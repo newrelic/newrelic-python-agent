@@ -1,11 +1,12 @@
 import psycopg2
 import psycopg2.extras
+import pytest
 
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs, validate_transaction_errors,
     validate_transaction_slow_sql_count,
     validate_stats_engine_explain_plan_output_is_none)
-from utils import DB_SETTINGS
+from utils import DB_SETTINGS, PSYCOPG2_VERSION
 
 from newrelic.agent import background_task, global_settings
 
@@ -13,7 +14,6 @@ from newrelic.agent import background_task, global_settings
 settings = global_settings()
 
 _test_async_mode_scoped_metrics = [
-        ('Function/psycopg2:connect', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2/select', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2/insert', 1),
         ('Datastore/operation/Postgres/drop', 1),
@@ -31,6 +31,13 @@ _test_async_mode_rollup_metrics = [
         ('Datastore/operation/Postgres/drop', 1),
         ('Datastore/operation/Postgres/create', 1)]
 
+if PSYCOPG2_VERSION > (2, 4):
+    _test_async_mode_scoped_metrics.append(
+            ('Function/psycopg2:connect', 1))
+else:
+    _test_async_mode_scoped_metrics.append(
+            ('Function/psycopg2._psycopg:connect', 1))
+
 # The feature flags are expected to be bound and set
 # through env vars at the time the test is imported
 if 'datastore.instances.r1' in settings.feature_flag:
@@ -41,6 +48,9 @@ if 'datastore.instances.r1' in settings.feature_flag:
             ('Datastore/instance/Postgres/%s/%s' % (
             DB_SETTINGS['host'], DB_SETTINGS['port']), 4))
 
+
+@pytest.mark.skipif(PSYCOPG2_VERSION < (2, 2),
+        reason='Async mode not implemented in this version of psycopg2')
 @validate_stats_engine_explain_plan_output_is_none()
 @validate_transaction_slow_sql_count(num_slow_sql=4)
 @validate_database_trace_inputs(sql_parameters_type=tuple)

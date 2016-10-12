@@ -12,9 +12,6 @@ from newrelic.agent import background_task, global_settings
 settings = global_settings()
 
 _test_execute_via_cursor_scoped_metrics = [
-        ('Function/psycopg2:connect', 1),
-        ('Function/psycopg2.extensions:connection.__enter__', 1),
-        ('Function/psycopg2.extensions:connection.__exit__', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2/select', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2/insert', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2/update', 1),
@@ -23,14 +20,14 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/statement/Postgres/pg_sleep/call', 1),
         ('Datastore/operation/Postgres/drop', 1),
         ('Datastore/operation/Postgres/create', 1),
-        ('Datastore/operation/Postgres/commit', 3),
+        ('Datastore/operation/Postgres/commit', 2),
         ('Datastore/operation/Postgres/rollback', 1)]
 
 _test_execute_via_cursor_rollup_metrics = [
-        ('Datastore/all', 13),
-        ('Datastore/allOther', 13),
-        ('Datastore/Postgres/all', 13),
-        ('Datastore/Postgres/allOther', 13),
+        ('Datastore/all', 12),
+        ('Datastore/allOther', 12),
+        ('Datastore/Postgres/all', 12),
+        ('Datastore/Postgres/allOther', 12),
         ('Datastore/operation/Postgres/select', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2/select', 1),
         ('Datastore/operation/Postgres/insert', 1),
@@ -44,7 +41,7 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/statement/Postgres/now/call', 1),
         ('Datastore/statement/Postgres/pg_sleep/call', 1),
         ('Datastore/operation/Postgres/call', 2),
-        ('Datastore/operation/Postgres/commit', 3),
+        ('Datastore/operation/Postgres/commit', 2),
         ('Datastore/operation/Postgres/rollback', 1)]
 
 # The feature flags are expected to be bound and set
@@ -64,11 +61,12 @@ if 'datastore.instances.r1' in settings.feature_flag:
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_execute_via_cursor():
-    with psycopg2.connect(
+    connection = psycopg2.connect(
             database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
             password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port']) as connection:
+            port=DB_SETTINGS['port'])
 
+    try:
         cursor = connection.cursor()
 
         psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
@@ -102,6 +100,9 @@ def test_execute_via_cursor():
         connection.rollback()
         connection.commit()
 
+    finally:
+        connection.close()
+
 @validate_transaction_metrics('test_cursor:test_execute_via_cursor_dict',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
         rollup_metrics=_test_execute_via_cursor_rollup_metrics,
@@ -109,11 +110,12 @@ def test_execute_via_cursor():
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_execute_via_cursor_dict():
-    with psycopg2.connect(
+    connection = psycopg2.connect(
             database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
             password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port']) as connection:
+            port=DB_SETTINGS['port'])
 
+    try:
         cursor = connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
         psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
@@ -146,3 +148,6 @@ def test_execute_via_cursor_dict():
 
         connection.rollback()
         connection.commit()
+
+    finally:
+        connection.close()

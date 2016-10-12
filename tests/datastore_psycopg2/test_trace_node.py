@@ -27,10 +27,14 @@ else:
         datastore_forgone_params=_test_trace_node_datastore_forgone_params)
 @background_task()
 def test_trace_node_datastore_params():
-    with psycopg2.connect(
+    connection = psycopg2.connect(
             database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
             password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port']) as connection:
+            port=DB_SETTINGS['port'])
+
+    try:
         cursor = connection.cursor()
         cursor.execute("""SELECT setting from pg_settings where name=%s""",
                 ('server_version',))
+    finally:
+        connection.close()

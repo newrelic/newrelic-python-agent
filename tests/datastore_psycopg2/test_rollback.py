@@ -1,8 +1,9 @@
 import psycopg2
+import pytest
 
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs)
-from utils import DB_SETTINGS
+from utils import DB_SETTINGS, PSYCOPG2_VERSION
 
 from newrelic.agent import background_task, global_settings
 
@@ -11,8 +12,6 @@ settings = global_settings()
 
 _test_rollback_on_exception_scoped_metrics = [
         ('Function/psycopg2:connect', 1),
-        ('Function/psycopg2.extensions:connection.__enter__', 1),
-        ('Function/psycopg2.extensions:connection.__exit__', 1),
         ('Datastore/operation/Postgres/rollback', 1)]
 
 _test_rollback_on_exception_rollup_metrics = [
@@ -32,6 +31,8 @@ if 'datastore.instances.r1' in settings.feature_flag:
             ('Datastore/instance/Postgres/%s/%s' % (
             DB_SETTINGS['host'], DB_SETTINGS['port']), 1))
 
+@pytest.mark.skipif(PSYCOPG2_VERSION < (2, 5),
+        reason='Context manager support introduced in psycopg2 version 2.5')
 @validate_transaction_metrics('test_rollback:test_rollback_on_exception',
         scoped_metrics=_test_rollback_on_exception_scoped_metrics,
         rollup_metrics=_test_rollback_on_exception_rollup_metrics,

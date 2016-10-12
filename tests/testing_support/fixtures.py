@@ -15,6 +15,7 @@ from newrelic.agent import (initialize, register_application,
         wrap_function_wrapper, ObjectProxy, application, callable_name)
 
 from newrelic.common import certs
+from newrelic.common.system_info import LOCALHOST_EQUIVALENTS
 from newrelic.common.encoding_utils import (unpack_field, json_encode,
         deobfuscate, json_decode, obfuscate)
 
@@ -898,6 +899,10 @@ def validate_tt_collector_json(required_params={},
                     for key in datastore_forgone_params:
                         assert key not in params
 
+                    # if host is reported, it cannot be localhost
+                    if 'host' in params:
+                        assert params['host'] not in LOCALHOST_EQUIVALENTS
+
             _check_datastore_instance_params(root_node)
 
             attributes = trace_details[4]
@@ -1024,6 +1029,10 @@ def validate_slow_sql_collector_json(required_params=set(),
 
                 # only legal keys should be reported
                 assert len(set(data.keys()) - legal_param_keys) == 0
+
+                # if host is reported, it cannot be localhost
+                if 'host' in data:
+                    assert data['host'] not in LOCALHOST_EQUIVALENTS
 
                 if required_params:
                     for param in required_params:

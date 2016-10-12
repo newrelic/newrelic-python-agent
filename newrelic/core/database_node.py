@@ -51,16 +51,7 @@ class DatabaseNode(_DatabaseNode):
 
     @property
     def instance_hostname(self):
-        localhost_equivalents = set([
-            'localhost',
-            '127.0.0.1',
-            '0.0.0.0',
-            '0:0:0:0:0:0:0:0',
-            '0:0:0:0:0:0:0:1',
-            '::1',
-            '::',
-        ])
-        if self.host in localhost_equivalents:
+        if self.host in system_info.LOCALHOST_EQUIVALENTS:
             hostname = system_info.gethostname()
         else:
             hostname = self.host

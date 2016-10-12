@@ -42,6 +42,16 @@ except ImportError:
 
 _logger = logging.getLogger(__name__)
 
+LOCALHOST_EQUIVALENTS = set([
+    'localhost',
+    '127.0.0.1',
+    '0.0.0.0',
+    '0:0:0:0:0:0:0:0',
+    '0:0:0:0:0:0:0:1',
+    '::1',
+    '::',
+])
+
 def logical_processor_count():
     """Returns the number of logical processors in the system.
 

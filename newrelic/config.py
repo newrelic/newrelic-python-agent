@@ -55,7 +55,6 @@ _FEATURE_FLAGS = set([
     'tornado.instrumentation.r2',
     'tornado.instrumentation.r3',
     'django.instrumentation.inclusion-tags.r1',
-    'datastore.instances.r1'
 ])
 
 # Names of configuration file and deployment environment. This
@@ -487,6 +486,11 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'strip_exception_messages.whitelist',
                      'get', _map_strip_exception_messages_whitelist)
+    _process_setting(section, 'datastore_tracer.instance_reporting.enabled',
+                     'getboolean', None)
+    _process_setting(section,
+                     'datastore_tracer.database_name_reporting.enabled',
+                     'getboolean', None)
 
 # Loading of configuration from specified file and for specified
 # deployment environment. Can also indicate whether configuration

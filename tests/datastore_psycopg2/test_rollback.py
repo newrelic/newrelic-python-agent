@@ -3,7 +3,7 @@ import pytest
 
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs, override_application_settings)
-from utils import DB_SETTINGS, PSYCOPG2_VERSION
+from utils import instance_hostname, DB_SETTINGS, PSYCOPG2_VERSION
 
 from newrelic.agent import background_task
 
@@ -38,7 +38,7 @@ _enable_rollup_metrics = list(_base_rollup_metrics)
 _disable_scoped_metrics = list(_base_scoped_metrics)
 _disable_rollup_metrics = list(_base_rollup_metrics)
 
-_host = DB_SETTINGS['host']
+_host = instance_hostname(DB_SETTINGS['host'])
 _port = DB_SETTINGS['port']
 
 _enable_scoped_metrics.append(

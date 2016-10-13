@@ -4,7 +4,7 @@ import psycopg2.extras
 
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs, override_application_settings)
-from utils import DB_SETTINGS, PSYCOPG2_VERSION
+from utils import instance_hostname, DB_SETTINGS, PSYCOPG2_VERSION
 
 from newrelic.agent import background_task
 
@@ -68,7 +68,7 @@ else:
     _enable_scoped_metrics.append(('Function/psycopg2._psycopg:connect', 1))
     _disable_scoped_metrics.append(('Function/psycopg2._psycopg:connect', 1))
 
-_host = DB_SETTINGS['host']
+_host = instance_hostname(DB_SETTINGS['host'])
 _port = DB_SETTINGS['port']
 
 _enable_scoped_metrics.append(

@@ -12,7 +12,6 @@ the global defaults or those from local agent configuration.
 import os
 import logging
 import copy
-import socket
 
 from .attribute_filter import AttributeFilter
 

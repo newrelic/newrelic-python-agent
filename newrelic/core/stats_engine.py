@@ -11,7 +11,6 @@ import logging
 import operator
 import random
 import zlib
-import traceback
 import time
 import sys
 

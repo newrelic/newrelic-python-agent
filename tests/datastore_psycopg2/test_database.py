@@ -263,7 +263,7 @@ _test_async_mode_rollup_metrics = [
 # through env vars at the time the test is imported
 if 'datastore.instances.r1' in settings.feature_flag:
     _test_async_mode_scoped_metrics.append(
-            ('Datastore/instance/Postgres/%s/%s' % 
+            ('Datastore/instance/Postgres/%s/%s' %
             (DB_SETTINGS['host'], DB_SETTINGS['port']), 4))
     _test_async_mode_rollup_metrics.append(
             ('Datastore/instance/Postgres/%s/%s' % (
@@ -417,33 +417,6 @@ def test_multiple_databases():
             port=postgresql2['port'])
     connection.close()
 
-slow_sql_json_required = set()
-slow_sql_json_forgone = set()
-if 'datastore.instances.r1' in settings.feature_flag:
-    # instance/database_name should be reported
-    slow_sql_json_required.add('host')
-    slow_sql_json_required.add('port_path_or_id')
-    slow_sql_json_required.add('database_name')
-else:
-    # instance/database_name should not be reported
-    slow_sql_json_forgone.add('host')
-    slow_sql_json_forgone.add('port_path_or_id')
-    slow_sql_json_forgone.add('database_name')
-@validate_slow_sql_collector_json(required_params=slow_sql_json_required,
-        forgone_params=slow_sql_json_forgone)
-@background_task()
-def test_slow_sql_json():
-    connection = psycopg2.connect(
-            database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
-            password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port'])
-
-    try:
-        cursor = connection.cursor()
-        cursor.execute("""SELECT setting from pg_settings where name=%s""",
-                ('server_version',))
-    finally:
-        connection.close()
 
 if 'datastore.instances.r1' in settings.feature_flag:
     _test_trace_node_datastore_params = {

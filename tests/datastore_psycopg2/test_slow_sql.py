@@ -1,30 +1,34 @@
 import psycopg2
 
-from testing_support.fixtures import validate_slow_sql_collector_json
+from testing_support.fixtures import (validate_slow_sql_collector_json,
+    override_application_settings)
 from utils import DB_SETTINGS
 
-from newrelic.agent import background_task, global_settings
+from newrelic.agent import background_task
 
 
-settings = global_settings()
+# Settings
 
-slow_sql_json_required = set()
-slow_sql_json_forgone = set()
-if 'datastore.instances.r1' in settings.feature_flag:
-    # instance/database_name should be reported
-    slow_sql_json_required.add('host')
-    slow_sql_json_required.add('port_path_or_id')
-    slow_sql_json_required.add('database_name')
-else:
-    # instance/database_name should not be reported
-    slow_sql_json_forgone.add('host')
-    slow_sql_json_forgone.add('port_path_or_id')
-    slow_sql_json_forgone.add('database_name')
+_enable_instance_settings = {
+    'datastore_tracer.instance_reporting.enabled': True,
+    'datastore_tracer.database_name_reporting.enabled': True,
+}
+_disable_instance_settings = {
+    'datastore_tracer.instance_reporting.enabled': False,
+    'datastore_tracer.database_name_reporting.enabled': False,
+}
 
-@validate_slow_sql_collector_json(required_params=slow_sql_json_required,
-        forgone_params=slow_sql_json_forgone)
-@background_task()
-def test_slow_sql_json():
+# Expected parameters
+
+_enabled_required = set(['host', 'port_path_or_id', 'database_name'])
+_enabled_forgone = set()
+
+_disabled_required = set()
+_disabled_forgone = set(['host', 'port_path_or_id', 'database_name'])
+
+# Query
+
+def _exercise_db():
     connection = psycopg2.connect(
             database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
             password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
@@ -36,3 +40,22 @@ def test_slow_sql_json():
                 ('server_version',))
     finally:
         connection.close()
+
+# Tests
+
+@override_application_settings(_enable_instance_settings)
+@validate_slow_sql_collector_json(
+        required_params=_enabled_required,
+        forgone_params=_enabled_forgone)
+@background_task()
+def test_slow_sql_json_enable_instance():
+    _exercise_db()
+
+
+@override_application_settings(_disable_instance_settings)
+@validate_slow_sql_collector_json(
+        required_params=_disabled_required,
+        forgone_params=_disabled_forgone)
+@background_task()
+def test_slow_sql_json_disable_instance():
+    _exercise_db()

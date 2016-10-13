@@ -1026,10 +1026,15 @@ class StatsEngine(object):
             if explain_plan_data:
                 params['explain_plan'] = explain_plan_data
 
-            if (slow_sql_node.dbapi2_module._nr_datastore_instance_feature_flag and
-                    'datastore.instances.r1' in self.__settings.feature_flag):
+            # Only send datastore instance params if not empty.
+
+            if slow_sql_node.host:
                 params['host'] = slow_sql_node.host
+
+            if slow_sql_node.port_path_or_id:
                 params['port_path_or_id'] = slow_sql_node.port_path_or_id
+
+            if slow_sql_node.database_name:
                 params['database_name'] = slow_sql_node.database_name
 
             json_data = json_encode(params)

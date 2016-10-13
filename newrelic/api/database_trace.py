@@ -107,9 +107,13 @@ class DatabaseTrace(TimeTrace):
 
                 ds_tracer = settings.datastore_tracer
                 instance_enabled = ds_tracer.instance_reporting.enabled
+                db_name_enabled = ds_tracer.database_name_reporting.enabled
 
                 if instance_enabled:
                     host, port_path_or_id, _ = instance_info
+
+                if db_name_enabled:
+                    _, _, database_name = instance_info
 
         if (tt.enabled and settings.collect_traces and
                 tt.record_sql != 'off'):

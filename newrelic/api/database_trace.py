@@ -93,21 +93,22 @@ class DatabaseTrace(TimeTrace):
         settings = transaction.settings
         tt = settings.transaction_tracer
         agent_limits = settings.agent_limits
+        ds_tracer = settings.datastore_tracer
 
-        if (self.dbapi2_module and
-                self.dbapi2_module._nr_datastore_instance_feature_flag):
+        # Check settings, so that we only call instance_info when needed.
 
-            if (self.connect_params and
+        instance_enabled = ds_tracer.instance_reporting.enabled
+        db_name_enabled = ds_tracer.database_name_reporting.enabled
+
+        if instance_enabled or db_name_enabled:
+
+            if (self.dbapi2_module and
+                    self.connect_params and
+                    self.dbapi2_module._nr_datastore_instance_feature_flag and
                     self.dbapi2_module._nr_instance_info is not None):
 
                 instance_info = self.dbapi2_module._nr_instance_info(
                         *self.connect_params)
-
-                # Check settings before setting attributes with instance_info.
-
-                ds_tracer = settings.datastore_tracer
-                instance_enabled = ds_tracer.instance_reporting.enabled
-                db_name_enabled = ds_tracer.database_name_reporting.enabled
 
                 if instance_enabled:
                     host, port_path_or_id, _ = instance_info

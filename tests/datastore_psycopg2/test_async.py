@@ -5,21 +5,32 @@ import pytest
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs, validate_transaction_errors,
     validate_transaction_slow_sql_count,
-    validate_stats_engine_explain_plan_output_is_none)
+    validate_stats_engine_explain_plan_output_is_none,
+    override_application_settings)
 from utils import DB_SETTINGS, PSYCOPG2_VERSION
 
-from newrelic.agent import background_task, global_settings
+from newrelic.agent import background_task
 
 
-settings = global_settings()
+# Settings
 
-_test_async_mode_scoped_metrics = [
+_enable_instance_settings = {
+    'datastore_tracer.instance_reporting.enabled': True,
+}
+_disable_instance_settings = {
+    'datastore_tracer.instance_reporting.enabled': False,
+}
+
+# Metrics
+
+_base_scoped_metrics = (
         ('Datastore/statement/Postgres/datastore_psycopg2/select', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2/insert', 1),
         ('Datastore/operation/Postgres/drop', 1),
-        ('Datastore/operation/Postgres/create', 1)]
+        ('Datastore/operation/Postgres/create', 1)
+)
 
-_test_async_mode_rollup_metrics = [
+_base_rollup_metrics = (
         ('Datastore/all', 5),
         ('Datastore/allOther', 5),
         ('Datastore/Postgres/all', 5),
@@ -29,39 +40,35 @@ _test_async_mode_rollup_metrics = [
         ('Datastore/operation/Postgres/insert', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2/insert', 1),
         ('Datastore/operation/Postgres/drop', 1),
-        ('Datastore/operation/Postgres/create', 1)]
+        ('Datastore/operation/Postgres/create', 1)
+)
+
+_disable_scoped_metrics = list(_base_scoped_metrics)
+_disable_rollup_metrics = list(_base_rollup_metrics)
+
+_enable_scoped_metrics = list(_base_scoped_metrics)
+_enable_rollup_metrics = list(_base_rollup_metrics)
 
 if PSYCOPG2_VERSION > (2, 4):
-    _test_async_mode_scoped_metrics.append(
-            ('Function/psycopg2:connect', 1))
+    _enable_scoped_metrics.append(('Function/psycopg2:connect', 1))
+    _disable_scoped_metrics.append(('Function/psycopg2:connect', 1))
 else:
-    _test_async_mode_scoped_metrics.append(
-            ('Function/psycopg2._psycopg:connect', 1))
+    _enable_scoped_metrics.append(('Function/psycopg2._psycopg:connect', 1))
+    _disable_scoped_metrics.append(('Function/psycopg2._psycopg:connect', 1))
 
-# The feature flags are expected to be bound and set
-# through env vars at the time the test is imported
-if 'datastore.instances.r1' in settings.feature_flag:
-    _test_async_mode_scoped_metrics.append(
-            ('Datastore/instance/Postgres/%s/%s' %
-            (DB_SETTINGS['host'], DB_SETTINGS['port']), 4))
-    _test_async_mode_rollup_metrics.append(
-            ('Datastore/instance/Postgres/%s/%s' % (
-            DB_SETTINGS['host'], DB_SETTINGS['port']), 4))
+_host = DB_SETTINGS['host']
+_port = DB_SETTINGS['port']
 
+_enable_scoped_metrics.append(
+        ('Datastore/instance/Postgres/%s/%s' % (_host, _port), 4)
+)
+_enable_rollup_metrics.append(
+        ('Datastore/instance/Postgres/%s/%s' % (_host, _port), 4)
+)
 
-@pytest.mark.skipif(PSYCOPG2_VERSION < (2, 2),
-        reason='Async mode not implemented in this version of psycopg2')
-@validate_stats_engine_explain_plan_output_is_none()
-@validate_transaction_slow_sql_count(num_slow_sql=4)
-@validate_database_trace_inputs(sql_parameters_type=tuple)
-@validate_transaction_metrics('test_async:test_async_mode',
-        scoped_metrics=_test_async_mode_scoped_metrics,
-        rollup_metrics=_test_async_mode_rollup_metrics,
-        background_task=True)
-@validate_transaction_errors(errors=[])
-@background_task()
-def test_async_mode():
+# Query
 
+def _exercise_db():
     wait = psycopg2.extras.wait_select
 
     async_conn = psycopg2.connect(
@@ -90,3 +97,38 @@ def test_async_mode():
         assert isinstance(row, tuple)
 
     async_conn.close()
+
+# Tests
+
+@pytest.mark.skipif(PSYCOPG2_VERSION < (2, 2),
+        reason='Async mode not implemented in this version of psycopg2')
+@override_application_settings(_enable_instance_settings)
+@validate_stats_engine_explain_plan_output_is_none()
+@validate_transaction_slow_sql_count(num_slow_sql=4)
+@validate_database_trace_inputs(sql_parameters_type=tuple)
+@validate_transaction_metrics(
+        'test_async:test_async_mode_enable_instance',
+        scoped_metrics=_enable_scoped_metrics,
+        rollup_metrics=_enable_rollup_metrics,
+        background_task=True)
+@validate_transaction_errors(errors=[])
+@background_task()
+def test_async_mode_enable_instance():
+    _exercise_db()
+
+
+@pytest.mark.skipif(PSYCOPG2_VERSION < (2, 2),
+        reason='Async mode not implemented in this version of psycopg2')
+@override_application_settings(_disable_instance_settings)
+@validate_stats_engine_explain_plan_output_is_none()
+@validate_transaction_slow_sql_count(num_slow_sql=4)
+@validate_database_trace_inputs(sql_parameters_type=tuple)
+@validate_transaction_metrics(
+        'test_async:test_async_mode_disable_instance',
+        scoped_metrics=_disable_scoped_metrics,
+        rollup_metrics=_disable_rollup_metrics,
+        background_task=True)
+@validate_transaction_errors(errors=[])
+@background_task()
+def test_async_mode_disable_instance():
+    _exercise_db()

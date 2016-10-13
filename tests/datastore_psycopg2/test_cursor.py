@@ -3,15 +3,24 @@ import psycopg2.extensions
 import psycopg2.extras
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_database_trace_inputs)
-from utils import DB_SETTINGS
+    validate_database_trace_inputs, override_application_settings)
+from utils import DB_SETTINGS, PSYCOPG2_VERSION
 
-from newrelic.agent import background_task, global_settings
+from newrelic.agent import background_task
 
 
-settings = global_settings()
+# Settings
 
-_test_execute_via_cursor_scoped_metrics = [
+_enable_instance_settings = {
+    'datastore_tracer.instance_reporting.enabled': True,
+}
+_disable_instance_settings = {
+    'datastore_tracer.instance_reporting.enabled': False,
+}
+
+# Metrics
+
+_base_scoped_metrics = (
         ('Datastore/statement/Postgres/datastore_psycopg2/select', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2/insert', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2/update', 1),
@@ -21,9 +30,10 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/operation/Postgres/drop', 1),
         ('Datastore/operation/Postgres/create', 1),
         ('Datastore/operation/Postgres/commit', 2),
-        ('Datastore/operation/Postgres/rollback', 1)]
+        ('Datastore/operation/Postgres/rollback', 1),
+)
 
-_test_execute_via_cursor_rollup_metrics = [
+_base_rollup_metrics = (
         ('Datastore/all', 12),
         ('Datastore/allOther', 12),
         ('Datastore/Postgres/all', 12),
@@ -42,36 +52,50 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/statement/Postgres/pg_sleep/call', 1),
         ('Datastore/operation/Postgres/call', 2),
         ('Datastore/operation/Postgres/commit', 2),
-        ('Datastore/operation/Postgres/rollback', 1)]
+        ('Datastore/operation/Postgres/rollback', 1),
+)
 
-# The feature flags are expected to be bound and set
-# through env vars at the time the test is imported
-if 'datastore.instances.r1' in settings.feature_flag:
-    _test_execute_via_cursor_scoped_metrics.append(
-            ('Datastore/instance/Postgres/%s/%s' % (
-            DB_SETTINGS['host'], DB_SETTINGS['port']), 12))
-    _test_execute_via_cursor_rollup_metrics.append(
-            ('Datastore/instance/Postgres/%s/%s' % (
-            DB_SETTINGS['host'], DB_SETTINGS['port']), 12))
+_disable_scoped_metrics = list(_base_scoped_metrics)
+_disable_rollup_metrics = list(_base_rollup_metrics)
 
-@validate_transaction_metrics('test_cursor:test_execute_via_cursor',
-        scoped_metrics=_test_execute_via_cursor_scoped_metrics,
-        rollup_metrics=_test_execute_via_cursor_rollup_metrics,
-        background_task=True)
-@validate_database_trace_inputs(sql_parameters_type=tuple)
-@background_task()
-def test_execute_via_cursor():
+_enable_scoped_metrics = list(_base_scoped_metrics)
+_enable_rollup_metrics = list(_base_rollup_metrics)
+
+if PSYCOPG2_VERSION > (2, 4):
+    _enable_scoped_metrics.append(('Function/psycopg2:connect', 1))
+    _disable_scoped_metrics.append(('Function/psycopg2:connect', 1))
+else:
+    _enable_scoped_metrics.append(('Function/psycopg2._psycopg:connect', 1))
+    _disable_scoped_metrics.append(('Function/psycopg2._psycopg:connect', 1))
+
+_host = DB_SETTINGS['host']
+_port = DB_SETTINGS['port']
+
+_enable_scoped_metrics.append(
+        ('Datastore/instance/Postgres/%s/%s' % (_host, _port), 11)
+)
+_enable_rollup_metrics.append(
+        ('Datastore/instance/Postgres/%s/%s' % (_host, _port), 11)
+)
+
+# Query
+
+def _exercise_db(cursor_factory=None, row_type=tuple):
     connection = psycopg2.connect(
             database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
             password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
             port=DB_SETTINGS['port'])
 
     try:
-        cursor = connection.cursor()
+        if cursor_factory:
+            cursor = connection.cursor(cursor_factory=cursor_factory)
+        else:
+            cursor = connection.cursor()
 
-        psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
-        psycopg2.extensions.register_type(psycopg2.extensions.UNICODE, connection)
-        psycopg2.extensions.register_type(psycopg2.extensions.UNICODE, cursor)
+        unicode_type = psycopg2.extensions.UNICODE
+        psycopg2.extensions.register_type(unicode_type)
+        psycopg2.extensions.register_type(unicode_type, connection)
+        psycopg2.extensions.register_type(unicode_type, cursor)
 
         cursor.execute("""drop table if exists datastore_psycopg2""")
 
@@ -85,7 +109,7 @@ def test_execute_via_cursor():
         cursor.execute("""select * from datastore_psycopg2""")
 
         for row in cursor:
-            assert isinstance(row, tuple)
+            assert isinstance(row, row_type)
 
         cursor.execute("""update datastore_psycopg2 set a=%s, b=%s, """
                 """c=%s where a=%s""", (4, 4.0, '4.0', 1))
@@ -103,51 +127,53 @@ def test_execute_via_cursor():
     finally:
         connection.close()
 
-@validate_transaction_metrics('test_cursor:test_execute_via_cursor_dict',
-        scoped_metrics=_test_execute_via_cursor_scoped_metrics,
-        rollup_metrics=_test_execute_via_cursor_rollup_metrics,
+# Tests
+
+@override_application_settings(_enable_instance_settings)
+@validate_transaction_metrics(
+        'test_cursor:test_execute_via_cursor_enable_instance',
+        scoped_metrics=_enable_scoped_metrics,
+        rollup_metrics=_enable_rollup_metrics,
         background_task=True)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
-def test_execute_via_cursor_dict():
-    connection = psycopg2.connect(
-            database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
-            password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port'])
+def test_execute_via_cursor_enable_instance():
+    _exercise_db(cursor_factory=None, row_type=tuple)
 
-    try:
-        cursor = connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-        psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
-        psycopg2.extensions.register_type(psycopg2.extensions.UNICODE, connection)
-        psycopg2.extensions.register_type(psycopg2.extensions.UNICODE, cursor)
+@override_application_settings(_disable_instance_settings)
+@validate_transaction_metrics(
+        'test_cursor:test_execute_via_cursor_disable_instance',
+        scoped_metrics=_disable_scoped_metrics,
+        rollup_metrics=_disable_rollup_metrics,
+        background_task=True)
+@validate_database_trace_inputs(sql_parameters_type=tuple)
+@background_task()
+def test_execute_via_cursor_disable_instance():
+    _exercise_db(cursor_factory=None, row_type=tuple)
 
-        cursor.execute("""drop table if exists datastore_psycopg2""")
 
-        cursor.execute("""create table datastore_psycopg2 """
-                """(a integer, b real, c text)""")
+@override_application_settings(_enable_instance_settings)
+@validate_transaction_metrics(
+        'test_cursor:test_execute_via_cursor_dict_enable_instance',
+        scoped_metrics=_enable_scoped_metrics,
+        rollup_metrics=_enable_rollup_metrics,
+        background_task=True)
+@validate_database_trace_inputs(sql_parameters_type=tuple)
+@background_task()
+def test_execute_via_cursor_dict_enable_instance():
+    dict_factory = psycopg2.extras.RealDictCursor
+    _exercise_db(cursor_factory=dict_factory, row_type=dict)
 
-        cursor.executemany("""insert into datastore_psycopg2 """
-                """values (%s, %s, %s)""", [(1, 1.0, '1.0'),
-                (2, 2.2, '2.2'), (3, 3.3, '3.3')])
 
-        cursor.execute("""select * from datastore_psycopg2""")
-
-        for row in cursor:
-            assert isinstance(row, dict)
-
-        cursor.execute("""update datastore_psycopg2 set a=%s, b=%s, """
-                """c=%s where a=%s""", (4, 4.0, '4.0', 1))
-
-        cursor.execute("""delete from datastore_psycopg2 where a=2""")
-
-        connection.commit()
-
-        cursor.callproc('now')
-        cursor.callproc('pg_sleep', (0.25,))
-
-        connection.rollback()
-        connection.commit()
-
-    finally:
-        connection.close()
+@override_application_settings(_disable_instance_settings)
+@validate_transaction_metrics(
+        'test_cursor:test_execute_via_cursor_dict_disable_instance',
+        scoped_metrics=_disable_scoped_metrics,
+        rollup_metrics=_disable_rollup_metrics,
+        background_task=True)
+@validate_database_trace_inputs(sql_parameters_type=tuple)
+@background_task()
+def test_execute_via_cursor_dict_disable_instance():
+    dict_factory = psycopg2.extras.RealDictCursor
+    _exercise_db(cursor_factory=dict_factory, row_type=dict)

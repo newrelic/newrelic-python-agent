@@ -3,11 +3,10 @@ from collections import namedtuple
 import newrelic.core.trace_node
 
 from newrelic.common import system_info
-
-from newrelic.core.metric import TimeMetric
-from newrelic.core.database_utils import sql_statement, explain_plan
-
 from newrelic.core.config import global_settings
+from newrelic.core.database_utils import sql_statement, explain_plan
+from newrelic.core.metric import TimeMetric
+
 
 _SlowSqlNode = namedtuple('_SlowSqlNode',
         ['duration', 'path', 'request_uri', 'sql', 'sql_format',
@@ -131,10 +130,9 @@ class DatabaseNode(_DatabaseNode):
                     duration=self.duration, exclusive=self.exclusive)
 
         # Instance Metrics
-        settings = global_settings()
-        if (self.dbapi2_module and
-                self.dbapi2_module._nr_datastore_instance_feature_flag and
-                'datastore.instances.r1' in settings.feature_flag):
+
+        if self.instance_hostname and self.port_path_or_id:
+
             name = 'Datastore/instance/%s/%s/%s' % (product,
                     self.instance_hostname, self.port_path_or_id)
 

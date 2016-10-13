@@ -1,5 +1,6 @@
 import pwd
 import os
+import socket
 
 
 def _e(key, default):
@@ -23,12 +24,17 @@ def postgresql_settings():
 
     settings = {}
 
+    # Use "real" hostname, rather than 'localhost', since that's
+    # what will be used in Datastore instance metrics and params.
+
+    pg_hostname = socket.gethostname()
+
     # Use local defaults, if TDDIUM vars aren't present.
 
     settings['name'] = _e('TDDIUM_DB_PG_NAME', USER)
     settings['user'] = _e('TDDIUM_DB_PG_USER', USER)
     settings['password'] = _e('TDDIUM_DB_PG_PASSWORD', '')
-    settings['host'] = _e('TDDIUM_DB_PG_HOST', 'localhost')
+    settings['host'] = _e('TDDIUM_DB_PG_HOST', pg_hostname)
     settings['port'] = int(_e('TDDIUM_DB_PG_PORT', '5432'))
 
     # Look for env vars in test docker container.

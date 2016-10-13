@@ -3,7 +3,6 @@ from collections import namedtuple
 import newrelic.core.trace_node
 
 from newrelic.common import system_info
-from newrelic.core.config import global_settings
 from newrelic.core.database_utils import sql_statement, explain_plan
 from newrelic.core.metric import TimeMetric
 
@@ -176,8 +175,6 @@ class DatabaseNode(_DatabaseNode):
                 database_name=self.database_name)
 
     def trace_node(self, stats, root, connections):
-        settings = global_settings()
-
         product = self.product
         operation = self.operation or 'other'
         target = self.target
@@ -199,10 +196,15 @@ class DatabaseNode(_DatabaseNode):
 
         params = {}
 
-        if (self.dbapi2_module._nr_datastore_instance_feature_flag
-                and 'datastore.instances.r1' in settings.feature_flag):
+        # Only send datastore instance params if not empty.
+
+        if self.host:
             params['host'] = self.host
+
+        if self.port_path_or_id:
             params['port_path_or_id'] = self.port_path_or_id
+
+        if self.database_name:
             params['database_name'] = self.database_name
 
         sql = self.formatted

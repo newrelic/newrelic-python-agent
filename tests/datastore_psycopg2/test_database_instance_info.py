@@ -183,6 +183,7 @@ _test_add_defaults = [
     [('127.0.0.1', None, None, 'foobar'), ('127.0.0.1', '5432', 'foobar')],
     [('::1', None, '8888', None), ('::1', '8888', 'default')],
     [('::1', None, None, None), ('::1', '5432', 'default')],
+    [('::1', None, None, ''), ('::1', '5432', 'default')],
 
     # Unix Domain Socket
 

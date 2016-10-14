@@ -46,10 +46,6 @@ class DatabaseNode(_DatabaseNode):
         return self.dbapi2_module and self.dbapi2_module._nr_database_product
 
     @property
-    def instance(self):
-        return "%s/%s" % (self.host, self.port_path_or_id)
-
-    @property
     def instance_hostname(self):
         if self.host in system_info.LOCALHOST_EQUIVALENTS:
             hostname = system_info.gethostname()

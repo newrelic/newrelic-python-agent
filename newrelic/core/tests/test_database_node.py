@@ -25,9 +25,6 @@ class TestDatabaseNodeProperties(unittest.TestCase):
     def test_product_property(self):
         assert self.db_node.product is None
 
-    def test_instance_property(self):
-        assert self.db_node.instance == '1.2.3.4/1234'
-
     def test_operation(self):
         assert self.db_node.operation == 'commit'
 

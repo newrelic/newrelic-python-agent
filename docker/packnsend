@@ -25,6 +25,7 @@ APP_SERVICE_IMAGES="
     "
 
 ALL_IMAGES="python-base $APP_SERVICE_IMAGES"
+DATE=`date '+%Y%m%d%H%M%S'`
 
 cleanup_containers()
 {
@@ -130,7 +131,7 @@ create_docker_test_image()
 
     echo "Building test image."
 
-    DATA_IMAGE_NAME="packnsend-`date '+%Y%m%d%H%M%S'`-$$"
+    DATA_IMAGE_NAME="packnsend-${DATE}-$$"
     (cd $DATA_DIRECTORY && docker build --rm -t $DATA_IMAGE_NAME .)
 }
 
@@ -357,7 +358,7 @@ docker_compose_run()
     echo "Staring containers and running command: $CMD"
     echo
 
-    time docker-compose --file $COMPOSE_FILE run --rm packnsend $CMD
+    time docker-compose --file $COMPOSE_FILE --project-name packnsend-${DATE} run --rm packnsend $CMD
 
     STATUS=$?
 }
@@ -370,7 +371,7 @@ docker_compose_down()
     echo "Cleaning up..."
     echo
 
-    docker-compose --file $COMPOSE_FILE down
+    docker-compose --file $COMPOSE_FILE --project-name packnsend-${DATE} down || exit 1
 }
 
 create_docker_base_images_nocache()

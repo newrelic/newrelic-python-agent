@@ -140,7 +140,7 @@ def _add_defaults(parsed_host, parsed_hostaddr, parsed_port, parsed_database):
     parsed_host = parsed_host or os.environ.get('PGHOST')
     parsed_hostaddr = parsed_hostaddr or os.environ.get('PGHOSTADDR')
     parsed_port = parsed_port or os.environ.get('PGPORT')
-    database = parsed_database or os.environ.get('PGDATABASE')
+    database = parsed_database or os.environ.get('PGDATABASE') or 'default'
 
     # If hostaddr is present, we use that, since host is used for auth only.
 

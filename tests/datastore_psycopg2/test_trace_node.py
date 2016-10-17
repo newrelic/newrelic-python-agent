@@ -2,7 +2,7 @@ import psycopg2
 
 from testing_support.fixtures import (validate_tt_collector_json,
     override_application_settings)
-from utils import DB_SETTINGS
+from utils import DB_SETTINGS, instance_hostname
 
 from newrelic.agent import background_task
 
@@ -21,7 +21,7 @@ _disable_instance_settings = {
 # Expected parameters
 
 _enabled_required = {
-    'host': DB_SETTINGS['host'],
+    'host': instance_hostname(DB_SETTINGS['host']),
     'port_path_or_id': str(DB_SETTINGS['port']),
     'database_name': DB_SETTINGS['name'],
 }
@@ -29,9 +29,9 @@ _enabled_forgone = {}
 
 _disabled_required = {}
 _disabled_forgone = {
-    'host': DB_SETTINGS['host'],
-    'port_path_or_id': str(DB_SETTINGS['port']),
-    'database_name': DB_SETTINGS['name'],
+    'host': 'VALUE NOT USED',
+    'port_path_or_id': 'VALUE NOT USED',
+    'database_name': 'VALUE NOT USED',
 }
 
 # Query

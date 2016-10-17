@@ -46,21 +46,8 @@ class DatabaseNode(_DatabaseNode):
         return self.dbapi2_module and self.dbapi2_module._nr_database_product
 
     @property
-    def instance(self):
-        return "%s/%s" % (self.host, self.port_path_or_id)
-
-    @property
     def instance_hostname(self):
-        localhost_equivalents = set([
-            'localhost',
-            '127.0.0.1',
-            '0.0.0.0',
-            '0:0:0:0:0:0:0:0',
-            '0:0:0:0:0:0:0:1',
-            '::1',
-            '::',
-        ])
-        if self.host in localhost_equivalents:
+        if self.host in system_info.LOCALHOST_EQUIVALENTS:
             hostname = system_info.gethostname()
         else:
             hostname = self.host
@@ -170,7 +157,7 @@ class DatabaseNode(_DatabaseNode):
                 cursor_params=self.cursor_params,
                 sql_parameters=self.sql_parameters,
                 execute_params=self.execute_params,
-                host=self.host,
+                host=self.instance_hostname,
                 port_path_or_id=self.port_path_or_id,
                 database_name=self.database_name)
 
@@ -199,7 +186,7 @@ class DatabaseNode(_DatabaseNode):
         # Only send datastore instance params if not empty.
 
         if self.host:
-            params['host'] = self.host
+            params['host'] = self.instance_hostname
 
         if self.port_path_or_id:
             params['port_path_or_id'] = self.port_path_or_id

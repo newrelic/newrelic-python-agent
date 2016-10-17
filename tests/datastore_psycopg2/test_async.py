@@ -59,11 +59,20 @@ else:
 _host = instance_hostname(DB_SETTINGS['host'])
 _port = DB_SETTINGS['port']
 
+_instance_metric_name = 'Datastore/instance/Postgres/%s/%s' % (_host, _port)
+
 _enable_scoped_metrics.append(
-        ('Datastore/instance/Postgres/%s/%s' % (_host, _port), 4)
+        (_instance_metric_name, 4)
 )
 _enable_rollup_metrics.append(
-        ('Datastore/instance/Postgres/%s/%s' % (_host, _port), 4)
+        (_instance_metric_name, 4)
+)
+
+_disable_scoped_metrics.append(
+        (_instance_metric_name, None)
+)
+_disable_rollup_metrics.append(
+        (_instance_metric_name, None)
 )
 
 # Query

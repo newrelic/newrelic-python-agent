@@ -351,6 +351,7 @@ create_docker_base_images()
 docker_compose_run()
 {
     COMPOSE_FILE=$(echo $@ | tr -s " " | cut -f1 -d" ")
+    PROJECT_NAME="packnsend-${DATE}-$$"
     CMD=$(echo $@ | tr -s " " | cut -f2- -d" ")
 
     echo
@@ -358,7 +359,10 @@ docker_compose_run()
     echo "Staring containers and running command: $CMD"
     echo
 
-    time docker-compose --file $COMPOSE_FILE --project-name packnsend-${DATE} run --rm packnsend $CMD
+    time docker-compose \
+        --file $COMPOSE_FILE \
+        --project-name $PROJECT_NAME \
+        run --rm packnsend $CMD
 
     STATUS=$?
 }
@@ -366,12 +370,16 @@ docker_compose_run()
 docker_compose_down()
 {
     COMPOSE_FILE=$(echo $@ | tr -s " " | cut -f1 -d" ")
+    PROJECT_NAME="packnsend-${DATE}-$$"
 
     echo
     echo "Cleaning up..."
     echo
 
-    docker-compose --file $COMPOSE_FILE --project-name packnsend-${DATE} down || exit 1
+    docker-compose \
+        --file $COMPOSE_FILE \
+        --project-name $PROJECT_NAME \
+        down || exit 1
 }
 
 create_docker_base_images_nocache()

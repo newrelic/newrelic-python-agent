@@ -1,0 +1,17 @@
+version: '2'
+services:
+  packnsend:
+    extends:
+      file: ../../docker/docker-compose.yml
+      service: packnsend
+    depends_on:
+      - postgresql1
+      - postgresql2
+    environment:
+      COMPOSE_POSTGRESQL_HOST_1: postgresql1
+      COMPOSE_POSTGRESQL_HOST_2: postgresql2
+    entrypoint: ./docker/wait-for-ready.sh --postgresql postgresql1:5432,postgresql2:5432
+  postgresql1:
+    image: postgresql
+  postgresql2:
+    image: postgresql

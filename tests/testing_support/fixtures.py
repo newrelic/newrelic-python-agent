@@ -12,10 +12,10 @@ from newrelic.packages import six
 from newrelic.agent import (initialize, register_application,
         global_settings, shutdown_agent, application as application_instance,
         transient_function_wrapper, function_wrapper, application_settings,
-        wrap_function_wrapper, ObjectProxy, application, callable_name,
-        get_browser_timing_footer)
+        wrap_function_wrapper, ObjectProxy, application, callable_name)
 
 from newrelic.common import certs
+from newrelic.common.system_info import LOCALHOST_EQUIVALENTS
 from newrelic.common.encoding_utils import (unpack_field, json_encode,
         deobfuscate, json_decode, obfuscate)
 
@@ -25,8 +25,9 @@ from newrelic.core.database_utils import SQLConnections
 from newrelic.network.addresses import proxy_details
 from newrelic.packages import requests
 
-from newrelic.core.agent import agent_instance
-from newrelic.core.attribute_filter import AttributeFilter
+from newrelic.core.attribute_filter import (AttributeFilter, DST_ERROR_COLLECTOR,
+        DST_TRANSACTION_TRACER)
+from newrelic.core.attribute import create_attributes
 
 from testing_support.sample_applications import (user_attributes_added,
         error_user_params_added)
@@ -46,6 +47,13 @@ def _environ_as_bool(name, default=False):
         except AttributeError:
             pass
     return flag
+
+def _lookup_string_table(name, string_table, default=None):
+    try:
+        index = int(name.lstrip('`'))
+        return string_table[index]
+    except ValueError:
+        return default
 
 _fake_collector_responses = {
     'get_redirect_host': u'fake-collector.newrelic.com',
@@ -242,7 +250,7 @@ def collector_agent_registration_fixture(app_name=None, default_settings={},
         if not use_fake_collector and not use_developer_mode:
             try:
                 _logger.debug("Record deployment marker at %s" % url)
-                r = requests.post(url, proxies=proxies, headers=headers,
+                requests.post(url, proxies=proxies, headers=headers,
                         timeout=timeout, data=data, verify=cert_loc)
             except Exception:
                 _logger.exception("Unable to record deployment marker.")
@@ -566,7 +574,7 @@ def validate_synthetics_event(required_attrs=[], forgone_attrs=[],
                 flat_event = _flatten(event)
 
                 assert 'nr.guid' in flat_event, ('name=%r, event=%r' %
-                            (name, flat_event))
+                            ('nr.guid', flat_event))
 
                 for name, value in required_attrs:
                     assert name in flat_event, ('name=%r, event=%r' %
@@ -803,7 +811,7 @@ def validate_synthetics_transaction_trace(required_params={},
                         'intrinsics=%r' % (name, tt_intrinsics))
                 assert tt_intrinsics[name] == required_params[name], (
                         'name=%r, value=%r, intrinsics=%r' %
-                        (name, required_params[name], intrinsics))
+                        (name, required_params[name], tt_intrinsics))
 
             for name in forgone_params:
                 assert name not in tt_intrinsics, ('name=%r, '
@@ -814,7 +822,8 @@ def validate_synthetics_transaction_trace(required_params={},
     return _validate_synthetics_transaction_trace
 
 def validate_tt_collector_json(required_params={},
-        forgone_params={}, should_exist=True):
+        forgone_params={}, should_exist=True, datastore_params={},
+        datastore_forgone_params={}):
     '''make assertions based off the cross-agent spec on transaction traces'''
 
     @transient_function_wrapper('newrelic.core.stats_engine',
@@ -836,7 +845,8 @@ def validate_tt_collector_json(required_params={},
             assert isinstance(trace[0], (int, float)) # start time (ms)
             assert isinstance(trace[1], (int, float)) # duration (ms)
             assert isinstance(trace[2], six.string_types) # transaction name
-            assert isinstance(trace[3], six.string_types) # request url
+            if trace[2].startswith('WebTransaction'):
+                assert isinstance(trace[3], six.string_types) # request url
 
             # trace details -- python agent always uses condensed trace array
 
@@ -874,6 +884,26 @@ def validate_tt_collector_json(required_params={},
             assert isinstance(trace_segment[2], six.string_types) # scope
             assert isinstance(trace_segment[3], dict) # request params
             assert isinstance(trace_segment[4], list) # children
+
+            def _check_datastore_instance_params(node):
+                children = node[4]
+                for child in children:
+                    _check_datastore_instance_params(child)
+
+                segment_name = _lookup_string_table(node[2], string_table,
+                        default=node[2])
+                if segment_name.startswith('Datastore'):
+                    params = node[3]
+                    for key in datastore_params:
+                        assert params[key] == datastore_params[key]
+                    for key in datastore_forgone_params:
+                        assert key not in params
+
+                    # if host is reported, it cannot be localhost
+                    if 'host' in params:
+                        assert params['host'] not in LOCALHOST_EQUIVALENTS
+
+            _check_datastore_instance_params(root_node)
 
             attributes = trace_details[4]
 
@@ -960,6 +990,62 @@ def validate_transaction_error_trace_attributes(required_params={},
 
     return _validate_transaction_error_trace
 
+def validate_slow_sql_collector_json(required_params=set(),
+        forgone_params=set()):
+    """Check that slow_sql json output is in accordance with agent specs.
+    """
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_slow_sql_collector_json(wrapped, instance, args, kwargs):
+        legal_param_keys = set([
+            'explain_plan',
+            'backtrace',
+            'host',
+            'port_path_or_id',
+            'database_name'
+        ])
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            connections = SQLConnections()
+            slow_sql_list = instance.slow_sql_data(connections)
+
+            for slow_sql in slow_sql_list:
+                assert isinstance(slow_sql[0], six.string_types) # txn_name
+                assert isinstance(slow_sql[1], six.string_types) # txn_url
+                assert isinstance(slow_sql[2], int)              # sql_id
+                assert isinstance(slow_sql[3], six.string_types) # sql
+                assert isinstance(slow_sql[4], six.string_types) # metric_name
+                assert isinstance(slow_sql[5], int)              # count
+                assert isinstance(slow_sql[6], float)            # total
+                assert isinstance(slow_sql[7], float)            # min
+                assert isinstance(slow_sql[8], float)            # max
+                assert isinstance(slow_sql[9], six.string_types) # params
+
+                params = slow_sql[9]
+                data = unpack_field(params)
+
+                # only legal keys should be reported
+                assert len(set(data.keys()) - legal_param_keys) == 0
+
+                # if host is reported, it cannot be localhost
+                if 'host' in data:
+                    assert data['host'] not in LOCALHOST_EQUIVALENTS
+
+                if required_params:
+                    for param in required_params:
+                        assert param in data
+
+                if forgone_params:
+                    for param in forgone_params:
+                        assert param not in data
+
+        return result
+
+    return _validate_slow_sql_collector_json
+
 def check_error_attributes(parameters, required_params={}, forgone_params={},
         is_transaction=True):
 
@@ -1029,6 +1115,8 @@ def validate_error_trace_collector_json():
 
             for field in parameter_fields:
                 assert field in parameters
+
+        return result
 
     return _validate_error_trace_collector_json
 
@@ -1271,6 +1359,8 @@ def validate_error_event_attributes(required_params={}, forgone_params={}):
 
             check_event_attributes(event_data, required_params, forgone_params)
 
+        return result
+
     return _validate_error_event_attributes
 
 def validate_error_trace_attributes_outside_transaction(err_name,
@@ -1289,6 +1379,8 @@ def validate_error_trace_attributes_outside_transaction(err_name,
             check_error_attributes(target_error.parameters, required_params,
                     forgone_params, is_transaction=False)
 
+        return result
+
     return _validate_error_trace_attributes_outside_transaction
 
 def validate_error_event_attributes_outside_transaction(required_params={},
@@ -1306,6 +1398,8 @@ def validate_error_event_attributes_outside_transaction(required_params={},
             event_data = instance.error_events
 
             check_event_attributes(event_data, required_params, forgone_params)
+
+        return result
 
     return _validate_error_event_attributes_outside_transaction
 
@@ -1468,7 +1562,8 @@ def validate_database_trace_inputs(sql_parameters_type):
     def _validate_database_trace_inputs(wrapped, instance, args, kwargs):
         def _bind_params(transaction, sql, dbapi2_module=None,
                 connect_params=None, cursor_params=None, sql_parameters=None,
-                execute_params=None):
+                execute_params=None, host=None, port_path_or_id=None,
+                database_name=None):
             return (transaction, sql, dbapi2_module, connect_params,
                     cursor_params, sql_parameters, execute_params)
 
@@ -1824,6 +1919,8 @@ def validate_custom_event_in_application_stats_engine(required_event):
             custom_event = stats.custom_events.samples[0]
             _validate_custom_event(custom_event, required_event)
 
+        return result
+
     return _validate_custom_event_in_application_stats_engine
 
 def validate_custom_event_count(count):
@@ -1836,6 +1933,8 @@ def validate_custom_event_count(count):
         else:
             stats = core_application_stats_engine(None)
             assert stats.custom_events.num_samples == count
+
+        return result
     return _validate_custom_event_count
 
 def override_application_name(app_name):

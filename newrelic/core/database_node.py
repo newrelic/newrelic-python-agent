@@ -2,15 +2,16 @@ from collections import namedtuple
 
 import newrelic.core.trace_node
 
-from newrelic.core.metric import TimeMetric
+from newrelic.common import system_info
 from newrelic.core.database_utils import sql_statement, explain_plan
+from newrelic.core.metric import TimeMetric
 
-from newrelic.core.config import global_settings
 
 _SlowSqlNode = namedtuple('_SlowSqlNode',
         ['duration', 'path', 'request_uri', 'sql', 'sql_format',
         'metric', 'dbapi2_module', 'stack_trace', 'connect_params',
-        'cursor_params', 'sql_parameters', 'execute_params'])
+        'cursor_params', 'sql_parameters', 'execute_params',
+        'host', 'port_path_or_id', 'database_name'])
 
 class SlowSqlNode(_SlowSqlNode):
 
@@ -31,7 +32,7 @@ _DatabaseNode = namedtuple('_DatabaseNode',
         ['dbapi2_module',  'sql', 'children', 'start_time', 'end_time',
         'duration', 'exclusive', 'stack_trace', 'sql_format',
         'connect_params', 'cursor_params', 'sql_parameters',
-        'execute_params'])
+        'execute_params', 'host', 'port_path_or_id', 'database_name'])
 
 class DatabaseNode(_DatabaseNode):
 
@@ -42,13 +43,15 @@ class DatabaseNode(_DatabaseNode):
 
     @property
     def product(self):
-        return self.dbapi2_module._nr_database_name
+        return self.dbapi2_module and self.dbapi2_module._nr_database_product
 
     @property
-    def instance(self):
-        if (self.connect_params and
-                self.dbapi2_module._nr_instance_name is not None):
-            return self.dbapi2_module._nr_instance_name(*self.connect_params)
+    def instance_hostname(self):
+        if self.host in system_info.LOCALHOST_EQUIVALENTS:
+            hostname = system_info.gethostname()
+        else:
+            hostname = self.host
+        return hostname
 
     @property
     def operation(self):
@@ -62,68 +65,7 @@ class DatabaseNode(_DatabaseNode):
     def formatted(self):
         return self.statement.formatted(self.sql_format)
 
-    def time_metrics_r1(self, stats, root, parent):
-        """Return a generator yielding the timed metrics for this
-        database node as well as all the child nodes.
-
-        """
-
-        yield TimeMetric(name='Database/all', scope='',
-                duration=self.duration, exclusive=self.exclusive)
-
-        if root.type == 'WebTransaction':
-            yield TimeMetric(name='Database/allWeb', scope='',
-                    duration=self.duration, exclusive=self.exclusive)
-        else:
-            yield TimeMetric(name='Database/allOther', scope='',
-                    duration=self.duration, exclusive=self.exclusive)
-
-        # FIXME The follow is what PHP agent was doing, but it may
-        # not sync up with what is now actually required. As example,
-        # the 'show' operation in PHP agent doesn't generate a full
-        # path with a table name, yet get_table() in SQL parser
-        # does appear to generate one. Also, the SQL parser has
-        # special cases for 'set', 'create' and 'call' as well.
-
-        operation = self.operation
-
-        if operation in ('select', 'update', 'insert', 'delete'):
-            target = self.target
-
-            if target:
-                name = 'Database/%s/%s' % (self.target, operation)
-
-                yield TimeMetric(name=name, scope='', duration=self.duration,
-                        exclusive=self.exclusive)
-
-                yield TimeMetric(name=name, scope=root.path,
-                    duration=self.duration, exclusive=self.exclusive)
-
-            name = 'Database/%s' % operation
-
-            yield TimeMetric(name=name, scope='', duration=self.duration,
-                    exclusive=self.exclusive)
-
-        elif operation in ('show',):
-            name = 'Database/%s' % operation
-
-            yield TimeMetric(name=name, scope='', duration=self.duration,
-                    exclusive=self.exclusive)
-
-            yield TimeMetric(name=name, scope=root.path,
-                    duration=self.duration, exclusive=self.exclusive)
-
-        else:
-            yield TimeMetric(name='Database/other', scope='',
-                    duration=self.duration, exclusive=self.exclusive)
-
-            yield TimeMetric(name='Database/other/sql', scope='',
-                    duration=self.duration, exclusive=self.exclusive)
-
-            yield TimeMetric(name='Database/other/sql', scope=root.path,
-                    duration=self.duration, exclusive=self.exclusive)
-
-    def time_metrics_r2(self, stats, root, parent):
+    def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
         database node as well as all the child nodes.
 
@@ -173,37 +115,29 @@ class DatabaseNode(_DatabaseNode):
             yield TimeMetric(name=name, scope=root.path,
                     duration=self.duration, exclusive=self.exclusive)
 
-    def time_metrics(self, stats, root, parent):
-        settings = global_settings()
+        # Instance Metrics
 
-        if 'database.instrumentation.r1' in settings.feature_flag:
-            return self.time_metrics_r1(stats, root, parent)
+        if self.instance_hostname and self.port_path_or_id:
 
-        return self.time_metrics_r2(stats, root, parent)
+            name = 'Datastore/instance/%s/%s/%s' % (product,
+                    self.instance_hostname, self.port_path_or_id)
+
+            yield TimeMetric(name=name, scope='', duration=self.duration,
+                    exclusive=self.exclusive)
+
+            yield TimeMetric(name=name, scope=root.path,
+                    duration=self.duration, exclusive=self.exclusive)
 
     def slow_sql_node(self, stats, root):
-        settings = global_settings()
-
         product = self.product
         operation = self.operation or 'other'
         target = self.target
 
-        if 'database.instrumentation.r1' in settings.feature_flag:
-            if operation in ('select', 'update', 'insert', 'delete'):
-                if target:
-                    name = 'Database/%s/%s' % (target, operation)
-                else:
-                    name = 'Database/%s' % operation
-            elif operation in ('show',):
-                name = 'Database/%s' % operation
-            else:
-                name = 'Database/other/sql'
+        if target:
+            name = 'Datastore/statement/%s/%s/%s' % (product, target,
+                    operation)
         else:
-            if target:
-                name = 'Datastore/statement/%s/%s/%s' % (product, target,
-                        operation)
-            else:
-                name = 'Datastore/operation/%s/%s' % (product, operation)
+            name = 'Datastore/operation/%s/%s' % (product, operation)
 
         request_uri = ''
         if root.type == 'WebTransaction':
@@ -222,31 +156,21 @@ class DatabaseNode(_DatabaseNode):
                 connect_params=self.connect_params,
                 cursor_params=self.cursor_params,
                 sql_parameters=self.sql_parameters,
-                execute_params=self.execute_params)
+                execute_params=self.execute_params,
+                host=self.instance_hostname,
+                port_path_or_id=self.port_path_or_id,
+                database_name=self.database_name)
 
     def trace_node(self, stats, root, connections):
-        settings = global_settings()
-
         product = self.product
         operation = self.operation or 'other'
         target = self.target
 
-        if 'database.instrumentation.r1' in settings.feature_flag:
-            if operation in ('select', 'update', 'insert', 'delete'):
-                if target:
-                    name = 'Database/%s/%s' % (target, operation)
-                else:
-                    name = 'Database/%s' % operation
-            elif operation in ('show',):
-                name = 'Database/%s' % operation
-            else:
-                name = 'Database/other/sql'
+        if target:
+            name = 'Datastore/statement/%s/%s/%s' % (product, target,
+                    operation)
         else:
-            if target:
-                name = 'Datastore/statement/%s/%s/%s' % (product, target,
-                        operation)
-            else:
-                name = 'Datastore/operation/%s/%s' % (product, operation)
+            name = 'Datastore/operation/%s/%s' % (product, operation)
 
         name = root.string_table.cache(name)
 
@@ -258,6 +182,17 @@ class DatabaseNode(_DatabaseNode):
         root.trace_node_count += 1
 
         params = {}
+
+        # Only send datastore instance params if not empty.
+
+        if self.host:
+            params['host'] = self.instance_hostname
+
+        if self.port_path_or_id:
+            params['port_path_or_id'] = self.port_path_or_id
+
+        if self.database_name:
+            params['database_name'] = self.database_name
 
         sql = self.formatted
 

@@ -48,7 +48,7 @@ def instrument_pymssql(module):
     # XXX Don't believe MSSQL provides a simple means of doing an
     # explain plan using one SQL statement prefix, eg., 'EXPLAIN'.
 
-    register_database_client(module, database_name='MSSQL',
+    register_database_client(module, database_product='MSSQL',
             quoting_style='single')
 
     wrap_object(module, 'connect', ConnectionFactory, (module,))

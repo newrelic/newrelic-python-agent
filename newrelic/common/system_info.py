@@ -4,11 +4,13 @@ system or for the specific process the code is running in.
 """
 
 import logging
-import os
-import sys
-import re
 import multiprocessing
+import os
+import re
+import socket
 import subprocess
+import sys
+import threading
 
 from newrelic.core.internal_metrics import internal_metric
 
@@ -39,6 +41,16 @@ except ImportError:
     pass
 
 _logger = logging.getLogger(__name__)
+
+LOCALHOST_EQUIVALENTS = set([
+    'localhost',
+    '127.0.0.1',
+    '0.0.0.0',
+    '0:0:0:0:0:0:0:0',
+    '0:0:0:0:0:0:0:1',
+    '::1',
+    '::',
+])
 
 def logical_processor_count():
     """Returns the number of logical processors in the system.
@@ -405,3 +417,28 @@ def _validate_docker_container_id(container_id):
 
     # Container id is not valid
     return False
+
+
+_nr_cached_hostname = None
+_nr_cached_hostname_lock = threading.Lock()
+
+def gethostname():
+    """Cache the output of socket.gethostname().
+
+    Keeps the reported hostname consistent throughout an agent run.
+
+    """
+
+    global _nr_cached_hostname
+    global _nr_cached_hostname_lock
+
+    if _nr_cached_hostname:
+        return _nr_cached_hostname
+
+    # Only lock for the one-time write.
+
+    with _nr_cached_hostname_lock:
+        if _nr_cached_hostname is None:
+            _nr_cached_hostname = socket.gethostname()
+
+    return _nr_cached_hostname

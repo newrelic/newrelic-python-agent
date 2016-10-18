@@ -10,7 +10,6 @@ TEST_IMAGE_NAME=python-base
 
 TMPDIR=${TMPDIR:-/tmp}
 
-IMAGE_ID=""
 CONTAINER_ID=""
 
 APP_SERVICE_IMAGES="
@@ -26,6 +25,7 @@ APP_SERVICE_IMAGES="
     "
 
 ALL_IMAGES="python-base $APP_SERVICE_IMAGES"
+DATE=`date '+%Y%m%d%H%M%S'`
 
 cleanup_containers()
 {
@@ -39,7 +39,7 @@ cleanup_containers()
 
     echo "Removing test image."
 
-    test -n "$IMAGE_ID" && docker rmi $IMAGE_ID
+    test -n "$DATA_IMAGE_NAME" && docker rmi $DATA_IMAGE_NAME
 
     echo "Removing data directory."
 
@@ -117,8 +117,8 @@ create_docker_file()
     cat > $DATA_DIRECTORY/Dockerfile << EOF
 FROM $TEST_IMAGE_NAME
 ADD . /data
-RUN chown -R guest.users /data
-RUN chmod 0755 /data
+RUN chown -R guest.users /data && \
+    chmod 0755 /data
 USER guest
 ENV HOME /home/guest
 VOLUME /data
@@ -131,9 +131,8 @@ create_docker_test_image()
 
     echo "Building test image."
 
-    DATA_IMAGE_NAME="packnsend-`date '+%Y%m%d%H%M%S'`-$$"
+    DATA_IMAGE_NAME="packnsend-${DATE}-$$"
     (cd $DATA_DIRECTORY && docker build --rm -t $DATA_IMAGE_NAME .)
-    IMAGE_ID=$(docker inspect --format='{{.Id}}' $DATA_IMAGE_NAME)
 }
 
 set_docker_env_vars()
@@ -349,6 +348,40 @@ create_docker_base_images()
     done
 }
 
+docker_compose_run()
+{
+    COMPOSE_FILE=$(echo $@ | tr -s " " | cut -f1 -d" ")
+    PROJECT_NAME="packnsend-${DATE}-$$"
+    CMD=$(echo $@ | tr -s " " | cut -f2- -d" ")
+
+    echo
+    echo "Using docker-compose file: $COMPOSE_FILE"
+    echo "Staring containers and running command: $CMD"
+    echo
+
+    time docker-compose \
+        --file $COMPOSE_FILE \
+        --project-name $PROJECT_NAME \
+        run --rm packnsend $CMD
+
+    STATUS=$?
+}
+
+docker_compose_down()
+{
+    COMPOSE_FILE=$(echo $@ | tr -s " " | cut -f1 -d" ")
+    PROJECT_NAME="packnsend-${DATE}-$$"
+
+    echo
+    echo "Cleaning up..."
+    echo
+
+    docker-compose \
+        --file $COMPOSE_FILE \
+        --project-name $PROJECT_NAME \
+        down || exit 1
+}
+
 create_docker_base_images_nocache()
 {
     IMAGE_LIST=${@:-$ALL_IMAGES}
@@ -508,9 +541,10 @@ print_usage()
     echo "`basename $0`: COMMAND [arg...]"
     echo
     echo "Run Commands:"
-    echo "    run            Run command on test container."
-    echo "    run -i         Run command interactively."
-    echo "    shell          Launch a shell on test container."
+    echo "    run                    Run command on test container."
+    echo "    run -i                 Run command interactively."
+    echo "    run -c [compose-file]  Run command using docker-compose."
+    echo "    shell                  Launch a shell on test container."
     echo
     echo "Management Commands:"
     echo
@@ -554,19 +588,31 @@ then
 fi
 
 COMMAND=$1
+OPTION=$2
 
 shift
 
 case "$COMMAND" in
     run)
-        create_work_directory
-        export_git_repository
-        create_remote_launchers
-        create_docker_file
-        create_docker_test_image
-        launch_remote_command "$@"
-        cleanup_containers
-        exit `expr $STATUS`
+        case "$OPTION" in
+            -c | --compose)
+                COMMAND_INFO=$(echo $@ | tr -s " " | cut -f2- -d" ")
+                docker_compose_run $COMMAND_INFO
+                docker_compose_down $COMMAND_INFO
+                exit `expr $STATUS`
+                ;;
+
+            *)
+                create_work_directory
+                export_git_repository
+                create_remote_launchers
+                create_docker_file
+                create_docker_test_image
+                launch_remote_command "$@"
+                cleanup_containers
+                exit `expr $STATUS`
+                ;;
+        esac
         ;;
 
     shell)

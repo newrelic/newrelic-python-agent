@@ -26,33 +26,30 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
         with FunctionTrace(transaction, name):
             if exc is None:
                 with DatabaseTrace(transaction, 'COMMIT',
-                        self._nr_dbapi2_module):
+                        self._nr_dbapi2_module, self._nr_connect_params):
                     return self.__wrapped__.__exit__(exc, value, tb)
             else:
                 with DatabaseTrace(transaction, 'ROLLBACK',
-                        self._nr_dbapi2_module):
+                        self._nr_dbapi2_module, self._nr_connect_params):
                     return self.__wrapped__.__exit__(exc, value, tb)
 
 class ConnectionFactory(DBAPI2ConnectionFactory):
 
     __connection_wrapper__ = ConnectionWrapper
 
-def instance_name(args, kwargs):
+def instance_info(args, kwargs):
     def _bind_params(host=None, user=None, passwd=None, db=None,
             port=None, *args, **kwargs):
-        return host, port
+        return host, port, db
 
-    host, port = _bind_params(*args, **kwargs)
+    host, port, db = _bind_params(*args, **kwargs)
 
-    if host in ('localhost', None):
-        return 'localhost'
-
-    return '%s:%s' % (host, port or '3306')
+    return (host, port, db)
 
 def instrument_mysqldb(module):
-    register_database_client(module, database_name='MySQL',
+    register_database_client(module, database_product='MySQL',
             quoting_style='single+double', explain_query='explain',
-            explain_stmts=('select',), instance_name=instance_name)
+            explain_stmts=('select',), instance_info=instance_info)
 
     wrap_object(module, 'connect', ConnectionFactory, (module,))
 

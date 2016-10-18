@@ -12,7 +12,6 @@ the global defaults or those from local agent configuration.
 import os
 import logging
 import copy
-import socket
 
 from .attribute_filter import AttributeFilter
 
@@ -78,6 +77,9 @@ class ProcessHostSettings(Settings): pass
 class SyntheticsSettings(Settings): pass
 class UtilizationSettings(Settings): pass
 class StripExceptionMessageSettings(Settings): pass
+class DatastoreTracerSettings(Settings): pass
+class DatastoreTracerInstanceReportingSettings(Settings): pass
+class DatastoreTracerDatabaseNameReportingSettings(Settings): pass
 
 _settings = Settings()
 _settings.attributes = AttributesSettings()
@@ -104,6 +106,9 @@ _settings.process_host = ProcessHostSettings()
 _settings.synthetics = SyntheticsSettings()
 _settings.utilization = UtilizationSettings()
 _settings.strip_exception_messages = StripExceptionMessageSettings()
+_settings.datastore_tracer = DatastoreTracerSettings()
+_settings.datastore_tracer.instance_reporting = DatastoreTracerInstanceReportingSettings()
+_settings.datastore_tracer.database_name_reporting = DatastoreTracerDatabaseNameReportingSettings()
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 _settings.audit_log_file = os.environ.get('NEW_RELIC_AUDIT_LOG', None)
@@ -414,6 +419,9 @@ _settings.utilization.billing_hostname = os.environ.get(
 
 _settings.strip_exception_messages.enabled = False
 _settings.strip_exception_messages.whitelist = []
+
+_settings.datastore_tracer.instance_reporting.enabled = True
+_settings.datastore_tracer.database_name_reporting.enabled = True
 
 def global_settings():
     """This returns the default global settings. Generally only used

@@ -1,6 +1,7 @@
 import os
-import socket
-import newrelic.core.data_collector
+
+from newrelic.common import system_info
+from newrelic.core import data_collector as dc
 
 from newrelic.core.data_collector import ApplicationSession
 
@@ -25,33 +26,52 @@ PID = 123
 PROCESSOR_COUNT = 4
 RECORD_SQL = 'record_sql'
 
+_backup_methods = {}
+
 # Mock out the calls used to create the connect payload.
 def setup_module(module):
+    # Mock out the calls used to create the connect payload.
     def gethostname():
         return HOST
-    socket.gethostname = gethostname
+    _backup_methods['gethostname'] = system_info.gethostname
+    system_info.gethostname = gethostname
 
     def getpid():
         return PID
+    _backup_methods['getpid'] = os.getpid
     os.getpid = getpid
 
     def docker_container_id():
         return DOCKER_ID
-    newrelic.core.data_collector.docker_container_id = docker_container_id
+    _backup_methods['docker_container_id'] = dc.docker_container_id
+    dc.docker_container_id = docker_container_id
 
     def logical_processor_cnt():
         return PROCESSOR_COUNT
-    newrelic.core.data_collector.logical_processor_count = logical_processor_cnt
+    _backup_methods['logical_proc_count'] = dc.logical_processor_count
+    dc.logical_processor_count = logical_processor_cnt
 
     def total_physical_memory():
         return MEMORY
-    newrelic.core.data_collector.total_physical_memory = total_physical_memory
+    _backup_methods['total_physical_memory'] = dc.total_physical_memory
+    dc.total_physical_memory = total_physical_memory
 
     def aws_data():
         return AWS
-    newrelic.core.data_collector.aws_data = aws_data
+    _backup_methods['aws_data'] = dc.aws_data
+    dc.aws_data = aws_data
 
-    newrelic.core.data_collector.version = AGENT_VERSION
+    _backup_methods['version'] = dc.version
+    dc.version = AGENT_VERSION
+
+def teardown_module(module):
+    system_info.gethostname = _backup_methods['gethostname']
+    os.getpid = _backup_methods['getpid']
+    dc.docker_container_id = _backup_methods['docker_container_id']
+    dc.logical_processor_count = _backup_methods['logical_proc_count']
+    dc.total_physical_memory = _backup_methods['total_physical_memory']
+    dc.aws_data = _backup_methods['aws_data']
+    dc.version = _backup_methods['version']
 
 def default_settings():
     return {'browser_monitoring.loader': BROWSER_MONITORING_LOADER,

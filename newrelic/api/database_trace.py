@@ -9,21 +9,25 @@ from ..common.object_wrapper import FunctionWrapper, wrap_object
 
 _logger = logging.getLogger(__name__)
 
-def register_database_client(dbapi2_module, database_name,
+def register_database_client(dbapi2_module, database_product,
         quoting_style='single', explain_query=None, explain_stmts=[],
-        instance_name=None):
+        instance_info=None):
 
     _logger.debug('Registering database client module %r where database '
             'is %r, quoting style is %r, explain query statement is %r and '
             'the SQL statements on which explain plans can be run are %r.',
-            dbapi2_module, database_name, quoting_style, explain_query,
+            dbapi2_module, database_product, quoting_style, explain_query,
             explain_stmts)
 
-    dbapi2_module._nr_database_name = database_name
+    dbapi2_module._nr_database_product = database_product
     dbapi2_module._nr_quoting_style = quoting_style
     dbapi2_module._nr_explain_query = explain_query
     dbapi2_module._nr_explain_stmts = explain_stmts
-    dbapi2_module._nr_instance_name = instance_name
+    dbapi2_module._nr_instance_info = instance_info
+    dbapi2_module._nr_datastore_instance_feature_flag = False
+
+def enable_datastore_instance_feature(dbapi2_module):
+    dbapi2_module._nr_datastore_instance_feature_flag = True
 
 class DatabaseTrace(TimeTrace):
 
@@ -31,7 +35,8 @@ class DatabaseTrace(TimeTrace):
 
     def __init__(self, transaction, sql, dbapi2_module=None,
                  connect_params=None, cursor_params=None,
-                 sql_parameters=None, execute_params=None):
+                 sql_parameters=None, execute_params=None,
+                 host=None, port_path_or_id=None, database_name=None):
 
         super(DatabaseTrace, self).__init__(transaction)
 
@@ -46,6 +51,9 @@ class DatabaseTrace(TimeTrace):
         self.cursor_params = cursor_params
         self.sql_parameters = sql_parameters
         self.execute_params = execute_params
+        self.host = host
+        self.port_path_or_id = port_path_or_id
+        self.database_name = database_name
 
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, dict(
@@ -78,10 +86,35 @@ class DatabaseTrace(TimeTrace):
         cursor_params = None
         sql_parameters = None
         execute_params = None
+        host = None
+        port_path_or_id = None
+        database_name = None
 
         settings = transaction.settings
         tt = settings.transaction_tracer
         agent_limits = settings.agent_limits
+        ds_tracer = settings.datastore_tracer
+
+        # Check settings, so that we only call instance_info when needed.
+
+        instance_enabled = ds_tracer.instance_reporting.enabled
+        db_name_enabled = ds_tracer.database_name_reporting.enabled
+
+        if instance_enabled or db_name_enabled:
+
+            if (self.dbapi2_module and
+                    self.connect_params and
+                    self.dbapi2_module._nr_datastore_instance_feature_flag and
+                    self.dbapi2_module._nr_instance_info is not None):
+
+                instance_info = self.dbapi2_module._nr_instance_info(
+                        *self.connect_params)
+
+                if instance_enabled:
+                    host, port_path_or_id, _ = instance_info
+
+                if db_name_enabled:
+                    _, _, database_name = instance_info
 
         if (tt.enabled and settings.collect_traces and
                 tt.record_sql != 'off'):
@@ -121,16 +154,27 @@ class DatabaseTrace(TimeTrace):
         self.cursor_params = cursor_params
         self.sql_parameters = sql_parameters
         self.execute_params = execute_params
+        self.host = host
+        self.port_path_or_id = port_path_or_id
+        self.database_name = database_name
 
     def create_node(self):
-        return DatabaseNode(dbapi2_module=self.dbapi2_module, sql=self.sql,
-                children=self.children, start_time=self.start_time,
-                end_time=self.end_time, duration=self.duration,
-                exclusive=self.exclusive, stack_trace=self.stack_trace,
-                sql_format=self.sql_format, connect_params=self.connect_params,
+        return DatabaseNode(dbapi2_module=self.dbapi2_module,
+                sql=self.sql,
+                children=self.children,
+                start_time=self.start_time,
+                end_time=self.end_time,
+                duration=self.duration,
+                exclusive=self.exclusive,
+                stack_trace=self.stack_trace,
+                sql_format=self.sql_format,
+                connect_params=self.connect_params,
                 cursor_params=self.cursor_params,
                 sql_parameters=self.sql_parameters,
-                execute_params=self.execute_params)
+                execute_params=self.execute_params,
+                host=self.host,
+                port_path_or_id=self.port_path_or_id,
+                database_name=self.database_name)
 
     def terminal_node(self):
         return True

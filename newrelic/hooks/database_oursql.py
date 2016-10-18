@@ -2,22 +2,19 @@ from newrelic.agent import (wrap_object, register_database_client)
 
 from .database_mysqldb import ConnectionFactory
 
-def instance_name(args, kwargs):
+def instance_info(args, kwargs):
     def _bind_params(host=None, user=None, passwd=None, db=None,
             port=None, *args, **kwargs):
-        return host, port
+        return host, port, db
 
-    host, port = _bind_params(*args, **kwargs)
+    host, port, db = _bind_params(*args, **kwargs)
 
-    if host in ('localhost', None):
-        return 'localhost'
-
-    return '%s:%s' % (host, port or '3306')
+    return (host, port, db)
 
 def instrument_oursql(module):
-    register_database_client(module, database_name='MySQL',
+    register_database_client(module, database_product='MySQL',
             quoting_style='single+double', explain_query='explain',
-            explain_stmts=('select',), instance_name=instance_name)
+            explain_stmts=('select',), instance_info=instance_info)
 
     wrap_object(module, 'connect', ConnectionFactory, (module,))
 

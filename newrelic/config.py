@@ -55,8 +55,6 @@ _FEATURE_FLAGS = set([
     'tornado.instrumentation.r2',
     'tornado.instrumentation.r3',
     'django.instrumentation.inclusion-tags.r1',
-    'database.instrumentation.r1',
-    'database.instrumentation.r2',
 ])
 
 # Names of configuration file and deployment environment. This
@@ -488,6 +486,11 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'strip_exception_messages.whitelist',
                      'get', _map_strip_exception_messages_whitelist)
+    _process_setting(section, 'datastore_tracer.instance_reporting.enabled',
+                     'getboolean', None)
+    _process_setting(section,
+                     'datastore_tracer.database_name_reporting.enabled',
+                     'getboolean', None)
 
 # Loading of configuration from specified file and for specified
 # deployment environment. Can also indicate whether configuration
@@ -2149,31 +2152,21 @@ def _process_module_builtin_defaults():
             'instrument_sqlite3_dbapi2')
 
 
-    if 'database.instrumentation.r1' in _settings.feature_flag:
-        _process_module_definition('memcache',
-                'newrelic.hooks.memcache_memcache')
-        _process_module_definition('umemcache',
-                'newrelic.hooks.memcache_umemcache')
-        _process_module_definition('pylibmc',
-                'newrelic.hooks.memcache_pylibmc')
-        _process_module_definition('bmemcached',
-                'newrelic.hooks.memcache_memcache')
-    else:
-        _process_module_definition('memcache',
-                'newrelic.hooks.datastore_memcache',
-                'instrument_memcache')
-        _process_module_definition('umemcache',
-                'newrelic.hooks.datastore_umemcache',
-                'instrument_umemcache')
-        _process_module_definition('pylibmc.client',
-                'newrelic.hooks.datastore_pylibmc',
-                'instrument_pylibmc_client')
-        _process_module_definition('bmemcached.client',
-                'newrelic.hooks.datastore_bmemcached',
-                'instrument_bmemcached_client')
-        _process_module_definition('pymemcache.client',
-                'newrelic.hooks.datastore_pymemcache',
-                'instrument_pymemcache_client')
+    _process_module_definition('memcache',
+            'newrelic.hooks.datastore_memcache',
+            'instrument_memcache')
+    _process_module_definition('umemcache',
+            'newrelic.hooks.datastore_umemcache',
+            'instrument_umemcache')
+    _process_module_definition('pylibmc.client',
+            'newrelic.hooks.datastore_pylibmc',
+            'instrument_pylibmc_client')
+    _process_module_definition('bmemcached.client',
+            'newrelic.hooks.datastore_bmemcached',
+            'instrument_bmemcached_client')
+    _process_module_definition('pymemcache.client',
+            'newrelic.hooks.datastore_pymemcache',
+            'instrument_pymemcache_client')
 
     _process_module_definition('jinja2.environment',
             'newrelic.hooks.template_jinja2')
@@ -2269,38 +2262,22 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.datastore_pyelasticsearch',
             'instrument_pyelasticsearch_client')
 
-    if 'database.instrumentation.r1' in _settings.feature_flag:
-        _process_module_definition('pymongo.connection',
-                'newrelic.hooks.nosql_pymongo',
-                'instrument_pymongo_connection')
-        _process_module_definition('pymongo.collection',
-                'newrelic.hooks.nosql_pymongo',
-                'instrument_pymongo_collection')
-    else:
-        _process_module_definition('pymongo.connection',
-                'newrelic.hooks.datastore_pymongo',
-                'instrument_pymongo_connection')
-        _process_module_definition('pymongo.mongo_client',
-                'newrelic.hooks.datastore_pymongo',
-                'instrument_pymongo_mongo_client')
-        _process_module_definition('pymongo.collection',
-                'newrelic.hooks.datastore_pymongo',
-                'instrument_pymongo_collection')
+    _process_module_definition('pymongo.connection',
+            'newrelic.hooks.datastore_pymongo',
+            'instrument_pymongo_connection')
+    _process_module_definition('pymongo.mongo_client',
+            'newrelic.hooks.datastore_pymongo',
+            'instrument_pymongo_mongo_client')
+    _process_module_definition('pymongo.collection',
+            'newrelic.hooks.datastore_pymongo',
+            'instrument_pymongo_collection')
 
-    if 'database.instrumentation.r1' in _settings.feature_flag:
-        _process_module_definition('redis.connection',
-                'newrelic.hooks.nosql_redis',
-                'instrument_redis_connection')
-        _process_module_definition('redis.client',
-                'newrelic.hooks.nosql_redis',
-                'instrument_redis_client')
-    else:
-        _process_module_definition('redis.connection',
-                'newrelic.hooks.datastore_redis',
-                'instrument_redis_connection')
-        _process_module_definition('redis.client',
-                'newrelic.hooks.datastore_redis',
-                'instrument_redis_client')
+    _process_module_definition('redis.connection',
+            'newrelic.hooks.datastore_redis',
+            'instrument_redis_connection')
+    _process_module_definition('redis.client',
+            'newrelic.hooks.datastore_redis',
+            'instrument_redis_client')
 
     _process_module_definition('motor',
             'newrelic.hooks.datastore_motor', 'patch_motor')

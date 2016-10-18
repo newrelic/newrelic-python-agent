@@ -16,7 +16,7 @@ Jobs are grouped into three views:
 **build-and-archive-package:** On demand job. Will build the source distribution package and upload it to Artifactory.
 
 ### Python Agent Tests
-**\_PYTHON-AGENT-DOCKER-TESTS\_:** Multijob run hourly on cron. Will run all tests currently configured in the `jenkins/test-pipeline-config.json` file. (See below for more details on adding new tests) The tests will all run in parallel in EC2 worker nodes.
+**\_PYTHON-AGENT-DOCKER-TESTS\_:** Multijob run daily on cron. Will run all tests currently configured in the `jenkins/test-pipeline-config.json` file. (See below for more details on adding new tests) The tests will all run in parallel in EC2 worker nodes.
 
 **\*__docker-test:** These tests are configured in the `jenkins/test-pipeline-config.json` file and are the subjobs to the PYTHON-AGENT-DOCKER-TESTS multijob. They will pull packnsend images from the New Relic docker repository (cf-registry.nr-ops.net) then start all containers. If a container is already running, the action is a noop. The consequence of this is if an image changes in the docker repository, the jobs will not pick up this change automatically (see the Reset Nodes job).
 
@@ -62,8 +62,44 @@ It is possible to disable a test by adding `"disable": "true"`.
 
 ## Jenkins Plugins
 We have installed the following plugins on our JaaS instance:
++ build-blocker-plugin
++ build-timeout
++ email-ext
 + envinject
 + jenkins-multijob-plugin
-+ email-ext
 + nodelabelparameter
-+ build-blocker-plugin
+
+## Development
+
+Development of new jobs can be tricky because of the need to get the groovy files to the JaaS host where they can then be seeded and inspected. Fortunately, local development is possible.
+
+Jenkins DSL is "compiled" into xml files which are then stored by Jenkins as configuration for a job. These xml files can be viewed on the web UI at `/config.xml`, for example https://python-agent-build.pdx.vm.datanerd.us/view/PY_Deploy/job/deploy-to-pypi/config.xml.
+
+To "compile" locally, follow these steps then compare the resultant xml files with those found in the UI.
+
+1. Clone the [more-jenkins-dsl](https://source.datanerd.us/commune/more-jenkins-dsl) repo
+
+  ```
+  git clone git@source.datanerd.us:commune/more-jenkins-dsl.git
+  cd more-jenkins-dsl
+  ```
+
+2. Build the required jar
+
+  ```
+  ./gradlew build
+  ```
+
+3. From within the repo, copy all groovy files and their dependencies to the `jenkins` directory
+
+  ```
+  cp ../python_agent/jenkins/* jenkins
+  ```
+
+4. Now generate the xml
+
+  ```
+  ./gradlew generateJenkinsDsl
+  ```
+
+5. View the new xml files in `build/dsl-workspace`

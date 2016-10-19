@@ -7,7 +7,8 @@ from ..common.object_wrapper import FunctionWrapper, wrap_object
 
 class DatastoreTrace(TimeTrace):
 
-    def __init__(self, transaction, product, target, operation):
+    def __init__(self, transaction, product, target, operation,
+            host=None, port_path_or_id=None, database_name=None):
 
         super(DatastoreTrace, self).__init__(transaction)
 
@@ -20,6 +21,10 @@ class DatastoreTrace(TimeTrace):
             self.target = target
             self.operation = operation
 
+        self.host = host
+        self.port_path_or_id = port_path_or_id
+        self.database_name = database_name
+
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, dict(
                 product=self.product, target=self.target,
@@ -29,7 +34,9 @@ class DatastoreTrace(TimeTrace):
         return DatastoreNode(product=self.product, target=self.target,
                 operation=self.operation, children=self.children,
                 start_time=self.start_time, end_time=self.end_time,
-                duration=self.duration, exclusive=self.exclusive)
+                duration=self.duration, exclusive=self.exclusive,
+                host=self.host, port_path_or_id=self.port_path_or_id,
+                database_name=self.database_name)
 
     def terminal_node(self):
         return True

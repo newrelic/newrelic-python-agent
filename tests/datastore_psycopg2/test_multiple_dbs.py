@@ -3,7 +3,8 @@ import pytest
 
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs, override_application_settings)
-from utils import DB_MULTIPLE_SETTINGS, PSYCOPG2_VERSION, instance_hostname
+from testing_support.util import instance_hostname
+from utils import DB_MULTIPLE_SETTINGS, PSYCOPG2_VERSION
 
 from newrelic.agent import background_task
 

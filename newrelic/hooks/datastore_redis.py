@@ -39,14 +39,38 @@ def instrument_redis_client(module):
     if hasattr(module, 'StrictRedis'):
         for name in _redis_client_methods:
             if name in vars(module.StrictRedis):
-                wrap_datastore_trace(module.StrictRedis, name,
-                        product='Redis', target=None, operation=name)
+                _wrap_Redis_method_wrapper_(module, 'StrictRedis', name)
 
     if hasattr(module, 'Redis'):
         for name in _redis_client_methods:
             if name in vars(module.Redis):
-                wrap_datastore_trace(module.Redis, name,
-                        product='Redis', target=None, operation=name)
+                _wrap_Redis_method_wrapper_(module, 'Redis', name)
+
+def _wrap_Redis_method_wrapper_(module, instance_class_name, operation):
+
+    def _nr_wrapper_Redis_method_(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+
+        if transaction is None:
+            return wrapped(*args, **kwargs)
+
+        host, port_path_or_id, db = _instance_info(instance)
+
+        with DatastoreTrace(transaction, product='Redis', target=None,
+                operation=operation):
+            return wrapped(*args, **kwargs)
+
+    name = '%s.%s' % (instance_class_name, operation)
+    wrap_function_wrapper(module, name, _nr_wrapper_Redis_method_)
+
+def _instance_info(instance):
+    kwargs = instance.connection_pool.connection_kwargs
+
+    host = kwargs.get('host') or 'localhost'
+    port_path_or_id = kwargs.get('port') or kwargs.get('path', 'unknown')
+    db = kwargs.get('db')
+
+    return (host, port_path_or_id, db)
 
 _redis_multipart_commands = set(['client', 'cluster', 'command', 'config',
     'debug', 'sentinel', 'slowlog', 'script'])

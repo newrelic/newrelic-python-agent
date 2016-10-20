@@ -1,5 +1,4 @@
 import os
-import random
 
 import redis
 
@@ -28,6 +27,23 @@ _test_httplib_http_request_rollup_metrics = [
         ('Datastore/operation/Redis/client_list', 2)]
 
 @validate_transaction_metrics(
+        'test_redis:test_strict_redis_operation',
+        scoped_metrics=_test_httplib_http_request_scoped_metrics,
+        rollup_metrics=_test_httplib_http_request_rollup_metrics,
+        background_task=False)
+@background_task()
+def test_strict_redis_operation():
+    set_background_task(False)
+
+    r = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=0)
+
+    r.set('key', 'value')
+    r.get('key')
+
+    r.execute_command('CLIENT LIST')
+    r.execute_command('CLIENT', 'LIST')
+
+@validate_transaction_metrics(
         'test_redis:test_redis_operation',
         scoped_metrics=_test_httplib_http_request_scoped_metrics,
         rollup_metrics=_test_httplib_http_request_rollup_metrics,
@@ -36,7 +52,7 @@ _test_httplib_http_request_rollup_metrics = [
 def test_redis_operation():
     set_background_task(False)
 
-    r = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=0)
+    r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
 
     r.set('key', 'value')
     r.get('key')

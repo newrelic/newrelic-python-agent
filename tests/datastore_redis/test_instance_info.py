@@ -28,7 +28,11 @@ _instance_info_from_url_tests = [
     (('redis://localhost?db=2',), {}, ('localhost', 6379, 2)),
     (('redis://localhost',), {'db': 2}, ('localhost', 6379, 2)),
     (('redis://localhost/2',), {'db': 3}, ('localhost', 6379, 2)),
-    (('redis://localhost',), {'host': '127.0.0.1'}, ('localhost', 6379, 0)),
+    (('redis://localhost',), {'host': 'someotherhost'}, ('localhost', 6379, 0)),
+    (('redis://localhost/2/?db=111',), {}, ('localhost', 6379, 111)),
+    (('redis://@127.0.0.1',), {}, ('127.0.0.1', 6379, 0)),
+    (('redis://:1234/',), {}, ('localhost', 1234, 0)),
+    (('redis://@:1234/',), {}, ('localhost', 1234, 0)),
 
     (('unix:///path/to/socket.sock',), {},
             ('localhost', '/path/to/socket.sock', 0)),

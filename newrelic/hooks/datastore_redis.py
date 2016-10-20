@@ -48,10 +48,10 @@ def instrument_redis_client(module):
 
 def _wrap_Redis_method_wrapper_(module, instance_class_name, operation):
 
-    def _nr_Redis_method_wrapper_(wrapped, instance, args, kwargs):
+    def _nr_wrapper_Redis_method_(wrapped, instance, args, kwargs):
         transaction = current_transaction()
 
-        if transaction is None or not args:
+        if transaction is None:
             return wrapped(*args, **kwargs)
 
         host, port_path_or_id, db = _instance_info(instance)
@@ -61,17 +61,14 @@ def _wrap_Redis_method_wrapper_(module, instance_class_name, operation):
             return wrapped(*args, **kwargs)
 
     name = '%s.%s' % (instance_class_name, operation)
-    wrap_function_wrapper(module, name, _nr_Redis_method_wrapper_)
+    wrap_function_wrapper(module, name, _nr_wrapper_Redis_method_)
 
 def _instance_info(instance):
-    conn_kwargs = instance.connection_pool.connection_kwargs
+    kwargs = instance.connection_pool.connection_kwargs
 
-    host = conn_kwargs.get('host') or 'localhost'
-    port_path_or_id = conn_kwargs.get('port')
-    db = conn_kwargs.get('db')
-
-    if port_path_or_id is None:
-        port_path_or_id = conn_kwargs.get('path', 'unknown')
+    host = kwargs.get('host') or 'localhost'
+    port_path_or_id = kwargs.get('port') or kwargs.get('path', 'unknown')
+    db = kwargs.get('db')
 
     return (host, port_path_or_id, db)
 

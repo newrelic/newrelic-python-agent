@@ -2,6 +2,7 @@ from collections import namedtuple
 
 import newrelic.core.trace_node
 
+from newrelic.common import system_info
 from newrelic.core.metric import TimeMetric
 
 _DatastoreNode = namedtuple('_DatastoreNode',
@@ -10,6 +11,14 @@ _DatastoreNode = namedtuple('_DatastoreNode',
         'database_name'])
 
 class DatastoreNode(_DatastoreNode):
+
+    @property
+    def instance_hostname(self):
+        if self.host in system_info.LOCALHOST_EQUIVALENTS:
+            hostname = system_info.gethostname()
+        else:
+            hostname = self.host
+        return hostname
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this

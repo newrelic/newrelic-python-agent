@@ -1,0 +1,17 @@
+version: '2'
+services:
+  packnsend:
+    extends:
+      file: ../../docker/docker-compose.yml
+      service: packnsend
+    depends_on:
+      - redis1
+      - redis2
+    environment:
+      COMPOSE_REDIS_HOST_1: redis1
+      COMPOSE_REDIS_HOST_2: redis2
+    entrypoint: ./docker/wait-for-ready.sh --redis redis1:6379,redis2:6379
+  redis1:
+    image: redis
+  redis2:
+    image: redis

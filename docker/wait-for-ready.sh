@@ -9,10 +9,13 @@ test_it() {
         postgresql)
             test_postgresql $@
             ;;
-    *)
-        echo "Value \"$WAIT_FOR\" not found"
-        exit 1
-        ;;
+        redis)
+            test_redis $@
+            ;;
+        *)
+            echo "Value \"$WAIT_FOR\" not found"
+            exit 1
+            ;;
     esac
 }
 
@@ -23,6 +26,12 @@ test_postgresql() {
     # test readiness by attempting to list databases
     export PGPASSWORD="python_agent"
     psql -h "$HOST" -p "$PORT" -U "python_agent" -c '\l' -w > /dev/null 2>&1
+}
+
+test_redis() {
+    HOST=$1
+    PORT=$2
+    redis-cli -h "$HOST" -p "$PORT" ping > /dev/null 2>&1
 }
 
 wait_for_ready() {
@@ -75,6 +84,7 @@ usage() {
     echo "USAGE: ./wait-for-ready.sh [OPTIONS] HOST1:PORT1[HOST2:PORT2,HOST3:PORT3...] command options"
     echo "  Options:"
     echo "      --postgresql    Wait for a postgresql database to become ready"
+    echo "      --redis         Wait for a redis database to become ready"
 }
 
 OPTION=$1
@@ -82,6 +92,10 @@ OPTION=$1
 case "$OPTION" in
     --postgresql)
         WAIT_FOR=postgresql
+        shift
+        ;;
+    --redis)
+        WAIT_FOR=redis
         shift
         ;;
     *)

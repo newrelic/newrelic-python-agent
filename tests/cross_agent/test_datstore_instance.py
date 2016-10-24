@@ -28,8 +28,7 @@ def _parametrize_test(test):
 
 _datastore_tests = [_parametrize_test(t) for t in _load_tests()]
 
-@pytest.mark.parametrize(_parameters,
-        _datastore_tests)
+@pytest.mark.parametrize(_parameters, _datastore_tests)
 @background_task()
 def test_datastore_instance(name, system_hostname, db_hostname,
         product, port, unix_socket, database_path,
@@ -65,18 +64,13 @@ def test_datastore_instance(name, system_hostname, db_hostname,
 
     empty_stats = StatsEngine()
     transaction = current_transaction()
-    scoped_scope = transaction.path
     unscoped_scope = ''
 
-    datastore_metric_scopes = []
+    # Check 'Datastore/instance' metric to confirm that:
+    #   1. metric name is reported correctly
+    #   2. metric scope is always unscoped
 
-    # Check that the metric names are reported correctly
     for metric in node.time_metrics(empty_stats, transaction, None):
         if metric.name.startswith("Datastore/instance/"):
             assert metric.name == expected_instance_metric, name
-            datastore_metric_scopes.append(metric.scope)
-
-    # Check for both the scoped and unscoped metric
-    assert len(datastore_metric_scopes)==2, name
-    assert scoped_scope in datastore_metric_scopes, name
-    assert unscoped_scope in datastore_metric_scopes, name
+            assert metric.scope == unscoped_scope

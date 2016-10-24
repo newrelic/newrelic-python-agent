@@ -75,6 +75,24 @@ class DatabaseNode(_DatabaseNode):
         operation = self.operation or 'other'
         target = self.target
 
+        # Determine the scoped metric
+
+        statement_metric_name = 'Datastore/statement/%s/%s/%s' % (product,
+                target, operation)
+
+        operation_metric_name = 'Datastore/operation/%s/%s' % (product,
+                operation)
+
+        if target:
+            scoped_metric_name = statement_metric_name
+        else:
+            scoped_metric_name = operation_metric_name
+
+        yield TimeMetric(name=scoped_metric_name, scope=root.path,
+                    duration=self.duration, exclusive=self.exclusive)
+
+        # Unscoped rollup metrics
+
         yield TimeMetric(name='Datastore/all', scope='',
                 duration=self.duration, exclusive=self.exclusive)
 
@@ -85,47 +103,34 @@ class DatabaseNode(_DatabaseNode):
             yield TimeMetric(name='Datastore/allWeb', scope='',
                     duration=self.duration, exclusive=self.exclusive)
 
-            yield TimeMetric(name='Datastore/%s/allWeb' % product,
-                    scope='', duration=self.duration,
-                    exclusive=self.exclusive)
+            yield TimeMetric(name='Datastore/%s/allWeb' % product, scope='',
+                    duration=self.duration, exclusive=self.exclusive)
         else:
             yield TimeMetric(name='Datastore/allOther', scope='',
                     duration=self.duration, exclusive=self.exclusive)
 
-            yield TimeMetric(name='Datastore/%s/allOther' % product,
-                    scope='', duration=self.duration,
-                    exclusive=self.exclusive)
-
-        if target:
-            name = 'Datastore/statement/%s/%s/%s' % (product,
-                    self.target, operation)
-
-            yield TimeMetric(name=name, scope='', duration=self.duration,
-                    exclusive=self.exclusive)
-
-            yield TimeMetric(name=name, scope=root.path,
-                duration=self.duration, exclusive=self.exclusive)
-
-        name = 'Datastore/operation/%s/%s' % (product, operation)
-
-        yield TimeMetric(name=name, scope='', duration=self.duration,
-                exclusive=self.exclusive)
-
-        if not target:
-            yield TimeMetric(name=name, scope=root.path,
+            yield TimeMetric(name='Datastore/%s/allOther' % product, scope='',
                     duration=self.duration, exclusive=self.exclusive)
 
-        # Instance Metrics
+        # Unscoped operation metric
+
+        yield TimeMetric(name=operation_metric_name, scope='',
+                duration=self.duration, exclusive=self.exclusive)
+
+        # Unscoped statement metric
+
+        if target:
+            yield TimeMetric(name=statement_metric_name, scope='',
+                    duration=self.duration, exclusive=self.exclusive)
+
+        # Unscoped instance Metric
 
         if self.instance_hostname and self.port_path_or_id:
 
-            name = 'Datastore/instance/%s/%s/%s' % (product,
+            instance_metric_name = 'Datastore/instance/%s/%s/%s' % (product,
                     self.instance_hostname, self.port_path_or_id)
 
-            yield TimeMetric(name=name, scope='', duration=self.duration,
-                    exclusive=self.exclusive)
-
-            yield TimeMetric(name=name, scope=root.path,
+            yield TimeMetric(name=instance_metric_name, scope='',
                     duration=self.duration, exclusive=self.exclusive)
 
     def slow_sql_node(self, stats, root):

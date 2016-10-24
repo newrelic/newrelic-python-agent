@@ -1,7 +1,8 @@
 import pytest
 import redis
 
-from newrelic.hooks.datastore_redis import _instance_info
+from newrelic.hooks.datastore_redis import (_client_instance_info,
+        _connection_instance_info)
 
 REDIS_PY_VERSION = redis.VERSION
 
@@ -12,16 +13,34 @@ _instance_info_tests = [
 ]
 
 @pytest.mark.parametrize('args,kwargs,expected', _instance_info_tests)
-def test_redis_instance_info(args, kwargs, expected):
+def test_redis_client_instance_info(args, kwargs, expected):
     r = redis.Redis(*args, **kwargs)
-    assert _instance_info(r) == expected
+    assert _client_instance_info(r) == expected
 
 @pytest.mark.parametrize('args,kwargs,expected', _instance_info_tests)
-def test_strict_redis_instance_info(args, kwargs, expected):
+def test_strict_redis_client_instance_info(args, kwargs, expected):
     r = redis.StrictRedis(*args, **kwargs)
-    assert _instance_info(r) == expected
+    assert _client_instance_info(r) == expected
 
-_instance_info_from_url_tests_redis = [
+@pytest.mark.parametrize('args,kwargs,expected', _instance_info_tests)
+def test_redis_connection_instance_info(args, kwargs, expected):
+    r = redis.Redis(*args, **kwargs)
+    connection = r.connection_pool.get_connection('SELECT')
+    try:
+        assert _connection_instance_info(connection) == expected
+    finally:
+        r.connection_pool.release(connection)
+
+@pytest.mark.parametrize('args,kwargs,expected', _instance_info_tests)
+def test_strict_redis_connection_instance_info(args, kwargs, expected):
+    r = redis.StrictRedis(*args, **kwargs)
+    connection = r.connection_pool.get_connection('SELECT')
+    try:
+        assert _connection_instance_info(connection) == expected
+    finally:
+        r.connection_pool.release(connection)
+
+_instance_info_from_url_tests = [
     (('redis://localhost:1234/',), {}, ('localhost', '1234', '0')),
     (('redis://localhost:1234',), {}, ('localhost', '1234', '0')),
     (('redis://user:password@localhost:6379',), {}, ('localhost', '6379', '0')),
@@ -34,12 +53,12 @@ _instance_info_from_url_tests_redis = [
 ]
 
 if REDIS_PY_VERSION >= (2, 7, 5):
-    _instance_info_from_url_tests_redis.append(
+    _instance_info_from_url_tests.append(
         (('redis://127.0.0.1',), {}, ('127.0.0.1', '6379', '0'))
     )
 
 if REDIS_PY_VERSION >= (2, 10):
-    _instance_info_from_url_tests_redis.extend([
+    _instance_info_from_url_tests.extend([
         (('rediss://localhost:6379/2/',), {}, ('localhost', '6379', '2')),
         (('redis://localhost:6379',), {'host': 'someotherhost'},
                 ('localhost', '6379', '0')),
@@ -53,22 +72,38 @@ if REDIS_PY_VERSION >= (2, 10):
                 ('localhost', '/path/to/socket.sock', '0')),
         (('unix:///path/to/socket.sock?db=2',), {},
                 ('localhost', '/path/to/socket.sock', '2')),
-        (('unix:///path/to/socket.sock?smellysocks=2',), {},
-                ('localhost', '/path/to/socket.sock', '0')),
+        (('unix:///path/to/socket.sock',), {'db': 2},
+                ('localhost', '/path/to/socket.sock', '2')),
     ])
 
 @pytest.mark.skipif(REDIS_PY_VERSION < (2, 6),
         reason='from_url not yet implemented in this redis-py version')
-@pytest.mark.parametrize('args,kwargs,expected',
-        _instance_info_from_url_tests_redis)
-def test_redis_from_url_redis(args, kwargs, expected):
+@pytest.mark.parametrize('args,kwargs,expected', _instance_info_from_url_tests)
+def test_redis_client_from_url(args, kwargs, expected):
     r = redis.Redis.from_url(*args, **kwargs)
-    assert _instance_info(r) == expected
+    assert _client_instance_info(r) == expected
+
+@pytest.mark.parametrize('args,kwargs,expected', _instance_info_from_url_tests)
+def test_strict_redis_client_from_url(args, kwargs, expected):
+    r = redis.StrictRedis.from_url(*args, **kwargs)
+    assert _client_instance_info(r) == expected
+
+@pytest.mark.parametrize('args,kwargs,expected', _instance_info_from_url_tests)
+def test_redis_connection_from_url(args, kwargs, expected):
+    r = redis.Redis.from_url(*args, **kwargs)
+    connection = r.connection_pool.get_connection('SELECT')
+    try:
+        assert _connection_instance_info(connection) == expected
+    finally:
+        r.connection_pool.release(connection)
 
 @pytest.mark.skipif(REDIS_PY_VERSION < (2, 6),
         reason='from_url not yet implemented in this redis-py version')
-@pytest.mark.parametrize('args,kwargs,expected',
-        _instance_info_from_url_tests_redis)
-def test_strict_redis_from_url_redis(args, kwargs, expected):
+@pytest.mark.parametrize('args,kwargs,expected', _instance_info_from_url_tests)
+def test_strict_redis_connection_from_url(args, kwargs, expected):
     r = redis.StrictRedis.from_url(*args, **kwargs)
-    assert _instance_info(r) == expected
+    connection = r.connection_pool.get_connection('SELECT')
+    try:
+        assert _connection_instance_info(connection) == expected
+    finally:
+        r.connection_pool.release(connection)

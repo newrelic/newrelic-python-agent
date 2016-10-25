@@ -66,17 +66,9 @@ if len(DB_MULTIPLE_SETTINGS) > 1:
     _instance_metric_name_2 = 'Datastore/instance/Postgres/%s/%s' % (
             _host_2, _port_2)
 
-    _enable_scoped_metrics.extend([
-            (_instance_metric_name_1, 2),
-            (_instance_metric_name_2, 3),
-    ])
     _enable_rollup_metrics.extend([
             (_instance_metric_name_1, 2),
             (_instance_metric_name_2, 3),
-    ])
-    _disable_scoped_metrics.extend([
-            (_instance_metric_name_1, None),
-            (_instance_metric_name_2, None),
     ])
     _disable_rollup_metrics.extend([
             (_instance_metric_name_1, None),

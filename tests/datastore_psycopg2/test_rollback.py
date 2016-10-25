@@ -43,16 +43,10 @@ _port = DB_SETTINGS['port']
 
 _instance_metric_name = 'Datastore/instance/Postgres/%s/%s' % (_host, _port)
 
-_enable_scoped_metrics.append(
-        (_instance_metric_name, 1)
-)
 _enable_rollup_metrics.append(
         (_instance_metric_name, 1)
 )
 
-_disable_scoped_metrics.append(
-        (_instance_metric_name, None)
-)
 _disable_rollup_metrics.append(
         (_instance_metric_name, None)
 )

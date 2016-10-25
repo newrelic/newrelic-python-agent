@@ -2,6 +2,7 @@ import pytest
 import redis
 
 from newrelic.hooks.datastore_redis import _instance_info
+from newrelic.packages import six
 
 REDIS_PY_VERSION = redis.VERSION
 
@@ -30,9 +31,10 @@ _instance_info_from_url_tests_redis = [
     (('redis://@127.0.0.1:6379',), {}, ('127.0.0.1', 6379, 0)),
     (('redis://:1234/',), {}, ('localhost', 1234, 0)),
     (('redis://@:1234/',), {}, ('localhost', 1234, 0)),
+    (('redis://localhost:1234/garbage',), {}, ('localhost', 1234, 0)),
 ]
 
-if REDIS_PY_VERSION >= (2, 7):
+if REDIS_PY_VERSION >= (2, 7, 5):
     _instance_info_from_url_tests_redis.append(
         (('redis://127.0.0.1',), {}, ('127.0.0.1', 6379, 0))
     )
@@ -40,10 +42,13 @@ if REDIS_PY_VERSION >= (2, 7):
 if REDIS_PY_VERSION >= (2, 10):
     _instance_info_from_url_tests_redis.extend([
         (('rediss://localhost:6379/2/',), {}, ('localhost', 6379, 2)),
-        (('redis://localhost:6379',), {'host': 'someotherhost'}, ('localhost', 6379, 0)),
+        (('redis://localhost:6379',), {'host': 'someotherhost'},
+                ('localhost', 6379, 0)),
         (('redis://localhost:6379/2',), {'db': 3}, ('localhost', 6379, 2)),
         (('redis://localhost:6379/2/?db=111',), {}, ('localhost', 6379, 111)),
         (('redis://localhost:6379?db=2',), {}, ('localhost', 6379, 2)),
+        (('redis://localhost:6379/2?db=111',), {},
+                ('localhost', 6379, 111)),
 
         (('unix:///path/to/socket.sock',), {},
                 ('localhost', '/path/to/socket.sock', 0)),

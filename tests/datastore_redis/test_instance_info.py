@@ -2,7 +2,6 @@ import pytest
 import redis
 
 from newrelic.hooks.datastore_redis import _instance_info
-from newrelic.packages import six
 
 REDIS_PY_VERSION = redis.VERSION
 

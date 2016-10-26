@@ -112,6 +112,23 @@ class DatastoreNode(_DatastoreNode):
 
         root.trace_node_count += 1
 
+        params = {}
+
+        ds_tracer_settings = stats.settings.datastore_tracer
+        instance_enabled = ds_tracer_settings.instance_reporting.enabled
+        db_name_enabled = ds_tracer_settings.database_name_reporting.enabled
+
+        if instance_enabled:
+            if self.instance_hostname:
+                params['host'] = self.instance_hostname
+
+            if self.port_path_or_id:
+                params['port_path_or_id'] = self.port_path_or_id
+
+        if db_name_enabled:
+            if self.database_name:
+                params['database_name'] = self.database_name
+
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
-                end_time=end_time, name=name, params=None, children=children,
+                end_time=end_time, name=name, params=params, children=children,
                 label=None)

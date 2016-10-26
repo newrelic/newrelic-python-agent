@@ -2,7 +2,8 @@ import psycopg2
 
 from testing_support.fixtures import (validate_tt_collector_json,
     override_application_settings)
-from utils import DB_SETTINGS, instance_hostname
+from testing_support.util import instance_hostname
+from utils import DB_SETTINGS
 
 from newrelic.agent import background_task
 

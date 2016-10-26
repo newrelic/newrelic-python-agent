@@ -947,6 +947,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/tests/test_datastore_node.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/tests/test_environment.py": {
         "hash": "n/a",
         "libraries": [

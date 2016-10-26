@@ -1,7 +1,7 @@
 import re
 
-from newrelic.agent import (wrap_datastore_trace, wrap_function_wrapper,
-        current_transaction, DatastoreTrace)
+from newrelic.agent import (wrap_function_wrapper, current_transaction,
+        DatastoreTrace)
 
 _redis_client_methods = ('bgrewriteaof', 'bgsave', 'client_kill',
     'client_list', 'client_getname', 'client_setname', 'config_get',
@@ -56,8 +56,14 @@ def _wrap_Redis_method_wrapper_(module, instance_class_name, operation):
 
         host, port_path_or_id, db = _instance_info(instance)
 
-        with DatastoreTrace(transaction, product='Redis', target=None,
-                operation=operation):
+        with DatastoreTrace(
+                transaction,
+                product='Redis',
+                target=None,
+                operation=operation,
+                host=host,
+                port_path_or_id=port_path_or_id,
+                database_name=db):
             return wrapped(*args, **kwargs)
 
     name = '%s.%s' % (instance_class_name, operation)

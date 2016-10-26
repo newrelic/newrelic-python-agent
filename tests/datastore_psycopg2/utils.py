@@ -1,5 +1,4 @@
 import re
-import socket
 
 import psycopg2
 
@@ -35,11 +34,6 @@ def postgresql_version():
 
     finally:
         connection.close()
-
-def instance_hostname(hostname):
-    if hostname == 'localhost':
-        hostname = socket.gethostname()
-    return hostname
 
 DB_MULTIPLE_SETTINGS = postgresql_multiple_settings()
 DB_SETTINGS = DB_MULTIPLE_SETTINGS[0]

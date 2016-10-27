@@ -16,11 +16,11 @@ Jobs are grouped into three views:
 **build-and-archive-package:** On demand job. Will build the source distribution package and upload it to Artifactory.
 
 ### Python Agent Tests
-**\_PYTHON-AGENT-DOCKER-TESTS\_:** Multijob run daily on cron. Will run all tests currently configured in the `jenkins/test-pipeline-config.json` file. (See below for more details on adding new tests) The tests will all run in parallel in EC2 worker nodes.
+**\_INTEGRATION-TESTS\_:** Multijob run daily on cron. Will run all tests currently configured in the `jenkins/test-pipeline-config.yml` file. (See below for more details on adding new tests) The tests will all run in parallel in EC2 worker nodes.
 
-**\*__docker-test:** These tests are configured in the `jenkins/test-pipeline-config.json` file and are the subjobs to the PYTHON-AGENT-DOCKER-TESTS multijob. They will pull packnsend images from the New Relic docker repository (cf-registry.nr-ops.net) then start all containers. If a container is already running, the action is a noop. The consequence of this is if an image changes in the docker repository, the jobs will not pick up this change automatically (see the Reset Nodes job).
+**\*__integration-test:** These tests are configured in the `jenkins/test-pipeline-config.json` file and are the subjobs to the PYTHON-AGENT-DOCKER-TESTS multijob. They will pull packnsend images from the New Relic docker repository (cf-registry.nr-ops.net) then start all containers. If a container is already running, the action is a noop. The consequence of this is if an image changes in the docker repository, the jobs will not pick up this change automatically (see the Reset Nodes job).
 
-**oldstyle-tests-*:** Run on push to master/deploy and on all pull requests. They run `./build.sh` then `./tests.sh`.
+**_UNIT-TESTS-[branch]:** Run on push to master/deploy and on all pull requests. They run `./build.sh` then `./tests.sh`.
 
 ### Python Agent Tools
 **python-agent-tools-dsl-seed:** Job to run on every push to the develop branch. Will rebuild all jenkins jobs from DSL. Any files in the *jenkins* directory with extension `.groovy` will be read and sourced.
@@ -36,29 +36,9 @@ The nodes run Docker version 1.12 that is installed when the node is first creat
 
 ## Adding New Docker Tests
 
-Adding new `tox` style tests is now super easy! Simply open the `jenkins/test-pipeline-config.json` file and add a new entry. When the change is pushed to develop, the python-agent-tools-dsl-seed job will create and configure the test.
+Adding new `tox` style tests is now super easy because they are auto-discovered! To disable a test, add it to the `test-pipeline-config.yml` file under the `disable` heading.
 
-```json
-{
-  "packnsendTests": {
-    "phase": [
-
-      {
-        "name": "<YOUR NEW TEST NAME>",
-        "description": "<A DESCRIPTION FOR YOUR NEW TEST>",
-        "commands": [
-          "<COMMAND 1>",
-          "<COMMAND 2>",
-          "<COMMAND 3>"
-        ]
-      }
-
-    ]
-  }
-}
-```
-
-It is possible to disable a test by adding `"disable": "true"`.
+For those test directories that have a `docker-compose.yml` file, tests will be run inside that docker-compose environment. Otherwise, tests will be run using `packnsend run` as normal.
 
 ## Jenkins Plugins
 We have installed the following plugins on our JaaS instance:
@@ -96,10 +76,10 @@ To "compile" locally, follow these steps then compare the resultant xml files wi
   cp ../python_agent/jenkins/* jenkins
   ```
 
-4. Now generate the xml
+4. Now generate the xml. The `WORKSPACE` environment variable will tell the groovy scripts where to find your `tests` directory.
 
   ```
-  ./gradlew generateJenkinsDsl
+  WORKSPACE=/path/to/your/python_agent ./gradlew generateJenkinsDsl
   ```
 
 5. View the new xml files in `build/dsl-workspace`

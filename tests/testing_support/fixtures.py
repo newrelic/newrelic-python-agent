@@ -893,8 +893,9 @@ def validate_tt_collector_json(required_params={},
                 segment_name = _lookup_string_table(node[2], string_table,
                         default=node[2])
                 if segment_name.startswith('Datastore'):
-                    params = node[3]
+                    params = node[3] or {}
                     for key in datastore_params:
+                        assert key in params
                         assert params[key] == datastore_params[key]
                     for key in datastore_forgone_params:
                         assert key not in params

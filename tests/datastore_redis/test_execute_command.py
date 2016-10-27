@@ -54,6 +54,12 @@ _disable_rollup_metrics.append(
         (_instance_metric_name, None)
 )
 
+def exercise_redis_multi_args(client):
+    client.execute_command('CLIENT', 'LIST', parse='LIST')
+
+def exercise_redis_single_arg(client):
+    client.execute_command('CLIENT LIST')
+
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
         'test_execute_command:test_strict_redis_execute_command_two_args_enable',
@@ -64,7 +70,7 @@ _disable_rollup_metrics.append(
 def test_strict_redis_execute_command_two_args_enable():
     r = redis.StrictRedis(host=DB_SETTINGS['host'],
             port=DB_SETTINGS['port'], db=0)
-    r.execute_command('CLIENT', 'LIST', parse='LIST')
+    exercise_redis_multi_args(r)
 
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
@@ -76,7 +82,7 @@ def test_strict_redis_execute_command_two_args_enable():
 def test_strict_redis_execute_command_two_args_disabled():
     r = redis.StrictRedis(host=DB_SETTINGS['host'],
             port=DB_SETTINGS['port'], db=0)
-    r.execute_command('CLIENT', 'LIST', parse='LIST')
+    exercise_redis_multi_args(r)
 
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
@@ -88,7 +94,7 @@ def test_strict_redis_execute_command_two_args_disabled():
 def test_redis_execute_command_two_args_enable():
     r = redis.Redis(host=DB_SETTINGS['host'],
             port=DB_SETTINGS['port'], db=0)
-    r.execute_command('CLIENT', 'LIST', parse='LIST')
+    exercise_redis_multi_args(r)
 
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
@@ -100,7 +106,7 @@ def test_redis_execute_command_two_args_enable():
 def test_redis_execute_command_two_args_disabled():
     r = redis.Redis(host=DB_SETTINGS['host'],
             port=DB_SETTINGS['port'], db=0)
-    r.execute_command('CLIENT', 'LIST', parse='LIST')
+    exercise_redis_multi_args(r)
 
 @pytest.mark.skipif(REDIS_PY_VERSION < (2, 10),
         reason='This command is not implemented yet')
@@ -114,7 +120,7 @@ def test_redis_execute_command_two_args_disabled():
 def test_strict_redis_execute_command_as_one_arg_enable():
     r = redis.StrictRedis(host=DB_SETTINGS['host'],
             port=DB_SETTINGS['port'], db=0)
-    r.execute_command('CLIENT LIST')
+    exercise_redis_single_arg(r)
 
 @pytest.mark.skipif(REDIS_PY_VERSION < (2, 10),
         reason='This command is not implemented yet')
@@ -128,7 +134,7 @@ def test_strict_redis_execute_command_as_one_arg_enable():
 def test_strict_redis_execute_command_as_one_arg_disabled():
     r = redis.StrictRedis(host=DB_SETTINGS['host'],
             port=DB_SETTINGS['port'], db=0)
-    r.execute_command('CLIENT LIST')
+    exercise_redis_single_arg(r)
 
 @pytest.mark.skipif(REDIS_PY_VERSION < (2, 10),
         reason='This command is not implemented yet')
@@ -142,7 +148,7 @@ def test_strict_redis_execute_command_as_one_arg_disabled():
 def test_redis_execute_command_as_one_arg_enable():
     r = redis.Redis(host=DB_SETTINGS['host'],
             port=DB_SETTINGS['port'], db=0)
-    r.execute_command('CLIENT LIST')
+    exercise_redis_single_arg(r)
 
 @pytest.mark.skipif(REDIS_PY_VERSION < (2, 10),
         reason='This command is not implemented yet')
@@ -156,4 +162,4 @@ def test_redis_execute_command_as_one_arg_enable():
 def test_redis_execute_command_as_one_arg_disabled():
     r = redis.Redis(host=DB_SETTINGS['host'],
             port=DB_SETTINGS['port'], db=0)
-    r.execute_command('CLIENT LIST')
+    exercise_redis_single_arg(r)

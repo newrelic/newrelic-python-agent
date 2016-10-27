@@ -109,6 +109,37 @@ def mysql_settings():
 
     return settings
 
+def mysql_multiple_settings():
+    """Return a list of dicts of settings for connecting to mysql.
+
+    Will return the correct settings, depending on which of the
+    four environments it is running in. It attempts to set variables
+    in the following order, where later environments override earlier
+    ones.
+
+        1. Local
+        2. Tddium
+        3. Test Docker container
+        4. Test docker-compose container
+
+    """
+
+    db1 = mysql_settings()
+
+    # When not using docker-compose, return immediately
+
+    if not _e('COMPOSE', False):
+        return [db1]
+
+    db2 = db1.copy()
+
+    # Update hostnames based on docker-compose env vars
+
+    db1['host'] = _e('COMPOSE_MYSQL_HOST_1', db1['host'])
+    db2['host'] = _e('COMPOSE_MYSQL_HOST_2', db2['host'])
+
+    return [db1, db2]
+
 def mongodb_settings():
     """Return (host, port) tuple to connect to mongodb."""
 

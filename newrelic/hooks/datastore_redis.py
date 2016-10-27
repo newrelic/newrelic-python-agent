@@ -110,8 +110,14 @@ def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
 
     host, port_path_or_id, db = _connection_instance_info(instance)
 
-    with DatastoreTrace(transaction, product='Redis', target=None,
-            operation=operation):
+    with DatastoreTrace(
+            transaction,
+            product='Redis',
+            target=None,
+            operation=operation,
+            host=host,
+            port_path_or_id=port_path_or_id,
+            database_name=db):
         return wrapped(*args, **kwargs)
 
 def instrument_redis_connection(module):

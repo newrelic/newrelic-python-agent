@@ -75,7 +75,16 @@ def _client_instance_info(instance):
     return instance_info
 
 def _connection_instance_info(instance):
-    kwargs = instance._description_args
+    def _getattr(attr):
+        return getattr(instance, attr, None)
+
+    kwargs = {
+        'host': _getattr('host'),
+        'port': _getattr('port'),
+        'path': _getattr('path'),
+        'db': _getattr('db'),
+    }
+
     instance_info = _instance_info(kwargs)
     return instance_info
 

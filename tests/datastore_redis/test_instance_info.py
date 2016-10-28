@@ -83,11 +83,15 @@ def test_redis_client_from_url(args, kwargs, expected):
     r = redis.Redis.from_url(*args, **kwargs)
     assert _client_instance_info(r) == expected
 
+@pytest.mark.skipif(REDIS_PY_VERSION < (2, 6),
+        reason='from_url not yet implemented in this redis-py version')
 @pytest.mark.parametrize('args,kwargs,expected', _instance_info_from_url_tests)
 def test_strict_redis_client_from_url(args, kwargs, expected):
     r = redis.StrictRedis.from_url(*args, **kwargs)
     assert _client_instance_info(r) == expected
 
+@pytest.mark.skipif(REDIS_PY_VERSION < (2, 6),
+        reason='from_url not yet implemented in this redis-py version')
 @pytest.mark.parametrize('args,kwargs,expected', _instance_info_from_url_tests)
 def test_redis_connection_from_url(args, kwargs, expected):
     r = redis.Redis.from_url(*args, **kwargs)

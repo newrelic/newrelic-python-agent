@@ -73,8 +73,8 @@ def _instance_info(instance):
     kwargs = instance.connection_pool.connection_kwargs
 
     host = kwargs.get('host') or 'localhost'
-    port_path_or_id = kwargs.get('port') or kwargs.get('path', 'unknown')
-    db = kwargs.get('db')
+    port_path_or_id = str(kwargs.get('port') or kwargs.get('path', 'unknown'))
+    db = str(kwargs.get('db'))
 
     return (host, port_path_or_id, db)
 

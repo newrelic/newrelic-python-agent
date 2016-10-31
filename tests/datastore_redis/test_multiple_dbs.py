@@ -44,18 +44,28 @@ _disable_rollup_metrics = list(_base_rollup_metrics)
 _enable_scoped_metrics = list(_base_scoped_metrics)
 _enable_rollup_metrics = list(_base_rollup_metrics)
 
-_host = instance_hostname(DB_SETTINGS['host'])
-_port = DB_SETTINGS['port']
+if len(DB_MULTIPLE_SETTINGS) > 1:
+    redis_1 = DB_MULTIPLE_SETTINGS[0]
+    redis_2 = DB_MULTIPLE_SETTINGS[1]
 
-_instance_metric_name = 'Datastore/instance/Redis/%s/%s' % (_host, _port)
+    host_1 = instance_hostname(redis_1['host'])
+    port_1 = redis_1['port']
 
-_enable_rollup_metrics.append(
-        (_instance_metric_name, 2)
-)
+    host_2 = instance_hostname(redis_2['host'])
+    port_2 = redis_2['port']
 
-_disable_rollup_metrics.append(
-        (_instance_metric_name, None)
-)
+    instance_metric_name_1 = 'Datastore/instance/Redis/%s/%s' % (host_1, port_1)
+    instance_metric_name_2 = 'Datastore/instance/Redis/%s/%s' % (host_2, port_2)
+
+    _enable_rollup_metrics.extend([
+            (instance_metric_name_1, 2),
+            (instance_metric_name_2, 1),
+    ])
+
+    _disable_rollup_metrics.extend([
+            (instance_metric_name_1, None),
+            (instance_metric_name_2, None),
+    ])
 
 def exercise_redis(client_1, client_2):
     client_1.set('key', 'value')

@@ -54,7 +54,7 @@ def _wrap_Redis_method_wrapper_(module, instance_class_name, operation):
         if transaction is None:
             return wrapped(*args, **kwargs)
 
-        host, port_path_or_id, db = _instance_info(instance)
+        host, port_path_or_id, db = _client_instance_info(instance)
 
         with DatastoreTrace(
                 transaction,
@@ -69,9 +69,26 @@ def _wrap_Redis_method_wrapper_(module, instance_class_name, operation):
     name = '%s.%s' % (instance_class_name, operation)
     wrap_function_wrapper(module, name, _nr_wrapper_Redis_method_)
 
-def _instance_info(instance):
+def _client_instance_info(instance):
     kwargs = instance.connection_pool.connection_kwargs
+    instance_info = _instance_info(kwargs)
+    return instance_info
 
+def _connection_instance_info(instance):
+    def _getattr(attr):
+        return getattr(instance, attr, None)
+
+    kwargs = {
+        'host': _getattr('host'),
+        'port': _getattr('port'),
+        'path': _getattr('path'),
+        'db': _getattr('db'),
+    }
+
+    instance_info = _instance_info(kwargs)
+    return instance_info
+
+def _instance_info(kwargs):
     host = kwargs.get('host') or 'localhost'
     port_path_or_id = str(kwargs.get('port') or kwargs.get('path', 'unknown'))
     db = str(kwargs.get('db'))
@@ -100,8 +117,16 @@ def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
 
     operation = _redis_operation_re.sub('_', operation)
 
-    with DatastoreTrace(transaction, product='Redis', target=None,
-            operation=operation):
+    host, port_path_or_id, db = _connection_instance_info(instance)
+
+    with DatastoreTrace(
+            transaction,
+            product='Redis',
+            target=None,
+            operation=operation,
+            host=host,
+            port_path_or_id=port_path_or_id,
+            database_name=db):
         return wrapped(*args, **kwargs)
 
 def instrument_redis_connection(module):

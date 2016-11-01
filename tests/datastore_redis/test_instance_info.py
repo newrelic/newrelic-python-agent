@@ -8,6 +8,10 @@ REDIS_PY_VERSION = redis.VERSION
 
 _instance_info_tests = [
     ((), {}, ('localhost', '6379', '0')),
+    ((), {'host': None}, ('localhost', '6379', '0')),
+    ((), {'host': ''}, ('localhost', '6379', '0')),
+    ((), {'db': None}, ('localhost', '6379', '0')),
+    ((), {'db': ''}, ('localhost', '6379', '0')),
     ((), {'host': '127.0.0.1', 'port': 1234, 'db': 2}, ('127.0.0.1', '1234', '2')),
     (('127.0.0.1', 1234, 2), {}, ('127.0.0.1', '1234', '2')),
 ]

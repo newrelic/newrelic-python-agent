@@ -1,0 +1,17 @@
+version: '2'
+services:
+  packnsend:
+    extends:
+      file: ../../docker/docker-compose.yml
+      service: packnsend
+    depends_on:
+      - mysql1
+      - mysql2
+    environment:
+      COMPOSE_MYSQL_HOST_1: mysql1
+      COMPOSE_MYSQL_HOST_2: mysql2
+    entrypoint: ./docker/wait-for-ready.sh --mysql mysql1:3306,mysql2:3306
+  mysql1:
+    image: mysql
+  mysql2:
+    image: mysql

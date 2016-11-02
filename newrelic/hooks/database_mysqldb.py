@@ -39,12 +39,24 @@ class ConnectionFactory(DBAPI2ConnectionFactory):
 
 def instance_info(args, kwargs):
     def _bind_params(host=None, user=None, passwd=None, db=None,
-            port=None, *args, **kwargs):
-        return host, port, db
+            port=None, unix_socket=None, *args, **kwargs):
+        return host, port, db, unix_socket
 
-    host, port, db = _bind_params(*args, **kwargs)
+    host, port, db, unix_socket = _bind_params(*args, **kwargs)
 
-    return (host, port, db)
+    port_path_or_id = str(port or 3306)
+
+    if not host:
+        host = 'localhost'
+
+    if host == 'localhost':
+        port_path_or_id = unix_socket or 'default'
+
+    # There is no default database if ommitted from the connect params
+    # In this case, we should report unknown
+    db = db or 'unknown'
+
+    return (host, port_path_or_id, db)
 
 def instrument_mysqldb(module):
     register_database_client(module, database_product='MySQL',

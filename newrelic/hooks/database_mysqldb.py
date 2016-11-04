@@ -1,3 +1,5 @@
+import os
+
 from newrelic.agent import (current_transaction, wrap_object, DatabaseTrace,
         register_database_client, FunctionTrace, callable_name)
 
@@ -44,13 +46,14 @@ def instance_info(args, kwargs):
 
     host, port, db, unix_socket = _bind_params(*args, **kwargs)
 
-    port_path_or_id = str(port or 3306)
-
     if not host:
         host = 'localhost'
 
     if host == 'localhost':
-        port_path_or_id = unix_socket or 'default'
+        port_path_or_id = unix_socket or os.getenv('MYSQL_UNIX_PORT', 'default')
+    else:
+        port = port and str(port)
+        port_path_or_id = port or os.getenv('MYSQL_TCP_PORT', '3306')
 
     # There is no default database if ommitted from the connect params
     # In this case, we should report unknown

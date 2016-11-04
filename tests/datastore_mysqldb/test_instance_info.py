@@ -32,3 +32,21 @@ def test_mysqldb_instance_info(args, kwargs, expected):
     connect_params = (args, kwargs)
     output = instance_info(*connect_params)
     assert output == expected
+
+def test_env_var_default_tcp_port(monkeypatch):
+    monkeypatch.setenv('MYSQL_TCP_PORT', 1234)
+    kwargs = {'host': '1.2.3.4'}
+    expected = ('1.2.3.4', '1234', 'unknown')
+
+    connect_params = ((), kwargs)
+    output = instance_info(*connect_params)
+    assert output == expected
+
+def test_env_var_default_unix_port(monkeypatch):
+    monkeypatch.setenv('MYSQL_UNIX_PORT', '/foo/bar')
+    kwargs = {}
+    expected = ('localhost', '/foo/bar', 'unknown')
+
+    connect_params = ((), kwargs)
+    output = instance_info(*connect_params)
+    assert output == expected

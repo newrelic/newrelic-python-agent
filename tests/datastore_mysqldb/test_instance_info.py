@@ -110,3 +110,12 @@ def test_explicit_host_cnf(monkeypatch):
     connect_params = ((), kwargs)
     output = instance_info(*connect_params)
     assert output == expected
+
+def test_mysql_host_env_ignored(monkeypatch):
+    monkeypatch.setenv('MYSQL_HOST', 'FOOBAR')
+    kwargs = {}
+    expected = ('localhost', 'default', 'unknown')
+
+    connect_params = ((), kwargs)
+    output = instance_info(*connect_params)
+    assert output == expected

@@ -40,20 +40,36 @@ class ConnectionFactory(DBAPI2ConnectionFactory):
     __connection_wrapper__ = ConnectionWrapper
 
 def instance_info(args, kwargs):
-    def _bind_params(host=None, user=None, passwd=None, db=None,
-            port=None, unix_socket=None, *args, **kwargs):
-        return host, port, db, unix_socket
+    def _bind_params(host=None, user=None, passwd=None, db=None, port=None,
+            unix_socket=None, conv=None, connect_timeout=None, compress=None,
+            named_pipe=None, init_command=None, read_default_file=None,
+            read_default_group=None, *args, **kwargs):
+        return (host, port, db, unix_socket,
+                read_default_file, read_default_group)
 
-    host, port, db, unix_socket = _bind_params(*args, **kwargs)
+    params = _bind_params(*args, **kwargs)
+    host, port, db, unix_socket, read_default_file, read_default_group = params
+    explicit_host = host
 
-    if not host:
+    port_path_or_id = None
+    if read_default_file or read_default_group:
+        host = host or 'default'
+        port_path_or_id = 'unknown'
+    elif not host:
         host = 'localhost'
 
     if host == 'localhost':
-        port_path_or_id = unix_socket or os.getenv('MYSQL_UNIX_PORT', 'default')
-    else:
+        # precedence: explicit -> cnf (if used) -> env -> 'default'
+        port_path_or_id = (unix_socket or
+                port_path_or_id or
+                os.getenv('MYSQL_UNIX_PORT', 'default'))
+    elif explicit_host:
+        # only reach here if host is explicitly passed in
         port = port and str(port)
-        port_path_or_id = port or os.getenv('MYSQL_TCP_PORT', '3306')
+        # precedence: explicit -> cnf (if used) -> env -> '3306'
+        port_path_or_id = (port or
+                port_path_or_id or
+                os.getenv('MYSQL_TCP_PORT', '3306'))
 
     # There is no default database if ommitted from the connect params
     # In this case, we should report unknown

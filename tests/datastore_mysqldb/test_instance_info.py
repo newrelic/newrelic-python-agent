@@ -42,10 +42,70 @@ def test_env_var_default_tcp_port(monkeypatch):
     output = instance_info(*connect_params)
     assert output == expected
 
+def test_override_env_var_tcp_port(monkeypatch):
+    monkeypatch.setenv('MYSQL_TCP_PORT', 1234)
+    kwargs = {'host': '1.2.3.4', 'port': 9876}
+    expected = ('1.2.3.4', '9876', 'unknown')
+
+    connect_params = ((), kwargs)
+    output = instance_info(*connect_params)
+    assert output == expected
+
 def test_env_var_default_unix_port(monkeypatch):
     monkeypatch.setenv('MYSQL_UNIX_PORT', '/foo/bar')
     kwargs = {}
     expected = ('localhost', '/foo/bar', 'unknown')
+
+    connect_params = ((), kwargs)
+    output = instance_info(*connect_params)
+    assert output == expected
+
+def test_override_env_var_unix_port(monkeypatch):
+    monkeypatch.setenv('MYSQL_UNIX_PORT', '/bar/baz')
+    kwargs = {'unix_socket': 'foobar'}
+    expected = ('localhost', 'foobar', 'unknown')
+
+    connect_params = ((), kwargs)
+    output = instance_info(*connect_params)
+    assert output == expected
+
+def test_default_file():
+    kwargs = {'read_default_group': 'foobar'}
+    expected = ('default', 'unknown', 'unknown')
+
+    connect_params = ((), kwargs)
+    output = instance_info(*connect_params)
+    assert output == expected
+
+def test_default_group():
+    kwargs = {'read_default_group': 'foobar'}
+    expected = ('default', 'unknown', 'unknown')
+
+    connect_params = ((), kwargs)
+    output = instance_info(*connect_params)
+    assert output == expected
+
+def test_default_precedence():
+    kwargs = {'port': 1234, 'host': '1.2.3.4', 'read_default_group': 'foobar'}
+    expected = ('1.2.3.4', '1234', 'unknown')
+
+    connect_params = ((), kwargs)
+    output = instance_info(*connect_params)
+    assert output == expected
+
+def test_localhost_cnf(monkeypatch):
+    monkeypatch.setenv('MYSQL_UNIX_PORT', '/foo/bar')
+    kwargs = {'host': 'localhost', 'read_default_group': 'foobar'}
+    expected = ('localhost', 'unknown', 'unknown')
+
+    connect_params = ((), kwargs)
+    output = instance_info(*connect_params)
+    assert output == expected
+
+def test_explicit_host_cnf(monkeypatch):
+    monkeypatch.setenv('MYSQL_TCP_PORT', 1234)
+    kwargs = {'host': '1.2.3.4', 'read_default_group': 'foobar'}
+    expected = ('1.2.3.4', 'unknown', 'unknown')
 
     connect_params = ((), kwargs)
     output = instance_info(*connect_params)

@@ -438,8 +438,11 @@ pull_docker_base_images()
         echo
 
         docker pull $PYTHON_AGENT_IMG_PATH/$IMG
-        docker inspect $IMG > /dev/null 2>&1 && docker rmi $IMG > /dev/null 2>&1
-        docker tag $PYTHON_AGENT_IMG_PATH/$IMG $IMG || exit 1
+
+        FORCE_TAG_OPERATION="docker tag -f $PYTHON_AGENT_IMG_PATH/$IMG $IMG"
+        TAG_OPERATION="docker tag $PYTHON_AGENT_IMG_PATH/$IMG $IMG"
+
+        $FORCE_TAG_OPERATION > /dev/null 2>&1 || $TAG_OPERATION || exit 1
 
     done
 }

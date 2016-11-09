@@ -3,6 +3,8 @@ import os
 from newrelic.agent import (current_transaction, wrap_object, DatabaseTrace,
         register_database_client, FunctionTrace, callable_name)
 
+from newrelic.api.database_trace import enable_datastore_instance_feature
+
 from .database_dbapi2 import (ConnectionWrapper as DBAPI2ConnectionWrapper,
         ConnectionFactory as DBAPI2ConnectionFactory)
 
@@ -81,6 +83,8 @@ def instrument_mysqldb(module):
     register_database_client(module, database_product='MySQL',
             quoting_style='single+double', explain_query='explain',
             explain_stmts=('select',), instance_info=instance_info)
+
+    enable_datastore_instance_feature(module)
 
     wrap_object(module, 'connect', ConnectionFactory, (module,))
 

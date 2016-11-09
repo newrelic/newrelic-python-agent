@@ -23,13 +23,15 @@ _disable_instance_settings = {
 
 _base_scoped_metrics = (
         ('Function/MySQLdb:Connect', 1),
+        ('Function/MySQLdb.connections:Connection.__enter__', 1),
+        ('Function/MySQLdb.connections:Connection.__exit__', 1),
         ('Datastore/statement/MySQL/datastore_mysqldb/select', 1),
         ('Datastore/statement/MySQL/datastore_mysqldb/insert', 1),
         ('Datastore/statement/MySQL/datastore_mysqldb/update', 1),
         ('Datastore/statement/MySQL/datastore_mysqldb/delete', 1),
-        ('Datastore/operation/MySQL/show', 1),
         ('Datastore/operation/MySQL/drop', 1),
         ('Datastore/operation/MySQL/create', 1),
+        ('Datastore/operation/MySQL/show', 1),
         ('Datastore/operation/MySQL/commit', 3),
         ('Datastore/operation/MySQL/rollback', 1),
 )
@@ -109,7 +111,7 @@ def _exercise_db(connection):
 @validate_database_trace_inputs(tuple)
 @background_task()
 def test_connect_using_alias_enable():
-    connection = MySQLdb.connect(db=DB_SETTINGS['name'],
+    connection = MySQLdb.Connect(db=DB_SETTINGS['name'],
             user=DB_SETTINGS['user'], passwd=DB_SETTINGS['password'],
             host=DB_SETTINGS['host'], port=DB_SETTINGS['port'])
     _exercise_db(connection)
@@ -122,7 +124,7 @@ def test_connect_using_alias_enable():
 @validate_database_trace_inputs(tuple)
 @background_task()
 def test_connect_using_alias_disable():
-    connection = MySQLdb.connect(db=DB_SETTINGS['name'],
+    connection = MySQLdb.Connect(db=DB_SETTINGS['name'],
             user=DB_SETTINGS['user'], passwd=DB_SETTINGS['password'],
             host=DB_SETTINGS['host'], port=DB_SETTINGS['port'])
     _exercise_db(connection)

@@ -1236,6 +1236,10 @@ _developer_mode_responses = {
 
     'analytic_event_data': None,
 
+    'error_event_data': None,
+
+    'custom_event_data': None,
+
     'shutdown': None,
 }
 

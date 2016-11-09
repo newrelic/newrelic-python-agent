@@ -20,6 +20,7 @@ from newrelic.common.encoding_utils import (unpack_field, json_encode,
         deobfuscate, json_decode, obfuscate)
 
 from newrelic.core.config import (apply_config_setting, flatten_settings)
+from newrelic.core.data_collector import _developer_mode_responses
 from newrelic.core.database_utils import SQLConnections
 
 from newrelic.network.addresses import proxy_details
@@ -55,50 +56,8 @@ def _lookup_string_table(name, string_table, default=None):
     except ValueError:
         return default
 
-_fake_collector_responses = {
-    'get_redirect_host': u'fake-collector.newrelic.com',
-
-    'connect': {
-        u'js_agent_loader': u'<!-- NREUM HEADER -->',
-        u'js_agent_file': u'js-agent.newrelic.com/nr-0.min.js',
-        u'browser_key': u'1234567890',
-        u'browser_monitoring.loader_version': u'0',
-        u'beacon': u'fake-beacon.newrelic.com',
-        u'error_beacon': u'fake-jserror.newrelic.com',
-        u'apdex_t': 0.5,
-        u'encoding_key': u'd67afc830dab717fd163bfcb0b8b88423e9a1a3b',
-        u'agent_run_id': 1234567,
-        u'product_level': 50,
-        u'trusted_account_ids': [12345],
-        u'url_rules': [],
-        u'collect_errors': True,
-        u'cross_process_id': u'12345#67890',
-        u'messages': [{u'message': u'Reporting to fake collector',
-            u'level': u'INFO' }],
-        u'sampling_rate': 0,
-        u'collect_traces': True,
-        u'data_report_period': 60
-    },
-
-    'metric_data': [],
-
-    'get_agent_commands': [],
-
-    'error_data': None,
-
-    'transaction_sample_data': None,
-
-    'sql_trace_data': None,
-
-    'analytic_event_data': None,
-
-    'agent_settings': None,
-
-    'shutdown': None,
-}
-
 if _environ_as_bool('NEW_RELIC_HIGH_SECURITY'):
-    _fake_collector_responses['connect']['high_security'] = True
+    _developer_mode_responses['connect']['high_security'] = True
 
 def fake_collector_wrapper(wrapped, instance, args, kwargs):
     def _bind_params(session, url, method, license_key, agent_run_id=None,
@@ -108,10 +67,7 @@ def fake_collector_wrapper(wrapped, instance, args, kwargs):
     session, url, method, license_key, agent_run_id, payload = _bind_params(
             *args, **kwargs)
 
-    if method in _fake_collector_responses:
-        return _fake_collector_responses[method]
-
-    return wrapped(*args, **kwargs)
+    return _developer_mode_responses[method]
 
 def initialize_agent(app_name=None, default_settings={}):
     settings = global_settings()

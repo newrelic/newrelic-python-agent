@@ -3,13 +3,14 @@ import newrelic.jenkins.extensions
 String organization = 'python-agent'
 String repoGHE = 'python_agent'
 String repoFull = "${organization}/${repoGHE}"
-String testSuffix = "__integration-test"
+String integTestSuffix = "__integration-test"
+String unitTestSuffix = "__unit-test"
 String slackChannel = '#python-agent'
 
 use(extensions) {
 
     view('PY_Tests', 'Test jobs',
-         "(_INTEGRATION-TESTS_)|(.*${testSuffix})|(_UNIT-TESTS.*)")
+         "(_INTEGRATION-TESTS_)|(.*${integTestSuffix})|(.*${unitTestSuffix})|(_UNIT-TESTS.*)")
 
     multiJob('_INTEGRATION-TESTS_') {
         description('Perform full suite of tests on Python Agent')

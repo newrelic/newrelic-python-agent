@@ -3,25 +3,20 @@ import newrelic.jenkins.extensions
 String organization = 'python-agent'
 String repoGHE = 'python_agent'
 String repoFull = "${organization}/${repoGHE}"
+String testSuffix = "__unit-test"
 String slackChannel = '#python-agent'
+String gitBranch
+
+List<String> unitTestEnvs = ['py26', 'py27', 'py33', 'pypy']
 
 use(extensions) {
 
     ['develop', 'master', 'pullrequest'].each { jobType ->
-        jaasBaseJob("_UNIT-TESTS-${jobType}_") {
+        multiJob("_UNIT-TESTS-${jobType}_") {
             label('py-ec2-linux')
-            description('Run the old style tests (i.e. ./tests.sh)')
+            description("Run unit tests (i.e. ./tests.sh) on the _${jobType}_ branch")
             logRotator { numToKeep(10) }
             blockOnJobs('.*-Reset-Nodes')
-
-            wrappers {
-                timeout {
-                    // abort if time is > 500% of the average of the
-                    // last 3 builds, or 60 minutes
-                    elastic(500, 3, 60)
-                    abortBuild()
-                }
-            }
 
             if (jobType == 'pullrequest') {
                 repositoryPR(repoFull)
@@ -33,6 +28,7 @@ use(extensions) {
                     }
                 }
                 concurrentBuild true
+                gitBranch = '${ghprbActualCommit}'
             }
             else {
                 repository(repoFull, jobType)
@@ -40,19 +36,95 @@ use(extensions) {
                     // trigger on push to develop/master
                     githubPush()
                 }
+                gitBranch = jobType
+            }
+
+            parameters {
+                stringParam('GIT_REPOSITORY_BRANCH', gitBranch,
+                            'Branch in git repository to run test agaisnt.')
             }
 
             steps {
-                environmentVariables {
-                    env('DOCKER_HOST', 'unix:///var/run/docker.sock')
+                phase('unit-tests', 'COMPLETED') {
+
+                    job("build.sh_${testSuffix}") {
+                        killPhaseCondition('NEVER')
+                    }
+
+                    for (testEnv in unitTestEnvs) {
+                        job("tests.sh-${testEnv}_${testSuffix}") {
+                            killPhaseCondition('NEVER')
+                        }
+                    }
                 }
-                shell('./jenkins/prep_node_for_test.sh')
-                shell('./build.sh')
-                shell('./docker/packnsend run /data/tests.sh')
             }
 
             slackQuiet(slackChannel) {
                 notifySuccess true
+            }
+        }
+    }
+
+    unitTestEnvs.each { testEnv ->
+        baseJob("tests.sh-${testEnv}_${testSuffix}") {
+            label('py-ec2-linux')
+            repo(repoFull)
+            branch('${GIT_REPOSITORY_BRANCH}')
+
+            configure {
+                description("Runs ./tests.sh with the ${testEnv} environment")
+                logRotator { numToKeep(10) }
+                blockOnJobs('.*-Reset-Nodes')
+                concurrentBuild true
+
+                wrappers {
+                    timeout {
+                        // abort if time is > 500% of the average of the
+                        // last 3 builds, or 60 minutes
+                        elastic(500, 3, 60)
+                        abortBuild()
+                    }
+                }
+
+                parameters {
+                    stringParam('GIT_REPOSITORY_BRANCH', 'develop',
+                                'Branch in git repository to run test against.')
+                }
+
+                steps {
+                    shell('./jenkins/prep_node_for_test.sh')
+                    shell("./docker/packnsend run /data/tests.sh ${testEnv}")
+                }
+            }
+        }
+    }
+
+    baseJob("build.sh_${testSuffix}") {
+        label('py-ec2-linux')
+        repo(repoFull)
+        branch('${GIT_REPOSITORY_BRANCH}')
+
+        configure {
+            description('Run ./build.sh')
+            logRotator { numToKeep(10) }
+            concurrentBuild true
+
+            wrappers {
+                timeout {
+                    // abort if time is > 500% of the average of the
+                    // last 3 builds, or 60 minutes
+                    elastic(500, 3, 60)
+                    abortBuild()
+                }
+            }
+
+            parameters {
+                stringParam('GIT_REPOSITORY_BRANCH', 'develop',
+                            'Branch in git repository to run test against.')
+            }
+
+            steps {
+                shell('./build.sh')
             }
         }
     }

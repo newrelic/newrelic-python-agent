@@ -7,9 +7,19 @@ String testSuffix = "__unit-test"
 String slackChannel = '#python-agent'
 String gitBranch
 
-List<String> unitTestEnvs = ['py26', 'py27', 'py33', 'pypy']
+def getUnitTestEnvs = {
+
+    def proc = "tox --listenvs -c ${WORKSPACE}/tox.ini".execute()
+    def stdout = new StringBuilder()
+    proc.consumeProcessOutput(stdout, System.err)
+    proc.waitForOrKill(1000)
+    assert !proc.exitValue()
+
+    List<String> unitTestEnvs = new String(stdout).split('\n')
+}
 
 use(extensions) {
+   def unitTestEnvs = getUnitTestEnvs()
 
     ['develop', 'master', 'pullrequest'].each { jobType ->
         multiJob("_UNIT-TESTS-${jobType}_") {

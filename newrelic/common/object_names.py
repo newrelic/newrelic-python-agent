@@ -216,22 +216,38 @@ def _object_context_py2(object):
     return (mname, path)
 
 def _object_context_py3(object):
-    # For functions and methods the __qualname__ attribute gives
-    # us the name. This will be a qualified name including the
-    # context which the function or method is defined in, such
-    # as a class, or outer function in the case of a nested
-    # function. Because it includes the class, we don't need to
-    # work that out separately.
 
-    path = getattr(object, '__qualname__', None)
+    if inspect.ismethod(object):
 
-    # If there is no __qualname__ it should mean it is a type
-    # object of some sort. In this case we use the name from the
-    # __class__. That also can be nested so need to use the
-    # qualified name.
+        # In Python 3, ismethod() returns True for bound methods. We
+        # need to distinguish between class methods and instance methods.
+        #
+        # First, test for class methods.
 
-    if path is None and hasattr(object, '__class__'):
-        path = getattr(object.__class__, '__qualname__')
+        cname = getattr(object.__self__, '__qualname__', None)
+
+        # If it's not a class method, it must be an instance method.
+
+        if cname is None:
+            cname = getattr(object.__self__.__class__, '__qualname__')
+
+        path = '%s.%s' % (cname, object.__name__)
+
+    else:
+        # For functions, the __qualname__ attribute gives us the name.
+        # This will be a qualified name including the context in which
+        # the function is defined in, such as an outer function in the
+        # case of a nested function.
+
+        path = getattr(object, '__qualname__', None)
+
+        # If there is no __qualname__ it should mean it is a type
+        # object of some sort. In this case we use the name from the
+        # __class__. That also can be nested so need to use the
+        # qualified name.
+
+        if path is None and hasattr(object, '__class__'):
+            path = getattr(object.__class__, '__qualname__')
 
     # Now calculate the name of the module object is defined in.
 

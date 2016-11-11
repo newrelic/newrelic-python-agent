@@ -40,7 +40,7 @@ Adding new `tox` style tests is now super easy because they are auto-discovered!
 
 For those test directories that have a `docker-compose.yml` file, tests will be run inside that docker-compose environment. Otherwise, tests will be run using `packnsend run` as normal.
 
-## Jenkins Plugins
+## Jenkins Plugins and Customizations
 We have installed the following plugins on our JaaS instance:
 + build-blocker-plugin
 + build-timeout
@@ -48,6 +48,9 @@ We have installed the following plugins on our JaaS instance:
 + envinject
 + jenkins-multijob-plugin
 + nodelabelparameter
+
+We have installed the following packages on the JaaS master:
++ tox==2.4.1
 
 ## Development
 

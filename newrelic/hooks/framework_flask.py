@@ -29,7 +29,7 @@ def _nr_wrapper_handler_(wrapped, instance, args, kwargs):
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    name = callable_name(wrapped)
+    name = getattr(wrapped, '_nr_view_func_name', callable_name(wrapped))
 
     # Set priority=2 so this will take precedence over any error
     # handler which will be at priority=1.
@@ -49,6 +49,11 @@ def _nr_wrapper_Flask_add_url_rule_input_(wrapped, instance, args, kwargs):
         view_func = _nr_wrapper_handler_(view_func)
 
     return wrapped(rule, endpoint, view_func, **options)
+
+def _nr_wrapper_Flask_views_View_as_view_(wrapped, instance, args, kwargs):
+    view = wrapped(*args, **kwargs)
+    view._nr_view_func_name = '%s:%s' % (view.__module__, view.__name__)
+    return view
 
 @function_wrapper
 def _nr_wrapper_endpoint_(wrapped, instance, args, kwargs):
@@ -204,6 +209,10 @@ def _nr_wrapper_Flask_teardown_appcontext_(wrapped, instance, args, kwargs):
     f = FunctionTraceWrapper(f)
 
     return wrapped(f, *_args, **_kwargs)
+
+def instrument_flask_views(module):
+    wrap_function_wrapper(module, 'View.as_view',
+            _nr_wrapper_Flask_views_View_as_view_)
 
 def instrument_flask_app(module):
     wrap_wsgi_application(module, 'Flask.wsgi_app',

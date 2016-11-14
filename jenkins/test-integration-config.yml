@@ -16,6 +16,7 @@ disable:
     - tests/datastore_motor/tox-0004.ini
     - tests/datastore_motor/tox-0005.ini
     - tests/datastore_motor/tox.ini
+    - tests/datastore_pymssql/tox.ini
     - tests/external_awscli/tox.ini
     - tests/external_requests/tox-0007.ini
     - tests/external_requests/tox-0008.ini

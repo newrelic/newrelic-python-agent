@@ -1,6 +1,7 @@
 # List of tox files to ignore
 # example: tests/framework_django/tox-0110.ini
 disable:
+    - tests/adapter_gevent/tox.ini
     - tests/database_mysql/tox.ini
     - tests/database_mysqldb/tox.ini
     - tests/database_oursql/tox.ini
@@ -15,6 +16,7 @@ disable:
     - tests/datastore_motor/tox-0004.ini
     - tests/datastore_motor/tox-0005.ini
     - tests/datastore_motor/tox.ini
+    - tests/datastore_pymssql/tox.ini
     - tests/external_awscli/tox.ini
     - tests/external_requests/tox-0007.ini
     - tests/external_requests/tox-0008.ini

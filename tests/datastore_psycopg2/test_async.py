@@ -7,7 +7,8 @@ from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_slow_sql_count,
     validate_stats_engine_explain_plan_output_is_none,
     override_application_settings)
-from utils import instance_hostname, DB_SETTINGS, PSYCOPG2_VERSION
+from testing_support.util import instance_hostname
+from utils import DB_SETTINGS, PSYCOPG2_VERSION
 
 from newrelic.agent import background_task
 

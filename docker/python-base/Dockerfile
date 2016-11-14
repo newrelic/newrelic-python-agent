@@ -51,3 +51,9 @@ RUN apt-get install -y libmemcached-dev
 
 # Needed for umemcache tests.
 RUN apt-get install -y build-essential
+
+# Needed for redis tests.
+RUN apt-get install -y redis-server
+
+# Needed for mysqldb tests.
+RUN apt-get install -y mysql-server

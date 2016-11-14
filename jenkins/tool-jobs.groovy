@@ -23,6 +23,8 @@ use(extensions) {
             // set repository a second time to ensure building from develop
             // branch instead of master
             repository(repoFull, 'develop')
+
+            blockOnJobs('reseed-integration-tests')
         }
     }
 

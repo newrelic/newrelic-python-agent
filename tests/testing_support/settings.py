@@ -109,6 +109,37 @@ def mysql_settings():
 
     return settings
 
+def mysql_multiple_settings():
+    """Return a list of dicts of settings for connecting to mysql.
+
+    Will return the correct settings, depending on which of the
+    four environments it is running in. It attempts to set variables
+    in the following order, where later environments override earlier
+    ones.
+
+        1. Local
+        2. Tddium
+        3. Test Docker container
+        4. Test docker-compose container
+
+    """
+
+    db1 = mysql_settings()
+
+    # When not using docker-compose, return immediately
+
+    if not _e('COMPOSE', False):
+        return [db1]
+
+    db2 = db1.copy()
+
+    # Update hostnames based on docker-compose env vars
+
+    db1['host'] = _e('COMPOSE_MYSQL_HOST_1', db1['host'])
+    db2['host'] = _e('COMPOSE_MYSQL_HOST_2', db2['host'])
+
+    return [db1, db2]
+
 def mongodb_settings():
     """Return (host, port) tuple to connect to mongodb."""
 
@@ -153,3 +184,61 @@ def solr_settings():
     port = int(os.environ.get('SOLR4_PORT_8983_TCP_PORT', port))
 
     return (host, port)
+
+def redis_settings():
+    """Return a dict of settings for connecting to redis.
+
+    Will return the correct settings, depending on which of the
+    three environments it is running in. It attempts to set variables
+    in the following order, where later environments override earlier
+    ones.
+
+        1. Local
+        2. Tddium
+        3. Test Docker container
+
+    """
+    settings = {}
+
+    # Use local defaults, if TDDIUM vars aren't present.
+
+    settings['host'] = os.environ.get('TDIUM_REDIS_HOST', 'localhost')
+    settings['port'] = int(os.environ.get('TDIUM_REDIS_PORT', '6379'))
+
+    # Look for env vars in test docker container.
+
+    settings['host'] = _e('REDIS_PORT_6379_TCP_ADDR', settings['host'])
+    settings['port'] = int(_e('REDIS_PORT_6379_TCP_PORT', settings['port']))
+
+    return settings
+
+def redis_multiple_settings():
+    """Return a list of dicts of settings for connecting to redis.
+
+    Will return the correct settings, depending on which of the
+    three environments it is running in. It attempts to set variables
+    in the following order, where later environments override earlier
+    ones.
+
+        1. Local
+        2. Tddium
+        3. Test Docker container
+        4. Test docker-compose container
+
+    """
+
+    db1 = redis_settings()
+
+    # When not using docker-compose, return immediately
+
+    if not _e('COMPOSE', False):
+        return [db1]
+
+    db2 = db1.copy()
+
+    # Update hostnames based on docker-compose env vars
+
+    db1['host'] = _e('COMPOSE_REDIS_HOST_1', db1['host'])
+    db2['host'] = _e('COMPOSE_REDIS_HOST_2', db2['host'])
+
+    return [db1, db2]

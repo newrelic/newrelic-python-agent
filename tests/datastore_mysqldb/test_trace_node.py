@@ -1,11 +1,14 @@
-import psycopg2
+import MySQLdb
 
 from testing_support.fixtures import (validate_tt_collector_json,
     override_application_settings)
+from testing_support.settings import mysql_multiple_settings
 from testing_support.util import instance_hostname
-from utils import DB_SETTINGS
 
 from newrelic.agent import background_task
+
+DB_MULTIPLE_SETTINGS = mysql_multiple_settings()
+DB_SETTINGS = DB_MULTIPLE_SETTINGS[0]
 
 
 # Settings
@@ -38,17 +41,12 @@ _disabled_forgone = {
 # Query
 
 def _exercise_db():
-    connection = psycopg2.connect(
-            database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
-            password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port'])
-
-    try:
-        cursor = connection.cursor()
-        cursor.execute("""SELECT setting from pg_settings where name=%s""",
-                ('server_version',))
-    finally:
-        connection.close()
+    connection = MySQLdb.connect(db=DB_SETTINGS['name'],
+            user=DB_SETTINGS['user'], passwd=DB_SETTINGS['password'],
+            host=DB_SETTINGS['host'], port=DB_SETTINGS['port'])
+    with connection as cursor:
+        cursor.execute('SELECT version();')
+    connection.commit()
 
 # Tests
 

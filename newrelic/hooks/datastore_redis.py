@@ -1,7 +1,7 @@
 import re
 
-from newrelic.agent import (wrap_datastore_trace, wrap_function_wrapper,
-        current_transaction, DatastoreTrace)
+from newrelic.agent import (wrap_function_wrapper, current_transaction,
+        DatastoreTrace)
 
 _redis_client_methods = ('bgrewriteaof', 'bgsave', 'client_kill',
     'client_list', 'client_getname', 'client_setname', 'config_get',
@@ -39,14 +39,61 @@ def instrument_redis_client(module):
     if hasattr(module, 'StrictRedis'):
         for name in _redis_client_methods:
             if name in vars(module.StrictRedis):
-                wrap_datastore_trace(module.StrictRedis, name,
-                        product='Redis', target=None, operation=name)
+                _wrap_Redis_method_wrapper_(module, 'StrictRedis', name)
 
     if hasattr(module, 'Redis'):
         for name in _redis_client_methods:
             if name in vars(module.Redis):
-                wrap_datastore_trace(module.Redis, name,
-                        product='Redis', target=None, operation=name)
+                _wrap_Redis_method_wrapper_(module, 'Redis', name)
+
+def _wrap_Redis_method_wrapper_(module, instance_class_name, operation):
+
+    def _nr_wrapper_Redis_method_(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+
+        if transaction is None:
+            return wrapped(*args, **kwargs)
+
+        host, port_path_or_id, db = _client_instance_info(instance)
+
+        with DatastoreTrace(
+                transaction,
+                product='Redis',
+                target=None,
+                operation=operation,
+                host=host,
+                port_path_or_id=port_path_or_id,
+                database_name=db):
+            return wrapped(*args, **kwargs)
+
+    name = '%s.%s' % (instance_class_name, operation)
+    wrap_function_wrapper(module, name, _nr_wrapper_Redis_method_)
+
+def _client_instance_info(instance):
+    kwargs = instance.connection_pool.connection_kwargs
+    instance_info = _instance_info(kwargs)
+    return instance_info
+
+def _connection_instance_info(instance):
+    def _getattr(attr):
+        return getattr(instance, attr, None)
+
+    kwargs = {
+        'host': _getattr('host'),
+        'port': _getattr('port'),
+        'path': _getattr('path'),
+        'db': _getattr('db'),
+    }
+
+    instance_info = _instance_info(kwargs)
+    return instance_info
+
+def _instance_info(kwargs):
+    host = kwargs.get('host') or 'localhost'
+    port_path_or_id = str(kwargs.get('port') or kwargs.get('path', 'unknown'))
+    db = str(kwargs.get('db') or 0)
+
+    return (host, port_path_or_id, db)
 
 _redis_multipart_commands = set(['client', 'cluster', 'command', 'config',
     'debug', 'sentinel', 'slowlog', 'script'])
@@ -70,8 +117,16 @@ def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
 
     operation = _redis_operation_re.sub('_', operation)
 
-    with DatastoreTrace(transaction, product='Redis', target=None,
-            operation=operation):
+    host, port_path_or_id, db = _connection_instance_info(instance)
+
+    with DatastoreTrace(
+            transaction,
+            product='Redis',
+            target=None,
+            operation=operation,
+            host=host,
+            port_path_or_id=port_path_or_id,
+            database_name=db):
         return wrapped(*args, **kwargs)
 
 def instrument_redis_connection(module):

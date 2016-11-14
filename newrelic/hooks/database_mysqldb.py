@@ -1,5 +1,9 @@
+import os
+
 from newrelic.agent import (current_transaction, wrap_object, DatabaseTrace,
         register_database_client, FunctionTrace, callable_name)
+
+from newrelic.api.database_trace import enable_datastore_instance_feature
 
 from .database_dbapi2 import (ConnectionWrapper as DBAPI2ConnectionWrapper,
         ConnectionFactory as DBAPI2ConnectionFactory)
@@ -38,18 +42,49 @@ class ConnectionFactory(DBAPI2ConnectionFactory):
     __connection_wrapper__ = ConnectionWrapper
 
 def instance_info(args, kwargs):
-    def _bind_params(host=None, user=None, passwd=None, db=None,
-            port=None, *args, **kwargs):
-        return host, port, db
+    def _bind_params(host=None, user=None, passwd=None, db=None, port=None,
+            unix_socket=None, conv=None, connect_timeout=None, compress=None,
+            named_pipe=None, init_command=None, read_default_file=None,
+            read_default_group=None, *args, **kwargs):
+        return (host, port, db, unix_socket,
+                read_default_file, read_default_group)
 
-    host, port, db = _bind_params(*args, **kwargs)
+    params = _bind_params(*args, **kwargs)
+    host, port, db, unix_socket, read_default_file, read_default_group = params
+    explicit_host = host
 
-    return (host, port, db)
+    port_path_or_id = None
+    if read_default_file or read_default_group:
+        host = host or 'default'
+        port_path_or_id = 'unknown'
+    elif not host:
+        host = 'localhost'
+
+    if host == 'localhost':
+        # precedence: explicit -> cnf (if used) -> env -> 'default'
+        port_path_or_id = (unix_socket or
+                port_path_or_id or
+                os.getenv('MYSQL_UNIX_PORT', 'default'))
+    elif explicit_host:
+        # only reach here if host is explicitly passed in
+        port = port and str(port)
+        # precedence: explicit -> cnf (if used) -> env -> '3306'
+        port_path_or_id = (port or
+                port_path_or_id or
+                os.getenv('MYSQL_TCP_PORT', '3306'))
+
+    # There is no default database if ommitted from the connect params
+    # In this case, we should report unknown
+    db = db or 'unknown'
+
+    return (host, port_path_or_id, db)
 
 def instrument_mysqldb(module):
     register_database_client(module, database_product='MySQL',
             quoting_style='single+double', explain_query='explain',
             explain_stmts=('select',), instance_info=instance_info)
+
+    enable_datastore_instance_feature(module)
 
     wrap_object(module, 'connect', ConnectionFactory, (module,))
 

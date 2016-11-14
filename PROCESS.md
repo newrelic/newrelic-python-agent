@@ -163,12 +163,21 @@ Support will need to know about the release, but aren't necessarily in the publi
 documentation, such as specific problems to look out for, new configuration settings,
 etc. Include links to the release notes and any changed or new documentation.
 
+5. Review this document and update it with any required changes. Create a pull request
+if necessary.
+
 Performing a Standard Release
 -----------------------------
 
 Once work has finished on a development version and all testing has been
 performed and the code approved for release, the following steps should be
 carried out to do the actual release.
+
+0. Create a new google spreadsheet and share it with the team. Add items from this document as checklist items. This command will gather the first two lines of each numbered item and prints it to a single line.
+
+  ```
+  cat PROCESS.md | grep -A1 '^\d' | awk '/--/{if (NR!=1)print "";next}{printf $0}END{print "";}' | sed 's/$/.../'
+  ```
 
 1. Check out the ``develop`` branch of the Python agent repository and
 update the version number in ``newrelic/__init__.py`` for the release.
@@ -293,23 +302,6 @@ the tags to Github master.
 
 [deploy-s3]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Deploy/job/deploy-to-s3/
 
-17. Upload from Artifactory to the New Relic Download site.
-
-    1. Log into Chicago VPN
-    2. Log into Jenkins in Chicago and go to job [Python-agent-deploy-to-download][chi-deploy]
-    3. Copy the value of ``DOWNLOAD_DIR`` from this screen (you'll need it in the next)
-    4. On the menu on the left select "Build with Parameters"
-    5. Fill in the agent version number, and paste in the download dir
-    6. Push the build button
-    7. Check that you can download the package [from the web][download-release]
-
-    For more details on working with the New Relic download site and
-transferring files across see: [Managing the Download Site][download-wiki].
-
-[chi-deploy]: https://chi-hudson.newrelic.com/
-[download-wiki]: https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Download+Site
-[download-release]: http://download.newrelic.com/python_agent/release/
-
 18. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM
 systems configuration page at: https://rpm-admin.newrelic.com/admin/system_configurations.
 
@@ -335,7 +327,7 @@ to internal parties.
 23. Send an email to ``python-support@newrelic.com`` with the Support notes
 drafted in the pre-release steps.
 
-24. Notify Python Agent HipChat room that release is out!
+24. Notify Python Agent Slack channel that release is out!
 
 25. Add New & Noteworthy entries (multiple) via Fog Lights for the key
 feature(s) or improvement(s) in the release.

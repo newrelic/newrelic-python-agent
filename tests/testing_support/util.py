@@ -1,4 +1,5 @@
 import re
+import socket
 
 def _to_int(version_str):
     m = re.match(r'\d+', version_str)
@@ -14,3 +15,8 @@ def version2tuple(version_str):
 
     parts = version_str.split('.')[:2]
     return tuple(map(_to_int, parts))
+
+def instance_hostname(hostname):
+    if hostname == 'localhost':
+        hostname = socket.gethostname()
+    return hostname

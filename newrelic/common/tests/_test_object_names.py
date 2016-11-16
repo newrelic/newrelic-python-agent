@@ -2,6 +2,8 @@ import functools
 
 from collections import namedtuple
 
+from newrelic.common.object_wrapper import function_wrapper
+
 
 def _function1(self): pass
 
@@ -92,6 +94,25 @@ class _class7(_class1):
 
 class _class8(_class2):
     def _function4(self): pass
+
+# Objects for TestCallableNameCaching
+
+_cached_value = 'I am the cached module', 'this is the cached path'
+
+@function_wrapper
+def _decorator3(wrapped, instance, args, kwargs):
+    return wrapped(*args, **kwargs)
+
+class _class9(object):
+    def _function1(self): pass
+    _function1._nr_object_path = _cached_value
+
+    @_decorator3
+    def _function2(self): pass
+    _function2._nr_object_path = _cached_value
+
+def _function4(): pass
+_function4._nr_object_path = _cached_value
 
 def _module_fqdn(path, name=None):
   name = name or __name__

@@ -327,8 +327,6 @@ class TestCallableName(unittest.TestCase):
                 callable_name(_test_object_names._class7._function1),
                 _test_object_names._module_fqdn('_class7._function1'))
 
-    @pytest.mark.skipif(six.PY3,
-            reason='Yet to be able to work out name of subclass')
     def test_subclass_old_class_instance_instancemethod(self):
         self.assertEqual(
                 callable_name(_test_object_names._class7()._function1),
@@ -382,8 +380,6 @@ class TestCallableName(unittest.TestCase):
                 callable_name(_test_object_names._class8._function1),
                 _test_object_names._module_fqdn('_class8._function1'))
 
-    @pytest.mark.skipif(six.PY3,
-            reason='Yet to be able to work out name of subclass')
     def test_subclass_new_class_instance_instancemethod(self):
         self.assertEqual(
                 callable_name(_test_object_names._class8()._function1),
@@ -430,30 +426,47 @@ class TestCallableName(unittest.TestCase):
                 callable_name(_test_object_names._class8()._function4),
                 _test_object_names._module_fqdn('_class8._function4'))
 
+    def test_subclass_new_class_wrapped_bound_method(self):
+        decorator = _test_object_names._decorator3
+        bound_method = _test_object_names._class8()._function1
+        test_object = decorator(bound_method)
+        self.assertEqual(
+                callable_name(test_object),
+                _test_object_names._module_fqdn('_class8._function1'))
+
 class TestCallableNameCaching(unittest.TestCase):
 
     def setUp(self):
-
-        cached_value = 'I am the cached module', 'this is the cached path'
-
-        class class1(object):
-            def function1(self): pass
-            function1._nr_object_path = cached_value
-
-        def function2(): pass
-        function2._nr_object_path = cached_value
+        reload(_test_object_names)
 
         if six.PY3:
-            self.method = class1().function1
+            self.method = _test_object_names._class9()._function1
+            self.method_as_function = _test_object_names._class9._function1
         else:
-            self.method = class1.function1
+            self.bound_method = _test_object_names._class9()._function1
+            self.method = _test_object_names._class9._function1
 
-        self.function = function2
+        self.function = _test_object_names._function4
+        self.wrapper = _test_object_names._decorator3
+        self.bound_wrapped = _test_object_names._class9()._function2
 
         assert inspect.ismethod(self.method)
         assert inspect.isfunction(self.function)
+        assert hasattr(self.bound_wrapped, '_nr_parent')
 
-        self.cached_callable_name = ':'.join(cached_value)
+        self.cached_callable_name = ':'.join(_test_object_names._cached_value)
+
+    @pytest.mark.skipif(not six.PY3, reason='This is a python 3 only test')
+    def test_py3_method_as_function_uses_cache(self):
+        self.assertEqual(
+                callable_name(self.method_as_function),
+                self.cached_callable_name)
+
+    @pytest.mark.skipif(six.PY3, reason='This is a python 2 only test')
+    def test_py2_bound_method_uses_cache(self):
+        self.assertEqual(
+                callable_name(self.bound_method),
+                self.cached_callable_name)
 
     @pytest.mark.skipif(not six.PY3, reason='This is a python 3 only test')
     def test_py3_methods_do_not_use_cache(self):
@@ -470,6 +483,33 @@ class TestCallableNameCaching(unittest.TestCase):
     def test_functions_use_cache(self):
         self.assertEqual(
                 callable_name(self.function),
+                self.cached_callable_name)
+
+    def test_wrapped_bound_methods_use_parent_cache(self):
+        # whether this is py2 or py3, always use the cache since the parent
+        # object will never be a method
+        self.assertEqual(
+                callable_name(self.bound_wrapped),
+                self.cached_callable_name)
+
+    @pytest.mark.skipif(not six.PY3, reason='This is a python 3 only test')
+    def test_py3_wrapped_methods_do_not_use_source_cache(self):
+        method = self.wrapper(self.method)
+        self.assertNotEqual(
+                callable_name(method),
+                self.cached_callable_name)
+
+    @pytest.mark.skipif(six.PY3, reason='This is a python 2 only test')
+    def test_py2_wrapped_methods_use_source_cache(self):
+        method = self.wrapper(self.method)
+        self.assertEqual(
+                callable_name(method),
+                self.cached_callable_name)
+
+    def test_wrapped_functions_use_source_cache(self):
+        function = self.wrapper(self.function)
+        self.assertEqual(
+                callable_name(function),
                 self.cached_callable_name)
 
 class TestExpandBuiltinExceptionName(unittest.TestCase):

@@ -273,7 +273,11 @@ def object_context(target):
 
     details = getattr(target, '_nr_object_path', None)
 
-    if details:
+    # Disallow cache lookup for python 3 methods. In the case where the method
+    # is defined on a parent class, the name of the parent class is incorrectly
+    # returned. Avoid this by recalculating the details each time.
+
+    if details and not _is_py3_method(target):
         return details
 
     # Check whether this is a bound wrapper and the name details
@@ -284,8 +288,8 @@ def object_context(target):
     if parent:
         details = getattr(parent, '_nr_object_path', None)
 
-    if details:
-        return details
+        if details and not _is_py3_method(parent):
+            return details
 
     # Check whether the object is actually one of our own
     # wrapper classes. For these we use the convention that the
@@ -300,9 +304,9 @@ def object_context(target):
     source = getattr(target, '_nr_last_object', None)
 
     if source:
-        details = getattr(target, '_nr_object_path', None)
+        details = getattr(source, '_nr_object_path', None)
 
-        if details:
+        if details and not _is_py3_method(source):
             return details
 
     else:
@@ -394,3 +398,6 @@ def expand_builtin_exception_name(name):
             return callable_name(exception)
 
     return name
+
+def _is_py3_method(target):
+    return six.PY3 and inspect.ismethod(target)

@@ -1,11 +1,16 @@
-import pytest
+import json
 import logging
 import os
-import sys
 import pwd
+import pytest
+import sys
 import threading
 import time
-import json
+
+try:
+    from Queue import Queue
+except ImportError:
+    from queue import Queue
 
 from newrelic.packages import six
 
@@ -62,10 +67,9 @@ if _environ_as_bool('NEW_RELIC_HIGH_SECURITY'):
 def fake_collector_wrapper(wrapped, instance, args, kwargs):
     def _bind_params(session, url, method, license_key, agent_run_id=None,
             payload=()):
-        return session, url, method, license_key, agent_run_id, payload
+        return method
 
-    session, url, method, license_key, agent_run_id, payload = _bind_params(
-            *args, **kwargs)
+    method = _bind_params(*args, **kwargs)
 
     return _developer_mode_responses[method]
 
@@ -136,6 +140,52 @@ def initialize_agent(app_name=None, default_settings={}):
     _stdout_logger.addHandler(_stdout_handler)
 
     initialize(log_file=log_file, log_level=log_level, ignore_errors=False)
+
+def capture_harvest_errors():
+    queue = Queue()
+
+    def wrap_harvest_loop(wrapped, instance, args, kwargs):
+        try:
+            return wrapped(*args, **kwargs)
+        except Exception as e:
+            queue.put(e)
+            raise
+
+    def wrap_shutdown_agent(wrapped, instance, args, kwargs):
+        result = wrapped(*args, **kwargs)
+        if not queue.empty():
+            exception = queue.get()
+            raise exception
+        return result
+
+    def wrap_record_custom_metric(wrapped, instance, args, kwargs):
+        def _bind_params(name, value, *args, **kwargs):
+            return name
+
+        metric_name = _bind_params(*args, **kwargs)
+        if (metric_name.startswith('Supportability/Python/Harvest/Exception')
+                and not metric_name.endswith('DiscardDataForRequest')
+                and not metric_name.endswith('RetryDataForRequest')):
+            exception = AssertionError(
+                    'Exception metric created %s' % metric_name)
+            queue.put(exception)
+
+        return wrapped(*args, **kwargs)
+
+    # Capture all unhandled exceptions from the harvest thread
+
+    wrap_function_wrapper('newrelic.core.agent', 'Agent._harvest_loop',
+            wrap_harvest_loop)
+
+    # Treat custom exception metrics as unhandled errors
+
+    wrap_function_wrapper('newrelic.core.stats_engine',
+            'CustomMetrics.record_custom_metric', wrap_record_custom_metric)
+
+    # Re-raise exceptions in the main thread
+
+    wrap_function_wrapper('newrelic.core.agent', 'Agent.shutdown_agent',
+            wrap_shutdown_agent)
 
 def collector_agent_registration_fixture(app_name=None, default_settings={},
         linked_applications=[], should_initialize_agent=True):
@@ -211,6 +261,12 @@ def collector_agent_registration_fixture(app_name=None, default_settings={},
             except Exception:
                 _logger.exception("Unable to record deployment marker.")
                 pass
+
+        # Catch exceptions in the harvest thread and reraise them in the main
+        # thread. This way the tests will reveal any unhandled exceptions in
+        # either of the two agent threads.
+
+        capture_harvest_errors()
 
         # Associate linked applications.
 

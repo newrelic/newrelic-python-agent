@@ -66,9 +66,9 @@ if len(DB_MULTIPLE_SETTINGS) > 1:
             (instance_metric_name_2, None),
     ])
 
-def exercise_memcached(client):
-    client.set_multi({'key1':'val1', 'key2':'val2'})
-    client.get_multi(['key1', 'key2'])
+def exercise_memcached(client, multi_dict):
+    client.set_multi(multi_dict)
+    client.get_multi(multi_dict.keys())
 
 transaction_metric_prefix = 'test_multiple_dbs:test_multiple_datastores'
 
@@ -80,7 +80,7 @@ transaction_metric_prefix = 'test_multiple_dbs:test_multiple_datastores'
         rollup_metrics=_enable_rollup_metrics,
         background_task=True)
 @background_task()
-def test_multiple_datastores_enabled():
+def test_multiple_datastores_enabled(memcached_multi):
     memcached1 = DB_MULTIPLE_SETTINGS[0]
     memcached2 = DB_MULTIPLE_SETTINGS[1]
     settings = [memcached1, memcached2]
@@ -88,7 +88,7 @@ def test_multiple_datastores_enabled():
 
     client = memcache.Client(servers=servers)
 
-    exercise_memcached(client)
+    exercise_memcached(client, memcached_multi)
 
 @pytest.mark.skipif(len(DB_MULTIPLE_SETTINGS) < 2,
         reason='Test environment not configured with multiple databases.')
@@ -98,7 +98,7 @@ def test_multiple_datastores_enabled():
         rollup_metrics=_disable_rollup_metrics,
         background_task=True)
 @background_task()
-def test_multiple_datastores_disabled():
+def test_multiple_datastores_disabled(memcached_multi):
     memcached1 = DB_MULTIPLE_SETTINGS[0]
     memcached2 = DB_MULTIPLE_SETTINGS[1]
     settings = [memcached1, memcached2]
@@ -106,4 +106,4 @@ def test_multiple_datastores_disabled():
 
     client = memcache.Client(servers=servers)
 
-    exercise_memcached(client)
+    exercise_memcached(client, memcached_multi)

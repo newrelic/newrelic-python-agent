@@ -242,3 +242,62 @@ def redis_multiple_settings():
     db2['host'] = _e('COMPOSE_REDIS_HOST_2', db2['host'])
 
     return [db1, db2]
+
+def memcached_settings():
+    """Return a dict of settings for connecting to memcached.
+
+    Will return the correct settings, depending on which of the
+    three environments it is running in. It attempts to set variables
+    in the following order, where later environments override earlier
+    ones.
+
+        1. Local
+        2. Tddium
+        3. Test Docker container
+
+    """
+    settings = {}
+
+    # Use local defaults, if TDDIUM vars aren't present.
+
+    settings['host'] = _e('TDDIUM_MEMCACHE_HOST', 'localhost')
+    settings['port'] = _e('TDDIUM_MEMCACHE_PORT', '11211')
+    settings['namespace'] = ''
+
+    # Look for env vars in test docker container.
+
+    settings['host'] = _e('MEMCACHED_PORT_11211_TCP_ADDR', settings['host'])
+    settings['port'] = _e('MEMCACHED_PORT_11211_TCP_PORT', settings['port'])
+    settings['namespace'] = _e('TDDIUM_MEMCACHE_NAMESPACE', settings['namespace'])
+
+    return settings
+
+def memcached_multiple_settings():
+    """Return a list of dicts of settings for connecting to memcached.
+
+    Will return the correct settings, depending on which of the
+    three environments it is running in. It attempts to set variables
+    in the following order, where later environments override earlier
+    ones.
+
+        1. Local
+        2. Tddium
+        3. Test Docker container
+        4. Test docker-compose container
+
+    """
+    db1 = memcached_settings()
+
+    # When not using docker-compose, return immediately
+
+    if not _e('COMPOSE', False):
+        return [db1]
+
+    db2 = db1.copy()
+
+    # Update hostnames based on docker-compose env vars
+
+    db1['host'] = _e('COMPOSE_MEMCACHED_HOST_1', db1['host'])
+    db2['host'] = _e('COMPOSE_MEMCACHED_HOST_2', db2['host'])
+
+    return [db1, db2]

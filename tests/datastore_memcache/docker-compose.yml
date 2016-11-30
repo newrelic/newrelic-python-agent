@@ -1,0 +1,17 @@
+version: '2'
+services:
+  packnsend:
+    extends:
+      file: ../../docker/docker-compose.yml
+      service: packnsend
+    depends_on:
+      - memcached1
+      - memcached2
+    environment:
+      COMPOSE_MEMCACHED_HOST_1: memcached1
+      COMPOSE_MEMCACHED_HOST_2: memcached2
+    entrypoint: ./docker/wait-for-ready.sh --memcached memcached1:11211,memcached2:11211
+  memcached1:
+    image: memcached
+  memcached2:
+    image: memcached

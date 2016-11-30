@@ -1,11 +1,16 @@
-import pytest
+import json
 import logging
 import os
-import sys
 import pwd
+import pytest
+import sys
 import threading
 import time
-import json
+
+try:
+    from Queue import Queue
+except ImportError:
+    from queue import Queue
 
 from newrelic.packages import six
 
@@ -20,6 +25,7 @@ from newrelic.common.encoding_utils import (unpack_field, json_encode,
         deobfuscate, json_decode, obfuscate)
 
 from newrelic.core.config import (apply_config_setting, flatten_settings)
+from newrelic.core.data_collector import _developer_mode_responses
 from newrelic.core.database_utils import SQLConnections
 
 from newrelic.network.addresses import proxy_details
@@ -55,63 +61,17 @@ def _lookup_string_table(name, string_table, default=None):
     except ValueError:
         return default
 
-_fake_collector_responses = {
-    'get_redirect_host': u'fake-collector.newrelic.com',
-
-    'connect': {
-        u'js_agent_loader': u'<!-- NREUM HEADER -->',
-        u'js_agent_file': u'js-agent.newrelic.com/nr-0.min.js',
-        u'browser_key': u'1234567890',
-        u'browser_monitoring.loader_version': u'0',
-        u'beacon': u'fake-beacon.newrelic.com',
-        u'error_beacon': u'fake-jserror.newrelic.com',
-        u'apdex_t': 0.5,
-        u'encoding_key': u'd67afc830dab717fd163bfcb0b8b88423e9a1a3b',
-        u'agent_run_id': 1234567,
-        u'product_level': 50,
-        u'trusted_account_ids': [12345],
-        u'url_rules': [],
-        u'collect_errors': True,
-        u'cross_process_id': u'12345#67890',
-        u'messages': [{u'message': u'Reporting to fake collector',
-            u'level': u'INFO' }],
-        u'sampling_rate': 0,
-        u'collect_traces': True,
-        u'data_report_period': 60
-    },
-
-    'metric_data': [],
-
-    'get_agent_commands': [],
-
-    'error_data': None,
-
-    'transaction_sample_data': None,
-
-    'sql_trace_data': None,
-
-    'analytic_event_data': None,
-
-    'agent_settings': None,
-
-    'shutdown': None,
-}
-
 if _environ_as_bool('NEW_RELIC_HIGH_SECURITY'):
-    _fake_collector_responses['connect']['high_security'] = True
+    _developer_mode_responses['connect']['high_security'] = True
 
 def fake_collector_wrapper(wrapped, instance, args, kwargs):
     def _bind_params(session, url, method, license_key, agent_run_id=None,
             payload=()):
-        return session, url, method, license_key, agent_run_id, payload
+        return method
 
-    session, url, method, license_key, agent_run_id, payload = _bind_params(
-            *args, **kwargs)
+    method = _bind_params(*args, **kwargs)
 
-    if method in _fake_collector_responses:
-        return _fake_collector_responses[method]
-
-    return wrapped(*args, **kwargs)
+    return _developer_mode_responses[method]
 
 def initialize_agent(app_name=None, default_settings={}):
     settings = global_settings()
@@ -180,6 +140,52 @@ def initialize_agent(app_name=None, default_settings={}):
     _stdout_logger.addHandler(_stdout_handler)
 
     initialize(log_file=log_file, log_level=log_level, ignore_errors=False)
+
+def capture_harvest_errors():
+    queue = Queue()
+
+    def wrap_harvest_loop(wrapped, instance, args, kwargs):
+        try:
+            return wrapped(*args, **kwargs)
+        except Exception as e:
+            queue.put(e)
+            raise
+
+    def wrap_shutdown_agent(wrapped, instance, args, kwargs):
+        result = wrapped(*args, **kwargs)
+        if not queue.empty():
+            exception = queue.get()
+            raise exception
+        return result
+
+    def wrap_record_custom_metric(wrapped, instance, args, kwargs):
+        def _bind_params(name, value, *args, **kwargs):
+            return name
+
+        metric_name = _bind_params(*args, **kwargs)
+        if (metric_name.startswith('Supportability/Python/Harvest/Exception')
+                and not metric_name.endswith('DiscardDataForRequest')
+                and not metric_name.endswith('RetryDataForRequest')):
+            exception = AssertionError(
+                    'Exception metric created %s' % metric_name)
+            queue.put(exception)
+
+        return wrapped(*args, **kwargs)
+
+    # Capture all unhandled exceptions from the harvest thread
+
+    wrap_function_wrapper('newrelic.core.agent', 'Agent._harvest_loop',
+            wrap_harvest_loop)
+
+    # Treat custom exception metrics as unhandled errors
+
+    wrap_function_wrapper('newrelic.core.stats_engine',
+            'CustomMetrics.record_custom_metric', wrap_record_custom_metric)
+
+    # Re-raise exceptions in the main thread
+
+    wrap_function_wrapper('newrelic.core.agent', 'Agent.shutdown_agent',
+            wrap_shutdown_agent)
 
 def collector_agent_registration_fixture(app_name=None, default_settings={},
         linked_applications=[], should_initialize_agent=True):
@@ -255,6 +261,12 @@ def collector_agent_registration_fixture(app_name=None, default_settings={},
             except Exception:
                 _logger.exception("Unable to record deployment marker.")
                 pass
+
+        # Catch exceptions in the harvest thread and reraise them in the main
+        # thread. This way the tests will reveal any unhandled exceptions in
+        # either of the two agent threads.
+
+        capture_harvest_errors()
 
         # Associate linked applications.
 

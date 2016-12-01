@@ -14,7 +14,6 @@ from newrelic.agent import background_task
 from testing_support.fixtures import (validate_transaction_metrics,
     override_application_settings)
 from testing_support.settings import redis_multiple_settings
-from testing_support.util import instance_hostname
 
 DB_MULTIPLE_SETTINGS = redis_multiple_settings()
 DB_SETTINGS = DB_MULTIPLE_SETTINGS[0]

@@ -57,7 +57,8 @@ def _wrap_Redis_method_wrapper_(module, instance_class_name, operation):
         try:
             dt = transaction.settings.datastore_tracer
             if dt.instance_reporting.enabled:
-                host, port_path_or_id, db = _client_instance_info(instance)
+                conn_kwargs = instance.connection_pool.connection_kwargs
+                host, port_path_or_id, db = _instance_info(conn_kwargs)
             else:
                 host, port_path_or_id, db = (None, None, None)
         except:
@@ -76,22 +77,13 @@ def _wrap_Redis_method_wrapper_(module, instance_class_name, operation):
     name = '%s.%s' % (instance_class_name, operation)
     wrap_function_wrapper(module, name, _nr_wrapper_Redis_method_)
 
-def _client_instance_info(instance):
-    kwargs = instance.connection_pool.connection_kwargs
-    return _instance_info(kwargs)
-
-def _connection_instance_info(instance):
-    def _getattr(attr):
-        return getattr(instance, attr, None)
-
-    kwargs = {
-        'host': _getattr('host'),
-        'port': _getattr('port'),
-        'path': _getattr('path'),
-        'db': _getattr('db'),
+def conn_attrs_to_dict(connection):
+    return {
+        'host': getattr(connection, 'host', None),
+        'port': getattr(connection, 'port', None),
+        'path': getattr(connection, 'path', None),
+        'db': getattr(connection, 'db', None),
     }
-
-    return _instance_info(kwargs)
 
 def _instance_info(kwargs):
     host = kwargs.get('host') or 'localhost'
@@ -133,7 +125,8 @@ def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
     try:
         dt = transaction.settings.datastore_tracer
         if dt.instance_reporting.enabled:
-            host, port_path_or_id, db = _connection_instance_info(instance)
+            conn_kwargs = conn_attrs_to_dict(instance)
+            host, port_path_or_id, db = _instance_info(conn_kwargs)
         else:
             host, port_path_or_id, db = (None, None, None)
     except:

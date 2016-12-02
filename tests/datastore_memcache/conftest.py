@@ -54,8 +54,7 @@ def memcached_multi():
             key_candidate = ''.join(random_chars)
             multi_dict[key_candidate] = key_candidate
 
-        missing_keys = client_all.set_multi(multi_dict)
-        assert not missing_keys, "memcached_multi failed to set server keys."
+        client_all.set_multi(multi_dict)
 
         server_hit = [False] * num_servers
 

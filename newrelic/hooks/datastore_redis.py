@@ -35,16 +35,25 @@ _redis_client_methods = ('bgrewriteaof', 'bgsave', 'client_kill',
     'script_exists', 'script_flush', 'script_kill', 'script_load',
     'setex', 'lrem', 'zadd')
 
-def instrument_redis_client(module):
-    if hasattr(module, 'StrictRedis'):
-        for name in _redis_client_methods:
-            if name in vars(module.StrictRedis):
-                _wrap_Redis_method_wrapper_(module, 'StrictRedis', name)
+_redis_multipart_commands = set(['client', 'cluster', 'command', 'config',
+    'debug', 'sentinel', 'slowlog', 'script'])
 
-    if hasattr(module, 'Redis'):
-        for name in _redis_client_methods:
-            if name in vars(module.Redis):
-                _wrap_Redis_method_wrapper_(module, 'Redis', name)
+_redis_operation_re = re.compile('[-\s]+')
+
+def conn_attrs_to_dict(connection):
+    return {
+        'host': getattr(connection, 'host', None),
+        'port': getattr(connection, 'port', None),
+        'path': getattr(connection, 'path', None),
+        'db': getattr(connection, 'db', None),
+    }
+
+def _instance_info(kwargs):
+    host = kwargs.get('host') or 'localhost'
+    port_path_or_id = str(kwargs.get('port') or kwargs.get('path', 'unknown'))
+    db = str(kwargs.get('db') or 0)
+
+    return (host, port_path_or_id, db)
 
 def _wrap_Redis_method_wrapper_(module, instance_class_name, operation):
 
@@ -77,25 +86,16 @@ def _wrap_Redis_method_wrapper_(module, instance_class_name, operation):
     name = '%s.%s' % (instance_class_name, operation)
     wrap_function_wrapper(module, name, _nr_wrapper_Redis_method_)
 
-def conn_attrs_to_dict(connection):
-    return {
-        'host': getattr(connection, 'host', None),
-        'port': getattr(connection, 'port', None),
-        'path': getattr(connection, 'path', None),
-        'db': getattr(connection, 'db', None),
-    }
+def instrument_redis_client(module):
+    if hasattr(module, 'StrictRedis'):
+        for name in _redis_client_methods:
+            if name in vars(module.StrictRedis):
+                _wrap_Redis_method_wrapper_(module, 'StrictRedis', name)
 
-def _instance_info(kwargs):
-    host = kwargs.get('host') or 'localhost'
-    port_path_or_id = str(kwargs.get('port') or kwargs.get('path', 'unknown'))
-    db = str(kwargs.get('db') or 0)
-
-    return (host, port_path_or_id, db)
-
-_redis_multipart_commands = set(['client', 'cluster', 'command', 'config',
-    'debug', 'sentinel', 'slowlog', 'script'])
-
-_redis_operation_re = re.compile('[-\s]+')
+    if hasattr(module, 'Redis'):
+        for name in _redis_client_methods:
+            if name in vars(module.Redis):
+                _wrap_Redis_method_wrapper_(module, 'Redis', name)
 
 def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
     transaction = current_transaction()

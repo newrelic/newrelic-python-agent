@@ -2,7 +2,7 @@ import pytest
 import redis
 
 from newrelic.hooks.datastore_redis import (_instance_info,
-        conn_attrs_to_dict)
+        _conn_attrs_to_dict)
 
 REDIS_PY_VERSION = redis.VERSION
 
@@ -33,7 +33,7 @@ def test_redis_connection_instance_info(args, kwargs, expected):
     r = redis.Redis(*args, **kwargs)
     connection = r.connection_pool.get_connection('SELECT')
     try:
-        conn_kwargs = conn_attrs_to_dict(connection)
+        conn_kwargs = _conn_attrs_to_dict(connection)
         assert _instance_info(conn_kwargs) == expected
     finally:
         r.connection_pool.release(connection)
@@ -43,7 +43,7 @@ def test_strict_redis_connection_instance_info(args, kwargs, expected):
     r = redis.StrictRedis(*args, **kwargs)
     connection = r.connection_pool.get_connection('SELECT')
     try:
-        conn_kwargs = conn_attrs_to_dict(connection)
+        conn_kwargs = _conn_attrs_to_dict(connection)
         assert _instance_info(conn_kwargs) == expected
     finally:
         r.connection_pool.release(connection)
@@ -107,7 +107,7 @@ def test_redis_connection_from_url(args, kwargs, expected):
     r = redis.Redis.from_url(*args, **kwargs)
     connection = r.connection_pool.get_connection('SELECT')
     try:
-        conn_kwargs = conn_attrs_to_dict(connection)
+        conn_kwargs = _conn_attrs_to_dict(connection)
         assert _instance_info(conn_kwargs) == expected
     finally:
         r.connection_pool.release(connection)
@@ -119,7 +119,7 @@ def test_strict_redis_connection_from_url(args, kwargs, expected):
     r = redis.StrictRedis.from_url(*args, **kwargs)
     connection = r.connection_pool.get_connection('SELECT')
     try:
-        conn_kwargs = conn_attrs_to_dict(connection)
+        conn_kwargs = _conn_attrs_to_dict(connection)
         assert _instance_info(conn_kwargs) == expected
     finally:
         r.connection_pool.release(connection)

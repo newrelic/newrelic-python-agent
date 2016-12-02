@@ -40,7 +40,7 @@ _redis_multipart_commands = set(['client', 'cluster', 'command', 'config',
 
 _redis_operation_re = re.compile('[-\s]+')
 
-def conn_attrs_to_dict(connection):
+def _conn_attrs_to_dict(connection):
     return {
         'host': getattr(connection, 'host', None),
         'port': getattr(connection, 'port', None),
@@ -125,7 +125,7 @@ def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
     try:
         dt = transaction.settings.datastore_tracer
         if dt.instance_reporting.enabled:
-            conn_kwargs = conn_attrs_to_dict(instance)
+            conn_kwargs = _conn_attrs_to_dict(instance)
             host, port_path_or_id, db = _instance_info(conn_kwargs)
         else:
             host, port_path_or_id, db = (None, None, None)

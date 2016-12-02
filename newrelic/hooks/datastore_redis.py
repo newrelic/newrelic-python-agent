@@ -111,11 +111,19 @@ def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
     if transaction is None or not args:
         return wrapped(*args, **kwargs)
 
-    operation = args[0].strip().lower()
-
     # Older Redis clients would when sending multi part commands pass
     # them in as separate arguments to send_command(). Need to therefore
     # detect those and grab the next argument from the set of arguments.
+
+    operation = args[0].strip().lower()
+
+    # If it's not a multi part command, there's no need to trace it, so
+    # we can return early.
+
+    if operation.split()[0] not in _redis_multipart_commands:
+        return wrapped(*args, **kwargs)
+
+    # Convert multi args to single arg string
 
     if operation in _redis_multipart_commands and len(args) > 1:
         operation = '%s %s' % (operation, args[1].strip().lower())

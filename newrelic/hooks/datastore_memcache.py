@@ -1,17 +1,26 @@
-from newrelic.agent import (wrap_object, transient_function_wrapper,
-        FunctionWrapper, DatastoreTrace, current_transaction,
-        wrap_datastore_trace)
+from newrelic.agent import (wrap_object, FunctionWrapper, DatastoreTrace,
+        current_transaction, wrap_datastore_trace, wrap_function_wrapper)
 
-def memcache_single_transient(dt, module, object_path):
-    @transient_function_wrapper(module, object_path)
-    def _nr_memcache_single_transient_(wrapped, instance, args, kwargs):
-        result = wrapped(*args, **kwargs)
-        if len(result) > 0:
-            server = result[0]
-            dt.host = server.ip
-            dt.port_path_or_id = str(server.port)
-        return result
-    return _nr_memcache_single_transient_
+def _instance_info(host):
+    return (host.ip, str(host.port), None)
+
+def _nr_get_server_wrapper(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    result = wrapped(*args, **kwargs)
+
+    try:
+        host = result[0]
+        if host is not None:
+            instance_info = _instance_info(host)
+            transaction._nr_datastore_instance_info = instance_info
+    except:
+        pass
+
+    return result
 
 def MemcacheSingleWrapper(wrapped, product, target, operation, module):
 
@@ -21,14 +30,19 @@ def MemcacheSingleWrapper(wrapped, product, target, operation, module):
         if transaction is None:
             return wrapped(*args, **kwargs)
 
+        transaction._nr_datastore_instance_info = (None, None, None)
+
         dt = DatastoreTrace(transaction, product, target, operation)
 
-        @memcache_single_transient(dt, module.Client, '_get_server')
-        def call_trace():
-            with dt:
-                return wrapped(*args, **kwargs)
+        with dt:
+            result = wrapped(*args, **kwargs)
 
-        return call_trace()
+            instance_info = transaction._nr_datastore_instance_info
+            (host, port_path_or_id, db) = instance_info
+            dt.host = host
+            dt.port_path_or_id = port_path_or_id
+
+            return result
 
     return FunctionWrapper(wrapped, _nr_datastore_trace_wrapper_)
 
@@ -44,6 +58,8 @@ _memcache_multi_methods = ('delete_multi', 'get_multi', 'set_multi',
 
 
 def instrument_memcache(module):
+    wrap_function_wrapper(module.Client, '_get_server', _nr_get_server_wrapper)
+
     for name in _memcache_client_methods:
         if hasattr(module.Client, name):
             wrap_memcache_single(module, name,

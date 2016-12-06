@@ -63,25 +63,24 @@ def _wrap_Redis_method_wrapper_(module, instance_class_name, operation):
         if transaction is None:
             return wrapped(*args, **kwargs)
 
-        try:
-            dt = transaction.settings.datastore_tracer
-            if dt.instance_reporting.enabled:
-                conn_kwargs = instance.connection_pool.connection_kwargs
-                host, port_path_or_id, db = _instance_info(conn_kwargs)
-            else:
-                host, port_path_or_id, db = (None, None, None)
-        except:
-            host, port_path_or_id, db = (None, None, None)
-
-        with DatastoreTrace(
+        dt = DatastoreTrace(
                 transaction,
                 product='Redis',
                 target=None,
-                operation=operation,
-                host=host,
-                port_path_or_id=port_path_or_id,
-                database_name=db):
-            return wrapped(*args, **kwargs)
+                operation=operation
+        )
+
+        transaction._nr_datastore_instance_info = None
+
+        with dt:
+            result = wrapped(*args, **kwargs)
+
+            host, port_path_or_id, db = transaction._nr_datastore_instance_info
+            dt.host = host
+            dt.port_path_or_id = port_path_or_id
+            dt.database_name = db
+
+            return result
 
     name = '%s.%s' % (instance_class_name, operation)
     wrap_function_wrapper(module, name, _nr_wrapper_Redis_method_)
@@ -103,6 +102,18 @@ def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
     if transaction is None or not args:
         return wrapped(*args, **kwargs)
 
+    host, port_path_or_id, db = (None, None, None)
+
+    try:
+        dt = transaction.settings.datastore_tracer
+        if dt.instance_reporting.enabled:
+            conn_kwargs = _conn_attrs_to_dict(instance)
+            host, port_path_or_id, db = _instance_info(conn_kwargs)
+    except:
+        pass
+
+    transaction._nr_datastore_instance_info = (host, port_path_or_id, db)
+
     # Older Redis clients would when sending multi part commands pass
     # them in as separate arguments to send_command(). Need to therefore
     # detect those and grab the next argument from the set of arguments.
@@ -121,16 +132,6 @@ def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
         operation = '%s %s' % (operation, args[1].strip().lower())
 
     operation = _redis_operation_re.sub('_', operation)
-
-    try:
-        dt = transaction.settings.datastore_tracer
-        if dt.instance_reporting.enabled:
-            conn_kwargs = _conn_attrs_to_dict(instance)
-            host, port_path_or_id, db = _instance_info(conn_kwargs)
-        else:
-            host, port_path_or_id, db = (None, None, None)
-    except:
-        host, port_path_or_id, db = (None, None, None)
 
     with DatastoreTrace(
             transaction,

@@ -11,6 +11,10 @@ def _function_a(a): pass
 
 _partial_function1 = functools.partial(_function_a, a=1)
 
+@function_wrapper
+def _decorator3(wrapped, instance, args, kwargs):
+    return wrapped(*args, **kwargs)
+
 class _class1():
 
     def _function1(self): pass
@@ -21,6 +25,9 @@ class _class1():
     @staticmethod
     def _function3(): pass
 
+    @_decorator3
+    def _function5(self): pass
+
 class _class2(object):
 
     def _function1(self): pass
@@ -30,6 +37,9 @@ class _class2(object):
 
     @staticmethod
     def _function3(): pass
+
+    @_decorator3
+    def _function5(self): pass
 
 _class3 = namedtuple('_class3', 'a')
 
@@ -56,7 +66,7 @@ class _decorator2(object):
 
     @property
     def __module__(self):
-        return self._self_wrapped.__module__
+        return self._nr_wrapped.__module__
 
     def __getattr__(self, name):
         return getattr(self._nr_wrapped, name)
@@ -95,13 +105,11 @@ class _class7(_class1):
 class _class8(_class2):
     def _function4(self): pass
 
+class _class11(_class4): pass
+
 # Objects for TestCallableNameCaching
 
 _cached_value = 'I am the cached module', 'this is the cached path'
-
-@function_wrapper
-def _decorator3(wrapped, instance, args, kwargs):
-    return wrapped(*args, **kwargs)
 
 class _class9(object):
     def _function1(self): pass
@@ -110,6 +118,8 @@ class _class9(object):
     @_decorator3
     def _function2(self): pass
     _function2._nr_object_path = _cached_value
+
+class _class10(_class9): pass
 
 def _function4(): pass
 _function4._nr_object_path = _cached_value

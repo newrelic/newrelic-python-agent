@@ -510,11 +510,9 @@ class TestCallableNameCaching(unittest.TestCase):
 
         self.function = _test_object_names._function4
         self.wrapper = _test_object_names._decorator3
-        self.bound_wrapped = _test_object_names._class9()._function2
 
         assert inspect.ismethod(self.method)
         assert inspect.isfunction(self.function)
-        assert hasattr(self.bound_wrapped, '_nr_parent')
 
         self.cached_callable_name = ':'.join(_test_object_names._cached_value)
 
@@ -545,13 +543,6 @@ class TestCallableNameCaching(unittest.TestCase):
     def test_functions_use_cache(self):
         self.assertEqual(
                 callable_name(self.function),
-                self.cached_callable_name)
-
-    def test_wrapped_bound_methods_use_parent_cache(self):
-        # whether this is py2 or py3, always use the cache since the parent
-        # object will never be a method
-        self.assertEqual(
-                callable_name(self.bound_wrapped),
                 self.cached_callable_name)
 
     @pytest.mark.skipif(not six.PY3, reason='This is a python 3 only test')

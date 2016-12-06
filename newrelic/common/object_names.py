@@ -280,17 +280,6 @@ def object_context(target):
     if details and not _is_py3_method(target):
         return details
 
-    # Check whether this is a bound wrapper and the name details
-    # are cached against the parent wrapper.
-
-    parent = getattr(target, '_nr_parent', None)
-
-    if parent:
-        details = getattr(parent, '_nr_object_path', None)
-
-        if details and not _is_py3_method(parent):
-            return details
-
     # Check whether the object is actually one of our own
     # wrapper classes. For these we use the convention that the
     # attribute _nr_last_object refers to the wrapped object
@@ -326,14 +315,6 @@ def object_context(target):
         # a wrapper.
 
         if target is not source:
-            # If the original target was a bound wrapper, then
-            # cache the details against the parent wrapper as
-            # this would likely be persistent, whereas the bound
-            # wrapper is going to be transient usually and the
-            # details would be lost.
-
-            if parent:
-                parent._nr_object_path = details
 
             # Although the original target could be a bound
             # wrapper still cache it against it anyway, in case

@@ -574,6 +574,204 @@ class TestCallableNameCaching(unittest.TestCase):
                 callable_name(function),
                 self.cached_callable_name)
 
+class TestParentChildNameCaching(unittest.TestCase):
+
+    # The following tests first call `callable_name` on the parent class, thus
+    # exercising the caching. When called the second time on the child, the
+    # test will ensure the cached value is not being used.
+
+    @pytest.mark.skipif(six.PY3,
+            reason='Yet to be able to work out name of subclass')
+    def test_subclass_old_class_type_instancemethod(self):
+        callable_name(_test_object_names._class1._function1)
+        self.assertEqual(
+                callable_name(_test_object_names._class7._function1),
+                _test_object_names._module_fqdn('_class7._function1'))
+
+    def test_subclass_old_class_instance_instancemethod(self):
+        callable_name(_test_object_names._class1()._function1)
+        self.assertEqual(
+                callable_name(_test_object_names._class7()._function1),
+                _test_object_names._module_fqdn('_class7._function1'))
+
+    def test_subclass_old_class_type_classmethod(self):
+        callable_name(_test_object_names._class1._function2)
+        self.assertEqual(
+                callable_name(_test_object_names._class7._function2),
+                _test_object_names._module_fqdn('_class7._function2'))
+
+    def test_subclass_old_class_instance_classmethod(self):
+        callable_name(_test_object_names._class1()._function2)
+        self.assertEqual(
+                callable_name(_test_object_names._class7()._function2),
+                _test_object_names._module_fqdn('_class7._function2'))
+
+    @pytest.mark.skipif(six.PY3,
+            reason='Yet to be able to work out name of subclass')
+    def test_subclass_old_class_type_staticmethod(self):
+        callable_name(_test_object_names._class1._function3)
+        if six.PY3:
+            self.assertEqual(
+                    callable_name(_test_object_names._class7._function3),
+                    _test_object_names._module_fqdn('_class7._function3'))
+        else:
+            # Cannot work out class name for Python 2.
+            self.assertEqual(
+                    callable_name(_test_object_names._class7._function3),
+                    _test_object_names._module_fqdn('_function3'))
+
+    @pytest.mark.skipif(six.PY3,
+            reason='Yet to be able to work out name of subclass')
+    def test_subclass_old_class_instance_staticmethod(self):
+        callable_name(_test_object_names._class1()._function3)
+        if six.PY3:
+            self.assertEqual(
+                    callable_name(_test_object_names._class7()._function3),
+                    _test_object_names._module_fqdn('_class7._function3'))
+        else:
+            # Cannot work out class name for Python 2.
+            self.assertEqual(
+                    callable_name(_test_object_names._class7()._function3),
+                    _test_object_names._module_fqdn('_function3'))
+
+    @pytest.mark.skipif(six.PY3,
+            reason='Yet to be able to work out name of subclass')
+    def test_subclass_old_class_wrapped_type_instancemethod(self):
+        callable_name(_test_object_names._class1._function5)
+        self.assertEqual(
+                callable_name(_test_object_names._class7._function5),
+                _test_object_names._module_fqdn('_class7._function5'))
+
+    def test_subclass_old_class_wrapped_instance_instancemethod(self):
+        callable_name(_test_object_names._class1()._function5)
+        self.assertEqual(
+                callable_name(_test_object_names._class7()._function5),
+                _test_object_names._module_fqdn('_class7._function5'))
+
+    @pytest.mark.skipif(six.PY3,
+            reason='Yet to be able to work out name of subclass')
+    def test_subclass_new_class_type_instancemethod(self):
+        callable_name(_test_object_names._class2._function1)
+        self.assertEqual(
+                callable_name(_test_object_names._class8._function1),
+                _test_object_names._module_fqdn('_class8._function1'))
+
+    def test_subclass_new_class_instance_instancemethod(self):
+        callable_name(_test_object_names._class2()._function1)
+        self.assertEqual(
+                callable_name(_test_object_names._class8()._function1),
+                _test_object_names._module_fqdn('_class8._function1'))
+
+    def test_subclass_new_class_type_classmethod(self):
+        callable_name(_test_object_names._class2._function2)
+        self.assertEqual(
+                callable_name(_test_object_names._class8._function2),
+                _test_object_names._module_fqdn('_class8._function2'))
+
+    def test_subclass_new_class_instance_classmethod(self):
+        callable_name(_test_object_names._class2()._function2)
+        self.assertEqual(
+                callable_name(_test_object_names._class8()._function2),
+                _test_object_names._module_fqdn('_class8._function2'))
+
+    @pytest.mark.skipif(six.PY3,
+            reason='Yet to be able to work out name of subclass')
+    def test_subclass_new_class_type_staticmethod(self):
+        callable_name(_test_object_names._class2._function3)
+        if six.PY3:
+            self.assertEqual(
+                    callable_name(_test_object_names._class8._function3),
+                    _test_object_names._module_fqdn('_class8._function3'))
+        else:
+            # Cannot work out class name for Python 2.
+            self.assertEqual(
+                    callable_name(_test_object_names._class8._function3),
+                    _test_object_names._module_fqdn('_function3'))
+
+    @pytest.mark.skipif(six.PY3,
+            reason='Yet to be able to work out name of subclass')
+    def test_subclass_new_class_instance_staticmethod(self):
+        callable_name(_test_object_names._class2()._function3)
+        if six.PY3:
+            self.assertEqual(
+                    callable_name(_test_object_names._class8()._function3),
+                    _test_object_names._module_fqdn('_class8._function3'))
+        else:
+            # Cannot work out class name for Python 2.
+            self.assertEqual(
+                    callable_name(_test_object_names._class8()._function3),
+                    _test_object_names._module_fqdn('_function3'))
+
+    @pytest.mark.skipif(six.PY3,
+            reason='Yet to be able to work out name of subclass')
+    def test_subclass_new_class_wrapped_type_instancemethod(self):
+        callable_name(_test_object_names._class2._function5)
+        self.assertEqual(
+                callable_name(_test_object_names._class8._function5),
+                _test_object_names._module_fqdn('_class8._function5'))
+
+    def test_subclass_new_class_wrapped_instance_instancemethod(self):
+        callable_name(_test_object_names._class2()._function5)
+        self.assertEqual(
+                callable_name(_test_object_names._class8()._function5),
+                _test_object_names._module_fqdn('_class8._function5'))
+
+    def test_subclass_new_class_wrapped_bound_method(self):
+
+        decorator = _test_object_names._decorator3
+        child_bound_method = _test_object_names._class8()._function1
+        child_test_object = decorator(child_bound_method)
+
+        parent_bound_method = _test_object_names._class2()._function1
+        parent_test_object = decorator(parent_bound_method)
+        callable_name(parent_test_object)
+
+        self.assertEqual(
+                callable_name(child_test_object),
+                _test_object_names._module_fqdn('_class8._function1'))
+
+    @pytest.mark.skipif(six.PY3,
+            reason='Yet to be able to work out name of subclass')
+    def test_subclass_new_class_type_instancemethod_wraps_decorator(self):
+        callable_name(_test_object_names._class4._function1)
+        self.assertEqual(
+                callable_name(_test_object_names._class11._function1),
+                _test_object_names._module_fqdn('_class11._function1'))
+
+    def test_subclass_new_class_instance_instancemethod_wraps_decorator(self):
+        callable_name(_test_object_names._class4()._function1)
+        self.assertEqual(
+                callable_name(_test_object_names._class11()._function1),
+                _test_object_names._module_fqdn('_class11._function1'))
+
+    @pytest.mark.skipif(six.PY3,
+            reason='Yet to be able to work out name of subclass')
+    def test_subclass_new_class_type_instancemethod_desc_decorator(self):
+        callable_name(_test_object_names._class4._function2)
+        if six.PY3:
+            self.assertEqual(
+                    callable_name(_test_object_names._class11._function2),
+                    _test_object_names._module_fqdn('_class11._function2'))
+        else:
+            # Cannot work out class name for Python 2.
+            self.assertEqual(
+                    callable_name(_test_object_names._class11._function2),
+                    _test_object_names._module_fqdn('_function2'))
+
+    @pytest.mark.skipif(six.PY3,
+            reason='Yet to be able to work out name of subclass')
+    def test_subclass_new_class_instance_instancemethod_desc_decorator(self):
+        callable_name(_test_object_names._class4()._function2)
+        if six.PY3:
+            self.assertEqual(
+                    callable_name(_test_object_names._class11()._function2),
+                    _test_object_names._module_fqdn('_class11._function2'))
+        else:
+            # Cannot work out class name for Python 2.
+            self.assertEqual(
+                    callable_name(_test_object_names._class11()._function2),
+                    _test_object_names._module_fqdn('_function2'))
+
 class TestExpandBuiltinExceptionName(unittest.TestCase):
 
     def test_builtin_exception(self):

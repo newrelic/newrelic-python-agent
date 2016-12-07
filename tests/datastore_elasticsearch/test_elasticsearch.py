@@ -1,5 +1,7 @@
 import sqlite3
+
 from elasticsearch import Elasticsearch
+import elasticsearch.client
 
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, validate_database_duration)
@@ -29,52 +31,110 @@ def _exercise_es(es):
     es.search(index='contacts,address', q='name:Bilbo')
     es.search(index='*', q='name:Bilbo')
     es.search(q='name:Bilbo')
-    es.indices.status()
-    es.cat.health()
     es.cluster.health()
-    es.nodes.info()
-    es.snapshot.status()
+
+    if hasattr(es, 'cat'):
+        es.cat.health()
+    if hasattr(es, 'nodes'):
+        es.nodes.info()
+    if hasattr(es, 'snapshot') and hasattr(es.snapshot, 'status'):
+        es.snapshot.status()
+    if hasattr(es.indices, 'status'):
+        es.indices.status()
 
 # Common Metrics for tests that use _exercise_es().
 
 _test_elasticsearch_scoped_metrics = [
-    ('Datastore/statement/Elasticsearch/contacts/index', 3),
-    ('Datastore/statement/Elasticsearch/contacts/search', 2),
+    ('Datastore/statement/Elasticsearch/_all/cluster.health', 1),
+    ('Datastore/statement/Elasticsearch/_all/search', 2),
     ('Datastore/statement/Elasticsearch/address/index', 2),
     ('Datastore/statement/Elasticsearch/address/search', 1),
-    ('Datastore/statement/Elasticsearch/_all/search', 2),
-    ('Datastore/statement/Elasticsearch/other/search', 2),
+    ('Datastore/statement/Elasticsearch/contacts/index', 3),
     ('Datastore/statement/Elasticsearch/contacts/indices.refresh', 1),
-    ('Datastore/statement/Elasticsearch/_all/indices.status', 1),
-    ('Datastore/operation/Elasticsearch/cat.health', 1),
-    ('Datastore/statement/Elasticsearch/_all/cluster.health', 1),
-    ('Datastore/operation/Elasticsearch/nodes.info', 1),
-    ('Datastore/operation/Elasticsearch/snapshot.status', 1),
+    ('Datastore/statement/Elasticsearch/contacts/search', 2),
+    ('Datastore/statement/Elasticsearch/other/search', 2),
 ]
 
 _test_elasticsearch_rollup_metrics = [
-    ('Datastore/all', 18),
-    ('Datastore/allOther', 18),
-    ('Datastore/Elasticsearch/all', 18),
-    ('Datastore/Elasticsearch/allOther', 18),
+    ('Datastore/operation/Elasticsearch/cluster.health', 1),
     ('Datastore/operation/Elasticsearch/index', 5),
-    ('Datastore/operation/Elasticsearch/search', 7),
     ('Datastore/operation/Elasticsearch/indices.refresh', 1),
-    ('Datastore/operation/Elasticsearch/indices.status', 1),
-    ('Datastore/statement/Elasticsearch/contacts/index', 3),
-    ('Datastore/statement/Elasticsearch/contacts/search', 2),
+    ('Datastore/operation/Elasticsearch/search', 7),
+    ('Datastore/statement/Elasticsearch/_all/cluster.health', 1),
+    ('Datastore/statement/Elasticsearch/_all/search', 2),
     ('Datastore/statement/Elasticsearch/address/index', 2),
     ('Datastore/statement/Elasticsearch/address/search', 1),
-    ('Datastore/statement/Elasticsearch/_all/search', 2),
-    ('Datastore/statement/Elasticsearch/other/search', 2),
+    ('Datastore/statement/Elasticsearch/contacts/index', 3),
     ('Datastore/statement/Elasticsearch/contacts/indices.refresh', 1),
-    ('Datastore/statement/Elasticsearch/_all/indices.status', 1),
-    ('Datastore/operation/Elasticsearch/cat.health', 1),
-    ('Datastore/operation/Elasticsearch/cluster.health', 1),
-    ('Datastore/statement/Elasticsearch/_all/cluster.health', 1),
-    ('Datastore/operation/Elasticsearch/nodes.info', 1),
-    ('Datastore/operation/Elasticsearch/snapshot.status', 1),
+    ('Datastore/statement/Elasticsearch/contacts/search', 2),
+    ('Datastore/statement/Elasticsearch/other/search', 2),
 ]
+
+# Version support
+
+_all_count = 14
+
+try:
+    import elasticsearch.client.cat
+    _test_elasticsearch_scoped_metrics.append(
+            ('Datastore/operation/Elasticsearch/cat.health', 1))
+    _test_elasticsearch_rollup_metrics.append(
+            ('Datastore/operation/Elasticsearch/cat.health', 1))
+    _all_count += 1
+except ImportError:
+    _test_elasticsearch_scoped_metrics.append(
+            ('Datastore/operation/Elasticsearch/cat.health', None))
+    _test_elasticsearch_rollup_metrics.append(
+            ('Datastore/operation/Elasticsearch/cat.health', None))
+
+try:
+    import elasticsearch.client.nodes
+    _test_elasticsearch_scoped_metrics.append(
+            ('Datastore/operation/Elasticsearch/nodes.info', 1))
+    _test_elasticsearch_rollup_metrics.append(
+            ('Datastore/operation/Elasticsearch/nodes.info', 1))
+    _all_count += 1
+except ImportError:
+    _test_elasticsearch_scoped_metrics.append(
+            ('Datastore/operation/Elasticsearch/nodes.info', None))
+    _test_elasticsearch_rollup_metrics.append(
+            ('Datastore/operation/Elasticsearch/nodes.info', None))
+
+if (hasattr(elasticsearch.client, 'SnapshotClient') and
+        hasattr(elasticsearch.client.SnapshotClient, 'status')):
+    _base_scoped_metrics.append(
+            ('Datastore/operation/Elasticsearch/snapshot.status', 1))
+    _test_elasticsearch_rollup_metrics.append(
+            ('Datastore/operation/Elasticsearch/snapshot.status', 1))
+    _all_count += 1
+else:
+    _test_elasticsearch_scoped_metrics.append(
+            ('Datastore/operation/Elasticsearch/snapshot.status', None))
+    _test_elasticsearch_rollup_metrics.append(
+            ('Datastore/operation/Elasticsearch/snapshot.status', None))
+
+if hasattr(elasticsearch.client.IndicesClient, 'status'):
+    _test_elasticsearch_scoped_metrics.append(
+        ('Datastore/statement/Elasticsearch/_all/indices.status', 1))
+    _test_elasticsearch_rollup_metrics.extend([
+        ('Datastore/operation/Elasticsearch/indices.status', 1),
+        ('Datastore/statement/Elasticsearch/_all/indices.status', 1),
+    ])
+    _all_count += 1
+else:
+    _test_elasticsearch_scoped_metrics.append(
+        ('Datastore/operation/Elasticsearch/indices.status', None))
+    _test_elasticsearch_rollup_metrics.extend([
+        ('Datastore/operation/Elasticsearch/indices.status', None),
+        ('Datastore/statement/Elasticsearch/_all/indices.status', None),
+    ])
+
+_test_elasticsearch_rollup_metrics.extend([
+    ('Datastore/all', _all_count),
+    ('Datastore/allOther', _all_count),
+    ('Datastore/Elasticsearch/all', _all_count),
+    ('Datastore/Elasticsearch/allOther', _all_count),
+])
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(

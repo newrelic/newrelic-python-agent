@@ -70,7 +70,7 @@ def _wrap_Redis_method_wrapper_(module, instance_class_name, operation):
                 operation=operation
         )
 
-        transaction._nr_datastore_instance_info = None
+        transaction._nr_datastore_instance_info = (None, None, None)
 
         with dt:
             result = wrapped(*args, **kwargs)

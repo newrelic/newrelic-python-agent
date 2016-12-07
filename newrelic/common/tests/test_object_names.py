@@ -763,6 +763,42 @@ class TestParentChildNameCaching(unittest.TestCase):
                     callable_name(_test_object_names._class11()._function2),
                     _test_object_names._module_fqdn('_function2'))
 
+class TestAddCachedName(unittest.TestCase):
+
+    def setUp(self):
+        reload(_test_object_names)
+
+        if six.PY3:
+            self.method_as_function = _test_object_names._class1._function1
+            self.bound_method = _test_object_names._class1()._function1
+        else:
+            self.unbound_method = _test_object_names._class1._function1
+            self.bound_method = _test_object_names._class1()._function1
+
+    @pytest.mark.skipif(six.PY3, reason='This is a python 2 only test')
+    def test_py2_unbound_methods_do_not_cache(self):
+        self.assertFalse(hasattr(self.unbound_method, '_nr_object_path'))
+        callable_name(self.unbound_method)
+        self.assertFalse(hasattr(self.unbound_method, '_nr_object_path'))
+
+    @pytest.mark.skipif(six.PY3, reason='This is a python 2 only test')
+    def test_py2_bound_methods_do_not_cache(self):
+        self.assertFalse(hasattr(self.bound_method, '_nr_object_path'))
+        callable_name(self.bound_method)
+        self.assertFalse(hasattr(self.bound_method, '_nr_object_path'))
+
+    @pytest.mark.skipif(not six.PY3, reason='This is a python 3 only test')
+    def test_py3_methods_as_functions_do_cache(self):
+        self.assertFalse(hasattr(self.method_as_function, '_nr_object_path'))
+        callable_name(self.method_as_function)
+        self.assertTrue(hasattr(self.method_as_function, '_nr_object_path'))
+
+    @pytest.mark.skipif(not six.PY3, reason='This is a python 3 only test')
+    def test_py3_bound_methods_do_not_cache(self):
+        self.assertFalse(hasattr(self.bound_method, '_nr_object_path'))
+        callable_name(self.bound_method)
+        self.assertFalse(hasattr(self.bound_method, '_nr_object_path'))
+
 class TestExpandBuiltinExceptionName(unittest.TestCase):
 
     def test_builtin_exception(self):

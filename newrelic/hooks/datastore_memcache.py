@@ -2,7 +2,11 @@ from newrelic.agent import (wrap_object, FunctionWrapper, DatastoreTrace,
         current_transaction, wrap_datastore_trace, wrap_function_wrapper)
 
 def _instance_info(host):
-    return (host.ip, str(host.port), None)
+    address = host.address
+    if isinstance(address, tuple):
+        return (host.ip, str(host.port), None)
+    else:
+        return ('localhost', address, None)
 
 def _nr_get_server_wrapper(wrapped, instance, args, kwargs):
     transaction = current_transaction()

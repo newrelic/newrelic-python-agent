@@ -106,7 +106,8 @@ def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
 
     try:
         dt = transaction.settings.datastore_tracer
-        if dt.instance_reporting.enabled:
+        if (dt.instance_reporting.enabled or
+                dt.database_name_reporting.enabled):
             conn_kwargs = _conn_attrs_to_dict(instance)
             host, port_path_or_id, db = _instance_info(conn_kwargs)
     except:

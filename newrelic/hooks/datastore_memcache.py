@@ -17,8 +17,12 @@ def _nr_get_server_wrapper(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
 
     try:
+        tracer_settings = transaction.settings.datastore_tracer
         host = result[0]
-        if host is not None:
+
+        # memcached does not set the db name attribute so there's
+        # no need to check the db name reporting setting
+        if tracer_settings.instance_reporting.enabled and host is not None:
             instance_info = _instance_info(host)
             transaction._nr_datastore_instance_info = instance_info
     except:

@@ -21,6 +21,14 @@ _disable_instance_settings = {
     'datastore_tracer.instance_reporting.enabled': False,
     'datastore_tracer.database_name_reporting.enabled': False,
 }
+_instance_only_settings = {
+    'datastore_tracer.instance_reporting.enabled': True,
+    'datastore_tracer.database_name_reporting.enabled': False,
+}
+_database_only_settings = {
+    'datastore_tracer.instance_reporting.enabled': False,
+    'datastore_tracer.database_name_reporting.enabled': True,
+}
 
 # Expected parameters
 
@@ -36,6 +44,22 @@ _disabled_forgone = {
     'host': 'VALUE NOT USED',
     'port_path_or_id': 'VALUE NOT USED',
     'database_name': 'VALUE NOT USED',
+}
+
+_instance_only_required = {
+    'host': instance_hostname(DB_SETTINGS['host']),
+    'port_path_or_id': str(DB_SETTINGS['port']),
+}
+_instance_only_forgone = {
+    'database_name': str(DATABASE_NUMBER),
+}
+
+_database_only_required = {
+    'database_name': str(DATABASE_NUMBER),
+}
+_database_only_forgone = {
+    'host': 'VALUE NOT USED',
+    'port_path_or_id': 'VALUE NOT USED',
 }
 
 # Query
@@ -66,4 +90,20 @@ def test_trace_node_datastore_params_enable_instance():
         datastore_forgone_params=_disabled_forgone)
 @background_task()
 def test_trace_node_datastore_params_disable_instance():
+    _exercise_db()
+
+@override_application_settings(_instance_only_settings)
+@validate_tt_collector_json(
+        datastore_params=_instance_only_required,
+        datastore_forgone_params=_instance_only_forgone)
+@background_task()
+def test_trace_node_datastore_params_instance_only():
+    _exercise_db()
+
+@override_application_settings(_database_only_settings)
+@validate_tt_collector_json(
+        datastore_params=_database_only_required,
+        datastore_forgone_params=_database_only_forgone)
+@background_task()
+def test_trace_node_datastore_params_database_only():
     _exercise_db()

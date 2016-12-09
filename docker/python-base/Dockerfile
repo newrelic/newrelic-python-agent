@@ -57,3 +57,6 @@ RUN apt-get install -y redis-server
 
 # Needed for mysqldb tests.
 RUN apt-get install -y mysql-server
+
+# Needed for elasticsearch tests.
+RUN apt-get install -y curl

@@ -5,12 +5,12 @@ import elasticsearch.client
 
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, validate_database_duration)
-from testing_support.settings import elasticsearch_settings
+from testing_support.settings import elasticsearch_multiple_settings
 
 from newrelic.agent import background_task
 
-ES_HOST, ES_PORT = elasticsearch_settings()
-ES_URL = 'http://%s:%s' % (ES_HOST, ES_PORT)
+ES_SETTINGS = elasticsearch_multiple_settings()[0]
+ES_URL = 'http://%s:%s' % (ES_SETTINGS['host'], ES_SETTINGS['port'])
 
 def _exercise_es(es):
     es.index("contacts", "person",

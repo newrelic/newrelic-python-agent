@@ -1,0 +1,17 @@
+version: '2'
+services:
+  packnsend:
+    extends:
+      file: ../../docker/docker-compose.yml
+      service: packnsend
+    depends_on:
+      - elasticsearch1
+      - elasticsearch2
+    environment:
+      COMPOSE_ELASTICSEARCH_HOST_1: elasticsearch1
+      COMPOSE_ELASTICSEARCH_HOST_2: elasticsearch2
+    entrypoint: ./docker/wait-for-ready.sh --elasticsearch elasticsearch1:9200,elasticsearch2:9200
+  elasticsearch1:
+    image: elasticsearch
+  elasticsearch2:
+    image: elasticsearch

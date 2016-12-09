@@ -695,6 +695,12 @@
             "New Relic"
         ]
     },
+    "newrelic/common/tests/_test_object_names.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/tests/test_object_wrapper.py": {
         "hash": "n/a",
         "libraries": [

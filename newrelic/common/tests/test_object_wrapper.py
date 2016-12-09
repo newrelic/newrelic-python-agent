@@ -242,7 +242,11 @@ class TestCallableName(unittest.TestCase):
         details1 = object_context(Class1.function)
         details2 = object_context(Class1.function)
 
-        self.assertTrue(details1 is details2)
+        self.assertTrue(details1 == details2)
+        if six.PY3:
+            self.assertTrue(details1 is details2)
+        else:
+            self.assertTrue(details1 is not details2)
 
 def object_wrapper(wrapper):
     @functools.wraps(wrapper)

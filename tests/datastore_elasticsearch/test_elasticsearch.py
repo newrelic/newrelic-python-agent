@@ -2,13 +2,141 @@ from elasticsearch import Elasticsearch
 import elasticsearch.client
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors)
+    validate_transaction_errors, override_application_settings)
 from testing_support.settings import elasticsearch_multiple_settings
+from testing_support.util import instance_hostname
 
 from newrelic.agent import background_task
 
 ES_SETTINGS = elasticsearch_multiple_settings()[0]
 ES_URL = 'http://%s:%s' % (ES_SETTINGS['host'], ES_SETTINGS['port'])
+
+# Settings
+
+_enable_instance_settings = {
+    'datastore_tracer.instance_reporting.enabled': True,
+}
+_disable_instance_settings = {
+    'datastore_tracer.instance_reporting.enabled': False,
+}
+
+# Metrics
+
+_base_scoped_metrics = [
+    ('Datastore/statement/Elasticsearch/_all/cluster.health', 1),
+    ('Datastore/statement/Elasticsearch/_all/search', 2),
+    ('Datastore/statement/Elasticsearch/address/index', 2),
+    ('Datastore/statement/Elasticsearch/address/search', 1),
+    ('Datastore/statement/Elasticsearch/contacts/index', 3),
+    ('Datastore/statement/Elasticsearch/contacts/indices.refresh', 1),
+    ('Datastore/statement/Elasticsearch/contacts/search', 2),
+    ('Datastore/statement/Elasticsearch/other/search', 2),
+]
+
+_base_rollup_metrics = [
+    ('Datastore/operation/Elasticsearch/cluster.health', 1),
+    ('Datastore/operation/Elasticsearch/index', 5),
+    ('Datastore/operation/Elasticsearch/indices.refresh', 1),
+    ('Datastore/operation/Elasticsearch/search', 7),
+    ('Datastore/statement/Elasticsearch/_all/cluster.health', 1),
+    ('Datastore/statement/Elasticsearch/_all/search', 2),
+    ('Datastore/statement/Elasticsearch/address/index', 2),
+    ('Datastore/statement/Elasticsearch/address/search', 1),
+    ('Datastore/statement/Elasticsearch/contacts/index', 3),
+    ('Datastore/statement/Elasticsearch/contacts/indices.refresh', 1),
+    ('Datastore/statement/Elasticsearch/contacts/search', 2),
+    ('Datastore/statement/Elasticsearch/other/search', 2),
+]
+
+# Version support
+
+_all_count = 14
+
+try:
+    import elasticsearch.client.cat
+    _base_scoped_metrics.append(
+            ('Datastore/operation/Elasticsearch/cat.health', 1))
+    _base_rollup_metrics.append(
+            ('Datastore/operation/Elasticsearch/cat.health', 1))
+    _all_count += 1
+except ImportError:
+    _base_scoped_metrics.append(
+            ('Datastore/operation/Elasticsearch/cat.health', None))
+    _base_rollup_metrics.append(
+            ('Datastore/operation/Elasticsearch/cat.health', None))
+
+try:
+    import elasticsearch.client.nodes
+    _base_scoped_metrics.append(
+            ('Datastore/operation/Elasticsearch/nodes.info', 1))
+    _base_rollup_metrics.append(
+            ('Datastore/operation/Elasticsearch/nodes.info', 1))
+    _all_count += 1
+except ImportError:
+    _base_scoped_metrics.append(
+            ('Datastore/operation/Elasticsearch/nodes.info', None))
+    _base_rollup_metrics.append(
+            ('Datastore/operation/Elasticsearch/nodes.info', None))
+
+if (hasattr(elasticsearch.client, 'SnapshotClient') and
+        hasattr(elasticsearch.client.SnapshotClient, 'status')):
+    _base_scoped_metrics.append(
+            ('Datastore/operation/Elasticsearch/snapshot.status', 1))
+    _base_rollup_metrics.append(
+            ('Datastore/operation/Elasticsearch/snapshot.status', 1))
+    _all_count += 1
+else:
+    _base_scoped_metrics.append(
+            ('Datastore/operation/Elasticsearch/snapshot.status', None))
+    _base_rollup_metrics.append(
+            ('Datastore/operation/Elasticsearch/snapshot.status', None))
+
+if hasattr(elasticsearch.client.IndicesClient, 'status'):
+    _base_scoped_metrics.append(
+        ('Datastore/statement/Elasticsearch/_all/indices.status', 1))
+    _base_rollup_metrics.extend([
+        ('Datastore/operation/Elasticsearch/indices.status', 1),
+        ('Datastore/statement/Elasticsearch/_all/indices.status', 1),
+    ])
+    _all_count += 1
+else:
+    _base_scoped_metrics.append(
+        ('Datastore/operation/Elasticsearch/indices.status', None))
+    _base_rollup_metrics.extend([
+        ('Datastore/operation/Elasticsearch/indices.status', None),
+        ('Datastore/statement/Elasticsearch/_all/indices.status', None),
+    ])
+
+_base_rollup_metrics.extend([
+    ('Datastore/all', _all_count),
+    ('Datastore/allOther', _all_count),
+    ('Datastore/Elasticsearch/all', _all_count),
+    ('Datastore/Elasticsearch/allOther', _all_count),
+])
+
+# Instance info
+
+_disable_scoped_metrics = list(_base_scoped_metrics)
+_disable_rollup_metrics = list(_base_rollup_metrics)
+
+_enable_scoped_metrics = list(_base_scoped_metrics)
+_enable_rollup_metrics = list(_base_rollup_metrics)
+
+_host = instance_hostname(ES_SETTINGS['host'])
+_port = ES_SETTINGS['port']
+
+_instance_metric_name = 'Datastore/instance/Elasticsearch/%s/%s' % (
+        _host, _port)
+
+_enable_rollup_metrics.append(
+        (_instance_metric_name, None)
+)
+
+_disable_rollup_metrics.append(
+        (_instance_metric_name, None)
+)
+
+# Query
 
 def _exercise_es(es):
     es.index("contacts", "person",
@@ -40,107 +168,28 @@ def _exercise_es(es):
     if hasattr(es.indices, 'status'):
         es.indices.status()
 
-# Common Metrics for tests that use _exercise_es().
-
-_test_elasticsearch_scoped_metrics = [
-    ('Datastore/statement/Elasticsearch/_all/cluster.health', 1),
-    ('Datastore/statement/Elasticsearch/_all/search', 2),
-    ('Datastore/statement/Elasticsearch/address/index', 2),
-    ('Datastore/statement/Elasticsearch/address/search', 1),
-    ('Datastore/statement/Elasticsearch/contacts/index', 3),
-    ('Datastore/statement/Elasticsearch/contacts/indices.refresh', 1),
-    ('Datastore/statement/Elasticsearch/contacts/search', 2),
-    ('Datastore/statement/Elasticsearch/other/search', 2),
-]
-
-_test_elasticsearch_rollup_metrics = [
-    ('Datastore/operation/Elasticsearch/cluster.health', 1),
-    ('Datastore/operation/Elasticsearch/index', 5),
-    ('Datastore/operation/Elasticsearch/indices.refresh', 1),
-    ('Datastore/operation/Elasticsearch/search', 7),
-    ('Datastore/statement/Elasticsearch/_all/cluster.health', 1),
-    ('Datastore/statement/Elasticsearch/_all/search', 2),
-    ('Datastore/statement/Elasticsearch/address/index', 2),
-    ('Datastore/statement/Elasticsearch/address/search', 1),
-    ('Datastore/statement/Elasticsearch/contacts/index', 3),
-    ('Datastore/statement/Elasticsearch/contacts/indices.refresh', 1),
-    ('Datastore/statement/Elasticsearch/contacts/search', 2),
-    ('Datastore/statement/Elasticsearch/other/search', 2),
-]
-
-# Version support
-
-_all_count = 14
-
-try:
-    import elasticsearch.client.cat
-    _test_elasticsearch_scoped_metrics.append(
-            ('Datastore/operation/Elasticsearch/cat.health', 1))
-    _test_elasticsearch_rollup_metrics.append(
-            ('Datastore/operation/Elasticsearch/cat.health', 1))
-    _all_count += 1
-except ImportError:
-    _test_elasticsearch_scoped_metrics.append(
-            ('Datastore/operation/Elasticsearch/cat.health', None))
-    _test_elasticsearch_rollup_metrics.append(
-            ('Datastore/operation/Elasticsearch/cat.health', None))
-
-try:
-    import elasticsearch.client.nodes
-    _test_elasticsearch_scoped_metrics.append(
-            ('Datastore/operation/Elasticsearch/nodes.info', 1))
-    _test_elasticsearch_rollup_metrics.append(
-            ('Datastore/operation/Elasticsearch/nodes.info', 1))
-    _all_count += 1
-except ImportError:
-    _test_elasticsearch_scoped_metrics.append(
-            ('Datastore/operation/Elasticsearch/nodes.info', None))
-    _test_elasticsearch_rollup_metrics.append(
-            ('Datastore/operation/Elasticsearch/nodes.info', None))
-
-if (hasattr(elasticsearch.client, 'SnapshotClient') and
-        hasattr(elasticsearch.client.SnapshotClient, 'status')):
-    _base_scoped_metrics.append(
-            ('Datastore/operation/Elasticsearch/snapshot.status', 1))
-    _test_elasticsearch_rollup_metrics.append(
-            ('Datastore/operation/Elasticsearch/snapshot.status', 1))
-    _all_count += 1
-else:
-    _test_elasticsearch_scoped_metrics.append(
-            ('Datastore/operation/Elasticsearch/snapshot.status', None))
-    _test_elasticsearch_rollup_metrics.append(
-            ('Datastore/operation/Elasticsearch/snapshot.status', None))
-
-if hasattr(elasticsearch.client.IndicesClient, 'status'):
-    _test_elasticsearch_scoped_metrics.append(
-        ('Datastore/statement/Elasticsearch/_all/indices.status', 1))
-    _test_elasticsearch_rollup_metrics.extend([
-        ('Datastore/operation/Elasticsearch/indices.status', 1),
-        ('Datastore/statement/Elasticsearch/_all/indices.status', 1),
-    ])
-    _all_count += 1
-else:
-    _test_elasticsearch_scoped_metrics.append(
-        ('Datastore/operation/Elasticsearch/indices.status', None))
-    _test_elasticsearch_rollup_metrics.extend([
-        ('Datastore/operation/Elasticsearch/indices.status', None),
-        ('Datastore/statement/Elasticsearch/_all/indices.status', None),
-    ])
-
-_test_elasticsearch_rollup_metrics.extend([
-    ('Datastore/all', _all_count),
-    ('Datastore/allOther', _all_count),
-    ('Datastore/Elasticsearch/all', _all_count),
-    ('Datastore/Elasticsearch/allOther', _all_count),
-])
+# Test
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
-        'test_elasticsearch:test_elasticsearch_operation',
-        scoped_metrics=_test_elasticsearch_scoped_metrics,
-        rollup_metrics=_test_elasticsearch_rollup_metrics,
+        'test_elasticsearch:test_elasticsearch_operation_disabled',
+        scoped_metrics=_disable_scoped_metrics,
+        rollup_metrics=_disable_rollup_metrics,
         background_task=True)
+@override_application_settings(_disable_instance_settings)
 @background_task()
-def test_elasticsearch_operation():
+def test_elasticsearch_operation_disabled():
+    client = Elasticsearch(ES_URL)
+    _exercise_es(client)
+
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics(
+        'test_elasticsearch:test_elasticsearch_operation_enabled',
+        scoped_metrics=_enable_scoped_metrics,
+        rollup_metrics=_enable_rollup_metrics,
+        background_task=True)
+@override_application_settings(_enable_instance_settings)
+@background_task()
+def test_elasticsearch_operation_enabled():
     client = Elasticsearch(ES_URL)
     _exercise_es(client)

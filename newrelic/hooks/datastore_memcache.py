@@ -1,12 +1,15 @@
 from newrelic.agent import (wrap_object, FunctionWrapper, DatastoreTrace,
         current_transaction, wrap_datastore_trace, wrap_function_wrapper)
 
-def _instance_info(host):
-    address = host.address
-    if isinstance(address, tuple):
-        return (host.ip, str(host.port), None)
-    else:
-        return ('localhost', address, None)
+def _instance_info(memcache_host):
+    try:
+        host = memcache_host.ip
+        port_path_or_id = str(memcache_host.port)
+    except AttributeError:
+        host = 'localhost'
+        port_path_or_id = str(memcache_host.address)
+
+    return (host, port_path_or_id, None)
 
 def _nr_get_server_wrapper(wrapped, instance, args, kwargs):
     transaction = current_transaction()

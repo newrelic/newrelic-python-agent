@@ -5,7 +5,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
 from testing_support.settings import memcached_multiple_settings
 from testing_support.util import instance_hostname
 
-from newrelic.agent import background_task
+from newrelic.agent import background_task, wrap_function_wrapper
 
 DB_SETTINGS = memcached_multiple_settings()[0]
 MEMCACHED_ADDR = '%s:%s' % (DB_SETTINGS['host'], DB_SETTINGS['port'])
@@ -47,7 +47,7 @@ _port = DB_SETTINGS['port']
 _instance_metric_name = 'Datastore/instance/Memcached/%s/%s' % (_host, _port)
 
 _enable_rollup_metrics.append(
-        (_instance_metric_name, None)
+        (_instance_metric_name, 3)
 )
 
 _disable_rollup_metrics.append(
@@ -84,5 +84,15 @@ def test_set_get_delete_enable():
         background_task=True)
 @background_task()
 def test_set_get_delete_disable():
+    instance_info_called = [False]
+
+    def check_instance_info_call(wrapped, instance, args, kwargs):
+        instance_info_called[0] = True
+
+        return wrapped(*args, **kwargs)
+
+    wrap_function_wrapper('newrelic.hooks.datastore_memcache',
+            '_instance_info', check_instance_info_call)
     client = memcache.Client([MEMCACHED_ADDR])
     _exercise_db(client)
+    assert not instance_info_called[0], "memcached _instance_info was called"

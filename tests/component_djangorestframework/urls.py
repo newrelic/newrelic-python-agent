@@ -1,7 +1,7 @@
 try:
-    from django.conf.urls.defaults import patterns, url, include
+    from django.conf.urls.defaults import patterns, url
 except ImportError:
-    from django.conf.urls import patterns, url, include
+    from django.conf.urls import patterns, url
 
 from rest_framework.views import APIView
 from rest_framework.response import Response

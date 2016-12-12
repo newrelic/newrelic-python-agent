@@ -2,12 +2,9 @@ from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, override_application_settings,
     override_generic_settings)
 
-from newrelic.packages import six
-from newrelic.agent import application_settings
 from newrelic.hooks.framework_django import django_settings
 
 import os
-import json
 
 import django
 
@@ -61,12 +58,8 @@ _test_application_index_scoped_metrics = [
 ]
 
 if DJANGO_VERSION >= (1, 5):
-    if six.PY3:
-        _test_application_index_scoped_metrics.extend([
-                ('Function/django.http.response:HttpResponseBase.close', 1)])
-    else:
-        _test_application_index_scoped_metrics.extend([
-                ('Function/django.http.response:HttpResponse.close', 1)])
+    _test_application_index_scoped_metrics.extend([
+            ('Function/django.http.response:HttpResponse.close', 1)])
 
 if DJANGO_VERSION < (1, 10):
     _test_application_index_scoped_metrics.extend(
@@ -99,7 +92,7 @@ def test_application_index():
 @validate_transaction_metrics('views:exception')
 def test_application_exception():
     test_application = target_application()
-    response = test_application.get('/exception', status=500)
+    test_application.get('/exception', status=500)
 
 _test_application_not_found_scoped_metrics = [
         ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
@@ -109,12 +102,8 @@ _test_application_not_found_scoped_metrics = [
 ]
 
 if DJANGO_VERSION >= (1, 5):
-    if six.PY3:
-        _test_application_not_found_scoped_metrics.extend([
-                ('Function/django.http.response:HttpResponseBase.close', 1)])
-    else:
-        _test_application_not_found_scoped_metrics.extend([
-                ('Function/django.http.response:HttpResponseNotFound.close', 1)])
+    _test_application_not_found_scoped_metrics.extend([
+            ('Function/django.http.response:HttpResponseNotFound.close', 1)])
 
 if DJANGO_VERSION < (1, 10):
     _test_application_not_found_scoped_metrics.extend(
@@ -144,7 +133,7 @@ elif DJANGO_VERSION < (1, 10):
         scoped_metrics=_test_application_not_found_scoped_metrics)
 def test_application_not_found():
     test_application = target_application()
-    response = test_application.get('/not_found', status=404)
+    test_application.get('/not_found', status=404)
 
 _test_application_cbv_scoped_metrics = [
         ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
@@ -156,12 +145,8 @@ _test_application_cbv_scoped_metrics = [
 ]
 
 if DJANGO_VERSION >= (1, 5):
-    if six.PY3:
-        _test_application_cbv_scoped_metrics.extend([
-                ('Function/django.http.response:HttpResponseBase.close', 1)])
-    else:
-        _test_application_cbv_scoped_metrics.extend([
-                ('Function/django.http.response:HttpResponse.close', 1)])
+    _test_application_cbv_scoped_metrics.extend([
+            ('Function/django.http.response:HttpResponse.close', 1)])
 
 if DJANGO_VERSION < (1, 10):
     _test_application_cbv_scoped_metrics.extend(
@@ -198,12 +183,8 @@ _test_application_deferred_cbv_scoped_metrics = [
 ]
 
 if DJANGO_VERSION >= (1, 5):
-    if six.PY3:
-        _test_application_deferred_cbv_scoped_metrics.extend([
-                ('Function/django.http.response:HttpResponseBase.close', 1)])
-    else:
-        _test_application_deferred_cbv_scoped_metrics.extend([
-                ('Function/django.http.response:HttpResponse.close', 1)])
+    _test_application_deferred_cbv_scoped_metrics.extend([
+            ('Function/django.http.response:HttpResponse.close', 1)])
 
 if DJANGO_VERSION < (1, 10):
     _test_application_deferred_cbv_scoped_metrics.extend(

@@ -1,6 +1,5 @@
 from django.http import HttpResponse
 from django.views.generic.base import View
-from django.template import Context, Template
 from django.shortcuts import render
 
 from newrelic.agent import (get_browser_timing_header,

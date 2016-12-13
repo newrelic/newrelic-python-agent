@@ -107,6 +107,8 @@ class _class8(_class2):
 
 class _class11(_class4): pass
 
+class _exception(Exception): pass
+
 # Objects for TestCallableNameCaching
 
 _cached_value = 'I am the cached module', 'this is the cached path'

@@ -2,7 +2,6 @@ import pytest
 
 import webtest
 import threading
-import select
 
 import tornado
 import tornado.ioloop

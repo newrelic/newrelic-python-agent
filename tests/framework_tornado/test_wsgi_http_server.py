@@ -1,12 +1,8 @@
-import pytest
-
 import webtest
 import threading
 
 import tornado
 import tornado.ioloop
-
-from newrelic.packages import six
 
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, raise_background_exceptions,

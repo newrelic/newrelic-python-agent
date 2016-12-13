@@ -1,23 +1,12 @@
-import celery
-
 from newrelic.agent import (background_task, ignore_transaction,
         end_of_transaction)
-from newrelic.packages import six
 
 from testing_support.fixtures import validate_transaction_metrics
-from tasks import app, add, tsum
-
-
-def select_python_version(py2, py3):
-    return six.PY3 and py3 or py2
-
+from tasks import add, tsum
 
 @validate_transaction_metrics(
         name='test_celery:test_celery_task_as_function_trace',
-        scoped_metrics=select_python_version(
-                py2=[('Function/tasks:add.__call__', 1)],
-                py3=[('Function/celery.app.task:Task.__call__', 1)]
-        ),
+        scoped_metrics=[('Function/tasks:add.__call__', 1)],
         background_task=True)
 @background_task()
 def test_celery_task_as_function_trace():
@@ -45,15 +34,10 @@ def test_celery_task_as_background_task():
     result = add(3, 4)
     assert result == 7
 
-
 @validate_transaction_metrics(
         name='test_celery:test_celery_tasks_multiple_function_traces',
-        scoped_metrics=select_python_version(
-                py2=[('Function/tasks:add.__call__', 1),
-                     ('Function/tasks:tsum.__call__', 1)
-                ],
-                py3=[('Function/celery.app.task:Task.__call__', 2)]
-        ),
+        scoped_metrics=[('Function/tasks:add.__call__', 1),
+                        ('Function/tasks:tsum.__call__', 1)],
         background_task=True)
 @background_task()
 def test_celery_tasks_multiple_function_traces():
@@ -83,10 +67,7 @@ def test_celery_tasks_ignore_transaction():
 
 @validate_transaction_metrics(
         name='test_celery:test_celery_tasks_end_transaction',
-        scoped_metrics=select_python_version(
-                py2=[('Function/tasks:add.__call__', 1)],
-                py3=[('Function/celery.app.task:Task.__call__', 1)]
-        ),
+        scoped_metrics=[('Function/tasks:add.__call__', 1)],
         background_task=True)
 @background_task()
 def test_celery_tasks_end_transaction():

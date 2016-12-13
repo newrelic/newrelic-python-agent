@@ -6,8 +6,8 @@ import unittest
 import newrelic.packages.six as six
 from newrelic.packages.six.moves import builtins
 
-from newrelic.common.object_names import (callable_name,
-        expand_builtin_exception_name)
+from newrelic.common.object_names import (callable_name, _module_name,
+        expand_builtin_exception_name, _object_context_py2, _object_context_py3)
 
 if six.PY3:
     try:
@@ -150,39 +150,29 @@ class TestCallableName(unittest.TestCase):
     def test_generated_class_type_instancemethod(self):
         # Cannot work out module name of method bound class for
         # Python 3. Make consistent between 2 and use Python 3.
-        self.assertEqual(
-                callable_name(_test_object_names._class3._asdict),
-                _test_object_names._module_fqdn('_class3._asdict', '<namedtuple__class3>'))
-
-    def test_generated_class_instance_instancemethod(self):
         if six.PY3:
             self.assertEqual(
-                    callable_name(_test_object_names._class3(1)._asdict),
+                    callable_name(_test_object_names._class3._asdict),
                     _test_object_names._module_fqdn('_class3._asdict', '<namedtuple__class3>'))
         else:
             self.assertEqual(
-                    callable_name(_test_object_names._class3(1)._asdict),
+                    callable_name(_test_object_names._class3._asdict),
                     _test_object_names._module_fqdn('_class3._asdict'))
 
+    def test_generated_class_instance_instancemethod(self):
+        self.assertEqual(
+                callable_name(_test_object_names._class3(1)._asdict),
+                _test_object_names._module_fqdn('_class3._asdict'))
+
     def test_generated_class_type_staticmethod(self):
-        if six.PY3:
-            self.assertEqual(
-                    callable_name(_test_object_names._class3._make),
-                    _test_object_names._module_fqdn('_class3._make', '<namedtuple__class3>'))
-        else:
-            self.assertEqual(
-                    callable_name(_test_object_names._class3._make),
-                    _test_object_names._module_fqdn('_class3._make'))
+        self.assertEqual(
+                callable_name(_test_object_names._class3._make),
+                _test_object_names._module_fqdn('_class3._make'))
 
     def test_generated_class_instance_staticmethod(self):
-        if six.PY3:
-            self.assertEqual(
-                    callable_name(_test_object_names._class3(1)._make),
-                    _test_object_names._module_fqdn('_class3._make', '<namedtuple__class3>'))
-        else:
-            self.assertEqual(
-                    callable_name(_test_object_names._class3(1)._make),
-                    _test_object_names._module_fqdn('_class3._make'))
+        self.assertEqual(
+                callable_name(_test_object_names._class3(1)._make),
+                _test_object_names._module_fqdn('_class3._make'))
 
     def test_function_name_wraps_decorator(self):
         self.assertEqual(
@@ -846,6 +836,510 @@ class TestExpandBuiltinExceptionName(unittest.TestCase):
     def test_not_builtin_with_colon(self):
         result = expand_builtin_exception_name('MyModule:KeyError')
         self.assertEqual(result, 'MyModule:KeyError')
+
+class TestModuleName(unittest.TestCase):
+
+    def setUp(self):
+        reload(_test_object_names)
+        self.other_file_name = _test_object_names.__name__
+        self.this_file_name = __name__
+
+        class _class7(_test_object_names._class1):
+            def _function4(self): pass
+
+        class _class8(_test_object_names._class2):
+            def _function4(self): pass
+
+        class _class11(_test_object_names._class4): pass
+
+        class _exception(Exception): pass
+
+        self._class7 = _class7
+        self._class8 = _class8
+        self._class11 = _class11
+        self._exception = _exception
+
+    def assertModuleName(self, object, expected):
+        # Since `object_context` includes caching of the object name, bypass
+        # this by going directly for `_object_context_py2` or
+        # `_object_context_py3`
+        if six.PY3:
+            mname, _ = _object_context_py3(object)
+        else:
+            mname, _ = _object_context_py2(object)
+        self.assertEqual(mname, expected)
+
+    # Tests where the object is defined in "other file" module
+
+    def test_subclass_old_class_type_instancemethod_other_file(self):
+        self.assertModuleName(
+                _test_object_names._class7._function1,
+                self.other_file_name)
+
+    def test_subclass_old_class_instance_instancemethod_other_file(self):
+        self.assertModuleName(
+                _test_object_names._class7()._function1,
+                self.other_file_name)
+
+    def test_subclass_old_class_type_classmethod_other_file(self):
+        self.assertModuleName(
+                _test_object_names._class7._function2,
+                self.other_file_name)
+
+    def test_subclass_old_class_instance_classmethod_other_file(self):
+        self.assertModuleName(
+                _test_object_names._class7()._function2,
+                self.other_file_name)
+
+    def test_subclass_old_class_type_staticmethod_other_file(self):
+        self.assertModuleName(
+                _test_object_names._class7._function3,
+                self.other_file_name)
+
+    def test_subclass_old_class_instance_staticmethod_other_file(self):
+        self.assertModuleName(
+                _test_object_names._class7()._function3,
+                self.other_file_name)
+
+    def test_subclass_old_class_non_inherited_method_other_file(self):
+        self.assertModuleName(
+                _test_object_names._class7()._function4,
+                self.other_file_name)
+
+    def test_subclass_old_class_wrapped_type_instancemethod_other_file(self):
+        self.assertModuleName(
+                _test_object_names._class7._function5,
+                self.other_file_name)
+
+    def test_subclass_old_class_wrapped_instance_instancemethod_other_file(self):
+        self.assertModuleName(
+                _test_object_names._class7()._function5,
+                self.other_file_name)
+
+    def test_subclass_new_class_type_instancemethod_other_file(self):
+        self.assertModuleName(
+                _test_object_names._class8._function1,
+                self.other_file_name)
+
+    def test_subclass_new_class_instance_instancemethod_other_file(self):
+        self.assertModuleName(
+                _test_object_names._class8()._function1,
+                self.other_file_name)
+
+    def test_subclass_new_class_type_classmethod_other_file(self):
+        self.assertModuleName(
+                _test_object_names._class8._function2,
+                self.other_file_name)
+
+    def test_subclass_new_class_instance_classmethod_other_file(self):
+        self.assertModuleName(
+                _test_object_names._class8()._function2,
+                self.other_file_name)
+
+    def test_subclass_new_class_type_staticmethod_other_file(self):
+        self.assertModuleName(
+                _test_object_names._class8._function3,
+                self.other_file_name)
+
+    def test_subclass_new_class_instance_staticmethod_other_file(self):
+        self.assertModuleName(
+                _test_object_names._class8()._function3,
+                self.other_file_name)
+
+    def test_subclass_new_class_non_inherited_method_other_file(self):
+        self.assertModuleName(
+                _test_object_names._class8()._function4,
+                self.other_file_name)
+
+    def test_subclass_new_class_wrapped_type_instancemethod_other_file(self):
+        self.assertModuleName(
+                _test_object_names._class8._function5,
+                self.other_file_name)
+
+    def test_subclass_new_class_wrapped_instance_instancemethod_other_file(self):
+        self.assertModuleName(
+                _test_object_names._class8()._function5,
+                self.other_file_name)
+
+    def test_subclass_new_class_wrapped_bound_method_other_file(self):
+        decorator = _test_object_names._decorator3
+        bound_method = _test_object_names._class8()._function1
+        test_object = decorator(bound_method)
+        self.assertModuleName(
+                test_object,
+                self.other_file_name)
+
+    def test_subclass_new_class_type_instancemethod_wraps_decorator_other_file(self):
+        self.assertModuleName(
+                _test_object_names._class11._function1,
+                self.other_file_name)
+
+    def test_subclass_new_class_instance_instancemethod_wraps_decorator_other_file(self):
+        self.assertModuleName(
+                _test_object_names._class11()._function1,
+                self.other_file_name)
+
+    def test_subclass_new_class_type_instancemethod_desc_decorator_other_file(self):
+        self.assertModuleName(
+                _test_object_names._class11._function2,
+                self.other_file_name)
+
+    def test_subclass_new_class_instance_instancemethod_desc_decorator_other_file(self):
+        self.assertModuleName(
+                _test_object_names._class11()._function2,
+                self.other_file_name)
+
+    def test_subclass_exception_type_other_file(self):
+        self.assertModuleName(
+                _test_object_names._exception,
+                self.other_file_name)
+
+    def test_subclass_exception_instance_other_file(self):
+        self.assertModuleName(
+                _test_object_names._exception(),
+                self.other_file_name)
+
+    # Tests where the object is defined in "this file" module
+    # Skipped tests are re-covered below in TestPython3UnableToGetSubclassName
+    # and TestPython2UnableToGetClassName
+
+    @pytest.mark.skipif(six.PY3,
+            reason='Yet to be able to work out module name of subclass')
+    def test_subclass_old_class_type_instancemethod_this_file(self):
+        self.assertModuleName(
+                self._class7._function1,
+                self.this_file_name)
+
+    def test_subclass_old_class_instance_instancemethod_this_file(self):
+        self.assertModuleName(
+                self._class7()._function1,
+                self.this_file_name)
+
+    def test_subclass_old_class_type_classmethod_this_file(self):
+        self.assertModuleName(
+                self._class7._function2,
+                self.this_file_name)
+
+    def test_subclass_old_class_instance_classmethod_this_file(self):
+        self.assertModuleName(
+                self._class7()._function2,
+                self.this_file_name)
+
+    @pytest.mark.skipif(six.PY3,
+            reason='Yet to be able to work out module name of subclass')
+    @pytest.mark.skipif(not six.PY3,
+            reason='Cannot work out class name for Python 2')
+    def test_subclass_old_class_type_staticmethod_this_file(self):
+        self.assertModuleName(
+                self._class7._function3,
+                self.this_file_name)
+
+    @pytest.mark.skipif(six.PY3,
+            reason='Yet to be able to work out module name of subclass')
+    @pytest.mark.skipif(not six.PY3,
+            reason='Cannot work out class name for Python 2')
+    def test_subclass_old_class_instance_staticmethod_this_file(self):
+        self.assertModuleName(
+                self._class7()._function3,
+                self.this_file_name)
+
+    def test_subclass_old_class_non_inherited_method_this_file(self):
+        self.assertModuleName(
+                self._class7()._function4,
+                self.this_file_name)
+
+    @pytest.mark.skipif(six.PY3,
+            reason='Yet to be able to work out module name of subclass')
+    def test_subclass_old_class_wrapped_type_instancemethod_this_file(self):
+        self.assertModuleName(
+                self._class7._function5,
+                self.this_file_name)
+
+    def test_subclass_old_class_wrapped_instance_instancemethod_this_file(self):
+        self.assertModuleName(
+                self._class7()._function5,
+                self.this_file_name)
+
+    @pytest.mark.skipif(six.PY3,
+            reason='Yet to be able to work out module name of subclass')
+    def test_subclass_new_class_type_instancemethod_this_file(self):
+        self.assertModuleName(
+                self._class8._function1,
+                self.this_file_name)
+
+    def test_subclass_new_class_instance_instancemethod_this_file(self):
+        self.assertModuleName(
+                self._class8()._function1,
+                self.this_file_name)
+
+    def test_subclass_new_class_type_classmethod_this_file(self):
+        self.assertModuleName(
+                self._class8._function2,
+                self.this_file_name)
+
+    def test_subclass_new_class_instance_classmethod_this_file(self):
+        self.assertModuleName(
+                self._class8()._function2,
+                self.this_file_name)
+
+    @pytest.mark.skipif(six.PY3,
+            reason='Yet to be able to work out module name of subclass')
+    @pytest.mark.skipif(not six.PY3,
+            reason='Cannot work out class name for Python 2')
+    def test_subclass_new_class_type_staticmethod_this_file(self):
+        self.assertModuleName(
+                self._class8._function3,
+                self.this_file_name)
+
+    @pytest.mark.skipif(six.PY3,
+            reason='Yet to be able to work out module name of subclass')
+    @pytest.mark.skipif(not six.PY3,
+            reason='Cannot work out class name for Python 2')
+    def test_subclass_new_class_instance_staticmethod_this_file(self):
+        self.assertModuleName(
+                self._class8()._function3,
+                self.this_file_name)
+
+    def test_subclass_new_class_non_inherited_method_this_file(self):
+        self.assertModuleName(
+                self._class8()._function4,
+                self.this_file_name)
+
+    @pytest.mark.skipif(six.PY3,
+            reason='Yet to be able to work out module name of subclass')
+    def test_subclass_new_class_wrapped_type_instancemethod_this_file(self):
+        self.assertModuleName(
+                self._class8._function5,
+                self.this_file_name)
+
+    def test_subclass_new_class_wrapped_instance_instancemethod_this_file(self):
+        self.assertModuleName(
+                self._class8()._function5,
+                self.this_file_name)
+
+    def test_subclass_new_class_wrapped_bound_method_this_file(self):
+        decorator = _test_object_names._decorator3
+        bound_method = self._class8()._function1
+        test_object = decorator(bound_method)
+        self.assertModuleName(
+                test_object,
+                self.this_file_name)
+
+    @pytest.mark.skipif(six.PY3,
+            reason='Yet to be able to work out module name of subclass')
+    def test_subclass_new_class_type_instancemethod_wraps_decorator_this_file(self):
+        self.assertModuleName(
+                self._class11._function1,
+                self.this_file_name)
+
+    def test_subclass_new_class_instance_instancemethod_wraps_decorator_this_file(self):
+        self.assertModuleName(
+                self._class11()._function1,
+                self.this_file_name)
+
+    @pytest.mark.skipif(six.PY3,
+            reason='Yet to be able to work out module name of subclass')
+    @pytest.mark.skipif(not six.PY3,
+            reason='Cannot work out class name for Python 2')
+    def test_subclass_new_class_type_instancemethod_desc_decorator_this_file(self):
+        self.assertModuleName(
+                self._class11._function2,
+                self.this_file_name)
+
+    @pytest.mark.skipif(six.PY3,
+            reason='Yet to be able to work out module name of subclass')
+    @pytest.mark.skipif(not six.PY3,
+            reason='Cannot work out class name for Python 2')
+    def test_subclass_new_class_instance_instancemethod_desc_decorator_this_file(self):
+        self.assertModuleName(
+                self._class11()._function2,
+                self.this_file_name)
+
+    def test_subclass_exception_type_this_file(self):
+        self.assertModuleName(
+                self._exception,
+                self.this_file_name)
+
+    def test_subclass_exception_instance_this_file(self):
+        self.assertModuleName(
+                self._exception(),
+                self.this_file_name)
+
+@pytest.mark.skipif(not six.PY3, reason='This is a python 3 test only')
+class TestPython3UnableToGetSubclassName(unittest.TestCase):
+
+    # In certain cases, we can't get the subclass name in Python 3.
+    #
+    #   1. A static method is defined on the parent class, but called on the
+    #      child class.
+    #
+    #   2. An unbound method is defined on the parent class, but called on the
+    #      child class.
+    #
+    # We'd like to be able to get the child class and module names. However,
+    # we can only get the parent class and module names.
+    #
+    # The details of what we'd _want_ to get are interspersed above (see any
+    # test that is "skipped" for python 3). This test case here contains what
+    # we actually expect to get at the current time.
+
+    def setUp(self):
+        reload(_test_object_names)
+        self.other_file_name = _test_object_names.__name__
+
+        class _class7(_test_object_names._class1):
+            def _function4(self): pass
+
+        class _class8(_test_object_names._class2):
+            def _function4(self): pass
+
+        class _class11(_test_object_names._class4): pass
+
+        class _exception(Exception): pass
+
+        self._class7 = _class7
+        self._class8 = _class8
+        self._class11 = _class11
+
+    def assertCallableName(self, object, file_name, obj_name):
+        expected = '%s:%s' % (file_name, obj_name)
+        self.assertEqual(callable_name(object), expected)
+
+    def test_subclass_old_class_type_instancemethod_this_file(self):
+        self.assertCallableName(
+                self._class7._function1,
+                self.other_file_name,
+                '_class1._function1')
+
+    def test_subclass_old_class_type_staticmethod_this_file(self):
+        self.assertCallableName(
+                self._class7._function3,
+                self.other_file_name,
+                '_class1._function3')
+
+    def test_subclass_old_class_instance_staticmethod_this_file(self):
+        self.assertCallableName(
+                self._class7()._function3,
+                self.other_file_name,
+                '_class1._function3')
+
+    def test_subclass_old_class_wrapped_type_instancemethod_this_file(self):
+        self.assertCallableName(
+                self._class7._function5,
+                self.other_file_name,
+                '_class1._function5')
+
+    def test_subclass_new_class_type_instancemethod_this_file(self):
+        self.assertCallableName(
+                self._class8._function1,
+                self.other_file_name,
+                '_class2._function1')
+
+    def test_subclass_new_class_type_staticmethod_this_file(self):
+        self.assertCallableName(
+                self._class8._function3,
+                self.other_file_name,
+                '_class2._function3')
+
+    def test_subclass_new_class_instance_staticmethod_this_file(self):
+        self.assertCallableName(
+                self._class8()._function3,
+                self.other_file_name,
+                '_class2._function3')
+
+    def test_subclass_new_class_wrapped_type_instancemethod_this_file(self):
+        self.assertCallableName(
+                self._class8._function5,
+                self.other_file_name,
+                '_class2._function5')
+
+    def test_subclass_new_class_type_instancemethod_wraps_decorator_this_file(self):
+        self.assertCallableName(
+                self._class11._function1,
+                self.other_file_name,
+                '_class4._function1')
+
+    def test_subclass_new_class_type_instancemethod_desc_decorator_this_file(self):
+        self.assertCallableName(
+                self._class11._function2,
+                self.other_file_name,
+                '_class4._function2')
+
+    def test_subclass_new_class_instance_instancemethod_desc_decorator_this_file(self):
+        self.assertCallableName(
+                self._class11()._function2,
+                self.other_file_name,
+                '_class4._function2')
+
+@pytest.mark.skipif(six.PY3, reason='This is a python 2 test only')
+class TestPython2UnableToGetClassName(unittest.TestCase):
+
+    # In certain cases, we can't get the class name in Python 2.
+    #
+    #   1. A static method is defined on the parent class, but called on the
+    #      child class.
+    #
+    # The details of what we'd _want_ to get are interspersed above (see any
+    # test that is "skipped" for python 2). The test cases here contain what
+    # we actually expect to get at the current time.
+
+    def setUp(self):
+        reload(_test_object_names)
+        self.other_file_name = _test_object_names.__name__
+
+        class _class7(_test_object_names._class1):
+            def _function4(self): pass
+
+        class _class8(_test_object_names._class2):
+            def _function4(self): pass
+
+        class _class11(_test_object_names._class4): pass
+
+        class _exception(Exception): pass
+
+        self._class7 = _class7
+        self._class8 = _class8
+        self._class11 = _class11
+
+    def assertCallableName(self, object, file_name, obj_name):
+        expected = '%s:%s' % (file_name, obj_name)
+        self.assertEqual(callable_name(object), expected)
+
+    def test_subclass_old_class_type_staticmethod_this_file(self):
+        self.assertCallableName(
+                self._class7._function3,
+                self.other_file_name,
+                '_function3')
+
+    def test_subclass_old_class_instance_staticmethod_this_file(self):
+        self.assertCallableName(
+                self._class7()._function3,
+                self.other_file_name,
+                '_function3')
+
+    def test_subclass_new_class_type_staticmethod_this_file(self):
+        self.assertCallableName(
+                self._class8._function3,
+                self.other_file_name,
+                '_function3')
+
+    def test_subclass_new_class_instance_staticmethod_this_file(self):
+        self.assertCallableName(
+                self._class8()._function3,
+                self.other_file_name,
+                '_function3')
+
+    def test_subclass_new_class_type_instancemethod_desc_decorator_this_file(self):
+        self.assertCallableName(
+                self._class11._function2,
+                self.other_file_name,
+                '_function2')
+
+    def test_subclass_new_class_instance_instancemethod_desc_decorator_this_file(self):
+        self.assertCallableName(
+                self._class11()._function2,
+                self.other_file_name,
+                '_function2')
 
 if __name__ == '__main__':
     unittest.main()

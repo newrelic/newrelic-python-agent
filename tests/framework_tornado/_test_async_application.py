@@ -108,7 +108,7 @@ if tornado.version_info[:2] >= (3, 0):
             add_custom_parameter('prepare1', 'value')
 
 _TEMPLATE = """
-<html><body>{% block body %} 
+<html><body>{% block body %}
 {{ myvalue }}
 {% end %}
 </body>
@@ -124,7 +124,9 @@ class TemplateHandler(tornado.web.RequestHandler):
 class DelayHandler(tornado.web.RequestHandler):
     @tornado.web.asynchronous
     def get(self):
-        tornado.ioloop.IOLoop.instance().add_timeout(time.time()+0.1,self.delayed)
+        tornado.ioloop.IOLoop.instance().add_timeout(
+                time.time() + 0.1, self.delayed
+        )
         self.write('DELAY RESPONSE')
     def delayed(self):
         self.finish()

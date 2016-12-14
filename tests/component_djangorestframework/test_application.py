@@ -5,14 +5,9 @@ from testing_support.fixtures import (validate_transaction_metrics,
 
 from wsgi import application
 
-from newrelic.packages import six
-
 import django
 
 DJANGO_VERSION = tuple(map(int, django.get_version().split('.')[:2]))
-
-def select_python_version(py2, py3):
-    return six.PY3 and py3 or py2
 
 test_application = webtest.TestApp(application)
 
@@ -35,12 +30,8 @@ _test_application_index_scoped_metrics = [
         ('Function/newrelic.hooks.framework_django:browser_timing_middleware', 1)]
 
 if DJANGO_VERSION >= (1, 5):
-    if six.PY3:
-        _test_application_index_scoped_metrics.extend([
-                ('Function/django.http.response:HttpResponseBase.close', 1)])
-    else:
-        _test_application_index_scoped_metrics.extend([
-                ('Function/django.http.response:HttpResponse.close', 1)])
+    _test_application_index_scoped_metrics.extend([
+            ('Function/django.http.response:HttpResponse.close', 1)])
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:index',
@@ -68,18 +59,15 @@ _test_application_view_scoped_metrics = [
         ('Function/newrelic.hooks.framework_django:browser_timing_middleware', 1)]
 
 if DJANGO_VERSION >= (1, 5):
-    if six.PY3:
-        _test_application_view_scoped_metrics.extend([
-                ('Function/django.http.response:HttpResponseBase.close', 1)])
-    else:
-        _test_application_view_scoped_metrics.extend([
-                ('Function/rest_framework.response:Response.close', 1)])
+    _test_application_view_scoped_metrics.extend([
+            ('Function/rest_framework.response:Response.close', 1)])
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('urls:View.get',
     scoped_metrics=_test_application_view_scoped_metrics)
 def test_application_view():
     response = test_application.get('/view/')
+    assert response.status_int == 200
 
 _test_application_view_error_scoped_metrics = [
         ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
@@ -103,4 +91,4 @@ _test_application_view_error_scoped_metrics = [
 @validate_transaction_metrics('urls:ViewError.get',
     scoped_metrics=_test_application_view_error_scoped_metrics)
 def test_application_view_error():
-    response = test_application.get('/view_error/', status=500)
+    test_application.get('/view_error/', status=500)

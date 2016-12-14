@@ -303,7 +303,7 @@ _test_async_application_engine_error_get_scoped_metrics = [
     scoped_metrics=_test_async_application_engine_error_get_scoped_metrics)
 @wait_for_background_threads()
 def test_async_application_engine_error_get():
-    response = _test_application.get('/engine_error', status=500)
+    _test_application.get('/engine_error', status=500)
 
 _test_async_application_coroutine_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
@@ -363,7 +363,7 @@ _test_async_application_coroutine_error_get_scoped_metrics = [
     scoped_metrics=_test_async_application_coroutine_error_get_scoped_metrics)
 @wait_for_background_threads()
 def test_async_application_coroutine_error_get():
-    response = _test_application.get('/coroutine_error', status=500)
+    _test_application.get('/coroutine_error', status=500)
 
 _test_async_application_404_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),

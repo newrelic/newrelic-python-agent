@@ -104,7 +104,7 @@ if tornado.version_info[:2] >= (3, 0):
         def prepare(self):
             add_custom_parameter('prepare0', 'value')
             http_client = tornado.httpclient.AsyncHTTPClient()
-            response = yield http_client.fetch("http://example.com")
+            yield http_client.fetch("http://example.com")
             add_custom_parameter('prepare1', 'value')
 
 _TEMPLATE = """

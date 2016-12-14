@@ -1,30 +1,32 @@
-import os
-
 import memcache
 
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.fixtures import (validate_transaction_metrics,
+    override_application_settings)
+from testing_support.settings import memcached_multiple_settings
+from testing_support.util import instance_hostname
 
-from newrelic.agent import background_task, set_background_task
+from newrelic.agent import background_task, wrap_function_wrapper
 
-def _e(key, default):
-    return os.environ.get(key, default)
+DB_SETTINGS = memcached_multiple_settings()[0]
+MEMCACHED_ADDR = '%s:%s' % (DB_SETTINGS['host'], DB_SETTINGS['port'])
 
-MEMCACHED_HOST = _e('TDDIUM_MEMCACHE_HOST', 'localhost')
-MEMCACHED_PORT = _e('TDDIUM_MEMCACHE_PORT', '11211')
-MEMCACHED_NAMESPACE = ''
+# Settings
 
-MEMCACHED_HOST = _e('MEMCACHED_PORT_11211_TCP_ADDR', MEMCACHED_HOST)
-MEMCACHED_PORT = _e('MEMCACHED_PORT_11211_TCP_PORT', MEMCACHED_PORT)
-MEMCACHED_NAMESPACE = _e('TDDIUM_MEMCACHE_NAMESPACE', MEMCACHED_NAMESPACE)
+_enable_instance_settings = {
+    'datastore_tracer.instance_reporting.enabled': True,
+}
+_disable_instance_settings = {
+    'datastore_tracer.instance_reporting.enabled': False,
+}
 
-MEMCACHED_ADDR = '%s:%s' % (MEMCACHED_HOST, MEMCACHED_PORT)
+# Metrics
 
-_test_bt_set_get_delete_scoped_metrics = [
+_base_scoped_metrics = [
         ('Datastore/operation/Memcached/set', 1),
         ('Datastore/operation/Memcached/get', 1),
         ('Datastore/operation/Memcached/delete', 1)]
 
-_test_bt_set_get_delete_rollup_metrics = [
+_base_rollup_metrics = [
         ('Datastore/all', 3),
         ('Datastore/allOther', 3),
         ('Datastore/Memcached/all', 3),
@@ -33,52 +35,64 @@ _test_bt_set_get_delete_rollup_metrics = [
         ('Datastore/operation/Memcached/get', 1),
         ('Datastore/operation/Memcached/delete', 1)]
 
+_disable_scoped_metrics = list(_base_scoped_metrics)
+_disable_rollup_metrics = list(_base_rollup_metrics)
+
+_enable_scoped_metrics = list(_base_scoped_metrics)
+_enable_rollup_metrics = list(_base_rollup_metrics)
+
+_host = instance_hostname(DB_SETTINGS['host'])
+_port = DB_SETTINGS['port']
+
+_instance_metric_name = 'Datastore/instance/Memcached/%s/%s' % (_host, _port)
+
+_enable_rollup_metrics.append(
+        (_instance_metric_name, 3)
+)
+
+_disable_rollup_metrics.append(
+        (_instance_metric_name, None)
+)
+
+# Query
+
+def _exercise_db(client):
+    key = DB_SETTINGS['namespace'] + 'key'
+    client.set(key, 'value')
+    value = client.get(key)
+    client.delete(key)
+    assert value == 'value'
+
+# Tests
+
+@override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
-        'test_memcache:test_bt_set_get_delete',
-        scoped_metrics=_test_bt_set_get_delete_scoped_metrics,
-        rollup_metrics=_test_bt_set_get_delete_rollup_metrics,
+        'test_memcache:test_set_get_delete_enable',
+        scoped_metrics=_enable_scoped_metrics,
+        rollup_metrics=_enable_rollup_metrics,
         background_task=True)
 @background_task()
-def test_bt_set_get_delete():
-    set_background_task(True)
+def test_set_get_delete_enable():
     client = memcache.Client([MEMCACHED_ADDR])
+    _exercise_db(client)
 
-    key = MEMCACHED_NAMESPACE + 'key'
-
-    client.set(key, 'value')
-    value = client.get(key)
-    client.delete(key)
-
-    assert value == 'value'
-
-_test_wt_set_get_delete_scoped_metrics = [
-        ('Datastore/operation/Memcached/set', 1),
-        ('Datastore/operation/Memcached/get', 1),
-        ('Datastore/operation/Memcached/delete', 1)]
-
-_test_wt_set_get_delete_rollup_metrics = [
-        ('Datastore/all', 3),
-        ('Datastore/allWeb', 3),
-        ('Datastore/Memcached/all', 3),
-        ('Datastore/Memcached/allWeb', 3),
-        ('Datastore/operation/Memcached/set', 1),
-        ('Datastore/operation/Memcached/get', 1),
-        ('Datastore/operation/Memcached/delete', 1)]
-
+@override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
-        'test_memcache:test_wt_set_get_delete',
-        scoped_metrics=_test_wt_set_get_delete_scoped_metrics,
-        rollup_metrics=_test_wt_set_get_delete_rollup_metrics,
-        background_task=False)
+        'test_memcache:test_set_get_delete_disable',
+        scoped_metrics=_disable_scoped_metrics,
+        rollup_metrics=_disable_rollup_metrics,
+        background_task=True)
 @background_task()
-def test_wt_set_get_delete():
-    set_background_task(False)
+def test_set_get_delete_disable():
+    instance_info_called = [False]
+
+    def check_instance_info_call(wrapped, instance, args, kwargs):
+        instance_info_called[0] = True
+
+        return wrapped(*args, **kwargs)
+
+    wrap_function_wrapper('newrelic.hooks.datastore_memcache',
+            '_instance_info', check_instance_info_call)
     client = memcache.Client([MEMCACHED_ADDR])
-
-    key = MEMCACHED_NAMESPACE + 'key'
-
-    client.set(key, 'value')
-    value = client.get(key)
-    client.delete(key)
-
-    assert value == 'value'
+    _exercise_db(client)
+    assert not instance_info_called[0], "memcached _instance_info was called"

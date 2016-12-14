@@ -204,38 +204,64 @@ def _object_context_py2(object):
         if object.__self__ is not None:
             cname = getattr(object.__self__, '__name__', None)
             if cname is None:
-                owner = object.__self__.__class__
+                owner = object.__self__.__class__   # bound method
             else:
-                owner = object.__self__
+                owner = object.__self__             # class method
 
         else:
-            owner = object.__self__
+            owner = getattr(object, 'im_class', None)   # unbound method
 
     mname = _module_name(owner or object)
 
     return (mname, path)
 
 def _object_context_py3(object):
-    # For functions and methods the __qualname__ attribute gives
-    # us the name. This will be a qualified name including the
-    # context which the function or method is defined in, such
-    # as a class, or outer function in the case of a nested
-    # function. Because it includes the class, we don't need to
-    # work that out separately.
 
-    path = getattr(object, '__qualname__', None)
+    if inspect.ismethod(object):
 
-    # If there is no __qualname__ it should mean it is a type
-    # object of some sort. In this case we use the name from the
-    # __class__. That also can be nested so need to use the
-    # qualified name.
+        # In Python 3, ismethod() returns True for bound methods. We
+        # need to distinguish between class methods and instance methods.
+        #
+        # First, test for class methods.
 
-    if path is None and hasattr(object, '__class__'):
-        path = getattr(object.__class__, '__qualname__')
+        cname = getattr(object.__self__, '__qualname__', None)
+
+        # If it's not a class method, it must be an instance method.
+
+        if cname is None:
+            cname = getattr(object.__self__.__class__, '__qualname__')
+
+        path = '%s.%s' % (cname, object.__name__)
+
+    else:
+        # For functions, the __qualname__ attribute gives us the name.
+        # This will be a qualified name including the context in which
+        # the function is defined in, such as an outer function in the
+        # case of a nested function.
+
+        path = getattr(object, '__qualname__', None)
+
+        # If there is no __qualname__ it should mean it is a type
+        # object of some sort. In this case we use the name from the
+        # __class__. That also can be nested so need to use the
+        # qualified name.
+
+        if path is None and hasattr(object, '__class__'):
+            path = getattr(object.__class__, '__qualname__')
 
     # Now calculate the name of the module object is defined in.
 
-    mname = _module_name(object)
+    owner = None
+
+    if inspect.ismethod(object):
+        if object.__self__ is not None:
+            cname = getattr(object.__self__, '__name__', None)
+            if cname is None:
+                owner = object.__self__.__class__   # bound method
+            else:
+                owner = object.__self__             # class method
+
+    mname = _module_name(owner or object)
 
     return (mname, path)
 
@@ -257,18 +283,11 @@ def object_context(target):
 
     details = getattr(target, '_nr_object_path', None)
 
-    if details:
-        return details
+    # Disallow cache lookup for python 3 methods. In the case where the method
+    # is defined on a parent class, the name of the parent class is incorrectly
+    # returned. Avoid this by recalculating the details each time.
 
-    # Check whether this is a bound wrapper and the name details
-    # are cached against the parent wrapper.
-
-    parent = getattr(target, '_nr_parent', None)
-
-    if parent:
-        details = getattr(parent, '_nr_object_path', None)
-
-    if details:
+    if details and not _is_py3_method(target):
         return details
 
     # Check whether the object is actually one of our own
@@ -284,9 +303,9 @@ def object_context(target):
     source = getattr(target, '_nr_last_object', None)
 
     if source:
-        details = getattr(target, '_nr_object_path', None)
+        details = getattr(source, '_nr_object_path', None)
 
-        if details:
+        if details and not _is_py3_method(source):
             return details
 
     else:
@@ -306,14 +325,6 @@ def object_context(target):
         # a wrapper.
 
         if target is not source:
-            # If the original target was a bound wrapper, then
-            # cache the details against the parent wrapper as
-            # this would likely be persistent, whereas the bound
-            # wrapper is going to be transient usually and the
-            # details would be lost.
-
-            if parent:
-                parent._nr_object_path = details
 
             # Although the original target could be a bound
             # wrapper still cache it against it anyway, in case
@@ -378,3 +389,6 @@ def expand_builtin_exception_name(name):
             return callable_name(exception)
 
     return name
+
+def _is_py3_method(target):
+    return six.PY3 and inspect.ismethod(target)

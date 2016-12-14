@@ -11,9 +11,19 @@ def getUnitTestEnvs = {
 
     def proc = "tox --listenvs -c ${WORKSPACE}/tox.ini".execute()
     def stdout = new StringBuilder()
-    proc.consumeProcessOutput(stdout, System.err)
-    proc.waitForOrKill(1000)
-    assert !proc.exitValue()
+    def stderr = new StringBuilder()
+
+    proc.consumeProcessOutput(stdout, stderr)
+    proc.waitForOrKill(5000)
+
+    if ( proc.exitValue() != 0 ) {
+        println("=======")
+        println("stdout:\n${stdout}")
+        println("=======")
+        println("stderr:\n${stderr}")
+        println("=======")
+        throw new Exception("Process failed with code ${proc.exitValue()}")
+    }
 
     List<String> unitTestEnvs = new String(stdout).split('\n')
 }

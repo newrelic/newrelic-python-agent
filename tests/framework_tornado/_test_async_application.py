@@ -104,11 +104,11 @@ if tornado.version_info[:2] >= (3, 0):
         def prepare(self):
             add_custom_parameter('prepare0', 'value')
             http_client = tornado.httpclient.AsyncHTTPClient()
-            response = yield http_client.fetch("http://example.com")
+            yield http_client.fetch("http://example.com")
             add_custom_parameter('prepare1', 'value')
 
 _TEMPLATE = """
-<html><body>{% block body %} 
+<html><body>{% block body %}
 {{ myvalue }}
 {% end %}
 </body>
@@ -124,7 +124,9 @@ class TemplateHandler(tornado.web.RequestHandler):
 class DelayHandler(tornado.web.RequestHandler):
     @tornado.web.asynchronous
     def get(self):
-        tornado.ioloop.IOLoop.instance().add_timeout(time.time()+0.1,self.delayed)
+        tornado.ioloop.IOLoop.instance().add_timeout(
+                time.time() + 0.1, self.delayed
+        )
         self.write('DELAY RESPONSE')
     def delayed(self):
         self.finish()

@@ -372,18 +372,12 @@ class TornadoTest(TornadoBaseTest):
         self.assertEqual(response.body, PrepareOnFinishRequestHandler.RESPONSE)
 
     scoped_metrics = [
-            select_python_version(
-                    py2=('Function/_test_async_application:'
-                         'PrepareOnFinishRequestHandlerSubclass.prepare', 1),
-                    py3=('Function/_test_async_application:'
-                         'PrepareOnFinishRequestHandler.prepare', 1)),
+            ('Function/_test_async_application:'
+                    'PrepareOnFinishRequestHandlerSubclass.prepare', 1),
             ('Function/_test_async_application:'
                     'PrepareOnFinishRequestHandlerSubclass.get', 1),
-            select_python_version(
-                    py2=('Function/_test_async_application:'
-                         'PrepareOnFinishRequestHandlerSubclass.on_finish', 1),
-                    py3=('Function/_test_async_application:'
-                         'PrepareOnFinishRequestHandler.on_finish', 1)),
+            ('Function/_test_async_application:'
+                    'PrepareOnFinishRequestHandlerSubclass.on_finish', 1),
     ]
 
     @tornado_validate_transaction_cache_empty()
@@ -472,11 +466,8 @@ class TornadoTest(TornadoBaseTest):
     scoped_metrics = [
             ('Function/_test_async_application:'
                     'SimpleStreamingRequestHandler.data_received', 1),
-            select_python_version(
-                py2=('Function/_test_async_application:'
-                     'SimpleStreamingRequestHandler.on_connection_close', 1),
-                py3=('Function/tornado.web:'
-                     'RequestHandler.on_connection_close', 1))]
+            ('Function/_test_async_application:'
+                     'SimpleStreamingRequestHandler.on_connection_close', 1)]
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()

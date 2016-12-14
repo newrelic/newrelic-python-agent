@@ -15,6 +15,9 @@ test_it() {
         mysql)
             test_mysql $@
             ;;
+        memcached)
+            test_memcached $@
+            ;;
         *)
             echo "Value \"$WAIT_FOR\" not found"
             exit 1
@@ -41,6 +44,12 @@ test_mysql() {
     HOST=$1
     PORT=$2
     mysql -h "$HOST" -P "$PORT" -ppython_agent -upython_agent -e ";" > /dev/null 2>&1
+}
+
+test_memcached() {
+    HOST=$1
+    PORT=$2
+    exec 3<>/dev/tcp/${HOST}/${PORT}
 }
 
 wait_for_ready() {
@@ -95,6 +104,7 @@ usage() {
     echo "      --postgresql  Wait for a postgresql database to become ready"
     echo "      --redis       Wait for a redis database to become ready"
     echo "      --mysql       Wait for a mysql database to become ready"
+    echo "      --memcached   Wait for a memcached database to become ready"
 }
 
 OPTION=$1
@@ -110,6 +120,10 @@ case "$OPTION" in
         ;;
     --mysql)
         WAIT_FOR=mysql
+        shift
+        ;;
+    --memcached)
+        WAIT_FOR=memcached
         shift
         ;;
     *)

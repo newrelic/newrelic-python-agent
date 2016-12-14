@@ -5,13 +5,14 @@ from testing_support.fixtures import (validate_transaction_metrics,
 
 from testing_support.settings import postgresql_settings
 
-from newrelic.agent import background_task, set_background_task
+from newrelic.agent import background_task
 
 DB_SETTINGS = postgresql_settings()
 
 _test_execute_via_cursor_scoped_metrics = [
-        ('Function/postgresql.driver.pq3:Connection.__enter__', 1),
-        ('Function/postgresql.driver.pq3:Connection.__exit__', 1),
+        ('Function/postgresql.driver.dbapi20:connect', 1),
+        ('Function/postgresql.driver.dbapi20:Connection.__enter__', 1),
+        ('Function/postgresql.driver.dbapi20:Connection.__exit__', 1),
         ('Datastore/statement/Postgres/datastore_postgresql/select', 1),
         ('Datastore/statement/Postgres/datastore_postgresql/insert', 1),
         ('Datastore/statement/Postgres/datastore_postgresql/update', 1),
@@ -84,8 +85,9 @@ def test_execute_via_cursor():
         connection.commit()
 
 _test_rollback_on_exception_scoped_metrics = [
-        ('Function/postgresql.driver.pq3:Connection.__enter__', 1),
-        ('Function/postgresql.driver.pq3:Connection.__exit__', 1),
+        ('Function/postgresql.driver.dbapi20:connect', 1),
+        ('Function/postgresql.driver.dbapi20:Connection.__enter__', 1),
+        ('Function/postgresql.driver.dbapi20:Connection.__exit__', 1),
         ('Datastore/operation/Postgres/rollback', 1)]
 
 _test_rollback_on_exception_rollup_metrics = [
@@ -104,7 +106,7 @@ def test_rollback_on_exception():
     try:
         with postgresql.driver.dbapi20.connect(database=DB_SETTINGS['name'],
                 user=DB_SETTINGS['user'], password=DB_SETTINGS['password'],
-                host=DB_SETTINGS['host'], port=DB_SETTINGS['port']) as connection:
+                host=DB_SETTINGS['host'], port=DB_SETTINGS['port']):
 
             raise RuntimeError('error')
     except RuntimeError:

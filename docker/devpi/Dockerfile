@@ -1,5 +1,6 @@
 FROM python-base
 
+RUN pip install devpi-common==2.0.8
 RUN pip install eventlet
 RUN pip install devpi==2.0.1
 

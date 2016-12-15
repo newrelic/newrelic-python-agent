@@ -356,7 +356,7 @@ docker_compose_run()
 
     echo
     echo "Using docker-compose file: $COMPOSE_FILE"
-    echo "Staring containers and running command: $CMD"
+    echo "Starting containers and running command: $CMD"
     echo
 
     time docker-compose \

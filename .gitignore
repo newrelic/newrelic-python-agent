@@ -52,3 +52,5 @@ testing.log
 
 .tags
 .solano*
+
+/docker/devpi/package-lists

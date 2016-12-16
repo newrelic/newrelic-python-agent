@@ -15,6 +15,7 @@ set -e
 # Create directory to hold package tarballs temporarily
 
 mkdir -p /downloads
+touch /root/needs-wheel.txt
 
 # Install most packages in python 2.7 virtualenv
 
@@ -24,6 +25,8 @@ do
         -i http://localhost:3141/root/pypi/ \
         --download /downloads \
         -U $PACKAGE
+
+    ls /downloads/*-py2.py3-none-any.whl > /dev/null 2>&1 || echo $PACKAGE >> /root/needs-wheel.txt
 
     # Clean out /downloads, so it's possible to install multiple versions
     # of the same package
@@ -41,6 +44,8 @@ do
         -i http://localhost:3141/root/pypi/ \
         --download /downloads \
         -U $PACKAGE
+
+    ls /downloads/*-py2.py3-none-any.whl > /dev/null 2>&1 || echo $PACKAGE >> /root/needs-wheel.txt
 
     # Make it possible to install multiple versions of the same package
 

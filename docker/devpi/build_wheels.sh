@@ -34,13 +34,6 @@ echo
 echo "Building wheels"
 echo
 
-# Install wheel in all virtualenvs
-
-/venvs/py26/bin/pip install wheel
-/venvs/py27/bin/pip install wheel
-/venvs/py33/bin/pip install wheel
-/venvs/pypy/bin/pip install wheel
-
 # Create directory for wheels
 
 mkdir -p /wheels
@@ -53,45 +46,47 @@ export PIP_INDEX_URL=$DEVPI_SERVER/root/pypi/+simple/
 
 MYQL_CONNECTOR_URL='http://cdn.mysql.com/Downloads/Connector-Python/mysql-connector-python-2.0.4.zip#md5=3df394d89300db95163f17c843ef49df'
 
-/venvs/py26/bin/pip wheel --wheel-dir=/wheels $MYQL_CONNECTOR_URL
-/venvs/py27/bin/pip wheel --wheel-dir=/wheels $MYQL_CONNECTOR_URL
-/venvs/py33/bin/pip wheel --wheel-dir=/wheels $MYQL_CONNECTOR_URL
+# Variable containing packages that need wheels
+NEEDS_WHEEL="$(cat /root/needs-wheel.txt)"
+PY2_ALREADY_BUILT=""
+PY3_ALREADY_BUILT=""
 
-echo
-echo "Building Python 2.6 wheels"
-echo
+## Install wheel in all virtualenvs
+#
+for venv in $(find /venvs -maxdepth 1 -type d | grep -v "/venvs$"); do
+    py_name=$(echo "$venv" | cut -f3 -d"/")
+    IS_PY2="$(echo "$py_name" | grep "^py2" || true)"
+    IS_PY3="$(echo "$py_name" | grep "^py3" || true)"
 
-while read PACKAGE
-do
-    /venvs/py26/bin/pip wheel --wheel-dir=/wheels $PACKAGE
-done < /root/package-lists/wheels-py26.txt
+    $venv/bin/pip install wheel
+    $venv/bin/pip wheel --wheel-dir=/wheels $MYQL_CONNECTOR_URL
+    while read PACKAGE
+    do
+        test -n "$IS_PY2" && echo "$PY2_ALREADY_BUILT" | grep -q "^$PACKAGE$" && continue
+        test -n "$IS_PY3" && echo "$PY3_ALREADY_BUILT" | grep -q "^$PACKAGE$" && continue
 
-echo
-echo "Building Python 2.7 wheels"
-echo
+        LAST_BUILT_WHEEL=""
+        # if the wheel build fails it should be safe to ignore the failure
+        echo "$NEEDS_WHEEL" | grep -q "^$PACKAGE$" &&
+            $venv/bin/pip wheel --wheel-dir=/wheels $PACKAGE &&
+            LAST_BUILT_WHEEL=$(ls -lt /wheels | tail -n+2 | head -n1) || true
 
-while read PACKAGE
-do
-    /venvs/py27/bin/pip wheel --wheel-dir=/wheels $PACKAGE
-done < /root/package-lists/wheels-py27.txt
+        test -n "$LAST_BUILT_WHEEL" &&
+        echo "$LAST_BUILT_WHEEL" | grep -q "py2.py3-none-any.whl" &&
+        NEEDS_WHEEL=$(echo "$NEEDS_WHEEL" | grep -v "^$PACKAGE$")
 
-echo
-echo "Building Python 3.3 wheels"
-echo
+        test -n "$LAST_BUILT_WHEEL" &&
+        echo "$LAST_BUILT_WHEEL" | grep -q "py2-none-any.whl" &&
+        PY2_ALREADY_BUILT="$PACKAGE
+$PY2_ALREADY_BUILT"
 
-while read PACKAGE
-do
-    /venvs/py33/bin/pip wheel --wheel-dir=/wheels $PACKAGE
-done < /root/package-lists/wheels-py33.txt
+        test -n "$LAST_BUILT_WHEEL" &&
+        echo "$LAST_BUILT_WHEEL" | grep -q "py3-none-any.whl" &&
+        PY3_ALREADY_BUILT="$PACKAGE
+$PY3_ALREADY_BUILT"
 
-echo
-echo "Building PyPy wheels"
-echo
-
-while read PACKAGE
-do
-    /venvs/pypy/bin/pip wheel --wheel-dir=/wheels $PACKAGE
-done < /root/package-lists/wheels-pypy.txt
+    done < /root/package-lists/wheels-$py_name.txt
+done
 
 # Upload wheels to devpi
 
@@ -100,13 +95,13 @@ devpi upload --from-dir /wheels
 # Remove the pytest wheel, since it doesn't install the py.test script in a
 # bin directory. Tests can't run, if tox can't find py.test!
 
-devpi remove -y pytest
+[ -e /wheels/pytest* ] && devpi remove -y pytest
 
 # Remove the WebTest wheel, since it uses orderereddict, which is a separate
 # package in Python 2.6, and installing the WebTest wheel in 2.6 doesn't
 # install ordereddict.
 
-devpi remove -y WebTest
+[ -e /wheels/WebTest* ] && devpi remove -y WebTest
 
 # Make docker image somewhat slimmer
 

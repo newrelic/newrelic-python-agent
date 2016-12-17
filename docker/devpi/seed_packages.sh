@@ -17,14 +17,34 @@ set -e
 mkdir -p /downloads
 touch /root/needs-wheel.txt
 
+for venv in $(find /venvs -maxdepth 1 -type d | grep -v "/venvs$"); do
+    $venv/bin/pip install -U "pip<=9.0.1"
+done
+
+# Some packages must be installed in source format only
+while read PACKAGE
+do
+    /venvs/py27/bin/pip download \
+        -i http://localhost:3141/root/pypi/ \
+        -d /downloads \
+        --no-binary :all: \
+        $PACKAGE
+
+    # Clean out /downloads, so it's possible to install multiple versions
+    # of the same package
+
+    rm -rf /downloads
+    mkdir -p /downloads
+done < /root/package-lists/packages-source.txt
+
 # Install most packages in python 2.7 virtualenv
 
 while read PACKAGE
 do
-    /venvs/py27/bin/pip install \
+    /venvs/py27/bin/pip download \
         -i http://localhost:3141/root/pypi/ \
-        --download /downloads \
-        -U $PACKAGE
+        -d /downloads \
+        $PACKAGE
 
     ls /downloads/*-py2.py3-none-any.whl > /dev/null 2>&1 || echo $PACKAGE >> /root/needs-wheel.txt
 
@@ -40,10 +60,10 @@ done < /root/package-lists/packages-py2.txt
 
 while read PACKAGE
 do
-    /venvs/py33/bin/pip install \
+    /venvs/py33/bin/pip download \
         -i http://localhost:3141/root/pypi/ \
-        --download /downloads \
-        -U $PACKAGE
+        -d /downloads \
+        $PACKAGE
 
     ls /downloads/*-py2.py3-none-any.whl > /dev/null 2>&1 || echo $PACKAGE >> /root/needs-wheel.txt
 

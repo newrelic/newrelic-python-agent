@@ -83,7 +83,9 @@ def generate_package_lists(packages):
 
 def create_package_list_files(package_lists, out_dir, source_only_packages):
     for pkg_l in package_lists:
-        out = '\n'.join(package_lists[pkg_l])
+        l = package_lists[pkg_l]
+        l = [pkg for pkg in l if pkg not in source_only_packages]
+        out = '\n'.join(l)
         out_filename = os.path.join(out_dir, 'packages-%s.txt' % pkg_l)
         with open(out_filename, 'w') as f:
             f.write(out)
@@ -93,9 +95,11 @@ def create_package_list_files(package_lists, out_dir, source_only_packages):
     with open(out_filename, 'w') as f:
         f.write(out)
 
-def create_wheel_build_files(packages, out_dir):
+def create_wheel_build_files(packages, out_dir, source_only_packages):
     for env in packages:
-        out = '\n'.join(list(packages[env]))
+        l = list(packages[env])
+        l = [pkg for pkg in l if pkg not in source_only_packages]
+        out = '\n'.join(l)
         out_filename = os.path.join(out_dir, 'wheels-%s.txt' % env)
         with open(out_filename, 'w') as f:
             f.write(out)
@@ -104,7 +108,7 @@ def main(tox_files, exclude_packages, source_only_packages, out_dir):
     packages = extract_packages(tox_files, exclude_packages)
     package_lists = generate_package_lists(packages)
     create_package_list_files(package_lists, out_dir, source_only_packages)
-    create_wheel_build_files(packages, out_dir)
+    create_wheel_build_files(packages, out_dir, source_only_packages)
     return 0
 
 if __name__=='__main__':

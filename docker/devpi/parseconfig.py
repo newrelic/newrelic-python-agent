@@ -4,7 +4,7 @@ import string
 import os.path
 import sys
 
-def extract_packages(tox_files, exclude_packages):
+def extract_packages(tox_files, exclude_packages, extra_packages):
     packages = {} # stores py27/py26/etc
     for tox_file in tox_files:
         tox_file_packages = set([])
@@ -40,6 +40,9 @@ def extract_packages(tox_files, exclude_packages):
             for env in tox_file_envs:
                 env_pkgs = packages.setdefault(env, set([]))
                 env_pkgs |= tox_file_packages
+
+    for env in packages:
+        packages[env] |= set(extra_packages)
 
     return packages
 
@@ -104,9 +107,12 @@ def create_wheel_build_files(packages, out_dir, source_only_packages):
         with open(out_filename, 'w') as f:
             f.write(out)
 
-def main(tox_files, exclude_packages, source_only_packages, out_dir):
-    packages = extract_packages(tox_files, exclude_packages)
+def main(tox_files, exclude_packages,
+        source_only_packages, extra_packages, out_dir):
+
+    packages = extract_packages(tox_files, exclude_packages, extra_packages)
     package_lists = generate_package_lists(packages)
+
     create_package_list_files(package_lists, out_dir, source_only_packages)
     create_wheel_build_files(packages, out_dir, source_only_packages)
     return 0
@@ -121,7 +127,13 @@ if __name__=='__main__':
                         help='Packages to exclude')
     parser.add_argument('-s', metavar='PKG', type=str, nargs='+',
                         help='Source only packages')
+    parser.add_argument('-x', metavar='PKG', type=str, nargs='+',
+                        help='Extra Packages (py2 used)')
     parser.add_argument('files', metavar='FILE', type=str, nargs='+',
                         help='List of tox files to parse')
     args = parser.parse_args()
-    sys.exit(main(args.files, args.e, args.s, args.o))
+    exclude_packages = args.e or []
+    source_only_packages = args.s or []
+    extra_packages = args.x or []
+    sys.exit(main(args.files, exclude_packages,
+            source_only_packages, extra_packages, args.o))

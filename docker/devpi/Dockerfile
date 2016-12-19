@@ -25,11 +25,11 @@ ADD build_wheels.sh /root/build_wheels.sh
 
 RUN chmod 755 /root/seed_packages.sh && \
     devpi-server --init --start && \
-    /root/seed_packages.sh && \
+    /root/seed_packages.sh --mirror-cache-expiry 4294967295 && \
     chmod 755 /root/build_wheels.sh && \
     # RUN script to build wheels \
     /root/build_wheels.sh
 
 EXPOSE 3141
 ENTRYPOINT ["devpi-server"]
-CMD ["--host", "0.0.0.0"]
+CMD ["--host", "0.0.0.0", "--mirror-cache-expiry", "4294967295"]

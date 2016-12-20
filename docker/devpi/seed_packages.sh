@@ -48,7 +48,13 @@ do
         -d /downloads \
         $PACKAGE
 
-    ls /downloads/*-py2.py3-none-any.whl > /dev/null 2>&1 || echo $PACKAGE >> /root/needs-wheel.txt
+    TRUE_PACKAGE_NAME=$(echo $PACKAGE | tr -s "<=>" " " | cut -f1 -d" " | tr -s "-" "_")
+    echo "$PACKAGE TRUE_PACKAGE_NAME: $TRUE_PACKAGE_NAME"
+
+    UNIVERSAL_WHEEL=$(find /downloads -maxdepth 1 -iname "$TRUE_PACKAGE_NAME"'*' | grep "py2.py3-none-any.whl" || true)
+
+    test -n "$UNIVERSAL_WHEEL" && echo "UNIVERSAL_WHEEL: $UNIVERSAL_WHEEL"
+    test -n "$UNIVERSAL_WHEEL" || echo "NEEDS WHEEL: $PACKAGE" && echo $PACKAGE >> /root/needs-wheel.txt
 
     # Clean out /downloads, so it's possible to install multiple versions
     # of the same package
@@ -68,7 +74,13 @@ do
         -d /downloads \
         $PACKAGE
 
-    ls /downloads/*-py2.py3-none-any.whl > /dev/null 2>&1 || echo $PACKAGE >> /root/needs-wheel.txt
+    TRUE_PACKAGE_NAME=$(echo $PACKAGE | tr -s "<=>" " " | cut -f1 -d" " | tr -s "-" "_")
+    echo "$PACKAGE TRUE_PACKAGE_NAME: $TRUE_PACKAGE_NAME"
+
+    UNIVERSAL_WHEEL=$(find /downloads -maxdepth 1 -iname "$TRUE_PACKAGE_NAME"'*' | grep "py2.py3-none-any.whl" || true)
+
+    test -n "$UNIVERSAL_WHEEL" && echo "UNIVERSAL_WHEEL: $UNIVERSAL_WHEEL"
+    test -n "$UNIVERSAL_WHEEL" || echo "NEEDS WHEEL: $PACKAGE" && echo $PACKAGE >> /root/needs-wheel.txt
 
     # Make it possible to install multiple versions of the same package
 

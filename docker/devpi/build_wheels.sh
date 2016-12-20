@@ -62,28 +62,37 @@ for venv in $(find /venvs -maxdepth 1 -type d | grep -v "/venvs$"); do
     $venv/bin/pip wheel --wheel-dir=/wheels $MYQL_CONNECTOR_URL
     while read PACKAGE || test -n "$PACKAGE"
     do
-        test -n "$IS_PY2" && echo "$PY2_ALREADY_BUILT" | grep -q "^$PACKAGE$" && continue
-        test -n "$IS_PY3" && echo "$PY3_ALREADY_BUILT" | grep -q "^$PACKAGE$" && continue
+        test -n "$IS_PY2" && echo "$PY2_ALREADY_BUILT" | grep -q "^$PACKAGE$" && echo "$PACKAGE PY2 ALREADY BUILT: SKIPPING" && continue
+        test -n "$IS_PY3" && echo "$PY3_ALREADY_BUILT" | grep -q "^$PACKAGE$" && echo "$PACKAGE PY3 ALREADY BUILT: SKIPPING" && continue
+        echo "$NEEDS_WHEEL" | grep -q "^$PACKAGE$" || continue
 
-        LAST_BUILT_WHEEL=""
-        # if the wheel build fails it should be safe to ignore the failure
-        echo "$NEEDS_WHEEL" | grep -q "^$PACKAGE$" &&
-            $venv/bin/pip wheel --wheel-dir=/wheels $PACKAGE &&
-            LAST_BUILT_WHEEL=$(ls -lt /wheels | tail -n+2 | head -n1) || true
+        BUILT_WHEEL=""
+        # if the wheel build fails it should be safe to ignore the failure but don't pick up wheels
+        echo "$PACKAGE BUILDING WHEEL" &&
+        $venv/bin/pip wheel --wheel-dir=/wheels $PACKAGE || continue
 
-        test -n "$LAST_BUILT_WHEEL" &&
-        echo "$LAST_BUILT_WHEEL" | grep -q "py2.py3-none-any.whl" &&
-        NEEDS_WHEEL=$(echo "$NEEDS_WHEEL" | grep -v "^$PACKAGE$")
+        TRUE_PACKAGE_NAME=$(echo $PACKAGE | tr -s "<=>" " " | cut -f1 -d" " | tr -s "-" "_")
+        echo "$PACKAGE TRUE_PACKAGE_NAME: $TRUE_PACKAGE_NAME"
 
-        test -n "$LAST_BUILT_WHEEL" &&
-        echo "$LAST_BUILT_WHEEL" | grep -q "py2-none-any.whl" &&
+        BUILT_WHEEL=$(find /wheels -maxdepth 1 -iname "$TRUE_PACKAGE_NAME"'*' | xargs ls -1t | head -n1 || true)
+        test -n "$BUILT_WHEEL" && echo "$PACKAGE BUILT WHEEL: $BUILT_WHEEL" || echo "$PACKAGE NO BUILT WHEEL DETECTED"
+
+        test -n "$BUILT_WHEEL" &&
+        echo "$BUILT_WHEEL" | grep -q "py2.py3-none-any.whl" &&
+        echo "$PACKAGE DETECTED UNIVERSAL WHEEL $BUILT_WHEEL" &&
+        NEEDS_WHEEL=$(echo "$NEEDS_WHEEL" | grep -v "^$PACKAGE$") && continue
+
+        test -n "$BUILT_WHEEL" &&
+        echo "$BUILT_WHEEL" | grep -q "py2-none-any.whl" &&
+        echo "$PACKAGE DETECTED PY2 WHEEL $BUILT_WHEEL" &&
         PY2_ALREADY_BUILT="$PACKAGE
-$PY2_ALREADY_BUILT"
+$PY2_ALREADY_BUILT" && continue
 
-        test -n "$LAST_BUILT_WHEEL" &&
-        echo "$LAST_BUILT_WHEEL" | grep -q "py3-none-any.whl" &&
+        test -n "$BUILT_WHEEL" &&
+        echo "$BUILT_WHEEL" | grep -q "py3-none-any.whl" &&
+        echo "$PACKAGE DETECTED PY3 WHEEL $BUILT_WHEEL" &&
         PY3_ALREADY_BUILT="$PACKAGE
-$PY3_ALREADY_BUILT"
+$PY3_ALREADY_BUILT" && continue
 
     done < /root/package-lists/wheels-$py_name.txt
 done
@@ -91,17 +100,6 @@ done
 # Upload wheels to devpi
 
 devpi upload --from-dir /wheels
-
-# Remove the pytest wheel, since it doesn't install the py.test script in a
-# bin directory. Tests can't run, if tox can't find py.test!
-
-[ -e /wheels/pytest* ] && devpi remove -y pytest
-
-# Remove the WebTest wheel, since it uses orderereddict, which is a separate
-# package in Python 2.6, and installing the WebTest wheel in 2.6 doesn't
-# install ordereddict.
-
-[ -e /wheels/WebTest* ] && devpi remove -y WebTest
 
 # Make docker image somewhat slimmer
 

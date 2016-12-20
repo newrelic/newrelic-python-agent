@@ -60,7 +60,7 @@ for venv in $(find /venvs -maxdepth 1 -type d | grep -v "/venvs$"); do
 
     $venv/bin/pip install wheel
     $venv/bin/pip wheel --wheel-dir=/wheels $MYQL_CONNECTOR_URL
-    while read PACKAGE
+    while read PACKAGE || test -n "$PACKAGE"
     do
         test -n "$IS_PY2" && echo "$PY2_ALREADY_BUILT" | grep -q "^$PACKAGE$" && continue
         test -n "$IS_PY3" && echo "$PY3_ALREADY_BUILT" | grep -q "^$PACKAGE$" && continue

@@ -22,8 +22,9 @@ for venv in $(find /venvs -maxdepth 1 -type d | grep -v "/venvs$"); do
 done
 
 # Some packages must be installed in source format only
-while read PACKAGE
+while read PACKAGE || test -n "$PACKAGE"
 do
+    echo "DOWNLOADING SOURCE: $PACKAGE"
     /venvs/py27/bin/pip download \
         -i http://localhost:3141/root/pypi/ \
         -d /downloads \
@@ -39,8 +40,9 @@ done < /root/package-lists/packages-source.txt
 
 # Install most packages in python 2.7 virtualenv
 
-while read PACKAGE
+while read PACKAGE || test -n "$PACKAGE"
 do
+    echo "DOWNLOADING PY2: $PACKAGE"
     /venvs/py27/bin/pip download \
         -i http://localhost:3141/root/pypi/ \
         -d /downloads \
@@ -58,8 +60,9 @@ done < /root/package-lists/packages-py2.txt
 
 # Some packages must be installed in python 3 virtualenv
 
-while read PACKAGE
+while read PACKAGE || test -n "$PACKAGE"
 do
+    echo "DOWNLOADING PY3: $PACKAGE"
     /venvs/py33/bin/pip download \
         -i http://localhost:3141/root/pypi/ \
         -d /downloads \

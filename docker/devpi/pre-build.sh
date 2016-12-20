@@ -4,7 +4,7 @@ OUT_DIR=docker/devpi/package-lists/
 mkdir -p $OUT_DIR
 
 EXCLUDE_ALL="mysql-connector-python"
-SOURCE_ONLY=""
+SOURCE_ONLY="importlib==1.0.4"
 EXTRA_PACKAGES="CherryPy==8.1.3 cffi==1.9.1 docutils==0.13.1 httpretty==0.8.10 importlib==1.0.4 ordereddict==1.1 pyramid==1.4.9 pyramid==1.5b1 simplejson==3.3.0 tornado==2.4.1"
 
 test -n "$EXCLUDE_ALL" && EXCLUDE_ALL="-e $EXCLUDE_ALL"

@@ -1,10 +1,8 @@
-import sqlite3
-
 from elasticsearch import Elasticsearch
 import elasticsearch.client
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors, validate_database_duration)
+    validate_transaction_errors)
 from testing_support.settings import elasticsearch_multiple_settings
 
 from newrelic.agent import background_task
@@ -146,29 +144,3 @@ _test_elasticsearch_rollup_metrics.extend([
 def test_elasticsearch_operation():
     client = Elasticsearch(ES_URL)
     _exercise_es(client)
-
-@validate_database_duration()
-@background_task()
-def test_elasticsearch_database_duration():
-    client = Elasticsearch(ES_URL)
-    _exercise_es(client)
-
-@validate_database_duration()
-@background_task()
-def test_elasticsearch_and_sqlite_database_duration():
-
-    # Make Elasticsearch queries
-
-    client = Elasticsearch(ES_URL)
-    _exercise_es(client)
-
-    # Make sqlite queries
-
-    conn = sqlite3.connect(":memory:")
-    cur = conn.cursor()
-
-    cur.execute("CREATE TABLE blah (name text, quantity int)")
-    cur.execute("INSERT INTO blah VALUES ('Bob', 22)")
-
-    conn.commit()
-    conn.close()

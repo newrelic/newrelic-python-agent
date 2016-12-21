@@ -231,3 +231,19 @@ def instrument_elasticsearch_client_snapshot(module):
     for name, arg_extractor in _elasticsearch_client_snapshot_methods:
         wrap_elasticsearch_client_method(module.SnapshotClient, name,
                 arg_extractor, 'snapshot')
+
+def _nr_Connection__init__wrapper(wrapped, instance, args, kwargs):
+    """Cache datastore instance info on Connection object"""
+
+    def _bind_params(host='localhost', port=9200, *args, **kwargs):
+        return host, port
+
+    host, port = _bind_params(*args, **kwargs)
+    port_path_or_id = str(port)
+    instance._nr_datastore_instance_info = (host, port_path_or_id)
+
+    return wrapped(*args, **kwargs)
+
+def instrument_elasticsearch_connection_base(module):
+    wrap_function_wrapper(module.Connection, '__init__',
+            _nr_Connection__init__wrapper)

@@ -2260,6 +2260,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('elasticsearch.client.snapshot',
             'newrelic.hooks.datastore_elasticsearch',
             'instrument_elasticsearch_client_snapshot')
+    _process_module_definition('elasticsearch.connection.base',
+            'newrelic.hooks.datastore_elasticsearch',
+            'instrument_elasticsearch_connection_base')
 
     _process_module_definition('pyelasticsearch.client',
             'newrelic.hooks.datastore_pyelasticsearch',

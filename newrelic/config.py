@@ -2266,6 +2266,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('elasticsearch.connection.http_urllib3',
             'newrelic.hooks.datastore_elasticsearch',
             'instrument_elasticsearch_urllib3HttpConnection')
+    _process_module_definition('elasticsearch.connection.http_requests',
+            'newrelic.hooks.datastore_elasticsearch',
+            'instrument_elasticsearch_requestsHttpConnection')
 
     _process_module_definition('pyelasticsearch.client',
             'newrelic.hooks.datastore_pyelasticsearch',

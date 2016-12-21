@@ -275,3 +275,7 @@ def _nr_perform_request_wrapper(wrapped, instance, args, kwargs):
 def instrument_elasticsearch_urllib3HttpConnection(module):
     wrap_function_wrapper(module.Urllib3HttpConnection, 'perform_request',
             _nr_perform_request_wrapper)
+
+def instrument_elasticsearch_requestsHttpConnection(module):
+    wrap_function_wrapper(module.RequestsHttpConnection, 'perform_request',
+            _nr_perform_request_wrapper)

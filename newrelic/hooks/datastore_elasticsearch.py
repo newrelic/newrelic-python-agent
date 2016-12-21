@@ -12,7 +12,7 @@ from newrelic.agent import (wrap_function_wrapper, current_transaction,
 def _index_name(index):
     if not index or index == '*':
         return '_all'
-    if not isinstance(index, six.string_types) or ',' in index: 
+    if not isinstance(index, six.string_types) or ',' in index:
         return 'other'
     return index
 

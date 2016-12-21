@@ -59,8 +59,8 @@ if len(ES_MULTIPLE_SETTINGS) > 1:
             host_2, port_2)
 
     _enable_rollup_metrics.extend([
-            (instance_metric_name_1, None),
-            (instance_metric_name_2, None),
+            (instance_metric_name_1, 2),
+            (instance_metric_name_2, 1),
     ])
 
     _disable_rollup_metrics.extend([

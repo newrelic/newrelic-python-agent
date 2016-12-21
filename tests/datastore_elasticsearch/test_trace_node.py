@@ -3,6 +3,7 @@ from elasticsearch import Elasticsearch
 from testing_support.fixtures import (validate_tt_collector_json,
     override_application_settings)
 from testing_support.settings import elasticsearch_multiple_settings
+from testing_support.util import instance_hostname
 
 from newrelic.agent import background_task
 
@@ -23,40 +24,27 @@ _instance_only_settings = {
     'datastore_tracer.instance_reporting.enabled': True,
     'datastore_tracer.database_name_reporting.enabled': False,
 }
-_database_only_settings = {
-    'datastore_tracer.instance_reporting.enabled': False,
-    'datastore_tracer.database_name_reporting.enabled': True,
-}
 
 # Expected parameters
 
-_enabled_required = {}
-_enabled_forgone = {
-    'host': 'VALUE NOT USED',
-    'port_path_or_id': 'VALUE NOT USED',
-    'database_name': 'VALUE NOT USED',
+_enabled_required = {
+    'host': instance_hostname(ES_SETTINGS['host']),
+    'port_path_or_id': str(ES_SETTINGS['port']),
 }
+_enabled_forgone = {}
 
 _disabled_required = {}
 _disabled_forgone = {
     'host': 'VALUE NOT USED',
     'port_path_or_id': 'VALUE NOT USED',
-    'database_name': 'VALUE NOT USED',
+    # 'database_name': 'VALUE NOT USED',
 }
 
-_instance_only_required = {}
-_instance_only_forgone = {
-    'host': 'VALUE NOT USED',
-    'port_path_or_id': 'VALUE NOT USED',
-    'database_name': 'VALUE NOT USED',
+_instance_only_required = {
+    'host': instance_hostname(ES_SETTINGS['host']),
+    'port_path_or_id': str(ES_SETTINGS['port']),
 }
-
-_database_only_required = {}
-_database_only_forgone = {
-    'host': 'VALUE NOT USED',
-    'port_path_or_id': 'VALUE NOT USED',
-    'database_name': 'VALUE NOT USED',
-}
+_instance_only_forgone = {}
 
 # Query
 
@@ -90,14 +78,5 @@ def test_trace_node_datastore_params_disable_instance():
         datastore_forgone_params=_instance_only_forgone)
 @background_task()
 def test_trace_node_datastore_params_instance_only():
-    client = Elasticsearch(ES_URL)
-    _exercise_es(client)
-
-@override_application_settings(_database_only_settings)
-@validate_tt_collector_json(
-        datastore_params=_database_only_required,
-        datastore_forgone_params=_database_only_forgone)
-@background_task()
-def test_trace_node_datastore_params_database_only():
     client = Elasticsearch(ES_URL)
     _exercise_es(client)

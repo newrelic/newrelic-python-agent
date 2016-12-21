@@ -65,9 +65,25 @@ def wrap_elasticsearch_client_method(owner, name, arg_extractor, prefix=None):
         else:
             operation = name
 
-        with DatastoreTrace(transaction, product='Elasticsearch',
-                target=index, operation=operation):
-            return wrapped(*args, **kwargs)
+        transaction._nr_datastore_instance_info = (None, None, None)
+
+        dt = DatastoreTrace(
+                transaction=transaction,
+                product='Elasticsearch',
+                target=index,
+                operation=operation
+        )
+
+        with dt:
+            result = wrapped(*args, **kwargs)
+
+            instance_info = transaction._nr_datastore_instance_info
+            host, port_path_or_id, _ = instance_info
+
+            dt.host = host
+            dt.port_path_or_id = port_path_or_id
+
+            return result
 
     if hasattr(owner, name):
         wrap_function_wrapper(owner, name, _nr_wrapper_Elasticsearch_method_)

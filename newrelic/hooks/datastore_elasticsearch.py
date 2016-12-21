@@ -247,3 +247,31 @@ def _nr_Connection__init__wrapper(wrapped, instance, args, kwargs):
 def instrument_elasticsearch_connection_base(module):
     wrap_function_wrapper(module.Connection, '__init__',
             _nr_Connection__init__wrapper)
+
+def _nr_perform_request_wrapper(wrapped, instance, args, kwargs):
+    """Read instance info from Connection and stash on Transaction."""
+
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    result = wrapped(*args, **kwargs)
+
+    instance_info = (None, None, None)
+    try:
+        tracer_settings = transaction.settings.datastore_tracer
+
+        if tracer_settings.instance_reporting.enabled:
+            host, port_path_or_id = instance._nr_datastore_instance_info
+            instance_info = (host, port_path_or_id, None)
+    except:
+        instance_info = ('unknown', 'unknown', None)
+
+    transaction._nr_datastore_instance_info = instance_info
+
+    return result
+
+def instrument_elasticsearch_urllib3HttpConnection(module):
+    wrap_function_wrapper(module.Urllib3HttpConnection, 'perform_request',
+            _nr_perform_request_wrapper)

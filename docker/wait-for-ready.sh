@@ -18,6 +18,9 @@ test_it() {
         memcached)
             test_memcached $@
             ;;
+        elasticsearch)
+            test_elasticsearch $@
+            ;;
         *)
             echo "Value \"$WAIT_FOR\" not found"
             exit 1
@@ -50,6 +53,12 @@ test_memcached() {
     HOST=$1
     PORT=$2
     exec 3<>/dev/tcp/${HOST}/${PORT}
+}
+
+test_elasticsearch() {
+    HOST=$1
+    PORT=$2
+    curl -XGET "http://${HOST}:${PORT}/_status" > /dev/null 2>&1
 }
 
 wait_for_ready() {
@@ -101,10 +110,11 @@ usage() {
     echo
     echo "USAGE: ./wait-for-ready.sh [OPTIONS] HOST1:PORT1[,HOST2:PORT2,HOST3:PORT3...] command options"
     echo "  Options:"
-    echo "      --postgresql  Wait for a postgresql database to become ready"
-    echo "      --redis       Wait for a redis database to become ready"
-    echo "      --mysql       Wait for a mysql database to become ready"
-    echo "      --memcached   Wait for a memcached database to become ready"
+    echo "      --postgresql     Wait for a postgresql database to become ready"
+    echo "      --redis          Wait for a redis database to become ready"
+    echo "      --mysql          Wait for a mysql database to become ready"
+    echo "      --memcached      Wait for a memcached database to become ready"
+    echo "      --elasticsearch  Wait for an elasticsearch database to become ready"
 }
 
 OPTION=$1
@@ -124,6 +134,10 @@ case "$OPTION" in
         ;;
     --memcached)
         WAIT_FOR=memcached
+        shift
+        ;;
+    --elasticsearch)
+        WAIT_FOR=elasticsearch
         shift
         ;;
     *)

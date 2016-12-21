@@ -7,8 +7,8 @@ from testing_support.settings import elasticsearch_settings
 
 from newrelic.agent import background_task
 
-ES_HOST, ES_PORT = elasticsearch_settings()
-ES_URL = 'http://%s:%s' % (ES_HOST, ES_PORT)
+ES_SETTINGS = elasticsearch_settings()
+ES_URL = 'http://%s:%s' % (ES_SETTINGS['host'], ES_SETTINGS['port'])
 
 def _exercise_es(es):
     es.index("contacts", "person",

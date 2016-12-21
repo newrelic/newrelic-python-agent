@@ -339,6 +339,15 @@ create_docker_base_images()
 
     for IMG in $IMAGE_LIST
     do
+        if [ -e "$ROOT_DIRECTORY/docker/$IMG/pre-build.sh" ];
+        then
+            echo
+            echo "Executing pre-build hook: $IMG"
+            echo
+
+            (cd $ROOT_DIRECTORY; docker/$IMG/pre-build.sh)
+        fi
+
         echo
         echo "Create image: $IMG"
         echo
@@ -392,6 +401,15 @@ create_docker_base_images_nocache()
 
     for IMG in $IMAGE_LIST
     do
+        if [ -e "$ROOT_DIRECTORY/docker/$IMG/pre-build.sh" ];
+        then
+            echo
+            echo "Executing pre-build hook: $IMG"
+            echo
+
+            (cd $ROOT_DIRECTORY; docker/$IMG/pre-build.sh)
+        fi
+
         echo
         echo "Create image: $IMG"
         echo

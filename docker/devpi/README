@@ -1,70 +1,120 @@
 README
 ======
 
-Devpi speeds up installations of Python packages by caching packages in its local filesystem. Since every test that we run creates a new virtualenv and installs packages, using the devpi-server instead of downloading directly from PyPi can save a considerable amount of setup time.
+Devpi speeds up installations of Python packages by caching packages in its
+local filesystem. Since every test that we run creates a new virtualenv and
+installs packages, using the devpi-server instead of downloading directly from
+PyPi can save a considerable amount of setup time.
 
-The devpi server in this docker image has two indexes: one that acts as a PyPi cache for source packages, and the other that indexes wheels that we build when we build the docker image.
+The devpi server in this docker image has two indexes: one that acts as a PyPi
+cache for source packages, and the other that indexes wheels that we build when
+we build the docker image.
 
 PyPi Cache
 ----------
 
-By default, a devpi server will act as a PyPi cache at its default index. If the server URL is: http://localhost:3141, then the PyPi caching index server is located at http://localhost:3141/root/pypi/+simple/.
+By default, a devpi server will act as a PyPi cache at its default index. If
+the server URL is: http://localhost:3141, then the PyPi caching index server is
+located at http://localhost:3141/root/pypi/+simple/.
 
-When using default index server URL, devpi will serve a package from it's cache, if it is present, or else it will fetch the package from PyPi and then save it to the local filesystem.
+When using default index server URL, devpi will serve a package from it's
+cache, if it is present, or else it will fetch the package from PyPi and then
+save it to the local filesystem.
 
-In order to seed the cache during the docker build step, we run the `seed_packages.sh` script to download the packages
-and cache them.
+In order to seed the cache during the docker build step, we run the
+`seed_packages.sh` script to download the packages and cache them.
 
 Wheels
 ------
 
-It's even faster to install from a wheel than a source package, so we run another script during the docker build process to create wheels and upload them to devpi. We create a wheel for each package needed for every Python version that we test. This script is named `build_wheels.sh`.
+It's even faster to install from a wheel than a source package, so we run
+another script during the docker build process to create wheels and upload them
+to devpi. We create a wheel for each package needed for every Python version
+that we test. This script is named `build_wheels.sh`.
 
-The wheels are uploaded to a new index located at: http://localhost:3141/packnsend/testing/+simple/.
+The wheels are uploaded to a new index located at:
+http://localhost:3141/packnsend/testing/+simple/.
 
 How to Use
 ----------
 
-To best take advantage of the devpi server, we need to set two options when using `pip`. Setting them as environment variables is done as follows:
+To best take advantage of the devpi server, we need to set two options when
+using `pip`. Setting them as environment variables is done as follows:
 
     PIP_USE_WHEEL=True
     PIP_INDEX_URL=http://<IP Address>:3141/packnsend/testing/+simple/
 
-This means that `pip` will first try to install using a wheel file from the `/packnsend/testing` index. If it can't find a wheel for the package, then it will automatically attempt to install using a source package file from the `/root/pypi` index. If that should fail, then it will install the source package from the PyPi index at https://pypi.python.org/pypi.
+This means that `pip` will first try to install using a wheel file from the
+`/packnsend/testing` index. If it can't find a wheel for the package, then it
+will automatically attempt to install using a source package file from the
+`/root/pypi` index. If that should fail, then it will install the source
+package from the PyPi index at https://pypi.python.org/pypi.
 
-In other words, using the devpi index server when running `pip install` will always work, even if the wheel or source package isn't already cached by the devpi server. It will just be faster if it has been cached.
+In other words, using the devpi index server when running `pip install` will
+always work, even if the wheel or source package isn't already cached by the
+devpi server. It will just be faster if it has been cached.
 
 Package Lists
 -------------
 
 * What source packages do we download to seed the cache?
 
-All of the packages listed in the `/packages-lists/packages-*txt` files. If a Python package is Python 3 only, then it is listed in `packages-py3.txt`, so that we know to download it with a Python 3 version of `pip`.
+The packages are automatically extracted from all the tox files in the
+python_agent repository. The extraction looks for dependencies in environments
+starting with `py`. If it finds environments with the prefix `py` then it will
+split them into `py2` and `py3` groups. The `py3` group will contain
+dependencies that only appear in `py3*` environments.
 
 * What wheels do we build to upload to the `/packnsend/testing` index?
 
-Each of the 4 Python versions has a separate list in the `packages-lists` directory:
+Each of the Python versions has a separate generated list in the
+`packages-lists` directory:
 
-* wheels-py26.txt
-* wheels-py27.txt
-* wheels-py33.txt
-* wheels-pypy.txt
+Example: wheels-py26.txt wheels-py27.txt wheels-py33.txt wheels-pypy.txt
 
-Unlike the lists for the source packages, there is a lot of duplication between the wheel lists, because some packages build different wheels for different Python versions.
+These files are generated by using the tox files to determine the specific
+versions of python that use the packages.
 
-Plus, a number of packages throw errors when trying to build a wheel in Python 3.3, so the Python 3.3 list has fewer packages than the Python 2 lists.
+A number of packages throw errors when trying to build a wheel in Python 3.3.
+In this case, there are 2 possible outcomes.
+1. The tox test only runs python3 anyway (no Python 2). In this case, the
+package will be excluded from all `wheels-py2*.txt` files.
+2. The wheel build will fail and a normal `setup.py install` command will be
+used on the source package during testing.
+
+Deduplication of Wheel Builds
+-----------------------------
+
+In order to speed up the image build time, it's important to exclude building
+wheels for packages that already upload wheels to pypi. This step is
+accomplished by inspecting the extension of the package downloaded during a
+`pip install`. Only universal wheels can fully disable the building of that
+package.
+
+If a package downloads a py2 only wheel, the devpi build still builds wheels
+for both `py2` and `py3`.
+
+Additionally, wheel builds are tracked for compatibility with other python dot
+versions. This is again done through inspecting the name of the `*.whl` file
+after the wheel is built. Wheels should only be built as needed.
+
+The following shows a table of extensions and how they're interpreted by the
+build.
+
+|      Extension     |          Interpretation              |
+|--------------------|--------------------------------------|
+|py2.py3-none-any.whl| Built once for all versions of python|
+|py2-none-any.whl    | Built once for every version of py2  |
+|py3-none-any.whl    | Built once for every version of py3  |
 
 Issues
 ------
 
-1. Devpi doesn't normalize packages with underscores and hyphens properly, so some wheels that are built may not be uploaded to the index server.
+1. Devpi doesn't normalize packages with underscores and hyphens properly, so
+some wheels that are built may not be uploaded to the index server.
 
     See issues:
 
     * https://bitbucket.org/hpk42/devpi/issue/98/unable-to-remove-package-with-underscore
     * https://bitbucket.org/hpk42/devpi/issue/84/uploading-project-with-a-dash-in-the-name
-
-2. The various package lists will need to be kept up to date as we add tests in the future. These lists are not generated automatically.
-
-3. The script could be smarter about avoiding duplication of work. If a wheel is universal, or can be used for multiple versions of Python, or if a package is a dependency for multiple packages, then ideally, we would only build the wheel once. However, right now, the `build_wheels.sh` script doesn't notice these redundancies, and it rebuilds the wheel anyway.
 

@@ -67,6 +67,9 @@ use(extensions) {
             steps {
                 phase('unit-tests', 'COMPLETED') {
 
+                    job("devpi-pre-build-hook_${testSuffix}") {
+                        killPhaseCondition('NEVER')
+                    }
                     job("build.sh_${testSuffix}") {
                         killPhaseCondition('NEVER')
                     }
@@ -115,6 +118,36 @@ use(extensions) {
                     shell('./jenkins/prep_node_for_test.sh')
                     shell("./docker/packnsend run /data/tests.sh ${testEnv}")
                 }
+            }
+        }
+    }
+
+    baseJob("devpi-pre-build-hook_${testSuffix}") {
+        label('py-ec2-linux')
+        repo(repoFull)
+        branch('${GIT_REPOSITORY_BRANCH}')
+
+        configure {
+            description('Run the devpi pre-build hook.')
+            logRotator { numToKeep(10) }
+            concurrentBuild true
+
+            wrappers {
+                timeout {
+                    // abort if time is > 500% of the average of the
+                    // last 3 builds, or 60 minutes
+                    elastic(500, 3, 60)
+                    abortBuild()
+                }
+            }
+
+            parameters {
+                stringParam('GIT_REPOSITORY_BRANCH', 'develop',
+                            'Branch in git repository to run test against.')
+            }
+
+            steps {
+                shell('./docker/devpi/pre-build.sh')
             }
         }
     }

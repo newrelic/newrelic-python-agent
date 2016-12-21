@@ -41,13 +41,15 @@ def extract_packages(tox_files, exclude_packages, extra_packages):
                 env_pkgs = packages.setdefault(env, set([]))
                 env_pkgs |= tox_file_packages
 
-    for env in packages:
-        packages[env] |= set(extra_packages)
+    env_pkgs = packages.setdefault('all', set([]))
+    env_pkgs |= set(extra_packages)
 
     return packages
 
 def generate_package_lists(packages):
-    env_all = packages.pop('all', None)
+    env_all = None
+    if 'all' in packages:
+        env_all = packages['all']
 
     package_lists = {
         'py2' : set([]),
@@ -60,6 +62,10 @@ def generate_package_lists(packages):
     pkg_memberships = {}
 
     for env in packages:
+
+        if env == 'all':
+            continue
+
         for pkg in packages[env]:
             membership = pkg_memberships.setdefault(pkg, set([]))
             if env.startswith('py2'):
@@ -99,8 +105,18 @@ def create_package_list_files(package_lists, out_dir, source_only_packages):
         f.write(out)
 
 def create_wheel_build_files(packages, out_dir, source_only_packages):
+    env_all = None
+    if 'all' in packages:
+        env_all = packages['all']
     for env in packages:
-        l = list(packages[env])
+        if env == 'all':
+            continue
+
+        env_pkgs = packages[env]
+        if env_all:
+            env_pkgs |= env_all
+
+        l = list(env_pkgs)
         l = [pkg for pkg in l if pkg not in source_only_packages]
         out = '\n'.join(l)
         out_filename = os.path.join(out_dir, 'wheels-%s.txt' % env)

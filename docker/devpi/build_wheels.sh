@@ -58,6 +58,8 @@ for venv in $(find /venvs -maxdepth 1 -type d | grep -v "/venvs$"); do
     IS_PY2="$(echo "$py_name" | grep "^py2" || true)"
     IS_PY3="$(echo "$py_name" | grep "^py3" || true)"
 
+    echo "BUILDING WHEELS IN VIRTUALENV: $py_name"
+
     $venv/bin/pip install wheel
     $venv/bin/pip wheel --wheel-dir=/wheels $MYQL_CONNECTOR_URL
     while read PACKAGE || test -n "$PACKAGE"

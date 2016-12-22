@@ -43,7 +43,7 @@ cleanup_containers()
 
     echo "Removing data directory."
 
-    rm -r $DATA_DIRECTORY
+    test -n "$DATA_DIRECTORY" && rm -r $DATA_DIRECTORY
 }
 
 trap "cleanup_containers && exit 255" INT QUIT TERM
@@ -538,6 +538,17 @@ stop_application_services()
     SERVICE_ID=""
 }
 
+delete_dangling_images()
+{
+    docker images -a --format "{{.Repository}} {{.ID}}" --filter "dangling=true" | cut -f2 -d" " | xargs docker rmi
+}
+
+delete_packnsend_images()
+{
+    REMAINING_IMAGES=$(docker images -a --format "{{.Repository}} {{.ID}}" --filter "dangling=false")
+    echo "$REMAINING_IMAGES" | grep "^packnsend" | cut -f2 -d" " | xargs docker rmi
+}
+
 delete_docker_base_images()
 {
     IMAGE_LIST=${@:-$ALL_IMAGES}
@@ -547,13 +558,38 @@ delete_docker_base_images()
 
     for IMG in $IMAGE_LIST
     do
-        echo
-        echo "Remove image: $IMG"
-        echo
 
-        docker rmi $IMG
+        LOCAL_AND_REMOTE="$IMG $PYTHON_AGENT_IMG_PATH/$IMG"
+        for IMG_NAME in $LOCAL_AND_REMOTE
+        do
+            echo
+            echo "Remove image: $IMG_NAME"
+            echo
+
+            docker rmi $IMG_NAME
+
+            REMAINING_IMAGES=$(docker images -a --format "{{.Repository}} {{.ID}}" --filter "dangling=false")
+            RELEVANT_IMAGES=$(echo "$REMAINING_IMAGES" | grep "^$IMG_NAME " | cut -f2 -d" ")
+
+            for RELATED_IMG in $RELEVANT_IMAGES
+            do
+                echo
+                echo "Remove image version: $RELATED_IMG"
+                echo
+
+                docker rmi $RELATED_IMG
+            done
+        done
 
     done
+}
+
+delete_all_containers()
+{
+    echo
+    echo "Removing all containers"
+    echo
+    docker ps -a | tail -n+2 | cut -f1 -d" " | xargs docker rm -f
 }
 
 print_usage()
@@ -581,6 +617,7 @@ print_usage()
     echo "    pull               Pull base images."
     echo "    start              Start base containers."
     echo "    stop               Stop base containers."
+    echo "    refresh            Re-pull the base containers, cleans up, restarts base containers."
     echo "    restart            Stop, then start base containers."
     echo "    cleanup            Delete base images."
     echo
@@ -680,7 +717,20 @@ case "$COMMAND" in
         start_application_services "$@"
         ;;
 
+    refresh)
+        stop_application_services "$@"
+        delete_all_containers
+        delete_dangling_images
+        delete_packnsend_images
+        pull_docker_base_images "$@"
+        delete_dangling_images
+        start_application_services "$@"
+        ;;
+
     cleanup)
+        delete_all_containers
+        delete_dangling_images
+        delete_packnsend_images
         delete_docker_base_images "$@"
         ;;
 

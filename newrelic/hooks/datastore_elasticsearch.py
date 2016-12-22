@@ -224,7 +224,7 @@ _elasticsearch_client_snapshot_methods = (
     ('get_repository', None),
     ('restore', None),
     ('status', None),
-    ('verfify_repository', None),
+    ('verify_repository', None),
 )
 
 def instrument_elasticsearch_client_snapshot(module):

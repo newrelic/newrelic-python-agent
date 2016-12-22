@@ -540,11 +540,17 @@ stop_application_services()
 
 delete_dangling_images()
 {
-    docker images -a --format "{{.Repository}} {{.ID}}" --filter "dangling=true" | cut -f2 -d" " | xargs docker rmi
+    echo
+    echo "Removing dangling images"
+    echo
+    docker images -a --format "{{.ID}}" --filter "dangling=true" | xargs docker rmi
 }
 
 delete_packnsend_images()
 {
+    echo
+    echo "Delete packnsend images"
+    echo
     REMAINING_IMAGES=$(docker images -a --format "{{.Repository}} {{.ID}}" --filter "dangling=false")
     echo "$REMAINING_IMAGES" | grep "^packnsend" | cut -f2 -d" " | xargs docker rmi
 }
@@ -562,12 +568,6 @@ delete_docker_base_images()
         LOCAL_AND_REMOTE="$IMG $PYTHON_AGENT_IMG_PATH/$IMG"
         for IMG_NAME in $LOCAL_AND_REMOTE
         do
-            echo
-            echo "Remove image: $IMG_NAME"
-            echo
-
-            docker rmi $IMG_NAME
-
             REMAINING_IMAGES=$(docker images -a --format "{{.Repository}} {{.ID}}" --filter "dangling=false")
             RELEVANT_IMAGES=$(echo "$REMAINING_IMAGES" | grep "^$IMG_NAME " | cut -f2 -d" ")
 
@@ -589,7 +589,7 @@ delete_all_containers()
     echo
     echo "Removing all containers"
     echo
-    docker ps -a | tail -n+2 | cut -f1 -d" " | xargs docker rm -f
+    docker ps -a -q | xargs docker rm -f
 }
 
 print_usage()

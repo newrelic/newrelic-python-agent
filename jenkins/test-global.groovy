@@ -30,10 +30,10 @@ use(extensions) {
             publishers {
                 extendedEmail('python-agent-dev@newrelic.com')
             }
+            blockOnJobs('python_agent-dsl-seed')
 
             if (jobType == 'pullrequest') {
                 repositoryPR(repoFull)
-                concurrentBuild true
                 gitBranch = '${ghprbActualCommit}'
             }
             else if (jobType == 'develop') {
@@ -89,7 +89,7 @@ use(extensions) {
         configure {
             description('reseeds only integration-test-multijob')
             logRotator { numToKeep(10) }
-            blockOnJobs(['integration-test-multijob', 'python_agent-dsl-seed'])
+            blockOnJobs(['integration-test-multijob', ".*${integTestSuffix}"])
 
             parameters {
                 stringParam('GIT_REPOSITORY_BRANCH', 'develop',

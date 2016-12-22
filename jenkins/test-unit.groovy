@@ -36,10 +36,11 @@ use(extensions) {
             label('py-ec2-linux')
             description("Run unit tests (i.e. ./tests.sh) on the _${jobType}_ branch")
             logRotator { numToKeep(10) }
+            concurrentBuild true
+            blockOnJobs('python_agent-dsl-seed')
 
             if (jobType == 'pullrequest') {
                 repositoryPR(repoFull)
-                concurrentBuild true
                 gitBranch = '${ghprbActualCommit}'
             } else if (jobType == 'manual') {
                 repository(repoFull, '${GIT_REPOSITORY_BRANCH}')

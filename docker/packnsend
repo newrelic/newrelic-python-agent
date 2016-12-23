@@ -544,7 +544,7 @@ delete_dangling_images()
     echo "Removing dangling images"
     echo
     DANGLING=$(docker images -a -q --filter "dangling=true")
-    test -n "$DANGLING" && echo "$DANGLING" | xargs docker rmi
+    test -n "$DANGLING" && { echo "$DANGLING" | xargs docker rmi || exit 1; }
 }
 
 delete_packnsend_images()
@@ -554,7 +554,7 @@ delete_packnsend_images()
     echo
     REMAINING_IMAGES=$(docker images -a --format "{{.Repository}} {{.ID}}" --filter "dangling=false")
     TO_REMOVE=$(echo "$REMAINING_IMAGES" | grep "^packnsend" | cut -f2 -d" ")
-    test -n "$TO_REMOVE" && echo "$TO_REMOVE" | xargs docker rmi
+    test -n "$TO_REMOVE" && { echo "$TO_REMOVE" | xargs docker rmi || exit 1; }
 }
 
 delete_docker_base_images()
@@ -579,7 +579,7 @@ delete_docker_base_images()
                 echo "Remove image version: $RELATED_IMG"
                 echo
 
-                docker rmi -f $RELATED_IMG
+                docker rmi -f $RELATED_IMG || exit 1
             done
         done
 
@@ -592,7 +592,7 @@ delete_all_containers()
     echo "Removing all containers"
     echo
     CONTAINERS=$(docker ps -a -q)
-    test -n "$CONTAINERS" && echo "$CONTAINERS" | xargs docker rm -f
+    test -n "$CONTAINERS" && { echo "$CONTAINERS" | xargs docker rm -f || exit 1; }
 }
 
 print_usage()

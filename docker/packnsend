@@ -579,7 +579,7 @@ delete_docker_base_images()
                 echo "Remove image version: $RELATED_IMG"
                 echo
 
-                docker rmi $RELATED_IMG
+                docker rmi -f $RELATED_IMG
             done
         done
 

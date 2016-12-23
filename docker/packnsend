@@ -620,7 +620,10 @@ print_usage()
     echo "    pull               Pull base images."
     echo "    start              Start base containers."
     echo "    stop               Stop base containers."
-    echo "    refresh            Re-pull the base containers, cleans up, restarts base containers."
+    echo "    refresh            Re-pull the base images,"
+    echo "                       remove all containers,"
+    echo "                       remove packnsend related images,"
+    echo "                       restarts base containers."
     echo "    restart            Stop, then start base containers."
     echo "    cleanup            Delete base images."
     echo

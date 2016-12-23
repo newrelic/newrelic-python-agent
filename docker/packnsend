@@ -543,7 +543,7 @@ delete_dangling_images()
     echo
     echo "Removing dangling images"
     echo
-    DANGLING=$(docker images -a --format "{{.ID}}" --filter "dangling=true")
+    DANGLING=$(docker images -a -q --filter "dangling=true")
     test -n "$DANGLING" && echo "$DANGLING" | xargs docker rmi
 }
 

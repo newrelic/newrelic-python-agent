@@ -46,8 +46,13 @@ use(extensions) {
                 }
             }
 
-            slackQuiet(slackChannel) {
-                notifySuccess true
+            if (jobType == 'pullrequest') {
+                slackQuiet(slackChannel) {
+                    customMessage '$ghprbPullTitle (<${ghprbPullLink}|${ghprbSourceBranch}>)'
+                    notifySuccess true
+                    notifyNotBuilt true
+                    notifyAborted true
+                }
             }
         }
     }

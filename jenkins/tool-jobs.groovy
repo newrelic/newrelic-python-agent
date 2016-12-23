@@ -53,9 +53,7 @@ use(extensions) {
                 shell('./jenkins/packnsend-buildnpush.sh')
             }
 
-            slackQuiet(slackChannel){
-                notifySuccess true
-            }
+            slackQuiet(slackChannel)
         }
     }
 
@@ -95,9 +93,7 @@ use(extensions) {
                 shell('./jenkins/refresh_docker_containers.sh')
             }
 
-            slackQuiet(slackChannel){
-                notifySuccess true
-            }
+            slackQuiet(slackChannel)
         }
     }
 }

@@ -27,9 +27,6 @@ use(extensions) {
             description("Perform full suite of tests on Python Agent on the ${jobType} branch")
             logRotator { numToKeep(10) }
             label('py-ec2-linux')
-            publishers {
-                extendedEmail('python-agent-dev@newrelic.com')
-            }
             blockOnJobs('python_agent-dsl-seed')
 
             if (jobType == 'pullrequest') {
@@ -75,8 +72,21 @@ use(extensions) {
                 }
             }
 
-            slack(slackChannel){
-                notifySuccess true
+            if (jobType == 'manual') {
+                // enable build-user-vars-plugin
+                wrappers { buildUserVars() }
+                // send private slack message
+                slackQuiet('@${BUILD_USER_ID}') {
+                    customMessage 'on branch `${GIT_REPOSITORY_BRANCH}`'
+                    notifySuccess true
+                    notifyNotBuilt true
+                    notifyAborted true
+                }
+            } else if (jobType == 'master' || jobType == 'develop') {
+                slackQuiet(slackChannel) {
+                    notifyNotBuilt true
+                    notifyAborted true
+                }
             }
         }
     }

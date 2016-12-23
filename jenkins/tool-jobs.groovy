@@ -4,6 +4,8 @@ String organization = 'python-agent'
 String repoGHE = 'python_agent'
 String repoFull = "${organization}/${repoGHE}"
 String testPrefix = "${organization}-tools"
+String integTestSuffix = "__integration-test"
+String unitTestSuffix = "__unit-test"
 String slackChannel = '#python-agent'
 
 
@@ -24,7 +26,8 @@ use(extensions) {
             // branch instead of master
             repository(repoFull, 'develop')
 
-            blockOnJobs('reseed-integration-tests')
+            // block on any RUNNING job (not queued)
+            blockOnJobs('.*', 'GLOBAL', 'DISABLED')
         }
     }
 
@@ -68,6 +71,9 @@ use(extensions) {
 
             concurrentBuild true
             logRotator { numToKeep(10) }
+
+            // block on any RUNNING job (not queued)
+            blockOnJobs("(.*${integTestSuffix})|(.*${unitTestSuffix})", 'GLOBAL', 'DISABLED')
 
             parameters {
                 stringParam('GIT_BRANCH', 'develop',

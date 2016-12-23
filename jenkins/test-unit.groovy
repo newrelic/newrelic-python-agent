@@ -77,8 +77,21 @@ use(extensions) {
                 }
             }
 
-            slackQuiet(slackChannel) {
-                notifySuccess true
+            if (jobType == 'manual') {
+                // enable build-user-vars-plugin
+                wrappers { buildUserVars() }
+                // send private slack message
+                slackQuiet('@${BUILD_USER_ID}') {
+                    customMessage 'on branch `${GIT_REPOSITORY_BRANCH}`'
+                    notifySuccess true
+                    notifyNotBuilt true
+                    notifyAborted true
+                }
+            } else if (jobType == 'master' || jobType == 'develop') {
+                slackQuiet(slackChannel) {
+                    notifyNotBuilt true
+                    notifyAborted true
+                }
             }
         }
     }

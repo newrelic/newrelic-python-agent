@@ -2,7 +2,8 @@ import elasticsearch
 import elasticsearch.client
 
 from newrelic.hooks.datastore_elasticsearch import (
-        _elasticsearch_client_methods, _elasticsearch_client_indices_methods,
+        _elasticsearch_client_methods,
+        _elasticsearch_client_indices_methods,
         _elasticsearch_client_cat_methods,
         _elasticsearch_client_cluster_methods,
         _elasticsearch_client_nodes_methods,

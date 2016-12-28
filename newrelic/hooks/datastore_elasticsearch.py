@@ -248,6 +248,18 @@ def instrument_elasticsearch_client_snapshot(module):
         wrap_elasticsearch_client_method(module.SnapshotClient, name,
                 arg_extractor, 'snapshot')
 
+_elasticsearch_client_ingest_methods = (
+    ('get_pipeline', None),
+    ('put_pipeline', None),
+    ('delete_pipeline', None),
+    ('simulate', None),
+)
+
+def instrument_elasticsearch_client_ingest(module):
+    for name, arg_extractor in _elasticsearch_client_ingest_methods:
+        wrap_elasticsearch_client_method(module.IngestClient, name,
+                arg_extractor, 'ingest')
+
 def _nr_Connection__init__wrapper(wrapped, instance, args, kwargs):
     """Cache datastore instance info on Connection object"""
 

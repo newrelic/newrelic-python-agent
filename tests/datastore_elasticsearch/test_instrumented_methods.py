@@ -7,7 +7,9 @@ from newrelic.hooks.datastore_elasticsearch import (
         _elasticsearch_client_cat_methods,
         _elasticsearch_client_cluster_methods,
         _elasticsearch_client_nodes_methods,
-        _elasticsearch_client_snapshot_methods)
+        _elasticsearch_client_snapshot_methods,
+        _elasticsearch_client_ingest_methods,
+)
 
 def _test_methods_wrapped(object, method_name_tuples):
     for method_name, _ in method_name_tuples:
@@ -35,3 +37,7 @@ def test_instrumented_methods():
     if hasattr(elasticsearch.client, 'SnapshotClient'):
         _test_methods_wrapped(elasticsearch.client.SnapshotClient,
                 _elasticsearch_client_snapshot_methods)
+
+    if hasattr(elasticsearch.client, 'IngestClient'):
+        _test_methods_wrapped(elasticsearch.client.IngestClient,
+                _elasticsearch_client_ingest_methods)

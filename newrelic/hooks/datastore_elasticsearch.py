@@ -255,8 +255,8 @@ def _nr_Connection__init__wrapper(wrapped, instance, args, kwargs):
         return host, port
 
     host, port = _bind_params(*args, **kwargs)
-    port_path_or_id = str(port)
-    instance._nr_datastore_instance_info = (host, port_path_or_id)
+    port = str(port)
+    instance._nr_host_port = (host, port)
 
     return wrapped(*args, **kwargs)
 
@@ -279,7 +279,7 @@ def _nr_perform_request_wrapper(wrapped, instance, args, kwargs):
         tracer_settings = transaction.settings.datastore_tracer
 
         if tracer_settings.instance_reporting.enabled:
-            host, port_path_or_id = instance._nr_datastore_instance_info
+            host, port_path_or_id = instance._nr_host_port
             instance_info = (host, port_path_or_id, None)
     except:
         instance_info = ('unknown', 'unknown', None)

@@ -2269,12 +2269,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('elasticsearch.connection.base',
             'newrelic.hooks.datastore_elasticsearch',
             'instrument_elasticsearch_connection_base')
-    _process_module_definition('elasticsearch.connection.http_urllib3',
+    _process_module_definition('elasticsearch.transport',
             'newrelic.hooks.datastore_elasticsearch',
-            'instrument_elasticsearch_urllib3HttpConnection')
-    _process_module_definition('elasticsearch.connection.http_requests',
-            'newrelic.hooks.datastore_elasticsearch',
-            'instrument_elasticsearch_requestsHttpConnection')
+            'instrument_elasticsearch_transport')
 
     _process_module_definition('pyelasticsearch.client',
             'newrelic.hooks.datastore_pyelasticsearch',

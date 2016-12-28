@@ -19,30 +19,39 @@ def _test_methods_wrapped(object, method_name_tuples):
             err = '%s.%s isnt being wrapped' % (object, method)
             assert hasattr(method, '__wrapped__'), err
 
-def test_instrumented_methods():
+def test_instrumented_methods_client():
     _test_methods_wrapped(elasticsearch.Elasticsearch,
             _elasticsearch_client_methods)
+
+def test_instrumented_methods_client_indices():
     _test_methods_wrapped(elasticsearch.client.IndicesClient,
             _elasticsearch_client_indices_methods)
+
+def test_instrumented_methods_client_cluster():
     _test_methods_wrapped(elasticsearch.client.ClusterClient,
             _elasticsearch_client_cluster_methods)
 
+def test_instrumented_methods_client_cat():
     if hasattr(elasticsearch.client, 'CatClient'):
         _test_methods_wrapped(elasticsearch.client.CatClient,
                 _elasticsearch_client_cat_methods)
 
+def test_instrumented_methods_client_nodes():
     if hasattr(elasticsearch.client, 'NodesClient'):
         _test_methods_wrapped(elasticsearch.client.NodesClient,
                 _elasticsearch_client_nodes_methods)
 
+def test_instrumented_methods_client_snapshot():
     if hasattr(elasticsearch.client, 'SnapshotClient'):
         _test_methods_wrapped(elasticsearch.client.SnapshotClient,
                 _elasticsearch_client_snapshot_methods)
 
+def test_instrumented_methods_client_tasks():
     if hasattr(elasticsearch.client, 'TasksClient'):
         _test_methods_wrapped(elasticsearch.client.TasksClient,
                 _elasticsearch_client_tasks_methods)
 
+def test_instrumented_methods_client_ingest():
     if hasattr(elasticsearch.client, 'IngestClient'):
         _test_methods_wrapped(elasticsearch.client.IngestClient,
                 _elasticsearch_client_ingest_methods)

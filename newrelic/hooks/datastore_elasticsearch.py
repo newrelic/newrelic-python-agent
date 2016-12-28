@@ -248,6 +248,17 @@ def instrument_elasticsearch_client_snapshot(module):
         wrap_elasticsearch_client_method(module.SnapshotClient, name,
                 arg_extractor, 'snapshot')
 
+_elasticsearch_client_tasks_methods = (
+    ('list', None),
+    ('cancel', None),
+    ('get', None),
+)
+
+def instrument_elasticsearch_client_tasks(module):
+    for name, arg_extractor in _elasticsearch_client_tasks_methods:
+        wrap_elasticsearch_client_method(module.TasksClient, name,
+                arg_extractor, 'tasks')
+
 _elasticsearch_client_ingest_methods = (
     ('get_pipeline', None),
     ('put_pipeline', None),

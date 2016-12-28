@@ -4,7 +4,7 @@
 
 import functools
 
-from newrelic.agent import (ObjectProxy, function_wrapper, callable_name,
+from newrelic.agent import (function_wrapper, callable_name,
     current_transaction, FunctionTrace, wrap_function_wrapper)
 
 module_cornice_service = None

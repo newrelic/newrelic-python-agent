@@ -38,13 +38,6 @@ _test_cornice_resource_collection_get_scoped_metrics = [
         ('Function/pyramid.router:Router.__call__', 1),
         ('Function/_test_application:Resource.collection_get', 1)]
 
-if six.PY3:
-    _test_cornice_resource_collection_get_scoped_metrics.extend([
-        ('Function/cornice.service:decorate_view.<locals>.wrapper', 1)])
-else:
-    _test_cornice_resource_collection_get_scoped_metrics.extend([
-        ('Function/cornice.service:wrapper', 1)])
-
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_application:Resource.collection_get',
         scoped_metrics=_test_cornice_resource_collection_get_scoped_metrics)
@@ -58,13 +51,6 @@ _test_cornice_resource_get_scoped_metrics = [
         ('Python/WSGI/Finalize', 1),
         ('Function/pyramid.router:Router.__call__', 1),
         ('Function/_test_application:Resource.get', 1)]
-
-if six.PY3:
-    _test_cornice_resource_get_scoped_metrics.extend([
-        ('Function/cornice.service:decorate_view.<locals>.wrapper', 1)])
-else:
-    _test_cornice_resource_get_scoped_metrics.extend([
-        ('Function/cornice.service:wrapper', 1)])
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_application:Resource.get',

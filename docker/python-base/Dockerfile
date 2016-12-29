@@ -1,5 +1,4 @@
-FROM ubuntu:12.04
-MAINTAINER Graham Dumpleton <grahamd@newrelic.com>
+FROM ubuntu:16.04
 
 RUN apt-get update
 
@@ -14,8 +13,7 @@ RUN apt-get install -y \
     bzip2 \
     vim \
     wget \
-    apache2-mpm-worker \
-    apache2-threaded-dev \
+    software-properties-common \
     python-software-properties
 
 # Install python versions.
@@ -38,12 +36,16 @@ RUN wget https://bootstrap.pypa.io/get-pip.py && \
     pip install 'pip<1.5' 'virtualenv==1.11.6' 'tox<1.7.0'
 
 # Needed for tests.
-RUN apt-get install -y \
-    postgresql-9.1 \
+# The DEBIAN_FRONTEND env var prevents mysql-server from prompting for a root
+# password
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    postgresql \
+    postgresql-server-dev-9.5 \
     libffi-dev \
     freetds-dev \
     libmemcached-dev \
     build-essential \
     redis-server \
     mysql-server \
+    libmysqlclient-dev \
     curl

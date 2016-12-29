@@ -42,6 +42,16 @@ _test_cornice_resource_collection_get_scoped_metrics = [
 @validate_transaction_metrics('_test_application:Resource.collection_get',
         scoped_metrics=_test_cornice_resource_collection_get_scoped_metrics)
 def test_cornice_resource_collection_get():
+    from utils import CORNICE_VERSION
+
+    if CORNICE_VERSION < (0, 18):
+        if six.PY3:
+            _test_cornice_resource_collection_get_scoped_metrics.extend([
+                ('Function/cornice.service:decorate_view.<locals>.wrapper', 1)])
+        else:
+            _test_cornice_resource_collection_get_scoped_metrics.extend([
+                ('Function/cornice.service:wrapper', 1)])
+
     application = target_application()
     application.get('/resource')
 
@@ -56,6 +66,16 @@ _test_cornice_resource_get_scoped_metrics = [
 @validate_transaction_metrics('_test_application:Resource.get',
         scoped_metrics=_test_cornice_resource_get_scoped_metrics)
 def test_cornice_resource_get():
+    from utils import CORNICE_VERSION
+
+    if CORNICE_VERSION < (0, 18):
+        if six.PY3:
+            _test_cornice_resource_get_scoped_metrics.extend([
+                ('Function/cornice.service:decorate_view.<locals>.wrapper', 1)])
+        else:
+            _test_cornice_resource_get_scoped_metrics.extend([
+                ('Function/cornice.service:wrapper', 1)])
+
     application = target_application()
     application.get('/resource/1')
 

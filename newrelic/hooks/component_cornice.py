@@ -4,7 +4,7 @@
 
 import functools
 
-from newrelic.agent import (ObjectProxy, function_wrapper, callable_name,
+from newrelic.agent import (function_wrapper, callable_name,
     current_transaction, FunctionTrace, wrap_function_wrapper)
 
 module_cornice_service = None
@@ -33,7 +33,7 @@ def wrapper_Resource(view):
     return _wrapper_Resource
 
 def wrapper_decorate_view(wrapped, instance, args, kwargs):
-    def _bind_params(view, args, method):
+    def _bind_params(view, args, method, *other_args, **other_kwargs):
         return view, args, method
 
     _view, _args, _method = _bind_params(*args, **kwargs)

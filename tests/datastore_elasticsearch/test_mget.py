@@ -59,8 +59,8 @@ if len(ES_MULTIPLE_SETTINGS) > 1:
             host_2, port_2)
 
     _enable_rollup_metrics.extend([
-            (instance_metric_name_1, None),
-            (instance_metric_name_2, None),
+            (instance_metric_name_1, 2),
+            (instance_metric_name_2, 1),
     ])
 
     _disable_rollup_metrics.extend([
@@ -110,7 +110,8 @@ def test_multi_get_enabled():
     # This is actually the default already. Using round robin will ensure that
     # doing two db calls will mean elastic search is talking to two different
     # dbs.
-    client = Elasticsearch(urls, selector_class=RoundRobinSelector)
+    client = Elasticsearch(urls, selector_class=RoundRobinSelector,
+            randomize_hosts=False)
     _exercise_es_multi(client)
 
 @pytest.mark.skipif(len(ES_MULTIPLE_SETTINGS) < 2,
@@ -129,5 +130,6 @@ def test_multi_get_disabled():
     # This is actually the default already. Using round robin will ensure that
     # doing two db calls will mean elastic search is talking to two different
     # dbs.
-    client = Elasticsearch(urls, selector_class=RoundRobinSelector)
+    client = Elasticsearch(urls, selector_class=RoundRobinSelector,
+            randomize_hosts=False)
     _exercise_es_multi(client)

@@ -31,20 +31,24 @@ _enabled_required = {
     'host': instance_hostname(ES_SETTINGS['host']),
     'port_path_or_id': str(ES_SETTINGS['port']),
 }
-_enabled_forgone = {}
+_enabled_forgone = {
+    'database_name': 'VALUE NOT USED',
+}
 
 _disabled_required = {}
 _disabled_forgone = {
     'host': 'VALUE NOT USED',
     'port_path_or_id': 'VALUE NOT USED',
-    # 'database_name': 'VALUE NOT USED',
+    'database_name': 'VALUE NOT USED',
 }
 
 _instance_only_required = {
     'host': instance_hostname(ES_SETTINGS['host']),
     'port_path_or_id': str(ES_SETTINGS['port']),
 }
-_instance_only_forgone = {}
+_instance_only_forgone = {
+    'database_name': 'VALUE NOT USED',
+}
 
 # Query
 

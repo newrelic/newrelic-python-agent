@@ -71,8 +71,6 @@ else:
     _test_cornice_error_errors = ['exceptions:RuntimeError']
 
 @validate_transaction_errors(errors=_test_cornice_error_errors)
-#@validate_transaction_metrics('_test_application:cornice_error_get_info',
-#        scoped_metrics=_test_cornice_error_scoped_metrics)
 @validate_transaction_metrics('cornice.pyramidhook:handle_exceptions',
         scoped_metrics=_test_cornice_error_scoped_metrics)
 def test_cornice_error():

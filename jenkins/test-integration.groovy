@@ -7,7 +7,6 @@ String organization = 'python-agent'
 String repoGHE = 'python_agent'
 String repoFull = "${organization}/${repoGHE}"
 String testSuffix = "__integration-test"
-String slackChannel = '#python-agent'
 
 def yaml = new Yaml()
 List<String> disabledList = yaml.load(readFileFromWorkspace('jenkins/test-integration-config.yml')).disable

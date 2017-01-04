@@ -15,38 +15,63 @@ set -e
 # Create directory to hold package tarballs temporarily
 
 mkdir -p /downloads
+touch /root/needs-wheel.txt
 
-# Install most packages in python 2.7 virtualenv
+for venv in $(find /venvs -maxdepth 1 -type d | grep -v "/venvs$"); do
+    $venv/bin/pip install -U "pip<=9.0.1"
+done
 
-while read PACKAGE
+# Some packages must be installed in source format only
+while read PACKAGE || test -n "$PACKAGE"
 do
-    /venvs/py27/bin/pip install \
+    echo "DOWNLOADING SOURCE: $PACKAGE"
+    /venvs/py27/bin/pip download \
         -i http://localhost:3141/root/pypi/ \
-        --download /downloads \
-        -U $PACKAGE
+        -d /downloads \
+        --no-binary :all: \
+        $PACKAGE
 
     # Clean out /downloads, so it's possible to install multiple versions
     # of the same package
 
     rm -rf /downloads
     mkdir -p /downloads
+done < /root/package-lists/packages-source.txt
 
-done < /root/package-lists/packages-py2.txt
+CONFIGS="PY2_py27_/root/package-lists/packages-py2.txt PY3_py33_/root/package-lists/packages-py3.txt"
 
-# Some packages must be installed in python 3 virtualenv
-
-while read PACKAGE
+for config in $CONFIGS
 do
-    /venvs/py33/bin/pip install \
-        -i http://localhost:3141/root/pypi/ \
-        --download /downloads \
-        -U $PACKAGE
+    PY_NAME=$(echo $config | cut -f1 -d"_")
+    PY_FULL=$(echo $config | cut -f2 -d"_")
+    PKG_FILE=$(echo $config | cut -f3 -d"_")
+    echo "PY_NAME: $PY_NAME"
+    echo "PY_FULL: $PY_FULL"
+    echo "PKG_FILE: $PKG_FILE"
+    while read PACKAGE || test -n "$PACKAGE"
+    do
+        echo "DOWNLOADING $PY_NAME: $PACKAGE"
+        /venvs/$PY_FULL/bin/pip download \
+            -i http://localhost:3141/root/pypi/ \
+            -d /downloads \
+            $PACKAGE
 
-    # Make it possible to install multiple versions of the same package
+        TRUE_PACKAGE_NAME=$(echo $PACKAGE | tr -s "<=>" " " | cut -f1 -d" " | tr -s "-" "_")
+        echo "$PACKAGE TRUE_PACKAGE_NAME: $TRUE_PACKAGE_NAME"
 
-    rm -rf /downloads
-    mkdir -p /downloads
+        UNIVERSAL_WHEEL=$(find /downloads -maxdepth 1 -iname "$TRUE_PACKAGE_NAME"'*' | grep "py2.py3-none-any.whl" || true)
 
-done < /root/package-lists/packages-py3.txt
+        test -n "$UNIVERSAL_WHEEL" && echo "$PACKAGE UNIVERSAL_WHEEL: $UNIVERSAL_WHEEL"
+        test -n "$UNIVERSAL_WHEEL" || echo "NEEDS WHEEL: $PACKAGE"
+        test -n "$UNIVERSAL_WHEEL" || echo $PACKAGE >> /root/needs-wheel.txt
+
+        # Clean out /downloads, so it's possible to install multiple versions
+        # of the same package
+
+        rm -rf /downloads
+        mkdir -p /downloads
+
+    done < $PKG_FILE
+done
 
 rm -rf /downloads

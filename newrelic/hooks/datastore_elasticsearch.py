@@ -12,7 +12,7 @@ from newrelic.agent import (wrap_function_wrapper, current_transaction,
 def _index_name(index):
     if not index or index == '*':
         return '_all'
-    if not isinstance(index, six.string_types) or ',' in index: 
+    if not isinstance(index, six.string_types) or ',' in index:
         return 'other'
     return index
 
@@ -65,9 +65,25 @@ def wrap_elasticsearch_client_method(owner, name, arg_extractor, prefix=None):
         else:
             operation = name
 
-        with DatastoreTrace(transaction, product='Elasticsearch',
-                target=index, operation=operation):
-            return wrapped(*args, **kwargs)
+        transaction._nr_datastore_instance_info = (None, None, None)
+
+        dt = DatastoreTrace(
+                transaction=transaction,
+                product='Elasticsearch',
+                target=index,
+                operation=operation
+        )
+
+        with dt:
+            result = wrapped(*args, **kwargs)
+
+            instance_info = transaction._nr_datastore_instance_info
+            host, port_path_or_id, _ = instance_info
+
+            dt.host = host
+            dt.port_path_or_id = port_path_or_id
+
+            return result
 
     if hasattr(owner, name):
         wrap_function_wrapper(owner, name, _nr_wrapper_Elasticsearch_method_)
@@ -224,10 +240,81 @@ _elasticsearch_client_snapshot_methods = (
     ('get_repository', None),
     ('restore', None),
     ('status', None),
-    ('verfify_repository', None),
+    ('verify_repository', None),
 )
 
 def instrument_elasticsearch_client_snapshot(module):
     for name, arg_extractor in _elasticsearch_client_snapshot_methods:
         wrap_elasticsearch_client_method(module.SnapshotClient, name,
                 arg_extractor, 'snapshot')
+
+_elasticsearch_client_tasks_methods = (
+    ('list', None),
+    ('cancel', None),
+    ('get', None),
+)
+
+def instrument_elasticsearch_client_tasks(module):
+    for name, arg_extractor in _elasticsearch_client_tasks_methods:
+        wrap_elasticsearch_client_method(module.TasksClient, name,
+                arg_extractor, 'tasks')
+
+_elasticsearch_client_ingest_methods = (
+    ('get_pipeline', None),
+    ('put_pipeline', None),
+    ('delete_pipeline', None),
+    ('simulate', None),
+)
+
+def instrument_elasticsearch_client_ingest(module):
+    for name, arg_extractor in _elasticsearch_client_ingest_methods:
+        wrap_elasticsearch_client_method(module.IngestClient, name,
+                arg_extractor, 'ingest')
+
+#
+# Instrumentation to get Datastore Instance Information
+#
+
+def _nr_Connection__init__wrapper(wrapped, instance, args, kwargs):
+    """Cache datastore instance info on Connection object"""
+
+    def _bind_params(host='localhost', port=9200, *args, **kwargs):
+        return host, port
+
+    host, port = _bind_params(*args, **kwargs)
+    port = str(port)
+    instance._nr_host_port = (host, port)
+
+    return wrapped(*args, **kwargs)
+
+def instrument_elasticsearch_connection_base(module):
+    wrap_function_wrapper(module.Connection, '__init__',
+            _nr_Connection__init__wrapper)
+
+def _nr_get_connection_wrapper(wrapped, instance, args, kwargs):
+    """Read instance info from Connection and stash on Transaction."""
+
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    conn = wrapped(*args, **kwargs)
+
+    instance_info = (None, None, None)
+    try:
+        tracer_settings = transaction.settings.datastore_tracer
+
+        if tracer_settings.instance_reporting.enabled:
+            host, port_path_or_id = conn._nr_host_port
+            instance_info = (host, port_path_or_id, None)
+    except:
+        instance_info = ('unknown', 'unknown', None)
+
+    transaction._nr_datastore_instance_info = instance_info
+
+    return conn
+
+def instrument_elasticsearch_transport(module):
+    wrap_function_wrapper(module.Transport, 'get_connection',
+            _nr_get_connection_wrapper)

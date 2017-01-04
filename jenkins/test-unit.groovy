@@ -31,29 +31,24 @@ def getUnitTestEnvs = {
 use(extensions) {
    def unitTestEnvs = getUnitTestEnvs()
 
-    ['develop', 'master', 'pullrequest'].each { jobType ->
+    ['develop', 'master', 'pullrequest', 'manual'].each { jobType ->
         multiJob("_UNIT-TESTS-${jobType}_") {
             label('py-ec2-linux')
             description("Run unit tests (i.e. ./tests.sh) on the _${jobType}_ branch")
             logRotator { numToKeep(10) }
-            blockOnJobs('.*-Reset-Nodes')
+            concurrentBuild true
+            blockOnJobs('python_agent-dsl-seed')
 
             if (jobType == 'pullrequest') {
                 repositoryPR(repoFull)
-                triggers {
-                    // run for all pull requests
-                    pullRequest {
-                        permitAll(true)
-                        useGitHubHooks()
-                    }
-                }
-                concurrentBuild true
                 gitBranch = '${ghprbActualCommit}'
-            }
-            else {
+            } else if (jobType == 'manual') {
+                repository(repoFull, '${GIT_REPOSITORY_BRANCH}')
+                gitBranch = ''
+            } else {
                 repository(repoFull, jobType)
                 triggers {
-                    // trigger on push to develop/master
+                    // trigger on push to master and develop
                     githubPush()
                 }
                 gitBranch = jobType
@@ -61,12 +56,15 @@ use(extensions) {
 
             parameters {
                 stringParam('GIT_REPOSITORY_BRANCH', gitBranch,
-                            'Branch in git repository to run test agaisnt.')
+                            'Branch in git repository to run test against.')
             }
 
             steps {
                 phase('unit-tests', 'COMPLETED') {
 
+                    job("devpi-pre-build-hook_${testSuffix}") {
+                        killPhaseCondition('NEVER')
+                    }
                     job("build.sh_${testSuffix}") {
                         killPhaseCondition('NEVER')
                     }
@@ -79,8 +77,21 @@ use(extensions) {
                 }
             }
 
-            slackQuiet(slackChannel) {
-                notifySuccess true
+            if (jobType == 'manual') {
+                // enable build-user-vars-plugin
+                wrappers { buildUserVars() }
+                // send private slack message
+                slackQuiet('@${BUILD_USER_ID}') {
+                    customMessage 'on branch `${GIT_REPOSITORY_BRANCH}`'
+                    notifySuccess true
+                    notifyNotBuilt true
+                    notifyAborted true
+                }
+            } else if (jobType == 'master' || jobType == 'develop') {
+                slackQuiet(slackChannel) {
+                    notifyNotBuilt true
+                    notifyAborted true
+                }
             }
         }
     }
@@ -115,6 +126,36 @@ use(extensions) {
                     shell('./jenkins/prep_node_for_test.sh')
                     shell("./docker/packnsend run /data/tests.sh ${testEnv}")
                 }
+            }
+        }
+    }
+
+    baseJob("devpi-pre-build-hook_${testSuffix}") {
+        label('py-ec2-linux')
+        repo(repoFull)
+        branch('${GIT_REPOSITORY_BRANCH}')
+
+        configure {
+            description('Run the devpi pre-build hook.')
+            logRotator { numToKeep(10) }
+            concurrentBuild true
+
+            wrappers {
+                timeout {
+                    // abort if time is > 500% of the average of the
+                    // last 3 builds, or 60 minutes
+                    elastic(500, 3, 60)
+                    abortBuild()
+                }
+            }
+
+            parameters {
+                stringParam('GIT_REPOSITORY_BRANCH', 'develop',
+                            'Branch in git repository to run test against.')
+            }
+
+            steps {
+                shell('./docker/devpi/pre-build.sh')
             }
         }
     }

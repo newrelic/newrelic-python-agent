@@ -44,6 +44,7 @@ For those test directories that have a `docker-compose.yml` file, tests will be 
 We have installed the following plugins on our JaaS instance:
 + build-blocker-plugin
 + build-timeout
++ build-user-vars-plugin
 + email-ext
 + envinject
 + jenkins-multijob-plugin

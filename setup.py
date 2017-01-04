@@ -101,6 +101,7 @@ classifiers = [
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.3",
         "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
         "Topic :: System :: Monitoring",
@@ -124,7 +125,6 @@ kwargs = dict(
               'common/cacert.pem',
               'packages/requests/LICENSE', 'packages/requests/NOTICE',
               'packages/requests/cacert.pem'] },
-        extra_path = ( "newrelic", "newrelic-%s" % package_version ),
         scripts = [ 'scripts/newrelic-admin' ],
 )
 

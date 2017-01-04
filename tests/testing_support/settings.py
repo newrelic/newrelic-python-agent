@@ -156,19 +156,63 @@ def mongodb_settings():
     return (host, port)
 
 def elasticsearch_settings():
-    """Return (host, port) tuple to connect to elasticsearch."""
+    """Return a dict of settings for connecting to elasticsearch.
+
+    Will return the correct settings, depending on which of the
+    three environments it is running in. It attempts to set variables
+    in the following order, where later environments override earlier
+    ones.
+
+        1. Local
+        2. Tddium
+        3. Test Docker container
+
+    """
+
+    settings = {}
 
     # Use local defaults, if TDDIUM vars aren't present.
 
-    host = os.environ.get('TDDIUM_ES_HOST', 'localhost')
-    port = int(os.environ.get('TDDIUM_ES_HTTP_PORT', '9200'))
+    settings['host'] = _e('TDDIUM_ES_HOST', 'localhost')
+    settings['port'] = _e('TDDIUM_ES_HTTP_PORT', '9200')
 
     # Look for env vars in test docker container.
 
-    host = os.environ.get('ELASTICSEARCH_PORT_9200_TCP_ADDR', host)
-    port = int(os.environ.get('ELASTICSEARCH_PORT_9200_TCP_PORT', port))
+    settings['host'] = _e('ELASTICSEARCH_PORT_9200_TCP_ADDR', settings['host'])
+    settings['port'] = _e('ELASTICSEARCH_PORT_9200_TCP_PORT', settings['port'])
 
-    return (host, port)
+    return settings
+
+def elasticsearch_multiple_settings():
+    """Return a list of dicts of settings for connecting to postgresql.
+
+    Will return the correct settings, depending on which of the
+    three environments it is running in. It attempts to set variables
+    in the following order, where later environments override earlier
+    ones.
+
+        1. Local
+        2. Tddium
+        3. Test Docker container
+        4. Test docker-compose container
+
+    """
+
+    db1 = elasticsearch_settings()
+
+    # When not using docker-compose, return immediately
+
+    if not _e('COMPOSE', False):
+        return [db1]
+
+    db2 = db1.copy()
+
+    # Update hostnames based on docker-compose env vars
+
+    db1['host'] = _e('COMPOSE_ELASTICSEARCH_HOST_1', db1['host'])
+    db2['host'] = _e('COMPOSE_ELASTICSEARCH_HOST_2', db2['host'])
+
+    return [db1, db2]
 
 def solr_settings():
     """Return (host, port) tuple to connect to solr."""

@@ -125,6 +125,7 @@ kwargs = dict(
               'common/cacert.pem',
               'packages/requests/LICENSE', 'packages/requests/NOTICE',
               'packages/requests/cacert.pem'] },
+        extra_path = ( "newrelic", "newrelic-%s" % package_version ),
         scripts = [ 'scripts/newrelic-admin' ],
 )
 

@@ -44,6 +44,7 @@ then
     export PIP_INDEX_URL=$DEVPI_BASE/packnsend/testing/+simple/
     export PIP_EXTRA_INDEX_URL=$DEVPI_BASE/root/pypi/+simple/
     export PIP_USE_WHEEL=True
+    export PIP_TRUSTED_HOST=$DEVPI_PORT_3141_TCP_ADDR
 fi
 
 #

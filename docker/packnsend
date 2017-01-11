@@ -242,7 +242,6 @@ launch_remote_command()
     echo "Setting extra arguments to pass to docker run command."
     set_docker_extra_args
 
-
     echo "DOCKER_EXTRA_ARGS:$DOCKER_EXTRA_ARGS"
     echo
 
@@ -302,9 +301,8 @@ launch_remote_command()
 
     if test -n "$INTERACTIVE"
     then
-        INSPECT_OUTPUT=$(docker inspect $CONTAINER_ID)
-        NETWORK_NAME=$(echo "$INSPECT_OUTPUT" | python -c "import json; import sys; x=json.load(sys.stdin)[0]; print x['NetworkSettings']['Networks'].keys()[0]" | grep -v bridge)
-        ENV_VARS=$(echo "$INSPECT_OUTPUT" | python -c "import json; import sys; x=json.load(sys.stdin)[0]; print ' '.join(x['Config']['Env'])")
+        NETWORK_NAME=$(docker inspect --format='{{range $key,$val:=.NetworkSettings.Networks}}{{$key}}{{end}}' $CONTAINER_ID)
+        ENV_VARS=$(docker inspect --format='{{range $x:=.Config.Env}}{{$x}} {{end}}' $CONTAINER_ID)
         for var in $ENV_VARS
         do
             ENV="$ENV -e $var"

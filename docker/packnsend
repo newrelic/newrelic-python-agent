@@ -282,7 +282,6 @@ launch_remote_command()
 
     echo "Starting test container and running command."
     echo "Command: $@"
-    #echo "RUN_CMD: $(echo $RUN_CMD | tr -s ' ')"
 
     CONTAINER_ID=$($RUN_CMD | tail -n1)
     test -n "$CONTAINER_ID" || exit 1

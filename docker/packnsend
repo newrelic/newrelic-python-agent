@@ -289,13 +289,8 @@ launch_remote_command()
 
     if test -n "$INTERACTIVE"
     then
-        NETWORK_NAME=$(docker inspect --format='{{range $key,$val:=.NetworkSettings.Networks}}{{$key}}{{end}}' $CONTAINER_ID)
-        ENV_VARS=$(docker inspect --format='{{range $x:=.Config.Env}}{{$x}} {{end}}' $CONTAINER_ID)
-        for var in $ENV_VARS
-        do
-            ENV="$ENV -e $var"
-        done
-        test -n "$NETWORK_NAME" && NETWORK="--network $NETWORK_NAME"
+        NETWORK=$(docker inspect --format='--network {{range $key,$val:=.NetworkSettings.Networks}}{{$key}}{{end}}' $CONTAINER_ID)
+        ENV=$(docker inspect --format='{{range $x:=.Config.Env}}-e {{$x}} {{end}}' $CONTAINER_ID)
 
         echo "Starting interactive debug shell."
         echo "NETWORK: $NETWORK"

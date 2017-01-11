@@ -7,5 +7,3 @@ services:
       # indicate this container uses docker-compose
       COMPOSE: "True"
     build: ../
-    external_links:
-      - packnsend-devpi:devpi

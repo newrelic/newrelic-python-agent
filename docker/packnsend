@@ -90,10 +90,7 @@ create_remote_launchers()
     cat > $DATA_DIRECTORY/packnsend-remote << EOF
 #!/bin/sh
 . /data/docker/environ
-"\$@" > /data/packnsend.log 2>&1
-STATUS=\$?
-cp /data/packnsend.log /tmp/packnsend.log
-exit \`expr \$STATUS\`
+"\$@"
 EOF
 
     cat > $DATA_DIRECTORY/packnsend-bash << EOF
@@ -285,17 +282,8 @@ launch_remote_command()
     CONTAINER_ID=$($RUN_CMD | tail -n1)
     test -n "$CONTAINER_ID" || exit 1
 
-    STATUS=$(time docker wait $CONTAINER_ID)
-
-    echo
-    echo "Copying back command output."
-
-    docker cp $CONTAINER_ID:/tmp/packnsend.log $DATA_DIRECTORY
-
-    echo "Command output:"
-    echo
-
-    cat $DATA_DIRECTORY/packnsend.log
+    docker logs -f $CONTAINER_ID
+    STATUS=$(docker wait $CONTAINER_ID)
 
     echo
 

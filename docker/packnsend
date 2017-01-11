@@ -519,7 +519,7 @@ delete_packnsend_images()
     echo
     REMAINING_IMAGES=$(docker images -a --format "{{.Repository}} {{.ID}}" --filter "dangling=false")
     TO_REMOVE=$(echo "$REMAINING_IMAGES" | grep "^packnsend" | cut -f2 -d" ")
-    test -n "$TO_REMOVE" && { echo "$TO_REMOVE" | xargs docker rmi || exit 1; }
+    test -n "$TO_REMOVE" && { echo "$TO_REMOVE" | xargs docker rmi -f || exit 1; }
 }
 
 delete_docker_base_images()

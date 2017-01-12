@@ -296,7 +296,8 @@ launch_remote_command()
 
 launch_remote_shell()
 {
-    launch_remote_command -i true
+    INTERACTIVE=1
+    launch_remote_command true
 }
 
 create_docker_base_images()

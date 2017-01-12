@@ -265,6 +265,8 @@ launch_remote_command()
     test -n "$CONTAINER_ID" || exit 1
 
     docker logs -f $CONTAINER_ID
+
+    echo "Calling docker wait."
     STATUS=$(docker wait $CONTAINER_ID)
 
     echo

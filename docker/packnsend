@@ -93,17 +93,10 @@ create_remote_launchers()
 "\$@"
 EOF
 
-    cat > $DATA_DIRECTORY/packnsend-bash << EOF
-#!/bin/sh
-. /data/docker/environ
-exec bash
-EOF
-
     # Shouldn't strictly need to do this as all files add to the image
     # by docker will have execute permissions anyway.
 
     chmod +x $DATA_DIRECTORY/packnsend-remote
-    chmod +x $DATA_DIRECTORY/packnsend-bash
 }
 
 create_docker_file()
@@ -290,7 +283,7 @@ launch_remote_command()
             $NETWORK \
             $LINK_IMGS \
             $ENV \
-            $TEST_IMAGE_NAME /data/packnsend-bash
+            $TEST_IMAGE_NAME /data/packnsend-remote bash
     fi
 }
 

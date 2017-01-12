@@ -33,9 +33,9 @@ cleanup_containers()
     # where we exported the git repository for use in creating the
     # docker image.
 
-    test -n "$COMPOSE_FILE" && docker_compose_down
-
     echo "Removing test container."
+
+    test -n "$COMPOSE_FILE" && docker_compose_down
 
     test -n "$CONTAINER_ID" && docker rm --volumes $CONTAINER_ID
 
@@ -119,7 +119,16 @@ create_docker_test_image()
     echo "Building test image."
 
     DATA_IMAGE_NAME="packnsend-${DATE}-$$"
-    (cd $DATA_DIRECTORY && docker build --no-cache --rm -t $DATA_IMAGE_NAME .)
+    if test -n "$COMPOSE_FILE"
+    then
+        (cd $DATA_DIRECTORY && docker-compose \
+                --file $COMPOSE_FILE \
+                --project-name $DATA_IMAGE_NAME \
+                build \
+                --force-rm --no-cache packnsend)
+    else
+        (cd $DATA_DIRECTORY && docker build --no-cache --rm -t $DATA_IMAGE_NAME .)
+    fi
 }
 
 set_docker_env_vars()
@@ -231,10 +240,9 @@ launch_remote_command()
 
     if test -n "$COMPOSE_FILE"
     then
-        PROJECT_NAME="packnsend-${DATE}-$$"
         RUN_CMD="docker-compose \
                 --file $DATA_DIRECTORY/$COMPOSE_FILE \
-                --project-name $PROJECT_NAME \
+                --project-name $DATA_IMAGE_NAME \
                 run -d \
                 --rm \
                 $DOCKER_EXTRA_ARGS \
@@ -325,11 +333,14 @@ docker_compose_down()
 
     docker-compose \
         --file $DATA_DIRECTORY/$COMPOSE_FILE \
-        --project-name $PROJECT_NAME \
+        --project-name $DATA_IMAGE_NAME \
         down --rmi local || exit 1
 
     # Docker compose removes the container, no need to track it further
     CONTAINER_ID=""
+
+    # Docker compose also removes the image, no need to track it further
+    DATA_IMAGE_NAME=""
 }
 
 create_docker_base_images_nocache()
@@ -626,7 +637,7 @@ case "$COMMAND" in
         export_git_repository
         create_remote_launchers
         create_docker_file
-        test -n "$COMPOSE_FILE" || create_docker_test_image
+        create_docker_test_image
         launch_remote_command "$@"
         cleanup_containers
         exit `expr $STATUS`
@@ -637,7 +648,7 @@ case "$COMMAND" in
         export_git_repository
         create_remote_launchers
         create_docker_file
-        test -n "$COMPOSE_FILE" || create_docker_test_image
+        create_docker_test_image
         launch_remote_shell
         cleanup_containers
         exit 0

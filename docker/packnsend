@@ -78,12 +78,6 @@ create_remote_launchers()
 {
     # Create the remote launcher scripts to be included in docker image
     # containing the code to be tested.
-    #
-    # XXX Still cannot seem to copy back files from /data of container
-    # after finished but can copy from /tmp. Can't even symlink or hard
-    # link file from /data into /tmp to allow it to be copied. So make
-    # an actual copy of the log file output into /tmp so it can be
-    # copied back when done.
 
     echo "Creating remote launcher scripts."
 
@@ -599,7 +593,6 @@ then
 fi
 
 COMMAND=$1
-OPTION=$2
 
 shift
 while test "$#" -ne 0

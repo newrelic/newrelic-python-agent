@@ -242,8 +242,9 @@ launch_remote_command()
                 --file $DATA_DIRECTORY/$COMPOSE_FILE \
                 --project-name $PROJECT_NAME \
                 run -d \
+                --rm \
                 $DOCKER_EXTRA_ARGS \
-                --rm packnsend \
+                packnsend \
                 /data/packnsend-remote $@"
     else
         echo "Setting images to link"
@@ -268,8 +269,10 @@ launch_remote_command()
 
     if test -n "$INTERACTIVE"
     then
-        NETWORK=$(docker inspect --format='--network {{range $key,$val:=.NetworkSettings.Networks}}{{$key}}{{end}}' $CONTAINER_ID)
-        ENV=$(docker inspect --format='{{range $x:=.Config.Env}}-e {{$x}} {{end}}' $CONTAINER_ID)
+        NETWORK_FORMAT_STR='--network {{range $k,$v:=.NetworkSettings.Networks}}{{$k}}{{end}}'
+        NETWORK=$(docker inspect --format="$NETWORK_FORMAT_STR" $CONTAINER_ID)
+        ENV_FORMAT_STR='{{range $x:=.Config.Env}}-e {{$x}} {{end}}'
+        ENV=$(docker inspect --format="$ENV_FORMAT_STR" $CONTAINER_ID)
 
         echo "Starting interactive debug shell."
         echo "NETWORK: $NETWORK"

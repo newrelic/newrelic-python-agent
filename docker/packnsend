@@ -119,7 +119,7 @@ create_docker_test_image()
     echo "Building test image."
 
     DATA_IMAGE_NAME="packnsend-${DATE}-$$"
-    (cd $DATA_DIRECTORY && docker build --rm -t $DATA_IMAGE_NAME .)
+    (cd $DATA_DIRECTORY && docker build --no-cache --rm -t $DATA_IMAGE_NAME .)
 }
 
 set_docker_env_vars()

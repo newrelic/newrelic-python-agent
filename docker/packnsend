@@ -263,8 +263,8 @@ launch_remote_command()
 
     if test -n "$INTERACTIVE"
     then
-        NETWORK_FORMAT_STR='--network {{range $k,$v:=.NetworkSettings.Networks}}{{$k}}{{end}}'
-        NETWORK=$(docker inspect --format="$NETWORK_FORMAT_STR" $CONTAINER_ID)
+        NFMT='--network {{range $k,$v:=.NetworkSettings.Networks}}{{$k}}{{end}}'
+        NETWORK=$(docker inspect --format="$NFMT" $CONTAINER_ID)
         ENV_FORMAT_STR='{{range $x:=.Config.Env}}-e {{$x}} {{end}}'
         ENV=$(docker inspect --format="$ENV_FORMAT_STR" $CONTAINER_ID)
 
@@ -422,7 +422,8 @@ start_application_services()
 
         # Is container already running?
         DOCKER_OUTPUT=$(docker ps) || exit 1
-        RUNNING_ID=$(echo "$DOCKER_OUTPUT" | grep packnsend-$IMG | awk '{print $1}')
+        RUNNING_ID=$(echo "$DOCKER_OUTPUT" |
+                grep packnsend-$IMG | awk '{print $1}')
 
         if test -n "$RUNNING_ID"
         then
@@ -432,7 +433,8 @@ start_application_services()
 
         # Is container in stopped state?
         DOCKER_OUTPUT=$(docker ps -a) || exit 1
-        STOPPED_ID=$(echo "$DOCKER_OUTPUT" | grep packnsend-$IMG | awk '{print $1}')
+        STOPPED_ID=$(echo "$DOCKER_OUTPUT" |
+                grep packnsend-$IMG | awk '{print $1}')
 
         if test -n "$STOPPED_ID"
         then
@@ -464,7 +466,8 @@ stop_application_services()
         echo "packnsend-$IMG"
 
         DOCKER_OUTPUT=$(docker ps -a) || exit 1
-        SERVICE_ID=$(echo "$DOCKER_OUTPUT" | grep packnsend-$IMG | awk '{print $1}')
+        SERVICE_ID=$(echo "$DOCKER_OUTPUT" |
+                grep packnsend-$IMG | awk '{print $1}')
         test -n "$SERVICE_ID" && echo "$SERVICE_ID"
 
         if test -n "$SERVICE_ID"
@@ -493,9 +496,10 @@ delete_packnsend_images()
     echo
     echo "Delete packnsend images"
     echo
-    REMAINING_IMAGES=$(docker images -a --format "{{.Repository}} {{.ID}}" --filter "dangling=false")
+    REMAINING_IMAGES=$(docker images -a \
+            --format "{{.Repository}} {{.ID}}" --filter "dangling=false")
     TO_REMOVE=$(echo "$REMAINING_IMAGES" | grep "^packnsend" | cut -f2 -d" ")
-    test -n "$TO_REMOVE" && { echo "$TO_REMOVE" | xargs docker rmi -f || exit 1; }
+    test -n "$TO_REMOVE" && echo "$TO_REMOVE" | xargs docker rmi -f
 }
 
 delete_docker_base_images()
@@ -511,8 +515,11 @@ delete_docker_base_images()
         LOCAL_AND_REMOTE="$IMG $PYTHON_AGENT_IMG_PATH/$IMG"
         for IMG_NAME in $LOCAL_AND_REMOTE
         do
-            REMAINING_IMAGES=$(docker images -a --format "{{.Repository}} {{.ID}}" --filter "dangling=false")
-            RELEVANT_IMAGES=$(echo "$REMAINING_IMAGES" | grep "^$IMG_NAME " | cut -f2 -d" ")
+            REMAINING_IMAGES=$(docker images -a \
+                    --format "{{.Repository}} {{.ID}}" \
+                    --filter "dangling=false")
+            RELEVANT_IMAGES=$(echo "$REMAINING_IMAGES" |
+                    grep "^$IMG_NAME " | cut -f2 -d" ")
 
             for RELATED_IMG in $RELEVANT_IMAGES
             do

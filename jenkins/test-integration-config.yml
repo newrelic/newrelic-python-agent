@@ -2,23 +2,6 @@
 # example: tests/framework_django/tox-0110.ini
 disable:
     - tests/adapter_gevent/tox.ini
-    - tests/datastore_motor/tox-0004.ini
-    - tests/datastore_motor/tox-0005.ini
     - tests/datastore_motor/tox.ini
     - tests/datastore_pymssql/tox.ini
     - tests/external_awscli/tox.ini
-    - tests/external_requests/tox-0007.ini
-    - tests/external_requests/tox-0008.ini
-    - tests/external_requests/tox-0009.ini
-    - tests/external_requests/tox-0010.ini
-    - tests/external_requests/tox-0011.ini
-    - tests/external_requests/tox-0012.ini
-    - tests/external_requests/tox-0013.ini
-    - tests/external_requests/tox-0014.ini
-    - tests/external_urllib3/tox-0100.ini
-    - tests/external_urllib3/tox-0101.ini
-    - tests/external_urllib3/tox-0102.ini
-    - tests/external_urllib3/tox-0103.ini
-    - tests/external_urllib3/tox-0104.ini
-    - tests/external_urllib3/tox-0105.ini
-    - tests/testing_support/tox.ini

@@ -104,9 +104,9 @@ use(extensions) {
 
                 wrappers {
                     timeout {
-                        // abort if time is > 500% of the average of the
-                        // last 3 builds, or 60 minutes
-                        elastic(500, 3, 60)
+                        // abort if nothing is printed to stdout/stderr
+                        // in 120 seconds
+                        noActivity(120)
                         abortBuild()
                     }
                 }

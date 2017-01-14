@@ -18,13 +18,15 @@ RUN apt-get install -y \
 
 # Install python versions.
 RUN add-apt-repository ppa:fkrull/deadsnakes && \
+    add-apt-repository ppa:jonathonf/python-3.6 && \
     apt-get update && \
     apt-get install -y \
     python2.6 python2.6-dev \
     python2.7 python2.7-dev \
     python3.3 python3.3-dev \
     python3.4 python3.4-dev \
-    python3.5 python3.5-dev
+    python3.5 python3.5-dev \
+    python3.6 python3.6-dev
 
 RUN wget https://bitbucket.org/pypy/pypy/downloads/pypy-2.5.1-linux64.tar.bz2 && \
     tar -C /usr/local -xf pypy-2.5.1-linux64.tar.bz2 && \

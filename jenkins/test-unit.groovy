@@ -156,7 +156,7 @@ use(extensions) {
 
             steps {
                 shell('./docker/devpi/pre-build.sh')
-                shell('python ./docker/devpi/test_parseconfig.py')
+                shell('./docker/packnsend run python ./docker/devpi/test_parseconfig.py')
             }
         }
     }

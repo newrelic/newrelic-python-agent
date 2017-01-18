@@ -1,5 +1,6 @@
 import os
 import shutil
+import subprocess
 import tempfile
 import unittest
 
@@ -400,6 +401,24 @@ class TestSetPackageDefaults(unittest.TestCase):
 
         }
         self.assertEqual(packages, expected)
+
+class TestDepListForAllToxFiles(unittest.TestCase):
+
+    def get_all_toxes(self):
+        cmd = 'find . -name "*tox*.ini" -type f'
+        proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = proc.communicate()
+        assert not stderr, stderr
+        return stdout.strip().split('\n')
+
+    def test_no_illegal_chars_in_deps_list(self):
+        toxes = self.get_all_toxes()
+        packages = parseconfig.extract_packages(toxes, [], [])
+        for packages in packages.values():
+            for package in packages:
+                # this will error if the package is malformed
+                Requirement(package)
 
 if __name__ == '__main__':
     unittest.main()

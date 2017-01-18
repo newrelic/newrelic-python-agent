@@ -303,7 +303,9 @@ class TestCreateWheelBuildFiles(unittest.TestCase):
         }
         parseconfig.create_wheel_build_files(packages, self.out_dir, [])
         created_files = os.listdir(self.out_dir)
-        self.assertEqual(created_files, ['wheels-py27.txt', 'wheels-py33.txt'])
+        self.assertEqual(
+                set(created_files),
+                set(['wheels-py27.txt', 'wheels-py33.txt']))
 
     def test_packages_from_all_env_added_to_all_envs(self):
         packages = {

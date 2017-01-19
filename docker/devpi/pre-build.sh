@@ -28,10 +28,10 @@ test -n "$EXCLUDE_ALL" && EXCLUDE_ALL="-e $EXCLUDE_ALL"
 test -n "$SOURCE_ONLY" && SOURCE_ONLY="-s $SOURCE_ONLY"
 test -n "$EXTRA_PACKAGES" && EXTRA_PACKAGES="-x $EXTRA_PACKAGES"
 
-TOX_FILES=$(git ls-files '*tox*.ini')
+TOX_FILES="$(git ls-files '*tox*.ini')"
 python docker/devpi/parseconfig.py \
-    "$TOX_FILES" \
-    -o "$OUT_DIR" \
-    "$EXCLUDE_ALL" \
-    "$SOURCE_ONLY" \
-    "$EXTRA_PACKAGES"
+    $TOX_FILES \
+    -o $OUT_DIR \
+    $EXCLUDE_ALL \
+    $SOURCE_ONLY \
+    $EXTRA_PACKAGES

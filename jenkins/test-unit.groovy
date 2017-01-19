@@ -138,6 +138,7 @@ use(extensions) {
         configure {
             description('Run the devpi pre-build hook and test the parseconfig.py script.')
             logRotator { numToKeep(10) }
+            blockOnJobs('.*-Reset-Nodes')
             concurrentBuild true
 
             wrappers {

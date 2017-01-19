@@ -76,10 +76,15 @@ def getPacknsendTests = {
 
                 if (!disabledList.contains(toxPath)) {
                     def testEnvs = getTestEnvs(canonicalName)
-                    for (int i = 0; i<testEnvs.size(); i+=maxEnvsPerContainer) {
-                        groupNum = i/maxEnvsPerContainer
+                    splitSize = maxEnvsPerContainer
+                    if (testEnvs.size() > maxEnvsPerContainer) {
+                        numGroups = testEnvs.size().intdiv(maxEnvsPerContainer) + 1
+                        splitSize = testEnvs.size().intdiv(numGroups) + 1
+                    }
+                    for (int i = 0; i<testEnvs.size(); i+=splitSize) {
+                        groupNum = i/splitSize
                         String testName = "${dirName}_${toxName}_group${groupNum}_${testSuffix}"
-                        stop_val = [i+maxEnvsPerContainer, testEnvs.size()].min()
+                        stop_val = [i+splitSize, testEnvs.size()].min()
                         envs = testEnvs.subList(i, stop_val)
                         env_str = envs.join(',')
                         def test = [testName, toxPath, composePath, env_str]

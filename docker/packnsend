@@ -37,7 +37,7 @@ cleanup_containers()
 
     test -n "$COMPOSE_FILE" && docker_compose_down
 
-    test -n "$CONTAINER_ID" && docker rm --volumes $CONTAINER_ID
+    test -n "$CONTAINER_ID" && docker rm -f --volumes $CONTAINER_ID
 
     echo "Removing test image."
 

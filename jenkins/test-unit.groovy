@@ -136,7 +136,7 @@ use(extensions) {
         branch('${GIT_REPOSITORY_BRANCH}')
 
         configure {
-            description('Run the devpi pre-build hook.')
+            description('Run the devpi pre-build hook and test the parseconfig.py script.')
             logRotator { numToKeep(10) }
             concurrentBuild true
 
@@ -156,6 +156,7 @@ use(extensions) {
 
             steps {
                 shell('./docker/devpi/pre-build.sh')
+                shell('./docker/packnsend run python ./docker/devpi/test_parseconfig.py')
             }
         }
     }

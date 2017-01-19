@@ -15,7 +15,7 @@ set -e
 # Create directory to hold package tarballs temporarily
 
 mkdir -p /downloads
-touch /root/needs-wheel.txt
+echo > /root/needs-wheel.txt
 
 for venv in $(find /venvs -maxdepth 1 -type d | grep -v "/venvs$"); do
     $venv/bin/pip install -U "pip<=9.0.1"
@@ -29,7 +29,7 @@ do
         -i http://localhost:3141/root/pypi/ \
         -d /downloads \
         --no-binary :all: \
-        $PACKAGE
+        $PACKAGE || echo "Download failed, ignoring"
 
     # Clean out /downloads, so it's possible to install multiple versions
     # of the same package
@@ -54,7 +54,7 @@ do
         /venvs/$PY_FULL/bin/pip download \
             -i http://localhost:3141/root/pypi/ \
             -d /downloads \
-            $PACKAGE
+            $PACKAGE || echo "Download failed, ignoring"
 
         TRUE_PACKAGE_NAME=$(echo $PACKAGE | tr -s "<=>" " " | cut -f1 -d" " | tr -s "-" "_")
         echo "$PACKAGE TRUE_PACKAGE_NAME: $TRUE_PACKAGE_NAME"

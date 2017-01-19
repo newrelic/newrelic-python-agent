@@ -9,6 +9,7 @@ RUN pip install devpi-server==4.2.0 && \
     virtualenv /venvs/py33 -p /usr/bin/python3.3 && \
     virtualenv /venvs/py34 -p /usr/bin/python3.4 && \
     virtualenv /venvs/py35 -p /usr/bin/python3.5 && \
+    virtualenv /venvs/py36 -p /usr/bin/python3.6 && \
     virtualenv /venvs/pypy -p /usr/local/bin/pypy
 
 # Add script to cache source packages

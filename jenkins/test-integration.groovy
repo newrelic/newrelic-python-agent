@@ -8,8 +8,31 @@ String repoGHE = 'python_agent'
 String repoFull = "${organization}/${repoGHE}"
 String testSuffix = "__integration-test"
 
+Integer maxEnvsPerContainer = 12
+
 def yaml = new Yaml()
 List<String> disabledList = yaml.load(readFileFromWorkspace('jenkins/test-integration-config.yml')).disable
+
+def getTestEnvs = {
+    String tox_path ->
+    def proc = "tox --listenvs -c ${tox_path}".execute()
+    def stdout = new StringBuilder()
+    def stderr = new StringBuilder()
+
+    proc.consumeProcessOutput(stdout, stderr)
+    proc.waitForOrKill(5000)
+
+    if ( proc.exitValue() != 0 ) {
+        println("=======")
+        println("stdout:\n${stdout}")
+        println("=======")
+        println("stderr:\n${stderr}")
+        println("=======")
+        throw new Exception("Process failed with code ${proc.exitValue()}")
+    }
+
+    List<String> testEnvs = new String(stdout).split('\n')
+}
 
 def getPacknsendTests = {
 
@@ -50,11 +73,18 @@ def getPacknsendTests = {
 
                 String toxName = toxFile.getName()
                 String toxPath = "tests/${dirName}/${toxName}"
-                String testName = "${dirName}_${toxName}_${testSuffix}"
 
                 if (!disabledList.contains(toxPath)) {
-                    def test = [testName, toxPath, composePath]
-                    packnsendTestsList.add(test)
+                    def testEnvs = getTestEnvs(canonicalName)
+                    for (int i = 0; i<testEnvs.size(); i+=maxEnvsPerContainer) {
+                        groupNum = i/maxEnvsPerContainer
+                        String testName = "${dirName}_${toxName}_group${groupNum}_${testSuffix}"
+                        stop_val = [i+maxEnvsPerContainer, testEnvs.size()].min()
+                        envs = testEnvs.subList(i, stop_val)
+                        env_str = envs.join(',')
+                        def test = [testName, toxPath, composePath, env_str]
+                        packnsendTestsList.add(test)
+                    }
                 }
             }
         }
@@ -91,7 +121,7 @@ use(extensions) {
     }
 
     // create all packnsend base tests
-    packnsendTests.each { testName, toxPath, composePath ->
+    packnsendTests.each { testName, toxPath, composePath, envs ->
         baseJob(testName) {
             label('py-ec2-linux')
             repo(repoFull)
@@ -129,9 +159,9 @@ use(extensions) {
                     shell('./jenkins/prep_node_for_test.sh')
 
                     if (composePath != "") {
-                        shell("./docker/packnsend run -c ${composePath} tox -c ${toxPath}")
+                        shell("./docker/packnsend run -c ${composePath} tox -c ${toxPath} -e ${envs}")
                     } else {
-                        shell("./docker/packnsend run tox -c ${toxPath}")
+                        shell("./docker/packnsend run tox -c ${toxPath} -e ${envs}")
                     }
                 }
             }

@@ -31,8 +31,11 @@ RUN add-apt-repository ppa:fkrull/deadsnakes && \
 RUN wget https://bitbucket.org/pypy/pypy/downloads/pypy2-v5.6.0-linux64.tar.bz2 && \
     tar -C /usr/local -xf pypy2-v5.6.0-linux64.tar.bz2 && \
     rm pypy2-v5.6.0-linux64.tar.bz2 && \
-    ln -s /usr/local/pypy2-v5.6.0-linux64/bin/pypy /usr/local/bin/pypy
-
+    ln -s /usr/local/pypy2-v5.6.0-linux64/bin/pypy /usr/local/bin/pypy && \
+    wget https://bitbucket.org/pypy/pypy/downloads/pypy3.3-v5.5.0-alpha-linux64.tar.bz2 && \
+    tar -C /usr/local -xf pypy3.3-v5.5.0-alpha-linux64.tar.bz2 && \
+    rm pypy3.3-v5.5.0-alpha-linux64.tar.bz2 && \
+    ln -s /usr/local/pypy3-v5.5.0-linux64/bin/pypy3 /usr/local/bin/pypy3
 
 # Pip.
 RUN wget https://bootstrap.pypa.io/get-pip.py && \

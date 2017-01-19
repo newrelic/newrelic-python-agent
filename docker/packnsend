@@ -37,7 +37,7 @@ cleanup_containers()
 
     test -n "$COMPOSE_FILE" && docker_compose_down
 
-    test -n "$CONTAINER_ID" && docker rm --volumes $CONTAINER_ID
+    test -n "$CONTAINER_ID" && docker rm -f --volumes $CONTAINER_ID
 
     echo "Removing test image."
 
@@ -557,6 +557,15 @@ delete_all_containers()
     test -n "$CONTAINERS" && { echo "$CONTAINERS" | xargs docker rm -f || exit 1; }
 }
 
+delete_dangling_volumes()
+{
+    echo
+    echo "Removing all dangling volumes"
+    echo
+    VOLUMES=$(docker volume ls -f dangling=true -q)
+    test -n "$VOLUMES" && { echo "$VOLUMES" | xargs docker volume rm || exit 1; }
+}
+
 print_usage()
 {
     echo
@@ -698,12 +707,14 @@ case "$COMMAND" in
         pull_docker_base_images "$@"
         delete_dangling_images
         start_application_services "$@"
+        delete_dangling_volumes
         ;;
 
     cleanup)
         delete_all_containers
         delete_dangling_images
         delete_packnsend_images
+        delete_dangling_volumes
         delete_docker_base_images "$@"
         ;;
 

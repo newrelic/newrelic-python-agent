@@ -8,7 +8,7 @@ String repoGHE = 'python_agent'
 String repoFull = "${organization}/${repoGHE}"
 String testSuffix = "__integration-test"
 
-Integer maxEnvsPerContainer = 12
+Integer maxEnvsPerContainer = 14
 
 def yaml = new Yaml()
 List<String> disabledList = yaml.load(readFileFromWorkspace('jenkins/test-integration-config.yml')).disable

@@ -340,9 +340,10 @@ class TestSetPackageDefaults(unittest.TestCase):
         envlist = """
             {py26,py27}-flask{0006,0007,0008,0009}-{with,without}-extensions,
             {py26,py27,py33,py34,py35}-flask0010-{with,without}-extensions,
-            pypy-flask{0006,0007,0008,0009,0010}-without-extensions,
+            {pypy,pypy3}-flask{0006,0007,0008,0009,0010}-without-extensions,
             """
-        packages = parseconfig._set_package_defaults({}, envlist)
+        packages = {}
+        parseconfig._set_package_defaults(packages, envlist)
         expected = {
             'py26': set([]),
             'py27': set([]),
@@ -350,12 +351,14 @@ class TestSetPackageDefaults(unittest.TestCase):
             'py34': set([]),
             'py35': set([]),
             'pypy': set([]),
+            'pypy3': set([]),
         }
         self.assertEqual(packages, expected)
 
     def test_correctly_ignores_package_names(self):
         envlist = '{py27,pypy}-pylibmc'
-        packages = parseconfig._set_package_defaults({}, envlist)
+        packages = {}
+        parseconfig._set_package_defaults(packages, envlist)
         expected = {
             'py27': set([]),
             'pypy': set([]),
@@ -369,7 +372,7 @@ class TestSetPackageDefaults(unittest.TestCase):
             'py27': set(['another-package']),
             'py36': set(['this', 'that']),
         }
-        packages = parseconfig._set_package_defaults(packages, envlist)
+        parseconfig._set_package_defaults(packages, envlist)
         expected = {
             'all': set(['mypackage']),
             'py27': set(['another-package']),
@@ -386,13 +389,15 @@ class TestSetPackageDefaults(unittest.TestCase):
             py34-without-extensions,
             py35-without-extensions,
             pypy-without-extensions,
+            pypy3-without-extensions,
             py26-with-extensions,
             py27-with-extensions,
             py33-with-extensions,
             py34-with-extensions,
             py35-with-extensions,
             """
-        packages = parseconfig._set_package_defaults({}, envlist)
+        packages = {}
+        parseconfig._set_package_defaults(packages, envlist)
         expected = {
             'py26': set([]),
             'py27': set([]),
@@ -400,6 +405,7 @@ class TestSetPackageDefaults(unittest.TestCase):
             'py34': set([]),
             'py35': set([]),
             'pypy': set([]),
+            'pypy3': set([]),
 
         }
         self.assertEqual(packages, expected)

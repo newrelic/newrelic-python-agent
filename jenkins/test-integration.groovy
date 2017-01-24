@@ -20,14 +20,14 @@ def getTestEnvs = {
     def stderr = new StringBuilder()
 
     proc.consumeProcessOutput(stdout, stderr)
-    proc.waitForOrKill(5000)
+    proc.waitForOrKill(1000)
 
+    println("=======")
+    println("stdout:\n${stdout}")
+    println("=======")
+    println("stderr:\n${stderr}")
+    println("=======")
     if ( proc.exitValue() != 0 ) {
-        println("=======")
-        println("stdout:\n${stdout}")
-        println("=======")
-        println("stderr:\n${stderr}")
-        println("=======")
         throw new Exception("Process failed with code ${proc.exitValue()}")
     }
 
@@ -76,6 +76,9 @@ def getPacknsendTests = {
 
                 if (!disabledList.contains(toxPath)) {
                     def testEnvs = getTestEnvs(canonicalName)
+                    println("=======")
+                    println("Environments:\n${testEnvs.join(',')}")
+                    println("=======")
                     splitSize = maxEnvsPerContainer
                     if (testEnvs.size() > maxEnvsPerContainer) {
                         numGroups = testEnvs.size().intdiv(maxEnvsPerContainer) + 1

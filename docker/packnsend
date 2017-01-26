@@ -34,10 +34,9 @@ cleanup_containers()
     # docker image.
 
     echo "Removing test container."
+    test -n "$CONTAINER_ID" && docker rm -f --volumes $CONTAINER_ID
 
     test -n "$COMPOSE_FILE" && docker_compose_down
-
-    test -n "$CONTAINER_ID" && docker rm -f --volumes $CONTAINER_ID
 
     echo "Removing test image."
 
@@ -334,11 +333,15 @@ docker_compose_down()
     echo
     echo "Cleaning up docker compose..."
     echo
+    docker-compose \
+        --file $DATA_DIRECTORY/$COMPOSE_FILE \
+        --project-name $DATA_IMAGE_NAME \
+        stop -t 0
 
     docker-compose \
         --file $DATA_DIRECTORY/$COMPOSE_FILE \
         --project-name $DATA_IMAGE_NAME \
-        down --volumes --rmi local || exit 1
+        down --volumes --rmi local
 
     # Docker compose removes the container, no need to track it further
     CONTAINER_ID=""

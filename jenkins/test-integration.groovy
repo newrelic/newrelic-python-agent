@@ -13,27 +13,6 @@ Integer maxEnvsPerContainer = 14
 def yaml = new Yaml()
 List<String> disabledList = yaml.load(readFileFromWorkspace('jenkins/test-integration-config.yml')).disable
 
-def getTestEnvs = {
-    String tox_path ->
-    def proc = "tox --listenvs -c ${tox_path}".execute()
-    def stdout = new StringBuilder()
-    def stderr = new StringBuilder()
-
-    proc.consumeProcessOutput(stdout, stderr)
-    proc.waitForOrKill(1000)
-
-    println("=======")
-    println("stdout:\n${stdout}")
-    println("=======")
-    println("stderr:\n${stderr}")
-    println("=======")
-    if ( proc.exitValue() != 0 ) {
-        throw new Exception("Process failed with code ${proc.exitValue()}")
-    }
-
-    List<String> testEnvs = new String(stdout).split('\n')
-}
-
 def getPacknsendTests = {
 
     // Get list of lists. Each item represents a single test. For example:
@@ -73,26 +52,11 @@ def getPacknsendTests = {
 
                 String toxName = toxFile.getName()
                 String toxPath = "tests/${dirName}/${toxName}"
+                String testName = "${dirName}_${toxName}_${testSuffix}"
 
                 if (!disabledList.contains(toxPath)) {
-                    def testEnvs = getTestEnvs(canonicalName)
-                    println("=======")
-                    println("Environments:\n${testEnvs.join(',')}")
-                    println("=======")
-                    splitSize = maxEnvsPerContainer
-                    if (testEnvs.size() > maxEnvsPerContainer) {
-                        numGroups = testEnvs.size().intdiv(maxEnvsPerContainer) + 1
-                        splitSize = testEnvs.size().intdiv(numGroups) + 1
-                    }
-                    for (int i = 0; i<testEnvs.size(); i+=splitSize) {
-                        groupNum = i/splitSize
-                        String testName = "${dirName}_${toxName}_group${groupNum}_${testSuffix}"
-                        stop_val = [i+splitSize, testEnvs.size()].min()
-                        envs = testEnvs.subList(i, stop_val)
-                        env_str = envs.join(',')
-                        def test = [testName, toxPath, composePath, env_str]
-                        packnsendTestsList.add(test)
-                    }
+                    def test = [testName, toxPath, composePath]
+                    packnsendTestsList.add(test)
                 }
             }
         }
@@ -129,7 +93,7 @@ use(extensions) {
     }
 
     // create all packnsend base tests
-    packnsendTests.each { testName, toxPath, composePath, envs ->
+    packnsendTests.each { testName, toxPath, composePath ->
         baseJob(testName) {
             label('py-ec2-linux')
             repo(repoFull)
@@ -167,9 +131,9 @@ use(extensions) {
                     shell('./jenkins/prep_node_for_test.sh')
 
                     if (composePath != "") {
-                        shell("./docker/packnsend run -c ${composePath} tox -c ${toxPath} -e ${envs}")
+                        shell("./docker/packnsend run -c ${composePath} tox -c ${toxPath}")
                     } else {
-                        shell("./docker/packnsend run tox -c ${toxPath} -e ${envs}")
+                        shell("./docker/packnsend run tox -c ${toxPath}")
                     }
                 }
             }

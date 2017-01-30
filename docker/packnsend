@@ -334,6 +334,17 @@ docker_compose_down()
     echo
     echo "Cleaning up docker compose..."
     echo
+
+    # The redirect to /dev/null for the docker-compose commands below is
+    # required for the case where jenkins initiates a job abort. It's currently
+    # unknown WHY this redirection is required so if you know, notes would be
+    # greatly appreciated.
+    #
+    # Without the redirect to /dev/null the docker-compose command exits
+    # immediately with an exit code of 255 (service containers still running).
+    #
+    # With the redirect, the exit code is 0 and the compose containers are
+    # stopped/removed correctly
     docker-compose \
         --file $DATA_DIRECTORY/$COMPOSE_FILE \
         --project-name $DATA_IMAGE_NAME \

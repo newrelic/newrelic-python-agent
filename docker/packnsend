@@ -268,7 +268,7 @@ launch_remote_command()
 
     { docker logs -f $CONTAINER_ID && \
         echo "Calling docker wait." && \
-        STATUS=$(docker wait $CONTAINER_ID) ; } || kill -INT $$
+        STATUS=$(docker wait $CONTAINER_ID) ; } || kill $$
 
     echo
 

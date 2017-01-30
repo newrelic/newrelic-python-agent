@@ -337,12 +337,12 @@ docker_compose_down()
     docker-compose \
         --file $DATA_DIRECTORY/$COMPOSE_FILE \
         --project-name $DATA_IMAGE_NAME \
-        stop -t 0
+        stop -t 0 &>/dev/null
 
     docker-compose \
         --file $DATA_DIRECTORY/$COMPOSE_FILE \
         --project-name $DATA_IMAGE_NAME \
-        down --volumes --rmi local
+        down --volumes --rmi local &>/dev/null
 
     # Docker compose removes the container, no need to track it further
     CONTAINER_ID=""

@@ -33,16 +33,17 @@ cleanup_containers()
     # where we exported the git repository for use in creating the
     # docker image.
 
-    echo "Removing test container."
+    echo "Removing test container $CONTAINER_ID."
     test -n "$CONTAINER_ID" && docker rm -f --volumes $CONTAINER_ID
 
+    echo "Running compose down $COMPOSE_FILE."
     test -n "$COMPOSE_FILE" && docker_compose_down
 
-    echo "Removing test image."
+    echo "Removing test image $DATA_IMAGE_NAME."
 
     test -n "$DATA_IMAGE_NAME" && docker rmi $DATA_IMAGE_NAME
 
-    echo "Removing data directory."
+    echo "Removing data directory $DATA_DIRECTORY."
 
     test -n "$DATA_DIRECTORY" && rm -r $DATA_DIRECTORY
 }

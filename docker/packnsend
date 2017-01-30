@@ -33,17 +33,17 @@ cleanup_containers()
     # where we exported the git repository for use in creating the
     # docker image.
 
-    echo "Removing test container."
-
-    test -n "$COMPOSE_FILE" && docker_compose_down
-
+    echo "Removing test container $CONTAINER_ID."
     test -n "$CONTAINER_ID" && docker rm -f --volumes $CONTAINER_ID
 
-    echo "Removing test image."
+    echo "Running compose down $COMPOSE_FILE."
+    test -n "$COMPOSE_FILE" && docker_compose_down
+
+    echo "Removing test image $DATA_IMAGE_NAME."
 
     test -n "$DATA_IMAGE_NAME" && docker rmi $DATA_IMAGE_NAME
 
-    echo "Removing data directory."
+    echo "Removing data directory $DATA_DIRECTORY."
 
     test -n "$DATA_DIRECTORY" && rm -r $DATA_DIRECTORY
 }
@@ -264,10 +264,11 @@ launch_remote_command()
     CONTAINER_ID=$($RUN_CMD | tail -n1)
     test -n "$CONTAINER_ID" || exit 1
 
-    docker logs -f $CONTAINER_ID
+    STATUS=100
 
-    echo "Calling docker wait."
-    STATUS=$(docker wait $CONTAINER_ID)
+    { docker logs -f $CONTAINER_ID && \
+        echo "Calling docker wait." && \
+        STATUS=$(docker wait $CONTAINER_ID) ; } || kill $$
 
     echo
 
@@ -334,10 +335,25 @@ docker_compose_down()
     echo "Cleaning up docker compose..."
     echo
 
+    # The redirect to /dev/null for the docker-compose commands below is
+    # required for the case where jenkins initiates a job abort. It's currently
+    # unknown WHY this redirection is required so if you know, notes would be
+    # greatly appreciated.
+    #
+    # Without the redirect to /dev/null the docker-compose command exits
+    # immediately with an exit code of 255 (service containers still running).
+    #
+    # With the redirect, the exit code is 0 and the compose containers are
+    # stopped/removed correctly
     docker-compose \
         --file $DATA_DIRECTORY/$COMPOSE_FILE \
         --project-name $DATA_IMAGE_NAME \
-        down --volumes --rmi local || exit 1
+        stop -t 0 &>/dev/null
+
+    docker-compose \
+        --file $DATA_DIRECTORY/$COMPOSE_FILE \
+        --project-name $DATA_IMAGE_NAME \
+        down --volumes --rmi local &>/dev/null
 
     # Docker compose removes the container, no need to track it further
     CONTAINER_ID=""

@@ -8,12 +8,11 @@ import sys
 def _set_package_defaults(packages, envlist):
     # Search the envlist for which python version to test against. Create an
     # env in the packages dictionary for each.
-    for groups in re.findall(r'(py\d{2})|(pypy)', envlist):
+    for groups in re.findall(r'(py\d{2})|(pypy3?)', envlist):
         for env in groups:
             if not env:
                 continue
             packages.setdefault(env, set([]))
-    return packages
 
 def extract_packages(tox_files, exclude_packages, extra_packages):
     packages = {} # stores py27/py26/etc
@@ -28,7 +27,7 @@ def extract_packages(tox_files, exclude_packages, extra_packages):
                 # if this is a new-style tox file, ensure there is a package
                 # set for each env even if it is empty
                 envlist = parser.get(section, 'envlist')
-                packages = _set_package_defaults(packages, envlist)
+                _set_package_defaults(packages, envlist)
             except NoOptionError:
                 pass
 

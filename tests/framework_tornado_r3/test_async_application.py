@@ -1,5 +1,6 @@
 import functools
 import multiprocessing
+import sys
 import time
 import threading
 
@@ -18,7 +19,7 @@ from newrelic.hooks.framework_tornado_r3.util import (
         retrieve_current_transaction)
 from newrelic.packages import six
 
-from tornado_base_test import TornadoBaseTest
+from tornado_base_test import TornadoBaseTest, TornadoZmqBaseTest
 
 from _test_async_application import (HelloRequestHandler,
         SleepRequestHandler, OneCallbackRequestHandler,
@@ -46,7 +47,7 @@ from remove_utilization_tester import remove_utilization_tester
 def select_python_version(py2, py3):
     return six.PY3 and py3 or py2
 
-class TornadoTest(TornadoBaseTest):
+class AllTests(object):
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
@@ -1085,3 +1086,10 @@ class TornadoTest(TornadoBaseTest):
 
         finally:
             app.global_settings.enabled = old_enabled
+
+class TornadoIoTest(AllTests, TornadoBaseTest):
+    pass
+
+if sys.version_info >= (2, 7):
+    class TornadoZmqTest(AllTests, TornadoZmqBaseTest):
+        pass

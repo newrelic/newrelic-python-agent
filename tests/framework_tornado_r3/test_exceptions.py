@@ -1,9 +1,10 @@
+import sys
 import tornado
 import threading
 
 from newrelic.packages import six
 
-from tornado_base_test import TornadoBaseTest
+from tornado_base_test import TornadoBaseTest, TornadoZmqBaseTest
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -21,7 +22,7 @@ INTERNAL_SERVER_ERROR = 'Internal Server Error'
 def select_python_version(py2, py3):
     return six.PY3 and py3 or py2
 
-class ExceptionTest(TornadoBaseTest):
+class AllTests(object):
 
     # Tests for exceptions occuring inside of a transaction.
 
@@ -273,3 +274,10 @@ class ExceptionTest(TornadoBaseTest):
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body,
                 OutsideTransactionErrorRequestHandler.RESPONSE)
+
+class ExceptionIoTest(AllTests, TornadoBaseTest):
+    pass
+
+if sys.version_info >= (2, 7):
+    class ExceptionZmqTest(AllTests, TornadoZmqBaseTest):
+        pass

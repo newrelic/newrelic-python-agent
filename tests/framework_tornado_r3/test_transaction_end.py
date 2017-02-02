@@ -1,5 +1,6 @@
 import newrelic.hooks.framework_tornado_r3.ioloop
 import pytest
+import sys
 import threading
 import tornado
 
@@ -7,7 +8,7 @@ from newrelic.agent import FunctionWrapper
 from newrelic.packages import six
 from newrelic.packages.six.moves import http_client
 
-from tornado_base_test import TornadoBaseTest
+from tornado_base_test import TornadoBaseTest, TornadoZmqBaseTest
 
 from _test_async_application import (ReturnFirstDivideRequestHandler,
         CallLaterRequestHandler, CancelAfterRanCallLaterRequestHandler,
@@ -34,7 +35,7 @@ from testing_support.fixtures import function_not_called
 def select_python_version(py2, py3):
     return six.PY3 and py3 or py2
 
-class TornadoTest(TornadoBaseTest):
+class AllTests(object):
 
     scoped_metrics = select_python_version(
             py2=[('Function/_test_async_application:'
@@ -490,3 +491,10 @@ class TornadoTest(TornadoBaseTest):
         response = self.fetch_response('/signal-ignore')
         expected = AddCallbackFromSignalRequestHandler.RESPONSE
         self.assertEqual(response.body, expected)
+
+class TornadoTest(AllTests, TornadoBaseTest):
+    pass
+
+if sys.version_info >= (2, 7):
+    class TornadoZmqTest(AllTests, TornadoZmqBaseTest):
+        pass

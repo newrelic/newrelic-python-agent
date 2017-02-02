@@ -1,7 +1,6 @@
 FROM python-base
 
-RUN pip install devpi-server==4.2.0 && \
-    pip install devpi-client==2.7.0 && \
+RUN pip install devpi-server==4.2.0 devpi-client==2.7.0 newrelic && \
     # Build a virtualenv for each python version \
     mkdir /venvs && \
     virtualenv /venvs/py26 -p /usr/bin/python2.6 && \
@@ -25,6 +24,12 @@ ADD package-lists /root/package-lists/
 
 ADD build_wheels.sh /root/build_wheels.sh
 
+# Prepare the agent
+
+ADD newrelic.ini /root/newrelic.ini
+ENV NEW_RELIC_CONFIG_FILE /root/newrelic.ini
+ENV NEW_RELIC_LICENSE_KEY '84325f47e9dec80613e262be4236088a9983d501'
+
 RUN chmod 755 /root/seed_packages.sh && \
     devpi-server --init --start && \
     /root/seed_packages.sh --mirror-cache-expiry 4294967295 && \
@@ -33,5 +38,5 @@ RUN chmod 755 /root/seed_packages.sh && \
     /root/build_wheels.sh
 
 EXPOSE 3141
-ENTRYPOINT ["devpi-server"]
+ENTRYPOINT ["newrelic-admin", "run-program", "devpi-server"]
 CMD ["--host", "0.0.0.0", "--mirror-cache-expiry", "4294967295"]

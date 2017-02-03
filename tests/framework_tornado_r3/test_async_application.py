@@ -10,9 +10,7 @@ import tornado.stack_context
 import tornado.testing
 
 from newrelic.agent import application, background_task
-from newrelic.core.agent import agent_instance
 from newrelic.core.stats_engine import StatsEngine
-from newrelic.core.thread_utilization import _utilization_trackers
 from newrelic.hooks.framework_tornado_r3.httputil import (
         initiate_request_monitoring, request_environment)
 from newrelic.hooks.framework_tornado_r3.util import (
@@ -30,9 +28,8 @@ from _test_async_application import (HelloRequestHandler,
         PrepareOnFinishRequestHandlerSubclass, RunSyncAddRequestHandler,
         SimpleStreamingRequestHandler, DoubleWrapRequestHandler,
         FutureDoubleWrapRequestHandler, RunnerRefCountRequestHandler,
-        RunnerRefCountSyncGetRequestHandler, RunnerRefCountErrorRequestHandler,
-        TransactionAwareFunctionAferFinalize, IgnoreAddHandlerRequestHandler,
-        NativeFuturesCoroutine)
+        RunnerRefCountSyncGetRequestHandler, NativeFuturesCoroutine,
+        TransactionAwareFunctionAferFinalize, IgnoreAddHandlerRequestHandler)
 
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 
@@ -855,7 +852,7 @@ class AllTests(object):
             scoped_metrics=scoped_metrics,
             forgone_metric_substrings=['do_stuff'])
     def test_runner_ref_count_error(self):
-        response = self.fetch_exception('/runner-error')
+        self.fetch_exception('/runner-error')
 
     # The purpose of this test is to ensure ioloop.handle_callback_exception
     # does not crash when the passed in argument is not a function.

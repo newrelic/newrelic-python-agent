@@ -51,7 +51,7 @@ def add_callback_background_task(io_loop, func, *args, **kwargs):
 @tornado.gen.coroutine
 def coroutine_background_task():
     do_stuff()
-    result = yield yield_stuff()
+    yield yield_stuff()
 
 @background_task()
 @tornado.gen.coroutine

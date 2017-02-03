@@ -1,10 +1,8 @@
-import newrelic.hooks.framework_tornado_r3.ioloop
 import pytest
 import sys
 import threading
 import tornado
 
-from newrelic.agent import FunctionWrapper
 from newrelic.packages import six
 from newrelic.packages.six.moves import http_client
 
@@ -27,7 +25,6 @@ from _test_async_application import (ReturnFirstDivideRequestHandler,
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
-    tornado_validate_time_transaction_metrics,
     tornado_validate_errors, tornado_validate_transaction_cache_empty)
 
 from testing_support.fixtures import function_not_called

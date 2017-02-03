@@ -697,7 +697,7 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
 
     def resolve_future(self, future, transaction):
         # Make sure that the get method has finished
-        while not transaction._can_finalize:
+        while not transaction._server_adapter_finalize:
             time.sleep(0.01)
 
         future.set_result(None)

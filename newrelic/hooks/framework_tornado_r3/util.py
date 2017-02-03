@@ -105,7 +105,9 @@ def possibly_finalize_transaction(transaction, exc=None, value=None, tb=None):
                 ''.join(traceback.format_stack()[:-1]))
         return
 
-    if transaction._can_finalize and transaction._ref_count == 0:
+    if (transaction._request_handler_finalize and
+            transaction._server_adapter_finalize and
+            transaction._ref_count == 0):
         _finalize_transaction(transaction, exc, value, tb)
 
 def _finalize_transaction(transaction, exc=None, value=None, tb=None):

@@ -106,11 +106,12 @@ def initiate_request_monitoring(request):
     transaction._is_finalized = False
     transaction._ref_count = 0
 
-    # For server requests We only allow the transaction to be closed when
-    # either 'finish' or 'on_connection_close' is called on an
-    # associated HTTPMessageDelegate.
+    # For requests that complete normally, a transaction can only be closed
+    # after the `finish()` method is called on both the `_ServerRequestAdapter`
+    # and the `RequestHandler`.
 
-    transaction._can_finalize = False
+    transaction._request_handler_finalize = False
+    transaction._server_adapter_finalize = False
 
     # Record framework information for generation of framework metrics.
 

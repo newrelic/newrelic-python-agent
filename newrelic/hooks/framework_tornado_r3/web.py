@@ -5,7 +5,7 @@ import sys
 from newrelic.agent import (callable_name, function_wrapper,
         wrap_function_wrapper, FunctionTrace)
 from .util import (retrieve_current_transaction, retrieve_request_transaction,
-        record_exception, TransactionContext)
+        record_exception, TransactionContext, request_handler_finish_finalize)
 
 _logger = logging.getLogger(__name__)
 
@@ -129,6 +129,9 @@ def _nr_wrapper_RequestHandler__init__(wrapped, instance, args, kwargs):
 
     return wrapped(*args, **kwargs)
 
+def _nr_wrapper_RequestHandler_finish_(wrapped, instance, args, kwargs):
+    return request_handler_finish_finalize(wrapped, instance, args, kwargs)
+
 def instrument_tornado_web(module):
     wrap_function_wrapper(module, 'RequestHandler._execute',
             _nr_wrapper_RequestHandler__execute_)
@@ -136,3 +139,5 @@ def instrument_tornado_web(module):
             _nr_wrapper_RequestHandler__handle_request_exception_)
     wrap_function_wrapper(module, 'RequestHandler.__init__',
             _nr_wrapper_RequestHandler__init__)
+    wrap_function_wrapper(module, 'RequestHandler.finish',
+            _nr_wrapper_RequestHandler_finish_)

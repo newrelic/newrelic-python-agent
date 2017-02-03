@@ -1125,6 +1125,53 @@ class OutsideTransactionErrorRequestHandler(CleanUpableRequestHandler):
         finally:
             self.cleanup()
 
+class FinishInCallbackHandler(RequestHandler):
+
+    RESPONSE = b'finish in callback'
+
+    @tornado.web.asynchronous
+    def get(self):
+        with TransactionContext(None):
+            ioloop = tornado.ioloop.IOLoop.current()
+            ioloop.add_callback(self.callback)
+
+    def callback(self):
+        # Even though the get method has completed and the ref_count
+        # is 0, the transaction doesn't close until finish() is called.
+
+        transaction = self.request._nr_transaction
+        assert transaction._ref_count == 0
+        assert not transaction._is_finalized
+
+        self.finish(self.RESPONSE)
+
+        # Now, the transaction is closed.
+
+        assert transaction._is_finalized
+
+class ExceptionInsteadOfFinishHandler(RequestHandler):
+
+    RESPONSE = b'exception before finish in callback'
+
+    @tornado.web.asynchronous
+    def get(self):
+        with TransactionContext(None):
+            ioloop = tornado.ioloop.IOLoop.current()
+            ioloop.add_callback(self.callback)
+
+    def callback(self):
+        # Even though the get method has completed and the ref_count
+        # is 0, the transaction doesn't close until finish() is called.
+
+        transaction = self.request._nr_transaction
+        assert transaction._ref_count == 0
+        assert not transaction._is_finalized
+
+        # Raise exception, rather than calling finish() directly.
+
+        raise Tornado4TestException("whoops")
+
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -1181,4 +1228,6 @@ def get_tornado_app():
         ('/coroutine-late-exception', CoroutineLateExceptionRequestHandler),
         ('/almost-error', ScheduleAndCancelExceptionRequestHandler),
         ('/outside-transaction-error', OutsideTransactionErrorRequestHandler),
+        ('/finish-in-callback', FinishInCallbackHandler),
+        ('/exception-instead-of-finish', ExceptionInsteadOfFinishHandler),
     ])

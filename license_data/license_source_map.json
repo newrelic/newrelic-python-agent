@@ -671,6 +671,12 @@
             "New Relic"
         ]
     },
+    "newrelic/common/tests/_test_object_names.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/tests/test_certs.py": {
         "hash": "n/a",
         "libraries": [
@@ -690,12 +696,6 @@
         ]
     },
     "newrelic/common/tests/test_object_names.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/tests/_test_object_names.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -1500,6 +1500,12 @@
         ]
     },
     "newrelic/hooks/framework_tornado_r3/concurrent.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/framework_tornado_r3/curl_httpclient.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

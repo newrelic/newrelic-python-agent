@@ -10,14 +10,14 @@ from newrelic.agent import (application as nr_app, current_transaction,
         function_trace)
 from newrelic.hooks.framework_tornado_r3.util import TransactionContext
 
+from tornado import stack_context
 from tornado.curl_httpclient import CurlAsyncHTTPClient
 from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
-from tornado.web import Application, RequestHandler
 from tornado.httpserver import HTTPServer
-from tornado import stack_context
 from tornado.ioloop import IOLoop
 from tornado.iostream import IOStream
 from tornado.testing import bind_unused_port
+from tornado.web import Application, RequestHandler
 
 
 class Tornado4TestException(Exception):

@@ -10,6 +10,7 @@ from newrelic.agent import (application as nr_app, current_transaction,
         function_trace)
 from newrelic.hooks.framework_tornado_r3.util import TransactionContext
 
+from tornado.curl_httpclient import CurlAsyncHTTPClient
 from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
 from tornado.web import Application, RequestHandler
 from tornado.httpserver import HTTPServer
@@ -407,6 +408,24 @@ class AsyncFetchRequestHandler(RequestHandler):
     def get(self, request_type, port):
         url = 'http://localhost:%s' % port
         client = AsyncHTTPClient()
+        # We test with a request object and a raw url as well as using the
+        # callback as a positional argument and as a keyword argument.
+        if request_type == 'requestobj':
+            request = HTTPRequest(url)
+            client.fetch(url, self.process_response)
+        else:
+            request = url
+            client.fetch(url, callback=self.process_response)
+
+    def process_response(self, response):
+        self.finish(response.body)
+
+class CurlAsyncFetchRequestHandler(RequestHandler):
+
+    @tornado.web.asynchronous
+    def get(self, request_type, port):
+        url = 'http://localhost:%s' % port
+        client = CurlAsyncHTTPClient()
         # We test with a request object and a raw url as well as using the
         # callback as a positional argument and as a keyword argument.
         if request_type == 'requestobj':
@@ -1102,6 +1121,7 @@ def get_tornado_app():
         ('/bookend-subclass', PrepareOnFinishRequestHandlerSubclass),
         ('/stream', SimpleStreamingRequestHandler),
         ('/async-fetch/(\w)+/(\d+)', AsyncFetchRequestHandler),
+        ('/curl-async-fetch/(\w)+/(\d+)', CurlAsyncFetchRequestHandler),
         ('/sync-fetch/(\w)+/(\d+)', SyncFetchRequestHandler),
         ('/run-sync-add/(\d+)/(\d+)', RunSyncAddRequestHandler),
         ('/prepare-future', PrepareReturnsFutureHandler),

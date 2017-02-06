@@ -54,3 +54,9 @@ testing.log
 .solano*
 
 /docker/devpi/package-lists
+
+# web2py testing
+/tests/framework_web2py/applications/*/cache/
+/tests/framework_web2py/applications/*/databases/
+/tests/framework_web2py/applications/*/private/
+/tests/framework_web2py/applications/*/errors/

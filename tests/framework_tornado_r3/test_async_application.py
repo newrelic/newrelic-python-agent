@@ -4,6 +4,8 @@ import sys
 import time
 import threading
 
+import pytest
+
 from tornado.httputil import HTTPHeaders, HTTPServerRequest
 from tornado.ioloop import IOLoop
 import tornado.stack_context
@@ -1084,9 +1086,10 @@ class AllTests(object):
         finally:
             app.global_settings.enabled = old_enabled
 
-class TornadoIoTest(AllTests, TornadoBaseTest):
+class TornadoDefaultIOLoopTest(AllTests, TornadoBaseTest):
     pass
 
-if sys.version_info >= (2, 7):
-    class TornadoZmqTest(AllTests, TornadoZmqBaseTest):
-        pass
+@pytest.mark.skipif(sys.version_info < (2, 7),
+        reason='pyzmq does not support Python 2.6')
+class TornadoZmqIOLoopTest(AllTests, TornadoZmqBaseTest):
+    pass

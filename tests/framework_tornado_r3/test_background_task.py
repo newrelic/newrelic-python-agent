@@ -1,5 +1,7 @@
 import sys
 
+import pytest
+
 import tornado.gen
 
 from newrelic.api.background_task import background_task
@@ -167,9 +169,10 @@ class AllTests(object):
         spawn_callback_background_task(self.io_loop)
         self.wait(timeout=5.0)
 
-class TornadoIoTest(AllTests, TornadoBaseTest):
+class TornadoDefaultIOLoopTest(AllTests, TornadoBaseTest):
     pass
 
-if sys.version_info >= (2, 7):
-    class TornadoZmqTest(AllTests, TornadoZmqBaseTest):
-        pass
+@pytest.mark.skipif(sys.version_info < (2, 7),
+        reason='pyzmq does not support Python 2.6')
+class TornadoZmqTest(AllTests, TornadoZmqBaseTest):
+    pass

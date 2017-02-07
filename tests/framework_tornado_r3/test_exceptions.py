@@ -2,6 +2,8 @@ import sys
 import tornado
 import threading
 
+import pytest
+
 from newrelic.packages import six
 
 from tornado_base_test import TornadoBaseTest, TornadoZmqBaseTest
@@ -275,9 +277,10 @@ class AllTests(object):
         self.assertEqual(response.body,
                 OutsideTransactionErrorRequestHandler.RESPONSE)
 
-class ExceptionIoTest(AllTests, TornadoBaseTest):
+class ExceptionDefaultIOLoopTest(AllTests, TornadoBaseTest):
     pass
 
-if sys.version_info >= (2, 7):
-    class ExceptionZmqTest(AllTests, TornadoZmqBaseTest):
-        pass
+@pytest.mark.skipif(sys.version_info < (2, 7),
+        reason='pyzmq does not support Python 2.6')
+class ExceptionZmqIOLoopTest(AllTests, TornadoZmqBaseTest):
+    pass

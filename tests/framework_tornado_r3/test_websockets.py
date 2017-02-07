@@ -1,4 +1,7 @@
 import sys
+
+import pytest
+
 import tornado.gen
 import tornado.testing
 import tornado.web
@@ -74,9 +77,10 @@ class AllTests(object):
 
         yield self.close(ws)
 
-class TornadoWebSocketsTest(AllTests, BaseWebSocketsTest):
+class TornadoWebSocketsDefaultIOLoopTest(AllTests, BaseWebSocketsTest):
     pass
 
-if sys.version_info >= (2, 7):
-    class TornadoWebSocketsZmqTest(AllTests, BaseWebSocketsZmqTest):
-        pass
+@pytest.mark.skipif(sys.version_info < (2, 7),
+        reason='pyzmq does not support Python 2.6')
+class TornadoWebSocketsZmqIOLoopTest(AllTests, BaseWebSocketsZmqTest):
+    pass

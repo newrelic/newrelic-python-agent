@@ -1,7 +1,8 @@
-import pytest
 import sys
 import threading
 import tornado
+
+import pytest
 
 from newrelic.packages import six
 from newrelic.packages.six.moves import http_client
@@ -489,9 +490,10 @@ class AllTests(object):
         expected = AddCallbackFromSignalRequestHandler.RESPONSE
         self.assertEqual(response.body, expected)
 
-class TornadoTest(AllTests, TornadoBaseTest):
+class TornadoDefaultIOLoopTest(AllTests, TornadoBaseTest):
     pass
 
-if sys.version_info >= (2, 7):
-    class TornadoZmqTest(AllTests, TornadoZmqBaseTest):
-        pass
+@pytest.mark.skipif(sys.version_info < (2, 7),
+        reason='pyzmq does not support Python 2.6')
+class TornadoZmqIOLoopTest(AllTests, TornadoZmqBaseTest):
+    pass

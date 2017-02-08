@@ -438,6 +438,34 @@ class CurlAsyncFetchRequestHandler(RequestHandler):
     def process_response(self, response):
         self.finish(response.body)
 
+class CurlStreamingCallbackRequestHandler(RequestHandler):
+
+    def initialize(self):
+        self.body = []
+
+    @tornado.web.asynchronous
+    def get(self, request_type, port):
+        url = 'http://localhost:%s' % port
+        client = CurlAsyncHTTPClient()
+        # We test with a request object and a raw url as well as using the
+        # callback as a positional argument and as a keyword argument.
+        if request_type == 'requestobj':
+            request = HTTPRequest(url, streaming_callback=self.process_chunk)
+            client.fetch(url, self.process_response)
+        else:
+            request = url
+            client.fetch(url, streaming_callback=self.process_chunk,
+                    callback=self.process_response)
+
+    def process_chunk(self, data):
+        self.body.append(data)
+
+    def process_response(self, response):
+        # response.body has already been consumed by process_chunk(),
+        # so we send back self.body, not response.body.
+        content = b''.join(self.body)
+        self.finish(content)
+
 class SyncFetchRequestHandler(RequestHandler):
 
     def get(self, request_type, port):
@@ -1122,6 +1150,7 @@ def get_tornado_app():
         ('/stream', SimpleStreamingRequestHandler),
         ('/async-fetch/(\w)+/(\d+)', AsyncFetchRequestHandler),
         ('/curl-async-fetch/(\w)+/(\d+)', CurlAsyncFetchRequestHandler),
+        ('/curl-stream-cb/(\w)+/(\d+)', CurlStreamingCallbackRequestHandler),
         ('/sync-fetch/(\w)+/(\d+)', SyncFetchRequestHandler),
         ('/run-sync-add/(\d+)/(\d+)', RunSyncAddRequestHandler),
         ('/prepare-future', PrepareReturnsFutureHandler),

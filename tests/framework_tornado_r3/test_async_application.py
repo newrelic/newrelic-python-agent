@@ -1,7 +1,10 @@
 import functools
 import multiprocessing
+import sys
 import time
 import threading
+
+import pytest
 
 from tornado.httputil import HTTPHeaders, HTTPServerRequest
 from tornado.ioloop import IOLoop
@@ -9,16 +12,14 @@ import tornado.stack_context
 import tornado.testing
 
 from newrelic.agent import application, background_task
-from newrelic.core.agent import agent_instance
 from newrelic.core.stats_engine import StatsEngine
-from newrelic.core.thread_utilization import _utilization_trackers
 from newrelic.hooks.framework_tornado_r3.httputil import (
         initiate_request_monitoring, request_environment)
 from newrelic.hooks.framework_tornado_r3.util import (
         retrieve_current_transaction)
 from newrelic.packages import six
 
-from tornado_base_test import TornadoBaseTest
+from tornado_base_test import TornadoBaseTest, TornadoZmqBaseTest
 
 from _test_async_application import (HelloRequestHandler,
         SleepRequestHandler, OneCallbackRequestHandler,
@@ -29,9 +30,8 @@ from _test_async_application import (HelloRequestHandler,
         PrepareOnFinishRequestHandlerSubclass, RunSyncAddRequestHandler,
         SimpleStreamingRequestHandler, DoubleWrapRequestHandler,
         FutureDoubleWrapRequestHandler, RunnerRefCountRequestHandler,
-        RunnerRefCountSyncGetRequestHandler, RunnerRefCountErrorRequestHandler,
-        TransactionAwareFunctionAferFinalize, IgnoreAddHandlerRequestHandler,
-        NativeFuturesCoroutine)
+        RunnerRefCountSyncGetRequestHandler, NativeFuturesCoroutine,
+        TransactionAwareFunctionAferFinalize, IgnoreAddHandlerRequestHandler)
 
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 
@@ -46,7 +46,7 @@ from remove_utilization_tester import remove_utilization_tester
 def select_python_version(py2, py3):
     return six.PY3 and py3 or py2
 
-class TornadoTest(TornadoBaseTest):
+class AllTests(object):
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
@@ -854,7 +854,7 @@ class TornadoTest(TornadoBaseTest):
             scoped_metrics=scoped_metrics,
             forgone_metric_substrings=['do_stuff'])
     def test_runner_ref_count_error(self):
-        response = self.fetch_exception('/runner-error')
+        self.fetch_exception('/runner-error')
 
     # The purpose of this test is to ensure ioloop.handle_callback_exception
     # does not crash when the passed in argument is not a function.
@@ -1085,3 +1085,11 @@ class TornadoTest(TornadoBaseTest):
 
         finally:
             app.global_settings.enabled = old_enabled
+
+class TornadoDefaultIOLoopTest(AllTests, TornadoBaseTest):
+    pass
+
+@pytest.mark.skipif(sys.version_info < (2, 7),
+        reason='pyzmq does not support Python 2.6')
+class TornadoZmqIOLoopTest(AllTests, TornadoZmqBaseTest):
+    pass

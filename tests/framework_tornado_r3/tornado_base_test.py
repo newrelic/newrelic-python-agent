@@ -1,4 +1,7 @@
+import sys
 import tornado.testing
+if sys.version_info >= (2, 7):
+    from zmq.eventloop.ioloop import ZMQIOLoop
 
 from newrelic.agent import FunctionWrapper
 from newrelic.core.stats_engine import StatsEngine
@@ -96,3 +99,8 @@ class TornadoBaseTest(tornado.testing.AsyncHTTPTestCase):
         with tornado.testing.ExpectLog('tornado.application',
                 "Uncaught exception GET %s" % path):
             return self.fetch_response(path, is_http_error=True)
+
+class TornadoZmqBaseTest(TornadoBaseTest):
+    def get_new_ioloop(self):
+        return ZMQIOLoop()
+

@@ -1,9 +1,13 @@
+import sys
+
+import pytest
+
 import tornado.gen
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace
 
-from tornado_base_test import TornadoBaseTest
+from tornado_base_test import TornadoBaseTest, TornadoZmqBaseTest
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -49,7 +53,7 @@ def add_callback_background_task(io_loop, func, *args, **kwargs):
 @tornado.gen.coroutine
 def coroutine_background_task():
     do_stuff()
-    result = yield yield_stuff()
+    yield yield_stuff()
 
 @background_task()
 @tornado.gen.coroutine
@@ -67,7 +71,7 @@ def spawn_callback_background_task(io_loop):
 
 # Actual tests start here!
 
-class TornadoTest(TornadoBaseTest):
+class AllTests(object):
 
     scoped_metrics = [('Function/test_background_task:do_stuff', 1)]
 
@@ -164,3 +168,11 @@ class TornadoTest(TornadoBaseTest):
         self.waits_expected += 1
         spawn_callback_background_task(self.io_loop)
         self.wait(timeout=5.0)
+
+class TornadoDefaultIOLoopTest(AllTests, TornadoBaseTest):
+    pass
+
+@pytest.mark.skipif(sys.version_info < (2, 7),
+        reason='pyzmq does not support Python 2.6')
+class TornadoZmqTest(AllTests, TornadoZmqBaseTest):
+    pass

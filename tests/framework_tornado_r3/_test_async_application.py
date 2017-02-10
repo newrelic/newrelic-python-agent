@@ -1,5 +1,4 @@
 import concurrent.futures
-import functools
 import socket
 import sys
 import tornado
@@ -13,7 +12,6 @@ from newrelic.hooks.framework_tornado_r3.util import TransactionContext
 from tornado import stack_context
 from tornado.curl_httpclient import CurlAsyncHTTPClient
 from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
-from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
 from tornado.iostream import IOStream
 from tornado.testing import bind_unused_port
@@ -697,7 +695,7 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
 
     def resolve_future(self, future, transaction):
         # Make sure that the get method has finished
-        while not transaction._can_finalize:
+        while not transaction._server_adapter_finalize:
             time.sleep(0.01)
 
         future.set_result(None)
@@ -715,7 +713,6 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
                 'method finished. Test timing incorrect, may need to re-run '
                 'test')
 
-        current_time = time.time()
         time.sleep(1)
 
         if self.add_future:
@@ -891,7 +888,7 @@ class RunnerRefCountRequestHandler(RequestHandler):
         with TransactionContext(None):
             self.io_loop.add_callback(self.resolve, self.result_future)
 
-        result = yield self.coro()
+        yield self.coro()
 
         # If transaction closes prematurely, calling do_stuff() will
         # produce this error (because cache will have None):
@@ -927,7 +924,7 @@ class RunnerRefCountSyncGetRequestHandler(RunnerRefCountRequestHandler):
         with TransactionContext(None):
             self.io_loop.add_callback(self.resolve, self.result_future)
 
-        result = yield self.result_future
+        yield self.result_future
         self.do_stuff()
 
     def get(self):
@@ -953,7 +950,7 @@ class RunnerRefCountErrorRequestHandler(RunnerRefCountRequestHandler):
         with TransactionContext(None):
             self.io_loop.add_callback(self.resolve, self.result_future)
 
-        result = yield self.coro()
+        yield self.coro()
         bad_divide = 1/0
 
         # Nothing beyond here gets called
@@ -1077,7 +1074,7 @@ class CoroutineLateExceptionRequestHandler(RequestHandler):
 
     @tornado.gen.coroutine
     def get(self):
-        _ = yield self.before_finish()
+        yield self.before_finish()
         self.finish(self.RESPONSE)
         raise Tornado4TestException(self.RESPONSE)
 
@@ -1119,11 +1116,58 @@ class OutsideTransactionErrorRequestHandler(CleanUpableRequestHandler):
         # framework assumes that an uncaught exception in a test is a real
         # error.
         try:
-            a = 5/0
+            5/0
         except:
             nr_app().record_exception(*sys.exc_info())
         finally:
             self.cleanup()
+
+class FinishInCallbackHandler(RequestHandler):
+
+    RESPONSE = b'finish in callback'
+
+    @tornado.web.asynchronous
+    def get(self):
+        with TransactionContext(None):
+            ioloop = tornado.ioloop.IOLoop.current()
+            ioloop.add_callback(self.callback)
+
+    def callback(self):
+        # Even though the get method has completed and the ref_count
+        # is 0, the transaction doesn't close until finish() is called.
+
+        transaction = self.request._nr_transaction
+        assert transaction._ref_count == 0
+        assert not transaction._is_finalized
+
+        self.finish(self.RESPONSE)
+
+        # Now, the transaction is closed.
+
+        assert transaction._is_finalized
+
+class ExceptionInsteadOfFinishHandler(RequestHandler):
+
+    RESPONSE = b'exception before finish in callback'
+
+    @tornado.web.asynchronous
+    def get(self):
+        with TransactionContext(None):
+            ioloop = tornado.ioloop.IOLoop.current()
+            ioloop.add_callback(self.callback)
+
+    def callback(self):
+        # Even though the get method has completed and the ref_count
+        # is 0, the transaction doesn't close until finish() is called.
+
+        transaction = self.request._nr_transaction
+        assert transaction._ref_count == 0
+        assert not transaction._is_finalized
+
+        # Raise exception, rather than calling finish() directly.
+
+        raise Tornado4TestException("whoops")
+
 
 def get_tornado_app():
     return Application([
@@ -1181,4 +1225,6 @@ def get_tornado_app():
         ('/coroutine-late-exception', CoroutineLateExceptionRequestHandler),
         ('/almost-error', ScheduleAndCancelExceptionRequestHandler),
         ('/outside-transaction-error', OutsideTransactionErrorRequestHandler),
+        ('/finish-in-callback', FinishInCallbackHandler),
+        ('/exception-instead-of-finish', ExceptionInsteadOfFinishHandler),
     ])

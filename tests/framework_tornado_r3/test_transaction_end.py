@@ -22,7 +22,7 @@ from _test_async_application import (ReturnFirstDivideRequestHandler,
         AddDoneCallbackRequestHandler, SimpleThreadedFutureRequestHandler,
         BusyWaitThreadedFutureRequestHandler,
         AddDoneCallbackAddsCallbackRequestHandler,
-        AddCallbackFromSignalRequestHandler)
+        AddCallbackFromSignalRequestHandler, FinishInCallbackHandler)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -488,6 +488,21 @@ class AllTests(object):
     def test_add_callback_from_signal_ignored(self):
         response = self.fetch_response('/signal-ignore')
         expected = AddCallbackFromSignalRequestHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'FinishInCallbackHandler.get', 1),
+    ]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:FinishInCallbackHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_finish_in_callback(self):
+        response = self.fetch_response('/finish-in-callback')
+        expected = FinishInCallbackHandler.RESPONSE
         self.assertEqual(response.body, expected)
 
 class TornadoDefaultIOLoopTest(AllTests, TornadoBaseTest):

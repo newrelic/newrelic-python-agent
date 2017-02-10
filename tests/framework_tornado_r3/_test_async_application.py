@@ -713,7 +713,6 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
                 'method finished. Test timing incorrect, may need to re-run '
                 'test')
 
-        current_time = time.time()
         time.sleep(1)
 
         if self.add_future:
@@ -889,7 +888,7 @@ class RunnerRefCountRequestHandler(RequestHandler):
         with TransactionContext(None):
             self.io_loop.add_callback(self.resolve, self.result_future)
 
-        result = yield self.coro()
+        yield self.coro()
 
         # If transaction closes prematurely, calling do_stuff() will
         # produce this error (because cache will have None):
@@ -925,7 +924,7 @@ class RunnerRefCountSyncGetRequestHandler(RunnerRefCountRequestHandler):
         with TransactionContext(None):
             self.io_loop.add_callback(self.resolve, self.result_future)
 
-        result = yield self.result_future
+        yield self.result_future
         self.do_stuff()
 
     def get(self):
@@ -951,7 +950,7 @@ class RunnerRefCountErrorRequestHandler(RunnerRefCountRequestHandler):
         with TransactionContext(None):
             self.io_loop.add_callback(self.resolve, self.result_future)
 
-        result = yield self.coro()
+        yield self.coro()
         bad_divide = 1/0
 
         # Nothing beyond here gets called
@@ -1075,7 +1074,7 @@ class CoroutineLateExceptionRequestHandler(RequestHandler):
 
     @tornado.gen.coroutine
     def get(self):
-        _ = yield self.before_finish()
+        yield self.before_finish()
         self.finish(self.RESPONSE)
         raise Tornado4TestException(self.RESPONSE)
 
@@ -1117,7 +1116,7 @@ class OutsideTransactionErrorRequestHandler(CleanUpableRequestHandler):
         # framework assumes that an uncaught exception in a test is a real
         # error.
         try:
-            a = 5/0
+            5/0
         except:
             nr_app().record_exception(*sys.exc_info())
         finally:

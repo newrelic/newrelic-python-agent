@@ -1971,6 +1971,9 @@ def _process_module_builtin_defaults():
         _process_module_definition('tornado.httpclient',
                 'newrelic.hooks.framework_tornado_r3.httpclient',
                 'instrument_tornado_httpclient')
+        _process_module_definition('tornado.curl_httpclient',
+                'newrelic.hooks.framework_tornado_r3.curl_httpclient',
+                'instrument_tornado_curl_httpclient')
         _process_module_definition('tornado.httputil',
                 'newrelic.hooks.framework_tornado_r3.httputil',
                 'instrument_tornado_httputil')

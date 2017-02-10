@@ -55,4 +55,5 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
     redis-server \
     mysql-server \
     libmysqlclient-dev \
-    curl
+    curl \
+    libcurl4-openssl-dev

@@ -10,13 +10,14 @@ from newrelic.agent import (application as nr_app, current_transaction,
         function_trace)
 from newrelic.hooks.framework_tornado_r3.util import TransactionContext
 
-from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
-from tornado.web import Application, RequestHandler
-from tornado.httpserver import HTTPServer
 from tornado import stack_context
+from tornado.curl_httpclient import CurlAsyncHTTPClient
+from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
+from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
 from tornado.iostream import IOStream
 from tornado.testing import bind_unused_port
+from tornado.web import Application, RequestHandler
 
 
 class Tornado4TestException(Exception):
@@ -418,6 +419,52 @@ class AsyncFetchRequestHandler(RequestHandler):
 
     def process_response(self, response):
         self.finish(response.body)
+
+class CurlAsyncFetchRequestHandler(RequestHandler):
+
+    @tornado.web.asynchronous
+    def get(self, request_type, port):
+        url = 'http://localhost:%s' % port
+        client = CurlAsyncHTTPClient()
+        # We test with a request object and a raw url as well as using the
+        # callback as a positional argument and as a keyword argument.
+        if request_type == 'requestobj':
+            request = HTTPRequest(url)
+            client.fetch(url, self.process_response)
+        else:
+            request = url
+            client.fetch(url, callback=self.process_response)
+
+    def process_response(self, response):
+        self.finish(response.body)
+
+class CurlStreamingCallbackRequestHandler(RequestHandler):
+
+    def initialize(self):
+        self.body = []
+
+    @tornado.web.asynchronous
+    def get(self, request_type, port):
+        url = 'http://localhost:%s' % port
+        client = CurlAsyncHTTPClient()
+        # We test with a request object and a raw url as well as using the
+        # callback as a positional argument and as a keyword argument.
+        if request_type == 'requestobj':
+            request = HTTPRequest(url, streaming_callback=self.process_chunk)
+            client.fetch(url, self.process_response)
+        else:
+            request = url
+            client.fetch(url, streaming_callback=self.process_chunk,
+                    callback=self.process_response)
+
+    def process_chunk(self, data):
+        self.body.append(data)
+
+    def process_response(self, response):
+        # response.body has already been consumed by process_chunk(),
+        # so we send back self.body, not response.body.
+        content = b''.join(self.body)
+        self.finish(content)
 
 class SyncFetchRequestHandler(RequestHandler):
 
@@ -1102,6 +1149,8 @@ def get_tornado_app():
         ('/bookend-subclass', PrepareOnFinishRequestHandlerSubclass),
         ('/stream', SimpleStreamingRequestHandler),
         ('/async-fetch/(\w)+/(\d+)', AsyncFetchRequestHandler),
+        ('/curl-async-fetch/(\w)+/(\d+)', CurlAsyncFetchRequestHandler),
+        ('/curl-stream-cb/(\w)+/(\d+)', CurlStreamingCallbackRequestHandler),
         ('/sync-fetch/(\w)+/(\d+)', SyncFetchRequestHandler),
         ('/run-sync-add/(\d+)/(\d+)', RunSyncAddRequestHandler),
         ('/prepare-future', PrepareReturnsFutureHandler),

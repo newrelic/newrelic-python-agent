@@ -539,6 +539,91 @@ class AllTests(object):
 
     # The port number 8989 matches the port number in MockExternalHTTPServer
     scoped_metrics = [('Function/_test_async_application:'
+            'CurlAsyncFetchRequestHandler.get', 1),
+            ('Function/_test_async_application:CurlAsyncFetchRequestHandler.'
+             'process_response', 1),
+            ('External/localhost:8989/tornado.httpclient/', 1)
+    ]
+
+    rollup_metrics = [('External/allWeb', 1), ('External/all', 1)]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:CurlAsyncFetchRequestHandler.get',
+            scoped_metrics=scoped_metrics,
+            rollup_metrics=rollup_metrics)
+    def test_curl_async_httpclient_raw_url_fetch(self):
+        external = MockExternalHTTPServer()
+        external.start()
+        response = self.fetch_response('/curl-async-fetch/rawurl/%s' %
+                external.port)
+        external.stop()
+
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, external.RESPONSE)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:CurlAsyncFetchRequestHandler.get',
+            scoped_metrics=scoped_metrics,
+            rollup_metrics=rollup_metrics)
+    def test_curl_async_httpclient_request_object_fetch(self):
+        external = MockExternalHTTPServer()
+        external.start()
+        response = self.fetch_response(
+                '/curl-async-fetch/requestobj/%s' % external.port)
+        external.stop()
+
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, external.RESPONSE)
+
+
+    # The port number 8989 matches the port number in MockExternalHTTPServer
+    scoped_metrics = [('Function/_test_async_application:'
+            'CurlStreamingCallbackRequestHandler.get', 1),
+            ('Function/_test_async_application:'
+                    'CurlStreamingCallbackRequestHandler.process_response', 1),
+            ('External/localhost:8989/tornado.httpclient/', 1)
+    ]
+
+    rollup_metrics = [('External/allWeb', 1), ('External/all', 1)]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:CurlStreamingCallbackRequestHandler.get',
+            scoped_metrics=scoped_metrics,
+            rollup_metrics=rollup_metrics)
+    def test_curl_streaming_callback_httpclient_raw_url_fetch(self):
+        external = MockExternalHTTPServer()
+        external.start()
+        response = self.fetch_response('/curl-stream-cb/rawurl/%s' %
+                external.port)
+        external.stop()
+
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, external.RESPONSE)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:CurlStreamingCallbackRequestHandler.get',
+            scoped_metrics=scoped_metrics,
+            rollup_metrics=rollup_metrics)
+    def test_curl_streaming_callback_httpclient_raw_url_fetch(self):
+        external = MockExternalHTTPServer()
+        external.start()
+        response = self.fetch_response('/curl-stream-cb/requestobj/%s' %
+                external.port)
+        external.stop()
+
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, external.RESPONSE)
+
+    # The port number 8989 matches the port number in MockExternalHTTPServer
+    scoped_metrics = [('Function/_test_async_application:'
             'SyncFetchRequestHandler.get', 1),
             ('External/localhost:8989/tornado.httpclient/', 1)
     ]

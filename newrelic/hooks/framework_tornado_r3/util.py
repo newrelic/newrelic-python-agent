@@ -236,26 +236,9 @@ def create_transaction_aware_fxn(fxn, fxn_for_name=None, should_trace=True):
 
     return transaction_aware(fxn)
 
-def _get_nr_transaction(request):
-    if request is None:
-        _logger.error('Runtime instrumentation error. Ending request '
-                'monitoring when no request is present. Please report '
-                'this issue to New Relic support.\n%s',
-                ''.join(traceback.format_stack()[:-1]))
-        return None
-
-    # We grab the transaction off of the request.
-    if not hasattr(request, '_nr_transaction'):
-        return None
-
-    if request._nr_transaction is None:
-        return None
-
-    return request._nr_transaction
-
 def request_handler_finish_finalize(wrapped, instance, args, kwargs):
     request = instance.request
-    transaction = _get_nr_transaction(request)
+    transaction = retrieve_request_transaction(request)
 
     if transaction is None:
         return wrapped(*args, **kwargs)
@@ -273,7 +256,7 @@ def server_request_adapter_finish_finalize(wrapped, instance, args, kwargs):
     else:
         request = instance.request
 
-    transaction = _get_nr_transaction(request)
+    transaction = retrieve_request_transaction(request)
 
     if transaction is None:
         return wrapped(*args, **kwargs)
@@ -291,7 +274,7 @@ def server_request_adapter_on_connection_close_finalize(wrapped,
     else:
         request = instance.request
 
-    transaction = _get_nr_transaction(request)
+    transaction = retrieve_request_transaction(request)
 
     if transaction is None:
         return wrapped(*args, **kwargs)

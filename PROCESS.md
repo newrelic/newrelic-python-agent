@@ -349,3 +349,24 @@ odd/even numbering scheme, ``B`` should always be odd after this change.
 
 30. Make sure that all JIRA stories associated with the release version have
 been updated as having been released.
+
+Creating a Custom Build for a Customer
+--------------------------------------
+
+When providing a custom build of the agent to a customer, we will typically build off of the `develop` branch. (If we have created a custom branch for the customer rather than using `develop`, adjust the instructions below accordingly.)
+
+1. On Jenkins (JAAS-1), manually edit the "build-and-archive" job through the Jenkins UI so that it builds from the `develop` branch. (Right now, it can only build from `master`.) This will produce a version number with an odd minor number, which indicates that it is not a public release. It's important to build the job on Jenkins so that we archive this version of the agent. Even though it is not a public release, we still want to archive any version of the agent which we release in any way.
+
+2. After running the "build-and-archive" job successfully, revert the change you made in step #1: re-edit the job so that it will build from the `master` branch for future runs.
+
+3. Tag the latest commit on `develop`. The tag will contain the version in the same format as our normal release. For example, the tag might be: `v2.79.0.59`.
+
+        $ git tag v2.79.0.59
+
+4. Push the tag to GHE.
+
+        $ git push origin v2.79.0.59
+
+5. Download the tarball from Artifactory. Run manual smoke tests to verify that the agent is working as expected. Manually testing with an application is a good idea. Running `newrelic-admin validate-config newrelic.ini` is also helpful.
+
+6. Work with the Product Manager to send the custom build to the customer.

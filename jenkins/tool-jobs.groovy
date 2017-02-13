@@ -28,6 +28,10 @@ use(extensions) {
 
             // block on any RUNNING job (not queued)
             blockOnJobs('.*', 'GLOBAL', 'DISABLED')
+
+            steps {
+                shell(readFileFromWorkspace('./jenkins/fetch_snakeyaml.sh'))
+            }
         }
     }
 

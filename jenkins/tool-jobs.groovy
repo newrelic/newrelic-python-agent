@@ -16,22 +16,27 @@ use(extensions) {
          "(${testPrefix}.*)|(python_agent-dsl-seed)")
 
     // python_agent-dsl-seed job
-    projectSeedJob() {
-        repo(repoGHE)
-        org(organization)
-        dslPath('jenkins')
+    baseJob('python_agent-dsl-seed') {
+        label('master')
+        repo(repoFull)
+        branch('develop')
 
         configure {
-            // set repository a second time to ensure building from develop
-            // branch instead of master
-            repository(repoFull, 'develop')
+            description("A job to create other Jenkins DSL defined jobs in the ${repoGHE} repo.")
 
+            triggers {
+                githubPush()
+            }
+            
             // block on any RUNNING job (not queued)
             blockOnJobs('.*', 'GLOBAL', 'DISABLED')
 
             steps {
                 shell(readFileFromWorkspace('./jenkins/fetch_snakeyaml.sh'))
+                reseedFrom('jenkins/**/*.groovy')
             }
+
+            slackQuiet(slackChannel)
         }
     }
 

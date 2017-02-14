@@ -1122,50 +1122,36 @@ class OutsideTransactionErrorRequestHandler(CleanUpableRequestHandler):
         finally:
             self.cleanup()
 
-class FinishInCallbackHandler(RequestHandler):
+class WaitForFinishHandler(RequestHandler):
+    """Transaction should not close until finish() is called. Test that the
+    transaction duration is > 0.1 secs to confirm.
+    """
 
-    RESPONSE = b'finish in callback'
+    RESPONSE = b'wait for finish'
 
     @tornado.web.asynchronous
     def get(self):
-        with TransactionContext(None):
-            ioloop = tornado.ioloop.IOLoop.current()
-            ioloop.add_callback(self.callback)
+        ioloop = tornado.ioloop.IOLoop.current()
+        ioloop.call_later(0.1, self.callback)
 
     def callback(self):
-        # Even though the get method has completed and the ref_count
-        # is 0, the transaction doesn't close until finish() is called.
-
-        transaction = self.request._nr_transaction
-        assert transaction._ref_count == 0
-        assert not transaction._is_finalized
-
         self.finish(self.RESPONSE)
 
-        # Now, the transaction is closed.
-
-        assert transaction._is_finalized
-
 class ExceptionInsteadOfFinishHandler(RequestHandler):
+    """Transaction should not close until exception is raised in callback(),
+    since finish() was never called. Test that the duration is > 0.1 secs
+    to confirm.
+    """
 
     RESPONSE = b'exception before finish in callback'
 
     @tornado.web.asynchronous
     def get(self):
-        with TransactionContext(None):
-            ioloop = tornado.ioloop.IOLoop.current()
-            ioloop.add_callback(self.callback)
+        ioloop = tornado.ioloop.IOLoop.current()
+        ioloop.call_later(0.1, self.callback)
 
     def callback(self):
-        # Even though the get method has completed and the ref_count
-        # is 0, the transaction doesn't close until finish() is called.
-
-        transaction = self.request._nr_transaction
-        assert transaction._ref_count == 0
-        assert not transaction._is_finalized
-
         # Raise exception, rather than calling finish() directly.
-
         raise Tornado4TestException("whoops")
 
 
@@ -1225,6 +1211,6 @@ def get_tornado_app():
         ('/coroutine-late-exception', CoroutineLateExceptionRequestHandler),
         ('/almost-error', ScheduleAndCancelExceptionRequestHandler),
         ('/outside-transaction-error', OutsideTransactionErrorRequestHandler),
-        ('/finish-in-callback', FinishInCallbackHandler),
+        ('/wait-for-finish', WaitForFinishHandler),
         ('/exception-instead-of-finish', ExceptionInsteadOfFinishHandler),
     ])

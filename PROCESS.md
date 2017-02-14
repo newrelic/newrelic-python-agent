@@ -355,11 +355,11 @@ Creating a Custom Build for a Customer
 
 When providing a custom build of the agent to a customer, we will typically build off of the `develop` branch. (If we have created a custom branch for the customer rather than using `develop`, adjust the instructions below accordingly.)
 
-1. On Jenkins (JAAS-1), manually edit the "build-and-archive" job through the Jenkins UI so that it builds from the `develop` branch. (Right now, it can only build from `master`.) This will produce a version number with an odd minor number, which indicates that it is not a public release. It's important to build the job on Jenkins so that we archive this version of the agent. Even though it is not a public release, we still want to archive any version of the agent which we release in any way.
+1. On Jenkins (JAAS-1), manually edit the "build-and-archive" job through the Jenkins UI so that it builds from the `develop` branch. (Right now, it can only build from `master`.) This will produce a version number with an odd minor number, which indicates that it is not a public release. It will also add the Jenkins build job number as the fourth element of the version number, just like we have for regular releases. It's important to build the job on Jenkins so that we archive this version of the agent. Even though it is not a public release, we still want to archive any version of the agent which we release in any way.
 
 2. After running the "build-and-archive" job successfully, revert the change you made in step #1: re-edit the job so that it will build from the `master` branch for future runs.
 
-3. Tag the latest commit on `develop`. The tag will contain the version in the same format as our normal release. For example, the tag might be: `v2.79.0.59`.
+3. Tag the latest commit on `develop`. The tag will contain the version in the same format as our normal release. For example, the tag might be: `v2.79.0.59`. Verify that the minor version ("79") is an odd number, and that the build number ("59") matches the build number from the Jenkins job.
 
         $ git tag v2.79.0.59
 

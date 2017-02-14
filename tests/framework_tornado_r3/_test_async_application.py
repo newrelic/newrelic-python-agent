@@ -106,8 +106,11 @@ class SyncExceptionRequestHandler(RequestHandler):
     RESPONSE = b'sync exception'
 
     def get(self):
-        divide = 10/0  # exception
-        self.write(self.RESPONSE)  # never executed
+        # Produce a ZeroDivisionError
+        10/0
+
+        # Never executed
+        self.write(self.RESPONSE)
 
 class CallbackExceptionRequestHandler(RequestHandler):
     RESPONSE = b'callback exception'
@@ -410,9 +413,8 @@ class AsyncFetchRequestHandler(RequestHandler):
         # callback as a positional argument and as a keyword argument.
         if request_type == 'requestobj':
             request = HTTPRequest(url)
-            client.fetch(url, self.process_response)
+            client.fetch(request, self.process_response)
         else:
-            request = url
             client.fetch(url, callback=self.process_response)
 
     def process_response(self, response):
@@ -428,9 +430,8 @@ class CurlAsyncFetchRequestHandler(RequestHandler):
         # callback as a positional argument and as a keyword argument.
         if request_type == 'requestobj':
             request = HTTPRequest(url)
-            client.fetch(url, self.process_response)
+            client.fetch(request, self.process_response)
         else:
-            request = url
             client.fetch(url, callback=self.process_response)
 
     def process_response(self, response):
@@ -449,9 +450,8 @@ class CurlStreamingCallbackRequestHandler(RequestHandler):
         # callback as a positional argument and as a keyword argument.
         if request_type == 'requestobj':
             request = HTTPRequest(url, streaming_callback=self.process_chunk)
-            client.fetch(url, self.process_response)
+            client.fetch(request, self.process_response)
         else:
-            request = url
             client.fetch(url, streaming_callback=self.process_chunk,
                     callback=self.process_response)
 
@@ -476,7 +476,7 @@ class SyncFetchRequestHandler(RequestHandler):
         else:
             request = url
 
-        response = client.fetch(url)
+        response = client.fetch(request)
         self.finish(response.body)
 
 class RunSyncAddRequestHandler(RequestHandler):
@@ -928,7 +928,7 @@ class RunnerRefCountSyncGetRequestHandler(RunnerRefCountRequestHandler):
         self.do_stuff()
 
     def get(self):
-        result_future = self.coro()
+        self.coro()
         self.write(self.RESPONSE)
 
 
@@ -951,10 +951,11 @@ class RunnerRefCountErrorRequestHandler(RunnerRefCountRequestHandler):
             self.io_loop.add_callback(self.resolve, self.result_future)
 
         yield self.coro()
-        bad_divide = 1/0
+
+        # Produce a ZeroDivisionError
+        1/0
 
         # Nothing beyond here gets called
-
         self.do_stuff()
         self.write(self.RESPONSE)
 
@@ -1125,6 +1126,7 @@ class OutsideTransactionErrorRequestHandler(CleanUpableRequestHandler):
 class WaitForFinishHandler(RequestHandler):
     """Transaction should not close until finish() is called. Test that the
     transaction duration is > 0.1 secs to confirm.
+
     """
 
     RESPONSE = b'wait for finish'
@@ -1141,6 +1143,7 @@ class ExceptionInsteadOfFinishHandler(RequestHandler):
     """Transaction should not close until exception is raised in callback(),
     since finish() was never called. Test that the duration is > 0.1 secs
     to confirm.
+
     """
 
     RESPONSE = b'exception before finish in callback'

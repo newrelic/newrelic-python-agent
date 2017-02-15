@@ -1,5 +1,3 @@
-// Grab will no longer be supported in jenkins-dsl 1.36, we currently use 1.35
-@Grab('org.yaml:snakeyaml:1.17')
 import org.yaml.snakeyaml.Yaml
 import newrelic.jenkins.extensions
 

@@ -284,7 +284,7 @@ class AllTests(object):
     ]
     custom_metrics = [
             ('WebTransaction/Function/_test_async_application:'
-                'ExceptionInsteadOfFinishHandler.get',(0.1, 0.2))
+                'ExceptionInsteadOfFinishHandler.get',(0.1, 0.6))
     ]
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_count_transaction_metrics(

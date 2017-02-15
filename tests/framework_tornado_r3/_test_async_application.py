@@ -106,8 +106,11 @@ class SyncExceptionRequestHandler(RequestHandler):
     RESPONSE = b'sync exception'
 
     def get(self):
-        divide = 10/0  # exception
-        self.write(self.RESPONSE)  # never executed
+        # Produce a ZeroDivisionError
+        10/0
+
+        # Never executed
+        self.write(self.RESPONSE)
 
 class CallbackExceptionRequestHandler(RequestHandler):
     RESPONSE = b'callback exception'
@@ -410,9 +413,8 @@ class AsyncFetchRequestHandler(RequestHandler):
         # callback as a positional argument and as a keyword argument.
         if request_type == 'requestobj':
             request = HTTPRequest(url)
-            client.fetch(url, self.process_response)
+            client.fetch(request, self.process_response)
         else:
-            request = url
             client.fetch(url, callback=self.process_response)
 
     def process_response(self, response):
@@ -428,9 +430,8 @@ class CurlAsyncFetchRequestHandler(RequestHandler):
         # callback as a positional argument and as a keyword argument.
         if request_type == 'requestobj':
             request = HTTPRequest(url)
-            client.fetch(url, self.process_response)
+            client.fetch(request, self.process_response)
         else:
-            request = url
             client.fetch(url, callback=self.process_response)
 
     def process_response(self, response):
@@ -449,9 +450,8 @@ class CurlStreamingCallbackRequestHandler(RequestHandler):
         # callback as a positional argument and as a keyword argument.
         if request_type == 'requestobj':
             request = HTTPRequest(url, streaming_callback=self.process_chunk)
-            client.fetch(url, self.process_response)
+            client.fetch(request, self.process_response)
         else:
-            request = url
             client.fetch(url, streaming_callback=self.process_chunk,
                     callback=self.process_response)
 
@@ -476,7 +476,7 @@ class SyncFetchRequestHandler(RequestHandler):
         else:
             request = url
 
-        response = client.fetch(url)
+        response = client.fetch(request)
         self.finish(response.body)
 
 class RunSyncAddRequestHandler(RequestHandler):
@@ -928,7 +928,7 @@ class RunnerRefCountSyncGetRequestHandler(RunnerRefCountRequestHandler):
         self.do_stuff()
 
     def get(self):
-        result_future = self.coro()
+        self.coro()
         self.write(self.RESPONSE)
 
 
@@ -951,10 +951,11 @@ class RunnerRefCountErrorRequestHandler(RunnerRefCountRequestHandler):
             self.io_loop.add_callback(self.resolve, self.result_future)
 
         yield self.coro()
-        bad_divide = 1/0
+
+        # Produce a ZeroDivisionError
+        1/0
 
         # Nothing beyond here gets called
-
         self.do_stuff()
         self.write(self.RESPONSE)
 
@@ -1122,50 +1123,38 @@ class OutsideTransactionErrorRequestHandler(CleanUpableRequestHandler):
         finally:
             self.cleanup()
 
-class FinishInCallbackHandler(RequestHandler):
+class WaitForFinishHandler(RequestHandler):
+    """Transaction should not close until finish() is called. Test that the
+    transaction duration is > 0.1 secs to confirm.
 
-    RESPONSE = b'finish in callback'
+    """
+
+    RESPONSE = b'wait for finish'
 
     @tornado.web.asynchronous
     def get(self):
-        with TransactionContext(None):
-            ioloop = tornado.ioloop.IOLoop.current()
-            ioloop.add_callback(self.callback)
+        ioloop = tornado.ioloop.IOLoop.current()
+        ioloop.call_later(0.1, self.callback)
 
     def callback(self):
-        # Even though the get method has completed and the ref_count
-        # is 0, the transaction doesn't close until finish() is called.
-
-        transaction = self.request._nr_transaction
-        assert transaction._ref_count == 0
-        assert not transaction._is_finalized
-
         self.finish(self.RESPONSE)
 
-        # Now, the transaction is closed.
-
-        assert transaction._is_finalized
-
 class ExceptionInsteadOfFinishHandler(RequestHandler):
+    """Transaction should not close until exception is raised in callback(),
+    since finish() was never called. Test that the duration is > 0.1 secs
+    to confirm.
+
+    """
 
     RESPONSE = b'exception before finish in callback'
 
     @tornado.web.asynchronous
     def get(self):
-        with TransactionContext(None):
-            ioloop = tornado.ioloop.IOLoop.current()
-            ioloop.add_callback(self.callback)
+        ioloop = tornado.ioloop.IOLoop.current()
+        ioloop.call_later(0.1, self.callback)
 
     def callback(self):
-        # Even though the get method has completed and the ref_count
-        # is 0, the transaction doesn't close until finish() is called.
-
-        transaction = self.request._nr_transaction
-        assert transaction._ref_count == 0
-        assert not transaction._is_finalized
-
         # Raise exception, rather than calling finish() directly.
-
         raise Tornado4TestException("whoops")
 
 
@@ -1225,6 +1214,6 @@ def get_tornado_app():
         ('/coroutine-late-exception', CoroutineLateExceptionRequestHandler),
         ('/almost-error', ScheduleAndCancelExceptionRequestHandler),
         ('/outside-transaction-error', OutsideTransactionErrorRequestHandler),
-        ('/finish-in-callback', FinishInCallbackHandler),
+        ('/wait-for-finish', WaitForFinishHandler),
         ('/exception-instead-of-finish', ExceptionInsteadOfFinishHandler),
     ])

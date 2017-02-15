@@ -11,13 +11,14 @@ from tornado_base_test import TornadoBaseTest, TornadoZmqBaseTest
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
     tornado_validate_errors, tornado_validate_transaction_cache_empty,
-    tornado_validate_unscoped_metrics)
+    tornado_validate_unscoped_metrics,
+    tornado_validate_time_transaction_metrics)
 
 from _test_async_application import (AsyncLateExceptionRequestHandler,
         CoroutineLateExceptionRequestHandler,
         OutsideTransactionErrorRequestHandler,
         ScheduleAndCancelExceptionRequestHandler,
-        SyncLateExceptionRequestHandler, ExceptionInsteadOfFinishHandler)
+        SyncLateExceptionRequestHandler)
 
 INTERNAL_SERVER_ERROR = 'Internal Server Error'
 
@@ -281,11 +282,17 @@ class AllTests(object):
             ('Function/_test_async_application:'
                     'ExceptionInsteadOfFinishHandler.get', 1),
     ]
-
+    custom_metrics = [
+            ('WebTransaction/Function/_test_async_application:'
+                'ExceptionInsteadOfFinishHandler.get',(0.1, 0.6))
+    ]
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:ExceptionInsteadOfFinishHandler.get',
             scoped_metrics=scoped_metrics)
+    @tornado_validate_time_transaction_metrics(
+            '_test_async_application:ExceptionInsteadOfFinishHandler.get',
+            custom_metrics=custom_metrics)
     def test_exception_before_finish_in_callback(self):
         response = self.fetch_exception('/exception-instead-of-finish')
         self.assertEqual(response.code, 500)

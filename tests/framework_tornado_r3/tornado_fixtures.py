@@ -290,7 +290,7 @@ def tornado_validate_time_transaction_metrics(name, group='Function',
 
         for scoped_name, scoped_time_range in scoped_metrics:
             _validate_metric_times(
-                    metrics, scoped_name, transaction_metric, scoped_time_range)
+                    metrics, scoped_name, name, scoped_time_range)
 
         for rollup_name, rollup_time_range in rollup_metrics:
             _validate_metric_times(metrics, rollup_name, '', rollup_time_range)

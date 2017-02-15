@@ -32,7 +32,7 @@ use(extensions) {
             blockOnJobs('.*', 'GLOBAL', 'DISABLED')
 
             steps {
-                shell(readFileFromWorkspace('./jenkins/fetch_snakeyaml.sh'))
+                shell('./jenkins/fetch_snakeyaml.sh')
                 reseedFrom('jenkins/**/*.groovy')
             }
 

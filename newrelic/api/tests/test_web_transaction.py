@@ -259,6 +259,62 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
         with transaction:
             self.assertTrue(transaction.ignore_transaction)
 
+    def test_no_rum_insertion_sync_application_call(self):
+        # The application wrapper should always directly call application
+        # regardless of rum settings
+
+        called = [False]
+
+        def wrapped(environ, start_response):
+            called[0] = True
+            return True
+
+        def start_response(status, headers):
+            return 'write'
+
+        environ = {
+            'REQUEST_URI': '/web_transaction',
+            'newrelic.disable_browser_autorum': True,
+        }
+
+        wrapped_wsgi_app = newrelic.api.web_transaction.WSGIApplicationWrapper(
+                wrapped, application=application)
+
+        # Call the now wrapped application. It will return a
+        # _WSGIApplicationIterable object. The generator attribute on this
+        # object is the middleware instance.
+        func_wrapper = wrapped_wsgi_app(environ, start_response)
+
+        self.assertTrue(called[0])
+
+    def test_sync_application_call(self):
+        # The application wrapper should always directly call application
+        # regardless of rum settings
+
+        called = [False]
+
+        def wrapped(environ, start_response):
+            called[0] = True
+            return True
+
+        def start_response(status, headers):
+            return 'write'
+
+        environ = {
+            'REQUEST_URI': '/web_transaction',
+            'newrelic.disable_browser_autorum': False,
+        }
+
+        wrapped_wsgi_app = newrelic.api.web_transaction.WSGIApplicationWrapper(
+                wrapped, application=application)
+
+        # Call the now wrapped application. It will return a
+        # _WSGIApplicationIterable object. The generator attribute on this
+        # object is the middleware instance.
+        func_wrapper = wrapped_wsgi_app(environ, start_response)
+
+        self.assertTrue(called[0])
+
     def test_queue_start(self):
         now = time.time()
         ts = now-0.2

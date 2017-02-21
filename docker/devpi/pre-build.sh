@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 OUT_DIR=docker/devpi/package-lists/
 mkdir -p $OUT_DIR
 rm -rf $OUT_DIR/*

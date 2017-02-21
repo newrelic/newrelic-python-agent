@@ -317,14 +317,14 @@ create_docker_base_images()
             echo "Executing pre-build hook: $IMG"
             echo
 
-            (cd $ROOT_DIRECTORY; docker/$IMG/pre-build.sh)
+            (cd $ROOT_DIRECTORY; docker/$IMG/pre-build.sh) || exit 1
         fi
 
         echo
         echo "Create image: $IMG"
         echo
 
-        (cd $ROOT_DIRECTORY; docker build --rm -t $IMG docker/$IMG)
+        (cd $ROOT_DIRECTORY; docker build --rm -t $IMG docker/$IMG) || exit 1
 
     done
 }
@@ -378,14 +378,14 @@ create_docker_base_images_nocache()
             echo "Executing pre-build hook: $IMG"
             echo
 
-            (cd $ROOT_DIRECTORY; docker/$IMG/pre-build.sh)
+            (cd $ROOT_DIRECTORY; docker/$IMG/pre-build.sh) || exit 1
         fi
 
         echo
         echo "Create image: $IMG"
         echo
 
-        (cd $ROOT_DIRECTORY; docker build --no-cache --rm -t $IMG docker/$IMG)
+        (cd $ROOT_DIRECTORY; docker build --no-cache --rm -t $IMG docker/$IMG) || exit 1
 
     done
 }

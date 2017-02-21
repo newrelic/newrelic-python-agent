@@ -285,7 +285,10 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
         # object is the middleware instance.
         func_wrapper = wrapped_wsgi_app(environ, start_response)
 
-        self.assertTrue(called[0])
+        try:
+            self.assertTrue(called[0])
+        finally:
+            func_wrapper.close()
 
     def test_sync_application_call(self):
         # The application wrapper should always directly call application
@@ -313,7 +316,10 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
         # object is the middleware instance.
         func_wrapper = wrapped_wsgi_app(environ, start_response)
 
-        self.assertTrue(called[0])
+        try:
+            self.assertTrue(called[0])
+        finally:
+            func_wrapper.close()
 
     def test_queue_start(self):
         now = time.time()
@@ -567,13 +573,13 @@ class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
         # _WSGIApplicationIterable object. The generator attribute on this
         # object is the value of wrapped(*args, **kwargs).
         func_wrapper = wrapped_wsgi_app(environ, start_response)
-        self.assertEqual(func_wrapper.generator,
-                wrapped(environ, start_response))
+        try:
+            self.assertEqual(func_wrapper.generator,
+                    wrapped(environ, start_response))
+        finally:
+            func_wrapper.close()
 
     def test_use_rum_when_not_websocket(self):
-        if is_pypy:
-            return
-
         # Test that the WSGIApplicationWrapper function will apply RUM
         # middleware if the transaction is not a websocket.
         def wrapped(environ, start_response):
@@ -591,12 +597,12 @@ class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
         # _WSGIApplicationIterable object. The generator attribute on this
         # object is the middleware instance.
         func_wrapper = wrapped_wsgi_app(environ, start_response)
-        self.assertEqual(type(func_wrapper.generator), types.GeneratorType)
+        try:
+            self.assertEqual(type(func_wrapper.generator), types.GeneratorType)
+        finally:
+            func_wrapper.close()
 
     def test_no_rum_when_not_websocket_and_autorum_disabled_is_True(self):
-        if is_pypy:
-            return
-
         # If autorum_disabled = True but the transaction is not a websocket,
         # RUM should not be applied.
 
@@ -618,8 +624,11 @@ class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
         # _WSGIApplicationIterable object. The generator attribute on this
         # object is the middleware instance.
         func_wrapper = wrapped_wsgi_app(environ, start_response)
-        self.assertEqual(func_wrapper.generator,
-                wrapped(environ, start_response))
+        try:
+            self.assertEqual(func_wrapper.generator,
+                    wrapped(environ, start_response))
+        finally:
+            func_wrapper.close()
 
     def test_no_rum_is_websocket_autorum_disabled(self):
         # If autorum_disabled = True and the transaction is a websocket, RUM
@@ -643,8 +652,11 @@ class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
         # _WSGIApplicationIterable object. The generator attribute on this
         # object is the middleware instance.
         func_wrapper = wrapped_wsgi_app(environ, start_response)
-        self.assertEqual(func_wrapper.generator,
-                wrapped(environ, start_response))
+        try:
+            self.assertEqual(func_wrapper.generator,
+                    wrapped(environ, start_response))
+        finally:
+            func_wrapper.close()
 
 if __name__ == '__main__':
     unittest.main()

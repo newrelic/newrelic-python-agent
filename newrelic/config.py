@@ -2317,6 +2317,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('rest_framework.views',
             'newrelic.hooks.component_djangorestframework',
             'instrument_rest_framework_views')
+    _process_module_definition('rest_framework.decorators',
+            'newrelic.hooks.component_djangorestframework',
+            'instrument_rest_framework_decorators')
 
     _process_module_definition('celery.task.base',
             'newrelic.hooks.application_celery',

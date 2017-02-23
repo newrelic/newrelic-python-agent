@@ -1,14 +1,18 @@
+import sys
 import tornado
 import threading
 
+import pytest
+
 from newrelic.packages import six
 
-from tornado_base_test import TornadoBaseTest
+from tornado_base_test import TornadoBaseTest, TornadoZmqBaseTest
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
     tornado_validate_errors, tornado_validate_transaction_cache_empty,
-    tornado_validate_unscoped_metrics)
+    tornado_validate_unscoped_metrics,
+    tornado_validate_time_transaction_metrics)
 
 from _test_async_application import (AsyncLateExceptionRequestHandler,
         CoroutineLateExceptionRequestHandler,
@@ -21,7 +25,7 @@ INTERNAL_SERVER_ERROR = 'Internal Server Error'
 def select_python_version(py2, py3):
     return six.PY3 and py3 or py2
 
-class ExceptionTest(TornadoBaseTest):
+class AllTests(object):
 
     # Tests for exceptions occuring inside of a transaction.
 
@@ -273,3 +277,31 @@ class ExceptionTest(TornadoBaseTest):
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body,
                 OutsideTransactionErrorRequestHandler.RESPONSE)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'ExceptionInsteadOfFinishHandler.get', 1),
+    ]
+    custom_metrics = [
+            ('WebTransaction/Function/_test_async_application:'
+                'ExceptionInsteadOfFinishHandler.get',(0.1, 0.6))
+    ]
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:ExceptionInsteadOfFinishHandler.get',
+            scoped_metrics=scoped_metrics)
+    @tornado_validate_time_transaction_metrics(
+            '_test_async_application:ExceptionInsteadOfFinishHandler.get',
+            custom_metrics=custom_metrics)
+    def test_exception_before_finish_in_callback(self):
+        response = self.fetch_exception('/exception-instead-of-finish')
+        self.assertEqual(response.code, 500)
+        self.assertEqual(response.reason, INTERNAL_SERVER_ERROR)
+
+class ExceptionDefaultIOLoopTest(AllTests, TornadoBaseTest):
+    pass
+
+@pytest.mark.skipif(sys.version_info < (2, 7),
+        reason='pyzmq does not support Python 2.6')
+class ExceptionZmqIOLoopTest(AllTests, TornadoZmqBaseTest):
+    pass

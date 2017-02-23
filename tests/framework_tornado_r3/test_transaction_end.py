@@ -1,13 +1,13 @@
-import newrelic.hooks.framework_tornado_r3.ioloop
-import pytest
+import sys
 import threading
 import tornado
 
-from newrelic.agent import FunctionWrapper
+import pytest
+
 from newrelic.packages import six
 from newrelic.packages.six.moves import http_client
 
-from tornado_base_test import TornadoBaseTest
+from tornado_base_test import TornadoBaseTest, TornadoZmqBaseTest
 
 from _test_async_application import (ReturnFirstDivideRequestHandler,
         CallLaterRequestHandler, CancelAfterRanCallLaterRequestHandler,
@@ -22,19 +22,19 @@ from _test_async_application import (ReturnFirstDivideRequestHandler,
         AddDoneCallbackRequestHandler, SimpleThreadedFutureRequestHandler,
         BusyWaitThreadedFutureRequestHandler,
         AddDoneCallbackAddsCallbackRequestHandler,
-        AddCallbackFromSignalRequestHandler)
+        AddCallbackFromSignalRequestHandler, WaitForFinishHandler)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
-    tornado_validate_time_transaction_metrics,
-    tornado_validate_errors, tornado_validate_transaction_cache_empty)
+    tornado_validate_errors, tornado_validate_transaction_cache_empty,
+    tornado_validate_time_transaction_metrics)
 
 from testing_support.fixtures import function_not_called
 
 def select_python_version(py2, py3):
     return six.PY3 and py3 or py2
 
-class TornadoTest(TornadoBaseTest):
+class AllTests(object):
 
     scoped_metrics = select_python_version(
             py2=[('Function/_test_async_application:'
@@ -490,3 +490,34 @@ class TornadoTest(TornadoBaseTest):
         response = self.fetch_response('/signal-ignore')
         expected = AddCallbackFromSignalRequestHandler.RESPONSE
         self.assertEqual(response.body, expected)
+
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'WaitForFinishHandler.get', 1),
+    ]
+    custom_metrics = [
+            ('WebTransaction/Function/_test_async_application:'
+                'WaitForFinishHandler.get',(0.1, 0.6))
+    ]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:WaitForFinishHandler.get',
+            scoped_metrics=scoped_metrics)
+    @tornado_validate_time_transaction_metrics(
+            '_test_async_application:WaitForFinishHandler.get',
+            custom_metrics=custom_metrics)
+    def test_wait_for_finish(self):
+        response = self.fetch_response('/wait-for-finish')
+        expected = WaitForFinishHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+class TornadoDefaultIOLoopTest(AllTests, TornadoBaseTest):
+    pass
+
+@pytest.mark.skipif(sys.version_info < (2, 7),
+        reason='pyzmq does not support Python 2.6')
+class TornadoZmqIOLoopTest(AllTests, TornadoZmqBaseTest):
+    pass

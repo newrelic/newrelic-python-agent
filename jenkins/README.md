@@ -68,22 +68,33 @@ To "compile" locally, follow these steps then compare the resultant xml files wi
   cd more-jenkins-dsl
   ```
 
-2. Build the required jar
+2. Modify the `build.gradle` in your local `more-jenkins-dsl` repo, adding snakyaml as a dependency (on or around line 10)
+
+  ```
+  dependencies {
+    .
+    .
+    .
+    compile 'org.yaml:snakeyaml:1.17'
+  }
+  ```
+
+3. Build the required jar
 
   ```
   ./gradlew build
   ```
 
-3. From within the repo, copy all groovy files and their dependencies to the `jenkins` directory
+4. From within the repo, copy all groovy files and their dependencies to the `jenkins` directory
 
   ```
   cp ../python_agent/jenkins/* jenkins
   ```
 
-4. Now generate the xml. The `WORKSPACE` environment variable will tell the groovy scripts where to find your `tests` directory.
+5. Now generate the xml. The `WORKSPACE` environment variable will tell the groovy scripts where to find your `tests` directory.
 
   ```
   WORKSPACE=/path/to/your/python_agent ./gradlew generateJenkinsDsl
   ```
 
-5. View the new xml files in `build/dsl-workspace`
+6. View the new xml files in `build/dsl-workspace`

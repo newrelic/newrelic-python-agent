@@ -1,6 +1,12 @@
+import sys
+
+import pytest
+
 import tornado.gen
 import tornado.testing
 import tornado.web
+if sys.version_info >= (2, 7):
+    from zmq.eventloop.ioloop import ZMQIOLoop
 
 from tornado.websocket import websocket_connect, WebSocketHandler
 
@@ -34,6 +40,10 @@ class BaseWebSocketsTest(tornado.testing.AsyncHTTPTestCase):
         ws.close()
         yield self.close_future
 
+class BaseWebSocketsZmqTest(BaseWebSocketsTest):
+    def get_new_ioloop(self):
+        return ZMQIOLoop()
+
 
 class HelloHandler(BaseWebSocketsHandler):
 
@@ -41,7 +51,7 @@ class HelloHandler(BaseWebSocketsHandler):
         self.write_message(b'hello', binary=True)
 
 
-class TornadoWebSocketsTest(BaseWebSocketsTest):
+class AllTests(object):
 
     def get_app(self):
         self.close_future = tornado.gen.Future()
@@ -66,3 +76,11 @@ class TornadoWebSocketsTest(BaseWebSocketsTest):
         self.assertEqual(response, b'hello')
 
         yield self.close(ws)
+
+class TornadoWebSocketsDefaultIOLoopTest(AllTests, BaseWebSocketsTest):
+    pass
+
+@pytest.mark.skipif(sys.version_info < (2, 7),
+        reason='pyzmq does not support Python 2.6')
+class TornadoWebSocketsZmqIOLoopTest(AllTests, BaseWebSocketsZmqTest):
+    pass

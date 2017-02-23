@@ -110,9 +110,9 @@ use(extensions) {
 
                 wrappers {
                     timeout {
-                        // abort if time is > 500% of the average of the
-                        // last 3 builds, or 60 minutes
-                        elastic(500, 3, 60)
+                        // abort if nothing is printed to stdout/stderr
+                        // in 120 seconds
+                        noActivity(120)
                         abortBuild()
                     }
                 }
@@ -136,15 +136,16 @@ use(extensions) {
         branch('${GIT_REPOSITORY_BRANCH}')
 
         configure {
-            description('Run the devpi pre-build hook.')
+            description('Run the devpi pre-build hook and test the parseconfig.py script.')
             logRotator { numToKeep(10) }
+            blockOnJobs('.*-Reset-Nodes')
             concurrentBuild true
 
             wrappers {
                 timeout {
-                    // abort if time is > 500% of the average of the
-                    // last 3 builds, or 60 minutes
-                    elastic(500, 3, 60)
+                    // abort if nothing is printed to stdout/stderr
+                    // in 120 seconds
+                    noActivity(120)
                     abortBuild()
                 }
             }
@@ -156,6 +157,7 @@ use(extensions) {
 
             steps {
                 shell('./docker/devpi/pre-build.sh')
+                shell('./docker/packnsend run python ./docker/devpi/test_parseconfig.py')
             }
         }
     }
@@ -172,9 +174,9 @@ use(extensions) {
 
             wrappers {
                 timeout {
-                    // abort if time is > 500% of the average of the
-                    // last 3 builds, or 60 minutes
-                    elastic(500, 3, 60)
+                    // abort if nothing is printed to stdout/stderr
+                    // in 120 seconds
+                    noActivity(120)
                     abortBuild()
                 }
             }

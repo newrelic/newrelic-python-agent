@@ -1971,6 +1971,9 @@ def _process_module_builtin_defaults():
         _process_module_definition('tornado.httpclient',
                 'newrelic.hooks.framework_tornado_r3.httpclient',
                 'instrument_tornado_httpclient')
+        _process_module_definition('tornado.curl_httpclient',
+                'newrelic.hooks.framework_tornado_r3.curl_httpclient',
+                'instrument_tornado_curl_httpclient')
         _process_module_definition('tornado.httputil',
                 'newrelic.hooks.framework_tornado_r3.httputil',
                 'instrument_tornado_httputil')
@@ -2314,6 +2317,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('rest_framework.views',
             'newrelic.hooks.component_djangorestframework',
             'instrument_rest_framework_views')
+    _process_module_definition('rest_framework.decorators',
+            'newrelic.hooks.component_djangorestframework',
+            'instrument_rest_framework_decorators')
 
     _process_module_definition('celery.task.base',
             'newrelic.hooks.application_celery',

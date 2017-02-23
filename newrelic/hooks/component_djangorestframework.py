@@ -1,5 +1,5 @@
 from newrelic.agent import (wrap_function_wrapper, current_transaction,
-    FunctionTrace, callable_name, wrap_function_trace)
+    FunctionTrace, callable_name, function_wrapper)
 
 def _nr_wrapper_APIView_dispatch_(wrapped, instance, args, kwargs):
     transaction = current_transaction()
@@ -12,20 +12,49 @@ def _nr_wrapper_APIView_dispatch_(wrapped, instance, args, kwargs):
 
     view = instance
     request = _args(*args, **kwargs)
+    request_method = request.method.lower()
 
-    if request.method.lower() in view.http_method_names:
-        handler = getattr(view, request.method.lower(),
-                          view.http_method_not_allowed)
+    if request_method in view.http_method_names:
+        handler = getattr(view, request_method, view.http_method_not_allowed)
     else:
         handler = view.http_method_not_allowed
 
-    name = callable_name(handler)
+    view_func_callable_name = getattr(view, '_nr_view_func_callable_name', None)
+    if view_func_callable_name:
+        if handler == view.http_method_not_allowed:
+            name = '%s.%s' % (view_func_callable_name,
+                    'http_method_not_allowed')
+        else:
+            name = '%s.%s' % (view_func_callable_name, request_method)
+    else:
+        name = callable_name(handler)
 
     transaction.set_transaction_name(name)
 
     with FunctionTrace(transaction, name):
         return wrapped(*args, **kwargs)
 
+@function_wrapper
+def _nr_wrapper_api_view_decorator_(wrapped, instance, args, kwargs):
+    def _bind_params(func, *args, **kwargs):
+        return func
+
+    func = _bind_params(*args, **kwargs)
+    view = wrapped(*args, **kwargs)
+
+    view.cls._nr_view_func_callable_name = callable_name(func)
+
+    return view
+
+def _nr_wrapper_api_view_(wrapped, instance, args, kwargs):
+    decorator = wrapped(*args, **kwargs)
+    decorator = _nr_wrapper_api_view_decorator_(decorator)
+    return decorator
+
 def instrument_rest_framework_views(module):
     wrap_function_wrapper(module, 'APIView.dispatch',
             _nr_wrapper_APIView_dispatch_)
+
+def instrument_rest_framework_decorators(module):
+    wrap_function_wrapper(module, 'api_view',
+            _nr_wrapper_api_view_)

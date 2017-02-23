@@ -1,8 +1,18 @@
 #!/usr/bin/env python
 from ConfigParser import ConfigParser, NoOptionError
-import string
 import os.path
+import re
+import string
 import sys
+
+def _set_package_defaults(packages, envlist):
+    # Search the envlist for which python version to test against. Create an
+    # env in the packages dictionary for each.
+    for groups in re.findall(r'(py\d{2})|(pypy3?)', envlist):
+        for env in groups:
+            if not env:
+                continue
+            packages.setdefault(env, set([]))
 
 def extract_packages(tox_files, exclude_packages, extra_packages):
     packages = {} # stores py27/py26/etc
@@ -14,10 +24,20 @@ def extract_packages(tox_files, exclude_packages, extra_packages):
         sections = parser.sections()
         for section in sections:
             try:
+                # if this is a new-style tox file, ensure there is a package
+                # set for each env even if it is empty
+                envlist = parser.get(section, 'envlist')
+                _set_package_defaults(packages, envlist)
+            except NoOptionError:
+                pass
+
+            try:
                 deps_section = parser.get(section, 'deps')
             except NoOptionError:
                 continue
             deps = deps_section.strip().split('\n')
+
+            # if this is an old-style tox file, get the env name
             env_name = section.split('-')[0]
             if ':' in env_name:
                 py_name = env_name.split(':')[1]
@@ -28,10 +48,11 @@ def extract_packages(tox_files, exclude_packages, extra_packages):
             #
             # Distribution names MUST start and end with an ASCII letter
             # or digit.
-            deps = [d for d in deps if d and
+            stripped_deps = [d.split(':')[-1].strip() for d in deps]
+            filtered_deps = [d for d in stripped_deps if d and
                     d[0] in (string.letters + string.digits) and
                     d not in exclude_packages]
-            tox_file_packages |= set(deps)
+            tox_file_packages |= set(filtered_deps)
 
         if not tox_file_envs:
             env_pkgs = packages.setdefault('all', set([]))

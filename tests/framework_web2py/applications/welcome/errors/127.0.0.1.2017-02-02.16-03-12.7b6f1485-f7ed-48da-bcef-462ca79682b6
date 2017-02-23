@@ -1,0 +1,215 @@
+(dp1
+S'output'
+p2
+S'Unable to open included view file: /Users/rabolofia/Documents/python_agent/tests/framework_web2py/applications/welcome/views/layout.html'
+p3
+sS'traceback'
+p4
+S'Traceback (most recent call last):\n  File "/Users/rabolofia/Documents/python_agent/tests/framework_web2py/.tox/py27/lib/python2.7/site-packages/gluon/template.py", line 437, in _get_file_text\n    fileobj = open(filepath, \'rb\')\nIOError: [Errno 2] No such file or directory: \'/Users/rabolofia/Documents/python_agent/tests/framework_web2py/applications/welcome/views/layout.html\'\n'
+p5
+sS'snapshot'
+p6
+(dp7
+S'exception'
+p8
+(dp9
+S'__dict__'
+p10
+S'{}'
+p11
+sS'__getslice__'
+p12
+S"<method-wrapper '__getslice__' of exceptions.IOError object>"
+p13
+sS'__delattr__'
+p14
+S"<method-wrapper '__delattr__' of exceptions.IOError object>"
+p15
+sS'strerror'
+p16
+S"'No such file or directory'"
+p17
+sS'__setattr__'
+p18
+S"<method-wrapper '__setattr__' of exceptions.IOError object>"
+p19
+sS'__sizeof__'
+p20
+S'<built-in method __sizeof__ of exceptions.IOError object>'
+p21
+sS'__new__'
+p22
+S'<built-in method __new__ of type object>'
+p23
+sS'__getattribute__'
+p24
+S"<method-wrapper '__getattribute__' of exceptions.IOError object>"
+p25
+sS'errno'
+p26
+S'2'
+sS'__setstate__'
+p27
+S'<built-in method __setstate__ of exceptions.IOError object>'
+p28
+sS'__doc__'
+p29
+S"'I/O operation failed.'"
+p30
+sS'__repr__'
+p31
+S"<method-wrapper '__repr__' of exceptions.IOError object>"
+p32
+sS'__reduce__'
+p33
+S'<built-in method __reduce__ of exceptions.IOError object>'
+p34
+sS'__hash__'
+p35
+S"<method-wrapper '__hash__' of exceptions.IOError object>"
+p36
+sS'__getitem__'
+p37
+S"<method-wrapper '__getitem__' of exceptions.IOError object>"
+p38
+sS'__subclasshook__'
+p39
+S'<built-in method __subclasshook__ of type object>'
+p40
+sS'__str__'
+p41
+S"<method-wrapper '__str__' of exceptions.IOError object>"
+p42
+sS'__class__'
+p43
+S"<type 'exceptions.IOError'>"
+p44
+sS'__reduce_ex__'
+p45
+S'<built-in method __reduce_ex__ of exceptions.IOError object>'
+p46
+sS'filename'
+p47
+S"'/Users/rabolofia/Documents/python_agent/tests/fr...ork_web2py/applications/welcome/views/layout.html'"
+p48
+sS'__init__'
+p49
+S"<method-wrapper '__init__' of exceptions.IOError object>"
+p50
+sS'args'
+p51
+S"(2, 'No such file or directory')"
+p52
+sS'__unicode__'
+p53
+S'<built-in method __unicode__ of exceptions.IOError object>'
+p54
+sS'__format__'
+p55
+S'<built-in method __format__ of exceptions.IOError object>'
+p56
+ssS'evalue'
+p57
+S"[Errno 2] No such file or directory: '/Users/rabolofia/Documents/python_agent/tests/framework_web2py/applications/welcome/views/layout.html'"
+p58
+sS'frames'
+p59
+(lp60
+(dp61
+S'call'
+p62
+S"(self=<gluon.template.TemplateParser object>, filename='layout.html')"
+p63
+sS'lines'
+p64
+(dp65
+I432
+S'        # Get the path of the file on the system.'
+p66
+sI433
+S'        filepath = os.path.join(self.path, filename)'
+p67
+sI434
+S''
+sI435
+S'        # try to read the text.'
+p68
+sI436
+S'        try:'
+p69
+sI437
+S"            fileobj = open(filepath, 'rb')"
+p70
+sI438
+S'            text = fileobj.read()'
+p71
+sI439
+S'            fileobj.close()'
+p72
+sI440
+S'        except IOError:'
+p73
+sI441
+S"            self._raise_error('Unable to open included view file: ' + filepath)"
+p74
+ssS'func'
+p75
+S'_get_file_text'
+p76
+sS'dump'
+p77
+(dp78
+S'fileobj'
+p79
+S'undefined'
+p80
+sS'builtinopen'
+p81
+S'<built-in function open>'
+p82
+sS'filepath'
+p83
+S"'/Users/rabolofia/Documents/python_agent/tests/fr...ork_web2py/applications/welcome/views/layout.html'"
+p84
+ssS'lnum'
+p85
+I437
+sS'file'
+p86
+S'/Users/rabolofia/Documents/python_agent/tests/framework_web2py/.tox/py27/lib/python2.7/site-packages/gluon/template.py'
+p87
+sasS'locals'
+p88
+(dp89
+g47
+S"'layout.html'"
+p90
+sS'self'
+p91
+S'<gluon.template.TemplateParser object>'
+p92
+sS'filepath'
+p93
+S"'/Users/rabolofia/Documents/python_agent/tests/fr...ork_web2py/applications/welcome/views/layout.html'"
+p94
+ssS'etype'
+p95
+S"<type 'exceptions.IOError'>"
+p96
+sS'date'
+p97
+S'Thu Feb  2 16:03:12 2017'
+p98
+sS'pyver'
+p99
+S'Python 2.7.10: /Users/rabolofia/Documents/python_agent/tests/framework_web2py/.tox/py27/bin/python2.7'
+p100
+ssS'layer'
+p101
+S'ParserContainer'
+p102
+sS'code'
+p103
+S'{{left_sidebar_enabled=right_sidebar_enabled=False}}\n{{extend \'layout.html\'}}\n\n{{if \'message\' in globals():}}\n\n<h1>{{=message}}</h1>\n\n<hr />\n<h2>{{=T("Readme")}}</h2>\n<ul>\n  <li>{{=T(\'You are successfully running web2py\')}}</li>\n  <li>{{=T(\'This is a copy of the scaffolding application\')}}</li>\n  <li>{{=T(\'You can modify this application and adapt it to your needs\')}}</li>\n  <li>{{=A(B(T("Administrative interface")), _href=URL(\'admin\',\'default\',\'index\'))}}</li>\n  <li>{{=A(T("Online examples"), _href=URL(\'examples\',\'default\',\'index\'))}}</li>\n  <li><a href="http://web2py.com">web2py.com</a></li>\n  <li><a href="http://web2py.com/book">{{=T(\'Documentation\')}}</a></li>\n</ul>\n\n<ol>\n  <li>{{=T(\'You visited the url\')}} {{=A(request.env.path_info,_href=request.env.path_info)}}</li>\n  <li>{{=T(\'Which called the function\')}} {{=A(request.function+\'()\',_href=\'#\')}} {{=T(\'located in the file\')}}\n    {{=A(\'web2py/applications/%(application)s/controllers/%(controller)s.py\'%request,_href=URL(\'admin\',\'default\',\'peek\',args=(request.application,\'controllers\',request.controller+\'.py\')))}}</li>\n  <li>{{=T(\'The output of the file is a dictionary that was rendered by the view\')}}\n    {{=A(\'web2py/applications/%(application)s/views/%(controller)s/index.html\'%request,_href=URL(\'admin\',\'default\',\'peek\',args=(request.application,\'views\',request.controller,\'index.html\')))}}</li>\n</ol>\n\n{{else:}}\n{{=BEAUTIFY(response._vars)}}\n{{pass}}\n\n{{block left_sidebar}}New Left Sidebar Content{{end}}\n{{block right_sidebar}}New Right Sidebar Content{{end}}\n'
+p104
+s.

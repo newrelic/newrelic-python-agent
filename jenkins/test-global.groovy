@@ -107,6 +107,7 @@ use(extensions) {
             }
 
             steps {
+                shell('./jenkins/fetch_snakeyaml.sh')
                 reseedFrom('jenkins/test-integration.groovy')
             }
         }

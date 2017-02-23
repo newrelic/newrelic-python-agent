@@ -1,5 +1,4 @@
 import concurrent.futures
-import functools
 import socket
 import sys
 import tornado
@@ -10,13 +9,13 @@ from newrelic.agent import (application as nr_app, current_transaction,
         function_trace)
 from newrelic.hooks.framework_tornado_r3.util import TransactionContext
 
-from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
-from tornado.web import Application, RequestHandler
-from tornado.httpserver import HTTPServer
 from tornado import stack_context
+from tornado.curl_httpclient import CurlAsyncHTTPClient
+from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
 from tornado.ioloop import IOLoop
 from tornado.iostream import IOStream
 from tornado.testing import bind_unused_port
+from tornado.web import Application, RequestHandler
 
 
 class Tornado4TestException(Exception):
@@ -107,8 +106,11 @@ class SyncExceptionRequestHandler(RequestHandler):
     RESPONSE = b'sync exception'
 
     def get(self):
-        divide = 10/0  # exception
-        self.write(self.RESPONSE)  # never executed
+        # Produce a ZeroDivisionError
+        10/0
+
+        # Never executed
+        self.write(self.RESPONSE)
 
 class CallbackExceptionRequestHandler(RequestHandler):
     RESPONSE = b'callback exception'
@@ -411,13 +413,56 @@ class AsyncFetchRequestHandler(RequestHandler):
         # callback as a positional argument and as a keyword argument.
         if request_type == 'requestobj':
             request = HTTPRequest(url)
-            client.fetch(url, self.process_response)
+            client.fetch(request, self.process_response)
         else:
-            request = url
             client.fetch(url, callback=self.process_response)
 
     def process_response(self, response):
         self.finish(response.body)
+
+class CurlAsyncFetchRequestHandler(RequestHandler):
+
+    @tornado.web.asynchronous
+    def get(self, request_type, port):
+        url = 'http://localhost:%s' % port
+        client = CurlAsyncHTTPClient()
+        # We test with a request object and a raw url as well as using the
+        # callback as a positional argument and as a keyword argument.
+        if request_type == 'requestobj':
+            request = HTTPRequest(url)
+            client.fetch(request, self.process_response)
+        else:
+            client.fetch(url, callback=self.process_response)
+
+    def process_response(self, response):
+        self.finish(response.body)
+
+class CurlStreamingCallbackRequestHandler(RequestHandler):
+
+    def initialize(self):
+        self.body = []
+
+    @tornado.web.asynchronous
+    def get(self, request_type, port):
+        url = 'http://localhost:%s' % port
+        client = CurlAsyncHTTPClient()
+        # We test with a request object and a raw url as well as using the
+        # callback as a positional argument and as a keyword argument.
+        if request_type == 'requestobj':
+            request = HTTPRequest(url, streaming_callback=self.process_chunk)
+            client.fetch(request, self.process_response)
+        else:
+            client.fetch(url, streaming_callback=self.process_chunk,
+                    callback=self.process_response)
+
+    def process_chunk(self, data):
+        self.body.append(data)
+
+    def process_response(self, response):
+        # response.body has already been consumed by process_chunk(),
+        # so we send back self.body, not response.body.
+        content = b''.join(self.body)
+        self.finish(content)
 
 class SyncFetchRequestHandler(RequestHandler):
 
@@ -431,7 +476,7 @@ class SyncFetchRequestHandler(RequestHandler):
         else:
             request = url
 
-        response = client.fetch(url)
+        response = client.fetch(request)
         self.finish(response.body)
 
 class RunSyncAddRequestHandler(RequestHandler):
@@ -650,7 +695,7 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
 
     def resolve_future(self, future, transaction):
         # Make sure that the get method has finished
-        while not transaction._can_finalize:
+        while not transaction._server_adapter_finalize:
             time.sleep(0.01)
 
         future.set_result(None)
@@ -668,7 +713,6 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
                 'method finished. Test timing incorrect, may need to re-run '
                 'test')
 
-        current_time = time.time()
         time.sleep(1)
 
         if self.add_future:
@@ -844,7 +888,7 @@ class RunnerRefCountRequestHandler(RequestHandler):
         with TransactionContext(None):
             self.io_loop.add_callback(self.resolve, self.result_future)
 
-        result = yield self.coro()
+        yield self.coro()
 
         # If transaction closes prematurely, calling do_stuff() will
         # produce this error (because cache will have None):
@@ -880,11 +924,11 @@ class RunnerRefCountSyncGetRequestHandler(RunnerRefCountRequestHandler):
         with TransactionContext(None):
             self.io_loop.add_callback(self.resolve, self.result_future)
 
-        result = yield self.result_future
+        yield self.result_future
         self.do_stuff()
 
     def get(self):
-        result_future = self.coro()
+        self.coro()
         self.write(self.RESPONSE)
 
 
@@ -906,11 +950,12 @@ class RunnerRefCountErrorRequestHandler(RunnerRefCountRequestHandler):
         with TransactionContext(None):
             self.io_loop.add_callback(self.resolve, self.result_future)
 
-        result = yield self.coro()
-        bad_divide = 1/0
+        yield self.coro()
+
+        # Produce a ZeroDivisionError
+        1/0
 
         # Nothing beyond here gets called
-
         self.do_stuff()
         self.write(self.RESPONSE)
 
@@ -1030,7 +1075,7 @@ class CoroutineLateExceptionRequestHandler(RequestHandler):
 
     @tornado.gen.coroutine
     def get(self):
-        _ = yield self.before_finish()
+        yield self.before_finish()
         self.finish(self.RESPONSE)
         raise Tornado4TestException(self.RESPONSE)
 
@@ -1072,11 +1117,46 @@ class OutsideTransactionErrorRequestHandler(CleanUpableRequestHandler):
         # framework assumes that an uncaught exception in a test is a real
         # error.
         try:
-            a = 5/0
+            5/0
         except:
             nr_app().record_exception(*sys.exc_info())
         finally:
             self.cleanup()
+
+class WaitForFinishHandler(RequestHandler):
+    """Transaction should not close until finish() is called. Test that the
+    transaction duration is > 0.1 secs to confirm.
+
+    """
+
+    RESPONSE = b'wait for finish'
+
+    @tornado.web.asynchronous
+    def get(self):
+        ioloop = tornado.ioloop.IOLoop.current()
+        ioloop.call_later(0.1, self.callback)
+
+    def callback(self):
+        self.finish(self.RESPONSE)
+
+class ExceptionInsteadOfFinishHandler(RequestHandler):
+    """Transaction should not close until exception is raised in callback(),
+    since finish() was never called. Test that the duration is > 0.1 secs
+    to confirm.
+
+    """
+
+    RESPONSE = b'exception before finish in callback'
+
+    @tornado.web.asynchronous
+    def get(self):
+        ioloop = tornado.ioloop.IOLoop.current()
+        ioloop.call_later(0.1, self.callback)
+
+    def callback(self):
+        # Raise exception, rather than calling finish() directly.
+        raise Tornado4TestException("whoops")
+
 
 def get_tornado_app():
     return Application([
@@ -1102,6 +1182,8 @@ def get_tornado_app():
         ('/bookend-subclass', PrepareOnFinishRequestHandlerSubclass),
         ('/stream', SimpleStreamingRequestHandler),
         ('/async-fetch/(\w)+/(\d+)', AsyncFetchRequestHandler),
+        ('/curl-async-fetch/(\w)+/(\d+)', CurlAsyncFetchRequestHandler),
+        ('/curl-stream-cb/(\w)+/(\d+)', CurlStreamingCallbackRequestHandler),
         ('/sync-fetch/(\w)+/(\d+)', SyncFetchRequestHandler),
         ('/run-sync-add/(\d+)/(\d+)', RunSyncAddRequestHandler),
         ('/prepare-future', PrepareReturnsFutureHandler),
@@ -1132,4 +1214,6 @@ def get_tornado_app():
         ('/coroutine-late-exception', CoroutineLateExceptionRequestHandler),
         ('/almost-error', ScheduleAndCancelExceptionRequestHandler),
         ('/outside-transaction-error', OutsideTransactionErrorRequestHandler),
+        ('/wait-for-finish', WaitForFinishHandler),
+        ('/exception-instead-of-finish', ExceptionInsteadOfFinishHandler),
     ])

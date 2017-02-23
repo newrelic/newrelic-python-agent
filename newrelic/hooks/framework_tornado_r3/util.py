@@ -105,7 +105,9 @@ def possibly_finalize_transaction(transaction, exc=None, value=None, tb=None):
                 ''.join(traceback.format_stack()[:-1]))
         return
 
-    if transaction._can_finalize and transaction._ref_count == 0:
+    if (transaction._request_handler_finalize and
+            transaction._server_adapter_finalize and
+            transaction._ref_count == 0):
         _finalize_transaction(transaction, exc, value, tb)
 
 def _finalize_transaction(transaction, exc=None, value=None, tb=None):
@@ -233,3 +235,53 @@ def create_transaction_aware_fxn(fxn, fxn_for_name=None, should_trace=True):
         return ret
 
     return transaction_aware(fxn)
+
+def request_handler_finish_finalize(wrapped, instance, args, kwargs):
+    request = instance.request
+    transaction = retrieve_request_transaction(request)
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    try:
+        return wrapped(*args, **kwargs)
+    finally:
+        transaction._request_handler_finalize = True
+        transaction.last_byte_time = request._finish_time
+        possibly_finalize_transaction(transaction)
+
+def server_request_adapter_finish_finalize(wrapped, instance, args, kwargs):
+    if instance.delegate is not None:
+        request = instance.delegate.request
+    else:
+        request = instance.request
+
+    transaction = retrieve_request_transaction(request)
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    try:
+        return wrapped(*args, **kwargs)
+    finally:
+        transaction._server_adapter_finalize = True
+        possibly_finalize_transaction(transaction)
+
+def server_request_adapter_on_connection_close_finalize(wrapped,
+        instance, args, kwargs):
+    if instance.delegate is not None:
+        request = instance.delegate.request
+    else:
+        request = instance.request
+
+    transaction = retrieve_request_transaction(request)
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    try:
+        return wrapped(*args, **kwargs)
+    finally:
+        transaction._request_handler_finalize = True
+        transaction._server_adapter_finalize = True
+        possibly_finalize_transaction(transaction)

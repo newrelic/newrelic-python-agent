@@ -107,7 +107,7 @@ If you need to be able to run a specific unit test, then you can execute
 
     tox newrelic/api/tests/test_wsgi_applicaton.py
 
-You will need to have 'tox' and 'nose' installed in whatever Python
+You will need to have 'tox' and 'pytest' installed in whatever Python
 installation or virtual environment you are using when developing with the
 package.
 

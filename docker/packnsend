@@ -33,15 +33,17 @@ cleanup_containers()
     # where we exported the git repository for use in creating the
     # docker image.
 
-    echo "Removing test container."
+    echo "Removing test container $CONTAINER_ID."
+    test -n "$CONTAINER_ID" && docker rm -f --volumes $CONTAINER_ID
 
-    test -n "$CONTAINER_ID" && docker rm --volumes $CONTAINER_ID
+    echo "Running compose down $COMPOSE_FILE."
+    test -n "$COMPOSE_FILE" && docker_compose_down
 
-    echo "Removing test image."
+    echo "Removing test image $DATA_IMAGE_NAME."
 
     test -n "$DATA_IMAGE_NAME" && docker rmi $DATA_IMAGE_NAME
 
-    echo "Removing data directory."
+    echo "Removing data directory $DATA_DIRECTORY."
 
     test -n "$DATA_DIRECTORY" && rm -r $DATA_DIRECTORY
 }
@@ -76,35 +78,19 @@ create_remote_launchers()
 {
     # Create the remote launcher scripts to be included in docker image
     # containing the code to be tested.
-    #
-    # XXX Still cannot seem to copy back files from /data of container
-    # after finished but can copy from /tmp. Can't even symlink or hard
-    # link file from /data into /tmp to allow it to be copied. So make
-    # an actual copy of the log file output into /tmp so it can be
-    # copied back when done.
 
     echo "Creating remote launcher scripts."
 
     cat > $DATA_DIRECTORY/packnsend-remote << EOF
 #!/bin/sh
 . /data/docker/environ
-"\$@" > /data/packnsend.log 2>&1
-STATUS=\$?
-cp /data/packnsend.log /tmp/packnsend.log
-exit \`expr \$STATUS\`
-EOF
-
-    cat > $DATA_DIRECTORY/packnsend-bash << EOF
-#!/bin/sh
-. /data/docker/environ
-exec bash
+"\$@"
 EOF
 
     # Shouldn't strictly need to do this as all files add to the image
     # by docker will have execute permissions anyway.
 
     chmod +x $DATA_DIRECTORY/packnsend-remote
-    chmod +x $DATA_DIRECTORY/packnsend-bash
 }
 
 create_docker_file()
@@ -122,6 +108,7 @@ RUN chown -R guest.users /data && \
 USER guest
 ENV HOME /home/guest
 VOLUME /data
+WORKDIR /data/$WORK_DIRECTORY
 EOF
 }
 
@@ -132,7 +119,16 @@ create_docker_test_image()
     echo "Building test image."
 
     DATA_IMAGE_NAME="packnsend-${DATE}-$$"
-    (cd $DATA_DIRECTORY && docker build --rm -t $DATA_IMAGE_NAME .)
+    if test -n "$COMPOSE_FILE"
+    then
+        (cd $DATA_DIRECTORY && docker-compose \
+                --file $COMPOSE_FILE \
+                --project-name $DATA_IMAGE_NAME \
+                build \
+                --force-rm --no-cache packnsend)
+    else
+        (cd $DATA_DIRECTORY && docker build --no-cache --rm -t $DATA_IMAGE_NAME .)
+    fi
 }
 
 set_docker_env_vars()
@@ -222,6 +218,15 @@ set_docker_extra_args()
     fi
 }
 
+set_link_arguments()
+{
+    LINK_IMGS=""
+    for img in $APP_SERVICE_IMAGES
+    do
+        LINK_IMGS="$LINK_IMGS --link packnsend-$img:$img"
+    done
+}
+
 launch_remote_command()
 {
     # Launch the remote command, wait for it to complete and display
@@ -233,100 +238,67 @@ launch_remote_command()
     echo "DOCKER_EXTRA_ARGS:$DOCKER_EXTRA_ARGS"
     echo
 
-    INTERACTIVE=""
+    if test -n "$COMPOSE_FILE"
+    then
+        RUN_CMD="docker-compose \
+                --file $DATA_DIRECTORY/$COMPOSE_FILE \
+                --project-name $DATA_IMAGE_NAME \
+                run -d \
+                --rm \
+                $DOCKER_EXTRA_ARGS \
+                packnsend \
+                /data/packnsend-remote $@"
+    else
+        echo "Setting images to link"
+        set_link_arguments
+        RUN_CMD="docker run -d --name $DATA_IMAGE_NAME \
+                 $DOCKER_EXTRA_ARGS \
+                 $LINK_IMGS \
+                 $DATA_IMAGE_NAME /data/packnsend-remote $@"
 
-    while test "$#" -ne 0
-    do
-        case $1 in
-            -i)
-                INTERACTIVE=1
-                shift
-                ;;
-            *)
-                break
-                ;;
-        esac
-    done
+    fi
 
     echo "Starting test container and running command."
     echo "Command: $@"
 
-    CONTAINER_ID=$(docker run -d --name $DATA_IMAGE_NAME \
-        $DOCKER_EXTRA_ARGS \
-        -w /data/$WORK_DIRECTORY \
-        --link packnsend-gearmand:gearmand \
-        --link packnsend-memcached:memcached \
-        --link packnsend-postgresql:postgresql \
-        --link packnsend-mysql:mysql \
-        --link packnsend-devpi:devpi \
-        --link packnsend-mongodb:mongodb \
-        --link packnsend-redis:redis \
-        --link packnsend-elasticsearch:elasticsearch \
-        --link packnsend-solr4:solr4 \
-        $DATA_IMAGE_NAME /data/packnsend-remote "$@")
+    CONTAINER_ID=$($RUN_CMD | tail -n1)
+    test -n "$CONTAINER_ID" || exit 1
 
-    STATUS=$(time docker wait $CONTAINER_ID)
+    STATUS=100
 
-    echo
-    echo "Copying back command output."
-
-    docker cp $CONTAINER_ID:/tmp/packnsend.log $DATA_DIRECTORY
-
-    echo "Command output:"
-    echo
-
-    cat $DATA_DIRECTORY/packnsend.log
+    { docker logs -f $CONTAINER_ID && \
+        echo "Calling docker wait." && \
+        STATUS=$(docker wait $CONTAINER_ID) ; } || kill $$
 
     echo
 
     if test -n "$INTERACTIVE"
     then
+        NFMT='--network {{range $k,$v:=.NetworkSettings.Networks}}{{$k}}{{end}}'
+        NETWORK=$(docker inspect --format="$NFMT" $CONTAINER_ID)
+        ENV_FORMAT_STR='{{range $x:=.Config.Env}}-e {{$x}} {{end}}'
+        ENV=$(docker inspect --format="$ENV_FORMAT_STR" $CONTAINER_ID)
+
         echo "Starting interactive debug shell."
+        echo "NETWORK: $NETWORK"
+        echo "ENV: $ENV"
+        echo "LINK_IMGS: $LINK_IMGS"
         echo
 
         docker run -t -i --rm -u guest --volumes-from $CONTAINER_ID \
             $DOCKER_EXTRA_ARGS \
             -w /data/$WORK_DIRECTORY \
-            --link packnsend-gearmand:gearmand \
-            --link packnsend-memcached:memcached \
-            --link packnsend-postgresql:postgresql \
-            --link packnsend-mysql:mysql \
-            --link packnsend-devpi:devpi \
-            --link packnsend-mongodb:mongodb \
-            --link packnsend-redis:redis \
-            --link packnsend-elasticsearch:elasticsearch \
-            --link packnsend-solr4:solr4 \
-            $TEST_IMAGE_NAME /data/packnsend-bash
+            $NETWORK \
+            $LINK_IMGS \
+            $ENV \
+            $TEST_IMAGE_NAME /data/packnsend-remote bash
     fi
 }
 
 launch_remote_shell()
 {
-    # Launch a remote shell in the container without actually running
-    # and command.
-
-    echo "Setting extra vars to pass to test container."
-    set_docker_extra_args
-
-    echo "DOCKER_EXTRA_ARGS:$DOCKER_EXTRA_ARGS"
-    echo
-
-    echo "Starting test container and running interactive shell."
-    echo
-
-    docker run -t -i --rm --name $DATA_IMAGE_NAME \
-        $DOCKER_EXTRA_ARGS \
-        -w /data/$WORK_DIRECTORY \
-        --link packnsend-gearmand:gearmand \
-        --link packnsend-memcached:memcached \
-        --link packnsend-postgresql:postgresql \
-        --link packnsend-mysql:mysql \
-        --link packnsend-devpi:devpi \
-        --link packnsend-mongodb:mongodb \
-        --link packnsend-redis:redis \
-        --link packnsend-elasticsearch:elasticsearch \
-        --link packnsend-solr4:solr4 \
-        $DATA_IMAGE_NAME /data/packnsend-bash
+    INTERACTIVE=1
+    launch_remote_command true
 }
 
 create_docker_base_images()
@@ -345,50 +317,49 @@ create_docker_base_images()
             echo "Executing pre-build hook: $IMG"
             echo
 
-            (cd $ROOT_DIRECTORY; docker/$IMG/pre-build.sh)
+            (cd $ROOT_DIRECTORY; docker/$IMG/pre-build.sh) || exit 1
         fi
 
         echo
         echo "Create image: $IMG"
         echo
 
-        (cd $ROOT_DIRECTORY; docker build --rm -t $IMG docker/$IMG)
+        (cd $ROOT_DIRECTORY; docker build --rm -t $IMG docker/$IMG) || exit 1
 
     done
 }
 
-docker_compose_run()
-{
-    COMPOSE_FILE=$(echo $@ | tr -s " " | cut -f1 -d" ")
-    PROJECT_NAME="packnsend-${DATE}-$$"
-    CMD=$(echo $@ | tr -s " " | cut -f2- -d" ")
-
-    echo
-    echo "Using docker-compose file: $COMPOSE_FILE"
-    echo "Starting containers and running command: $CMD"
-    echo
-
-    time docker-compose \
-        --file $COMPOSE_FILE \
-        --project-name $PROJECT_NAME \
-        run --rm packnsend $CMD
-
-    STATUS=$?
-}
-
 docker_compose_down()
 {
-    COMPOSE_FILE=$(echo $@ | tr -s " " | cut -f1 -d" ")
-    PROJECT_NAME="packnsend-${DATE}-$$"
+    echo
+    echo "Cleaning up docker compose..."
+    echo
 
-    echo
-    echo "Cleaning up..."
-    echo
+    # The redirect to /dev/null for the docker-compose commands below is
+    # required for the case where jenkins initiates a job abort. It's currently
+    # unknown WHY this redirection is required so if you know, notes would be
+    # greatly appreciated.
+    #
+    # Without the redirect to /dev/null the docker-compose command exits
+    # immediately with an exit code of 255 (service containers still running).
+    #
+    # With the redirect, the exit code is 0 and the compose containers are
+    # stopped/removed correctly
+    docker-compose \
+        --file $DATA_DIRECTORY/$COMPOSE_FILE \
+        --project-name $DATA_IMAGE_NAME \
+        stop -t 0 &>/dev/null
 
     docker-compose \
-        --file $COMPOSE_FILE \
-        --project-name $PROJECT_NAME \
-        down || exit 1
+        --file $DATA_DIRECTORY/$COMPOSE_FILE \
+        --project-name $DATA_IMAGE_NAME \
+        down --volumes --rmi local &>/dev/null
+
+    # Docker compose removes the container, no need to track it further
+    CONTAINER_ID=""
+
+    # Docker compose also removes the image, no need to track it further
+    DATA_IMAGE_NAME=""
 }
 
 create_docker_base_images_nocache()
@@ -407,14 +378,14 @@ create_docker_base_images_nocache()
             echo "Executing pre-build hook: $IMG"
             echo
 
-            (cd $ROOT_DIRECTORY; docker/$IMG/pre-build.sh)
+            (cd $ROOT_DIRECTORY; docker/$IMG/pre-build.sh) || exit 1
         fi
 
         echo
         echo "Create image: $IMG"
         echo
 
-        (cd $ROOT_DIRECTORY; docker build --no-cache --rm -t $IMG docker/$IMG)
+        (cd $ROOT_DIRECTORY; docker build --no-cache --rm -t $IMG docker/$IMG) || exit 1
 
     done
 }
@@ -481,7 +452,8 @@ start_application_services()
 
         # Is container already running?
         DOCKER_OUTPUT=$(docker ps) || exit 1
-        RUNNING_ID=$(echo "$DOCKER_OUTPUT" | grep packnsend-$IMG | awk '{print $1}')
+        RUNNING_ID=$(echo "$DOCKER_OUTPUT" |
+                grep packnsend-$IMG | awk '{print $1}')
 
         if test -n "$RUNNING_ID"
         then
@@ -491,7 +463,8 @@ start_application_services()
 
         # Is container in stopped state?
         DOCKER_OUTPUT=$(docker ps -a) || exit 1
-        STOPPED_ID=$(echo "$DOCKER_OUTPUT" | grep packnsend-$IMG | awk '{print $1}')
+        STOPPED_ID=$(echo "$DOCKER_OUTPUT" |
+                grep packnsend-$IMG | awk '{print $1}')
 
         if test -n "$STOPPED_ID"
         then
@@ -523,7 +496,8 @@ stop_application_services()
         echo "packnsend-$IMG"
 
         DOCKER_OUTPUT=$(docker ps -a) || exit 1
-        SERVICE_ID=$(echo "$DOCKER_OUTPUT" | grep packnsend-$IMG | awk '{print $1}')
+        SERVICE_ID=$(echo "$DOCKER_OUTPUT" |
+                grep packnsend-$IMG | awk '{print $1}')
         test -n "$SERVICE_ID" && echo "$SERVICE_ID"
 
         if test -n "$SERVICE_ID"
@@ -552,9 +526,10 @@ delete_packnsend_images()
     echo
     echo "Delete packnsend images"
     echo
-    REMAINING_IMAGES=$(docker images -a --format "{{.Repository}} {{.ID}}" --filter "dangling=false")
+    REMAINING_IMAGES=$(docker images -a \
+            --format "{{.Repository}} {{.ID}}" --filter "dangling=false")
     TO_REMOVE=$(echo "$REMAINING_IMAGES" | grep "^packnsend" | cut -f2 -d" ")
-    test -n "$TO_REMOVE" && { echo "$TO_REMOVE" | xargs docker rmi || exit 1; }
+    test -n "$TO_REMOVE" && echo "$TO_REMOVE" | xargs docker rmi -f
 }
 
 delete_docker_base_images()
@@ -570,8 +545,11 @@ delete_docker_base_images()
         LOCAL_AND_REMOTE="$IMG $PYTHON_AGENT_IMG_PATH/$IMG"
         for IMG_NAME in $LOCAL_AND_REMOTE
         do
-            REMAINING_IMAGES=$(docker images -a --format "{{.Repository}} {{.ID}}" --filter "dangling=false")
-            RELEVANT_IMAGES=$(echo "$REMAINING_IMAGES" | grep "^$IMG_NAME " | cut -f2 -d" ")
+            REMAINING_IMAGES=$(docker images -a \
+                    --format "{{.Repository}} {{.ID}}" \
+                    --filter "dangling=false")
+            RELEVANT_IMAGES=$(echo "$REMAINING_IMAGES" |
+                    grep "^$IMG_NAME " | cut -f2 -d" ")
 
             for RELATED_IMG in $RELEVANT_IMAGES
             do
@@ -593,6 +571,15 @@ delete_all_containers()
     echo
     CONTAINERS=$(docker ps -a -q)
     test -n "$CONTAINERS" && { echo "$CONTAINERS" | xargs docker rm -f || exit 1; }
+}
+
+delete_dangling_volumes()
+{
+    echo
+    echo "Removing all dangling volumes"
+    echo
+    VOLUMES=$(docker volume ls -f dangling=true -q)
+    test -n "$VOLUMES" && { echo "$VOLUMES" | xargs docker volume rm || exit 1; }
 }
 
 print_usage()
@@ -652,31 +639,36 @@ then
 fi
 
 COMMAND=$1
-OPTION=$2
 
 shift
+while test "$#" -ne 0
+do
+    case $1 in
+        -i)
+            INTERACTIVE=1
+            shift
+            ;;
+        -c | --compose)
+            shift
+            COMPOSE_FILE="$1"
+            shift
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
 
 case "$COMMAND" in
     run)
-        case "$OPTION" in
-            -c | --compose)
-                COMMAND_INFO=$(echo $@ | tr -s " " | cut -f2- -d" ")
-                docker_compose_run $COMMAND_INFO
-                docker_compose_down $COMMAND_INFO
-                exit `expr $STATUS`
-                ;;
-
-            *)
-                create_work_directory
-                export_git_repository
-                create_remote_launchers
-                create_docker_file
-                create_docker_test_image
-                launch_remote_command "$@"
-                cleanup_containers
-                exit `expr $STATUS`
-                ;;
-        esac
+        create_work_directory
+        export_git_repository
+        create_remote_launchers
+        create_docker_file
+        create_docker_test_image
+        launch_remote_command "$@"
+        cleanup_containers
+        exit `expr $STATUS`
         ;;
 
     shell)
@@ -731,12 +723,14 @@ case "$COMMAND" in
         pull_docker_base_images "$@"
         delete_dangling_images
         start_application_services "$@"
+        delete_dangling_volumes
         ;;
 
     cleanup)
         delete_all_containers
         delete_dangling_images
         delete_packnsend_images
+        delete_dangling_volumes
         delete_docker_base_images "$@"
         ;;
 

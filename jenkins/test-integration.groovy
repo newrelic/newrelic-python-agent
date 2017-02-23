@@ -1,5 +1,3 @@
-// Grab will no longer be supported in jenkins-dsl 1.36, we currently use 1.35
-@Grab('org.yaml:snakeyaml:1.17')
 import org.yaml.snakeyaml.Yaml
 import newrelic.jenkins.extensions
 
@@ -7,6 +5,8 @@ String organization = 'python-agent'
 String repoGHE = 'python_agent'
 String repoFull = "${organization}/${repoGHE}"
 String testSuffix = "__integration-test"
+
+Integer maxEnvsPerContainer = 14
 
 def yaml = new Yaml()
 List<String> disabledList = yaml.load(readFileFromWorkspace('jenkins/test-integration-config.yml')).disable
@@ -104,9 +104,9 @@ use(extensions) {
 
                 wrappers {
                     timeout {
-                        // abort if time is > 500% of the average of the
-                        // last 3 builds, or 60 minutes
-                        elastic(500, 3, 60)
+                        // abort if nothing is printed to stdout/stderr
+                        // in 120 seconds
+                        noActivity(120)
                         abortBuild()
                     }
                 }

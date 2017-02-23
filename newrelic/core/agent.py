@@ -154,12 +154,12 @@ class Agent(object):
                 if settings.debug.log_agent_initialization:
                     _logger.info('Creating instance of Python agent in '
                             'process %d.', os.getpid())
-                    _logger.info('Agent was intialized from: %r',
+                    _logger.info('Agent was initialized from: %r',
                             ''.join(traceback.format_stack()[:-1]))
                 else:
                     _logger.debug('Creating instance of Python agent in '
                             'process %d.', os.getpid())
-                    _logger.debug('Agent was intialized from: %r',
+                    _logger.debug('Agent was initialized from: %r',
                             ''.join(traceback.format_stack()[:-1]))
 
                 instance = Agent(settings)

@@ -1,6 +1,14 @@
 FROM python-base
 
-RUN pip install devpi-server==4.2.0 devpi-client==2.7.0 newrelic && \
+ADD devpi.patch /root/devpi.patch
+RUN pip download --no-deps --no-binary :all: devpi-server==4.2.0 && \
+    tar xfz devpi-server-4.2.0.tar.gz && \
+    rm devpi-server-4.2.0.tar.gz && \
+    patch -p1 devpi-server-4.2.0/devpi_server/main.py /root/devpi.patch && \
+    pip install /devpi-server-4.2.0 && \
+    rm -rf /devpi-server-4.2.0
+
+RUN pip install devpi-client==2.7.0 newrelic && \
     # Build a virtualenv for each python version \
     mkdir /venvs && \
     virtualenv /venvs/py26 -p /usr/bin/python2.6 && \

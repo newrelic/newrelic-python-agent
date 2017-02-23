@@ -1,0 +1,13 @@
+diff a/server/devpi_server/main.py b/server/devpi_server/main.py
+--- a/server/devpi_server/main.py
++++ b/server/devpi_server/main.py
+@@ -396,6 +396,8 @@ class FatalResponse:
+ 
+     def __init__(self, excinfo=None):
+         self.excinfo = excinfo
++        import traceback
++        threadlog.error(str(traceback.format_exception(*self.excinfo)))
+ 
+ def get_remote_ip(request):
+     return request.headers.get("X-REAL-IP", request.client_addr)
+

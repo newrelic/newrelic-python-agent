@@ -381,3 +381,71 @@ def test_inclusion_tag_template_tag_metric():
     test_application = target_application()
     response = test_application.get('/inclusion_tag')
     response.mustcontain('Inclusion tag')
+
+_test_template_render_exception_scoped_metrics_base = [
+        ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
+        ('Python/WSGI/Application', 1),
+        ('Python/WSGI/Response', 1),
+        ('Python/WSGI/Finalize', 1),
+]
+
+if DJANGO_VERSION < (1, 5):
+    _test_template_render_exception_scoped_metrics_base.append(
+            ('Function/django.http:HttpResponseServerError.close', 1))
+elif DJANGO_VERSION < (1, 8):
+    _test_template_render_exception_scoped_metrics_base.append(
+            ('Function/django.http.response:HttpResponseServerError.close', 1))
+else:
+    _test_template_render_exception_scoped_metrics_base.append(
+            ('Function/django.http.response:HttpResponse.close', 1))
+
+if DJANGO_VERSION < (1, 10):
+    _test_template_render_exception_scoped_metrics_base.extend(
+        _test_django_pre_1_10_url_resolver_scoped_metrics)
+else:
+    _test_template_render_exception_scoped_metrics_base.extend(
+        _test_django_post_1_10_url_resolver_scoped_metrics)
+
+if DJANGO_SETTINGS_MODULE == 'settings_0110_old':
+    _test_template_render_exception_scoped_metrics_base.extend(
+        _test_django_pre_1_10_middleware_scoped_metrics)
+elif DJANGO_SETTINGS_MODULE == 'settings_0110_new':
+    _test_template_render_exception_scoped_metrics_base.extend(
+        _test_django_post_1_10_middleware_scoped_metrics)
+elif DJANGO_VERSION < (1, 10):
+    _test_template_render_exception_scoped_metrics_base.extend(
+        _test_django_pre_1_10_middleware_scoped_metrics)
+
+if DJANGO_VERSION < (1, 9):
+    _test_template_render_exception_errors = [
+        'django.template.base:TemplateSyntaxError']
+else:
+    _test_template_render_exception_errors = [
+        'django.template.exceptions:TemplateSyntaxError']
+
+_test_template_render_exception_function_scoped_metrics = list(
+        _test_template_render_exception_scoped_metrics_base)
+_test_template_render_exception_function_scoped_metrics.extend([
+        ('Function/views:render_exception_function', 1),
+])
+
+@validate_transaction_errors(errors=_test_template_render_exception_errors)
+@validate_transaction_metrics('views:render_exception_function',
+        scoped_metrics=_test_template_render_exception_function_scoped_metrics)
+def test_template_render_exception_function():
+    test_application = target_application()
+    test_application.get('/render_exception_function', status=500)
+
+_test_template_render_exception_class_scoped_metrics = list(
+        _test_template_render_exception_scoped_metrics_base)
+_test_template_render_exception_class_scoped_metrics.extend([
+        ('Function/views:RenderExceptionClass', 1),
+        ('Function/views:RenderExceptionClass.get', 1),
+])
+
+@validate_transaction_errors(errors=_test_template_render_exception_errors)
+@validate_transaction_metrics('views:RenderExceptionClass.get',
+        scoped_metrics=_test_template_render_exception_class_scoped_metrics)
+def test_template_render_exception_class():
+    test_application = target_application()
+    test_application.get('/render_exception_class', status=500)

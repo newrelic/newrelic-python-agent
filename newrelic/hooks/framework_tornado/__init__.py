@@ -1,3 +1,4 @@
+import logging
 import weakref
 import traceback
 import contextlib
@@ -5,6 +6,8 @@ import contextlib
 from newrelic.agent import (FunctionTrace, WebTransaction,
     application as application_instance, ignore_status_code, extra_settings,
     current_transaction)
+
+_logger = logging.getLogger('newrelic.hooks.framework_tornado')
 
 _boolean_states = {
    '1': True, 'yes': True, 'true': True, 'on': True,

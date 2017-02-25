@@ -437,6 +437,31 @@ class CurlAsyncFetchRequestHandler(RequestHandler):
     def process_response(self, response):
         self.finish(response.body)
 
+
+class CustomImplCurlAsyncHTTPClient(CurlAsyncHTTPClient):
+    """Call fetch_impl with one positional arg and one kwarg."""
+
+    def fetch_impl(self, request, callback):
+        super(CustomImplCurlAsyncHTTPClient, self).fetch_impl(
+                request, callback=callback)
+
+class CustomImplCurlAsyncRequestHandler(RequestHandler):
+
+    @tornado.web.asynchronous
+    def get(self, request_type, port):
+        url = 'http://localhost:%s' % port
+        client = CustomImplCurlAsyncHTTPClient()
+        # We test with a request object and a raw url as well as using the
+        # callback as a positional argument and as a keyword argument.
+        if request_type == 'requestobj':
+            request = HTTPRequest(url)
+            client.fetch(request, self.process_response)
+        else:
+            client.fetch(url, callback=self.process_response)
+
+    def process_response(self, response):
+        self.finish(response.body)
+
 class CurlStreamingCallbackRequestHandler(RequestHandler):
 
     def initialize(self):
@@ -1183,6 +1208,7 @@ def get_tornado_app():
         ('/stream', SimpleStreamingRequestHandler),
         ('/async-fetch/(\w)+/(\d+)', AsyncFetchRequestHandler),
         ('/curl-async-fetch/(\w)+/(\d+)', CurlAsyncFetchRequestHandler),
+        ('/curl-async-custom/(\w)+/(\d+)', CustomImplCurlAsyncRequestHandler),
         ('/curl-stream-cb/(\w)+/(\d+)', CurlStreamingCallbackRequestHandler),
         ('/sync-fetch/(\w)+/(\d+)', SyncFetchRequestHandler),
         ('/run-sync-add/(\d+)/(\d+)', RunSyncAddRequestHandler),

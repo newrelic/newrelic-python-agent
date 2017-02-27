@@ -48,7 +48,7 @@ def _nr_wrapper_curl_httpclient_CurlAsyncHTTPClient_fetch_impl_(wrapped,
             # Replace callback with one that will decrement the ref_count
             # when it runs.
 
-            if len(args) > 0:
+            if len(args) > 1:
                 args = list(args)
                 args[1] = wrapped_callback
             else:

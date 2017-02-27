@@ -361,6 +361,44 @@ odd/even numbering scheme, ``B`` should always be odd after this change.
 32. Make sure that all JIRA stories associated with the release version have
 been updated as having been released.
 
+Performing a Hotfix Release
+---------------------------
+
+A "hotfix" release is one that contains an urgent bug fix that needs to be released before the
+`develop` branch is ready for release. A `hotfix` branch is created off of the `master` branch, and
+once it is released, the `hotfix` branch is merged back into the `develop` branch.
+
+The procedure for preparing a hotfix release differs in some ways from a normal release.
+
+1. Create a hotfix branch
+
+    # Make sure master is up-to-date
+    $ git checkout master
+    $ git pull master
+
+    # Create a hotfix branch with the version number as the name. Increment the "patch number"
+    # in the version string (the 3rd element).
+    $ git-flow hotfix start 2.80.1
+
+2. Add a commit with the bugfix.
+
+3. Add a commit to bump the "patch number" in the version in ``newrelic/__init__.py``. The commit
+   message should be:
+
+        Increment version to 2.80.1 for hotfix release.
+
+4. Run `./build.sh` locally to run license validation script and ensure package builds.
+
+5. Run `./tests.sh` locally.
+
+6. Create a PR against the `master` branch.
+
+7. Sidekick and merge the PR into the `master` branch.
+
+Once these steps have been completed, begin following the standard release procedure, starting at
+step 11 (merge `master` back into `develop`).
+
+
 Creating a Custom Build for a Customer
 --------------------------------------
 

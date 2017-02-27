@@ -372,13 +372,13 @@ The procedure for preparing a hotfix release differs in some ways from a normal 
 
 1. Create a hotfix branch
 
-    # Make sure master is up-to-date
-    $ git checkout master
-    $ git pull master
+        # Make sure master is up-to-date
+        $ git checkout master
+        $ git pull master
 
-    # Create a hotfix branch with the version number as the name. Increment the "patch number"
-    # in the version string (the 3rd element).
-    $ git-flow hotfix start 2.80.1
+        # Create a hotfix branch with the version number as the name. Increment the "patch
+        # number" in the version string (the 3rd element).
+        $ git-flow hotfix start 2.80.1
 
 2. Add a commit with the bugfix.
 

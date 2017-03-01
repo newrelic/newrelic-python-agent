@@ -1,6 +1,5 @@
 import unittest
 import time
-import types
 import sys
 
 import newrelic.tests.test_cases
@@ -597,7 +596,8 @@ class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
         # object is the middleware instance.
         func_wrapper = wrapped_wsgi_app(environ, start_response)
         try:
-            self.assertEqual(type(func_wrapper.generator), types.GeneratorType)
+            self.assertNotEqual(func_wrapper.generator,
+                    wrapped(environ, start_response))
         finally:
             func_wrapper.close()
 

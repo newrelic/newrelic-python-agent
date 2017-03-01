@@ -2,7 +2,6 @@ import unittest
 import time
 import types
 import sys
-import logging
 
 import newrelic.tests.test_cases
 

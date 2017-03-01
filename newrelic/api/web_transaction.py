@@ -2,7 +2,6 @@ import sys
 import cgi
 import time
 import string
-import re
 import logging
 import functools
 
@@ -175,7 +174,6 @@ class WebTransaction(Transaction):
 
         script_name = environ.get('SCRIPT_NAME', None)
         path_info = environ.get('PATH_INFO', None)
-        http_cookie = environ.get('HTTP_COOKIE', None)
 
         self._request_uri = request_uri
 

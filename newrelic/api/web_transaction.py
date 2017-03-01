@@ -759,7 +759,9 @@ class _WSGIApplicationIterable(object):
 
             with FunctionTrace(self.transaction, name='Finalize',
                     group='Python/WSGI'):
-                if hasattr(self.generator, 'close'):
+                if isinstance(self.generator, _WSGIApplicationMiddleware):
+                    self.generator.close()
+                elif hasattr(self.generator, 'close'):
                     name = callable_name(self.generator.close)
                     with FunctionTrace(self.transaction, name):
                         self.generator.close()

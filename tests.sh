@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# We first need to work out what Python installations we can use on the
-# system we are running this on. On the Hudson boxes we give preference
-# to our own Python installations over the system ones.
+# This script searches for python executables for each version of python that
+# we test. If an appropriate python executable is detected, we automatically
+# add it to the list of python versions to run unit tests against.
 #
 # Because of what appears to be a bug in tox and its understanding of
 # what the current working directory is when using a non default test

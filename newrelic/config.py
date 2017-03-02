@@ -1995,6 +1995,9 @@ def _process_module_builtin_defaults():
         _process_module_definition('concurrent.futures',
                 'newrelic.hooks.framework_tornado_r3.concurrent',
                 'instrument_concurrent')
+        _process_module_definition('tornado.http1connection',
+                'newrelic.hooks.framework_tornado_r3.http1connection',
+                'instrument_tornado_http1connection')
 
     elif 'tornado.instrumentation.r1' in _settings.feature_flag:
         _process_module_definition('tornado.wsgi',

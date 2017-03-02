@@ -42,9 +42,7 @@ else
     shift
 fi
 
-TOX=tox
-
-$TOX --help > /dev/null 2>&1
+tox --help > /dev/null 2>&1
 if test "$?" != "0"
 then
     echo "Please install tox using 'pip install tox'"
@@ -71,10 +69,10 @@ echo "Running tests with Pure Python version of agent!"
 
 if test x"$NEW_RELIC_ADMIN_TESTS" = x"true"
 then
-    NEW_RELIC_EXTENSIONS=false $TOX -v -e $ENVIRONMENTS -c tox-admin.ini
+    NEW_RELIC_EXTENSIONS=false tox -v -e $ENVIRONMENTS -c tox-admin.ini
 fi
 
-NEW_RELIC_EXTENSIONS=false $TOX -v -e $ENVIRONMENTS -c tox.ini $TOX_TESTS
+NEW_RELIC_EXTENSIONS=false tox -v -e $ENVIRONMENTS -c tox.ini $TOX_TESTS
 
 STATUS=$?
 if test "$STATUS" != "0"
@@ -87,10 +85,10 @@ echo "Running tests with mixed binary version of agent!"
 
 if test x"$NEW_RELIC_ADMIN_TESTS" = x"true"
 then
-    NEW_RELIC_EXTENSIONS=true $TOX -v -e $ENVIRONMENTS -c tox-admin.ini
+    NEW_RELIC_EXTENSIONS=true tox -v -e $ENVIRONMENTS -c tox-admin.ini
 fi
 
-NEW_RELIC_EXTENSIONS=true $TOX -v -e $ENVIRONMENTS -c tox.ini $TOX_TESTS
+NEW_RELIC_EXTENSIONS=true tox -v -e $ENVIRONMENTS -c tox.ini $TOX_TESTS
 
 STATUS=$?
 if test "$STATUS" != "0"

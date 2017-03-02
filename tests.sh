@@ -1,117 +1,35 @@
 #!/bin/sh
 
-# We first need to work out what Python installations we can use on the
-# system we are running this on. On the Hudson boxes we give preference
-# to our own Python installations over the system ones.
+# This script searches for python executables for each version of python that
+# we test. If an appropriate python executable is detected, we automatically
+# add it to the list of python versions to run unit tests against.
 #
 # Because of what appears to be a bug in tox and its understanding of
 # what the current working directory is when using a non default test
 # environment, we use the default test environments and run tests twice.
 # The first time as pure Python and the second with extensions enabled.
 
-PYTHON26=
-PYTHON27=
-PYTHON33=
-PYPY=
+py26=$(which python2.6)
+py27=$(which python2.7)
+py33=$(which python3.3)
+py34=$(which python3.4)
+py35=$(which python3.5)
+py36=$(which python3.6)
+pypy=$(which pypy)
+pypy3=$(which pypy3)
 
 ENVIRONMENTS=
 
-# First check if we are running on the Hudson boxes and if we are look for
-# our own versions.
-
-if test x"$BUILD_NUMBER" != x""
-then
-    if test -x $HOME/python-tools/python-2.6-ucs4/bin/python2.6
-    then
-        ENVIRONMENTS="$ENVIRONMENTS,py26"
-        PYTHON26="$HOME/python-tools/python-2.6-ucs4/bin/python2.6"
-        PATH="$HOME/python-tools/python-2.6-ucs4/bin:$PATH"
-    fi
-    if test -x $HOME/python-tools/python-2.7-ucs4/bin/python2.7
-    then
-        ENVIRONMENTS="$ENVIRONMENTS,py27"
-        PYTHON27="$HOME/python-tools/python-2.7-ucs4/bin/python2.7"
-        PATH="$HOME/python-tools/python-2.7-ucs4/bin:$PATH"
-    fi
-    if test -x $HOME/python-tools/python-3.3-ucs4/bin/python3.3
-    then
-        ENVIRONMENTS="$ENVIRONMENTS,py33"
-        PYTHON27="$HOME/python-tools/python-3.3-ucs4/bin/python3.3"
-        PATH="$HOME/python-tools/python-3.3-ucs4/bin:$PATH"
-    fi
-    if test -x $HOME/pypy-2.2/bin/pypy
-    then
-        ENVIRONMENTS="$ENVIRONMENTS,pypy"
-        PYPY="$HOME/pypy-2.2/bin/pypy"
-        PATH="$HOME/pypy-2.2/bin:$PATH"
-        LD_LIBRARY_PATH="$HOME/pypy-2.2/lib:$LD_LIBRARY_PATH"
-        export LD_LIBRARY_PATH
-    fi
-fi
-
-# Now fallback to system provided Python installations if we haven't
-# already found one of our own. This is primarily for Mac OS X.
-
-if test x"$PYTHON26" = x""
-then
-    if test -x /usr/bin/python2.6
-    then
-        ENVIRONMENTS="$ENVIRONMENTS,py26"
-        PYTHON26="/usr/bin/python2.6"
-    fi
-fi
-if test x"$PYTHON27" = x""
-then
-    if test -x /usr/bin/python2.7
-    then
-        ENVIRONMENTS="$ENVIRONMENTS,py27"
-        PYTHON27="/usr/bin/python2.7"
-    fi
-fi
-if test x"$PYTHON33" = x""
-then
-    if test -x /usr/bin/python3.3
-    then
-        ENVIRONMENTS="$ENVIRONMENTS,py33"
-        PYTHON27="/usr/bin/python3.3"
-    fi
-fi
-
-if test x"$PYTHON26" = x""
-then
-    if test -x /usr/local/bin/python2.6
-    then
-        ENVIRONMENTS="$ENVIRONMENTS,py26"
-        PYTHON26="/usr/local/bin/python2.6"
-    fi
-fi
-if test x"$PYTHON27" = x""
-then
-    if test -x /usr/local/bin/python2.7
-    then
-        ENVIRONMENTS="$ENVIRONMENTS,py27"
-        PYTHON27="/usr/local/bin/python2.7"
-    fi
-fi
-if test x"$PYTHON33" = x""
-then
-    if test -x /usr/local/bin/python3.3
-    then
-        ENVIRONMENTS="$ENVIRONMENTS,py33"
-        PYTHON27="/usr/local/bin/python3.3"
-    fi
-fi
-if test x"$PYPY" = x""
-then
-    if test -x /usr/local/bin/pypy
-    then
-        ENVIRONMENTS="$ENVIRONMENTS,pypy"
-        PYPY="/usr/local/bin/pypy"
-    fi
-fi
-
 if test x"$1" = x""
 then
+    for e in py26 py27 py33 py34 py35 py36 pypy pypy3
+    do
+        eval py_exe="\$$e"
+        if test x"$py_exe" != x""
+        then
+            ENVIRONMENTS="$ENVIRONMENTS,$e"
+        fi
+    done
     ENVIRONMENTS=`echo $ENVIRONMENTS | sed -e 's/^,//'`
     if test x"$ENVIRONMENTS" = x""
     then
@@ -124,14 +42,7 @@ else
     shift
 fi
 
-if test -x $HOME/python-tools/python-2.6-ucs4-testing/bin/tox
-then
-    TOX=$HOME/python-tools/python-2.6-ucs4-testing/bin/tox
-else
-    TOX=tox
-fi
-
-$TOX --help > /dev/null 2>&1
+tox --help > /dev/null 2>&1
 if test "$?" != "0"
 then
     echo "Please install tox using 'pip install tox'"
@@ -144,7 +55,7 @@ then
 
     TOX_TESTS="$TOX_TESTS newrelic/common/tests"
     TOX_TESTS="$TOX_TESTS newrelic/core/tests"
-    TOX_TESTS="$TOX_TESTS newrelic/api/tests" 
+    TOX_TESTS="$TOX_TESTS newrelic/api/tests"
     TOX_TESTS="$TOX_TESTS newrelic/tests"
 
     NEW_RELIC_ADMIN_TESTS=true
@@ -158,10 +69,10 @@ echo "Running tests with Pure Python version of agent!"
 
 if test x"$NEW_RELIC_ADMIN_TESTS" = x"true"
 then
-    NEW_RELIC_EXTENSIONS=false $TOX -v -e $ENVIRONMENTS -c tox-admin.ini
+    NEW_RELIC_EXTENSIONS=false tox -v -e $ENVIRONMENTS -c tox-admin.ini
 fi
 
-NEW_RELIC_EXTENSIONS=false $TOX -v -e $ENVIRONMENTS -c tox.ini $TOX_TESTS
+NEW_RELIC_EXTENSIONS=false tox -v -e $ENVIRONMENTS -c tox.ini $TOX_TESTS
 
 STATUS=$?
 if test "$STATUS" != "0"
@@ -174,10 +85,10 @@ echo "Running tests with mixed binary version of agent!"
 
 if test x"$NEW_RELIC_ADMIN_TESTS" = x"true"
 then
-    NEW_RELIC_EXTENSIONS=true $TOX -v -e $ENVIRONMENTS -c tox-admin.ini
+    NEW_RELIC_EXTENSIONS=true tox -v -e $ENVIRONMENTS -c tox-admin.ini
 fi
 
-NEW_RELIC_EXTENSIONS=true $TOX -v -e $ENVIRONMENTS -c tox.ini $TOX_TESTS
+NEW_RELIC_EXTENSIONS=true tox -v -e $ENVIRONMENTS -c tox.ini $TOX_TESTS
 
 STATUS=$?
 if test "$STATUS" != "0"

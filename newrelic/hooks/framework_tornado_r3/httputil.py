@@ -152,6 +152,31 @@ def request_environment(request):
 def is_websocket(request):
     return request.headers.get('Upgrade', '').lower() == 'websocket'
 
+def _nr_wrapper__NormalizedHeaderCache___missing__(
+        wrapped, instance, args, kwargs):
+
+    if instance is None:
+        def _bind_params(self, key, *args, **kwargs):
+            return self, key
+
+        instance, key = _bind_params(*args, **kwargs)
+
+    else:
+        def _bind_params(key, *args, **kwargs):
+            return key
+
+        key = _bind_params(*args, **kwargs)
+
+    normalized = wrapped(*args, **kwargs)
+
+    if key.startswith('X-NewRelic'):
+        instance[key] = key
+        return key
+
+    return normalized
+
 def instrument_tornado_httputil(module):
     wrap_function_wrapper(module, 'HTTPServerRequest.__init__',
             _nr_wrapper_HTTPServerRequest__init__)
+    wrap_function_wrapper(module, '_NormalizedHeaderCache.__missing__',
+            _nr_wrapper__NormalizedHeaderCache___missing__)

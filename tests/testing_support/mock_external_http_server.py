@@ -40,7 +40,7 @@ class MockExternalHTTPServer(threading.Thread):
 
         self.port = 8989
         self.httpd = BaseHTTPServer.HTTPServer(('localhost', 8989),
-                MockExternalHTTPServer.ExternalHandler)
+                self.ExternalHandler)
         self.daemon = True
 
     def run(self):
@@ -52,3 +52,18 @@ class MockExternalHTTPServer(threading.Thread):
         # Close the socket so we can reuse it.
         self.httpd.socket.close()
         self.join()
+
+
+class MockExternalHTTPHResponseHeadersServer(MockExternalHTTPServer):
+    """
+    MockExternalHTTPHResponseHeadersServer will send the incoming
+    request headers back as the response.body, allowing us to validate
+    httpclient request headers.
+
+    """
+    class ExternalHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+        def do_GET(self):
+            response = str(self.headers).encode('utf-8')
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(response)

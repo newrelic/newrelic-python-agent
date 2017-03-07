@@ -41,10 +41,7 @@ class AllTests(object):
 
         headers = dict(**response.headers)
 
-        # TODO: When we add ability to send "New Relic cased" headers,
-        # then we need to test for `X-NewRelic-App-Data` (capital 'R').
-
-        self.assertTrue('X-Newrelic-App-Data' in headers)
+        self.assertTrue('X-NewRelic-App-Data' in headers)
 
 
     @tornado_validate_transaction_cache_empty()

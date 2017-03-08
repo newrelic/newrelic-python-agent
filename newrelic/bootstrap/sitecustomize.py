@@ -117,17 +117,19 @@ if python_prefix_matches and python_version_matches:
         # If it is a buildout created script, it will replace the whole
         # sys.path again later anyway.
 
-        if root_directory not in sys.path:
+        do_insert_path = root_directory not in sys.path
+        if do_insert_path:
             sys.path.insert(0, root_directory)
 
         import newrelic.agent
 
         log_message('agent_version = %r', newrelic.version)
 
-        try:
-            del sys.path[sys.path.index(root_directory)]
-        except Exception:
-            pass
+        if do_insert_path:
+            try:
+                del sys.path[sys.path.index(root_directory)]
+            except Exception:
+                pass
 
         # Finally initialize the agent.
 

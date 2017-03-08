@@ -24,4 +24,8 @@ urlpatterns = [
         name='html_insertion_named_attachment_header'),
     url(r'^inclusion_tag$', views.inclusion_tag, name='inclusion_tag'),
     url(r'^template_tags$', views.template_tags, name='template_tags'),
+    url(r'^render_exception_function', views.render_exception_function,
+        name='render_exception_function'),
+    url(r'^render_exception_class', views.RenderExceptionClass.as_view(),
+        name='render_exception_class'),
 ]

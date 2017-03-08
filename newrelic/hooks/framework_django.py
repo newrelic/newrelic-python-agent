@@ -474,9 +474,10 @@ def instrument_django_core_handlers_wsgi(module):
     # exception, so last chance to do this as exception will not
     # propogate up to the WSGI application.
 
-    module.WSGIHandler.handle_uncaught_exception = (
-            wrap_handle_uncaught_exception(
-            module.WSGIHandler.handle_uncaught_exception))
+    if hasattr(module.WSGIHandler, 'handle_uncaught_exception'):
+        module.WSGIHandler.handle_uncaught_exception = (
+                wrap_handle_uncaught_exception(
+                module.WSGIHandler.handle_uncaught_exception))
 
 def wrap_view_handler(wrapped, priority=3):
 
@@ -1150,3 +1151,8 @@ def instrument_django_core_handlers_exception(module):
     if hasattr(module, 'convert_exception_to_response'):
         wrap_function_wrapper(module, 'convert_exception_to_response',
                 _nr_wrapper_convert_exception_to_response_)
+
+    if hasattr(module, 'handle_uncaught_exception'):
+        module.handle_uncaught_exception = (
+                wrap_handle_uncaught_exception(
+                module.handle_uncaught_exception))

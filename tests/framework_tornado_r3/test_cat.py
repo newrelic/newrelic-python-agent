@@ -1,6 +1,11 @@
 import sys
 
+import json
 import pytest
+import webtest
+
+from newrelic.agent import wsgi_application
+from newrelic.common.encoding_utils import deobfuscate
 
 from testing_support.fixtures import (make_cross_agent_headers,
         override_application_settings)
@@ -24,6 +29,17 @@ _override_settings = {
 payload = ['b854df4feb2b1f06', False, '7e249074f277923d', '5d2957be']
 
 
+@wsgi_application()
+def _wsgi_app(environ, start_response):
+    status = '200 OK'
+    response_headers = [('Content-Type', 'text/html; charset=UTF-8'), ]
+    start_response(status, response_headers)
+    return [b'Hello World']
+
+
+wsgi_app = webtest.TestApp(_wsgi_app)
+
+
 class AllTests(object):
 
     @tornado_validate_transaction_cache_empty()
@@ -39,10 +55,26 @@ class AllTests(object):
         # case-sensitive header name. Otherwise, HTTPHeaders will
         # normalize the header name before comparing.
 
-        headers = dict(**response.headers)
+        tornado_response_headers = dict(**response.headers)
 
-        self.assertTrue('X-NewRelic-App-Data' in headers)
+        # When this test was written, both tornado and wsgi use the same code
+        # paths to generate the CAT response headers. It's conceivable that in
+        # the future, tornado might use a different codepath from WSGI
+        # applications. This test checks that WSGI and Tornado, at least to a
+        # first order, are generating the same outputs.
+        wsgi_response = wsgi_app.get('/', headers=headers)
+        self.assertEqual(wsgi_response.status, '200 OK')
 
+        self.assertTrue('X-NewRelic-App-Data' in tornado_response_headers)
+        self.assertTrue('X-NewRelic-App-Data' in wsgi_response.headers)
+
+        tornado_cat_data = json.loads(deobfuscate(
+                tornado_response_headers['X-NewRelic-App-Data'], ENCODING_KEY))
+        wsgi_cat_data = json.loads(deobfuscate(
+                wsgi_response.headers['X-NewRelic-App-Data'], ENCODING_KEY))
+
+        self.assertEqual(tornado_cat_data[0], '1#1')
+        self.assertEqual(wsgi_cat_data[0], '1#1')
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
@@ -66,6 +98,7 @@ class AllTests(object):
 
 class TornadoDefaultIOLoopTest(AllTests, TornadoBaseTest):
     pass
+
 
 @pytest.mark.skipif(sys.version_info < (2, 7),
         reason='pyzmq does not support Python 2.6')

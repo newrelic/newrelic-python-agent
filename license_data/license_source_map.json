@@ -485,6 +485,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/tests/test_browser_middleware.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/tests/test_cross_process.py": {
         "hash": "n/a",
         "libraries": [

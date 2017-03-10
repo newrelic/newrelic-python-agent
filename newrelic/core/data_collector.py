@@ -9,7 +9,6 @@ import os
 import sys
 import time
 import zlib
-import base64
 import warnings
 
 from pprint import pprint
@@ -22,7 +21,7 @@ from newrelic.common import certs, system_info
 
 from newrelic import version
 from newrelic.core.config import (global_settings, global_settings_dump,
-        apply_server_side_settings, finalize_application_settings)
+        finalize_application_settings)
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
         internal_metric)
 
@@ -487,7 +486,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
             session = None
 
     if r.status_code != 200:
-        _logger.debug('Received a non 200 HTTP response from the data '
+        _logger.warning('Received a non 200 HTTP response from the data '
                 'collector where url=%r, method=%r, license_key=%r, '
                 'agent_run_id=%r, params=%r, headers=%r, status_code=%r '
                 'and content=%r.', url, method, license_key, agent_run_id,
@@ -618,7 +617,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
     # Now need to check for server side exceptions. The following
     # exceptions can occur for abnormal events.
 
-    _logger.debug('Received an exception from the data collector where '
+    _logger.warning('Received an exception from the data collector where '
             'url=%r, method=%r, license_key=%r, agent_run_id=%r, params=%r, '
             'headers=%r, error_type=%r and message=%r', url, method,
             license_key, agent_run_id, params, headers, error_type,

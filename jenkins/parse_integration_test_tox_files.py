@@ -17,6 +17,7 @@ def str2bool(val):
 
     return bools_dict[val]
 
+
 def parse_args():
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument('-s', '--test-suffix',
@@ -45,6 +46,7 @@ def parse_args():
 
     return args
 
+
 def test_dirs(workspace):
     """
     Generate a list of the directories under the 'tests' directory
@@ -54,6 +56,7 @@ def test_dirs(workspace):
         name = '%s/%s' % (tests_dir, test_dir)
         if os.path.isdir(name):
             yield name
+
 
 def get_envs(tox_file, restrict_to=None):
     """
@@ -66,10 +69,12 @@ def get_envs(tox_file, restrict_to=None):
         envs = [env for env in envs if restrict_to in env]
     return envs
 
+
 def get_compose_path_if_exists(test_dir):
     if 'docker-compose.yml' in os.listdir(test_dir):
         return '%s/docker-compose.yml' % test_dir
     return None
+
 
 def get_tox_path_if_exists(test_dir):
     for file_name in os.listdir(test_dir):
@@ -77,10 +82,12 @@ def get_tox_path_if_exists(test_dir):
             return os.path.join(test_dir, file_name)
     return None
 
+
 def create_test_name(test_dir, group_name, test_suffix):
     dir_basename = os.path.basename(test_dir)
     name = '_'.join([dir_basename, group_name, test_suffix])
     return name
+
 
 def possibly_group_envs(test_envs, max_group_size):
     """
@@ -170,6 +177,7 @@ def get_tests(test_suffix, most_recent_only, max_group_size, test_dir):
         ])
 
     return tests
+
 
 def main(args):
     test_suffix = args.test_suffix

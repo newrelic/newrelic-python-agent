@@ -48,6 +48,7 @@ USER_AGENT = 'NewRelic-PythonAgent/%s (Python %s %s)' % (
 
 # Data collector URL and proxy settings.
 
+
 def collector_url(server=None):
     """Returns the URL for talking to the data collector. When no server
     'host:port' is specified then the main data collector host and port is
@@ -77,6 +78,7 @@ def collector_url(server=None):
 
     return url % (scheme, server)
 
+
 def proxy_server():
     """Returns the dictionary of proxy server settings to be supplied to
     the 'requests' library when making requests.
@@ -98,6 +100,7 @@ def proxy_server():
 
     return proxy_details(proxy_scheme, settings.proxy_host,
             settings.proxy_port, settings.proxy_user, settings.proxy_pass)
+
 
 def connection_type(proxies):
     """Returns a string describing the connection type for use in metrics.
@@ -122,6 +125,7 @@ def connection_type(proxies):
 # is communicated with so as to allow us to restore the old broken
 # behaviour from before requests 2.0.0 so that we can transition
 # customers over without outright breaking their existing configurations.
+
 
 @patch_function_wrapper(
         'newrelic.packages.requests.packages.urllib3.connectionpool',
@@ -150,6 +154,7 @@ def _requests_proxy_scheme_workaround(wrapped, instance, args, kwargs):
 # be more correct than the changed version and works in testing. Return the
 # functionality back to how it worked previously.
 
+
 @patch_function_wrapper(
         'newrelic.packages.requests.adapters',
         'HTTPAdapter.request_url')
@@ -171,8 +176,10 @@ def _requests_request_url_workaround(wrapped, instance, args, kwargs):
 # It is though then necessary to ask the data collector for the per
 # session data collector to use. Subsequent calls are then made to it.
 
+
 _audit_log_fp = None
 _audit_log_id = 0
+
 
 def _log_request(url, params, headers, data):
     settings = global_settings()
@@ -242,12 +249,13 @@ def _log_request(url, params, headers, data):
             pprint(field_as_json, stream=_audit_log_fp)
 
     print(file=_audit_log_fp)
-    print(78*'=', file=_audit_log_fp)
+    print(78 * '=', file=_audit_log_fp)
     print(file=_audit_log_fp)
 
     _audit_log_fp.flush()
 
     return _audit_log_id
+
 
 def _log_response(log_id, result):
 
@@ -263,13 +271,15 @@ def _log_response(log_id, result):
     pprint(result, stream=_audit_log_fp)
 
     print(file=_audit_log_fp)
-    print(78*'=', file=_audit_log_fp)
+    print(78 * '=', file=_audit_log_fp)
     print(file=_audit_log_fp)
 
     _audit_log_fp.flush()
 
+
 _deflate_exclude_list = set(['transaction_sample_data', 'sql_trace_data',
     'profile_data'])
+
 
 def send_request(session, url, method, license_key, agent_run_id=None,
             payload=()):
@@ -277,7 +287,6 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     params = {}
     headers = {}
-    config = {}
 
     settings = global_settings()
 
@@ -702,6 +711,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     raise DiscardDataForRequest(message)
 
+
 def apply_high_security_mode_fixups(local_settings, server_settings):
     # When High Security Mode is True in local_settings, then all
     # security related settings should be removed from server_settings.
@@ -759,6 +769,7 @@ def apply_high_security_mode_fixups(local_settings, server_settings):
 
     return server_settings
 
+
 class ApplicationSession(object):
 
     """ Class which encapsulates communication with the data collector
@@ -797,7 +808,6 @@ class ApplicationSession(object):
 
         """
 
-        #payload = (self.agent_run_id, settings)
         payload = (settings,)
 
         return self.send_request(self.requests_session, self.collector_url,
@@ -1171,7 +1181,7 @@ class ApplicationSession(object):
         if settings['utilization.detect_docker']:
             docker_id = docker_container_id()
             if docker_id:
-                utilization_vendor_settings['docker'] = { 'id': docker_id }
+                utilization_vendor_settings['docker'] = {'id': docker_id}
         if utilization_vendor_settings:
             utilization_settings['vendors'] = utilization_vendor_settings
 
@@ -1196,6 +1206,7 @@ class ApplicationSession(object):
         }
         return (local_config,)
 
+
 _developer_mode_responses = {
     'get_redirect_host': u'fake-collector.newrelic.com',
 
@@ -1217,7 +1228,7 @@ _developer_mode_responses = {
         u'collect_errors': True,
         u'cross_process_id': u'12345#67890',
         u'messages': [{u'message': u'Reporting to fake collector',
-            u'level': u'INFO' }],
+            u'level': u'INFO'}],
         u'sampling_rate': 0,
         u'collect_traces': True,
         u'data_report_period': 60
@@ -1241,6 +1252,7 @@ _developer_mode_responses = {
 
     'shutdown': None,
 }
+
 
 class DeveloperModeSession(ApplicationSession):
 
@@ -1290,6 +1302,7 @@ class DeveloperModeSession(ApplicationSession):
             _log_response(log_id, dict(return_value=result))
 
         return result
+
 
 def create_session(license_key, app_name, linked_applications,
         environment, settings):

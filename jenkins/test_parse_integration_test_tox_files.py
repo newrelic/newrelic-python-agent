@@ -243,7 +243,7 @@ class TestGetEnvs(unittest.TestCase):
 
     def get_tox_file(self, contents):
         tox_file = tempfile.NamedTemporaryFile()
-        tox_file.write(contents)
+        tox_file.write(contents.encode('utf-8'))
         tox_file.seek(0)
         return tox_file
 
@@ -382,7 +382,7 @@ class TestIsDisabled(unittest.TestCase):
 
     def get_tox_file(self, contents):
         tox_file = tempfile.NamedTemporaryFile()
-        tox_file.write(contents)
+        tox_file.write(contents.encode('utf-8'))
         tox_file.seek(0)
         return tox_file
 
@@ -451,7 +451,7 @@ class TestMostRecent(unittest.TestCase):
 
     def get_tox_file(self, contents):
         tox_file = tempfile.NamedTemporaryFile()
-        tox_file.write(contents)
+        tox_file.write(contents.encode('utf-8'))
         tox_file.seek(0)
         return tox_file
 

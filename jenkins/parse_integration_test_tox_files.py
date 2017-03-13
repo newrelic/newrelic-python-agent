@@ -1,10 +1,14 @@
 #!/usr/bin/env python2.7
 
 import argparse
-import ConfigParser
 import json
 import os
 import tox.config
+
+try:
+    import ConfigParser
+except ImportError:
+    import configparser as ConfigParser
 
 
 def str2bool(val):
@@ -94,7 +98,7 @@ def possibly_group_envs(test_envs, max_group_size):
     Given a list of envs and the max size for each group, return a list of
     tuples of (envlist, group name)
     """
-    num_groups = len(test_envs) / max_group_size
+    num_groups = int(len(test_envs) / max_group_size)
     if len(test_envs) % max_group_size != 0:
         num_groups += 1
 
@@ -196,4 +200,4 @@ def main(args):
 if __name__ == '__main__':
     args = parse_args()
     tests = main(args)
-    print tests
+    print(tests)

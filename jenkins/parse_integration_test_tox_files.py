@@ -134,6 +134,7 @@ def parse_tox_file(tox_path):
 
     most_recent = None
     is_disabled = False
+    max_group_size = None
 
     if config_object.has_section('jenkins'):
         try:
@@ -147,10 +148,16 @@ def parse_tox_file(tox_path):
         except ConfigParser.NoOptionError:
             pass
 
-    return most_recent, is_disabled
+        try:
+            max_group_size_str = config_object.get('jenkins', 'max_group_size')
+            max_group_size = int(max_group_size_str)
+        except ConfigParser.NoOptionError:
+            pass
+
+    return most_recent, is_disabled, max_group_size
 
 
-def get_tests(test_suffix, most_recent_only, max_group_size, test_dir):
+def get_tests(test_suffix, most_recent_only, max_group_size_global, test_dir):
     """
     Get a list of tests to run found in the given test_dir. Returns list of
     lists representing a test.
@@ -161,11 +168,12 @@ def get_tests(test_suffix, most_recent_only, max_group_size, test_dir):
     if not tox_path:
         return tests
 
-    most_recent, is_disabled = parse_tox_file(tox_path)
+    most_recent, is_disabled, max_group_size_local = parse_tox_file(tox_path)
     if is_disabled:
         return tests
 
     restrict_to = most_recent_only and most_recent
+    max_group_size = max_group_size_local or max_group_size_global
 
     test_envs = get_envs(tox_path, restrict_to=restrict_to)
     for env_group, group_name in possibly_group_envs(test_envs,

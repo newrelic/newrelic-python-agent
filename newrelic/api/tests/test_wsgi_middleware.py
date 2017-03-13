@@ -119,6 +119,13 @@ class TestWSGIMiddleware(newrelic.tests.test_cases.TestCase):
         instance = target_app(environ, start_response)
         iterable = iter(instance)
         first = next(iterable)
+
+        # Verify yield count and bytes sent have been updated
+
+        transaction = current_transaction()
+        self.assertEqual(transaction._calls_yield, 1)
+        self.assertEqual(transaction._bytes_sent, len(first))
+
         instance.close()
 
         self.assertEqual(first, b'Hello')
@@ -171,6 +178,13 @@ class TestWSGIMiddleware(newrelic.tests.test_cases.TestCase):
         instance = target_app(environ, start_response)
         iterable = iter(instance)
         first = next(iterable)
+
+        # Verify yield count and bytes sent have been updated
+
+        transaction = current_transaction()
+        self.assertEqual(transaction._calls_yield, 1)
+        self.assertEqual(transaction._bytes_sent, len(first))
+
         instance.close()
 
         self.assertEqual(first, b'Hello')

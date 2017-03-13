@@ -731,13 +731,13 @@ class _WSGIApplicationIterable(object):
 
         try:
             for item in self.generator:
-                yield item
-
                 try:
                     self.transaction._calls_yield += 1
                     self.transaction._bytes_sent += len(item)
                 except Exception:
                     pass
+
+                yield item
 
         except GeneratorExit:
             raise

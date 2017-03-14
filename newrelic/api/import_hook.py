@@ -1,5 +1,8 @@
-import sys
 import imp
+import logging
+import sys
+
+_logger = logging.getLogger(__name__)
 
 try:
     from importlib import find_loader
@@ -7,6 +10,10 @@ except ImportError:
     find_loader = None
 
 _import_hooks = {}
+
+# These modules are imported by the newrelic package and/or do not do nested
+# imports, so they're ok to import before newrelic.
+_ok_modules = ['urllib', 'urllib2', 'httplib']
 
 def register_import_hook(name, callable):
     imp.acquire_lock()
@@ -28,6 +35,13 @@ def register_import_hook(name, callable):
 
                 # The module has already been loaded so fire hook
                 # immediately.
+
+                if module.__name__ not in _ok_modules:
+                    _logger.debug('Module %s has been imported before the '
+                            'newrelic.agent.initialize call. Import and '
+                            'initialize the New Relic agent before all '
+                            'other modules for best monitoring '
+                            'results.' % module)
 
                 _import_hooks[name] = None
 

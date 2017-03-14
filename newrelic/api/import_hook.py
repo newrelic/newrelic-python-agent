@@ -15,13 +15,14 @@ _import_hooks = {}
 # imports, so they're ok to import before newrelic.
 _ok_modules = ['urllib', 'urllib2', 'httplib']
 
+
 def register_import_hook(name, callable):
     imp.acquire_lock()
 
     try:
         hooks = _import_hooks.get(name, None)
 
-        if not name in _import_hooks or hooks is None:
+        if name not in _import_hooks or hooks is None:
 
             # If no entry in registry or entry already flagged with
             # None then module may have been loaded, in which case
@@ -64,6 +65,7 @@ def register_import_hook(name, callable):
     finally:
         imp.release_lock()
 
+
 def _notify_import_hooks(name, module):
 
     # Is assumed that this function is called with the global
@@ -78,6 +80,7 @@ def _notify_import_hooks(name, module):
         for callable in hooks:
             callable(module)
 
+
 class _ImportHookLoader:
 
     def load_module(self, fullname):
@@ -88,6 +91,7 @@ class _ImportHookLoader:
         _notify_import_hooks(fullname, module)
 
         return module
+
 
 class _ImportHookChainedLoader:
 
@@ -103,6 +107,7 @@ class _ImportHookChainedLoader:
 
         return module
 
+
 class ImportHookFinder:
 
     def __init__(self):
@@ -112,7 +117,7 @@ class ImportHookFinder:
 
         # If not something we are interested in we can return.
 
-        if not fullname in _import_hooks:
+        if fullname not in _import_hooks:
             return None
 
         # Check whether this is being called on the second time
@@ -151,11 +156,13 @@ class ImportHookFinder:
         finally:
             del self._skip[fullname]
 
+
 def import_hook(name):
     def decorator(wrapped):
         register_import_hook(name, wrapped)
         return wrapped
     return decorator
+
 
 def import_module(name):
     __import__(name)

@@ -575,6 +575,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/tests/test_wsgi_middleware.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/time_trace.py": {
         "hash": "n/a",
         "libraries": [

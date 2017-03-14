@@ -265,7 +265,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
 
         def wrapped(environ, start_response):
             called[0] = True
-            return True
+            return ['response']
 
         def start_response(status, headers):
             return 'write'
@@ -554,7 +554,7 @@ class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
         # make sense for websockets to include RUM anyway.
 
         def wrapped(environ, start_response):
-            return True
+            return ['response']
 
         def start_response(status, headers):
             return 'write'
@@ -581,7 +581,7 @@ class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
         # Test that the WSGIApplicationWrapper function will apply RUM
         # middleware if the transaction is not a websocket.
         def wrapped(environ, start_response):
-            return True
+            return ['response']
 
         def start_response(status, headers):
             return 'write'
@@ -606,7 +606,7 @@ class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
         # RUM should not be applied.
 
         def wrapped(environ, start_response):
-            return True
+            return ['response']
 
         def start_response(status, headers):
             return 'write'
@@ -633,7 +633,7 @@ class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
         # If autorum_disabled = True and the transaction is a websocket, RUM
         # should not be applied.
         def wrapped(environ, start_response):
-            return True
+            return ['response']
 
         def start_response(status, headers):
             return 'write'

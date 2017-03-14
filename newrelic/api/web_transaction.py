@@ -724,25 +724,20 @@ class _WSGIApplicationIterable(object):
         self.transaction = transaction
         self.generator = generator
         self.response_trace = None
+        self.closed = False
 
     def __iter__(self):
-        if not self.transaction._sent_start:
-            self.transaction._sent_start = time.time()
-        try:
-            self.response_trace = FunctionTrace(self.transaction,
-                    name='Response', group='Python/WSGI')
-            self.response_trace.__enter__()
+        self.start_trace()
 
+        try:
             for item in self.generator:
-                yield item
                 try:
                     self.transaction._calls_yield += 1
                     self.transaction._bytes_sent += len(item)
                 except Exception:
                     pass
 
-            self.response_trace.__exit__(None, None, None)
-            self.response_trace = None
+                yield item
 
         except GeneratorExit:
             raise
@@ -751,16 +746,33 @@ class _WSGIApplicationIterable(object):
             self.transaction.record_exception(*sys.exc_info())
             raise
 
-    def close(self):
-        try:
-            if self.response_trace:
-                self.response_trace.__exit__(None, None, None)
-                self.response_trace = None
+        finally:
+            self.close()
 
+    def start_trace(self):
+        if not self.transaction._sent_start:
+            self.transaction._sent_start = time.time()
+
+        if not self.response_trace:
+            self.response_trace = FunctionTrace(self.transaction,
+                    name='Response', group='Python/WSGI')
+            self.response_trace.__enter__()
+
+    def close(self):
+        if self.closed:
+            return
+
+        if self.response_trace:
+            self.response_trace.__exit__(None, None, None)
+            self.response_trace = None
+
+        try:
             with FunctionTrace(self.transaction, name='Finalize',
                     group='Python/WSGI'):
+
                 if isinstance(self.generator, _WSGIApplicationMiddleware):
                     self.generator.close()
+
                 elif hasattr(self.generator, 'close'):
                     name = callable_name(self.generator.close)
                     with FunctionTrace(self.transaction, name):
@@ -773,6 +785,9 @@ class _WSGIApplicationIterable(object):
         else:
             self.transaction.__exit__(None, None, None)
             self.transaction._sent_end = time.time()
+
+        finally:
+            self.closed = True
 
 class _WSGIInputWrapper(object):
 

@@ -1,4 +1,4 @@
-import org.yaml.snakeyaml.Yaml
+import groovy.json.JsonSlurper
 import newrelic.jenkins.extensions
 
 String organization = 'python-agent'
@@ -8,58 +8,57 @@ String testSuffix = "__integration-test"
 
 Integer maxEnvsPerContainer = 14
 
-def yaml = new Yaml()
-List<String> disabledList = yaml.load(readFileFromWorkspace('jenkins/test-integration-config.yml')).disable
+String mostRecentOnly
+try {
+    mostRecentOnly = "${MOST_RECENT_ONLY}"
+} catch (all) {
+    mostRecentOnly = "false"
+}
+
 
 def getPacknsendTests = {
 
     // Get list of lists. Each item represents a single test. For example:
     //
     // [
-    //     framework_django_tox.ini__docker_test,
-    //     tests/framework_django/tox.ini,
-    //     tests/framework_django/docker-compose.yml,
+    //     "framework_django_tox.ini__docker_test",
+    //     "tests/framework_django/tox.ini",
+    //     "py27-with-extensions,py27-without-extensions",
+    //     "tests/framework_django/docker-compose.yml",
     // ]
     //
     // Where the first item is the name of the test. The second is the path to
-    // the tox file relative to the job's workspace. The third is the path to
-    // the docker-compose file relative to the job's workspace if it exists, if
-    // it does not exist, this value is an empty string.
+    // the tox file relative to the job's workspace. The third is the list tox
+    // environments to run the test on. The fourth is the path to the
+    // docker-compose file relative to the job's workspace if it exists, if it
+    // does not exist, this value is `null`.
 
-    def packnsendTestsList = []
-    String composeName = 'docker-compose.yml'
-    new File("${WORKSPACE}/tests").eachDir() { dir ->
-        String dirName = dir.getName()
+    println "Reseed to run tests on only most recent package versions? ${mostRecentOnly}"
 
-        // Determine if there is an available docker-compose environment
-        String composePath = ""
-        dir.eachFileMatch(composeName) { composeFile ->
-            composePath = "tests/${dirName}/${composeName}"
-        }
+    def proc = (
+        "python2.7 ${WORKSPACE}/jenkins/parse_integration_test_tox_files.py " +
+            "--test-suffix ${testSuffix} " +
+            "--max-group-size ${maxEnvsPerContainer} " +
+            "--most-recent-only ${mostRecentOnly} " +
+            "--workspace ${WORKSPACE}"
+    ).execute()
 
-        dir.eachFileMatch(~/^tox.*.ini$/) { toxFile ->
-            File canonicalFile = toxFile.getCanonicalFile()
-            String canonicalName = canonicalFile.getPath()
-            String absoluteName = toxFile.getAbsolutePath()
+    def stdout = new StringBuilder()
+    def stderr = new StringBuilder()
 
-            // If this is not a symlink
-            //   or if it's a symlink that doesn't match tox.ini
-            // -> add it to tests
-            if ((canonicalName == absoluteName) ||
-                !canonicalFile.getName().matches(~/^tox.*.ini$/)) {
+    proc.consumeProcessOutput(stdout, stderr)
+    proc.waitForOrKill(15000)
 
-                String toxName = toxFile.getName()
-                String toxPath = "tests/${dirName}/${toxName}"
-                String testName = "${dirName}_${toxName}_${testSuffix}"
-
-                if (!disabledList.contains(toxPath)) {
-                    def test = [testName, toxPath, composePath]
-                    packnsendTestsList.add(test)
-                }
-            }
-        }
+    if ( proc.exitValue() != 0 ) {
+        println("=======")
+        println("stdout:\n${stdout}")
+        println("=======")
+        println("stderr:\n${stderr}")
+        println("=======")
+        throw new Exception("Process failed with code ${proc.exitValue()}")
     }
-    packnsendTestsList
+
+    new JsonSlurper().parseText(stdout.toString())
 }
 
 use(extensions) {
@@ -91,7 +90,7 @@ use(extensions) {
     }
 
     // create all packnsend base tests
-    packnsendTests.each { testName, toxPath, composePath ->
+    packnsendTests.each { testName, toxPath, testEnvs, composePath ->
         baseJob(testName) {
             label('py-ec2-linux')
             repo(repoFull)
@@ -128,10 +127,10 @@ use(extensions) {
                     }
                     shell('./jenkins/prep_node_for_test.sh')
 
-                    if (composePath != "") {
-                        shell("./docker/packnsend run -c ${composePath} tox -c ${toxPath}")
+                    if (composePath) {
+                        shell("./docker/packnsend run -c ${composePath} tox -c ${toxPath} -e ${testEnvs}")
                     } else {
-                        shell("./docker/packnsend run tox -c ${toxPath}")
+                        shell("./docker/packnsend run tox -c ${toxPath} -e ${testEnvs}")
                     }
                 }
             }

@@ -27,12 +27,11 @@ use(extensions) {
             triggers {
                 githubPush()
             }
-            
+
             // block on any RUNNING job (not queued)
             blockOnJobs('.*', 'GLOBAL', 'DISABLED')
 
             steps {
-                shell('./jenkins/fetch_snakeyaml.sh')
                 reseedFrom('jenkins/**/*.groovy')
             }
 

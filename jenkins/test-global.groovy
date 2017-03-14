@@ -7,6 +7,11 @@ String integTestSuffix = "__integration-test"
 String unitTestSuffix = "__unit-test"
 String slackChannel = '#python-agent'
 String gitBranch
+Boolean isJaasHostname = InetAddress.getLocalHost().getHostName() == 'python-agent-build.pdx.vm.datanerd.us'
+
+if ( !isJaasHostname ) {
+    slackChannel = '#python-agent-verbose'
+}
 
 use(extensions) {
 
@@ -39,8 +44,11 @@ use(extensions) {
                 triggers {
                     // trigger on push to develop
                     githubPush()
-                    // run daily on cron
-                    cron('H 10 * * *')
+
+                    if (isJaasHostname) {
+                        // run daily on cron
+                        cron('H 10 * * *')
+                    }
                 }
                 gitBranch = jobType
                 mostRecent = 'false'

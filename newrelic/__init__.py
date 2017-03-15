@@ -1,4 +1,4 @@
-version = '2.82.0'
+version = '2.83.0'
 
 try:
     from newrelic.build import build_number

@@ -538,7 +538,10 @@ class Application(object):
                         'persists, please report this problem to New Relic '
                         'support for further investigation.')
 
-        self._active_session.close_connection()
+        try:
+            self._active_session.close_connection()
+        except:
+            pass
 
     def validate_process(self):
         """Logs a warning message if called in a process different to

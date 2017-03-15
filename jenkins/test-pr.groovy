@@ -33,6 +33,8 @@ use(extensions) {
             parameters {
                 stringParam('GIT_REPOSITORY_BRANCH', gitBranch,
                             'Branch in git repository to run test against.')
+                stringParam('MOST_RECENT_ONLY', 'true',
+                            'Run tests only on most recent version of all packages?')
             }
 
             steps {

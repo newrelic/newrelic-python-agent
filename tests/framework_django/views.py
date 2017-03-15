@@ -1,5 +1,5 @@
 from django.http import HttpResponse
-from django.views.generic.base import View
+from django.views.generic.base import View, TemplateView
 from django.shortcuts import render
 
 from newrelic.agent import (get_browser_timing_header,
@@ -64,3 +64,9 @@ def inclusion_tag(request):
 
 def template_tags(request):
     return render(request, 'main.html', {}, content_type="text/html")
+
+def render_exception_function(request):
+    return render(request, 'render_exception.html')
+
+class RenderExceptionClass(TemplateView):
+    template_name = 'render_exception.html'

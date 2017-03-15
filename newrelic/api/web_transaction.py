@@ -2,7 +2,6 @@ import sys
 import cgi
 import time
 import string
-import re
 import logging
 import functools
 
@@ -175,7 +174,6 @@ class WebTransaction(Transaction):
 
         script_name = environ.get('SCRIPT_NAME', None)
         path_info = environ.get('PATH_INFO', None)
-        http_cookie = environ.get('HTTP_COOKIE', None)
 
         self._request_uri = request_uri
 
@@ -726,25 +724,20 @@ class _WSGIApplicationIterable(object):
         self.transaction = transaction
         self.generator = generator
         self.response_trace = None
+        self.closed = False
 
     def __iter__(self):
-        if not self.transaction._sent_start:
-            self.transaction._sent_start = time.time()
-        try:
-            self.response_trace = FunctionTrace(self.transaction,
-                    name='Response', group='Python/WSGI')
-            self.response_trace.__enter__()
+        self.start_trace()
 
+        try:
             for item in self.generator:
-                yield item
                 try:
                     self.transaction._calls_yield += 1
                     self.transaction._bytes_sent += len(item)
                 except Exception:
                     pass
 
-            self.response_trace.__exit__(None, None, None)
-            self.response_trace = None
+                yield item
 
         except GeneratorExit:
             raise
@@ -753,15 +746,34 @@ class _WSGIApplicationIterable(object):
             self.transaction.record_exception(*sys.exc_info())
             raise
 
-    def close(self):
-        try:
-            if self.response_trace:
-                self.response_trace.__exit__(None, None, None)
-                self.response_trace = None
+        finally:
+            self.close()
 
+    def start_trace(self):
+        if not self.transaction._sent_start:
+            self.transaction._sent_start = time.time()
+
+        if not self.response_trace:
+            self.response_trace = FunctionTrace(self.transaction,
+                    name='Response', group='Python/WSGI')
+            self.response_trace.__enter__()
+
+    def close(self):
+        if self.closed:
+            return
+
+        if self.response_trace:
+            self.response_trace.__exit__(None, None, None)
+            self.response_trace = None
+
+        try:
             with FunctionTrace(self.transaction, name='Finalize',
                     group='Python/WSGI'):
-                if hasattr(self.generator, 'close'):
+
+                if isinstance(self.generator, _WSGIApplicationMiddleware):
+                    self.generator.close()
+
+                elif hasattr(self.generator, 'close'):
                     name = callable_name(self.generator.close)
                     with FunctionTrace(self.transaction, name):
                         self.generator.close()
@@ -773,6 +785,9 @@ class _WSGIApplicationIterable(object):
         else:
             self.transaction.__exit__(None, None, None)
             self.transaction._sent_end = time.time()
+
+        finally:
+            self.closed = True
 
 class _WSGIInputWrapper(object):
 
@@ -870,6 +885,11 @@ class _WSGIApplicationMiddleware(object):
         settings = transaction.settings
 
         self.debug = settings and settings.debug.log_autorum_middleware
+
+        # Grab the iterable returned by the wrapped WSGI
+        # application.
+        self.iterable = self.application(self.request_environ,
+                self.start_response)
 
     def process_data(self, data):
         # If this is the first data block, then immediately try
@@ -1103,92 +1123,83 @@ class _WSGIApplicationMiddleware(object):
 
         return self.inner_write
 
-    def __call__(self):
-        iterable = None
+    def close(self):
+        # Call close() on the iterable as required by the
+        # WSGI specification.
 
-        try:
-            # Grab the iterable returned by the wrapped WSGI
-            # application.
+        if hasattr(self.iterable, 'close'):
+            name = callable_name(self.iterable.close)
+            with FunctionTrace(self.transaction, name):
+                self.iterable.close()
 
-            iterable = self.application(self.request_environ,
-                    self.start_response)
+    def __iter__(self):
+        # Process the response content from the iterable.
 
-            # Process the response content from the iterable.
+        for data in self.iterable:
+            # If we are in pass through mode, simply pass it
+            # through. If we are in pass through mode then
+            # the headers should already have been flushed.
 
-            for data in iterable:
-                # If we are in pass through mode, simply pass it
-                # through. If we are in pass through mode then
-                # the headers should already have been flushed.
+            if self.pass_through:
+                yield data
 
-                if self.pass_through:
-                    yield data
+                continue
 
-                    continue
-
-                # If the headers haven't been flushed we need to
-                # check for the potential insertion point and
-                # buffer up data as necessary if we can't find it.
-
-                if self.outer_write is None:
-                    # Ignore any empty strings.
-
-                    if not data:
-                        continue
-
-                    # Check for the insertion point. Will return
-                    # None if data was buffered.
-
-                    buffered_data = self.process_data(data)
-
-                    if buffered_data is None:
-                        continue
-
-                    # The data was returned, with it being
-                    # potentially modified. It would not have
-                    # been modified if we had reached maximum to
-                    # be buffer. Flush out the headers, switch to
-                    # pass through mode and yield the data.
-
-                    self.flush_headers()
-                    self.pass_through = True
-
-                    for data in buffered_data:
-                        yield data
-
-                else:
-                    # Depending on how the WSGI specification is
-                    # interpreted, this shouldn't occur. That is,
-                    # nothing should be yielded prior to the
-                    # start_response() function being called. The
-                    # CGI/WSGI example in the WSGI specification
-                    # does allow that though as do various WSGI
-                    # servers that followed that example.
-
-                    yield data
-
-            # Ensure that headers have been written if the
-            # response was actually empty.
+            # If the headers haven't been flushed we need to
+            # check for the potential insertion point and
+            # buffer up data as necessary if we can't find it.
 
             if self.outer_write is None:
+                # Ignore any empty strings.
+
+                if not data:
+                    continue
+
+                # Check for the insertion point. Will return
+                # None if data was buffered.
+
+                buffered_data = self.process_data(data)
+
+                if buffered_data is None:
+                    continue
+
+                # The data was returned, with it being
+                # potentially modified. It would not have
+                # been modified if we had reached maximum to
+                # be buffer. Flush out the headers, switch to
+                # pass through mode and yield the data.
+
                 self.flush_headers()
                 self.pass_through = True
 
-            # Ensure that any remaining buffered data is also
-            # written. Technically this should never be able
-            # to occur at this point, but do it just in case.
-
-            if self.response_data:
-                for data in self.response_data:
+                for data in buffered_data:
                     yield data
 
-        finally:
-            # Call close() on the iterable as required by the
-            # WSGI specification.
+            else:
+                # Depending on how the WSGI specification is
+                # interpreted, this shouldn't occur. That is,
+                # nothing should be yielded prior to the
+                # start_response() function being called. The
+                # CGI/WSGI example in the WSGI specification
+                # does allow that though as do various WSGI
+                # servers that followed that example.
 
-            if hasattr(iterable, 'close'):
-                name = callable_name(iterable.close)
-                with FunctionTrace(self.transaction, name):
-                    iterable.close()
+                yield data
+
+        # Ensure that headers have been written if the
+        # response was actually empty.
+
+        if self.outer_write is None:
+            self.flush_headers()
+            self.pass_through = True
+
+        # Ensure that any remaining buffered data is also
+        # written. Technically this should never be able
+        # to occur at this point, but do it just in case.
+
+        if self.response_data:
+            for data in self.response_data:
+                yield data
 
 def WSGIApplicationWrapper(wrapped, application=None, name=None,
         group=None, framework=None):
@@ -1349,9 +1360,8 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
                 with FunctionTrace(transaction, name=callable_name(wrapped)):
                     if (settings and settings.browser_monitoring.enabled and
                             not transaction.autorum_disabled):
-                        middleware = _WSGIApplicationMiddleware(wrapped,
+                        result = _WSGIApplicationMiddleware(wrapped,
                                 environ, _start_response, transaction)
-                        result = middleware()
                     else:
                         result = wrapped(environ, _start_response)
 

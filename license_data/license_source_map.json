@@ -485,6 +485,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/tests/test_browser_middleware.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/tests/test_cross_process.py": {
         "hash": "n/a",
         "libraries": [
@@ -564,6 +570,12 @@
         ]
     },
     "newrelic/api/tests/test_wsgi_application.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/test_wsgi_middleware.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -1512,6 +1524,12 @@
         ]
     },
     "newrelic/hooks/framework_tornado_r3/gen.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/framework_tornado_r3/http1connection.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

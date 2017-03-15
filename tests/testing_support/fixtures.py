@@ -448,6 +448,25 @@ def validate_transaction_metrics(name, group='Function',
 
     return _validate_transaction_metrics
 
+def capture_transaction_metrics(metrics_list):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    @catch_background_exceptions
+    def _capture_transaction_metrics(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            metrics = instance.stats_table
+            for metric in metrics.keys():
+                metrics_list.append(metric)
+            metrics_list.sort()
+
+        return result
+
+    return _capture_transaction_metrics
+
 def validate_transaction_errors(errors=[], required_params=[],
         forgone_params=[]):
 

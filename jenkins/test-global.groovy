@@ -32,6 +32,7 @@ use(extensions) {
             if (jobType == 'pullrequest') {
                 repositoryPR(repoFull)
                 gitBranch = '${ghprbActualCommit}'
+                mostRecent = 'true'
             }
             else if (jobType == 'develop') {
                 repository(repoFull, jobType)
@@ -42,6 +43,7 @@ use(extensions) {
                     cron('H 10 * * *')
                 }
                 gitBranch = jobType
+                mostRecent = 'false'
             } else if (jobType == 'master') {
                 repository(repoFull, jobType)
                 triggers {
@@ -49,14 +51,18 @@ use(extensions) {
                     githubPush()
                 }
                 gitBranch = jobType
+                mostRecent = 'false'
             } else {
                 repository(repoFull, '${GIT_REPOSITORY_BRANCH}')
                 gitBranch = ''
+                mostRecent = 'true'
             }
 
             parameters {
                 stringParam('GIT_REPOSITORY_BRANCH', gitBranch,
                             'Branch in git repository to run test against.')
+                stringParam('MOST_RECENT_ONLY', mostRecent,
+                            'Run tests only on most recent version of all packages?')
                 stringParam('AGENT_FAKE_COLLECTOR', 'false',
                             'Whether fake collector is used or not.')
                 stringParam('AGENT_PROXY_HOST', '',
@@ -104,10 +110,11 @@ use(extensions) {
             parameters {
                 stringParam('GIT_REPOSITORY_BRANCH', 'develop',
                             'Branch in git repository to run test against.')
+                stringParam('MOST_RECENT_ONLY', 'false',
+                            'Run tests only on most recent version of all packages?')
             }
 
             steps {
-                shell('./jenkins/fetch_snakeyaml.sh')
                 reseedFrom('jenkins/test-integration.groovy')
             }
         }

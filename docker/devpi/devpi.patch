@@ -1,0 +1,57 @@
+diff a/server/devpi_server/main.py b/server/devpi_server/main.py
+index da88668..2e81313 100644
+--- a/server/devpi_server/main.py
++++ b/server/devpi_server/main.py
+@@ -5,7 +5,7 @@ recursive cache of pypi.python.org packages.
+ """
+ from __future__ import unicode_literals
+
+-import os, sys
++import os, sys, time, traceback
+ import py
+
+ from requests import Response
+@@ -280,18 +280,23 @@ class XOM:
+             if url.startswith("https://pypi.python.org/simple/"):
+                 url = url.replace("https://pypi", "https://front")
+                 headers["HOST"] = "pypi.python.org"
+-        try:
+-            resp = self._httpsession.get(
+-                        url, stream=True,
+-                        allow_redirects=allow_redirects,
+-                        headers=headers,
+-                        timeout=timeout)
+-            if USE_FRONT and resp.url.startswith("https://front.python.org"):
+-                resp.url = resp.url.replace("https://front.python.org",
+-                                            "https://pypi.python.org")
+-            return resp
+-        except self._httpsession.Errors:
+-            return FatalResponse(sys.exc_info())
++        # INSERT DUCT TAPE HERE
++        for retry in range(5):
++            try:
++                resp = self._httpsession.get(
++                            url, stream=True,
++                            allow_redirects=allow_redirects,
++                            headers=headers,
++                            timeout=timeout)
++                if USE_FRONT and resp.url.startswith("https://front.python.org"):
++                    resp.url = resp.url.replace("https://front.python.org",
++                                                "https://pypi.python.org")
++                return resp
++            except self._httpsession.Errors:
++                resp = FatalResponse(sys.exc_info())
++                time.sleep(0.1)
++
++        return resp
+
+     def create_app(self):
+         from devpi_server.view_auth import DevpiAuthenticationPolicy
+@@ -396,6 +401,7 @@ class FatalResponse:
+
+     def __init__(self, excinfo=None):
+         self.excinfo = excinfo
++        threadlog.error(str(traceback.format_exception(*self.excinfo)))
+
+ def get_remote_ip(request):
+     return request.headers.get("X-REAL-IP", request.client_addr)

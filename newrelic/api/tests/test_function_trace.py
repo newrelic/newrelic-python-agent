@@ -135,5 +135,24 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             _test_function_6("function+lambda")
             time.sleep(0.1)
 
+    def test_async_trace_parent_ended(self):
+        environ = {"REQUEST_URI": "/async_trace_parent_ended"}
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
+
+        with transaction:
+            with newrelic.api.function_trace.FunctionTrace(
+                    transaction, 'parent'):
+                child_trace = newrelic.api.function_trace.FunctionTrace(
+                        transaction, 'child')
+
+            with child_trace:
+                child_child_trace = newrelic.api.function_trace.FunctionTrace(
+                        transaction, 'child_child')
+
+            with child_child_trace:
+                pass
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -16,14 +16,28 @@ Jobs are grouped into three views:
 **build-and-archive-package:** On demand job. Will build the source distribution package and upload it to Artifactory.
 
 ### Python Agent Tests
-**\_INTEGRATION-TESTS\_:** Multijob run daily on cron. Will run all tests currently configured in the `jenkins/test-pipeline-config.yml` file. (See below for more details on adding new tests) The tests will all run in parallel in EC2 worker nodes.
 
-**\*__integration-test:** These tests are configured in the `jenkins/test-pipeline-config.json` file and are the subjobs to the PYTHON-AGENT-DOCKER-TESTS multijob. They will pull packnsend images from the New Relic docker repository (cf-registry.nr-ops.net) then start all containers. If a container is already running, the action is a noop. The consequence of this is if an image changes in the docker repository, the jobs will not pick up this change automatically (see the Reset Nodes job).
+#### \_INTEGRATION-TESTS-[branch]\_
+Multijob to run all tests as defined by `tox.ini` files in the `tests/` directory. The tests will all run in parallel in EC2 worker nodes.
 
-**_UNIT-TESTS-[branch]:** Run on push to master/deploy and on all pull requests. They run `./build.sh` then `./tests.sh`.
+`master` and `develop` tests run on any push to the branch whereas `manual` can be kicked off ad-hoc. `develop` tests will also be run on cron daily.
+
+**reseed-integration-tests:** The first step of this job is to parse the tox files and create the list of tests to run. If the job is related to a pull request then only the most recent package version is tested (see Test Configuration below). Tox environments are grouped so as to cut down on testing time. Because of this, depending on if the job is running only the most recent package version or not, a given tox environment could move between Jenkins jobs.
+
+**\*__integration-test:** These tests are are the subjobs to the **INTEGRATION-TESTS** multijob. They will pull packnsend images from the New Relic docker repository (cf-registry.nr-ops.net) then start all containers. If a container is already running, the action is a noop. The consequence of this is if an image changes in the docker repository, the jobs will not pick up this change automatically (see the Reset Nodes job).
+
+#### \_UNIT-TESTS-[branch]\_
+Multijob to run `./build.sh` then `./tests.sh`.
+
+`master` and `develop` tests run on any push to the branch whereas `manual` can be kicked off ad-hoc.
+
+#### \_COMBINED-TESTS-[branch]\_
+Multijob to run both the unit and integration tests on the given branch.
+
+`pullrequest` tests will be run on all pull requests whereas `manual` can be kicked off ad-hoc.
 
 ### Python Agent Tools
-**python-agent-tools-dsl-seed:** Job to run on every push to the develop branch. Will rebuild all jenkins jobs from DSL. Any files in the *jenkins* directory with extension `.groovy` will be read and sourced.
+**python_agent-dsl-seed:** Job to run on every push to the develop branch. Will rebuild all jenkins jobs from DSL. Any files in the *jenkins* directory with extension `.groovy` will be read and sourced.
 
 **python-agent-tools-Packnsend-Build-and-Push:** On demand job. Will build all packnsend docker images (as currently found in the develop branch) then push them to the [New Relic docker repository](https://source.datanerd.us/container-fabric/docs/blob/master/users-guide/docker.md) (cf-registry.nr-ops.net). Any pre-existing EC2 nodes will not start using these images until the images are restarted (see the Reset Nodes job). New EC2 nodes will automatically use these new images.
 
@@ -36,9 +50,18 @@ The nodes run Docker version 1.12 that is installed when the node is first creat
 
 ## Adding New Docker Tests
 
-Adding new `tox` style tests is now super easy because they are auto-discovered! To disable a test, add it to the `test-pipeline-config.yml` file under the `disable` heading.
+Adding new `tox` style tests is now super easy because they are auto-discovered!
 
 For those test directories that have a `docker-compose.yml` file, tests will be run inside that docker-compose environment. Otherwise, tests will be run using `packnsend run` as normal.
+
+### Test Configuration
+Available settings under the `jenkins` heading in any integration test tox.ini file.
+
+**mostrecent:** If multiple versions of a package are being tested, use this option to specify which is the most recent. Pull request tests will test only this package version.
+
+**disabled:** Set to `true` if you do not want any of the tests defined in the tox file to be run in jenkins.
+
+**max_group_size:** Jenkins will automatically split tests into multiple jobs to cut down on run time. Globally the max number of environments per group is set in the [`maxEnvsPerContainer` variable](https://source.datanerd.us/python-agent/python_agent/blob/develop/jenkins/test-integration.groovy). This option will override that value.
 
 ## Jenkins Plugins and Customizations
 We have installed the following plugins on our JaaS instance:
@@ -68,33 +91,22 @@ To "compile" locally, follow these steps then compare the resultant xml files wi
   cd more-jenkins-dsl
   ```
 
-2. Modify the `build.gradle` in your local `more-jenkins-dsl` repo, adding snakyaml as a dependency (on or around line 10)
-
-  ```
-  dependencies {
-    .
-    .
-    .
-    compile 'org.yaml:snakeyaml:1.17'
-  }
-  ```
-
-3. Build the required jar
+2. Build the required jar
 
   ```
   ./gradlew build
   ```
 
-4. From within the repo, copy all groovy files and their dependencies to the `jenkins` directory
+3. From within the repo, copy all groovy files and their dependencies to the `jenkins` directory
 
   ```
   cp ../python_agent/jenkins/* jenkins
   ```
 
-5. Now generate the xml. The `WORKSPACE` environment variable will tell the groovy scripts where to find your `tests` directory.
+4. Now generate the xml. The `WORKSPACE` environment variable will tell the groovy scripts where to find your `tests` directory.
 
   ```
   WORKSPACE=/path/to/your/python_agent ./gradlew generateJenkinsDsl
   ```
 
-6. View the new xml files in `build/dsl-workspace`
+5. View the new xml files in `build/dsl-workspace`

@@ -10,18 +10,31 @@ class TimeTrace(object):
 
     def __init__(self, transaction):
         self.transaction = transaction
+        self.parent = None
+        self.child_count = 0
         self.children = []
         self.start_time = 0.0
         self.end_time = 0.0
         self.duration = 0.0
         self.exclusive = 0.0
         self.activated = False
+        self.exited = False
+        self.exc_data = (None, None, None)
 
         # Don't do further tracing of transaction if
         # it has been explicitly stopped.
 
         if transaction and transaction.stopped:
             self.transaction = None
+            return
+
+        if transaction:
+            self.parent = self.transaction.active_node()
+
+        # parent shall track children immediately
+        if (self.parent is not None and
+                not self.parent.terminal_node()):
+            self.parent.child_count += 1
 
     def __enter__(self):
         if not self.transaction:
@@ -30,10 +43,11 @@ class TimeTrace(object):
         # Don't do any tracing if parent is designated
         # as a terminal node.
 
-        parent = self.transaction.active_node()
+        parent = self.parent
 
         if not parent or parent.terminal_node():
             self.transaction = None
+            self.parent = None
             return parent
 
         # Record start time.
@@ -63,13 +77,7 @@ class TimeTrace(object):
 
             return
 
-        # Wipe out transaction reference so can't use object
-        # again. Retain reference as local variable for use in
-        # this call though.
-
         transaction = self.transaction
-
-        self.transaction = None
 
         # If recording of time for transaction has already been
         # stopped, then that time has to be used.
@@ -97,17 +105,65 @@ class TimeTrace(object):
         if self.exclusive < 0:
             self.exclusive = 0
 
-        # Pop ourselves as current node. The return value is our
-        # parent.
+        self.exited = True
 
-        parent = transaction._pop_current(self)
+        self.exc_data = (exc, value, tb)
+
+        # in all cases except async, the children will have exited
+        # so this will create the node
+
+        # ----------------------------------------------------------------------
+        # SYNC  | The node will be created here. All children will have exited.
+        # ----------------------------------------------------------------------
+        # Async | The node might be created here (if there are no children).
+        #       | Otherwise, this will exit siliently without creating the
+        #       | node.
+        #       | All references to transaction, parent, exc_data are
+        #       | maintained.
+        # ----------------------------------------------------------------------
+        self.complete_trace()
+
+    def complete_trace(self):
+        # we shouldn't continue if we're still running
+        if not self.exited:
+            return
+
+        # defer node completion until all children have exited
+        if len(self.children) != self.child_count:
+            return
+
+        # transaction already completed, this is an error
+        if self.transaction is None:
+            _logger.error('Runtime instrumentation error. The transaction '
+                    'already completed meaning a child called complete trace '
+                    'after the trace had been finalized. Trace: %r \n%s',
+                    self, ''.join(traceback.format_stack()[:-1]))
+
+        # Wipe out transaction reference so can't use object
+        # again. Retain reference as local variable for use in
+        # this call though.
+
+        transaction = self.transaction
+        self.transaction = None
+
+        # Pop ourselves as current node.
+
+        transaction._pop_current(self)
+
+        # wipe out parent too
+        parent = self.parent
+        self.parent = None
+
+        # wipe out exc data
+        exc_data = self.exc_data
+        self.exc_data = (None, None, None)
 
         # Give chance for derived class to finalize any data in
         # this object instance. The transaction is passed as a
         # parameter since the transaction object on this instance
         # will have been cleared above.
 
-        self.finalize_data(transaction, exc, value, tb)
+        self.finalize_data(transaction, *exc_data)
 
         # Give chance for derived class to create a standin node
         # object to be used in the transaction trace. If we get
@@ -119,6 +175,16 @@ class TimeTrace(object):
         if node:
             transaction._process_node(node)
             parent.process_child(node)
+
+        # ----------------------------------------------------------------------
+        # SYNC  | The parent will not have exited yet, so no node will be
+        #       | created. This operation is a NOP.
+        # ----------------------------------------------------------------------
+        # Async | The parent may have exited already while the child was
+        #       | running. If this trace is the last node that's running, this
+        #       | complete_trace will create the parent node.
+        # ----------------------------------------------------------------------
+        parent.complete_trace()
 
     def finalize_data(self, transaction, exc=None, value=None, tb=None):
         pass

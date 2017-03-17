@@ -73,7 +73,7 @@ class Transaction(object):
 
         self._frozen_path = None
 
-        self._node_stack = []
+        self.current_node = None
 
         self._request_uri = None
         self._port = None
@@ -263,7 +263,7 @@ class Transaction(object):
         # dummy time trace object and when done we will
         # just grab what we need from that.
 
-        self._node_stack.append(Sentinel())
+        self.current_node = Sentinel()
 
         return self
 
@@ -279,11 +279,10 @@ class Transaction(object):
         # instrumentation error and return with hope that
         # will recover later.
 
-        if not len(self._node_stack) == 1:
-            _logger.error('Runtime instrumentation error. Exiting the '
-                    'transaction but the node stack is not empty. '
-                    'Node stack is %r. Report this issue to New Relic '
-                    'support.\n%s', self._node_stack, ''.join(
+        if not isinstance(self.current_node, Sentinel):
+            _logger.error('Transaction ended but current_node is not Sentinel.'
+                    ' Current node is %r. Report this issue to New Relic '
+                    'support.\n%s', self.current_node, ''.join(
                     traceback.format_stack()[:-1]))
 
             return
@@ -372,7 +371,7 @@ class Transaction(object):
         # as negative number. Add our own duration to get
         # our own exclusive time.
 
-        root = self._node_stack.pop()
+        root = self.current_node
         children = root.children
 
         exclusive = duration + root.exclusive
@@ -1147,31 +1146,17 @@ class Transaction(object):
         return self.record_custom_metric(name, value)
 
     def active_node(self):
-        if self._node_stack:
-            return self._node_stack[-1]
+        return self.current_node
 
     def _intern_string(self, value):
         return self._string_cache.setdefault(value, value)
 
     def _push_current(self, node):
-        self._node_stack.append(node)
+        self.current_node = node
 
     def _pop_current(self, node):
-        last = self._node_stack.pop()
-
-        try:
-            assert last == node
-
-        except Exception:
-            _logger.error('Runtime instrumentation error. Object on '
-                    'transaction node stack when removing last value is '
-                    'not the expected one, found %r, expected %r. Report '
-                    'this issue to New Relic support.\n%s', last, node,
-                    ''.join(traceback.format_stack()[:-1]))
-
-            raise
-
-        parent = self._node_stack[-1]
+        parent = node.parent
+        self.current_node = parent
 
         return parent
 
@@ -1290,10 +1275,9 @@ class Transaction(object):
                 self.autorum_disabled)
         print >> file, 'Supress Apdex: %s' % (
                 self.suppress_apdex)
+        print >> file, 'Current Node: %s' % (
+                self.current_node)
 
-        print >> file, 'Node Stack:'
-        for node in self._node_stack[1:]:
-            print >> file, node
 
 def current_transaction(active_only=True):
     current = transaction_cache().current_transaction()

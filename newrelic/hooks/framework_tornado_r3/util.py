@@ -98,19 +98,20 @@ def possibly_finalize_transaction(transaction, exc=None, value=None, tb=None):
                 'support.\n%s', ''.join(traceback.format_stack()[:-1]))
         return
 
+    if (transaction._request_handler_finalize and
+            transaction._server_adapter_finalize and
+            transaction._ref_count == 0 and
+            len(transaction._node_stack) <= 1):
+        _finalize_transaction(transaction, exc, value, tb)
+
+
+def _finalize_transaction(transaction, exc=None, value=None, tb=None):
     if transaction._is_finalized:
         _logger.error('Runtime instrumentation error. Attempting to finalize '
                 'a transaction which has already been finalized. Please report '
                 'this issue to New Relic support.\n%s',
                 ''.join(traceback.format_stack()[:-1]))
         return
-
-    if (transaction._request_handler_finalize and
-            transaction._server_adapter_finalize and
-            transaction._ref_count == 0):
-        _finalize_transaction(transaction, exc, value, tb)
-
-def _finalize_transaction(transaction, exc=None, value=None, tb=None):
     old_transaction = replace_current_transaction(transaction)
 
     try:
@@ -229,7 +230,7 @@ def create_transaction_aware_fxn(fxn, fxn_for_name=None, should_trace=True):
         # If decrementing the ref count in Runner.run() takes it to 0, then
         # we need to end the transaction here.
 
-        if inner_transaction and inner_transaction._ref_count == 0:
+        if inner_transaction:
             possibly_finalize_transaction(inner_transaction)
 
         return ret

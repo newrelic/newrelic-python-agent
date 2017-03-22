@@ -84,6 +84,19 @@ class NamedStackContextWrapRequestHandler(RequestHandler):
     def finish_callback(self):
         self.finish(self.RESPONSE)
 
+class DelayedWrappedCallbackHandler(tornado.web.RequestHandler):
+    RESPONSE = b'another callback'
+
+    @tornado.web.asynchronous
+    def get(self):
+        cb = tornado.stack_context.wrap(self.finish_callback)
+        tornado.ioloop.IOLoop.current().call_later(1, cb)
+
+    @function_trace()
+    def finish_callback(self):
+        self.write(self.RESPONSE)
+        self.finish()
+
 class MultipleCallbacksRequestHandler(RequestHandler):
     RESPONSE = b'multiple callbacks'
     _MAX_COUNTER = 2
@@ -1189,6 +1202,7 @@ def get_tornado_app():
         ('/sleep', SleepRequestHandler),
         ('/one-callback', OneCallbackRequestHandler),
         ('/named-wrap-callback', NamedStackContextWrapRequestHandler),
+        ('/delayed-callback', DelayedWrappedCallbackHandler),
         ('/multiple-callbacks', MultipleCallbacksRequestHandler),
         ('/sync-exception', SyncExceptionRequestHandler),
         ('/callback-exception', CallbackExceptionRequestHandler),

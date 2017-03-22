@@ -154,12 +154,9 @@ page. Increment the build number by one from the previous release. Most likely,
 that will be the build number for the release version. If it isn't, it will
 need to be changed during the release process.
 
-3.  Draft the New & Noteworthy update for Foglights for each Foglights project that
-is being released. This should be a short summary of what the feature is, focusing
-on how it benefits our customers, and written in a way that will make sense to both
-Engineering and Sales/Marketing.
-
-    An image (usually a screenshot) **MUST** be included in each New & Noteworthy.
+3.  Draft the New & Noteworthy blog post for Jive. This should be a short summary
+of what the feature is, focusing on how it benefits our customers, and written
+in a way that will make sense to both Engineering and Sales/Marketing.
 
 4.  Draft the Support notes for the release. This is where we describe key things that
 Support will need to know about the release, but aren't necessarily in the public
@@ -193,11 +190,11 @@ run and ensure package builds.
 
     This test can also be run in docker, with `packnsend`:
 
-        packnsend run /data/tests.sh
+        docker/packnsend run tests.sh
 
 5. Perform any other final adhoc local tests deemed necessary for the release.
 
-6. Create a release branch
+6. Create a release branch with `git checkout -b release/vA.B.C`
 
 7. Commit change made to ``newrelic/__init__.py`` into the release
 branch you just created. Format the commit message like this:
@@ -233,22 +230,14 @@ when trying to compare branches.
         git push origin develop
         git push origin master
 
-    This action will also trigger the Jenkins
-    [`oldstyle-tests-develop`][test-develop] and
-    [`oldstyle-tests-master`][test-master] jobs. If the automatic trigger does
-    not work, then run the tests manually in [Jenkins][Jenkins].
+13. Pushing these branches will trigger the following Jenkins jobs. Check that
+they are triggered and complete successfully. If the automatic trigger does not
+work, then run the tests manually.
 
-[Jenkins]: https://python-agent-build.pdx.vm.datanerd.us
-
-    In addition, run the [`_PYTHON-AGENT-DOCKER-TESTS_`][docker-tests] tests
-    manually for the `master` branch. Click `Build with parameters` and set the
-    branch to `master`.
-
-13. Check that the [`oldstyle-tests-develop`][test-develop] and [`oldstyle-tests-master`][test-master] jobs in Jenkins run and all tests pass okay.
-
-[test-develop]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/oldstyle-tests-develop/
-[test-master]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/oldstyle-tests-master/
-[docker-tests]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_PYTHON-AGENT-DOCKER-TESTS_/
+    1. [`_INTEGRATION-TESTS-develop_`](https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_INTEGRATION-TESTS-develop_/)
+    2. [`_UNIT-TESTS-develop_`](https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_UNIT-TESTS-develop_/)
+    3. [`_INTEGRATION-TESTS-master_`](https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_INTEGRATION-TESTS-master_/)
+    4. [`_UNIT-TESTS-master_`](https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_UNIT-TESTS-master_/)
 
 14. Tag the release in the ``master`` branch on the GIT repo with tag of
 the form ``vA.B.C`` and ``vA.B.C.D``, where ``D`` is now the build number. Push
@@ -340,10 +329,11 @@ drafted in the pre-release steps.
 
 26. Notify Python Agent Slack channel that release is out!
 
-27. Add New & Noteworthy entries (multiple) via Fog Lights for the key
-feature(s) or improvement(s) in the release.
+27. Publish the New & Noteworthy blog post on Jive for the key feature(s) or
+improvement(s) in the release.
 
-28. Create a branch off ``develop`` to increment the version number for development.
+28. Create a branch off ``develop`` to increment the version number for
+development by running `git checkout -b increment-development-version-A.B.C`
 
 29. Update the version number in``newrelic/__init__.py`` to be that of next development release number.
 
@@ -360,6 +350,14 @@ odd/even numbering scheme, ``B`` should always be odd after this change.
 
 32. Make sure that all JIRA stories associated with the release version have
 been updated as having been released.
+
+33. Submit a pull request to [docker-state](https://source.datanerd.us/container-fabric/docker-state/blob/master/requirements.txt)
+to upgrade the agent version. Be sure it gets merged and deployed to
+production. This way we can immediately have a production app running this most
+recent agent version.
+
+34. Upgrade the agent version on [Sidekick Bot](https://source.datanerd.us/python-agent/sidekick-bot/blob/master/requirements.txt)
+and [redeploy it to production](https://source.datanerd.us/python-agent/sidekick-bot#deploying-to-grandcentral).
 
 Performing a Hotfix Release
 ---------------------------

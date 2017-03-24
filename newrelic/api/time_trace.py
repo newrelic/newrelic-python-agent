@@ -20,6 +20,9 @@ class TimeTrace(object):
         self.exclusive = 0.0
         self.activated = False
         self.exited = False
+        self.async = False
+        self.has_async_children = False
+        self.min_child_start_time = float('inf')
         self.exc_data = (None, None, None)
 
         # Don't do further tracing of transaction if
@@ -35,7 +38,7 @@ class TimeTrace(object):
         # parent shall track children immediately
         if (self.parent is not None and
                 not self.parent.terminal_node()):
-            self.parent.child_count += 1
+            self.parent.increment_child_count()
 
     def __enter__(self):
         if not self.transaction:
@@ -159,6 +162,10 @@ class TimeTrace(object):
         exc_data = self.exc_data
         self.exc_data = (None, None, None)
 
+        # Check to see if we're async
+        if parent.exited or parent.has_async_children:
+            self.async = True
+
         # Give chance for derived class to finalize any data in
         # this object instance. The transaction is passed as a
         # parameter since the transaction object on this instance
@@ -201,4 +208,42 @@ class TimeTrace(object):
 
     def process_child(self, node):
         self.children.append(node)
-        self.exclusive -= node.duration
+        if node.async:
+
+            # record the lowest start time
+            self.min_child_start_time = min(self.min_child_start_time,
+                    node.start_time)
+
+            # if there are no children running, finalize exclusive time
+            if self.child_count == len(self.children):
+
+                # if we've exited, the max end time is
+                # the parent end time
+                if self.exited:
+                    end_time = self.end_time
+                else:
+                    end_time = node.end_time
+
+                # this can be false if the child started after
+                # the parent exited
+                if end_time > self.min_child_start_time:
+                    self.exclusive -= (end_time -
+                            self.min_child_start_time)
+
+                # reset time range tracking
+                self.min_child_start_time = float('inf')
+        else:
+            self.exclusive -= node.duration
+
+    def increment_child_count(self):
+        self.child_count += 1
+
+        # if there's more than 1 child node outstanding
+        # then the children are async w.r.t each other
+        if (self.child_count - len(self.children)) > 1:
+            self.has_async_children = True
+        # else, the current trace that's being scheduled is not going to be
+        # async. note that this implies that all previous traces have
+        # completed
+        else:
+            self.has_async_children = False

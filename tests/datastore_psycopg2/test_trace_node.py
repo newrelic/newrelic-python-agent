@@ -1,7 +1,7 @@
 import psycopg2
 
 from testing_support.fixtures import (validate_tt_collector_json,
-    override_application_settings)
+    override_application_settings, validate_tt_parenting)
 from testing_support.util import instance_hostname
 from utils import DB_SETTINGS
 
@@ -35,6 +35,13 @@ _disabled_forgone = {
     'database_name': 'VALUE NOT USED',
 }
 
+_tt_parenting = (
+    'TransactionNode', [
+        ('FunctionNode', []),
+        ('DatabaseNode', []),
+    ],
+)
+
 # Query
 
 def _exercise_db():
@@ -56,6 +63,7 @@ def _exercise_db():
 @validate_tt_collector_json(
         datastore_params=_enabled_required,
         datastore_forgone_params=_enabled_forgone)
+@validate_tt_parenting(_tt_parenting)
 @background_task()
 def test_trace_node_datastore_params_enable_instance():
     _exercise_db()
@@ -65,6 +73,7 @@ def test_trace_node_datastore_params_enable_instance():
 @validate_tt_collector_json(
         datastore_params=_disabled_required,
         datastore_forgone_params=_disabled_forgone)
+@validate_tt_parenting(_tt_parenting)
 @background_task()
 def test_trace_node_datastore_params_disable_instance():
     _exercise_db()

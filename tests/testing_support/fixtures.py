@@ -916,10 +916,11 @@ def validate_tt_collector_json(required_params={},
             assert isinstance(trace_segment[3], dict) # request params
             assert isinstance(trace_segment[4], list) # children
 
-            def _check_datastore_instance_params(node):
+            def _check_datastore_instance_params_and_start_time(node):
                 children = node[4]
                 for child in children:
-                    _check_datastore_instance_params(child)
+                    assert child[0] >= node[0]  # child started after parent
+                    _check_datastore_instance_params_and_start_time(child)
 
                 segment_name = _lookup_string_table(node[2], string_table,
                         default=node[2])
@@ -935,7 +936,7 @@ def validate_tt_collector_json(required_params={},
                     if 'host' in params:
                         assert params['host'] not in LOCALHOST_EQUIVALENTS
 
-            _check_datastore_instance_params(root_node)
+            _check_datastore_instance_params_and_start_time(root_node)
 
             attributes = trace_details[4]
 
@@ -1968,6 +1969,55 @@ def validate_custom_event_count(count):
 
         return result
     return _validate_custom_event_count
+
+def _validate_node_parenting(node, expected_node):
+    expected_children = expected_node[1]
+
+    def len_error():
+        return ('len(node.children)=%s, len(expected_children)=%s, '
+                'node.children=%s') % (
+                len(node.children), len(expected_children), node.children)
+
+    assert len(node.children) == len(expected_children), len_error()
+
+    for index, child in enumerate(node.children):
+        assert child.start_time > node.start_time
+        _validate_node_parenting(child, expected_children[index])
+
+def validate_tt_parenting(expected_parenting):
+    """
+    Validate the parenting and start_time of each node in a transaction trace
+
+    expected_parenting is a tuple. The second item is a list of child nodes.
+    The first item is not used in validation and exists as a tool for the
+    developer to differentiate the node tuples.
+
+        expected_parenting_example = (
+            'TransactionNode', [
+                ('FunctionNode', [
+                    ('FunctionNode', [
+                        ('FunctionNode', []),
+                        ('FunctionNode', []),
+                    ]),
+            ]),
+        ])
+    """
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_tt_parenting(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        finally:
+            def _bind_params(transaction, *args, **kwargs):
+                return transaction
+            transaction = _bind_params(*args, **kwargs)
+            _validate_node_parenting(transaction, expected_parenting)
+
+        return result
+
+    return _validate_tt_parenting
 
 def override_application_name(app_name):
     # The argument here cannot be named 'name', or else it triggers

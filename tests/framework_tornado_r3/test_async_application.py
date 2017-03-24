@@ -39,7 +39,7 @@ from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
     tornado_validate_time_transaction_metrics,
     tornado_validate_errors, tornado_validate_transaction_cache_empty,
-    tornado_run_validator)
+    tornado_run_validator, tornado_validate_tt_parenting)
 
 from remove_utilization_tester import remove_utilization_tester
 
@@ -48,15 +48,43 @@ def select_python_version(py2, py3):
 
 class AllTests(object):
 
+    _test_simple_response_parenting = (
+        'TransactionNode', [
+            ('FunctionNode', [
+                ('FunctionNode', []),
+                ('FunctionNode', []),
+                ('FunctionNode', []),
+                ('FunctionNode', []),
+            ]),
+        ]
+    )
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:HelloRequestHandler.get',
             forgone_metric_substrings=['prepare', 'on_finish'])
+    @tornado_validate_tt_parenting(_test_simple_response_parenting)
     def test_simple_response(self):
         response = self.fetch_response('/')
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, HelloRequestHandler.RESPONSE)
+
+    _test_sleep_response_parenting = (
+        'TransactionNode', [
+            ('FunctionNode', [
+                ('FunctionNode', []),
+            ]),
+            ('FunctionNode', []),
+            ('FunctionNode', [
+                ('FunctionNode', []),
+                ('FunctionNode', []),
+                ('FunctionNode', []),
+                ('FunctionNode', []),
+            ]),
+            ('FunctionNode', []),
+        ]
+    )
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
@@ -64,9 +92,11 @@ class AllTests(object):
             '_test_async_application:SleepRequestHandler.get')
     @tornado_validate_time_transaction_metrics(
             '_test_with_unittest:SleepRequestHandler.get',
-            custom_metrics = [(
-                    'WebTransaction/Function/_test_async_application:SleepRequestHandler.get',
-                    (2.0, 2.3))])
+            custom_metrics=[(
+                ('WebTransaction/Function/_test_async_application:'
+                'SleepRequestHandler.get'),
+                (2.0, 2.3))])
+    @tornado_validate_tt_parenting(_test_sleep_response_parenting)
     def test_sleep_response(self):
         response = self.fetch_response('/sleep')
         self.assertEqual(response.code, 200)
@@ -79,9 +109,11 @@ class AllTests(object):
             transaction_count=2)
     @tornado_validate_time_transaction_metrics(
             '_test_with_unittest:SleepRequestHandler.get',
-            custom_metrics = [(
-                    'WebTransaction/Function/_test_async_application:SleepRequestHandler.get',
-                    (2.0, 2.3))])
+            custom_metrics=[(
+                ('WebTransaction/Function/_test_async_application:'
+                'SleepRequestHandler.get'),
+                (2.0, 2.3))])
+    @tornado_validate_tt_parenting(_test_sleep_response_parenting)
     def test_sleep_two_clients(self):
         start_time = time.time()
         responses = self.fetch_responses(['/sleep', '/sleep'])
@@ -101,11 +133,25 @@ class AllTests(object):
             ('Function/_test_async_application:'
             'OneCallbackRequestHandler.finish_callback', 1)]
 
+    _test_one_callback_parenting = (
+        'TransactionNode', [
+            ('FunctionNode', [
+                ('FunctionNode', []),
+            ]),
+            ('FunctionNode', [
+                ('FunctionNode', []),
+                ('FunctionNode', []),
+                ('FunctionNode', []),
+            ]),
+        ]
+    )
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:OneCallbackRequestHandler.get',
             scoped_metrics=scoped_metrics)
+    @tornado_validate_tt_parenting(_test_one_callback_parenting)
     def test_one_callback(self):
         response = self.fetch_response('/one-callback')
         self.assertEqual(response.code, 200)

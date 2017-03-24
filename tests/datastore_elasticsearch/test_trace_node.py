@@ -1,7 +1,7 @@
 from elasticsearch import Elasticsearch
 
 from testing_support.fixtures import (validate_tt_collector_json,
-    override_application_settings)
+    override_application_settings, validate_tt_parenting)
 from testing_support.settings import elasticsearch_multiple_settings
 from testing_support.util import instance_hostname
 
@@ -50,6 +50,12 @@ _instance_only_forgone = {
     'database_name': 'VALUE NOT USED',
 }
 
+_tt_parenting = (
+    'TransactionNode', [
+        ('DatastoreNode', []),
+    ],
+)
+
 # Query
 
 def _exercise_es(es):
@@ -62,6 +68,7 @@ def _exercise_es(es):
 @validate_tt_collector_json(
         datastore_params=_enabled_required,
         datastore_forgone_params=_enabled_forgone)
+@validate_tt_parenting(_tt_parenting)
 @background_task()
 def test_trace_node_datastore_params_enable_instance():
     client = Elasticsearch(ES_URL)
@@ -71,6 +78,7 @@ def test_trace_node_datastore_params_enable_instance():
 @validate_tt_collector_json(
         datastore_params=_disabled_required,
         datastore_forgone_params=_disabled_forgone)
+@validate_tt_parenting(_tt_parenting)
 @background_task()
 def test_trace_node_datastore_params_disable_instance():
     client = Elasticsearch(ES_URL)
@@ -80,6 +88,7 @@ def test_trace_node_datastore_params_disable_instance():
 @validate_tt_collector_json(
         datastore_params=_instance_only_required,
         datastore_forgone_params=_instance_only_forgone)
+@validate_tt_parenting(_tt_parenting)
 @background_task()
 def test_trace_node_datastore_params_instance_only():
     client = Elasticsearch(ES_URL)

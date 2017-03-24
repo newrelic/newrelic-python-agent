@@ -1,13 +1,15 @@
 import pytest
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors, override_application_settings)
+    validate_transaction_errors, override_application_settings,
+    validate_tt_parenting)
 
 from newrelic.packages import six
 
 try:
     # The __version__ attribute was only added in 0.7.0.
     from flask import __version__ as flask_version
+    flask_version = tuple([int(v) for v in flask_version.split('.')])
     is_gt_flask060 = True
 except ImportError:
     is_gt_flask060 = False
@@ -36,9 +38,38 @@ _test_application_index_scoped_metrics = [
         ('Function/_test_application:index_page', 1),
         ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
 
+_test_application_index_tt_parenting = (
+    'TransactionNode', [
+        ('FunctionNode', [
+            ('FunctionNode', [
+                ('FunctionNode', []),
+                ('FunctionNode', []),
+                ('FunctionNode', []),
+                # some flask versions have more FunctionNodes here, as appended
+                # below
+            ]),
+        ]),
+        ('FunctionNode', []),
+        ('FunctionNode', [
+            ('FunctionNode', []),
+        ]),
+    ]
+)
+
+if is_gt_flask060 and flask_version >= (0, 7):
+    _test_application_index_tt_parenting[1][0][1][0][1].append(
+        ('FunctionNode', []),
+    )
+if is_gt_flask060 and flask_version >= (0, 9):
+    _test_application_index_tt_parenting[1][0][1][0][1].append(
+        ('FunctionNode', []),
+    )
+
+
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_application:index_page',
         scoped_metrics=_test_application_index_scoped_metrics)
+@validate_tt_parenting(_test_application_index_tt_parenting)
 def test_application_index():
     application = target_application()
     response = application.get('/index')

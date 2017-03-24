@@ -5,6 +5,8 @@ import logging
 from newrelic.agent import (callable_name, function_wrapper,
         wrap_function_wrapper)
 
+from testing_support.fixtures import _validate_node_parenting
+
 _logger = logging.getLogger('newrelic.tests.tornado')
 
 # The following fixtures and validation functions are used in the Tornado 4
@@ -384,3 +386,35 @@ def tornado_validate_transaction_cache_empty():
         assert None == transaction
 
     return validate_cache_empty
+
+def tornado_validate_tt_parenting(expected_parenting):
+    """
+    Validate the parenting and start_time of each node in a transaction trace
+
+    expected_parenting is a tuple. The second item is a list of child nodes.
+    The first item is not used in validation and exists as a tool for the
+    developer to differentiate the node tuples.
+
+        expected_parenting_example = (
+            'TransactionNode', [
+                ('FunctionNode', [
+                    ('FunctionNode', [
+                        ('FunctionNode', []),
+                        ('FunctionNode', []),
+                    ]),
+            ]),
+        ])
+    """
+    @function_wrapper
+    def _validate_tt_parenting(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        finally:
+            transaction, _, _ = _RECORDED_TRANSACTIONS[0]
+            _validate_node_parenting(transaction, expected_parenting)
+
+        return result
+
+    return _validate_tt_parenting

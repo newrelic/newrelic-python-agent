@@ -4,7 +4,7 @@ import requests
 import requests.exceptions
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors)
+    validate_transaction_errors, validate_tt_parenting)
 from testing_support.external_fixtures import (cache_outgoing_headers,
     validate_cross_process_headers, insert_incoming_headers,
     validate_external_node_params)
@@ -24,6 +24,13 @@ _test_requests_http_request_rollup_metrics = [
         ('External/www.example.com/all', 1),
         ('External/www.example.com/requests/', 1)]
 
+_test_requests_http_request_get_parenting = (
+    'TransactionNode', [
+        ('ExternalNode', []),
+    ]
+)
+
+@validate_tt_parenting(_test_requests_http_request_get_parenting)
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
         'test_requests:test_http_request_get',

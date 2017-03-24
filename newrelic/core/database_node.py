@@ -34,7 +34,8 @@ _DatabaseNode = namedtuple('_DatabaseNode',
         ['dbapi2_module', 'sql', 'children', 'start_time', 'end_time',
         'duration', 'exclusive', 'stack_trace', 'sql_format',
         'connect_params', 'cursor_params', 'sql_parameters',
-        'execute_params', 'host', 'port_path_or_id', 'database_name'])
+        'execute_params', 'host', 'port_path_or_id', 'database_name',
+        'async'])
 
 
 class DatabaseNode(_DatabaseNode):

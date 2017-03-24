@@ -35,7 +35,8 @@ _db_node = newrelic.core.database_node.DatabaseNode(
         execute_params=None,
         host='localhost',
         port_path_or_id='1234',
-        database_name='bar')
+        database_name='bar',
+        async=True)
 
 
 def test_product_property():

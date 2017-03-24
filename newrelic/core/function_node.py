@@ -8,7 +8,8 @@ from ..packages import six
 
 _FunctionNode = namedtuple('_FunctionNode',
         ['group', 'name', 'children', 'start_time', 'end_time',
-        'duration', 'exclusive', 'label', 'params', 'rollup'])
+        'duration', 'exclusive', 'label', 'params', 'rollup',
+        'async'])
 
 
 class FunctionNode(_FunctionNode):

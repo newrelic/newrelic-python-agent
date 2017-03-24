@@ -56,11 +56,13 @@ _tt_parenting = (
     ],
 )
 
+
 # Query
 
 def _exercise_es(es):
     es.index('contacts', 'person',
             {'name': 'Joe Tester', 'age': 25, 'title': 'QA Master'}, id=1)
+
 
 # Tests
 
@@ -74,6 +76,7 @@ def test_trace_node_datastore_params_enable_instance():
     client = Elasticsearch(ES_URL)
     _exercise_es(client)
 
+
 @override_application_settings(_disable_instance_settings)
 @validate_tt_collector_json(
         datastore_params=_disabled_required,
@@ -83,6 +86,7 @@ def test_trace_node_datastore_params_enable_instance():
 def test_trace_node_datastore_params_disable_instance():
     client = Elasticsearch(ES_URL)
     _exercise_es(client)
+
 
 @override_application_settings(_instance_only_settings)
 @validate_tt_collector_json(

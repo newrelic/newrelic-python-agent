@@ -42,6 +42,7 @@ _tt_parenting = (
     ],
 )
 
+
 # Query
 
 def _exercise_db():
@@ -56,6 +57,7 @@ def _exercise_db():
                 ('server_version',))
     finally:
         connection.close()
+
 
 # Tests
 

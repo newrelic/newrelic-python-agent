@@ -1,4 +1,3 @@
-import sys
 import pytest
 import requests
 import requests.exceptions
@@ -12,8 +11,10 @@ from testing_support.mock_external_http_server import MockExternalHTTPServer
 
 from newrelic.agent import background_task
 
+
 def get_requests_version():
     return tuple(map(int, requests.__version__.split('.')[:2]))
+
 
 _test_requests_http_request_scoped_metrics = [
         ('External/www.example.com/requests/', 1)]
@@ -30,6 +31,7 @@ _test_requests_http_request_get_parenting = (
     ]
 )
 
+
 @validate_tt_parenting(_test_requests_http_request_get_parenting)
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
@@ -40,6 +42,7 @@ _test_requests_http_request_get_parenting = (
 @background_task()
 def test_http_request_get():
     requests.get('http://www.example.com/')
+
 
 @pytest.mark.skipif(get_requests_version() < (0, 8),
         reason="Can't set verify=False for requests.get() in v0.7")
@@ -53,6 +56,7 @@ def test_http_request_get():
 def test_https_request_get():
     requests.get('https://www.example.com/', verify=False)
 
+
 _test_requests_http_request_with_port_scoped_metrics = [
         ('External/localhost:8989/requests/', 1)]
 
@@ -61,6 +65,7 @@ _test_requests_http_request_with_port_rollup_metrics = [
         ('External/allOther', 1),
         ('External/localhost:8989/all', 1),
         ('External/localhost:8989/requests/', 1)]
+
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
@@ -77,6 +82,7 @@ def test_http_request_with_port():
 
     external.stop()
 
+
 @pytest.mark.skipif(get_requests_version() < (1, 0),
         reason="Session.send() doesn't exist for requests < v1.0.")
 @validate_transaction_errors(errors=[])
@@ -87,11 +93,11 @@ def test_http_request_with_port():
         background_task=True)
 @background_task()
 def test_http_session_send():
-    adapter = requests.adapters.HTTPAdapter()
     session = requests.Session()
     req = requests.Request('GET', 'http://www.example.com/')
     prep_req = req.prepare()
     session.send(prep_req)
+
 
 _test_requests_none_url_scoped_metrics = [
         ('External/unknown/requests/', 1)]
@@ -101,6 +107,7 @@ _test_requests_none_url_rollup_metrics = [
         ('External/allOther', 1),
         ('External/unknown/all', 1),
         ('External/unknown/requests/', 1)]
+
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
@@ -119,6 +126,7 @@ def test_none_url_get():
         # Python 3.
         pass
 
+
 _test_requests_wrong_datatype_url_scoped_metrics = [
         ('External/unknown.url/requests/', 1)]
 
@@ -127,6 +135,7 @@ _test_requests_wrong_datatype_url_rollup_metrics = [
         ('External/allOther', 1),
         ('External/unknown.url/all', 1),
         ('External/unknown.url/requests/', 1)]
+
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
@@ -141,12 +150,14 @@ def test_wrong_datatype_url_get():
     except Exception:
         pass
 
+
 @validate_transaction_errors(errors=[])
 @background_task()
 @cache_outgoing_headers
 @validate_cross_process_headers
 def test_requests_cross_process_request():
     requests.get('http://www.example.com/')
+
 
 _test_requests_cross_process_response_scoped_metrics = [
         ('ExternalTransaction/www.example.com/1#2/test', 1)]
@@ -162,6 +173,7 @@ _test_requests_cross_process_response_external_node_params = [
         ('cross_process_id', '1#2'),
         ('external_txn_name', 'test'),
         ('transaction_guid', '0123456789012345')]
+
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(

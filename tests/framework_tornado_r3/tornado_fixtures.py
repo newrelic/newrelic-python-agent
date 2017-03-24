@@ -31,6 +31,7 @@ _logger = logging.getLogger('newrelic.tests.tornado')
 _RECORDED_TRANSACTIONS = []
 _NUM_FINIALIZED_TRANSACTIONS = 0
 
+
 @pytest.fixture(scope='function')
 def clear_record_transaction_list():
     global _RECORDED_TRANSACTIONS
@@ -41,6 +42,7 @@ def clear_record_transaction_list():
     # could lead to problems if one tries to export it.
     _RECORDED_TRANSACTIONS = []
     _NUM_FINIALIZED_TRANSACTIONS = 0
+
 
 @pytest.fixture(scope='session')
 def wrap_record_transaction_fixture(request):
@@ -65,6 +67,7 @@ def wrap_record_transaction_fixture(request):
     wrap_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction', _nr_wrapper_record_transaction)
 
+
 @pytest.fixture(scope='session')
 def wrap_transaction_exit_fixture(request):
 
@@ -77,15 +80,18 @@ def wrap_transaction_exit_fixture(request):
     wrap_function_wrapper('newrelic.api.transaction',
             'Transaction.__exit__', _nr_wrapper_Transaction__exit__)
 
+
 # _RECORDED_APP_EXCEPTIONS is used to store exceptions occurring outside of
 # a transaction. Otherwise, the strategy for recording them is the same as
 # _RECORDED_TRANSACTIONS.
 _RECORDED_APP_EXCEPTIONS = []
 
+
 @pytest.fixture(scope='function')
 def clear_record_app_exception_list():
     global _RECORDED_APP_EXCEPTIONS
     _RECORDED_APP_EXCEPTIONS = []
+
 
 @pytest.fixture(scope='session')
 def wrap_record_app_exception_fixture(request):
@@ -109,13 +115,16 @@ def wrap_record_app_exception_fixture(request):
     wrap_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_exception', _nr_wrapper_record_exception)
 
+
 # _RECORDED_UNSCOPED_METRIC_COUNTS is used to store unscoped metric counts.
 _RECORDED_UNSCOPED_METRIC_COUNTS = {}
+
 
 @pytest.fixture(scope='function')
 def clear_record_unscoped_metrics():
     global _RECORDED_UNSCOPED_METRIC_COUNTS
     _RECORDED_UNSCOPED_METRIC_COUNTS = {}
+
 
 @pytest.fixture(scope='session')
 def wrap_record_unscoped_time_metrics():
@@ -133,6 +142,7 @@ def wrap_record_unscoped_time_metrics():
 
     wrap_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_time_metric', _nr_wrapper_record_time_metric)
+
 
 def tornado_validate_unscoped_metrics(unscoped_metrics):
     """Decorate to validate unscoped count metrics.
@@ -156,6 +166,7 @@ def tornado_validate_unscoped_metrics(unscoped_metrics):
                     (name, count, _RECORDED_UNSCOPED_METRIC_COUNTS,))
 
     return _validate
+
 
 def tornado_validate_count_transaction_metrics(name, group='Function',
         background_task=False, scoped_metrics=[], rollup_metrics=[],
@@ -195,7 +206,8 @@ def tornado_validate_count_transaction_metrics(name, group='Function',
 
     def _validate_forgone_metric_substrings(metrics, forgone_substrings):
         def _substring_found(substring, metric):
-            return ('Found substring "%s" in metric "%s"' % (substring, metric))
+            return ('Found substring "%s" in metric "%s"' % (substring,
+                metric))
 
         for foregone_substring in forgone_substrings:
             for key in metrics.keys():
@@ -218,7 +230,7 @@ def tornado_validate_count_transaction_metrics(name, group='Function',
                 transaction_count), ('Expected # of transactions=%d; '
                 '# of recorded transactions=%d; # of times finalize called=%d'
                 % (transaction_count, len(_RECORDED_TRANSACTIONS),
-                 _NUM_FINIALIZED_TRANSACTIONS ))
+                 _NUM_FINIALIZED_TRANSACTIONS))
 
         # We only validate the first recorded transaction
         _, metrics, errors = _RECORDED_TRANSACTIONS[0]
@@ -242,6 +254,7 @@ def tornado_validate_count_transaction_metrics(name, group='Function',
         _validate_forgone_metric_substrings(metrics, forgone_metric_substrings)
 
     return _validate
+
 
 def tornado_validate_time_transaction_metrics(name, group='Function',
         background_task=False, scoped_metrics=[], rollup_metrics=[],
@@ -302,13 +315,14 @@ def tornado_validate_time_transaction_metrics(name, group='Function',
 
     return _validate
 
+
 def tornado_validate_errors(errors=[], app_exceptions=[],
         expect_transaction=True):
     """Decorator to validate errors.
 
     Arguments:
-      errors: A list of expected error types as strings. If empty this will test
-         that no errors have occurred.
+      errors: A list of expected error types as strings. If empty this will
+          test that no errors have occurred.
 
     Note, this only validates the first transaction in the test.
 
@@ -351,6 +365,7 @@ def tornado_validate_errors(errors=[], app_exceptions=[],
 
     return _validate_errors
 
+
 def tornado_run_validator(func):
     """Get the transaction_node saved in _RECORDED_TRANSACTIONS[0]
     and run func(transaction_node).
@@ -371,6 +386,7 @@ def tornado_run_validator(func):
 
     return _validator
 
+
 def tornado_validate_transaction_cache_empty():
     """Validates the transaction cache is empty after all requests are serviced.
 
@@ -380,12 +396,13 @@ def tornado_validate_transaction_cache_empty():
     def validate_cache_empty(wrapped, instance, args, kwargs):
         from newrelic.core.transaction_cache import transaction_cache
         transaction = transaction_cache().current_transaction()
-        assert None == transaction
+        assert transaction is None
         wrapped(*args, **kwargs)
         transaction = transaction_cache().current_transaction()
-        assert None == transaction
+        assert transaction is None
 
     return validate_cache_empty
+
 
 def tornado_validate_tt_parenting(expected_parenting):
     """

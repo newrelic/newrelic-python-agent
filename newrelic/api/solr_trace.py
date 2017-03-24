@@ -19,12 +19,6 @@ class SolrTrace(newrelic.api.time_trace.TimeTrace):
         return '<%s %s>' % (self.__class__.__name__, dict(
                 library=self.library, command=self.command))
 
-    def create_node(self):
-        return self.node(library=self.library, command=self.command,
-                children=self.children, start_time=self.start_time,
-                end_time=self.end_time, duration=self.duration,
-                exclusive=self.exclusive)
-
     def terminal_node(self):
         return True
 

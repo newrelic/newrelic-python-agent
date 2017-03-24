@@ -9,6 +9,8 @@ from ..common.object_names import callable_name
 
 class FunctionTrace(TimeTrace):
 
+    node = FunctionNode
+
     def __init__(self, transaction, name, group=None, label=None,
             params=None, terminal=False, rollup=None):
         super(FunctionTrace, self).__init__(transaction)
@@ -35,13 +37,6 @@ class FunctionTrace(TimeTrace):
                 name=self.name, group=self.group, label=self.label,
                 params=self.params, terminal=self.terminal,
                 rollup=self.rollup))
-
-    def create_node(self):
-        return FunctionNode(group=self.group, name=self.name,
-                children=self.children, start_time=self.start_time,
-                end_time=self.end_time, duration=self.duration,
-                exclusive=self.exclusive, label=self.label,
-                params=self.params, rollup=self.rollup)
 
     def terminal_node(self):
         return self.terminal

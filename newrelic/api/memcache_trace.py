@@ -8,6 +8,8 @@ from ..common.object_wrapper import FunctionWrapper, wrap_object
 
 class MemcacheTrace(TimeTrace):
 
+    node = MemcacheNode
+
     def __init__(self, transaction, command):
         super(MemcacheTrace, self).__init__(transaction)
 
@@ -16,11 +18,6 @@ class MemcacheTrace(TimeTrace):
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, dict(
                 command=self.command))
-
-    def create_node(self):
-        return MemcacheNode(command=self.command, children=self.children,
-                start_time=self.start_time, end_time=self.end_time,
-                duration=self.duration, exclusive=self.exclusive)
 
     def terminal_node(self):
         return True

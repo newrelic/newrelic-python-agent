@@ -10,6 +10,8 @@ from ..common.encoding_utils import (obfuscate, deobfuscate, json_encode,
 
 class ExternalTrace(TimeTrace):
 
+    node = ExternalNode
+
     def __init__(self, transaction, library, url, method=None):
         super(ExternalTrace, self).__init__(transaction)
 
@@ -22,13 +24,6 @@ class ExternalTrace(TimeTrace):
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, dict(
                 library=self.library, url=self.url, method=self.method))
-
-    def create_node(self):
-        return ExternalNode(library=self.library, url=self.url,
-                method=self.method, children=self.children,
-                start_time=self.start_time, end_time=self.end_time,
-                duration=self.duration, exclusive=self.exclusive,
-                params=self.params)
 
     def terminal_node(self):
         return True

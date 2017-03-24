@@ -9,6 +9,7 @@ from ..common.object_wrapper import FunctionWrapper, wrap_object
 
 _logger = logging.getLogger(__name__)
 
+
 def register_database_client(dbapi2_module, database_product,
         quoting_style='single', explain_query=None, explain_stmts=[],
         instance_info=None):
@@ -26,8 +27,10 @@ def register_database_client(dbapi2_module, database_product,
     dbapi2_module._nr_instance_info = instance_info
     dbapi2_module._nr_datastore_instance_feature_flag = False
 
+
 def enable_datastore_instance_feature(dbapi2_module):
     dbapi2_module._nr_datastore_instance_feature_flag = True
+
 
 class DatabaseTrace(TimeTrace):
 
@@ -135,11 +138,11 @@ class DatabaseTrace(TimeTrace):
                 # doing the explain plan with the same inputs could
                 # cause further problems.
 
-                if (exc is None
-                        and not self.is_async_mode
-                        and tt.explain_enabled
-                        and self.duration >= tt.explain_threshold
-                        and self.connect_params is not None):
+                if (exc is None and
+                        not self.is_async_mode and
+                        tt.explain_enabled and
+                        self.duration >= tt.explain_threshold and
+                        self.connect_params is not None):
                     if (transaction._explain_plan_count <
                            agent_limits.sql_explain_plans):
                         connect_params = self.connect_params
@@ -179,6 +182,7 @@ class DatabaseTrace(TimeTrace):
     def terminal_node(self):
         return True
 
+
 def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None):
 
     def _nr_database_trace_wrapper_(wrapped, instance, args, kwargs):
@@ -200,9 +204,11 @@ def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None):
 
     return FunctionWrapper(wrapped, _nr_database_trace_wrapper_)
 
+
 def database_trace(sql, dbapi2_module=None):
     return functools.partial(DatabaseTraceWrapper, sql=sql,
             dbapi2_module=dbapi2_module)
+
 
 def wrap_database_trace(module, object_path, sql, dbapi2_module=None):
     wrap_object(module, object_path, DatabaseTraceWrapper,

@@ -13,6 +13,7 @@ _ExternalNode = namedtuple('_ExternalNode',
         ['library', 'url', 'method', 'children', 'start_time', 'end_time',
         'duration', 'exclusive', 'params'])
 
+
 class ExternalNode(_ExternalNode):
 
     @property

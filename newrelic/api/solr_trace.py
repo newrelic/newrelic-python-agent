@@ -1,12 +1,9 @@
-import sys
-import types
-import time
-
 import newrelic.core.solr_node
 
 import newrelic.api.transaction
 import newrelic.api.time_trace
 import newrelic.api.object_wrapper
+
 
 class SolrTrace(newrelic.api.time_trace.TimeTrace):
 
@@ -30,6 +27,7 @@ class SolrTrace(newrelic.api.time_trace.TimeTrace):
 
     def terminal_node(self):
         return True
+
 
 class SolrTraceWrapper(object):
 
@@ -83,10 +81,12 @@ class SolrTraceWrapper(object):
         with SolrTrace(transaction, library, command):
             return self._nr_next_object(*args, **kwargs)
 
+
 def solr_trace(library, command):
     def decorator(wrapped):
         return SolrTraceWrapper(wrapped, library, command)
     return decorator
+
 
 def wrap_solr_trace(module, object_path, library, command):
     newrelic.api.object_wrapper.wrap_object(module, object_path,

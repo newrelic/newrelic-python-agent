@@ -7,6 +7,7 @@ from ..common.object_wrapper import FunctionWrapper, wrap_object
 from ..common.encoding_utils import (obfuscate, deobfuscate, json_encode,
     json_decode)
 
+
 class ExternalTrace(TimeTrace):
 
     def __init__(self, transaction, library, url, method=None):
@@ -94,6 +95,7 @@ class ExternalTrace(TimeTrace):
 
         return nr_headers
 
+
 def ExternalTraceWrapper(wrapped, library, url, method=None):
 
     def dynamic_wrapper(wrapped, instance, args, kwargs):
@@ -137,9 +139,11 @@ def ExternalTraceWrapper(wrapped, library, url, method=None):
 
     return FunctionWrapper(wrapped, literal_wrapper)
 
+
 def external_trace(library, url, method=None):
     return functools.partial(ExternalTraceWrapper, library=library,
             url=url, method=method)
+
 
 def wrap_external_trace(module, object_path, library, url, method=None):
     wrap_object(module, object_path, ExternalTraceWrapper,

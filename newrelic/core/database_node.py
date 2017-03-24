@@ -13,6 +13,7 @@ _SlowSqlNode = namedtuple('_SlowSqlNode',
         'cursor_params', 'sql_parameters', 'execute_params',
         'host', 'port_path_or_id', 'database_name'])
 
+
 class SlowSqlNode(_SlowSqlNode):
 
     def __new__(cls, *args, **kwargs):
@@ -28,11 +29,13 @@ class SlowSqlNode(_SlowSqlNode):
     def identifier(self):
         return self.statement.identifier
 
+
 _DatabaseNode = namedtuple('_DatabaseNode',
-        ['dbapi2_module',  'sql', 'children', 'start_time', 'end_time',
+        ['dbapi2_module', 'sql', 'children', 'start_time', 'end_time',
         'duration', 'exclusive', 'stack_trace', 'sql_format',
         'connect_params', 'cursor_params', 'sql_parameters',
         'execute_params', 'host', 'port_path_or_id', 'database_name'])
+
 
 class DatabaseNode(_DatabaseNode):
 

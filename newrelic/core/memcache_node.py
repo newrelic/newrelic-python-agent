@@ -8,6 +8,7 @@ _MemcacheNode = namedtuple('_MemcacheNode',
         ['command', 'children', 'start_time', 'end_time', 'duration',
         'exclusive'])
 
+
 class MemcacheNode(_MemcacheNode):
 
     def time_metrics(self, stats, root, parent):

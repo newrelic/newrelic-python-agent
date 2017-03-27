@@ -165,6 +165,24 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             with child_child_trace:
                 pass
 
+    def test_async_trace_overlapping_children(self):
+        environ = {"REQUEST_URI": "/async_trace_overlapping_children"}
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
+
+        with transaction:
+            with newrelic.api.function_trace.FunctionTrace(
+                    transaction, 'parent'):
+                child_trace_1 = newrelic.api.function_trace.FunctionTrace(
+                        transaction, 'child_1')
+                child_trace_2 = newrelic.api.function_trace.FunctionTrace(
+                        transaction, 'child_2')
+
+                child_trace_1.__enter__()
+                child_trace_2.__enter__()
+                child_trace_1.__exit__(None, None, None)
+                child_trace_2.__exit__(None, None, None)
+
 
 if __name__ == '__main__':
     unittest.main()

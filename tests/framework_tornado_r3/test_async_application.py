@@ -39,24 +39,54 @@ from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
     tornado_validate_time_transaction_metrics,
     tornado_validate_errors, tornado_validate_transaction_cache_empty,
-    tornado_run_validator)
+    tornado_run_validator, tornado_validate_tt_parenting)
 
 from remove_utilization_tester import remove_utilization_tester
+
 
 def select_python_version(py2, py3):
     return six.PY3 and py3 or py2
 
+
 class AllTests(object):
+
+    _test_simple_response_parenting = (
+        'TransactionNode', [
+            ('FunctionNode', [
+                ('FunctionNode', []),
+                ('FunctionNode', []),
+                ('FunctionNode', []),
+                ('FunctionNode', []),
+            ]),
+        ]
+    )
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:HelloRequestHandler.get',
             forgone_metric_substrings=['prepare', 'on_finish'])
+    @tornado_validate_tt_parenting(_test_simple_response_parenting)
     def test_simple_response(self):
         response = self.fetch_response('/')
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, HelloRequestHandler.RESPONSE)
+
+    _test_sleep_response_parenting = (
+        'TransactionNode', [
+            ('FunctionNode', [
+                ('FunctionNode', []),
+            ]),
+            ('FunctionNode', []),
+            ('FunctionNode', [
+                ('FunctionNode', []),
+                ('FunctionNode', []),
+                ('FunctionNode', []),
+                ('FunctionNode', []),
+            ]),
+            ('FunctionNode', []),
+        ]
+    )
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
@@ -64,9 +94,11 @@ class AllTests(object):
             '_test_async_application:SleepRequestHandler.get')
     @tornado_validate_time_transaction_metrics(
             '_test_with_unittest:SleepRequestHandler.get',
-            custom_metrics = [(
-                    'WebTransaction/Function/_test_async_application:SleepRequestHandler.get',
-                    (2.0, 2.3))])
+            custom_metrics=[(
+                ('WebTransaction/Function/_test_async_application:'
+                'SleepRequestHandler.get'),
+                (2.0, 2.3))])
+    @tornado_validate_tt_parenting(_test_sleep_response_parenting)
     def test_sleep_response(self):
         response = self.fetch_response('/sleep')
         self.assertEqual(response.code, 200)
@@ -79,9 +111,11 @@ class AllTests(object):
             transaction_count=2)
     @tornado_validate_time_transaction_metrics(
             '_test_with_unittest:SleepRequestHandler.get',
-            custom_metrics = [(
-                    'WebTransaction/Function/_test_async_application:SleepRequestHandler.get',
-                    (2.0, 2.3))])
+            custom_metrics=[(
+                ('WebTransaction/Function/_test_async_application:'
+                'SleepRequestHandler.get'),
+                (2.0, 2.3))])
+    @tornado_validate_tt_parenting(_test_sleep_response_parenting)
     def test_sleep_two_clients(self):
         start_time = time.time()
         responses = self.fetch_responses(['/sleep', '/sleep'])
@@ -101,11 +135,25 @@ class AllTests(object):
             ('Function/_test_async_application:'
             'OneCallbackRequestHandler.finish_callback', 1)]
 
+    _test_one_callback_parenting = (
+        'TransactionNode', [
+            ('FunctionNode', [
+                ('FunctionNode', []),
+            ]),
+            ('FunctionNode', [
+                ('FunctionNode', []),
+                ('FunctionNode', []),
+                ('FunctionNode', []),
+            ]),
+        ]
+    )
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:OneCallbackRequestHandler.get',
             scoped_metrics=scoped_metrics)
+    @tornado_validate_tt_parenting(_test_one_callback_parenting)
     def test_one_callback(self):
         response = self.fetch_response('/one-callback')
         self.assertEqual(response.code, 200)
@@ -122,7 +170,8 @@ class AllTests(object):
             '_test_async_application:OneCallbackRequestHandler.post',
             scoped_metrics=scoped_metrics)
     def test_post_method_one_callback(self):
-        response = self.fetch_response('/one-callback', method="POST", body="test")
+        response = self.fetch_response('/one-callback', method="POST",
+                body="test")
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, OneCallbackRequestHandler.RESPONSE)
 
@@ -167,7 +216,8 @@ class AllTests(object):
             '_test_async_application:OneCallbackRequestHandler.patch',
             scoped_metrics=scoped_metrics)
     def test_patch_method_one_callback(self):
-        response = self.fetch_response('/one-callback', method="PATCH", body="test")
+        response = self.fetch_response('/one-callback', method="PATCH",
+                body="test")
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, OneCallbackRequestHandler.RESPONSE)
 
@@ -182,7 +232,8 @@ class AllTests(object):
             '_test_async_application:OneCallbackRequestHandler.put',
             scoped_metrics=scoped_metrics)
     def test_put_method_one_callback(self):
-        response = self.fetch_response('/one-callback', method="PUT", body="test")
+        response = self.fetch_response('/one-callback', method="PUT",
+                body="test")
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, OneCallbackRequestHandler.RESPONSE)
 
@@ -265,11 +316,11 @@ class AllTests(object):
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:IOLoopDivideRequestHandler.get',
             scoped_metrics=scoped_metrics,)
-            # forgone_metric_substrings=['lambda']) # may add after PYTHON-1847
+    # forgone_metric_substrings=['lambda']) # may add after PYTHON-1847
     def test_coroutine_names_not_lambda(self):
         response = self.fetch_response('/ioloop-divide/10000/10')
         expected = (IOLoopDivideRequestHandler.RESPONSE % (
-                10000.0, 10.0, 10000.0/10.0)).encode('ascii')
+                10000.0, 10.0, 10000.0 / 10.0)).encode('ascii')
         self.assertEqual(response.body, expected)
 
     scoped_metrics = [
@@ -281,11 +332,11 @@ class AllTests(object):
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:IOLoopDivideRequestHandler.get',
             scoped_metrics=scoped_metrics,)
-            # forgone_metric_substrings=['lambda']) # may add after PYTHON-1847
+    # forgone_metric_substrings=['lambda']) # may add after PYTHON-1847
     def test_immediate_coroutine_names_not_lambda(self):
         response = self.fetch_response('/ioloop-divide/10000/10/immediate')
         expected = (IOLoopDivideRequestHandler.RESPONSE % (
-                10000.0, 10.0, 10000.0/10.0)).encode('ascii')
+                10000.0, 10.0, 10000.0 / 10.0)).encode('ascii')
         self.assertEqual(response.body, expected)
 
     # The following 2 tests are the "engine" version of the coroutine tests
@@ -303,34 +354,36 @@ class AllTests(object):
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:EngineDivideRequestHandler.get',
             scoped_metrics=scoped_metrics,)
-            # forgone_metric_substrings=['lambda']) # may add after PYTHON-1847
+    # forgone_metric_substrings=['lambda']) # may add after PYTHON-1847
     def test_engine_names_not_lambda(self):
         response = self.fetch_response('/engine-divide/10000/10')
         expected = (EngineDivideRequestHandler.RESPONSE % (
-                10000.0, 10.0, 10000.0/10.0)).encode('ascii')
+                10000.0, 10.0, 10000.0 / 10.0)).encode('ascii')
         self.assertEqual(response.body, expected)
 
     # There is an issue with callable name. With the coroutine wrapper, we
     # preserve the name of the method and get the class name in the method name
-    # path. However, with the gen.engine wrapper, we get the method name without
-    # the classname. We get the full name from wrapping the GET request handler.
+    # path. However, with the gen.engine wrapper, we get the method name
+    # without the classname. We get the full name from wrapping the GET request
+    # handler.
     scoped_metrics = select_python_version(
             py2=[('Function/_test_async_application:'
                 'EngineDivideRequestHandler.get', 1),
                 ('Function/_test_async_application:get', 1)],
-            py3=[('Function/_test_async_application:EngineDivideRequestHandler.'
-                  'get', 2)])
+            py3=[(
+                'Function/_test_async_application:EngineDivideRequestHandler.'
+                'get', 2)])
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:EngineDivideRequestHandler.get',
             scoped_metrics=scoped_metrics,)
-            # forgone_metric_substrings=['lambda']) # may add after PYTHON-1847
+    # forgone_metric_substrings=['lambda']) # may add after PYTHON-1847
     def test_immediate_engine_names_not_lambda(self):
         response = self.fetch_response('/engine-divide/10000/10/immediate')
         expected = (EngineDivideRequestHandler.RESPONSE % (
-                10000.0, 10.0, 10000.0/10.0)).encode('ascii')
+                10000.0, 10.0, 10000.0 / 10.0)).encode('ascii')
         self.assertEqual(response.body, expected)
 
     scoped_metrics = select_python_version(
@@ -347,11 +400,11 @@ class AllTests(object):
     @tornado_validate_count_transaction_metrics(
         '_test_async_application:NestedCoroutineDivideRequestHandler.get',
         scoped_metrics=scoped_metrics,)
-        # forgone_metric_substrings=['lambda']) # may add after PYTHON-1847
+    # forgone_metric_substrings=['lambda']) # may add after PYTHON-1847
     def test_coroutine_first_time(self):
         response = self.fetch_response('/nested-divide/100/10/')
         expected = (EngineDivideRequestHandler.RESPONSE % (
-                100.0, 10.0, 100.0/10.0)).encode('ascii')
+            100.0, 10.0, 100.0 / 10.0)).encode('ascii')
         self.assertEqual(response.body, expected)
 
     scoped_metrics = [('Function/_test_async_application:'
@@ -359,7 +412,7 @@ class AllTests(object):
             ('Function/_test_async_application:'
             'PrepareOnFinishRequestHandler.get', 1),
             ('Function/_test_async_application:'
-            'PrepareOnFinishRequestHandler.on_finish', 1),]
+            'PrepareOnFinishRequestHandler.on_finish', 1)]
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
@@ -373,18 +426,18 @@ class AllTests(object):
 
     scoped_metrics = [
             ('Function/_test_async_application:'
-                    'PrepareOnFinishRequestHandlerSubclass.prepare', 1),
+                'PrepareOnFinishRequestHandlerSubclass.prepare', 1),
             ('Function/_test_async_application:'
-                    'PrepareOnFinishRequestHandlerSubclass.get', 1),
+                'PrepareOnFinishRequestHandlerSubclass.get', 1),
             ('Function/_test_async_application:'
-                    'PrepareOnFinishRequestHandlerSubclass.on_finish', 1),
+                'PrepareOnFinishRequestHandlerSubclass.on_finish', 1),
     ]
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
-            '_test_async_application:PrepareOnFinishRequestHandlerSubclass.get',
-            scoped_metrics=scoped_metrics)
+        '_test_async_application:PrepareOnFinishRequestHandlerSubclass.get',
+        scoped_metrics=scoped_metrics)
     def test_prepare_on_finish_subclass_instrumented(self):
         response = self.fetch_response('/bookend-subclass')
         self.assertEqual(response.code, 200)
@@ -465,9 +518,9 @@ class AllTests(object):
 
     scoped_metrics = [
             ('Function/_test_async_application:'
-                    'SimpleStreamingRequestHandler.data_received', 1),
+                'SimpleStreamingRequestHandler.data_received', 1),
             ('Function/_test_async_application:'
-                     'SimpleStreamingRequestHandler.on_connection_close', 1)]
+                'SimpleStreamingRequestHandler.on_connection_close', 1)]
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
@@ -515,7 +568,8 @@ class AllTests(object):
     def test_async_httpclient_raw_url_fetch(self):
         external = MockExternalHTTPServer()
         external.start()
-        response = self.fetch_response('/async-fetch/rawurl/%s' % external.port)
+        response = self.fetch_response('/async-fetch/rawurl/%s' %
+                external.port)
         external.stop()
 
         self.assertEqual(response.code, 200)
@@ -581,10 +635,10 @@ class AllTests(object):
 
     # The port number 8989 matches the port number in MockExternalHTTPServer
     scoped_metrics = [('Function/_test_async_application:'
-            'CustomImplCurlAsyncRequestHandler.get', 1),
-            ('Function/_test_async_application:CustomImplCurlAsyncRequestHandler.'
-             'process_response', 1),
-            ('External/localhost:8989/tornado.httpclient/', 1)
+        'CustomImplCurlAsyncRequestHandler.get', 1),
+        ('Function/_test_async_application:CustomImplCurlAsyncRequestHandler.'
+         'process_response', 1),
+        ('External/localhost:8989/tornado.httpclient/', 1)
     ]
 
     rollup_metrics = [('External/allWeb', 1), ('External/all', 1)]
@@ -629,7 +683,7 @@ class AllTests(object):
     scoped_metrics = [('Function/_test_async_application:'
             'CurlStreamingCallbackRequestHandler.get', 1),
             ('Function/_test_async_application:'
-                    'CurlStreamingCallbackRequestHandler.process_response', 1),
+                'CurlStreamingCallbackRequestHandler.process_response', 1),
             ('External/localhost:8989/tornado.httpclient/', 1)
     ]
 
@@ -657,7 +711,7 @@ class AllTests(object):
             '_test_async_application:CurlStreamingCallbackRequestHandler.get',
             scoped_metrics=scoped_metrics,
             rollup_metrics=rollup_metrics)
-    def test_curl_streaming_callback_httpclient_raw_url_fetch(self):
+    def test_curl_streaming_callback_httpclient_request_object_fetch(self):
         external = MockExternalHTTPServer()
         external.start()
         response = self.fetch_response('/curl-stream-cb/requestobj/%s' %
@@ -713,9 +767,10 @@ class AllTests(object):
     def test_run_sync_response(self):
         a = 3
         b = 4
-        response = self.fetch_response('/run-sync-add/%s/%s' % (a,b))
+        response = self.fetch_response('/run-sync-add/%s/%s' % (a, b))
         self.assertEqual(response.code, 200)
-        self.assertEqual(response.body, RunSyncAddRequestHandler.RESPONSE(a+b))
+        self.assertEqual(response.body,
+                RunSyncAddRequestHandler.RESPONSE(a + b))
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
@@ -993,7 +1048,7 @@ class AllTests(object):
     # will catch the exception itself before our instrumentation of the ioloop
     # has a chance to capture and log the error.
     @tornado_validate_transaction_cache_empty()
-    @tornado_validate_errors(errors = [],
+    @tornado_validate_errors(errors=[],
                              app_exceptions=[select_python_version(
                                      py2='exceptions:Exception',
                                      py3='builtins:Exception')] * 5,
@@ -1017,7 +1072,7 @@ class AllTests(object):
     # internals will catch the exception before the ioloop exception handler
     # catches it.
     @tornado_validate_transaction_cache_empty()
-    @tornado_validate_errors(errors = [],
+    @tornado_validate_errors(errors=[],
                              app_exceptions=[select_python_version(
                                      py2='__builtin__:NoneType',
                                      py3='builtins:NoneType')],
@@ -1041,16 +1096,15 @@ class AllTests(object):
         fxn.func._nr_last_object._nr_recorded_exception = True
         io_loop.handle_callback_exception(fxn)
 
-
     # For these thread utilization tests, we want to make sure that both the
     # transaction isn't sending up attributes related to thread utilization,
     # and also that the harvest isn't sending up utilization metrics, which are
     # used for "capacity" in APM. We check this by asserting that the machinery
     # that generates these metrics, thread_utilization_data_source & it's
-    # 'Thread Utilization' data sampler, have been removed. _utilization_trackers
-    # is actually used by transactions, and should agree with the
-    # tornado_run_validator check, but we check that it is also clear here,
-    # for completeness.
+    # 'Thread Utilization' data sampler, have been removed.
+    # _utilization_trackers is actually used by transactions, and should agree
+    # with the tornado_run_validator check, but we check that it is also clear
+    # here, for completeness.
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
@@ -1124,13 +1178,14 @@ class AllTests(object):
             py2=('Function/_test_async_application:get (coroutine)', 1),
             py3=('Function/_test_async_application:'
                  'NativeFuturesCoroutine.get (coroutine)', 1)),
-            ('Function/_test_async_application:NativeFuturesCoroutine.get', 1),
-            ('Function/_test_async_application:NativeFuturesCoroutine.'
-                 'do_thing', 1),
-            ('Function/_test_async_application:NativeFuturesCoroutine.'
-                 'resolve', 1),
-            ('Function/_test_async_application:NativeFuturesCoroutine.'
-                 'another_method', 1),]
+                ('Function/_test_async_application:NativeFuturesCoroutine.get',
+                    1),
+                ('Function/_test_async_application:NativeFuturesCoroutine.'
+                    'do_thing', 1),
+                ('Function/_test_async_application:NativeFuturesCoroutine.'
+                    'resolve', 1),
+                ('Function/_test_async_application:NativeFuturesCoroutine.'
+                    'another_method', 1)]
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
@@ -1148,9 +1203,10 @@ class AllTests(object):
             py2=('Function/_test_async_application:get (coroutine)', 1),
             py3=('Function/_test_async_application:'
                  'NativeFuturesCoroutine.get (coroutine)', 1)),
-            ('Function/_test_async_application:NativeFuturesCoroutine.get', 1),
-            ('Function/_test_async_application:NativeFuturesCoroutine.'
-                 'do_thing', 1),]
+                ('Function/_test_async_application:NativeFuturesCoroutine.get',
+                    1),
+                ('Function/_test_async_application:NativeFuturesCoroutine.'
+                    'do_thing', 1)]
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
@@ -1183,7 +1239,7 @@ class AllTests(object):
         port_value = 8888
         headers = HTTPHeaders({'X-NewRelic-Synthetics': synthetics_value})
         request = HTTPServerRequest(uri="pupper.com", headers=headers,
-                host='localhost:'+str(port_value))
+                host='localhost:' + str(port_value))
 
         # HTTPServerRequest will cause a transaction to be created
         transaction = request._nr_transaction
@@ -1204,8 +1260,8 @@ class AllTests(object):
         old_enabled = app.global_settings.enabled
 
         try:
-            # Set the application settings to false to simulate that we have not
-            # yet connected to the collector.
+            # Set the application settings to false to simulate that we have
+            # not yet connected to the collector.
             app.global_settings.enabled = False
 
             request = HTTPServerRequest(uri="pupper.com", host='localhost')
@@ -1216,8 +1272,10 @@ class AllTests(object):
         finally:
             app.global_settings.enabled = old_enabled
 
+
 class TornadoDefaultIOLoopTest(AllTests, TornadoBaseTest):
     pass
+
 
 @pytest.mark.skipif(sys.version_info < (2, 7),
         reason='pyzmq does not support Python 2.6')

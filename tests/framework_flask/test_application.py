@@ -1,19 +1,22 @@
 import pytest
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors, override_application_settings)
+    validate_transaction_errors, override_application_settings,
+    validate_tt_parenting)
 
 from newrelic.packages import six
 
 try:
     # The __version__ attribute was only added in 0.7.0.
     from flask import __version__ as flask_version
+    flask_version = tuple([int(v) for v in flask_version.split('.')])
     is_gt_flask060 = True
 except ImportError:
     is_gt_flask060 = False
 
 requires_endpoint_decorator = pytest.mark.skipif(not is_gt_flask060,
         reason="The endpoint decorator is not supported.")
+
 
 def target_application():
     # We need to delay Flask application creation because of ordering
@@ -28,6 +31,7 @@ def target_application():
     from _test_application import _test_application
     return _test_application
 
+
 _test_application_index_scoped_metrics = [
         ('Function/flask.app:Flask.wsgi_app', 1),
         ('Python/WSGI/Application', 1),
@@ -36,13 +40,43 @@ _test_application_index_scoped_metrics = [
         ('Function/_test_application:index_page', 1),
         ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
 
+_test_application_index_tt_parenting = (
+    'TransactionNode', [
+        ('FunctionNode', [
+            ('FunctionNode', [
+                ('FunctionNode', []),
+                ('FunctionNode', []),
+                ('FunctionNode', []),
+                # some flask versions have more FunctionNodes here, as appended
+                # below
+            ]),
+        ]),
+        ('FunctionNode', []),
+        ('FunctionNode', [
+            ('FunctionNode', []),
+        ]),
+    ]
+)
+
+if is_gt_flask060 and flask_version >= (0, 7):
+    _test_application_index_tt_parenting[1][0][1][0][1].append(
+        ('FunctionNode', []),
+    )
+if is_gt_flask060 and flask_version >= (0, 9):
+    _test_application_index_tt_parenting[1][0][1][0][1].append(
+        ('FunctionNode', []),
+    )
+
+
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_application:index_page',
         scoped_metrics=_test_application_index_scoped_metrics)
+@validate_tt_parenting(_test_application_index_tt_parenting)
 def test_application_index():
     application = target_application()
     response = application.get('/index')
     response.mustcontain('INDEX RESPONSE')
+
 
 _test_application_endpoint_scoped_metrics = [
         ('Function/flask.app:Flask.wsgi_app', 1),
@@ -52,6 +86,7 @@ _test_application_endpoint_scoped_metrics = [
         ('Function/_test_application:endpoint_page', 1),
         ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
 
+
 @requires_endpoint_decorator
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_application:endpoint_page',
@@ -60,6 +95,7 @@ def test_application_endpoint():
     application = target_application()
     response = application.get('/endpoint')
     response.mustcontain('ENDPOINT RESPONSE')
+
 
 _test_application_error_scoped_metrics = [
         ('Function/flask.app:Flask.wsgi_app', 1),
@@ -79,12 +115,14 @@ if six.PY3:
 else:
     _test_application_error_errors = ['exceptions:RuntimeError']
 
+
 @validate_transaction_errors(errors=_test_application_error_errors)
 @validate_transaction_metrics('_test_application:error_page',
         scoped_metrics=_test_application_error_scoped_metrics)
 def test_application_error():
     application = target_application()
-    response = application.get('/error', status=500, expect_errors=True)
+    application.get('/error', status=500, expect_errors=True)
+
 
 _test_application_abort_404_scoped_metrics = [
         ('Function/flask.app:Flask.wsgi_app', 1),
@@ -99,12 +137,14 @@ if is_gt_flask060:
     _test_application_abort_404_scoped_metrics.extend([
             ('Function/flask.app:Flask.handle_user_exception', 1)])
 
+
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_application:abort_404_page',
         scoped_metrics=_test_application_abort_404_scoped_metrics)
 def test_application_abort_404():
     application = target_application()
-    response = application.get('/abort_404', status=404)
+    application.get('/abort_404', status=404)
+
 
 _test_application_exception_404_scoped_metrics = [
         ('Function/flask.app:Flask.wsgi_app', 1),
@@ -119,12 +159,14 @@ if is_gt_flask060:
     _test_application_exception_404_scoped_metrics.extend([
             ('Function/flask.app:Flask.handle_user_exception', 1)])
 
+
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_application:exception_404_page',
         scoped_metrics=_test_application_exception_404_scoped_metrics)
 def test_application_exception_404():
     application = target_application()
-    response = application.get('/exception_404', status=404)
+    application.get('/exception_404', status=404)
+
 
 _test_application_not_found_scoped_metrics = [
         ('Function/flask.app:Flask.wsgi_app', 1),
@@ -138,12 +180,14 @@ if is_gt_flask060:
     _test_application_not_found_scoped_metrics.extend([
             ('Function/flask.app:Flask.handle_user_exception', 1)])
 
+
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('flask.app:Flask.handle_http_exception',
         scoped_metrics=_test_application_not_found_scoped_metrics)
 def test_application_not_found():
     application = target_application()
-    response = application.get('/missing', status=404)
+    application.get('/missing', status=404)
+
 
 _test_application_render_template_string_scoped_metrics = [
         ('Function/flask.app:Flask.wsgi_app', 1),
@@ -155,12 +199,14 @@ _test_application_render_template_string_scoped_metrics = [
         ('Template/Compile/<template>', 1),
         ('Template/Render/<template>', 1)]
 
+
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_application:template_string',
         scoped_metrics=_test_application_render_template_string_scoped_metrics)
 def test_application_render_template_string():
     application = target_application()
-    response = application.get('/template_string')
+    application.get('/template_string')
+
 
 _test_application_render_template_not_found_scoped_metrics = [
         ('Function/flask.app:Flask.wsgi_app', 1),
@@ -175,18 +221,21 @@ if is_gt_flask060:
     _test_application_render_template_not_found_scoped_metrics.extend([
             ('Function/flask.app:Flask.handle_user_exception', 1)])
 
+
 @validate_transaction_errors(errors=['jinja2.exceptions:TemplateNotFound'])
 @validate_transaction_metrics('_test_application:template_not_found',
-        scoped_metrics=_test_application_render_template_not_found_scoped_metrics)
+    scoped_metrics=_test_application_render_template_not_found_scoped_metrics)
 def test_application_render_template_not_found():
     application = target_application()
-    response = application.get('/template_not_found', status=500)
+    application.get('/template_not_found', status=500)
+
 
 _test_html_insertion_settings = {
     'browser_monitoring.enabled': True,
     'browser_monitoring.auto_instrument': True,
     'js_agent_loader': u'<!-- NREUM HEADER -->',
 }
+
 
 @override_application_settings(_test_html_insertion_settings)
 def test_html_insertion():

@@ -1,18 +1,12 @@
 import os
 import sys
 import time
-import weakref
 import threading
 import traceback
 import logging
 import warnings
 import itertools
 import random
-
-try:
-    import thread
-except ImportError:
-    import _thread as thread
 
 from collections import deque
 
@@ -27,12 +21,12 @@ from newrelic.core.transaction_cache import transaction_cache
 from newrelic.core.thread_utilization import utilization_tracker
 
 from ..core.attribute import (create_attributes, create_agent_attributes,
-        create_user_attributes, truncate, process_user_attribute,
+        create_user_attributes, process_user_attribute,
         MAX_NUM_USER_ATTRIBUTES)
 from ..core.attribute_filter import (DST_NONE, DST_ERROR_COLLECTOR,
         DST_TRANSACTION_TRACER)
 from ..core.config import DEFAULT_RESERVOIR_SIZE
-from ..core.custom_event import process_event_type, create_custom_event
+from ..core.custom_event import create_custom_event
 from ..core.stack_trace import exception_stack
 from ..common.encoding_utils import generate_path_hash
 
@@ -41,9 +35,11 @@ from .time_trace import TimeTrace
 
 _logger = logging.getLogger(__name__)
 
+
 class Sentinel(TimeTrace):
     def __init__(self):
         super(Sentinel, self).__init__(None)
+
 
 class Transaction(object):
 
@@ -73,7 +69,7 @@ class Transaction(object):
 
         self._frozen_path = None
 
-        self._node_stack = []
+        self.current_node = None
 
         self._request_uri = None
         self._port = None
@@ -263,7 +259,7 @@ class Transaction(object):
         # dummy time trace object and when done we will
         # just grab what we need from that.
 
-        self._node_stack.append(Sentinel())
+        self.current_node = Sentinel()
 
         return self
 
@@ -279,11 +275,10 @@ class Transaction(object):
         # instrumentation error and return with hope that
         # will recover later.
 
-        if not len(self._node_stack) == 1:
-            _logger.error('Runtime instrumentation error. Exiting the '
-                    'transaction but the node stack is not empty. '
-                    'Node stack is %r. Report this issue to New Relic '
-                    'support.\n%s', self._node_stack, ''.join(
+        if not isinstance(self.current_node, Sentinel):
+            _logger.error('Transaction ended but current_node is not Sentinel.'
+                    ' Current node is %r. Report this issue to New Relic '
+                    'support.\n%s', self.current_node, ''.join(
                     traceback.format_stack()[:-1]))
 
             return
@@ -372,7 +367,7 @@ class Transaction(object):
         # as negative number. Add our own duration to get
         # our own exclusive time.
 
-        root = self._node_stack.pop()
+        root = self.current_node
         children = root.children
 
         exclusive = duration + root.exclusive
@@ -440,11 +435,6 @@ class Transaction(object):
                 self.record_custom_metric('Python/Framework/%s/%s' %
                     (framework, version), 1)
 
-        request_params = {}
-
-        if self.capture_params:
-            request_params = self._request_params
-
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
                 path=self.path,
@@ -475,11 +465,11 @@ class Transaction(object):
                 suppress_transaction_trace=self.suppress_transaction_trace,
                 client_cross_process_id=self.client_cross_process_id,
                 referring_transaction_guid=self.referring_transaction_guid,
-                record_tt = self.record_tt,
-                synthetics_resource_id = self.synthetics_resource_id,
-                synthetics_job_id = self.synthetics_job_id,
-                synthetics_monitor_id = self.synthetics_monitor_id,
-                synthetics_header = self.synthetics_header,
+                record_tt=self.record_tt,
+                synthetics_resource_id=self.synthetics_resource_id,
+                synthetics_job_id=self.synthetics_job_id,
+                synthetics_monitor_id=self.synthetics_monitor_id,
+                synthetics_header=self.synthetics_header,
                 is_part_of_cat=self.is_part_of_cat,
                 trip_id=self.trip_id,
                 path_hash=self.path_hash,
@@ -488,7 +478,7 @@ class Transaction(object):
                 trace_intrinsics=self.trace_intrinsics,
                 agent_attributes=self.agent_attributes,
                 user_attributes=self.user_attributes,
-                )
+        )
 
         # Clear settings as we are all done and don't need it
         # anymore.
@@ -669,7 +659,8 @@ class Transaction(object):
         i_attrs = {}
 
         if self.referring_transaction_guid:
-            i_attrs['referring_transaction_guid'] = self.referring_transaction_guid
+            i_attrs['referring_transaction_guid'] = \
+                    self.referring_transaction_guid
         if self.client_cross_process_id:
             i_attrs['client_cross_process_id'] = self.client_cross_process_id
         if self.trip_id:
@@ -765,7 +756,8 @@ class Transaction(object):
         if req_env.get('HTTP_ACCEPT', None):
             a_attrs['request.headers.accept'] = req_env['HTTP_ACCEPT']
         if req_env.get('CONTENT_LENGTH', None):
-            a_attrs['request.headers.contentLength'] = req_env['CONTENT_LENGTH']
+            a_attrs['request.headers.contentLength'] = \
+                    req_env['CONTENT_LENGTH']
         if req_env.get('CONTENT_TYPE', None):
             a_attrs['request.headers.contentType'] = req_env['CONTENT_TYPE']
         if req_env.get('HTTP_HOST', None):
@@ -780,9 +772,11 @@ class Transaction(object):
         resp_props = self._response_properties
 
         if resp_props.get('CONTENT_LENGTH', None):
-            a_attrs['response.headers.contentLength'] = resp_props['CONTENT_LENGTH']
+            a_attrs['response.headers.contentLength'] = \
+                    resp_props['CONTENT_LENGTH']
         if resp_props.get('CONTENT_TYPE', None):
-            a_attrs['response.headers.contentType'] = resp_props['CONTENT_TYPE']
+            a_attrs['response.headers.contentType'] = \
+                    resp_props['CONTENT_TYPE']
         if resp_props.get('STATUS', None):
             a_attrs['response.status'] = resp_props['STATUS']
 
@@ -810,7 +804,7 @@ class Transaction(object):
             a_attrs['host.displayName'] = settings.process_host.display_name
         if self._thread_utilization_value:
             a_attrs['thread.concurrency'] = self._thread_utilization_value
-        if self.queue_wait != 0 :
+        if self.queue_wait != 0:
             a_attrs['webfrontend.queue.seconds'] = self.queue_wait
 
         agent_attributes = create_agent_attributes(a_attrs,
@@ -939,10 +933,6 @@ class Transaction(object):
         self._name = name
 
     def name_transaction(self, name, group=None, priority=None):
-        #warnings.warn('Internal API change. Use set_transaction_name() '
-        #        'instead of name_transaction().', DeprecationWarning,
-        #        stacklevel=2)
-
         return self.set_transaction_name(name, group, priority)
 
     def record_exception(self, exc=None, value=None, tb=None,
@@ -1147,31 +1137,17 @@ class Transaction(object):
         return self.record_custom_metric(name, value)
 
     def active_node(self):
-        if self._node_stack:
-            return self._node_stack[-1]
+        return self.current_node
 
     def _intern_string(self, value):
         return self._string_cache.setdefault(value, value)
 
     def _push_current(self, node):
-        self._node_stack.append(node)
+        self.current_node = node
 
     def _pop_current(self, node):
-        last = self._node_stack.pop()
-
-        try:
-            assert last == node
-
-        except Exception:
-            _logger.error('Runtime instrumentation error. Object on '
-                    'transaction node stack when removing last value is '
-                    'not the expected one, found %r, expected %r. Report '
-                    'this issue to New Relic support.\n%s', last, node,
-                    ''.join(traceback.format_stack()[:-1]))
-
-            raise
-
-        parent = self._node_stack[-1]
+        parent = node.parent
+        self.current_node = parent
 
         return parent
 
@@ -1240,15 +1216,9 @@ class Transaction(object):
             self.add_custom_parameter(name, value)
 
     def add_user_attribute(self, name, value):
-        #warnings.warn('Internal API change. Use add_custom_parameter() '
-        #        'instead of add_user_attribute().', DeprecationWarning,
-        #        stacklevel=2)
         self.add_custom_parameter(name, value)
 
     def add_user_attributes(self, items):
-        #warnings.warn('Internal API change. Use add_custom_parameters() '
-        #        'instead of add_user_attributes().', DeprecationWarning,
-        #        stacklevel=2)
         self.add_custom_parameters(items)
 
     def add_framework_info(self, name, version=None):
@@ -1290,10 +1260,9 @@ class Transaction(object):
                 self.autorum_disabled)
         print >> file, 'Supress Apdex: %s' % (
                 self.suppress_apdex)
+        print >> file, 'Current Node: %s' % (
+                self.current_node)
 
-        print >> file, 'Node Stack:'
-        for node in self._node_stack[1:]:
-            print >> file, node
 
 def current_transaction(active_only=True):
     current = transaction_cache().current_transaction()
@@ -1302,16 +1271,19 @@ def current_transaction(active_only=True):
             return None
     return current
 
+
 def transaction():
     warnings.warn('Internal API change. Use current_transaction() '
             'instead of transaction().', DeprecationWarning, stacklevel=2)
 
     return current_transaction()
 
+
 def set_transaction_name(name, group=None, priority=None):
     transaction = current_transaction()
     if transaction:
         transaction.set_transaction_name(name, group, priority)
+
 
 def name_transaction(name, group=None, priority=None):
     warnings.warn('API change. Use set_transaction_name() instead of '
@@ -1320,25 +1292,30 @@ def name_transaction(name, group=None, priority=None):
     if transaction:
         transaction.set_transaction_name(name, group, priority)
 
+
 def end_of_transaction():
     transaction = current_transaction()
     if transaction:
         transaction.stop_recording()
+
 
 def set_background_task(flag=True):
     transaction = current_transaction()
     if transaction:
         transaction.background_task = flag
 
+
 def ignore_transaction(flag=True):
     transaction = current_transaction()
     if transaction:
         transaction.ignore_transaction = flag
 
+
 def suppress_apdex_metric(flag=True):
     transaction = current_transaction()
     if transaction:
         transaction.suppress_apdex = flag
+
 
 def capture_request_params(flag=True):
     transaction = current_transaction()
@@ -1348,6 +1325,7 @@ def capture_request_params(flag=True):
         else:
             transaction.capture_params = flag
 
+
 def add_custom_parameter(key, value):
     transaction = current_transaction()
     if transaction:
@@ -1355,15 +1333,16 @@ def add_custom_parameter(key, value):
     else:
         return False
 
+
 def add_user_attribute(key, value):
-    #warnings.warn('API change. Use add_custom_parameter() instead of '
-    #        'add_user_attribute().', DeprecationWarning, stacklevel=2)
     return add_custom_parameter(key, value)
+
 
 def add_framework_info(name, version=None):
     transaction = current_transaction()
     if transaction:
         transaction.add_framework_info(name, version)
+
 
 def record_exception(exc=None, value=None, tb=None, params={},
         ignore_errors=[], application=None):
@@ -1377,11 +1356,13 @@ def record_exception(exc=None, value=None, tb=None, params={},
             application.record_exception(exc, value, tb, params,
                     ignore_errors)
 
+
 def get_browser_timing_header():
     transaction = current_transaction()
     if transaction and hasattr(transaction, 'browser_timing_header'):
         return transaction.browser_timing_header()
     return ''
+
 
 def get_browser_timing_footer():
     transaction = current_transaction()
@@ -1389,15 +1370,18 @@ def get_browser_timing_footer():
         return transaction.browser_timing_footer()
     return ''
 
+
 def disable_browser_autorum(flag=True):
     transaction = current_transaction()
     if transaction:
         transaction.autorum_disabled = flag
 
+
 def suppress_transaction_trace(flag=True):
     transaction = current_transaction()
     if transaction:
         transaction.suppress_transaction_trace = flag
+
 
 def record_custom_metric(name, value, application=None):
     if application is None:
@@ -1408,6 +1392,7 @@ def record_custom_metric(name, value, application=None):
         if application.enabled:
             application.record_custom_metric(name, value)
 
+
 def record_custom_metrics(metrics, application=None):
     if application is None:
         transaction = current_transaction()
@@ -1416,6 +1401,7 @@ def record_custom_metrics(metrics, application=None):
     else:
         if application.enabled:
             application.record_custom_metrics(metrics)
+
 
 def record_custom_event(event_type, params, application=None):
     """Record a custom event.

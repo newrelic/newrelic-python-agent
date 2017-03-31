@@ -764,7 +764,8 @@ def apply_local_high_security_mode_setting(settings):
 
     if settings.custom_insights_events.enabled:
         settings.custom_insights_events.enabled = False
-        _logger.info(log_template, 'custom_insights_events', True, False)
+        _logger.info(log_template, 'custom_insights_events.enabled', True,
+                False)
 
     return settings
 

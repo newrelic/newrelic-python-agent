@@ -2043,6 +2043,8 @@ def validate_custom_event_count(count):
 
 
 def _validate_node_parenting(node, expected_node):
+    assert node.exclusive >= 0, 'node.exclusive = %s' % node.exclusive
+
     expected_children = expected_node[1]
 
     def len_error():

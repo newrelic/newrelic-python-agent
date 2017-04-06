@@ -1,3 +1,4 @@
+import time
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_tt_parenting)
 
@@ -139,6 +140,7 @@ def test_async_trace_overlapping_children():
 
         child_trace_1.__enter__()
         child_trace_2.__enter__()
+        time.sleep(0.01)
         child_trace_1.__exit__(None, None, None)
         child_trace_2.__exit__(None, None, None)
 

@@ -6,6 +6,7 @@ from newrelic.agent import (application as application_instance,
         current_transaction, ignore_status_code, function_wrapper,
         callable_name, FunctionTrace)
 from newrelic.core.transaction_cache import transaction_cache
+from newrelic.api.transaction import Sentinel
 
 _logger = logging.getLogger(__name__)
 
@@ -110,7 +111,7 @@ def possibly_finalize_transaction(transaction, exc=None, value=None, tb=None):
     if (transaction._request_handler_finalize and
             transaction._server_adapter_finalize and
             transaction._ref_count == 0 and
-            len(transaction._node_stack) <= 1):
+            not isinstance(transaction.current_node.parent, Sentinel)):
         _finalize_transaction(transaction, exc, value, tb)
 
 

@@ -206,6 +206,31 @@ class TimeTrace(object):
     def terminal_node(self):
         return False
 
+    def update_async_exclusive_time(self, min_child_start_time,
+            exclusive_duration):
+        # if exited and the child started after, there's no overlap on the
+        # exclusive time
+        if self.exited and (self.end_time < min_child_start_time):
+            exclusive_delta = 0.0
+        # else there is overlap and we need to compute it
+        elif self.exited:
+            exclusive_delta = (self.end_time -
+                    min_child_start_time)
+        # we're still running so all exclusive duration is taken by us
+        else:
+            exclusive_delta = exclusive_duration
+
+        # update the exclusive time
+        self.exclusive -= exclusive_delta
+
+        # pass any remaining exclusive duration up to the parent
+        exclusive_duration_remaining = exclusive_duration - exclusive_delta
+
+        if self.parent and exclusive_duration_remaining > 0.0:
+            # call parent exclusive duration delta
+            self.parent.update_async_exclusive_time(min_child_start_time,
+                    exclusive_duration_remaining)
+
     def process_child(self, node):
         self.children.append(node)
         if node.async:
@@ -217,18 +242,10 @@ class TimeTrace(object):
             # if there are no children running, finalize exclusive time
             if self.child_count == len(self.children):
 
-                # if we've exited, the max end time is
-                # the parent end time
-                if self.exited:
-                    end_time = self.end_time
-                else:
-                    end_time = node.end_time
+                exclusive_duration = node.end_time - self.min_child_start_time
 
-                # this can be false if the child started after
-                # the parent exited
-                if end_time > self.min_child_start_time:
-                    self.exclusive -= (end_time -
-                            self.min_child_start_time)
+                self.update_async_exclusive_time(self.min_child_start_time,
+                        exclusive_duration)
 
                 # reset time range tracking
                 self.min_child_start_time = float('inf')

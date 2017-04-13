@@ -216,6 +216,11 @@ class TimeTrace(object):
         elif self.exited:
             exclusive_delta = (self.end_time -
                     min_child_start_time)
+
+            # we don't want to double count the partial exclusive time
+            # attributed to this trace, so we should reset the child start time
+            # to after this trace ended
+            min_child_start_time = self.end_time
         # we're still running so all exclusive duration is taken by us
         else:
             exclusive_delta = exclusive_duration

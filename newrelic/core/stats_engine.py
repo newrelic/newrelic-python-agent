@@ -1194,7 +1194,7 @@ class StatsEngine(object):
             else:
                 force_persist = False
 
-            trace_data.append([root.start_time,
+            trace_data.append([transaction_trace.start_time,
                     root.end_time - root.start_time,
                     trace.path,
                     trace.request_uri,

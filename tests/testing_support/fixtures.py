@@ -909,8 +909,9 @@ def validate_tt_collector_json(required_params={},
             trace_data = instance.transaction_trace_data(connections)
 
             trace = trace_data[0]  # 1st trace
-            assert isinstance(trace[0], float)  # start time (ms)
+            assert isinstance(trace[0], float)  # absolute start time (ms)
             assert isinstance(trace[1], float)  # duration (ms)
+            assert trace[0] > 0  # absolute time (ms)
             assert isinstance(trace[2], six.string_types)  # transaction name
             if trace[2].startswith('WebTransaction'):
                 assert isinstance(trace[3], six.string_types)  # request url

@@ -303,6 +303,7 @@ class TransactionNode(_TransactionNode):
             children.append(child.trace_node(stats, root, connections))
 
         params = {}
+        params['exclusive_duration_millis'] = round(1000.0 * self.exclusive)
 
         return newrelic.core.trace_node.TraceNode(
                 start_time=start_time,

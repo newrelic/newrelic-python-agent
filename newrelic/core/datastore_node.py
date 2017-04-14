@@ -115,6 +115,7 @@ class DatastoreNode(_DatastoreNode):
         root.trace_node_count += 1
 
         params = {}
+        params['exclusive_duration_millis'] = round(1000.0 * self.exclusive)
 
         ds_tracer_settings = stats.settings.datastore_tracer
         instance_enabled = ds_tracer_settings.instance_reporting.enabled

@@ -142,6 +142,7 @@ class ExternalNode(_ExternalNode):
                 details.path, '', ''))
 
         params['url'] = url
+        params['exclusive_duration_millis'] = round(1000.0 * self.exclusive)
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,

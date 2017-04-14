@@ -11,6 +11,7 @@ _DatastoreNode = namedtuple('_DatastoreNode',
         'database_name', 'async'])
 
 
+
 class DatastoreNode(_DatastoreNode):
 
     @property

@@ -12,6 +12,7 @@ _FunctionNode = namedtuple('_FunctionNode',
         'async'])
 
 
+
 class FunctionNode(_FunctionNode):
 
     def time_metrics(self, stats, root, parent):

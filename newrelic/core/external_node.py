@@ -14,6 +14,7 @@ _ExternalNode = namedtuple('_ExternalNode',
         'duration', 'exclusive', 'params', 'async'])
 
 
+
 class ExternalNode(_ExternalNode):
 
     @property

@@ -38,6 +38,7 @@ _DatabaseNode = namedtuple('_DatabaseNode',
         'async'])
 
 
+
 class DatabaseNode(_DatabaseNode):
 
     def __new__(cls, *args, **kwargs):

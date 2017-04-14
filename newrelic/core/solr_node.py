@@ -8,6 +8,7 @@ _SolrNode = namedtuple('_SolrNode',
         ['library', 'command', 'children', 'start_time', 'end_time',
         'duration', 'exclusive'])
 
+
 class SolrNode(_SolrNode):
 
     def time_metrics(self, stats, root, parent):

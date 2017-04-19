@@ -77,10 +77,10 @@ class Application(object):
         self._detect_deadlock = False
         self._deadlock_event = threading.Event()
 
-        self._stats_lock = threading.Lock()
+        self._stats_lock = threading.RLock()
         self._stats_engine = StatsEngine()
 
-        self._stats_custom_lock = threading.Lock()
+        self._stats_custom_lock = threading.RLock()
         self._stats_custom_engine = StatsEngine()
 
         self._agent_commands_lock = threading.Lock()

@@ -43,8 +43,21 @@ def _nr_wrapper_httpclient_AsyncHTTPClient_fetch_(
 
     url = _extract_url(*args, **kwargs)
 
-    with ExternalTrace(transaction, 'tornado.httpclient', url):
-        return wrapped(*args, **kwargs)
+    trace = ExternalTrace(transaction, 'tornado.httpclient', url)
+
+    def external_trace_done(future):
+        exc_info = future.exc_info()
+        if exc_info:
+            trace.__exit__(*exc_info)
+        else:
+            trace.__exit__(None, None, None)
+        transaction._ref_count -= 1
+
+    transaction._ref_count += 1
+    trace.__enter__()
+    future = wrapped(*args, **kwargs)
+    future.add_done_callback(external_trace_done)
+    return future
 
 
 def instrument_tornado_httpclient(module):

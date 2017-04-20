@@ -18,7 +18,7 @@ fi
 GIT_REPO_ROOT=$(git rev-parse --show-toplevel)
 PYPIRC=$GIT_REPO_ROOT/deploy/.pypirc
 
-ARTIFACTORY=http://pdx-artifacts.pdx.vm.datanerd.us:8081/artifactory
+ARTIFACTORY=https://pdx-artifacts.pdx.vm.datanerd.us
 ARTIFACTORY_PYPI_URL=$ARTIFACTORY/simple/pypi-newrelic
 ARTIFACTORY_USER=python-agent
 

@@ -9,6 +9,7 @@ _MemcacheNode = namedtuple('_MemcacheNode',
         'exclusive', 'async'])
 
 
+
 class MemcacheNode(_MemcacheNode):
 
     def time_metrics(self, stats, root, parent):
@@ -48,7 +49,8 @@ class MemcacheNode(_MemcacheNode):
 
         root.trace_node_count += 1
 
-        params = None
+        params = {}
+        params['exclusive_duration_millis'] = round(1000.0 * self.exclusive)
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,

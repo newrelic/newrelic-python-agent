@@ -950,16 +950,25 @@ def validate_tt_collector_json(required_params={},
             assert isinstance(trace_segment[3], dict)  # request params
             assert isinstance(trace_segment[4], list)  # children
 
-            def _check_datastore_instance_params_and_start_time(node):
+            assert trace_segment[0] >= root_node[0]  # trace starts after root
+
+            def _check_params_and_start_time(node):
                 children = node[4]
                 for child in children:
                     assert child[0] >= node[0]  # child started after parent
-                    _check_datastore_instance_params_and_start_time(child)
+                    _check_params_and_start_time(child)
+
+                params = node[3]
+                assert isinstance(params, dict)
+
+                # We should always report exclusive_duration_millis on a
+                # segment. This allows us to override exclusive time
+                # calculations on APM.
+                assert 'exclusive_duration_millis' in params
 
                 segment_name = _lookup_string_table(node[2], string_table,
                         default=node[2])
                 if segment_name.startswith('Datastore'):
-                    params = node[3] or {}
                     for key in datastore_params:
                         assert key in params
                         assert params[key] == datastore_params[key]
@@ -970,7 +979,7 @@ def validate_tt_collector_json(required_params={},
                     if 'host' in params:
                         assert params['host'] not in LOCALHOST_EQUIVALENTS
 
-            _check_datastore_instance_params_and_start_time(root_node)
+            _check_params_and_start_time(trace_segment)
 
             attributes = trace_details[4]
 

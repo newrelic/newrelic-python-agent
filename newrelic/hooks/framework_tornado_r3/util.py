@@ -17,8 +17,10 @@ _logger = logging.getLogger(__name__)
 class NoneProxy(object):
     pass
 
+
 def current_thread_id():
     return transaction_cache().current_thread_id()
+
 
 def record_exception(exc_info):
     # Record the details of any exception ignoring status codes which
@@ -47,6 +49,7 @@ def record_exception(exc_info):
         if application and application.enabled:
             application.record_exception(*exc_info)
 
+
 def retrieve_current_transaction():
     # Retrieves the current transaction regardless of whether it has
     # been stopped or ignored. We sometimes want to purge the current
@@ -54,6 +57,7 @@ def retrieve_current_transaction():
     # known current transaction that is being called into asynchronously.
 
     return current_transaction(active_only=False)
+
 
 def retrieve_request_transaction(request):
     # Retrieves any transaction already associated with the request.
@@ -69,6 +73,7 @@ def retrieve_request_transaction(request):
     else:
         return transaction
 
+
 def retrieve_transaction_request(transaction):
     # Retrieves any request already associated with the transaction.
     request_weakref = getattr(transaction, '_nr_current_request', None)
@@ -79,17 +84,21 @@ def retrieve_transaction_request(transaction):
 # We sometimes want to purge the current transaction out of the queue and
 # replace it with the known current transaction which has been called into
 # asynchronously.
+
+
 def purge_current_transaction():
     old_transaction = retrieve_current_transaction()
     if old_transaction is not None:
         old_transaction.drop_transaction()
     return old_transaction
 
+
 def replace_current_transaction(new_transaction):
     old_transaction = purge_current_transaction()
     if new_transaction:
         new_transaction.save_transaction()
     return old_transaction
+
 
 def possibly_finalize_transaction(transaction, exc=None, value=None, tb=None):
     if transaction is None:
@@ -98,19 +107,20 @@ def possibly_finalize_transaction(transaction, exc=None, value=None, tb=None):
                 'support.\n%s', ''.join(traceback.format_stack()[:-1]))
         return
 
-    if transaction._is_finalized:
-        _logger.error('Runtime instrumentation error. Attempting to finalize '
-                'a transaction which has already been finalized. Please report '
-                'this issue to New Relic support.\n%s',
-                ''.join(traceback.format_stack()[:-1]))
-        return
-
     if (transaction._request_handler_finalize and
             transaction._server_adapter_finalize and
-            transaction._ref_count == 0):
+            transaction._ref_count == 0 and
+            len(transaction._node_stack) <= 1):
         _finalize_transaction(transaction, exc, value, tb)
 
+
 def _finalize_transaction(transaction, exc=None, value=None, tb=None):
+    if transaction._is_finalized:
+        _logger.error('Runtime instrumentation error. Attempting to finalize '
+                'a transaction which has already been finalized. Please '
+                'report this issue to New Relic support.\n%s',
+                ''.join(traceback.format_stack()[:-1]))
+        return
     old_transaction = replace_current_transaction(transaction)
 
     try:
@@ -129,6 +139,7 @@ def _finalize_transaction(transaction, exc=None, value=None, tb=None):
         if old_transaction != transaction:
             replace_current_transaction(old_transaction)
 
+
 class TransactionContext(object):
     def __init__(self, transaction):
         self.transaction = transaction
@@ -138,6 +149,7 @@ class TransactionContext(object):
 
     def __exit__(self, exc_type, exc_value, traceback):
         replace_current_transaction(self.old_transaction)
+
 
 def create_transaction_aware_fxn(fxn, fxn_for_name=None, should_trace=True):
     # Returns a version of fxn that will switch context to the appropriate
@@ -154,8 +166,8 @@ def create_transaction_aware_fxn(fxn, fxn_for_name=None, should_trace=True):
     #      naming. This happens, for example, when tornado wraps a function in
     #      stack_context.wrap and we want to wrap the output function.
     #  should_trace: Defaults to True. Usually we want to trace the transaction
-    #      aware function. However, to prevent tracing a function multiple times
-    #      we may not want to trace a particular function. See our
+    #      aware function. However, to prevent tracing a function multiple
+    #      times we may not want to trace a particular function. See our
     #      instrumentation, stack_context._nr_wrapper_stack_context_wrap.
 
     if fxn is None or hasattr(fxn, '_nr_transaction'):
@@ -209,18 +221,19 @@ def create_transaction_aware_fxn(fxn, fxn_for_name=None, should_trace=True):
                         wrapped._nr_recorded_exception = True
                         raise
 
-                    # Coroutines are wrapped in lambdas when they are scheduled.
-                    # See tornado.gen.Runner.run(). In this case, we don't know
-                    # the name until the function is run. We only know it then
-                    # because we pass out the name as an attribute on the
-                    # result. We update the name now.
+                    # Coroutines are wrapped in lambdas when they are
+                    # scheduled. See tornado.gen.Runner.run(). In this
+                    # case, we don't know the name until the function
+                    # is run. We only know it then because we pass
+                    # out the name as an attribute on the result.
+                    # We update the name now.
 
                     if (ft is not None and ret is not None and
                             hasattr(ret, '_nr_coroutine_name')):
                         ft.name = ret._nr_coroutine_name
 
-                        # To be able to attach the name to the return value of a
-                        # coroutine we need to have the coroutine return an
+                        # To be able to attach the name to the return value of
+                        # a coroutine we need to have the coroutine return an
                         # object. If it returns None, we have created a proxy
                         # object. We now restore the original None value.
                         if type(ret) == NoneProxy:
@@ -229,12 +242,13 @@ def create_transaction_aware_fxn(fxn, fxn_for_name=None, should_trace=True):
         # If decrementing the ref count in Runner.run() takes it to 0, then
         # we need to end the transaction here.
 
-        if inner_transaction and inner_transaction._ref_count == 0:
+        if inner_transaction:
             possibly_finalize_transaction(inner_transaction)
 
         return ret
 
     return transaction_aware(fxn)
+
 
 def request_handler_finish_finalize(wrapped, instance, args, kwargs):
     request = instance.request
@@ -249,6 +263,7 @@ def request_handler_finish_finalize(wrapped, instance, args, kwargs):
         transaction._request_handler_finalize = True
         transaction.last_byte_time = request._finish_time
         possibly_finalize_transaction(transaction)
+
 
 def server_request_adapter_finish_finalize(wrapped, instance, args, kwargs):
     if instance.delegate is not None:
@@ -266,6 +281,7 @@ def server_request_adapter_finish_finalize(wrapped, instance, args, kwargs):
     finally:
         transaction._server_adapter_finalize = True
         possibly_finalize_transaction(transaction)
+
 
 def server_request_adapter_on_connection_close_finalize(wrapped,
         instance, args, kwargs):

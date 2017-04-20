@@ -31,7 +31,8 @@ from _test_async_application import (HelloRequestHandler,
         SimpleStreamingRequestHandler, DoubleWrapRequestHandler,
         FutureDoubleWrapRequestHandler, RunnerRefCountRequestHandler,
         RunnerRefCountSyncGetRequestHandler, NativeFuturesCoroutine,
-        TransactionAwareFunctionAferFinalize, IgnoreAddHandlerRequestHandler)
+        TransactionAwareFunctionAferFinalize, IgnoreAddHandlerRequestHandler,
+        DelayedWrappedCallbackHandler)
 
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 
@@ -251,6 +252,22 @@ class AllTests(object):
         response = self.fetch_response('/one-callback', method="OPTIONS")
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, OneCallbackRequestHandler.RESPONSE)
+
+    scoped_metrics = [('Function/_test_async_application:'
+            'DelayedWrappedCallbackHandler.get', 1),
+            ('Function/_test_async_application:'
+            'DelayedWrappedCallbackHandler.finish_callback', 1)]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[])
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:DelayedWrappedCallbackHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_delayed_callback(self):
+        response = self.fetch_response('/delayed-callback')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body,
+                DelayedWrappedCallbackHandler.RESPONSE)
 
     scoped_metrics = [('Function/_test_async_application:'
             'NamedStackContextWrapRequestHandler.get', 1),
@@ -699,22 +716,6 @@ class AllTests(object):
         external = MockExternalHTTPServer()
         external.start()
         response = self.fetch_response('/curl-stream-cb/rawurl/%s' %
-                external.port)
-        external.stop()
-
-        self.assertEqual(response.code, 200)
-        self.assertEqual(response.body, external.RESPONSE)
-
-    @tornado_validate_transaction_cache_empty()
-    @tornado_validate_errors()
-    @tornado_validate_count_transaction_metrics(
-            '_test_async_application:CurlStreamingCallbackRequestHandler.get',
-            scoped_metrics=scoped_metrics,
-            rollup_metrics=rollup_metrics)
-    def test_curl_streaming_callback_httpclient_request_object_fetch(self):
-        external = MockExternalHTTPServer()
-        external.start()
-        response = self.fetch_response('/curl-stream-cb/requestobj/%s' %
                 external.port)
         external.stop()
 

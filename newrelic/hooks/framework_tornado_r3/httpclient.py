@@ -1,8 +1,8 @@
 from tornado.httpclient import HTTPRequest
 
-from newrelic.agent import (ExternalTrace, FunctionTrace, function_wrapper,
-        wrap_function_wrapper, callable_name)
+from newrelic.agent import ExternalTrace, wrap_function_wrapper
 from .util import retrieve_current_transaction
+
 
 def _extract_url(*args, **kwargs):
 
@@ -19,6 +19,7 @@ def _extract_url(*args, **kwargs):
 
     return url
 
+
 def _nr_wrapper_httpclient_HTTPClient_fetch_(wrapped, instance, args, kwargs):
 
     transaction = retrieve_current_transaction()
@@ -30,6 +31,7 @@ def _nr_wrapper_httpclient_HTTPClient_fetch_(wrapped, instance, args, kwargs):
 
     with ExternalTrace(transaction, 'tornado.httpclient', url):
         return wrapped(*args, **kwargs)
+
 
 def _nr_wrapper_httpclient_AsyncHTTPClient_fetch_(
         wrapped, instance, args, kwargs):
@@ -43,6 +45,7 @@ def _nr_wrapper_httpclient_AsyncHTTPClient_fetch_(
 
     with ExternalTrace(transaction, 'tornado.httpclient', url):
         return wrapped(*args, **kwargs)
+
 
 def instrument_tornado_httpclient(module):
     wrap_function_wrapper(module, 'HTTPClient.fetch',

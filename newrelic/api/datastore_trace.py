@@ -5,7 +5,10 @@ from .transaction import current_transaction
 from ..core.datastore_node import DatastoreNode
 from ..common.object_wrapper import FunctionWrapper, wrap_object
 
+
 class DatastoreTrace(TimeTrace):
+
+    node = DatastoreNode
 
     def __init__(self, transaction, product, target, operation,
             host=None, port_path_or_id=None, database_name=None):
@@ -30,16 +33,9 @@ class DatastoreTrace(TimeTrace):
                 product=self.product, target=self.target,
                 operation=self.operation))
 
-    def create_node(self):
-        return DatastoreNode(product=self.product, target=self.target,
-                operation=self.operation, children=self.children,
-                start_time=self.start_time, end_time=self.end_time,
-                duration=self.duration, exclusive=self.exclusive,
-                host=self.host, port_path_or_id=self.port_path_or_id,
-                database_name=self.database_name)
-
     def terminal_node(self):
         return True
+
 
 def DatastoreTraceWrapper(wrapped, product, target, operation):
 
@@ -78,9 +74,11 @@ def DatastoreTraceWrapper(wrapped, product, target, operation):
 
     return FunctionWrapper(wrapped, _nr_datastore_trace_wrapper_)
 
+
 def datastore_trace(product, target, operation):
     return functools.partial(DatastoreTraceWrapper, product=product,
             target=target, operation=operation)
+
 
 def wrap_datastore_trace(module, object_path, product, target, operation):
     wrap_object(module, object_path, DatastoreTraceWrapper,

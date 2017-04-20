@@ -6,7 +6,10 @@ from ..core.function_node import FunctionNode
 from ..common.object_wrapper import FunctionWrapper, wrap_object
 from ..common.object_names import callable_name
 
+
 class FunctionTrace(TimeTrace):
+
+    node = FunctionNode
 
     def __init__(self, transaction, name, group=None, label=None,
             params=None, terminal=False, rollup=None):
@@ -35,15 +38,9 @@ class FunctionTrace(TimeTrace):
                 params=self.params, terminal=self.terminal,
                 rollup=self.rollup))
 
-    def create_node(self):
-        return FunctionNode(group=self.group, name=self.name,
-                children=self.children, start_time=self.start_time,
-                end_time=self.end_time, duration=self.duration,
-                exclusive=self.exclusive, label=self.label,
-                params=self.params, rollup=self.rollup)
-
     def terminal_node(self):
         return self.terminal
+
 
 def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
             params=None, terminal=False, rollup=None):
@@ -115,11 +112,13 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
 
     return FunctionWrapper(wrapped, literal_wrapper)
 
+
 def function_trace(name=None, group=None, label=None, params=None,
         terminal=False, rollup=None):
     return functools.partial(FunctionTraceWrapper, name=name,
             group=group, label=label, params=params, terminal=terminal,
             rollup=rollup)
+
 
 def wrap_function_trace(module, object_path, name=None,
         group=None, label=None, params=None, terminal=False, rollup=None):

@@ -9,6 +9,7 @@ from ..common.object_wrapper import FunctionWrapper, wrap_object
 
 _logger = logging.getLogger(__name__)
 
+
 def register_database_client(dbapi2_module, database_product,
         quoting_style='single', explain_query=None, explain_stmts=[],
         instance_info=None):
@@ -26,10 +27,14 @@ def register_database_client(dbapi2_module, database_product,
     dbapi2_module._nr_instance_info = instance_info
     dbapi2_module._nr_datastore_instance_feature_flag = False
 
+
 def enable_datastore_instance_feature(dbapi2_module):
     dbapi2_module._nr_datastore_instance_feature_flag = True
 
+
 class DatabaseTrace(TimeTrace):
+
+    node = DatabaseNode
 
     __async_explain_plan_logged = False
 
@@ -135,11 +140,11 @@ class DatabaseTrace(TimeTrace):
                 # doing the explain plan with the same inputs could
                 # cause further problems.
 
-                if (exc is None
-                        and not self.is_async_mode
-                        and tt.explain_enabled
-                        and self.duration >= tt.explain_threshold
-                        and self.connect_params is not None):
+                if (exc is None and
+                        not self.is_async_mode and
+                        tt.explain_enabled and
+                        self.duration >= tt.explain_threshold and
+                        self.connect_params is not None):
                     if (transaction._explain_plan_count <
                            agent_limits.sql_explain_plans):
                         connect_params = self.connect_params
@@ -158,26 +163,9 @@ class DatabaseTrace(TimeTrace):
         self.port_path_or_id = port_path_or_id
         self.database_name = database_name
 
-    def create_node(self):
-        return DatabaseNode(dbapi2_module=self.dbapi2_module,
-                sql=self.sql,
-                children=self.children,
-                start_time=self.start_time,
-                end_time=self.end_time,
-                duration=self.duration,
-                exclusive=self.exclusive,
-                stack_trace=self.stack_trace,
-                sql_format=self.sql_format,
-                connect_params=self.connect_params,
-                cursor_params=self.cursor_params,
-                sql_parameters=self.sql_parameters,
-                execute_params=self.execute_params,
-                host=self.host,
-                port_path_or_id=self.port_path_or_id,
-                database_name=self.database_name)
-
     def terminal_node(self):
         return True
+
 
 def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None):
 
@@ -200,9 +188,11 @@ def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None):
 
     return FunctionWrapper(wrapped, _nr_database_trace_wrapper_)
 
+
 def database_trace(sql, dbapi2_module=None):
     return functools.partial(DatabaseTraceWrapper, sql=sql,
             dbapi2_module=dbapi2_module)
+
 
 def wrap_database_trace(module, object_path, sql, dbapi2_module=None):
     wrap_object(module, object_path, DatabaseTraceWrapper,

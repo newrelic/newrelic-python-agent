@@ -6,9 +6,10 @@ from newrelic.common import system_info
 from newrelic.core.metric import TimeMetric
 
 _DatastoreNode = namedtuple('_DatastoreNode',
-        ['product',  'target', 'operation', 'children', 'start_time',
+        ['product', 'target', 'operation', 'children', 'start_time',
         'end_time', 'duration', 'exclusive', 'host', 'port_path_or_id',
-        'database_name'])
+        'database_name', 'async'])
+
 
 class DatastoreNode(_DatastoreNode):
 

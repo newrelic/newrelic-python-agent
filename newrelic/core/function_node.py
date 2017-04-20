@@ -8,7 +8,9 @@ from ..packages import six
 
 _FunctionNode = namedtuple('_FunctionNode',
         ['group', 'name', 'children', 'start_time', 'end_time',
-        'duration', 'exclusive', 'label', 'params', 'rollup'])
+        'duration', 'exclusive', 'label', 'params', 'rollup',
+        'async'])
+
 
 class FunctionNode(_FunctionNode):
 
@@ -54,10 +56,10 @@ class FunctionNode(_FunctionNode):
                             duration=self.duration, exclusive=None)
 
                     if root.type == 'WebTransaction':
-                        yield TimeMetric(name=rollup+'Web', scope='',
+                        yield TimeMetric(name=rollup + 'Web', scope='',
                                 duration=self.duration, exclusive=None)
                     else:
-                        yield TimeMetric(name=rollup+'Other', scope='',
+                        yield TimeMetric(name=rollup + 'Other', scope='',
                                 duration=self.duration, exclusive=None)
 
                 else:

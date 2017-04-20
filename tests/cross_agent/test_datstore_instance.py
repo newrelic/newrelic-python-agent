@@ -17,16 +17,20 @@ _parameters_list = ['name', 'system_hostname', 'db_hostname',
 
 _parameters = ','.join(_parameters_list)
 
+
 def _load_tests():
     with open(FIXTURE, 'r') as fh:
         js = fh.read()
     return json.loads(js)
 
+
 def _parametrize_test(test):
-    return tuple([test.get(f, None if f!='db_hostname' else 'localhost')
+    return tuple([test.get(f, None if f != 'db_hostname' else 'localhost')
             for f in _parameters_list])
 
+
 _datastore_tests = [_parametrize_test(t) for t in _load_tests()]
+
 
 @pytest.mark.parametrize(_parameters, _datastore_tests)
 @background_task()
@@ -45,7 +49,7 @@ def test_datastore_instance(name, system_hostname, db_hostname,
 
     port_path_or_id = port or database_path or unix_socket
 
-    node=DatabaseNode(dbapi2_module=FakeModule,
+    node = DatabaseNode(dbapi2_module=FakeModule,
             sql='',
             children=[],
             start_time=0,
@@ -60,7 +64,8 @@ def test_datastore_instance(name, system_hostname, db_hostname,
             execute_params=None,
             host=db_hostname,
             port_path_or_id=port_path_or_id,
-            database_name=database_path)
+            database_name=database_path,
+            async=False)
 
     empty_stats = StatsEngine()
     transaction = current_transaction()

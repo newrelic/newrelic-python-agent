@@ -11,7 +11,8 @@ from newrelic.core.metric import TimeMetric
 
 _ExternalNode = namedtuple('_ExternalNode',
         ['library', 'url', 'method', 'children', 'start_time', 'end_time',
-        'duration', 'exclusive', 'params'])
+        'duration', 'exclusive', 'params', 'async'])
+
 
 class ExternalNode(_ExternalNode):
 

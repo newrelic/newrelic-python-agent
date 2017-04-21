@@ -50,7 +50,7 @@ class MemcacheNode(_MemcacheNode):
         root.trace_node_count += 1
 
         params = {}
-        params['exclusive_duration_millis'] = round(1000.0 * self.exclusive, 0)
+        params['exclusive_duration_millis'] = 1000.0 * self.exclusive
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,

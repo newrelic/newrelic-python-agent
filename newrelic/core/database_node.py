@@ -192,7 +192,7 @@ class DatabaseNode(_DatabaseNode):
         root.trace_node_count += 1
 
         params = {}
-        params['exclusive_duration_millis'] = round(1000.0 * self.exclusive, 0)
+        params['exclusive_duration_millis'] = 1000.0 * self.exclusive
 
         # Only send datastore instance params if not empty.
 

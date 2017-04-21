@@ -965,6 +965,7 @@ def validate_tt_collector_json(required_params={},
                 # segment. This allows us to override exclusive time
                 # calculations on APM.
                 assert 'exclusive_duration_millis' in params
+                assert type(params['exclusive_duration_millis']) is float
 
                 segment_name = _lookup_string_table(node[2], string_table,
                         default=node[2])

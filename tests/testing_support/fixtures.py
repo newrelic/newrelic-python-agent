@@ -907,8 +907,8 @@ def validate_tt_collector_json(required_params={},
             trace_data = instance.transaction_trace_data(connections)
 
             trace = trace_data[0]  # 1st trace
-            assert isinstance(trace[0], (int, float))  # start time (ms)
-            assert isinstance(trace[1], (int, float))  # duration (ms)
+            assert isinstance(trace[0], float)  # start time (ms)
+            assert isinstance(trace[1], float)  # duration (ms)
             assert isinstance(trace[2], six.string_types)  # transaction name
             if trace[2].startswith('WebTransaction'):
                 assert isinstance(trace[3], six.string_types)  # request url
@@ -917,7 +917,7 @@ def validate_tt_collector_json(required_params={},
 
             trace_details, string_table = unpack_field(trace[4])
             assert len(trace_details) == 5
-            assert isinstance(trace_details[0], (int, float))  # start time (s)
+            assert isinstance(trace_details[0], float)  # start time (ms)
 
             # the next two items should be empty dicts, old parameters stuff,
             # placeholders for now
@@ -930,8 +930,8 @@ def validate_tt_collector_json(required_params={},
             # root node in slot 3
 
             root_node = trace_details[3]
-            assert isinstance(root_node[0], (int, float))  # entry timestamp
-            assert isinstance(root_node[1], (int, float))  # exit timestamp
+            assert isinstance(root_node[0], float)  # entry timestamp
+            assert isinstance(root_node[1], float)  # exit timestamp
             assert root_node[2] == 'ROOT'
             assert isinstance(root_node[3], dict)
             assert len(root_node[3]) == 0  # spec shows empty (for root)
@@ -944,8 +944,8 @@ def validate_tt_collector_json(required_params={},
 
             # let's just test the first child
             trace_segment = children[0]
-            assert isinstance(trace_segment[0], (int, float))  # entry timestmp
-            assert isinstance(trace_segment[1], (int, float))  # exit timestamp
+            assert isinstance(trace_segment[0], float)  # entry timestmp
+            assert isinstance(trace_segment[1], float)  # exit timestamp
             assert isinstance(trace_segment[2], six.string_types)  # scope
             assert isinstance(trace_segment[3], dict)  # request params
             assert isinstance(trace_segment[4], list)  # children

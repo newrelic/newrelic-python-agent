@@ -11,7 +11,9 @@ from newrelic.core.metric import TimeMetric
 
 _ExternalNode = namedtuple('_ExternalNode',
         ['library', 'url', 'method', 'children', 'start_time', 'end_time',
-        'duration', 'exclusive', 'params'])
+        'duration', 'exclusive', 'params', 'async'])
+
+
 
 class ExternalNode(_ExternalNode):
 
@@ -140,6 +142,7 @@ class ExternalNode(_ExternalNode):
                 details.path, '', ''))
 
         params['url'] = url
+        params['exclusive_duration_millis'] = 1000.0 * self.exclusive
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,

@@ -7,7 +7,6 @@ make use of when doing monkey patching.
 
 import sys
 import inspect
-import functools
 
 from ..packages import six
 
@@ -32,6 +31,7 @@ from ..packages.wrapt.wrappers import _FunctionWrapperBase
 # method lookup for __setattr__(), __getattr__() and __delattr__(). Also
 # the intention eventually is that ObjectWrapper is deprecated. Either
 # ObjectProxy or FunctionWrapper should be used going forward.
+
 
 class _ObjectWrapperBase(object):
 
@@ -81,11 +81,14 @@ class _ObjectWrapperBase(object):
     def _nr_parent(self):
         return self._self_parent
 
+
 class _NRBoundFunctionWrapper(_ObjectWrapperBase, _BoundFunctionWrapper):
     pass
 
+
 class FunctionWrapper(_ObjectWrapperBase, _FunctionWrapper):
     __bound_function_wrapper__ = _NRBoundFunctionWrapper
+
 
 class ObjectProxy(_ObjectProxy):
 
@@ -123,6 +126,7 @@ class ObjectProxy(_ObjectProxy):
                     '_nr_last_object', self.__wrapped__)
             return self._self_last_object
 
+
 class CallableObjectProxy(ObjectProxy):
 
     def __call__(self, *args, **kwargs):
@@ -131,6 +135,7 @@ class CallableObjectProxy(ObjectProxy):
 # The ObjectWrapper class needs to be deprecated and removed once all our
 # own code no longer uses it. It reaches down into what are wrapt internals
 # at present which shouldn't be doing.
+
 
 class ObjectWrapper(_ObjectWrapperBase, _FunctionWrapperBase):
     __bound_function_wrapper__ = _NRBoundFunctionWrapper
@@ -148,9 +153,11 @@ class ObjectWrapper(_ObjectWrapperBase, _FunctionWrapperBase):
 
 # The wrap_callable() alias needs to be deprecated and usage of it removed.
 
+
 wrap_callable = FunctionWrapper
 
 # Helper functions for performing monkey patching.
+
 
 def resolve_path(module, name):
     if isinstance(module, six.string_types):
@@ -181,8 +188,8 @@ def resolve_path(module, name):
 
         if inspect.isclass(original):
             for cls in inspect.getmro(original):
-                if attribute in vars(original):
-                    original = vars(original)[attribute]
+                if attribute in vars(cls):
+                    original = vars(cls)[attribute]
                     break
             else:
                 original = getattr(original, attribute)
@@ -192,8 +199,10 @@ def resolve_path(module, name):
 
     return (parent, attribute, original)
 
+
 def apply_patch(parent, attribute, replacement):
     setattr(parent, attribute, replacement)
+
 
 def wrap_object(module, name, factory, args=(), kwargs={}):
     (parent, attribute, original) = resolve_path(module, name)
@@ -206,6 +215,7 @@ def wrap_object(module, name, factory, args=(), kwargs={}):
 # class which is a descriptor and which intercepts access to the
 # instance attribute. Note that this cannot be used on attributes which
 # are themselves defined by a property object.
+
 
 class AttributeWrapper(object):
 
@@ -225,6 +235,7 @@ class AttributeWrapper(object):
     def __delete__(self, instance):
         del instance.__dict__[self.attribute]
 
+
 def wrap_object_attribute(module, name, factory, args=(), kwargs={}):
     path, attribute = name.rsplit('.', 1)
     parent = resolve_path(module, path)[2]
@@ -234,6 +245,7 @@ def wrap_object_attribute(module, name, factory, args=(), kwargs={}):
 
 # Function for creating a decorator for applying to functions, as well as
 # short cut functions for applying wrapper functions via monkey patching.
+
 
 def function_wrapper(wrapper):
     def _wrapper(wrapped, instance, args, kwargs):
@@ -247,13 +259,16 @@ def function_wrapper(wrapper):
         return FunctionWrapper(target_wrapped, target_wrapper)
     return FunctionWrapper(wrapper, _wrapper)
 
+
 def wrap_function_wrapper(module, name, wrapper):
     return wrap_object(module, name, FunctionWrapper, (wrapper,))
+
 
 def patch_function_wrapper(module, name):
     def _wrapper(wrapper):
         return wrap_object(module, name, FunctionWrapper, (wrapper,))
     return _wrapper
+
 
 def transient_function_wrapper(module, name):
     def _decorator(wrapper):
@@ -265,6 +280,7 @@ def transient_function_wrapper(module, name):
                 target_wrapper = wrapper.__get__(None, instance)
             else:
                 target_wrapper = wrapper.__get__(instance, type(instance))
+
             def _execute(wrapped, instance, args, kwargs):
                 (parent, attribute, original) = resolve_path(module, name)
                 replacement = FunctionWrapper(original, target_wrapper)
@@ -280,6 +296,7 @@ def transient_function_wrapper(module, name):
 # Generic decorators for performing actions before and after a wrapped
 # function is called, or modifying the inbound arguments or return value.
 
+
 def pre_function(function):
     @function_wrapper
     def _wrapper(wrapped, instance, args, kwargs):
@@ -290,11 +307,14 @@ def pre_function(function):
         return wrapped(*args, **kwargs)
     return _wrapper
 
+
 def PreFunctionWrapper(wrapped, function):
     return pre_function(function)(wrapped)
 
+
 def wrap_pre_function(module, object_path, function):
     return wrap_object(module, object_path, PreFunctionWrapper, (function,))
+
 
 def post_function(function):
     @function_wrapper
@@ -307,11 +327,14 @@ def post_function(function):
         return result
     return _wrapper
 
+
 def PostFunctionWrapper(wrapped, function):
     return post_function(function)(wrapped)
 
+
 def wrap_post_function(module, object_path, function):
     return wrap_object(module, object_path, PostFunctionWrapper, (function,))
+
 
 def in_function(function):
     @function_wrapper
@@ -336,11 +359,14 @@ def in_function(function):
 
     return _wrapper
 
+
 def InFunctionWrapper(wrapped, function):
     return in_function(function)(wrapped)
 
+
 def wrap_in_function(module, object_path, function):
     return wrap_object(module, object_path, InFunctionWrapper, (function,))
+
 
 def out_function(function):
     @function_wrapper
@@ -348,8 +374,10 @@ def out_function(function):
         return function(wrapped(*args, **kwargs))
     return _wrapper
 
+
 def OutFunctionWrapper(wrapped, function):
     return out_function(function)(wrapped)
+
 
 def wrap_out_function(module, object_path, function):
     return wrap_object(module, object_path, OutFunctionWrapper, (function,))

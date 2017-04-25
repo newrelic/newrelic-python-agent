@@ -4,24 +4,41 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
+
 class TimeTrace(object):
 
     node = None
 
     def __init__(self, transaction):
         self.transaction = transaction
+        self.parent = None
+        self.child_count = 0
         self.children = []
         self.start_time = 0.0
         self.end_time = 0.0
         self.duration = 0.0
         self.exclusive = 0.0
         self.activated = False
+        self.exited = False
+        self.async = False
+        self.has_async_children = False
+        self.min_child_start_time = float('inf')
+        self.exc_data = (None, None, None)
 
         # Don't do further tracing of transaction if
         # it has been explicitly stopped.
 
         if transaction and transaction.stopped:
             self.transaction = None
+            return
+
+        if transaction:
+            self.parent = self.transaction.active_node()
+
+        # parent shall track children immediately
+        if (self.parent is not None and
+                not self.parent.terminal_node()):
+            self.parent.increment_child_count()
 
     def __enter__(self):
         if not self.transaction:
@@ -30,10 +47,11 @@ class TimeTrace(object):
         # Don't do any tracing if parent is designated
         # as a terminal node.
 
-        parent = self.transaction.active_node()
+        parent = self.parent
 
         if not parent or parent.terminal_node():
             self.transaction = None
+            self.parent = None
             return parent
 
         # Record start time.
@@ -63,13 +81,7 @@ class TimeTrace(object):
 
             return
 
-        # Wipe out transaction reference so can't use object
-        # again. Retain reference as local variable for use in
-        # this call though.
-
         transaction = self.transaction
-
-        self.transaction = None
 
         # If recording of time for transaction has already been
         # stopped, then that time has to be used.
@@ -97,17 +109,69 @@ class TimeTrace(object):
         if self.exclusive < 0:
             self.exclusive = 0
 
-        # Pop ourselves as current node. The return value is our
-        # parent.
+        self.exited = True
 
-        parent = transaction._pop_current(self)
+        self.exc_data = (exc, value, tb)
+
+        # in all cases except async, the children will have exited
+        # so this will create the node
+
+        # ----------------------------------------------------------------------
+        # SYNC  | The node will be created here. All children will have exited.
+        # ----------------------------------------------------------------------
+        # Async | The node might be created here (if there are no children).
+        #       | Otherwise, this will exit siliently without creating the
+        #       | node.
+        #       | All references to transaction, parent, exc_data are
+        #       | maintained.
+        # ----------------------------------------------------------------------
+        self.complete_trace()
+
+    def complete_trace(self):
+        # we shouldn't continue if we're still running
+        if not self.exited:
+            return
+
+        # defer node completion until all children have exited
+        if len(self.children) != self.child_count:
+            return
+
+        # transaction already completed, this is an error
+        if self.transaction is None:
+            _logger.error('Runtime instrumentation error. The transaction '
+                    'already completed meaning a child called complete trace '
+                    'after the trace had been finalized. Trace: %r \n%s',
+                    self, ''.join(traceback.format_stack()[:-1]))
+
+        # Wipe out transaction reference so can't use object
+        # again. Retain reference as local variable for use in
+        # this call though.
+
+        transaction = self.transaction
+        self.transaction = None
+
+        # Pop ourselves as current node.
+
+        transaction._pop_current(self)
+
+        # wipe out parent too
+        parent = self.parent
+        self.parent = None
+
+        # wipe out exc data
+        exc_data = self.exc_data
+        self.exc_data = (None, None, None)
+
+        # Check to see if we're async
+        if parent.exited or parent.has_async_children:
+            self.async = True
 
         # Give chance for derived class to finalize any data in
         # this object instance. The transaction is passed as a
         # parameter since the transaction object on this instance
         # will have been cleared above.
 
-        self.finalize_data(transaction, exc, value, tb)
+        self.finalize_data(transaction, *exc_data)
 
         # Give chance for derived class to create a standin node
         # object to be used in the transaction trace. If we get
@@ -119,6 +183,16 @@ class TimeTrace(object):
         if node:
             transaction._process_node(node)
             parent.process_child(node)
+
+        # ----------------------------------------------------------------------
+        # SYNC  | The parent will not have exited yet, so no node will be
+        #       | created. This operation is a NOP.
+        # ----------------------------------------------------------------------
+        # Async | The parent may have exited already while the child was
+        #       | running. If this trace is the last node that's running, this
+        #       | complete_trace will create the parent node.
+        # ----------------------------------------------------------------------
+        parent.complete_trace()
 
     def finalize_data(self, transaction, exc=None, value=None, tb=None):
         pass
@@ -132,6 +206,66 @@ class TimeTrace(object):
     def terminal_node(self):
         return False
 
+    def update_async_exclusive_time(self, min_child_start_time,
+            exclusive_duration):
+        # if exited and the child started after, there's no overlap on the
+        # exclusive time
+        if self.exited and (self.end_time < min_child_start_time):
+            exclusive_delta = 0.0
+        # else there is overlap and we need to compute it
+        elif self.exited:
+            exclusive_delta = (self.end_time -
+                    min_child_start_time)
+
+            # we don't want to double count the partial exclusive time
+            # attributed to this trace, so we should reset the child start time
+            # to after this trace ended
+            min_child_start_time = self.end_time
+        # we're still running so all exclusive duration is taken by us
+        else:
+            exclusive_delta = exclusive_duration
+
+        # update the exclusive time
+        self.exclusive -= exclusive_delta
+
+        # pass any remaining exclusive duration up to the parent
+        exclusive_duration_remaining = exclusive_duration - exclusive_delta
+
+        if self.parent and exclusive_duration_remaining > 0.0:
+            # call parent exclusive duration delta
+            self.parent.update_async_exclusive_time(min_child_start_time,
+                    exclusive_duration_remaining)
+
     def process_child(self, node):
         self.children.append(node)
-        self.exclusive -= node.duration
+        if node.async:
+
+            # record the lowest start time
+            self.min_child_start_time = min(self.min_child_start_time,
+                    node.start_time)
+
+            # if there are no children running, finalize exclusive time
+            if self.child_count == len(self.children):
+
+                exclusive_duration = node.end_time - self.min_child_start_time
+
+                self.update_async_exclusive_time(self.min_child_start_time,
+                        exclusive_duration)
+
+                # reset time range tracking
+                self.min_child_start_time = float('inf')
+        else:
+            self.exclusive -= node.duration
+
+    def increment_child_count(self):
+        self.child_count += 1
+
+        # if there's more than 1 child node outstanding
+        # then the children are async w.r.t each other
+        if (self.child_count - len(self.children)) > 1:
+            self.has_async_children = True
+        # else, the current trace that's being scheduled is not going to be
+        # async. note that this implies that all previous traces have
+        # completed
+        else:
+            self.has_async_children = False

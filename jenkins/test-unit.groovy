@@ -6,6 +6,11 @@ String repoFull = "${organization}/${repoGHE}"
 String testSuffix = "__unit-test"
 String slackChannel = '#python-agent'
 String gitBranch
+Boolean isJaasHostname = InetAddress.getLocalHost().getHostName() == 'python-agent-build.pdx.vm.datanerd.us'
+
+if ( !isJaasHostname ) {
+    slackChannel = '#python-agent-verbose'
+}
 
 def getUnitTestEnvs = {
 

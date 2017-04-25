@@ -551,6 +551,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/tests/test_time_trace.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/tests/test_transaction_name.py": {
         "hash": "n/a",
         "libraries": [

@@ -2,9 +2,10 @@ import newrelic.core.datastore_node
 
 from newrelic.common import system_info
 
-HOST='foo'
+HOST = 'foo'
 
 _backup_methods = {}
+
 
 def setup_module(module):
 
@@ -14,8 +15,10 @@ def setup_module(module):
     _backup_methods['gethostname'] = system_info.gethostname
     system_info.gethostname = gethostname
 
+
 def teardown_module(module):
     system_info.gethostname = _backup_methods['gethostname']
+
 
 _ds_node = newrelic.core.datastore_node.DatastoreNode(
         product='Redis',
@@ -28,7 +31,9 @@ _ds_node = newrelic.core.datastore_node.DatastoreNode(
         exclusive=0.8,
         host='localhost',
         port_path_or_id='1234',
-        database_name='bar')
+        database_name='bar',
+        async=False)
+
 
 def test_instance_hostname():
     assert _ds_node.instance_hostname == HOST

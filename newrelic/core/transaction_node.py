@@ -4,13 +4,10 @@ then to be generated.
 
 """
 
-import itertools
-
 from collections import namedtuple
 
 import newrelic.core.error_collector
 import newrelic.core.trace_node
-import newrelic.packages.six as six
 
 from newrelic.core.metric import ApdexMetric, TimeMetric
 from newrelic.core.internal_metrics import internal_trace
@@ -22,7 +19,7 @@ from newrelic.core.attribute_filter import (DST_ERROR_COLLECTOR,
 
 _TransactionNode = namedtuple('_TransactionNode',
         ['settings', 'path', 'type', 'group', 'base_name', 'name_for_metric',
-        'port', 'request_uri', 'response_code', 'queue_start','start_time',
+        'port', 'request_uri', 'response_code', 'queue_start', 'start_time',
         'end_time', 'last_byte_time', 'response_time', 'total_time',
         'duration', 'exclusive', 'children', 'errors', 'slow_sql',
         'custom_events', 'apdex_t', 'suppress_apdex', 'custom_metrics', 'guid',
@@ -32,6 +29,7 @@ _TransactionNode = namedtuple('_TransactionNode',
         'is_part_of_cat', 'trip_id', 'path_hash', 'referring_path_hash',
         'alternate_path_hashes', 'trace_intrinsics', 'agent_attributes',
         'user_attributes'])
+
 
 class TransactionNode(_TransactionNode):
 
@@ -305,6 +303,7 @@ class TransactionNode(_TransactionNode):
             children.append(child.trace_node(stats, root, connections))
 
         params = {}
+        params['exclusive_duration_millis'] = 1000.0 * self.exclusive
 
         return newrelic.core.trace_node.TraceNode(
                 start_time=start_time,
@@ -482,7 +481,6 @@ class TransactionNode(_TransactionNode):
             intrinsics['nr.referringTransactionGuid'] = guid
 
         return intrinsics
-
 
     def _event_intrinsics(self, stats_table):
         """Common attributes for analytics events"""

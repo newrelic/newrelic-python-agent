@@ -7,6 +7,11 @@ String testPrefix = "${organization}-tools"
 String integTestSuffix = "__integration-test"
 String unitTestSuffix = "__unit-test"
 String slackChannel = '#python-agent'
+Boolean isJaasHostname = InetAddress.getLocalHost().getHostName() == 'python-agent-build.pdx.vm.datanerd.us'
+
+if ( !isJaasHostname ) {
+    slackChannel = '#python-agent-verbose'
+}
 
 
 // Views for any tool-like jobs

@@ -1,7 +1,11 @@
 import pytest
 
-from motor import (MotorClient, MotorReplicaSetClient, MotorDatabase,
-        MotorCollection)
+import motor
+from motor import MotorClient, MotorDatabase, MotorCollection
+try:
+    from motor import MotorReplicaSetClient
+except ImportError:
+    pass
 
 from newrelic.agent import callable_name
 
@@ -14,9 +18,11 @@ from newrelic.agent import callable_name
 
 def test_callable_name_motor_client():
     client = MotorClient()
-    assert callable_name(client) == 'motor:MotorClient'
+    assert callable_name(client).endswith(':MotorClient')
 
 
+@pytest.mark.skipif(motor.version_tuple >= (1, 0),
+        reason="Motor 1.0 removed MotorReplicaSetClient")
 def test_callable_name_motor_replica_set_client():
     client = MotorReplicaSetClient(replicaSet='foo')
     assert callable_name(client) == 'motor:MotorReplicaSetClient'
@@ -25,14 +31,14 @@ def test_callable_name_motor_replica_set_client():
 def test_callable_name_motor_database():
     client = MotorClient()
     db = client['database']
-    assert callable_name(db) == 'motor:MotorDatabase'
+    assert callable_name(db).endswith(':MotorDatabase')
 
 
 def test_callable_name_motor_collection():
     client = MotorClient()
     db = client['database']
     collection = db['example_collection']
-    assert callable_name(collection) == 'motor:MotorCollection'
+    assert callable_name(collection).endswith(':MotorCollection')
 
 
 def test_getattr_dunder_name():
@@ -47,6 +53,9 @@ def test_getattr_nr_attribute():
         client._nr_object_path
 
 
+@pytest.mark.skipif(motor.version_tuple >= (0, 6),
+        reason="As of Motor 0.6, A database or collection whose name"
+        " starts with an underscore can no longer be accessed as a property.")
 def test_leading_underscore_attribute_access():
     client = MotorClient()
     db = client._db_with_leading_underscore

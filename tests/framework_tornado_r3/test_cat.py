@@ -26,6 +26,9 @@ _override_settings = {
     'browser_monitoring.enabled': False,
 }
 
+_override_settings_browser_enabled = dict(_override_settings)
+_override_settings_browser_enabled['browser_monitoring.enabled'] = True
+
 payload = ['b854df4feb2b1f06', False, '7e249074f277923d', '5d2957be']
 
 
@@ -44,8 +47,7 @@ class AllTests(object):
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
-    @override_application_settings(_override_settings)
-    def test_cat_response(self):
+    def _test_cat_response(self):
         headers = make_cross_agent_headers(payload, ENCODING_KEY, '1#1')
         response = self.fetch_response('/', headers=headers)
         self.assertEqual(response.code, 200)
@@ -75,6 +77,14 @@ class AllTests(object):
 
         self.assertEqual(tornado_cat_data[0], '1#1')
         self.assertEqual(wsgi_cat_data[0], '1#1')
+
+    @override_application_settings(_override_settings)
+    def test_cat_response(self):
+        self._test_cat_response()
+
+    @override_application_settings(_override_settings_browser_enabled)
+    def test_cat_response_browser_enabled(self):
+        self._test_cat_response()
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()

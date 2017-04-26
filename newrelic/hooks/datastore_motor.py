@@ -5,6 +5,7 @@ from newrelic.agent import wrap_function_wrapper
 # the __name__ lookup on a MotorCollection object to fail. This bug was causing
 # customer's applications to fail when they used motor in Tornado applications.
 
+
 def _nr_wrapper_Motor_getattr_(wrapped, instance, args, kwargs):
 
     def _bind_params(name, *args, **kwargs):
@@ -19,12 +20,15 @@ def _nr_wrapper_Motor_getattr_(wrapped, instance, args, kwargs):
 
     return wrapped(*args, **kwargs)
 
+
 def patch_motor(module):
-    wrap_function_wrapper(module, 'MotorClient.__getattr__',
-            _nr_wrapper_Motor_getattr_)
-    wrap_function_wrapper(module, 'MotorReplicaSetClient.__getattr__',
-            _nr_wrapper_Motor_getattr_)
-    wrap_function_wrapper(module, 'MotorDatabase.__getattr__',
-            _nr_wrapper_Motor_getattr_)
-    wrap_function_wrapper(module, 'MotorCollection.__getattr__',
-            _nr_wrapper_Motor_getattr_)
+    if (hasattr(module, 'version_tuple') and
+            module.version_tuple >= (0, 6)):
+        return
+
+    patched_classes = ['MotorClient', 'MotorReplicaSetClient', 'MotorDatabase',
+            'MotorCollection']
+    for patched_class in patched_classes:
+        if hasattr(module, patched_class):
+            wrap_function_wrapper(module, patched_class + '.__getattr__',
+                    _nr_wrapper_Motor_getattr_)

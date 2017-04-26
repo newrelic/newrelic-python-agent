@@ -26,6 +26,7 @@ _parameters_list = ["name", "appName", "transactionName", "transactionGuid",
         "inboundPayload", "outboundRequests", "expectedIntrinsicFields",
         "nonExpectedIntrinsicFields"]
 
+
 def load_tests():
     result = []
     path = os.path.join(JSON_DIR, 'cat_map.json')
@@ -38,7 +39,9 @@ def load_tests():
 
     return result
 
+
 _parameters = ",".join(_parameters_list)
+
 
 @wsgi_application()
 def target_wsgi_application(environ, start_response):
@@ -92,7 +95,9 @@ def target_wsgi_application(environ, start_response):
 
     return [output]
 
+
 target_application = webtest.TestApp(target_wsgi_application)
+
 
 def validate_analytics_catmap_data(name, expected_attributes=(),
         non_expected_attributes=()):
@@ -124,6 +129,7 @@ def validate_analytics_catmap_data(name, expected_attributes=(),
 
     return _validate_analytics_sample_data
 
+
 @pytest.mark.parametrize(_parameters, load_tests())
 def test_cat_map(name, appName, transactionName, transactionGuid,
         inboundPayload, outboundRequests, expectedIntrinsicFields,
@@ -137,13 +143,13 @@ def test_cat_map(name, appName, transactionName, transactionGuid,
             'trusted_account_ids': [1],
             'cross_application_tracer.enabled': True,
             'transaction_tracer.transaction_threshold': 0.0,
-            }
+    }
 
     if expectedIntrinsicFields:
         _external_node_params = {
                 'path_hash': expectedIntrinsicFields['nr.pathHash'],
                 'trip_id': expectedIntrinsicFields['nr.tripId'],
-                }
+        }
     else:
         _external_node_params = []
 

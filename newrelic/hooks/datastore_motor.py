@@ -22,11 +22,13 @@ def _nr_wrapper_Motor_getattr_(wrapped, instance, args, kwargs):
 
 
 def patch_motor(module):
-    wrap_function_wrapper(module, 'MotorClient.__getattr__',
-            _nr_wrapper_Motor_getattr_)
-    wrap_function_wrapper(module, 'MotorReplicaSetClient.__getattr__',
-            _nr_wrapper_Motor_getattr_)
-    wrap_function_wrapper(module, 'MotorDatabase.__getattr__',
-            _nr_wrapper_Motor_getattr_)
-    wrap_function_wrapper(module, 'MotorCollection.__getattr__',
-            _nr_wrapper_Motor_getattr_)
+    if (hasattr(module, 'version_tuple') and
+            module.version_tuple >= (0, 6)):
+        return
+
+    patched_classes = ['MotorClient', 'MotorReplicaSetClient', 'MotorDatabase',
+            'MotorCollection']
+    for patched_class in patched_classes:
+        if hasattr(module, patched_class):
+            wrap_function_wrapper(module, patched_class + '.__getattr__',
+                    _nr_wrapper_Motor_getattr_)

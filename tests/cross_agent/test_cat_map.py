@@ -11,11 +11,11 @@ from newrelic.api.external_trace import ExternalTrace
 from newrelic.packages import six
 from newrelic.agent import (get_browser_timing_header, set_transaction_name,
         get_browser_timing_footer, wsgi_application, set_background_task,
-        transient_function_wrapper, current_transaction)
+        current_transaction)
 from newrelic.common.encoding_utils import (obfuscate, json_encode)
 from testing_support.fixtures import (override_application_settings,
         override_application_name, validate_tt_parameters,
-        make_cross_agent_headers)
+        make_cross_agent_headers, validate_analytics_catmap_data)
 
 ENCODING_KEY = '1234567890123456789012345678901234567890'
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -97,37 +97,6 @@ def target_wsgi_application(environ, start_response):
 
 
 target_application = webtest.TestApp(target_wsgi_application)
-
-
-def validate_analytics_catmap_data(name, expected_attributes=(),
-        non_expected_attributes=()):
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'SampledDataSet.add')
-    def _validate_analytics_sample_data(wrapped, instance, args, kwargs):
-        def _bind_params(sample, *args, **kwargs):
-            return sample
-
-        sample = _bind_params(*args, **kwargs)
-
-        assert isinstance(sample, list)
-        assert len(sample) == 3
-
-        intrinsics, user_attributes, agent_attributes = sample
-
-        assert intrinsics['type'] == 'Transaction'
-        assert intrinsics['name'] == name
-        assert intrinsics['timestamp'] >= 0.0
-        assert intrinsics['duration'] >= 0.0
-
-        for key, value in expected_attributes.items():
-            assert intrinsics[key] == value
-
-        for key in non_expected_attributes:
-            assert intrinsics.get(key) is None
-
-        return wrapped(*args, **kwargs)
-
-    return _validate_analytics_sample_data
 
 
 @pytest.mark.parametrize(_parameters, load_tests())

@@ -1,3 +1,9 @@
+"""
+This is an implementation of the cross agent tests for cat map using a wsgi
+application. Another implementation of these tests using a tornado application
+can be found in test/framework_tornado_r3/test_cat_map.py
+"""
+
 import webtest
 import pytest
 import json

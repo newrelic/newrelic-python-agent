@@ -6,8 +6,10 @@ import threading
 import time
 
 from newrelic.agent import (application as nr_app, current_transaction,
-        function_trace)
+        function_trace, set_transaction_name)
+from newrelic.api.external_trace import ExternalTrace
 from newrelic.hooks.framework_tornado_r3.util import TransactionContext
+from newrelic.common.encoding_utils import (obfuscate, json_encode)
 
 from tornado import stack_context
 from tornado.curl_httpclient import CurlAsyncHTTPClient
@@ -1255,6 +1257,41 @@ class ExceptionInsteadOfFinishHandler(RequestHandler):
         raise Tornado4TestException("whoops")
 
 
+class CatMapHandler(RequestHandler):
+
+    RESPONSE = b'Cat Mapping Meoooow'
+    ENCODING_KEY = '1234567890123456789012345678901234567890'
+
+    def get_test_params(self):
+        raise NotImplementedError
+
+    @tornado.web.asynchronous
+    def get(self):
+        (guid, outbound_requests, txn_name,
+                external_port) = self.get_test_params()
+
+        txn = current_transaction()
+        txn.guid = guid
+        for outbound_request in outbound_requests:
+            outgoing_name = outbound_request['outboundTxnName'].split('/', 3)
+            set_transaction_name(outgoing_name[2], group=outgoing_name[1])
+
+            expected_outbound_header = obfuscate(
+                    json_encode(outbound_request['expectedOutboundPayload']),
+                    self.ENCODING_KEY)
+            generated_outbound_header = dict(
+                    ExternalTrace.generate_request_headers(txn))
+            assert (expected_outbound_header ==
+                    generated_outbound_header['X-NewRelic-Transaction'])
+
+            client = AsyncHTTPClient()
+            client.fetch('http://localhost:%s' % external_port)
+
+        set_transaction_name(txn_name[2], group=txn_name[1])
+
+        self.finish(self.RESPONSE)
+
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -1316,4 +1353,5 @@ def get_tornado_app():
         ('/outside-transaction-error', OutsideTransactionErrorRequestHandler),
         ('/wait-for-finish', WaitForFinishHandler),
         ('/exception-instead-of-finish', ExceptionInsteadOfFinishHandler),
+        ('/cat-map', CatMapHandler),
     ])

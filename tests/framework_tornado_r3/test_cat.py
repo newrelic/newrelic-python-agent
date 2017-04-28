@@ -89,21 +89,42 @@ class AllTests(object):
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @override_application_settings(_override_settings)
-    def test_async_httpclient_no_cat_response_header_in_request(self):
+    def _test_external_cat_headers(self, url, req_type):
         external = MockExternalHTTPHResponseHeadersServer()
         external.start()
         headers = make_cross_agent_headers(payload, ENCODING_KEY, '1#1')
         response = self.fetch_response(
-                '/async-fetch/requestobj/%s' % external.port, headers=headers)
+                '/%s/%s/%s' % (url, req_type, external.port),
+                headers=headers)
         external.stop()
 
-        expected_request_header = b'host'
+        expected_request_headers = [b'host', b'x-newrelic-id',
+                b'x-newrelic-transaction']
         unexpected_response_header = b'X-NewRelic-App-Data'.lower()
         sent_headers = response.body.lower()
 
         self.assertEqual(response.code, 200)
-        self.assertTrue(expected_request_header in sent_headers)
+        for expected_request_header in expected_request_headers:
+            self.assertTrue(expected_request_header in sent_headers)
         self.assertTrue(unexpected_response_header not in sent_headers)
+
+    def test_async_httpclient_req_obj_cat_headers(self):
+        self._test_external_cat_headers('async-fetch', 'requestobj')
+
+    def test_curl_async_httpclient_req_obj_cat_headers(self):
+        self._test_external_cat_headers('curl-async-fetch', 'requestobj')
+
+    def test_sync_httpclient_req_obj_cat_headers(self):
+        self._test_external_cat_headers('sync-fetch', 'requestobj')
+
+    def test_async_httpclient_url_cat_headers(self):
+        self._test_external_cat_headers('async-fetch', 'url')
+
+    def test_curl_async_httpclient_url_cat_headers(self):
+        self._test_external_cat_headers('curl-async-fetch', 'url')
+
+    def test_sync_httpclient_url_cat_headers(self):
+        self._test_external_cat_headers('sync-fetch', 'url')
 
 
 class TornadoDefaultIOLoopTest(AllTests, TornadoBaseTest):

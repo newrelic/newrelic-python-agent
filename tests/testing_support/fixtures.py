@@ -6,6 +6,7 @@ import pytest
 import sys
 import threading
 import time
+import traceback
 
 try:
     from Queue import Queue
@@ -173,6 +174,7 @@ def capture_harvest_errors():
                 'Supportability/Python/Harvest/Exception') and
                 not metric_name.endswith('DiscardDataForRequest') and
                 not metric_name.endswith('RetryDataForRequest')):
+            traceback.print_exception(*sys.exc_info())
             exception = AssertionError(
                     'Exception metric created %s' % metric_name)
             queue.put(exception)

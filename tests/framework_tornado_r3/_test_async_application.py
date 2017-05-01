@@ -1266,7 +1266,7 @@ class CatMapHandler(RequestHandler):
         raise NotImplementedError
 
     @tornado.web.asynchronous
-    def get(self):
+    def get(self, client_type):
         (guid, outbound_requests, txn_name,
                 external_port) = self.get_test_params()
 
@@ -1284,7 +1284,10 @@ class CatMapHandler(RequestHandler):
             assert (expected_outbound_header ==
                     generated_outbound_header['X-NewRelic-Transaction'])
 
-            client = AsyncHTTPClient()
+            if client_type == 'async':
+                client = AsyncHTTPClient()
+            elif client_type == 'sync':
+                client = HTTPClient()
             client.fetch('http://localhost:%s' % external_port)
 
         set_transaction_name(txn_name[2], group=txn_name[1])
@@ -1353,5 +1356,5 @@ def get_tornado_app():
         ('/outside-transaction-error', OutsideTransactionErrorRequestHandler),
         ('/wait-for-finish', WaitForFinishHandler),
         ('/exception-instead-of-finish', ExceptionInsteadOfFinishHandler),
-        ('/cat-map', CatMapHandler),
+        ('/cat-map/(\w+)', CatMapHandler),
     ])

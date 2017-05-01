@@ -93,7 +93,18 @@ class AllTests(object):
                 headers = make_cross_agent_headers(inboundPayload,
                         ENCODING_KEY, '1#1')
 
-                response = self.fetch_response('/cat-map', headers=headers)
+                # Test sync
+
+                response = self.fetch_response('/cat-map/sync',
+                        headers=headers)
+
+                assert response.code == 200
+                assert response.body == CatMapHandler.RESPONSE
+
+                # Test async
+
+                response = self.fetch_response('/cat-map/async',
+                        headers=headers)
 
                 assert response.code == 200
                 assert response.body == CatMapHandler.RESPONSE

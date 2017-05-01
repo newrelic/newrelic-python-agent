@@ -2354,3 +2354,34 @@ def function_not_called(module, name):
         assert False
 
     return _function_not_called_
+
+
+def validate_analytics_catmap_data(name, expected_attributes=(),
+        non_expected_attributes=()):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'SampledDataSet.add')
+    def _validate_analytics_sample_data(wrapped, instance, args, kwargs):
+        def _bind_params(sample, *args, **kwargs):
+            return sample
+
+        sample = _bind_params(*args, **kwargs)
+
+        assert isinstance(sample, list)
+        assert len(sample) == 3
+
+        intrinsics, user_attributes, agent_attributes = sample
+
+        assert intrinsics['type'] == 'Transaction'
+        assert intrinsics['name'] == name
+        assert intrinsics['timestamp'] >= 0.0
+        assert intrinsics['duration'] >= 0.0
+
+        for key, value in expected_attributes.items():
+            assert intrinsics[key] == value
+
+        for key in non_expected_attributes:
+            assert intrinsics.get(key) is None
+
+        return wrapped(*args, **kwargs)
+
+    return _validate_analytics_sample_data

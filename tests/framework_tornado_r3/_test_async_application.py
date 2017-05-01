@@ -6,8 +6,10 @@ import threading
 import time
 
 from newrelic.agent import (application as nr_app, current_transaction,
-        function_trace)
+        function_trace, set_transaction_name)
+from newrelic.api.external_trace import ExternalTrace
 from newrelic.hooks.framework_tornado_r3.util import TransactionContext
+from newrelic.common.encoding_utils import (obfuscate, json_encode)
 
 from tornado import stack_context
 from tornado.curl_httpclient import CurlAsyncHTTPClient
@@ -21,11 +23,13 @@ from tornado.web import Application, RequestHandler
 class Tornado4TestException(Exception):
     pass
 
+
 class HelloRequestHandler(RequestHandler):
     RESPONSE = b'Hello, world.'
 
     def get(self):
         self.write(self.RESPONSE)
+
 
 class SleepRequestHandler(RequestHandler):
     RESPONSE = b'sleep'
@@ -34,6 +38,7 @@ class SleepRequestHandler(RequestHandler):
     def get(self):
         yield tornado.gen.sleep(2)
         self.finish(self.RESPONSE)
+
 
 class OneCallbackRequestHandler(RequestHandler):
     RESPONSE = b'one callback'
@@ -70,6 +75,7 @@ class OneCallbackRequestHandler(RequestHandler):
     def finish_callback(self):
         self.finish(self.RESPONSE)
 
+
 class NamedStackContextWrapRequestHandler(RequestHandler):
     RESPONSE = b'another callback'
 
@@ -84,6 +90,7 @@ class NamedStackContextWrapRequestHandler(RequestHandler):
     def finish_callback(self):
         self.finish(self.RESPONSE)
 
+
 class DelayedWrappedCallbackHandler(tornado.web.RequestHandler):
     RESPONSE = b'another callback'
 
@@ -97,6 +104,7 @@ class DelayedWrappedCallbackHandler(tornado.web.RequestHandler):
         self.write(self.RESPONSE)
         self.finish()
 
+
 class MultipleCallbacksRequestHandler(RequestHandler):
     RESPONSE = b'multiple callbacks'
     _MAX_COUNTER = 2
@@ -108,22 +116,24 @@ class MultipleCallbacksRequestHandler(RequestHandler):
     def counter_callback(self, counter):
         if counter < self._MAX_COUNTER:
             tornado.ioloop.IOLoop.current().add_callback(
-                    self.counter_callback, counter+1)
+                    self.counter_callback, counter + 1)
         else:
             tornado.ioloop.IOLoop.current().add_callback(self.finish_callback)
 
     def finish_callback(self):
         self.finish(self.RESPONSE)
 
+
 class SyncExceptionRequestHandler(RequestHandler):
     RESPONSE = b'sync exception'
 
     def get(self):
         # Produce a ZeroDivisionError
-        10/0
+        10 / 0
 
         # Never executed
         self.write(self.RESPONSE)
+
 
 class CallbackExceptionRequestHandler(RequestHandler):
     RESPONSE = b'callback exception'
@@ -136,14 +146,16 @@ class CallbackExceptionRequestHandler(RequestHandler):
     def counter_callback(self, counter):
         if counter < self._MAX_COUNTER:
             tornado.ioloop.IOLoop.current().add_callback(
-                self.counter_callback, counter+1)
-        elif count == 3:  # exception since count (vs counter) is not defined
+                self.counter_callback, counter + 1)
+        elif count == 3:  # noqa
+            # exception since count (vs counter) is not defined
             pass
         else:
             tornado.ioloop.IOLoop.current().add_callback(self.finish_callback)
 
     def finish_callback(self):
         self.finish(self.RESPONSE)
+
 
 class CallbackFromCoroutineRequestHandler(RequestHandler):
     RESPONSE = "callback from coroutine"
@@ -158,6 +170,7 @@ class CallbackFromCoroutineRequestHandler(RequestHandler):
 
     def error(self):
         raise Tornado4TestException("Error")
+
 
 class CoroutineExceptionRequestHandler(RequestHandler):
     RESPONSE = b'coroutine exception'
@@ -182,6 +195,7 @@ class CoroutineExceptionRequestHandler(RequestHandler):
         if self.location == '2':
             raise Tornado4TestException("location 2")
 
+
 # This RequestHandler is equivalent to the RequestHandler above when
 # location is set to 2. However, the testing framework exception handling seems
 # to catch our exception unless we wrap in in asynchronous (which we shouldn't
@@ -204,6 +218,7 @@ class CoroutineException2RequestHandler(RequestHandler):
         f.set_result(self.count + 1)
         raise Tornado4TestException("ERROR!")
 
+
 # This isn't really an exception but a legitimate way to end request handling.
 class FinishExceptionRequestHandler(RequestHandler):
     RESPONSE = b'Finish'
@@ -211,6 +226,7 @@ class FinishExceptionRequestHandler(RequestHandler):
     def get(self):
         self.write(self.RESPONSE)
         raise tornado.web.Finish()
+
 
 class ReturnExceptionRequestHandler(RequestHandler):
     RESPONSE_TEMPLATE = u'Return %s'
@@ -228,6 +244,7 @@ class ReturnExceptionRequestHandler(RequestHandler):
     def one(self):
         raise tornado.gen.Return(1)
 
+
 class DivideRequestHandler(RequestHandler):
     RESPONSE = u'Division %s / %s = %s'
 
@@ -238,7 +255,7 @@ class DivideRequestHandler(RequestHandler):
             # Set future result immediately. In this case we never need to
             # call run on the tornado.gen.Runner object and the coroutine isn't
             # really asynchronous.
-            f.set_result(a/b)
+            f.set_result(a / b)
         else:
             # We add a callback to do the division. In this case we are in a
             # coroutine which actually run asynchronously.
@@ -247,7 +264,8 @@ class DivideRequestHandler(RequestHandler):
         return f
 
     def _divide(self, future, a, b):
-        future.set_result(a/b)
+        future.set_result(a / b)
+
 
 class IOLoopDivideRequestHandler(DivideRequestHandler):
 
@@ -259,6 +277,7 @@ class IOLoopDivideRequestHandler(DivideRequestHandler):
         quotient = yield self.divide(a, b, immediate=immediate)
         response = self.RESPONSE % (a, b, quotient)
         self.finish(response.encode('ascii'))
+
 
 class EngineDivideRequestHandler(DivideRequestHandler):
 
@@ -272,6 +291,7 @@ class EngineDivideRequestHandler(DivideRequestHandler):
         response = self.RESPONSE % (a, b, quotient)
         self.finish(response.encode('ascii'))
 
+
 class NestedCoroutineDivideRequestHandler(DivideRequestHandler):
 
     @tornado.gen.coroutine
@@ -279,12 +299,13 @@ class NestedCoroutineDivideRequestHandler(DivideRequestHandler):
         a = float(a)
         b = float(b)
         yield self.do_divide(a, b)
-        response = self.RESPONSE % (a, b,  self.quotient)
+        response = self.RESPONSE % (a, b, self.quotient)
         self.finish(response.encode('ascii'))
 
     @tornado.gen.coroutine
     def do_divide(self, a, b):
         self.quotient = yield self.divide(a, b, False)
+
 
 class ReturnFirstDivideRequestHandler(DivideRequestHandler):
     RESPONSE = b"Return immediately"
@@ -299,6 +320,7 @@ class ReturnFirstDivideRequestHandler(DivideRequestHandler):
     @tornado.gen.coroutine
     def do_divide(self, a, b):
         self.quotient = yield self.divide(a, b, False)
+
 
 class CallLaterRequestHandler(RequestHandler):
     RESPONSE = b"Return immediately"
@@ -319,6 +341,7 @@ class CallLaterRequestHandler(RequestHandler):
     def later(self):
         pass
 
+
 class CancelAfterRanCallLaterRequestHandler(RequestHandler):
     RESPONSE = b"Return immediately"
 
@@ -332,6 +355,7 @@ class CancelAfterRanCallLaterRequestHandler(RequestHandler):
     def later(self):
         pass
 
+
 class PrepareOnFinishRequestHandler(RequestHandler):
     RESPONSE = b'bookend get'
 
@@ -344,9 +368,11 @@ class PrepareOnFinishRequestHandler(RequestHandler):
     def on_finish(self):
         pass
 
+
 class PrepareOnFinishRequestHandlerSubclass(PrepareOnFinishRequestHandler):
     def get(self):
         self.finish(self.RESPONSE)
+
 
 class PrepareReturnsFutureHandler(RequestHandler):
     RESPONSE = b'preparedness'
@@ -361,6 +387,7 @@ class PrepareReturnsFutureHandler(RequestHandler):
 
     def get(self):
         self.write(self.RESPONSE)
+
 
 class PrepareCoroutineReturnsFutureHandler(RequestHandler):
     RESPONSE = b'preparedness'
@@ -377,6 +404,7 @@ class PrepareCoroutineReturnsFutureHandler(RequestHandler):
     def get(self):
         self.write(self.RESPONSE)
 
+
 class PrepareCoroutineFutureDoesNotResolveHandler(RequestHandler):
     RESPONSE = b'preparedness'
 
@@ -390,6 +418,7 @@ class PrepareCoroutineFutureDoesNotResolveHandler(RequestHandler):
     def get(self):
         self.write(self.RESPONSE)
 
+
 class PrepareFinishesHandler(RequestHandler):
     RESPONSE = b'preparedness'
 
@@ -399,6 +428,7 @@ class PrepareFinishesHandler(RequestHandler):
     def get(self):
         # this should never get called
         pass
+
 
 class OnFinishWithGetCoroutineHandler(RequestHandler):
     RESPONSE = b'get coroutine with on finish'
@@ -416,6 +446,7 @@ class OnFinishWithGetCoroutineHandler(RequestHandler):
     def on_finish(self):
         pass
 
+
 class AsyncFetchRequestHandler(RequestHandler):
 
     @tornado.web.asynchronous
@@ -432,6 +463,7 @@ class AsyncFetchRequestHandler(RequestHandler):
 
     def process_response(self, response):
         self.finish(response.body)
+
 
 class CurlAsyncFetchRequestHandler(RequestHandler):
 
@@ -458,6 +490,7 @@ class CustomImplCurlAsyncHTTPClient(CurlAsyncHTTPClient):
         super(CustomImplCurlAsyncHTTPClient, self).fetch_impl(
                 request, callback=callback)
 
+
 class CustomImplCurlAsyncRequestHandler(RequestHandler):
 
     @tornado.web.asynchronous
@@ -474,6 +507,7 @@ class CustomImplCurlAsyncRequestHandler(RequestHandler):
 
     def process_response(self, response):
         self.finish(response.body)
+
 
 class CurlStreamingCallbackRequestHandler(RequestHandler):
 
@@ -502,6 +536,7 @@ class CurlStreamingCallbackRequestHandler(RequestHandler):
         content = b''.join(self.body)
         self.finish(content)
 
+
 class SyncFetchRequestHandler(RequestHandler):
 
     def get(self, request_type, port):
@@ -517,14 +552,15 @@ class SyncFetchRequestHandler(RequestHandler):
         response = client.fetch(request)
         self.finish(response.body)
 
+
 class RunSyncAddRequestHandler(RequestHandler):
     RESPONSE_TEMPLATE = 'The sum is %s'
 
     def __init__(self, *args, **kwargs):
         super(RunSyncAddRequestHandler, self).__init__(*args, **kwargs)
         # In versions prior to 4.2 there is no 'make_current' argument to
-        # IOLoop. The behavior prior to 4.2 is identical to setting make_current
-        # to False.
+        # IOLoop. The behavior prior to 4.2 is identical to setting
+        # make_current to False.
         if tornado.version < '4.2':
             self.my_io_loop = tornado.ioloop.IOLoop()
         else:
@@ -550,6 +586,7 @@ class RunSyncAddRequestHandler(RequestHandler):
     def RESPONSE(cls, total):
         return (cls.RESPONSE_TEMPLATE % total).encode('ascii')
 
+
 class ThreadScheduledCallbackRequestHandler(RequestHandler):
     RESPONSE = b'callback threading'
 
@@ -568,6 +605,7 @@ class ThreadScheduledCallbackRequestHandler(RequestHandler):
     def do_thing(self):
         pass
 
+
 class CallbackOnThreadExecutorRequestHandler(RequestHandler):
     RESPONSE = b'callback threading'
 
@@ -582,6 +620,7 @@ class CallbackOnThreadExecutorRequestHandler(RequestHandler):
     @tornado.concurrent.run_on_executor
     def do_thing(self):
         pass
+
 
 class ThreadScheduledCallAtRequestHandler(RequestHandler):
     RESPONSE = b'call_at threading'
@@ -602,6 +641,7 @@ class ThreadScheduledCallAtRequestHandler(RequestHandler):
     def do_thing(self):
         pass
 
+
 class CallAtOnThreadExecutorRequestHandler(RequestHandler):
     RESPONSE = b'call_at threading'
 
@@ -618,6 +658,7 @@ class CallAtOnThreadExecutorRequestHandler(RequestHandler):
     def do_thing(self):
         pass
 
+
 class AddFutureRequestHandler(RequestHandler):
     RESPONSE = b'Add future'
 
@@ -632,12 +673,14 @@ class AddFutureRequestHandler(RequestHandler):
     def do_thing(self, future):
         pass
 
+
 class AddDoneCallbackRequestHandler(RequestHandler):
     RESPONSE = b'Add future'
 
     def get(self):
         f = tornado.concurrent.Future()
-        f.add_done_callback(lambda future: tornado.ioloop.IOLoop.current().add_callback(self.do_thing))
+        f.add_done_callback(lambda future:
+                tornado.ioloop.IOLoop.current().add_callback(self.do_thing))
         self.write(self.RESPONSE)
 
         # resolve the future asynchronously, after _execute here finishes
@@ -645,6 +688,7 @@ class AddDoneCallbackRequestHandler(RequestHandler):
 
     def do_thing(self):
         pass
+
 
 @tornado.web.stream_request_body
 class SimpleStreamingRequestHandler(RequestHandler):
@@ -656,6 +700,7 @@ class SimpleStreamingRequestHandler(RequestHandler):
     def post(self):
         self.write(self.RESPONSE)
 
+
 class SimpleThreadedFutureRequestHandler(RequestHandler):
     """This handler creates a future and passes it to a thread, which should
     resolve immediately, while the current method still has the transaction
@@ -664,8 +709,8 @@ class SimpleThreadedFutureRequestHandler(RequestHandler):
     RESPONSE = b"please don't do this"
 
     def get(self, add_future=False):
-        # Tornado futures are not thread safe, however that should not,
-        # in itself, cause this test to fail because we do not access the future
+        # Tornado futures are not thread safe, however that should not, in
+        # itself, cause this test to fail because we do not access the future
         # from the main thread once we start the thread that we pass it to.
         f = tornado.concurrent.Future()
 
@@ -689,7 +734,8 @@ class SimpleThreadedFutureRequestHandler(RequestHandler):
         self.write(self.RESPONSE)
 
     def do_stuff(self, f=None):
-         pass
+        pass
+
 
 class BusyWaitThreadedFutureRequestHandler(RequestHandler):
     """This handler creates a future and passes it to a thread, but with timing
@@ -702,8 +748,8 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
     RESPONSE = b'bad programmer'
 
     def get(self, add_future=False):
-        # Tornado futures are not thread safe, however that should not,
-        # in itself, cause this test to fail because we do not access the future
+        # Tornado futures are not thread safe, however that should not, in
+        # itself, cause this test to fail because we do not access the future
         # from the main thread once we start the thread that we pass it to.
         f = tornado.concurrent.Future()
 
@@ -741,15 +787,15 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
     def long_wait(self, f=None):
         # We need this to take up enough time so that its likely to be "active"
         # when our main thread scheduled callback kicks in. If this is running
-        # in a thread, as a result of add_done_callback, do_stuff should be able
-        # to add and remove the transaction object from the cache *while* this
-        # function is running. Otherwise, if this is running in the main thread
-        # as a result of add_future, it will block do_stuff's ability to run,
-        # and it will run on the IO loop after.
+        # in a thread, as a result of add_done_callback, do_stuff should be
+        # able to add and remove the transaction object from the cache *while*
+        # this function is running. Otherwise, if this is running in the main
+        # thread as a result of add_future, it will block do_stuff's ability to
+        # run, and it will run on the IO loop after.
 
-        assert not hasattr(self, 'stuff_done'), ('long_wait started before get '
-                'method finished. Test timing incorrect, may need to re-run '
-                'test')
+        assert not hasattr(self, 'stuff_done'), ('long_wait started before '
+                'get method finished. Test timing incorrect, may need to '
+                're-run test')
 
         time.sleep(1)
 
@@ -769,6 +815,7 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
         # callback (at least for the add_future case)
         yield tornado.gen.sleep(0.15)
         self.stuff_done = True
+
 
 class CleanUpableRequestHandler(RequestHandler):
 
@@ -791,12 +838,12 @@ class CleanUpableRequestHandler(RequestHandler):
             subsequent requests, one must set this before each request."""
         cls.CLEANUP = cleanup
 
+
 class AddDoneCallbackAddsCallbackRequestHandler(CleanUpableRequestHandler):
     """This adds a callback in an add_done_callback after the transaction
     completes. This should not increment/decrement the refcounter causing the
     transaction to finalize multiple times."""
     RESPONSE = b"Add done callback adds a callback."
-
 
     def get(self, future_type):
         if future_type == 'tornado':
@@ -810,7 +857,8 @@ class AddDoneCallbackAddsCallbackRequestHandler(CleanUpableRequestHandler):
         f.add_done_callback(self.schedule_work)
 
         with TransactionContext(None):
-            tornado.ioloop.IOLoop.current().add_callback(self.resolve_future, f)
+            tornado.ioloop.IOLoop.current().add_callback(self.resolve_future,
+                    f)
 
         self.finish(self.RESPONSE)
 
@@ -823,6 +871,7 @@ class AddDoneCallbackAddsCallbackRequestHandler(CleanUpableRequestHandler):
     def do_work(self):
         with TransactionContext(None):
             tornado.ioloop.IOLoop.current().add_callback(self.cleanup)
+
 
 class TransactionAwareFunctionAferFinalize(CleanUpableRequestHandler):
     RESPONSE = b'orphaned function'
@@ -840,19 +889,20 @@ class TransactionAwareFunctionAferFinalize(CleanUpableRequestHandler):
         with TransactionContext(None):
 
             # place the call to the function inside a lambda so add_callback
-            # here places its own stack context with None transaction around the
-            # callback arg.
+            # here places its own stack context with None transaction around
+            # the callback arg.
 
             tornado.ioloop.IOLoop.current().add_callback(lambda: func())
 
     def orphan(self):
-        # Since the error we are testing for here is a log message, not a raised
-        # Exception, we assert against the condition that would raise it when
-        # this function finishes.
+        # Since the error we are testing for here is a log message, not a
+        # raised Exception, we assert against the condition that would raise it
+        # when this function finishes.
 
         transaction = current_transaction()
         assert transaction is None
         self.cleanup()
+
 
 class AddCallbackFromSignalRequestHandler(RequestHandler):
     RESPONSE = b'ignore add_callback_from_signal'
@@ -864,6 +914,7 @@ class AddCallbackFromSignalRequestHandler(RequestHandler):
     def do_thing(self):
         pass
 
+
 class DoubleWrapRequestHandler(RequestHandler):
     RESPONSE = b'double wrap'
 
@@ -874,6 +925,7 @@ class DoubleWrapRequestHandler(RequestHandler):
     @function_trace()
     def do_stuff(self):
         pass
+
 
 class FutureDoubleWrapRequestHandler(RequestHandler):
     RESPONSE = b'future double wrap'
@@ -894,6 +946,7 @@ class FutureDoubleWrapRequestHandler(RequestHandler):
     @function_trace()
     def do_stuff(self, future):
         self.finish(self.RESPONSE)
+
 
 class RunnerRefCountRequestHandler(RequestHandler):
     """Verify that incrementing/decrementing the ref count in Runner will
@@ -991,7 +1044,7 @@ class RunnerRefCountErrorRequestHandler(RunnerRefCountRequestHandler):
         yield self.coro()
 
         # Produce a ZeroDivisionError
-        1/0
+        1 / 0
 
         # Nothing beyond here gets called
         self.do_stuff()
@@ -1040,6 +1093,7 @@ class IgnoreAddHandlerRequestHandler(RequestHandler):
     def on_finish(self):
         self.io_loop.remove_handler(self.listener)
 
+
 class NativeFuturesCoroutine(RequestHandler):
 
     RESPONSE = b'native future coroutine'
@@ -1087,12 +1141,14 @@ class NativeFuturesCoroutine(RequestHandler):
     def another_method(self, *args):
         pass
 
+
 class SyncLateExceptionRequestHandler(RequestHandler):
     RESPONSE = b'sync late exception'
 
     def get(self):
         self.finish(self.RESPONSE)
         raise Tornado4TestException(self.RESPONSE)
+
 
 class AsyncLateExceptionRequestHandler(RequestHandler):
     RESPONSE = b'async late exception'
@@ -1107,6 +1163,7 @@ class AsyncLateExceptionRequestHandler(RequestHandler):
 
     def error(self):
         raise Tornado4TestException(self.RESPONSE)
+
 
 class CoroutineLateExceptionRequestHandler(RequestHandler):
     RESPONSE = b'coroutine late exception'
@@ -1125,6 +1182,7 @@ class CoroutineLateExceptionRequestHandler(RequestHandler):
     def resolve_future(self, f):
         f.set_result(None)
 
+
 class ScheduleAndCancelExceptionRequestHandler(RequestHandler):
     RESPONSE = b'close call'
 
@@ -1136,6 +1194,7 @@ class ScheduleAndCancelExceptionRequestHandler(RequestHandler):
 
     def do_error(self):
         raise Tornado4TestException("whoops")
+
 
 class OutsideTransactionErrorRequestHandler(CleanUpableRequestHandler):
     RESPONSE = b'outside transaction error'
@@ -1155,11 +1214,12 @@ class OutsideTransactionErrorRequestHandler(CleanUpableRequestHandler):
         # framework assumes that an uncaught exception in a test is a real
         # error.
         try:
-            5/0
+            5 / 0
         except:
             nr_app().record_exception(*sys.exc_info())
         finally:
             self.cleanup()
+
 
 class WaitForFinishHandler(RequestHandler):
     """Transaction should not close until finish() is called. Test that the
@@ -1176,6 +1236,7 @@ class WaitForFinishHandler(RequestHandler):
 
     def callback(self):
         self.finish(self.RESPONSE)
+
 
 class ExceptionInsteadOfFinishHandler(RequestHandler):
     """Transaction should not close until exception is raised in callback(),
@@ -1194,6 +1255,44 @@ class ExceptionInsteadOfFinishHandler(RequestHandler):
     def callback(self):
         # Raise exception, rather than calling finish() directly.
         raise Tornado4TestException("whoops")
+
+
+class CatMapHandler(RequestHandler):
+
+    RESPONSE = b'Cat Mapping Meoooow'
+    ENCODING_KEY = '1234567890123456789012345678901234567890'
+
+    def get_test_params(self):
+        raise NotImplementedError
+
+    @tornado.web.asynchronous
+    def get(self, client_type):
+        (guid, outbound_requests, txn_name,
+                external_port) = self.get_test_params()
+
+        txn = current_transaction()
+        txn.guid = guid
+        for outbound_request in outbound_requests:
+            outgoing_name = outbound_request['outboundTxnName'].split('/', 3)
+            set_transaction_name(outgoing_name[2], group=outgoing_name[1])
+
+            expected_outbound_header = obfuscate(
+                    json_encode(outbound_request['expectedOutboundPayload']),
+                    self.ENCODING_KEY)
+            generated_outbound_header = dict(
+                    ExternalTrace.generate_request_headers(txn))
+            assert (expected_outbound_header ==
+                    generated_outbound_header['X-NewRelic-Transaction'])
+
+            if client_type == 'async':
+                client = AsyncHTTPClient()
+            elif client_type == 'sync':
+                client = HTTPClient()
+            client.fetch('http://localhost:%s' % external_port)
+
+        set_transaction_name(txn_name[2], group=txn_name[1])
+
+        self.finish(self.RESPONSE)
 
 
 def get_tornado_app():
@@ -1239,7 +1338,8 @@ def get_tornado_app():
         ('/add_done_callback', AddDoneCallbackRequestHandler),
         ('/future-thread/?(\w+)?', SimpleThreadedFutureRequestHandler),
         ('/future-thread-2/?(\w+)?', BusyWaitThreadedFutureRequestHandler),
-        ('/add-done-callback/(\w+)', AddDoneCallbackAddsCallbackRequestHandler),
+        ('/add-done-callback/(\w+)',
+            AddDoneCallbackAddsCallbackRequestHandler),
         ('/double-wrap', DoubleWrapRequestHandler),
         ('/done-callback-double-wrap/(\w+)', FutureDoubleWrapRequestHandler),
         ('/runner', RunnerRefCountRequestHandler),
@@ -1256,4 +1356,5 @@ def get_tornado_app():
         ('/outside-transaction-error', OutsideTransactionErrorRequestHandler),
         ('/wait-for-finish', WaitForFinishHandler),
         ('/exception-instead-of-finish', ExceptionInsteadOfFinishHandler),
+        ('/cat-map/(\w+)', CatMapHandler),
     ])

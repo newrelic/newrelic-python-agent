@@ -389,6 +389,14 @@ elif DJANGO_VERSION < (1, 10):
     _test_application_inclusion_tag_scoped_metrics.extend(
         _test_django_pre_1_10_middleware_scoped_metrics)
 
+try:
+    _test_application_inclusion_tag_scoped_metrics.remove(
+        (('Function/newrelic.hooks.framework_django:'
+                'browser_timing_insertion'), 1)
+    )
+except ValueError:
+    pass
+
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:inclusion_tag',
@@ -433,6 +441,14 @@ elif DJANGO_SETTINGS_MODULE == 'settings_0110_new':
 elif DJANGO_VERSION < (1, 10):
     _test_inclusion_tag_template_tags_scoped_metrics.extend(
         _test_django_pre_1_10_middleware_scoped_metrics)
+
+try:
+    _test_inclusion_tag_template_tags_scoped_metrics.remove(
+        (('Function/newrelic.hooks.framework_django:'
+                'browser_timing_insertion'), 1)
+    )
+except ValueError:
+    pass
 
 
 @validate_transaction_errors(errors=[])

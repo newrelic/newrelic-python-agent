@@ -37,8 +37,6 @@ _test_application_index_scoped_metrics = [
                 'SessionMiddleware.process_response'), 1),
         (('Function/django.middleware.common:'
                 'CommonMiddleware.process_response'), 1),
-        (('Function/newrelic.hooks.framework_django:'
-                'browser_timing_middleware'), 1),
 ]
 
 if DJANGO_VERSION >= (1, 5):
@@ -80,8 +78,6 @@ _test_application_view_scoped_metrics = [
                 'SessionMiddleware.process_response'), 1),
         (('Function/django.middleware.common:'
                 'CommonMiddleware.process_response'), 1),
-        (('Function/newrelic.hooks.framework_django:'
-                'browser_timing_middleware'), 1),
 ]
 
 if DJANGO_VERSION >= (1, 5):
@@ -123,8 +119,6 @@ _test_application_view_error_scoped_metrics = [
                 'SessionMiddleware.process_response'), 1),
         (('Function/django.middleware.common:'
                 'CommonMiddleware.process_response'), 1),
-        (('Function/newrelic.hooks.framework_django:'
-                'browser_timing_middleware'), 1),
 ]
 
 
@@ -163,8 +157,6 @@ _test_api_view_scoped_metrics_get = [
                 'SessionMiddleware.process_response'), 1),
         (('Function/django.middleware.common:'
                 'CommonMiddleware.process_response'), 1),
-        (('Function/newrelic.hooks.framework_django:'
-                'browser_timing_middleware'), 1),
 ]
 
 
@@ -204,8 +196,6 @@ _test_api_view_scoped_metrics_post = [
                 'SessionMiddleware.process_response'), 1),
         (('Function/django.middleware.common:'
                 'CommonMiddleware.process_response'), 1),
-        (('Function/newrelic.hooks.framework_django:'
-                'browser_timing_middleware'), 1),
 ]
 
 

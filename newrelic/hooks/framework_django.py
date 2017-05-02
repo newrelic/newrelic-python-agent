@@ -59,7 +59,7 @@ def should_ignore(exc, value, tb):
 # Response middleware for automatically inserting RUM header and
 # footer into HTML response returned by application
 
-def browser_timing_middleware(request, response):
+def browser_timing_insertion(request, response):
 
     # Don't do anything if receive a streaming response which
     # was introduced in Django 1.5. Need to avoid this as there
@@ -401,8 +401,8 @@ def _nr_wrapper_GZipMiddleware_process_response_(wrapped, instance, args,
     request, response = _bind_params(*args, **kwargs)
 
     with FunctionTrace(transaction,
-            name=callable_name(browser_timing_middleware)):
-        response_with_browser = browser_timing_middleware(request, response)
+            name=callable_name(browser_timing_insertion)):
+        response_with_browser = browser_timing_insertion(request, response)
 
     return wrapped(request, response_with_browser)
 

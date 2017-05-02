@@ -42,7 +42,7 @@ _test_django_pre_1_10_middleware_scoped_metrics = [
     (('Function/django.middleware.gzip:'
             'GZipMiddleware.process_response'), 1),
     (('Function/newrelic.hooks.framework_django:'
-            'browser_timing_middleware'), 1),
+            'browser_timing_insertion'), 1),
 ]
 
 _test_django_post_1_10_middleware_scoped_metrics = [

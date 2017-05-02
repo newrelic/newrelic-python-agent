@@ -161,35 +161,10 @@ def browser_timing_middleware(request, response):
     return response
 
 
-def register_browser_timing_middleware(middleware):
-
-    # Inserts our middleware for inserting the RUM header and
-    # footer into the list of middleware. Must check for certain
-    # types of middleware which modify content as must always
-    # come before them. Otherwise is added last so that comes
-    # after any caching middleware. If don't do that then the
-    # inserted header and footer will end up being cached and
-    # then when served up from cache we would add a second
-    # header and footer, something we don't want.
-
-    content_type_modifying_middleware = [
-        'django.middleware.gzip:GZipMiddleware.process_response'
-    ]
-
-    for i in range(len(middleware)):
-        function = middleware[i]
-        name = callable_name(function)
-        if name in content_type_modifying_middleware:
-            middleware.insert(i, browser_timing_middleware)
-            break
-    else:
-        middleware.append(browser_timing_middleware)
-
 # Template tag functions for manually inserting RUM header and
 # footer into HTML response. A template tag library for
 # 'newrelic' will be automatically inserted into set of tag
 # libraries when performing step to instrument the middleware.
-
 
 def newrelic_browser_timing_header():
     from django.utils.safestring import mark_safe
@@ -377,18 +352,8 @@ def insert_and_wrap_middleware(handler, *args, **kwargs):
     middleware_instrumentation_lock = None
 
     try:
-        # For response middleware, need to add in middleware for
-        # automatically inserting RUM header and footer. This is
-        # done first which means it gets wrapped and timed as
-        # well. Will therefore show in traces however that may
-        # be beneficial as highlights we are doing some magic
-        # and can see if it is taking too long on large
-        # responses.
 
-        if hasattr(handler, '_response_middleware'):
-            register_browser_timing_middleware(handler._response_middleware)
-
-        # Now wrap the middleware to undertake timing and name
+        # Wrap the middleware to undertake timing and name
         # the web transaction. The naming is done as lower
         # priority than that for view handler so view handler
         # name always takes precedence.
@@ -422,6 +387,26 @@ def insert_and_wrap_middleware(handler, *args, **kwargs):
         lock.release()
 
 
+def _nr_wrapper_GZipMiddleware_process_response_(wrapped, instance, args,
+        kwargs):
+
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    def _bind_params(request, response, *args, **kwargs):
+        return request, response
+
+    request, response = _bind_params(*args, **kwargs)
+
+    with FunctionTrace(transaction,
+            name=callable_name(browser_timing_middleware)):
+        response_with_browser = browser_timing_middleware(request, response)
+
+    return wrapped(request, response_with_browser)
+
+
 # Post import hooks for modules.
 
 def instrument_django_core_handlers_base(module):
@@ -432,6 +417,12 @@ def instrument_django_core_handlers_base(module):
 
     wrap_post_function(module, 'BaseHandler.load_middleware',
             insert_and_wrap_middleware)
+
+
+def instrument_django_gzip_middleware(module):
+
+    wrap_function_wrapper(module, 'GZipMiddleware.process_response',
+            _nr_wrapper_GZipMiddleware_process_response_)
 
 
 def wrap_handle_uncaught_exception(middleware):

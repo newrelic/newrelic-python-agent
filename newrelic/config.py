@@ -1880,6 +1880,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('django.template.base',
             'newrelic.hooks.framework_django',
             'instrument_django_template_base')
+    _process_module_definition('django.middleware.gzip',
+            'newrelic.hooks.framework_django',
+            'instrument_django_gzip_middleware')
 
     # New modules in Django 1.10
     _process_module_definition('django.urls.resolvers',

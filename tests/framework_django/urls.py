@@ -28,4 +28,6 @@ urlpatterns = [
         name='render_exception_function'),
     url(r'^render_exception_class', views.RenderExceptionClass.as_view(),
         name='render_exception_class'),
+    url(r'^gzip_html_insertion', views.gzip_html_insertion,
+        name='gzip_html_insertion'),
 ]

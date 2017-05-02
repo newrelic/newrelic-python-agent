@@ -56,10 +56,7 @@ def should_ignore(exc, value, tb):
             return True
 
 
-# Response middleware for automatically inserting RUM header and
-# footer into HTML response returned by application
-
-def browser_timing_insertion(request, response):
+def should_add_browser_timing(response, transaction):
 
     # Don't do anything if receive a streaming response which
     # was introduced in Django 1.5. Need to avoid this as there
@@ -73,29 +70,27 @@ def browser_timing_insertion(request, response):
     # deal with how to update the content length.
 
     if hasattr(response, 'streaming_content'):
-        return response
+        return False
 
     # Need to be running within a valid web transaction.
 
-    transaction = current_transaction()
-
     if not transaction:
-        return response
+        return False
 
     # Only insert RUM JavaScript headers and footers if enabled
     # in configuration and not already likely inserted.
 
     if not transaction.settings.browser_monitoring.enabled:
-        return response
+        return False
 
     if transaction.autorum_disabled:
-        return response
+        return False
 
     if not django_settings.browser_monitoring.auto_instrument:
-        return response
+        return False
 
     if transaction.rum_header_generated:
-        return response
+        return False
 
     # Only possible if the content type is one of the allowed
     # values. Normally this is just text/html, but optionally
@@ -106,19 +101,27 @@ def browser_timing_insertion(request, response):
     ctype = response.get('Content-Type', '').lower().split(';')[0]
 
     if ctype not in transaction.settings.browser_monitoring.content_type:
-        return response
+        return False
 
     # Don't risk it if content encoding already set.
 
     if response.has_header('Content-Encoding'):
-        return response
+        return False
 
     # Don't risk it if content is actually within an attachment.
 
     cdisposition = response.get('Content-Disposition', '').lower()
 
     if cdisposition.split(';')[0].strip().lower() == 'attachment':
-        return response
+        return False
+
+    return True
+
+
+# Response middleware for automatically inserting RUM header and
+# footer into HTML response returned by application
+
+def browser_timing_insertion(response, transaction):
 
     # No point continuing if header is empty. This can occur if
     # RUM is not enabled within the UI. It is assumed at this
@@ -400,11 +403,15 @@ def _nr_wrapper_GZipMiddleware_process_response_(wrapped, instance, args,
 
     request, response = _bind_params(*args, **kwargs)
 
-    with FunctionTrace(transaction,
-            name=callable_name(browser_timing_insertion)):
-        response_with_browser = browser_timing_insertion(request, response)
+    if should_add_browser_timing(response, transaction):
+        with FunctionTrace(transaction,
+                name=callable_name(browser_timing_insertion)):
+            response_with_browser = browser_timing_insertion(
+                    response, transaction)
 
-    return wrapped(request, response_with_browser)
+        return wrapped(request, response_with_browser)
+
+    return wrapped(request, response)
 
 
 # Post import hooks for modules.

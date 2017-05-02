@@ -252,7 +252,7 @@ def test_html_insertion_django_middleware():
 
 
 @override_application_settings(_test_html_insertion_settings)
-def test_html_insertion_django_gzip_middleware():
+def test_html_insertion_django_gzip_middleware_enabled():
     test_application = target_application()
 
     # GZipMiddleware only fires if given the following header.
@@ -268,6 +268,32 @@ def test_html_insertion_django_gzip_middleware():
     # The response.text will already be gunzipped
 
     response.mustcontain('NREUM HEADER', 'NREUM.info')
+
+
+_test_html_insertion_settings_disabled = {
+    'browser_monitoring.enabled': False,
+    'browser_monitoring.auto_instrument': False,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
+
+
+@override_application_settings(_test_html_insertion_settings_disabled)
+def test_html_insertion_django_gzip_middleware_disabled():
+    test_application = target_application()
+
+    # GZipMiddleware only fires if given the following header.
+
+    gzip_header = {'Accept-Encoding': 'gzip'}
+    response = test_application.get('/gzip_html_insertion', status=200,
+            headers=gzip_header)
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    # The response.text will already be gunzipped
+
+    response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
 
 
 _test_html_insertion_manual_settings = {

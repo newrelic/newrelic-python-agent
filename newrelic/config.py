@@ -89,6 +89,7 @@ _cache_object = []
 # Mechanism for extracting settings from the configuration for use in
 # instrumentation modules and extensions.
 
+
 def extra_settings(section, types={}, defaults={}):
     settings = {}
 
@@ -108,16 +109,17 @@ def extra_settings(section, types={}, defaults={}):
 
     return settings_object
 
+
 # Define some mapping functions to convert raw values read from
 # configuration file into the internal types expected by the
 # internal configuration settings object.
 
 _LOG_LEVEL = {
-    'CRITICAL' : logging.CRITICAL,
-    'ERROR' : logging.ERROR,
+    'CRITICAL': logging.CRITICAL,
+    'ERROR': logging.ERROR,
     'WARNING': logging.WARNING,
-    'INFO' : logging.INFO,
-    'DEBUG' : logging.DEBUG,
+    'INFO': logging.INFO,
+    'DEBUG': logging.DEBUG,
 }
 
 _RECORD_SQL = {
@@ -126,41 +128,53 @@ _RECORD_SQL = {
     "obfuscated": newrelic.api.settings.RECORDSQL_OBFUSCATED,
 }
 
+
 def _map_log_level(s):
     return _LOG_LEVEL[s.upper()]
+
 
 def _map_feature_flag(s):
     return set(s.split())
 
+
 def _map_labels(s):
     return newrelic.core.config._environ_as_mapping(name='', default=s)
+
 
 def _map_transaction_threshold(s):
     if s == 'apdex_f':
         return None
     return float(s)
 
+
 def _map_record_sql(s):
     return _RECORD_SQL[s]
+
 
 def _map_split_strings(s):
     return s.split()
 
+
 def _map_console_listener_socket(s):
     return s % {'pid': os.getpid()}
+
 
 def _merge_ignore_status_codes(s):
     return newrelic.core.config._parse_ignore_status_codes(
             s, _settings.error_collector.ignore_status_codes)
 
+
 def _map_browser_monitoring_content_type(s):
     return s.split()
+
 
 def _map_strip_exception_messages_whitelist(s):
     return [expand_builtin_exception_name(item) for item in s.split()]
 
+
 def _map_inc_excl_attributes(s):
     return newrelic.core.config._parse_attributes(s)
+
 
 # Processing of a single setting from configuration file.
 
@@ -201,6 +215,7 @@ def _raise_configuration_error(section, option=None):
                         'Invalid configuration for option "%s". '
                         'Check New Relic agent log file for further '
                         'details.' % option)
+
 
 def _process_setting(section, option, getter, mapper):
     try:
@@ -248,6 +263,7 @@ def _process_setting(section, option, getter, mapper):
 
     except Exception:
         _raise_configuration_error(section, option)
+
 
 # Processing of all the settings for specified section except
 # for log file and log level which are applied separately to
@@ -492,11 +508,13 @@ def _process_configuration(section):
                      'datastore_tracer.database_name_reporting.enabled',
                      'getboolean', None)
 
+
 # Loading of configuration from specified file and for specified
 # deployment environment. Can also indicate whether configuration
 # and instrumentation errors should raise an exception or not.
 
 _configuration_done = False
+
 
 def _process_app_name_setting():
     # Do special processing to handle the case where the application
@@ -528,6 +546,7 @@ def _process_app_name_setting():
         _settings.linked_applications = linked
 
     _settings.app_name = name
+
 
 def _process_labels_setting(labels=None):
     # Do special processing to handle labels. Initially the labels
@@ -572,6 +591,7 @@ def _process_labels_setting(labels=None):
 
     _settings.labels = result
 
+
 def delete_setting(settings_object, name):
     """Delete setting from settings_object.
 
@@ -594,6 +614,7 @@ def delete_setting(settings_object, name):
         delattr(target, fields[0])
     except AttributeError:
         _logger.debug('Failed to delete setting: %r', name)
+
 
 def translate_deprecated_settings(settings, cached_settings):
     # If deprecated setting has been set by user, but the new
@@ -719,6 +740,7 @@ def translate_deprecated_settings(settings, cached_settings):
 
     return settings
 
+
 def apply_local_high_security_mode_setting(settings):
     # When High Security Mode is activated, certain settings must be
     # set to be secure, even if that requires overriding a setting that
@@ -768,6 +790,7 @@ def apply_local_high_security_mode_setting(settings):
                 False)
 
     return settings
+
 
 def _load_configuration(config_file=None, environment=None,
         ignore_errors=True, log_file=None, log_level=None):
@@ -974,6 +997,7 @@ def _load_configuration(config_file=None, environment=None,
             _raise_configuration_error(section=None,
                     option='transaction_tracer.generator_trace')
 
+
 # Generic error reporting functions.
 
 def _raise_instrumentation_error(type, locals):
@@ -987,13 +1011,16 @@ def _raise_instrumentation_error(type, locals):
                 'Failure when instrumenting code. Check New Relic '
                 'agent log file for further details.')
 
+
 # Registration of module import hooks defined in configuration file.
 
 _module_import_hook_results = {}
 _module_import_hook_registry = {}
 
+
 def module_import_hook_results():
     return _module_import_hook_results
+
 
 def _module_import_hook(target, module, function):
     def _instrument(target):
@@ -1026,6 +1053,7 @@ def _module_import_hook(target, module, function):
             _raise_instrumentation_error('import-hook', locals())
 
     return _instrument
+
 
 def _process_module_configuration():
     for section in _config_object.sections():
@@ -1069,6 +1097,7 @@ def _process_module_configuration():
         except Exception:
             _raise_configuration_error(section)
 
+
 # Setup wsgi application wrapper defined in configuration file.
 
 def _wsgi_application_import_hook(object_path, application):
@@ -1083,6 +1112,7 @@ def _wsgi_application_import_hook(object_path, application):
             _raise_instrumentation_error('wsgi-application', locals())
 
     return _instrument
+
 
 def _process_wsgi_application_configuration():
     for section in _config_object.sections():
@@ -1118,6 +1148,7 @@ def _process_wsgi_application_configuration():
         except Exception:
             _raise_configuration_error(section)
 
+
 # Setup background task wrapper defined in configuration file.
 
 def _background_task_import_hook(object_path, application, name, group):
@@ -1132,6 +1163,7 @@ def _background_task_import_hook(object_path, application, name, group):
             _raise_instrumentation_error('background-task', locals())
 
     return _instrument
+
 
 def _process_background_task_configuration():
     for section in _config_object.sections():
@@ -1179,6 +1211,7 @@ def _process_background_task_configuration():
         except Exception:
             _raise_configuration_error(section)
 
+
 # Setup database traces defined in configuration file.
 
 def _database_trace_import_hook(object_path, sql):
@@ -1193,6 +1226,7 @@ def _database_trace_import_hook(object_path, sql):
             _raise_instrumentation_error('database-trace', locals())
 
     return _instrument
+
 
 def _process_database_trace_configuration():
     for section in _config_object.sections():
@@ -1230,6 +1264,7 @@ def _process_database_trace_configuration():
         except Exception:
             _raise_configuration_error(section)
 
+
 # Setup external traces defined in configuration file.
 
 def _external_trace_import_hook(object_path, library, url, method):
@@ -1244,6 +1279,7 @@ def _external_trace_import_hook(object_path, library, url, method):
             _raise_instrumentation_error('external-trace', locals())
 
     return _instrument
+
 
 def _process_external_trace_configuration():
     for section in _config_object.sections():
@@ -1292,6 +1328,7 @@ def _process_external_trace_configuration():
         except Exception:
             _raise_configuration_error(section)
 
+
 # Setup function traces defined in configuration file.
 
 def _function_trace_import_hook(object_path, name, group, label, params,
@@ -1309,6 +1346,7 @@ def _function_trace_import_hook(object_path, name, group, label, params,
             _raise_instrumentation_error('function-trace', locals())
 
     return _instrument
+
 
 def _process_function_trace_configuration():
     for section in _config_object.sections():
@@ -1364,6 +1402,7 @@ def _process_function_trace_configuration():
         except Exception:
             _raise_configuration_error(section)
 
+
 # Setup generator traces defined in configuration file.
 
 def _generator_trace_import_hook(object_path, name, group):
@@ -1378,6 +1417,7 @@ def _generator_trace_import_hook(object_path, name, group):
             _raise_instrumentation_error('generator-trace', locals())
 
     return _instrument
+
 
 def _process_generator_trace_configuration():
     for section in _config_object.sections():
@@ -1421,6 +1461,7 @@ def _process_generator_trace_configuration():
         except Exception:
             _raise_configuration_error(section)
 
+
 # Setup profile traces defined in configuration file.
 
 def _profile_trace_import_hook(object_path, name, group, depth):
@@ -1435,6 +1476,7 @@ def _profile_trace_import_hook(object_path, name, group, depth):
             _raise_instrumentation_error('profile-trace', locals())
 
     return _instrument
+
 
 def _process_profile_trace_configuration():
     for section in _config_object.sections():
@@ -1482,6 +1524,7 @@ def _process_profile_trace_configuration():
         except Exception:
             _raise_configuration_error(section)
 
+
 # Setup memcache traces defined in configuration file.
 
 def _memcache_trace_import_hook(object_path, command):
@@ -1496,6 +1539,7 @@ def _memcache_trace_import_hook(object_path, command):
             _raise_instrumentation_error('memcache-trace', locals())
 
     return _instrument
+
 
 def _process_memcache_trace_configuration():
     for section in _config_object.sections():
@@ -1533,6 +1577,7 @@ def _process_memcache_trace_configuration():
         except Exception:
             _raise_configuration_error(section)
 
+
 # Setup name transaction wrapper defined in configuration file.
 
 def _transaction_name_import_hook(object_path, name, group, priority):
@@ -1547,6 +1592,7 @@ def _transaction_name_import_hook(object_path, name, group, priority):
             _raise_instrumentation_error('transaction-name', locals())
 
     return _instrument
+
 
 def _process_transaction_name_configuration():
     for section in _config_object.sections():
@@ -1596,6 +1642,7 @@ def _process_transaction_name_configuration():
         except Exception:
             _raise_configuration_error(section)
 
+
 # Setup error trace wrapper defined in configuration file.
 
 def _error_trace_import_hook(object_path, ignore_errors):
@@ -1610,6 +1657,7 @@ def _error_trace_import_hook(object_path, ignore_errors):
             _raise_instrumentation_error('error-trace', locals())
 
     return _instrument
+
 
 def _process_error_trace_configuration():
     for section in _config_object.sections():
@@ -1646,9 +1694,11 @@ def _process_error_trace_configuration():
         except Exception:
             _raise_configuration_error(section)
 
+
 # Automatic data source loading defined in configuration file.
 
 _data_sources = []
+
 
 def _process_data_source_configuration():
     for section in _config_object.sections():
@@ -1701,6 +1751,7 @@ def _process_data_source_configuration():
         except Exception:
             _raise_configuration_error(section)
 
+
 def _startup_data_source():
     _logger.debug('Registering data sources defined in configuration.')
 
@@ -1721,7 +1772,9 @@ def _startup_data_source():
                     'has failed. Data source will be skipped.', module,
                     object_path, name, section)
 
+
 _data_sources_done = False
+
 
 def _setup_data_source():
 
@@ -1734,6 +1787,7 @@ def _setup_data_source():
 
     if _data_sources:
         newrelic.core.agent.Agent.run_on_startup(_startup_data_source)
+
 
 # Setup function profiler defined in configuration file.
 
@@ -1749,6 +1803,7 @@ def _function_profile_import_hook(object_path, filename, delay, checkpoint):
             _raise_instrumentation_error('function-profile', locals())
 
     return _instrument
+
 
 def _process_function_profile_configuration():
     for section in _config_object.sections():
@@ -1790,6 +1845,7 @@ def _process_function_profile_configuration():
             newrelic.api.import_hook.register_import_hook(module, hook)
         except Exception:
             _raise_configuration_error(section)
+
 
 def _process_module_definition(target, module, function='instrument'):
     enabled = True
@@ -1833,6 +1889,7 @@ def _process_module_definition(target, module, function='instrument'):
 
     except Exception:
         _raise_instrumentation_error('import-hook', locals())
+
 
 def _process_module_builtin_defaults():
     _process_module_definition('django.core.handlers.base',
@@ -1880,6 +1937,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('django.template.base',
             'newrelic.hooks.framework_django',
             'instrument_django_template_base')
+    _process_module_definition('django.middleware.gzip',
+            'newrelic.hooks.framework_django',
+            'instrument_django_gzip_middleware')
 
     # New modules in Django 1.10
     _process_module_definition('django.urls.resolvers',
@@ -1909,9 +1969,9 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.middleware_flask_compress',
             'instrument_flask_compress')
 
-    #_process_module_definition('web.application',
+    # _process_module_definition('web.application',
     #        'newrelic.hooks.framework_webpy')
-    #_process_module_definition('web.template',
+    # _process_module_definition('web.template',
     #        'newrelic.hooks.framework_webpy')
 
     _process_module_definition('gluon.compileapp',
@@ -2161,7 +2221,6 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.database_sqlite',
             'instrument_sqlite3_dbapi2')
 
-
     _process_module_definition('memcache',
             'newrelic.hooks.datastore_memcache',
             'instrument_memcache')
@@ -2340,7 +2399,7 @@ def _process_module_builtin_defaults():
     _process_module_definition('celery.concurrency.prefork',
             'newrelic.hooks.application_celery',
             'instrument_celery_worker')
-    #_process_module_definition('celery.loaders.base',
+    # _process_module_definition('celery.loaders.base',
     #        'newrelic.hooks.application_celery',
     #        'instrument_celery_loaders_base')
     _process_module_definition('celery.execute.trace',
@@ -2407,16 +2466,16 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.component_cornice',
             'instrument_cornice_service')
 
-    #_process_module_definition('twisted.web.server',
+    # _process_module_definition('twisted.web.server',
     #        'newrelic.hooks.framework_twisted',
     #        'instrument_twisted_web_server')
-    #_process_module_definition('twisted.web.http',
+    # _process_module_definition('twisted.web.http',
     #        'newrelic.hooks.framework_twisted',
     #        'instrument_twisted_web_http')
-    #_process_module_definition('twisted.web.resource',
+    # _process_module_definition('twisted.web.resource',
     #        'newrelic.hooks.framework_twisted',
     #        'instrument_twisted_web_resource')
-    #_process_module_definition('twisted.internet.defer',
+    # _process_module_definition('twisted.internet.defer',
     #        'newrelic.hooks.framework_twisted',
     #        'instrument_twisted_internet_defer')
 
@@ -2448,6 +2507,7 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.external_botocore',
             'instrument_botocore_endpoint')
 
+
 def _process_module_entry_points():
     try:
         import pkg_resources
@@ -2471,7 +2531,9 @@ def _process_module_entry_points():
 
         _process_module_definition(target, module, function)
 
+
 _instrumentation_done = False
+
 
 def _setup_instrumentation():
 
@@ -2504,6 +2566,7 @@ def _setup_instrumentation():
 
     _process_function_profile_configuration()
 
+
 def _setup_extensions():
     try:
         import pkg_resources
@@ -2517,7 +2580,9 @@ def _setup_extensions():
         module = sys.modules[entrypoint.module_name]
         module.initialize()
 
+
 _console = None
+
 
 def _startup_agent_console():
     global _console
@@ -2528,9 +2593,11 @@ def _startup_agent_console():
     _console = newrelic.console.ConnectionManager(
             _settings.console.listener_socket)
 
+
 def _setup_agent_console():
     if _settings.console.listener_socket:
         newrelic.core.agent.Agent.run_on_startup(_startup_agent_console)
+
 
 def initialize(config_file=None, environment=None, ignore_errors=None,
             log_file=None, log_level=None):
@@ -2556,6 +2623,7 @@ def initialize(config_file=None, environment=None, ignore_errors=None,
         _setup_agent_console()
     else:
         _settings.enabled = False
+
 
 def filter_app_factory(app, global_conf, config_file, environment=None):
     initialize(config_file, environment)

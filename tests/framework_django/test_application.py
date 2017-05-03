@@ -11,50 +11,65 @@ import django
 DJANGO_VERSION = tuple(map(int, django.get_version().split('.')[:2]))
 DJANGO_SETTINGS_MODULE = os.environ.get('DJANGO_SETTINGS_MODULE', None)
 
+
 def target_application():
     from _target_application import _target_application
     return _target_application
+
 
 # The middleware scoped metrics are dependent on the MIDDLEWARE_CLASSES or
 # MIDDLEWARE defined in the version-specific Django settings.py file.
 
 _test_django_pre_1_10_middleware_scoped_metrics = [
-        ('Function/django.middleware.common:CommonMiddleware.process_request', 1),
-        ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_request', 1),
-        ('Function/django.contrib.auth.middleware:AuthenticationMiddleware.process_request', 1),
-        ('Function/django.contrib.messages.middleware:MessageMiddleware.process_request', 1),
-        ('Function/django.middleware.csrf:CsrfViewMiddleware.process_view', 1),
-        ('Function/django.contrib.messages.middleware:MessageMiddleware.process_response', 1),
-        ('Function/django.middleware.csrf:CsrfViewMiddleware.process_response', 1),
-        ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_response', 1),
-        ('Function/django.middleware.common:CommonMiddleware.process_response', 1),
-        ('Function/newrelic.hooks.framework_django:browser_timing_middleware', 1),
+    (('Function/django.middleware.common:'
+            'CommonMiddleware.process_request'), 1),
+    (('Function/django.contrib.sessions.middleware:'
+            'SessionMiddleware.process_request'), 1),
+    (('Function/django.contrib.auth.middleware:'
+            'AuthenticationMiddleware.process_request'), 1),
+    (('Function/django.contrib.messages.middleware:'
+            'MessageMiddleware.process_request'), 1),
+    (('Function/django.middleware.csrf:'
+            'CsrfViewMiddleware.process_view'), 1),
+    (('Function/django.contrib.messages.middleware:'
+            'MessageMiddleware.process_response'), 1),
+    (('Function/django.middleware.csrf:'
+            'CsrfViewMiddleware.process_response'), 1),
+    (('Function/django.contrib.sessions.middleware:'
+            'SessionMiddleware.process_response'), 1),
+    (('Function/django.middleware.common:'
+            'CommonMiddleware.process_response'), 1),
+    (('Function/django.middleware.gzip:'
+            'GZipMiddleware.process_response'), 1),
+    (('Function/newrelic.hooks.framework_django:'
+            'browser_timing_insertion'), 1),
 ]
 
 _test_django_post_1_10_middleware_scoped_metrics = [
-        ('Function/django.middleware.security:SecurityMiddleware', 1),
-        ('Function/django.contrib.sessions.middleware:SessionMiddleware', 1),
-        ('Function/django.middleware.common:CommonMiddleware', 1),
-        ('Function/django.middleware.csrf:CsrfViewMiddleware', 1),
-        ('Function/django.contrib.auth.middleware:AuthenticationMiddleware', 1),
-        ('Function/django.contrib.messages.middleware:MessageMiddleware', 1),
-        ('Function/django.middleware.clickjacking:XFrameOptionsMiddleware', 1),
+    ('Function/django.middleware.security:SecurityMiddleware', 1),
+    ('Function/django.contrib.sessions.middleware:SessionMiddleware', 1),
+    ('Function/django.middleware.common:CommonMiddleware', 1),
+    ('Function/django.middleware.csrf:CsrfViewMiddleware', 1),
+    ('Function/django.contrib.auth.middleware:AuthenticationMiddleware', 1),
+    ('Function/django.contrib.messages.middleware:MessageMiddleware', 1),
+    ('Function/django.middleware.clickjacking:XFrameOptionsMiddleware', 1),
+    ('Function/django.middleware.gzip:GZipMiddleware', 1),
 ]
 
 _test_django_pre_1_10_url_resolver_scoped_metrics = [
-        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 'present'),
+    ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 'present'),
 ]
 
 _test_django_post_1_10_url_resolver_scoped_metrics = [
-        ('Function/django.urls.resolvers:RegexURLResolver.resolve', 'present'),
+    ('Function/django.urls.resolvers:RegexURLResolver.resolve', 'present'),
 ]
 
 _test_application_index_scoped_metrics = [
-        ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
-        ('Python/WSGI/Application', 1),
-        ('Python/WSGI/Response', 1),
-        ('Python/WSGI/Finalize', 1),
-        ('Function/views:index', 1),
+    ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
+    ('Python/WSGI/Application', 1),
+    ('Python/WSGI/Response', 1),
+    ('Python/WSGI/Finalize', 1),
+    ('Function/views:index', 1),
 ]
 
 if DJANGO_VERSION >= (1, 5):
@@ -87,10 +102,12 @@ def test_application_index():
     response = test_application.get('')
     response.mustcontain('INDEX RESPONSE')
 
+
 @validate_transaction_metrics('views:exception')
 def test_application_exception():
     test_application = target_application()
     test_application.get('/exception', status=500)
+
 
 _test_application_not_found_scoped_metrics = [
         ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
@@ -126,12 +143,14 @@ elif DJANGO_VERSION < (1, 10):
     _test_application_not_found_scoped_metrics.remove(
         ('Function/django.middleware.csrf:CsrfViewMiddleware.process_view', 1))
 
+
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('django.views.debug:technical_404_response',
         scoped_metrics=_test_application_not_found_scoped_metrics)
 def test_application_not_found():
     test_application = target_application()
     test_application.get('/not_found', status=404)
+
 
 _test_application_cbv_scoped_metrics = [
         ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
@@ -163,6 +182,7 @@ elif DJANGO_VERSION < (1, 10):
     _test_application_cbv_scoped_metrics.extend(
         _test_django_pre_1_10_middleware_scoped_metrics)
 
+
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:MyView.get',
         scoped_metrics=_test_application_cbv_scoped_metrics)
@@ -170,6 +190,7 @@ def test_application_cbv():
     test_application = target_application()
     response = test_application.get('/cbv')
     response.mustcontain('CBV RESPONSE')
+
 
 _test_application_deferred_cbv_scoped_metrics = [
         ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
@@ -201,6 +222,7 @@ elif DJANGO_VERSION < (1, 10):
     _test_application_deferred_cbv_scoped_metrics.extend(
         _test_django_pre_1_10_middleware_scoped_metrics)
 
+
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:deferred_cbv',
         scoped_metrics=_test_application_deferred_cbv_scoped_metrics)
@@ -209,11 +231,13 @@ def test_application_deferred_cbv():
     response = test_application.get('/deferred_cbv')
     response.mustcontain('CBV RESPONSE')
 
+
 _test_html_insertion_settings = {
     'browser_monitoring.enabled': True,
     'browser_monitoring.auto_instrument': True,
     'js_agent_loader': u'<!-- NREUM HEADER -->',
 }
+
 
 @override_application_settings(_test_html_insertion_settings)
 def test_html_insertion_django_middleware():
@@ -226,11 +250,58 @@ def test_html_insertion_django_middleware():
 
     response.mustcontain('NREUM HEADER', 'NREUM.info')
 
+
+@override_application_settings(_test_html_insertion_settings)
+def test_html_insertion_django_gzip_middleware_enabled():
+    test_application = target_application()
+
+    # GZipMiddleware only fires if given the following header.
+
+    gzip_header = {'Accept-Encoding': 'gzip'}
+    response = test_application.get('/gzip_html_insertion', status=200,
+            headers=gzip_header)
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    # The response.text will already be gunzipped
+
+    response.mustcontain('NREUM HEADER', 'NREUM.info')
+
+
+_test_html_insertion_settings_disabled = {
+    'browser_monitoring.enabled': False,
+    'browser_monitoring.auto_instrument': False,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
+
+
+@override_application_settings(_test_html_insertion_settings_disabled)
+def test_html_insertion_django_gzip_middleware_disabled():
+    test_application = target_application()
+
+    # GZipMiddleware only fires if given the following header.
+
+    gzip_header = {'Accept-Encoding': 'gzip'}
+    response = test_application.get('/gzip_html_insertion', status=200,
+            headers=gzip_header)
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    # The response.text will already be gunzipped
+
+    response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
+
+
 _test_html_insertion_manual_settings = {
     'browser_monitoring.enabled': True,
     'browser_monitoring.auto_instrument': True,
     'js_agent_loader': u'<!-- NREUM HEADER -->',
 }
+
 
 @override_application_settings(_test_html_insertion_manual_settings)
 def test_html_insertion_manual_django_middleware():
@@ -242,6 +313,7 @@ def test_html_insertion_manual_django_middleware():
     # footer added by the agent.
 
     response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
+
 
 @override_application_settings(_test_html_insertion_settings)
 def test_html_insertion_unnamed_attachment_header_django_middleware():
@@ -255,6 +327,7 @@ def test_html_insertion_unnamed_attachment_header_django_middleware():
 
     response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
 
+
 @override_application_settings(_test_html_insertion_settings)
 def test_html_insertion_named_attachment_header_django_middleware():
     test_application = target_application()
@@ -267,11 +340,13 @@ def test_html_insertion_named_attachment_header_django_middleware():
 
     response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
 
+
 _test_html_insertion_settings = {
     'browser_monitoring.enabled': True,
     'browser_monitoring.auto_instrument': False,
     'js_agent_loader': u'<!-- NREUM HEADER -->',
 }
+
 
 @override_application_settings(_test_html_insertion_settings)
 def test_html_insertion_manual_tag_instrumentation():
@@ -314,6 +389,15 @@ elif DJANGO_VERSION < (1, 10):
     _test_application_inclusion_tag_scoped_metrics.extend(
         _test_django_pre_1_10_middleware_scoped_metrics)
 
+try:
+    _test_application_inclusion_tag_scoped_metrics.remove(
+        (('Function/newrelic.hooks.framework_django:'
+                'browser_timing_insertion'), 1)
+    )
+except ValueError:
+    pass
+
+
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:inclusion_tag',
         scoped_metrics=_test_application_inclusion_tag_scoped_metrics)
@@ -321,6 +405,7 @@ def test_application_inclusion_tag():
     test_application = target_application()
     response = test_application.get('/inclusion_tag')
     response.mustcontain('Inclusion tag')
+
 
 _test_inclusion_tag_template_tags_scoped_metrics = [
         ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
@@ -357,6 +442,15 @@ elif DJANGO_VERSION < (1, 10):
     _test_inclusion_tag_template_tags_scoped_metrics.extend(
         _test_django_pre_1_10_middleware_scoped_metrics)
 
+try:
+    _test_inclusion_tag_template_tags_scoped_metrics.remove(
+        (('Function/newrelic.hooks.framework_django:'
+                'browser_timing_insertion'), 1)
+    )
+except ValueError:
+    pass
+
+
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:inclusion_tag',
         scoped_metrics=_test_inclusion_tag_template_tags_scoped_metrics)
@@ -365,6 +459,7 @@ def test_inclusion_tag_template_tag_metric():
     test_application = target_application()
     response = test_application.get('/inclusion_tag')
     response.mustcontain('Inclusion tag')
+
 
 _test_template_render_exception_scoped_metrics_base = [
         ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
@@ -413,6 +508,7 @@ _test_template_render_exception_function_scoped_metrics.extend([
         ('Function/views:render_exception_function', 1),
 ])
 
+
 @validate_transaction_errors(errors=_test_template_render_exception_errors)
 @validate_transaction_metrics('views:render_exception_function',
         scoped_metrics=_test_template_render_exception_function_scoped_metrics)
@@ -420,12 +516,14 @@ def test_template_render_exception_function():
     test_application = target_application()
     test_application.get('/render_exception_function', status=500)
 
+
 _test_template_render_exception_class_scoped_metrics = list(
         _test_template_render_exception_scoped_metrics_base)
 _test_template_render_exception_class_scoped_metrics.extend([
         ('Function/views:RenderExceptionClass', 1),
         ('Function/views:RenderExceptionClass.get', 1),
 ])
+
 
 @validate_transaction_errors(errors=_test_template_render_exception_errors)
 @validate_transaction_metrics('views:RenderExceptionClass.get',

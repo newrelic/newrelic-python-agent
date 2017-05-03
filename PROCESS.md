@@ -272,7 +272,7 @@ the tags to Github master.
     4. Confirm that a `newrelic-admin validate-config` test runs okay
     5. Create a small test app and confirm that starting it with `newrelic-admin run-program` runs okay
 
-[artifactory]:http://pdx-artifacts.pdx.vm.datanerd.us:8081/artifactory/webapp/browserepo.html?0
+[artifactory]:https://pdx-artifacts.pdx.vm.datanerd.us/artifactory/webapp/browserepo.html?0
 
 17. Pause here, regroup before continuing
 

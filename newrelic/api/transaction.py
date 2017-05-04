@@ -431,6 +431,11 @@ class Transaction(object):
             self.record_custom_metric('Python/WSGI/Output/Calls/write',
                                self._calls_write)
 
+        # Record supportability metrics for api calls
+
+        for key, value in six.iteritems(self._transaction_metrics):
+            self.record_custom_metric(key, {'count': value})
+
         if self._frameworks:
             for framework, version in self._frameworks:
                 self.record_custom_metric('Python/Framework/%s/%s' %

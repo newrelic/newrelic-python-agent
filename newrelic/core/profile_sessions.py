@@ -26,13 +26,16 @@ _logger = logging.getLogger(__name__)
 
 AGENT_PACKAGE_DIRECTORY = os.path.dirname(newrelic.__file__) + '/'
 
+
 class SessionState(object):
     RUNNING = 1
     FINISHED = 2
 
+
 class SessionType(object):
     GENERIC = 1
     XRAY = 2
+
 
 def format_stack_trace(frame, thread_category):
     """Formats the frame obj into a list of stack trace tuples.
@@ -114,6 +117,7 @@ def collect_stack_traces(include_nr_threads=False, include_xrays=False):
             txn.add_profile_sample(stack_trace)
 
         yield thread_category, stack_trace
+
 
 class ProfileSessionManager(object):
     """Singleton class that manages multiple profile sessions. Do NOT
@@ -313,7 +317,8 @@ class ProfileSessionManager(object):
                             '%d transactions with name %r and xray ID of %r '
                             'over a period of %.2f seconds and %d samples.',
                             session.transaction_count, session.key_txn,
-                            session.xray_id, time.time()-session.start_time_s,
+                            session.xray_id,
+                            time.time() - session.start_time_s,
                             session.sample_count)
                 else:
                     _logger.debug('Reporting final thread profiling data for '
@@ -626,6 +631,7 @@ class ProfileSession(object):
         self.reset_profile_data()
         return profile
 
+
 class CallTree(object):
     def __init__(self, method_data, call_count=0, depth=1):
         self.method_data = method_data
@@ -652,6 +658,7 @@ class CallTree(object):
 
         return [method_data, self.call_count, 0,
                 [x.flatten() for x in self.children.values() if not x.ignore]]
+
 
 def profile_session_manager():
     return ProfileSessionManager.singleton()

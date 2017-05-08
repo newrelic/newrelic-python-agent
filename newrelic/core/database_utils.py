@@ -5,7 +5,6 @@ explain plans for SQL etc.
 
 import logging
 import re
-import time
 import weakref
 
 from newrelic.core.internal_metrics import (internal_trace, internal_metric)
@@ -55,6 +54,7 @@ _quotes_table = {
 
 _quotes_default = _single_quotes_re
 
+
 @internal_trace('Supportability/Python/DatabaseUtils/Calls/obfuscate_sql')
 def _obfuscate_sql(sql, database):
     quotes_re = _quotes_table.get(database.quoting_style, _single_quotes_re)
@@ -90,6 +90,7 @@ def _obfuscate_sql(sql, database):
 # ':\w+'. This can match ':1name', which is not strictly correct, but
 # then it likely isn't valid in SQL anyway for that param style.
 
+
 _normalize_params_1_p = r'%\([^)]*\)s'
 _normalize_params_1_re = re.compile(_normalize_params_1_p)
 _normalize_params_2_p = r'%s'
@@ -106,6 +107,7 @@ _normalize_whitespace_2_p = r'\s+(?!\w)'
 _normalize_whitespace_2_re = re.compile(_normalize_whitespace_2_p)
 _normalize_whitespace_3_p = r'(?<!\w)\s+'
 _normalize_whitespace_3_re = re.compile(_normalize_whitespace_3_p)
+
 
 @internal_trace('Supportability/Python/DatabaseUtils/Calls/normalize_sql')
 def _normalize_sql(sql):
@@ -150,15 +152,19 @@ def _normalize_sql(sql):
 # TODO This isn't always going to do what we require, but it is only used
 # now for cases below which never get invoked, so is okay for now.
 
+
 _identifier_re = re.compile('[\',"`\[\]\(\)]*')
+
 
 def _extract_identifier(token):
     return _identifier_re.sub('', token).strip().lower()
 
 # Helper function for removing C style comments embedded in SQL statements.
 
+
 _uncomment_sql_p = r'/\*.*?\*/'
 _uncomment_sql_re = re.compile(_uncomment_sql_p, re.DOTALL)
+
 
 def _uncomment_sql(sql):
     return _uncomment_sql_re.sub('', sql)
@@ -213,9 +219,11 @@ def _uncomment_sql(sql):
 # You cannot mix different quoting schemes as then the regex gets
 # even more messy.
 
+
 def _parse_default(sql, regex):
     match = regex.search(sql)
     return match and _extract_identifier(match.group(1)) or ''
+
 
 _parse_identifier_1_p = r'"((?:[^"]|"")+)"(?:\."((?:[^"]|"")+)")?'
 _parse_identifier_2_p = r"'((?:[^']|'')+)'(?:\.'((?:[^']|'')+)')?"
@@ -232,50 +240,62 @@ _parse_identifier_p = ''.join(('(', _parse_identifier_1_p, '|',
 _parse_from_p = '\s+FROM\s+' + _parse_identifier_p
 _parse_from_re = re.compile(_parse_from_p, re.IGNORECASE)
 
+
 def _join_identifier(m):
     return m and '.'.join([s for s in m.groups()[1:] if s]).lower() or ''
+
 
 @internal_trace('Supportability/Python/DatabaseUtils/Calls/'
         'parse_target_select')
 def _parse_select(sql):
     return _join_identifier(_parse_from_re.search(sql))
 
+
 @internal_trace('Supportability/Python/DatabaseUtils/Calls/'
         'parse_target_delete')
 def _parse_delete(sql):
     return _join_identifier(_parse_from_re.search(sql))
 
+
 _parse_into_p = '\s+INTO\s+' + _parse_identifier_p
 _parse_into_re = re.compile(_parse_into_p, re.IGNORECASE)
+
 
 @internal_trace('Supportability/Python/DatabaseUtils/Calls/'
         'parse_target_insert')
 def _parse_insert(sql):
     return _join_identifier(_parse_into_re.search(sql))
 
+
 _parse_update_p = '\s*UPDATE\s+' + _parse_identifier_p
 _parse_update_re = re.compile(_parse_update_p, re.IGNORECASE)
+
 
 @internal_trace('Supportability/Python/DatabaseUtils/Calls/'
         'parse_target_update')
 def _parse_update(sql):
     return _join_identifier(_parse_update_re.search(sql))
 
+
 _parse_table_p = '\s+TABLE\s+' + _parse_identifier_p
 _parse_table_re = re.compile(_parse_table_p, re.IGNORECASE)
+
 
 @internal_trace('Supportability/Python/DatabaseUtils/Calls/'
         'parse_target_create')
 def _parse_create(sql):
     return _join_identifier(_parse_table_re.search(sql))
 
+
 @internal_trace('Supportability/Python/DatabaseUtils/Calls/'
         'parse_target_drop')
 def _parse_drop(sql):
     return _join_identifier(_parse_table_re.search(sql))
 
+
 _parse_call_p = r'\s*CALL\s+(?!\()(\w+)'
 _parse_call_re = re.compile(_parse_call_p, re.IGNORECASE)
+
 
 @internal_trace('Supportability/Python/DatabaseUtils/Calls/'
         'parse_target_call')
@@ -285,40 +305,50 @@ def _parse_call(sql):
 # TODO Following need to be reviewed again. They aren't currently used
 # in actual use as only parse out target for select/insert/update/delete.
 
+
 _parse_show_p = r'\s*SHOW\s+(.*)'
 _parse_show_re = re.compile(_parse_show_p, re.IGNORECASE | re.DOTALL)
+
 
 @internal_trace('Supportability/Python/DatabaseUtils/Calls/'
         'parse_target_show')
 def _parse_show(sql):
     return _parse_default(sql, _parse_show_re)
 
+
 _parse_set_p = r'\s*SET\s+(.*?)\W+.*'
 _parse_set_re = re.compile(_parse_set_p, re.IGNORECASE | re.DOTALL)
+
 
 @internal_trace('Supportability/Python/DatabaseUtils/Calls/'
         'parse_target_set')
 def _parse_set(sql):
     return _parse_default(sql, _parse_set_re)
 
+
 _parse_exec_p = r'\s*EXEC\s+(?!\()(\w+)'
 _parse_exec_re = re.compile(_parse_exec_p, re.IGNORECASE)
+
 
 @internal_trace('Supportability/Python/DatabaseUtils/Calls/'
         'parse_target_exec')
 def _parse_exec(sql):
     return _parse_default(sql, _parse_exec_re)
 
+
 _parse_execute_p = r'\s*EXECUTE\s+(?!\()(\w+)'
 _parse_execute_re = re.compile(_parse_execute_p, re.IGNORECASE)
+
 
 @internal_trace('Supportability/Python/DatabaseUtils/Calls/'
         'parse_target_execute')
 def _parse_execute(sql):
     return _parse_default(sql, _parse_execute_re)
 
+
 _parse_alter_p = r'\s*ALTER\s+(?!\()(\w+)'
 _parse_alter_re = re.compile(_parse_alter_p, re.IGNORECASE)
+
 
 @internal_trace('Supportability/Python/DatabaseUtils/Calls/'
         'parse_target_alter')
@@ -331,6 +361,7 @@ def _parse_alter(sql):
 # desired that the operation be broken out separately with new Datastore
 # metrics, then the operation should still be added, but with the value
 # being set to None.
+
 
 _operation_table = {
     'select': _parse_select,
@@ -352,11 +383,13 @@ _operation_table = {
 _parse_operation_p = r'(\w+)'
 _parse_operation_re = re.compile(_parse_operation_p)
 
+
 @internal_trace('Supportability/Python/DatabaseUtils/Calls/parse_operation')
 def _parse_operation(sql):
     match = _parse_operation_re.search(sql)
     operation = match and match.group(1).lower() or ''
     return operation if operation in _operation_table else ''
+
 
 @internal_trace('Supportability/Python/DatabaseUtils/Calls/parse_target')
 def _parse_target(sql, operation):
@@ -369,6 +402,7 @@ def _parse_target(sql, operation):
 # otherwise. We will swap single quotes with a token value. Next up we
 # want to match anything we want to keep. Finally match all remaining
 # numeric values. These we will also swap with a token value.
+
 
 _explain_plan_postgresql_re_1_mask_false = re.compile(
     r"""((?P<double_quotes>"[^"]*")|"""
@@ -385,6 +419,7 @@ _explain_plan_postgresql_re_1_mask_true = re.compile(
 
 _explain_plan_postgresql_re_2 = re.compile(
     r"""^(?P<label>[^:]*:\s+).*$""", re.MULTILINE)
+
 
 def _obfuscate_explain_plan_postgresql_substitute(text, mask):
     # Perform substitutions for the explain plan on the text string.
@@ -407,6 +442,7 @@ def _obfuscate_explain_plan_postgresql_substitute(text, mask):
         return _explain_plan_postgresql_re_1_mask_true.sub(replacement, text)
     else:
         return _explain_plan_postgresql_re_1_mask_false.sub(replacement, text)
+
 
 def _obfuscate_explain_plan_postgresql(columns, rows, mask=None):
     settings = global_settings()
@@ -448,15 +484,18 @@ def _obfuscate_explain_plan_postgresql(columns, rows, mask=None):
 
     return columns, rows
 
+
 _obfuscate_explain_plan_table = {
     'Postgres': _obfuscate_explain_plan_postgresql
 }
+
 
 def _obfuscate_explain_plan(database, columns, rows):
     obfuscator = _obfuscate_explain_plan_table.get(database.product)
     if obfuscator:
         return obfuscator(columns, rows)
     return columns, rows
+
 
 class SQLConnection(object):
 
@@ -496,6 +535,7 @@ class SQLConnection(object):
             pass
 
         self.connection.close()
+
 
 class SQLConnections(object):
 
@@ -576,6 +616,7 @@ class SQLConnections(object):
     def __exit__(self, exc, value, tb):
         self.cleanup()
 
+
 def _query_result_dicts_to_tuples(columns, rows):
     # Query results come back as a list of rows. If each row is a
     # dict, then its keys can be found in the columns list. Here, we
@@ -589,10 +630,10 @@ def _query_result_dicts_to_tuples(columns, rows):
 
     return [tuple([row[col] for col in columns]) for row in rows]
 
+
 @internal_trace('Supportability/Python/DatabaseUtils/Calls/explain_plan')
 def _explain_plan(connections, sql, database, connect_params, cursor_params,
         sql_parameters, execute_params):
-
     query = '%s %s' % (database.explain_query, sql)
 
     settings = global_settings()
@@ -662,6 +703,7 @@ def _explain_plan(connections, sql, database, connect_params, cursor_params,
 
     return None
 
+
 def explain_plan(connections, sql_statement, connect_params, cursor_params,
         sql_parameters, execute_params, sql_format):
 
@@ -689,6 +731,7 @@ def explain_plan(connections, sql_statement, connect_params, cursor_params,
     return details
 
 # Wrapper for information about a specific database.
+
 
 class SQLDatabase(object):
 
@@ -732,6 +775,7 @@ class SQLDatabase(object):
             result = ()
 
         return result
+
 
 class SQLStatement(object):
 
@@ -792,7 +836,9 @@ class SQLStatement(object):
         else:
             return self.obfuscated
 
+
 _sql_statements = weakref.WeakValueDictionary()
+
 
 def sql_statement(sql, dbapi2_module):
     key = (sql, dbapi2_module)

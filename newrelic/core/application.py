@@ -16,10 +16,8 @@ import newrelic.packages.six as six
 
 from newrelic.samplers.data_sampler import DataSampler
 
-from newrelic.core.attribute import (process_user_attribute,
-        MAX_NUM_USER_ATTRIBUTES)
 from newrelic.core.config import global_settings_dump, global_settings
-from newrelic.core.custom_event import process_event_type, create_custom_event
+from newrelic.core.custom_event import create_custom_event
 from newrelic.core.data_collector import create_session
 from newrelic.network.exceptions import (ForceAgentRestart,
         ForceAgentDisconnect, DiscardDataForRequest, RetryDataForRequest)
@@ -35,6 +33,7 @@ from .database_utils import SQLConnections
 from ..common.object_names import callable_name
 
 _logger = logging.getLogger(__name__)
+
 
 class Application(object):
 
@@ -92,7 +91,7 @@ class Application(object):
         # avoid a race condition in setting it later. Otherwise we have
         # to use unnecessary locking to protect access.
 
-        self._rules_engine = { 'url': RulesEngine([]),
+        self._rules_engine = {'url': RulesEngine([]),
                 'transaction': RulesEngine([]),
                 'metric': RulesEngine([]),
                 'segment': SegmentCollapseEngine([])}
@@ -101,11 +100,11 @@ class Application(object):
 
         # Thread profiler and state of whether active or not.
 
-        #self._thread_profiler = None
-        #self._profiler_started = False
-        #self._send_profile_data = False
+        # self._thread_profiler = None
+        # self._profiler_started = False
+        # self._send_profile_data = False
 
-        #self._xray_profiler = None
+        # self._xray_profiler = None
         self.xray_session_running = False
 
         self.profile_manager = profile_session_manager()
@@ -311,7 +310,7 @@ class Application(object):
 
         retries = [(15, False, False), (15, False, False),
                    (30, False, False), (60, True, False),
-                   (120, False, False), (300, False, True),]
+                   (120, False, False), (300, False, True), ]
 
         connect_attempts = 0
 
@@ -462,7 +461,7 @@ class Application(object):
             with InternalTraceContext(internal_metrics):
                 internal_metric('Supportability/Python/Application/'
                         'Registration/Duration',
-                        self._period_start-connect_start)
+                        self._period_start - connect_start)
                 internal_metric('Supportability/Python/Application/'
                         'Registration/Attempts',
                         connect_attempts)
@@ -639,18 +638,18 @@ class Application(object):
 
             for data_sampler in self._data_samplers:
                 try:
-                     _logger.debug('Starting data sampler for %r in '
-                             'application %r.', data_sampler.name,
-                             self._app_name)
+                    _logger.debug('Starting data sampler for %r in '
+                            'application %r.', data_sampler.name,
+                            self._app_name)
 
-                     data_sampler.start()
+                    data_sampler.start()
                 except Exception:
-                     _logger.exception('Unexpected exception when starting '
-                             'data source %r. Custom metrics from this data '
-                             'source may not be subsequently available. If '
-                             'this problem persists, please report this '
-                             'problem to the provider of the data source.',
-                             data_sampler.name)
+                    _logger.exception('Unexpected exception when starting '
+                            'data source %r. Custom metrics from this data '
+                            'source may not be subsequently available. If '
+                            'this problem persists, please report this '
+                            'problem to the provider of the data source.',
+                            data_sampler.name)
 
             self._data_samplers_started = True
 
@@ -667,18 +666,18 @@ class Application(object):
 
             for data_sampler in self._data_samplers:
                 try:
-                     _logger.debug('Stopping data sampler for %r in '
-                             'application %r.', data_sampler.name,
-                             self._app_name)
+                    _logger.debug('Stopping data sampler for %r in '
+                            'application %r.', data_sampler.name,
+                            self._app_name)
 
-                     data_sampler.stop()
+                    data_sampler.stop()
                 except Exception:
-                     _logger.exception('Unexpected exception when stopping '
-                             'data source %r Custom metrics from this data '
-                             'source may not be subsequently available. If '
-                             'this problem persists, please report this '
-                             'problem to the provider of the data source.',
-                             data_sampler.name)
+                    _logger.exception('Unexpected exception when stopping '
+                            'data source %r Custom metrics from this data '
+                            'source may not be subsequently available. If '
+                            'this problem persists, please report this '
+                            'problem to the provider of the data source.',
+                            data_sampler.name)
 
     def remove_data_source(self, name):
         with self._data_samplers_lock:
@@ -999,7 +998,7 @@ class Application(object):
 
         _logger.info('Starting an xray session for %r. '
                 'duration:%d mins name:%s xray_id:%d', self._app_name,
-                duration_s/60, name, xray_id)
+                duration_s / 60, name, xray_id)
 
         return {command_id: {}}
 
@@ -1151,7 +1150,6 @@ class Application(object):
 
         stop_time_s = self._period_start + duration_s
 
-
         if not hasattr(sys, '_current_frames'):
             _logger.warning('A thread profiling session was requested for '
                     '%r but thread profiling is not supported for the '
@@ -1279,7 +1277,8 @@ class Application(object):
 
                     stats_custom = self._stats_custom_engine.harvest_snapshot()
 
-                # stats_custom should only contain metric stats, no transactions
+                # stats_custom should only contain metric stats, no
+                # transactions
 
                 stats.merge_metric_stats(stats_custom)
 

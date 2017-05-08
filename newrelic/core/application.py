@@ -1354,35 +1354,6 @@ class Application(object):
 
                     configuration = self._active_session.configuration
 
-                    # Create a metric_normalizer based on normalize_name
-                    # If metric rename rules are empty, set normalizer
-                    # to None and the stats engine will skip steps as
-                    # appropriate.
-
-                    if self._rules_engine['metric'].rules:
-                        metric_normalizer = partial(self.normalize_name,
-                                rule_type='metric')
-                    else:
-                        metric_normalizer = None
-
-                    # Pass the metric_normalizer to stats.metric_data to
-                    # do metric renaming.
-
-                    _logger.debug('Normalizing metrics for harvest of %r.',
-                            self._app_name)
-
-                    metric_data = stats.metric_data(metric_normalizer)
-
-                    _logger.debug('Sending metric data for harvest of %r.',
-                            self._app_name)
-
-                    # Send metrics
-
-                    metric_ids = self._active_session.send_metric_data(
-                            self._period_start, period_end, metric_data)
-
-                    stats.reset_metric_stats()
-
                     # Send data set for analytics, which is a combination
                     # of Synthetic analytic events, and the sampled data
                     # set of regular requests.
@@ -1470,19 +1441,6 @@ class Application(object):
 
                     stats.reset_custom_events()
 
-                    # Successful, so we update the stats engine with the
-                    # new metric IDs and reset the reporting period
-                    # start time. If an error occurs after this point,
-                    # any remaining data for the period being reported
-                    # on will be thrown away. We reset the count of
-                    # number of merges we have done due to failures as
-                    # only really want to count errors in being able to
-                    # report the main transaction metrics.
-
-                    self._merge_count = 0
-                    self._period_start = period_end
-                    self._stats_engine.update_metric_ids(metric_ids)
-
                     # Send the accumulated error data.
 
                     if configuration.collect_errors:
@@ -1525,14 +1483,6 @@ class Application(object):
                                 self._active_session.send_transaction_traces(
                                         slow_transaction_data)
 
-                    # Fetch agent commands sent from the data collector
-                    # and process them.
-
-                    _logger.debug('Process agent commands during '
-                            'harvest of %r.', self._app_name)
-
-                    self.process_agent_commands()
-
                     # Send the accumulated profile data back to the data
                     # collector. Note that this come after we process
                     # the agent commands as we might receive an agent
@@ -1546,8 +1496,63 @@ class Application(object):
 
                     self.report_profile_data()
 
+                    # Fetch agent commands sent from the data collector
+                    # and process them.
+
+                    _logger.debug('Process agent commands during '
+                            'harvest of %r.', self._app_name)
+
+                    self.process_agent_commands()
+
+                    # Create a metric_normalizer based on normalize_name
+                    # If metric rename rules are empty, set normalizer
+                    # to None and the stats engine will skip steps as
+                    # appropriate.
+
+                    if self._rules_engine['metric'].rules:
+                        metric_normalizer = partial(self.normalize_name,
+                                rule_type='metric')
+                    else:
+                        metric_normalizer = None
+
+                    # Merge all ready internal metrics
+                    stats.merge_custom_metrics(internal_metrics.metrics())
+
+                    # Pass the metric_normalizer to stats.metric_data to
+                    # do metric renaming.
+
+                    _logger.debug('Normalizing metrics for harvest of %r.',
+                            self._app_name)
+
+                    metric_data = stats.metric_data(metric_normalizer)
+
+                    _logger.debug('Sending metric data for harvest of %r.',
+                            self._app_name)
+
+                    # Send metrics
+                    metric_ids = self._active_session.send_metric_data(
+                            self._period_start, period_end, metric_data)
+
                     _logger.debug('Done sending data for harvest of '
                             '%r.', self._app_name)
+
+                    stats.reset_metric_stats()
+
+                    # Clear sent internal metrics
+                    internal_metrics.reset_metric_stats()
+
+                    # Successful, so we update the stats engine with the
+                    # new metric IDs and reset the reporting period
+                    # start time. If an error occurs after this point,
+                    # any remaining data for the period being reported
+                    # on will be thrown away. We reset the count of
+                    # number of merges we have done due to failures as
+                    # only really want to count errors in being able to
+                    # report the main transaction metrics.
+
+                    self._merge_count = 0
+                    self._period_start = period_end
+                    self._stats_engine.update_metric_ids(metric_ids)
 
                     # If this is a final forced harvest for the process
                     # then attempt to shutdown the session.

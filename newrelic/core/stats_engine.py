@@ -180,6 +180,12 @@ class CustomMetrics(object):
 
         return six.iteritems(self.__stats_table)
 
+    def reset_metric_stats(self):
+        """Resets the accumulated statistics back to initial state for
+        metric data.
+
+        """
+        self.__stats_table = {}
 
 class SlowSqlStats(list):
 

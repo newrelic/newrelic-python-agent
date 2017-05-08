@@ -844,9 +844,6 @@ class Application(object):
                 try:
                     background_task, samples = profile_samples
 
-                    internal_metric('Supportability/Python/Profiling/'
-                            'Counts/stack_traces', len(samples))
-
                     tr_type = 'BACKGROUND' if background_task else 'REQUEST'
 
                     if data.path in self._stats_engine.xray_sessions:
@@ -873,9 +870,6 @@ class Application(object):
                 try:
                     self._transaction_count += 1
                     self._last_transaction = data.end_time
-
-                    internal_metric('Supportability/Python/Transaction/'
-                            'Counts/metric_data', stats.metric_data_count())
 
                     self._stats_engine.merge(stats)
 
@@ -1383,9 +1377,6 @@ class Application(object):
                     metric_ids = self._active_session.send_metric_data(
                             self._period_start, period_end, metric_data)
 
-                    internal_metric('Supportability/Python/Harvest/Counts/'
-                            'metric_data', len(metric_data))
-
                     stats.reset_metric_stats()
 
                     # Send data set for analytics, which is a combination
@@ -1465,18 +1456,10 @@ class Application(object):
                             self._active_session.send_custom_events(
                                     customs.sampling_info, customs.samples)
 
-                        dropped = customs.num_seen - customs.num_samples
-
                         internal_count_metric('Supportability/Events/'
                                 'Customer/Seen', customs.num_seen)
                         internal_count_metric('Supportability/Events/'
                                 'Customer/Sent', customs.num_samples)
-                        internal_count_metric('Supportability/Events/'
-                                'Customer/Dropped', dropped)
-
-                        if dropped > 0:
-                            _logger.debug('Dropped %d custom events out of '
-                                    '%d.', dropped, customs.num_seen)
 
                     stats.reset_custom_events()
 
@@ -1498,9 +1481,6 @@ class Application(object):
                     if configuration.collect_errors:
                         error_data = stats.error_data()
 
-                        internal_metric('Supportability/Python/Harvest/'
-                                'Counts/error_data', len(error_data))
-
                         if error_data:
                             _logger.debug('Sending error data for harvest '
                                     'of %r.', self._app_name)
@@ -1519,10 +1499,6 @@ class Application(object):
                                 slow_sql_data = stats.slow_sql_data(
                                         connections)
 
-                                internal_metric('Supportability/Python/'
-                                        'Harvest/Counts/sql_trace_data',
-                                        len(slow_sql_data))
-
                                 if slow_sql_data:
                                     _logger.debug('Sending slow SQL data for '
                                             'harvest of %r.', self._app_name)
@@ -1533,10 +1509,6 @@ class Application(object):
                             slow_transaction_data = (
                                     stats.transaction_trace_data(
                                     connections))
-
-                            internal_metric('Supportability/Python/Harvest/'
-                                    'Counts/transaction_sample_data',
-                                    len(slow_transaction_data))
 
                             if slow_transaction_data:
                                 _logger.debug('Sending slow transaction '

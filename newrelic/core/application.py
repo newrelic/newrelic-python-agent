@@ -990,6 +990,10 @@ class Application(object):
                     self._app_name, -1, stop_time_s, sample_period_s, False,
                     name, xray_id)
 
+            if not profiler_status:
+                _logger.warning('Unable to start profile session for '
+                        'application %s', self._app_name)
+
         _logger.info('Starting an xray session for %r. '
                 'duration:%d mins name:%s xray_id:%d', self._app_name,
                 duration_s / 60, name, xray_id)

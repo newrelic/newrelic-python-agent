@@ -31,6 +31,7 @@ from ..common.encoding_utils import json_encode
 
 _logger = logging.getLogger(__name__)
 
+
 class ApdexStats(list):
 
     """Bucket for accumulating apdex metrics.
@@ -72,6 +73,7 @@ class ApdexStats(list):
         self[3] = ((self[0] or self[1] or self[2]) and
                 min(self[3], metric.apdex_t) or metric.apdex_t)
         self[4] = max(self[4], metric.apdex_t)
+
 
 class TimeStats(list):
 
@@ -138,6 +140,7 @@ class TimeStats(list):
 
         self.merge_raw_time_metric(value)
 
+
 class CustomMetrics(object):
 
     """Table for collection a set of value metrics.
@@ -177,6 +180,7 @@ class CustomMetrics(object):
         """
 
         return six.iteritems(self.__stats_table)
+
 
 class SlowSqlStats(list):
 
@@ -221,6 +225,7 @@ class SlowSqlStats(list):
 
         self[0] += 1
 
+
 class SampledDataSet(object):
 
     def __init__(self, capacity=100):
@@ -235,8 +240,8 @@ class SampledDataSet(object):
     @property
     def sampling_info(self):
         return {
-            'reservoir_size' : self.capacity,
-            'events_seen' : self.num_seen
+            'reservoir_size': self.capacity,
+            'events_seen': self.num_seen
         }
 
     def reset(self):
@@ -259,6 +264,7 @@ class SampledDataSet(object):
         # Make sure num_seen includes total items seen from merged set
 
         self.num_seen += other_data_set.num_seen - other_data_set.num_samples
+
 
 class StatsEngine(object):
 
@@ -348,8 +354,8 @@ class StatsEngine(object):
 
     def error_events_sampling_info(self):
         sampling_info = {
-                'reservoir_size' : self.error_events.capacity,
-                'events_seen' : self.error_events.num_seen
+                'reservoir_size': self.error_events.capacity,
+                'events_seen': self.error_events.num_seen
         }
         return sampling_info
 
@@ -616,11 +622,11 @@ class StatsEngine(object):
         # don't let the poorly named 'type' attribute fool you.
 
         intrinsics = {
-                'type' : 'TransactionError',
-                'error.class' : error.type,
-                'error.message' : error.message,
-                'timestamp' : error.start_time,
-                'transactionName' : None,
+                'type': 'TransactionError',
+                'error.class': error.type,
+                'error.message': error.message,
+                'timestamp': error.start_time,
+                'transactionName': None,
         }
 
         # Leave agent attributes field blank since not a transaction
@@ -636,8 +642,8 @@ class StatsEngine(object):
         if not settings:
             return
 
-        if (settings.collect_custom_events
-                and settings.custom_insights_events.enabled):
+        if (settings.collect_custom_events and
+                settings.custom_insights_events.enabled):
             self.__custom_events.add(event)
 
     def record_custom_metric(self, name, value):
@@ -846,8 +852,9 @@ class StatsEngine(object):
                 self.__transaction_errors = self.__transaction_errors[:
                         settings.agent_limits.errors_per_harvest]
 
-        if (error_collector.capture_events and error_collector.enabled
-                and settings.collect_error_events):
+        if (error_collector.capture_events and
+                error_collector.enabled and
+                settings.collect_error_events):
             events = transaction.error_events(self.__stats_table)
             for event in events:
                 self.__error_events.add(event)
@@ -939,7 +946,7 @@ class StatsEngine(object):
 
         if normalizer is not None:
             for key, value in six.iteritems(self.__stats_table):
-                key = (normalizer(key[0])[0] , key[1])
+                key = (normalizer(key[0])[0], key[1])
                 stats = normalized_stats.get(key)
                 if stats is None:
                     normalized_stats[key] = copy.copy(value)
@@ -1187,7 +1194,7 @@ class StatsEngine(object):
             else:
                 force_persist = False
 
-            trace_data.append([root.start_time,
+            trace_data.append([transaction_trace.start_time,
                     root.end_time - root.start_time,
                     trace.path,
                     trace.request_uri,
@@ -1196,7 +1203,7 @@ class StatsEngine(object):
                     None,
                     force_persist,
                     xray_id,
-                    trace.synthetics_resource_id,])
+                    trace.synthetics_resource_id, ])
 
         return trace_data
 
@@ -1457,8 +1464,8 @@ class StatsEngine(object):
     def merge_metric_stats(self, snapshot):
         """Merges metric data from a snapshot. This is used both when merging
         data from a single transaction into the main stats engine, and for
-        performing a rollback merge. In either case, the merge is done the exact
-        same way.
+        performing a rollback merge. In either case, the merge is done the
+        exact same way.
         """
 
         if not self.__settings:
@@ -1474,13 +1481,13 @@ class StatsEngine(object):
     def _merge_transaction_events(self, snapshot, rollback=False):
 
         # Merge in transaction events. In the normal case snapshot is a
-        # StatsEngine from a single transaction, and should only have one event.
-        # Just to avoid issues, if there is more than one, don't merge.
+        # StatsEngine from a single transaction, and should only have one
+        # event. Just to avoid issues, if there is more than one, don't merge.
 
         # If this is a rollback, snapshot is a copy of a previous main
         # StatsEngine, and self is still the current main StatsEngine. Then
-        # we are merging multiple events, but still using the reservoir sampling
-        # that gives equal probability for keeping all events
+        # we are merging multiple events, but still using the reservoir
+        # sampling that gives equal probability for keeping all events
 
         if rollback:
             for sample in snapshot.__transaction_events.samples:

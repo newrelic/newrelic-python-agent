@@ -23,9 +23,27 @@ def _nr_wrapper__ServerRequestAdapter_finish_(wrapped, instance,
             kwargs)
 
 
+def _nr_wrapper__HTTPServer_start_request_(wrapped, instance,
+        args, kwargs):
+
+    delegate = wrapped(*args, **kwargs)
+
+    wrap_function_wrapper(delegate, 'on_connection_close',
+            _nr_wrapper__ServerRequestAdapter_on_connection_close_)
+    wrap_function_wrapper(delegate, 'finish',
+            _nr_wrapper__ServerRequestAdapter_finish_)
+
+    return delegate
+
+
 def instrument_tornado_httpserver(module):
 
-    wrap_function_wrapper(module, '_ServerRequestAdapter.on_connection_close',
-            _nr_wrapper__ServerRequestAdapter_on_connection_close_)
-    wrap_function_wrapper(module, '_ServerRequestAdapter.finish',
-            _nr_wrapper__ServerRequestAdapter_finish_)
+    if hasattr(module, '_ServerRequestAdapter'):
+        wrap_function_wrapper(module,
+                '_ServerRequestAdapter.on_connection_close',
+                _nr_wrapper__ServerRequestAdapter_on_connection_close_)
+        wrap_function_wrapper(module, '_ServerRequestAdapter.finish',
+                _nr_wrapper__ServerRequestAdapter_finish_)
+    else:
+        wrap_function_wrapper(module, 'HTTPServer.start_request',
+                _nr_wrapper__HTTPServer_start_request_)

@@ -10,6 +10,21 @@ def _nr_wrapper_Future_add_done_callback(wrapped, instance, args, kwargs):
 
     should_trace = not hasattr(fxn, '_nr_last_object')
 
+    # In Tornado, the coroutine runs inside of a lambda or a closure. In this
+    # case, we don't know the name of the actual function until it's run. The
+    # name is passed as an attribute on the future.
+    if hasattr(instance, '_nr_coroutine_name'):
+        old_fxn = fxn
+
+        def new_fxn(*_args, **_kwargs):
+            return old_fxn(*_args, **_kwargs)
+
+        fxn = new_fxn
+        fxn._nr_coroutine_name = instance._nr_coroutine_name
+
+        # Clear name off of future in case the future is reused
+        delattr(instance, '_nr_coroutine_name')
+
     transaction_aware_fxn = create_transaction_aware_fxn(fxn,
             should_trace=should_trace)
 

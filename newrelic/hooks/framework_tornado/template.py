@@ -1,6 +1,7 @@
-from newrelic.agent import wrap_function_wrapper, FunctionTrace
+from newrelic.api.function_trace import FunctionTrace
+from newrelic.common.object_wrapper import wrap_function_wrapper
 
-from . import retrieve_current_transaction
+from newrelic.hooks.framework_tornado import retrieve_current_transaction
 
 def template_generate_wrapper(wrapped, instance, args, kwargs):
     transaction = retrieve_current_transaction()

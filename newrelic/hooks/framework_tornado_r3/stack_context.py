@@ -1,8 +1,7 @@
-import sys
-
-from newrelic.agent import function_wrapper, wrap_function_wrapper
-from .util import (create_transaction_aware_fxn, record_exception,
+from newrelic.hooks.framework_tornado_r3.util import (
+        create_transaction_aware_fxn, record_exception,
         retrieve_current_transaction)
+from newrelic.common.object_wrapper import wrap_function_wrapper
 
 def _nr_wrapper_stack_context_wrap_(wrapped, instance, args, kwargs):
     # Lots of wrapping going on here. There's the original function, and

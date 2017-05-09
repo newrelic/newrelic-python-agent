@@ -3,9 +3,12 @@ import weakref
 import traceback
 import contextlib
 
-from newrelic.agent import (FunctionTrace, WebTransaction,
-    application as application_instance, ignore_status_code, extra_settings,
-    current_transaction)
+from newrelic.api.application import application_instance
+from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.transaction import current_transaction
+from newrelic.api.web_transaction import WebTransaction
+from newrelic.config import extra_settings
+from newrelic.core.config import ignore_status_code
 
 _logger = logging.getLogger('newrelic.hooks.framework_tornado')
 

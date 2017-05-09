@@ -1,6 +1,7 @@
-from newrelic.agent import wrap_object, register_database_client
+from newrelic.common.object_wrapper import wrap_object
+from newrelic.api.database_trace import register_database_client
 
-from .database_psycopg2 import instance_info
+from newrelic.hooks.database_psycopg2 import instance_info
 
 def instrument_postgresql_driver_dbapi20(module):
     register_database_client(module, database_product='Postgres',

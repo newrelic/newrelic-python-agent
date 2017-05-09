@@ -2,11 +2,13 @@ import logging
 import sys
 import traceback
 
-from newrelic.agent import (application as application_instance,
-        current_transaction, ignore_status_code, function_wrapper,
-        callable_name, FunctionTrace)
+from newrelic.api.application import application as application_instance
+from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.transaction import Sentinel, current_transaction
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import function_wrapper
+from newrelic.core.config import ignore_status_code
 from newrelic.core.transaction_cache import transaction_cache
-from newrelic.api.transaction import Sentinel
 
 _logger = logging.getLogger(__name__)
 

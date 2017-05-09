@@ -1,8 +1,9 @@
 import logging
 
-from newrelic.agent import wrap_function_wrapper
-from .util import (server_request_adapter_finish_finalize,
+from newrelic.hooks.framework_tornado_r3.util import (
+        server_request_adapter_finish_finalize,
         server_request_adapter_on_connection_close_finalize)
+from newrelic.common.object_wrapper import wrap_function_wrapper
 
 _logger = logging.getLogger(__name__)
 

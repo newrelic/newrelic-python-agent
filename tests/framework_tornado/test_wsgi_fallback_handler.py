@@ -10,7 +10,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, raise_background_exceptions,
     wait_for_background_threads)
 
-from newrelic.agent import function_wrapper
+from newrelic.common.object_wrapper import function_wrapper
 
 def select_python_version(py2, py3):
     return six.PY3 and py3 or py2

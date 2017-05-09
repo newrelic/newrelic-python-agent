@@ -5,12 +5,21 @@ import functools
 
 from newrelic.packages import six
 
-from newrelic.agent import (FunctionWrapper, callable_name,
-    wrap_error_trace, FunctionTrace, wrap_function_trace, wrap_in_function,
-    wrap_transaction_name, wrap_post_function, current_transaction,
-    WSGIApplicationWrapper, ignore_status_code, insert_html_snippet,
-    BackgroundTask, register_application, wrap_function_wrapper,
-    FunctionTraceWrapper, function_wrapper, extra_settings, global_settings)
+from newrelic.api.application import register_application
+from newrelic.api.background_task import BackgroundTask
+from newrelic.api.error_trace import wrap_error_trace
+from newrelic.api.function_trace import (FunctionTrace, wrap_function_trace,
+        FunctionTraceWrapper)
+from newrelic.api.html_insertion import insert_html_snippet
+from newrelic.api.transaction import current_transaction
+from newrelic.api.transaction_name import wrap_transaction_name
+from newrelic.api.web_transaction import WSGIApplicationWrapper
+
+from newrelic.common.object_wrapper import (FunctionWrapper, wrap_in_function,
+        wrap_post_function, wrap_function_wrapper, function_wrapper)
+from newrelic.common.object_names import callable_name
+from newrelic.config import extra_settings
+from newrelic.core.config import global_settings, ignore_status_code
 
 _logger = logging.getLogger(__name__)
 

@@ -3,11 +3,12 @@ try:
 except ImportError:
     import httplib
 
-from newrelic.agent import (transient_function_wrapper, current_transaction,
-    function_wrapper, ExternalTrace)
-
+from newrelic.api.external_trace import ExternalTrace
+from newrelic.api.transaction import current_transaction
 from newrelic.common.encoding_utils import (json_encode, json_decode,
     obfuscate, deobfuscate)
+from newrelic.common.object_wrapper import (transient_function_wrapper,
+        function_wrapper)
 
 @transient_function_wrapper(httplib.__name__, 'HTTPConnection.putheader')
 def cache_outgoing_headers(wrapped, instance, args, kwargs):

@@ -4,7 +4,8 @@ from flask import Flask
 from flask import Response
 from flask_compress import Compress
 
-from newrelic.agent import get_browser_timing_header, get_browser_timing_footer
+from newrelic.api.transaction import (get_browser_timing_header,
+        get_browser_timing_footer)
 
 application = Flask(__name__)
 

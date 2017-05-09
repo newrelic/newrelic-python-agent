@@ -1,4 +1,5 @@
-from newrelic.agent import wrap_in_function, WSGIApplicationWrapper
+from newrelic.common.object_wrapper import wrap_in_function
+from newrelic.api.web_transaction import WSGIApplicationWrapper
 
 def instrument_gevent_wsgi(module):
 

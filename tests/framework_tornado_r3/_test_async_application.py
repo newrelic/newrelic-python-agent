@@ -1,15 +1,16 @@
 import concurrent.futures
 import socket
 import sys
-import tornado
 import threading
 import time
+import tornado
 
-from newrelic.agent import (application as nr_app, current_transaction,
-        function_trace, set_transaction_name)
+from newrelic.api.application import application as nr_app
 from newrelic.api.external_trace import ExternalTrace
-from newrelic.hooks.framework_tornado_r3.util import TransactionContext
+from newrelic.api.function_trace import function_trace
+from newrelic.api.transaction import set_transaction_name, current_transaction
 from newrelic.common.encoding_utils import (obfuscate, json_encode)
+from newrelic.hooks.framework_tornado_r3.util import TransactionContext
 
 from tornado import stack_context
 from tornado.curl_httpclient import CurlAsyncHTTPClient

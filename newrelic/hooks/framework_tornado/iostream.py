@@ -1,4 +1,4 @@
-from newrelic.agent import wrap_function_wrapper
+from newrelic.common.object_wrapper import wrap_function_wrapper
 
 def maybe_run_close_callback_wrapper(wrapped, instance, args, kwargs):
     # This will be called when the stream object is closed. It will in

@@ -1,10 +1,11 @@
 import logging
-import traceback
 import weakref
 
-from newrelic.agent import (application as application_instance, callable_name,
-        WebTransaction, wrap_function_wrapper)
-from .util import purge_current_transaction
+from newrelic.hooks.framework_tornado_r3.util import purge_current_transaction
+from newrelic.api.application import application as application_instance
+from newrelic.api.web_transaction import WebTransaction
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import wrap_function_wrapper
 
 _logger = logging.getLogger(__name__)
 

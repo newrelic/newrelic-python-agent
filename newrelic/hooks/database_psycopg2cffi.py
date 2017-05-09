@@ -1,7 +1,8 @@
-from newrelic.agent import wrap_object, register_database_client
+from newrelic.api.database_trace import register_database_client
+from newrelic.common.object_wrapper import wrap_object
 
-from .database_psycopg2 import (instance_info, instrument_psycopg2_extensions,
-        ConnectionFactory)
+from newrelic.hooks.database_psycopg2 import (instance_info,
+        instrument_psycopg2_extensions, ConnectionFactory)
 
 def instrument_psycopg2cffi(module):
     register_database_client(module, database_product='Postgres',

@@ -1,8 +1,11 @@
 import logging
 
-from newrelic.agent import (FunctionTrace, callable_name,
-    function_wrapper, wrap_function_wrapper, ObjectProxy)
-from .util import retrieve_current_transaction
+from newrelic.hooks.framework_tornado_r3.util import (
+        retrieve_current_transaction)
+from newrelic.api.function_trace import FunctionTrace
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import (function_wrapper,
+        wrap_function_wrapper, ObjectProxy)
 
 _logger = logging.getLogger(__name__)
 

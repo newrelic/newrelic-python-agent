@@ -1,4 +1,4 @@
-from newrelic.agent import global_settings
+from newrelic.core.config import global_settings
 from newrelic.core.data_collector import proxy_server, connection_type
 
 import pytest

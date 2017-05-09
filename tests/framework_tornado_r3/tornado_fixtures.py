@@ -3,7 +3,8 @@ import inspect
 import pytest
 import logging
 
-from newrelic.agent import (callable_name, function_wrapper,
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import (function_wrapper,
         wrap_function_wrapper)
 
 from testing_support.fixtures import _validate_node_parenting

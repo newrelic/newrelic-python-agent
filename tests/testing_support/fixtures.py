@@ -15,26 +15,31 @@ except ImportError:
 
 from newrelic.packages import six
 
-from newrelic.agent import (initialize, register_application,
-        global_settings, shutdown_agent, application as application_instance,
-        transient_function_wrapper, function_wrapper, application_settings,
-        wrap_function_wrapper, ObjectProxy, application, callable_name)
+from newrelic.api.application import (register_application,
+        application_instance, application_settings, application_instance as
+        application)
 
 from newrelic.common import certs
-from newrelic.common.system_info import LOCALHOST_EQUIVALENTS
 from newrelic.common.encoding_utils import (unpack_field, json_encode,
         deobfuscate, json_decode, obfuscate)
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import (transient_function_wrapper,
+        function_wrapper, wrap_function_wrapper, ObjectProxy)
+from newrelic.common.system_info import LOCALHOST_EQUIVALENTS
 
-from newrelic.core.config import (apply_config_setting, flatten_settings)
+from newrelic.config import initialize
+
+from newrelic.core.agent import shutdown_agent
+from newrelic.core.attribute import create_attributes
+from newrelic.core.attribute_filter import (AttributeFilter,
+        DST_ERROR_COLLECTOR, DST_TRANSACTION_TRACER)
+from newrelic.core.config import (apply_config_setting, flatten_settings,
+        global_settings)
 from newrelic.core.data_collector import _developer_mode_responses
 from newrelic.core.database_utils import SQLConnections
 
 from newrelic.network.addresses import proxy_details
 from newrelic.packages import requests
-
-from newrelic.core.attribute_filter import (AttributeFilter,
-        DST_ERROR_COLLECTOR, DST_TRANSACTION_TRACER)
-from newrelic.core.attribute import create_attributes
 
 from testing_support.sample_applications import (user_attributes_added,
         error_user_params_added)

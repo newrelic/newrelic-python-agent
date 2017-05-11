@@ -86,6 +86,7 @@ class AWSVendorInfo(object):
         if self.valid_length(stripped) and self.valid_chars(stripped):
             result = stripped
         else:
+            # As per spec
             internal_metric('Supportability/utilization/aws/error', 1)
             _logger.warning('Fetched invalid AWS data for "%r": %r', path,
                     data)

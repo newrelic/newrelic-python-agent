@@ -381,6 +381,7 @@ def _process_cgroup_info(cgroup_info):
         container_id = None
         _logger.warning("Docker cgroup ID does not validate: '%s'" %
                 container_id)
+        # As per spec
         internal_metric('Supportability/utilization/docker/error', 1)
 
     return container_id

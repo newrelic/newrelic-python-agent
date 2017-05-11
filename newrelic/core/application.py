@@ -1413,6 +1413,7 @@ class Application(object):
 
                         transaction_events = stats.transaction_events
 
+                        # As per spec
                         internal_metric('Supportability/Python/'
                                 'RequestSampler/requests',
                                 transaction_events.num_seen)
@@ -1439,6 +1440,7 @@ class Application(object):
                             self._active_session.send_error_events(samp_info,
                                     error_events.samples)
 
+                        # As per spec
                         internal_count_metric('Supportability/Events/'
                                 'TransactionError/Seen', error_events.num_seen)
                         internal_count_metric('Supportability/Events/'
@@ -1460,6 +1462,7 @@ class Application(object):
                             self._active_session.send_custom_events(
                                     customs.sampling_info, customs.samples)
 
+                        # As per spec
                         internal_count_metric('Supportability/Events/'
                                 'Customer/Seen', customs.num_seen)
                         internal_count_metric('Supportability/Events/'

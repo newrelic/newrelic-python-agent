@@ -465,6 +465,27 @@ class AsyncFetchRequestHandler(RequestHandler):
         self.finish(response.body)
 
 
+class ExpectedError(Exception):
+    pass
+
+
+class ErrorHTTPClient(AsyncHTTPClient):
+    def fetch_impl(self, request, callback):
+        raise ExpectedError("I am very bad at handling requests.")
+
+
+class AsyncFetchExceptionRaiseHandler(RequestHandler):
+    """Raises an exception in the http client."""
+
+    def get(self, request_type, port):
+        url = 'http://localhost:%s' % port
+        client = ErrorHTTPClient()
+        try:
+            client.fetch(url)
+        except ExpectedError:
+            self.write('OK')
+
+
 class CurlAsyncFetchRequestHandler(RequestHandler):
 
     @tornado.web.asynchronous
@@ -1320,6 +1341,7 @@ def get_tornado_app():
         ('/bookend-subclass', PrepareOnFinishRequestHandlerSubclass),
         ('/stream', SimpleStreamingRequestHandler),
         ('/async-fetch/(\w)+/(\d+)', AsyncFetchRequestHandler),
+        ('/async-fetch-error/(\w)+/(\d+)', AsyncFetchExceptionRaiseHandler),
         ('/curl-async-fetch/(\w)+/(\d+)', CurlAsyncFetchRequestHandler),
         ('/curl-async-custom/(\w)+/(\d+)', CustomImplCurlAsyncRequestHandler),
         ('/curl-stream-cb/(\w)+/(\d+)', CurlStreamingCallbackRequestHandler),

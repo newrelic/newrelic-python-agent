@@ -15,8 +15,6 @@ from pprint import pprint
 
 import newrelic.packages.six as six
 
-import newrelic.packages.requests as requests
-
 from newrelic.common import certs, system_info
 
 from newrelic import version
@@ -119,62 +117,62 @@ def connection_type(proxies):
 
     return '%s-proxy/%s' % (proxy_scheme, request_scheme)
 
-# This is a monkey patch for urllib3 contained within our bundled requests
-# library. This is to override the urllib3 behaviour for how the proxy
-# is communicated with so as to allow us to restore the old broken
-# behaviour from before requests 2.0.0 so that we can transition
-# customers over without outright breaking their existing configurations.
 
-
-@patch_function_wrapper(
-        'newrelic.packages.requests.packages.urllib3.connectionpool',
-        'HTTPSConnectionPool._prepare_conn')
-def _requests_proxy_scheme_workaround(wrapped, instance, args, kwargs):
-    def _params(connection, *args, **kwargs):
-        return connection
-
-    pool, connection = instance, _params(*args, **kwargs)
-
-    settings = global_settings()
-
-    if pool.proxy and pool.proxy.scheme == 'https':
-        if settings.proxy_scheme in (None, 'https'):
+def patch_requests():
+    # This is a monkey patch for urllib3 contained within our bundled requests
+    # library. This is to override the urllib3 behaviour for how the proxy
+    # is communicated with so as to allow us to restore the old broken
+    # behaviour from before requests 2.0.0 so that we can transition
+    # customers over without outright breaking their existing configurations.
+    @patch_function_wrapper(
+            'newrelic.packages.requests.packages.urllib3.connectionpool',
+            'HTTPSConnectionPool._prepare_conn')
+    def _requests_proxy_scheme_workaround(wrapped, instance, args, kwargs):
+        def _params(connection, *args, **kwargs):
             return connection
 
-    return wrapped(*args, **kwargs)
+        pool, connection = instance, _params(*args, **kwargs)
 
-# This is a monkey patch for requests contained within our bundled requests.
-# Have no idea why they made the change, but the change they made in the
-# commit:
-#
-#   https://github.com/kennethreitz/requests/commit/8b7fcfb49a38cd6ee1cbb4a52e0a4af57969abb3
-#
-# breaks proxying a HTTPS requests over a HTTPS proxy. The original seems to
-# be more correct than the changed version and works in testing. Return the
-# functionality back to how it worked previously.
+        settings = global_settings()
 
+        if pool.proxy and pool.proxy.scheme == 'https':
+            if settings.proxy_scheme in (None, 'https'):
+                return connection
 
-@patch_function_wrapper(
-        'newrelic.packages.requests.adapters',
-        'HTTPAdapter.request_url')
-def _requests_request_url_workaround(wrapped, instance, args, kwargs):
-    from newrelic.packages.requests.adapters import urldefragauth
-
-    def _bind_params(request, proxies):
-        return request, proxies
-
-    request, proxies = _bind_params(*args, **kwargs)
-
-    if not proxies:
         return wrapped(*args, **kwargs)
 
-    return urldefragauth(request.url)
+    # This is a monkey patch for requests contained within our bundled
+    # requests. Have no idea why they made the change, but the change they made
+    # in the commit:
+    #
+    #   https://github.com/kennethreitz/requests/commit/8b7fcfb49a38cd6ee1cbb4a52e0a4af57969abb3
+    #
+    # breaks proxying a HTTPS requests over a HTTPS proxy. The original seems
+    # to be more correct than the changed version and works in testing. Return
+    # the functionality back to how it worked previously.
+    @patch_function_wrapper(
+            'newrelic.packages.requests.adapters',
+            'HTTPAdapter.request_url')
+    def _requests_request_url_workaround(wrapped, instance, args, kwargs):
+        from newrelic.packages.requests.adapters import urldefragauth
+
+        def _bind_params(request, proxies):
+            return request, proxies
+
+        request, proxies = _bind_params(*args, **kwargs)
+
+        if not proxies:
+            return wrapped(*args, **kwargs)
+
+        return urldefragauth(request.url)
+
+
+patch_requests.patched = False
 
 # Low level network functions and session management. When connecting to
 # the data collector it is initially done through the main data collector.
 # It is though then necessary to ask the data collector for the per
 # session data collector to use. Subsequent calls are then made to it.
-
 
 _audit_log_fp = None
 _audit_log_id = 0
@@ -283,6 +281,10 @@ _deflate_exclude_list = set(['transaction_sample_data', 'sql_trace_data',
 def send_request(session, url, method, license_key, agent_run_id=None,
             payload=()):
     """Constructs and sends a request to the data collector."""
+    if not patch_requests.patched:
+        patch_requests()
+        patch_requests.patched = True
+    import newrelic.packages.requests as requests
 
     params = {}
     headers = {}
@@ -767,6 +769,10 @@ class ApplicationSession(object):
 
     @property
     def requests_session(self):
+        if not patch_requests.patched:
+            patch_requests()
+            patch_requests.patched = True
+        import newrelic.packages.requests as requests
         if self._requests_session is None:
             self._requests_session = requests.session()
         return self._requests_session

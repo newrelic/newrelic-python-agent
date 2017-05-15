@@ -9,12 +9,11 @@ from ..agent import initialize, global_settings
 from ..common import certs
 from ..network.addresses import proxy_details
 
-from ..packages import requests
-
 
 @command('record-deploy', 'config_file description [revision changelog user]',
 """Records a deployment for the monitored application.""")
 def local_config(args):
+    from ..packages import requests
     import sys
 
     if len(args) < 2:

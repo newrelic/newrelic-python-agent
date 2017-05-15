@@ -11,10 +11,10 @@ from ..network.addresses import proxy_details
 
 from ..packages import requests
 
+
 @command('record-deploy', 'config_file description [revision changelog user]',
 """Records a deployment for the monitored application.""")
 def local_config(args):
-    import os
     import sys
 
     if len(args) < 2:

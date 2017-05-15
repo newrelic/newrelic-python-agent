@@ -3,7 +3,8 @@ import mock
 import os
 import pytest
 
-from newrelic.common.utilization import aws_data, requests
+from newrelic.packages import requests
+from newrelic.common.utilization import aws_data
 
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))

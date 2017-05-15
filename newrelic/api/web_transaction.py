@@ -10,19 +10,19 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
-from .application import application_instance
-from .transaction import Transaction, current_transaction
-from .function_trace import FunctionTrace
-from .html_insertion import insert_html_snippet, verify_body_exists
+from newrelic.api.application import application_instance
+from newrelic.api.transaction import Transaction, current_transaction
+from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.html_insertion import insert_html_snippet, verify_body_exists
 
-from ..common.object_names import callable_name
-from ..common.object_wrapper import wrap_object, FunctionWrapper
-from ..common.encoding_utils import (obfuscate, deobfuscate, json_encode,
-    json_decode)
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import wrap_object, FunctionWrapper
+from newrelic.common.encoding_utils import (obfuscate, deobfuscate,
+        json_encode, json_decode)
 
-from ..core.attribute_filter import DST_BROWSER_MONITORING
+from newrelic.core.attribute_filter import DST_BROWSER_MONITORING
 
-from ..packages import six
+from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
 

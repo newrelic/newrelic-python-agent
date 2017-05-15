@@ -9,7 +9,7 @@ def instrument_postgresql_driver_dbapi20(module):
             explain_stmts=('select', 'insert', 'update', 'delete'),
             instance_info=instance_info)
 
-    from .database_psycopg2 import ConnectionFactory
+    from newrelic.hooks.database_psycopg2 import ConnectionFactory
 
     wrap_object(module, 'connect', ConnectionFactory, (module,))
 
@@ -19,6 +19,6 @@ def instrument_postgresql_interface_proboscis_dbapi2(module):
             explain_stmts=('select', 'insert', 'update', 'delete'),
             instance_info=instance_info)
 
-    from .database_dbapi2 import ConnectionFactory
+    from newrelic.hooks.database_dbapi2 import ConnectionFactory
 
     wrap_object(module, 'connect', ConnectionFactory, (module,))

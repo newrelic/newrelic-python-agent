@@ -13,7 +13,7 @@ import newrelic
 from newrelic.core.config import global_settings
 from newrelic.core.transaction_cache import transaction_cache
 
-from ..common.encoding_utils import json_encode
+from newrelic.common.encoding_utils import json_encode
 
 try:
     from sys import intern

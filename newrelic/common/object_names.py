@@ -7,7 +7,7 @@ import types
 import inspect
 import functools
 
-from ..packages import six
+from newrelic.packages import six
 
 if six.PY2:
     import exceptions

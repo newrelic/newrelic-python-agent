@@ -26,13 +26,14 @@ from newrelic.network.exceptions import (NetworkInterfaceException,
         ForceAgentRestart, ForceAgentDisconnect, DiscardDataForRequest,
         RetryDataForRequest, ServerIsUnavailable)
 
-from ..network.addresses import proxy_details
-from ..common.object_wrapper import patch_function_wrapper
-from ..common.object_names import callable_name
-from ..common.encoding_utils import json_encode, json_decode, unpack_field
-from ..common.system_info import (docker_container_id,
+from newrelic.network.addresses import proxy_details
+from newrelic.common.object_wrapper import patch_function_wrapper
+from newrelic.common.object_names import callable_name
+from newrelic.common.encoding_utils import (json_encode, json_decode,
+        unpack_field)
+from newrelic.common.system_info import (docker_container_id,
         logical_processor_count, total_physical_memory)
-from ..common.utilization import aws_data
+from newrelic.common.utilization import aws_data
 
 _logger = logging.getLogger(__name__)
 

@@ -5,7 +5,7 @@ manages the consumption of data from a data source.
 
 import logging
 
-from ..common.object_names import callable_name
+from newrelic.common.object_names import callable_name
 
 _logger = logging.getLogger(__name__)
 

@@ -7,7 +7,7 @@ etc.
 import sys
 import itertools
 
-from .config import global_settings
+from newrelic.core.config import global_settings
 
 _global_settings = global_settings()
 

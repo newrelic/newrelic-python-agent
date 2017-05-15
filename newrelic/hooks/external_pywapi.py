@@ -1,4 +1,4 @@
-from ..agent import wrap_external_trace
+from newrelic.agent import wrap_external_trace
 
 def instrument_pywapi(module):
 

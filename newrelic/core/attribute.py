@@ -2,9 +2,9 @@ import logging
 
 from collections import namedtuple
 
-from ..packages import six
+from newrelic.packages import six
 
-from .attribute_filter import (DST_ALL, DST_ERROR_COLLECTOR,
+from newrelic.core.attribute_filter import (DST_ALL, DST_ERROR_COLLECTOR,
         DST_TRANSACTION_TRACER, DST_TRANSACTION_EVENTS)
 
 

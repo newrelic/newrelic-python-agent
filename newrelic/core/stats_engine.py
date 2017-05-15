@@ -187,6 +187,7 @@ class CustomMetrics(object):
         """
         self.__stats_table = {}
 
+
 class SlowSqlStats(list):
 
     def __init__(self):

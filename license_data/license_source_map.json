@@ -989,6 +989,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/tests/test_internal_metrics.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/tests/test_profile_sessions.py": {
         "hash": "n/a",
         "libraries": [

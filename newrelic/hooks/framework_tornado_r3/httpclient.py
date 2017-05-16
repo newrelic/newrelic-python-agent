@@ -1,11 +1,11 @@
 import sys
-from tornado.httpclient import HTTPRequest
 
 from newrelic.agent import ExternalTrace, wrap_function_wrapper
 from .util import retrieve_current_transaction
 
 
 def _prepare_request(*args, **kwargs):
+    from tornado.httpclient import HTTPRequest
 
     def _extract_request(request, callback=None, raise_error=True, **_kwargs):
         return request, callback, raise_error, _kwargs

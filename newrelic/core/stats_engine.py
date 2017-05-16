@@ -146,6 +146,15 @@ class TimeStats(list):
         self.merge_raw_time_metric(value)
 
 
+class CountStats(TimeStats):
+
+    def merge_stats(self, other):
+        self[0] += other[0]
+
+    def merge_raw_time_metric(self, duration, exclusive=None):
+        pass
+
+
 class CustomMetrics(object):
 
     """Table for collection a set of value metrics.
@@ -164,7 +173,10 @@ class CustomMetrics(object):
 
         """
         if isinstance(value, dict):
-            new_stats = TimeStats(*c2t(**value))
+            if len(value) == 1 and 'count' in value:
+                new_stats = CountStats(call_count=value['count'])
+            else:
+                new_stats = TimeStats(*c2t(**value))
         else:
             new_stats = TimeStats(1, value, value, value, value, value**2)
 
@@ -669,7 +681,10 @@ class StatsEngine(object):
         key = (name, '')
 
         if isinstance(value, dict):
-            new_stats = TimeStats(*c2t(**value))
+            if len(value) == 1 and 'count' in value:
+                new_stats = CountStats(call_count=value['count'])
+            else:
+                new_stats = TimeStats(*c2t(**value))
         else:
             new_stats = TimeStats(1, value, value, value, value, value**2)
 

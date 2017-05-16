@@ -1434,7 +1434,7 @@ class StatsEngine(object):
         for key, other in six.iteritems(snapshot.__stats_table):
             stats = self.__stats_table.get(key)
             if not stats:
-                self.__stats_table[key] = copy.copy(other)
+                self.__stats_table[key] = other
             else:
                 stats.merge_stats(other)
 
@@ -1568,6 +1568,6 @@ class StatsEngine(object):
             key = (name, '')
             stats = self.__stats_table.get(key)
             if not stats:
-                self.__stats_table[key] = copy.copy(other)
+                self.__stats_table[key] = other
             else:
                 stats.merge_stats(other)

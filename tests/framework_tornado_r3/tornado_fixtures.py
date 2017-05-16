@@ -1,3 +1,4 @@
+import copy
 import inspect
 import pytest
 import logging
@@ -59,7 +60,10 @@ def wrap_record_transaction_fixture(request):
         except:
             raise
 
-        metrics = instance.stats_table
+        # Record the original metric values (before they can be mutated)
+        metrics = {}
+        for k, m in instance.stats_table.items():
+            metrics[k] = copy.copy(m)
         _RECORDED_TRANSACTIONS.append((transaction, metrics, errors))
 
         return result

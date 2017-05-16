@@ -31,6 +31,10 @@ from ..common.encoding_utils import json_encode
 _logger = logging.getLogger(__name__)
 
 
+def c2t(count=0, total=0.0, min=0.0, max=0.0, sum_of_squares=0.0):
+    return (count, total, total, min, max, sum_of_squares)
+
+
 class ApdexStats(list):
 
     """Bucket for accumulating apdex metrics.
@@ -87,6 +91,8 @@ class TimeStats(list):
     def __init__(self, call_count=0, total_call_time=0.0,
                 total_exclusive_call_time=0.0, min_call_time=0.0,
                 max_call_time=0.0, sum_of_squares=0.0):
+        if total_exclusive_call_time is None:
+            total_exclusive_call_time = total_call_time
         super(TimeStats, self).__init__([call_count, total_call_time,
                 total_exclusive_call_time, min_call_time,
                 max_call_time, sum_of_squares])
@@ -140,6 +146,15 @@ class TimeStats(list):
         self.merge_raw_time_metric(value)
 
 
+class CountStats(TimeStats):
+
+    def merge_stats(self, other):
+        self[0] += other[0]
+
+    def merge_raw_time_metric(self, duration, exclusive=None):
+        pass
+
+
 class CustomMetrics(object):
 
     """Table for collection a set of value metrics.
@@ -157,19 +172,19 @@ class CustomMetrics(object):
         from prior value metrics with the same name.
 
         """
+        if isinstance(value, dict):
+            if len(value) == 1 and 'count' in value:
+                new_stats = CountStats(call_count=value['count'])
+            else:
+                new_stats = TimeStats(*c2t(**value))
+        else:
+            new_stats = TimeStats(1, value, value, value, value, value**2)
 
         stats = self.__stats_table.get(name)
         if stats is None:
-            stats = TimeStats()
-            self.__stats_table[name] = stats
-
-        def c2t(count=0, total=0.0, min=0.0, max=0.0, sum_of_squares=0.0):
-            return (count, total, total, min, max, sum_of_squares)
-
-        try:
-            stats.merge_stats(TimeStats(*c2t(**value)))
-        except Exception:
-            stats.merge_custom_metric(value)
+            self.__stats_table[name] = new_stats
+        else:
+            stats.merge_stats(new_stats)
 
     def metrics(self):
         """Returns an iterator over the set of value metrics. The items
@@ -186,6 +201,7 @@ class CustomMetrics(object):
 
         """
         self.__stats_table = {}
+
 
 class SlowSqlStats(list):
 
@@ -440,9 +456,15 @@ class StatsEngine(object):
         key = (metric.name, metric.scope or '')
         stats = self.__stats_table.get(key)
         if stats is None:
-            stats = TimeStats()
+            stats = TimeStats(call_count=1,
+                    total_call_time=metric.duration,
+                    total_exclusive_call_time=metric.exclusive,
+                    min_call_time=metric.duration,
+                    max_call_time=metric.duration,
+                    sum_of_squares=metric.duration ** 2)
             self.__stats_table[key] = stats
-        stats.merge_time_metric(metric)
+        else:
+            stats.merge_time_metric(metric)
 
         return key
 
@@ -656,29 +678,21 @@ class StatsEngine(object):
         from prior value metrics with the same name.
 
         """
-
-        if not self.__settings:
-            return
-
-        # Scope is forced to be empty string. This means
-        # that it can overlap with a time metric, but no
-        # validation is done to avoid clashes and mixing
-        # the two types of metrics will simply cause
-        # incorrect data.
-
         key = (name, '')
+
+        if isinstance(value, dict):
+            if len(value) == 1 and 'count' in value:
+                new_stats = CountStats(call_count=value['count'])
+            else:
+                new_stats = TimeStats(*c2t(**value))
+        else:
+            new_stats = TimeStats(1, value, value, value, value, value**2)
+
         stats = self.__stats_table.get(key)
         if stats is None:
-            stats = TimeStats()
-            self.__stats_table[key] = stats
-
-        def c2t(count=0, total=0.0, min=0.0, max=0.0, sum_of_squares=0.0):
-            return (count, total, total, min, max, sum_of_squares)
-
-        try:
-            stats.merge_stats(TimeStats(*c2t(**value)))
-        except Exception:
-            stats.merge_custom_metric(value)
+            self.__stats_table[key] = new_stats
+        else:
+            stats.merge_stats(new_stats)
 
         return key
 
@@ -1433,7 +1447,7 @@ class StatsEngine(object):
         for key, other in six.iteritems(snapshot.__stats_table):
             stats = self.__stats_table.get(key)
             if not stats:
-                self.__stats_table[key] = copy.copy(other)
+                self.__stats_table[key] = other
             else:
                 stats.merge_stats(other)
 
@@ -1567,6 +1581,6 @@ class StatsEngine(object):
             key = (name, '')
             stats = self.__stats_table.get(key)
             if not stats:
-                self.__stats_table[key] = copy.copy(other)
+                self.__stats_table[key] = other
             else:
                 stats.merge_stats(other)

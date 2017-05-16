@@ -24,7 +24,7 @@ _DESTINATIONS_WITH_EVENTS = _DESTINATIONS | DST_TRANSACTION_EVENTS
 
 # The following subset goes to transaction events by default.
 
-_TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = [
+_TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set((
         'host.displayName',
         'request.method',
         'request.headers.contentType',
@@ -32,7 +32,7 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = [
         'response.status',
         'response.headers.contentLength',
         'response.headers.contentType',
-]
+))
 
 MAX_NUM_USER_ATTRIBUTES = 64
 MAX_ATTRIBUTE_LENGTH = 255

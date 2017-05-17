@@ -3,6 +3,7 @@ from newrelic.common.object_wrapper import wrap_function_wrapper
 
 from newrelic.hooks.framework_tornado import retrieve_current_transaction
 
+
 def template_generate_wrapper(wrapped, instance, args, kwargs):
     transaction = retrieve_current_transaction()
 
@@ -34,6 +35,7 @@ def block_generate_wrapper(wrapped, instance, args, kwargs):
             return wrapped(writer, *args, **kwargs)
 
     return execute(*args, **kwargs)
+
 
 def instrument_tornado_template(module):
     wrap_function_wrapper(module, 'Template.generate',

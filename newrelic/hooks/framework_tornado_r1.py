@@ -863,7 +863,9 @@ def instrument_tornado_template(module):
     def template_generate_wrapper(wrapped, instance, args, kwargs):
         result = wrapped(*args, **kwargs)
         if result is not None:
-            return 'import newrelic.agent as _nr_newrelic_agent\n' + result
+            return ('import newrelic.api.function_trace as _nr_fxn_trace\n'
+                    'import newrelic.api.transaction as _nr_txn\n'
+                    ) + result
 
     module.Template._generate_python = ObjectWrapper(
             module.Template._generate_python, None,
@@ -873,8 +875,8 @@ def instrument_tornado_template(module):
         def execute(writer, *args, **kwargs):
             if not hasattr(instance, 'line'):
                 return wrapped(writer, *args, **kwargs)
-            writer.write_line('with _nr_newrelic_agent.FunctionTrace('
-                    '_nr_newrelic_agent.current_transaction(), name=%r, '
+            writer.write_line('with _nr_fxn_trace.FunctionTrace('
+                    '_nr_txn.current_transaction(), name=%r, '
                     'group="Template/Block"):' % instance.name, instance.line)
             with writer.indent():
                 writer.write_line("pass", instance.line)

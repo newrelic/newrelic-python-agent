@@ -466,6 +466,11 @@ def validate_transaction_metrics(name, group='Function',
             for custom_name, custom_count in custom_metrics:
                 _validate(custom_name, '', custom_count)
 
+            custom_metric_names = set([name for name, _ in custom_metrics])
+            for name, _ in metrics:
+                if name not in custom_metric_names:
+                    assert not name.startswith('Supportability/api/'), name
+
         return result
 
     return _validate_transaction_metrics

@@ -2,20 +2,20 @@ import pytest
 import json
 import os
 
-from newrelic.packages import six
-
 from contextlib import contextmanager
 
+from newrelic.api.application import (application_instance as
+        current_application)
+from newrelic.api.background_task import BackgroundTask
 from newrelic.core.rules_engine import SegmentCollapseEngine
 from newrelic.core.agent import agent_instance
-
-from newrelic.agent import BackgroundTask, application as current_application
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures'))
 OUTBOUD_REQUESTS = {}
 
 _parameters_list = ['testname', 'transaction_segment_terms', 'tests']
+
 
 def load_tests():
     result = []

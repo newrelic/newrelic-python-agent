@@ -3,18 +3,17 @@ from __future__ import print_function
 import pwd
 import os
 
-from . import command, usage
+from newrelic.admin import command, usage
 
-from ..agent import initialize, global_settings
-from ..common import certs
-from ..network.addresses import proxy_details
+from newrelic.agent import initialize, global_settings
+from newrelic.common import certs
+from newrelic.network.addresses import proxy_details
 
-from ..packages import requests
 
 @command('record-deploy', 'config_file description [revision changelog user]',
 """Records a deployment for the monitored application.""")
 def local_config(args):
-    import os
+    from newrelic.packages import requests
     import sys
 
     if len(args) < 2:

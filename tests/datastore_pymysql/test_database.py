@@ -5,7 +5,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
 
 from testing_support.settings import mysql_settings
 
-from newrelic.agent import background_task
+from newrelic.api.background_task import background_task
 
 DB_SETTINGS = mysql_settings()
 

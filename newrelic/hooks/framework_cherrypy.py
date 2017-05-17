@@ -23,10 +23,13 @@
 # * We don't handle any sub dispatching that may be occuring due to the
 #   use of XMLRPCDispatcher.
 
-
-from newrelic.agent import (current_transaction, wrap_wsgi_application,
-        FunctionTrace, callable_name, ObjectProxy, function_wrapper,
-        wrap_function_wrapper, wrap_function_trace, ignore_status_code)
+from newrelic.api.function_trace import FunctionTrace, wrap_function_trace
+from newrelic.api.transaction import current_transaction
+from newrelic.api.web_transaction import wrap_wsgi_application
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import (ObjectProxy, function_wrapper,
+        wrap_function_wrapper)
+from newrelic.core.config import ignore_status_code
 
 def framework_details():
     import cherrypy

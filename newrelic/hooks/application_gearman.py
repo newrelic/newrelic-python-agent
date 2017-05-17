@@ -1,6 +1,11 @@
-from newrelic.agent import (application as default_application,
-        wrap_function_wrapper, BackgroundTask, FunctionTrace, FunctionWrapper,
-        current_transaction, callable_name, ExternalTrace, wrap_function_trace)
+from newrelic.api.application import application as default_application
+from newrelic.common.object_wrapper import (wrap_function_wrapper,
+        FunctionWrapper)
+from newrelic.api.background_task import BackgroundTask
+from newrelic.api.function_trace import FunctionTrace, wrap_function_trace
+from newrelic.api.transaction import current_transaction
+from newrelic.common.object_names import callable_name
+from newrelic.api.external_trace import ExternalTrace
 
 # Following wrappers are specifically for a gearman client.
 

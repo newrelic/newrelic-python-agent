@@ -5,19 +5,19 @@ import sys
 import socket
 import os
 
-from ..packages import six
+from newrelic.packages import six
 
-from ..packages import requests
+from newrelic.packages import requests
 
-from .. import version as agent_version
+from newrelic import version as agent_version
 
-from .addresses import platform_url, proxy_details
-from .exceptions import (NetworkInterfaceException, ForceAgentRestart,
-        ForceAgentDisconnect, DiscardDataForRequest, RetryDataForRequest,
-        ServerIsUnavailable)
+from newrelic.network.addresses import platform_url, proxy_details
+from newrelic.network.exceptions import (NetworkInterfaceException,
+        ForceAgentRestart, ForceAgentDisconnect, DiscardDataForRequest,
+        RetryDataForRequest, ServerIsUnavailable)
 
-from ..common import certs
-from ..common.encoding_utils import json_encode, json_decode
+from newrelic.common import certs
+from newrelic.common.encoding_utils import json_encode, json_decode
 
 _logger = logging.getLogger(__name__)
 

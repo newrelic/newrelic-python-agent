@@ -10,7 +10,6 @@ import newrelic.core.error_collector
 import newrelic.core.trace_node
 
 from newrelic.core.metric import ApdexMetric, TimeMetric
-from newrelic.core.internal_metrics import internal_trace
 from newrelic.core.string_table import StringTable
 from newrelic.core.attribute import create_user_attributes
 from newrelic.core.attribute_filter import (DST_ERROR_COLLECTOR,
@@ -313,8 +312,6 @@ class TransactionNode(_TransactionNode):
                 children=children,
                 label=None)
 
-    @internal_trace('Supportability/Python/TransactionNode/Calls/'
-            'transaction_trace')
     def transaction_trace(self, stats, limit, connections):
 
         self.trace_node_count = 0

@@ -1,3 +1,3 @@
-from . import main
+from newrelic.admin import main
 
 main()

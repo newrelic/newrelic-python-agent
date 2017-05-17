@@ -13,7 +13,7 @@ import os
 import logging
 import copy
 
-from .attribute_filter import AttributeFilter
+from newrelic.core.attribute_filter import AttributeFilter
 
 try:
     import urlparse

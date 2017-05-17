@@ -1,5 +1,8 @@
-from newrelic.agent import (wrap_function_wrapper, current_transaction,
-    FunctionTrace, callable_name, function_wrapper)
+from newrelic.common.object_wrapper import (wrap_function_wrapper,
+        function_wrapper)
+from newrelic.api.transaction import current_transaction
+from newrelic.api.function_trace import FunctionTrace
+from newrelic.common.object_names import callable_name
 
 def _nr_wrapper_APIView_dispatch_(wrapped, instance, args, kwargs):
     transaction = current_transaction()

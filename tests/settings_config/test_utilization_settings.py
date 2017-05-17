@@ -2,8 +2,9 @@ import os
 import pytest
 import tempfile
 
-from newrelic.agent import function_wrapper, global_settings, initialize
+from newrelic.common.object_wrapper import function_wrapper
 from newrelic.core.data_collector import ApplicationSession
+from newrelic.config import initialize
 
 # these will be reloaded for each test
 import newrelic.config
@@ -12,7 +13,7 @@ import newrelic.core.config
 # the specific methods imported here will not be changed when the modules are
 # reloaded
 from newrelic.core.config import (_remove_ignored_configs,
-        finalize_application_settings, _environ_as_int)
+        finalize_application_settings, _environ_as_int, global_settings)
 
 try:
     # python 2.x

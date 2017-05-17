@@ -1,6 +1,7 @@
-from newrelic.agent import (wrap_object, register_database_client)
+from newrelic.api.database_trace import register_database_client
+from newrelic.common.object_wrapper import wrap_object
 
-from .database_dbapi2 import ConnectionFactory
+from newrelic.hooks.database_dbapi2 import ConnectionFactory
 
 def instance_info(args, kwargs):
     host = kwargs.get('host')

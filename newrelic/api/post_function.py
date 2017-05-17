@@ -1,4 +1,4 @@
 # Use of these from this module will be deprecated.
 
-from ..common.object_wrapper import (post_function, PostFunctionWrapper,
+from newrelic.common.object_wrapper import (post_function, PostFunctionWrapper,
         wrap_post_function)

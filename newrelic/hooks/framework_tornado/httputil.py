@@ -1,4 +1,4 @@
-from newrelic.agent import wrap_function_trace
+from newrelic.api.function_trace import wrap_function_trace
 
 def instrument_tornado_httputil(module):
     if hasattr(module, 'parse_body_arguments'):

@@ -6,7 +6,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
 from testing_support.util import instance_hostname
 from utils import DB_MULTIPLE_SETTINGS, PSYCOPG2_VERSION
 
-from newrelic.agent import background_task
+from newrelic.api.background_task import background_task
 
 
 # Settings

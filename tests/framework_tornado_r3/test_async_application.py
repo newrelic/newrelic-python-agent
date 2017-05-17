@@ -11,7 +11,8 @@ from tornado.ioloop import IOLoop
 import tornado.stack_context
 import tornado.testing
 
-from newrelic.agent import application, background_task
+from newrelic.api.application import application
+from newrelic.api.background_task import background_task
 from newrelic.core.stats_engine import StatsEngine
 from newrelic.hooks.framework_tornado_r3.httputil import (
         initiate_request_monitoring, request_environment)
@@ -591,6 +592,30 @@ class AllTests(object):
 
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, external.RESPONSE)
+
+    # The port number 8989 matches the port number in MockExternalHTTPServer
+    scoped_metrics = [('Function/_test_async_application:'
+            'AsyncFetchRequestHandler.get', 1),
+            ('Function/_test_async_application:AsyncFetchRequestHandler.'
+             'process_response', 1),
+            ('External/localhost:8989/tornado.httpclient/', 1)
+    ]
+
+    rollup_metrics = [('External/allWeb', 1), ('External/all', 1)]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    def test_async_httpclient_fetch_raises_exception(self):
+        external = MockExternalHTTPServer()
+        external.start()
+        try:
+            response = self.fetch_response('/async-fetch-error/rawurl/%s' %
+                    external.port)
+        finally:
+            external.stop()
+
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, b'OK')
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()

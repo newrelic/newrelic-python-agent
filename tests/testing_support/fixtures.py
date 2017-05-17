@@ -15,26 +15,31 @@ except ImportError:
 
 from newrelic.packages import six
 
-from newrelic.agent import (initialize, register_application,
-        global_settings, shutdown_agent, application as application_instance,
-        transient_function_wrapper, function_wrapper, application_settings,
-        wrap_function_wrapper, ObjectProxy, application, callable_name)
+from newrelic.api.application import (register_application,
+        application_instance, application_settings, application_instance as
+        application)
 
 from newrelic.common import certs
-from newrelic.common.system_info import LOCALHOST_EQUIVALENTS
 from newrelic.common.encoding_utils import (unpack_field, json_encode,
         deobfuscate, json_decode, obfuscate)
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import (transient_function_wrapper,
+        function_wrapper, wrap_function_wrapper, ObjectProxy)
+from newrelic.common.system_info import LOCALHOST_EQUIVALENTS
 
-from newrelic.core.config import (apply_config_setting, flatten_settings)
+from newrelic.config import initialize
+
+from newrelic.core.agent import shutdown_agent
+from newrelic.core.attribute import create_attributes
+from newrelic.core.attribute_filter import (AttributeFilter,
+        DST_ERROR_COLLECTOR, DST_TRANSACTION_TRACER)
+from newrelic.core.config import (apply_config_setting, flatten_settings,
+        global_settings)
 from newrelic.core.data_collector import _developer_mode_responses
 from newrelic.core.database_utils import SQLConnections
 
 from newrelic.network.addresses import proxy_details
 from newrelic.packages import requests
-
-from newrelic.core.attribute_filter import (AttributeFilter,
-        DST_ERROR_COLLECTOR, DST_TRANSACTION_TRACER)
-from newrelic.core.attribute import create_attributes
 
 from testing_support.sample_applications import (user_attributes_added,
         error_user_params_added)
@@ -460,6 +465,11 @@ def validate_transaction_metrics(name, group='Function',
 
             for custom_name, custom_count in custom_metrics:
                 _validate(custom_name, '', custom_count)
+
+            custom_metric_names = set([name for name, _ in custom_metrics])
+            for name, _ in metrics:
+                if name not in custom_metric_names:
+                    assert not name.startswith('Supportability/api/'), name
 
         return result
 
@@ -909,8 +919,9 @@ def validate_tt_collector_json(required_params={},
             trace_data = instance.transaction_trace_data(connections)
 
             trace = trace_data[0]  # 1st trace
-            assert isinstance(trace[0], float)  # start time (ms)
+            assert isinstance(trace[0], float)  # absolute start time (ms)
             assert isinstance(trace[1], float)  # duration (ms)
+            assert trace[0] > 0  # absolute time (ms)
             assert isinstance(trace[2], six.string_types)  # transaction name
             if trace[2].startswith('WebTransaction'):
                 assert isinstance(trace[3], six.string_types)  # request url

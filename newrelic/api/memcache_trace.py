@@ -1,9 +1,9 @@
 import functools
 
-from .time_trace import TimeTrace
-from .transaction import current_transaction
-from ..core.memcache_node import MemcacheNode
-from ..common.object_wrapper import FunctionWrapper, wrap_object
+from newrelic.api.time_trace import TimeTrace
+from newrelic.api.transaction import current_transaction
+from newrelic.core.memcache_node import MemcacheNode
+from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
 
 class MemcacheTrace(TimeTrace):

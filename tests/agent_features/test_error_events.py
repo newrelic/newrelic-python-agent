@@ -2,9 +2,10 @@ import sys
 import time
 import webtest
 
-from newrelic.agent import (record_exception, application, callable_name,
+from newrelic.api.application import (application_instance as application,
         application_settings)
-from newrelic.common.encoding_utils import obfuscate, json_encode
+from newrelic.api.transaction import record_exception
+from newrelic.common.object_names import callable_name
 
 from testing_support.fixtures import (validate_error_event_sample_data,
         validate_non_transaction_error_event, override_application_settings,

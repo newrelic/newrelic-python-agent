@@ -4,8 +4,8 @@ import sys
 # them are moved at which point will mark as deprecated to ensure users
 # weren't using them directly.
 
-from ..common.object_names import callable_name
-from ..common.object_wrapper import (ObjectWrapper, wrap_object,
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import (ObjectWrapper, wrap_object,
         wrap_callable)
 
 # From Python 3.X. In older Python versions it fails if attributes do

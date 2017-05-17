@@ -8,17 +8,21 @@ import webtest
 import pytest
 import json
 import os
+
 try:
     from urllib2 import urlopen  # Py2.X
 except ImportError:
     from urllib.request import urlopen   # Py3.X
 
-from newrelic.api.external_trace import ExternalTrace
 from newrelic.packages import six
-from newrelic.agent import (get_browser_timing_header, set_transaction_name,
-        get_browser_timing_footer, wsgi_application, set_background_task,
+
+from newrelic.api.external_trace import ExternalTrace
+from newrelic.api.transaction import (get_browser_timing_header,
+        set_transaction_name, get_browser_timing_footer, set_background_task,
         current_transaction)
-from newrelic.common.encoding_utils import (obfuscate, json_encode)
+from newrelic.api.web_transaction import wsgi_application
+from newrelic.common.encoding_utils import obfuscate, json_encode
+
 from testing_support.fixtures import (override_application_settings,
         override_application_name, validate_tt_parameters,
         make_cross_agent_headers, validate_analytics_catmap_data)

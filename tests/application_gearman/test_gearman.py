@@ -2,12 +2,9 @@ from __future__ import print_function
 
 import gearman
 import threading
-import sys
-import time
 import os
 
-from newrelic.agent import (background_task, record_exception,
-        add_custom_parameter)
+from newrelic.api.background_task import background_task
 
 worker_thread = None
 worker_event = threading.Event()

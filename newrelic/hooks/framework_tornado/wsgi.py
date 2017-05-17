@@ -1,12 +1,15 @@
 import sys
 import logging
 
-from newrelic.agent import (wrap_function_wrapper, FunctionTrace,
-    callable_name, wrap_wsgi_application)
+from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.web_transaction import wrap_wsgi_application
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import wrap_function_wrapper
 
-from . import (retrieve_request_transaction, initiate_request_monitoring,
-    suspend_request_monitoring, finalize_request_monitoring,
-    request_finished, retrieve_current_transaction)
+from newrelic.hooks.framework_tornado import (retrieve_request_transaction,
+        initiate_request_monitoring, suspend_request_monitoring,
+        finalize_request_monitoring, request_finished,
+        retrieve_current_transaction)
 
 _logger = logging.getLogger(__name__)
 

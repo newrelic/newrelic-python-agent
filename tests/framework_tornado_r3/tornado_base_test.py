@@ -3,7 +3,7 @@ import tornado.testing
 if sys.version_info >= (2, 7):
     from zmq.eventloop.ioloop import ZMQIOLoop
 
-from newrelic.agent import FunctionWrapper
+from newrelic.common.object_wrapper import FunctionWrapper
 from newrelic.core.stats_engine import StatsEngine
 
 from _test_async_application import get_tornado_app

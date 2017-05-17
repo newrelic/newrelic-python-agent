@@ -1,6 +1,7 @@
 from testing_support.fixtures import override_application_name
 
-from newrelic.agent import background_task, current_transaction
+from newrelic.api.background_task import background_task
+from newrelic.api.transaction import current_transaction
 
 @override_application_name(app_name='my-application-name')
 @background_task()

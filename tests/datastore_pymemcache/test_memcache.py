@@ -4,7 +4,8 @@ import pymemcache.client
 
 from testing_support.fixtures import validate_transaction_metrics
 
-from newrelic.agent import background_task, set_background_task
+from newrelic.api.background_task import background_task
+from newrelic.api.transaction import set_background_task
 
 def _e(key, default):
     return os.environ.get(key, default)

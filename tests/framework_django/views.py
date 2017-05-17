@@ -2,7 +2,7 @@ from django.http import HttpResponse
 from django.views.generic.base import View, TemplateView
 from django.shortcuts import render
 
-from newrelic.agent import (get_browser_timing_header,
+from newrelic.api.transaction import (get_browser_timing_header,
     get_browser_timing_footer)
 
 

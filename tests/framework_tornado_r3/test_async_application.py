@@ -11,7 +11,8 @@ from tornado.ioloop import IOLoop
 import tornado.stack_context
 import tornado.testing
 
-from newrelic.agent import application, background_task
+from newrelic.api.application import application
+from newrelic.api.background_task import background_task
 from newrelic.core.stats_engine import StatsEngine
 from newrelic.hooks.framework_tornado_r3.httputil import (
         initiate_request_monitoring, request_environment)

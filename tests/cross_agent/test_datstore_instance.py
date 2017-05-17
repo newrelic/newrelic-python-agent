@@ -2,9 +2,10 @@ import json
 import os
 import pytest
 
-from newrelic.agent import background_task, current_transaction
+from newrelic.api.background_task import background_task
 from newrelic.api.database_trace import (register_database_client,
         enable_datastore_instance_feature)
+from newrelic.api.transaction import current_transaction
 from newrelic.core.database_node import DatabaseNode
 from newrelic.core.stats_engine import StatsEngine
 

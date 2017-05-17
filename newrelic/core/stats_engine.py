@@ -19,14 +19,14 @@ import newrelic.packages.six as six
 from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR
 from newrelic.core.attribute import create_user_attributes
 
-from .attribute import process_user_attribute
-from .database_utils import explain_plan
-from .error_collector import TracedError
-from .metric import TimeMetric
-from .stack_trace import exception_stack
+from newrelic.core.attribute import process_user_attribute
+from newrelic.core.database_utils import explain_plan
+from newrelic.core.error_collector import TracedError
+from newrelic.core.metric import TimeMetric
+from newrelic.core.stack_trace import exception_stack
 
-from ..api.settings import STRIP_EXCEPTION_MESSAGE
-from ..common.encoding_utils import json_encode
+from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
+from newrelic.common.encoding_utils import json_encode
 
 _logger = logging.getLogger(__name__)
 

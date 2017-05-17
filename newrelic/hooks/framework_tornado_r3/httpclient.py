@@ -1,7 +1,9 @@
 import sys
 
-from newrelic.agent import ExternalTrace, wrap_function_wrapper
-from .util import retrieve_current_transaction
+from newrelic.hooks.framework_tornado_r3.util import (
+        retrieve_current_transaction)
+from newrelic.api.external_trace import ExternalTrace
+from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
 def _prepare_request(*args, **kwargs):

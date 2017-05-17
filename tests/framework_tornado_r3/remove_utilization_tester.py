@@ -16,18 +16,19 @@ def remove_utilization_tester(now=True, queue=None):
         sys.modules.pop(module)
         del module
 
-    import newrelic.agent
+    import newrelic.config
+    from newrelic.api.application import register_application
     from newrelic.core.agent import agent_instance, Agent
     from newrelic.core.thread_utilization import _utilization_trackers
 
     config_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
             'remove_utilization.ini')
-    newrelic.agent.initialize(config_file)
+    newrelic.config.initialize(config_file)
 
     try:
         if now:
 
-            newrelic.agent.register_application(timeout=10)
+            register_application(timeout=10)
 
             # When we register the application first, we have an opportunity to
             # check that thread utilization is, in fact, added to _data_sources,
@@ -52,7 +53,7 @@ def remove_utilization_tester(now=True, queue=None):
 
             import tornado.ioloop
             assert Agent._instance is None
-            newrelic.agent.register_application(timeout=10)
+            register_application(timeout=10)
 
         agent = agent_instance()
 

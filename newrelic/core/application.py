@@ -29,8 +29,8 @@ from newrelic.core.internal_metrics import (InternalTrace,
 from newrelic.core.xray_session import XraySession
 from newrelic.core.profile_sessions import profile_session_manager
 
-from .database_utils import SQLConnections
-from ..common.object_names import callable_name
+from newrelic.core.database_utils import SQLConnections
+from newrelic.common.object_names import callable_name
 
 _logger = logging.getLogger(__name__)
 

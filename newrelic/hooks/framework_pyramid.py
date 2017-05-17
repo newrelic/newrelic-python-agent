@@ -30,9 +30,12 @@
 #   but since likely that error_collector.ignore_status_codes would not
 #   be overridden, so tolerate it for now.
 
-from newrelic.agent import (callable_name, current_transaction,
-        FunctionWrapper, wrap_out_function, wrap_wsgi_application,
-        FunctionTrace, ignore_status_code)
+from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.transaction import current_transaction
+from newrelic.api.web_transaction import wrap_wsgi_application
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import FunctionWrapper, wrap_out_function
+from newrelic.core.config import ignore_status_code
 
 def instrument_pyramid_router(module):
     pyramid_version = None

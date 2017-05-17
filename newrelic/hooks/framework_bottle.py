@@ -4,10 +4,15 @@
 
 import functools
 
-from newrelic.agent import (wrap_function_trace, wrap_out_function,
-    wrap_wsgi_application, function_wrapper, current_transaction,
-    FunctionTrace, callable_name, ignore_status_code, ObjectProxy,
-    FunctionTraceWrapper, wrap_object_attribute, wrap_function_wrapper)
+from newrelic.api.function_trace import (FunctionTrace, FunctionTraceWrapper,
+        wrap_function_trace)
+from newrelic.api.transaction import current_transaction
+from newrelic.api.web_transaction import wrap_wsgi_application
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import (wrap_out_function,
+        function_wrapper, ObjectProxy, wrap_object_attribute,
+        wrap_function_wrapper)
+from newrelic.core.config import ignore_status_code
 
 module_bottle = None
 

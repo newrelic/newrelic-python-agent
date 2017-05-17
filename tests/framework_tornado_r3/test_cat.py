@@ -1,10 +1,9 @@
-import sys
-
 import json
 import pytest
+import sys
 import webtest
 
-from newrelic.agent import wsgi_application
+from newrelic.api.web_transaction import wsgi_application
 from newrelic.common.encoding_utils import deobfuscate
 
 from testing_support.fixtures import (make_cross_agent_headers,

@@ -12,6 +12,7 @@ from newrelic.api.function_trace import FunctionTrace, wrap_function_trace
 
 _logger = logging.getLogger(__name__)
 
+
 def record_exception(transaction, exc_info):
     import tornado.web
 
@@ -23,6 +24,7 @@ def record_exception(transaction, exc_info):
             return
 
     transaction.record_exception(*exc_info)
+
 
 def request_environment(application, request):
     result = {}
@@ -72,6 +74,7 @@ def request_environment(application, request):
                 result[key] = value
 
     return result
+
 
 def instrument_tornado_httpserver(module):
 
@@ -422,12 +425,14 @@ def instrument_tornado_httpserver(module):
     if hasattr(module.HTTPRequest, '_parse_mime_body'):
         wrap_function_trace(module.HTTPRequest, '_parse_mime_body')
 
+
 def instrument_tornado_httputil(module):
 
     if hasattr(module, 'parse_body_arguments'):
         wrap_function_trace(module, 'parse_body_arguments')
     if hasattr(module, 'parse_multipart_form_data'):
         wrap_function_trace(module, 'parse_multipart_form_data')
+
 
 def instrument_tornado_web(module):
 
@@ -621,10 +626,10 @@ def instrument_tornado_web(module):
     # is as it does walking of the stack frames to work it out and the
     # wrapper makes it stop before getting to the users code.
 
-    #module.RequestHandler.render = ObjectWrapper(
-    #        module.RequestHandler.render, None, render_wrapper)
-    #module.RequestHandler.render_string = ObjectWrapper(
-    #        module.RequestHandler.render_string, None, render_wrapper)
+    # module.RequestHandler.render = ObjectWrapper(
+    #         module.RequestHandler.render, None, render_wrapper)
+    # module.RequestHandler.render_string = ObjectWrapper(
+    #         module.RequestHandler.render_string, None, render_wrapper)
 
     def finish_wrapper(wrapped, instance, args, kwargs):
         assert instance is not None
@@ -839,6 +844,7 @@ def instrument_tornado_web(module):
     module.RequestHandler.__init__ = ObjectWrapper(
             module.RequestHandler.__init__, None, init_wrapper)
 
+
 def instrument_tornado_template(module):
 
     def template_generate_wrapper(wrapped, instance, args, kwargs):
@@ -857,7 +863,9 @@ def instrument_tornado_template(module):
     def template_generate_wrapper(wrapped, instance, args, kwargs):
         result = wrapped(*args, **kwargs)
         if result is not None:
-            return 'import newrelic.agent as _nr_newrelic_agent\n' + result
+            return ('import newrelic.api.function_trace as _nr_fxn_trace\n'
+                    'import newrelic.api.transaction as _nr_txn\n'
+                    ) + result
 
     module.Template._generate_python = ObjectWrapper(
             module.Template._generate_python, None,
@@ -867,8 +875,8 @@ def instrument_tornado_template(module):
         def execute(writer, *args, **kwargs):
             if not hasattr(instance, 'line'):
                 return wrapped(writer, *args, **kwargs)
-            writer.write_line('with _nr_newrelic_agent.FunctionTrace('
-                    '_nr_newrelic_agent.current_transaction(), name=%r, '
+            writer.write_line('with _nr_fxn_trace.FunctionTrace('
+                    '_nr_txn.current_transaction(), name=%r, '
                     'group="Template/Block"):' % instance.name, instance.line)
             with writer.indent():
                 writer.write_line("pass", instance.line)
@@ -877,6 +885,7 @@ def instrument_tornado_template(module):
 
     module._NamedBlock.generate = ObjectWrapper(
             module._NamedBlock.generate, None, block_generate_wrapper)
+
 
 def instrument_tornado_stack_context(module):
 
@@ -965,6 +974,7 @@ def instrument_tornado_stack_context(module):
 
     module.wrap = ObjectWrapper(module.wrap, None, stack_context_wrap_wrapper)
 
+
 def instrument_tornado_ioloop(module):
 
     wrap_function_trace(module, 'IOLoop.add_handler')
@@ -979,6 +989,7 @@ def instrument_tornado_ioloop(module):
         wrap_function_trace(module, 'PollIOLoop.add_timeout')
         wrap_function_trace(module, 'PollIOLoop.add_callback')
         wrap_function_trace(module, 'PollIOLoop.add_callback_from_signal')
+
 
 def instrument_tornado_iostream(module):
 
@@ -1006,13 +1017,16 @@ def instrument_tornado_iostream(module):
                 module.IOStream._maybe_run_close_callback, None,
                 maybe_run_close_callback_wrapper)
 
+
 def instrument_tornado_curl_httpclient(module):
 
     wrap_function_trace(module, 'CurlAsyncHTTPClient.fetch')
 
+
 def instrument_tornado_simple_httpclient(module):
 
     wrap_function_trace(module, 'SimpleAsyncHTTPClient.fetch')
+
 
 def instrument_tornado_gen(module):
 
@@ -1106,6 +1120,7 @@ def instrument_tornado_gen(module):
         module.engine = ObjectWrapper(module.engine, None,
                 coroutine_wrapper)
 
+
 def wsgi_container_call_wrapper(wrapped, instance, args, kwargs):
     def _args(request, *args, **kwargs):
         return request
@@ -1159,8 +1174,8 @@ def wsgi_container_call_wrapper(wrapped, instance, args, kwargs):
             # as a default.
 
             if transaction._request_uri is not None:
-                 transaction.set_transaction_name(
-                         transaction._request_uri, 'Uri', priority=1)
+                transaction.set_transaction_name(
+                        transaction._request_uri, 'Uri', priority=1)
 
             with FunctionTrace(transaction, name='WSGI/Application',
                     group='Python/Tornado'):
@@ -1195,8 +1210,8 @@ def wsgi_container_call_wrapper(wrapped, instance, args, kwargs):
             # as a default.
 
             if transaction._request_uri is not None:
-                 transaction.set_transaction_name(
-                         transaction._request_uri, 'Uri', priority=1)
+                transaction.set_transaction_name(
+                        transaction._request_uri, 'Uri', priority=1)
 
             with FunctionTrace(transaction, name='WSGI/Application',
                     group='Python/Tornado'):
@@ -1223,6 +1238,7 @@ def wsgi_container_call_wrapper(wrapped, instance, args, kwargs):
             request._nr_transaction = None
 
             raise
+
 
 def instrument_tornado_wsgi(module):
 

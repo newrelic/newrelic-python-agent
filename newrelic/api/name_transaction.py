@@ -1,6 +1,6 @@
 import warnings
 
-from .transaction_name import (transaction_name as name_transaction,
+from newrelic.api.transaction_name import (transaction_name as name_transaction,
         TransactionNameWrapper as NameTransactionWrapper,
         wrap_transaction_name as wrap_name_transaction)
 

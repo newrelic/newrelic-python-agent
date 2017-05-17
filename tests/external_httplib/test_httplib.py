@@ -1,6 +1,3 @@
-import os
-import random
-
 try:
     import http.client as httplib
 except ImportError:
@@ -12,7 +9,7 @@ from testing_support.external_fixtures import (cache_outgoing_headers,
     validate_external_node_params)
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 
-from newrelic.agent import background_task
+from newrelic.api.background_task import background_task
 from newrelic.packages import six
 
 def select_python_version(py2, py3):

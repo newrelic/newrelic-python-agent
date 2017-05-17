@@ -1,5 +1,6 @@
-from newrelic.agent import wrap_function_wrapper
-from .util import retrieve_current_transaction, create_transaction_aware_fxn
+from newrelic.hooks.framework_tornado_r3.util import (
+        retrieve_current_transaction, create_transaction_aware_fxn)
+from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
 def _nr_wrapper_Future_add_done_callback(wrapped, instance, args, kwargs):

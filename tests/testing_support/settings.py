@@ -5,7 +5,9 @@ import os
 def _e(key, default):
     return os.environ.get(key, default)
 
+
 USER = pwd.getpwuid(os.getuid()).pw_name
+
 
 def postgresql_settings():
     """Return a dict of settings for connecting to postgresql.
@@ -43,6 +45,7 @@ def postgresql_settings():
 
     return settings
 
+
 def postgresql_multiple_settings():
     """Return a list of dicts of settings for connecting to postgresql.
 
@@ -73,6 +76,7 @@ def postgresql_multiple_settings():
     db2['host'] = _e('COMPOSE_POSTGRESQL_HOST_2', db2['host'])
 
     return [db1, db2]
+
 
 def mysql_settings():
     """Return a dict of settings for connecting to mysql.
@@ -109,6 +113,7 @@ def mysql_settings():
 
     return settings
 
+
 def mysql_multiple_settings():
     """Return a list of dicts of settings for connecting to mysql.
 
@@ -140,6 +145,7 @@ def mysql_multiple_settings():
 
     return [db1, db2]
 
+
 def mongodb_settings():
     """Return (host, port) tuple to connect to mongodb."""
 
@@ -154,6 +160,7 @@ def mongodb_settings():
     port = int(os.environ.get('MONGODB_PORT_27017_TCP_PORT', port))
 
     return (host, port)
+
 
 def elasticsearch_settings():
     """Return a dict of settings for connecting to elasticsearch.
@@ -182,6 +189,7 @@ def elasticsearch_settings():
     settings['port'] = _e('ELASTICSEARCH_PORT_9200_TCP_PORT', settings['port'])
 
     return settings
+
 
 def elasticsearch_multiple_settings():
     """Return a list of dicts of settings for connecting to postgresql.
@@ -214,6 +222,7 @@ def elasticsearch_multiple_settings():
 
     return [db1, db2]
 
+
 def solr_settings():
     """Return (host, port) tuple to connect to solr."""
 
@@ -228,6 +237,7 @@ def solr_settings():
     port = int(os.environ.get('SOLR4_PORT_8983_TCP_PORT', port))
 
     return (host, port)
+
 
 def redis_settings():
     """Return a dict of settings for connecting to redis.
@@ -255,6 +265,7 @@ def redis_settings():
     settings['port'] = int(_e('REDIS_PORT_6379_TCP_PORT', settings['port']))
 
     return settings
+
 
 def redis_multiple_settings():
     """Return a list of dicts of settings for connecting to redis.
@@ -287,6 +298,7 @@ def redis_multiple_settings():
 
     return [db1, db2]
 
+
 def memcached_settings():
     """Return a dict of settings for connecting to memcached.
 
@@ -312,9 +324,11 @@ def memcached_settings():
 
     settings['host'] = _e('MEMCACHED_PORT_11211_TCP_ADDR', settings['host'])
     settings['port'] = _e('MEMCACHED_PORT_11211_TCP_PORT', settings['port'])
-    settings['namespace'] = _e('TDDIUM_MEMCACHE_NAMESPACE', settings['namespace'])
+    settings['namespace'] = _e('TDDIUM_MEMCACHE_NAMESPACE',
+            settings['namespace'])
 
     return settings
+
 
 def memcached_multiple_settings():
     """Return a list of dicts of settings for connecting to memcached.

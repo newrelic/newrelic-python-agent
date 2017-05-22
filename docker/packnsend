@@ -21,7 +21,8 @@ APP_SERVICE_IMAGES="
     mongodb \
     redis \
     elasticsearch \
-    solr4
+    solr4 \
+    rabbitmq
     "
 
 ALL_IMAGES="python-base $APP_SERVICE_IMAGES"

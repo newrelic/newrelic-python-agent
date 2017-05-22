@@ -359,3 +359,28 @@ def memcached_multiple_settings():
     db2['host'] = _e('COMPOSE_MEMCACHED_HOST_2', db2['host'])
 
     return [db1, db2]
+
+
+def rabbitmq_settings():
+    """Return a dict of settings for connecting to rabbitmq.
+
+    Will return the correct settings, depending on which of the two
+    environments it is running in. It attempts to set variables in the
+    following order, where later environments override earlier ones.
+
+        1. Local
+        2. Test Docker container
+
+    """
+
+    settings = {}
+
+    # Use local defaults, if PACKNSEND vars aren't present.
+
+    settings['name'] = _e('PACKNSEND_DB_USER', USER)
+    settings['user'] = _e('PACKNSEND_DB_USER', USER)
+    settings['password'] = _e('PACKNSEND_DB_USER', '')
+    settings['host'] = _e('RABBITMQ_PORT_5672_TCP_ADDR', 'localhost')
+    settings['port'] = int(_e('RABBITMQ_PORT_5672_TCP_PORT', '5672'))
+
+    return settings

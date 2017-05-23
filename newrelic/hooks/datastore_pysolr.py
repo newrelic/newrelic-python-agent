@@ -1,4 +1,4 @@
-from newrelic.api.datastore_trace import wrap_datastore_trace
+from newrelic.agent import wrap_datastore_trace
 
 _pysolr_client_methods = ('search', 'more_like_this', 'suggest_terms', 'add',
 'delete', 'commit', 'optimize', 'extract')

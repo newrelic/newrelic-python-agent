@@ -3,9 +3,8 @@ import os
 import pytest
 import webtest
 
-from newrelic.api.transaction import (set_transaction_name,
-        add_custom_parameter, get_browser_timing_footer)
-from newrelic.api.web_transaction import wsgi_application
+from newrelic.agent import (set_transaction_name, add_custom_parameter,
+        wsgi_application, get_browser_timing_footer)
 
 from testing_support.fixtures import override_application_settings
 

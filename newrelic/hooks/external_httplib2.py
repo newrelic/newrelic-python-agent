@@ -1,6 +1,8 @@
-from newrelic.api.external_trace import wrap_external_trace, ExternalTrace
-from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import wrap_function_wrapper
+import functools
+
+from newrelic.agent import (wrap_function_wrapper, current_transaction,
+        ExternalTrace)
+import newrelic.api.external_trace
 
 def _nr_wrapper_httplib2_connect_wrapper(scheme):
 
@@ -44,4 +46,5 @@ def instrument(module):
     def url_request(connection, uri, *args, **kwargs):
         return uri
 
-    wrap_external_trace(module, 'Http.request', 'httplib2', url_request)
+    newrelic.api.external_trace.wrap_external_trace(
+           module, 'Http.request', 'httplib2', url_request)

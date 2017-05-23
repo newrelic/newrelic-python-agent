@@ -1,8 +1,7 @@
-from newrelic.api.background_task import background_task
-from newrelic.api.transaction import ignore_transaction, end_of_transaction
+from newrelic.agent import (background_task, ignore_transaction,
+        end_of_transaction)
 
 from testing_support.fixtures import validate_transaction_metrics
-
 from tasks import add, tsum
 
 @validate_transaction_metrics(

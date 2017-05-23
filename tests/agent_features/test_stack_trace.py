@@ -1,10 +1,9 @@
 import sys
 
-from newrelic.core.config import global_settings
 from newrelic.core.stack_trace import (exception_stack, current_stack,
     _format_stack_trace as _format_stack_trace_from_dicts, _extract_stack,
     _extract_tb)
-
+from newrelic.agent import global_settings
 
 def _format_stack_trace_from_tuples(frames):
     result = ['Traceback (most recent call last):']

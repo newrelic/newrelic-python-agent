@@ -13,8 +13,7 @@ _import_hooks = {}
 
 # These modules are imported by the newrelic package and/or do not do nested
 # imports, so they're ok to import before newrelic.
-_ok_modules = ['urllib', 'urllib2', 'httplib', 'http.client', 'urllib.request',
-        'newrelic.agent']
+_ok_modules = ['urllib', 'urllib2', 'httplib', 'http.client', 'urllib.request']
 
 
 def register_import_hook(name, callable):

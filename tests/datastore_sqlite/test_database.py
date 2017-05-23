@@ -7,7 +7,7 @@ is_pypy = hasattr(sys, 'pypy_version_info')
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs)
 
-from newrelic.api.background_task import background_task
+from newrelic.agent import background_task
 
 DATABASE_DIR = os.environ.get('TOX_ENVDIR', '.')
 #DATABASE_NAME = os.path.join(DATABASE_DIR, 'database.db')

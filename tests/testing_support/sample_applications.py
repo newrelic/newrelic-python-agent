@@ -1,3 +1,5 @@
+import sys
+
 try:
     from urllib2 import urlopen  # Py2.X
 except ImportError:
@@ -5,10 +7,9 @@ except ImportError:
 
 import sqlite3 as db
 
-from newrelic.api.transaction import (add_user_attribute, add_custom_parameter,
-        record_exception, get_browser_timing_header, get_browser_timing_footer,
-        record_custom_event)
-from newrelic.api.web_transaction import wsgi_application
+from newrelic.agent import (add_user_attribute, add_custom_parameter,
+        wsgi_application, record_exception, get_browser_timing_header,
+        get_browser_timing_footer, record_custom_event)
 
 _custom_parameters = {
         'user' : 'user-name',

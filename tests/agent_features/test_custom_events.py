@@ -1,8 +1,7 @@
+import pytest
 import time
 
-from newrelic.api.application import application_instance as application
-from newrelic.api.background_task import background_task
-from newrelic.api.transaction import record_custom_event
+from newrelic.agent import background_task, record_custom_event, application
 from newrelic.core.custom_event import process_event_type
 
 from testing_support.fixtures import (reset_core_stats_engine,

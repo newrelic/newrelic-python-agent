@@ -1,7 +1,5 @@
-from newrelic.api.datastore_trace import DatastoreTrace, wrap_datastore_trace
-from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import (wrap_object, FunctionWrapper,
-        wrap_function_wrapper)
+from newrelic.agent import (wrap_object, FunctionWrapper, DatastoreTrace,
+        current_transaction, wrap_datastore_trace, wrap_function_wrapper)
 
 def _instance_info(memcache_host):
     try:

@@ -1,11 +1,10 @@
 import json
 import webtest
 
-from newrelic.api.application import application_settings
-from newrelic.api.background_task import background_task
+from newrelic.agent import (application_settings, transient_function_wrapper,
+        background_task)
 
 from newrelic.common.encoding_utils import deobfuscate
-from newrelic.common.object_wrapper import transient_function_wrapper
 
 from testing_support.fixtures import (override_application_settings,
         validate_transaction_event_sample_data,

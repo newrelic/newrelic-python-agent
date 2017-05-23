@@ -9,7 +9,7 @@ import json
 import zlib
 from hashlib import md5
 
-from newrelic.packages import six
+from ..packages import six
 
 # Functions for encoding/decoding JSON. These wrappers are used in order
 # to hide the differences between Python 2 and Python 3 implementations

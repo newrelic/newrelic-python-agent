@@ -5,7 +5,7 @@ system, Python and hosting environment.
 
 import newrelic
 
-from newrelic.common.system_info import (total_physical_memory,
+from ..common.system_info import (total_physical_memory,
     logical_processor_count, physical_processor_count)
 
 import sys

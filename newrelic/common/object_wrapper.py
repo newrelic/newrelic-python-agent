@@ -8,13 +8,13 @@ make use of when doing monkey patching.
 import sys
 import inspect
 
-from newrelic.packages import six
+from ..packages import six
 
-from newrelic.packages.wrapt import (ObjectProxy as _ObjectProxy,
+from ..packages.wrapt import (ObjectProxy as _ObjectProxy,
         FunctionWrapper as _FunctionWrapper,
         BoundFunctionWrapper as _BoundFunctionWrapper)
 
-from newrelic.packages.wrapt.wrappers import _FunctionWrapperBase
+from ..packages.wrapt.wrappers import _FunctionWrapperBase
 
 # We previously had our own pure Python implementation of the generic
 # object wrapper but we now defer to using the wrapt module as its C

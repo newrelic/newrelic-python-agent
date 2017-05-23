@@ -18,9 +18,9 @@ import newrelic.core.application
 
 import newrelic.packages.six as six
 
-from newrelic.common.log_file import initialize_logging
-from newrelic.samplers.cpu_usage import cpu_usage_data_source
-from newrelic.samplers.memory_usage import memory_usage_data_source
+from ..common.log_file import initialize_logging
+from ..samplers.cpu_usage import cpu_usage_data_source
+from ..samplers.memory_usage import memory_usage_data_source
 
 from newrelic.core.thread_utilization import thread_utilization_data_source
 

@@ -2,13 +2,11 @@ import sys
 import pytest
 import webtest
 
-from newrelic.api.background_task import background_task
-from newrelic.api.transaction import add_custom_parameter
-from newrelic.api.web_transaction import wsgi_application
+from newrelic.agent import (wsgi_application, add_custom_parameter,
+    background_task)
+from newrelic.packages import six
 from newrelic.core.attribute import (truncate, sanitize, Attribute,
     CastingFailureException, MAX_64_BIT_INT, _DESTINATIONS_WITH_EVENTS)
-
-from newrelic.packages import six
 
 from testing_support.fixtures import (override_application_settings,
     validate_attributes, validate_attributes_complete,

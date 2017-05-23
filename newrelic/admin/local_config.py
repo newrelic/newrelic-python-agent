@@ -2,7 +2,6 @@ from __future__ import print_function
 
 from newrelic.admin import command, usage
 
-
 @command('local-config', 'config_file [log_file]',
 """Dumps out the local agent configuration after having loaded the settings
 from <config_file>.""")
@@ -15,8 +14,7 @@ def local_config(args):
         usage('local-config')
         sys.exit(1)
 
-    from newrelic.config import initialize
-    from newrelic.core.config import global_settings
+    from newrelic.agent import global_settings, initialize
 
     if len(args) >= 2:
         log_file = args[1]

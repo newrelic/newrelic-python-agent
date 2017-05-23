@@ -10,6 +10,8 @@ import newrelic.api.application
 import newrelic.api.web_transaction
 import newrelic.api.database_trace
 
+import newrelic.agent
+
 settings = newrelic.api.settings.settings()
 application = newrelic.api.application.application_instance(settings.app_name)
 

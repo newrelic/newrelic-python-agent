@@ -6,10 +6,10 @@ usage.
 import os
 import time
 
-from newrelic.common.system_info import logical_processor_count
-from newrelic.common.stopwatch import start_timer
+from ..common.system_info import logical_processor_count
+from ..common.stopwatch import start_timer
 
-from newrelic.samplers.decorators import data_source_factory
+from .decorators import data_source_factory
 
 @data_source_factory(name='CPU Usage')
 class _CPUUsageDataSource(object):

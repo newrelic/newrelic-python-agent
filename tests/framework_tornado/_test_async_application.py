@@ -8,7 +8,7 @@ import tornado.gen
 import tornado.template
 import tornado.httpclient
 
-from newrelic.api.transaction import add_custom_parameter
+from newrelic.agent import add_custom_parameter
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):

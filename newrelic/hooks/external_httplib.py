@@ -1,10 +1,7 @@
 import functools
 
+from newrelic.agent import (ExternalTrace, ObjectWrapper, current_transaction)
 from newrelic.packages import six
-
-from newrelic.api.external_trace import ExternalTrace
-from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import ObjectWrapper
 
 def httplib_connect_wrapper(wrapped, instance, args, kwargs, scheme, library):
     transaction = current_transaction()

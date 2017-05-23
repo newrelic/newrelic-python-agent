@@ -1,9 +1,9 @@
 import pytest
 import webtest
 
-from newrelic.api.web_transaction import wsgi_application
-
-from newrelic.common.encoding_utils import deobfuscate, json_decode
+from newrelic.agent import wsgi_application
+from newrelic.common.encoding_utils import (deobfuscate, obfuscate,
+        json_decode, json_encode)
 from newrelic.core.agent import agent_instance
 
 from testing_support.fixtures import (validate_synthetics_event,

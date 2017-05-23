@@ -2,10 +2,9 @@ import pytest
 import six
 import webtest
 
-from newrelic.api.web_transaction import wsgi_application
-
 from testing_support.fixtures import (override_application_settings,
     capture_transaction_metrics)
+from newrelic.agent import wsgi_application
 
 PAGE_CONTENTS = b'Hello World'
 

@@ -5,7 +5,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, validate_database_duration)
 from testing_support.settings import mongodb_settings
 
-from newrelic.api.background_task import background_task
+from newrelic.agent import background_task
 
 MONGODB_HOST, MONGODB_PORT = mongodb_settings()
 

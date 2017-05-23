@@ -1,8 +1,7 @@
-from newrelic.packages import six
+from ..packages import six
 
-from newrelic.api.datastore_trace import DatastoreTrace
-from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.agent import (wrap_function_wrapper, current_transaction,
+        DatastoreTrace)
 
 # An index name can be a string, None or a sequence. In the case of None
 # an empty string or '*', it is the same as using '_all'. When a string

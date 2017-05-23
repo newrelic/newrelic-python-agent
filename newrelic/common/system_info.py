@@ -52,7 +52,6 @@ LOCALHOST_EQUIVALENTS = set([
     '::',
 ])
 
-
 def logical_processor_count():
     """Returns the number of logical processors in the system.
 
@@ -88,7 +87,7 @@ def logical_processor_count():
 
         res = 0
         for pd in pseudoDevices:
-            if expr.match(pd) is not None:
+            if expr.match(pd) != None:
                 res += 1
 
         if res > 0:
@@ -99,7 +98,6 @@ def logical_processor_count():
     # Fallback to assuming only a single CPU.
 
     return 1
-
 
 def _linux_physical_processor_count(filename=None):
     # For Linux we can use information from '/proc/cpuinfo.
@@ -175,7 +173,6 @@ def _linux_physical_processor_count(filename=None):
 
     return (num_physical_processors, num_physical_cores)
 
-
 def _darwin_physical_processor_count():
     # For MacOS X we can use sysctl.
 
@@ -197,7 +194,6 @@ def _darwin_physical_processor_count():
 
     return (num_physical_processors, num_physical_cores)
 
-
 def physical_processor_count():
     """Returns the number of physical processors and the number of physical
     cores in the system as a tuple. One or both values may be None, if a value
@@ -211,7 +207,6 @@ def physical_processor_count():
         return _darwin_physical_processor_count()
 
     return (None, None)
-
 
 def _linux_total_physical_memory(filename=None):
     # For Linux we can use information from /proc/meminfo. Although the
@@ -231,11 +226,10 @@ def _linux_total_physical_memory(filename=None):
                 key, value = match.groups(['key', 'value'])
                 if key == 'MemTotal':
                     memory_bytes = float(value) * 1024
-                    return memory_bytes / (1024 * 1024)
+                    return memory_bytes / (1024*1024)
 
     except Exception:
         pass
-
 
 def _darwin_total_physical_memory():
     # For MacOS X we can use sysctl. The value queried from sysctl is
@@ -245,12 +239,11 @@ def _darwin_total_physical_memory():
 
     try:
         return float(_execute_program(command,
-                stderr=subprocess.PIPE)) / (1024 * 1024)
+                stderr=subprocess.PIPE)) / (1024*1024)
     except subprocess.CalledProcessError:
         pass
     except ValueError:
         pass
-
 
 def total_physical_memory():
     """Returns the total physical memory available in the system. Returns
@@ -262,7 +255,6 @@ def total_physical_memory():
         return _linux_total_physical_memory()
     elif sys.platform == 'darwin':
         return _darwin_total_physical_memory()
-
 
 def _linux_physical_memory_used(filename=None):
     # For Linux we can use information from the proc filesystem. We use
@@ -289,11 +281,10 @@ def _linux_physical_memory_used(filename=None):
         with open(filename, 'r') as fp:
             rss_pages = float(fp.read().split()[1])
             memory_bytes = rss_pages * resource.getpagesize()
-            return memory_bytes / (1024 * 1024)
+            return memory_bytes / (1024*1024)
 
     except Exception:
         return 0
-
 
 def physical_memory_used():
     """Returns the amount of physical memory used in MBs. Returns 0 if
@@ -323,14 +314,13 @@ def physical_memory_used():
             # value is in kilobytes, it is actually in bytes.
 
             memory_bytes = float(rusage.ru_maxrss)
-            return memory_bytes / (1024 * 1024)
+            return memory_bytes / (1024*1024)
 
         elif rusage.ru_maxrss > 0:
             memory_kbytes = float(rusage.ru_maxrss)
             return memory_kbytes / 1024
 
     return 0
-
 
 def docker_container_id(cgroup_path='/proc/self/cgroup'):
     """Returns the docker container id, or None if it can't be determined."""
@@ -346,7 +336,6 @@ def docker_container_id(cgroup_path='/proc/self/cgroup'):
 
     except Exception:
         return None
-
 
 def _process_cgroup_info(cgroup_info):
     """Parses the Docker container id from cgroup info.
@@ -381,11 +370,9 @@ def _process_cgroup_info(cgroup_info):
         container_id = None
         _logger.warning("Docker cgroup ID does not validate: '%s'" %
                 container_id)
-        # As per spec
         internal_metric('Supportability/utilization/docker/error', 1)
 
     return container_id
-
 
 def _parse_cgroup_ids(cgroup_info):
     """Returns a dictionary of subsystems to their cgroup.
@@ -409,7 +396,6 @@ def _parse_cgroup_ids(cgroup_info):
             cgroup_ids[subsystem] = cgroup_id
 
     return cgroup_ids
-
 
 def _validate_docker_container_id(container_id):
     """Validates a docker container id.
@@ -435,7 +421,6 @@ def _validate_docker_container_id(container_id):
 
 _nr_cached_hostname = None
 _nr_cached_hostname_lock = threading.Lock()
-
 
 def gethostname():
     """Cache the output of socket.gethostname().

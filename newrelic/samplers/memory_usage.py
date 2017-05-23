@@ -3,10 +3,9 @@ memory usage.
 
 """
 
-from newrelic.common.system_info import physical_memory_used
+from ..common.system_info import physical_memory_used
 
-from newrelic.samplers.decorators import data_source_generator
-
+from .decorators import data_source_generator
 
 @data_source_generator(name='Memory Usage')
 def memory_usage_data_source():

@@ -1,6 +1,5 @@
-from newrelic.api.external_trace import ExternalTrace
-from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.agent import (wrap_function_wrapper, current_transaction,
+        ExternalTrace)
 
 try:
     import urlparse

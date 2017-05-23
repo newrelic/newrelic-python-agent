@@ -1,21 +1,17 @@
 import sys
 
-from newrelic.api.application import (application_settings,
-        application_instance as application)
-from newrelic.api.background_task import background_task
-from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
-from newrelic.api.transaction import record_exception
-
-from newrelic.common.object_names import callable_name
-
 from testing_support.fixtures import (validate_transaction_errors,
-        override_application_settings, core_application_stats_engine_error,
-        error_is_saved, reset_core_stats_engine, validate_application_errors,
+        override_application_settings, core_application_stats_engine,
+        core_application_stats_engine_error, error_is_saved,
+        reset_core_stats_engine, validate_application_errors,
         validate_transaction_error_trace_count,
         validate_application_error_trace_count,
         validate_transaction_error_event_count,
-        validate_application_error_event_count)
+        validate_application_error_event_count  )
 
+from newrelic.agent import (background_task, record_exception,
+        application_settings, application, callable_name)
+from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 
 _runtime_error_name = callable_name(RuntimeError)
 _type_error_name = callable_name(TypeError)

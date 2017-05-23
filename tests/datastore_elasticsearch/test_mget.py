@@ -8,7 +8,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
 from testing_support.settings import elasticsearch_multiple_settings
 from testing_support.util import instance_hostname
 
-from newrelic.api.background_task import background_task
+from newrelic.agent import background_task
 
 ES_MULTIPLE_SETTINGS = elasticsearch_multiple_settings()
 

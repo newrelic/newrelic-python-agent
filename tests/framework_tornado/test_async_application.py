@@ -12,8 +12,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, raise_background_exceptions,
     wait_for_background_threads)
 
-from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import function_wrapper
+from newrelic.agent import function_wrapper, callable_name
 
 requires_coroutine = pytest.mark.skipif(tornado.version_info[:2] < (3, 0),
     reason="Tornado only added gen.coroutine in 3.0.")

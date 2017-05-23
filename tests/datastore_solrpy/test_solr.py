@@ -3,7 +3,7 @@ from solr import SolrConnection
 from testing_support.fixtures import validate_transaction_metrics
 from testing_support.settings import solr_settings
 
-from newrelic.api.background_task import background_task
+from newrelic.agent import background_task
 
 SOLR_HOST, SOLR_PORT = solr_settings()
 SOLR_URL = 'http://%s:%s/solr' % (SOLR_HOST, SOLR_PORT)

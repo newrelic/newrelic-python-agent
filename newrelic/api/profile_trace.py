@@ -2,14 +2,14 @@ import functools
 import sys
 import os
 
-from newrelic.packages import six
+from ..packages import six
 
-from newrelic.api.transaction import current_transaction
-from newrelic.api.function_trace import FunctionTrace
-from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
-from newrelic.common.object_names import callable_name
+from .transaction import current_transaction
+from .function_trace import FunctionTrace
+from ..common.object_wrapper import FunctionWrapper, wrap_object
+from ..common.object_names import callable_name
 
-from newrelic import __file__ as AGENT_PACKAGE_FILE
+from .. import __file__ as AGENT_PACKAGE_FILE
 AGENT_PACKAGE_DIRECTORY = os.path.dirname(AGENT_PACKAGE_FILE) + '/'
 
 class ProfileTrace(object):

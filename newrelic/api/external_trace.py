@@ -1,11 +1,11 @@
 import functools
 
-from newrelic.api.time_trace import TimeTrace
-from newrelic.api.transaction import current_transaction
-from newrelic.core.external_node import ExternalNode
-from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
-from newrelic.common.encoding_utils import (obfuscate, deobfuscate,
-        json_encode, json_decode)
+from .time_trace import TimeTrace
+from .transaction import current_transaction
+from ..core.external_node import ExternalNode
+from ..common.object_wrapper import FunctionWrapper, wrap_object
+from ..common.encoding_utils import (obfuscate, deobfuscate, json_encode,
+    json_decode)
 
 
 class ExternalTrace(TimeTrace):

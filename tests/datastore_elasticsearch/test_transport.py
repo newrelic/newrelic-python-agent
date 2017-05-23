@@ -4,8 +4,7 @@ from elasticsearch.connection.http_requests import RequestsHttpConnection
 from elasticsearch.connection.http_urllib3 import Urllib3HttpConnection
 from elasticsearch.serializer import JSONSerializer
 
-from newrelic.api.application import application_instance as application
-from newrelic.api.background_task import BackgroundTask
+from newrelic.agent import application, BackgroundTask
 
 from testing_support.settings import elasticsearch_multiple_settings
 

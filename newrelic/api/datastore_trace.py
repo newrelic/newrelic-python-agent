@@ -1,9 +1,9 @@
 import functools
 
-from newrelic.api.time_trace import TimeTrace
-from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
-from newrelic.core.datastore_node import DatastoreNode
+from .time_trace import TimeTrace
+from .transaction import current_transaction
+from ..core.datastore_node import DatastoreNode
+from ..common.object_wrapper import FunctionWrapper, wrap_object
 
 
 class DatastoreTrace(TimeTrace):

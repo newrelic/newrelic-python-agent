@@ -4,7 +4,7 @@ import os
 import threading
 import time
 
-from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
+from ..common.object_wrapper import FunctionWrapper, wrap_object
 
 class FunctionProfile(object):
 

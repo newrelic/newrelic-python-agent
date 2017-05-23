@@ -4,7 +4,7 @@ from testing_support.fixtures import (validate_slow_sql_collector_json,
     override_application_settings)
 from utils import DB_SETTINGS
 
-from newrelic.api.background_task import background_task
+from newrelic.agent import background_task
 
 
 # Settings

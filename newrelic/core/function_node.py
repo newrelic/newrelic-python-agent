@@ -4,7 +4,7 @@ import newrelic.core.trace_node
 
 from newrelic.core.metric import TimeMetric
 
-from newrelic.packages import six
+from ..packages import six
 
 _FunctionNode = namedtuple('_FunctionNode',
         ['group', 'name', 'children', 'start_time', 'end_time',

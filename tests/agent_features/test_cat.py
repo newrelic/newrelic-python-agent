@@ -9,7 +9,7 @@ end style test, it does not fit as a unittest.
 
 import webtest
 
-from newrelic.api.web_transaction import wsgi_application
+from newrelic.agent import wsgi_application
 
 from testing_support.fixtures import (make_cross_agent_headers,
         override_application_settings)

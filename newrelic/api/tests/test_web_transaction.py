@@ -9,6 +9,8 @@ import newrelic.api.application
 import newrelic.api.transaction
 import newrelic.api.web_transaction
 
+import newrelic.agent
+
 is_pypy = '__pypy__' in sys.builtin_module_names
 
 settings = newrelic.api.settings.settings()

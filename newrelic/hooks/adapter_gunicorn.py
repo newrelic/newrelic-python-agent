@@ -1,8 +1,6 @@
 import sys
 
-from newrelic.api.web_transaction import WSGIApplicationWrapper
-from newrelic.common.object_wrapper import wrap_out_function
-
+from newrelic.agent import WSGIApplicationWrapper, wrap_out_function
 
 def _nr_wrapper_Application_wsgi_(application):
     # Normally Application.wsgi() returns a WSGI application, but in

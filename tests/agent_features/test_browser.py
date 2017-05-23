@@ -7,12 +7,11 @@ import six
 from testing_support.fixtures import (override_application_settings,
     validate_transaction_errors, validate_custom_parameters)
 
-from newrelic.api.application import application_settings
-from newrelic.api.transaction import (get_browser_timing_header,
-        get_browser_timing_footer, add_custom_parameter,
-        disable_browser_autorum)
-from newrelic.api.web_transaction import wsgi_application
-from newrelic.common.encoding_utils import deobfuscate
+from newrelic.agent import (wsgi_application, get_browser_timing_header,
+    get_browser_timing_footer, application_settings, add_custom_parameter,
+    disable_browser_autorum)
+
+from newrelic.common.encoding_utils import deobfuscate, json_decode
 
 _runtime_error_name = (RuntimeError.__module__ + ':' + RuntimeError.__name__)
 

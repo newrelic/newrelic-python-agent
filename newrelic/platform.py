@@ -11,15 +11,15 @@ try:
 except ImportError:
     from configparser import RawConfigParser, NoOptionError
 
-from newrelic import version as agent_version
+from . import version as agent_version
 
-from newrelic.common.object_names import callable_name
+from .common.object_names import callable_name
 
-from newrelic.network.platform_api import PlatformInterface
-from newrelic.network.exceptions import (DiscardDataForRequest, RetryDataForRequest)
+from .network.platform_api import PlatformInterface
+from .network.exceptions import (DiscardDataForRequest, RetryDataForRequest)
 
-from newrelic.samplers.data_sampler import DataSampler
-from newrelic.samplers.decorators import (data_source_generator, data_source_factory)
+from .samplers.data_sampler import DataSampler
+from .samplers.decorators import (data_source_generator, data_source_factory)
 
 _logger = logging.getLogger(__name__)
 

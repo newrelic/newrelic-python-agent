@@ -21,7 +21,7 @@ except AttributeError:
         # clock for the performance counter, but the standard
         # monotonic clock should suit our requirements okay.
 
-        from newrelic.common._monotonic import monotonic as default_timer
+        from ._monotonic import monotonic as default_timer
         default_timer()
         timer_implementation = '_monotonic.monotonic()'
 

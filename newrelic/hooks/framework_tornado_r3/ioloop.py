@@ -2,11 +2,10 @@ import logging
 import sys
 import traceback
 
-from newrelic.hooks.framework_tornado_r3.util import (
-        possibly_finalize_transaction, record_exception,
-        retrieve_current_transaction, current_thread_id, TransactionContext)
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.agent import wrap_function_wrapper
 from newrelic.core.agent import remove_thread_utilization
+from .util import (possibly_finalize_transaction, record_exception,
+        retrieve_current_transaction, current_thread_id, TransactionContext)
 
 _logger = logging.getLogger(__name__)
 

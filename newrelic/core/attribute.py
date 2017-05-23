@@ -2,10 +2,10 @@ import logging
 
 from collections import namedtuple
 
-from newrelic.packages import six
+from ..packages import six
 
-from newrelic.core.attribute_filter import (DST_ALL, DST_ERROR_COLLECTOR,
-        DST_TRANSACTION_TRACER, DST_TRANSACTION_EVENTS)
+from .attribute_filter import (DST_ALL, DST_ERROR_COLLECTOR,
+        DST_TRANSACTION_TRACER, DST_NONE, DST_TRANSACTION_EVENTS)
 
 
 _logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ _DESTINATIONS_WITH_EVENTS = _DESTINATIONS | DST_TRANSACTION_EVENTS
 
 # The following subset goes to transaction events by default.
 
-_TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set((
+_TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = [
         'host.displayName',
         'request.method',
         'request.headers.contentType',
@@ -32,35 +32,22 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set((
         'response.status',
         'response.headers.contentLength',
         'response.headers.contentType',
-))
+]
 
 MAX_NUM_USER_ATTRIBUTES = 64
 MAX_ATTRIBUTE_LENGTH = 255
-MAX_64_BIT_INT = 2 ** 63 - 1
+MAX_64_BIT_INT = 2 ** 63 -1
 
-
-class NameTooLongException(Exception):
-    pass
-
-
-class NameIsNotStringException(Exception):
-    pass
-
-
-class IntTooLargeException(Exception):
-    pass
-
-
-class CastingFailureException(Exception):
-    pass
-
+class NameTooLongException(Exception): pass
+class NameIsNotStringException(Exception): pass
+class IntTooLargeException(Exception): pass
+class CastingFailureException(Exception): pass
 
 class Attribute(_Attribute):
 
     def __repr__(self):
         return "Attribute(name=%r, value=%r, destinations=%r)" % (
                 self.name, self.value, bin(self.destinations))
-
 
 def create_attributes(attr_dict, destinations, attribute_filter):
     attributes = []
@@ -70,7 +57,6 @@ def create_attributes(attr_dict, destinations, attribute_filter):
         attributes.append(Attribute(k, v, dest))
 
     return attributes
-
 
 def create_agent_attributes(attr_dict, attribute_filter):
     attributes = []
@@ -85,11 +71,9 @@ def create_agent_attributes(attr_dict, attribute_filter):
 
     return attributes
 
-
 def create_user_attributes(attr_dict, attribute_filter):
     destinations = DST_ALL
     return create_attributes(attr_dict, destinations, attribute_filter)
-
 
 def truncate(text, maxsize=MAX_ATTRIBUTE_LENGTH, encoding='utf-8'):
 
@@ -104,31 +88,25 @@ def truncate(text, maxsize=MAX_ATTRIBUTE_LENGTH, encoding='utf-8'):
     else:
         return _truncate_bytes(text, maxsize)
 
-
 def _truncate_unicode(u, maxsize, encoding='utf-8'):
     encoded = u.encode(encoding)[:maxsize]
     return encoded.decode(encoding, 'ignore')
 
-
 def _truncate_bytes(s, maxsize):
     return s[:maxsize]
-
 
 def check_name_length(name, max_length=MAX_ATTRIBUTE_LENGTH, encoding='utf-8'):
     trunc_name = truncate(name, max_length, encoding)
     if name != trunc_name:
         raise NameTooLongException()
 
-
 def check_name_is_string(name):
     if not isinstance(name, (six.text_type, six.binary_type)):
         raise NameIsNotStringException()
 
-
 def check_max_int(value, max_int=MAX_64_BIT_INT):
     if isinstance(value, six.integer_types) and value > max_int:
         raise IntTooLargeException()
-
 
 def process_user_attribute(name, value):
 
@@ -186,7 +164,6 @@ def process_user_attribute(name, value):
             value = trunc_value
 
         return (name, value)
-
 
 def sanitize(value):
 

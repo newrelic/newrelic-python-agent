@@ -1,9 +1,7 @@
 import logging
 
-from newrelic.api.html_insertion import insert_html_snippet
-from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.config import extra_settings
+from newrelic.agent import (current_transaction, extra_settings,
+    insert_html_snippet, wrap_function_wrapper)
 
 from newrelic.packages import six
 

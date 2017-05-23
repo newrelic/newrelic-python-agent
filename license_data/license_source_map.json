@@ -989,12 +989,6 @@
             "New Relic"
         ]
     },
-    "newrelic/core/tests/test_internal_metrics.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/core/tests/test_profile_sessions.py": {
         "hash": "n/a",
         "libraries": [
@@ -1632,12 +1626,6 @@
         ]
     },
     "newrelic/hooks/middleware_weberror.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/newrelic_agent.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

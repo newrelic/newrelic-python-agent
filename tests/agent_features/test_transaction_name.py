@@ -1,8 +1,7 @@
-from newrelic.api.background_task import background_task
-from newrelic.api.transaction import set_transaction_name, set_background_task
-
 from testing_support.fixtures import validate_transaction_metrics
 
+from newrelic.agent import (background_task, set_background_task,
+        set_transaction_name)
 
 @validate_transaction_metrics(
         'test_transaction_name:test_transaction_name_default_bt',

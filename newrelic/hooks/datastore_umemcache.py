@@ -1,5 +1,4 @@
-from newrelic.api.datastore_trace import datastore_trace
-from newrelic.common.object_wrapper import wrap_function_wrapper, ObjectProxy
+from newrelic.agent import ObjectProxy, datastore_trace, wrap_function_wrapper
 
 class _nr_umemcache_Client_proxy_(ObjectProxy):
 

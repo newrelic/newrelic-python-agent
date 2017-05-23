@@ -1,11 +1,11 @@
 import logging
 import re
 
+from newrelic.packages import requests
 from newrelic.core.internal_metrics import internal_metric
 
 
 _logger = logging.getLogger(__name__)
-
 
 class AWSVendorInfo(object):
 
@@ -54,7 +54,6 @@ class AWSVendorInfo(object):
         return self.normalize(path, data)
 
     def fetch(self, path):
-        from newrelic.packages import requests
         if self.skip_metadata_check:
             return None
 
@@ -86,10 +85,8 @@ class AWSVendorInfo(object):
         if self.valid_length(stripped) and self.valid_chars(stripped):
             result = stripped
         else:
-            # As per spec
             internal_metric('Supportability/utilization/aws/error', 1)
-            _logger.warning('Fetched invalid AWS data for "%r": %r', path,
-                    data)
+            _logger.warning('Fetched invalid AWS data for "%r": %r', path, data)
             result = None
 
         return result
@@ -111,7 +108,6 @@ class AWSVendorInfo(object):
             'type': self.instance_type,
             'zone': self.availability_zone
         }
-
 
 def aws_data():
     aws = AWSVendorInfo()

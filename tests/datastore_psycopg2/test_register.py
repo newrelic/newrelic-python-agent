@@ -6,7 +6,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors)
 from utils import DB_SETTINGS, POSTGRESQL_VERSION, PSYCOPG2_VERSION
 
-from newrelic.api.background_task import background_task
+from newrelic.agent import background_task
 
 
 @pytest.mark.skipif(PSYCOPG2_VERSION < (2, 5),

@@ -1,16 +1,15 @@
 import concurrent.futures
 import socket
 import sys
+import tornado
 import threading
 import time
-import tornado
 
-from newrelic.api.application import application as nr_app
+from newrelic.agent import (application as nr_app, current_transaction,
+        function_trace, set_transaction_name)
 from newrelic.api.external_trace import ExternalTrace
-from newrelic.api.function_trace import function_trace
-from newrelic.api.transaction import set_transaction_name, current_transaction
-from newrelic.common.encoding_utils import (obfuscate, json_encode)
 from newrelic.hooks.framework_tornado_r3.util import TransactionContext
+from newrelic.common.encoding_utils import (obfuscate, json_encode)
 
 from tornado import stack_context
 from tornado.curl_httpclient import CurlAsyncHTTPClient
@@ -464,27 +463,6 @@ class AsyncFetchRequestHandler(RequestHandler):
 
     def process_response(self, response):
         self.finish(response.body)
-
-
-class ExpectedError(Exception):
-    pass
-
-
-class ErrorHTTPClient(AsyncHTTPClient):
-    def fetch_impl(self, request, callback):
-        raise ExpectedError("I am very bad at handling requests.")
-
-
-class AsyncFetchExceptionRaiseHandler(RequestHandler):
-    """Raises an exception in the http client."""
-
-    def get(self, request_type, port):
-        url = 'http://localhost:%s' % port
-        client = ErrorHTTPClient()
-        try:
-            client.fetch(url)
-        except ExpectedError:
-            self.write('OK')
 
 
 class CurlAsyncFetchRequestHandler(RequestHandler):
@@ -1342,7 +1320,6 @@ def get_tornado_app():
         ('/bookend-subclass', PrepareOnFinishRequestHandlerSubclass),
         ('/stream', SimpleStreamingRequestHandler),
         ('/async-fetch/(\w)+/(\d+)', AsyncFetchRequestHandler),
-        ('/async-fetch-error/(\w)+/(\d+)', AsyncFetchExceptionRaiseHandler),
         ('/curl-async-fetch/(\w)+/(\d+)', CurlAsyncFetchRequestHandler),
         ('/curl-async-custom/(\w)+/(\d+)', CustomImplCurlAsyncRequestHandler),
         ('/curl-stream-cb/(\w)+/(\d+)', CurlStreamingCallbackRequestHandler),

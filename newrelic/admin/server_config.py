@@ -2,7 +2,6 @@ from __future__ import print_function
 
 from newrelic.admin import command, usage
 
-
 @command('server-config', 'config_file [log_file]',
 """Dumps out the agent configuration after having loaded the settings
 from <config_file>, registered the application and then merged the server
@@ -18,8 +17,7 @@ def server_config(args):
         usage('server-config')
         sys.exit(1)
 
-    from newrelic.api.application import register_application
-    from newrelic.config import initialize
+    from newrelic.agent import initialize, register_application
 
     if len(args) >= 2:
         log_file = args[1]

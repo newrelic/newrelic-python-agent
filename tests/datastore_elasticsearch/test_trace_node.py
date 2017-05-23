@@ -5,7 +5,7 @@ from testing_support.fixtures import (validate_tt_collector_json,
 from testing_support.settings import elasticsearch_multiple_settings
 from testing_support.util import instance_hostname
 
-from newrelic.api.background_task import background_task
+from newrelic.agent import background_task
 
 ES_SETTINGS = elasticsearch_multiple_settings()[0]
 ES_URL = 'http://%s:%s' % (ES_SETTINGS['host'], ES_SETTINGS['port'])

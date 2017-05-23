@@ -1,5 +1,5 @@
-from newrelic.api.external_trace import wrap_external_trace
-from newrelic.api.function_trace import wrap_function_trace
+from newrelic.agent import wrap_function_trace
+from newrelic.agent import wrap_external_trace
 
 def instrument_weberror_errormiddleware(module):
 

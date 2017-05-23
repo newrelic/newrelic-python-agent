@@ -1,9 +1,8 @@
-from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.agent import (function_wrapper, wrap_function_wrapper,
+        current_transaction)
 
 
-def _nr_wrapper_HTTP1Connection_write_headers_(wrapped, instance, args,
-        kwargs):
+def _nr_wrapper_HTTP1Connection_write_headers_(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
     if transaction is None:

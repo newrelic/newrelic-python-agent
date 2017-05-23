@@ -1,4 +1,4 @@
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.agent import wrap_function_wrapper
 
 # This is NOT a fully-featured instrumentation for the motor library. Instead
 # this is a monkey-patch of the motor library to work around a bug that causes

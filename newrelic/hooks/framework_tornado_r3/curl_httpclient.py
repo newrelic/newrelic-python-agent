@@ -1,7 +1,6 @@
-from newrelic.hooks.framework_tornado_r3.util import (
-        retrieve_current_transaction, possibly_finalize_transaction)
-from newrelic.common.object_wrapper import (function_wrapper,
-        wrap_function_wrapper)
+from newrelic.agent import function_wrapper, wrap_function_wrapper
+
+from .util import retrieve_current_transaction, possibly_finalize_transaction
 
 
 def _nr_wrapper_curl_httpclient_CurlAsyncHTTPClient_fetch_impl_(wrapped,

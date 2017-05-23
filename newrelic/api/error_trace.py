@@ -1,7 +1,7 @@
 import functools
 
-from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
+from .transaction import current_transaction
+from ..common.object_wrapper import FunctionWrapper, wrap_object
 
 class ErrorTrace(object):
 

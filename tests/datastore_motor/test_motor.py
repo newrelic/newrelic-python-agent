@@ -7,7 +7,7 @@ try:
 except ImportError:
     pass
 
-from newrelic.common.object_names import callable_name
+from newrelic.agent import callable_name
 
 
 # Tests verify that our patch to __getattr__ works.

@@ -1,4 +1,4 @@
-from newrelic.api.datastore_trace import wrap_datastore_trace
+from newrelic.agent import wrap_datastore_trace
 
 _memcache_client_methods = ('get', 'gets', 'set', 'replace', 'add',
     'prepend', 'append', 'cas', 'delete', 'incr', 'decr', 'incr_multi',

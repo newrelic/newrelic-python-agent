@@ -1,14 +1,14 @@
 import sys
+import types
 import logging
 
-from newrelic.hooks.framework_tornado import (retrieve_transaction_request,
-        resume_request_monitoring, suspend_request_monitoring,
-        record_exception, retrieve_current_transaction)
+from . import (retrieve_transaction_request, resume_request_monitoring,
+        suspend_request_monitoring, record_exception,
+        retrieve_current_transaction)
 
-from newrelic.api.function_trace import FunctionTrace
-from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import (wrap_function_wrapper,
-        function_wrapper)
+from newrelic.agent import (wrap_function_wrapper, FunctionTrace,
+    callable_name, FunctionWrapper, function_wrapper, wrap_object,
+    FunctionTraceWrapper)
 
 _logger = logging.getLogger(__name__)
 

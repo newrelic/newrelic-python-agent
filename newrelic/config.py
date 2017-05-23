@@ -8,12 +8,11 @@ try:
 except ImportError:
     import configparser as ConfigParser
 
-from newrelic.packages import six
+from .packages import six
 
-from newrelic.common.log_file import initialize_logging
-from newrelic.common.object_names import expand_builtin_exception_name
-from newrelic.core.config import (Settings, apply_config_setting,
-        fetch_config_setting)
+from .common.log_file import initialize_logging
+from .common.object_names import expand_builtin_exception_name
+from .core.config import Settings, apply_config_setting, fetch_config_setting
 
 import newrelic.core.agent
 import newrelic.core.config
@@ -2507,10 +2506,6 @@ def _process_module_builtin_defaults():
     _process_module_definition('botocore.endpoint',
             'newrelic.hooks.external_botocore',
             'instrument_botocore_endpoint')
-
-    _process_module_definition('newrelic.agent',
-            'newrelic.hooks.newrelic_agent',
-            'instrument_newrelic_agent')
 
 
 def _process_module_entry_points():

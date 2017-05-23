@@ -1,8 +1,7 @@
 import re
 
-from newrelic.api.datastore_trace import DatastoreTrace
-from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.agent import (wrap_function_wrapper, current_transaction,
+        DatastoreTrace)
 
 _redis_client_methods = ('bgrewriteaof', 'bgsave', 'client_kill',
     'client_list', 'client_getname', 'client_setname', 'config_get',

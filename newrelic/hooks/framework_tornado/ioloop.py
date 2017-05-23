@@ -1,8 +1,7 @@
-from newrelic.api.function_trace import wrap_function_trace, FunctionTrace
-from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.agent import (wrap_function_trace, wrap_function_wrapper,
+    FunctionTrace, callable_name)
 
-from newrelic.hooks.framework_tornado import retrieve_current_transaction
+from . import retrieve_current_transaction
 
 def _nr_wrapper_IOLoop_add_callback_(wrapped, instance, args, kwargs):
     transaction = retrieve_current_transaction()

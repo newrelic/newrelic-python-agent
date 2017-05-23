@@ -3,9 +3,7 @@
 import six
 import pytest
 
-from newrelic.api.application import application_instance as application
-from newrelic.api.background_task import background_task
-from newrelic.api.transaction import record_exception
+from newrelic.agent import background_task, record_exception, application
 
 from testing_support.fixtures import (validate_transaction_exception_message,
         set_default_encoding, validate_application_exception_message,

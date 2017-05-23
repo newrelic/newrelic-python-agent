@@ -1,9 +1,7 @@
 import webtest
 
-from newrelic.api.application import application_instance as application
-from newrelic.api.web_transaction import wsgi_application
-from newrelic.api.transaction import add_custom_parameter, record_exception
-from newrelic.common.object_names import callable_name
+from newrelic.agent import (application, callable_name,
+        wsgi_application, add_custom_parameter, record_exception)
 
 from testing_support.fixtures import (validate_transaction_trace_attributes,
         validate_transaction_error_trace_attributes,

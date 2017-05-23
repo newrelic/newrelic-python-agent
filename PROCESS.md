@@ -190,7 +190,7 @@ run and ensure package builds.
 
     This test can also be run in docker, with `packnsend`:
 
-        docker/packnsend run ./tests.sh
+        docker/packnsend run tests.sh
 
 5. Perform any other final adhoc local tests deemed necessary for the release.
 

@@ -19,21 +19,17 @@ import newrelic.packages.six as six
 from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR
 from newrelic.core.attribute import create_user_attributes
 
-from newrelic.core.attribute import process_user_attribute
-from newrelic.core.database_utils import explain_plan
-from newrelic.core.error_collector import TracedError
-from newrelic.core.metric import TimeMetric
-from newrelic.core.stack_trace import exception_stack
+from .attribute import process_user_attribute
+from .database_utils import explain_plan
+from .error_collector import TracedError
+from .internal_metrics import (internal_trace, InternalTrace, internal_metric)
+from .metric import TimeMetric
+from .stack_trace import exception_stack
 
-from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
-from newrelic.common.encoding_utils import json_encode
+from ..api.settings import STRIP_EXCEPTION_MESSAGE
+from ..common.encoding_utils import json_encode
 
 _logger = logging.getLogger(__name__)
-
-
-def c2t(count=0, total=0.0, min=0.0, max=0.0, sum_of_squares=0.0):
-    return (count, total, total, min, max, sum_of_squares)
-
 
 class ApdexStats(list):
 
@@ -77,7 +73,6 @@ class ApdexStats(list):
                 min(self[3], metric.apdex_t) or metric.apdex_t)
         self[4] = max(self[4], metric.apdex_t)
 
-
 class TimeStats(list):
 
     """Bucket for accumulating time and value metrics.
@@ -91,8 +86,6 @@ class TimeStats(list):
     def __init__(self, call_count=0, total_call_time=0.0,
                 total_exclusive_call_time=0.0, min_call_time=0.0,
                 max_call_time=0.0, sum_of_squares=0.0):
-        if total_exclusive_call_time is None:
-            total_exclusive_call_time = total_call_time
         super(TimeStats, self).__init__([call_count, total_call_time,
                 total_exclusive_call_time, min_call_time,
                 max_call_time, sum_of_squares])
@@ -145,16 +138,6 @@ class TimeStats(list):
 
         self.merge_raw_time_metric(value)
 
-
-class CountStats(TimeStats):
-
-    def merge_stats(self, other):
-        self[0] += other[0]
-
-    def merge_raw_time_metric(self, duration, exclusive=None):
-        pass
-
-
 class CustomMetrics(object):
 
     """Table for collection a set of value metrics.
@@ -172,19 +155,19 @@ class CustomMetrics(object):
         from prior value metrics with the same name.
 
         """
-        if isinstance(value, dict):
-            if len(value) == 1 and 'count' in value:
-                new_stats = CountStats(call_count=value['count'])
-            else:
-                new_stats = TimeStats(*c2t(**value))
-        else:
-            new_stats = TimeStats(1, value, value, value, value, value**2)
 
         stats = self.__stats_table.get(name)
         if stats is None:
-            self.__stats_table[name] = new_stats
-        else:
-            stats.merge_stats(new_stats)
+            stats = TimeStats()
+            self.__stats_table[name] = stats
+
+        def c2t(count=0, total=0.0, min=0.0, max=0.0, sum_of_squares=0.0):
+            return (count, total, total, min, max, sum_of_squares)
+
+        try:
+            stats.merge_stats(TimeStats(*c2t(**value)))
+        except Exception:
+            stats.merge_custom_metric(value)
 
     def metrics(self):
         """Returns an iterator over the set of value metrics. The items
@@ -194,14 +177,6 @@ class CustomMetrics(object):
         """
 
         return six.iteritems(self.__stats_table)
-
-    def reset_metric_stats(self):
-        """Resets the accumulated statistics back to initial state for
-        metric data.
-
-        """
-        self.__stats_table = {}
-
 
 class SlowSqlStats(list):
 
@@ -246,7 +221,6 @@ class SlowSqlStats(list):
 
         self[0] += 1
 
-
 class SampledDataSet(object):
 
     def __init__(self, capacity=100):
@@ -261,8 +235,8 @@ class SampledDataSet(object):
     @property
     def sampling_info(self):
         return {
-            'reservoir_size': self.capacity,
-            'events_seen': self.num_seen
+            'reservoir_size' : self.capacity,
+            'events_seen' : self.num_seen
         }
 
     def reset(self):
@@ -285,7 +259,6 @@ class SampledDataSet(object):
         # Make sure num_seen includes total items seen from merged set
 
         self.num_seen += other_data_set.num_seen - other_data_set.num_samples
-
 
 class StatsEngine(object):
 
@@ -375,8 +348,8 @@ class StatsEngine(object):
 
     def error_events_sampling_info(self):
         sampling_info = {
-                'reservoir_size': self.error_events.capacity,
-                'events_seen': self.error_events.num_seen
+                'reservoir_size' : self.error_events.capacity,
+                'events_seen' : self.error_events.num_seen
         }
         return sampling_info
 
@@ -456,15 +429,9 @@ class StatsEngine(object):
         key = (metric.name, metric.scope or '')
         stats = self.__stats_table.get(key)
         if stats is None:
-            stats = TimeStats(call_count=1,
-                    total_call_time=metric.duration,
-                    total_exclusive_call_time=metric.exclusive,
-                    min_call_time=metric.duration,
-                    max_call_time=metric.duration,
-                    sum_of_squares=metric.duration ** 2)
+            stats = TimeStats()
             self.__stats_table[key] = stats
-        else:
-            stats.merge_time_metric(metric)
+        stats.merge_time_metric(metric)
 
         return key
 
@@ -649,11 +616,11 @@ class StatsEngine(object):
         # don't let the poorly named 'type' attribute fool you.
 
         intrinsics = {
-                'type': 'TransactionError',
-                'error.class': error.type,
-                'error.message': error.message,
-                'timestamp': error.start_time,
-                'transactionName': None,
+                'type' : 'TransactionError',
+                'error.class' : error.type,
+                'error.message' : error.message,
+                'timestamp' : error.start_time,
+                'transactionName' : None,
         }
 
         # Leave agent attributes field blank since not a transaction
@@ -669,8 +636,8 @@ class StatsEngine(object):
         if not settings:
             return
 
-        if (settings.collect_custom_events and
-                settings.custom_insights_events.enabled):
+        if (settings.collect_custom_events
+                and settings.custom_insights_events.enabled):
             self.__custom_events.add(event)
 
     def record_custom_metric(self, name, value):
@@ -678,21 +645,29 @@ class StatsEngine(object):
         from prior value metrics with the same name.
 
         """
+
+        if not self.__settings:
+            return
+
+        # Scope is forced to be empty string. This means
+        # that it can overlap with a time metric, but no
+        # validation is done to avoid clashes and mixing
+        # the two types of metrics will simply cause
+        # incorrect data.
+
         key = (name, '')
-
-        if isinstance(value, dict):
-            if len(value) == 1 and 'count' in value:
-                new_stats = CountStats(call_count=value['count'])
-            else:
-                new_stats = TimeStats(*c2t(**value))
-        else:
-            new_stats = TimeStats(1, value, value, value, value, value**2)
-
         stats = self.__stats_table.get(key)
         if stats is None:
-            self.__stats_table[key] = new_stats
-        else:
-            stats.merge_stats(new_stats)
+            stats = TimeStats()
+            self.__stats_table[key] = stats
+
+        def c2t(count=0, total=0.0, min=0.0, max=0.0, sum_of_squares=0.0):
+            return (count, total, total, min, max, sum_of_squares)
+
+        try:
+            stats.merge_stats(TimeStats(*c2t(**value)))
+        except Exception:
+            stats.merge_custom_metric(value)
 
         return key
 
@@ -814,6 +789,8 @@ class StatsEngine(object):
         if len(self.__synthetics_transactions) < maximum:
             self.__synthetics_transactions.append(transaction)
 
+    @internal_trace('Supportability/Python/StatsEngine/Calls/'
+            'record_transaction')
     def record_transaction(self, transaction):
         """Record any apdex and time metrics for the transaction as
         well as any errors which occurred for the transaction. If the
@@ -842,11 +819,17 @@ class StatsEngine(object):
         # lesser time. Such metrics get reported into the performance
         # breakdown tab for specific web transactions.
 
-        self.record_apdex_metrics(transaction.apdex_metrics(self))
+        with InternalTrace('Supportability/Python/TransactionNode/Calls/'
+                'apdex_metrics'):
+            self.record_apdex_metrics(transaction.apdex_metrics(self))
 
-        self.merge_custom_metrics(transaction.custom_metrics.metrics())
+        with InternalTrace('Supportability/Python/TransactionNode/Calls/'
+                'value_metrics'):
+            self.merge_custom_metrics(transaction.custom_metrics.metrics())
 
-        self.record_time_metrics(transaction.time_metrics(self))
+        with InternalTrace('Supportability/Python/TransactionNode/Calls/'
+                'time_metrics'):
+            self.record_time_metrics(transaction.time_metrics(self))
 
         # Capture any errors if error collection is enabled.
         # Only retain maximum number allowed per harvest.
@@ -856,14 +839,15 @@ class StatsEngine(object):
         if (error_collector.enabled and settings.collect_errors and
                 len(self.__transaction_errors) <
                 settings.agent_limits.errors_per_harvest):
-            self.__transaction_errors.extend(transaction.error_details())
+            with InternalTrace('Supportability/Python/TransactionNode/Calls/'
+                    'error_details'):
+                self.__transaction_errors.extend(transaction.error_details())
 
-            self.__transaction_errors = self.__transaction_errors[:
-                    settings.agent_limits.errors_per_harvest]
+                self.__transaction_errors = self.__transaction_errors[:
+                        settings.agent_limits.errors_per_harvest]
 
-        if (error_collector.capture_events and
-                error_collector.enabled and
-                settings.collect_error_events):
+        if (error_collector.capture_events and error_collector.enabled
+                and settings.collect_error_events):
             events = transaction.error_events(self.__stats_table)
             for event in events:
                 self.__error_events.add(event)
@@ -871,8 +855,10 @@ class StatsEngine(object):
         # Capture any sql traces if transaction tracer enabled.
 
         if settings.slow_sql.enabled and settings.collect_traces:
-            for node in transaction.slow_sql_nodes(self):
-                self.record_slow_sql_node(node)
+            with InternalTrace('Supportability/Python/TransactionNode/Calls/'
+                    'slow_sql_nodes'):
+                for node in transaction.slow_sql_nodes(self):
+                    self.record_slow_sql_node(node)
 
         # Remember as slowest transaction if transaction tracer
         # is enabled, it is over the threshold and slower than
@@ -923,6 +909,7 @@ class StatsEngine(object):
                 settings.custom_insights_events.enabled):
             self.custom_events.merge(transaction.custom_events)
 
+    @internal_trace('Supportability/Python/StatsEngine/Calls/metric_data')
     def metric_data(self, normalizer=None):
         """Returns a list containing the low level metric data for
         sending to the core application pertaining to the reporting
@@ -952,7 +939,7 @@ class StatsEngine(object):
 
         if normalizer is not None:
             for key, value in six.iteritems(self.__stats_table):
-                key = (normalizer(key[0])[0], key[1])
+                key = (normalizer(key[0])[0] , key[1])
                 stats = normalized_stats.get(key)
                 if stats is None:
                     normalized_stats[key] = copy.copy(value)
@@ -985,6 +972,7 @@ class StatsEngine(object):
 
         return len(self.__stats_table)
 
+    @internal_trace('Supportability/Python/StatsEngine/Calls/error_data')
     def error_data(self):
         """Returns a to a list containing any errors collected during
         the reporting period.
@@ -996,6 +984,7 @@ class StatsEngine(object):
 
         return self.__transaction_errors
 
+    @internal_trace('Supportability/Python/StatsEngine/Calls/slow_sql_data')
     def slow_sql_data(self, connections):
 
         _logger.debug('Generating slow SQL data.')
@@ -1079,6 +1068,8 @@ class StatsEngine(object):
 
         return result
 
+    @internal_trace('Supportability/Python/StatsEngine/Calls/'
+            'transaction_trace_data')
     def transaction_trace_data(self, connections):
         """Returns a list of slow transaction data collected
         during the reporting period.
@@ -1156,6 +1147,9 @@ class StatsEngine(object):
             transaction_trace = trace.transaction_trace(
                     self, maximum_nodes, connections)
 
+            internal_metric('Supportability/Python/StatsEngine/Counts/'
+                    'transaction_sample_data', trace.trace_node_count)
+
             data = [transaction_trace,
                     list(trace.string_table.values())]
 
@@ -1163,17 +1157,27 @@ class StatsEngine(object):
                 _logger.debug('Encoding slow transaction data where '
                               'payload=%r.', data)
 
-            json_data = json_encode(data)
+            with InternalTrace('Supportability/Python/StatsEngine/JSON/'
+                    'Encode/transaction_sample_data'):
+
+                json_data = json_encode(data)
+
+            internal_metric('Supportability/Python/StatsEngine/ZLIB/Bytes/'
+                    'transaction_sample_data', len(json_data))
 
             level = self.__settings.agent_limits.data_compression_level
             level = level or zlib.Z_DEFAULT_COMPRESSION
 
-            zlib_data = zlib.compress(six.b(json_data), level)
+            with InternalTrace('Supportability/Python/StatsEngine/ZLIB/'
+                    'Compress/transaction_sample_data'):
+                zlib_data = zlib.compress(six.b(json_data), level)
 
-            pack_data = base64.standard_b64encode(zlib_data)
+            with InternalTrace('Supportability/Python/StatsEngine/BASE64/'
+                    'Encode/transaction_sample_data'):
+                pack_data = base64.standard_b64encode(zlib_data)
 
-            if six.PY3:
-                pack_data = pack_data.decode('Latin-1')
+                if six.PY3:
+                    pack_data = pack_data.decode('Latin-1')
 
             root = transaction_trace.root
             xray_id = getattr(trace, 'xray_id', None)
@@ -1183,7 +1187,7 @@ class StatsEngine(object):
             else:
                 force_persist = False
 
-            trace_data.append([transaction_trace.start_time,
+            trace_data.append([root.start_time,
                     root.end_time - root.start_time,
                     trace.path,
                     trace.request_uri,
@@ -1192,10 +1196,12 @@ class StatsEngine(object):
                     None,
                     force_persist,
                     xray_id,
-                    trace.synthetics_resource_id, ])
+                    trace.synthetics_resource_id,])
 
         return trace_data
 
+    @internal_trace('Supportability/Python/StatsEngine/Calls/'
+            'slow_transaction_data')
     def slow_transaction_data(self):
         """Returns a list containing any slow transaction data collected
         during the reporting period.
@@ -1219,6 +1225,10 @@ class StatsEngine(object):
         transaction_trace = self.__slow_transaction.transaction_trace(
                 self, maximum)
 
+        internal_metric('Supportability/Python/StatsEngine/Counts/'
+                'transaction_sample_data',
+                self.__slow_transaction.trace_node_count)
+
         data = [transaction_trace,
                 list(self.__slow_transaction.string_table.values())]
 
@@ -1226,17 +1236,27 @@ class StatsEngine(object):
             _logger.debug('Encoding slow transaction data where '
                     'payload=%r.', data)
 
-        json_data = json_encode(data)
+        with InternalTrace('Supportability/Python/StatsEngine/JSON/Encode/'
+                'transaction_sample_data'):
+
+            json_data = json_encode(data)
+
+        internal_metric('Supportability/Python/StatsEngine/ZLIB/Bytes/'
+                'transaction_sample_data', len(json_data))
 
         level = self.__settings.agent_limits.data_compression_level
         level = level or zlib.Z_DEFAULT_COMPRESSION
 
-        zlib_data = zlib.compress(six.b(json_data), level)
+        with InternalTrace('Supportability/Python/StatsEngine/ZLIB/Compress/'
+                'transaction_sample_data'):
+            zlib_data = zlib.compress(six.b(json_data), level)
 
-        pack_data = base64.standard_b64encode(zlib_data)
+        with InternalTrace('Supportability/Python/StatsEngine/BASE64/Encode/'
+                'transaction_sample_data'):
+            pack_data = base64.standard_b64encode(zlib_data)
 
-        if six.PY3:
-            pack_data = pack_data.decode('Latin-1')
+            if six.PY3:
+                pack_data = pack_data.decode('Latin-1')
 
         root = transaction_trace.root
 
@@ -1437,8 +1457,8 @@ class StatsEngine(object):
     def merge_metric_stats(self, snapshot):
         """Merges metric data from a snapshot. This is used both when merging
         data from a single transaction into the main stats engine, and for
-        performing a rollback merge. In either case, the merge is done the
-        exact same way.
+        performing a rollback merge. In either case, the merge is done the exact
+        same way.
         """
 
         if not self.__settings:
@@ -1447,20 +1467,20 @@ class StatsEngine(object):
         for key, other in six.iteritems(snapshot.__stats_table):
             stats = self.__stats_table.get(key)
             if not stats:
-                self.__stats_table[key] = other
+                self.__stats_table[key] = copy.copy(other)
             else:
                 stats.merge_stats(other)
 
     def _merge_transaction_events(self, snapshot, rollback=False):
 
         # Merge in transaction events. In the normal case snapshot is a
-        # StatsEngine from a single transaction, and should only have one
-        # event. Just to avoid issues, if there is more than one, don't merge.
+        # StatsEngine from a single transaction, and should only have one event.
+        # Just to avoid issues, if there is more than one, don't merge.
 
         # If this is a rollback, snapshot is a copy of a previous main
         # StatsEngine, and self is still the current main StatsEngine. Then
-        # we are merging multiple events, but still using the reservoir
-        # sampling that gives equal probability for keeping all events
+        # we are merging multiple events, but still using the reservoir sampling
+        # that gives equal probability for keeping all events
 
         if rollback:
             for sample in snapshot.__transaction_events.samples:
@@ -1581,6 +1601,6 @@ class StatsEngine(object):
             key = (name, '')
             stats = self.__stats_table.get(key)
             if not stats:
-                self.__stats_table[key] = other
+                self.__stats_table[key] = copy.copy(other)
             else:
                 stats.merge_stats(other)

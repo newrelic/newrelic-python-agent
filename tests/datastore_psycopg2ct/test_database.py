@@ -10,7 +10,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
 
 from testing_support.settings import postgresql_settings
 
-from newrelic.api.background_task import background_task
+from newrelic.agent import background_task
 
 DB_SETTINGS = postgresql_settings()
 

@@ -1,16 +1,17 @@
 import logging
 import sys
+import weakref
+import types
+import itertools
 import traceback
 
-from newrelic.api.function_trace import FunctionTrace, wrap_function_trace
-from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.agent import (wrap_function_wrapper, FunctionTrace,
+    wrap_function_trace, callable_name)
 
-from newrelic.hooks.framework_tornado import (retrieve_request_transaction,
-        initiate_request_monitoring, suspend_request_monitoring,
-        resume_request_monitoring, finish_request_monitoring,
-        finalize_request_monitoring, request_finished,
-        last_transaction_activation, retrieve_current_transaction)
+from . import (retrieve_request_transaction, initiate_request_monitoring,
+    suspend_request_monitoring, resume_request_monitoring,
+    finish_request_monitoring, finalize_request_monitoring, request_finished,
+    last_transaction_activation, retrieve_current_transaction)
 
 _logger = logging.getLogger(__name__)
 

@@ -1,10 +1,10 @@
 import functools
 import types
 
-from newrelic.api.transaction import current_transaction
-from newrelic.api.function_trace import FunctionTrace
-from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
-from newrelic.common.object_names import callable_name
+from .transaction import current_transaction
+from .function_trace import FunctionTrace
+from ..common.object_wrapper import FunctionWrapper, wrap_object
+from ..common.object_names import callable_name
 
 def GeneratorTraceWrapper(wrapped, name=None, group=None, label=None,
             params=None):

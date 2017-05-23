@@ -1,10 +1,10 @@
 import functools
 
-from newrelic.api.time_trace import TimeTrace
-from newrelic.api.transaction import current_transaction
-from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
-from newrelic.core.function_node import FunctionNode
+from .time_trace import TimeTrace
+from .transaction import current_transaction
+from ..core.function_node import FunctionNode
+from ..common.object_wrapper import FunctionWrapper, wrap_object
+from ..common.object_names import callable_name
 
 
 class FunctionTrace(TimeTrace):

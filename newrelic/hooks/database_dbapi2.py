@@ -1,9 +1,6 @@
-from newrelic.api.database_trace import DatabaseTrace, register_database_client
-from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.transaction import current_transaction
-from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import wrap_object, ObjectProxy
-from newrelic.core.config import global_settings
+from newrelic.agent import (current_transaction, wrap_object,
+        callable_name, FunctionTrace, ObjectProxy, DatabaseTrace,
+        register_database_client, global_settings)
 
 DEFAULT = object()
 

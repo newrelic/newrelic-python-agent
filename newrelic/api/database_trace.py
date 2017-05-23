@@ -1,11 +1,11 @@
 import functools
 import logging
 
-from newrelic.api.time_trace import TimeTrace
-from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
-from newrelic.core.database_node import DatabaseNode
-from newrelic.core.stack_trace import current_stack
+from .time_trace import TimeTrace
+from .transaction import current_transaction
+from ..core.database_node import DatabaseNode
+from ..core.stack_trace import current_stack
+from ..common.object_wrapper import FunctionWrapper, wrap_object
 
 _logger = logging.getLogger(__name__)
 

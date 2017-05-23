@@ -171,6 +171,27 @@ def _requests_request_url_workaround(wrapped, instance, args, kwargs):
 
     return urldefragauth(request.url)
 
+
+# This is a monkey patch for urllib3 + python3.6 + gevent/eventlet.
+# Gevent/Eventlet patches the ssl library resulting in a re-binding that causes
+# infinite recursion in a super call. In order to prevent this error, the
+# SSLContext object should be accessed through the ssl library attribute.
+#
+#   https://github.com/python/cpython/commit/328067c468f82e4ec1b5c510a4e84509e010f296#diff-c49248c7181161e24048bec5e35ba953R457
+#   https://github.com/gevent/gevent/blob/f3acb176d0f0f1ac797b50e44a5e03726f687c53/src/gevent/_ssl3.py#L67
+#   https://github.com/shazow/urllib3/pull/1177
+#   https://bugs.python.org/issue29149
+#
+@patch_function_wrapper(
+        'newrelic.packages.requests.packages.urllib3.util.ssl_',
+        'SSLContext')
+def _urllib3_ssl_recursion_workaround(wrapped, instance, args, kwargs):
+    try:
+        import ssl
+        return ssl.SSLContext(*args, **kwargs)
+    except:
+        return wrapped(*args, **kwargs)
+
 # Low level network functions and session management. When connecting to
 # the data collector it is initially done through the main data collector.
 # It is though then necessary to ask the data collector for the per

@@ -2600,8 +2600,12 @@ def _setup_agent_console():
         newrelic.core.agent.Agent.run_on_startup(_startup_agent_console)
 
 
+_initialize_done = False
+
+
 def initialize(config_file=None, environment=None, ignore_errors=None,
             log_file=None, log_level=None):
+    global _initialize_done
 
     if config_file is None:
         config_file = os.environ.get('NEW_RELIC_CONFIG_FILE', None)
@@ -2624,6 +2628,8 @@ def initialize(config_file=None, environment=None, ignore_errors=None,
         _setup_agent_console()
     else:
         _settings.enabled = False
+
+    _initialize_done = True
 
 
 def filter_app_factory(app, global_conf, config_file, environment=None):

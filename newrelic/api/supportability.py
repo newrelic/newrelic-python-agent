@@ -1,3 +1,4 @@
+import newrelic.config
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import function_wrapper
 from newrelic.core.agent import agent_instance
@@ -11,8 +12,8 @@ def wrap_api_call(method, method_name):
     def _nr_wrap_api_call_(wrapped, instance, args, kwargs):
         settings = global_settings()
 
-        # agent is not initialized / configured / enabled
-        if not settings.enabled:
+        # agent is not initialized / enabled
+        if not newrelic.config._initialize_done or not settings.enabled:
             return wrapped(*args, **kwargs)
 
         transaction = current_transaction()

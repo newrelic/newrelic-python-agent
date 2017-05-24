@@ -2508,10 +2508,6 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.external_botocore',
             'instrument_botocore_endpoint')
 
-    _process_module_definition('newrelic.agent',
-            'newrelic.hooks.newrelic_agent',
-            'instrument_newrelic_agent')
-
 
 def _process_module_entry_points():
     try:

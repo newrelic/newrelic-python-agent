@@ -42,12 +42,9 @@ use(extensions) {
             else if (jobType == 'develop') {
                 repository(repoFull, jobType)
                 triggers {
-                    // trigger on push to develop
-                    githubPush()
-
                     if (isJaasHostname) {
                         // run daily on cron
-                        cron('H 10 * * *')
+                        cron('H 0,12 * * 1-5')
                     }
                 }
                 gitBranch = jobType

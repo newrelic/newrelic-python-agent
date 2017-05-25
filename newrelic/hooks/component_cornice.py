@@ -4,8 +4,11 @@
 
 import functools
 
-from newrelic.agent import (function_wrapper, callable_name,
-    current_transaction, FunctionTrace, wrap_function_wrapper)
+from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.transaction import current_transaction
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import (function_wrapper,
+        wrap_function_wrapper)
 
 module_cornice_service = None
 
@@ -19,7 +22,7 @@ def wrapper_Resource_method(wrapped, instance, args, kwargs):
     name = callable_name(wrapped)
 
     transaction.set_transaction_name(name)
-    
+
     with FunctionTrace(transaction, name):
         return wrapped(*args, **kwargs)
 

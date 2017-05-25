@@ -251,6 +251,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/supportability.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/tests/__init__.py": {
         "hash": "n/a",
         "libraries": [
@@ -984,6 +990,12 @@
         ]
     },
     "newrelic/core/tests/test_explain_plans.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/core/tests/test_internal_metrics.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

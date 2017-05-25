@@ -1,8 +1,10 @@
+import copy
 import inspect
 import pytest
 import logging
 
-from newrelic.agent import (callable_name, function_wrapper,
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import (function_wrapper,
         wrap_function_wrapper)
 
 from testing_support.fixtures import _validate_node_parenting
@@ -59,7 +61,10 @@ def wrap_record_transaction_fixture(request):
         except:
             raise
 
-        metrics = instance.stats_table
+        # Record the original metric values (before they can be mutated)
+        metrics = {}
+        for k, m in instance.stats_table.items():
+            metrics[k] = copy.copy(m)
         _RECORDED_TRANSACTIONS.append((transaction, metrics, errors))
 
         return result

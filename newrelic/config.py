@@ -8,11 +8,12 @@ try:
 except ImportError:
     import configparser as ConfigParser
 
-from .packages import six
+from newrelic.packages import six
 
-from .common.log_file import initialize_logging
-from .common.object_names import expand_builtin_exception_name
-from .core.config import Settings, apply_config_setting, fetch_config_setting
+from newrelic.common.log_file import initialize_logging
+from newrelic.common.object_names import expand_builtin_exception_name
+from newrelic.core.config import (Settings, apply_config_setting,
+        fetch_config_setting)
 
 import newrelic.core.agent
 import newrelic.core.config
@@ -453,6 +454,8 @@ def _process_configuration(section):
     _process_setting(section, 'console.listener_socket',
                      'get', _map_console_listener_socket)
     _process_setting(section, 'console.allow_interpreter_cmd',
+                     'getboolean', None)
+    _process_setting(section, 'debug.disable_api_supportability_metrics',
                      'getboolean', None)
     _process_setting(section, 'debug.log_data_collector_calls',
                      'getboolean', None)

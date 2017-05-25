@@ -1,8 +1,11 @@
 import logging
 
-from newrelic.agent import (FunctionTrace, callable_name,
-    function_wrapper, wrap_function_wrapper)
-from .util import retrieve_current_transaction, NoneProxy
+from newrelic.hooks.framework_tornado_r3.util import (
+        retrieve_current_transaction)
+from newrelic.api.function_trace import FunctionTrace
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import (function_wrapper,
+        wrap_function_wrapper, ObjectProxy)
 
 _logger = logging.getLogger(__name__)
 
@@ -18,9 +21,10 @@ try:
 except:
     _logger.warning('You are using a python implemenation without '
             'sys._getframe which is used by New Relic to get meaningful names '
-            'for coroutines. We are falling back to use inspect.stack which is '
-            'very slow.')
+            'for coroutines. We are falling back to use inspect.stack which is'
+            ' very slow.')
     import inspect
+
     def getframe(depth):
         return inspect.stack(0)[depth]
     get_frame = getframe
@@ -33,6 +37,14 @@ def _coroutine_name(func):
     # im_class. This means callable_name will return the function name without
     # the class prefix. See PYTHON-1798.
     return '%s %s' % (callable_name(func), '(coroutine)')
+
+
+class IOLoopProxy(ObjectProxy):
+
+    def add_future(self, future, callback):
+        future._nr_coroutine_name = self._nr_coroutine_name
+        return self.__wrapped__.add_future(future, callback)
+
 
 def _nr_wrapper_Runner__init__(wrapped, instance, args, kwargs):
     # We want to associate a function name from _make_coroutine_wrapper with
@@ -90,8 +102,8 @@ def _nr_wrapper_Runner__init__(wrapped, instance, args, kwargs):
     else:
         _logger.debug('tornado.gen.Runner is being called outside of a '
                 'tornado.gen decorator (or the tornado implemenation has '
-                'changed). NewRelic will not be able to name this instrumented '
-                'function meaningfully (it will be named lambda).')
+                'changed). NewRelic will not be able to name this instrumented'
+                ' function meaningfully (it will be named lambda or inner).')
 
     # Bump the ref count, so we don't end the transaction before
     # the Runner finishes.
@@ -100,28 +112,29 @@ def _nr_wrapper_Runner__init__(wrapped, instance, args, kwargs):
 
     return wrapped(*args, **kwargs)
 
-def _nr_wrapper_Runner_run_(wrapped, instance, args, kwargs):
-    # We attach the running coroutine name as an attribute on the runner
-    # result. The consumer of the name should also check if the result is
-    # NoneProxy and, if so, set it to None before passing the result up.
 
+def _nr_wrapper_Runner_handle_yield_(wrapped, instance, args, kwargs):
+    if (hasattr(instance, 'io_loop') and
+            hasattr(instance, '_nr_coroutine_name')):
+        _io_loop = instance.io_loop
+        proxy = IOLoopProxy(_io_loop)
+        proxy._nr_coroutine_name = instance._nr_coroutine_name
+        instance.io_loop = proxy
+    return wrapped(*args, **kwargs)
+
+
+def _nr_wrapper_Runner_run_(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
 
     transaction = retrieve_current_transaction()
     if transaction is None:
         return result
 
-    if result is None:
-        result = NoneProxy()
-
-    if (hasattr(instance, '_nr_coroutine_name') and
-            instance._nr_coroutine_name is not None):
-        result._nr_coroutine_name = instance._nr_coroutine_name
-
     if instance.finished:
         transaction._ref_count -= 1
 
     return result
+
 
 @function_wrapper
 def _wrap_decorated(wrapped, instance, args, kwargs):
@@ -139,18 +152,24 @@ def _wrap_decorated(wrapped, instance, args, kwargs):
     with FunctionTrace(transaction, name=name):
         return wrapped(*args, **kwargs)
 
+
 # We explictly wrap the first time we enter a coroutine decorated function.
 def _nr_wrapper_coroutine_wrapper_(wrapped, instance, args, kwargs):
     func = wrapped(*args, **kwargs)
     return _wrap_decorated(func)
+
 
 # We explicitly wrap the first time we enter an engine decorated function.
 def _nr_wrapper_engine_wrapper_(wrapped, instance, args, kwargs):
     func = wrapped(*args, **kwargs)
     return _wrap_decorated(func)
 
+
 def instrument_tornado_gen(module):
-    wrap_function_wrapper(module, 'Runner.__init__', _nr_wrapper_Runner__init__)
+    wrap_function_wrapper(module, 'Runner.__init__',
+            _nr_wrapper_Runner__init__)
+    wrap_function_wrapper(module, 'Runner.handle_yield',
+            _nr_wrapper_Runner_handle_yield_)
     wrap_function_wrapper(module, 'Runner.run', _nr_wrapper_Runner_run_)
     wrap_function_wrapper(module, 'coroutine', _nr_wrapper_coroutine_wrapper_)
     wrap_function_wrapper(module, 'engine', _nr_wrapper_engine_wrapper_)

@@ -2,10 +2,15 @@
 
 """
 
-from newrelic.agent import (current_transaction, wrap_wsgi_application,
-    wrap_function_wrapper,  callable_name, wrap_function_trace,
-    FunctionTrace, TransactionNameWrapper, function_wrapper,
-    ignore_status_code, FunctionTraceWrapper)
+from newrelic.api.web_transaction import wrap_wsgi_application
+from newrelic.api.function_trace import (FunctionTrace, wrap_function_trace,
+        FunctionTraceWrapper)
+from newrelic.api.transaction import current_transaction
+
+from newrelic.common.object_wrapper import (wrap_function_wrapper,
+        function_wrapper)
+from newrelic.common.object_names import callable_name
+from newrelic.core.config import ignore_status_code
 
 def framework_details():
     import flask

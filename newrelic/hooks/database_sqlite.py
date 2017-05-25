@@ -1,8 +1,11 @@
-from newrelic.agent import (current_transaction, wrap_object, DatabaseTrace,
-        register_database_client, FunctionTrace, callable_name)
+from newrelic.api.database_trace import register_database_client, DatabaseTrace
+from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.transaction import current_transaction
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import wrap_object
 
-from .database_dbapi2 import (CursorWrapper as DBAPI2CursorWrapper,
-        ConnectionWrapper as DBAPI2ConnectionWrapper,
+from newrelic.hooks.database_dbapi2 import (CursorWrapper as
+        DBAPI2CursorWrapper, ConnectionWrapper as DBAPI2ConnectionWrapper,
         ConnectionFactory as DBAPI2ConnectionFactory)
 
 DEFAULT = object()

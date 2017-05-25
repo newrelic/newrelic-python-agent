@@ -2,12 +2,17 @@ from __future__ import print_function
 
 from newrelic.admin import command, usage
 
+
 def _run_validation_test():
     import time
 
-    from newrelic.agent import (background_task, error_trace,
-            external_trace, function_trace, wsgi_application,
-            add_custom_parameter, record_exception, application)
+    from newrelic.api.application import application_instance as application
+    from newrelic.api.background_task import background_task
+    from newrelic.api.error_trace import error_trace
+    from newrelic.api.external_trace import external_trace
+    from newrelic.api.function_trace import function_trace
+    from newrelic.api.transaction import add_custom_parameter, record_exception
+    from newrelic.api.web_transaction import wsgi_application
 
     @external_trace(library='test',
             url='http://localhost/test', method='GET')
@@ -131,8 +136,9 @@ def validate_config(args):
         usage('validate-config')
         sys.exit(1)
 
-    from newrelic.agent import (global_settings, initialize,
-            register_application)
+    from newrelic.api.application import register_application
+    from newrelic.config import initialize
+    from newrelic.core.config import global_settings
 
     if len(args) >= 2:
         log_file = args[1]

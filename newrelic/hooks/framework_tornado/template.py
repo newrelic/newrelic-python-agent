@@ -1,6 +1,8 @@
-from newrelic.agent import wrap_function_wrapper, FunctionTrace
+from newrelic.api.function_trace import FunctionTrace
+from newrelic.common.object_wrapper import wrap_function_wrapper
 
-from . import retrieve_current_transaction
+from newrelic.hooks.framework_tornado import retrieve_current_transaction
+
 
 def template_generate_wrapper(wrapped, instance, args, kwargs):
     transaction = retrieve_current_transaction()
@@ -12,11 +14,15 @@ def template_generate_wrapper(wrapped, instance, args, kwargs):
             group='Template/Render'):
         return wrapped(*args, **kwargs)
 
+
 def template_generate_python_wrapper(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
 
     if result is not None:
-        return 'import newrelic.agent as _nr_newrelic_agent\n' + result
+        return ('import newrelic.api.function_trace as _nr_fxn_trace\n'
+                'import newrelic.api.transaction as _nr_txn\n'
+                ) + result
+
 
 def block_generate_wrapper(wrapped, instance, args, kwargs):
 
@@ -24,8 +30,8 @@ def block_generate_wrapper(wrapped, instance, args, kwargs):
         if not hasattr(instance, 'line'):
             return wrapped(writer, *args, **kwargs)
 
-        writer.write_line('with _nr_newrelic_agent.FunctionTrace('
-                '_nr_newrelic_agent.current_transaction(), name=%r, '
+        writer.write_line('with _nr_fxn_trace.FunctionTrace('
+                '_nr_txn.current_transaction(), name=%r, '
                 'group="Template/Block"):' % instance.name, instance.line)
 
         with writer.indent():
@@ -33,6 +39,7 @@ def block_generate_wrapper(wrapped, instance, args, kwargs):
             return wrapped(writer, *args, **kwargs)
 
     return execute(*args, **kwargs)
+
 
 def instrument_tornado_template(module):
     wrap_function_wrapper(module, 'Template.generate',

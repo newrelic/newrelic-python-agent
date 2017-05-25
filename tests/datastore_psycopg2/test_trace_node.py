@@ -5,7 +5,7 @@ from testing_support.fixtures import (validate_tt_collector_json,
 from testing_support.util import instance_hostname
 from utils import DB_SETTINGS
 
-from newrelic.agent import background_task
+from newrelic.api.background_task import background_task
 
 
 # Settings

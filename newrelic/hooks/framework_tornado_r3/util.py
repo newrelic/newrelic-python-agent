@@ -2,11 +2,13 @@ import logging
 import sys
 import traceback
 
-from newrelic.agent import (application as application_instance,
-        current_transaction, ignore_status_code, function_wrapper,
-        callable_name, FunctionTrace)
+from newrelic.api.application import application as application_instance
+from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.transaction import Sentinel, current_transaction
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import function_wrapper
+from newrelic.core.config import ignore_status_code
 from newrelic.core.transaction_cache import transaction_cache
-from newrelic.api.transaction import Sentinel
 
 _logger = logging.getLogger(__name__)
 
@@ -229,16 +231,8 @@ def create_transaction_aware_fxn(fxn, fxn_for_name=None, should_trace=True):
                     # out the name as an attribute on the result.
                     # We update the name now.
 
-                    if (ft is not None and ret is not None and
-                            hasattr(ret, '_nr_coroutine_name')):
-                        ft.name = ret._nr_coroutine_name
-
-                        # To be able to attach the name to the return value of
-                        # a coroutine we need to have the coroutine return an
-                        # object. If it returns None, we have created a proxy
-                        # object. We now restore the original None value.
-                        if type(ret) == NoneProxy:
-                            ret = None
+                    if hasattr(fxn, '_nr_coroutine_name'):
+                        ft.name = fxn._nr_coroutine_name
 
         # If decrementing the ref count in Runner.run() takes it to 0, then
         # we need to end the transaction here.

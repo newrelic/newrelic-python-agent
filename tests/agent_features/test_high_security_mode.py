@@ -3,6 +3,24 @@ import pytest
 import time
 import webtest
 
+from newrelic.api.application import application_instance as application
+from newrelic.api.background_task import background_task
+from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
+from newrelic.api.transaction import (capture_request_params,
+        add_custom_parameter, record_exception, current_transaction,
+        record_custom_event)
+from newrelic.api.web_transaction import wsgi_application
+
+from newrelic.common.object_names import callable_name
+
+from newrelic.config import apply_local_high_security_mode_setting
+
+from newrelic.core.attribute import (Attribute, DST_TRANSACTION_TRACER,
+        DST_ERROR_COLLECTOR, DST_ALL)
+from newrelic.core.config import (global_settings, Settings,
+        apply_config_setting)
+from newrelic.core.data_collector import apply_high_security_mode_fixups
+
 from testing_support.fixtures import (override_application_settings,
         validate_custom_parameters, validate_transaction_errors,
         validate_request_params_omitted, validate_attributes_complete,
@@ -10,22 +28,6 @@ from testing_support.fixtures import (override_application_settings,
         validate_custom_event_in_application_stats_engine,
         validate_custom_event_count)
 
-from newrelic.agent import (background_task, add_custom_parameter,
-        record_exception, wsgi_application, current_transaction, application,
-        callable_name, record_custom_event)
-
-from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
-
-from newrelic.core.attribute import (Attribute, DST_TRANSACTION_TRACER,
-        DST_ERROR_COLLECTOR, DST_ALL)
-
-from newrelic.core.config import (global_settings, Settings,
-        apply_config_setting)
-
-from newrelic.config import apply_local_high_security_mode_setting
-from newrelic.core.data_collector import apply_high_security_mode_fixups
-
-from newrelic.agent import capture_request_params
 
 def test_hsm_configuration_default():
     # Global default should always be off.

@@ -5,7 +5,8 @@ from testing_support.fixtures import (validate_transaction_metrics,
 from testing_support.settings import memcached_multiple_settings
 from testing_support.util import instance_hostname
 
-from newrelic.agent import background_task, wrap_function_wrapper
+from newrelic.api.background_task import background_task
+from newrelic.common.object_wrapper import wrap_function_wrapper
 
 DB_SETTINGS = memcached_multiple_settings()[0]
 MEMCACHED_ADDR = '%s:%s' % (DB_SETTINGS['host'], DB_SETTINGS['port'])

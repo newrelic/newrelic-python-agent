@@ -121,7 +121,7 @@ if python_prefix_matches and python_version_matches:
         if do_insert_path:
             sys.path.insert(0, root_directory)
 
-        import newrelic.agent
+        import newrelic.config
 
         log_message('agent_version = %r', newrelic.version)
 
@@ -133,4 +133,4 @@ if python_prefix_matches and python_version_matches:
 
         # Finally initialize the agent.
 
-        newrelic.agent.initialize(config_file, environment)
+        newrelic.config.initialize(config_file, environment)

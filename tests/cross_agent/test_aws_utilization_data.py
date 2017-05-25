@@ -3,7 +3,8 @@ import mock
 import os
 import pytest
 
-from newrelic.common.utilization import aws_data, requests
+from newrelic.packages import requests
+from newrelic.common.utilization import aws_data
 
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -14,27 +15,33 @@ _parameters_list = ['testname', 'uris', 'expected_vendors_hash',
 
 _parameters = ','.join(_parameters_list)
 
+
 def _load_tests():
     with open(FIXTURE, 'r') as fh:
         js = fh.read()
     return json.loads(js)
 
+
 def _parametrize_test(test):
     return tuple([test.get(f, None) for f in _parameters_list])
+
 
 _aws_tests = [_parametrize_test(t) for t in _load_tests()]
 
 _metadata_urls = {
     'id_url': 'http://169.254.169.254/2008-02-01/meta-data/instance-id',
     'type_url': 'http://169.254.169.254/2008-02-01/meta-data/instance-type',
-    'zone_url': 'http://169.254.169.254/2008-02-01/meta-data/placement/availability-zone',
+    'zone_url': ('http://169.254.169.254/2008-02-01/meta-data/'
+            'placement/availability-zone'),
 }
+
 
 class MockResponse(object):
 
     def __init__(self, code, body):
         self.code = code
         self.text = body
+
 
 @pytest.mark.parametrize(_parameters, _aws_tests)
 def test_aws(testname, uris, expected_vendors_hash, expected_metrics):

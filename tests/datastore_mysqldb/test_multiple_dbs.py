@@ -6,7 +6,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
 from testing_support.settings import mysql_multiple_settings
 from testing_support.util import instance_hostname
 
-from newrelic.agent import background_task
+from newrelic.api.background_task import background_task
 
 DB_MULTIPLE_SETTINGS = mysql_multiple_settings()
 

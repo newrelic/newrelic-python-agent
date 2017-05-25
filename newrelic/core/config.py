@@ -13,7 +13,7 @@ import os
 import logging
 import copy
 
-from .attribute_filter import AttributeFilter
+from newrelic.core.attribute_filter import AttributeFilter
 
 try:
     import urlparse
@@ -391,6 +391,7 @@ _settings.console.allow_interpreter_cmd = False
 _settings.debug.ignore_all_server_settings = False
 _settings.debug.local_settings_overrides = []
 
+_settings.debug.disable_api_supportability_metrics = False
 _settings.debug.log_agent_initialization = False
 _settings.debug.log_data_collector_calls = False
 _settings.debug.log_data_collector_payloads = False

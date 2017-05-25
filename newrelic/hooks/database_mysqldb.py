@@ -1,12 +1,14 @@
 import os
 
-from newrelic.agent import (current_transaction, wrap_object, DatabaseTrace,
-        register_database_client, FunctionTrace, callable_name)
+from newrelic.api.database_trace import (enable_datastore_instance_feature,
+        DatabaseTrace, register_database_client)
+from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.transaction import current_transaction
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import wrap_object
 
-from newrelic.api.database_trace import enable_datastore_instance_feature
-
-from .database_dbapi2 import (ConnectionWrapper as DBAPI2ConnectionWrapper,
-        ConnectionFactory as DBAPI2ConnectionFactory)
+from newrelic.hooks.database_dbapi2 import (ConnectionWrapper as
+        DBAPI2ConnectionWrapper, ConnectionFactory as DBAPI2ConnectionFactory)
 
 class ConnectionWrapper(DBAPI2ConnectionWrapper):
 

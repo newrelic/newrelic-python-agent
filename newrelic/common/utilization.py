@@ -1,6 +1,7 @@
 import logging
 import re
 
+from newrelic.packages import requests
 from newrelic.core.internal_metrics import internal_metric
 
 
@@ -54,7 +55,6 @@ class AWSVendorInfo(object):
         return self.normalize(path, data)
 
     def fetch(self, path):
-        from newrelic.packages import requests
         if self.skip_metadata_check:
             return None
 

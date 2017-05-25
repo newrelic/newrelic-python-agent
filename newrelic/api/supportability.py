@@ -12,7 +12,9 @@ def wrap_api_call(method, method_name):
         settings = global_settings()
 
         # agent is not initialized / enabled
-        if not Agent._instance or not settings.enabled:
+        if (settings.debug.disable_api_supportability_metrics or
+                not Agent._instance or
+                not settings.enabled):
             return wrapped(*args, **kwargs)
 
         transaction = current_transaction()

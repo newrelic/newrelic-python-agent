@@ -455,6 +455,8 @@ def _process_configuration(section):
                      'get', _map_console_listener_socket)
     _process_setting(section, 'console.allow_interpreter_cmd',
                      'getboolean', None)
+    _process_setting(section, 'debug.disable_api_supportability_metrics',
+                     'getboolean', None)
     _process_setting(section, 'debug.log_data_collector_calls',
                      'getboolean', None)
     _process_setting(section, 'debug.log_data_collector_payloads',

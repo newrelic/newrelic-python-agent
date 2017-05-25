@@ -251,6 +251,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/supportability.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/tests/__init__.py": {
         "hash": "n/a",
         "libraries": [
@@ -1632,12 +1638,6 @@
         ]
     },
     "newrelic/hooks/middleware_weberror.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/newrelic_agent.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

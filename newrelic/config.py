@@ -455,6 +455,8 @@ def _process_configuration(section):
                      'get', _map_console_listener_socket)
     _process_setting(section, 'console.allow_interpreter_cmd',
                      'getboolean', None)
+    _process_setting(section, 'debug.disable_api_supportability_metrics',
+                     'getboolean', None)
     _process_setting(section, 'debug.log_data_collector_calls',
                      'getboolean', None)
     _process_setting(section, 'debug.log_data_collector_payloads',
@@ -2507,10 +2509,6 @@ def _process_module_builtin_defaults():
     _process_module_definition('botocore.endpoint',
             'newrelic.hooks.external_botocore',
             'instrument_botocore_endpoint')
-
-    _process_module_definition('newrelic.agent',
-            'newrelic.hooks.newrelic_agent',
-            'instrument_newrelic_agent')
 
 
 def _process_module_entry_points():

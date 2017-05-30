@@ -1299,6 +1299,23 @@ class AllTests(object):
             app.global_settings.enabled = old_enabled
 
 
+class TornadoProxyTest(TornadoBaseTest):
+    def get_httpserver_options(self):
+        options = super(TornadoProxyTest, self).get_httpserver_options()
+        options['xheaders'] = True
+        return options
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:HelloRequestHandler.get',
+            forgone_metric_substrings=['prepare', 'on_finish'])
+    def test_simple_response_proxy(self):
+        response = self.fetch_response('/')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, HelloRequestHandler.RESPONSE)
+
+
 class TornadoDefaultIOLoopTest(AllTests, TornadoBaseTest):
     pass
 

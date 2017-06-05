@@ -44,35 +44,37 @@ class AttributeFilter(object):
 
     def __init__(self, flattened_settings):
 
-        self.settings = flattened_settings
-        self.enabled_destinations = self._set_enabled_destinations()
-        self.rules = self._build_rules()
+        self.enabled_destinations = self._set_enabled_destinations(flattened_settings)
+        self.rules = self._build_rules(flattened_settings)
 
     def __repr__(self):
         return "<AttributeFilter: destinations: %s, rules: %s>" % (
                 bin(self.enabled_destinations), self.rules)
 
-    def _set_enabled_destinations(self):
+    def _set_enabled_destinations(self, settings):
+
+        # Determines and returns bitfield representing attribute destinations enabled.
+
         enabled_destinations = DST_NONE
 
-        if self.settings.get('transaction_tracer.attributes.enabled', None):
+        if settings.get('transaction_tracer.attributes.enabled', None):
             enabled_destinations |= DST_TRANSACTION_TRACER
 
-        if self.settings.get('transaction_events.attributes.enabled', None):
+        if settings.get('transaction_events.attributes.enabled', None):
             enabled_destinations |= DST_TRANSACTION_EVENTS
 
-        if self.settings.get('error_collector.attributes.enabled', None):
+        if settings.get('error_collector.attributes.enabled', None):
             enabled_destinations |= DST_ERROR_COLLECTOR
 
-        if self.settings.get('browser_monitoring.attributes.enabled', None):
+        if settings.get('browser_monitoring.attributes.enabled', None):
             enabled_destinations |= DST_BROWSER_MONITORING
 
-        if not self.settings.get('attributes.enabled', None):
+        if not settings.get('attributes.enabled', None):
             enabled_destinations = DST_NONE
 
         return enabled_destinations
 
-    def _build_rules(self):
+    def _build_rules(self, settings):
 
         # "Rule Templates" below are used for building AttributeFilterRules.
         #
@@ -98,7 +100,7 @@ class AttributeFilter(object):
 
         for (setting_name, destination, is_include) in rule_templates:
 
-            for setting in self.settings.get(setting_name) or ():
+            for setting in settings.get(setting_name) or ():
                 rule = AttributeFilterRule(setting, destination, is_include)
                 rules.append(rule)
 

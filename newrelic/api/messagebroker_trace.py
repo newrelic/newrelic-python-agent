@@ -1,20 +1,26 @@
 import functools
 
+from newrelic.api.cat_header_mixin import CatHeaderMixin
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.messagebroker_node import MessageBrokerNode
 
 
-class MessageBrokerTrace(TimeTrace):
+class MessageBrokerTrace(TimeTrace, CatHeaderMixin):
 
     node = MessageBrokerNode
+    cat_id_key = 'NewRelicID'
+    cat_transaction_key = 'NewRelicTransaction'
+    cat_appdata_key = 'NewRelicAppData'
+    cat_synthetics_key = 'NewRelicSynthetics'
 
     def __init__(self, transaction, library, operation,
             destination_type=None, destination_name=None,
             message_properties=None, params={}):
 
         super(MessageBrokerTrace, self).__init__(transaction)
+        self.params = {}
 
         if transaction:
             self.library = transaction._intern_string(library)

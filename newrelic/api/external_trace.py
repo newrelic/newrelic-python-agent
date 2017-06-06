@@ -1,14 +1,13 @@
 import functools
 
+from newrelic.api.cat_header_mixin import CatHeaderMixin
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.core.external_node import ExternalNode
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
-from newrelic.common.encoding_utils import (obfuscate, deobfuscate,
-        json_encode, json_decode)
 
 
-class ExternalTrace(TimeTrace):
+class ExternalTrace(TimeTrace, CatHeaderMixin):
 
     node = ExternalNode
 
@@ -27,68 +26,6 @@ class ExternalTrace(TimeTrace):
 
     def terminal_node(self):
         return True
-
-    def process_response_headers(self, response_headers):
-        """
-        Decode the response headers and create appropriate metics based on the
-        header values. The response_headers are passed in as a list of tuples.
-        [(HEADER_NAME0, HEADER_VALUE0), (HEADER_NAME1, HEADER_VALUE1)]
-
-        """
-
-        if not self.settings.cross_application_tracer.enabled:
-            return
-
-        appdata = None
-
-        try:
-            for k, v in response_headers:
-                if k.upper() == 'X-NEWRELIC-APP-DATA':
-                    appdata = json_decode(deobfuscate(v,
-                            self.settings.encoding_key))
-                    break
-
-            if appdata:
-                self.params['cross_process_id'] = appdata[0]
-                self.params['external_txn_name'] = appdata[1]
-                self.params['transaction_guid'] = appdata[5]
-
-        except Exception:
-            pass
-
-    @staticmethod
-    def generate_request_headers(transaction):
-        """
-        Return a list of NewRelic specific headers as tuples
-        [(HEADER_NAME0, HEADER_VALUE0), (HEADER_NAME1, HEADER_VALUE1)]
-
-        """
-
-        if transaction is None:
-            return []
-
-        settings = transaction.settings
-
-        nr_headers = []
-
-        if settings.cross_application_tracer.enabled:
-
-            transaction.is_part_of_cat = True
-            encoded_cross_process_id = obfuscate(settings.cross_process_id,
-                    settings.encoding_key)
-            nr_headers.append(('X-NewRelic-ID', encoded_cross_process_id))
-
-            transaction_data = [transaction.guid, transaction.record_tt,
-                    transaction.trip_id, transaction.path_hash]
-            encoded_transaction = obfuscate(json_encode(transaction_data),
-                    settings.encoding_key)
-            nr_headers.append(('X-NewRelic-Transaction', encoded_transaction))
-
-        if transaction.synthetics_header:
-            nr_headers.append(
-                    ('X-NewRelic-Synthetics', transaction.synthetics_header))
-
-        return nr_headers
 
 
 def ExternalTraceWrapper(wrapped, library, url, method=None):

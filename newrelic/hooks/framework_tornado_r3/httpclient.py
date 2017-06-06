@@ -36,7 +36,7 @@ def _nr_wrapper_httpclient_AsyncHTTPClient_fetch_(
     # Prepare outgoing CAT headers
     outgoing_headers = ExternalTrace.generate_request_headers(transaction)
     for header_name, header_value in outgoing_headers:
-        req.headers.add(header_name, header_value)
+        req.headers[header_name] = header_value
 
     trace = ExternalTrace(transaction, 'tornado.httpclient', req.url)
 

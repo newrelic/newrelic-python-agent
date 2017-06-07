@@ -97,10 +97,10 @@ class AllTests(object):
                 headers=headers)
         external.stop()
 
-        expected_request_headers = [b'host', b'x-newrelic-id',
-                b'x-newrelic-transaction']
+        expected_request_headers = [b'Host', b'X-NewRelic-ID',
+                b'X-NewRelic-Transaction']
         unexpected_response_header = b'X-NewRelic-App-Data'.lower()
-        sent_headers = response.body.lower()
+        sent_headers = response.body
 
         self.assertEqual(response.code, 200)
         for expected_request_header in expected_request_headers:

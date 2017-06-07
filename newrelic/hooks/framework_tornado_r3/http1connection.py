@@ -27,7 +27,7 @@ def _nr_wrapper_HTTP1Connection_write_headers_(wrapped, instance, args,
         cat_headers = transaction.process_response(http_status, headers)
 
     for k, v in cat_headers:
-        headers.add(k, v)
+        headers[k] = v
 
     return wrapped(*args, **kwargs)
 

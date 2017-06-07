@@ -40,6 +40,19 @@ COMMENT_PARSE_TESTS = [
     from dude2
     """
   ),
+  (
+    # Comment using -- at the beginning
+    ('cats1', 'select'),
+    """-- This is a comment to be ignored
+    select * from cats1"""
+  ),
+  (
+    # Comment using -- in the middle
+    ('cats2', 'select'),
+    """select *
+    -- This is a comment to be ignored
+    from cats2"""
+  ),
 ]
 
 SELECT_PARSE_TESTS = [

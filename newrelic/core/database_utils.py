@@ -161,7 +161,9 @@ def _extract_identifier(token):
 
 
 _uncomment_sql_p = r'/\*.*?\*/'
-_uncomment_sql_re = re.compile(_uncomment_sql_p, re.DOTALL)
+_uncomment_sql_q = r'--.*?\n'
+_uncomment_sql_x = r'(%s)|(%s)' % (_uncomment_sql_p, _uncomment_sql_q)
+_uncomment_sql_re = re.compile(_uncomment_sql_x, re.DOTALL)
 
 
 def _uncomment_sql(sql):

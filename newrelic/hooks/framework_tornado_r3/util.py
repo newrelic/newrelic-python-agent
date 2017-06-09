@@ -261,12 +261,16 @@ def request_handler_finish_finalize(wrapped, instance, args, kwargs):
 
 
 def server_request_adapter_finish_finalize(wrapped, instance, args, kwargs):
-    if instance.delegate is not None:
-        request = instance.delegate.request
-    else:
-        request = instance.request
+    delegate = instance
+    while not hasattr(delegate, 'request') or delegate.request is None:
+        delegate = delegate.delegate
+        if delegate is None:
+            break
 
-    transaction = retrieve_request_transaction(request)
+    transaction = None
+    if delegate is not None:
+        request = delegate.request
+        transaction = retrieve_request_transaction(request)
 
     if transaction is None:
         return wrapped(*args, **kwargs)

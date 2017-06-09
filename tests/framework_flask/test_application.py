@@ -64,11 +64,11 @@ _test_application_index_tt_parenting = (
     ]
 )
 
-if (is_gt_flask060 and flask_version >= (0, 7)) or is_dev_version:
+if is_dev_version or (is_gt_flask060 and flask_version >= (0, 7)):
     _test_application_index_tt_parenting[1][0][1][0][1].append(
         ('FunctionNode', []),
     )
-if (is_gt_flask060 and flask_version >= (0, 9)) or is_dev_version:
+if is_dev_version or (is_gt_flask060 and flask_version >= (0, 9)):
     _test_application_index_tt_parenting[1][0][1][0][1].append(
         ('FunctionNode', []),
     )

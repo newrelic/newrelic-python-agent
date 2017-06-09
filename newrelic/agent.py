@@ -167,8 +167,7 @@ data_source_factory = __wrap_api_call(__data_source_factory,
         'data_source_factory')
 application = __wrap_api_call(__application,
         'application')
-register_application = __wrap_api_call(__register_application,
-        'register_application')
+register_application = __register_application
 application_settings = __wrap_api_call(__application_settings,
         'application_settings')
 current_transaction = __wrap_api_call(__current_transaction,
@@ -209,14 +208,11 @@ name_transaction = __wrap_api_call(__name_transaction,
         'name_transaction')
 add_user_attribute = __wrap_api_call(__add_user_attribute,
         'add_user_attribute')
-wsgi_application = __wrap_api_call(__wsgi_application,
-        'wsgi_application')
+wsgi_application = __wsgi_application
 WebTransaction = __wrap_api_call(__WebTransaction,
         'WebTransaction')
-WSGIApplicationWrapper = __wrap_api_call(__WSGIApplicationWrapper,
-        'WSGIApplicationWrapper')
-wrap_wsgi_application = __wrap_api_call(__wrap_wsgi_application,
-        'wrap_wsgi_application')
+WSGIApplicationWrapper = __WSGIApplicationWrapper
+wrap_wsgi_application = __wrap_wsgi_application
 background_task = __wrap_api_call(__background_task,
         'background_task')
 BackgroundTask = __wrap_api_call(__BackgroundTask,
@@ -345,5 +341,3 @@ insert_html_snippet = __wrap_api_call(__insert_html_snippet,
         'insert_html_snippet')
 verify_body_exists = __wrap_api_call(__verify_body_exists,
         'verify_body_exists')
-wrap_api_call = __wrap_api_call(__wrap_api_call,
-        'wrap_api_call')

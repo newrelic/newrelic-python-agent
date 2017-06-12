@@ -1,5 +1,6 @@
 import pika
 import pytest
+import six
 
 from newrelic.api.background_task import background_task
 
@@ -9,7 +10,7 @@ from testing_support.settings import rabbitmq_settings
 
 DB_SETTINGS = rabbitmq_settings()
 QUEUE = 'test_pika_comsume'
-BODY = 'test_body'
+BODY = b'test_body'
 
 
 @pytest.fixture()
@@ -57,12 +58,20 @@ def test_blocking_connection_basic_get(producer):
 _test_blocking_conn_basic_consume_no_txn_scoped_metrics = [
     ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
     ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
-    ('Function/test_pika_consume:on_message', 1),
 ]
 _test_blocking_conn_basic_consume_no_txn_rollup_metrics = [
     ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
     ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
 ]
+
+if six.PY3:
+    _test_blocking_conn_basic_consume_no_txn_scoped_metrics.append(
+        (('Function/test_pika_consume:'
+          'test_blocking_connection_basic_consume_outside_transaction.'
+          '<locals>.test_blocking.<locals>.on_message'), 1))
+else:
+    _test_blocking_conn_basic_consume_no_txn_scoped_metrics.append(
+        ('Function/test_pika_consume:on_message', 1))
 
 
 @validate_transaction_metrics(
@@ -103,12 +112,20 @@ def test_blocking_connection_basic_consume_outside_transaction(producer):
 _test_blocking_conn_basic_consume_in_txn_scoped_metrics = [
     ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
     ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
-    ('Function/test_pika_consume:on_message', 1),
 ]
 _test_blocking_conn_basic_consume_in_txn_rollup_metrics = [
     ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
     ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
 ]
+
+if six.PY3:
+    _test_blocking_conn_basic_consume_in_txn_scoped_metrics.append(
+        (('Function/test_pika_consume:'
+          'test_blocking_connection_basic_consume_inside_txn.'
+          '<locals>.on_message'), 1))
+else:
+    _test_blocking_conn_basic_consume_in_txn_scoped_metrics.append(
+        ('Function/test_pika_consume:on_message', 1))
 
 
 @validate_transaction_metrics(

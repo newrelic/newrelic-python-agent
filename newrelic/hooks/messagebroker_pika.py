@@ -50,9 +50,10 @@ def _nr_wrapper_BlockingChannel_basic_consume_(wrapped, instance, args,
         # TODO: Replace with destination type/name
         bt_group = 'Message/RabbitMQ/None'
         bt_name = 'Named/None'
+
         def wrapped_callback(*args, **kwargs):
-            with BackgroundTask(application=application_instance(), name=bt_name,
-                    group=bt_group) as bt:
+            with BackgroundTask(application=application_instance(),
+                    name=bt_name, group=bt_group) as bt:
                 with FunctionTrace(transaction=bt, name=name):
                     return callback(*args, **kwargs)
 

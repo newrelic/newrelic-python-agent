@@ -8,7 +8,7 @@ from testing_support.settings import rabbitmq_settings
 DB_SETTINGS = rabbitmq_settings()
 
 
-_test_blocking_connection_scoped_metrics = [
+_test_blocking_connection_metrics = [
     ('MessageBroker/RabbitMQ/None/Produce/Named/None', 2),
     ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
 ]
@@ -16,7 +16,8 @@ _test_blocking_connection_scoped_metrics = [
 
 @validate_transaction_metrics(
         'test_pika_produce:test_blocking_connection',
-        scoped_metrics=_test_blocking_connection_scoped_metrics,
+        scoped_metrics=_test_blocking_connection_metrics,
+        rollup_metrics=_test_blocking_connection_metrics,
         background_task=True)
 @background_task()
 def test_blocking_connection():
@@ -38,7 +39,7 @@ def test_blocking_connection():
         )
 
 
-_test_select_connection_scoped_metrics = [
+_test_select_connection_metrics = [
     ('MessageBroker/RabbitMQ/None/Produce/Named/None', 1),
     ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
 ]
@@ -46,7 +47,8 @@ _test_select_connection_scoped_metrics = [
 
 @validate_transaction_metrics(
         'test_pika_produce:test_select_connection',
-        scoped_metrics=_test_select_connection_scoped_metrics,
+        scoped_metrics=_test_select_connection_metrics,
+        rollup_metrics=_test_select_connection_metrics,
         background_task=True)
 @background_task()
 def test_select_connection():
@@ -76,7 +78,7 @@ def test_select_connection():
         raise
 
 
-_test_tornado_connection_scoped_metrics = [
+_test_tornado_connection_metrics = [
     ('MessageBroker/RabbitMQ/None/Produce/Named/None', 1),
     ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
 ]
@@ -84,7 +86,8 @@ _test_tornado_connection_scoped_metrics = [
 
 @validate_transaction_metrics(
         'test_pika_produce:test_tornado_connection',
-        scoped_metrics=_test_tornado_connection_scoped_metrics,
+        scoped_metrics=_test_tornado_connection_metrics,
+        rollup_metrics=_test_tornado_connection_metrics,
         background_task=True)
 @background_task()
 def test_tornado_connection():

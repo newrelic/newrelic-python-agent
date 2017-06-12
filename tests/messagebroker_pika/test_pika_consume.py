@@ -31,11 +31,16 @@ _test_blocking_connection_basic_get_scoped_metrics = [
     ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
     ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
 ]
+_test_blocking_connection_basic_get_rollup_metrics = [
+    ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
+    ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
+]
 
 
 @validate_transaction_metrics(
         'test_pika_consume:test_blocking_connection_basic_get',
         scoped_metrics=_test_blocking_connection_basic_get_scoped_metrics,
+        rollup_metrics=_test_blocking_connection_basic_get_rollup_metrics,
         background_task=True)
 @background_task()
 def test_blocking_connection_basic_get(producer):
@@ -54,11 +59,16 @@ _test_blocking_connection_basic_consume_outside_transaction_scoped_metrics = [
     ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
     ('Function/test_pika_consume:on_message', 1),
 ]
+_test_blocking_connection_basic_consume_outside_transaction_rollup_metrics = [
+    ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
+    ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
+]
 
 
 @validate_transaction_metrics(
         'Named/None',  # TODO: Replace with destination type/name
         scoped_metrics=_test_blocking_connection_basic_consume_outside_transaction_scoped_metrics,
+        rollup_metrics=_test_blocking_connection_basic_consume_outside_transaction_rollup_metrics,
         background_task=True,
         group='Message/RabbitMQ/None')
 def test_blocking_connection_basic_consume_outside_transaction(producer):
@@ -95,11 +105,16 @@ _test_blocking_connection_basic_consume_inside_transaction_scoped_metrics = [
     ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
     ('Function/test_pika_consume:on_message', 1),
 ]
+_test_blocking_connection_basic_consume_inside_transaction_rollup_metrics = [
+    ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
+    ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
+]
 
 
 @validate_transaction_metrics(
         'test_pika_consume:test_blocking_connection_basic_consume_inside_transaction',
         scoped_metrics=_test_blocking_connection_basic_consume_inside_transaction_scoped_metrics,
+        rollup_metrics=_test_blocking_connection_basic_consume_inside_transaction_rollup_metrics,
         background_task=True)
 @background_task()
 def test_blocking_connection_basic_consume_inside_transaction(producer):
@@ -122,11 +137,16 @@ _test_blocking_connection_consume_scoped_metrics = [
     ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
     ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
 ]
+_test_blocking_connection_consume_rollup_metrics = [
+    ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
+    ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
+]
 
 
 @validate_transaction_metrics(
         'test_pika_consume:test_blocking_connection_consume',
         scoped_metrics=_test_blocking_connection_consume_scoped_metrics,
+        rollup_metrics=_test_blocking_connection_consume_rollup_metrics,
         background_task=True)
 @background_task()
 def test_blocking_connection_consume(producer):

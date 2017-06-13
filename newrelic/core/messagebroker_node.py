@@ -20,6 +20,11 @@ class MessageBrokerNode(_MessageBrokerNode):
         name = 'MessageBroker/%s/%s/%s/Named/%s' % (self.product,
                 self.destination_type, self.operation, self.destination_name)
 
+        # Unscoped metric
+
+        yield TimeMetric(name=name, scope='',
+                duration=self.duration, exclusive=self.exclusive)
+
         # Scoped metric
 
         yield TimeMetric(name=name, scope=root.path,

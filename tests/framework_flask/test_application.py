@@ -233,7 +233,7 @@ if is_gt_flask060:
     scoped_metrics=_test_application_render_template_not_found_scoped_metrics)
 def test_application_render_template_not_found():
     application = target_application()
-    application.get('/template_not_found', status=500)
+    application.get('/template_not_found', status=500, expect_errors=True)
 
 
 _test_html_insertion_settings = {

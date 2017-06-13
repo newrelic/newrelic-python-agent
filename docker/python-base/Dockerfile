@@ -13,6 +13,7 @@ RUN apt-get install -y \
     bzip2 \
     vim \
     wget \
+    git \
     software-properties-common \
     python-software-properties
 

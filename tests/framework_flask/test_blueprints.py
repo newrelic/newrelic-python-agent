@@ -7,8 +7,10 @@ from newrelic.packages import six
 
 try:
     # The __version__ attribute was only added in 0.7.0.
+    # Flask team does not use semantic versioning during development.
     from flask import __version__ as flask_version
-    is_gt_flask080 = tuple(map(int, flask_version.split('.')))[:2] > (0, 8)
+    is_gt_flask080 = 'dev' in flask_version or tuple(
+            map(int, flask_version.split('.')))[:2] > (0, 8)
 except ImportError:
     is_gt_flask080 = False
 

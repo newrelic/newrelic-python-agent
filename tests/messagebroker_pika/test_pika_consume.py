@@ -89,6 +89,7 @@ def test_blocking_connection_basic_consume_outside_transaction(producer):
     @capture_transaction_metrics(metrics_list)
     def test_blocking():
         def on_message(channel, method_frame, header_frame, body):
+            assert hasattr(method_frame, '_nr_start_time')
             assert body == BODY
             channel.stop_consuming()
 
@@ -136,6 +137,7 @@ else:
 @background_task()
 def test_blocking_connection_basic_consume_inside_txn(producer):
     def on_message(channel, method_frame, header_frame, body):
+        assert hasattr(method_frame, '_nr_start_time')
         assert body == BODY
         channel.stop_consuming()
 

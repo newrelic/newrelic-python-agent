@@ -1,3 +1,5 @@
+import time
+
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.function_trace import FunctionTrace
@@ -66,6 +68,12 @@ def _nr_wrapper_BlockingChannel_basic_consume_(wrapped, instance, args,
     return wrapped(*args, **kwargs)
 
 
+def _nr_wrapper_Basic_Deliver_init_(wrapper, instance, args, kwargs):
+    ret = wrapper(*args, **kwargs)
+    instance._nr_start_time = time.time()
+    return ret
+
+
 def instrument_pika_connection(module):
     wrap_messagebroker_trace(module.Connection, '_send_message',
             product='RabbitMQ', target=None, operation='Produce')
@@ -75,3 +83,8 @@ def instrument_pika_adapters(module):
     wrap_function_wrapper(module.blocking_connection,
             'BlockingChannel.basic_consume',
             _nr_wrapper_BlockingChannel_basic_consume_)
+
+
+def instrument_pika_spec(module):
+    wrap_function_wrapper(module.Basic.Deliver, '__init__',
+            _nr_wrapper_Basic_Deliver_init_)

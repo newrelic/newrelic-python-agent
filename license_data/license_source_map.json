@@ -491,6 +491,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/tests/test_amqp_trace.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/tests/test_application.py": {
         "hash": "n/a",
         "libraries": [

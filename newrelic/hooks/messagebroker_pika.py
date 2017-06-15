@@ -76,7 +76,7 @@ def _nr_wrapper_Basic_Deliver_init_(wrapper, instance, args, kwargs):
 
 def instrument_pika_connection(module):
     wrap_messagebroker_trace(module.Connection, '_send_message',
-            product='RabbitMQ', target=None, operation='Produce')
+            library='RabbitMQ', operation='Produce')
 
 
 def instrument_pika_adapters(module):

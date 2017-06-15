@@ -117,6 +117,12 @@ from newrelic.api.messagebroker_trace import (
         MessageBrokerTraceWrapper as __MessageBrokerTraceWrapper,
         wrap_messagebroker_trace as __wrap_messagebroker_trace)
 
+from newrelic.api.amqp_trace import (
+        amqp_trace as __amqp_trace,
+        AmqpTrace as __AmqpTrace,
+        AmqpTraceWrapper as __AmqpTraceWrapper,
+        wrap_amqp_trace as __wrap_amqp_trace)
+
 from newrelic.common.object_names import callable_name as __callable_name
 
 from newrelic.common.object_wrapper import (
@@ -289,6 +295,14 @@ MessageBrokerTraceWrapper = __wrap_api_call(__MessageBrokerTraceWrapper,
         'MessageBrokerTraceWrapper')
 wrap_messagebroker_trace = __wrap_api_call(__wrap_messagebroker_trace,
         'wrap_messagebroker_trace')
+amqp_trace = __wrap_api_call(__amqp_trace,
+        'amqp_trace')
+AmqpTrace = __wrap_api_call(__AmqpTrace,
+        'AmqpTrace')
+AmqpTraceWrapper = __wrap_api_call(__AmqpTraceWrapper,
+        'AmqpTraceWrapper')
+wrap_amqp_trace = __wrap_api_call(__wrap_amqp_trace,
+        'wrap_amqp_trace')
 callable_name = __wrap_api_call(__callable_name,
         'callable_name')
 ObjectProxy = __wrap_api_call(__ObjectProxy,

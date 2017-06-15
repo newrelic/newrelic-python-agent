@@ -119,6 +119,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/amqp_trace.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/application.py": {
         "hash": "n/a",
         "libraries": [

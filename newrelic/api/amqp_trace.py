@@ -1,0 +1,35 @@
+from newrelic.api.messagebroker_trace import MessageBrokerTrace
+
+
+class AmqpTrace(MessageBrokerTrace):
+    def __init__(self, transaction, library, operation,
+            destination_name, message_properties=None, routing_key=None,
+            reply_to=None, correlation_id=None, queue_name=None,
+            exchange_type=None, subscribed=False):
+
+        super(AmqpTrace, self).__init__(transaction=transaction,
+                library=library,
+                operation=operation,
+                destination_type='Exchange',
+                destination_name=destination_name,
+                message_properties=message_properties,
+                params={})
+
+        if routing_key is not None:
+            self.params['routing_key'] = routing_key
+
+        if reply_to is not None:
+            self.params['reply_to'] = reply_to
+
+        if correlation_id is not None:
+            self.params['correlation_id'] = correlation_id
+
+        if exchange_type is not None:
+            self.params['exchange_type'] = exchange_type
+
+        if operation.lower() == 'consume' and queue_name is not None:
+            self.params['queue_name'] = queue_name
+
+        # Add routing key to agent attributes if subscribed
+        if subscribed:
+            transaction._request_environment['ROUTING_KEY'] = routing_key

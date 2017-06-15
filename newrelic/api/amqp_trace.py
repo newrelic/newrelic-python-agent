@@ -1,4 +1,8 @@
+import functools
+
 from newrelic.api.messagebroker_trace import MessageBrokerTrace
+from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
+from newrelic.api.transaction import current_transaction
 
 
 class AmqpTrace(MessageBrokerTrace):
@@ -33,3 +37,51 @@ class AmqpTrace(MessageBrokerTrace):
         # Add routing key to agent attributes if subscribed
         if subscribed:
             transaction._request_environment['ROUTING_KEY'] = routing_key
+
+
+def AmqpTraceWrapper(wrapped, library, operation, destination_name,
+        message_properties, routing_key, reply_to, correlation_id, queue_name,
+        exchange_type, subscribed):
+
+    def wrapper(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+
+        if transaction is None:
+            return wrapped(*args, **kwargs)
+
+        with AmqpTrace(transaction=transaction,
+                library=library,
+                operation=operation,
+                destination_name=destination_name,
+                message_properties=message_properties,
+                routing_key=routing_key,
+                reply_to=reply_to,
+                correlation_id=correlation_id,
+                queue_name=queue_name,
+                exchange_type=exchange_type,
+                subscribed=subscribed):
+            return wrapped(*args, **kwargs)
+
+    return FunctionWrapper(wrapped, wrapper)
+
+
+def amqp_trace(library, operation,
+            destination_name, message_properties=None, routing_key=None,
+            reply_to=None, correlation_id=None, queue_name=None,
+            exchange_type=None, subscribed=False):
+    return functools.partial(AmqpTraceWrapper, library=library,
+            operation=operation, destination_name=destination_name,
+            message_properties=message_properties, routing_key=routing_key,
+            reply_to=reply_to, correlation_id=correlation_id,
+            queue_name=queue_name, exchange_type=exchange_type,
+            subscribed=subscribed)
+
+
+def wrap_amqp_trace(module, object_path, library, operation,
+            destination_name, message_properties=None, routing_key=None,
+            reply_to=None, correlation_id=None, queue_name=None,
+            exchange_type=None, subscribed=False):
+    wrap_object(module, object_path, AmqpTraceWrapper,
+            (library, operation, destination_name, message_properties,
+            routing_key, reply_to, correlation_id, queue_name, exchange_type,
+            subscribed))

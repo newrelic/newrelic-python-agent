@@ -39,9 +39,10 @@ class AmqpTrace(MessageBrokerTrace):
             transaction._request_environment['ROUTING_KEY'] = routing_key
 
 
-def AmqpTraceWrapper(wrapped, library, operation, destination_name,
-        message_properties, routing_key, reply_to, correlation_id, queue_name,
-        exchange_type, subscribed):
+def AmqpTraceWrapper(wrapped, library, operation,
+            destination_name, message_properties=None, routing_key=None,
+            reply_to=None, correlation_id=None, queue_name=None,
+            exchange_type=None, subscribed=False):
 
     def wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction()

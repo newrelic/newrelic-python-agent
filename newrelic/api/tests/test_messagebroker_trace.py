@@ -11,8 +11,8 @@ settings = newrelic.api.settings.settings()
 application = newrelic.api.application.application_instance(settings.app_name)
 
 
-@newrelic.api.messagebroker_trace.messagebroker_trace(product='product',
-        target=None, operation='operation')
+@newrelic.api.messagebroker_trace.messagebroker_trace(library='library',
+        operation='operation')
 def _test_function_1(message):
     pass
 
@@ -27,8 +27,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 application, environ)
         with transaction:
             with newrelic.api.messagebroker_trace.MessageBrokerTrace(
-                    transaction, product='RabbitMQ', target=None,
-                    operation='Consume'):
+                    transaction, library='RabbitMQ', operation='Consume'):
                 pass
 
     def test_transaction_not_running(self):
@@ -37,8 +36,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 application, environ)
 
         with newrelic.api.messagebroker_trace.MessageBrokerTrace(
-                transaction, product='RabbitMQ', target=None,
-                operation='Consume'):
+                transaction, library='RabbitMQ', operation='Consume'):
             pass
 
     def test_messagebroker_trace_decorator(self):

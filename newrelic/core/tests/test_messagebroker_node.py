@@ -1,8 +1,7 @@
 import newrelic.core.messagebroker_node
 
 _ms_node = newrelic.core.messagebroker_node.MessageBrokerNode(
-        product='RabbitMQ',
-        target=None,
+        library='RabbitMQ',
         operation='Consume',
         children=[],
         start_time=0.1,
@@ -11,19 +10,17 @@ _ms_node = newrelic.core.messagebroker_node.MessageBrokerNode(
         exclusive=0.8,
         destination_type=None,
         destination_name=None,
+        message_properties=None,
+        params={'hello': True},
         async=False)
 
 
-def test_product_property():
-    assert _ms_node.product == 'RabbitMQ'
+def test_library_property():
+    assert _ms_node.library == 'RabbitMQ'
 
 
 def test_operation():
     assert _ms_node.operation == 'Consume'
-
-
-def test_target():
-    assert _ms_node.target is None
 
 
 def test_destination_type():
@@ -32,3 +29,27 @@ def test_destination_type():
 
 def test_destination_name():
     assert _ms_node.destination_name is None
+
+
+def test_message_properties():
+    assert _ms_node.message_properties is None
+
+
+def test_params():
+    assert _ms_node.params == {'hello': True}
+
+
+def test_trace_node_uses_params():
+    class DummyCache(object):
+        @staticmethod
+        def cache(name):
+            pass
+
+    class DummyRoot(object):
+        trace_node_count = 0
+        string_table = DummyCache
+        start_time = 0.0
+        end_time = 0.0
+
+    trace_node = _ms_node.trace_node(None, DummyRoot, None)
+    assert trace_node.params['hello'] is True, trace_node.params

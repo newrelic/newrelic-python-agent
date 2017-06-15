@@ -66,10 +66,8 @@ _test_urlopen_http_request_rollup_metrics = [
         background_task=True)
 @background_task()
 def test_urlopen_http_request_with_port():
-    external = MockExternalHTTPServer()
-    external.start()
-    urllib2.urlopen('http://localhost:8989/')
-    external.stop()
+    with MockExternalHTTPServer():
+        urllib2.urlopen('http://localhost:8989/')
 
 _test_urlopen_file_request_scoped_metrics = [
         ('External/unknown/urllib2/', None)]

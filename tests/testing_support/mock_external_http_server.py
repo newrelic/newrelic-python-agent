@@ -43,6 +43,13 @@ class MockExternalHTTPServer(threading.Thread):
                 self.ExternalHandler)
         self.daemon = True
 
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, type, value, tb):
+        self.stop()
+
     def run(self):
         self.httpd.serve_forever()
 

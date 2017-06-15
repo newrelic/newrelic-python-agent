@@ -584,11 +584,9 @@ class AllTests(object):
             scoped_metrics=scoped_metrics,
             rollup_metrics=rollup_metrics)
     def test_async_httpclient_raw_url_fetch(self):
-        external = MockExternalHTTPServer()
-        external.start()
-        response = self.fetch_response('/async-fetch/rawurl/%s' %
-                external.port)
-        external.stop()
+        with MockExternalHTTPServer() as external:
+            response = self.fetch_response('/async-fetch/rawurl/%s' %
+                    external.port)
 
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, external.RESPONSE)
@@ -606,13 +604,9 @@ class AllTests(object):
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     def test_async_httpclient_fetch_raises_exception(self):
-        external = MockExternalHTTPServer()
-        external.start()
-        try:
+        with MockExternalHTTPServer() as external:
             response = self.fetch_response('/async-fetch-error/rawurl/%s' %
                     external.port)
-        finally:
-            external.stop()
 
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, b'OK')
@@ -624,11 +618,9 @@ class AllTests(object):
             scoped_metrics=scoped_metrics,
             rollup_metrics=rollup_metrics)
     def test_async_httpclient_request_object_fetch(self):
-        external = MockExternalHTTPServer()
-        external.start()
-        response = self.fetch_response(
-                '/async-fetch/requestobj/%s' % external.port)
-        external.stop()
+        with MockExternalHTTPServer() as external:
+            response = self.fetch_response(
+                    '/async-fetch/requestobj/%s' % external.port)
 
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, external.RESPONSE)
@@ -650,11 +642,9 @@ class AllTests(object):
             scoped_metrics=scoped_metrics,
             rollup_metrics=rollup_metrics)
     def test_curl_async_httpclient_raw_url_fetch(self):
-        external = MockExternalHTTPServer()
-        external.start()
-        response = self.fetch_response('/curl-async-fetch/rawurl/%s' %
-                external.port)
-        external.stop()
+        with MockExternalHTTPServer() as external:
+            response = self.fetch_response('/curl-async-fetch/rawurl/%s' %
+                    external.port)
 
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, external.RESPONSE)
@@ -666,11 +656,9 @@ class AllTests(object):
             scoped_metrics=scoped_metrics,
             rollup_metrics=rollup_metrics)
     def test_curl_async_httpclient_request_object_fetch(self):
-        external = MockExternalHTTPServer()
-        external.start()
-        response = self.fetch_response(
-                '/curl-async-fetch/requestobj/%s' % external.port)
-        external.stop()
+        with MockExternalHTTPServer() as external:
+            response = self.fetch_response(
+                    '/curl-async-fetch/requestobj/%s' % external.port)
 
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, external.RESPONSE)
@@ -692,13 +680,9 @@ class AllTests(object):
             scoped_metrics=scoped_metrics,
             rollup_metrics=rollup_metrics)
     def test_curl_async_httpclient_raw_url_custom_impl(self):
-        external = MockExternalHTTPServer()
-        external.start()
-        try:
+        with MockExternalHTTPServer() as external:
             response = self.fetch_response(
                     '/curl-async-custom/rawurl/%s' % external.port)
-        finally:
-            external.stop()
 
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, external.RESPONSE)
@@ -710,13 +694,9 @@ class AllTests(object):
             scoped_metrics=scoped_metrics,
             rollup_metrics=rollup_metrics)
     def test_curl_async_httpclient_request_object_custom_impl(self):
-        external = MockExternalHTTPServer()
-        external.start()
-        try:
+        with MockExternalHTTPServer() as external:
             response = self.fetch_response(
                     '/curl-async-custom/requestobj/%s' % external.port)
-        finally:
-            external.stop()
 
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, external.RESPONSE)
@@ -738,11 +718,9 @@ class AllTests(object):
             scoped_metrics=scoped_metrics,
             rollup_metrics=rollup_metrics)
     def test_curl_streaming_callback_httpclient_raw_url_fetch(self):
-        external = MockExternalHTTPServer()
-        external.start()
-        response = self.fetch_response('/curl-stream-cb/rawurl/%s' %
-                external.port)
-        external.stop()
+        with MockExternalHTTPServer() as external:
+            response = self.fetch_response('/curl-stream-cb/rawurl/%s' %
+                    external.port)
 
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, external.RESPONSE)
@@ -762,10 +740,9 @@ class AllTests(object):
             scoped_metrics=scoped_metrics,
             rollup_metrics=rollup_metrics)
     def test_sync_httpclient_raw_url_fetch(self):
-        external = MockExternalHTTPServer()
-        external.start()
-        response = self.fetch_response('/sync-fetch/rawurl/%s' % external.port)
-        external.stop()
+        with MockExternalHTTPServer() as external:
+            response = self.fetch_response(
+                    '/sync-fetch/rawurl/%s' % external.port)
 
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, external.RESPONSE)
@@ -777,11 +754,9 @@ class AllTests(object):
             scoped_metrics=scoped_metrics,
             rollup_metrics=rollup_metrics)
     def test_sync_httpclient_request_object_fetch(self):
-        external = MockExternalHTTPServer()
-        external.start()
-        response = self.fetch_response(
-                '/sync-fetch/requestobj/%s' % external.port)
-        external.stop()
+        with MockExternalHTTPServer() as external:
+            response = self.fetch_response(
+                     '/sync-fetch/requestobj/%s' % external.port)
 
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, external.RESPONSE)

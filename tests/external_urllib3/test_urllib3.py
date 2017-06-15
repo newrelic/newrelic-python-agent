@@ -103,11 +103,9 @@ _test_port_included_rollup_metrics = [
         background_task=True)
 @background_task()
 def test_port_included():
-    external = MockExternalHTTPServer()
-    external.start()
-    conn = urllib3.connection_from_url('localhost:8989')
-    conn.request('GET', '/')
-    external.stop()
+    with MockExternalHTTPServer():
+        conn = urllib3.connection_from_url('localhost:8989')
+        conn.request('GET', '/')
 
 # Starting in urllib3 1.8, urllib3 wrote their own version of the HTTPConnection
 # class. Previously the httplib/http.client HTTPConnection class was used. We
@@ -122,11 +120,9 @@ def test_port_included():
         background_task=True)
 @background_task()
 def test_HTTPConnection_port_included():
-    external = MockExternalHTTPServer()
-    external.start()
-    conn = urllib3.connection.HTTPConnection('localhost:8989')
-    conn.request('GET', '/')
-    external.stop()
+    with MockExternalHTTPServer():
+        conn = urllib3.connection.HTTPConnection('localhost:8989')
+        conn.request('GET', '/')
 
 @validate_transaction_errors(errors=[])
 @background_task()

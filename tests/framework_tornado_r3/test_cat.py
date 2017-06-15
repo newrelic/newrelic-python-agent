@@ -89,13 +89,11 @@ class AllTests(object):
     @tornado_validate_errors()
     @override_application_settings(_override_settings)
     def _test_external_cat_headers(self, url, req_type):
-        external = MockExternalHTTPHResponseHeadersServer()
-        external.start()
-        headers = make_cross_agent_headers(payload, ENCODING_KEY, '1#1')
-        response = self.fetch_response(
-                '/%s/%s/%s' % (url, req_type, external.port),
-                headers=headers)
-        external.stop()
+        with MockExternalHTTPHResponseHeadersServer() as external:
+            headers = make_cross_agent_headers(payload, ENCODING_KEY, '1#1')
+            response = self.fetch_response(
+                    '/%s/%s/%s' % (url, req_type, external.port),
+                    headers=headers)
 
         expected_request_headers = [b'Host', b'X-NewRelic-ID',
                 b'X-NewRelic-Transaction']

@@ -70,16 +70,12 @@ _test_httplib_http_request_with_port_rollup_metrics = [
         background_task=True)
 @background_task()
 def test_httplib_http_with_port_request():
-    external = MockExternalHTTPServer()
-    external.start()
-
-    connection = httplib.HTTPConnection('localhost', 8989)
-    connection.request('GET', '/')
-    response = connection.getresponse()
-    data = response.read()
-    connection.close()
-
-    external.stop()
+    with MockExternalHTTPServer():
+        connection = httplib.HTTPConnection('localhost', 8989)
+        connection.request('GET', '/')
+        response = connection.getresponse()
+        data = response.read()
+        connection.close()
 
 @background_task()
 @cache_outgoing_headers

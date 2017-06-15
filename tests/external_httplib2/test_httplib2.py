@@ -68,14 +68,12 @@ _test_httplib2_http_request_rollup_metrics = [
         background_task=True)
 @background_task()
 def test_httplib2_http_connection_with_port():
-    external = MockExternalHTTPServer()
-    external.start()
-    connection = httplib2.HTTPConnectionWithTimeout('localhost', 8989)
-    connection.request('GET', '/')
-    response = connection.getresponse()
-    data = response.read()
-    connection.close()
-    external.stop()
+    with MockExternalHTTPServer():
+        connection = httplib2.HTTPConnectionWithTimeout('localhost', 8989)
+        connection.request('GET', '/')
+        response = connection.getresponse()
+        data = response.read()
+        connection.close()
 
 _test_httplib2_http_request_scoped_metrics = [
         ('External/www.example.com/httplib2/', 1)]

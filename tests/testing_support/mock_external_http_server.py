@@ -13,6 +13,7 @@ from newrelic.packages.six.moves import BaseHTTPServer
 #    created by an external call.
 # 3) This app runs on a separate thread meaning it won't block the test app.
 
+
 class MockExternalHTTPServer(threading.Thread):
     # To use this class in a test one needs to start and stop this server
     # before and after making requests to the test app that makes the external
@@ -42,6 +43,13 @@ class MockExternalHTTPServer(threading.Thread):
         self.httpd = BaseHTTPServer.HTTPServer(('localhost', 8989),
                 self.ExternalHandler)
         self.daemon = True
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, type, value, tb):
+        self.stop()
 
     def run(self):
         self.httpd.serve_forever()

@@ -137,6 +137,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/cat_header_mixin.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/database_trace.py": {
         "hash": "n/a",
         "libraries": [

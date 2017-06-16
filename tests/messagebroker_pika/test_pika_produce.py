@@ -3,7 +3,24 @@ import pika
 from newrelic.api.background_task import background_task
 
 from testing_support.fixtures import validate_transaction_metrics
+from testing_support.external_fixtures import validate_messagebroker_headers
 from testing_support.settings import rabbitmq_settings
+from newrelic.api.transaction import current_transaction
+from newrelic.common.object_wrapper import transient_function_wrapper
+
+
+@transient_function_wrapper(pika.frame, 'Header.__init__')
+def cache_pika_headers(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    ret = wrapped(*args, **kwargs)
+    headers = instance.properties.headers
+    transaction._test_request_headers = headers
+    return ret
+
 
 DB_SETTINGS = rabbitmq_settings()
 
@@ -20,6 +37,8 @@ _test_blocking_connection_metrics = [
         rollup_metrics=_test_blocking_connection_metrics,
         background_task=True)
 @background_task()
+@validate_messagebroker_headers
+@cache_pika_headers
 def test_blocking_connection():
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
@@ -51,6 +70,8 @@ _test_select_connection_metrics = [
         rollup_metrics=_test_select_connection_metrics,
         background_task=True)
 @background_task()
+@validate_messagebroker_headers
+@cache_pika_headers
 def test_select_connection():
     def on_open(connection):
         connection.channel(on_channel_open)
@@ -90,6 +111,8 @@ _test_tornado_connection_metrics = [
         rollup_metrics=_test_tornado_connection_metrics,
         background_task=True)
 @background_task()
+@validate_messagebroker_headers
+@cache_pika_headers
 def test_tornado_connection():
     def on_open(connection):
         connection.channel(on_channel_open)

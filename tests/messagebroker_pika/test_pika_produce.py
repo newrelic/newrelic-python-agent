@@ -9,8 +9,8 @@ DB_SETTINGS = rabbitmq_settings()
 
 
 _test_blocking_connection_metrics = [
-    ('MessageBroker/RabbitMQ/None/Produce/Named/None', 2),
-    ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', 2),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', None),
 ]
 
 
@@ -40,8 +40,8 @@ def test_blocking_connection():
 
 
 _test_select_connection_metrics = [
-    ('MessageBroker/RabbitMQ/None/Produce/Named/None', 1),
-    ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', 1),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', None),
 ]
 
 
@@ -79,8 +79,8 @@ def test_select_connection():
 
 
 _test_tornado_connection_metrics = [
-    ('MessageBroker/RabbitMQ/None/Produce/Named/None', 1),
-    ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', 1),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', None),
 ]
 
 

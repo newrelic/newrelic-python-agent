@@ -5,9 +5,9 @@ import newrelic.core.trace_node
 from newrelic.core.metric import TimeMetric
 
 _MessageBrokerNode = namedtuple('_MessageBrokerNode',
-        ['product', 'target', 'operation', 'children', 'start_time',
+        ['library', 'operation', 'children', 'start_time',
         'end_time', 'duration', 'exclusive', 'destination_name',
-        'destination_type', 'async'])
+        'destination_type', 'message_properties', 'params', 'async'])
 
 
 class MessageBrokerNode(_MessageBrokerNode):
@@ -17,7 +17,7 @@ class MessageBrokerNode(_MessageBrokerNode):
         messagebroker node as well as all the child nodes.
 
         """
-        name = 'MessageBroker/%s/%s/%s/Named/%s' % (self.product,
+        name = 'MessageBroker/%s/%s/%s/Named/%s' % (self.library,
                 self.destination_type, self.operation, self.destination_name)
 
         # Unscoped metric
@@ -31,7 +31,7 @@ class MessageBrokerNode(_MessageBrokerNode):
                 duration=self.duration, exclusive=self.exclusive)
 
     def trace_node(self, stats, root, connections):
-        name = 'MessageBroker/%s/%s/%s/Named/%s' % (self.product,
+        name = 'MessageBroker/%s/%s/%s/Named/%s' % (self.library,
                 self.destination_type, self.operation, self.destination_name)
         name = root.string_table.cache(name)
 
@@ -42,7 +42,7 @@ class MessageBrokerNode(_MessageBrokerNode):
 
         root.trace_node_count += 1
 
-        params = {}
+        params = self.params or {}
         params['exclusive_duration_millis'] = 1000.0 * self.exclusive
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,

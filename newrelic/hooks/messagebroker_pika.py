@@ -9,6 +9,9 @@ from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
+_no_trace_methods = set()
+
+
 def _wrap_Channel_consume_callback(module, obj, bind_params,
         callback_referrer):
     def _nr_wrapper_Channel_consume_(wrapped, instance, args, kwargs):
@@ -43,7 +46,7 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
             # 1. In an inactive transaction
             return wrapped(*args, **kwargs)
 
-        elif name.endswith('BlockingChannel._on_consumer_message_delivery'):
+        elif callback in _no_trace_methods:
             # This is an internal callback that should not be wrapped.
             return wrapped(*args, **kwargs)
 
@@ -113,6 +116,13 @@ def _nr_wrapper_Basic_Deliver_init_(wrapper, instance, args, kwargs):
     return ret
 
 
+def _nr_wrap_BlockingChannel___init__(wrapped, instance, args, kwargs):
+    ret = wrapped(*args, **kwargs)
+    # Add the bound method to the set of methods not to trace.
+    _no_trace_methods.add(instance._on_consumer_message_delivery)
+    return ret
+
+
 def _consumer_callback_bind_params(consumer_callback, *args, **kwargs):
     return consumer_callback
 
@@ -125,6 +135,8 @@ def instrument_pika_adapters(module):
     _wrap_Channel_consume_callback(module.blocking_connection,
             'BlockingChannel.basic_consume', _consumer_callback_bind_params,
             'consumer_callback')
+    wrap_function_wrapper(module.blocking_connection,
+            'BlockingChannel.__init__', _nr_wrap_BlockingChannel___init__)
 
 
 def instrument_pika_spec(module):

@@ -3,7 +3,7 @@ import time
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.messagebroker_trace import wrap_messagebroker_trace
+from newrelic.api.amqp_trace import AmqpTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
@@ -68,21 +68,49 @@ def _nr_wrapper_BlockingChannel_basic_consume_(wrapped, instance, args,
     return wrapped(*args, **kwargs)
 
 
+def _bind_basic_publish(exchange, routing_key, body,
+                    properties=None, mandatory=False, immediate=False):
+    return (exchange, routing_key, body, properties, mandatory, immediate)
+
+
+def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    from pika import BasicProperties
+
+    (exchange, routing_key, body, properties, mandatory, immediate) = (
+            _bind_basic_publish(*args, **kwargs))
+    properties = properties or BasicProperties()
+    properties.headers = properties.headers or {}
+    cat_headers = AmqpTrace.generate_request_headers(transaction)
+    for name, value in cat_headers:
+        properties.headers[name] = value
+
+    args = (exchange, routing_key, body, properties, mandatory, immediate)
+
+    with AmqpTrace(transaction, library='RabbitMQ', operation='Produce',
+            destination_name='TODO', message_properties=properties.__dict__):
+        return wrapped(*args)
+
+
 def _nr_wrapper_Basic_Deliver_init_(wrapper, instance, args, kwargs):
     ret = wrapper(*args, **kwargs)
     instance._nr_start_time = time.time()
     return ret
 
 
-def instrument_pika_connection(module):
-    wrap_messagebroker_trace(module.Connection, '_send_message',
-            library='RabbitMQ', operation='Produce')
-
-
 def instrument_pika_adapters(module):
     wrap_function_wrapper(module.blocking_connection,
             'BlockingChannel.basic_consume',
             _nr_wrapper_BlockingChannel_basic_consume_)
+
+
+def instrument_pika_channel(module):
+    wrap_function_wrapper(module, 'Channel.basic_publish',
+            _nr_wrapper_basic_publish)
 
 
 def instrument_pika_spec(module):

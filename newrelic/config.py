@@ -2342,9 +2342,9 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.datastore_elasticsearch',
             'instrument_elasticsearch_transport')
 
-    _process_module_definition('pika.connection',
+    _process_module_definition('pika.channel',
             'newrelic.hooks.messagebroker_pika',
-            'instrument_pika_connection')
+            'instrument_pika_channel')
     _process_module_definition('pika.adapters',
             'newrelic.hooks.messagebroker_pika',
             'instrument_pika_adapters')

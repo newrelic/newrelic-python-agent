@@ -1,3 +1,4 @@
+import functools
 import time
 
 from newrelic.api.application import application_instance
@@ -10,6 +11,31 @@ from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
 _no_trace_methods = set()
+
+
+def _add_consume_rabbitmq_trace(transaction, method, properties,
+        subscribed=False):
+    if not hasattr(method, '_nr_start_time'):
+        return
+
+    routing_key = None
+    if hasattr(method, 'routing_key'):
+        routing_key = method.routing_key
+
+    # The transaction may have started after the message was received. In this
+    # case, the start time is reset to the true transaction start time.
+    transaction.start_time = min(method._nr_start_time,
+            transaction.start_time)
+
+    # create a trace starting at the time the message was received
+    trace = AmqpTrace(transaction, library='RabbitMQ',
+            operation='Consume', destination_name='TODO',
+            message_properties=properties,
+            routing_key=routing_key,
+            subscribed=subscribed)
+    trace.__enter__()
+    trace.start_time = method._nr_start_time
+    trace.__exit__(None, None, None)
 
 
 def _wrap_Channel_consume_callback(module, obj, bind_params,
@@ -55,7 +81,15 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
 
         elif transaction:
             # 2. In an active transaction
+            @functools.wraps(callback)
             def wrapped_callback(*args, **kwargs):
+                # Keyword arguments are unknown since this is a user defined
+                # callback
+                if not kwargs:
+                    method, properties = args[1:3]
+                    _add_consume_rabbitmq_trace(transaction,
+                            method,
+                            properties and properties.__dict__)
                 with FunctionTrace(transaction=transaction, name=name):
                     return callback(*args, **kwargs)
 
@@ -65,9 +99,18 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
             bt_group = 'Message/RabbitMQ/None'
             bt_name = 'Named/None'
 
+            @functools.wraps(callback)
             def wrapped_callback(*args, **kwargs):
                 with BackgroundTask(application=application_instance(),
                         name=bt_name, group=bt_group) as bt:
+                    # Keyword arguments are unknown since this is a user
+                    # defined callback
+                    if not kwargs:
+                        method, properties = args[1:3]
+                        _add_consume_rabbitmq_trace(bt,
+                                method,
+                                properties and properties.__dict__,
+                                subscribed=True)
                     with FunctionTrace(transaction=bt, name=name):
                         return callback(*args, **kwargs)
 

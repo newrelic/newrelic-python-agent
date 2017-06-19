@@ -30,8 +30,8 @@ def producer():
 
 
 _test_select_conn_basic_get_inside_txn_metrics = [
-    ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
-    ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', 1),
 ]
 
 if six.PY3:
@@ -80,8 +80,8 @@ def test_select_connection_basic_get_inside_txn(producer):
 
 
 _test_select_conn_basic_get_outside_txn_metrics = [
-    ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
-    ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', 1),
 ]
 
 if six.PY3:
@@ -142,8 +142,8 @@ def test_select_connection_basic_get_outside_txn(producer):
 
 
 _test_select_conn_basic_get_inside_txn_no_callback_metrics = [
-    ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
-    ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', None),
 ]
 
 
@@ -179,8 +179,8 @@ def test_select_connection_basic_get_inside_txn_no_callback(producer):
 
 
 _test_select_conn_basic_consume_in_txn_metrics = [
-    ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
-    ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', 1),
 ]
 
 if six.PY3:

@@ -4,6 +4,7 @@ import six
 import uuid
 
 from newrelic.api.background_task import background_task
+from newrelic.api.transaction import end_of_transaction
 
 from testing_support.fixtures import (validate_transaction_metrics,
         capture_transaction_metrics)
@@ -131,6 +132,47 @@ def test_blocking_connection_basic_consume_inside_txn(producer):
         assert hasattr(method_frame, '_nr_start_time')
         assert body == BODY
         channel.stop_consuming()
+
+    with pika.BlockingConnection(
+            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+        channel = connection.channel()
+        channel.basic_consume(on_message, QUEUE)
+        try:
+            channel.start_consuming()
+        except:
+            channel.stop_consuming()
+            raise
+
+
+_test_blocking_conn_basic_consume_stopped_txn_metrics = [
+    ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
+    ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
+]
+
+if six.PY3:
+    _test_blocking_conn_basic_consume_stopped_txn_metrics.append(
+        (('Function/test_pika_blocking_connection_consume:'
+          'test_blocking_connection_basic_consume_stopped_txn.'
+          '<locals>.on_message'), None))
+else:
+    _test_blocking_conn_basic_consume_stopped_txn_metrics.append(
+        ('Function/test_pika_blocking_connection_consume:on_message', None))
+
+
+@validate_transaction_metrics(
+        ('test_pika_blocking_connection_consume:'
+                'test_blocking_connection_basic_consume_stopped_txn'),
+        scoped_metrics=_test_blocking_conn_basic_consume_stopped_txn_metrics,
+        rollup_metrics=_test_blocking_conn_basic_consume_stopped_txn_metrics,
+        background_task=True)
+@background_task()
+def test_blocking_connection_basic_consume_stopped_txn(producer):
+    def on_message(channel, method_frame, header_frame, body):
+        assert hasattr(method_frame, '_nr_start_time')
+        assert body == BODY
+        channel.stop_consuming()
+
+    end_of_transaction()
 
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:

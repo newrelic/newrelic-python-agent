@@ -1,15 +1,17 @@
 import pika
 import pytest
 import six
+import uuid
 
 from newrelic.api.background_task import background_task
+from newrelic.api.transaction import end_of_transaction
 
 from testing_support.fixtures import (validate_transaction_metrics,
         capture_transaction_metrics)
 from testing_support.settings import rabbitmq_settings
 
 DB_SETTINGS = rabbitmq_settings()
-QUEUE = 'test_pika_comsume'
+QUEUE = 'test_pika_comsume-%s' % uuid.uuid4()
 BODY = b'test_body'
 
 
@@ -28,20 +30,17 @@ def producer():
         )
 
 
-_test_blocking_connection_basic_get_scoped_metrics = [
-    ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
-    ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
-]
-_test_blocking_connection_basic_get_rollup_metrics = [
+_test_blocking_connection_basic_get_metrics = [
     ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
     ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
 ]
 
 
 @validate_transaction_metrics(
-        'test_pika_consume:test_blocking_connection_basic_get',
-        scoped_metrics=_test_blocking_connection_basic_get_scoped_metrics,
-        rollup_metrics=_test_blocking_connection_basic_get_rollup_metrics,
+        ('test_pika_blocking_connection_consume:'
+                'test_blocking_connection_basic_get'),
+        scoped_metrics=_test_blocking_connection_basic_get_metrics,
+        rollup_metrics=_test_blocking_connection_basic_get_metrics,
         background_task=True)
 @background_task()
 def test_blocking_connection_basic_get(producer):
@@ -55,29 +54,25 @@ def test_blocking_connection_basic_get(producer):
         assert method_frame
 
 
-_test_blocking_conn_basic_consume_no_txn_scoped_metrics = [
-    ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
-    ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
-]
-_test_blocking_conn_basic_consume_no_txn_rollup_metrics = [
+_test_blocking_conn_basic_consume_no_txn_metrics = [
     ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
     ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
 ]
 
 if six.PY3:
-    _test_blocking_conn_basic_consume_no_txn_scoped_metrics.append(
-        (('Function/test_pika_consume:'
+    _test_blocking_conn_basic_consume_no_txn_metrics.append(
+        (('Function/test_pika_blocking_connection_consume:'
           'test_blocking_connection_basic_consume_outside_transaction.'
           '<locals>.test_blocking.<locals>.on_message'), 1))
 else:
-    _test_blocking_conn_basic_consume_no_txn_scoped_metrics.append(
-        ('Function/test_pika_consume:on_message', 1))
+    _test_blocking_conn_basic_consume_no_txn_metrics.append(
+        ('Function/test_pika_blocking_connection_consume:on_message', 1))
 
 
 @validate_transaction_metrics(
         'Named/None',  # TODO: Replace with destination type/name
-        scoped_metrics=_test_blocking_conn_basic_consume_no_txn_scoped_metrics,
-        rollup_metrics=_test_blocking_conn_basic_consume_no_txn_rollup_metrics,
+        scoped_metrics=_test_blocking_conn_basic_consume_no_txn_metrics,
+        rollup_metrics=_test_blocking_conn_basic_consume_no_txn_metrics,
         background_task=True,
         group='Message/RabbitMQ/None')
 def test_blocking_connection_basic_consume_outside_transaction(producer):
@@ -110,29 +105,26 @@ def test_blocking_connection_basic_consume_outside_transaction(producer):
     assert metrics_list
 
 
-_test_blocking_conn_basic_consume_in_txn_scoped_metrics = [
-    ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
-    ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
-]
-_test_blocking_conn_basic_consume_in_txn_rollup_metrics = [
+_test_blocking_conn_basic_consume_in_txn_metrics = [
     ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
     ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
 ]
 
 if six.PY3:
-    _test_blocking_conn_basic_consume_in_txn_scoped_metrics.append(
-        (('Function/test_pika_consume:'
+    _test_blocking_conn_basic_consume_in_txn_metrics.append(
+        (('Function/test_pika_blocking_connection_consume:'
           'test_blocking_connection_basic_consume_inside_txn.'
           '<locals>.on_message'), 1))
 else:
-    _test_blocking_conn_basic_consume_in_txn_scoped_metrics.append(
-        ('Function/test_pika_consume:on_message', 1))
+    _test_blocking_conn_basic_consume_in_txn_metrics.append(
+        ('Function/test_pika_blocking_connection_consume:on_message', 1))
 
 
 @validate_transaction_metrics(
-        'test_pika_consume:test_blocking_connection_basic_consume_inside_txn',
-        scoped_metrics=_test_blocking_conn_basic_consume_in_txn_scoped_metrics,
-        rollup_metrics=_test_blocking_conn_basic_consume_in_txn_rollup_metrics,
+        ('test_pika_blocking_connection_consume:'
+                'test_blocking_connection_basic_consume_inside_txn'),
+        scoped_metrics=_test_blocking_conn_basic_consume_in_txn_metrics,
+        rollup_metrics=_test_blocking_conn_basic_consume_in_txn_metrics,
         background_task=True)
 @background_task()
 def test_blocking_connection_basic_consume_inside_txn(producer):
@@ -152,20 +144,58 @@ def test_blocking_connection_basic_consume_inside_txn(producer):
             raise
 
 
-_test_blocking_connection_consume_scoped_metrics = [
+_test_blocking_conn_basic_consume_stopped_txn_metrics = [
     ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
     ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
 ]
-_test_blocking_connection_consume_rollup_metrics = [
+
+if six.PY3:
+    _test_blocking_conn_basic_consume_stopped_txn_metrics.append(
+        (('Function/test_pika_blocking_connection_consume:'
+          'test_blocking_connection_basic_consume_stopped_txn.'
+          '<locals>.on_message'), None))
+else:
+    _test_blocking_conn_basic_consume_stopped_txn_metrics.append(
+        ('Function/test_pika_blocking_connection_consume:on_message', None))
+
+
+@validate_transaction_metrics(
+        ('test_pika_blocking_connection_consume:'
+                'test_blocking_connection_basic_consume_stopped_txn'),
+        scoped_metrics=_test_blocking_conn_basic_consume_stopped_txn_metrics,
+        rollup_metrics=_test_blocking_conn_basic_consume_stopped_txn_metrics,
+        background_task=True)
+@background_task()
+def test_blocking_connection_basic_consume_stopped_txn(producer):
+    def on_message(channel, method_frame, header_frame, body):
+        assert hasattr(method_frame, '_nr_start_time')
+        assert body == BODY
+        channel.stop_consuming()
+
+    end_of_transaction()
+
+    with pika.BlockingConnection(
+            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+        channel = connection.channel()
+        channel.basic_consume(on_message, QUEUE)
+        try:
+            channel.start_consuming()
+        except:
+            channel.stop_consuming()
+            raise
+
+
+_test_blocking_connection_consume_metrics = [
     ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
     ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
 ]
 
 
 @validate_transaction_metrics(
-        'test_pika_consume:test_blocking_connection_consume',
-        scoped_metrics=_test_blocking_connection_consume_scoped_metrics,
-        rollup_metrics=_test_blocking_connection_consume_rollup_metrics,
+        ('test_pika_blocking_connection_consume:'
+                'test_blocking_connection_consume'),
+        scoped_metrics=_test_blocking_connection_consume_metrics,
+        rollup_metrics=_test_blocking_connection_consume_metrics,
         background_task=True)
 @background_task()
 def test_blocking_connection_consume(producer):
@@ -173,5 +203,6 @@ def test_blocking_connection_consume(producer):
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
         channel = connection.channel()
         for method_frame, properties, body in channel.consume(QUEUE):
+            assert hasattr(method_frame, '_nr_start_time')
             assert body == BODY
             break

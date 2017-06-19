@@ -14,9 +14,7 @@ _no_trace_methods = set()
 
 
 def _add_consume_rabbitmq_trace(transaction, method, properties,
-        subscribed=False):
-    if not hasattr(method, '_nr_start_time'):
-        return
+        nr_start_time, subscribed=False):
 
     routing_key = None
     if hasattr(method, 'routing_key'):
@@ -24,7 +22,7 @@ def _add_consume_rabbitmq_trace(transaction, method, properties,
 
     # The transaction may have started after the message was received. In this
     # case, the start time is reset to the true transaction start time.
-    transaction.start_time = min(method._nr_start_time,
+    transaction.start_time = min(nr_start_time,
             transaction.start_time)
 
     # create a trace starting at the time the message was received
@@ -34,7 +32,7 @@ def _add_consume_rabbitmq_trace(transaction, method, properties,
             routing_key=routing_key,
             subscribed=subscribed)
     trace.__enter__()
-    trace.start_time = method._nr_start_time
+    trace.start_time = nr_start_time
     trace.__exit__(None, None, None)
 
 
@@ -83,13 +81,17 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
             # 2. In an active transaction
             @functools.wraps(callback)
             def wrapped_callback(*args, **kwargs):
+
                 # Keyword arguments are unknown since this is a user defined
                 # callback
                 if not kwargs:
                     method, properties = args[1:3]
+                    start_time = (getattr(method, '_nr_start_time', None) or
+                            getattr(wrapped_callback, '_nr_start_time', None))
                     _add_consume_rabbitmq_trace(transaction,
                             method,
-                            properties and properties.__dict__)
+                            properties and properties.__dict__,
+                            start_time)
                 with FunctionTrace(transaction=transaction, name=name):
                     return callback(*args, **kwargs)
 
@@ -103,13 +105,17 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
             def wrapped_callback(*args, **kwargs):
                 with BackgroundTask(application=application_instance(),
                         name=bt_name, group=bt_group) as bt:
+
                     # Keyword arguments are unknown since this is a user
                     # defined callback
                     if not kwargs:
                         method, properties = args[1:3]
+                        start_time = (getattr(method, '_nr_start_time', None) or
+                                getattr(wrapped_callback, '_nr_start_time', None))
                         _add_consume_rabbitmq_trace(bt,
                                 method,
                                 properties and properties.__dict__,
+                                start_time,
                                 subscribed=True)
                     with FunctionTrace(transaction=bt, name=name):
                         return callback(*args, **kwargs)
@@ -119,6 +125,8 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
             args[0] = wrapped_callback
         else:
             kwargs[callback_referrer] = wrapped_callback
+
+        wrapped_callback._nr_start_time = time.time()
 
         return wrapped(*args, **kwargs)
 

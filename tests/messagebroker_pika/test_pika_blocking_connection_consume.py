@@ -6,7 +6,8 @@ import uuid
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
 
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.fixtures import (capture_transaction_metrics,
+        validate_transaction_metrics)
 from testing_support.settings import rabbitmq_settings
 
 DB_SETTINGS = rabbitmq_settings()
@@ -34,6 +35,8 @@ def producer():
 _test_blocking_connection_basic_get_metrics = [
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
     ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', 1),
+    (('Function/pika.adapters.blocking_connection:'
+            '_CallbackResult.set_value_once'), 1)
 ]
 
 
@@ -76,6 +79,27 @@ def test_blocking_connection_basic_get_empty():
 
         method_frame, _, _ = channel.basic_get(QUEUE)
         assert method_frame is None
+
+
+def test_blocking_connection_basic_get_outside_transaction(producer):
+    metrics_list = []
+
+    @capture_transaction_metrics(metrics_list)
+    def test_basic_get():
+        with pika.BlockingConnection(
+                pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+            channel = connection.channel()
+            channel.queue_declare(queue=QUEUE)
+
+            method_frame, _, _ = channel.basic_get(QUEUE)
+            channel.basic_ack(method_frame.delivery_tag)
+            assert method_frame
+
+    test_basic_get()
+
+    # Confirm that no metrics have been created. This is because no background
+    # task should be created for basic_get actions.
+    assert not metrics_list
 
 
 _test_blocking_conn_basic_consume_no_txn_metrics = [

@@ -127,6 +127,14 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
         else:
             kwargs[callback_referrer] = wrapped_callback
 
+        # This start time is used only for PULL style interactions with
+        # RabbitMQ For example, BasicGet is a PULL style interaction. In the
+        # BasicGet case, the segment measurement should include the time from
+        # BasicGet to BasicGet.Ok.
+        #
+        # In the PUSH case (Basic.Deliver), the start time will be attached to
+        # the method. The method based start time will override the callback
+        # start time.
         wrapped_callback._nr_start_time = time.time()
 
         return wrapped(*args, **kwargs)

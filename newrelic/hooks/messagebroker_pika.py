@@ -12,6 +12,7 @@ from newrelic.common.object_wrapper import wrap_function_wrapper
 
 _no_trace_methods = set()
 _START_KEY = '_nr_start_time'
+KWARGS_ERROR = 'Supportability/hooks/pika/kwargs_error'
 
 
 def _add_consume_rabbitmq_trace(transaction, method, properties,
@@ -93,6 +94,9 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
                             method,
                             properties and properties.__dict__,
                             start_time)
+                else:
+                    m = transaction._transaction_metrics.get(KWARGS_ERROR, 0)
+                    transaction._transaction_metrics[KWARGS_ERROR] = m + 1
                 with FunctionTrace(transaction=transaction, name=name):
                     return callback(*args, **kwargs)
 
@@ -118,6 +122,9 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
                                 properties and properties.__dict__,
                                 start_time,
                                 subscribed=True)
+                    else:
+                        m = bt._transaction_metrics.get(KWARGS_ERROR, 0)
+                        bt._transaction_metrics[KWARGS_ERROR] = m + 1
                     with FunctionTrace(transaction=bt, name=name):
                         return callback(*args, **kwargs)
 

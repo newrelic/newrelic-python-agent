@@ -28,6 +28,8 @@ def producer():
             routing_key=QUEUE,
             body=BODY,
         )
+        yield
+        channel.queue_purge(queue=QUEUE)
 
 
 _test_blocking_connection_basic_get_metrics = [

@@ -27,6 +27,8 @@ def producer():
             routing_key=QUEUE,
             body=BODY,
         )
+        yield
+        channel.queue_purge(queue=QUEUE)
 
 
 _test_select_conn_basic_get_inside_txn_metrics = [

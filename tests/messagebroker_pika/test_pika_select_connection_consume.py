@@ -178,6 +178,46 @@ def test_select_connection_basic_get_inside_txn_no_callback(producer):
         raise
 
 
+_test_select_connection_basic_get_empty_metrics = [
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', None),
+]
+
+
+@validate_transaction_metrics(
+        ('test_pika_select_connection_consume:'
+                'test_select_connection_basic_get_empty'),
+        scoped_metrics=_test_select_connection_basic_get_empty_metrics,
+        rollup_metrics=_test_select_connection_basic_get_empty_metrics,
+        background_task=True)
+@background_task()
+def test_select_connection_basic_get_empty():
+    def on_message(channel, method_frame, header_frame, body):
+        assert False, body.decode('UTF-8')
+
+    def on_open_channel(channel):
+        channel.basic_get(callback=on_message, queue=QUEUE)
+        channel.close()
+        connection.close()
+        connection.ioloop.start()
+
+    def on_open_connection(connection):
+        connection.channel(on_open_channel)
+
+    connection = pika.SelectConnection(
+            pika.ConnectionParameters(DB_SETTINGS['host']),
+            on_open_callback=on_open_connection)
+
+    try:
+        connection.ioloop.start()
+    except:
+        connection.close()
+        # Start the IOLoop again so Pika can communicate, it will stop on its
+        # own when the connection is closed
+        connection.ioloop.start()
+        raise
+
+
 _test_select_conn_basic_consume_in_txn_metrics = [
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
     ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', 1),

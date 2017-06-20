@@ -54,6 +54,29 @@ def test_blocking_connection_basic_get(producer):
         assert method_frame
 
 
+_test_blocking_connection_basic_get_empty_metrics = [
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', None),
+]
+
+
+@validate_transaction_metrics(
+        ('test_pika_blocking_connection_consume:'
+                'test_blocking_connection_basic_get_empty'),
+        scoped_metrics=_test_blocking_connection_basic_get_empty_metrics,
+        rollup_metrics=_test_blocking_connection_basic_get_empty_metrics,
+        background_task=True)
+@background_task()
+def test_blocking_connection_basic_get_empty():
+    with pika.BlockingConnection(
+            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+        channel = connection.channel()
+        channel.queue_declare(queue=QUEUE)
+
+        method_frame, _, _ = channel.basic_get(QUEUE)
+        assert method_frame is None
+
+
 _test_blocking_conn_basic_consume_no_txn_metrics = [
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
     ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', 1),

@@ -5,8 +5,7 @@ import uuid
 
 from newrelic.api.background_task import background_task
 
-from testing_support.fixtures import (validate_transaction_metrics,
-        capture_transaction_metrics)
+from testing_support.fixtures import validate_transaction_metrics
 from testing_support.settings import rabbitmq_settings
 
 DB_SETTINGS = rabbitmq_settings()

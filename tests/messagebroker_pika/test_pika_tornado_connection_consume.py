@@ -5,8 +5,7 @@ import uuid
 
 from newrelic.api.background_task import background_task
 
-from testing_support.fixtures import (validate_transaction_metrics,
-        capture_transaction_metrics)
+from testing_support.fixtures import validate_transaction_metrics
 from testing_support.settings import rabbitmq_settings
 
 DB_SETTINGS = rabbitmq_settings()
@@ -99,42 +98,29 @@ else:
         background_task=True,
         group='Message/RabbitMQ/None')
 def test_tornado_connection_basic_get_outside_txn(producer):
-    # The instrumentation for basic_consume will create the background_task
-    # which is why this test does not have the background_task decorator
+    def on_message(channel, method_frame, header_frame, body):
+        assert method_frame
+        assert body == BODY
+        channel.close()
+        connection.close()
+        connection.ioloop.stop()
 
-    metrics_list = []
+    def on_open_channel(channel):
+        channel.basic_get(callback=on_message, queue=QUEUE)
 
-    @capture_transaction_metrics(metrics_list)
-    def test_basic_get():
-        def on_message(channel, method_frame, header_frame, body):
-            assert method_frame
-            assert body == BODY
-            channel.close()
-            connection.close()
-            connection.ioloop.stop()
+    def on_open_connection(connection):
+        connection.channel(on_open_channel)
 
-        def on_open_channel(channel):
-            channel.basic_get(callback=on_message, queue=QUEUE)
+    connection = pika.TornadoConnection(
+            pika.ConnectionParameters(DB_SETTINGS['host']),
+            on_open_callback=on_open_connection)
 
-        def on_open_connection(connection):
-            connection.channel(on_open_channel)
-
-        connection = pika.TornadoConnection(
-                pika.ConnectionParameters(DB_SETTINGS['host']),
-                on_open_callback=on_open_connection)
-
-        try:
-            connection.ioloop.start()
-        except:
-            connection.close()
-            connection.ioloop.stop()
-            raise
-
-    test_basic_get()
-
-    # Make sure that metrics have been created. The
-    # validate_transaction_metrics fixture won't run at all if they aren't.
-    assert metrics_list
+    try:
+        connection.ioloop.start()
+    except:
+        connection.close()
+        connection.ioloop.stop()
+        raise
 
 
 _test_tornado_conn_basic_get_inside_txn_no_callback_metrics = [

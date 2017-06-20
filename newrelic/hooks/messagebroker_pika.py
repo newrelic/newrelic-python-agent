@@ -11,6 +11,7 @@ from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
 _no_trace_methods = set()
+_START_KEY = '_nr_start_time'
 
 
 def _add_consume_rabbitmq_trace(transaction, method, properties,
@@ -86,8 +87,8 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
                 # callback
                 if not kwargs:
                     method, properties = args[1:3]
-                    start_time = (getattr(method, '_nr_start_time', None) or
-                            getattr(wrapped_callback, '_nr_start_time', None))
+                    start_time = (getattr(method, _START_KEY, None) or
+                            getattr(wrapped_callback, _START_KEY, None))
                     _add_consume_rabbitmq_trace(transaction,
                             method,
                             properties and properties.__dict__,
@@ -110,8 +111,8 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
                     # defined callback
                     if not kwargs:
                         method, properties = args[1:3]
-                        start_time = (getattr(method, '_nr_start_time', None) or
-                                getattr(wrapped_callback, '_nr_start_time', None))
+                        start_time = (getattr(method, _START_KEY, None) or
+                                getattr(wrapped_callback, _START_KEY, None))
                         _add_consume_rabbitmq_trace(bt,
                                 method,
                                 properties and properties.__dict__,

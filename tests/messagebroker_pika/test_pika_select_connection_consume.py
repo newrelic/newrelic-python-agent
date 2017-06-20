@@ -27,11 +27,13 @@ def producer():
             routing_key=QUEUE,
             body=BODY,
         )
+        yield
+        channel.queue_purge(queue=QUEUE)
 
 
 _test_select_conn_basic_get_inside_txn_metrics = [
-    ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
-    ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', 1),
 ]
 
 if six.PY3:
@@ -55,6 +57,7 @@ def test_select_connection_basic_get_inside_txn(producer):
     def on_message(channel, method_frame, header_frame, body):
         assert method_frame
         assert body == BODY
+        channel.basic_ack(method_frame.delivery_tag)
         channel.close()
         connection.close()
         connection.ioloop.start()
@@ -80,8 +83,8 @@ def test_select_connection_basic_get_inside_txn(producer):
 
 
 _test_select_conn_basic_get_outside_txn_metrics = [
-    ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
-    ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', 1),
 ]
 
 if six.PY3:
@@ -111,6 +114,7 @@ def test_select_connection_basic_get_outside_txn(producer):
         def on_message(channel, method_frame, header_frame, body):
             assert method_frame
             assert body == BODY
+            channel.basic_ack(method_frame.delivery_tag)
             channel.close()
             connection.close()
             connection.ioloop.start()
@@ -142,8 +146,8 @@ def test_select_connection_basic_get_outside_txn(producer):
 
 
 _test_select_conn_basic_get_inside_txn_no_callback_metrics = [
-    ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
-    ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', None),
 ]
 
 
@@ -178,9 +182,49 @@ def test_select_connection_basic_get_inside_txn_no_callback(producer):
         raise
 
 
+_test_select_connection_basic_get_empty_metrics = [
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', None),
+]
+
+
+@validate_transaction_metrics(
+        ('test_pika_select_connection_consume:'
+                'test_select_connection_basic_get_empty'),
+        scoped_metrics=_test_select_connection_basic_get_empty_metrics,
+        rollup_metrics=_test_select_connection_basic_get_empty_metrics,
+        background_task=True)
+@background_task()
+def test_select_connection_basic_get_empty():
+    def on_message(channel, method_frame, header_frame, body):
+        assert False, body.decode('UTF-8')
+
+    def on_open_channel(channel):
+        channel.basic_get(callback=on_message, queue=QUEUE)
+        channel.close()
+        connection.close()
+        connection.ioloop.start()
+
+    def on_open_connection(connection):
+        connection.channel(on_open_channel)
+
+    connection = pika.SelectConnection(
+            pika.ConnectionParameters(DB_SETTINGS['host']),
+            on_open_callback=on_open_connection)
+
+    try:
+        connection.ioloop.start()
+    except:
+        connection.close()
+        # Start the IOLoop again so Pika can communicate, it will stop on its
+        # own when the connection is closed
+        connection.ioloop.start()
+        raise
+
+
 _test_select_conn_basic_consume_in_txn_metrics = [
-    ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
-    ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', 1),
 ]
 
 if six.PY3:
@@ -204,6 +248,7 @@ def test_select_connection_basic_consume_inside_txn(producer):
     def on_message(channel, method_frame, header_frame, body):
         assert hasattr(method_frame, '_nr_start_time')
         assert body == BODY
+        channel.basic_ack(method_frame.delivery_tag)
         channel.close()
         connection.close()
         connection.ioloop.start()

@@ -28,11 +28,13 @@ def producer():
             routing_key=QUEUE,
             body=BODY,
         )
+        yield
+        channel.queue_purge(queue=QUEUE)
 
 
 _test_blocking_connection_basic_get_metrics = [
-    ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
-    ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', 1),
 ]
 
 
@@ -54,9 +56,32 @@ def test_blocking_connection_basic_get(producer):
         assert method_frame
 
 
+_test_blocking_connection_basic_get_empty_metrics = [
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', None),
+]
+
+
+@validate_transaction_metrics(
+        ('test_pika_blocking_connection_consume:'
+                'test_blocking_connection_basic_get_empty'),
+        scoped_metrics=_test_blocking_connection_basic_get_empty_metrics,
+        rollup_metrics=_test_blocking_connection_basic_get_empty_metrics,
+        background_task=True)
+@background_task()
+def test_blocking_connection_basic_get_empty():
+    with pika.BlockingConnection(
+            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+        channel = connection.channel()
+        channel.queue_declare(queue=QUEUE)
+
+        method_frame, _, _ = channel.basic_get(QUEUE)
+        assert method_frame is None
+
+
 _test_blocking_conn_basic_consume_no_txn_metrics = [
-    ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
-    ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', 1),
 ]
 
 if six.PY3:
@@ -106,8 +131,8 @@ def test_blocking_connection_basic_consume_outside_transaction(producer):
 
 
 _test_blocking_conn_basic_consume_in_txn_metrics = [
-    ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
-    ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', 1),
 ]
 
 if six.PY3:
@@ -145,8 +170,8 @@ def test_blocking_connection_basic_consume_inside_txn(producer):
 
 
 _test_blocking_conn_basic_consume_stopped_txn_metrics = [
-    ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
-    ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', None),
 ]
 
 if six.PY3:
@@ -186,8 +211,9 @@ def test_blocking_connection_basic_consume_stopped_txn(producer):
 
 
 _test_blocking_connection_consume_metrics = [
-    ('MessageBroker/RabbitMQ/None/Produce/Named/None', None),
-    ('MessageBroker/RabbitMQ/None/Consume/Named/None', None),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
+    # TODO: This test needs to be re-enabled (count=1) with PYTHON-2364
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', None),
 ]
 
 

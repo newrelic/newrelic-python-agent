@@ -1,3 +1,4 @@
+import functools
 import time
 
 from newrelic.api.application import application_instance
@@ -10,6 +11,31 @@ from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
 _no_trace_methods = set()
+_START_KEY = '_nr_start_time'
+KWARGS_ERROR = 'Supportability/hooks/pika/kwargs_error'
+
+
+def _add_consume_rabbitmq_trace(transaction, method, properties,
+        nr_start_time, subscribed=False):
+
+    routing_key = None
+    if hasattr(method, 'routing_key'):
+        routing_key = method.routing_key
+
+    # The transaction may have started after the message was received. In this
+    # case, the start time is reset to the true transaction start time.
+    transaction.start_time = min(nr_start_time,
+            transaction.start_time)
+
+    # create a trace starting at the time the message was received
+    trace = AmqpTrace(transaction, library='RabbitMQ',
+            operation='Consume', destination_name='TODO',
+            message_properties=properties,
+            routing_key=routing_key,
+            subscribed=subscribed)
+    trace.__enter__()
+    trace.start_time = nr_start_time
+    trace.__exit__(None, None, None)
 
 
 def _wrap_Channel_consume_callback(module, obj, bind_params,
@@ -55,7 +81,22 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
 
         elif transaction:
             # 2. In an active transaction
+            @functools.wraps(callback)
             def wrapped_callback(*args, **kwargs):
+
+                # Keyword arguments are unknown since this is a user defined
+                # callback
+                if not kwargs:
+                    method, properties = args[1:3]
+                    start_time = (getattr(method, _START_KEY, None) or
+                            getattr(wrapped_callback, _START_KEY, None))
+                    _add_consume_rabbitmq_trace(transaction,
+                            method,
+                            properties and properties.__dict__,
+                            start_time)
+                else:
+                    m = transaction._transaction_metrics.get(KWARGS_ERROR, 0)
+                    transaction._transaction_metrics[KWARGS_ERROR] = m + 1
                 with FunctionTrace(transaction=transaction, name=name):
                     return callback(*args, **kwargs)
 
@@ -65,9 +106,25 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
             bt_group = 'Message/RabbitMQ/None'
             bt_name = 'Named/None'
 
+            @functools.wraps(callback)
             def wrapped_callback(*args, **kwargs):
                 with BackgroundTask(application=application_instance(),
                         name=bt_name, group=bt_group) as bt:
+
+                    # Keyword arguments are unknown since this is a user
+                    # defined callback
+                    if not kwargs:
+                        method, properties = args[1:3]
+                        start_time = (getattr(method, _START_KEY, None) or
+                                getattr(wrapped_callback, _START_KEY, None))
+                        _add_consume_rabbitmq_trace(bt,
+                                method,
+                                properties and properties.__dict__,
+                                start_time,
+                                subscribed=True)
+                    else:
+                        m = bt._transaction_metrics.get(KWARGS_ERROR, 0)
+                        bt._transaction_metrics[KWARGS_ERROR] = m + 1
                     with FunctionTrace(transaction=bt, name=name):
                         return callback(*args, **kwargs)
 
@@ -76,6 +133,16 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
             args[0] = wrapped_callback
         else:
             kwargs[callback_referrer] = wrapped_callback
+
+        # This start time is used only for PULL style interactions with
+        # RabbitMQ For example, BasicGet is a PULL style interaction. In the
+        # BasicGet case, the segment measurement should include the time from
+        # BasicGet to BasicGet.Ok.
+        #
+        # In the PUSH case (Basic.Deliver), the start time will be attached to
+        # the method. The method based start time will override the callback
+        # start time.
+        wrapped_callback._nr_start_time = time.time()
 
         return wrapped(*args, **kwargs)
 

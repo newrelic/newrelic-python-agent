@@ -39,12 +39,13 @@ def _add_consume_rabbitmq_trace(transaction, method, properties,
 
 
 def _wrap_Channel_consume_callback(module, obj, bind_params,
-        callback_referrer):
+        callback_referrer, subscribed=False):
     def _nr_wrapper_Channel_consume_(wrapped, instance, args, kwargs):
 
         transaction = current_transaction(active_only=False)
         callback = bind_params(*args, **kwargs)
         name = callable_name(callback)
+        wrapped_callback = None
 
         # A consumer callback can be called either outside of a transaction, or
         # within the context of an existing transaction. There are 3
@@ -65,7 +66,8 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
         #   3. Outside of a transaction
         #
         #      Since it's not running inside of an existing transaction, we
-        #      want to create a new background transaction for it.
+        #      want to create a new background transaction for it but only when
+        #      we've subscribed.
 
         if transaction and (transaction.ignore_transaction or
                 transaction.stopped):
@@ -100,7 +102,7 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
                 with FunctionTrace(transaction=transaction, name=name):
                     return callback(*args, **kwargs)
 
-        else:
+        elif subscribed:
             # 3. Outside of a transaction
             # TODO: Replace with destination type/name
             bt_group = 'Message/RabbitMQ/None'
@@ -128,21 +130,22 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
                     with FunctionTrace(transaction=bt, name=name):
                         return callback(*args, **kwargs)
 
-        if len(args) > 0:
-            args = list(args)
-            args[0] = wrapped_callback
-        else:
-            kwargs[callback_referrer] = wrapped_callback
+        if wrapped_callback:
+            if len(args) > 0:
+                args = list(args)
+                args[0] = wrapped_callback
+            else:
+                kwargs[callback_referrer] = wrapped_callback
 
-        # This start time is used only for PULL style interactions with
-        # RabbitMQ For example, BasicGet is a PULL style interaction. In the
-        # BasicGet case, the segment measurement should include the time from
-        # BasicGet to BasicGet.Ok.
-        #
-        # In the PUSH case (Basic.Deliver), the start time will be attached to
-        # the method. The method based start time will override the callback
-        # start time.
-        wrapped_callback._nr_start_time = time.time()
+            # This start time is used only for PULL style interactions with
+            # RabbitMQ For example, BasicGet is a PULL style interaction. In
+            # the BasicGet case, the segment measurement should include the
+            # time from BasicGet to BasicGet.Ok.
+            #
+            # In the PUSH case (Basic.Deliver), the start time will be attached
+            # to the method. The method based start time will override the
+            # callback start time.
+            wrapped_callback._nr_start_time = time.time()
 
         return wrapped(*args, **kwargs)
 
@@ -201,7 +204,7 @@ def _callback_bind_params(callback=None, *args, **kwargs):
 def instrument_pika_adapters(module):
     _wrap_Channel_consume_callback(module.blocking_connection,
             'BlockingChannel.basic_consume', _consumer_callback_bind_params,
-            'consumer_callback')
+            'consumer_callback', subscribed=True)
     wrap_function_wrapper(module.blocking_connection,
             'BlockingChannel.__init__', _nr_wrap_BlockingChannel___init__)
 
@@ -216,6 +219,7 @@ def instrument_pika_channel(module):
             _nr_wrapper_basic_publish)
 
     _wrap_Channel_consume_callback(module, 'Channel.basic_consume',
-            _consumer_callback_bind_params, 'consumer_callback')
+            _consumer_callback_bind_params, 'consumer_callback',
+            subscribed=True)
     _wrap_Channel_consume_callback(module, 'Channel.basic_get',
-            _callback_bind_params, 'callback')
+            _callback_bind_params, 'callback', subscribed=False)

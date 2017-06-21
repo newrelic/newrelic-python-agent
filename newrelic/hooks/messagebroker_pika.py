@@ -29,7 +29,7 @@ def _add_consume_rabbitmq_trace(transaction, method, properties,
 
     # create a trace starting at the time the message was received
     trace = AmqpTrace(transaction, library='RabbitMQ',
-            operation='Consume', destination_name='TODO',
+            operation='Consume', destination_name=method.exchange or 'Default',
             message_properties=properties,
             routing_key=routing_key,
             subscribed=subscribed)

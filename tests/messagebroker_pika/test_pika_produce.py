@@ -59,10 +59,10 @@ def test_blocking_connection(producer):
 
 
 _test_blocking_connection_two_exchanges_metrics = [
-    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/exchange_1', 1),
-    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/exchange_2', 1),
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/exchange_1', None),
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/exchange_2', None),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/exchange-1', 1),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/exchange-2', 1),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/exchange-1', None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/exchange-2', None),
 ]
 
 
@@ -79,18 +79,18 @@ def test_blocking_connection_two_exchanges():
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
         channel = connection.channel()
         channel.queue_declare(queue='hello')
-        channel.exchange_declare(exchange='exchange_1', durable=False,
+        channel.exchange_declare(exchange='exchange-1', durable=False,
                 auto_delete=True)
-        channel.exchange_declare(exchange='exchange_2', durable=False,
+        channel.exchange_declare(exchange='exchange-2', durable=False,
                 auto_delete=True)
 
         channel.basic_publish(
-            exchange='exchange_1',
+            exchange='exchange-1',
             routing_key='hello',
             body='test',
         )
         channel.basic_publish(
-            exchange='exchange_2',
+            exchange='exchange-2',
             routing_key='hello',
             body='test',
         )

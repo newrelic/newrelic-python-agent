@@ -4,7 +4,7 @@ import six
 
 from newrelic.api.background_task import background_task
 
-from conftest import QUEUE, BODY
+from conftest import QUEUE, EXCHANGE, BODY
 from testing_support.fixtures import (capture_transaction_metrics,
         validate_transaction_metrics)
 from testing_support.settings import rabbitmq_settings
@@ -17,8 +17,8 @@ parametrized_connection = pytest.mark.parametrize('ConnectionClass',
 
 
 _test_select_conn_basic_get_inside_txn_metrics = [
-    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', 1),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE, None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, 1),
 ]
 
 if six.PY3:
@@ -105,8 +105,8 @@ def test_select_connection_basic_get_outside_txn(producer, ConnectionClass):
 
 
 _test_select_conn_basic_get_inside_txn_no_callback_metrics = [
-    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', None),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE, None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, None),
 ]
 
 
@@ -142,8 +142,8 @@ def test_async_connection_basic_get_inside_txn_no_callback(producer,
 
 
 _test_async_connection_basic_get_empty_metrics = [
-    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', None),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE, None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, None),
 ]
 
 
@@ -183,8 +183,8 @@ def test_async_connection_basic_get_empty(ConnectionClass):
 
 
 _test_select_conn_basic_consume_in_txn_metrics = [
-    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', 1),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE, None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, 1),
 ]
 
 if six.PY3:

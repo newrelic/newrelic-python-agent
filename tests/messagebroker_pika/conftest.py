@@ -8,6 +8,7 @@ from testing_support.fixtures import (code_coverage_fixture,  # NOQA
 
 
 QUEUE = 'test_pika-%s' % uuid.uuid4()
+EXCHANGE = 'exchange-%s' % uuid.uuid4()
 BODY = b'test_body'
 DB_SETTINGS = rabbitmq_settings()
 
@@ -47,12 +48,16 @@ def producer():
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
         channel = connection.channel()
+
         channel.queue_declare(queue=QUEUE, durable=False)
+        channel.exchange_declare(exchange=EXCHANGE, durable=False)
+        channel.queue_bind(queue=QUEUE, exchange=EXCHANGE)
 
         channel.basic_publish(
-            exchange='',
+            exchange=EXCHANGE,
             routing_key=QUEUE,
             body=BODY,
         )
-        yield QUEUE, BODY
+        yield QUEUE, EXCHANGE, BODY
         channel.queue_delete(queue=QUEUE)
+        channel.exchange_delete(exchange=EXCHANGE)

@@ -60,30 +60,6 @@ def test_record_exception():
 
 
 _unscoped_metrics = [
-        ('Supportability/api/ignore_transaction', 1),
-        ('Supportability/api/function_trace', 1),
-        ('Supportability/api/background_task', None),
-]
-
-
-@validate_transaction_metrics(
-        'test_supportability_metrics:test_ignore_transaction',
-        custom_metrics=_unscoped_metrics,
-        background_task=True)
-@newrelic.agent.background_task()
-def test_ignore_transaction():
-    # test that even if the transaction is ignored that we still create the
-    # metric
-    newrelic.agent.ignore_transaction()
-
-    # now, even though the transaction is ignored, we should still still record
-    # this function_trace metric
-    @newrelic.agent.function_trace()
-    def _nothing():
-        pass
-
-
-_unscoped_metrics = [
         ('Supportability/api/end_of_transaction', 1),
         ('Supportability/api/function_trace', None),
         ('Supportability/api/background_task', None),

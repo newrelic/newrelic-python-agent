@@ -2,7 +2,6 @@ import pika
 
 from newrelic.api.background_task import background_task
 
-from conftest import QUEUE
 from testing_support.fixtures import validate_transaction_metrics
 from testing_support.external_fixtures import validate_messagebroker_headers
 from testing_support.settings import rabbitmq_settings

@@ -101,11 +101,11 @@ else:
 
 
 @validate_transaction_metrics(
-        'Named/None',  # TODO: Replace with destination type/name
+        'Named/%s' % EXCHANGE,
         scoped_metrics=_test_blocking_conn_basic_consume_no_txn_metrics,
         rollup_metrics=_test_blocking_conn_basic_consume_no_txn_metrics,
         background_task=True,
-        group='Message/RabbitMQ/None')
+        group='Message/RabbitMQ/Exchange')
 def test_blocking_connection_basic_consume_outside_transaction(producer):
     def on_message(channel, method_frame, header_frame, body):
         assert hasattr(method_frame, '_nr_start_time')

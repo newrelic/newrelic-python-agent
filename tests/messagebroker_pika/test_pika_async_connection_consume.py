@@ -1,37 +1,19 @@
 import pika
 import pytest
 import six
-import uuid
 
 from newrelic.api.background_task import background_task
 
+from conftest import QUEUE, BODY
 from testing_support.fixtures import (capture_transaction_metrics,
         validate_transaction_metrics)
 from testing_support.settings import rabbitmq_settings
 
+
 DB_SETTINGS = rabbitmq_settings()
-QUEUE = 'test_pika_comsume-%s' % uuid.uuid4()
-BODY = b'test_body'
 
 parametrized_connection = pytest.mark.parametrize('ConnectionClass',
         [pika.SelectConnection, pika.TornadoConnection])
-
-
-@pytest.fixture()
-def producer():
-    # put something into the queue so it can be consumed
-    with pika.BlockingConnection(
-            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
-        channel = connection.channel()
-        channel.queue_declare(queue=QUEUE)
-
-        channel.basic_publish(
-            exchange='',
-            routing_key=QUEUE,
-            body=BODY,
-        )
-        yield
-        channel.queue_purge(queue=QUEUE)
 
 
 _test_select_conn_basic_get_inside_txn_metrics = [
@@ -127,6 +109,7 @@ _test_select_conn_basic_get_inside_txn_no_callback_metrics = [
     ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', None),
 ]
 
+
 @parametrized_connection
 @validate_transaction_metrics(
     ('test_pika_async_connection_consume:'
@@ -173,6 +156,8 @@ _test_async_connection_basic_get_empty_metrics = [
         background_task=True)
 @background_task()
 def test_async_connection_basic_get_empty(ConnectionClass):
+    QUEUE = 'test_async_empty'
+
     def on_message(channel, method_frame, header_frame, body):
         assert False, body.decode('UTF-8')
 

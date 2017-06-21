@@ -6,8 +6,7 @@ import uuid
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
 
-from testing_support.fixtures import (validate_transaction_metrics,
-        capture_transaction_metrics)
+from testing_support.fixtures import validate_transaction_metrics
 from testing_support.settings import rabbitmq_settings
 
 DB_SETTINGS = rabbitmq_settings()
@@ -88,7 +87,7 @@ if six.PY3:
     _test_blocking_conn_basic_consume_no_txn_metrics.append(
         (('Function/test_pika_blocking_connection_consume:'
           'test_blocking_connection_basic_consume_outside_transaction.'
-          '<locals>.test_blocking.<locals>.on_message'), 1))
+          '<locals>.on_message'), 1))
 else:
     _test_blocking_conn_basic_consume_no_txn_metrics.append(
         ('Function/test_pika_blocking_connection_consume:on_message', 1))
@@ -101,33 +100,20 @@ else:
         background_task=True,
         group='Message/RabbitMQ/None')
 def test_blocking_connection_basic_consume_outside_transaction(producer):
-    # The instrumentation for basic_consume will create the background_task
-    # which is why this test does not have the background_task decorator
+    def on_message(channel, method_frame, header_frame, body):
+        assert hasattr(method_frame, '_nr_start_time')
+        assert body == BODY
+        channel.stop_consuming()
 
-    metrics_list = []
-
-    @capture_transaction_metrics(metrics_list)
-    def test_blocking():
-        def on_message(channel, method_frame, header_frame, body):
-            assert hasattr(method_frame, '_nr_start_time')
-            assert body == BODY
+    with pika.BlockingConnection(
+            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+        channel = connection.channel()
+        channel.basic_consume(on_message, QUEUE)
+        try:
+            channel.start_consuming()
+        except:
             channel.stop_consuming()
-
-        with pika.BlockingConnection(
-                pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
-            channel = connection.channel()
-            channel.basic_consume(on_message, QUEUE)
-            try:
-                channel.start_consuming()
-            except:
-                channel.stop_consuming()
-                raise
-
-    test_blocking()
-
-    # Make sure that metrics have been created. The
-    # validate_transaction_metrics fixture won't run at all if they aren't.
-    assert metrics_list
+            raise
 
 
 _test_blocking_conn_basic_consume_in_txn_metrics = [

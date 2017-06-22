@@ -29,7 +29,7 @@ def _add_consume_rabbitmq_trace(transaction, method, properties,
 
     # create a trace starting at the time the message was received
     trace = AmqpTrace(transaction, library='RabbitMQ',
-            operation='Consume', destination_name='TODO',
+            operation='Consume', destination_name=method.exchange or 'Default',
             message_properties=properties,
             routing_key=routing_key,
             subscribed=subscribed)
@@ -104,19 +104,25 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
 
         elif subscribed:
             # 3. Outside of a transaction
-            # TODO: Replace with destination type/name
-            bt_group = 'Message/RabbitMQ/None'
-            bt_name = 'Named/None'
-
             @functools.wraps(callback)
             def wrapped_callback(*args, **kwargs):
+
+                # Keyword arguments are unknown since this is a user
+                # defined callback
+                exchange = 'Unknown'
+                if not kwargs:
+                    method, properties = args[1:3]
+                    exchange = method.exchange or 'Default'
+
+                bt_group = 'Message/RabbitMQ/Exchange'
+                bt_name = 'Named/%s' % exchange
+
                 with BackgroundTask(application=application_instance(),
                         name=bt_name, group=bt_group) as bt:
 
                     # Keyword arguments are unknown since this is a user
                     # defined callback
                     if not kwargs:
-                        method, properties = args[1:3]
                         start_time = (getattr(method, _START_KEY, None) or
                                 getattr(wrapped_callback, _START_KEY, None))
                         _add_consume_rabbitmq_trace(bt,
@@ -176,7 +182,8 @@ def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
     args = (exchange, routing_key, body, properties, mandatory, immediate)
 
     with AmqpTrace(transaction, library='RabbitMQ', operation='Produce',
-            destination_name='TODO', message_properties=properties.__dict__):
+            destination_name=exchange or 'Default',
+            message_properties=properties.__dict__):
         return wrapped(*args)
 
 

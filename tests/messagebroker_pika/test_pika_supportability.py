@@ -58,7 +58,7 @@ def test_select_connection_supportability_in_txn(producer):
         channel.basic_ack(method_frame.delivery_tag)
         channel.close()
         connection.close()
-        connection.ioloop.start()
+        connection.ioloop.stop()
 
     def on_open_channel(channel):
         channel.basic_get(callback=on_message, queue=QUEUE)
@@ -76,16 +76,16 @@ def test_select_connection_supportability_in_txn(producer):
         connection.close()
         # Start the IOLoop again so Pika can communicate, it will stop on its
         # own when the connection is closed
-        connection.ioloop.start()
+        connection.ioloop.stop()
         raise
 
 
 @validate_transaction_metrics(
-        'Named/None',  # TODO: Replace with destination type/name
+        'Named/Unknown',  # destination name is ungatherable
         scoped_metrics=(),
         rollup_metrics=_test_select_connection_supportability_metrics,
         background_task=True,
-        group='Message/RabbitMQ/None')
+        group='Message/RabbitMQ/Exchange')
 def test_select_connection_supportability_outside_txn(producer):
     def on_message(channel, method_frame, header_frame, body):
         assert method_frame
@@ -93,7 +93,7 @@ def test_select_connection_supportability_outside_txn(producer):
         channel.basic_ack(method_frame.delivery_tag)
         channel.close()
         connection.close()
-        connection.ioloop.start()
+        connection.ioloop.stop()
 
     def on_open_channel(channel):
         channel.basic_consume(on_message, QUEUE)
@@ -111,5 +111,5 @@ def test_select_connection_supportability_outside_txn(producer):
         connection.close()
         # Start the IOLoop again so Pika can communicate, it will stop on its
         # own when the connection is closed
-        connection.ioloop.start()
+        connection.ioloop.stop()
         raise

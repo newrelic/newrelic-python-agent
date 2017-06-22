@@ -4,17 +4,17 @@ import six
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
 
-from conftest import QUEUE, BODY
+from conftest import QUEUE, EXCHANGE, BODY
 from testing_support.fixtures import (capture_transaction_metrics,
         validate_transaction_metrics)
 from testing_support.settings import rabbitmq_settings
 
-
 DB_SETTINGS = rabbitmq_settings()
 
+
 _test_blocking_connection_basic_get_metrics = [
-    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', 1),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE, None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, 1),
     (('Function/pika.adapters.blocking_connection:'
             '_CallbackResult.set_value_once'), 1)
 ]
@@ -31,16 +31,14 @@ def test_blocking_connection_basic_get(producer):
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
         channel = connection.channel()
-        channel.queue_declare(queue=QUEUE)
-
         method_frame, _, _ = channel.basic_get(QUEUE)
-        channel.basic_ack(method_frame.delivery_tag)
         assert method_frame
+        channel.basic_ack(method_frame.delivery_tag)
 
 
 _test_blocking_connection_basic_get_empty_metrics = [
-    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', None),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE, None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, None),
 ]
 
 
@@ -88,8 +86,8 @@ def test_blocking_connection_basic_get_outside_transaction(producer):
 
 
 _test_blocking_conn_basic_consume_no_txn_metrics = [
-    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', 1),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE, None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, 1),
 ]
 
 if six.PY3:
@@ -103,11 +101,11 @@ else:
 
 
 @validate_transaction_metrics(
-        'Named/None',  # TODO: Replace with destination type/name
+        'Named/%s' % EXCHANGE,
         scoped_metrics=_test_blocking_conn_basic_consume_no_txn_metrics,
         rollup_metrics=_test_blocking_conn_basic_consume_no_txn_metrics,
         background_task=True,
-        group='Message/RabbitMQ/None')
+        group='Message/RabbitMQ/Exchange')
 def test_blocking_connection_basic_consume_outside_transaction(producer):
     def on_message(channel, method_frame, header_frame, body):
         assert hasattr(method_frame, '_nr_start_time')
@@ -126,8 +124,8 @@ def test_blocking_connection_basic_consume_outside_transaction(producer):
 
 
 _test_blocking_conn_basic_consume_in_txn_metrics = [
-    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', 1),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE, None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, 1),
 ]
 
 if six.PY3:
@@ -165,8 +163,8 @@ def test_blocking_connection_basic_consume_inside_txn(producer):
 
 
 _test_blocking_conn_basic_consume_stopped_txn_metrics = [
-    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', None),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE, None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, None),
 ]
 
 if six.PY3:
@@ -206,9 +204,9 @@ def test_blocking_connection_basic_consume_stopped_txn(producer):
 
 
 _test_blocking_connection_consume_metrics = [
-    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE, None),
     # TODO: This test needs to be re-enabled (count=1) with PYTHON-2364
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/TODO', None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, None),
 ]
 
 

@@ -1,32 +1,12 @@
 import pika
-import pytest
-import uuid
 
 from newrelic.api.background_task import background_task
 
+from conftest import QUEUE, BODY
 from testing_support.fixtures import validate_transaction_metrics
 from testing_support.settings import rabbitmq_settings
 
 DB_SETTINGS = rabbitmq_settings()
-QUEUE = 'test_pika_comsume-%s' % uuid.uuid4()
-BODY = b'test_body'
-
-
-@pytest.fixture()
-def producer():
-    # put something into the queue so it can be consumed
-    with pika.BlockingConnection(
-            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
-        channel = connection.channel()
-        channel.queue_declare(queue=QUEUE)
-
-        channel.basic_publish(
-            exchange='',
-            routing_key=QUEUE,
-            body=BODY,
-        )
-        yield
-        channel.queue_purge(queue=QUEUE)
 
 
 class CustomPikaChannel(pika.channel.Channel):

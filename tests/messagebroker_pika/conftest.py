@@ -1,7 +1,15 @@
+import pika
 import pytest
+import uuid
 
-from testing_support.fixtures import (code_coverage_fixture,
+from testing_support.settings import rabbitmq_settings
+from testing_support.fixtures import (code_coverage_fixture,  # NOQA
         collector_agent_registration_fixture, collector_available_fixture)
+
+
+QUEUE = 'test_pika-%s' % uuid.uuid4()
+BODY = b'test_body'
+DB_SETTINGS = rabbitmq_settings()
 
 _coverage_source = [
     'newrelic.hooks.messagebroker_pika',
@@ -28,6 +36,23 @@ def session_initialization(code_coverage, collector_agent_registration):
     pass
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope='function')  # NOQA
 def requires_data_collector(collector_available_fixture):
     pass
+
+
+@pytest.fixture()
+def producer():
+    # put something into the queue so it can be consumed
+    with pika.BlockingConnection(
+            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+        channel = connection.channel()
+        channel.queue_declare(queue=QUEUE, durable=False)
+
+        channel.basic_publish(
+            exchange='',
+            routing_key=QUEUE,
+            body=BODY,
+        )
+        yield QUEUE, BODY
+        channel.queue_delete(queue=QUEUE)

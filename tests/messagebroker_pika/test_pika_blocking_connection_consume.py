@@ -1,36 +1,16 @@
 import pika
-import pytest
 import six
-import uuid
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
 
+from conftest import QUEUE, BODY
 from testing_support.fixtures import (capture_transaction_metrics,
         validate_transaction_metrics)
 from testing_support.settings import rabbitmq_settings
 
+
 DB_SETTINGS = rabbitmq_settings()
-QUEUE = 'test_pika_comsume-%s' % uuid.uuid4()
-BODY = b'test_body'
-
-
-@pytest.fixture()
-def producer():
-    # put something into the queue so it can be consumed
-    with pika.BlockingConnection(
-            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
-        channel = connection.channel()
-        channel.queue_declare(queue=QUEUE)
-
-        channel.basic_publish(
-            exchange='',
-            routing_key=QUEUE,
-            body=BODY,
-        )
-        yield
-        channel.queue_purge(queue=QUEUE)
-
 
 _test_blocking_connection_basic_get_metrics = [
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/TODO', None),
@@ -72,13 +52,18 @@ _test_blocking_connection_basic_get_empty_metrics = [
         background_task=True)
 @background_task()
 def test_blocking_connection_basic_get_empty():
+    QUEUE = 'test_blocking_empty'
+
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
         channel = connection.channel()
         channel.queue_declare(queue=QUEUE)
 
-        method_frame, _, _ = channel.basic_get(QUEUE)
-        assert method_frame is None
+        try:
+            method_frame, _, _ = channel.basic_get(QUEUE)
+            assert method_frame is None
+        finally:
+            channel.queue_delete(queue=QUEUE)
 
 
 def test_blocking_connection_basic_get_outside_transaction(producer):

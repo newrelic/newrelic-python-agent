@@ -2,6 +2,7 @@ import pika
 
 from newrelic.api.background_task import background_task
 
+from conftest import QUEUE
 from testing_support.fixtures import validate_transaction_metrics
 from testing_support.external_fixtures import validate_messagebroker_headers
 from testing_support.settings import rabbitmq_settings
@@ -39,11 +40,10 @@ _test_blocking_connection_metrics = [
 @background_task()
 @validate_messagebroker_headers
 @cache_pika_headers
-def test_blocking_connection():
+def test_blocking_connection(producer):
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
         channel = connection.channel()
-        channel.queue_declare(queue='hello')
 
         channel.basic_publish(
             exchange='',

@@ -428,7 +428,7 @@ class WebTransaction(Transaction):
                 queue_time = 0
 
             if self.end_time:
-                duration = self.end_time = self.start_time
+                duration = self.end_time - self.start_time
             else:
                 duration = time.time() - self.start_time
 

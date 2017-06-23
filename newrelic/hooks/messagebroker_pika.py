@@ -1,5 +1,7 @@
 import functools
+import sys
 import time
+import types
 
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask
@@ -7,7 +9,8 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.amqp_trace import AmqpTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.object_wrapper import (wrap_function_wrapper, wrap_object,
+        FunctionWrapper)
 
 
 _no_trace_methods = set()
@@ -208,12 +211,57 @@ def _callback_bind_params(callback=None, *args, **kwargs):
     return callback
 
 
+def _ConsumeGeneratorWrapper(wrapped):
+    def wrapper(wrapped, instance, args, kwargs):
+        def _generator(generator):
+            try:
+                value = None
+                exc = None
+
+                while True:
+                    transaction = current_transaction()
+
+                    if exc is not None:
+                        yielded = generator.throw(*exc)
+                        exc = None
+                    else:
+                        yielded = generator.send(value)
+                        if yielded:
+                            method, properties, _ = yielded
+                            nr_start_time = method._nr_start_time
+                            _add_consume_rabbitmq_trace(transaction, method,
+                                    properties, nr_start_time,
+                                    subscribed=True)
+
+                    try:
+                        value = yield yielded
+                    except Exception:
+                        exc = sys.exc_info()
+
+            finally:
+                generator.close()
+
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            if isinstance(result, types.GeneratorType):
+                return _generator(result)
+            else:
+                return result
+
+    return FunctionWrapper(wrapped, wrapper)
+
+
 def instrument_pika_adapters(module):
     _wrap_Channel_consume_callback(module.blocking_connection,
             'BlockingChannel.basic_consume', _consumer_callback_bind_params,
             'consumer_callback', subscribed=True)
     wrap_function_wrapper(module.blocking_connection,
             'BlockingChannel.__init__', _nr_wrap_BlockingChannel___init__)
+    wrap_object(module.blocking_connection, 'BlockingChannel.consume',
+            _ConsumeGeneratorWrapper)
 
 
 def instrument_pika_spec(module):

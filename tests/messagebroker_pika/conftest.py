@@ -86,3 +86,26 @@ def producer_2():
         yield QUEUE_2, EXCHANGE_2, BODY
         channel.queue_delete(queue=QUEUE_2)
         channel.exchange_delete(exchange=EXCHANGE_2)
+
+
+@pytest.fixture()
+def produce_five():
+    # put something into the queue so it can be consumed
+    with pika.BlockingConnection(
+            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+        channel = connection.channel()
+
+        channel.queue_declare(queue=QUEUE, durable=False)
+        channel.exchange_declare(exchange=EXCHANGE, durable=False)
+        channel.queue_bind(queue=QUEUE, exchange=EXCHANGE)
+
+        for _ in range(5):
+            channel.basic_publish(
+                exchange=EXCHANGE,
+                routing_key=QUEUE,
+                body=BODY,
+            )
+
+        yield QUEUE, EXCHANGE, BODY
+        channel.queue_delete(queue=QUEUE)
+        channel.exchange_delete(exchange=EXCHANGE)

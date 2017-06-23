@@ -251,6 +251,7 @@ def _ConsumeGeneratorWrapper(wrapped):
                 _add_consume_rabbitmq_trace(transaction, method,
                         properties and properties.__dict__, nr_start_time,
                         subscribed=True)
+                return
 
             else:
                 # 3. Outside of a transaction
@@ -262,33 +263,49 @@ def _ConsumeGeneratorWrapper(wrapped):
                 # the generator process lasts a long time and consumes many
                 # many messages.
 
-                with BackgroundTask(application=application_instance(),
-                        name=bt_name, group=bt_group) as bt:
-                    _add_consume_rabbitmq_trace(bt, method,
-                            properties and properties.__dict__, nr_start_time,
-                            subscribed=True)
+                bt = BackgroundTask(application=application_instance(),
+                        name=bt_name, group=bt_group)
+                bt.__enter__()
+                _add_consume_rabbitmq_trace(bt, method,
+                        properties and properties.__dict__, nr_start_time,
+                        subscribed=True)
+                return bt
 
         def _generator(generator):
             try:
                 value = None
-                exc = None
+                exc = (None, None, None)
+                created_bt = None
 
                 while True:
-                    if exc is not None:
+                    if any(exc):
                         yielded = generator.throw(*exc)
-                        exc = None
+                        exc = (None, None, None)
                     else:
                         yielded = generator.send(value)
-                        if yielded:
-                            _possibly_create_traces(yielded)
+
+                    if yielded:
+                        created_bt = _possibly_create_traces(yielded)
 
                     try:
                         value = yield yielded
                     except Exception:
                         exc = sys.exc_info()
 
+                    if created_bt:
+                        created_bt.__exit__(*exc)
+
+            except (GeneratorExit, StopIteration):
+                raise
+
+            except Exception:
+                exc = sys.exc_info()
+                raise
+
             finally:
                 generator.close()
+                if created_bt:
+                    created_bt.__exit__(*exc)
 
         try:
             result = wrapped(*args, **kwargs)

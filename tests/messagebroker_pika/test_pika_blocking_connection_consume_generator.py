@@ -212,10 +212,16 @@ def test_blocking_connection_consume_outside_txn(producer):
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
         channel = connection.channel()
-        for method_frame, properties, body in channel.consume(QUEUE):
-            assert hasattr(method_frame, '_nr_start_time')
-            assert body == BODY
-            break
+        consumer = channel.consume(QUEUE)
+
+        try:
+            for method_frame, properties, body in consumer:
+                assert hasattr(method_frame, '_nr_start_time')
+                assert body == BODY
+                break
+        finally:
+            # Required for PyPy compatibility, see http://pypy.org/compat.html
+            consumer.close()
 
 
 @validate_transaction_metrics(
@@ -245,3 +251,36 @@ def test_blocking_connection_consume_ending_txn(produce_five):
             else:
                 assert consumed == 5
                 break
+
+
+@validate_transaction_metrics(
+        'Named/%s' % EXCHANGE,
+        scoped_metrics=_test_blocking_connection_consume_metrics,
+        rollup_metrics=_test_blocking_connection_consume_metrics,
+        background_task=True,
+        group='Message/RabbitMQ/Exchange')
+def test_blocking_connection_consume_using_methods_outside_txn(producer):
+    with pika.BlockingConnection(
+            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+        channel = connection.channel()
+
+        consumer = channel.consume(QUEUE, inactivity_timeout=0.01)
+
+        method, properties, body = next(consumer)
+        assert hasattr(method, '_nr_start_time')
+        assert body == BODY
+
+        result = next(consumer)
+        assert result is None
+
+        try:
+            consumer.throw(ZeroDivisionError)
+        except ZeroDivisionError:
+            # This is expected
+            pass
+        else:
+            # this is not
+            assert False, 'No exception was raised!'
+
+        result = consumer.close()
+        assert result is None

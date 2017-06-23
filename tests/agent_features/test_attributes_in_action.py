@@ -1,5 +1,8 @@
 import webtest
 
+from newrelic.api.transaction import Transaction
+from newrelic.api.amqp_trace import AmqpTrace
+from newrelic.api.application import Application
 from newrelic.api.application import application_instance as application
 from newrelic.api.web_transaction import wsgi_application
 from newrelic.api.transaction import add_custom_parameter, record_exception
@@ -11,7 +14,7 @@ from testing_support.fixtures import (validate_transaction_trace_attributes,
         validate_browser_attributes, validate_error_event_attributes,
         validate_error_trace_attributes_outside_transaction,
         validate_error_event_attributes_outside_transaction,
-        reset_core_stats_engine)
+        reset_core_stats_engine, validate_attributes)
 
 
 URL_PARAM = 'some_key'
@@ -160,6 +163,7 @@ _expected_absent_attributes = {
 @override_application_settings(_override_settings)
 def test_browser_default_attribute_settings():
     normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
+
 
 # ========================= exclude request params
 
@@ -1108,3 +1112,32 @@ def test_error_outside_transaction_excluded_user_param():
         application_instance = application()
         application_instance.record_exception(
             params={'test_key': 'test_value'})
+
+
+# Test routing key agent attribute.
+_required_agent_attributes = ['message.routingKey']
+_forgone_agent_attributes = []
+
+
+@validate_attributes('agent', _required_agent_attributes,
+                     _forgone_agent_attributes)
+def test_routing_key_agent_attribute():
+    application = Application("MeowMeowApp")
+    transaction = Transaction(application)
+    with AmqpTrace(transaction, 'library', 'Produce', 'Home',
+                   routing_key='cats.eat.fishies', subscribed=True):
+        pass
+
+
+_required_agent_attributes = []
+_forgone_agent_attributes = ['message.routingKey']
+
+
+@validate_attributes('agent', _required_agent_attributes,
+                     _forgone_agent_attributes)
+def test_routing_key_agent_attribute_not_subscribed():
+    application = Application("MeowMeowApp")
+    transaction = Transaction(application)
+    with AmqpTrace(transaction, 'library', 'Produce', 'Home',
+                   routing_key='cats.eat.fishies', subscribed=False):
+        pass

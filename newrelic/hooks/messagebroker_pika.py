@@ -213,25 +213,74 @@ def _callback_bind_params(callback=None, *args, **kwargs):
 
 def _ConsumeGeneratorWrapper(wrapped):
     def wrapper(wrapped, instance, args, kwargs):
+        def _possibly_create_traces(yielded):
+            # This generator can be called either outside of a transaction, or
+            # within the context of an existing transaction.  There are 3
+            # possibilities we need to handle: (Note that this is similar to
+            # our Celery instrumentation)
+            #
+            #   1. In an inactive transaction
+            #
+            #      If the end_of_transaction() or ignore_transaction() API
+            #      calls have been invoked, this generator may be called in the
+            #      context of an inactive transaction. In this case, don't wrap
+            #      the generator in any way. Just run the original generator.
+            #
+            #   2. In an active transaction
+            #
+            #      Run the original generator and produce an AmqpTrace for each
+            #      iteration.
+            #
+            #   3. Outside of a transaction
+            #
+            #      Since it's not running inside of an existing transaction, we
+            #      want to create a new background transaction for it but only
+            #      when we've subscribed.
+
+            transaction = current_transaction(active_only=False)
+            method, properties, _ = yielded
+            nr_start_time = method._nr_start_time
+
+            if transaction and (transaction.ignore_transaction or
+                    transaction.stopped):
+                # 1. In an inactive transaction
+                return
+
+            elif transaction:
+                # 2. In an active transaction
+                _add_consume_rabbitmq_trace(transaction, method,
+                        properties and properties.__dict__, nr_start_time,
+                        subscribed=True)
+
+            else:
+                # 3. Outside of a transaction
+                bt_group = 'Message/RabbitMQ/Exchange'
+                bt_name = 'Named/%s' % (method.exchange or 'Default')
+
+                # Create a background task for each iteration through the
+                # generator. This is important because it is foreseeable that
+                # the generator process lasts a long time and consumes many
+                # many messages.
+
+                with BackgroundTask(application=application_instance(),
+                        name=bt_name, group=bt_group) as bt:
+                    _add_consume_rabbitmq_trace(bt, method,
+                            properties and properties.__dict__, nr_start_time,
+                            subscribed=True)
+
         def _generator(generator):
             try:
                 value = None
                 exc = None
 
                 while True:
-                    transaction = current_transaction()
-
                     if exc is not None:
                         yielded = generator.throw(*exc)
                         exc = None
                     else:
                         yielded = generator.send(value)
                         if yielded:
-                            method, properties, _ = yielded
-                            nr_start_time = method._nr_start_time
-                            _add_consume_rabbitmq_trace(transaction, method,
-                                    properties, nr_start_time,
-                                    subscribed=True)
+                            _possibly_create_traces(yielded)
 
                     try:
                         value = yield yielded

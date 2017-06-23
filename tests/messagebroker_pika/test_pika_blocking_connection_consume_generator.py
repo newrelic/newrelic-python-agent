@@ -1,6 +1,7 @@
 import pika
 
 from newrelic.api.background_task import background_task
+from newrelic.api.transaction import end_of_transaction
 
 from conftest import QUEUE, EXCHANGE, BODY
 from testing_support.fixtures import validate_transaction_metrics
@@ -199,3 +200,48 @@ def test_blocking_connection_consume_using_methods(producer):
 
         result = consumer.close()
         assert result is None
+
+
+@validate_transaction_metrics(
+        'Named/%s' % EXCHANGE,
+        scoped_metrics=_test_blocking_connection_consume_metrics,
+        rollup_metrics=_test_blocking_connection_consume_metrics,
+        background_task=True,
+        group='Message/RabbitMQ/Exchange')
+def test_blocking_connection_consume_outside_txn(producer):
+    with pika.BlockingConnection(
+            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+        channel = connection.channel()
+        for method_frame, properties, body in channel.consume(QUEUE):
+            assert hasattr(method_frame, '_nr_start_time')
+            assert body == BODY
+            break
+
+
+@validate_transaction_metrics(
+        ('test_pika_blocking_connection_consume_generator:'
+                'test_blocking_connection_consume_ending_txn'),
+        scoped_metrics=_test_blocking_connection_consume_metrics,
+        rollup_metrics=_test_blocking_connection_consume_metrics,
+        background_task=True)
+@background_task()
+def test_blocking_connection_consume_ending_txn(produce_five):
+
+    # Despite consuming 5 messages from the queue, only 1 gets a metric because
+    # end_of_transaction is called.
+
+    with pika.BlockingConnection(
+            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+        channel = connection.channel()
+
+        consumed = 0
+        for result in channel.consume(QUEUE, inactivity_timeout=0.01):
+            if result:
+                consumed += 1
+                end_of_transaction()
+                method_frame, properties, body = result
+                assert hasattr(method_frame, '_nr_start_time')
+                assert body == BODY
+            else:
+                assert consumed == 5
+                break

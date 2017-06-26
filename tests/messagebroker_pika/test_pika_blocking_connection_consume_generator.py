@@ -3,7 +3,7 @@ import pika
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
 
-from conftest import QUEUE, EXCHANGE, BODY
+from conftest import QUEUE, EXCHANGE, CORRELATION_ID, BODY
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_tt_collector_json)
 from testing_support.settings import rabbitmq_settings
@@ -13,6 +13,7 @@ DB_SETTINGS = rabbitmq_settings()
 _message_broker_tt_params = {
     'queue_name': QUEUE,
     'routing_key': QUEUE,
+    'correlation_id': CORRELATION_ID,
 }
 
 _test_blocking_connection_consume_metrics = [

@@ -198,7 +198,8 @@ def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
     with AmqpTrace(transaction, library='RabbitMQ', operation='Produce',
             destination_name=exchange or 'Default',
             message_properties=properties.__dict__, routing_key=routing_key,
-            correlation_id=properties.correlation_id):
+            correlation_id=properties.correlation_id,
+            reply_to=properties.reply_to):
         return wrapped(*args)
 
 

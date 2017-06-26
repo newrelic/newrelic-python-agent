@@ -26,12 +26,13 @@ def cache_pika_headers(wrapped, instance, args, kwargs):
 DB_SETTINGS = rabbitmq_settings()
 QUEUE = 'cats-are-better-than-dogs'
 CORRELATION_ID = 'meowmeowmeow'
+REPLY_TO = 'purrrr'
 
 _message_broker_tt_included_params = {
     'routing_key': QUEUE,
 }
 
-_message_broker_tt_forgone_params = ['queue_name', 'correlation_id']
+_message_broker_tt_forgone_params = ['queue_name', 'correlation_id', 'reply_to']
 
 _test_blocking_connection_metrics = [
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/Default', 2),
@@ -74,7 +75,7 @@ _message_broker_tt_included_test_correlation_id.update({
     'correlation_id': CORRELATION_ID,
 })
 
-_message_broker_tt_forgone_test_correlation_id = ['queue_name']
+_message_broker_tt_forgone_test_correlation_id = ['queue_name', 'reply_to']
 
 
 @validate_transaction_metrics(
@@ -93,6 +94,47 @@ def test_blocking_connection_correlation_id(producer):
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
         channel = connection.channel()
         properties = pika.spec.BasicProperties(correlation_id=CORRELATION_ID)
+
+        channel.basic_publish(
+            exchange='',
+            routing_key=QUEUE,
+            body='test',
+            properties=properties,
+        )
+
+        channel.publish(
+            exchange='',
+            routing_key=QUEUE,
+            body='test',
+            properties=properties,
+        )
+
+
+_message_broker_tt_included_test_reply_to = (
+        _message_broker_tt_included_params.copy())
+_message_broker_tt_included_test_reply_to.update({
+    'reply_to': REPLY_TO,
+})
+
+_message_broker_tt_forgone_test_reply_to = ['queue_name', 'correlation_id']
+
+
+@validate_transaction_metrics(
+        'test_pika_produce:test_blocking_connection_reply_to',
+        scoped_metrics=_test_blocking_connection_metrics,
+        rollup_metrics=_test_blocking_connection_metrics,
+        background_task=True)
+@validate_tt_collector_json(
+        message_broker_params=_message_broker_tt_included_test_reply_to,
+        message_broker_forgone_params=_message_broker_tt_forgone_test_reply_to)
+@background_task()
+@validate_messagebroker_headers
+@cache_pika_headers
+def test_blocking_connection_reply_to(producer):
+    with pika.BlockingConnection(
+            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+        channel = connection.channel()
+        properties = pika.spec.BasicProperties(reply_to=REPLY_TO)
 
         channel.basic_publish(
             exchange='',

@@ -911,7 +911,7 @@ def validate_synthetics_transaction_trace(required_params={},
 
 def validate_tt_collector_json(required_params={},
         forgone_params={}, should_exist=True, datastore_params={},
-        datastore_forgone_params={}):
+        datastore_forgone_params={}, message_broker_params={}):
     '''make assertions based off the cross-agent spec on transaction traces'''
 
     @transient_function_wrapper('newrelic.core.stats_engine',
@@ -1003,6 +1003,11 @@ def validate_tt_collector_json(required_params={},
                     # if host is reported, it cannot be localhost
                     if 'host' in params:
                         assert params['host'] not in LOCALHOST_EQUIVALENTS
+
+                elif segment_name.startswith('MessageBroker'):
+                    for key in message_broker_params:
+                        assert key in params
+                        assert params[key] == message_broker_params[key]
 
             _check_params_and_start_time(trace_segment)
 

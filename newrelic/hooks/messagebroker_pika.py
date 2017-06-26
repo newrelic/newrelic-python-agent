@@ -19,7 +19,7 @@ KWARGS_ERROR = 'Supportability/hooks/pika/kwargs_error'
 
 
 def _add_consume_rabbitmq_trace(transaction, method, properties,
-        nr_start_time, subscribed=False):
+        nr_start_time, subscribed=False, queue_name=None):
 
     routing_key = None
     if hasattr(method, 'routing_key'):
@@ -42,7 +42,8 @@ def _add_consume_rabbitmq_trace(transaction, method, properties,
             operation='Consume', destination_name=method.exchange or 'Default',
             message_properties=properties,
             routing_key=routing_key,
-            subscribed=subscribed)
+            subscribed=subscribed,
+            queue_name=queue_name)
     trace.__enter__()
     trace.start_time = nr_start_time
     trace.__exit__(None, None, None)
@@ -53,7 +54,7 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
     def _nr_wrapper_Channel_consume_(wrapped, instance, args, kwargs):
 
         transaction = current_transaction(active_only=False)
-        callback = bind_params(*args, **kwargs)
+        callback, queue = bind_params(*args, **kwargs)
         name = callable_name(callback)
         wrapped_callback = None
 
@@ -105,7 +106,8 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
                     _add_consume_rabbitmq_trace(transaction,
                             method,
                             properties and properties.__dict__,
-                            start_time)
+                            start_time,
+                            queue_name=queue)
                 else:
                     m = transaction._transaction_metrics.get(KWARGS_ERROR, 0)
                     transaction._transaction_metrics[KWARGS_ERROR] = m + 1
@@ -139,7 +141,8 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
                                 method,
                                 properties and properties.__dict__,
                                 start_time,
-                                subscribed=True)
+                                subscribed=True,
+                                queue_name=queue)
                     else:
                         m = bt._transaction_metrics.get(KWARGS_ERROR, 0)
                         bt._transaction_metrics[KWARGS_ERROR] = m + 1
@@ -210,15 +213,25 @@ def _nr_wrap_BlockingChannel___init__(wrapped, instance, args, kwargs):
     return ret
 
 
-def _consumer_callback_bind_params(consumer_callback, *args, **kwargs):
-    return consumer_callback
+def _bind_params_BlockingChannel_basic_consume(consumer_callback, queue, *args,
+        **kwargs):
+    return consumer_callback, queue
 
 
-def _callback_bind_params(callback=None, *args, **kwargs):
-    return callback
+def _bind_params_Channel_basic_consume(consumer_callback, queue='', *args,
+        **kwargs):
+    return consumer_callback, queue
+
+
+def _bind_params_Channel_basic_get(callback=None, queue='', *args, **kwargs):
+    return callback, queue
 
 
 def _ConsumeGeneratorWrapper(wrapped):
+
+    def _bind_params(queue, *args, **kwargs):
+        return queue
+
     def wrapper(wrapped, instance, args, kwargs):
         def _possibly_create_traces(yielded):
             # This generator can be called either outside of a transaction, or
@@ -246,6 +259,7 @@ def _ConsumeGeneratorWrapper(wrapped):
 
             transaction = current_transaction(active_only=False)
             method, properties, _ = yielded
+            queue = _bind_params(*args, **kwargs)
             nr_start_time = method._nr_start_time
 
             if transaction and (transaction.ignore_transaction or
@@ -257,7 +271,7 @@ def _ConsumeGeneratorWrapper(wrapped):
                 # 2. In an active transaction
                 _add_consume_rabbitmq_trace(transaction, method,
                         properties and properties.__dict__, nr_start_time,
-                        subscribed=True)
+                        subscribed=True, queue_name=queue)
                 return
 
             else:
@@ -275,7 +289,7 @@ def _ConsumeGeneratorWrapper(wrapped):
                 bt.__enter__()
                 _add_consume_rabbitmq_trace(bt, method,
                         properties and properties.__dict__, nr_start_time,
-                        subscribed=True)
+                        subscribed=True, queue_name=queue)
                 return bt
 
         def _generator(generator):
@@ -330,7 +344,8 @@ def _ConsumeGeneratorWrapper(wrapped):
 
 def instrument_pika_adapters(module):
     _wrap_Channel_consume_callback(module.blocking_connection,
-            'BlockingChannel.basic_consume', _consumer_callback_bind_params,
+            'BlockingChannel.basic_consume',
+            _bind_params_BlockingChannel_basic_consume,
             'consumer_callback', subscribed=True)
     wrap_function_wrapper(module.blocking_connection,
             'BlockingChannel.__init__', _nr_wrap_BlockingChannel___init__)
@@ -348,7 +363,7 @@ def instrument_pika_channel(module):
             _nr_wrapper_basic_publish)
 
     _wrap_Channel_consume_callback(module, 'Channel.basic_consume',
-            _consumer_callback_bind_params, 'consumer_callback',
+            _bind_params_Channel_basic_consume, 'consumer_callback',
             subscribed=True)
     _wrap_Channel_consume_callback(module, 'Channel.basic_get',
-            _callback_bind_params, 'callback', subscribed=False)
+            _bind_params_Channel_basic_get, 'callback', subscribed=False)

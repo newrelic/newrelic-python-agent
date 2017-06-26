@@ -4,11 +4,15 @@ from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
 
 from conftest import QUEUE, EXCHANGE, BODY
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.fixtures import (validate_transaction_metrics,
+        validate_tt_collector_json)
 from testing_support.settings import rabbitmq_settings
 
 DB_SETTINGS = rabbitmq_settings()
 
+_message_broker_tt_params = {
+    'queue_name': QUEUE,
+}
 
 _test_blocking_connection_consume_metrics = [
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE, None),
@@ -23,6 +27,7 @@ _test_blocking_connection_consume_metrics = [
         scoped_metrics=_test_blocking_connection_consume_metrics,
         rollup_metrics=_test_blocking_connection_consume_metrics,
         background_task=True)
+@validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_blocking_connection_consume_break(producer):
     with pika.BlockingConnection(
@@ -40,6 +45,7 @@ def test_blocking_connection_consume_break(producer):
         scoped_metrics=_test_blocking_connection_consume_metrics,
         rollup_metrics=_test_blocking_connection_consume_metrics,
         background_task=True)
+@validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_blocking_connection_consume_connection_close(producer):
     connection = pika.BlockingConnection(
@@ -64,6 +70,7 @@ def test_blocking_connection_consume_connection_close(producer):
         scoped_metrics=_test_blocking_connection_consume_metrics,
         rollup_metrics=_test_blocking_connection_consume_metrics,
         background_task=True)
+@validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_blocking_connection_consume_timeout(producer):
     with pika.BlockingConnection(
@@ -88,6 +95,7 @@ def test_blocking_connection_consume_timeout(producer):
         scoped_metrics=_test_blocking_connection_consume_metrics,
         rollup_metrics=_test_blocking_connection_consume_metrics,
         background_task=True)
+@validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_blocking_connection_consume_exception_in_for_loop(producer):
     with pika.BlockingConnection(
@@ -121,6 +129,7 @@ _test_blocking_connection_consume_empty_metrics = [
         scoped_metrics=_test_blocking_connection_consume_empty_metrics,
         rollup_metrics=_test_blocking_connection_consume_empty_metrics,
         background_task=True)
+@validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_blocking_connection_consume_exception_in_generator():
     with pika.BlockingConnection(
@@ -153,6 +162,7 @@ _test_blocking_connection_consume_many_metrics = [
         scoped_metrics=_test_blocking_connection_consume_many_metrics,
         rollup_metrics=_test_blocking_connection_consume_many_metrics,
         background_task=True)
+@validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_blocking_connection_consume_many(produce_five):
     with pika.BlockingConnection(
@@ -174,6 +184,7 @@ def test_blocking_connection_consume_many(produce_five):
         scoped_metrics=_test_blocking_connection_consume_metrics,
         rollup_metrics=_test_blocking_connection_consume_metrics,
         background_task=True)
+@validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_blocking_connection_consume_using_methods(producer):
     with pika.BlockingConnection(
@@ -208,6 +219,7 @@ def test_blocking_connection_consume_using_methods(producer):
         rollup_metrics=_test_blocking_connection_consume_metrics,
         background_task=True,
         group='Message/RabbitMQ/Exchange')
+@validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 def test_blocking_connection_consume_outside_txn(producer):
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
@@ -230,6 +242,7 @@ def test_blocking_connection_consume_outside_txn(producer):
         scoped_metrics=_test_blocking_connection_consume_metrics,
         rollup_metrics=_test_blocking_connection_consume_metrics,
         background_task=True)
+@validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_blocking_connection_consume_ending_txn(produce_five):
 
@@ -259,6 +272,7 @@ def test_blocking_connection_consume_ending_txn(produce_five):
         rollup_metrics=_test_blocking_connection_consume_metrics,
         background_task=True,
         group='Message/RabbitMQ/Exchange')
+@validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 def test_blocking_connection_consume_using_methods_outside_txn(producer):
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:

@@ -6,11 +6,15 @@ from newrelic.api.background_task import background_task
 
 from conftest import QUEUE, QUEUE_2, EXCHANGE, EXCHANGE_2, BODY
 from testing_support.fixtures import (capture_transaction_metrics,
-        validate_transaction_metrics)
+        validate_transaction_metrics, validate_tt_collector_json)
 from testing_support.settings import rabbitmq_settings
 
 
 DB_SETTINGS = rabbitmq_settings()
+
+_message_broker_tt_params = {
+    'queue_name': QUEUE,
+}
 
 parametrized_connection = pytest.mark.parametrize('ConnectionClass',
         [pika.SelectConnection, pika.TornadoConnection])
@@ -38,6 +42,7 @@ else:
         scoped_metrics=_test_select_conn_basic_get_inside_txn_metrics,
         rollup_metrics=_test_select_conn_basic_get_inside_txn_metrics,
         background_task=True)
+@validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_async_connection_basic_get_inside_txn(producer, ConnectionClass):
     def on_message(channel, method_frame, header_frame, body):
@@ -117,6 +122,7 @@ _test_select_conn_basic_get_inside_txn_no_callback_metrics = [
     scoped_metrics=_test_select_conn_basic_get_inside_txn_no_callback_metrics,
     rollup_metrics=_test_select_conn_basic_get_inside_txn_no_callback_metrics,
     background_task=True)
+@validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_async_connection_basic_get_inside_txn_no_callback(producer,
         ConnectionClass):
@@ -154,6 +160,7 @@ _test_async_connection_basic_get_empty_metrics = [
         scoped_metrics=_test_async_connection_basic_get_empty_metrics,
         rollup_metrics=_test_async_connection_basic_get_empty_metrics,
         background_task=True)
+@validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_async_connection_basic_get_empty(ConnectionClass):
     QUEUE = 'test_async_empty'
@@ -204,6 +211,7 @@ else:
         scoped_metrics=_test_select_conn_basic_consume_in_txn_metrics,
         rollup_metrics=_test_select_conn_basic_consume_in_txn_metrics,
         background_task=True)
+@validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_async_connection_basic_consume_inside_txn(producer, ConnectionClass):
     def on_message(channel, method_frame, header_frame, body):

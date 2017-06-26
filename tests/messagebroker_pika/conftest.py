@@ -15,6 +15,7 @@ EXCHANGE_2 = 'exchange-%s' % uuid.uuid4()
 
 CORRELATION_ID = 'test-correlation-id'
 REPLY_TO = 'test-reply-to'
+HEADERS = {'TestHeader': 'my test header value'}
 BODY = b'test_body'
 
 DB_SETTINGS = rabbitmq_settings()
@@ -66,7 +67,8 @@ def producer():
             body=BODY,
             properties=pika.spec.BasicProperties(
                 correlation_id=CORRELATION_ID,
-                reply_to=REPLY_TO),
+                reply_to=REPLY_TO,
+                headers=HEADERS),
         )
         yield
         channel.queue_delete(queue=QUEUE)
@@ -90,7 +92,8 @@ def producer_2():
             body=BODY,
             properties=pika.spec.BasicProperties(
                 correlation_id=CORRELATION_ID,
-                reply_to=REPLY_TO),
+                reply_to=REPLY_TO,
+                headers=HEADERS),
         )
         yield
         channel.queue_delete(queue=QUEUE_2)
@@ -115,7 +118,8 @@ def produce_five():
                 body=BODY,
                 properties=pika.spec.BasicProperties(
                     correlation_id=CORRELATION_ID,
-                    reply_to=REPLY_TO),
+                    reply_to=REPLY_TO,
+                    headers=HEADERS),
             )
 
         yield

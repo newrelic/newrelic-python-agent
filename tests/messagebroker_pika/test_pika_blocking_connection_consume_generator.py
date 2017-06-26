@@ -284,3 +284,25 @@ def test_blocking_connection_consume_using_methods_outside_txn(producer):
 
         result = consumer.close()
         assert result is None
+
+
+@validate_transaction_metrics(
+        ('test_pika_blocking_connection_consume_generator:'
+                'test_blocking_connection_consume_exception_on_creation'),
+        scoped_metrics=_test_blocking_connection_consume_empty_metrics,
+        rollup_metrics=_test_blocking_connection_consume_empty_metrics,
+        background_task=True)
+@background_task()
+def test_blocking_connection_consume_exception_on_creation():
+    with pika.BlockingConnection(
+            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+        channel = connection.channel()
+
+        try:
+            consumer = channel.consume(kittens=True)
+        except TypeError:
+            # this is expected
+            pass
+        else:
+            # this is not
+            assert False, 'TypeError was not raised'

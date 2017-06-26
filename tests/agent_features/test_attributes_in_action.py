@@ -835,6 +835,7 @@ def test_error_outside_transaction_excluded_user_param():
 
 
 # Test routing key agent attribute.
+
 _required_agent_attributes = ['message.routingKey']
 _forgone_agent_attributes = []
 
@@ -849,6 +850,16 @@ def test_routing_key_agent_attribute():
         pass
 
 
+@validate_attributes('agent', _required_agent_attributes,
+        _forgone_agent_attributes)
+def test_none_type_routing_key_agent_attribute():
+    application = Application("MeowMeowApp")
+    transaction = Transaction(application)
+    with AmqpTrace(transaction, 'library', 'Produce', 'Home',
+            routing_key=None, subscribed=True):
+        pass
+
+
 _required_agent_attributes = []
 _forgone_agent_attributes = ['message.routingKey']
 
@@ -860,4 +871,14 @@ def test_routing_key_agent_attribute_not_subscribed():
     transaction = Transaction(application)
     with AmqpTrace(transaction, 'library', 'Produce', 'Home',
             routing_key='cats.eat.fishies', subscribed=False):
+        pass
+
+
+@validate_attributes('agent', _required_agent_attributes,
+        _forgone_agent_attributes)
+def test_none_type_routing_key_agent_attribute_not_subscribed():
+    application = Application("MeowMeowApp")
+    transaction = Transaction(application)
+    with AmqpTrace(transaction, 'library', 'Produce', 'Home',
+            routing_key=None, subscribed=False):
         pass

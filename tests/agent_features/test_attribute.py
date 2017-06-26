@@ -50,9 +50,8 @@ def test_intrinsics():
 
 
 _required_agent = ['request.method', 'wsgi.output.seconds', 'response.status',
-                   'request.headers.host', 'request.headers.accept',
-                   'response.headers.contentType',
-                   'response.headers.contentLength']
+        'request.headers.host', 'request.headers.accept',
+        'response.headers.contentType', 'response.headers.contentLength']
 _forgone_agent = []
 
 
@@ -60,7 +59,7 @@ _forgone_agent = []
 def test_agent():
     target_application = webtest.TestApp(target_wsgi_application)
     response = target_application.get('/',
-                                      extra_environ={'HTTP_ACCEPT': '*/*'})
+            extra_environ={'HTTP_ACCEPT': '*/*'})
     assert response.body == b'Hello World!'
 
 
@@ -347,26 +346,24 @@ fully_featured_application = webtest.TestApp(fully_featured_app)
 
 # Types are only defined in the spec for agent attributes, not intrinsics.
 
-agent_attributes = {
-    'request.headers.accept': str,
-    'request.headers.contentLength': int,
-    'request.headers.contentType': str,
-    'request.headers.host': str,
-    'request.headers.referer': str,
-    'request.headers.userAgent': str,
-    'request.method': str,
-    'request.parameters.test': str,
-    'response.headers.contentLength': int,
-    'response.headers.contentType': str,
-    'response.status': str,
-}
+agent_attributes = {'request.headers.accept': str,
+        'request.headers.contentLength': int,
+        'request.headers.contentType': str,
+        'request.headers.host': str,
+        'request.headers.referer': str,
+        'request.headers.userAgent': str,
+        'request.method': str,
+        'request.parameters.test': str,
+        'response.headers.contentLength': int,
+        'response.headers.contentType': str,
+        'response.status': str}
 
 
 @validate_agent_attribute_types(agent_attributes)
 def test_agent_attribute_types():
     test_environ = {'CONTENT_TYPE': 'HTML', 'CONTENT_LENGTH': '100',
-                'HTTP_USER_AGENT': 'Firefox', 'HTTP_REFERER': 'somewhere',
-                'HTTP_ACCEPT': 'everything'}
+            'HTTP_USER_AGENT': 'Firefox', 'HTTP_REFERER': 'somewhere',
+            'HTTP_ACCEPT': 'everything'}
     fully_featured_application.get('/?test=val', extra_environ=test_environ)
 
 

@@ -53,7 +53,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_script_name_path_info_web_transaction(self):
         environ = {"SCRIPT_NAME": "/script_name_",
-                   "PATH_INFO": "path_info_web_transaction"}
+                "PATH_INFO": "path_info_web_transaction"}
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
@@ -100,7 +100,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_environ_background_web_transaction_bool(self):
         environ = {"REQUEST_URI": "DUMMY",
-                   "newrelic.set_background_task": True}
+                "newrelic.set_background_task": True}
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
@@ -110,7 +110,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_environ_background_web_transaction_string(self):
         environ = {"REQUEST_URI": "DUMMY",
-                   "newrelic.set_background_task": "On"}
+                "newrelic.set_background_task": "On"}
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
@@ -131,7 +131,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_request_parameters(self):
         environ = {"REQUEST_URI": "/request_parameters",
-                   "QUERY_STRING": "a=1&a=2&b=3&c"}
+                "QUERY_STRING": "a=1&a=2&b=3&c"}
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
@@ -188,7 +188,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
     def test_environ_enabled_bool(self):
         application.enabled = False
         environ = {"REQUEST_URI": "/environ_enabled_bool",
-                   "newrelic.enabled": True}
+                "newrelic.enabled": True}
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
@@ -199,7 +199,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_environ_disabled_bool(self):
         environ = {"REQUEST_URI": "/environ_disabled_bool",
-                   "newrelic.enabled": False}
+                "newrelic.enabled": False}
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
@@ -210,7 +210,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
     def test_environ_enabled_string(self):
         application.enabled = False
         environ = {"REQUEST_URI": "/environ_enabled_string",
-                   "newrelic.enabled": "On"}
+                "newrelic.enabled": "On"}
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
@@ -221,7 +221,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_environ_disabled_string(self):
         environ = {"REQUEST_URI": "/environ_disabled_string",
-                   "newrelic.enabled": "Off"}
+                "newrelic.enabled": "Off"}
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
@@ -253,7 +253,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_environ_ignore_web_transaction_string(self):
         environ = {"REQUEST_URI": "/environ_ignore_web_transaction_string",
-                   "newrelic.ignore_transaction": "On"}
+                "newrelic.ignore_transaction": "On"}
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
@@ -272,10 +272,8 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
         def start_response(status, headers):
             return 'write'
 
-        environ = {
-            'REQUEST_URI': '/web_transaction',
-            'newrelic.disable_browser_autorum': True,
-        }
+        environ = {'REQUEST_URI': '/web_transaction',
+                'newrelic.disable_browser_autorum': True}
 
         wrapped_wsgi_app = newrelic.api.web_transaction.WSGIApplicationWrapper(
                 wrapped, application=application)
@@ -303,10 +301,8 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
         def start_response(status, headers):
             return 'write'
 
-        environ = {
-            'REQUEST_URI': '/web_transaction',
-            'newrelic.disable_browser_autorum': False,
-        }
+        environ = {'REQUEST_URI': '/web_transaction',
+                'newrelic.disable_browser_autorum': False}
 
         wrapped_wsgi_app = newrelic.api.web_transaction.WSGIApplicationWrapper(
                 wrapped, application=application)
@@ -329,78 +325,78 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
 
             # HTTP_X_REQUEST_START seconds (with t=)
             ({"REQUEST_URI": "/queue_start",
-              "HTTP_X_REQUEST_START": "t=%d" % ts}, ts),
+                    "HTTP_X_REQUEST_START": "t=%d" % ts}, ts),
 
             # HTTP_X_REQUEST_START seconds
             ({"REQUEST_URI": "/queue_start",
-              "HTTP_X_REQUEST_START": "%d" % ts}, ts),
+                    "HTTP_X_REQUEST_START": "%d" % ts}, ts),
 
             # HTTP_X_QUEUE_START seconds (with t=)
             ({"REQUEST_URI": "/queue_start",
-              "HTTP_X_QUEUE_START": "t=%d" % ts}, ts),
+                    "HTTP_X_QUEUE_START": "t=%d" % ts}, ts),
 
             # HTTP_X_QUEUE_START seconds
-            ({"REQUEST_URI": "/queue_start", "HTTP_X_QUEUE_START": "%d" % ts},
-              ts),
+            ({"REQUEST_URI": "/queue_start",
+                    "HTTP_X_QUEUE_START": "%d" % ts}, ts),
 
             # mod_wsgi.queue_start seconds
             ({"REQUEST_URI": "/queue_start",
-              "mod_wsgi.queue_start": "%d" % ts}, ts),
+                    "mod_wsgi.queue_start": "%d" % ts}, ts),
 
             # mod_wsgi.queue_start seconds (with t=)
             ({"REQUEST_URI": "/queue_start",
-              "mod_wsgi.queue_start": "t=%d" % ts}, ts),
+                    "mod_wsgi.queue_start": "t=%d" % ts}, ts),
 
             # All three headers (with t=)
             ({"REQUEST_URI": "/queue_start",
-              "mod_wsgi.queue_start": "t=%d" % (ts + 100),
-              "HTTP_X_REQUEST_START": "t=%d" % ts,
-              "HTTP_X_QUEUE_START": "t=%d" % (ts + 100)}, ts),
+                    "mod_wsgi.queue_start": "t=%d" % (ts + 100),
+                    "HTTP_X_REQUEST_START": "t=%d" % ts,
+                    "HTTP_X_QUEUE_START": "t=%d" % (ts + 100)}, ts),
 
             # All three headers
             ({"REQUEST_URI": "/queue_start",
-              "mod_wsgi.queue_start": "%d" % (ts + 100),
-              "HTTP_X_REQUEST_START": "%d" % ts,
-              "HTTP_X_QUEUE_START": "%d" % (ts + 100)}, ts)
+                    "mod_wsgi.queue_start": "%d" % (ts + 100),
+                    "HTTP_X_REQUEST_START": "%d" % ts,
+                    "HTTP_X_QUEUE_START": "%d" % (ts + 100)}, ts)
         ]
 
         float_seconds_tests = [
 
             # HTTP_X_REQUEST_START seconds (with t=)
             ({"REQUEST_URI": "/queue_start",
-              "HTTP_X_REQUEST_START": "t=%f" % ts}, ts),
+                    "HTTP_X_REQUEST_START": "t=%f" % ts}, ts),
 
             # HTTP_X_REQUEST_START seconds
             ({"REQUEST_URI": "/queue_start",
-              "HTTP_X_REQUEST_START": "%f" % ts}, ts),
+                    "HTTP_X_REQUEST_START": "%f" % ts}, ts),
 
             # HTTP_X_QUEUE_START seconds (with t=)
             ({"REQUEST_URI": "/queue_start",
-              "HTTP_X_QUEUE_START": "t=%f" % ts}, ts),
+                    "HTTP_X_QUEUE_START": "t=%f" % ts}, ts),
 
             # HTTP_X_QUEUE_START seconds
             ({"REQUEST_URI": "/queue_start",
-              "HTTP_X_QUEUE_START": "%f" % ts}, ts),
+                    "HTTP_X_QUEUE_START": "%f" % ts}, ts),
 
             # mod_wsgi.queue_start seconds
             ({"REQUEST_URI": "/queue_start",
-              "mod_wsgi.queue_start": "%f" % ts}, ts),
+                    "mod_wsgi.queue_start": "%f" % ts}, ts),
 
             # mod_wsgi.queue_start seconds (with t=)
             ({"REQUEST_URI": "/queue_start",
-              "mod_wsgi.queue_start": "t=%f" % ts}, ts),
+                    "mod_wsgi.queue_start": "t=%f" % ts}, ts),
 
             # All three headers (with t=)
             ({"REQUEST_URI": "/queue_start",
-              "mod_wsgi.queue_start": "t=%f" % (ts + 100),
-              "HTTP_X_REQUEST_START": "t=%f" % ts,
-              "HTTP_X_QUEUE_START": "t=%f" % (ts + 100)}, ts),
+                    "mod_wsgi.queue_start": "t=%f" % (ts + 100),
+                    "HTTP_X_REQUEST_START": "t=%f" % ts,
+                    "HTTP_X_QUEUE_START": "t=%f" % (ts + 100)}, ts),
 
             # All three headers
             ({"REQUEST_URI": "/queue_start",
-              "mod_wsgi.queue_start": "%f" % (ts + 100),
-              "HTTP_X_REQUEST_START": "%f" % ts,
-              "HTTP_X_QUEUE_START": "%f" % (ts + 100)}, ts)
+                    "mod_wsgi.queue_start": "%f" % (ts + 100),
+                    "HTTP_X_REQUEST_START": "%f" % ts,
+                    "HTTP_X_QUEUE_START": "%f" % (ts + 100)}, ts)
 
         ]
 
@@ -408,27 +404,27 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
 
             # HTTP_X_REQUEST_START milli-seconds (with t=)
             ({"REQUEST_URI": "/queue_start",
-              "HTTP_X_REQUEST_START": "t=%.0f" % (ts * 1000)}, ts),
+                    "HTTP_X_REQUEST_START": "t=%.0f" % (ts * 1000)}, ts),
 
             # HTTP_X_REQUEST_START milli-seconds
             ({"REQUEST_URI": "/queue_start",
-              "HTTP_X_REQUEST_START": "%.0f" % (ts * 1000)}, ts),
+                    "HTTP_X_REQUEST_START": "%.0f" % (ts * 1000)}, ts),
 
             # HTTP_X_QUEUE_START milli-seconds (with t=)
             ({"REQUEST_URI": "/queue_start",
-              "HTTP_X_QUEUE_START": "t=%.0f" % (ts * 1000)}, ts),
+                    "HTTP_X_QUEUE_START": "t=%.0f" % (ts * 1000)}, ts),
 
             # HTTP_X_QUEUE_START milli-seconds
             ({"REQUEST_URI": "/queue_start",
-              "HTTP_X_QUEUE_START": "%.0f" % (ts * 1000)}, ts),
+                    "HTTP_X_QUEUE_START": "%.0f" % (ts * 1000)}, ts),
 
             # mod_wsgi.queue_start milli-seconds (with t=)
             ({"REQUEST_URI": "/queue_start",
-              "mod_wsgi.queue_start": "t=%.0f" % (ts * 1000)}, ts),
+                    "mod_wsgi.queue_start": "t=%.0f" % (ts * 1000)}, ts),
 
             # mod_wsgi.queue_start milli-seconds
             ({"REQUEST_URI": "/queue_start",
-              "mod_wsgi.queue_start": "%.0f" % (ts * 1000)}, ts),
+                    "mod_wsgi.queue_start": "%.0f" % (ts * 1000)}, ts),
 
         ]
 
@@ -436,27 +432,27 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
 
             # HTTP_X_REQUEST_START micro-seconds (with t=)
             ({"REQUEST_URI": "/queue_start",
-              "HTTP_X_REQUEST_START": "t=%.0f" % (ts * 1000000)}, ts),
+                    "HTTP_X_REQUEST_START": "t=%.0f" % (ts * 1000000)}, ts),
 
             # HTTP_X_REQUEST_START micro-seconds
             ({"REQUEST_URI": "/queue_start",
-              "HTTP_X_REQUEST_START": "%.0f" % (ts * 1000000)}, ts),
+                    "HTTP_X_REQUEST_START": "%.0f" % (ts * 1000000)}, ts),
 
             # HTTP_X_QUEUE_START micro-seconds (with t=)
             ({"REQUEST_URI": "/queue_start",
-              "HTTP_X_QUEUE_START": "t=%.0f" % (ts * 1000000)}, ts),
+                    "HTTP_X_QUEUE_START": "t=%.0f" % (ts * 1000000)}, ts),
 
             # HTTP_X_QUEUE_START micro-seconds
             ({"REQUEST_URI": "/queue_start",
-              "HTTP_X_QUEUE_START": "%.0f" % (ts * 1000000)}, ts),
+                    "HTTP_X_QUEUE_START": "%.0f" % (ts * 1000000)}, ts),
 
             # mod_wsgi.queue_start micro-seconds (with t=)
             ({"REQUEST_URI": "/queue_start",
-              "mod_wsgi.queue_start": "t=%.0f" % (ts * 1000000)}, ts),
+                    "mod_wsgi.queue_start": "t=%.0f" % (ts * 1000000)}, ts),
 
             # mod_wsgi.queue_start micro-seconds
             ({"REQUEST_URI": "/queue_start",
-              "mod_wsgi.queue_start": "%.0f" % (ts * 1000000)}, ts),
+                    "mod_wsgi.queue_start": "%.0f" % (ts * 1000000)}, ts),
 
     ]
 
@@ -479,7 +475,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
 
             # Time in the future.
             {"REQUEST_URI": "/queue_start",
-             "HTTP_X_REQUEST_START": "t=%.0f" % (ts + 1000)},
+                    "HTTP_X_REQUEST_START": "t=%.0f" % (ts + 1000)},
 
         ]
 
@@ -524,24 +520,19 @@ class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test__is_websocket_websocket_in_environ(self):
         environ = {'HTTP_UPGRADE': 'websocket'}
-        self.assertTrue(newrelic.api.web_transaction._is_websocket(
-            environ))
+        self.assertTrue(newrelic.api.web_transaction._is_websocket(environ))
 
     def test__is_websocket_empty_environ(self):
         environ = {}
-        self.assertFalse(newrelic.api.web_transaction._is_websocket(
-            environ))
+        self.assertFalse(newrelic.api.web_transaction._is_websocket(environ))
 
     def test__is_websocket_websocket_not_in_environ(self):
         environ = {'HTTP_UPGRADE': 'not a websocket'}
-        self.assertFalse(newrelic.api.web_transaction._is_websocket(
-            environ))
+        self.assertFalse(newrelic.api.web_transaction._is_websocket(environ))
 
     def test_web_transaction_disabled(self):
-        environ = {
-            'HTTP_UPGRADE': 'websocket',
-            'REQUEST_URI': '/web_transaction',
-        }
+        environ = {'HTTP_UPGRADE': 'websocket',
+                'REQUEST_URI': '/web_transaction'}
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
@@ -567,10 +558,8 @@ class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
         def start_response(status, headers):
             return 'write'
 
-        environ = {
-            'HTTP_UPGRADE': 'websocket',
-            'REQUEST_URI': '/web_transaction',
-        }
+        environ = {'HTTP_UPGRADE': 'websocket',
+                'REQUEST_URI': '/web_transaction'}
 
         wrapped_wsgi_app = newrelic.api.web_transaction.WSGIApplicationWrapper(
                 wrapped, application=application)
@@ -619,10 +608,8 @@ class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
         def start_response(status, headers):
             return 'write'
 
-        environ = {
-            'REQUEST_URI': '/web_transaction',
-            'newrelic.disable_browser_autorum': True,
-        }
+        environ = {'REQUEST_URI': '/web_transaction',
+                'newrelic.disable_browser_autorum': True}
 
         wrapped_wsgi_app = newrelic.api.web_transaction.WSGIApplicationWrapper(
                 wrapped, application=application)
@@ -646,11 +633,9 @@ class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
         def start_response(status, headers):
             return 'write'
 
-        environ = {
-            'HTTP_UPGRADE': 'websocket',
-            'REQUEST_URI': '/web_transaction',
-            'newrelic.disable_browser_autorum': True,
-        }
+        environ = {'HTTP_UPGRADE': 'websocket',
+                'REQUEST_URI': '/web_transaction',
+                'newrelic.disable_browser_autorum': True}
 
         wrapped_wsgi_app = newrelic.api.web_transaction.WSGIApplicationWrapper(
                 wrapped, application=application)

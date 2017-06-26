@@ -411,8 +411,8 @@ _intrinsic_attributes = {
 @reset_core_stats_engine()
 @override_application_settings(_test_transaction_settings_hsm_disabled)
 @validate_non_transaction_error_event(
-    required_intrinsics=_intrinsic_attributes,
-    required_user={'key-1': 'value-1'})
+        required_intrinsics=_intrinsic_attributes,
+        required_user={'key-1': 'value-1'})
 def test_non_transaction_error_parameters_hsm_disabled():
     try:
         raise TestException(_err_message)
@@ -430,8 +430,8 @@ _intrinsic_attributes = {
 @reset_core_stats_engine()
 @override_application_settings(_test_transaction_settings_hsm_enabled)
 @validate_non_transaction_error_event(
-    required_intrinsics=_intrinsic_attributes,
-    forgone_user={'key-1': 'value-1'})
+        required_intrinsics=_intrinsic_attributes,
+        forgone_user={'key-1': 'value-1'})
 def test_non_transaction_error_parameters_hsm_enabled():
     try:
         raise TestException(_err_message)
@@ -482,7 +482,7 @@ def test_transaction_hsm_enabled_environ_capture_request_params():
 
 
 @override_application_settings(
-    _test_transaction_settings_hsm_enabled_capture_params)
+        _test_transaction_settings_hsm_enabled_capture_params)
 @validate_request_params_omitted()
 def test_transaction_hsm_enabled_environ_capture_request_params_disabled():
     target_application = webtest.TestApp(
@@ -495,7 +495,7 @@ def test_transaction_hsm_enabled_environ_capture_request_params_disabled():
 
 
 @override_application_settings(
-    _test_transaction_settings_hsm_enabled_capture_params)
+        _test_transaction_settings_hsm_enabled_capture_params)
 @validate_request_params_omitted()
 def test_transaction_hsm_enabled_environ_capture_request_params_enabled():
     target_application = webtest.TestApp(
@@ -508,7 +508,7 @@ def test_transaction_hsm_enabled_environ_capture_request_params_enabled():
 
 
 @override_application_settings(
-    _test_transaction_settings_hsm_enabled_capture_params)
+        _test_transaction_settings_hsm_enabled_capture_params)
 @validate_request_params_omitted()
 def test_transaction_hsm_enabled_environ_capture_request_params_api_called():
     target_application = webtest.TestApp(

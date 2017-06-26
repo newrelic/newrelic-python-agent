@@ -44,7 +44,8 @@ def _add_consume_rabbitmq_trace(transaction, method, properties,
             routing_key=routing_key,
             subscribed=subscribed,
             queue_name=queue_name,
-            correlation_id=properties.get('correlation_id', None))
+            correlation_id=properties.get('correlation_id', None),
+            reply_to=properties.get('reply_to', None))
     trace.__enter__()
     trace.start_time = nr_start_time
     trace.__exit__(None, None, None)

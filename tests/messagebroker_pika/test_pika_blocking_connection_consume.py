@@ -13,6 +13,7 @@ DB_SETTINGS = rabbitmq_settings()
 
 _message_broker_tt_params = {
     'queue_name': QUEUE,
+    'routing_key': QUEUE,
 }
 
 _test_blocking_connection_basic_get_metrics = [

@@ -14,6 +14,7 @@ DB_SETTINGS = rabbitmq_settings()
 
 _message_broker_tt_params = {
     'queue_name': QUEUE,
+    'routing_key': QUEUE,
 }
 
 parametrized_connection = pytest.mark.parametrize('ConnectionClass',

@@ -9,7 +9,7 @@ class AmqpTrace(MessageBrokerTrace):
     def __init__(self, transaction, library, operation,
             destination_name, message_properties=None, routing_key=None,
             reply_to=None, correlation_id=None, queue_name=None,
-            exchange_type=None, subscribed=False):
+            exchange_type=None, subscribed=False, headers=None):
 
         super(AmqpTrace, self).__init__(transaction=transaction,
                 library=library,
@@ -33,6 +33,9 @@ class AmqpTrace(MessageBrokerTrace):
 
         if operation.lower() == 'consume' and queue_name is not None:
             self.params['queue_name'] = queue_name
+
+        if headers is not None:
+            self.params['headers'] = headers
 
         # Add routing key to agent attributes if subscribed
         if subscribed and routing_key is not None:

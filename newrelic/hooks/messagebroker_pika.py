@@ -190,6 +190,7 @@ def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
             _bind_basic_publish(*args, **kwargs))
     properties = properties or BasicProperties()
     properties.headers = properties.headers or {}
+    user_headers = properties.headers.copy() or None
     cat_headers = AmqpTrace.generate_request_headers(transaction)
     for name, value in cat_headers:
         properties.headers[name] = value
@@ -200,7 +201,7 @@ def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
             destination_name=exchange or 'Default',
             message_properties=properties.__dict__, routing_key=routing_key,
             correlation_id=properties.correlation_id,
-            reply_to=properties.reply_to):
+            reply_to=properties.reply_to, headers=user_headers):
         return wrapped(*args)
 
 

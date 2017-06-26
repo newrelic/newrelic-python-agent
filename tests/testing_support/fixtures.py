@@ -1008,7 +1008,13 @@ def validate_tt_collector_json(required_params={},
                 elif segment_name.startswith('MessageBroker'):
                     for key in message_broker_params:
                         assert key in params, key
-                        assert params[key] == message_broker_params[key]
+                        if isinstance(message_broker_params[key], dict):
+                            for k in message_broker_params[key]:
+                                assert k in params[key], k
+                                assert params[key][k] == (
+                                        message_broker_params[key][k])
+                        else:
+                            assert params[key] == message_broker_params[key]
                     for key in message_broker_forgone_params:
                         assert key not in params, key
 

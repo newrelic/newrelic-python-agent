@@ -182,7 +182,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
         with transaction:
             self.assertFalse(transaction.enabled)
             self.assertEqual(newrelic.api.transaction.current_transaction(),
-                             None)
+                    None)
         application.enabled = True
 
     def test_environ_enabled_bool(self):
@@ -205,7 +205,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
         with transaction:
             self.assertFalse(transaction.enabled)
             self.assertEqual(newrelic.api.transaction.current_transaction(),
-                             None)
+                    None)
 
     def test_environ_enabled_string(self):
         application.enabled = False
@@ -227,7 +227,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
         with transaction:
             self.assertFalse(transaction.enabled)
             self.assertEqual(newrelic.api.transaction.current_transaction(),
-                             None)
+                    None)
 
     def test_ignore_web_transaction(self):
         environ = {"REQUEST_URI": "/ignore_web_transaction"}
@@ -245,7 +245,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_environ_ignore_web_transaction_bool(self):
         environ = {"REQUEST_URI": "/environ_ignore_web_transaction_bool",
-                   "newrelic.ignore_transaction": True}
+                "newrelic.ignore_transaction": True}
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
@@ -538,7 +538,7 @@ class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
         with transaction:
             self.assertFalse(transaction.enabled)
             self.assertEqual(newrelic.api.transaction.current_transaction(),
-                             None)
+                    None)
 
     def test_no_rum_wsgi_application_wrapper(self):
         # Test that the WSGIApplicationWrapper function will not apply RUM

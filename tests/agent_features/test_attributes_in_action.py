@@ -445,7 +445,7 @@ def test_error_in_transaction_exclude_agent_attribute():
 
 
 _expected_attributes = {'agent': ['wsgi.output.seconds', 'response.status',
-          'request.headers.contentType', 'request.headers.contentLength'],
+        'request.headers.contentType', 'request.headers.contentLength'],
         'user': USER_ATTRS, 'intrinsic': ['trip_id']}
 
 
@@ -613,7 +613,7 @@ _expected_absent_attributes = {'agent': REQ_PARAMS, 'user': []}
 
 
 @validate_error_event_attributes(_expected_attributes_event,
-                                 _expected_absent_attributes)
+        _expected_absent_attributes)
 @validate_transaction_error_trace_attributes(_expected_attributes,
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
@@ -798,7 +798,7 @@ def test_error_outside_transaction():
     except OutsideWithParamsError:
         application_instance = application()
         application_instance.record_exception(
-            params={'test_key': 'test_value'})
+                params={'test_key': 'test_value'})
 
 
 class OutsideNoParamsError(Exception):

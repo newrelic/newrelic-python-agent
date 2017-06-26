@@ -319,19 +319,15 @@ def test_remote_config_hsm_fixups_server_side_disabled():
     assert 'high_security' not in settings
 
 
-_test_transaction_settings_hsm_disabled = {
-        'high_security': False
-}
+_test_transaction_settings_hsm_disabled = {'high_security': False}
 
 # Normally, in HSM the exception message would be stripped just by turning on
 # high_security. However, these tests (like all of our tests) overrides the
 # settings after agent initialization where this setting is fixed up.
 
-_test_transaction_settings_hsm_enabled = {
-    'high_security': True,
-    'strip_exception_messages.enabled': True,
-    'custom_insights_events.enabled': False,
-}
+_test_transaction_settings_hsm_enabled = {'high_security': True,
+        'strip_exception_messages.enabled': True,
+        'custom_insights_events.enabled': False}
 
 
 @override_application_settings(_test_transaction_settings_hsm_disabled)
@@ -402,10 +398,8 @@ def test_other_transaction_error_parameters_hsm_enabled():
 
 
 _err_message = "Error! :("
-_intrinsic_attributes = {
-        'error.class': callable_name(TestException),
-        'error.message': _err_message,
-}
+_intrinsic_attributes = {'error.class': callable_name(TestException),
+        'error.message': _err_message}
 
 
 @reset_core_stats_engine()
@@ -421,10 +415,8 @@ def test_non_transaction_error_parameters_hsm_disabled():
         record_exception(params={'key-1': 'value-1'}, application=app)
 
 
-_intrinsic_attributes = {
-        'error.class': callable_name(TestException),
-        'error.message': STRIP_EXCEPTION_MESSAGE,
-}
+_intrinsic_attributes = {'error.class': callable_name(TestException),
+        'error.message': STRIP_EXCEPTION_MESSAGE}
 
 
 @reset_core_stats_engine()
@@ -446,7 +438,7 @@ def target_wsgi_application_capture_params(environ, start_response):
     output = b'Hello World!'
 
     response_headers = [('Content-Type', 'text/plain; charset=utf-8'),
-                        ('Content-Length', str(len(output)))]
+            ('Content-Length', str(len(output)))]
     start_response(status, response_headers)
 
     return [output]
@@ -459,16 +451,14 @@ def target_wsgi_application_capture_params_api_called(environ, start_response):
 
     capture_request_params(True)
     response_headers = [('Content-Type', 'text/plain; charset=utf-8'),
-                        ('Content-Length', str(len(output)))]
+            ('Content-Length', str(len(output)))]
     start_response(status, response_headers)
 
     return [output]
 
 
-_test_transaction_settings_hsm_enabled_capture_params = {
-    'high_security': True,
-    'capture_params': False
-}
+_test_transaction_settings_hsm_enabled_capture_params = {'high_security': True,
+        'capture_params': False}
 
 
 @override_application_settings(
@@ -530,10 +520,7 @@ def simple_custom_event_app(environ, start_response):
     return []
 
 
-_intrinsics = {
-    'type': _event_type,
-    'timestamp': time.time()
-}
+_intrinsics = {'type': _event_type, 'timestamp': time.time()}
 
 _required_event = [_intrinsics, _params]
 

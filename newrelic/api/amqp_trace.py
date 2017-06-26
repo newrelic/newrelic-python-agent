@@ -35,7 +35,7 @@ class AmqpTrace(MessageBrokerTrace):
             self.params['queue_name'] = queue_name
 
         # Add routing key to agent attributes if subscribed
-        if subscribed:
+        if subscribed and routing_key is not None:
             transaction._request_environment['ROUTING_KEY'] = routing_key
 
 

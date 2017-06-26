@@ -774,6 +774,8 @@ class Transaction(object):
             a_attrs['request.headers.userAgent'] = req_env['HTTP_USER_AGENT']
         if req_env.get('REQUEST_METHOD', None):
             a_attrs['request.method'] = req_env['REQUEST_METHOD']
+        if req_env.get('ROUTING_KEY', None):
+            a_attrs['message.routingKey'] = req_env['ROUTING_KEY']
 
         resp_props = self._response_properties
 

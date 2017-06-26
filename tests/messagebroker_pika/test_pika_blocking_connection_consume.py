@@ -201,27 +201,3 @@ def test_blocking_connection_basic_consume_stopped_txn(producer):
         except:
             channel.stop_consuming()
             raise
-
-
-_test_blocking_connection_consume_metrics = [
-    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE, None),
-    # TODO: This test needs to be re-enabled (count=1) with PYTHON-2364
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, None),
-]
-
-
-@validate_transaction_metrics(
-        ('test_pika_blocking_connection_consume:'
-                'test_blocking_connection_consume'),
-        scoped_metrics=_test_blocking_connection_consume_metrics,
-        rollup_metrics=_test_blocking_connection_consume_metrics,
-        background_task=True)
-@background_task()
-def test_blocking_connection_consume(producer):
-    with pika.BlockingConnection(
-            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
-        channel = connection.channel()
-        for method_frame, properties, body in channel.consume(QUEUE):
-            assert hasattr(method_frame, '_nr_start_time')
-            assert body == BODY
-            break

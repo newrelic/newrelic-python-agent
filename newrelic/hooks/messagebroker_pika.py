@@ -1,5 +1,7 @@
 import functools
+import sys
 import time
+import types
 
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask
@@ -7,7 +9,8 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.amqp_trace import AmqpTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.object_wrapper import (wrap_function_wrapper, wrap_object,
+        FunctionWrapper)
 
 
 _no_trace_methods = set()
@@ -208,12 +211,124 @@ def _callback_bind_params(callback=None, *args, **kwargs):
     return callback
 
 
+def _ConsumeGeneratorWrapper(wrapped):
+    def wrapper(wrapped, instance, args, kwargs):
+        def _possibly_create_traces(yielded):
+            # This generator can be called either outside of a transaction, or
+            # within the context of an existing transaction.  There are 3
+            # possibilities we need to handle: (Note that this is similar to
+            # our Celery instrumentation)
+            #
+            #   1. In an inactive transaction
+            #
+            #      If the end_of_transaction() or ignore_transaction() API
+            #      calls have been invoked, this generator may be called in the
+            #      context of an inactive transaction. In this case, don't wrap
+            #      the generator in any way. Just run the original generator.
+            #
+            #   2. In an active transaction
+            #
+            #      Run the original generator and produce an AmqpTrace for each
+            #      iteration.
+            #
+            #   3. Outside of a transaction
+            #
+            #      Since it's not running inside of an existing transaction, we
+            #      want to create a new background transaction for it but only
+            #      when we've subscribed.
+
+            transaction = current_transaction(active_only=False)
+            method, properties, _ = yielded
+            nr_start_time = method._nr_start_time
+
+            if transaction and (transaction.ignore_transaction or
+                    transaction.stopped):
+                # 1. In an inactive transaction
+                return
+
+            elif transaction:
+                # 2. In an active transaction
+                _add_consume_rabbitmq_trace(transaction, method,
+                        properties and properties.__dict__, nr_start_time,
+                        subscribed=True)
+                return
+
+            else:
+                # 3. Outside of a transaction
+                bt_group = 'Message/RabbitMQ/Exchange'
+                bt_name = 'Named/%s' % (method.exchange or 'Default')
+
+                # Create a background task for each iteration through the
+                # generator. This is important because it is foreseeable that
+                # the generator process lasts a long time and consumes many
+                # many messages.
+
+                bt = BackgroundTask(application=application_instance(),
+                        name=bt_name, group=bt_group)
+                bt.__enter__()
+                _add_consume_rabbitmq_trace(bt, method,
+                        properties and properties.__dict__, nr_start_time,
+                        subscribed=True)
+                return bt
+
+        def _generator(generator):
+            try:
+                value = None
+                exc = (None, None, None)
+                created_bt = None
+
+                while True:
+                    if any(exc):
+                        to_throw = exc
+                        exc = (None, None, None)
+                        yielded = generator.throw(*to_throw)
+                    else:
+                        yielded = generator.send(value)
+
+                    if yielded:
+                        created_bt = _possibly_create_traces(yielded)
+
+                    try:
+                        value = yield yielded
+                    except Exception:
+                        exc = sys.exc_info()
+
+                    if created_bt:
+                        created_bt.__exit__(*exc)
+
+            except (GeneratorExit, StopIteration):
+                raise
+
+            except Exception:
+                exc = sys.exc_info()
+                raise
+
+            finally:
+                generator.close()
+                if created_bt:
+                    created_bt.__exit__(*exc)
+
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            if isinstance(result, types.GeneratorType):
+                return _generator(result)
+            else:
+                return result
+
+    return FunctionWrapper(wrapped, wrapper)
+
+
 def instrument_pika_adapters(module):
     _wrap_Channel_consume_callback(module.blocking_connection,
             'BlockingChannel.basic_consume', _consumer_callback_bind_params,
             'consumer_callback', subscribed=True)
     wrap_function_wrapper(module.blocking_connection,
             'BlockingChannel.__init__', _nr_wrap_BlockingChannel___init__)
+    wrap_object(module.blocking_connection, 'BlockingChannel.consume',
+            _ConsumeGeneratorWrapper)
 
 
 def instrument_pika_spec(module):

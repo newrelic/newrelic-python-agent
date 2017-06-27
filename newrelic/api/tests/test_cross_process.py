@@ -4,10 +4,11 @@ import json
 
 import newrelic.packages.six as six
 
-from newrelic.api.application import application_instance
-from newrelic.core.config import global_settings, apply_server_side_settings
+from newrelic.core.config import apply_server_side_settings
+from newrelic.core.attribute_filter import AttributeFilter
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.encoding_utils import deobfuscate, obfuscate
+
 
 class TestCase(unittest.TestCase):
 
@@ -26,10 +27,16 @@ class TestCase(unittest.TestCase):
         encoding_key = '0123456789'
 
         class Application(object):
+            name = 'Fakey McFakeFake'
+
             def activate(self):
                 pass
+
             def normalize_name(self, name, rule_type):
                 return name, False
+
+            def record_transaction(self, *args, **kwargs):
+                pass
 
         application = Application()
 
@@ -43,6 +50,7 @@ class TestCase(unittest.TestCase):
         settings['cross_process_id'] = cross_process_id
         settings['encoding_key'] = encoding_key
         settings['trusted_account_ids'] = trusted_account_ids
+        settings['attribute_filter'] = AttributeFilter({})
 
         application.settings = apply_server_side_settings(settings)
 
@@ -65,10 +73,23 @@ class TestCase(unittest.TestCase):
         transaction.set_transaction_name(transaction_name)
 
         transaction.queue_start = queue_start
+        transaction.__enter__()
         transaction.start_time = start_time
-        transaction.end_time = end_time
+
+        # set up end time
+        if end_time is not None:
+            transaction.stop_recording()
+            transaction.end_time = end_time
 
         headers = dict(transaction.process_response('200 OK', []))
+
+        # Check if web transaction name was frozen (before transaction exit).
+
+        self.assertEqual(transaction._frozen_path is not None, expect_result,
+                 'Failed for %s.' % test_args())
+
+        # Exit transaciton to check for metrics
+        transaction.__exit__(None, None, None)
 
         # Check for whether header is present when expected.
 
@@ -81,11 +102,6 @@ class TestCase(unittest.TestCase):
 
         self.assertEqual(metric in transaction._custom_metrics, expect_result,
                 'Failed for %s.' % test_args())
-
-        # Check if web transaction name was frozen.
-
-        self.assertEqual(transaction._frozen_path is not None, expect_result,
-                 'Failed for %s.' % test_args())
 
         # Nothing else to check if no response header expected.
 
@@ -116,7 +132,7 @@ class TestCase(unittest.TestCase):
             queue_time = 0
 
         if end_time:
-            duration = end_time = start_time
+            duration = end_time - start_time
         else:
             duration = time.time() - start_time
 
@@ -200,39 +216,41 @@ class TestCase(unittest.TestCase):
 
             # Transaction had been stopped.
 
-            (True, u'1#2', _o, [1], 1, 1, now, now+2, 'Name', True),
+            (True, u'1#2', _o, [1], 1, 1, now, now + 2, 'Name', True),
 
             # Transaction with Latin-1 Unicode name.
 
-            (True, u'1#2', _o, [1], 1, 1, now, now+2, u'Name', True),
+            (True, u'1#2', _o, [1], 1, 1, now, now + 2, u'Name', True),
 
             # Transaction with UTF-8 Unicode name.
 
-            (True, u'1#2', _o, [1], 1, 1, now, now+2, six.unichr(0x0bf2), True),
+            (True, u'1#2', _o, [1], 1, 1, now, now + 2, six.unichr(0x0bf2),
+                    True),
 
             # Transaction with single quotes in name.
 
-            (True, u'1#2', _o, [1], 1, 1, now, now+2, 'Name\'', True),
+            (True, u'1#2', _o, [1], 1, 1, now, now + 2, 'Name\'', True),
 
             # Transaction with double quotes in name.
 
-            (True, u'1#2', _o, [1], 1, 1, now, now+2, 'Name\"', True),
+            (True, u'1#2', _o, [1], 1, 1, now, now + 2, 'Name\"', True),
 
             # List of trusted accounts is empty.
 
-            (True, u'1#2', _o, [], 1, 1, now, now+2, 'Name', False),
+            (True, u'1#2', _o, [], 1, 1, now, now + 2, 'Name', False),
 
             # Not in trusted list of accounts.
 
-            (True, u'1#2', _o, [0], 1, 1, now, now+2, 'Name', False),
+            (True, u'1#2', _o, [0], 1, 1, now, now + 2, 'Name', False),
 
             # Disabled by agent configuration.
 
-            (False, u'1#2', _o, [1], 1, 1, now, now+2, 'Name', False),
+            (False, u'1#2', _o, [1], 1, 1, now, now + 2, 'Name', False),
         ]
 
         for item in tests:
             self._run_cross_process_process_response(*item)
+
 
 if __name__ == '__main__':
     unittest.main()

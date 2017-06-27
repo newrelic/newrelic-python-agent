@@ -30,6 +30,13 @@ def _add_consume_rabbitmq_trace(transaction, method, properties,
     transaction.start_time = min(nr_start_time,
             transaction.start_time)
 
+    if properties:
+        headers = properties['headers']
+        if headers:
+            cat_id = headers.get(AmqpTrace.cat_id_key)
+            cat_transaction = headers.get(AmqpTrace.cat_transaction_key)
+            transaction._process_incoming_cat_headers(cat_id, cat_transaction)
+
     # create a trace starting at the time the message was received
     trace = AmqpTrace(transaction, library='RabbitMQ',
             operation='Consume', destination_name=method.exchange or 'Default',

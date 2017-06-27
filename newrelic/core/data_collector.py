@@ -524,6 +524,16 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
         raise DiscardDataForRequest()
 
+    elif r.status_code == 408:
+        _logger.warning('Data collector is indicating that a timeout '
+                'has occurred for url %r, headers of %r, '
+                'params of %r and payload of %r. If this keeps occurring on a '
+                'regular basis, Please report this problem to New Relic '
+                'support.', url, headers, params,
+                payload)
+
+        raise RetryDataForRequest()
+
     elif r.status_code == 413:
         _logger.warning('Data collector is indicating that a request for '
                 'method %r was received where the request content size '

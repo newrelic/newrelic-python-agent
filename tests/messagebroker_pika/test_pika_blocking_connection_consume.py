@@ -4,13 +4,20 @@ import six
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
 
-from conftest import QUEUE, EXCHANGE, BODY
+from conftest import QUEUE, EXCHANGE, CORRELATION_ID, REPLY_TO, HEADERS, BODY
 from testing_support.fixtures import (capture_transaction_metrics,
-        validate_transaction_metrics)
+        validate_transaction_metrics, validate_tt_collector_json)
 from testing_support.settings import rabbitmq_settings
 
 DB_SETTINGS = rabbitmq_settings()
 
+_message_broker_tt_params = {
+    'queue_name': QUEUE,
+    'routing_key': QUEUE,
+    'correlation_id': CORRELATION_ID,
+    'reply_to': REPLY_TO,
+    'headers': HEADERS.copy(),
+}
 
 _test_blocking_connection_basic_get_metrics = [
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE, None),
@@ -26,6 +33,7 @@ _test_blocking_connection_basic_get_metrics = [
         scoped_metrics=_test_blocking_connection_basic_get_metrics,
         rollup_metrics=_test_blocking_connection_basic_get_metrics,
         background_task=True)
+@validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_blocking_connection_basic_get(producer):
     with pika.BlockingConnection(
@@ -48,6 +56,7 @@ _test_blocking_connection_basic_get_empty_metrics = [
         scoped_metrics=_test_blocking_connection_basic_get_empty_metrics,
         rollup_metrics=_test_blocking_connection_basic_get_empty_metrics,
         background_task=True)
+@validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_blocking_connection_basic_get_empty():
     QUEUE = 'test_blocking_empty'
@@ -106,6 +115,7 @@ else:
         rollup_metrics=_test_blocking_conn_basic_consume_no_txn_metrics,
         background_task=True,
         group='Message/RabbitMQ/Exchange')
+@validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 def test_blocking_connection_basic_consume_outside_transaction(producer):
     def on_message(channel, method_frame, header_frame, body):
         assert hasattr(method_frame, '_nr_start_time')
@@ -144,6 +154,7 @@ else:
         scoped_metrics=_test_blocking_conn_basic_consume_in_txn_metrics,
         rollup_metrics=_test_blocking_conn_basic_consume_in_txn_metrics,
         background_task=True)
+@validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_blocking_connection_basic_consume_inside_txn(producer):
     def on_message(channel, method_frame, header_frame, body):
@@ -183,6 +194,7 @@ else:
         scoped_metrics=_test_blocking_conn_basic_consume_stopped_txn_metrics,
         rollup_metrics=_test_blocking_conn_basic_consume_stopped_txn_metrics,
         background_task=True)
+@validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_blocking_connection_basic_consume_stopped_txn(producer):
     def on_message(channel, method_frame, header_frame, body):

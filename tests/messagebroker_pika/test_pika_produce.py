@@ -2,7 +2,8 @@ import pika
 
 from newrelic.api.background_task import background_task
 
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.fixtures import (validate_transaction_metrics,
+        validate_tt_collector_json)
 from testing_support.external_fixtures import validate_messagebroker_headers
 from testing_support.settings import rabbitmq_settings
 from newrelic.api.transaction import current_transaction
@@ -23,7 +24,16 @@ def cache_pika_headers(wrapped, instance, args, kwargs):
 
 
 DB_SETTINGS = rabbitmq_settings()
+QUEUE = 'cats-are-better-than-dogs'
+CORRELATION_ID = 'meowmeowmeow'
+REPLY_TO = 'purrrr'
+HEADERS = {u'MYHEADER': u'headtail'}
 
+_message_broker_tt_included_params = {
+    'routing_key': QUEUE,
+}
+
+_message_broker_tt_forgone_params = ['queue_name', 'correlation_id', 'reply_to']
 
 _test_blocking_connection_metrics = [
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/Default', 2),
@@ -36,6 +46,9 @@ _test_blocking_connection_metrics = [
         scoped_metrics=_test_blocking_connection_metrics,
         rollup_metrics=_test_blocking_connection_metrics,
         background_task=True)
+@validate_tt_collector_json(
+        message_broker_params=_message_broker_tt_included_params,
+        message_broker_forgone_params=_message_broker_tt_forgone_params)
 @background_task()
 @validate_messagebroker_headers
 @cache_pika_headers
@@ -46,14 +59,138 @@ def test_blocking_connection(producer):
 
         channel.basic_publish(
             exchange='',
-            routing_key='hello',
+            routing_key=QUEUE,
             body='test',
         )
 
         channel.publish(
             exchange='',
-            routing_key='hello',
+            routing_key=QUEUE,
             body='test',
+        )
+
+
+_message_broker_tt_included_test_correlation_id = (
+        _message_broker_tt_included_params.copy())
+_message_broker_tt_included_test_correlation_id.update({
+    'correlation_id': CORRELATION_ID,
+})
+
+_message_broker_tt_forgone_test_correlation_id = ['queue_name', 'reply_to',
+        'headers']
+
+
+@validate_transaction_metrics(
+        'test_pika_produce:test_blocking_connection_correlation_id',
+        scoped_metrics=_test_blocking_connection_metrics,
+        rollup_metrics=_test_blocking_connection_metrics,
+        background_task=True)
+@validate_tt_collector_json(
+        message_broker_params=_message_broker_tt_included_test_correlation_id,
+        message_broker_forgone_params=(
+            _message_broker_tt_forgone_test_correlation_id))
+@background_task()
+@validate_messagebroker_headers
+@cache_pika_headers
+def test_blocking_connection_correlation_id(producer):
+    with pika.BlockingConnection(
+            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+        channel = connection.channel()
+
+        channel.basic_publish(
+            exchange='',
+            routing_key=QUEUE,
+            body='test',
+            properties=pika.spec.BasicProperties(correlation_id=CORRELATION_ID),
+        )
+
+        channel.publish(
+            exchange='',
+            routing_key=QUEUE,
+            body='test',
+            properties=pika.spec.BasicProperties(correlation_id=CORRELATION_ID),
+        )
+
+
+_message_broker_tt_included_test_reply_to = (
+        _message_broker_tt_included_params.copy())
+_message_broker_tt_included_test_reply_to.update({
+    'reply_to': REPLY_TO,
+})
+
+_message_broker_tt_forgone_test_reply_to = ['queue_name', 'correlation_id',
+        'headers']
+
+
+@validate_transaction_metrics(
+        'test_pika_produce:test_blocking_connection_reply_to',
+        scoped_metrics=_test_blocking_connection_metrics,
+        rollup_metrics=_test_blocking_connection_metrics,
+        background_task=True)
+@validate_tt_collector_json(
+        message_broker_params=_message_broker_tt_included_test_reply_to,
+        message_broker_forgone_params=_message_broker_tt_forgone_test_reply_to)
+@background_task()
+@validate_messagebroker_headers
+@cache_pika_headers
+def test_blocking_connection_reply_to(producer):
+    with pika.BlockingConnection(
+            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+        channel = connection.channel()
+
+        channel.basic_publish(
+            exchange='',
+            routing_key=QUEUE,
+            body='test',
+            properties=pika.spec.BasicProperties(reply_to=REPLY_TO),
+        )
+
+        channel.publish(
+            exchange='',
+            routing_key=QUEUE,
+            body='test',
+            properties=pika.spec.BasicProperties(reply_to=REPLY_TO),
+        )
+
+
+_message_broker_tt_included_test_headers = (
+        _message_broker_tt_included_params.copy())
+_message_broker_tt_included_test_headers.update({
+    'headers': HEADERS.copy(),
+})
+
+_message_broker_tt_forgone_test_headers = ['queue_name', 'correlation_id',
+        'reply_to']
+
+
+@validate_transaction_metrics(
+        'test_pika_produce:test_blocking_connection_headers',
+        scoped_metrics=_test_blocking_connection_metrics,
+        rollup_metrics=_test_blocking_connection_metrics,
+        background_task=True)
+@validate_tt_collector_json(
+        message_broker_params=_message_broker_tt_included_test_headers,
+        message_broker_forgone_params=_message_broker_tt_forgone_test_headers)
+@background_task()
+@validate_messagebroker_headers
+@cache_pika_headers
+def test_blocking_connection_headers(producer):
+    with pika.BlockingConnection(
+            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+        channel = connection.channel()
+
+        channel.basic_publish(
+            exchange='',
+            routing_key=QUEUE,
+            body='test',
+            properties=pika.spec.BasicProperties(headers=HEADERS),
+        )
+
+        channel.publish(
+            exchange='',
+            routing_key=QUEUE,
+            body='test',
+            properties=pika.spec.BasicProperties(headers=HEADERS),
         )
 
 
@@ -70,6 +207,9 @@ _test_blocking_connection_two_exchanges_metrics = [
         scoped_metrics=_test_blocking_connection_two_exchanges_metrics,
         rollup_metrics=_test_blocking_connection_two_exchanges_metrics,
         background_task=True)
+@validate_tt_collector_json(
+        message_broker_params=_message_broker_tt_included_params,
+        message_broker_forgone_params=_message_broker_tt_forgone_params)
 @background_task()
 @validate_messagebroker_headers
 @cache_pika_headers
@@ -77,7 +217,7 @@ def test_blocking_connection_two_exchanges():
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
         channel = connection.channel()
-        channel.queue_declare(queue='hello')
+        channel.queue_declare(queue=QUEUE)
         channel.exchange_declare(exchange='exchange-1', durable=False,
                 auto_delete=True)
         channel.exchange_declare(exchange='exchange-2', durable=False,
@@ -85,12 +225,12 @@ def test_blocking_connection_two_exchanges():
 
         channel.basic_publish(
             exchange='exchange-1',
-            routing_key='hello',
+            routing_key=QUEUE,
             body='test',
         )
         channel.basic_publish(
             exchange='exchange-2',
-            routing_key='hello',
+            routing_key=QUEUE,
             body='test',
         )
 
@@ -106,6 +246,9 @@ _test_select_connection_metrics = [
         scoped_metrics=_test_select_connection_metrics,
         rollup_metrics=_test_select_connection_metrics,
         background_task=True)
+@validate_tt_collector_json(
+        message_broker_params=_message_broker_tt_included_params,
+        message_broker_forgone_params=_message_broker_tt_forgone_params)
 @background_task()
 @validate_messagebroker_headers
 @cache_pika_headers
@@ -116,7 +259,7 @@ def test_select_connection():
     def on_channel_open(channel):
         channel.basic_publish(
             exchange='',
-            routing_key='hello',
+            routing_key=QUEUE,
             body='test',
         )
         connection.close()
@@ -147,6 +290,9 @@ _test_tornado_connection_metrics = [
         scoped_metrics=_test_tornado_connection_metrics,
         rollup_metrics=_test_tornado_connection_metrics,
         background_task=True)
+@validate_tt_collector_json(
+        message_broker_params=_message_broker_tt_included_params,
+        message_broker_forgone_params=_message_broker_tt_forgone_params)
 @background_task()
 @validate_messagebroker_headers
 @cache_pika_headers
@@ -157,7 +303,7 @@ def test_tornado_connection():
     def on_channel_open(channel):
         channel.basic_publish(
             exchange='',
-            routing_key='hello',
+            routing_key=QUEUE,
             body='test',
         )
         connection.close()

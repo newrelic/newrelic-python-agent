@@ -13,7 +13,11 @@ QUEUE_2 = 'test_pika-%s' % uuid.uuid4()
 EXCHANGE = 'exchange-%s' % uuid.uuid4()
 EXCHANGE_2 = 'exchange-%s' % uuid.uuid4()
 
+CORRELATION_ID = 'test-correlation-id'
+REPLY_TO = 'test-reply-to'
+HEADERS = {'TestHeader': 'my test header value'}
 BODY = b'test_body'
+
 DB_SETTINGS = rabbitmq_settings()
 
 _coverage_source = [
@@ -61,8 +65,12 @@ def producer():
             exchange=EXCHANGE,
             routing_key=QUEUE,
             body=BODY,
+            properties=pika.spec.BasicProperties(
+                correlation_id=CORRELATION_ID,
+                reply_to=REPLY_TO,
+                headers=HEADERS),
         )
-        yield QUEUE, EXCHANGE, BODY
+        yield
         channel.queue_delete(queue=QUEUE)
         channel.exchange_delete(exchange=EXCHANGE)
 
@@ -82,8 +90,12 @@ def producer_2():
             exchange=EXCHANGE_2,
             routing_key=QUEUE_2,
             body=BODY,
+            properties=pika.spec.BasicProperties(
+                correlation_id=CORRELATION_ID,
+                reply_to=REPLY_TO,
+                headers=HEADERS),
         )
-        yield QUEUE_2, EXCHANGE_2, BODY
+        yield
         channel.queue_delete(queue=QUEUE_2)
         channel.exchange_delete(exchange=EXCHANGE_2)
 
@@ -104,8 +116,12 @@ def produce_five():
                 exchange=EXCHANGE,
                 routing_key=QUEUE,
                 body=BODY,
+                properties=pika.spec.BasicProperties(
+                    correlation_id=CORRELATION_ID,
+                    reply_to=REPLY_TO,
+                    headers=HEADERS),
             )
 
-        yield QUEUE, EXCHANGE, BODY
+        yield
         channel.queue_delete(queue=QUEUE)
         channel.exchange_delete(exchange=EXCHANGE)

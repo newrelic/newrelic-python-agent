@@ -1,11 +1,11 @@
 import webtest
 
-from newrelic.api.transaction import Transaction
 from newrelic.api.amqp_trace import AmqpTrace
-from newrelic.api.application import Application
 from newrelic.api.application import application_instance as application
+from newrelic.api.background_task import background_task
+from newrelic.api.transaction import (add_custom_parameter, record_exception,
+        current_transaction)
 from newrelic.api.web_transaction import wsgi_application
-from newrelic.api.transaction import add_custom_parameter, record_exception
 from newrelic.common.object_names import callable_name
 
 from testing_support.fixtures import (validate_transaction_trace_attributes,
@@ -842,9 +842,9 @@ _forgone_agent_attributes = []
 
 @validate_attributes('agent', _required_agent_attributes,
         _forgone_agent_attributes)
+@background_task()
 def test_routing_key_agent_attribute():
-    application = Application("MeowMeowApp")
-    transaction = Transaction(application)
+    transaction = current_transaction()
     with AmqpTrace(transaction, 'library', 'Produce', 'Home',
             routing_key='cats.eat.fishies', subscribed=True):
         pass
@@ -856,9 +856,9 @@ _forgone_agent_attributes = ['message.routingKey']
 
 @validate_attributes('agent', _required_agent_attributes,
         _forgone_agent_attributes)
+@background_task()
 def test_routing_key_agent_attribute_not_subscribed():
-    application = Application("MeowMeowApp")
-    transaction = Transaction(application)
+    transaction = current_transaction()
     with AmqpTrace(transaction, 'library', 'Produce', 'Home',
             routing_key='cats.eat.fishies', subscribed=False):
         pass
@@ -866,9 +866,9 @@ def test_routing_key_agent_attribute_not_subscribed():
 
 @validate_attributes('agent', _required_agent_attributes,
         _forgone_agent_attributes)
+@background_task()
 def test_none_type_routing_key_agent_attribute():
-    application = Application("MeowMeowApp")
-    transaction = Transaction(application)
+    transaction = current_transaction()
     with AmqpTrace(transaction, 'library', 'Produce', 'Home',
             routing_key=None, subscribed=True):
         pass
@@ -876,9 +876,9 @@ def test_none_type_routing_key_agent_attribute():
 
 @validate_attributes('agent', _required_agent_attributes,
         _forgone_agent_attributes)
+@background_task()
 def test_none_type_routing_key_agent_attribute_not_subscribed():
-    application = Application("MeowMeowApp")
-    transaction = Transaction(application)
+    transaction = current_transaction()
     with AmqpTrace(transaction, 'library', 'Produce', 'Home',
             routing_key=None, subscribed=False):
         pass

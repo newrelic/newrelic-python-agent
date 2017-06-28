@@ -2062,6 +2062,9 @@ def _process_module_builtin_defaults():
         _process_module_definition('tornado.http1connection',
                 'newrelic.hooks.framework_tornado_r3.http1connection',
                 'instrument_tornado_http1connection')
+        _process_module_definition('tornado.platform.asyncio',
+                'newrelic.hooks.framework_tornado_r3.ioloop',
+                'instrument_tornado_asyncio_loop')
 
     elif 'tornado.instrumentation.r1' in _settings.feature_flag:
         _process_module_definition('tornado.wsgi',

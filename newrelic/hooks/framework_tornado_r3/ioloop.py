@@ -140,3 +140,14 @@ def instrument_tornado_ioloop(module):
             _nr_wrapper_PollIOLoop_add_handler)
     wrap_function_wrapper(module, 'PollIOLoop.add_callback_from_signal',
             _nr_wrapper_PollIOLoop_add_callback_from_signal)
+
+
+def instrument_tornado_asyncio_loop(module):
+    wrap_function_wrapper(module, 'AsyncIOLoop.add_callback',
+            _nr_wrapper_PollIOLoop_add_callback)
+    wrap_function_wrapper(module, 'AsyncIOLoop.call_at',
+            _nr_wrapper_PollIOLoop_call_at)
+    wrap_function_wrapper(module, 'AsyncIOLoop.add_handler',
+            _nr_wrapper_PollIOLoop_add_handler)
+    wrap_function_wrapper(module, 'AsyncIOLoop.add_callback_from_signal',
+            _nr_wrapper_PollIOLoop_add_callback_from_signal)

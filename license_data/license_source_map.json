@@ -119,12 +119,6 @@
             "New Relic"
         ]
     },
-    "newrelic/api/amqp_trace.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/api/application.py": {
         "hash": "n/a",
         "libraries": [
@@ -492,12 +486,6 @@
         ]
     },
     "newrelic/api/tests/html_insertion/x_ua_meta_with_uppercase.html": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/api/tests/test_amqp_trace.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

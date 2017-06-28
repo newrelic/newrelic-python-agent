@@ -20,7 +20,7 @@ _message_broker_tt_params = {
 
 _test_blocking_connection_consume_metrics = [
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE, None),
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, 1),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, None),
     ('MessageBroker/RabbitMQ/Exchange/Consume/Named/Unknown', None),
 ]
 
@@ -155,7 +155,7 @@ def test_blocking_connection_consume_exception_in_generator():
 
 _test_blocking_connection_consume_many_metrics = [
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE, None),
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, 5),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, None),
     ('MessageBroker/RabbitMQ/Exchange/Consume/Named/Unknown', None),
 ]
 
@@ -317,7 +317,7 @@ def test_blocking_connection_consume_exception_on_creation():
         channel = connection.channel()
 
         try:
-            consumer = channel.consume(kittens=True)
+            channel.consume(kittens=True)
         except TypeError:
             # this is expected
             pass

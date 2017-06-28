@@ -196,7 +196,7 @@ def test_async_connection_basic_get_empty(ConnectionClass):
 
 _test_select_conn_basic_consume_in_txn_metrics = [
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE, None),
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, 1),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, None),
 ]
 
 if six.PY3:
@@ -247,9 +247,9 @@ def test_async_connection_basic_consume_inside_txn(producer, ConnectionClass):
 
 _test_select_conn_basic_consume_two_exchanges = [
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE, None),
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, 1),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, None),
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE_2, None),
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE_2, 1),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE_2, None),
 ]
 
 if six.PY3:

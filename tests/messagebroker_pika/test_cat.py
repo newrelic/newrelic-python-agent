@@ -26,23 +26,67 @@ def do_basic_publish(channel, QUEUE):
     )
 
 
-_test_cat_basic_get_scoped_metrics = [
+_test_cat_basic_consume_scoped_metrics = [
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/Default', None),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/Default', None),
+]
+_test_cat_basic_consume_rollup_metrics = list(
+        _test_cat_basic_consume_scoped_metrics)
+_test_cat_basic_consume_rollup_metrics.append(('ClientApplication/1#1/all', 1))
+
+
+@validate_transaction_metrics(
+        'Named/Default',
+        scoped_metrics=_test_cat_basic_consume_scoped_metrics,
+        rollup_metrics=_test_cat_basic_consume_rollup_metrics,
+        background_task=True,
+        group='Message/RabbitMQ/Exchange')
+def do_basic_consume(channel):
+    channel.start_consuming()
+
+
+@override_application_settings(_override_settings)
+def test_basic_consume_cat_headers():
+    def on_receive(ch, method, properties, msg):
+        headers = properties.headers
+        assert headers
+        assert 'NewRelicID' in headers
+        assert 'NewRelicTransaction' in headers
+        assert msg == b'Testing CAT 123'
+        ch.stop_consuming()
+
+    with pika.BlockingConnection(
+            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+        channel = connection.channel()
+        channel.queue_declare('TESTCAT', durable=False)
+
+        try:
+            channel.basic_consume(on_receive,
+                no_ack=True,
+                queue='TESTCAT')
+            do_basic_publish(channel, 'TESTCAT')
+            do_basic_consume(channel)
+
+        finally:
+            channel.queue_delete('TESTCAT')
+
+
+_test_cat_basic_get_metrics = [
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/Default', None),
     ('MessageBroker/RabbitMQ/Exchange/Consume/Named/Default', 1),
+    # Verify basic_get doesn't create a CAT metric
+    ('ClientApplication/1#1/all', None),
 ]
-_test_cat_basic_get_rollup_metrics = list(_test_cat_basic_get_scoped_metrics)
-_test_cat_basic_get_rollup_metrics.append(('ClientApplication/1#1/all', 1))
 
 
 @validate_transaction_metrics(
         'test_cat:do_basic_get',
-        scoped_metrics=_test_cat_basic_get_scoped_metrics,
-        rollup_metrics=_test_cat_basic_get_rollup_metrics,
+        scoped_metrics=_test_cat_basic_get_metrics,
+        rollup_metrics=_test_cat_basic_get_metrics,
         background_task=True)
 @background_task()
 def do_basic_get(channel, QUEUE):
     _, properties, msg = channel.basic_get(QUEUE)
-
     headers = properties.headers
     assert headers
     assert 'NewRelicID' in headers
@@ -51,7 +95,7 @@ def do_basic_get(channel, QUEUE):
 
 
 @override_application_settings(_override_settings)
-def test_basic_get_cat_headers():
+def test_basic_get_no_cat_headers():
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
         channel = connection.channel()
@@ -60,6 +104,5 @@ def test_basic_get_cat_headers():
         try:
             do_basic_publish(channel, 'TESTCAT')
             do_basic_get(channel, 'TESTCAT')
-
         finally:
             channel.queue_delete('TESTCAT')

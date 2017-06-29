@@ -194,6 +194,38 @@ def test_blocking_connection_headers(producer):
         )
 
 
+@validate_transaction_metrics(
+        'test_pika_produce:test_blocking_connection_headers_reuse_properties',
+        scoped_metrics=_test_blocking_connection_metrics,
+        rollup_metrics=_test_blocking_connection_metrics,
+        background_task=True)
+@validate_tt_collector_json(
+        message_broker_params=_message_broker_tt_included_test_headers,
+        message_broker_forgone_params=_message_broker_tt_forgone_test_headers)
+@background_task()
+@validate_messagebroker_headers
+@cache_pika_headers
+def test_blocking_connection_headers_reuse_properties(producer):
+    with pika.BlockingConnection(
+            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+        channel = connection.channel()
+        properties = pika.spec.BasicProperties(headers=HEADERS)
+
+        channel.basic_publish(
+            exchange='',
+            routing_key=QUEUE,
+            body='test',
+            properties=properties,
+        )
+
+        channel.publish(
+            exchange='',
+            routing_key=QUEUE,
+            body='test',
+            properties=properties,
+        )
+
+
 _test_blocking_connection_two_exchanges_metrics = [
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/exchange-1', 1),
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/exchange-2', 1),

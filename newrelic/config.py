@@ -489,6 +489,8 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'cross_application_tracer.enabled',
                      'getboolean', None)
+    _process_setting(section, 'message_tracer.segment_parameters.enabled',
+                     'getboolean', None)
     _process_setting(section, 'process_host.display_name',
                      'get', None)
     _process_setting(section, 'utilization.detect_aws',

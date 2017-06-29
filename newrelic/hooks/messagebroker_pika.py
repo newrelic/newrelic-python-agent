@@ -86,10 +86,10 @@ def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
         properties.headers[name] = value
 
     # Do not record cat headers in the segment parameters
-    if AmqpTrace.cat_id_key in user_headers:
-        del user_headers[AmqpTrace.cat_id_key]
-    if AmqpTrace.cat_transaction_key in user_headers:
-        del user_headers[AmqpTrace.cat_transaction_key]
+    if MessageBrokerTrace.cat_id_key in user_headers:
+        del user_headers[MessageBrokerTrace.cat_id_key]
+    if MessageBrokerTrace.cat_transaction_key in user_headers:
+        del user_headers[MessageBrokerTrace.cat_transaction_key]
 
     args = (exchange, routing_key, body, properties, mandatory, immediate)
 

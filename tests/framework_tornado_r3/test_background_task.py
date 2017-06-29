@@ -33,27 +33,35 @@ from tornado_fixtures import (
 def do_stuff():
     pass
 
+
 @function_trace()
 def yield_stuff():
     raise tornado.gen.Return('yielded stuff')
 
-class ExceptionAfterTransactionRecorded(Exception): pass
+
+class ExceptionAfterTransactionRecorded(Exception):
+    pass
+
 
 @function_trace()
 def do_error():
     raise ExceptionAfterTransactionRecorded()
 
+
 @background_task()
 def do_nothing_background_task():
     pass
+
 
 @background_task()
 def do_stuff_background_task():
     do_stuff()
 
+
 @background_task()
 def add_callback_background_task(io_loop, func, *args, **kwargs):
     io_loop.add_callback(func, *args, **kwargs)
+
 
 @background_task()
 @tornado.gen.coroutine
@@ -61,12 +69,14 @@ def coroutine_background_task():
     do_stuff()
     yield yield_stuff()
 
+
 @background_task()
 @tornado.gen.coroutine
 def schedule_and_cancel_callback_task(io_loop):
     timeout = io_loop.call_later(1.0, do_error)
     io_loop.remove_timeout(timeout)
     do_stuff()
+
 
 @background_task()
 @tornado.gen.coroutine

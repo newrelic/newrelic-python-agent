@@ -10,8 +10,6 @@ except ImportError:
 import tornado.gen
 import tornado.testing
 import tornado.web
-if sys.version_info >= (2, 7):
-    from zmq.eventloop.ioloop import ZMQIOLoop
 
 from tornado.ioloop import IOLoop
 from tornado.websocket import websocket_connect, WebSocketHandler
@@ -20,6 +18,9 @@ from tornado_fixtures import (tornado_validate_transaction_cache_empty,
         tornado_validate_errors)
 
 from testing_support.fixtures import function_not_called
+
+if sys.version_info >= (2, 7):
+    from zmq.eventloop.ioloop import ZMQIOLoop
 
 
 class BaseWebSocketsHandler(WebSocketHandler):

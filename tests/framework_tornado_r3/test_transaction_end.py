@@ -37,8 +37,10 @@ from tornado_fixtures import (
 
 from testing_support.fixtures import function_not_called
 
+
 def select_python_version(py2, py3):
     return six.PY3 and py3 or py2
+
 
 class AllTests(object):
 
@@ -48,7 +50,7 @@ class AllTests(object):
                 ('Function/_test_async_application:do_divide (coroutine)', 1),
                 ('Function/_test_async_application:'
                     'ReturnFirstDivideRequestHandler.get', 1),
-                ('Function/_test_async_application:get (coroutine)', 1),],
+                ('Function/_test_async_application:get (coroutine)', 1)],
             py3=[('Function/_test_async_application:'
                     'ReturnFirstDivideRequestHandler.do_divide', 1),
                 ('Function/_test_async_application:ReturnFirstDivide'
@@ -56,7 +58,7 @@ class AllTests(object):
                 ('Function/_test_async_application:'
                     'ReturnFirstDivideRequestHandler.get', 1),
                 ('Function/_test_async_application:ReturnFirstDivide'
-                    'RequestHandler.get (coroutine)', 1),])
+                    'RequestHandler.get (coroutine)', 1)])
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[])
@@ -85,7 +87,7 @@ class AllTests(object):
         self.assertEqual(response.body, expected)
 
     scoped_metrics = [('Function/_test_async_application:'
-            'CallLaterRequestHandler.get', 1),]
+            'CallLaterRequestHandler.get', 1)]
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[])
@@ -100,16 +102,17 @@ class AllTests(object):
     scoped_metrics = select_python_version(
             py2=[('Function/_test_async_application:'
                     'CancelAfterRanCallLaterRequestHandler.get', 1),
-                ('Function/_test_async_application:get (coroutine)', 1),],
+                ('Function/_test_async_application:get (coroutine)', 1)],
             py3=[('Function/_test_async_application:'
                     'CancelAfterRanCallLaterRequestHandler.get', 1),
                 ('Function/_test_async_application:CancelAfterRanCallLater'
-                    'RequestHandler.get (coroutine)', 1),])
+                    'RequestHandler.get (coroutine)', 1)])
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(
-            '_test_async_application:CancelAfterRanCallLaterRequestHandler.get',
+            ('_test_async_application:'
+                    'CancelAfterRanCallLaterRequestHandler.get'),
             scoped_metrics=scoped_metrics, forgone_metric_substrings=['later'])
     def test_cancel_call_at_after_callback_ran(self):
         response = self.fetch_response('/cancel-timer')
@@ -212,8 +215,8 @@ class AllTests(object):
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
-            '_test_async_application:PrepareCoroutine'
-                    'FutureDoesNotResolveHandler.get',
+            ('_test_async_application:PrepareCoroutine'
+                    'FutureDoesNotResolveHandler.get'),
             scoped_metrics=scoped_metrics)
     def test_prepare_coroutine_future_does_not_resolve(self):
         response = self.fetch_response('/prepare-unresolved')
@@ -262,7 +265,8 @@ class AllTests(object):
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
-            '_test_async_application:ThreadScheduledCallbackRequestHandler.get',
+            ('_test_async_application:'
+                    'ThreadScheduledCallbackRequestHandler.get'),
             scoped_metrics=scoped_metrics,
             forgone_metric_substrings=['do_thing'])
     def test_thread_scheduled_callback(self):
@@ -282,7 +286,8 @@ class AllTests(object):
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
-            '_test_async_application:CallbackOnThreadExecutorRequestHandler.get',
+            ('_test_async_application:'
+                    'CallbackOnThreadExecutorRequestHandler.get'),
             scoped_metrics=scoped_metrics)
     def test_thread_ran_callback(self):
         response = self.fetch_response('/thread-ran-callback')
@@ -401,8 +406,7 @@ class AllTests(object):
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:BusyWaitThreadedFutureRequestHandler.get',
             scoped_metrics=scoped_metrics,
-            forgone_metric_substrings=['long_wait'],
-            )
+            forgone_metric_substrings=['long_wait'])
     def test_future_resolved_in_thread_complex_add_done_callback(self):
         response = self.fetch_response('/future-thread-2')
         expected = BusyWaitThreadedFutureRequestHandler.RESPONSE
@@ -435,7 +439,8 @@ class AllTests(object):
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
-            '_test_async_application:AddDoneCallbackAddsCallbackRequestHandler.get',
+            ('_test_async_application:'
+                    'AddDoneCallbackAddsCallbackRequestHandler.get'),
             scoped_metrics=scoped_metrics, forgone_metric_substrings=[
                     'resolve_future', 'schedule_work', 'do_work'])
     @function_not_called('newrelic.hooks.framework_tornado_r3.ioloop',
@@ -462,7 +467,8 @@ class AllTests(object):
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
-            '_test_async_application:AddDoneCallbackAddsCallbackRequestHandler.get',
+            ('_test_async_application:'
+                    'AddDoneCallbackAddsCallbackRequestHandler.get'),
             scoped_metrics=scoped_metrics, forgone_metric_substrings=[
                     'resolve_future', 'schedule_work', 'do_work'])
     @function_not_called('newrelic.hooks.framework_tornado_r3.ioloop',
@@ -497,14 +503,13 @@ class AllTests(object):
         expected = AddCallbackFromSignalRequestHandler.RESPONSE
         self.assertEqual(response.body, expected)
 
-
     scoped_metrics = [
             ('Function/_test_async_application:'
                     'WaitForFinishHandler.get', 1),
     ]
     custom_metrics = [
             ('WebTransaction/Function/_test_async_application:'
-                'WaitForFinishHandler.get',(0.1, 0.6))
+                'WaitForFinishHandler.get', (0.1, 0.6))
     ]
 
     @tornado_validate_transaction_cache_empty()

@@ -3,12 +3,24 @@ import tornado.testing
 if sys.version_info >= (2, 7):
     from zmq.eventloop.ioloop import ZMQIOLoop
 
+from tornado.ioloop import IOLoop
+
 from newrelic.common.object_wrapper import FunctionWrapper
 from newrelic.core.stats_engine import StatsEngine
 
 from _test_async_application import get_tornado_app
 
 class TornadoBaseTest(tornado.testing.AsyncHTTPTestCase):
+
+    def get_new_ioloop(self):
+
+        # Starting with Tornado 5, when available it will use the asyncio event
+        # loop. If this is the case, override and force use of the tornado
+        # event loop. The asyncio event loop will be tested separately.
+
+        if IOLoop.configurable_default().__name__ == 'AsyncIOLoop':
+            IOLoop.configure('tornado.ioloop.PollIOLoop')
+        return IOLoop.instance()
 
     def setUp(self):
         super(TornadoBaseTest, self).setUp()
@@ -100,7 +112,13 @@ class TornadoBaseTest(tornado.testing.AsyncHTTPTestCase):
                 "Uncaught exception GET %s" % path):
             return self.fetch_response(path, is_http_error=True)
 
+
 class TornadoZmqBaseTest(TornadoBaseTest):
     def get_new_ioloop(self):
         return ZMQIOLoop()
 
+
+class TornadoAsyncIOBaseTest(TornadoBaseTest):
+    def get_new_ioloop(self):
+        IOLoop.configure('tornado.platform.asyncio.AsyncIOLoop')
+        return IOLoop()

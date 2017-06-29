@@ -4,9 +4,15 @@ import threading
 
 import pytest
 
+try:
+    import asyncio
+except ImportError:
+    asyncio = None
+
 from newrelic.packages import six
 
-from tornado_base_test import TornadoBaseTest, TornadoZmqBaseTest
+from tornado_base_test import (TornadoBaseTest, TornadoZmqBaseTest,
+        TornadoAsyncIOBaseTest)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -298,10 +304,17 @@ class AllTests(object):
         self.assertEqual(response.code, 500)
         self.assertEqual(response.reason, INTERNAL_SERVER_ERROR)
 
-class ExceptionDefaultIOLoopTest(AllTests, TornadoBaseTest):
+
+class ExceptionPollIOLoopTest(AllTests, TornadoBaseTest):
     pass
+
 
 @pytest.mark.skipif(sys.version_info < (2, 7),
         reason='pyzmq does not support Python 2.6')
 class ExceptionZmqIOLoopTest(AllTests, TornadoZmqBaseTest):
+    pass
+
+
+@pytest.mark.skipif(not asyncio, reason='No asyncio module available')
+class ExceptionAsyncIOLoopTest(AllTests, TornadoAsyncIOBaseTest):
     pass

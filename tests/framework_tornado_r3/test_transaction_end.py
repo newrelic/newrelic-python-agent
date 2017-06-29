@@ -4,10 +4,16 @@ import tornado
 
 import pytest
 
+try:
+    import asyncio
+except ImportError:
+    asyncio = None
+
 from newrelic.packages import six
 from newrelic.packages.six.moves import http_client
 
-from tornado_base_test import TornadoBaseTest, TornadoZmqBaseTest
+from tornado_base_test import (TornadoBaseTest, TornadoZmqBaseTest,
+        TornadoAsyncIOBaseTest)
 
 from _test_async_application import (ReturnFirstDivideRequestHandler,
         CallLaterRequestHandler, CancelAfterRanCallLaterRequestHandler,
@@ -514,10 +520,17 @@ class AllTests(object):
         expected = WaitForFinishHandler.RESPONSE
         self.assertEqual(response.body, expected)
 
-class TornadoDefaultIOLoopTest(AllTests, TornadoBaseTest):
+
+class TornadoPollIOLoopTest(AllTests, TornadoBaseTest):
     pass
+
 
 @pytest.mark.skipif(sys.version_info < (2, 7),
         reason='pyzmq does not support Python 2.6')
 class TornadoZmqIOLoopTest(AllTests, TornadoZmqBaseTest):
+    pass
+
+
+@pytest.mark.skipif(not asyncio, reason='No asyncio module available')
+class TornadoAsyncIOLoopTest(AllTests, TornadoAsyncIOBaseTest):
     pass

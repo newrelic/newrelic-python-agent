@@ -2,12 +2,18 @@ import sys
 
 import pytest
 
+try:
+    import asyncio
+except ImportError:
+    asyncio = None
+
 import tornado.gen
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace
 
-from tornado_base_test import TornadoBaseTest, TornadoZmqBaseTest
+from tornado_base_test import (TornadoBaseTest, TornadoZmqBaseTest,
+        TornadoAsyncIOBaseTest)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -169,10 +175,17 @@ class AllTests(object):
         spawn_callback_background_task(self.io_loop)
         self.wait(timeout=5.0)
 
-class TornadoDefaultIOLoopTest(AllTests, TornadoBaseTest):
+
+class TornadoPollIOLoopTest(AllTests, TornadoBaseTest):
     pass
+
 
 @pytest.mark.skipif(sys.version_info < (2, 7),
         reason='pyzmq does not support Python 2.6')
 class TornadoZmqTest(AllTests, TornadoZmqBaseTest):
+    pass
+
+
+@pytest.mark.skipif(not asyncio, reason='No asyncio module available')
+class TornadoAsyncIOLoopTest(AllTests, TornadoAsyncIOBaseTest):
     pass

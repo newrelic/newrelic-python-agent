@@ -7,6 +7,7 @@ import newrelic.api.application
 import newrelic.api.web_transaction
 import newrelic.api.message_trace
 
+
 settings = newrelic.api.settings.settings()
 application = newrelic.api.application.application_instance(settings.app_name)
 
@@ -65,6 +66,32 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_message_trace_decorator_no_transaction(self):
         _test_function_1('hello kitty')
+
+    def test_segment_parameters_enabled(self):
+        environ = {'REQUEST_URI': '/message_trace'}
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
+        transaction.settings.message_tracer.segment_parameters_enabled = True
+        params = {'cats': 'meow', 'dogs': 'wruff'}
+        with transaction:
+            with newrelic.api.message_trace.MessageTrace(
+                    transaction, library='RabbitMQ', operation='Consume',
+                    destination_type='Exchange', destination_name='x',
+                    params=params) as mt:
+                assert mt.params == params
+
+    def test_segment_parameters_disabled(self):
+        environ = {'REQUEST_URI': '/message_trace'}
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
+        transaction.settings.message_tracer.segment_parameters_enabled = False
+        params = {'cats': 'meow', 'dogs': 'wruff'}
+        with transaction:
+            with newrelic.api.message_trace.MessageTrace(
+                    transaction, library='RabbitMQ', operation='Consume',
+                    destination_type='Exchange', destination_name='x',
+                    params=params) as mt:
+                assert mt.params == {}
 
 
 if __name__ == '__main__':

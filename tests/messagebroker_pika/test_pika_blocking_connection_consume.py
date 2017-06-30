@@ -176,6 +176,7 @@ def test_blocking_connection_basic_consume_inside_txn(producer):
 _test_blocking_conn_basic_consume_stopped_txn_metrics = [
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE, None),
     ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, None),
+    ('OtherTransaction/Message/RabbitMQ/Exchange/Named/%s' % EXCHANGE, None),
 ]
 
 if six.PY3:

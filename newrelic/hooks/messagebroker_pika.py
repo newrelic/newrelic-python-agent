@@ -286,7 +286,10 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
         def wrapped_callback(*args, **kwargs):
             transaction = current_transaction(active_only=False)
 
-            if transaction:
+            if transaction and (transaction.ignore_transaction or
+                    transaction.stopped):
+                return callback(*args, **kwargs)
+            elif transaction:
                 with FunctionTrace(transaction=transaction, name=name):
                     return callback(*args, **kwargs)
             else:

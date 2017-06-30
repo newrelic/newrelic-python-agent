@@ -9,6 +9,11 @@ import os
 import pytest
 import sys
 
+try:
+    import asyncio
+except ImportError:
+    asyncio = None
+
 from testing_support.mock_external_http_server import (
         MockExternalHTTPHResponseHeadersServer)
 
@@ -16,7 +21,8 @@ from testing_support.fixtures import (override_application_settings,
         override_application_name, make_cross_agent_headers,
         validate_analytics_catmap_data, validate_tt_parameters)
 
-from tornado_base_test import TornadoBaseTest, TornadoZmqBaseTest
+from tornado_base_test import (TornadoBaseTest, TornadoZmqBaseTest,
+        TornadoAsyncIOBaseTest)
 from _test_async_application import CatMapHandler
 
 ENCODING_KEY = '1234567890123456789012345678901234567890'
@@ -112,7 +118,7 @@ class AllTests(object):
             run_cat_test()
 
 
-class TornadoDefaultIOLoopTest(AllTests, TornadoBaseTest):
+class TornadoPollIOLoopTest(AllTests, TornadoBaseTest):
     pass
 
 
@@ -120,3 +126,11 @@ class TornadoDefaultIOLoopTest(AllTests, TornadoBaseTest):
         reason='pyzmq does not support Python 2.6')
 class TornadoZmqIOLoopTest(AllTests, TornadoZmqBaseTest):
     pass
+
+
+@pytest.mark.skipif(not asyncio, reason='No asyncio module available')
+class TornadoAsyncIOLoopTest(AllTests, TornadoAsyncIOBaseTest):
+    @pytest.mark.skip(
+            reason='asyncio event loop does not support synchronous calls')
+    def test_cat_map(self):
+        pass

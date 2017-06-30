@@ -4,6 +4,11 @@ import sys
 import time
 import threading
 
+try:
+    import asyncio
+except ImportError:
+    asyncio = None
+
 import pytest
 
 from tornado.httputil import HTTPHeaders, HTTPServerRequest
@@ -20,7 +25,8 @@ from newrelic.hooks.framework_tornado_r3.util import (
         retrieve_current_transaction)
 from newrelic.packages import six
 
-from tornado_base_test import TornadoBaseTest, TornadoZmqBaseTest
+from tornado_base_test import (TornadoBaseTest, TornadoZmqBaseTest,
+        TornadoAsyncIOBaseTest)
 
 from _test_async_application import (HelloRequestHandler,
         SleepRequestHandler, OneCallbackRequestHandler,
@@ -1291,7 +1297,7 @@ class TornadoProxyTest(TornadoBaseTest):
         self.assertEqual(response.body, HelloRequestHandler.RESPONSE)
 
 
-class TornadoDefaultIOLoopTest(AllTests, TornadoBaseTest):
+class TornadoPollIOLoopTest(AllTests, TornadoBaseTest):
     pass
 
 
@@ -1299,3 +1305,21 @@ class TornadoDefaultIOLoopTest(AllTests, TornadoBaseTest):
         reason='pyzmq does not support Python 2.6')
 class TornadoZmqIOLoopTest(AllTests, TornadoZmqBaseTest):
     pass
+
+
+@pytest.mark.skipif(not asyncio, reason='No asyncio module available')
+class TornadoAsyncIOLoopTest(AllTests, TornadoAsyncIOBaseTest):
+    @pytest.mark.skip(
+            reason='asyncio event loop does not support synchronous calls')
+    def test_run_sync_response(self):
+        pass
+
+    @pytest.mark.skip(
+            reason='asyncio event loop does not support synchronous calls')
+    def test_sync_httpclient_raw_url_fetch(self):
+        pass
+
+    @pytest.mark.skip(
+            reason='asyncio event loop does not support synchronous calls')
+    def test_sync_httpclient_request_object_fetch(self):
+        pass

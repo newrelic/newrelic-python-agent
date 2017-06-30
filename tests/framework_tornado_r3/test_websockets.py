@@ -2,18 +2,25 @@ import sys
 
 import pytest
 
+try:
+    import asyncio
+except ImportError:
+    asyncio = None
+
 import tornado.gen
 import tornado.testing
 import tornado.web
-if sys.version_info >= (2, 7):
-    from zmq.eventloop.ioloop import ZMQIOLoop
 
+from tornado.ioloop import IOLoop
 from tornado.websocket import websocket_connect, WebSocketHandler
 
 from tornado_fixtures import (tornado_validate_transaction_cache_empty,
         tornado_validate_errors)
 
 from testing_support.fixtures import function_not_called
+
+if sys.version_info >= (2, 7):
+    from zmq.eventloop.ioloop import ZMQIOLoop
 
 
 class BaseWebSocketsHandler(WebSocketHandler):
@@ -26,6 +33,15 @@ class BaseWebSocketsHandler(WebSocketHandler):
 
 
 class BaseWebSocketsTest(tornado.testing.AsyncHTTPTestCase):
+
+    # Starting with Tornado 5, when available it will use the asyncio event
+    # loop. If this is the case, override and force use of the tornado event
+    # loop. The asyncio event loop will be tested separately.
+
+    if IOLoop.configurable_default().__name__ == 'AsyncIOLoop':
+        def get_new_ioloop(self):
+            IOLoop.configure('tornado.ioloop.PollIOLoop')
+            return IOLoop.current()
 
     def get_protocol(self):
         return 'ws'
@@ -40,9 +56,16 @@ class BaseWebSocketsTest(tornado.testing.AsyncHTTPTestCase):
         ws.close()
         yield self.close_future
 
+
 class BaseWebSocketsZmqTest(BaseWebSocketsTest):
     def get_new_ioloop(self):
         return ZMQIOLoop()
+
+
+class BaseWebSocketsAsyncIOTest(BaseWebSocketsTest):
+    def get_new_ioloop(self):
+        IOLoop.configure('tornado.platform.asyncio.AsyncIOLoop')
+        return IOLoop()
 
 
 class HelloHandler(BaseWebSocketsHandler):
@@ -77,10 +100,18 @@ class AllTests(object):
 
         yield self.close(ws)
 
-class TornadoWebSocketsDefaultIOLoopTest(AllTests, BaseWebSocketsTest):
+
+class TornadoWebSocketsPollIOLoopTest(AllTests, BaseWebSocketsTest):
     pass
+
 
 @pytest.mark.skipif(sys.version_info < (2, 7),
         reason='pyzmq does not support Python 2.6')
 class TornadoWebSocketsZmqIOLoopTest(AllTests, BaseWebSocketsZmqTest):
+    pass
+
+
+@pytest.mark.skipif(not asyncio, reason='No asyncio module available')
+class TornadoWebsocketsAsyncIOLoopTest(AllTests,
+        BaseWebSocketsAsyncIOTest):
     pass

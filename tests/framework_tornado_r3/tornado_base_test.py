@@ -1,21 +1,36 @@
 import sys
 import tornado.testing
-if sys.version_info >= (2, 7):
-    from zmq.eventloop.ioloop import ZMQIOLoop
+
+from tornado.ioloop import IOLoop
 
 from newrelic.common.object_wrapper import FunctionWrapper
 from newrelic.core.stats_engine import StatsEngine
 
 from _test_async_application import get_tornado_app
 
+if sys.version_info >= (2, 7):
+    from zmq.eventloop.ioloop import ZMQIOLoop
+
+
 class TornadoBaseTest(tornado.testing.AsyncHTTPTestCase):
+
+    def get_new_ioloop(self):
+
+        # Starting with Tornado 5, when available it will use the asyncio event
+        # loop. If this is the case, override and force use of the tornado
+        # event loop. The asyncio event loop will be tested separately.
+
+        if IOLoop.configurable_default().__name__ == 'AsyncIOLoop':
+            IOLoop.configure('tornado.ioloop.PollIOLoop')
+        return IOLoop.instance()
 
     def setUp(self):
         super(TornadoBaseTest, self).setUp()
 
-        # We wrap record_transaction in every test because we want this wrapping
-        # to happen after the one in test fixture. Also, this must be wrapped on
-        # a per test basis to capture the correct instance of this class
+        # We wrap record_transaction in every test because we want this
+        # wrapping to happen after the one in test fixture. Also, this must be
+        # wrapped on a per test basis to capture the correct instance of this
+        # class
         self.unwrapped_record_transaction = StatsEngine.record_transaction
         StatsEngine.record_transaction = FunctionWrapper(
                 StatsEngine.record_transaction,
@@ -31,10 +46,10 @@ class TornadoBaseTest(tornado.testing.AsyncHTTPTestCase):
         return get_tornado_app()
 
     def get_httpserver_options(self):
-        return { 'chunk_size': 250 }
+        return {'chunk_size': 250}
 
-    # These tests validate the server response and the data written
-    # in record_transaction. Before we can validate this, we need to ensure that
+    # These tests validate the server response and the data written in
+    # record_transaction. Before we can validate this, we need to ensure that
     # the response has been returned and record_transaction has been called.
     # That means we can not use the default url fetch method provided by the
     # Tornado test framework but instead create our own fetch methods and the
@@ -47,18 +62,18 @@ class TornadoBaseTest(tornado.testing.AsyncHTTPTestCase):
         self.waits_counter_check()
 
     def waits_counter_check(self):
-        self.waits_counter += 1;
+        self.waits_counter += 1
         if self.waits_counter == self.waits_expected:
             self.stop()
 
     def fetch_response(self, path, is_http_error=False, **kwargs):
-        # For each request we need to wait for 2 events: the response and a call
-        # to record transaction.
+        # For each request we need to wait for 2 events: the response and a
+        # call to record transaction.
         self.waits_expected += 2
 
         # Make a request to the server.
-        future = self.http_client.fetch(self.get_url(path), self.fetch_finished,
-                **kwargs)
+        future = self.http_client.fetch(self.get_url(path),
+                self.fetch_finished, **kwargs)
         try:
             self.wait(timeout=5.0)
         except Exception as e:
@@ -80,8 +95,8 @@ class TornadoBaseTest(tornado.testing.AsyncHTTPTestCase):
             return response
 
     def fetch_responses(self, paths):
-        # For each request we need to wait for 2 events: the response and a call
-        # to record transaction.
+        # For each request we need to wait for 2 events: the response and a
+        # call to record transaction.
         self.waits_expected += 2 * len(paths)
         futures = []
         for path in paths:
@@ -100,7 +115,13 @@ class TornadoBaseTest(tornado.testing.AsyncHTTPTestCase):
                 "Uncaught exception GET %s" % path):
             return self.fetch_response(path, is_http_error=True)
 
+
 class TornadoZmqBaseTest(TornadoBaseTest):
     def get_new_ioloop(self):
         return ZMQIOLoop()
 
+
+class TornadoAsyncIOBaseTest(TornadoBaseTest):
+    def get_new_ioloop(self):
+        IOLoop.configure('tornado.platform.asyncio.AsyncIOLoop')
+        return IOLoop()

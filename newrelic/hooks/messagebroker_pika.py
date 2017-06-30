@@ -25,7 +25,7 @@ def _add_consume_rabbitmq_trace(transaction, method, properties,
     if hasattr(method, 'routing_key'):
         routing_key = method.routing_key
 
-    properties = properties and properties.__dict__
+    properties = properties and properties.__dict__ or {}
 
     correlation_id = properties.get('correlation_id')
     reply_to = properties.get('reply_to')

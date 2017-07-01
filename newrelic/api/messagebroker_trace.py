@@ -16,8 +16,8 @@ class MessageBrokerTrace(TimeTrace, CatHeaderMixin):
     cat_synthetics_key = 'NewRelicSynthetics'
 
     def __init__(self, transaction, library, operation,
-            destination_type=None, destination_name=None,
-            message_properties=None, params={}):
+            destination_type, destination_name,
+            params={}):
 
         super(MessageBrokerTrace, self).__init__(transaction)
         self.params = {}
@@ -31,7 +31,6 @@ class MessageBrokerTrace(TimeTrace, CatHeaderMixin):
 
         self.destination_type = destination_type
         self.destination_name = destination_name
-        self.message_properties = message_properties
         self.params = params
 
     def __repr__(self):
@@ -42,7 +41,8 @@ class MessageBrokerTrace(TimeTrace, CatHeaderMixin):
         return True
 
 
-def MessageBrokerTraceWrapper(wrapped, library, operation):
+def MessageBrokerTraceWrapper(wrapped, library, operation, destination_type,
+        destination_name, params={}):
 
     def _nr_message_trace_wrapper_(wrapped, instance, args, kwargs):
         transaction = current_transaction()
@@ -66,17 +66,21 @@ def MessageBrokerTraceWrapper(wrapped, library, operation):
         else:
             _operation = operation
 
-        with MessageBrokerTrace(transaction, _library, _operation):
+        with MessageBrokerTrace(transaction, _library, _operation,
+                destination_type, destination_name, params={}):
             return wrapped(*args, **kwargs)
 
     return FunctionWrapper(wrapped, _nr_message_trace_wrapper_)
 
 
-def messagebroker_trace(library, operation):
+def messagebroker_trace(library, operation, destination_type, destination_name,
+        params={}):
     return functools.partial(MessageBrokerTraceWrapper, library=library,
-            operation=operation)
+            operation=operation, destination_type=destination_type,
+            destination_name=destination_name, params=params)
 
 
-def wrap_messagebroker_trace(module, object_path, library, operation):
+def wrap_messagebroker_trace(module, object_path, library, operation,
+        destination_type, destination_name, params={}):
     wrap_object(module, object_path, MessageBrokerTraceWrapper,
-            (library, operation))
+            (library, operation, destination_type, destination_name, params))

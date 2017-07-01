@@ -96,7 +96,7 @@ def test_blocking_connection_basic_get_outside_transaction(producer):
 
 _test_blocking_conn_basic_consume_no_txn_metrics = [
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE, None),
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, 1),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, None),
 ]
 
 if six.PY3:
@@ -135,7 +135,7 @@ def test_blocking_connection_basic_consume_outside_transaction(producer):
 
 _test_blocking_conn_basic_consume_in_txn_metrics = [
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE, None),
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, 1),
+    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, None),
 ]
 
 if six.PY3:
@@ -176,6 +176,7 @@ def test_blocking_connection_basic_consume_inside_txn(producer):
 _test_blocking_conn_basic_consume_stopped_txn_metrics = [
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE, None),
     ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, None),
+    ('OtherTransaction/Message/RabbitMQ/Exchange/Named/%s' % EXCHANGE, None),
 ]
 
 if six.PY3:

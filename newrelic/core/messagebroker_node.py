@@ -7,7 +7,7 @@ from newrelic.core.metric import TimeMetric
 _MessageBrokerNode = namedtuple('_MessageBrokerNode',
         ['library', 'operation', 'children', 'start_time',
         'end_time', 'duration', 'exclusive', 'destination_name',
-        'destination_type', 'message_properties', 'params', 'async'])
+        'destination_type', 'params', 'async'])
 
 
 class MessageBrokerNode(_MessageBrokerNode):

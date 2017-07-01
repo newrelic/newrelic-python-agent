@@ -1,6 +1,5 @@
 import webtest
 
-from newrelic.api.amqp_trace import AmqpTrace
 from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import (add_custom_parameter, record_exception,
@@ -845,9 +844,7 @@ _forgone_agent_attributes = []
 @background_task()
 def test_routing_key_agent_attribute():
     transaction = current_transaction()
-    with AmqpTrace(transaction, 'library', 'Produce', 'Home',
-            routing_key='cats.eat.fishies', subscribed=True):
-        pass
+    transaction._request_environment['ROUTING_KEY'] = 'cats.eat.fishies'
 
 
 _required_agent_attributes = []
@@ -857,28 +854,6 @@ _forgone_agent_attributes = ['message.routingKey']
 @validate_attributes('agent', _required_agent_attributes,
         _forgone_agent_attributes)
 @background_task()
-def test_routing_key_agent_attribute_not_subscribed():
-    transaction = current_transaction()
-    with AmqpTrace(transaction, 'library', 'Produce', 'Home',
-            routing_key='cats.eat.fishies', subscribed=False):
-        pass
-
-
-@validate_attributes('agent', _required_agent_attributes,
-        _forgone_agent_attributes)
-@background_task()
 def test_none_type_routing_key_agent_attribute():
     transaction = current_transaction()
-    with AmqpTrace(transaction, 'library', 'Produce', 'Home',
-            routing_key=None, subscribed=True):
-        pass
-
-
-@validate_attributes('agent', _required_agent_attributes,
-        _forgone_agent_attributes)
-@background_task()
-def test_none_type_routing_key_agent_attribute_not_subscribed():
-    transaction = current_transaction()
-    with AmqpTrace(transaction, 'library', 'Produce', 'Home',
-            routing_key=None, subscribed=False):
-        pass
+    transaction._request_environment['ROUTING_KEY'] = None

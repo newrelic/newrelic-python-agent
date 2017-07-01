@@ -10,7 +10,6 @@ _ms_node = newrelic.core.messagebroker_node.MessageBrokerNode(
         exclusive=0.8,
         destination_type=None,
         destination_name=None,
-        message_properties=None,
         params={'hello': True},
         async=False)
 
@@ -29,10 +28,6 @@ def test_destination_type():
 
 def test_destination_name():
     assert _ms_node.destination_name is None
-
-
-def test_message_properties():
-    assert _ms_node.message_properties is None
 
 
 def test_params():

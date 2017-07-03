@@ -117,6 +117,12 @@ from newrelic.api.message_trace import (
         MessageTraceWrapper as __MessageTraceWrapper,
         wrap_message_trace as __wrap_message_trace)
 
+from newrelic.api.message_transaction import (
+        message_transaction as __message_transaction,
+        MessageTransaction as __MessageTransaction,
+        MessageTransactionWrapper as __MessageTransactionWrapper,
+        wrap_message_transaction as __wrap_message_transaction)
+
 from newrelic.common.object_names import callable_name as __callable_name
 
 from newrelic.common.object_wrapper import (
@@ -289,6 +295,14 @@ MessageTraceWrapper = __wrap_api_call(__MessageTraceWrapper,
         'MessageTraceWrapper')
 wrap_message_trace = __wrap_api_call(__wrap_message_trace,
         'wrap_message_trace')
+message_transaction = __wrap_api_call(__message_transaction,
+        'message_trace')
+MessageTransaction = __wrap_api_call(__MessageTransaction,
+        'MessageTransaction')
+MessageTransactionWrapper = __wrap_api_call(__MessageTransactionWrapper,
+        'MessageTransactionWrapper')
+wrap_message_transaction = __wrap_api_call(__wrap_message_transaction,
+        'wrap_message_transaction')
 callable_name = __wrap_api_call(__callable_name,
         'callable_name')
 ObjectProxy = __wrap_api_call(__ObjectProxy,

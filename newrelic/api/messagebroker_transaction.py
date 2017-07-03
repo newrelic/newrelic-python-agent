@@ -209,12 +209,24 @@ def MessageBrokerTransactionWrapper(wrapped, application=None, library=None,
     return FunctionWrapper(wrapped, wrapper)
 
 
-def messagebroker_transaction(application=None, name=None, group=None):
+def messagebroker_transaction(application=None, library=None,
+        destination_type=None, destination_name=None, routing_key=None,
+        exchange_type=None, headers=None, queue_name=None, reply_to=None,
+        correlation_id=None):
     return functools.partial(MessageBrokerTransactionWrapper,
-            application=application, name=name, group=group)
+            application=application, library=library,
+            destination_type=destination_type,
+            destination_name=destination_name, routing_key=routing_key,
+            exchange_type=exchange_type, headers=headers,
+            queue_name=queue_name, reply_to=reply_to,
+            correlation_id=correlation_id)
 
 
 def wrap_message_broker_transaction(module, object_path, application=None,
-        name=None, group=None):
+        library=None, destination_type=None, destination_name=None,
+        routing_key=None, exchange_type=None, headers=None, queue_name=None,
+        reply_to=None, correlation_id=None):
     wrap_object(module, object_path, MessageBrokerTransactionWrapper,
-            (application, name, group))
+            (application, library, destination_type, destination_name,
+            routing_key, exchange_type, headers, queue_name, reply_to,
+            correlation_id))

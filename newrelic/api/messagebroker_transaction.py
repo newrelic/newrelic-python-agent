@@ -59,7 +59,7 @@ class MessageBrokerTransaction(BackgroundTask):
         messagebroker_attributes = create_agent_attributes(ms_attrs,
                 self.attribute_filter)
 
-        attributes = super(MessageBrokerTransaction, self).agent_attributes()
+        attributes = super(MessageBrokerTransaction, self).agent_attributes
         attributes.extend(messagebroker_attributes)
 
         return attributes

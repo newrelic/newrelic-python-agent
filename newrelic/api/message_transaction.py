@@ -52,10 +52,8 @@ class MessageTransaction(BackgroundTask):
                 new_key = 'message.headers.%s' % k
                 new_val = str(v)
                 ms_attrs[new_key] = new_val
-
-        if not self._settings.high_security:
-            if self.routing_key is not None:
-                ms_attrs['message.routingKey'] = self.routing_key
+        if self.routing_key is not None:
+            ms_attrs['message.routingKey'] = self.routing_key
 
         messagebroker_attributes = create_agent_attributes(ms_attrs,
                 self.attribute_filter)

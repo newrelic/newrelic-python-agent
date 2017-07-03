@@ -42,7 +42,7 @@ class MessageBrokerTransaction(BackgroundTask):
             ms_attrs['message.routingKey'] = self.routing_key
         if self.exchange_type is not None:
             ms_attrs['message.exchangeType'] = self.exchange_type
-        if self.headers is not None:
+        if self.headers:
             ms_attrs['message.headers'] = self.headers
         if self.queue_name is not None:
             ms_attrs['message.queueName'] = self.queue_name

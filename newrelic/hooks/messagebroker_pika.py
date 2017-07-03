@@ -4,7 +4,7 @@ import time
 import types
 
 from newrelic.api.application import application_instance
-from newrelic.api.background_task import BackgroundTask
+from newrelic.api.messagebroker_transaction import MessageBrokerTransaction
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.messagebroker_trace import MessageBrokerTrace
 from newrelic.api.transaction import current_transaction
@@ -210,17 +210,41 @@ def _ConsumeGeneratorWrapper(wrapped):
 
             else:
                 # 3. Outside of a transaction
-                bt_group = 'Message/RabbitMQ/Exchange'
-                bt_name = 'Named/%s' % (method.exchange or 'Default')
+                exchange = method.exchange or 'Default'
+                routing_key = getattr(method, 'routing_key', None)
+                headers = None
+                reply_to = None
+                correlation_id = None
+                if properties is not None:
+                    headers = getattr(properties, 'headers', None)
+                    reply_to = getattr(properties, 'reply_to', None)
+                    correlation_id = getattr(
+                            properties, 'correlation_id', None)
 
-                # Create a background task for each iteration through the
+                cat_id, cat_transaction = None, None
+                if headers:
+                    cat_id = headers.pop(
+                            MessageBrokerTrace.cat_id_key, None)
+                    cat_transaction = headers.pop(
+                            MessageBrokerTrace.cat_transaction_key, None)
+
+                # Create a messagebroker task for each iteration through the
                 # generator. This is important because it is foreseeable that
                 # the generator process lasts a long time and consumes many
                 # many messages.
 
-                bt = BackgroundTask(application=application_instance(),
-                        name=bt_name, group=bt_group)
+                bt = MessageBrokerTransaction(
+                        application=application_instance(),
+                        library='RabbitMQ',
+                        destination_type='Exchange',
+                        destination_name=exchange,
+                        routing_key=routing_key,
+                        headers=headers,
+                        reply_to=reply_to,
+                        correlation_id=correlation_id)
                 bt.__enter__()
+
+                bt._process_incoming_cat_headers(cat_id, cat_transaction)
                 return bt
 
         def _generator(generator):
@@ -298,6 +322,8 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
                 exchange = 'Unknown'
                 routing_key = None
                 headers = None
+                reply_to = None
+                correlation_id = None
                 unknown_kwargs = False
                 if not kwargs:
                     method, properties = args[1:3]
@@ -305,33 +331,41 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
                     routing_key = getattr(method, 'routing_key', None)
                     if properties is not None:
                         headers = getattr(properties, 'headers', None)
+                        reply_to = getattr(properties, 'reply_to', None)
+                        correlation_id = getattr(
+                                properties, 'correlation_id', None)
                 else:
                     unknown_kwargs = True
 
-                bt_group = 'Message/RabbitMQ/Exchange'
-                bt_name = 'Named/%s' % exchange
-                with BackgroundTask(application=application_instance(),
-                        name=bt_name, group=bt_group) as bt:
+                # If headers are available, attempt to process CAT
+                cat_id, cat_transaction = None, None
+                if headers:
+                    cat_id = headers.pop(
+                            MessageBrokerTrace.cat_id_key, None)
+                    cat_transaction = headers.pop(
+                            MessageBrokerTrace.cat_transaction_key, None)
+
+                with MessageBrokerTransaction(
+                        application=application_instance(),
+                        library='RabbitMQ',
+                        destination_type='Exchange',
+                        destination_name=exchange,
+                        routing_key=routing_key,
+                        headers=headers,
+                        queue_name=queue,
+                        reply_to=reply_to,
+                        correlation_id=correlation_id) as mt:
 
                     # Record that something went horribly wrong
                     if unknown_kwargs:
-                        m = bt._transaction_metrics.get(KWARGS_ERROR, 0)
-                        bt._transaction_metrics[KWARGS_ERROR] = m + 1
+                        m = mt._transaction_metrics.get(KWARGS_ERROR, 0)
+                        mt._transaction_metrics[KWARGS_ERROR] = m + 1
 
-                    # If headers are available, attempt to process CAT
-                    if headers:
-                        cat_id = headers.pop(
-                                MessageBrokerTrace.cat_id_key, None)
-                        cat_transaction = headers.pop(
-                                MessageBrokerTrace.cat_transaction_key, None)
-                        bt._process_incoming_cat_headers(
-                                cat_id, cat_transaction)
+                    # Process CAT headers
+                    mt._process_incoming_cat_headers(
+                            cat_id, cat_transaction)
 
-                    # Add agent attribute if available
-                    if routing_key is not None:
-                        bt._request_environment['ROUTING_KEY'] = routing_key
-
-                    with FunctionTrace(transaction=bt, name=name):
+                    with FunctionTrace(transaction=mt, name=name):
                         return callback(*args, **kwargs)
 
         if len(args) > 0:

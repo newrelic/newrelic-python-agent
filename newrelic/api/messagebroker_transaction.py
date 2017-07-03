@@ -38,18 +38,23 @@ class MessageBrokerTransaction(BackgroundTask):
     def agent_attributes(self):
         ms_attrs = {}
 
-        if self.routing_key is not None:
-            ms_attrs['message.routingKey'] = self.routing_key
         if self.exchange_type is not None:
             ms_attrs['message.exchangeType'] = self.exchange_type
-        if self.headers:
-            ms_attrs['message.headers'] = self.headers
         if self.queue_name is not None:
             ms_attrs['message.queueName'] = self.queue_name
         if self.reply_to is not None:
             ms_attrs['message.replyTo'] = self.reply_to
         if self.correlation_id is not None:
             ms_attrs['message.correlationId'] = self.correlation_id
+        if self.headers:
+            for k, v in self.headers.items():
+                new_key = 'message.headers.%s' % k
+                new_val = str(v)
+                ms_attrs[new_key] = new_val
+
+        if not self._settings.high_security:
+            if self.routing_key is not None:
+                ms_attrs['message.routingKey'] = self.routing_key
 
         messagebroker_attributes = create_agent_attributes(ms_attrs,
                 self.attribute_filter)

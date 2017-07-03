@@ -320,11 +320,12 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
 
                     # If headers are available, attempt to process CAT
                     if headers:
-                        cat_id = headers.get(MessageBrokerTrace.cat_id_key)
-                        cat_transaction = headers.get(
-                                MessageBrokerTrace.cat_transaction_key)
-                        bt._process_incoming_cat_headers(cat_id,
-                                cat_transaction)
+                        cat_id = headers.pop(
+                                MessageBrokerTrace.cat_id_key, None)
+                        cat_transaction = headers.pop(
+                                MessageBrokerTrace.cat_transaction_key, None)
+                        bt._process_incoming_cat_headers(
+                                cat_id, cat_transaction)
 
                     # Add agent attribute if available
                     if routing_key is not None:

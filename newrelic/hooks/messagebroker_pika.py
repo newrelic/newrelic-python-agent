@@ -31,6 +31,13 @@ def _add_consume_rabbitmq_trace(transaction, method, properties,
     reply_to = properties.get('reply_to')
     headers = properties.get('headers')
 
+    # Delete CAT headers
+    if headers:
+        headers.pop(
+                MessageBrokerTrace.cat_id_key, None)
+        headers.pop(
+                MessageBrokerTrace.cat_transaction_key, None)
+
     # The transaction may have started after the message was received. In this
     # case, the start time is reset to the true transaction start time.
     transaction.start_time = min(nr_start_time,

@@ -4,9 +4,9 @@ import time
 import types
 
 from newrelic.api.application import application_instance
-from newrelic.api.messagebroker_transaction import MessageBrokerTransaction
+from newrelic.api.message_transaction import MessageTransaction
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.messagebroker_trace import MessageBrokerTrace
+from newrelic.api.message_trace import MessageTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (wrap_function_wrapper, wrap_object,
@@ -34,9 +34,9 @@ def _add_consume_rabbitmq_trace(transaction, method, properties,
     # Delete CAT headers
     if headers:
         headers.pop(
-                MessageBrokerTrace.cat_id_key, None)
+                MessageTrace.cat_id_key, None)
         headers.pop(
-                MessageBrokerTrace.cat_transaction_key, None)
+                MessageTrace.cat_transaction_key, None)
 
     # The transaction may have started after the message was received. In this
     # case, the start time is reset to the true transaction start time.
@@ -56,7 +56,7 @@ def _add_consume_rabbitmq_trace(transaction, method, properties,
         params['queue_name'] = queue_name
 
     # create a trace starting at the time the message was received
-    trace = MessageBrokerTrace(transaction, library='RabbitMQ',
+    trace = MessageTrace(transaction, library='RabbitMQ',
             operation='Consume',
             destination_type='Exchange',
             destination_name=method.exchange or 'Default',
@@ -88,15 +88,15 @@ def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
     properties = properties or BasicProperties()
     properties.headers = properties.headers or {}
     user_headers = properties.headers.copy()
-    cat_headers = MessageBrokerTrace.generate_request_headers(transaction)
+    cat_headers = MessageTrace.generate_request_headers(transaction)
     for name, value in cat_headers:
         properties.headers[name] = value
 
     # Do not record cat headers in the segment parameters
-    if MessageBrokerTrace.cat_id_key in user_headers:
-        del user_headers[MessageBrokerTrace.cat_id_key]
-    if MessageBrokerTrace.cat_transaction_key in user_headers:
-        del user_headers[MessageBrokerTrace.cat_transaction_key]
+    if MessageTrace.cat_id_key in user_headers:
+        del user_headers[MessageTrace.cat_id_key]
+    if MessageTrace.cat_transaction_key in user_headers:
+        del user_headers[MessageTrace.cat_transaction_key]
 
     args = (exchange, routing_key, body, properties, mandatory, immediate)
 
@@ -110,7 +110,7 @@ def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
     if user_headers:
         params['headers'] = user_headers
 
-    with MessageBrokerTrace(transaction, library='RabbitMQ',
+    with MessageTrace(transaction, library='RabbitMQ',
             operation='Produce',
             destination_type='Exchange',
             destination_name=exchange or 'Default',
@@ -231,16 +231,16 @@ def _ConsumeGeneratorWrapper(wrapped):
                 cat_id, cat_transaction = None, None
                 if headers:
                     cat_id = headers.pop(
-                            MessageBrokerTrace.cat_id_key, None)
+                            MessageTrace.cat_id_key, None)
                     cat_transaction = headers.pop(
-                            MessageBrokerTrace.cat_transaction_key, None)
+                            MessageTrace.cat_transaction_key, None)
 
                 # Create a messagebroker task for each iteration through the
                 # generator. This is important because it is foreseeable that
                 # the generator process lasts a long time and consumes many
                 # many messages.
 
-                bt = MessageBrokerTransaction(
+                bt = MessageTransaction(
                         application=application_instance(),
                         library='RabbitMQ',
                         destination_type='Exchange',
@@ -348,11 +348,11 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
                 cat_id, cat_transaction = None, None
                 if headers:
                     cat_id = headers.pop(
-                            MessageBrokerTrace.cat_id_key, None)
+                            MessageTrace.cat_id_key, None)
                     cat_transaction = headers.pop(
-                            MessageBrokerTrace.cat_transaction_key, None)
+                            MessageTrace.cat_transaction_key, None)
 
-                with MessageBrokerTransaction(
+                with MessageTransaction(
                         application=application_instance(),
                         library='RabbitMQ',
                         destination_type='Exchange',

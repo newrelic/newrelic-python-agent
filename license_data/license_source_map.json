@@ -209,7 +209,13 @@
             "New Relic"
         ]
     },
-    "newrelic/api/messagebroker_trace.py": {
+    "newrelic/api/message_trace.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/message_transaction.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -563,7 +569,13 @@
             "New Relic"
         ]
     },
-    "newrelic/api/tests/test_messagebroker_trace.py": {
+    "newrelic/api/tests/test_message_transaction.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/test_message_trace.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

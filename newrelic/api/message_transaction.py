@@ -9,7 +9,7 @@ from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
 
-class MessageBrokerTransaction(BackgroundTask):
+class MessageTransaction(BackgroundTask):
 
     def __init__(self, application, library, destination_type=None,
             destination_name=None, routing_key=None, exchange_type=None,
@@ -18,7 +18,7 @@ class MessageBrokerTransaction(BackgroundTask):
         name, group = self.get_transaction_name(library, destination_type,
                 destination_name)
 
-        super(MessageBrokerTransaction, self).__init__(application, name,
+        super(MessageTransaction, self).__init__(application, name,
                 group=group)
 
         self.routing_key = routing_key
@@ -59,13 +59,13 @@ class MessageBrokerTransaction(BackgroundTask):
         messagebroker_attributes = create_agent_attributes(ms_attrs,
                 self.attribute_filter)
 
-        attributes = super(MessageBrokerTransaction, self).agent_attributes
+        attributes = super(MessageTransaction, self).agent_attributes
         attributes.extend(messagebroker_attributes)
 
         return attributes
 
 
-def MessageBrokerTransactionWrapper(wrapped, application=None, library=None,
+def MessageTransactionWrapper(wrapped, application=None, library=None,
         destination_type=None, destination_name=None, routing_key=None,
         exchange_type=None, headers=None, queue_name=None, reply_to=None,
         correlation_id=None):
@@ -168,7 +168,7 @@ def MessageBrokerTransactionWrapper(wrapped, application=None, library=None,
                 if not transaction.background_task:
                     transaction.background_task = True
                     transaction.set_transaction_name(
-                            *MessageBrokerTransaction.get_transaction_name(
+                            *MessageTransaction.get_transaction_name(
                                 _library, _destination_type,
                                 _destination_name))
 
@@ -183,7 +183,7 @@ def MessageBrokerTransactionWrapper(wrapped, application=None, library=None,
 
         try:
             success = True
-            manager = MessageBrokerTransaction(_application, _library,
+            manager = MessageTransaction(_application, _library,
                     destination_type=_destination_type,
                     destination_name=_destination_name,
                     routing_key=_routing_key,
@@ -214,11 +214,11 @@ def MessageBrokerTransactionWrapper(wrapped, application=None, library=None,
     return FunctionWrapper(wrapped, wrapper)
 
 
-def messagebroker_transaction(application=None, library=None,
+def message_transaction(application=None, library=None,
         destination_type=None, destination_name=None, routing_key=None,
         exchange_type=None, headers=None, queue_name=None, reply_to=None,
         correlation_id=None):
-    return functools.partial(MessageBrokerTransactionWrapper,
+    return functools.partial(MessageTransactionWrapper,
             application=application, library=library,
             destination_type=destination_type,
             destination_name=destination_name, routing_key=routing_key,
@@ -227,11 +227,11 @@ def messagebroker_transaction(application=None, library=None,
             correlation_id=correlation_id)
 
 
-def wrap_message_broker_transaction(module, object_path, application=None,
+def wrap_message_transaction(module, object_path, application=None,
         library=None, destination_type=None, destination_name=None,
         routing_key=None, exchange_type=None, headers=None, queue_name=None,
         reply_to=None, correlation_id=None):
-    wrap_object(module, object_path, MessageBrokerTransactionWrapper,
+    wrap_object(module, object_path, MessageTransactionWrapper,
             (application, library, destination_type, destination_name,
             routing_key, exchange_type, headers, queue_name, reply_to,
             correlation_id))

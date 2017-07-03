@@ -11,9 +11,10 @@ from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
 class MessageTransaction(BackgroundTask):
 
-    def __init__(self, application, library, destination_type=None,
-            destination_name=None, routing_key=None, exchange_type=None,
-            headers=None, queue_name=None, reply_to=None, correlation_id=None):
+    def __init__(self, library, destination_type,
+            destination_name, application, routing_key=None,
+            exchange_type=None, headers=None, queue_name=None, reply_to=None,
+            correlation_id=None):
 
         name, group = self.get_transaction_name(library, destination_type,
                 destination_name)
@@ -65,8 +66,8 @@ class MessageTransaction(BackgroundTask):
         return attributes
 
 
-def MessageTransactionWrapper(wrapped, application=None, library=None,
-        destination_type=None, destination_name=None, routing_key=None,
+def MessageTransactionWrapper(wrapped, library, destination_type,
+        destination_name, application=None, routing_key=None,
         exchange_type=None, headers=None, queue_name=None, reply_to=None,
         correlation_id=None):
 
@@ -183,9 +184,11 @@ def MessageTransactionWrapper(wrapped, application=None, library=None,
 
         try:
             success = True
-            manager = MessageTransaction(_application, _library,
+            manager = MessageTransaction(
+                    library=_library,
                     destination_type=_destination_type,
                     destination_name=_destination_name,
+                    application=_application,
                     routing_key=_routing_key,
                     exchange_type=_exchange_type,
                     headers=_headers,
@@ -214,24 +217,22 @@ def MessageTransactionWrapper(wrapped, application=None, library=None,
     return FunctionWrapper(wrapped, wrapper)
 
 
-def message_transaction(application=None, library=None,
-        destination_type=None, destination_name=None, routing_key=None,
-        exchange_type=None, headers=None, queue_name=None, reply_to=None,
-        correlation_id=None):
+def message_transaction(library, destination_type, destination_name,
+        application=None, routing_key=None, exchange_type=None, headers=None,
+        queue_name=None, reply_to=None, correlation_id=None):
     return functools.partial(MessageTransactionWrapper,
-            application=application, library=library,
-            destination_type=destination_type,
-            destination_name=destination_name, routing_key=routing_key,
-            exchange_type=exchange_type, headers=headers,
-            queue_name=queue_name, reply_to=reply_to,
+            library=library, destination_type=destination_type,
+            destination_name=destination_name, application=application,
+            routing_key=routing_key, exchange_type=exchange_type,
+            headers=headers, queue_name=queue_name, reply_to=reply_to,
             correlation_id=correlation_id)
 
 
-def wrap_message_transaction(module, object_path, application=None,
-        library=None, destination_type=None, destination_name=None,
-        routing_key=None, exchange_type=None, headers=None, queue_name=None,
-        reply_to=None, correlation_id=None):
+def wrap_message_transaction(module, object_path, library, destination_type,
+        destination_name, application=None, routing_key=None,
+        exchange_type=None, headers=None, queue_name=None, reply_to=None,
+        correlation_id=None):
     wrap_object(module, object_path, MessageTransactionWrapper,
-            (application, library, destination_type, destination_name,
+            (library, destination_type, destination_name, application,
             routing_key, exchange_type, headers, queue_name, reply_to,
             correlation_id))

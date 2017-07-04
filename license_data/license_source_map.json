@@ -935,7 +935,7 @@
             "New Relic"
         ]
     },
-    "newrelic/core/messagebroker_node.py": {
+    "newrelic/core/message_node.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -1037,7 +1037,7 @@
             "New Relic"
         ]
     },
-    "newrelic/core/tests/test_messagebroker_node.py": {
+    "newrelic/core/tests/test_message_node.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

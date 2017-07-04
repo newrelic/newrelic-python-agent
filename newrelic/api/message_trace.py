@@ -4,12 +4,12 @@ from newrelic.api.cat_header_mixin import CatHeaderMixin
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
-from newrelic.core.messagebroker_node import MessageBrokerNode
+from newrelic.core.message_node import MessageNode
 
 
 class MessageTrace(TimeTrace, CatHeaderMixin):
 
-    node = MessageBrokerNode
+    node = MessageNode
     cat_id_key = 'NewRelicID'
     cat_transaction_key = 'NewRelicTransaction'
     cat_appdata_key = 'NewRelicAppData'

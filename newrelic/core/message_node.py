@@ -4,13 +4,13 @@ import newrelic.core.trace_node
 
 from newrelic.core.metric import TimeMetric
 
-_MessageBrokerNode = namedtuple('_MessageBrokerNode',
+_MessageNode = namedtuple('_MessageNode',
         ['library', 'operation', 'children', 'start_time',
         'end_time', 'duration', 'exclusive', 'destination_name',
         'destination_type', 'params', 'async'])
 
 
-class MessageBrokerNode(_MessageBrokerNode):
+class MessageNode(_MessageNode):
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this

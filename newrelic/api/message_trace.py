@@ -66,8 +66,24 @@ def MessageTraceWrapper(wrapped, library, operation, destination_type,
         else:
             _operation = operation
 
+        if callable(destination_type):
+            if instance is not None:
+                _destination_type = destination_type(instance, *args, **kwargs)
+            else:
+                _destination_type = destination_type(*args, **kwargs)
+        else:
+            _destination_type = destination_type
+
+        if callable(destination_name):
+            if instance is not None:
+                _destination_name = destination_name(instance, *args, **kwargs)
+            else:
+                _destination_name = destination_name(*args, **kwargs)
+        else:
+            _destination_name = destination_name
+
         with MessageTrace(transaction, _library, _operation,
-                destination_type, destination_name, params={}):
+                _destination_type, _destination_name, params={}):
             return wrapped(*args, **kwargs)
 
     return FunctionWrapper(wrapped, _nr_message_trace_wrapper_)

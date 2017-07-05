@@ -1,6 +1,7 @@
 import pika
 
 from newrelic.api.background_task import background_task
+from newrelic.api.transaction import current_transaction
 
 from testing_support.settings import rabbitmq_settings
 from testing_support.fixtures import (override_application_settings,
@@ -18,11 +19,12 @@ _override_settings = {
 
 
 @background_task()
-def do_basic_publish(channel, QUEUE):
+def do_basic_publish(channel, QUEUE, properties=None):
     channel.basic_publish(
         exchange='',
         routing_key=QUEUE,
         body='Testing CAT 123',
+        properties=properties,
     )
 
 
@@ -50,9 +52,13 @@ def test_basic_consume_cat_headers():
     def on_receive(ch, method, properties, msg):
         headers = properties.headers
         assert headers
-        assert 'NewRelicID' in headers
-        assert 'NewRelicTransaction' in headers
+        assert 'NewRelicID' not in headers
+        assert 'NewRelicTransaction' not in headers
         assert msg == b'Testing CAT 123'
+        txn = current_transaction()
+        assert txn.client_cross_process_id == '1#1'
+        assert txn.client_account_id == 1
+        assert txn.client_application_id == 1
         ch.stop_consuming()
 
     with pika.BlockingConnection(
@@ -60,11 +66,14 @@ def test_basic_consume_cat_headers():
         channel = connection.channel()
         channel.queue_declare('TESTCAT', durable=False)
 
+        properties = pika.BasicProperties()
+        properties.headers = {'Hello': 'World'}
+
         try:
             channel.basic_consume(on_receive,
                 no_ack=True,
                 queue='TESTCAT')
-            do_basic_publish(channel, 'TESTCAT')
+            do_basic_publish(channel, 'TESTCAT', properties=properties)
             do_basic_consume(channel)
 
         finally:
@@ -89,9 +98,13 @@ def do_basic_get(channel, QUEUE):
     _, properties, msg = channel.basic_get(QUEUE)
     headers = properties.headers
     assert headers
-    assert 'NewRelicID' in headers
-    assert 'NewRelicTransaction' in headers
+    assert 'NewRelicID' not in headers
+    assert 'NewRelicTransaction' not in headers
     assert msg == b'Testing CAT 123'
+    txn = current_transaction()
+    assert txn.client_cross_process_id is None
+    assert txn.client_account_id is None
+    assert txn.client_application_id is None
 
 
 @override_application_settings(_override_settings)
@@ -101,8 +114,11 @@ def test_basic_get_no_cat_headers():
         channel = connection.channel()
         channel.queue_declare('TESTCAT', durable=False)
 
+        properties = pika.BasicProperties()
+        properties.headers = {'Hello': 'World'}
+
         try:
-            do_basic_publish(channel, 'TESTCAT')
+            do_basic_publish(channel, 'TESTCAT', properties=properties)
             do_basic_get(channel, 'TESTCAT')
         finally:
             channel.queue_delete('TESTCAT')

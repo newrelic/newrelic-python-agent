@@ -5,13 +5,13 @@ import newrelic.tests.test_cases
 import newrelic.api.settings
 import newrelic.api.application
 import newrelic.api.web_transaction
-import newrelic.api.messagebroker_trace
+import newrelic.api.message_trace
 
 settings = newrelic.api.settings.settings()
 application = newrelic.api.application.application_instance(settings.app_name)
 
 
-@newrelic.api.messagebroker_trace.messagebroker_trace(library='library',
+@newrelic.api.message_trace.message_trace(library='library',
         operation='operation', destination_type='Exchange',
         destination_name='x')
 def _test_function_1(message):
@@ -22,12 +22,12 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     requires_collector = True
 
-    def test_messagebroker_trace(self):
-        environ = {'REQUEST_URI': '/messagebroker_trace'}
+    def test_message_trace(self):
+        environ = {'REQUEST_URI': '/message_trace'}
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
-            with newrelic.api.messagebroker_trace.MessageBrokerTrace(
+            with newrelic.api.message_trace.MessageTrace(
                     transaction, library='RabbitMQ', operation='Consume',
                     destination_type='Exchange', destination_name='x'):
                 pass
@@ -37,21 +37,21 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
 
-        with newrelic.api.messagebroker_trace.MessageBrokerTrace(
+        with newrelic.api.message_trace.MessageTrace(
                 transaction, library='RabbitMQ', operation='Consume',
                 destination_type='Exchange', destination_name='x'):
             pass
 
-    def test_messagebroker_trace_decorator(self):
-        environ = {'REQUEST_URI': '/messagebroker_trace_decorator'}
+    def test_message_trace_decorator(self):
+        environ = {'REQUEST_URI': '/message_trace_decorator'}
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
 
         with transaction:
             _test_function_1('hello kitty')
 
-    def test_messagebroker_trace_decorator_error(self):
-        environ = {'REQUEST_URI': '/messagebroker_trace_decorator_error'}
+    def test_message_trace_decorator_error(self):
+        environ = {'REQUEST_URI': '/message_trace_decorator_error'}
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
 
@@ -63,7 +63,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 raises = True
         assert raises
 
-    def test_messagebroker_trace_decorator_no_transaction(self):
+    def test_message_trace_decorator_no_transaction(self):
         _test_function_1('hello kitty')
 
 

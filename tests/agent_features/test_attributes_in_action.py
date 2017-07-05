@@ -1,9 +1,8 @@
 import webtest
 
 from newrelic.api.application import application_instance as application
-from newrelic.api.background_task import background_task
-from newrelic.api.transaction import (add_custom_parameter, record_exception,
-        current_transaction)
+from newrelic.api.message_transaction import message_transaction
+from newrelic.api.transaction import add_custom_parameter, record_exception
 from newrelic.api.web_transaction import wsgi_application
 from newrelic.common.object_names import callable_name
 
@@ -841,10 +840,10 @@ _forgone_agent_attributes = []
 
 @validate_attributes('agent', _required_agent_attributes,
         _forgone_agent_attributes)
-@background_task()
+@message_transaction(library='RabbitMQ', destination_type='Exchange',
+        destination_name='x', routing_key='cat.eat.fishies')
 def test_routing_key_agent_attribute():
-    transaction = current_transaction()
-    transaction._request_environment['ROUTING_KEY'] = 'cats.eat.fishies'
+    pass
 
 
 _required_agent_attributes = []
@@ -853,7 +852,7 @@ _forgone_agent_attributes = ['message.routingKey']
 
 @validate_attributes('agent', _required_agent_attributes,
         _forgone_agent_attributes)
-@background_task()
+@message_transaction(library='RabbitMQ', destination_type='Exchange',
+        destination_name='x')
 def test_none_type_routing_key_agent_attribute():
-    transaction = current_transaction()
-    transaction._request_environment['ROUTING_KEY'] = None
+    pass

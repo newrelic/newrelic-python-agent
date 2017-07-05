@@ -32,6 +32,8 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set((
         'response.status',
         'response.headers.contentLength',
         'response.headers.contentType',
+        'message.queueName',
+        'message.routingKey',
 ))
 
 MAX_NUM_USER_ATTRIBUTES = 64

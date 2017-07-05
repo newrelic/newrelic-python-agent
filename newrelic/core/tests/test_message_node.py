@@ -1,6 +1,6 @@
-import newrelic.core.messagebroker_node
+import newrelic.core.message_node
 
-_ms_node = newrelic.core.messagebroker_node.MessageBrokerNode(
+_ms_node = newrelic.core.message_node.MessageNode(
         library='RabbitMQ',
         operation='Consume',
         children=[],

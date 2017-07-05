@@ -111,11 +111,17 @@ from newrelic.api.error_trace import (
         ErrorTraceWrapper as __ErrorTraceWrapper,
         wrap_error_trace as __wrap_error_trace)
 
-from newrelic.api.messagebroker_trace import (
-        messagebroker_trace as __messagebroker_trace,
-        MessageBrokerTrace as __MessageBrokerTrace,
-        MessageBrokerTraceWrapper as __MessageBrokerTraceWrapper,
-        wrap_messagebroker_trace as __wrap_messagebroker_trace)
+from newrelic.api.message_trace import (
+        message_trace as __message_trace,
+        MessageTrace as __MessageTrace,
+        MessageTraceWrapper as __MessageTraceWrapper,
+        wrap_message_trace as __wrap_message_trace)
+
+from newrelic.api.message_transaction import (
+        message_transaction as __message_transaction,
+        MessageTransaction as __MessageTransaction,
+        MessageTransactionWrapper as __MessageTransactionWrapper,
+        wrap_message_transaction as __wrap_message_transaction)
 
 from newrelic.common.object_names import callable_name as __callable_name
 
@@ -281,14 +287,22 @@ ErrorTraceWrapper = __wrap_api_call(__ErrorTraceWrapper,
         'ErrorTraceWrapper')
 wrap_error_trace = __wrap_api_call(__wrap_error_trace,
         'wrap_error_trace')
-messagebroker_trace = __wrap_api_call(__messagebroker_trace,
-        'messagebroker_trace')
-MessageBrokerTrace = __wrap_api_call(__MessageBrokerTrace,
-        'MessageBrokerTrace')
-MessageBrokerTraceWrapper = __wrap_api_call(__MessageBrokerTraceWrapper,
-        'MessageBrokerTraceWrapper')
-wrap_messagebroker_trace = __wrap_api_call(__wrap_messagebroker_trace,
-        'wrap_messagebroker_trace')
+message_trace = __wrap_api_call(__message_trace,
+        'message_trace')
+MessageTrace = __wrap_api_call(__MessageTrace,
+        'MessageTrace')
+MessageTraceWrapper = __wrap_api_call(__MessageTraceWrapper,
+        'MessageTraceWrapper')
+wrap_message_trace = __wrap_api_call(__wrap_message_trace,
+        'wrap_message_trace')
+message_transaction = __wrap_api_call(__message_transaction,
+        'message_trace')
+MessageTransaction = __wrap_api_call(__MessageTransaction,
+        'MessageTransaction')
+MessageTransactionWrapper = __wrap_api_call(__MessageTransactionWrapper,
+        'MessageTransactionWrapper')
+wrap_message_transaction = __wrap_api_call(__wrap_message_transaction,
+        'wrap_message_transaction')
 callable_name = __wrap_api_call(__callable_name,
         'callable_name')
 ObjectProxy = __wrap_api_call(__ObjectProxy,

@@ -4,12 +4,12 @@ from newrelic.api.cat_header_mixin import CatHeaderMixin
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
-from newrelic.core.messagebroker_node import MessageBrokerNode
+from newrelic.core.message_node import MessageNode
 
 
-class MessageBrokerTrace(TimeTrace, CatHeaderMixin):
+class MessageTrace(TimeTrace, CatHeaderMixin):
 
-    node = MessageBrokerNode
+    node = MessageNode
     cat_id_key = 'NewRelicID'
     cat_transaction_key = 'NewRelicTransaction'
     cat_appdata_key = 'NewRelicAppData'
@@ -19,7 +19,7 @@ class MessageBrokerTrace(TimeTrace, CatHeaderMixin):
             destination_type, destination_name,
             params={}):
 
-        super(MessageBrokerTrace, self).__init__(transaction)
+        super(MessageTrace, self).__init__(transaction)
         self.params = {}
 
         if transaction:
@@ -41,7 +41,7 @@ class MessageBrokerTrace(TimeTrace, CatHeaderMixin):
         return True
 
 
-def MessageBrokerTraceWrapper(wrapped, library, operation, destination_type,
+def MessageTraceWrapper(wrapped, library, operation, destination_type,
         destination_name, params={}):
 
     def _nr_message_trace_wrapper_(wrapped, instance, args, kwargs):
@@ -66,21 +66,21 @@ def MessageBrokerTraceWrapper(wrapped, library, operation, destination_type,
         else:
             _operation = operation
 
-        with MessageBrokerTrace(transaction, _library, _operation,
+        with MessageTrace(transaction, _library, _operation,
                 destination_type, destination_name, params={}):
             return wrapped(*args, **kwargs)
 
     return FunctionWrapper(wrapped, _nr_message_trace_wrapper_)
 
 
-def messagebroker_trace(library, operation, destination_type, destination_name,
+def message_trace(library, operation, destination_type, destination_name,
         params={}):
-    return functools.partial(MessageBrokerTraceWrapper, library=library,
+    return functools.partial(MessageTraceWrapper, library=library,
             operation=operation, destination_type=destination_type,
             destination_name=destination_name, params=params)
 
 
-def wrap_messagebroker_trace(module, object_path, library, operation,
+def wrap_message_trace(module, object_path, library, operation,
         destination_type, destination_name, params={}):
-    wrap_object(module, object_path, MessageBrokerTraceWrapper,
+    wrap_object(module, object_path, MessageTraceWrapper,
             (library, operation, destination_type, destination_name, params))

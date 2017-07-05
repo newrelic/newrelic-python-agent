@@ -31,12 +31,15 @@ ERROR_EVENT_RESERVOIR_SIZE = 100
 IGNORED_SERVER_SIDE_SETTINGS = ['utilization.logical_processors',
         'utilization.total_ram_mib', 'utilization.billing_hostname']
 
+
 class _NullHandler(logging.Handler):
     def emit(self, record):
         pass
 
+
 _logger = logging.getLogger(__name__)
 _logger.addHandler(_NullHandler())
+
 
 # The Settings objects and the global default settings. We create a
 # distinct type for each sub category of settings that the agent knows
@@ -48,38 +51,125 @@ _logger.addHandler(_NullHandler())
 class Settings(object):
     def __repr__(self):
         return repr(self.__dict__)
+
     def __iter__(self):
         return iter(flatten_settings(self).items())
+
     def __contains__(self, item):
         return hasattr(self, item)
 
-class AttributesSettings(Settings): pass
-class ThreadProfilerSettings(Settings): pass
-class TransactionTracerSettings(Settings): pass
-class TransactionTracerAttributesSettings(Settings): pass
-class ErrorCollectorSettings(Settings): pass
-class ErrorCollectorAttributesSettings(Settings): pass
-class BrowserMonitorSettings(Settings): pass
-class BrowserMonitorAttributesSettings(Settings): pass
-class TransactionNameSettings(Settings): pass
-class TransactionMetricsSettings(Settings): pass
-class RumSettings(Settings): pass
-class SlowSqlSettings(Settings): pass
-class AgentLimitsSettings(Settings): pass
-class ConsoleSettings(Settings): pass
-class DebugSettings(Settings): pass
-class CrossApplicationTracerSettings(Settings): pass
-class XraySessionSettings(Settings): pass
-class TransactionEventsSettings(Settings): pass
-class TransactionEventsAttributesSettings(Settings): pass
-class CustomInsightsEventsSettings(Settings): pass
-class ProcessHostSettings(Settings): pass
-class SyntheticsSettings(Settings): pass
-class UtilizationSettings(Settings): pass
-class StripExceptionMessageSettings(Settings): pass
-class DatastoreTracerSettings(Settings): pass
-class DatastoreTracerInstanceReportingSettings(Settings): pass
-class DatastoreTracerDatabaseNameReportingSettings(Settings): pass
+
+class AttributesSettings(Settings):
+    pass
+
+
+class ThreadProfilerSettings(Settings):
+    pass
+
+
+class TransactionTracerSettings(Settings):
+    pass
+
+
+class TransactionTracerAttributesSettings(Settings):
+    pass
+
+
+class ErrorCollectorSettings(Settings):
+    pass
+
+
+class ErrorCollectorAttributesSettings(Settings):
+    pass
+
+
+class BrowserMonitorSettings(Settings):
+    pass
+
+
+class BrowserMonitorAttributesSettings(Settings):
+    pass
+
+
+class TransactionNameSettings(Settings):
+    pass
+
+
+class TransactionMetricsSettings(Settings):
+    pass
+
+
+class RumSettings(Settings):
+    pass
+
+
+class SlowSqlSettings(Settings):
+    pass
+
+
+class AgentLimitsSettings(Settings):
+    pass
+
+
+class ConsoleSettings(Settings):
+    pass
+
+
+class DebugSettings(Settings):
+    pass
+
+
+class CrossApplicationTracerSettings(Settings):
+    pass
+
+
+class XraySessionSettings(Settings):
+    pass
+
+
+class TransactionEventsSettings(Settings):
+    pass
+
+
+class TransactionEventsAttributesSettings(Settings):
+    pass
+
+
+class CustomInsightsEventsSettings(Settings):
+    pass
+
+
+class ProcessHostSettings(Settings):
+    pass
+
+
+class SyntheticsSettings(Settings):
+    pass
+
+
+class MessageTracerSettings(Settings):
+    pass
+
+
+class UtilizationSettings(Settings):
+    pass
+
+
+class StripExceptionMessageSettings(Settings):
+    pass
+
+
+class DatastoreTracerSettings(Settings):
+    pass
+
+
+class DatastoreTracerInstanceReportingSettings(Settings):
+    pass
+
+
+class DatastoreTracerDatabaseNameReportingSettings(Settings):
+    pass
+
 
 _settings = Settings()
 _settings.attributes = AttributesSettings()
@@ -104,14 +194,18 @@ _settings.transaction_events.attributes = TransactionEventsAttributesSettings()
 _settings.custom_insights_events = CustomInsightsEventsSettings()
 _settings.process_host = ProcessHostSettings()
 _settings.synthetics = SyntheticsSettings()
+_settings.message_tracer = MessageTracerSettings()
 _settings.utilization = UtilizationSettings()
 _settings.strip_exception_messages = StripExceptionMessageSettings()
 _settings.datastore_tracer = DatastoreTracerSettings()
-_settings.datastore_tracer.instance_reporting = DatastoreTracerInstanceReportingSettings()
-_settings.datastore_tracer.database_name_reporting = DatastoreTracerDatabaseNameReportingSettings()
+_settings.datastore_tracer.instance_reporting = \
+        DatastoreTracerInstanceReportingSettings()
+_settings.datastore_tracer.database_name_reporting = \
+        DatastoreTracerDatabaseNameReportingSettings()
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 _settings.audit_log_file = os.environ.get('NEW_RELIC_AUDIT_LOG', None)
+
 
 def _environ_as_int(name, default=0):
     val = os.environ.get(name, default)
@@ -119,6 +213,7 @@ def _environ_as_int(name, default=0):
         return int(val)
     except ValueError:
         return default
+
 
 def _environ_as_bool(name, default=False):
     flag = os.environ.get(name, default)
@@ -134,9 +229,11 @@ def _environ_as_bool(name, default=False):
             pass
     return flag
 
+
 def _environ_as_set(name, default=''):
     value = os.environ.get(name, default)
     return set(value.split())
+
 
 def _environ_as_mapping(name, default=''):
     result = []
@@ -178,6 +275,7 @@ def _environ_as_mapping(name, default=''):
 
     return result
 
+
 def _parse_ignore_status_codes(value, target):
     items = value.split()
     for item in items:
@@ -188,7 +286,7 @@ def _parse_ignore_status_codes(value, target):
 
             start, end = item.split('-')
 
-            values = set(range(int(start), int(end)+1))
+            values = set(range(int(start), int(end) + 1))
 
             if negate:
                 target.symmetric_difference_update(values)
@@ -201,6 +299,7 @@ def _parse_ignore_status_codes(value, target):
             else:
                 target.add(int(item))
     return target
+
 
 def _parse_attributes(s):
     valid = []
@@ -382,7 +481,7 @@ _settings.agent_limits.xray_profile_overhead = 0.05
 _settings.agent_limits.xray_profile_maximum = 500
 _settings.agent_limits.synthetics_events = 200
 _settings.agent_limits.synthetics_transactions = 20
-_settings.agent_limits.data_compression_threshold = 64*1024
+_settings.agent_limits.data_compression_threshold = 64 * 1024
 _settings.agent_limits.data_compression_level = None
 
 _settings.console.listener_socket = None
@@ -408,6 +507,8 @@ _settings.debug.enable_coroutine_profiling = False
 _settings.debug.explain_plan_obfuscation = 'simple'
 _settings.debug.disable_certificate_validation = False
 
+_settings.message_tracer.segment_parameters_enabled = True
+
 _settings.utilization.detect_aws = True
 _settings.utilization.detect_docker = True
 
@@ -423,6 +524,7 @@ _settings.strip_exception_messages.whitelist = []
 
 _settings.datastore_tracer.instance_reporting.enabled = True
 _settings.datastore_tracer.database_name_reporting.enabled = True
+
 
 def global_settings():
     """This returns the default global settings. Generally only used
@@ -441,6 +543,7 @@ def global_settings():
     """
 
     return _settings
+
 
 def flatten_settings(settings):
     """This returns dictionary of settings flattened into a single
@@ -465,6 +568,7 @@ def flatten_settings(settings):
 
     return _flatten({}, None, settings)
 
+
 def create_obfuscated_netloc(username, password, hostname, mask):
     """Create a netloc string from hostname, username and password. If the
     username and/or password is present, replace them with the obfuscation
@@ -486,6 +590,7 @@ def create_obfuscated_netloc(username, password, hostname, mask):
         netloc = hostname
 
     return netloc
+
 
 def global_settings_dump(settings_object=None):
     """This returns dictionary of global settings flattened into a single
@@ -543,6 +648,7 @@ def global_settings_dump(settings_object=None):
 
     return settings
 
+
 # Creation of an application settings object from global default settings
 # and any server side configuration settings.
 
@@ -570,6 +676,7 @@ def apply_config_setting(settings_object, name, value):
 
     setattr(target, fields[0], value)
 
+
 def fetch_config_setting(settings_object, name):
     """Fetch a setting from the settings object where name is a dotted path.
 
@@ -591,6 +698,7 @@ def fetch_config_setting(settings_object, name):
         target = getattr(target, fields[0])
 
     return target
+
 
 def apply_server_side_settings(server_side_config={}, settings=_settings):
     """Create a snapshot of the global default settings and overlay it
@@ -641,6 +749,7 @@ def apply_server_side_settings(server_side_config={}, settings=_settings):
 
     return settings_snapshot
 
+
 def finalize_application_settings(server_side_config={}, settings=_settings):
     """Overlay server-side settings and add attribute filter."""
 
@@ -656,6 +765,7 @@ def finalize_application_settings(server_side_config={}, settings=_settings):
 
     return application_settings
 
+
 def _remove_ignored_configs(server_settings):
     if not server_settings.get('agent_config'):
         return server_settings
@@ -665,6 +775,7 @@ def _remove_ignored_configs(server_settings):
         server_settings['agent_config'].pop(ignored_setting, None)
 
     return server_settings
+
 
 def ignore_status_code(status):
     return status in _settings.error_collector.ignore_status_codes

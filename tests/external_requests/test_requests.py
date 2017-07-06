@@ -75,12 +75,8 @@ _test_requests_http_request_with_port_rollup_metrics = [
         background_task=True)
 @background_task()
 def test_http_request_with_port():
-    external = MockExternalHTTPServer()
-    external.start()
-
-    requests.get('http://localhost:8989/')
-
-    external.stop()
+    with MockExternalHTTPServer():
+        requests.get('http://localhost:8989/')
 
 
 @pytest.mark.skipif(get_requests_version() < (1, 0),

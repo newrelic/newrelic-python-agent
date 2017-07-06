@@ -111,6 +111,18 @@ from newrelic.api.error_trace import (
         ErrorTraceWrapper as __ErrorTraceWrapper,
         wrap_error_trace as __wrap_error_trace)
 
+from newrelic.api.message_trace import (
+        message_trace as __message_trace,
+        MessageTrace as __MessageTrace,
+        MessageTraceWrapper as __MessageTraceWrapper,
+        wrap_message_trace as __wrap_message_trace)
+
+from newrelic.api.message_transaction import (
+        message_transaction as __message_transaction,
+        MessageTransaction as __MessageTransaction,
+        MessageTransactionWrapper as __MessageTransactionWrapper,
+        wrap_message_transaction as __wrap_message_transaction)
+
 from newrelic.common.object_names import callable_name as __callable_name
 
 from newrelic.common.object_wrapper import (
@@ -161,8 +173,7 @@ data_source_factory = __wrap_api_call(__data_source_factory,
         'data_source_factory')
 application = __wrap_api_call(__application,
         'application')
-register_application = __wrap_api_call(__register_application,
-        'register_application')
+register_application = __register_application
 application_settings = __wrap_api_call(__application_settings,
         'application_settings')
 current_transaction = __wrap_api_call(__current_transaction,
@@ -203,14 +214,11 @@ name_transaction = __wrap_api_call(__name_transaction,
         'name_transaction')
 add_user_attribute = __wrap_api_call(__add_user_attribute,
         'add_user_attribute')
-wsgi_application = __wrap_api_call(__wsgi_application,
-        'wsgi_application')
+wsgi_application = __wsgi_application
 WebTransaction = __wrap_api_call(__WebTransaction,
         'WebTransaction')
-WSGIApplicationWrapper = __wrap_api_call(__WSGIApplicationWrapper,
-        'WSGIApplicationWrapper')
-wrap_wsgi_application = __wrap_api_call(__wrap_wsgi_application,
-        'wrap_wsgi_application')
+WSGIApplicationWrapper = __WSGIApplicationWrapper
+wrap_wsgi_application = __wrap_wsgi_application
 background_task = __wrap_api_call(__background_task,
         'background_task')
 BackgroundTask = __wrap_api_call(__BackgroundTask,
@@ -279,6 +287,22 @@ ErrorTraceWrapper = __wrap_api_call(__ErrorTraceWrapper,
         'ErrorTraceWrapper')
 wrap_error_trace = __wrap_api_call(__wrap_error_trace,
         'wrap_error_trace')
+message_trace = __wrap_api_call(__message_trace,
+        'message_trace')
+MessageTrace = __wrap_api_call(__MessageTrace,
+        'MessageTrace')
+MessageTraceWrapper = __wrap_api_call(__MessageTraceWrapper,
+        'MessageTraceWrapper')
+wrap_message_trace = __wrap_api_call(__wrap_message_trace,
+        'wrap_message_trace')
+message_transaction = __wrap_api_call(__message_transaction,
+        'message_trace')
+MessageTransaction = __wrap_api_call(__MessageTransaction,
+        'MessageTransaction')
+MessageTransactionWrapper = __wrap_api_call(__MessageTransactionWrapper,
+        'MessageTransactionWrapper')
+wrap_message_transaction = __wrap_api_call(__wrap_message_transaction,
+        'wrap_message_transaction')
 callable_name = __wrap_api_call(__callable_name,
         'callable_name')
 ObjectProxy = __wrap_api_call(__ObjectProxy,
@@ -331,5 +355,3 @@ insert_html_snippet = __wrap_api_call(__insert_html_snippet,
         'insert_html_snippet')
 verify_body_exists = __wrap_api_call(__verify_body_exists,
         'verify_body_exists')
-wrap_api_call = __wrap_api_call(__wrap_api_call,
-        'wrap_api_call')

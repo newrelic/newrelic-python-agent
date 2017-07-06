@@ -489,6 +489,8 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'cross_application_tracer.enabled',
                      'getboolean', None)
+    _process_setting(section, 'message_tracer.segment_parameters_enabled',
+                     'getboolean', None)
     _process_setting(section, 'process_host.display_name',
                      'get', None)
     _process_setting(section, 'utilization.detect_aws',
@@ -2062,6 +2064,9 @@ def _process_module_builtin_defaults():
         _process_module_definition('tornado.http1connection',
                 'newrelic.hooks.framework_tornado_r3.http1connection',
                 'instrument_tornado_http1connection')
+        _process_module_definition('tornado.platform.asyncio',
+                'newrelic.hooks.framework_tornado_r3.ioloop',
+                'instrument_tornado_asyncio_loop')
 
     elif 'tornado.instrumentation.r1' in _settings.feature_flag:
         _process_module_definition('tornado.wsgi',
@@ -2341,6 +2346,16 @@ def _process_module_builtin_defaults():
     _process_module_definition('elasticsearch.transport',
             'newrelic.hooks.datastore_elasticsearch',
             'instrument_elasticsearch_transport')
+
+    _process_module_definition('pika.adapters',
+            'newrelic.hooks.messagebroker_pika',
+            'instrument_pika_adapters')
+    _process_module_definition('pika.channel',
+            'newrelic.hooks.messagebroker_pika',
+            'instrument_pika_channel')
+    _process_module_definition('pika.spec',
+            'newrelic.hooks.messagebroker_pika',
+            'instrument_pika_spec')
 
     _process_module_definition('pyelasticsearch.client',
             'newrelic.hooks.datastore_pyelasticsearch',

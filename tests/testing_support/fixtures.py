@@ -423,57 +423,68 @@ def validate_transaction_metrics(name, group='Function',
         ]
         transaction_scope_name = 'WebTransaction/%s/%s' % (group, name)
 
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
-    @catch_background_exceptions
-    def _validate_transaction_metrics(wrapped, instance, args, kwargs):
-        try:
-            result = wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
-            metrics = instance.stats_table
+    @function_wrapper
+    def _validate_wrapper(wrapped, instance, args, kwargs):
 
-            def _validate(name, scope, count):
-                key = (name, scope)
-                metric = metrics.get(key)
+        record_transaction_called = []
 
-                def _metrics_table():
-                    return 'metric=%r, metrics=%r' % (key, metrics)
+        @transient_function_wrapper('newrelic.core.stats_engine',
+                'StatsEngine.record_transaction')
+        @catch_background_exceptions
+        def _validate_transaction_metrics(wrapped, instance, args, kwargs):
+            record_transaction_called.append(True)
+            try:
+                result = wrapped(*args, **kwargs)
+            except:
+                raise
+            else:
+                metrics = instance.stats_table
 
-                def _metric_details():
-                    return 'metric=%r, count=%r' % (key, metric.call_count)
+                def _validate(name, scope, count):
+                    key = (name, scope)
+                    metric = metrics.get(key)
 
-                if count is not None:
-                    assert metric is not None, _metrics_table()
-                    if count == 'present':
-                        assert metric.call_count > 0, _metric_details()
+                    def _metrics_table():
+                        return 'metric=%r, metrics=%r' % (key, metrics)
+
+                    def _metric_details():
+                        return 'metric=%r, count=%r' % (key, metric.call_count)
+
+                    if count is not None:
+                        assert metric is not None, _metrics_table()
+                        if count == 'present':
+                            assert metric.call_count > 0, _metric_details()
+                        else:
+                            assert metric.call_count == count, _metric_details()
+
                     else:
-                        assert metric.call_count == count, _metric_details()
+                        assert metric is None, _metrics_table()
 
-                else:
-                    assert metric is None, _metrics_table()
+                for unscoped_metric in unscoped_metrics:
+                    _validate(unscoped_metric, '', 1)
 
-            for unscoped_metric in unscoped_metrics:
-                _validate(unscoped_metric, '', 1)
+                for scoped_name, scoped_count in scoped_metrics:
+                    _validate(scoped_name, transaction_scope_name, scoped_count)
 
-            for scoped_name, scoped_count in scoped_metrics:
-                _validate(scoped_name, transaction_scope_name, scoped_count)
+                for rollup_name, rollup_count in rollup_metrics:
+                    _validate(rollup_name, '', rollup_count)
 
-            for rollup_name, rollup_count in rollup_metrics:
-                _validate(rollup_name, '', rollup_count)
+                for custom_name, custom_count in custom_metrics:
+                    _validate(custom_name, '', custom_count)
 
-            for custom_name, custom_count in custom_metrics:
-                _validate(custom_name, '', custom_count)
+                custom_metric_names = set([name for name, _ in custom_metrics])
+                for name, _ in metrics:
+                    if name not in custom_metric_names:
+                        assert not name.startswith('Supportability/api/'), name
 
-            custom_metric_names = set([name for name, _ in custom_metrics])
-            for name, _ in metrics:
-                if name not in custom_metric_names:
-                    assert not name.startswith('Supportability/api/'), name
+            return result
 
-        return result
+        _new_wrapper = _validate_transaction_metrics(wrapped)
+        val = _new_wrapper(*args,**kwargs)
+        assert record_transaction_called
+        return val
 
-    return _validate_transaction_metrics
+    return _validate_wrapper
 
 
 def capture_transaction_metrics(metrics_list):
@@ -900,7 +911,8 @@ def validate_synthetics_transaction_trace(required_params={},
 
 def validate_tt_collector_json(required_params={},
         forgone_params={}, should_exist=True, datastore_params={},
-        datastore_forgone_params={}):
+        datastore_forgone_params={}, message_broker_params={},
+        message_broker_forgone_params=[]):
     '''make assertions based off the cross-agent spec on transaction traces'''
 
     @transient_function_wrapper('newrelic.core.stats_engine',
@@ -984,14 +996,21 @@ def validate_tt_collector_json(required_params={},
                         default=node[2])
                 if segment_name.startswith('Datastore'):
                     for key in datastore_params:
-                        assert key in params
+                        assert key in params, key
                         assert params[key] == datastore_params[key]
                     for key in datastore_forgone_params:
-                        assert key not in params
+                        assert key not in params, key
 
                     # if host is reported, it cannot be localhost
                     if 'host' in params:
                         assert params['host'] not in LOCALHOST_EQUIVALENTS
+
+                elif segment_name.startswith('MessageBroker'):
+                    for key in message_broker_params:
+                        assert key in params, key
+                        assert params[key] == message_broker_params[key]
+                    for key in message_broker_forgone_params:
+                        assert key not in params, key
 
             _check_params_and_start_time(trace_segment)
 

@@ -34,40 +34,57 @@ def cache_outgoing_headers(wrapped, instance, args, kwargs):
 
     return wrapped(*args, **kwargs)
 
-@function_wrapper
-def validate_cross_process_headers(wrapped, instance, args, kwargs):
-    result = wrapped(*args, **kwargs)
-
+def validate_outbound_headers(header_id='X-NewRelic-ID',
+        header_transaction='X-NewRelic-Transaction'):
     transaction = current_transaction()
+    headers = transaction._test_request_headers
     settings = transaction.settings
     encoding_key = settings.encoding_key
 
-    headers = transaction._test_request_headers
+    assert header_id in headers
 
-    assert 'X-NewRelic-ID' in headers
+    values = headers[header_id]
+    if isinstance(values, list):
+        assert len(values) == 1, headers
+        assert type(values[0]) == type('')
+        value = values[0]
+    else:
+        value = values
 
-    values = headers['X-NewRelic-ID']
-    assert len(values) == 1
-
-    assert type(values[0]) == type('')
-
-    cross_process_id = deobfuscate(values[0], encoding_key)
+    cross_process_id = deobfuscate(value, encoding_key)
     assert cross_process_id == settings.cross_process_id
 
-    assert 'X-NewRelic-Transaction' in headers
+    assert header_transaction in headers
 
-    values = headers['X-NewRelic-Transaction']
-    assert len(values) == 1
-
-    assert type(values[0]) == type('')
+    values = headers[header_transaction]
+    if isinstance(values, list):
+        assert len(values) == 1, headers
+        assert type(values[0]) == type('')
+        value = values[0]
+    else:
+        value = values
 
     (guid, record_tt, trip_id, path_hash) = \
-            json_decode(deobfuscate(values[0], encoding_key))
+            json_decode(deobfuscate(value, encoding_key))
 
     assert guid == transaction.guid
     assert record_tt == transaction.record_tt
     assert trip_id == transaction.trip_id
     assert path_hash == transaction.path_hash
+
+@function_wrapper
+def validate_cross_process_headers(wrapped, instance, args, kwargs):
+    result = wrapped(*args, **kwargs)
+
+    validate_outbound_headers()
+
+    return result
+
+@function_wrapper
+def validate_messagebroker_headers(wrapped, instance, args, kwargs):
+    result = wrapped(*args, **kwargs)
+    validate_outbound_headers(header_id='NewRelicID',
+            header_transaction='NewRelicTransaction')
 
     return result
 

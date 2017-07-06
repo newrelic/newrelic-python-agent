@@ -330,60 +330,11 @@ class WebTransaction(Transaction):
             except Exception:
                 pass
 
-        # Check for the New Relic cross process ID header and extract
+        # Process the New Relic cross process ID header and extract
         # the relevant details.
-
-        if settings.cross_application_tracer.enabled and \
-                settings.cross_process_id and settings.trusted_account_ids and \
-                settings.encoding_key:
-
-            client_cross_process_id = environ.get('HTTP_X_NEWRELIC_ID')
-
-            if client_cross_process_id:
-                try:
-                    client_cross_process_id = deobfuscate(
-                            client_cross_process_id, settings.encoding_key)
-
-                    # The cross process ID consists of the client
-                    # account ID and the ID of the specific application
-                    # the client is recording requests against. We need
-                    # to validate that the client account ID is in the
-                    # list of trusted account IDs and ignore it if it
-                    # isn't. The trusted account IDs list has the
-                    # account IDs as integers, so save the client ones
-                    # away as integers here so easier to compare later.
-
-                    client_account_id, client_application_id = \
-                            map(int, client_cross_process_id.split('#'))
-
-                    if client_account_id in settings.trusted_account_ids:
-                        self.client_cross_process_id = client_cross_process_id
-                        self.client_account_id = client_account_id
-                        self.client_application_id = client_application_id
-
-                        header_name = 'HTTP_X_NEWRELIC_TRANSACTION'
-                        txn_header = self.decode_newrelic_header(
-                                environ, header_name)
-
-                        if txn_header:
-                            self.is_part_of_cat = True
-                            self.referring_transaction_guid = txn_header[0]
-
-                            # Incoming record_tt is OR'd with existing
-                            # record_tt. In the scenario where we make multiple
-                            # ext request, this will ensure we don't set the
-                            # record_tt to False by a later request if it was
-                            # set to True by an earlier request.
-
-                            self.record_tt = self.record_tt or txn_header[1]
-
-                            if isinstance(txn_header[2], six.string_types):
-                                self._trip_id = txn_header[2]
-                            if isinstance(txn_header[3], six.string_types):
-                                self._referring_path_hash = txn_header[3]
-
-                except Exception:
-                    pass
+        client_cross_process_id = environ.get('HTTP_X_NEWRELIC_ID')
+        txn_header = environ.get('HTTP_X_NEWRELIC_TRANSACTION')
+        self._process_incoming_cat_headers(client_cross_process_id, txn_header)
 
         # Capture WSGI request environ dictionary values. We capture
         # content length explicitly as will need it for cross process
@@ -477,15 +428,9 @@ class WebTransaction(Transaction):
                 queue_time = 0
 
             if self.end_time:
-                duration = self.end_time = self.start_time
+                duration = self.end_time - self.start_time
             else:
                 duration = time.time() - self.start_time
-
-            # Generate the metric identifying the caller.
-
-            metric_name = 'ClientApplication/%s/all' % (
-                    self.client_cross_process_id)
-            self.record_custom_metric(metric_name, duration)
 
             # Generate the additional response headers which provide
             # information back to the caller. We need to freeze the

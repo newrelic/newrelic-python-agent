@@ -28,7 +28,8 @@ from newrelic.core.attribute_filter import (DST_NONE, DST_ERROR_COLLECTOR,
 from newrelic.core.config import DEFAULT_RESERVOIR_SIZE
 from newrelic.core.custom_event import create_custom_event
 from newrelic.core.stack_trace import exception_stack
-from newrelic.common.encoding_utils import generate_path_hash
+from newrelic.common.encoding_utils import (generate_path_hash, deobfuscate,
+        json_decode)
 
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.api.time_trace import TimeTrace
@@ -430,6 +431,11 @@ class Transaction(object):
                                self._calls_yield)
             self.record_custom_metric('Python/WSGI/Output/Calls/write',
                                self._calls_write)
+
+        if self.client_cross_process_id is not None:
+            metric_name = 'ClientApplication/%s/all' % (
+                    self.client_cross_process_id)
+            self.record_custom_metric(metric_name, duration)
 
         # Record supportability metrics for api calls
 
@@ -894,6 +900,65 @@ class Transaction(object):
 
             self.apdex = (self._settings.web_transactions_apdex.get(
                 self.path) or self._settings.apdex_t)
+
+    def _process_incoming_cat_headers(self, encoded_cross_process_id,
+            encoded_txn_header):
+        settings = self._settings
+
+        if not (settings.cross_application_tracer.enabled and
+                settings.cross_process_id and settings.trusted_account_ids and
+                settings.encoding_key):
+            return
+
+        if encoded_cross_process_id is None:
+            return
+
+        try:
+            client_cross_process_id = deobfuscate(
+                    encoded_cross_process_id, settings.encoding_key)
+
+            # The cross process ID consists of the client
+            # account ID and the ID of the specific application
+            # the client is recording requests against. We need
+            # to validate that the client account ID is in the
+            # list of trusted account IDs and ignore it if it
+            # isn't. The trusted account IDs list has the
+            # account IDs as integers, so save the client ones
+            # away as integers here so easier to compare later.
+
+            client_account_id, client_application_id = \
+                    map(int, client_cross_process_id.split('#'))
+
+            if client_account_id not in settings.trusted_account_ids:
+                return
+
+            self.client_cross_process_id = client_cross_process_id
+            self.client_account_id = client_account_id
+            self.client_application_id = client_application_id
+
+            txn_header = json_decode(deobfuscate(
+                    encoded_txn_header,
+                    settings.encoding_key))
+
+            if txn_header:
+                self.is_part_of_cat = True
+                self.referring_transaction_guid = txn_header[0]
+
+                # Incoming record_tt is OR'd with existing
+                # record_tt. In the scenario where we make multiple
+                # ext request, this will ensure we don't set the
+                # record_tt to False by a later request if it was
+                # set to True by an earlier request.
+
+                self.record_tt = (self.record_tt or
+                        txn_header[1])
+
+                if isinstance(txn_header[2], six.string_types):
+                    self._trip_id = txn_header[2]
+                if isinstance(txn_header[3], six.string_types):
+                    self._referring_path_hash = txn_header[3]
+        except Exception:
+            pass
 
     def set_transaction_name(self, name, group=None, priority=None):
 

@@ -4,9 +4,15 @@ import threading
 
 import pytest
 
+try:
+    import asyncio
+except ImportError:
+    asyncio = None
+
 from newrelic.packages import six
 
-from tornado_base_test import TornadoBaseTest, TornadoZmqBaseTest
+from tornado_base_test import (TornadoBaseTest, TornadoZmqBaseTest,
+        TornadoAsyncIOBaseTest)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -22,8 +28,10 @@ from _test_async_application import (AsyncLateExceptionRequestHandler,
 
 INTERNAL_SERVER_ERROR = 'Internal Server Error'
 
+
 def select_python_version(py2, py3):
     return six.PY3 and py3 or py2
+
 
 class AllTests(object):
 
@@ -64,7 +72,7 @@ class AllTests(object):
                     'CoroutineExceptionRequestHandler.get (coroutine)'),
              1),
             ('Function/_test_async_application:'
-            'CoroutineExceptionRequestHandler._inc', 1),]
+            'CoroutineExceptionRequestHandler._inc', 1)]
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[
@@ -80,7 +88,7 @@ class AllTests(object):
     scoped_metrics = [('Function/_test_async_application:'
             'CoroutineExceptionRequestHandler.get', 1),
             ('Function/_test_async_application:'
-            'CoroutineExceptionRequestHandler._inc', 1),]
+            'CoroutineExceptionRequestHandler._inc', 1)]
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[
@@ -102,7 +110,7 @@ class AllTests(object):
                 py3='Function/_test_async_application:'
                     'CoroutineException2RequestHandler.get (coroutine)'), 1),
             ('Function/_test_async_application:'
-            'CoroutineException2RequestHandler._inc', 1),]
+            'CoroutineException2RequestHandler._inc', 1)]
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[
@@ -116,11 +124,11 @@ class AllTests(object):
         self.assertEqual(response.reason, INTERNAL_SERVER_ERROR)
 
     scoped_metrics = [
-           # The request handler is double counted. See PYTHON-1967.
-           #('Function/_test_async_application:'
-           # 'CallbackFromCoroutineRequestHandler.get', 1),
+            # The request handler is double counted. See PYTHON-1967.
+            # ('Function/_test_async_application:'
+            # 'CallbackFromCoroutineRequestHandler.get', 1),
             ('Function/_test_async_application:'
-            'CallbackFromCoroutineRequestHandler.error', 1),]
+            'CallbackFromCoroutineRequestHandler.error', 1)]
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[
@@ -170,13 +178,13 @@ class AllTests(object):
                 AsyncLateExceptionRequestHandler.RESPONSE)
 
     scoped_metrics = [('Function/_test_async_application:'
-            'CoroutineLateExceptionRequestHandler.get', 1),
-            (select_python_version(
-                py2='Function/_test_async_application:get (coroutine)',
-                py3='Function/_test_async_application:'
-                    'CoroutineLateExceptionRequestHandler.get (coroutine)'), 1),
-            ('Function/_test_async_application:'
-            'CoroutineLateExceptionRequestHandler.resolve_future', 1)]
+        'CoroutineLateExceptionRequestHandler.get', 1),
+        (select_python_version(
+            py2='Function/_test_async_application:get (coroutine)',
+            py3='Function/_test_async_application:'
+                'CoroutineLateExceptionRequestHandler.get (coroutine)'), 1),
+        ('Function/_test_async_application:'
+        'CoroutineLateExceptionRequestHandler.resolve_future', 1)]
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[
@@ -215,7 +223,7 @@ class AllTests(object):
     def divide_by_zero(self):
         quotient = 0
         try:
-            quotient = 5/0
+            quotient = 5 / 0
         finally:
             self.io_loop.add_callback(self.after_divide)
         return quotient
@@ -231,8 +239,8 @@ class AllTests(object):
     def test_stack_context_no_transaction_exception(self):
         # This tests that we record exceptions when they are not in a
         # transaction, but they do occur within a stack context. That is they
-        # are scheduled asynchronously in a way where one wants to keep track of
-        # the stack context, such as via a context manager. Just as a note,
+        # are scheduled asynchronously in a way where one wants to keep track
+        # of the stack context, such as via a context manager. Just as a note,
         # it is possible for code written by an application developer to occur
         # within an ExceptionStackContext implicitly, request handlers do this
         # for example.
@@ -266,7 +274,7 @@ class AllTests(object):
                 py2='exceptions:ZeroDivisionError',
                 py3='builtins:ZeroDivisionError')])
     @tornado_validate_count_transaction_metrics(
-            '_test_async_application:OutsideTransactionErrorRequestHandler.get')
+        '_test_async_application:OutsideTransactionErrorRequestHandler.get')
     @tornado_validate_unscoped_metrics([('Errors/all', 1)])
     def test_outside_transaction_exception(self):
         self.waits_expected += 1
@@ -284,8 +292,9 @@ class AllTests(object):
     ]
     custom_metrics = [
             ('WebTransaction/Function/_test_async_application:'
-                'ExceptionInsteadOfFinishHandler.get',(0.1, 0.6))
+                'ExceptionInsteadOfFinishHandler.get', (0.1, 0.6))
     ]
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:ExceptionInsteadOfFinishHandler.get',
@@ -298,10 +307,17 @@ class AllTests(object):
         self.assertEqual(response.code, 500)
         self.assertEqual(response.reason, INTERNAL_SERVER_ERROR)
 
-class ExceptionDefaultIOLoopTest(AllTests, TornadoBaseTest):
+
+class ExceptionPollIOLoopTest(AllTests, TornadoBaseTest):
     pass
+
 
 @pytest.mark.skipif(sys.version_info < (2, 7),
         reason='pyzmq does not support Python 2.6')
 class ExceptionZmqIOLoopTest(AllTests, TornadoZmqBaseTest):
+    pass
+
+
+@pytest.mark.skipif(not asyncio, reason='No asyncio module available')
+class ExceptionAsyncIOLoopTest(AllTests, TornadoAsyncIOBaseTest):
     pass

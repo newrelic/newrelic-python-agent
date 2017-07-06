@@ -3,6 +3,11 @@ import pytest
 import sys
 import webtest
 
+try:
+    import asyncio
+except ImportError:
+    asyncio = None
+
 from newrelic.api.web_transaction import wsgi_application
 from newrelic.common.encoding_utils import deobfuscate
 
@@ -10,7 +15,8 @@ from testing_support.fixtures import (make_cross_agent_headers,
         override_application_settings)
 from testing_support.mock_external_http_server import (
         MockExternalHTTPHResponseHeadersServer)
-from tornado_base_test import TornadoBaseTest, TornadoZmqBaseTest
+from tornado_base_test import (TornadoBaseTest, TornadoZmqBaseTest,
+        TornadoAsyncIOBaseTest)
 from tornado_fixtures import (
         tornado_validate_errors, tornado_validate_transaction_cache_empty)
 
@@ -89,18 +95,16 @@ class AllTests(object):
     @tornado_validate_errors()
     @override_application_settings(_override_settings)
     def _test_external_cat_headers(self, url, req_type):
-        external = MockExternalHTTPHResponseHeadersServer()
-        external.start()
-        headers = make_cross_agent_headers(payload, ENCODING_KEY, '1#1')
-        response = self.fetch_response(
-                '/%s/%s/%s' % (url, req_type, external.port),
-                headers=headers)
-        external.stop()
+        with MockExternalHTTPHResponseHeadersServer() as external:
+            headers = make_cross_agent_headers(payload, ENCODING_KEY, '1#1')
+            response = self.fetch_response(
+                    '/%s/%s/%s' % (url, req_type, external.port),
+                    headers=headers)
 
-        expected_request_headers = [b'host', b'x-newrelic-id',
-                b'x-newrelic-transaction']
+        expected_request_headers = [b'Host', b'X-NewRelic-ID',
+                b'X-NewRelic-Transaction']
         unexpected_response_header = b'X-NewRelic-App-Data'.lower()
-        sent_headers = response.body.lower()
+        sent_headers = response.body
 
         self.assertEqual(response.code, 200)
         for expected_request_header in expected_request_headers:
@@ -126,7 +130,7 @@ class AllTests(object):
         self._test_external_cat_headers('sync-fetch', 'url')
 
 
-class TornadoDefaultIOLoopTest(AllTests, TornadoBaseTest):
+class TornadoPollIOLoopTest(AllTests, TornadoBaseTest):
     pass
 
 
@@ -134,3 +138,16 @@ class TornadoDefaultIOLoopTest(AllTests, TornadoBaseTest):
         reason='pyzmq does not support Python 2.6')
 class TornadoZmqIOLoopTest(AllTests, TornadoZmqBaseTest):
     pass
+
+
+@pytest.mark.skipif(not asyncio, reason='No asyncio module available')
+class TornadoAsyncIOLoopTest(AllTests, TornadoAsyncIOBaseTest):
+    @pytest.mark.skip(
+            reason='asyncio event loop does not support synchronous calls')
+    def test_sync_httpclient_req_obj_cat_headers(self):
+        pass
+
+    @pytest.mark.skip(
+            reason='asyncio event loop does not support synchronous calls')
+    def test_sync_httpclient_url_cat_headers(self):
+                pass

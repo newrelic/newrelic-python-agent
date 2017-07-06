@@ -10,6 +10,7 @@ from newrelic.core.agent import remove_thread_utilization
 
 _logger = logging.getLogger(__name__)
 
+
 def _nr_wrapper_IOLoop__run_callback_(wrapped, instance, args, kwargs):
     # callback in wrapped in functools.partial so to get the actual callback
     # we need to grab the func attribute.
@@ -39,6 +40,7 @@ def _nr_wrapper_IOLoop__run_callback_(wrapped, instance, args, kwargs):
 
     return ret
 
+
 def _nr_wrapper_IOLoop_handle_callback_exception_(
         wrapped, instance, args, kwargs):
 
@@ -53,12 +55,13 @@ def _nr_wrapper_IOLoop_handle_callback_exception_(
             record_exception(sys.exc_info())
     else:
         # If cb is an unexpected form (ie it's not a callback wrapped in a
-        # partial function) we record an error against the app. This can happen,
-        # for example, when too many file handles get opened and cb will be a
-        # tuple of the form: (socketobject, FunctionWrapper).
+        # partial function) we record an error against the app. This can
+        # happen, for example, when too many file handles get opened and cb
+        # will be a tuple of the form: (socketobject, FunctionWrapper).
         record_exception(sys.exc_info())
 
     return wrapped(*args, **kwargs)
+
 
 def _increment_ref_count(callback, wrapped, instance, args, kwargs):
     transaction = retrieve_current_transaction()
@@ -77,12 +80,12 @@ def _increment_ref_count(callback, wrapped, instance, args, kwargs):
 
         if transaction is not callback._nr_transaction:
             _logger.error('Attempt to add callback to ioloop with different '
-                    'transaction attached than in the cache. Please report this'
-                    ' issue to New Relic support.\n%s',
+                    'transaction attached than in the cache. Please report '
+                    'this issue to New Relic support.\n%s',
                     ''.join(traceback.format_stack()[:-1]))
 
-            # Since we are not incrementing the counter for this callback,
-            # we need to remove the transaction from the callback, so it doesn't
+            # Since we are not incrementing the counter for this callback, we
+            # need to remove the transaction from the callback, so it doesn't
             # get decremented either.
             callback._nr_transaction = None
             return wrapped(*args, **kwargs)
@@ -94,6 +97,7 @@ def _increment_ref_count(callback, wrapped, instance, args, kwargs):
 
     return wrapped(*args, **kwargs)
 
+
 def _nr_wrapper_PollIOLoop_add_callback(wrapped, instance, args, kwargs):
 
     def _callback_extractor(callback, *args, **kwargs):
@@ -102,15 +106,18 @@ def _nr_wrapper_PollIOLoop_add_callback(wrapped, instance, args, kwargs):
 
     return _increment_ref_count(callback, wrapped, instance, args, kwargs)
 
+
 def _nr_wrapper_PollIOLoop_call_at(wrapped, instance, args, kwargs):
 
     with TransactionContext(None):
         return wrapped(*args, **kwargs)
 
+
 def _nr_wrapper_PollIOLoop_add_handler(wrapped, instance, args, kwargs):
 
     with TransactionContext(None):
         return wrapped(*args, **kwargs)
+
 
 def _nr_wrapper_PollIOLoop_add_callback_from_signal(wrapped, instance, args,
         kwargs):
@@ -118,13 +125,15 @@ def _nr_wrapper_PollIOLoop_add_callback_from_signal(wrapped, instance, args,
     with TransactionContext(None):
         return wrapped(*args, **kwargs)
 
+
 def instrument_tornado_ioloop(module):
 
     # Thread utilization data is meaningless in a tornado app. Remove it here,
-    # once, since we know that tornado has been imported now. The following call
-    # to agent_instance will initialize data sources, if they have not been
-    # already. Thus, we know that this is a single place that we can remove the
-    # thread utilization, regardless of the order of imports/agent registration.
+    # once, since we know that tornado has been imported now. The following
+    # call to agent_instance will initialize data sources, if they have not
+    # been already. Thus, we know that this is a single place that we can
+    # remove the thread utilization, regardless of the order of imports/agent
+    # registration.
 
     remove_thread_utilization()
 
@@ -139,4 +148,15 @@ def instrument_tornado_ioloop(module):
     wrap_function_wrapper(module, 'PollIOLoop.add_handler',
             _nr_wrapper_PollIOLoop_add_handler)
     wrap_function_wrapper(module, 'PollIOLoop.add_callback_from_signal',
+            _nr_wrapper_PollIOLoop_add_callback_from_signal)
+
+
+def instrument_tornado_asyncio_loop(module):
+    wrap_function_wrapper(module, 'AsyncIOLoop.add_callback',
+            _nr_wrapper_PollIOLoop_add_callback)
+    wrap_function_wrapper(module, 'AsyncIOLoop.call_at',
+            _nr_wrapper_PollIOLoop_call_at)
+    wrap_function_wrapper(module, 'AsyncIOLoop.add_handler',
+            _nr_wrapper_PollIOLoop_add_handler)
+    wrap_function_wrapper(module, 'AsyncIOLoop.add_callback_from_signal',
             _nr_wrapper_PollIOLoop_add_callback_from_signal)

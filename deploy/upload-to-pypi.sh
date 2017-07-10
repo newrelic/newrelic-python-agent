@@ -98,5 +98,4 @@ echo "... PACKAGE_PATH    = $PACKAGE_PATH"
 
 # Run upload commands
 
-twine_command register $PACKAGE_PATH
 twine_command upload $PACKAGE_PATH

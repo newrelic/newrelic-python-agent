@@ -905,6 +905,9 @@ class Transaction(object):
             encoded_txn_header):
         settings = self._settings
 
+        if not self.enabled:
+            return
+
         if not (settings.cross_application_tracer.enabled and
                 settings.cross_process_id and settings.trusted_account_ids and
                 settings.encoding_key):

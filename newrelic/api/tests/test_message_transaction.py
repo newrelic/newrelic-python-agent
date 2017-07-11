@@ -58,6 +58,28 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 raises = True
         assert raises
 
+    def test_process_cat_empty_settings(self):
+
+        class FakeApp(newrelic.api.application.Application):
+            def activate(self, *args, **kwargs):
+                pass
+
+            @property
+            def settings(self):
+                return None
+
+        transaction = newrelic.api.message_transaction.MessageTransaction(
+                library='library', destination_type='Exchange',
+                destination_name='x',
+                application=FakeApp(settings.app_name))
+
+        with transaction:
+            transaction._process_incoming_cat_headers(None, None)
+
+        assert transaction.client_cross_process_id is None
+        assert transaction.client_account_id is None
+        assert transaction.client_application_id is None
+
 
 if __name__ == '__main__':
     unittest.main()

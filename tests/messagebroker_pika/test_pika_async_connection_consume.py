@@ -1,6 +1,7 @@
 import pika
 import pytest
 import six
+import tornado
 
 from newrelic.api.background_task import background_task
 
@@ -8,7 +9,7 @@ from conftest import (QUEUE, QUEUE_2, EXCHANGE, EXCHANGE_2, CORRELATION_ID,
         REPLY_TO, HEADERS, BODY)
 from testing_support.fixtures import (capture_transaction_metrics,
         validate_transaction_metrics, validate_tt_collector_json,
-        function_not_called)
+        function_not_called, override_application_settings)
 from testing_support.settings import rabbitmq_settings
 
 
@@ -21,6 +22,14 @@ _message_broker_tt_params = {
     'reply_to': REPLY_TO,
     'headers': HEADERS.copy(),
 }
+
+
+class MyIOLoop(tornado.ioloop.IOLoop.configured_class()):
+    def handle_callback_exception(self, *args, **kwargs):
+        raise
+
+
+tornado.ioloop.IOLoop.configure(MyIOLoop)
 
 parametrized_connection = pytest.mark.parametrize('ConnectionClass',
         [pika.SelectConnection, pika.TornadoConnection])
@@ -330,6 +339,7 @@ def test_async_connection_basic_consume_two_exchanges(producer, producer_2,
 # This should not create a transaction
 @function_not_called('newrelic.core.stats_engine',
                 'StatsEngine.record_transaction')
+@override_application_settings({'debug.record_transaction_failure': True})
 def test_tornado_connection_basic_consume_outside_transaction(producer):
     def on_message(channel, method_frame, header_frame, body):
         assert hasattr(method_frame, '_nr_start_time')

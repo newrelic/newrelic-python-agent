@@ -324,6 +324,8 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
                 with FunctionTrace(transaction=transaction, name=name):
                     return callback(*args, **kwargs)
             else:
+                if hasattr(instance, '_nr_disable_txn_tracing'):
+                    return callback(*args, **kwargs)
                 # Keyword arguments are unknown since this is a user
                 # defined callback
                 exchange = 'Unknown'
@@ -386,6 +388,12 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
     wrap_function_wrapper(module, obj, _nr_wrapper_Channel_consume_)
 
 
+def _disable_channel_transactions(wrapped, instance, args, kwargs):
+    ch = wrapped(*args, **kwargs)
+    ch._nr_disable_txn_tracing = True
+    return ch
+
+
 def instrument_pika_adapters(module):
     _wrap_Channel_consume_callback(module.blocking_connection,
             'BlockingChannel.basic_consume',
@@ -395,6 +403,10 @@ def instrument_pika_adapters(module):
             'BlockingChannel.__init__', _nr_wrap_BlockingChannel___init__)
     wrap_object(module.blocking_connection, 'BlockingChannel.consume',
             _ConsumeGeneratorWrapper)
+
+    if hasattr(module, 'tornado_connection'):
+        wrap_function_wrapper(module.tornado_connection,
+                'TornadoConnection.channel', _disable_channel_transactions)
 
 
 def instrument_pika_spec(module):

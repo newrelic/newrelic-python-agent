@@ -7,7 +7,8 @@ from newrelic.api.background_task import background_task
 from conftest import (QUEUE, QUEUE_2, EXCHANGE, EXCHANGE_2, CORRELATION_ID,
         REPLY_TO, HEADERS, BODY)
 from testing_support.fixtures import (capture_transaction_metrics,
-        validate_transaction_metrics, validate_tt_collector_json)
+        validate_transaction_metrics, validate_tt_collector_json,
+        function_not_called)
 from testing_support.settings import rabbitmq_settings
 
 
@@ -315,6 +316,80 @@ def test_async_connection_basic_consume_two_exchanges(producer, producer_2,
         connection.channel(on_open_channel)
 
     connection = ConnectionClass(
+            pika.ConnectionParameters(DB_SETTINGS['host']),
+            on_open_callback=on_open_connection)
+
+    try:
+        connection.ioloop.start()
+    except:
+        connection.close()
+        connection.ioloop.stop()
+        raise
+
+
+# This should not create a transaction
+@function_not_called('newrelic.core.stats_engine',
+                'StatsEngine.record_transaction')
+def test_tornado_connection_basic_consume_outside_transaction(producer):
+    def on_message(channel, method_frame, header_frame, body):
+        assert hasattr(method_frame, '_nr_start_time')
+        assert body == BODY
+        channel.basic_ack(method_frame.delivery_tag)
+        channel.close()
+        connection.close()
+        connection.ioloop.stop()
+
+    def on_open_channel(channel):
+        channel.basic_consume(on_message, QUEUE)
+
+    def on_open_connection(connection):
+        connection.channel(on_open_channel)
+
+    connection = pika.TornadoConnection(
+            pika.ConnectionParameters(DB_SETTINGS['host']),
+            on_open_callback=on_open_connection)
+
+    try:
+        connection.ioloop.start()
+    except:
+        connection.close()
+        connection.ioloop.stop()
+        raise
+
+
+if six.PY3:
+    _test_select_connection_consume_outside_txn_metrics = [
+        (('Function/test_pika_async_connection_consume:'
+          'test_select_connection_basic_consume_outside_transaction.'
+          '<locals>.on_message'), 1)]
+else:
+    _test_select_connection_consume_outside_txn_metrics = [
+        ('Function/test_pika_async_connection_consume:on_message', 1)]
+
+
+# This should create a transaction
+@validate_transaction_metrics(
+        'Named/%s' % EXCHANGE,
+        scoped_metrics=_test_select_connection_consume_outside_txn_metrics,
+        rollup_metrics=_test_select_connection_consume_outside_txn_metrics,
+        background_task=True,
+        group='Message/RabbitMQ/Exchange')
+def test_select_connection_basic_consume_outside_transaction(producer):
+    def on_message(channel, method_frame, header_frame, body):
+        assert hasattr(method_frame, '_nr_start_time')
+        assert body == BODY
+        channel.basic_ack(method_frame.delivery_tag)
+        channel.close()
+        connection.close()
+        connection.ioloop.stop()
+
+    def on_open_channel(channel):
+        channel.basic_consume(on_message, QUEUE)
+
+    def on_open_connection(connection):
+        connection.channel(on_open_channel)
+
+    connection = pika.SelectConnection(
             pika.ConnectionParameters(DB_SETTINGS['host']),
             on_open_callback=on_open_connection)
 

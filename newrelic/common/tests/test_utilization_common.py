@@ -4,8 +4,7 @@ import time
 
 from newrelic.packages import requests
 from newrelic.packages.six.moves import BaseHTTPServer
-from newrelic.common.utilization_common import (CommonUtilization,
-        valid_length, valid_chars)
+from newrelic.common.utilization_common import CommonUtilization
 from newrelic.core.stats_engine import CustomMetrics
 from newrelic.core.internal_metrics import InternalTraceContext
 
@@ -15,19 +14,19 @@ from newrelic.core.internal_metrics import InternalTraceContext
 
 def test_simple_valid_length():
     data = '  HelloWorld  '
-    assert valid_length(data)
+    assert CommonUtilization.valid_length(data)
 
 
 def test_simple_invalid_length():
     data = '0' * 256
-    assert not valid_length(data)
+    assert not CommonUtilization.valid_length(data)
 
 
 def test_unicode_valid_length():
     # unicode sailboat! (3 bytes)
     data = u'HelloWorld\u26F5'
     assert len(data) == 11
-    assert valid_length(data)
+    assert CommonUtilization.valid_length(data)
 
 
 def test_unicode_invalid_length():
@@ -36,7 +35,7 @@ def test_unicode_invalid_length():
     # of 1
     data = u'0' * (256 - 3) + u'\u26F5'
     assert len(data) == (256 - 3 + 1)
-    assert not valid_length(data)
+    assert not CommonUtilization.valid_length(data)
 
 
 # Valid Chars Tests
@@ -44,17 +43,17 @@ def test_unicode_invalid_length():
 
 def test_simple_valid_chars():
     data = '  Server1.machine_thing/metal-box  '
-    assert valid_chars(data)
+    assert CommonUtilization.valid_chars(data)
 
 
 def test_simple_invalid_chars():
     data = 'Server1.costs.$$$$$$'
-    assert not valid_chars(data)
+    assert not CommonUtilization.valid_chars(data)
 
 
 def test_unicode_is_valid():
     data = u'HelloWorld\u26F5'
-    assert valid_chars(data)
+    assert CommonUtilization.valid_chars(data)
 
 
 # Normalize Tests

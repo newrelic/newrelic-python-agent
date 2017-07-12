@@ -6,21 +6,7 @@ from newrelic.core.internal_metrics import internal_metric
 
 
 _logger = logging.getLogger(__name__)
-
-
-def valid_length(data):
-    b = data.encode('utf-8')
-    return len(b) <= 255
-
-
 VALID_CHARS_RE = re.compile(r'[0-9a-zA-Z_ ./-]')
-
-
-def valid_chars(data):
-    for c in data:
-        if not VALID_CHARS_RE.match(c) and ord(c) < 0x80:
-            return False
-    return True
 
 
 class CommonUtilization(object):
@@ -67,11 +53,24 @@ class CommonUtilization(object):
         return j
 
     @staticmethod
-    def normalize(key, data):
+    def valid_chars(data):
+        for c in data:
+            if not VALID_CHARS_RE.match(c) and ord(c) < 0x80:
+                return False
+        return True
+
+    @staticmethod
+    def valid_length(data):
+        b = data.encode('utf-8')
+        return len(b) <= 255
+
+    @classmethod
+    def normalize(cls, key, data):
         try:
             stripped = data.strip()
 
-            if stripped and valid_length(stripped) and valid_chars(stripped):
+            if (stripped and cls.valid_length(stripped) and
+                    cls.valid_chars(stripped)):
                 return stripped
         except:
             pass

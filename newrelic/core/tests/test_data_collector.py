@@ -9,6 +9,7 @@ from newrelic.core.data_collector import ApplicationSession
 AGENT_VERSION = '2.0.0.0'
 APP_NAME = 'test_app'
 AWS = {'id': 'foo', 'type': 'bar', 'zone': 'baz'}
+AZURE = {}
 BROWSER_MONITORING_DEBUG = 'debug'
 BROWSER_MONITORING_LOADER = 'loader'
 CAPTURE_PARAMS = 'capture_params'
@@ -17,11 +18,13 @@ DOCKER_ID = '2a4f870e24a3b52eb9fe7f3e02858c31855e213e568cfa6c76cb046ffa5b8a28'
 ENVIRONMENT = []
 HIGH_SECURITY = True
 HOST = "test_host"
+GCP = {}
 LABELS = 'labels'
 LINKED_APPS = ['linked_app_1', 'linked_app_2']
 MEMORY = 12000.0
 PAYLOAD_APP_NAME = [APP_NAME] + LINKED_APPS
 PAYLOAD_ID = ','.join(PAYLOAD_APP_NAME)
+PCF = {}
 PID = 123
 PROCESSOR_COUNT = 4
 RECORD_SQL = 'record_sql'
@@ -85,7 +88,10 @@ def default_settings():
             'labels': LABELS,
             'process_host.display_name': DISPLAY_NAME,
             'utilization.detect_aws': True,
-            'utilization.detect_docker': True}
+            'utilization.detect_azure': True,
+            'utilization.detect_docker': True,
+            'utilization.detect_gcp': True,
+            'utilization.detect_pcf': True}
 
 
 def payload_asserts(payload, with_aws=True, with_docker=True):

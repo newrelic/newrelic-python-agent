@@ -45,6 +45,9 @@ class CommonUtilization(object):
 
     @classmethod
     def get_values(cls, response):
+        if response is None:
+            return
+
         try:
             j = response.json()
         except ValueError:
@@ -56,6 +59,9 @@ class CommonUtilization(object):
 
     @staticmethod
     def valid_chars(data):
+        if data is None:
+            return
+
         for c in data:
             if not VALID_CHARS_RE.match(c) and ord(c) < 0x80:
                 return False
@@ -63,11 +69,17 @@ class CommonUtilization(object):
 
     @staticmethod
     def valid_length(data):
+        if data is None:
+            return
+
         b = data.encode('utf-8')
         return len(b) <= 255
 
     @classmethod
     def normalize(cls, key, data):
+        if data is None:
+            return
+
         try:
             stripped = data.strip()
 
@@ -79,6 +91,9 @@ class CommonUtilization(object):
 
     @classmethod
     def sanitize(cls, values):
+        if values is None:
+            return
+
         out = {}
         for key in cls.EXPECTED_KEYS:
             metadata = values.get(key, None)
@@ -98,9 +113,5 @@ class CommonUtilization(object):
     @classmethod
     def detect(cls):
         response = cls.fetch()
-
-        if response:
-            values = cls.get_values(response)
-
-            d = cls.sanitize(values)
-            return d
+        values = cls.get_values(response)
+        return cls.sanitize(values)

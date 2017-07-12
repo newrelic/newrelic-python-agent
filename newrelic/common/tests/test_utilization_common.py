@@ -260,3 +260,18 @@ def test_detect_fail(mock_get):
     d = ExpectKey.detect()
 
     assert d is None
+
+
+@mock.patch.object(requests.Session, 'get')
+def test_detect_nonetype(mock_get):
+    class ExpectKey(CommonUtilization):
+        EXPECTED_KEYS = ['key1', 'key2']
+
+    response = requests.models.Response()
+    response.status_code = 500
+    response._content = b'{"error": "¯\_(ツ)_/¯"}'
+    mock_get.return_value = response
+
+    d = ExpectKey.detect()
+
+    assert d is None

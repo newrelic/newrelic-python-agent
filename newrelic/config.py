@@ -495,7 +495,13 @@ def _process_configuration(section):
                      'get', None)
     _process_setting(section, 'utilization.detect_aws',
                      'getboolean', None)
+    _process_setting(section, 'utilization.detect_azure',
+                     'getboolean', None)
     _process_setting(section, 'utilization.detect_docker',
+                     'getboolean', None)
+    _process_setting(section, 'utilization.detect_gcp',
+                     'getboolean', None)
+    _process_setting(section, 'utilization.detect_pcf',
                      'getboolean', None)
     _process_setting(section, 'utilization.logical_processors',
                      'getint', None)

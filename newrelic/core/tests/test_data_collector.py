@@ -9,6 +9,7 @@ from newrelic.core.data_collector import ApplicationSession
 AGENT_VERSION = '2.0.0.0'
 APP_NAME = 'test_app'
 AWS = {'id': 'foo', 'type': 'bar', 'zone': 'baz'}
+AZURE = {}
 BROWSER_MONITORING_DEBUG = 'debug'
 BROWSER_MONITORING_LOADER = 'loader'
 CAPTURE_PARAMS = 'capture_params'
@@ -17,16 +18,19 @@ DOCKER_ID = '2a4f870e24a3b52eb9fe7f3e02858c31855e213e568cfa6c76cb046ffa5b8a28'
 ENVIRONMENT = []
 HIGH_SECURITY = True
 HOST = "test_host"
+GCP = {}
 LABELS = 'labels'
 LINKED_APPS = ['linked_app_1', 'linked_app_2']
 MEMORY = 12000.0
 PAYLOAD_APP_NAME = [APP_NAME] + LINKED_APPS
 PAYLOAD_ID = ','.join(PAYLOAD_APP_NAME)
+PCF = {}
 PID = 123
 PROCESSOR_COUNT = 4
 RECORD_SQL = 'record_sql'
 
 _backup_methods = {}
+
 
 # Mock out the calls used to create the connect payload.
 def setup_module(module):
@@ -64,6 +68,7 @@ def setup_module(module):
     _backup_methods['version'] = dc.version
     dc.version = AGENT_VERSION
 
+
 def teardown_module(module):
     system_info.gethostname = _backup_methods['gethostname']
     os.getpid = _backup_methods['getpid']
@@ -72,6 +77,7 @@ def teardown_module(module):
     dc.total_physical_memory = _backup_methods['total_physical_memory']
     dc.aws_data = _backup_methods['aws_data']
     dc.version = _backup_methods['version']
+
 
 def default_settings():
     return {'browser_monitoring.loader': BROWSER_MONITORING_LOADER,
@@ -82,7 +88,11 @@ def default_settings():
             'labels': LABELS,
             'process_host.display_name': DISPLAY_NAME,
             'utilization.detect_aws': True,
-            'utilization.detect_docker': True }
+            'utilization.detect_azure': True,
+            'utilization.detect_docker': True,
+            'utilization.detect_gcp': True,
+            'utilization.detect_pcf': True}
+
 
 def payload_asserts(payload, with_aws=True, with_docker=True):
     payload_data = payload[0]
@@ -97,7 +107,8 @@ def payload_asserts(payload, with_aws=True, with_docker=True):
     assert payload_data['language'] == 'python'
     assert payload_data['pid'] == PID
     assert len(payload_data['security_settings']) == 2
-    assert payload_data['security_settings']['capture_params'] == CAPTURE_PARAMS
+    assert payload_data['security_settings']['capture_params'] == \
+            CAPTURE_PARAMS
     assert payload_data['security_settings']['transaction_tracer'] == {
             'record_sql': RECORD_SQL}
     assert len(payload_data['settings']) == 2
@@ -126,10 +137,12 @@ def payload_asserts(payload, with_aws=True, with_docker=True):
     else:
         assert 'vendors' not in payload_data['utilization']
 
+
 def test_create_connect_payload():
     payload = ApplicationSession._create_connect_payload(
             APP_NAME, LINKED_APPS, ENVIRONMENT, default_settings())
     payload_asserts(payload)
+
 
 def test_create_connect_payload_no_aws():
     settings = default_settings()
@@ -138,12 +151,14 @@ def test_create_connect_payload_no_aws():
             APP_NAME, LINKED_APPS, ENVIRONMENT, settings)
     payload_asserts(payload, with_aws=False)
 
+
 def test_create_connect_payload_no_docker():
     settings = default_settings()
     settings['utilization.detect_docker'] = False
     payload = ApplicationSession._create_connect_payload(
             APP_NAME, LINKED_APPS, ENVIRONMENT, settings)
     payload_asserts(payload, with_docker=False)
+
 
 def test_create_connect_payload_no_vendors():
     settings = default_settings()

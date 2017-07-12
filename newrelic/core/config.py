@@ -510,7 +510,10 @@ _settings.debug.disable_certificate_validation = False
 _settings.message_tracer.segment_parameters_enabled = True
 
 _settings.utilization.detect_aws = True
+_settings.utilization.detect_azure = True
 _settings.utilization.detect_docker = True
+_settings.utilization.detect_gcp = True
+_settings.utilization.detect_pcf = True
 
 _settings.utilization.logical_processors = _environ_as_int(
         'NEW_RELIC_UTILIZATION_LOGICAL_PROCESSORS')

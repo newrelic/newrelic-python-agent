@@ -569,13 +569,13 @@
             "New Relic"
         ]
     },
-    "newrelic/api/tests/test_message_transaction.py": {
+    "newrelic/api/tests/test_message_trace.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
         ]
     },
-    "newrelic/api/tests/test_message_trace.py": {
+    "newrelic/api/tests/test_message_transaction.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -797,6 +797,12 @@
             "New Relic"
         ]
     },
+    "newrelic/common/tests/test_utilization_common.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/tests/test_xor_cipher.py": {
         "hash": "n/a",
         "libraries": [
@@ -804,6 +810,12 @@
         ]
     },
     "newrelic/common/utilization.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/utilization_common.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

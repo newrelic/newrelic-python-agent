@@ -797,6 +797,12 @@
             "New Relic"
         ]
     },
+    "newrelic/common/tests/test_utilization_azure.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/tests/test_utilization_common.py": {
         "hash": "n/a",
         "libraries": [
@@ -810,6 +816,12 @@
         ]
     },
     "newrelic/common/utilization.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/utilization_azure.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

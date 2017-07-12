@@ -11,6 +11,7 @@ VALID_CHARS_RE = re.compile(r'[0-9a-zA-Z_ ./-]')
 
 class CommonUtilization(object):
     METADATA_URL = ''
+    HEADERS = None
     EXPECTED_KEYS = []
     VENDOR_NAME = ''
     TIMEOUT = 0.5
@@ -32,7 +33,8 @@ class CommonUtilization(object):
         session.trust_env = False
 
         try:
-            resp = session.get(cls.METADATA_URL, timeout=cls.TIMEOUT)
+            resp = session.get(cls.METADATA_URL, timeout=cls.TIMEOUT,
+                    headers=cls.HEADERS)
             resp.raise_for_status()
         except Exception as e:
             resp = None

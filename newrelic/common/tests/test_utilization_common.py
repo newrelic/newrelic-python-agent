@@ -229,3 +229,35 @@ def test_sanitize_only_spaces_fail():
     d = ExpectKey.sanitize(values)
 
     assert d is None
+
+
+# Test detect
+
+@mock.patch.object(requests.Session, 'get')
+def test_detect_success(mock_get):
+    class ExpectKey(CommonUtilization):
+        EXPECTED_KEYS = ['key1', 'key2']
+
+    response = requests.models.Response()
+    response.status_code = 200
+    response._content = b'{"key1": "x", "key2": "y", "key3": "z"}'
+    mock_get.return_value = response
+
+    d = ExpectKey.detect()
+
+    assert d == {'key1': 'x', 'key2': 'y'}
+
+
+@mock.patch.object(requests.Session, 'get')
+def test_detect_fail(mock_get):
+    class ExpectKey(CommonUtilization):
+        EXPECTED_KEYS = ['key1', 'key2']
+
+    response = requests.models.Response()
+    response.status_code = 200
+    response._content = b'{"key1": "x", "key3": "z"}'
+    mock_get.return_value = response
+
+    d = ExpectKey.detect()
+
+    assert d is None

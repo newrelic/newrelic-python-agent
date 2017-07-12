@@ -90,6 +90,12 @@ def test_empty_after_strip_normalize():
     assert result is None
 
 
+def test_non_str_normalize():
+    data = 123
+    result = CommonUtilization.normalize('thing', data)
+    assert result is None
+
+
 # Test Error Reporting
 
 def test_supportability_metric():

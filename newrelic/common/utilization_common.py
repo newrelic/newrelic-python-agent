@@ -68,10 +68,13 @@ class CommonUtilization(object):
 
     @staticmethod
     def normalize(key, data):
-        stripped = data.strip()
+        try:
+            stripped = data.strip()
 
-        if stripped and valid_length(stripped) and valid_chars(stripped):
-            return stripped
+            if stripped and valid_length(stripped) and valid_chars(stripped):
+                return stripped
+        except:
+            pass
 
     @classmethod
     def sanitize(cls, values):

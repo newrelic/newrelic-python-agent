@@ -196,11 +196,9 @@ def test_sanitize_success():
     class ExpectKey(CommonUtilization):
         EXPECTED_KEYS = ['key1', 'key2']
 
-    response = requests.models.Response()
-    response.status_code = 200
-    response._content = b'{"key1": "x", "key2": "y", "key3": "z"}'
+    values = {'key1': 'x', 'key2': 'y', 'key3': 'z'}
 
-    d = ExpectKey.sanitize(response)
+    d = ExpectKey.sanitize(values)
 
     assert d == {'key1': 'x', 'key2': 'y'}
 
@@ -209,11 +207,9 @@ def test_sanitize_typical_fail():
     class ExpectKey(CommonUtilization):
         EXPECTED_KEYS = ['key1', 'key2']
 
-    response = requests.models.Response()
-    response.status_code = 200
-    response._content = b'{"key1": "x", "key3": "z"}'
+    values = {'key1': 'x', 'key3': 'z'}
 
-    d = ExpectKey.sanitize(response)
+    d = ExpectKey.sanitize(values)
 
     assert d is None
 
@@ -222,10 +218,8 @@ def test_sanitize_only_spaces_fail():
     class ExpectKey(CommonUtilization):
         EXPECTED_KEYS = ['key1', 'key2']
 
-    response = requests.models.Response()
-    response.status_code = 200
-    response._content = b'{"key1": "x", "key2": "       "}'
+    values = {'key1': 'x', 'key2': '       '}
 
-    d = ExpectKey.sanitize(response)
+    d = ExpectKey.sanitize(values)
 
     assert d is None

@@ -74,9 +74,8 @@ class CommonUtilization(object):
             return stripped
 
     @classmethod
-    def sanitize(cls, response):
+    def sanitize(cls, values):
         out = {}
-        values = cls.get_values(response)
         for key in cls.EXPECTED_KEYS:
             metadata = values.get(key, None)
             if not metadata:
@@ -97,5 +96,7 @@ class CommonUtilization(object):
         response = cls.fetch()
 
         if response:
-            d = cls.sanitize(response)
+            values = cls.get_values(response)
+
+            d = cls.sanitize(values)
             return d

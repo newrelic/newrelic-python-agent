@@ -11,22 +11,21 @@ from newrelic.core.internal_metrics import InternalTraceContext
 
 # Valid Length Tests
 
-
 def test_simple_valid_length():
     data = '  HelloWorld  '
-    assert CommonUtilization.valid_length(data)
+    assert CommonUtilization.valid_length(data) is True
 
 
 def test_simple_invalid_length():
     data = '0' * 256
-    assert not CommonUtilization.valid_length(data)
+    assert CommonUtilization.valid_length(data) is False
 
 
 def test_unicode_valid_length():
     # unicode sailboat! (3 bytes)
     data = u'HelloWorld\u26F5'
     assert len(data) == 11
-    assert CommonUtilization.valid_length(data)
+    assert CommonUtilization.valid_length(data) is True
 
 
 def test_unicode_invalid_length():
@@ -35,29 +34,35 @@ def test_unicode_invalid_length():
     # of 1
     data = u'0' * (256 - 3) + u'\u26F5'
     assert len(data) == (256 - 3 + 1)
-    assert not CommonUtilization.valid_length(data)
+    assert CommonUtilization.valid_length(data) is False
+
+
+def test_nonetype_length():
+    assert CommonUtilization.valid_length(None) is False
 
 
 # Valid Chars Tests
 
-
 def test_simple_valid_chars():
     data = '  Server1.machine_thing/metal-box  '
-    assert CommonUtilization.valid_chars(data)
+    assert CommonUtilization.valid_chars(data) is True
 
 
 def test_simple_invalid_chars():
     data = 'Server1.costs.$$$$$$'
-    assert not CommonUtilization.valid_chars(data)
+    assert CommonUtilization.valid_chars(data) is False
 
 
 def test_unicode_is_valid():
     data = u'HelloWorld\u26F5'
-    assert CommonUtilization.valid_chars(data)
+    assert CommonUtilization.valid_chars(data) is True
+
+
+def test_nonetype_chars():
+    assert CommonUtilization.valid_chars(None) is False
 
 
 # Normalize Tests
-
 
 def test_normalize_no_strip():
     data = 'Hello World'
@@ -93,6 +98,10 @@ def test_non_str_normalize():
     data = 123
     result = CommonUtilization.normalize('thing', data)
     assert result is None
+
+
+def test_nonetype_normalize():
+    assert CommonUtilization.normalize('pass', None) is None
 
 
 # Test Error Reporting
@@ -195,6 +204,10 @@ def test_get_values_fail():
     assert vals is None
 
 
+def test_get_values_nonetype():
+    assert CommonUtilization.get_values(None) is None
+
+
 # Test sanitize
 
 def test_sanitize_success():
@@ -230,6 +243,10 @@ def test_sanitize_only_spaces_fail():
     assert d is None
 
 
+def test_sanitize_nonetype():
+    assert CommonUtilization.sanitize(None) is None
+
+
 # Test detect
 
 @mock.patch.object(requests.Session, 'get')
@@ -248,13 +265,28 @@ def test_detect_success(mock_get):
 
 
 @mock.patch.object(requests.Session, 'get')
-def test_detect_fail(mock_get):
+def test_detect_missing_key(mock_get):
     class ExpectKey(CommonUtilization):
         EXPECTED_KEYS = ['key1', 'key2']
 
     response = requests.models.Response()
     response.status_code = 200
     response._content = b'{"key1": "x", "key3": "z"}'
+    mock_get.return_value = response
+
+    d = ExpectKey.detect()
+
+    assert d is None
+
+
+@mock.patch.object(requests.Session, 'get')
+def test_detect_invalid_json(mock_get):
+    class ExpectKey(CommonUtilization):
+        EXPECTED_KEYS = ['key1', 'key2']
+
+    response = requests.models.Response()
+    response.status_code = 200
+    response._content = b':-3'
     mock_get.return_value = response
 
     d = ExpectKey.detect()

@@ -60,7 +60,7 @@ class CommonUtilization(object):
     @staticmethod
     def valid_chars(data):
         if data is None:
-            return
+            return False
 
         for c in data:
             if not VALID_CHARS_RE.match(c) and ord(c) < 0x80:
@@ -70,7 +70,7 @@ class CommonUtilization(object):
     @staticmethod
     def valid_length(data):
         if data is None:
-            return
+            return False
 
         b = data.encode('utf-8')
         return len(b) <= 255

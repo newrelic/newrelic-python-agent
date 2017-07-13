@@ -11,7 +11,6 @@ from newrelic.core.internal_metrics import InternalTraceContext
 
 # Valid Length Tests
 
-
 def test_simple_valid_length():
     data = '  HelloWorld  '
     assert CommonUtilization.valid_length(data)
@@ -38,8 +37,11 @@ def test_unicode_invalid_length():
     assert not CommonUtilization.valid_length(data)
 
 
-# Valid Chars Tests
+def test_nonetype_length():
+    assert not CommonUtilization.valid_length(None)
 
+
+# Valid Chars Tests
 
 def test_simple_valid_chars():
     data = '  Server1.machine_thing/metal-box  '
@@ -56,8 +58,11 @@ def test_unicode_is_valid():
     assert CommonUtilization.valid_chars(data)
 
 
-# Normalize Tests
+def test_nonetype_chars():
+    assert not CommonUtilization.valid_chars(None)
 
+
+# Normalize Tests
 
 def test_normalize_no_strip():
     data = 'Hello World'
@@ -93,6 +98,10 @@ def test_non_str_normalize():
     data = 123
     result = CommonUtilization.normalize('thing', data)
     assert result is None
+
+
+def test_nonetype_normalize():
+    assert not CommonUtilization.normalize('pass', None)
 
 
 # Test Error Reporting
@@ -195,6 +204,10 @@ def test_get_values_fail():
     assert vals is None
 
 
+def test_get_values_nonetype():
+    assert not CommonUtilization().get_values(None)
+
+
 # Test sanitize
 
 def test_sanitize_success():
@@ -230,6 +243,10 @@ def test_sanitize_only_spaces_fail():
     assert d is None
 
 
+def test_sanitize_nonetype():
+    assert not CommonUtilization().sanitize(None)
+
+
 # Test detect
 
 @mock.patch.object(requests.Session, 'get')
@@ -248,7 +265,7 @@ def test_detect_success(mock_get):
 
 
 @mock.patch.object(requests.Session, 'get')
-def test_detect_fail(mock_get):
+def test_detect_missing_key(mock_get):
     class ExpectKey(CommonUtilization):
         EXPECTED_KEYS = ['key1', 'key2']
 
@@ -263,13 +280,13 @@ def test_detect_fail(mock_get):
 
 
 @mock.patch.object(requests.Session, 'get')
-def test_detect_nonetype(mock_get):
+def test_detect_invalid_json(mock_get):
     class ExpectKey(CommonUtilization):
         EXPECTED_KEYS = ['key1', 'key2']
 
     response = requests.models.Response()
-    response.status_code = 500
-    response._content = b'{"error": "¯\_(ツ)_/¯"}'
+    response.status_code = 200
+    response._content = b':-3'
     mock_get.return_value = response
 
     d = ExpectKey.detect()

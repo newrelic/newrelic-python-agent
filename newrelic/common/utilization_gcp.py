@@ -21,8 +21,3 @@ class GCPUtilization(CommonUtilization):
         if GCPUtilization.valid_length(formatted) and \
                 GCPUtilization.valid_chars(formatted):
             return formatted
-
-
-def gcp_data():
-    gcp = GCPUtilization()
-    return gcp.detect()

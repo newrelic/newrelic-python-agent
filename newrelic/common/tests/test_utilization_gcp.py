@@ -2,7 +2,7 @@
 import json
 import mock
 
-from newrelic.common.utilization_gcp import GCPUtilization, gcp_data
+from newrelic.common.utilization_gcp import GCPUtilization
 from newrelic.packages import requests
 
 
@@ -196,18 +196,3 @@ def test_detect_ugly_response(get_mock):
 
     gcp = GCPUtilization()
     assert gcp.detect() is None
-
-
-@mock.patch.object(requests.Session, 'get')
-def test_gcp_data(get_mock):
-    response = requests.models.Response()
-    response.status_code = 200
-    response._content = _mock_response_data
-    get_mock.return_value = response
-
-    assert gcp_data() == {'id': '1234567890123456', 'name': 'meow-bot',
-            'machineType': 'f1-micro', 'zone': 'us-central1-b'}
-    get_mock.assert_called_with(GCPUtilization.METADATA_URL,
-            headers={'Metadata-Flavor': 'Google'},
-            timeout=GCPUtilization.TIMEOUT)
-    assert len(get_mock.call_args_list) == 1  # Should be called once.

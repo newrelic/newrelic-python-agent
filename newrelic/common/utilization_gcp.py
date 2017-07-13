@@ -1,4 +1,3 @@
-
 from newrelic.common.utilization_common import CommonUtilization
 
 
@@ -9,15 +8,16 @@ class GCPUtilization(CommonUtilization):
             'metadata.google.internal')
     VENDOR_NAME = 'gcp'
 
-    @staticmethod
-    def normalize(key, data):
+    @classmethod
+    def normalize(cls, key, data):
+        if data is None:
+            return
+
         if key in ('machineType', 'zone'):
             formatted = data.strip().split('/')[-1]
         elif key == 'id':
             formatted = str(data)
         else:
-            formatted = data.strip()
+            formatted = data
 
-        if GCPUtilization.valid_length(formatted) and \
-                GCPUtilization.valid_chars(formatted):
-            return formatted
+        return super(GCPUtilization, cls).normalize(key, formatted)

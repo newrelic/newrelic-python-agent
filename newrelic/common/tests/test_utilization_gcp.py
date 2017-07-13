@@ -154,7 +154,7 @@ def test_normalize_bad_regex_plus_unicode():
 
 def test_sanitize():
     gcp = GCPUtilization()
-    assert gcp.sanitize(json.loads(_mock_response_data)) == \
+    assert gcp.sanitize(json.loads(_mock_response_data.decode('utf-8'))) == \
             {'id': '1234567890123456', 'name': 'meow-bot',
             'machineType': 'f1-micro', 'zone': 'us-central1-b'}
 

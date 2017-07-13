@@ -1,7 +1,7 @@
-
 import json
 import mock
 
+from newrelic.common.utilization_common import CommonUtilization
 from newrelic.common.utilization_gcp import GCPUtilization
 from newrelic.packages import requests
 
@@ -122,34 +122,15 @@ def test_normalize_zone():
     assert GCPUtilization.normalize('zone', data) == "us-central1-b"
 
 
-def test_normalize_too_long():
-    data = "meow" * 63 + "wruff"
+def test_normalize_nonetype():
+    data = None
     assert GCPUtilization.normalize('O--nn', data) is None
 
 
-def test_normalize_ok_regex():
-    data = '12345'
-    assert GCPUtilization.normalize('O--nn', data) == data
-
-
-def test_normalize_bad_regex():
-    data = '!#$'
-    assert GCPUtilization.normalize('O--nn', data) is None
-
-
-def test_normalize_ok_unicode_range():
-    data = u'\u2603'
-    assert GCPUtilization.normalize('O--nn', data) == data
-
-
-def test_normalize_ok_regex_plus_unicode():
-    data = u'09\u2603az'
-    assert GCPUtilization.normalize('O--nn', data) == data
-
-
-def test_normalize_bad_regex_plus_unicode():
-    data = u'a\u0021'
-    assert GCPUtilization.normalize('O--nn', data) is None
+def test_normalize_different_key():
+    data = "wruff"
+    assert GCPUtilization.normalize('O--nn', data) == \
+            CommonUtilization.normalize('O--nn', data)
 
 
 def test_sanitize():

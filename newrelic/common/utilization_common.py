@@ -21,7 +21,7 @@ class CommonUtilization(object):
         # As per spec
         internal_metric(
                 'Supportability/utilization/%s/error' % cls.VENDOR_NAME, 1)
-        _logger.warning('Fetched invalid %r data for "%r": %r',
+        _logger.warning('Invalid %r data (%r): %r',
                 cls.VENDOR_NAME, resource, data)
 
     @classmethod
@@ -51,7 +51,7 @@ class CommonUtilization(object):
         try:
             j = response.json()
         except ValueError:
-            _logger.debug('Fetched invalid %s data from %r: %r',
+            _logger.debug('Invalid %s data (%r): %r',
                     cls.VENDOR_NAME, cls.METADATA_URL, response.text)
             return
 

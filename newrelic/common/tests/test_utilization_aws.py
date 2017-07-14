@@ -1,4 +1,3 @@
-
 import mock
 from newrelic.common.utilization_aws import AWSUtilization
 from newrelic.packages import requests
@@ -21,22 +20,13 @@ _mock_response_data = b"""{
         "accountId": "244932736945"}"""
 
 
-_mock_exception_data = """
-        <?xml version="1.0" encoding="iso-8859-1"?>
-        <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-                 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-        <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-                 <head>
-          <title>500 - Internal Server Error</title>
-         </head>
-         <body>
-          <h1>500 - Internal Server Error</h1>
-         </body>
-        </html>"""
+def test_aws_vendor_info():
+    aws = AWSUtilization()
+    assert aws.VENDOR_NAME == 'aws'
 
 
 @mock.patch.object(requests.Session, 'get')
-def test_aws_success(mock_get):
+def test_aws_good_response(mock_get):
     response = requests.models.Response()
     response.status_code = 200
     response._content = _mock_response_data
@@ -48,10 +38,19 @@ def test_aws_success(mock_get):
 
 
 @mock.patch.object(requests.Session, 'get')
-def test_aws_failure(mock_get):
+def test_aws_bad_response(mock_get):
     response = requests.models.Response()
     response.status_code = 500
-    response._content = _mock_exception_data
+    mock_get.return_value = response
+
+    assert AWSUtilization.detect() is None
+
+
+@mock.patch.object(requests.Session, 'get')
+def test_aws_ugly_response(mock_get):
+    response = requests.models.Response()
+    response.status_code = 200
+    response._content = b"wruff"
     mock_get.return_value = response
 
     assert AWSUtilization.detect() is None

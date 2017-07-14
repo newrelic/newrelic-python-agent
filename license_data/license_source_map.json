@@ -809,6 +809,12 @@
             "New Relic"
         ]
     },
+    "newrelic/common/tests/test_utilization_gcp.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/tests/test_xor_cipher.py": {
         "hash": "n/a",
         "libraries": [
@@ -828,6 +834,12 @@
         ]
     },
     "newrelic/common/utilization_common.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/utilization_gcp.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

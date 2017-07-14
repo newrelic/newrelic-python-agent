@@ -1,4 +1,3 @@
-
 from newrelic.common.utilization_common import CommonUtilization
 
 

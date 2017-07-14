@@ -22,7 +22,7 @@ class CommonUtilization(object):
         internal_metric(
                 'Supportability/utilization/%s/error' % cls.VENDOR_NAME, 1)
         _logger.warning('Fetched invalid %r data for "%r": %r',
-                cls.VENDOR_NAME, cls.METADATA_URL, data)
+                cls.VENDOR_NAME, resource, data)
 
     @classmethod
     def fetch(cls):
@@ -57,23 +57,30 @@ class CommonUtilization(object):
 
         return j
 
-    @staticmethod
-    def valid_chars(data):
+    @classmethod
+    def valid_chars(cls, data):
         if data is None:
             return False
 
         for c in data:
             if not VALID_CHARS_RE.match(c) and ord(c) < 0x80:
+                cls.record_error('valid_chars', data)
                 return False
+
         return True
 
-    @staticmethod
-    def valid_length(data):
+    @classmethod
+    def valid_length(cls, data):
         if data is None:
             return False
 
         b = data.encode('utf-8')
-        return len(b) <= 255
+        valid = len(b) <= 255
+        if valid:
+            return True
+
+        cls.record_error('valid_length', data)
+        return False
 
     @classmethod
     def normalize(cls, key, data):

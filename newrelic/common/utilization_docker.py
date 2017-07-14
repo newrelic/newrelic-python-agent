@@ -4,7 +4,7 @@ from newrelic.common.utilization_common import CommonUtilization
 
 class DockerUtilization(CommonUtilization):
     VENDOR_NAME = 'docker'
-    EXPECTED_KEYS = ['id']
+    EXPECTED_KEYS = ('id',)
     METADATA_FILE = '/proc/self/cgroup'
 
     @classmethod

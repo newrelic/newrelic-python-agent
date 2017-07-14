@@ -42,6 +42,10 @@ example_procfile = '''
 missing_cpu_procfile = 'OHAI. This file is a disaster'
 
 
+def _bind_open(name, *args, **kwargs):
+    return name
+
+
 def test_fetch_file_exists():
     fake_open = mock.mock_open(read_data=example_procfile)
     file_iter = iter(example_procfile.split('\n'))
@@ -55,7 +59,9 @@ def test_fetch_file_exists():
     assert fake_open.call_count == 1
 
     # check that the correct file was opened
-    assert fake_open.call_args[0][0] == '/proc/self/cgroup'
+    args, kwargs = fake_open.call_args
+    name = _bind_open(*args, **kwargs)
+    assert name == '/proc/self/cgroup'
 
     # check that the correct line was processed
     s = ('2:cpu:/docker/'
@@ -91,7 +97,9 @@ def test_fetch_cpu_line_missing():
     assert fake_open.call_count == 1
 
     # check that the correct file was opened
-    assert fake_open.call_args[0][0] == '/proc/self/cgroup'
+    args, kwargs = fake_open.call_args
+    name = _bind_open(*args, **kwargs)
+    assert name == '/proc/self/cgroup'
 
     # check that the line is missing
     assert result is None

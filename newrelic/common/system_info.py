@@ -13,6 +13,7 @@ import sys
 import threading
 
 from newrelic.core.internal_metrics import internal_metric
+from newrelic.common.utilization_common import CommonUtilization
 
 try:
     from subprocess import check_output as _execute_program
@@ -457,3 +458,38 @@ def gethostname():
             _nr_cached_hostname = socket.gethostname()
 
     return _nr_cached_hostname
+
+
+class BootIdUtilization(CommonUtilization):
+    VENDOR_NAME = 'boot_id'
+    METADATA_URL = '/proc/sys/kernel/random/boot_id'
+
+    @classmethod
+    def fetch(cls):
+        if not sys.platform.startswith('linux'):
+            return
+
+        try:
+            with open(cls.METADATA_URL, 'rb') as f:
+                return f.readline()
+        except:
+            # There are all sorts of exceptions that can occur here
+            # (i.e. permissions, non-existent file, etc)
+            cls.record_error(None, 'File read error.')
+            pass
+
+    @staticmethod
+    def get_values(value):
+        return value
+
+    @classmethod
+    def sanitize(cls, value):
+        if value is None:
+            return
+
+        stripped = value.strip()
+
+        if len(stripped) > 128:
+            cls.record_error(None, stripped)
+
+        return stripped[:128]

@@ -1,4 +1,5 @@
 import mock
+import pytest
 import threading
 import time
 
@@ -9,9 +10,27 @@ from newrelic.core.stats_engine import CustomMetrics
 from newrelic.core.internal_metrics import InternalTraceContext
 
 
+@pytest.fixture
+def validate_error_metric_forgone():
+    internal_metrics = CustomMetrics()
+    with InternalTraceContext(internal_metrics):
+        yield
+
+    assert list(internal_metrics.metrics()) == []
+
+
+@pytest.fixture
+def validate_error_metric_exists():
+    internal_metrics = CustomMetrics()
+    with InternalTraceContext(internal_metrics):
+        yield
+
+    assert 'Supportability/utilization//error' in internal_metrics
+
+
 # Valid Length Tests
 
-def test_simple_valid_length():
+def test_simple_valid_length(validate_error_metric_forgone):
     data = '  HelloWorld  '
     assert CommonUtilization.valid_length(data) is True
 
@@ -28,7 +47,7 @@ def test_unicode_valid_length():
     assert CommonUtilization.valid_length(data) is True
 
 
-def test_unicode_invalid_length():
+def test_unicode_invalid_length(validate_error_metric_exists):
     # unicode sailboat! (3 bytes)
     # this test checks that the unicode character is counted as 3 bytes instead
     # of 1
@@ -37,7 +56,7 @@ def test_unicode_invalid_length():
     assert CommonUtilization.valid_length(data) is False
 
 
-def test_nonetype_length():
+def test_nonetype_length(validate_error_metric_forgone):
     assert CommonUtilization.valid_length(None) is False
 
 
@@ -58,7 +77,7 @@ def test_unicode_is_valid():
     assert CommonUtilization.valid_chars(data) is True
 
 
-def test_nonetype_chars():
+def test_nonetype_chars(validate_error_metric_forgone):
     assert CommonUtilization.valid_chars(None) is False
 
 
@@ -76,13 +95,13 @@ def test_normalize_strip():
     assert result == 'Hello World'
 
 
-def test_invalid_length_normalize():
+def test_invalid_length_normalize(validate_error_metric_exists):
     data = '0' * 256
     result = CommonUtilization.normalize('thing', data)
     assert result is None
 
 
-def test_invalid_chars_normalize():
+def test_invalid_chars_normalize(validate_error_metric_exists):
     data = u'$HelloWorld$'
     result = CommonUtilization.normalize('thing', data)
     assert result is None
@@ -100,7 +119,7 @@ def test_non_str_normalize():
     assert result is None
 
 
-def test_nonetype_normalize():
+def test_nonetype_normalize(validate_error_metric_forgone):
     assert CommonUtilization.normalize('pass', None) is None
 
 

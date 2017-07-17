@@ -12,7 +12,7 @@ class DockerUtilization(CommonUtilization):
         try:
             with open(cls.METADATA_FILE, 'rb') as f:
                 for line in f:
-                    stripped = line.strip()
+                    stripped = line.decode('utf-8').strip()
                     if stripped.startswith('2:cpu'):
                         return stripped
         except:

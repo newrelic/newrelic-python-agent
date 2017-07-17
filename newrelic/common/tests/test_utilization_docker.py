@@ -48,7 +48,8 @@ def _bind_open(name, *args, **kwargs):
 
 def test_fetch_file_exists():
     fake_open = mock.mock_open(read_data=example_procfile)
-    file_iter = iter(example_procfile.split('\n'))
+    lines = [l.encode('UTF-8') for l in example_procfile.split('\n')]
+    file_iter = iter(lines)
     fake_open.return_value.__iter__ = lambda self: file_iter
 
     with mock.patch('newrelic.common.utilization_docker.open', fake_open,

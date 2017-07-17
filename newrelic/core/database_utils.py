@@ -236,7 +236,7 @@ _parse_identifier_7_p = r'([^\s\(\)\[\],]+)'
 _parse_identifier_p = ''.join(('(', _parse_identifier_1_p, '|',
         _parse_identifier_2_p, '|', _parse_identifier_3_p, '|',
         _parse_identifier_4_p, '|', _parse_identifier_5_p, '|',
-        _parse_identifier_6_p, '|', _parse_identifier_5_p, ')'))
+        _parse_identifier_6_p, '|', _parse_identifier_7_p, ')'))
 
 _parse_from_p = '\s+FROM\s+' + _parse_identifier_p
 _parse_from_re = re.compile(_parse_from_p, re.IGNORECASE)

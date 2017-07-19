@@ -27,7 +27,7 @@ def validate_error_metric_exists(exist=True):
 
 # Test file fetch
 
-example_procfile = '''
+example_procfile_a = b'''
 9:perf_event:/docker/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2
 8:blkio:/docker/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2
 7:net_cls:/
@@ -38,17 +38,60 @@ example_procfile = '''
 2:cpu:/docker/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2
 1:cpuset:/
 '''
-
-missing_cpu_procfile = 'OHAI. This file is a disaster'
+example_procfile_b = b'''
+9:perf_event:/basher/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2
+8:blkio:/basher/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2
+7:net_cls:/
+6:freezer:/basher/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2
+5:devices:/basher/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2
+4:memory:/basher/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2
+3:cpuacct:/basher/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2
+2:cpu:/basher/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2
+1:cpuset:/
+'''
+example_procfile_c = b'''
+8:perf_event:/basher/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2
+7:blkio:/basher/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2
+6:net_cls:/
+5:freezer:/basher/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2
+4:devices:/basher/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2
+3:memory:/basher/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2
+2:cpuacct:/basher/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2
+1:cpu,cpuset:/basher/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2
+'''
+example_procfile_d = b'''
+8:perf_event:/basher/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2
+7:blkio:/basher/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2
+6:net_cls:/
+5:freezer:/basher/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2
+4:devices:/basher/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2
+3:memory:/basher/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2
+2:cpuacct:/basher/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2
+1:cpuset,cpu:/basher/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2
+'''
+missing_cpu = b'OHAI. This file is a disaster'
+a = '/docker/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2'
+b = '/basher/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2'
+c = '/basher/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2'
+d = '/basher/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2'
 
 
 def _bind_open(name, *args, **kwargs):
     return name
 
 
-def test_fetch_file_exists():
-    fake_open = mock.mock_open(read_data=example_procfile)
-    lines = [l.encode('UTF-8') for l in example_procfile.split('\n')]
+@pytest.mark.parametrize('case', [
+    (example_procfile_a, a),
+    (example_procfile_b, b),
+    (example_procfile_c, c),
+    (example_procfile_d, d),
+    (missing_cpu, None),
+])
+def test_fetch_file_valid(case):
+    f, expected = case
+    fake_open = mock.mock_open(read_data=f)
+    lines = [l.encode('UTF-8')
+            for l in f.decode('utf-8').split('\n')]
     file_iter = iter(lines)
     fake_open.return_value.__iter__ = lambda self: file_iter
 
@@ -65,9 +108,7 @@ def test_fetch_file_exists():
     assert name == '/proc/self/cgroup'
 
     # check that the correct line was processed
-    s = ('2:cpu:/docker/'
-            '47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2')
-    assert result == s
+    assert result == expected
 
 
 @mock.patch.object(ud, 'open', create=True)
@@ -85,27 +126,6 @@ def test_fetch_file_missing(fake_open):
     assert result is None
 
 
-def test_fetch_cpu_line_missing():
-    fake_open = mock.mock_open(read_data=example_procfile)
-    file_iter = iter(missing_cpu_procfile.split('\n'))
-    fake_open.return_value.__iter__ = lambda self: file_iter
-
-    with mock.patch('newrelic.common.utilization_docker.open', fake_open,
-            create=True):
-        result = ud.DockerUtilization.fetch()
-
-    # check that open is called once
-    assert fake_open.call_count == 1
-
-    # check that the correct file was opened
-    args, kwargs = fake_open.call_args
-    name = _bind_open(*args, **kwargs)
-    assert name == '/proc/self/cgroup'
-
-    # check that the line is missing
-    assert result is None
-
-
 # Get Values
 
 def test_get_values_none():
@@ -114,7 +134,7 @@ def test_get_values_none():
 
 
 def test_get_values_valid():
-    s = '2:cpu:/docker/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf5'
+    s = '/docker/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf5'
     result = ud.DockerUtilization.get_values(s)
 
     assert result == {
@@ -123,13 +143,13 @@ def test_get_values_valid():
 
 
 def test_get_values_endswith_slash():
-    result = ud.DockerUtilization.get_values('2:cpu:/')
+    result = ud.DockerUtilization.get_values('/')
     # both of these are acceptable responses
     assert result is None or result == {'id': ''}
 
 
 def test_get_values_no_slash():
-    result = ud.DockerUtilization.get_values('2:cpu:  ')
+    result = ud.DockerUtilization.get_values('  ')
     # both of these are acceptable responses
     assert result is None or result == {'id': ''}
 

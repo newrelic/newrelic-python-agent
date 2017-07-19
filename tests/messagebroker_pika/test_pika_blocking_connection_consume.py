@@ -100,21 +100,26 @@ _test_blocking_conn_basic_consume_no_txn_metrics = [
 ]
 
 if six.PY3:
+    _txn_name = ('test_pika_blocking_connection_consume:'
+            'test_blocking_connection_basic_consume_outside_transaction.'
+            '<locals>.on_message')
     _test_blocking_conn_basic_consume_no_txn_metrics.append(
         (('Function/test_pika_blocking_connection_consume:'
           'test_blocking_connection_basic_consume_outside_transaction.'
           '<locals>.on_message'), 1))
 else:
+    _txn_name = ('test_pika_blocking_connection_consume:'
+            'on_message')
     _test_blocking_conn_basic_consume_no_txn_metrics.append(
         ('Function/test_pika_blocking_connection_consume:on_message', 1))
 
 
 @validate_transaction_metrics(
-        'Named/%s' % EXCHANGE,
+        _txn_name,
         scoped_metrics=_test_blocking_conn_basic_consume_no_txn_metrics,
         rollup_metrics=_test_blocking_conn_basic_consume_no_txn_metrics,
         background_task=True,
-        group='Message/RabbitMQ/Exchange')
+        group='Message/RabbitMQ/Exchange/%s' % EXCHANGE)
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 def test_blocking_connection_basic_consume_outside_transaction(producer):
     def on_message(channel, method_frame, header_frame, body):

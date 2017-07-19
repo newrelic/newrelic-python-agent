@@ -1,4 +1,5 @@
 import pika
+import six
 
 from newrelic.api.background_task import background_task
 
@@ -80,12 +81,21 @@ def test_select_connection_supportability_in_txn(producer):
         raise
 
 
+if six.PY3:
+    _txn_name = ('test_pika_supportability:'
+            'test_select_connection_supportability_outside_txn.'
+            '<locals>.on_message')
+else:
+    _txn_name = (
+        'test_pika_supportability:on_message')
+
+
 @validate_transaction_metrics(
-        'Named/Unknown',  # destination name is ungatherable
+        _txn_name,
         scoped_metrics=(),
         rollup_metrics=_test_select_connection_supportability_metrics,
         background_task=True,
-        group='Message/RabbitMQ/Exchange')
+        group='Message/RabbitMQ/Exchange/Unknown')
 def test_select_connection_supportability_outside_txn(producer):
     def on_message(channel, method_frame, header_frame, body):
         assert method_frame

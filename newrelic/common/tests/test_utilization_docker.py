@@ -16,15 +16,6 @@ def validate_error_metric_forgone(exist=True):
     assert list(internal_metrics.metrics()) == []
 
 
-@pytest.fixture
-def validate_error_metric_exists(exist=True):
-    internal_metrics = CustomMetrics()
-    with InternalTraceContext(internal_metrics):
-        yield
-
-    assert 'Supportability/utilization/docker/error' in internal_metrics
-
-
 # Test file fetch
 
 example_procfile_a = b'''
@@ -166,7 +157,7 @@ def test_valid_chars_true(validate_error_metric_forgone):
     assert result is True
 
 
-def test_valid_chars_invalid(validate_error_metric_exists):
+def test_valid_chars_invalid(validate_error_metric_forgone):
     result = ud.DockerUtilization.valid_chars('cats')
     assert result is False
 
@@ -184,19 +175,19 @@ def test_valid_length_true(validate_error_metric_forgone):
     assert result is True
 
 
-def test_valid_length_less_than(validate_error_metric_exists):
+def test_valid_length_less_than(validate_error_metric_forgone):
     data = '0' * 63
     result = ud.DockerUtilization.valid_length(data)
     assert result is False
 
 
-def test_valid_length_greater_than(validate_error_metric_exists):
+def test_valid_length_greater_than(validate_error_metric_forgone):
     data = '0' * 65
     result = ud.DockerUtilization.valid_length(data)
     assert result is False
 
 
-def test_valid_length_0(validate_error_metric_exists):
+def test_valid_length_0(validate_error_metric_forgone):
     data = ''
     result = ud.DockerUtilization.valid_length(data)
     assert result is False

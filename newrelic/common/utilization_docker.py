@@ -48,7 +48,6 @@ class DockerUtilization(CommonUtilization):
         if valid:
             return True
 
-        cls.record_error(cls.METADATA_FILE, data)
         return False
 
     @classmethod
@@ -61,5 +60,4 @@ class DockerUtilization(CommonUtilization):
         if valid:
             return True
 
-        cls.record_error(cls.METADATA_FILE, data)
         return False

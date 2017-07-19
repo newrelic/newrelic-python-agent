@@ -13,8 +13,12 @@ class DockerUtilization(CommonUtilization):
             with open(cls.METADATA_FILE, 'rb') as f:
                 for line in f:
                     stripped = line.decode('utf-8').strip()
-                    if stripped.startswith('2:cpu'):
-                        return stripped
+                    cgroup = stripped.split(':')
+                    if len(cgroup) != 3:
+                        continue
+                    subsystems = cgroup[1].split(',')
+                    if 'cpu' in subsystems:
+                        return cgroup[2]
         except:
             # There are all sorts of exceptions that can occur here
             # (i.e. permissions, non-existent file, etc)

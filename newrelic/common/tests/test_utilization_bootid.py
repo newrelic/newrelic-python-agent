@@ -43,9 +43,7 @@ def non_linux_platform():
 
 # Test file fetch
 
-example_bootid_file = '12de7c83-742b-4d8c-9870-7d2627980875'
-
-too_long_bootid_file = '*' * 200
+example_bootid_file = b'12de7c83-742b-4d8c-9870-7d2627980875'
 
 
 def _bind_open(name, *args, **kwargs):
@@ -56,7 +54,9 @@ def test_fetch_file_exists_on_linux(linux_platform,
         validate_error_metric_forgone):
 
     fake_open = mock.mock_open(read_data=example_bootid_file)
-    file_iter = iter(example_bootid_file.split('\n'))
+    lines = [l.encode('utf-8')
+            for l in example_bootid_file.decode('utf-8').split('\n')]
+    file_iter = iter(lines)
 
     # come on python... seriously?
     fake_open.return_value.__iter__ = lambda self: file_iter
@@ -75,7 +75,7 @@ def test_fetch_file_exists_on_linux(linux_platform,
     assert name == '/proc/sys/kernel/random/boot_id'
 
     # check that the correct line was processed
-    assert result == example_bootid_file
+    assert result == '12de7c83-742b-4d8c-9870-7d2627980875'
 
 
 def test_fetch_file_missing_on_linux(linux_platform,
@@ -113,8 +113,13 @@ def test_fetch_on_non_linux_file_exists(non_linux_platform,
     fake_open = mock.mock_open(read_data=example_bootid_file)
 
     if file_exists:
-        file_iter = iter(example_bootid_file.split('\n'))
+        lines = [l.encode('utf-8')
+                for l in example_bootid_file.decode('utf-8').split('\n')]
+        file_iter = iter(lines)
+
+        # come on python... seriously?
         fake_open.return_value.__iter__ = lambda self: file_iter
+        fake_open.return_value.readline = lambda: next(file_iter)
     else:
         if six.PY3:
             fake_open.side_effect = FileNotFoundError # NOQA

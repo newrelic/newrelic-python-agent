@@ -365,6 +365,11 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
                         reply_to=reply_to,
                         correlation_id=correlation_id) as mt:
 
+                    # Improve transaction naming
+                    _new_txn_name = 'RabbitMQ/Exchange/%s/%s' % (exchange,
+                            name)
+                    mt.set_transaction_name(_new_txn_name, group='Message')
+
                     # Record that something went horribly wrong
                     if unknown_kwargs:
                         m = mt._transaction_metrics.get(KWARGS_ERROR, 0)

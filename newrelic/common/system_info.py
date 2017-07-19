@@ -471,7 +471,7 @@ class BootIdUtilization(CommonUtilization):
 
         try:
             with open(cls.METADATA_URL, 'rb') as f:
-                return f.readline()
+                return f.readline().decode('utf-8')
         except:
             # There are all sorts of exceptions that can occur here
             # (i.e. permissions, non-existent file, etc)

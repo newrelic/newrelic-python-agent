@@ -11,8 +11,10 @@ def wsgi_test_app(environ, start_response):
 def test_wsgi_app_positional_args():
     server = cherrypy.wsgiserver.CherryPyWSGIServer(('0.0.0.0', 8070),
             wsgi_test_app)
+    assert type(server.wsgi_app) != type(wsgi_test_app)
 
 
 def test_wsgi_app_keyword_args():
     server = cherrypy.wsgiserver.CherryPyWSGIServer(bind_addr=('0.0.0.0', 8070),
             wsgi_app=wsgi_test_app)
+    assert type(server.wsgi_app) != type(wsgi_test_app)

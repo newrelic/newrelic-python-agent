@@ -1,5 +1,9 @@
 import string
+import re
 from newrelic.common.utilization_common import CommonUtilization
+
+match_exp = r'([0-9a-f]{64,})'
+DOCKER_RE = re.compile(match_exp)
 
 
 class DockerUtilization(CommonUtilization):
@@ -29,13 +33,11 @@ class DockerUtilization(CommonUtilization):
         if contents is None:
             return
 
-        # parse the line
-        if '/' not in contents:
-            return
-
         value = contents.split('/')[-1]
-
-        return {'id': value}
+        match = DOCKER_RE.search(value)
+        if match:
+            value = match.group(0)
+            return {'id': value}
 
     @classmethod
     def valid_chars(cls, data):

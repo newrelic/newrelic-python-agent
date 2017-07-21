@@ -125,11 +125,11 @@ def test_get_values_none():
 
 
 def test_get_values_valid():
-    s = '/docker/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf5'
+    s = '/d/47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2'
     result = ud.DockerUtilization.get_values(s)
 
     assert result == {
-            'id': '47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf5'
+        'id': '47cbd16b77c50cbf71401c069cd2189f0e659af17d5a2daca3bddf59d8a870b2' # NOQA
     }
 
 

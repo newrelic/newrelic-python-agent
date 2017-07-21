@@ -1,7 +1,7 @@
 import newrelic.api.web_transaction
 import newrelic.api.in_function
 
-def instrument_cherrypy_wsgiserver_wsgiserver2(module):
+def instrument_cherrypy_wsgiserver(module):
 
     def wrap_wsgi_application_entry_point(server, bind_addr, wsgi_app,
             *args, **kwargs):

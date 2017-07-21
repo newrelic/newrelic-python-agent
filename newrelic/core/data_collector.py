@@ -374,6 +374,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
     if method not in _deflate_exclude_list and len(data) > threshold:
         headers['Content-Encoding'] = 'deflate'
 
+        internal_metric('Supportability/Python/Collector/ZLIB/Bytes/'
+                '%s' % method, len(data))
+
         level = settings.agent_limits.data_compression_level
         level = level or zlib.Z_DEFAULT_COMPRESSION
         data = zlib.compress(six.b(data), level)
@@ -417,6 +420,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
     # application is being restarted and not in state to be able to
     # accept requests. It should be a transient issue so should be able
     # to retain data and try again.
+
+    internal_metric('Supportability/Python/Collector/Output/Bytes/'
+            '%s' % method, len(data))
 
     # If audit logging is enabled, log the requests details.
 

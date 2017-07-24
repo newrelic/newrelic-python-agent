@@ -1,5 +1,9 @@
 import string
+import re
 from newrelic.common.utilization_common import CommonUtilization
+
+match_exp = r'([0-9a-f]{64,})'
+DOCKER_RE = re.compile(match_exp)
 
 
 class DockerUtilization(CommonUtilization):
@@ -12,9 +16,13 @@ class DockerUtilization(CommonUtilization):
         try:
             with open(cls.METADATA_FILE, 'rb') as f:
                 for line in f:
-                    stripped = line.strip()
-                    if stripped.startswith('2:cpu'):
-                        return stripped
+                    stripped = line.decode('utf-8').strip()
+                    cgroup = stripped.split(':')
+                    if len(cgroup) != 3:
+                        continue
+                    subsystems = cgroup[1].split(',')
+                    if 'cpu' in subsystems:
+                        return cgroup[2]
         except:
             # There are all sorts of exceptions that can occur here
             # (i.e. permissions, non-existent file, etc)
@@ -25,13 +33,11 @@ class DockerUtilization(CommonUtilization):
         if contents is None:
             return
 
-        # parse the line
-        if '/' not in contents:
-            return
-
         value = contents.split('/')[-1]
-
-        return {'id': value}
+        match = DOCKER_RE.search(value)
+        if match:
+            value = match.group(0)
+            return {'id': value}
 
     @classmethod
     def valid_chars(cls, data):
@@ -44,7 +50,6 @@ class DockerUtilization(CommonUtilization):
         if valid:
             return True
 
-        cls.record_error(cls.METADATA_FILE, data)
         return False
 
     @classmethod
@@ -57,5 +62,4 @@ class DockerUtilization(CommonUtilization):
         if valid:
             return True
 
-        cls.record_error(cls.METADATA_FILE, data)
         return False

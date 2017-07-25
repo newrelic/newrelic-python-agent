@@ -159,19 +159,23 @@ def test_sanitize_none(validate_error_metric_forgone):
 
 
 def test_sanitize_valid(validate_error_metric_forgone):
-    result = si.BootIdUtilization.sanitize('   size-10-boots   ')
-    assert result == 'size-10-boots'
+    # size 36 boots are perfect
+    boot_id = 'x' * 36
+    result = si.BootIdUtilization.sanitize(boot_id)
+    assert result == boot_id
 
 
-def test_sanitize_invalid(validate_error_metric_exists):
+@pytest.mark.parametrize('boot_id', [
     # these boots are too big, they don't fit
-    boot = '   size-%s-boots   ' % ('9' * 128)
-    result = si.BootIdUtilization.sanitize(boot)
+    '   size-%s-boots   ' % ('9' * 128),
+    # these boots are too small
+    '   size-10-boots   ',
+])
+def test_sanitize_invalid(validate_error_metric_exists, boot_id):
+    result = si.BootIdUtilization.sanitize(boot_id)
 
     # result truncates
-    assert len(result) == 128
+    assert len(result) <= 128
 
     # result stripped prior to truncation
-    number_of_nines = 128 - len('size-')
-    suffix = '9' * number_of_nines
-    assert result == ('size-%s' % suffix)
+    assert result == boot_id.strip()[:128]

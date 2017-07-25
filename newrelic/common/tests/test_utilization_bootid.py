@@ -44,6 +44,7 @@ def non_linux_platform():
 # Test file fetch
 
 example_bootid_file = b'12de7c83-742b-4d8c-9870-7d2627980875'
+sailboat_bootid_file = b'\xe2\x9b\xb5'
 
 
 def _bind_open(name, *args, **kwargs):
@@ -76,6 +77,27 @@ def test_fetch_file_exists_on_linux(linux_platform,
 
     # check that the correct line was processed
     assert result == '12de7c83-742b-4d8c-9870-7d2627980875'
+
+
+def test_fetch_unicode_file_on_linux(linux_platform,
+        validate_error_metric_exists):
+    fake_open = mock.mock_open(read_data=sailboat_bootid_file)
+    lines = [l.encode('utf-8')
+            for l in sailboat_bootid_file.decode('utf-8').split('\n')]
+    file_iter = iter(lines)
+
+    # come on python... seriously?
+    fake_open.return_value.__iter__ = lambda self: file_iter
+    fake_open.return_value.readline = lambda: next(file_iter)
+
+    with mock.patch('newrelic.common.system_info.open', fake_open,
+            create=True):
+        result = si.BootIdUtilization.fetch()
+
+    # check that open is called once
+    assert fake_open.call_count == 1
+
+    assert result is None
 
 
 def test_fetch_file_missing_on_linux(linux_platform,

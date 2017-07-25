@@ -489,7 +489,7 @@ class BootIdUtilization(CommonUtilization):
 
         stripped = value.strip()
 
-        if len(stripped) > 128:
-            cls.record_error(None, stripped)
+        if len(stripped) != 36:
+            cls.record_error(cls.METADATA_URL, stripped)
 
         return stripped[:128]

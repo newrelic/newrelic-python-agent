@@ -69,5 +69,5 @@ def test_boot_id(testname, input_total_ram_mib, input_logical_processors,
             value = item[1]['call_count']
             mock_internal_metric.assert_called_with(key, value)
 
-    with MockedBootIdEndpoint(input_boot_id):
+    with MockedBootIdEndpoint(input_boot_id.encode('utf8')):
         _test_boot_id_data()

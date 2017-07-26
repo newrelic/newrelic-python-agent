@@ -33,9 +33,15 @@ _pcf_tests = [_parametrize_test(t) for t in _load_tests()]
 class Environ(object):
     def __init__(self, env_dict):
         env_dict = env_dict or {}
+        cleaned_env_dict = {}
         for key, val in env_dict.items():
-            env_dict[key] = val.encode('utf8')
-        self.env_dict = env_dict
+            if val is None:
+                continue
+            elif not isinstance(val, str):
+                cleaned_env_dict[key] = val.encode('utf-8')
+            else:
+                cleaned_env_dict[key] = val
+        self.env_dict = cleaned_env_dict
 
     def __enter__(self):
         os.environ.update(self.env_dict)

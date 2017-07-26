@@ -136,7 +136,7 @@ class MockMetadataEndpoints(object):
                 'instanceId': self.test.get('input_aws_id'),
                 'instanceType': self.test.get('input_aws_type'),
                 'availabilityZone': self.test.get('input_aws_zone'),
-            })
+            }).encode('utf8')
             dc.AWSUtilization.METADATA_URL = (
                     'http://localhost:%s' % self.external.port)
         if self.test.get('input_azure_id'):
@@ -145,7 +145,7 @@ class MockMetadataEndpoints(object):
                 'name': self.test.get('input_azure_name'),
                 'vmId': self.test.get('input_azure_id'),
                 'vmSize': self.test.get('input_azure_size'),
-            })
+            }).encode('utf8')
             dc.AzureUtilization.METADATA_URL = (
                     'http://localhost:%s' % self.external.port)
         if self.test.get('input_gcp_id'):
@@ -154,7 +154,7 @@ class MockMetadataEndpoints(object):
                 'machineType': self.test.get('input_gcp_type'),
                 'name': self.test.get('input_gcp_name'),
                 'zone': self.test.get('input_gcp_zone'),
-            })
+            }).encode('utf8')
             dc.GCPUtilization.METADATA_URL = (
                     'http://localhost:%s' % self.external.port)
         if self.test.get('input_boot_id'):

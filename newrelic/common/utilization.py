@@ -4,7 +4,7 @@ import string
 import re
 
 from newrelic.packages import requests
-from newrelic.core.internal_metrics import internal_metric
+from newrelic.core.internal_metrics import internal_count_metric
 
 
 _logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ class CommonUtilization(object):
     @classmethod
     def record_error(cls, resource, data):
         # As per spec
-        internal_metric(
+        internal_count_metric(
                 'Supportability/utilization/%s/error' % cls.VENDOR_NAME, 1)
         _logger.warning('Invalid %r data (%r): %r',
                 cls.VENDOR_NAME, resource, data)

@@ -373,7 +373,7 @@ class BootIdUtilization(CommonUtilization):
         except:
             # There are all sorts of exceptions that can occur here
             # (i.e. permissions, non-existent file, etc)
-            cls.record_error(None, 'File read error.')
+            cls.record_error(cls.METADATA_URL, 'File read error.')
             pass
 
     @staticmethod

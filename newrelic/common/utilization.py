@@ -66,7 +66,6 @@ class CommonUtilization(object):
 
         for c in data:
             if not VALID_CHARS_RE.match(c) and ord(c) < 0x80:
-                cls.record_error('valid_chars', data)
                 return False
 
         return True
@@ -81,7 +80,6 @@ class CommonUtilization(object):
         if valid:
             return True
 
-        cls.record_error('valid_length', data)
         return False
 
     @classmethod

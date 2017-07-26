@@ -262,6 +262,32 @@ def test_sanitize_only_spaces_fail(validate_error_metric_exists):
     assert d is None
 
 
+def test_sanitize_invalid_char_value(validate_error_metric_exists):
+    data = 'Server1.costs.$$$$$$'
+
+    class ExpectKey(CommonUtilization):
+        EXPECTED_KEYS = ['key1', 'key2']
+
+    values = {'key1': 'x', 'key2': data}
+
+    d = ExpectKey.sanitize(values)
+
+    assert d is None
+
+
+def test_sanitize_too_long_value(validate_error_metric_exists):
+    data = '*' * 256
+
+    class ExpectKey(CommonUtilization):
+        EXPECTED_KEYS = ['key1', 'key2']
+
+    values = {'key1': 'x', 'key2': data}
+
+    d = ExpectKey.sanitize(values)
+
+    assert d is None
+
+
 def test_sanitize_nonetype(validate_error_metric_forgone):
     assert CommonUtilization.sanitize(None) is None
 

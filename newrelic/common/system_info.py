@@ -13,7 +13,7 @@ import sys
 import threading
 
 from newrelic.core.internal_metrics import internal_metric
-from newrelic.common.utilization_common import CommonUtilization
+from newrelic.common.utilization import CommonUtilization
 
 try:
     from subprocess import check_output as _execute_program

@@ -3,7 +3,7 @@ import mock
 import os
 import pytest
 
-import newrelic.common.utilization_docker as ud
+import newrelic.common.utilization as u
 
 DOCKER_FIXTURE = os.path.join(os.curdir, 'fixtures', 'docker_container_id')
 
@@ -29,8 +29,8 @@ def _load_docker_test_attributes():
 def test_docker_container_id(filename, containerId):
     path = os.path.join(DOCKER_FIXTURE, filename)
     with open(path, 'rb') as f:
-        with mock.patch.object(ud, 'open', create=True, return_value=f):
+        with mock.patch.object(u, 'open', create=True, return_value=f):
             if containerId is not None:
-                assert ud.DockerUtilization.detect() == {'id': containerId}
+                assert u.DockerUtilization.detect() == {'id': containerId}
             else:
-                assert ud.DockerUtilization.detect() is None
+                assert u.DockerUtilization.detect() is None

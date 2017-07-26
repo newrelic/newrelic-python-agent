@@ -4,7 +4,7 @@ import os
 import pytest
 
 from newrelic.packages import requests
-from newrelic.common.utilization_azure import AzureUtilization
+from newrelic.common.utilization import AzureUtilization
 
 from testing_support.fixtures import validate_internal_metrics
 

@@ -5,7 +5,7 @@ import time
 
 from newrelic.packages import requests
 from newrelic.packages.six.moves import BaseHTTPServer
-from newrelic.common.utilization_common import CommonUtilization
+from newrelic.common.utilization import CommonUtilization
 from newrelic.core.stats_engine import CustomMetrics
 from newrelic.core.internal_metrics import InternalTraceContext
 

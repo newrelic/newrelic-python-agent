@@ -2,7 +2,7 @@ import json
 import os
 import pytest
 
-from newrelic.common.utilization_pivotal import PCFUtilization
+from newrelic.common.utilization import PCFUtilization
 
 from testing_support.fixtures import validate_internal_metrics
 

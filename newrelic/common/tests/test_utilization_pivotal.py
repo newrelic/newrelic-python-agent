@@ -1,7 +1,6 @@
-import os
 import pytest
 
-from newrelic.common.utilization_pivotal import PCFUtilization
+from newrelic.common.utilization import PCFUtilization
 
 
 @pytest.mark.parametrize('environ,expected', [

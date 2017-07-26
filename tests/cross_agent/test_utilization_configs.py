@@ -8,9 +8,8 @@ import tempfile
 # methods in newrelic.core.data_collector and does not put them back!
 from newrelic.core.data_collector import ApplicationSession
 from newrelic.common.system_info import BootIdUtilization
-from newrelic.common.utilization_aws import AWSUtilization
-from newrelic.common.utilization_azure import AzureUtilization
-from newrelic.common.utilization_gcp import GCPUtilization
+from newrelic.common.utilization import (AWSUtilization,
+        AzureUtilization, GCPUtilization)
 from newrelic.common.object_wrapper import (transient_function_wrapper,
         function_wrapper)
 import newrelic.core.config

@@ -1,7 +1,7 @@
 import mock
 
 from newrelic.packages import requests
-from newrelic.common.utilization_azure import AzureUtilization
+from newrelic.common.utilization import AzureUtilization
 
 azure_success_response = (
 b'{'

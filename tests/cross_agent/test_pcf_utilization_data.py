@@ -1,9 +1,10 @@
 import json
-import mock
 import os
 import pytest
 
 from newrelic.common.utilization_pivotal import PCFUtilization
+
+from testing_support.fixtures import validate_internal_metrics
 
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -67,10 +68,13 @@ class MockResponse(object):
 @pytest.mark.parametrize(_parameters, _pcf_tests)
 def test_pcf(testname, env_vars, expected_vendors_hash, expected_metrics):
 
-    # Define function that actually runs the test
+    metrics = []
+    if expected_metrics:
+        metrics = [(k, v.get('call_count')) for k, v in
+                expected_metrics.items()]
 
-    @mock.patch('newrelic.common.utilization_common.internal_metric')
-    def _test_pcf_data(mock_internal_metric):
+    @validate_internal_metrics(metrics=metrics)
+    def _test_pcf_data():
 
         env_dict = dict([(key, val['response']) for key, val in
             env_vars.items()])
@@ -84,11 +88,5 @@ def test_pcf(testname, env_vars, expected_vendors_hash, expected_metrics):
             pcf_vendor_hash = None
 
         assert pcf_vendor_hash == expected_vendors_hash
-
-        if expected_metrics:
-            item = list(expected_metrics.items())[0]
-            key = item[0]
-            value = item[1]['call_count']
-            mock_internal_metric.assert_called_with(key, value)
 
     _test_pcf_data()

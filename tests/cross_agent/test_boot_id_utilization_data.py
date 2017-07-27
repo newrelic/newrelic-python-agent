@@ -1,11 +1,12 @@
 import json
-import mock
 import os
 import pytest
 import sys
 import tempfile
 
 from newrelic.common.system_info import BootIdUtilization
+
+from testing_support.fixtures import validate_internal_metrics
 
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -35,7 +36,7 @@ _boot_id_tests = [_parametrize_test(t) for t in _load_tests()]
 
 class MockedBootIdEndpoint(object):
     def __init__(self, boot_id):
-        self.boot_id = boot_id
+        self.boot_id = (boot_id or '').encode('utf8')
 
     def __enter__(self):
         if self.boot_id is not None:
@@ -57,17 +58,16 @@ class MockedBootIdEndpoint(object):
 def test_boot_id(testname, input_total_ram_mib, input_logical_processors,
         input_hostname, input_boot_id, expected_output_json, expected_metrics):
 
-    @mock.patch('newrelic.common.utilization_common.internal_metric')
-    def _test_boot_id_data(mock_internal_metric):
+    metrics = []
+    if expected_metrics:
+        metrics = [(k, v.get('call_count')) for k, v in
+                expected_metrics.items()]
+
+    @validate_internal_metrics(metrics=metrics)
+    def _test_boot_id_data():
         data = BootIdUtilization.detect()
 
-        assert data == expected_output_json['boot_id']
+        assert data == expected_output_json.get('boot_id')
 
-        if expected_metrics:
-            item = list(expected_metrics.items())[0]
-            key = item[0]
-            value = item[1]['call_count']
-            mock_internal_metric.assert_called_with(key, value)
-
-    with MockedBootIdEndpoint(input_boot_id.encode('utf8')):
+    with MockedBootIdEndpoint(input_boot_id):
         _test_boot_id_data()

@@ -6,6 +6,8 @@ import pytest
 from newrelic.packages import requests
 from newrelic.common.utilization_aws import AWSUtilization
 
+from testing_support.fixtures import validate_internal_metrics
+
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 FIXTURE = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures',
@@ -57,11 +59,16 @@ def test_aws(testname, uri, expected_vendors_hash, expected_metrics):
     mock_return_values = (
             _get_mock_return_value(uri[AWSUtilization.METADATA_URL]),)
 
+    metrics = []
+    if expected_metrics:
+        metrics = [(k, v.get('call_count')) for k, v in
+                expected_metrics.items()]
+
     # Define function that actually runs the test
 
-    @mock.patch('newrelic.common.utilization_common.internal_metric')
+    @validate_internal_metrics(metrics=metrics)
     @mock.patch.object(requests.Session, 'get')
-    def _test_aws_data(mock_get, mock_internal_metric):
+    def _test_aws_data(mock_get):
         mock_get.side_effect = mock_return_values
 
         data = AWSUtilization.detect()
@@ -72,11 +79,5 @@ def test_aws(testname, uri, expected_vendors_hash, expected_metrics):
             aws_vendor_hash = None
 
         assert aws_vendor_hash == expected_vendors_hash
-
-        if expected_metrics:
-            item = list(expected_metrics.items())[0]
-            key = item[0]
-            value = item[1]['call_count']
-            mock_internal_metric.assert_called_with(key, value)
 
     _test_aws_data()

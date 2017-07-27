@@ -37,6 +37,8 @@ from newrelic.core.config import (apply_config_setting, flatten_settings,
         global_settings)
 from newrelic.core.data_collector import _developer_mode_responses
 from newrelic.core.database_utils import SQLConnections
+from newrelic.core.internal_metrics import InternalTraceContext
+from newrelic.core.stats_engine import CustomMetrics
 
 from newrelic.network.addresses import proxy_details
 from newrelic.packages import requests
@@ -505,6 +507,42 @@ def capture_transaction_metrics(metrics_list):
         return result
 
     return _capture_transaction_metrics
+
+
+def validate_internal_metrics(metrics=[]):
+    @function_wrapper
+    def _validate_wrapper(wrapped, instance, args, kwargs):
+
+        captured_metrics = CustomMetrics()
+        with InternalTraceContext(captured_metrics):
+            result = wrapped(*args, **kwargs)
+        captured_metrics = dict(captured_metrics.metrics())
+
+        def _validate(name, count):
+            metric = captured_metrics.get(name)
+
+            def _metrics_table():
+                return 'metric=%r, metrics=%r' % (name, captured_metrics)
+
+            def _metric_details():
+                return 'metric=%r, count=%r' % (name, metric.call_count)
+
+            if count is not None and count > 0:
+                assert metric is not None, _metrics_table()
+                if count == 'present':
+                    assert metric.call_count > 0, _metric_details()
+                else:
+                    assert metric.call_count == count, _metric_details()
+
+            else:
+                assert metric is None, _metrics_table()
+
+        for metric, count in metrics:
+            _validate(metric, count)
+
+        return result
+
+    return _validate_wrapper
 
 
 def validate_transaction_errors(errors=[], required_params=[],

@@ -35,21 +35,6 @@ def _load_tests():
     return json.loads(js)
 
 
-class Environ(object):
-    def __init__(self, env_dict):
-        env_dict = env_dict or {}
-        for key, val in env_dict.items():
-            env_dict[key] = str(val)
-        self.env_dict = env_dict
-
-    def __enter__(self):
-        os.environ.update(self.env_dict)
-
-    def __exit__(self, *args, **kwargs):
-        os.environ.clear()
-        os.environ = INITIAL_ENV
-
-
 def _mock_logical_processor_count(cnt):
     def logical_processor_count():
         return cnt
@@ -78,18 +63,6 @@ class UpdatedSettings(object):
         the test.
 
         """
-        env = self.test.get('input_environment_variables', {})
-
-        if self.test.get('input_pcf_guid'):
-            env.update({
-                'CF_INSTANCE_GUID': self.test.get('input_pcf_guid'),
-                'CF_INSTANCE_IP': self.test.get('input_pcf_ip'),
-                'MEMORY_LIMIT': self.test.get('input_pcf_mem_limit'),
-            })
-
-        self.custom_env = Environ(env)
-        self.custom_env.__enter__()
-
         # clean settings cache and reload env vars
         # Note that reload can at times work in unexpected ways. All that is
         # required here is that the globals (such as
@@ -105,7 +78,6 @@ class UpdatedSettings(object):
         return newrelic.core.config.global_settings_dump()
 
     def __exit__(self, *args, **kwargs):
-        self.custom_env.__exit__(*args, **kwargs)
         newrelic.core.config._settings = self.initial_settings
 
 
@@ -226,7 +198,19 @@ def patch_system_info(test):
 
 
 @pytest.mark.parametrize('test', _load_tests())
-def test_utilization_settings(test):
+def test_utilization_settings(test, monkeypatch):
+
+    env = test.get('input_environment_variables', {})
+
+    if test.get('input_pcf_guid'):
+        env.update({
+            'CF_INSTANCE_GUID': test.get('input_pcf_guid'),
+            'CF_INSTANCE_IP': test.get('input_pcf_ip'),
+            'MEMORY_LIMIT': test.get('input_pcf_mem_limit'),
+        })
+
+    for key, val in env.items():
+        monkeypatch.setenv(key, val)
 
     @patch_Session_get(test)
     @patch_boot_id_file(test)

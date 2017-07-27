@@ -65,6 +65,7 @@ class MockResponse(object):
         return self.text
 
 
+@pytest.mark.xfail
 @pytest.mark.parametrize(_parameters, _pcf_tests)
 def test_pcf(testname, env_vars, expected_vendors_hash, expected_metrics):
 

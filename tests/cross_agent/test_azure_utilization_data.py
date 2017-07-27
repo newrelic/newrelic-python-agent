@@ -45,6 +45,7 @@ class MockResponse(object):
         return self.text
 
 
+@pytest.mark.xfail
 @pytest.mark.parametrize(_parameters, _azure_tests)
 def test_azure(testname, uri, expected_vendors_hash, expected_metrics):
 

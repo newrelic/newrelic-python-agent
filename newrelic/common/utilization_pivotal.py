@@ -16,11 +16,14 @@ class PCFUtilization(CommonUtilization):
         if all(pcf_vars):
             return pcf_vars
 
-    @staticmethod
-    def get_values(response):
-        if response is not None and len(response) == 3:
-            return {
-                'cf_instance_guid': response[0],
-                'cf_instance_ip': response[1],
-                'memory_limit': response[2],
-            }
+    @classmethod
+    def get_values(cls, response):
+        if response is None or len(response) != 3:
+            return
+
+        values = {}
+        for k, v in zip(cls.EXPECTED_KEYS, response):
+            if hasattr(v, 'decode'):
+                v = v.decode('utf-8')
+            values[k] = v
+        return values

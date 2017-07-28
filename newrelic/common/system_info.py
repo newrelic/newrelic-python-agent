@@ -492,4 +492,4 @@ class BootIdUtilization(CommonUtilization):
         if len(stripped) != 36:
             cls.record_error(cls.METADATA_URL, stripped)
 
-        return stripped[:128]
+        return stripped[:128] or None

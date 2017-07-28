@@ -376,11 +376,9 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
                         mt._transaction_metrics[KWARGS_ERROR] = m + 1
 
                     # Process CAT headers
-                    mt._process_incoming_cat_headers(
-                            cat_id, cat_transaction)
+                    mt._process_incoming_cat_headers(cat_id, cat_transaction)
 
-                    with FunctionTrace(transaction=mt, name=name):
-                        return callback(*args, **kwargs)
+                    return callback(*args, **kwargs)
 
         if len(args) > 0:
             args = list(args)

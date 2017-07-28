@@ -1122,6 +1122,8 @@ class ApplicationSession(object):
             if 'messages' in server_config:
                 for item in server_config['messages']:
                     message = item['message']
+                    if six.PY2 and hasattr(message, 'encode'):
+                        message = message.encode('utf-8')
                     level = item['level']
                     logger_func = logger_func_mapping.get(level, None)
                     if logger_func:

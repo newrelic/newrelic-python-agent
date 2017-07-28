@@ -45,7 +45,6 @@ class MockResponse(object):
         return self.text
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize(_parameters, _aws_tests)
 def test_aws(testname, uri, expected_vendors_hash, expected_metrics):
 

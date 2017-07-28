@@ -36,7 +36,7 @@ _boot_id_tests = [_parametrize_test(t) for t in _load_tests()]
 
 class MockedBootIdEndpoint(object):
     def __init__(self, boot_id):
-        self.boot_id = (boot_id or '').encode('utf8')
+        self.boot_id = boot_id
 
     def __enter__(self):
         if self.boot_id is not None:
@@ -54,7 +54,6 @@ class MockedBootIdEndpoint(object):
             del self.boot_id_file  # close and thus delete the tempfile
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize(_parameters, _boot_id_tests)
 def test_boot_id(testname, input_total_ram_mib, input_logical_processors,
         input_hostname, input_boot_id, expected_output_json, expected_metrics):

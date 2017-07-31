@@ -1,4 +1,5 @@
 import pika
+import six
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction
@@ -35,14 +36,21 @@ _test_cat_basic_consume_scoped_metrics = [
 _test_cat_basic_consume_rollup_metrics = list(
         _test_cat_basic_consume_scoped_metrics)
 _test_cat_basic_consume_rollup_metrics.append(('ClientApplication/1#1/all', 1))
+if six.PY3:
+    _txn_name = ('test_cat:'
+            'test_basic_consume_cat_headers.'
+            '<locals>.on_receive')
+else:
+    _txn_name = (
+        'test_cat:on_receive')
 
 
 @validate_transaction_metrics(
-        'Named/Default',
+        _txn_name,
         scoped_metrics=_test_cat_basic_consume_scoped_metrics,
         rollup_metrics=_test_cat_basic_consume_rollup_metrics,
         background_task=True,
-        group='Message/RabbitMQ/Exchange')
+        group='Message/RabbitMQ/Exchange/Default')
 def do_basic_consume(channel):
     channel.start_consuming()
 

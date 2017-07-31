@@ -12,7 +12,7 @@ import subprocess
 import sys
 import threading
 
-from newrelic.core.internal_metrics import internal_metric
+from newrelic.common.utilization import CommonUtilization
 
 try:
     from subprocess import check_output as _execute_program
@@ -332,107 +332,6 @@ def physical_memory_used():
     return 0
 
 
-def docker_container_id(cgroup_path='/proc/self/cgroup'):
-    """Returns the docker container id, or None if it can't be determined."""
-
-    if not sys.platform.startswith('linux'):
-        return None
-
-    container_id = None
-    try:
-        with open(cgroup_path, 'r') as cgroup_info:
-            container_id = _process_cgroup_info(cgroup_info)
-        return container_id
-
-    except Exception:
-        return None
-
-
-def _process_cgroup_info(cgroup_info):
-    """Parses the Docker container id from cgroup info.
-
-    Arguments:
-      cgroup_info: An iterable where each item is a line of a cgroup file.
-
-    Returns:
-      Dock container id or None if it can't be determined.
-
-    """
-
-    cgroup_ids = _parse_cgroup_ids(cgroup_info)
-    cpu_cgroup = cgroup_ids.get('cpu', '')
-
-    native_no_sysd_p = '^/docker/(?P<native_no_sysd>[0-9a-f]+)$'
-    native_sysd_p = '^/system.slice/docker-(?P<native_sysd>[0-9a-f]+).scope$'
-    lxc_p = '^/lxc/(?P<lxc>[0-9a-f]+)$'
-    docker_id_p = '|'.join([native_no_sysd_p, native_sysd_p, lxc_p])
-
-    match = re.match(docker_id_p, cpu_cgroup)
-    if match:
-        container_id = next((m for m in match.groups() if m is not None))
-    elif cpu_cgroup == '/':
-        container_id = None
-    else:
-        _logger.debug("Ignoring unrecognized cgroup ID format: '%s'" %
-                (cpu_cgroup))
-        container_id = None
-
-    if (container_id and not _validate_docker_container_id(container_id)):
-        container_id = None
-        _logger.warning("Docker cgroup ID does not validate: '%s'" %
-                container_id)
-        # As per spec
-        internal_metric('Supportability/utilization/docker/error', 1)
-
-    return container_id
-
-
-def _parse_cgroup_ids(cgroup_info):
-    """Returns a dictionary of subsystems to their cgroup.
-
-    Arguments:
-      cgroup_info: An iterable where each item is a line of a cgroup file.
-
-    """
-
-    cgroup_ids = {}
-
-    for line in cgroup_info:
-        parts = line.split(':')
-        if len(parts) != 3:
-            continue
-
-        _, subsystems, cgroup_id = parts
-        subsystems = subsystems.split(',')
-
-        for subsystem in subsystems:
-            cgroup_ids[subsystem] = cgroup_id
-
-    return cgroup_ids
-
-
-def _validate_docker_container_id(container_id):
-    """Validates a docker container id.
-
-    Arguments:
-      container_id: A string or buffer with the container id.
-
-    Returns:
-      True if the container id is valid, False otherwise.
-
-    """
-
-    # Check if container id is valid
-    valid_id_p = '^[0-9a-f]+$'
-
-    match = re.match(valid_id_p, container_id)
-    if match and len(container_id) == 64:
-        return True
-
-    # Container id is not valid
-    return False
-
-
 _nr_cached_hostname = None
 _nr_cached_hostname_lock = threading.Lock()
 
@@ -457,3 +356,38 @@ def gethostname():
             _nr_cached_hostname = socket.gethostname()
 
     return _nr_cached_hostname
+
+
+class BootIdUtilization(CommonUtilization):
+    VENDOR_NAME = 'boot_id'
+    METADATA_URL = '/proc/sys/kernel/random/boot_id'
+
+    @classmethod
+    def fetch(cls):
+        if not sys.platform.startswith('linux'):
+            return
+
+        try:
+            with open(cls.METADATA_URL, 'rb') as f:
+                return f.readline().decode('ascii')
+        except:
+            # There are all sorts of exceptions that can occur here
+            # (i.e. permissions, non-existent file, etc)
+            cls.record_error(cls.METADATA_URL, 'File read error.')
+            pass
+
+    @staticmethod
+    def get_values(value):
+        return value
+
+    @classmethod
+    def sanitize(cls, value):
+        if value is None:
+            return
+
+        stripped = value.strip()
+
+        if len(stripped) != 36:
+            cls.record_error(cls.METADATA_URL, stripped)
+
+        return stripped[:128] or None

@@ -428,6 +428,14 @@ SELECT_PARSE_TESTS = [
     ('v$session', 'select'),
     """SELECT count(*) theCount FROM v$session WHERE client_info = ?"""
   ),
+  # Select with special char in table name
+  (
+    ('customers', 'select'),
+    """SELECT Customers.CustID, Customers.Name, Orders.OrderID, Orders.Status
+       FROM {Customers} LEFT OUTER JOIN
+          Orders ON Customers.CustID=Orders.CustID
+       WHERE Orders.Status='OPEN'""",
+  ),
   (
     # Select with special char in table name
     ('krusher', 'select'),

@@ -33,9 +33,10 @@ from newrelic.common.object_wrapper import patch_function_wrapper
 from newrelic.common.object_names import callable_name
 from newrelic.common.encoding_utils import (json_encode, json_decode,
         unpack_field)
-from newrelic.common.system_info import (docker_container_id,
-        logical_processor_count, total_physical_memory)
-from newrelic.common.utilization import aws_data
+from newrelic.common.system_info import (logical_processor_count,
+        total_physical_memory, BootIdUtilization)
+from newrelic.common.utilization import (AWSUtilization, AzureUtilization,
+        DockerUtilization, GCPUtilization, PCFUtilization)
 
 _logger = logging.getLogger(__name__)
 
@@ -374,6 +375,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
     if method not in _deflate_exclude_list and len(data) > threshold:
         headers['Content-Encoding'] = 'deflate'
 
+        internal_metric('Supportability/Python/Collector/ZLIB/Bytes/'
+                '%s' % method, len(data))
+
         level = settings.agent_limits.data_compression_level
         level = level or zlib.Z_DEFAULT_COMPRESSION
         data = zlib.compress(six.b(data), level)
@@ -417,6 +421,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
     # application is being restarted and not in state to be able to
     # accept requests. It should be a transient issue so should be able
     # to retain data and try again.
+
+    internal_metric('Supportability/Python/Collector/Output/Bytes/'
+            '%s' % method, len(data))
 
     # If audit logging is enabled, log the requests details.
 
@@ -1146,10 +1153,13 @@ class ApplicationSession(object):
 
         utilization_settings = {}
         # metadata_version corresponds to the utilization spec being used.
-        utilization_settings['metadata_version'] = 2
+        utilization_settings['metadata_version'] = 3
         utilization_settings['logical_processors'] = logical_processor_count()
         utilization_settings['total_ram_mib'] = total_physical_memory()
         utilization_settings['hostname'] = hostname
+        boot_id = BootIdUtilization.detect()
+        if boot_id:
+            utilization_settings['boot_id'] = boot_id
 
         utilization_conf = {}
         logical_processor_conf = settings.get('utilization.logical_processors')
@@ -1164,15 +1174,28 @@ class ApplicationSession(object):
         if utilization_conf:
             utilization_settings['config'] = utilization_conf
 
-        utilization_vendor_settings = {}
+        vendors = []
         if settings['utilization.detect_aws']:
-            aws = aws_data()
-            if aws:
-                utilization_vendor_settings['aws'] = aws
+            vendors.append(AWSUtilization)
+        if settings['utilization.detect_pcf']:
+            vendors.append(PCFUtilization)
+        if settings['utilization.detect_gcp']:
+            vendors.append(GCPUtilization)
+        if settings['utilization.detect_azure']:
+            vendors.append(AzureUtilization)
+
+        utilization_vendor_settings = {}
+        for vendor in vendors:
+            metadata = vendor.detect()
+            if metadata:
+                utilization_vendor_settings[vendor.VENDOR_NAME] = metadata
+                break
+
         if settings['utilization.detect_docker']:
-            docker_id = docker_container_id()
-            if docker_id:
-                utilization_vendor_settings['docker'] = {'id': docker_id}
+            docker = DockerUtilization.detect()
+            if docker:
+                utilization_vendor_settings['docker'] = docker
+
         if utilization_vendor_settings:
             utilization_settings['vendors'] = utilization_vendor_settings
 

@@ -1,28 +1,31 @@
-import json
 import os
 import pytest
 
 from newrelic.common.system_info import (logical_processor_count,
         physical_processor_count, total_physical_memory, physical_memory_used,
-        _linux_physical_processor_count, _linux_total_physical_memory,
-        docker_container_id)
+        _linux_physical_processor_count, _linux_total_physical_memory)
+
 
 def test_logical_processor_count():
     assert logical_processor_count() >= 1
+
 
 def test_physical_processor_count():
     processors_count, cores_count = physical_processor_count()
     assert processors_count is None or processors_count >= 0
     assert cores_count is None or cores_count >= 0
 
+
 def test_total_physical_memory():
     assert total_physical_memory() >= 0
+
 
 def test_physical_memory_used():
     assert physical_memory_used() >= 0
 
     if total_physical_memory() > 0:
         assert physical_memory_used() <= total_physical_memory()
+
 
 @pytest.mark.parametrize('filename,expected', [
     ('1pack_1core_1logical.txt', (1, 1)),
@@ -46,8 +49,9 @@ def test_linux_physical_processor_count(filename, expected):
     result = _linux_physical_processor_count(path)
     assert result == expected
 
+
 @pytest.mark.parametrize('filename,expected', [
-    ('meminfo_4096MB.txt', 4194304/1024.0),
+    ('meminfo_4096MB.txt', 4194304 / 1024.0),
     ('malformed-file', None),
     ('non-existant-file.txt', None)])
 def test_linux_total_physical_memory(filename, expected):
@@ -56,25 +60,3 @@ def test_linux_total_physical_memory(filename, expected):
 
     value = _linux_total_physical_memory(path)
     assert value == expected
-
-DOCKER_FIXTURE = os.path.join(os.curdir, 'fixtures', 'docker_container_id')
-def _load_docker_test_attributes():
-    """Returns a list of docker test attributes in the form:
-       [(<filename>, <containerId>), ...]
-
-    """
-    docker_test_attributes = []
-    test_cases = os.path.join(DOCKER_FIXTURE, 'cases.json')
-    with open(test_cases, 'r') as fh:
-        js = fh.read()
-    json_list = json.loads(js)
-    for json_record in json_list:
-        docker_test_attributes.append(
-            (json_record['filename'], json_record['containerId']))
-    return docker_test_attributes
-
-@pytest.mark.parametrize('filename, containerId',
-                          _load_docker_test_attributes())
-def test_docker_container_id(filename, containerId):
-    path = os.path.join(DOCKER_FIXTURE, filename)
-    assert docker_container_id(path) == containerId

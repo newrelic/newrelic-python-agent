@@ -569,13 +569,13 @@
             "New Relic"
         ]
     },
-    "newrelic/api/tests/test_message_transaction.py": {
+    "newrelic/api/tests/test_message_trace.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
         ]
     },
-    "newrelic/api/tests/test_message_trace.py": {
+    "newrelic/api/tests/test_message_transaction.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -791,7 +791,43 @@
             "New Relic"
         ]
     },
-    "newrelic/common/tests/test_utilization.py": {
+    "newrelic/common/tests/test_utilization_aws.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_utilization_azure.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_utilization_bootid.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_utilization_common.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_utilization_docker.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_utilization_gcp.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_utilization_pivotal.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

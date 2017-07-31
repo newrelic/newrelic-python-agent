@@ -207,7 +207,7 @@ def _uncomment_sql(sql):
 # avoid trying to use \w pattern even if LOCALE flag is used.
 #
 # On top of the character set issues and quoting, different types of
-# bracketing such as () and [] can also be used around names.
+# bracketing such as (), {}, and [] can also be used around names.
 #
 # Because of the difficulty in handling locales especially, what we do
 # instead is try and match based on whatever occurs between the
@@ -230,12 +230,13 @@ _parse_identifier_2_p = r"'((?:[^']|'')+)'(?:\.'((?:[^']|'')+)')?"
 _parse_identifier_3_p = r'`((?:[^`]|``)+)`(?:\.`((?:[^`]|``)+)`)?'
 _parse_identifier_4_p = r'\[\s*(\S+)\s*\]'
 _parse_identifier_5_p = r'\(\s*(\S+)\s*\)'
-_parse_identifier_6_p = r'([^\s\(\)\[\],]+)'
+_parse_identifier_6_p = r'\{\s*(\S+)\s*\}'
+_parse_identifier_7_p = r'([^\s\(\)\[\],]+)'
 
 _parse_identifier_p = ''.join(('(', _parse_identifier_1_p, '|',
         _parse_identifier_2_p, '|', _parse_identifier_3_p, '|',
         _parse_identifier_4_p, '|', _parse_identifier_5_p, '|',
-        _parse_identifier_6_p, ')'))
+        _parse_identifier_6_p, '|', _parse_identifier_7_p, ')'))
 
 _parse_from_p = '\s+FROM\s+' + _parse_identifier_p
 _parse_from_re = re.compile(_parse_from_p, re.IGNORECASE)

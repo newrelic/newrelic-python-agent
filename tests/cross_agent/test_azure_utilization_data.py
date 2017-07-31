@@ -4,14 +4,14 @@ import os
 import pytest
 
 from newrelic.packages import requests
-from newrelic.common.utilization import AWSUtilization
+from newrelic.common.utilization import AzureUtilization
 
 from testing_support.fixtures import validate_internal_metrics
 
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 FIXTURE = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures',
-    'utilization_vendor_specific', 'aws.json'))
+    'utilization_vendor_specific', 'azure.json'))
 
 _parameters_list = ['testname', 'uri', 'expected_vendors_hash',
         'expected_metrics']
@@ -29,7 +29,7 @@ def _parametrize_test(test):
     return tuple([test.get(f, None) for f in _parameters_list])
 
 
-_aws_tests = [_parametrize_test(t) for t in _load_tests()]
+_azure_tests = [_parametrize_test(t) for t in _load_tests()]
 
 
 class MockResponse(object):
@@ -45,8 +45,8 @@ class MockResponse(object):
         return self.text
 
 
-@pytest.mark.parametrize(_parameters, _aws_tests)
-def test_aws(testname, uri, expected_vendors_hash, expected_metrics):
+@pytest.mark.parametrize(_parameters, _azure_tests)
+def test_azure(testname, uri, expected_vendors_hash, expected_metrics):
 
     # Generate mock responses for requests.Session.get
 
@@ -57,7 +57,7 @@ def test_aws(testname, uri, expected_vendors_hash, expected_metrics):
             return MockResponse('200', api_result['response'])
 
     mock_return_values = (
-            _get_mock_return_value(uri[AWSUtilization.METADATA_URL]),)
+            _get_mock_return_value(uri[AzureUtilization.METADATA_URL]),)
 
     metrics = []
     if expected_metrics:
@@ -68,16 +68,16 @@ def test_aws(testname, uri, expected_vendors_hash, expected_metrics):
 
     @validate_internal_metrics(metrics=metrics)
     @mock.patch.object(requests.Session, 'get')
-    def _test_aws_data(mock_get):
+    def _test_azure_data(mock_get):
         mock_get.side_effect = mock_return_values
 
-        data = AWSUtilization.detect()
+        data = AzureUtilization.detect()
 
         if data:
-            aws_vendor_hash = {'aws': data}
+            azure_vendor_hash = {'azure': data}
         else:
-            aws_vendor_hash = None
+            azure_vendor_hash = None
 
-        assert aws_vendor_hash == expected_vendors_hash
+        assert azure_vendor_hash == expected_vendors_hash
 
-    _test_aws_data()
+    _test_azure_data()

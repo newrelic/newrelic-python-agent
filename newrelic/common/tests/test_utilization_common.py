@@ -5,7 +5,7 @@ import time
 
 from newrelic.packages import requests
 from newrelic.packages.six.moves import BaseHTTPServer
-from newrelic.common.utilization_common import CommonUtilization
+from newrelic.common.utilization import CommonUtilization
 from newrelic.core.stats_engine import CustomMetrics
 from newrelic.core.internal_metrics import InternalTraceContext
 
@@ -30,7 +30,7 @@ def validate_error_metric_exists():
 
 # Valid Length Tests
 
-def test_simple_valid_length(validate_error_metric_forgone):
+def test_simple_valid_length():
     data = '  HelloWorld  '
     assert CommonUtilization.valid_length(data) is True
 
@@ -47,7 +47,7 @@ def test_unicode_valid_length():
     assert CommonUtilization.valid_length(data) is True
 
 
-def test_unicode_invalid_length(validate_error_metric_exists):
+def test_unicode_invalid_length():
     # unicode sailboat! (3 bytes)
     # this test checks that the unicode character is counted as 3 bytes instead
     # of 1
@@ -56,7 +56,7 @@ def test_unicode_invalid_length(validate_error_metric_exists):
     assert CommonUtilization.valid_length(data) is False
 
 
-def test_nonetype_length(validate_error_metric_forgone):
+def test_nonetype_length():
     assert CommonUtilization.valid_length(None) is False
 
 
@@ -77,7 +77,7 @@ def test_unicode_is_valid():
     assert CommonUtilization.valid_chars(data) is True
 
 
-def test_nonetype_chars(validate_error_metric_forgone):
+def test_nonetype_chars():
     assert CommonUtilization.valid_chars(None) is False
 
 
@@ -95,13 +95,13 @@ def test_normalize_strip():
     assert result == 'Hello World'
 
 
-def test_invalid_length_normalize(validate_error_metric_exists):
+def test_invalid_length_normalize():
     data = '0' * 256
     result = CommonUtilization.normalize('thing', data)
     assert result is None
 
 
-def test_invalid_chars_normalize(validate_error_metric_exists):
+def test_invalid_chars_normalize():
     data = u'$HelloWorld$'
     result = CommonUtilization.normalize('thing', data)
     assert result is None
@@ -119,7 +119,7 @@ def test_non_str_normalize():
     assert result is None
 
 
-def test_nonetype_normalize(validate_error_metric_forgone):
+def test_nonetype_normalize():
     assert CommonUtilization.normalize('pass', None) is None
 
 
@@ -229,7 +229,7 @@ def test_get_values_nonetype():
 
 # Test sanitize
 
-def test_sanitize_success():
+def test_sanitize_success(validate_error_metric_forgone):
     class ExpectKey(CommonUtilization):
         EXPECTED_KEYS = ['key1', 'key2']
 
@@ -240,7 +240,7 @@ def test_sanitize_success():
     assert d == {'key1': 'x', 'key2': 'y'}
 
 
-def test_sanitize_typical_fail():
+def test_sanitize_typical_fail(validate_error_metric_exists):
     class ExpectKey(CommonUtilization):
         EXPECTED_KEYS = ['key1', 'key2']
 
@@ -251,7 +251,7 @@ def test_sanitize_typical_fail():
     assert d is None
 
 
-def test_sanitize_only_spaces_fail():
+def test_sanitize_only_spaces_fail(validate_error_metric_exists):
     class ExpectKey(CommonUtilization):
         EXPECTED_KEYS = ['key1', 'key2']
 
@@ -262,7 +262,33 @@ def test_sanitize_only_spaces_fail():
     assert d is None
 
 
-def test_sanitize_nonetype():
+def test_sanitize_invalid_char_value(validate_error_metric_exists):
+    data = 'Server1.costs.$$$$$$'
+
+    class ExpectKey(CommonUtilization):
+        EXPECTED_KEYS = ['key1', 'key2']
+
+    values = {'key1': 'x', 'key2': data}
+
+    d = ExpectKey.sanitize(values)
+
+    assert d is None
+
+
+def test_sanitize_too_long_value(validate_error_metric_exists):
+    data = '*' * 256
+
+    class ExpectKey(CommonUtilization):
+        EXPECTED_KEYS = ['key1', 'key2']
+
+    values = {'key1': 'x', 'key2': data}
+
+    d = ExpectKey.sanitize(values)
+
+    assert d is None
+
+
+def test_sanitize_nonetype(validate_error_metric_forgone):
     assert CommonUtilization.sanitize(None) is None
 
 

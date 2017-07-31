@@ -4,7 +4,7 @@ import os
 import pytest
 
 from newrelic.packages import requests
-from newrelic.common.utilization_azure import AzureUtilization
+from newrelic.common.utilization import AzureUtilization
 
 from testing_support.fixtures import validate_internal_metrics
 
@@ -45,7 +45,6 @@ class MockResponse(object):
         return self.text
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize(_parameters, _azure_tests)
 def test_azure(testname, uri, expected_vendors_hash, expected_metrics):
 

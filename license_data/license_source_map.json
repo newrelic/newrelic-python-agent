@@ -791,12 +791,6 @@
             "New Relic"
         ]
     },
-    "newrelic/common/tests/test_utilization.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/common/tests/test_utilization_aws.py": {
         "hash": "n/a",
         "libraries": [
@@ -846,42 +840,6 @@
         ]
     },
     "newrelic/common/utilization.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/utilization_aws.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/utilization_azure.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/utilization_common.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/utilization_docker.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/utilization_gcp.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/utilization_pivotal.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

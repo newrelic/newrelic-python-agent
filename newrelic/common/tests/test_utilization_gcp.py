@@ -1,8 +1,8 @@
 import json
 import mock
 
-from newrelic.common.utilization_common import CommonUtilization
-from newrelic.common.utilization_gcp import GCPUtilization
+from newrelic.common.utilization import (CommonUtilization,
+        GCPUtilization)
 from newrelic.packages import requests
 
 

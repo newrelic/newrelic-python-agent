@@ -1,5 +1,5 @@
 import mock
-from newrelic.common.utilization_aws import AWSUtilization
+from newrelic.common.utilization import AWSUtilization
 from newrelic.packages import requests
 
 

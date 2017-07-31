@@ -2,7 +2,7 @@ import json
 import os
 import pytest
 
-from newrelic.common.utilization_pivotal import PCFUtilization
+from newrelic.common.utilization import PCFUtilization
 
 from testing_support.fixtures import validate_internal_metrics
 
@@ -65,7 +65,6 @@ class MockResponse(object):
         return self.text
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize(_parameters, _pcf_tests)
 def test_pcf(testname, env_vars, expected_vendors_hash, expected_metrics):
 

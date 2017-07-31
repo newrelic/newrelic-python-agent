@@ -35,11 +35,8 @@ from newrelic.common.encoding_utils import (json_encode, json_decode,
         unpack_field)
 from newrelic.common.system_info import (logical_processor_count,
         total_physical_memory, BootIdUtilization)
-from newrelic.common.utilization_aws import AWSUtilization
-from newrelic.common.utilization_azure import AzureUtilization
-from newrelic.common.utilization_docker import DockerUtilization
-from newrelic.common.utilization_gcp import GCPUtilization
-from newrelic.common.utilization_pivotal import PCFUtilization
+from newrelic.common.utilization import (AWSUtilization, AzureUtilization,
+        DockerUtilization, GCPUtilization, PCFUtilization)
 
 _logger = logging.getLogger(__name__)
 

@@ -374,12 +374,12 @@ if six.PY3:
     _test_select_connection_consume_outside_txn_metrics = [
         (('Function/test_pika_async_connection_consume:'
           'test_select_connection_basic_consume_outside_transaction.'
-          '<locals>.on_message'), 1)]
+          '<locals>.on_message'), None)]
 else:
     _txn_name = (
         'test_pika_async_connection_consume:on_message')
     _test_select_connection_consume_outside_txn_metrics = [
-        ('Function/test_pika_async_connection_consume:on_message', 1)]
+        ('Function/test_pika_async_connection_consume:on_message', None)]
 
 
 # This should create a transaction

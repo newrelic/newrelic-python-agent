@@ -308,6 +308,10 @@ systems configuration page at: https://rpm-admin.newrelic.com/admin/system_confi
     If we need to notify existing users to update their older agents, also
 update the ``min_python_agent_version`` to ``A.B.C.D``.
 
+    Additionally, if we have a new feature in the agent, and we want to make
+sure APM is gated to the correct version, put in a PR to the [Agent Feature
+Service](https://source.datanerd.us/APM/agent_feature_service).
+
 21. Verify that the build number is correct in the version string in the release notes. If
 it needs to change, edit the release notes, but get in touch with the Documentation team so
 that they can change the URL for the release notes page.

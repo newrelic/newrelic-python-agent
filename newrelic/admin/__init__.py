@@ -21,19 +21,22 @@ _builtin_plugins = [
 _commands = {}
 
 def command(name, options='', description='', hidden=False,
-        log_intercept=True):
+        log_intercept=True, deprecated=False):
     def wrapper(callback):
         callback.name = name
         callback.options = options
         callback.description = description
         callback.hidden = hidden
         callback.log_intercept = log_intercept
+        callback.deprecated = deprecated
         _commands[name] = callback
         return callback
     return wrapper
 
 def usage(name):
     details = _commands[name]
+    if details.deprecated:
+        print("[WARNING] This command is deprecated and will be removed")
     print('Usage: newrelic-admin %s %s' % (name, details.options))
 
 @command('help', '[command]', hidden=True)
@@ -65,7 +68,10 @@ def help(args):
             print('Usage: newrelic-admin %s %s' % (name, details.options))
             if details.description:
                 print()
-                print(details.description)
+                description = details.description
+                if details.deprecated:
+                    description = '[DEPRECATED] ' + description
+                print(description)
 
 def setup_log_intercept():
     # Send any errors or warnings to standard output as well so more

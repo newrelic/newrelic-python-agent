@@ -1518,6 +1518,9 @@ class Application(object):
                     # Merge all ready internal metrics
                     stats.merge_custom_metrics(internal_metrics.metrics())
 
+                    # Clear sent internal metrics
+                    internal_metrics.reset_metric_stats()
+
                     # Pass the metric_normalizer to stats.metric_data to
                     # do metric renaming.
 
@@ -1537,9 +1540,6 @@ class Application(object):
                             '%r.', self._app_name)
 
                     stats.reset_metric_stats()
-
-                    # Clear sent internal metrics
-                    internal_metrics.reset_metric_stats()
 
                     # Successful, so we update the stats engine with the
                     # new metric IDs and reset the reporting period

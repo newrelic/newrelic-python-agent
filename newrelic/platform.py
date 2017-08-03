@@ -364,6 +364,17 @@ def run(config_file, background=False):
         logging.basicConfig(filename=log_file,
                 level=log_level, format=_LOG_FORMAT)
 
+    _warn = ('The platform API (used by newrelic-admin data-source) has '
+            'been deprecated and will be removed from a future agent version. '
+            'Please use data sources '
+            '(https://docs.newrelic.com/docs/agents/python-agent/'
+            'supported-features/'
+            'python-custom-metrics#registering-a-data-source) '
+            'in place of the platform API.')
+
+    _logger.warning(_warn)
+    print(_warn)
+
     agent = Agent(license_key, host, port, ssl, timeout, proxy_host,
             proxy_port, proxy_user, proxy_pass)
 

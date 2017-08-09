@@ -54,11 +54,8 @@ def outer_fn_wrapper(outer_fn, instance, args, kwargs):
         transaction.set_transaction_name(name, group, priority=5)
 
         with FunctionTrace(transaction, name, group):
-            try:
-                return inner_fn(*args, **kwargs)
-            except:  # Catch all
-                transaction.record_exception(*sys.exc_info())
-                raise
+            # django's exception handling will record errors here
+            return inner_fn(*args, **kwargs)
 
     result = outer_fn(*args, **kwargs)
 
@@ -72,6 +69,7 @@ def instrument_tastypie_resources(module):
 
     wrap_function_wrapper(module, 'Resource._handle_500',
             _nr_wrap_handle_exception)
+
 
 def instrument_tastypie_api(module):
     _wrap_view = module.Api.wrap_view

@@ -2,6 +2,9 @@ import pytest
 import six
 import webtest
 
+from newrelic.api.background_task import background_task
+from newrelic.api.transaction import end_of_transaction
+
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, override_ignore_status_codes)
 
@@ -178,3 +181,18 @@ def test_record_404_errors(api_version, tastypie_full_debug):
                     status=debug_status)
 
     _test_not_found()
+
+
+@pytest.mark.parametrize('api_version', ['v1', 'v2'])
+@pytest.mark.parametrize('tastypie_full_debug', [True, False])
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics('test_application:test_ended_txn_name',
+        background_task=True)
+@background_task()
+def test_ended_txn_name(api_version, tastypie_full_debug):
+    # if the transaction has ended, do not change the transaction name
+    end_of_transaction()
+
+    with TastyPieFullDebugMode(tastypie_full_debug) as debug_status:
+        test_application.get('/api/%s/simple/NotFound/' % api_version,
+                status=debug_status)

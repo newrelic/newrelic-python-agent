@@ -1,4 +1,5 @@
 import django
+import pytest
 import six
 import webtest
 
@@ -53,11 +54,12 @@ else:
             ('Function/tastypie.resources:wrapper', 1))
 
 
+@pytest.mark.parametrize('api_version', ['v1', 'v2'])
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('api:SimpleResource.dispatch_detail',
         scoped_metrics=_test_application_not_found_scoped_metrics)
-def test_not_found():
-    test_application.get('/api/simple/NotFound/', status=404)
+def test_not_found(api_version):
+    test_application.get('/api/%s/simple/NotFound/' % api_version, status=404)
 
 
 _test_application_object_does_not_exist_scoped_metrics = [
@@ -83,11 +85,13 @@ else:
             ('Function/tastypie.resources:wrapper', 1))
 
 
+@pytest.mark.parametrize('api_version', ['v1', 'v2'])
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('api:SimpleResource.dispatch_detail',
         scoped_metrics=_test_application_object_does_not_exist_scoped_metrics)
-def test_object_does_not_exist():
-    test_application.get('/api/simple/ObjectDoesNotExist/', status=404)
+def test_object_does_not_exist(api_version):
+    test_application.get('/api/%s/simple/ObjectDoesNotExist/' % api_version,
+            status=404)
 
 
 _test_application_raises_zerodivision = [
@@ -121,17 +125,20 @@ else:
             'exceptions:ZeroDivisionError')
 
 
+@pytest.mark.parametrize('api_version', ['v1', 'v2'])
 @validate_transaction_errors(
         errors=_test_application_raises_zerodivision_exceptions)
 @validate_transaction_metrics('api:SimpleResource.dispatch_detail',
         scoped_metrics=_test_application_raises_zerodivision)
-def test_raises_zerodivision():
-    test_application.get('/api/simple/ZeroDivisionError/', status=500)
+def test_raises_zerodivision(api_version):
+    test_application.get('/api/%s/simple/ZeroDivisionError/' % api_version,
+            status=500)
 
 
+@pytest.mark.parametrize('api_version', ['v1', 'v2'])
 @override_ignore_status_codes(set())  # don't ignore any status codes
 @validate_transaction_errors(errors=['tastypie.exceptions:NotFound'])
 @validate_transaction_metrics('api:SimpleResource.dispatch_detail',
         scoped_metrics=_test_application_not_found_scoped_metrics)
-def test_record_404_errors():
-    test_application.get('/api/simple/NotFound/', status=404)
+def test_record_404_errors(api_version):
+    test_application.get('/api/%s/simple/NotFound/' % api_version, status=404)

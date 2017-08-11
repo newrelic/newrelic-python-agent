@@ -3,12 +3,21 @@ import sys
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.object_wrapper import ObjectWrapper, callable_name
 from newrelic.api.transaction import current_transaction
-from newrelic.api.pre_function import wrap_pre_function
+from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.core.config import ignore_status_code
 
-def wrap_handle_exception(*args):
-    transaction = current_transaction()
-    if transaction:
-        transaction.record_exception(*sys.exc_info())
+
+def _nr_wrap_handle_exception(wrapped, instance, args, kwargs):
+
+    response = wrapped(*args, **kwargs)
+
+    if not ignore_status_code(response.status_code):
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_exception(*sys.exc_info())
+
+    return response
+
 
 def outer_fn_wrapper(outer_fn, instance, args, kwargs):
     view_name = args[0]
@@ -45,22 +54,22 @@ def outer_fn_wrapper(outer_fn, instance, args, kwargs):
         transaction.set_transaction_name(name, group, priority=5)
 
         with FunctionTrace(transaction, name, group):
-            try:
-                return inner_fn(*args, **kwargs)
-            except:  # Catch all
-                transaction.record_exception(*sys.exc_info())
-                raise
+            # django's exception handling will record errors here
+            return inner_fn(*args, **kwargs)
 
     result = outer_fn(*args, **kwargs)
 
     return ObjectWrapper(result, None, inner_fn_wrapper)
+
 
 def instrument_tastypie_resources(module):
     _wrap_view = module.Resource.wrap_view
     module.Resource.wrap_view = ObjectWrapper(
             _wrap_view, None, outer_fn_wrapper)
 
-    wrap_pre_function(module, 'Resource._handle_500', wrap_handle_exception)
+    wrap_function_wrapper(module, 'Resource._handle_500',
+            _nr_wrap_handle_exception)
+
 
 def instrument_tastypie_api(module):
     _wrap_view = module.Api.wrap_view

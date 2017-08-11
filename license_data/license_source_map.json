@@ -5,6 +5,12 @@
             "New Relic"
         ]
     },
+    "CHANGELOG.rst": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "deploy/Dockerfile": {
         "hash": "n/a",
         "libraries": [

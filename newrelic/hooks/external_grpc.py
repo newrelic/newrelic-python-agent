@@ -1,5 +1,6 @@
 import sys
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.object_wrapper import (wrap_function_wrapper,
+        function_wrapper)
 from newrelic.api.transaction import current_transaction
 from newrelic.api.external_trace import ExternalTrace
 
@@ -33,14 +34,32 @@ def wrap_external_future(module, object_path, library, url, method=None):
 
         future = wrapped(*args, **kwargs)
 
+        # we still need to have a done callback in case of cancellation
         def _future_done(f):
+            if trace.exited:
+                return
+
             try:
                 f.result()
                 trace.__exit__(None, None, None)
             except Exception:
                 trace.__exit__(*sys.exc_info())
 
+        @function_wrapper
+        def wrap_next(_wrapped, _instance, _args, _kwargs):
+            if trace.exited:
+                return _wrapped(*_args, **_kwargs)
+
+            try:
+                val = _wrapped(*_args, **_kwargs)
+                trace.__exit__(None, None, None)
+                return val
+            except Exception:
+                trace.__exit__(*sys.exc_info())
+                raise
+
         future.add_done_callback(_future_done)
+        future._next = wrap_next(future._next)
 
         return future
 

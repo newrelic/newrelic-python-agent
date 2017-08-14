@@ -1,11 +1,11 @@
 {
-    "README.rst": {
+    "CHANGELOG.rst": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
         ]
     },
-    "CHANGELOG.rst": {
+    "README.rst": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -1434,6 +1434,12 @@
         ]
     },
     "newrelic/hooks/external_feedparser.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/external_grpc.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

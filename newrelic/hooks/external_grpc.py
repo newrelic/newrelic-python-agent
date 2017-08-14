@@ -27,12 +27,6 @@ def wrap_external_future(module, object_path, library, url, method=None):
             return wrapped(*args, **kwargs)
 
         trace = ExternalTrace(transaction, library, _url, method)
-        trace.__enter__()
-
-        # There are no children of an external, ever!
-        transaction._pop_current(trace)
-
-        future = wrapped(*args, **kwargs)
 
         # we still need to have a done callback in case of cancellation
         def _future_done(f):
@@ -58,8 +52,13 @@ def wrap_external_future(module, object_path, library, url, method=None):
                 trace.__exit__(*sys.exc_info())
                 raise
 
+        future = wrapped(*args, **kwargs)
         future.add_done_callback(_future_done)
         future._next = wrap_next(future._next)
+        trace.__enter__()
+
+        # There are no children of an external, ever!
+        transaction._pop_current(trace)
 
         return future
 

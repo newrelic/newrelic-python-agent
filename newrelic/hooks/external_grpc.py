@@ -2,7 +2,7 @@ import sys
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
         function_wrapper)
 from newrelic.api.transaction import current_transaction
-from newrelic.api.external_trace import ExternalTrace
+from newrelic.api.external_trace import (ExternalTrace, wrap_external_trace)
 
 
 def _get_uri(instance, *args, **kwargs):
@@ -66,6 +66,12 @@ def wrap_external_future(module, object_path, library, url, method=None):
 
 
 def instrument_grpc__channel(module):
+    wrap_external_trace(module, '_UnaryUnaryMultiCallable.__call__',
+            'gRPC', _get_uri, 'unary_unary')
+
+    wrap_external_trace(module, '_UnaryUnaryMultiCallable.with_call',
+            'gRPC', _get_uri, 'unary_unary')
+
     wrap_external_future(module, '_UnaryUnaryMultiCallable.future',
             'gRPC', _get_uri, 'unary_unary')
 

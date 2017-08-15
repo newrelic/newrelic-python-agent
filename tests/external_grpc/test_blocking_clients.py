@@ -248,3 +248,77 @@ def test_stream_unary_with_call_raises():
         _test_stream_unary()
     except grpc.RpcError:
         pass  # this error is expected
+
+
+# UNARY STREAM
+
+_test_unary_stream_scoped_metrics = [
+        ('External/localhost:%s/gRPC/unary_stream' % PORT, 1),
+]
+
+_test_unary_stream_rollup_metrics = [
+        ('External/localhost:%s/gRPC/unary_stream' % PORT, 1),
+        ('External/localhost:%s/all' % PORT, 1),
+        ('External/allOther', 1),
+        ('External/all', 1),
+]
+
+
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics(
+        'test_blocking_clients:test_unary_stream__call__',
+        scoped_metrics=_test_unary_stream_scoped_metrics,
+        rollup_metrics=_test_unary_stream_rollup_metrics,
+        background_task=True)
+@background_task()
+def test_unary_stream__call__():
+    with MockExternalgRPCServer(port=PORT) as server:
+        add_SampleApplicationServicer_to_server(SampleApplicationServicer(),
+                server)
+
+        channel = grpc.insecure_channel('localhost:%s' % PORT)
+        stub = SampleApplicationStub(channel)
+        replies = stub.DoUnaryStream(Message(text='Hello World'))
+        for reply in replies:
+            assert reply.text == 'unary_stream: Hello World'
+        assert replies.code() == grpc.StatusCode.OK
+
+
+if six.PY2:
+    _test_unary_stream_raises_transaction_name = (
+            'test_blocking_clients:_test_unary_stream')
+else:
+    _test_unary_stream_raises_transaction_name = (
+            'test_blocking_clients:'
+            'test_unary_stream__call__raises.<locals>._test_unary_stream')
+
+
+@validate_transaction_errors(errors=['grpc._channel:_Rendezvous'])
+@validate_transaction_metrics(_test_unary_stream_raises_transaction_name,
+        scoped_metrics=_test_unary_stream_scoped_metrics,
+        rollup_metrics=_test_unary_stream_rollup_metrics,
+        background_task=True)
+def test_unary_stream__call__raises():
+
+    @background_task()
+    def _test_unary_stream():
+        with MockExternalgRPCServer(port=PORT) as server:
+            add_SampleApplicationServicer_to_server(SampleApplicationServicer(),
+                    server)
+
+            channel = grpc.insecure_channel('localhost:%s' % PORT)
+            stub = SampleApplicationStub(channel)
+            replies = stub.DoUnaryStreamRaises(Message(text='Hello World'))
+
+            for reply in replies:
+                # Replies must be consumed before checking status code even
+                # though there will be no replies!
+                pass
+
+            assert replies.code() == grpc.StatusCode.OK
+            raise replies
+
+    try:
+        _test_unary_stream()
+    except grpc.RpcError as e:
+        assert 'unary_stream: Hello World' in e.details()

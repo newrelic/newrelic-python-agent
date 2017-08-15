@@ -75,11 +75,17 @@ def instrument_grpc__channel(module):
     wrap_external_future(module, '_UnaryUnaryMultiCallable.future',
             'gRPC', _get_uri, 'unary_unary')
 
-    wrap_external_future(module, '_StreamUnaryMultiCallable.future',
-            'gRPC', _get_uri, 'stream_unary')
-
     wrap_external_future(module, '_UnaryStreamMultiCallable.__call__',
             'gRPC', _get_uri, 'unary_stream')
+
+    wrap_external_trace(module, '_StreamUnaryMultiCallable.__call__',
+            'gRPC', _get_uri, 'stream_unary')
+
+    wrap_external_trace(module, '_StreamUnaryMultiCallable.with_call',
+            'gRPC', _get_uri, 'stream_unary')
+
+    wrap_external_future(module, '_StreamUnaryMultiCallable.future',
+            'gRPC', _get_uri, 'stream_unary')
 
     wrap_external_future(module, '_StreamStreamMultiCallable.__call__',
             'gRPC', _get_uri, 'stream_stream')

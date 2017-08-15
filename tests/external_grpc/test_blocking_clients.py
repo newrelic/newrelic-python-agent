@@ -322,3 +322,77 @@ def test_unary_stream__call__raises():
         _test_unary_stream()
     except grpc.RpcError as e:
         assert 'unary_stream: Hello World' in e.details()
+
+
+# STREAM STREAM
+
+_test_stream_stream_scoped_metrics = [
+        ('External/localhost:%s/gRPC/stream_stream' % PORT, 1),
+]
+
+_test_stream_stream_rollup_metrics = [
+        ('External/localhost:%s/gRPC/stream_stream' % PORT, 1),
+        ('External/localhost:%s/all' % PORT, 1),
+        ('External/allOther', 1),
+        ('External/all', 1),
+]
+
+
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics(
+        'test_blocking_clients:test_stream_stream__call__',
+        scoped_metrics=_test_stream_stream_scoped_metrics,
+        rollup_metrics=_test_stream_stream_rollup_metrics,
+        background_task=True)
+@background_task()
+def test_stream_stream__call__():
+    with MockExternalgRPCServer(port=PORT) as server:
+        add_SampleApplicationServicer_to_server(SampleApplicationServicer(),
+                server)
+
+        channel = grpc.insecure_channel('localhost:%s' % PORT)
+        stub = SampleApplicationStub(channel)
+        replies = stub.DoStreamStream(_message_stream())
+        for reply in replies:
+            assert reply.text == 'stream_stream: Hello World'
+        assert replies.code() == grpc.StatusCode.OK
+
+
+if six.PY2:
+    _test_stream_stream_raises_transaction_name = (
+            'test_blocking_clients:_test_stream_stream')
+else:
+    _test_stream_stream_raises_transaction_name = (
+            'test_blocking_clients:'
+            'test_stream_stream__call__raises.<locals>._test_stream_stream')
+
+
+@validate_transaction_errors(errors=['grpc._channel:_Rendezvous'])
+@validate_transaction_metrics(_test_stream_stream_raises_transaction_name,
+        scoped_metrics=_test_stream_stream_scoped_metrics,
+        rollup_metrics=_test_stream_stream_rollup_metrics,
+        background_task=True)
+def test_stream_stream__call__raises():
+
+    @background_task()
+    def _test_stream_stream():
+        with MockExternalgRPCServer(port=PORT) as server:
+            add_SampleApplicationServicer_to_server(SampleApplicationServicer(),
+                    server)
+
+            channel = grpc.insecure_channel('localhost:%s' % PORT)
+            stub = SampleApplicationStub(channel)
+            replies = stub.DoStreamStreamRaises(_message_stream())
+
+            for reply in replies:
+                # Replies must be consumed before checking status code even
+                # though there will be no replies!
+                pass
+
+            assert replies.code() == grpc.StatusCode.OK
+            raise replies
+
+    try:
+        _test_stream_stream()
+    except grpc.RpcError as e:
+        assert 'stream_stream: Hello World' in e.details()

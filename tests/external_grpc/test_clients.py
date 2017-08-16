@@ -27,11 +27,15 @@ _test_matrix = [
         ('unary_unary', '__call__', True),
         ('unary_unary', 'with_call', False),
         ('unary_unary', 'with_call', True),
+        ('unary_unary', 'future', False),
+        ('unary_unary', 'future', True),
 
         ('stream_unary', '__call__', False),
         ('stream_unary', '__call__', True),
         ('stream_unary', 'with_call', False),
         ('stream_unary', 'with_call', True),
+        ('stream_unary', 'future', False),
+        ('stream_unary', 'future', True),
 
         ('unary_stream', '__call__', False),
         ('unary_stream', '__call__', True),
@@ -42,7 +46,7 @@ _test_matrix = [
 
 
 @pytest.mark.parametrize(*_test_matrix)
-def test_blocking_client(service_method_type, service_method_method_name,
+def test_client(service_method_type, service_method_method_name,
         raises_exception):
 
     _test_scoped_metrics = [
@@ -56,12 +60,10 @@ def test_blocking_client(service_method_type, service_method_method_name,
     ]
 
     if six.PY2:
-        _test_transaction_name = (
-                'test_blocking_clients:_test_blocking_client')
+        _test_transaction_name = 'test_clients:_test_client'
     else:
         _test_transaction_name = (
-                'test_blocking_clients:'
-                'test_blocking_client.<locals>._test_blocking_client')
+                'test_clients:test_client.<locals>._test_client')
 
     _errors = []
     if raises_exception:
@@ -79,7 +81,7 @@ def test_blocking_client(service_method_type, service_method_method_name,
             rollup_metrics=_test_rollup_metrics,
             background_task=True)
     @background_task()
-    def _test_blocking_client():
+    def _test_client():
         with MockExternalgRPCServer(port=PORT) as server:
             add_SampleApplicationServicer_to_server(
                     SampleApplicationServicer(), server)
@@ -101,9 +103,11 @@ def test_blocking_client(service_method_type, service_method_method_name,
 
             if isinstance(reply, tuple):
                 reply, rendezvous = reply
+            elif service_method_method_name == 'future':
+                rendezvous = reply
 
             if rendezvous:
-                rendezvous.result()
+                reply = rendezvous.result()
 
             expected_text = '%s: Hello World' % service_method_type
             if streaming_response:
@@ -111,10 +115,10 @@ def test_blocking_client(service_method_type, service_method_method_name,
                         reply]
             else:
                 response_texts_correct = [reply.text == expected_text]
-            assert all(response_texts_correct)
+            assert response_texts_correct and all(response_texts_correct)
 
     try:
-        _test_blocking_client()
+        _test_client()
     except grpc.RpcError as e:
         if raises_exception:
             assert '%s: Hello World' % service_method_type in e.details()

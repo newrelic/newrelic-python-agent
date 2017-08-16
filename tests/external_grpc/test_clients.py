@@ -17,6 +17,14 @@ from sample_application import SampleApplicationServicer
 PORT = random.randint(50000, 50100)
 
 
+@pytest.fixture(scope='module')
+def mock_grpc_server():
+    with MockExternalgRPCServer(port=PORT) as server:
+        add_SampleApplicationServicer_to_server(
+                SampleApplicationServicer(), server)
+        yield
+
+
 def _message_stream(count=1):
     for i in range(count):
         yield Message(text='Hello World', count=count)
@@ -55,7 +63,7 @@ _test_matrix = [
 
 @pytest.mark.parametrize(*_test_matrix)
 def test_client(service_method_type, service_method_method_name,
-        raises_exception, message_count):
+        raises_exception, message_count, mock_grpc_server):
 
     service_method_class_name = 'Do%s%s' % (
             service_method_type.title().replace('_', ''),
@@ -97,41 +105,36 @@ def test_client(service_method_type, service_method_method_name,
             background_task=True)
     @background_task()
     def _test_client():
-        with MockExternalgRPCServer(port=PORT) as server:
-            add_SampleApplicationServicer_to_server(
-                    SampleApplicationServicer(), server)
+        channel = grpc.insecure_channel('localhost:%s' % PORT)
+        stub = SampleApplicationStub(channel)
 
-            channel = grpc.insecure_channel('localhost:%s' % PORT)
-            stub = SampleApplicationStub(channel)
+        service_method_class = getattr(stub, service_method_class_name)
+        service_method_method = getattr(service_method_class,
+                service_method_method_name)
 
-            service_method_class = getattr(stub, service_method_class_name)
-            service_method_method = getattr(service_method_class,
-                    service_method_method_name)
+        if streaming_request:
+            request = _message_stream(count=message_count)
+        else:
+            request = Message(text='Hello World', count=message_count)
 
-            if streaming_request:
-                request = _message_stream(count=message_count)
-            else:
-                request = Message(text='Hello World', count=message_count)
+        rendezvous = None
+        reply = service_method_method(request)
 
-            rendezvous = None
-            reply = service_method_method(request)
+        if isinstance(reply, tuple):
+            reply, rendezvous = reply
+        elif service_method_method_name == 'future':
+            rendezvous = reply
 
-            if isinstance(reply, tuple):
-                reply, rendezvous = reply
-            elif service_method_method_name == 'future':
-                rendezvous = reply
+        if rendezvous:
+            reply = rendezvous.result()
 
-            if rendezvous:
-                reply = rendezvous.result()
-
-            expected_text = '%s: Hello World' % service_method_type
-            if streaming_response:
-                response_texts_correct = [r.text == expected_text for r in
-                        reply]
-                assert len(response_texts_correct) == message_count
-            else:
-                response_texts_correct = [reply.text == expected_text]
-            assert response_texts_correct and all(response_texts_correct)
+        expected_text = '%s: Hello World' % service_method_type
+        if streaming_response:
+            response_texts_correct = [r.text == expected_text for r in reply]
+            assert len(response_texts_correct) == message_count
+        else:
+            response_texts_correct = [reply.text == expected_text]
+        assert response_texts_correct and all(response_texts_correct)
 
     try:
         _test_client()

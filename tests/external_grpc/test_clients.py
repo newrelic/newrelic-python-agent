@@ -17,46 +17,65 @@ from sample_application import SampleApplicationServicer
 PORT = random.randint(50000, 50100)
 
 
-def _message_stream():
-    yield Message(text='Hello World')
+def _message_stream(count=1):
+    for i in range(count):
+        yield Message(text='Hello World', count=count)
 
 
 _test_matrix = [
-    'service_method_type,service_method_method_name,raises_exception', (
-        ('unary_unary', '__call__', False),
-        ('unary_unary', '__call__', True),
-        ('unary_unary', 'with_call', False),
-        ('unary_unary', 'with_call', True),
-        ('unary_unary', 'future', False),
-        ('unary_unary', 'future', True),
+    ('service_method_type,service_method_method_name,raises_exception,'
+    'message_count'), (
+        ('unary_unary', '__call__', False, 1),
+        ('unary_unary', '__call__', True, 1),
+        ('unary_unary', 'with_call', False, 1),
+        ('unary_unary', 'with_call', True, 1),
+        ('unary_unary', 'future', False, 1),
+        ('unary_unary', 'future', True, 1),
 
-        ('stream_unary', '__call__', False),
-        ('stream_unary', '__call__', True),
-        ('stream_unary', 'with_call', False),
-        ('stream_unary', 'with_call', True),
-        ('stream_unary', 'future', False),
-        ('stream_unary', 'future', True),
+        ('stream_unary', '__call__', False, 1),
+        ('stream_unary', '__call__', True, 1),
+        ('stream_unary', 'with_call', False, 1),
+        ('stream_unary', 'with_call', True, 1),
+        ('stream_unary', 'future', False, 1),
+        ('stream_unary', 'future', True, 1),
 
-        ('unary_stream', '__call__', False),
-        ('unary_stream', '__call__', True),
+        ('unary_stream', '__call__', False, 1),
+        ('unary_stream', '__call__', True, 1),
+        ('unary_stream', '__call__', False, 2),
+        ('unary_stream', '__call__', True, 2),
 
-        ('stream_stream', '__call__', False),
-        ('stream_stream', '__call__', True),
+        ('stream_stream', '__call__', False, 1),
+        ('stream_stream', '__call__', True, 1),
+        ('stream_stream', '__call__', False, 2),
+        ('stream_stream', '__call__', True, 2),
 )]
 
 
 @pytest.mark.parametrize(*_test_matrix)
 def test_client(service_method_type, service_method_method_name,
-        raises_exception):
+        raises_exception, message_count):
+
+    service_method_class_name = 'Do%s%s' % (
+            service_method_type.title().replace('_', ''),
+            'Raises' if raises_exception else '')
+    streaming_request = service_method_type.split('_')[0] == 'stream'
+    streaming_response = service_method_type.split('_')[1] == 'stream'
+
+    if not streaming_response or raises_exception:
+        expected_metrics_count = 1
+    else:
+        expected_metrics_count = message_count
 
     _test_scoped_metrics = [
-            ('External/localhost:%s/gRPC/%s' % (PORT, service_method_type), 1),
+            ('External/localhost:%s/gRPC/%s' % (PORT, service_method_type),
+                expected_metrics_count),
     ]
     _test_rollup_metrics = [
-            ('External/localhost:%s/gRPC/%s' % (PORT, service_method_type), 1),
-            ('External/localhost:%s/all' % PORT, 1),
-            ('External/allOther', 1),
-            ('External/all', 1),
+            ('External/localhost:%s/gRPC/%s' % (PORT, service_method_type),
+                expected_metrics_count),
+            ('External/localhost:%s/all' % PORT, expected_metrics_count),
+            ('External/allOther', expected_metrics_count),
+            ('External/all', expected_metrics_count),
     ]
 
     if six.PY2:
@@ -68,12 +87,6 @@ def test_client(service_method_type, service_method_method_name,
     _errors = []
     if raises_exception:
         _errors.append('grpc._channel:_Rendezvous')
-
-    service_method_class_name = 'Do%s%s' % (
-            service_method_type.title().replace('_', ''),
-            'Raises' if raises_exception else '')
-    streaming_request = service_method_type.split('_')[0] == 'stream'
-    streaming_response = service_method_type.split('_')[1] == 'stream'
 
     @validate_transaction_errors(errors=_errors)
     @validate_transaction_metrics(_test_transaction_name,
@@ -94,9 +107,9 @@ def test_client(service_method_type, service_method_method_name,
                     service_method_method_name)
 
             if streaming_request:
-                request = _message_stream()
+                request = _message_stream(count=message_count)
             else:
-                request = Message(text='Hello World')
+                request = Message(text='Hello World', count=message_count)
 
             rendezvous = None
             reply = service_method_method(request)
@@ -113,6 +126,7 @@ def test_client(service_method_type, service_method_method_name,
             if streaming_response:
                 response_texts_correct = [r.text == expected_text for r in
                         reply]
+                assert len(response_texts_correct) == message_count
             else:
                 response_texts_correct = [reply.text == expected_text]
             assert response_texts_correct and all(response_texts_correct)

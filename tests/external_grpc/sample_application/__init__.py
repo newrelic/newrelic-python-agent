@@ -9,7 +9,8 @@ class SampleApplicationServicer(_SampleApplicationServicer):
         return Message(text='unary_unary: %s' % request.text)
 
     def DoUnaryStream(self, request, context):
-        yield Message(text='unary_stream: %s' % request.text)
+        for i in range(request.count):
+            yield Message(text='unary_stream: %s' % request.text)
 
     def DoStreamUnary(self, request_iter, context):
         for request in request_iter:

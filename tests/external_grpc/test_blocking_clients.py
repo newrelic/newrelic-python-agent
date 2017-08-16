@@ -1,4 +1,5 @@
 import grpc
+import pytest
 import random
 import six
 
@@ -9,7 +10,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
 from testing_support.mock_external_grpc_server import MockExternalgRPCServer
 
 from sample_application.sample_application_pb2_grpc import (
-    add_SampleApplicationServicer_to_server, SampleApplicationStub)
+        add_SampleApplicationServicer_to_server, SampleApplicationStub)
 from sample_application.sample_application_pb2 import Message
 from sample_application import SampleApplicationServicer
 
@@ -20,379 +21,102 @@ def _message_stream():
     yield Message(text='Hello World')
 
 
-# UNARY UNARY
+_test_matrix = [
+    'service_method_type,service_method_method_name,raises_exception', (
+        ('unary_unary', '__call__', False),
+        ('unary_unary', '__call__', True),
+        ('unary_unary', 'with_call', False),
+        ('unary_unary', 'with_call', True),
 
-_test_unary_unary_scoped_metrics = [
-        ('External/localhost:%s/gRPC/unary_unary' % PORT, None),
-]
+        ('stream_unary', '__call__', False),
+        ('stream_unary', '__call__', True),
+        ('stream_unary', 'with_call', False),
+        ('stream_unary', 'with_call', True),
 
-_test_unary_unary_rollup_metrics = [
-        ('External/localhost:%s/gRPC/unary_unary' % PORT, None),
-        ('External/localhost:%s/all' % PORT, None),
-        ('External/allOther', None),
-        ('External/all', None),
-]
+        ('unary_stream', '__call__', False),
+        ('unary_stream', '__call__', True),
 
-
-@validate_transaction_errors(errors=[])
-@validate_transaction_metrics('test_blocking_clients:test_unary_unary__call__',
-        scoped_metrics=_test_unary_unary_scoped_metrics,
-        rollup_metrics=_test_unary_unary_rollup_metrics,
-        background_task=True)
-@background_task()
-def test_unary_unary__call__():
-    with MockExternalgRPCServer(port=PORT) as server:
-        add_SampleApplicationServicer_to_server(SampleApplicationServicer(),
-                server)
-
-        channel = grpc.insecure_channel('localhost:%s' % PORT)
-        stub = SampleApplicationStub(channel)
-        reply = stub.DoUnaryUnary(Message(text='Hello World'))
-        assert reply.text == 'unary_unary: Hello World'
+        ('stream_stream', '__call__', False),
+        ('stream_stream', '__call__', True),
+)]
 
 
-@validate_transaction_errors(errors=[])
-@validate_transaction_metrics(
-        'test_blocking_clients:test_unary_unary_with_call',
-        scoped_metrics=_test_unary_unary_scoped_metrics,
-        rollup_metrics=_test_unary_unary_rollup_metrics,
-        background_task=True)
-@background_task()
-def test_unary_unary_with_call():
-    with MockExternalgRPCServer(port=PORT) as server:
-        add_SampleApplicationServicer_to_server(SampleApplicationServicer(),
-                server)
+@pytest.mark.parametrize(*_test_matrix)
+def test_blocking_client(service_method_type, service_method_method_name,
+        raises_exception):
 
-        channel = grpc.insecure_channel('localhost:%s' % PORT)
-        stub = SampleApplicationStub(channel)
-        reply, rendezvous = stub.DoUnaryUnary.with_call(
-                Message(text='Hello World'))
-        assert reply.text == 'unary_unary: Hello World'
-        assert rendezvous.code() == grpc.StatusCode.OK
+    _test_scoped_metrics = [
+            ('External/localhost:%s/gRPC/%s' % (PORT, service_method_type), 1),
+    ]
+    _test_rollup_metrics = [
+            ('External/localhost:%s/gRPC/%s' % (PORT, service_method_type), 1),
+            ('External/localhost:%s/all' % PORT, 1),
+            ('External/allOther', 1),
+            ('External/all', 1),
+    ]
 
+    if six.PY2:
+        _test_transaction_name = (
+                'test_blocking_clients:_test_blocking_client')
+    else:
+        _test_transaction_name = (
+                'test_blocking_clients:'
+                'test_blocking_client.<locals>._test_blocking_client')
 
-if six.PY2:
-    _test_unary_unary_raises_transaction_name = (
-            'test_blocking_clients:_test_unary_unary')
-else:
-    _test_unary_unary_raises_transaction_name = (
-            'test_blocking_clients:'
-            'test_unary_unary__call__raises.<locals>._test_unary_unary')
+    _errors = []
+    if raises_exception:
+        _errors.append('grpc._channel:_Rendezvous')
 
+    service_method_class_name = 'Do%s%s' % (
+            service_method_type.title().replace('_', ''),
+            'Raises' if raises_exception else '')
+    streaming_request = service_method_type.split('_')[0] == 'stream'
+    streaming_response = service_method_type.split('_')[1] == 'stream'
 
-@validate_transaction_errors(errors=['grpc._channel:_Rendezvous'])
-@validate_transaction_metrics(_test_unary_unary_raises_transaction_name,
-        scoped_metrics=_test_unary_unary_scoped_metrics,
-        rollup_metrics=_test_unary_unary_rollup_metrics,
-        background_task=True)
-def test_unary_unary__call__raises():
-
+    @validate_transaction_errors(errors=_errors)
+    @validate_transaction_metrics(_test_transaction_name,
+            scoped_metrics=_test_scoped_metrics,
+            rollup_metrics=_test_rollup_metrics,
+            background_task=True)
     @background_task()
-    def _test_unary_unary():
+    def _test_blocking_client():
         with MockExternalgRPCServer(port=PORT) as server:
             add_SampleApplicationServicer_to_server(
                     SampleApplicationServicer(), server)
 
             channel = grpc.insecure_channel('localhost:%s' % PORT)
             stub = SampleApplicationStub(channel)
-            stub.DoUnaryUnaryRaises(Message(text='Hello World'))
+
+            service_method_class = getattr(stub, service_method_class_name)
+            service_method_method = getattr(service_method_class,
+                    service_method_method_name)
+
+            if streaming_request:
+                request = _message_stream()
+            else:
+                request = Message(text='Hello World')
+
+            rendezvous = None
+            reply = service_method_method(request)
+
+            if isinstance(reply, tuple):
+                reply, rendezvous = reply
+
+            if rendezvous:
+                rendezvous.result()
+
+            expected_text = '%s: Hello World' % service_method_type
+            if streaming_response:
+                response_texts_correct = [r.text == expected_text for r in
+                        reply]
+            else:
+                response_texts_correct = [reply.text == expected_text]
+            assert all(response_texts_correct)
 
     try:
-        _test_unary_unary()
+        _test_blocking_client()
     except grpc.RpcError as e:
-        assert 'unary_unary: Hello World' in e.details()
-
-
-if six.PY2:
-    _test_unary_unary_raises_transaction_name = (
-            'test_blocking_clients:_test_unary_unary')
-else:
-    _test_unary_unary_raises_transaction_name = (
-            'test_blocking_clients:'
-            'test_unary_unary_with_call_raises.<locals>._test_unary_unary')
-
-
-@validate_transaction_errors(errors=['grpc._channel:_Rendezvous'])
-@validate_transaction_metrics(_test_unary_unary_raises_transaction_name,
-        scoped_metrics=_test_unary_unary_scoped_metrics,
-        rollup_metrics=_test_unary_unary_rollup_metrics,
-        background_task=True)
-def test_unary_unary_with_call_raises():
-
-    @background_task()
-    def _test_unary_unary():
-        with MockExternalgRPCServer(port=PORT) as server:
-            add_SampleApplicationServicer_to_server(
-                    SampleApplicationServicer(), server)
-
-            channel = grpc.insecure_channel('localhost:%s' % PORT)
-            stub = SampleApplicationStub(channel)
-            stub.DoUnaryUnaryRaises.with_call(Message(text='Hello World'))
-
-    try:
-        _test_unary_unary()
-    except grpc.RpcError:
-        pass  # this error is expected
-
-
-# STREAM UNARY
-
-_test_stream_unary_scoped_metrics = [
-        ('External/localhost:%s/gRPC/stream_unary' % PORT, None),
-]
-
-_test_stream_unary_rollup_metrics = [
-        ('External/localhost:%s/gRPC/stream_unary' % PORT, None),
-        ('External/localhost:%s/all' % PORT, None),
-        ('External/allOther', None),
-        ('External/all', None),
-]
-
-
-@validate_transaction_errors(errors=[])
-@validate_transaction_metrics(
-        'test_blocking_clients:test_stream_unary__call__',
-        scoped_metrics=_test_stream_unary_scoped_metrics,
-        rollup_metrics=_test_stream_unary_rollup_metrics,
-        background_task=True)
-@background_task()
-def test_stream_unary__call__():
-    with MockExternalgRPCServer(port=PORT) as server:
-        add_SampleApplicationServicer_to_server(SampleApplicationServicer(),
-                server)
-
-        channel = grpc.insecure_channel('localhost:%s' % PORT)
-        stub = SampleApplicationStub(channel)
-        reply = stub.DoStreamUnary(_message_stream())
-        assert reply.text == 'stream_unary: Hello World'
-
-
-@validate_transaction_errors(errors=[])
-@validate_transaction_metrics(
-        'test_blocking_clients:test_stream_unary_with_call',
-        scoped_metrics=_test_stream_unary_scoped_metrics,
-        rollup_metrics=_test_stream_unary_rollup_metrics,
-        background_task=True)
-@background_task()
-def test_stream_unary_with_call():
-    with MockExternalgRPCServer(port=PORT) as server:
-        add_SampleApplicationServicer_to_server(SampleApplicationServicer(),
-                server)
-
-        channel = grpc.insecure_channel('localhost:%s' % PORT)
-        stub = SampleApplicationStub(channel)
-        reply, rendezvous = stub.DoStreamUnary.with_call(_message_stream())
-        assert reply.text == 'stream_unary: Hello World'
-        assert rendezvous.done()
-
-
-if six.PY2:
-    _test_stream_unary_raises_transaction_name = (
-            'test_blocking_clients:_test_stream_unary')
-else:
-    _test_stream_unary_raises_transaction_name = (
-            'test_blocking_clients:'
-            'test_stream_unary__call__raises.<locals>._test_stream_unary')
-
-
-@validate_transaction_errors(errors=['grpc._channel:_Rendezvous'])
-@validate_transaction_metrics(_test_stream_unary_raises_transaction_name,
-        scoped_metrics=_test_stream_unary_scoped_metrics,
-        rollup_metrics=_test_stream_unary_rollup_metrics,
-        background_task=True)
-def test_stream_unary__call__raises():
-
-    @background_task()
-    def _test_stream_unary():
-        with MockExternalgRPCServer(port=PORT) as server:
-            add_SampleApplicationServicer_to_server(
-                    SampleApplicationServicer(), server)
-
-            channel = grpc.insecure_channel('localhost:%s' % PORT)
-            stub = SampleApplicationStub(channel)
-            stub.DoStreamUnaryRaises(_message_stream())
-
-    try:
-        _test_stream_unary()
-    except grpc.RpcError:
-        pass  # this error is expected
-
-
-if six.PY2:
-    _test_stream_unary_raises_transaction_name = (
-            'test_blocking_clients:_test_stream_unary')
-else:
-    _test_stream_unary_raises_transaction_name = (
-            'test_blocking_clients:'
-            'test_stream_unary_with_call_raises.<locals>._test_stream_unary')
-
-
-@validate_transaction_errors(errors=['grpc._channel:_Rendezvous'])
-@validate_transaction_metrics(_test_stream_unary_raises_transaction_name,
-        scoped_metrics=_test_stream_unary_scoped_metrics,
-        rollup_metrics=_test_stream_unary_rollup_metrics,
-        background_task=True)
-def test_stream_unary_with_call_raises():
-
-    @background_task()
-    def _test_stream_unary():
-        with MockExternalgRPCServer(port=PORT) as server:
-            add_SampleApplicationServicer_to_server(
-                    SampleApplicationServicer(), server)
-
-            channel = grpc.insecure_channel('localhost:%s' % PORT)
-            stub = SampleApplicationStub(channel)
-            stub.DoStreamUnaryRaises.with_call(_message_stream())
-
-    try:
-        _test_stream_unary()
-    except grpc.RpcError:
-        pass  # this error is expected
-
-
-# UNARY STREAM
-
-_test_unary_stream_scoped_metrics = [
-        ('External/localhost:%s/gRPC/unary_stream' % PORT, 1),
-]
-
-_test_unary_stream_rollup_metrics = [
-        ('External/localhost:%s/gRPC/unary_stream' % PORT, 1),
-        ('External/localhost:%s/all' % PORT, 1),
-        ('External/allOther', 1),
-        ('External/all', 1),
-]
-
-
-@validate_transaction_errors(errors=[])
-@validate_transaction_metrics(
-        'test_blocking_clients:test_unary_stream__call__',
-        scoped_metrics=_test_unary_stream_scoped_metrics,
-        rollup_metrics=_test_unary_stream_rollup_metrics,
-        background_task=True)
-@background_task()
-def test_unary_stream__call__():
-    with MockExternalgRPCServer(port=PORT) as server:
-        add_SampleApplicationServicer_to_server(SampleApplicationServicer(),
-                server)
-
-        channel = grpc.insecure_channel('localhost:%s' % PORT)
-        stub = SampleApplicationStub(channel)
-        replies = stub.DoUnaryStream(Message(text='Hello World'))
-        for reply in replies:
-            assert reply.text == 'unary_stream: Hello World'
-        assert replies.code() == grpc.StatusCode.OK
-
-
-if six.PY2:
-    _test_unary_stream_raises_transaction_name = (
-            'test_blocking_clients:_test_unary_stream')
-else:
-    _test_unary_stream_raises_transaction_name = (
-            'test_blocking_clients:'
-            'test_unary_stream__call__raises.<locals>._test_unary_stream')
-
-
-@validate_transaction_errors(errors=['grpc._channel:_Rendezvous'])
-@validate_transaction_metrics(_test_unary_stream_raises_transaction_name,
-        scoped_metrics=_test_unary_stream_scoped_metrics,
-        rollup_metrics=_test_unary_stream_rollup_metrics,
-        background_task=True)
-def test_unary_stream__call__raises():
-
-    @background_task()
-    def _test_unary_stream():
-        with MockExternalgRPCServer(port=PORT) as server:
-            add_SampleApplicationServicer_to_server(SampleApplicationServicer(),
-                    server)
-
-            channel = grpc.insecure_channel('localhost:%s' % PORT)
-            stub = SampleApplicationStub(channel)
-            replies = stub.DoUnaryStreamRaises(Message(text='Hello World'))
-
-            for reply in replies:
-                # Replies must be consumed before checking status code even
-                # though there will be no replies!
-                pass
-
-            assert replies.code() == grpc.StatusCode.OK
-            raise replies
-
-    try:
-        _test_unary_stream()
-    except grpc.RpcError as e:
-        assert 'unary_stream: Hello World' in e.details()
-
-
-# STREAM STREAM
-
-_test_stream_stream_scoped_metrics = [
-        ('External/localhost:%s/gRPC/stream_stream' % PORT, 1),
-]
-
-_test_stream_stream_rollup_metrics = [
-        ('External/localhost:%s/gRPC/stream_stream' % PORT, 1),
-        ('External/localhost:%s/all' % PORT, 1),
-        ('External/allOther', 1),
-        ('External/all', 1),
-]
-
-
-@validate_transaction_errors(errors=[])
-@validate_transaction_metrics(
-        'test_blocking_clients:test_stream_stream__call__',
-        scoped_metrics=_test_stream_stream_scoped_metrics,
-        rollup_metrics=_test_stream_stream_rollup_metrics,
-        background_task=True)
-@background_task()
-def test_stream_stream__call__():
-    with MockExternalgRPCServer(port=PORT) as server:
-        add_SampleApplicationServicer_to_server(SampleApplicationServicer(),
-                server)
-
-        channel = grpc.insecure_channel('localhost:%s' % PORT)
-        stub = SampleApplicationStub(channel)
-        replies = stub.DoStreamStream(_message_stream())
-        for reply in replies:
-            assert reply.text == 'stream_stream: Hello World'
-        assert replies.code() == grpc.StatusCode.OK
-
-
-if six.PY2:
-    _test_stream_stream_raises_transaction_name = (
-            'test_blocking_clients:_test_stream_stream')
-else:
-    _test_stream_stream_raises_transaction_name = (
-            'test_blocking_clients:'
-            'test_stream_stream__call__raises.<locals>._test_stream_stream')
-
-
-@validate_transaction_errors(errors=['grpc._channel:_Rendezvous'])
-@validate_transaction_metrics(_test_stream_stream_raises_transaction_name,
-        scoped_metrics=_test_stream_stream_scoped_metrics,
-        rollup_metrics=_test_stream_stream_rollup_metrics,
-        background_task=True)
-def test_stream_stream__call__raises():
-
-    @background_task()
-    def _test_stream_stream():
-        with MockExternalgRPCServer(port=PORT) as server:
-            add_SampleApplicationServicer_to_server(SampleApplicationServicer(),
-                    server)
-
-            channel = grpc.insecure_channel('localhost:%s' % PORT)
-            stub = SampleApplicationStub(channel)
-            replies = stub.DoStreamStreamRaises(_message_stream())
-
-            for reply in replies:
-                # Replies must be consumed before checking status code even
-                # though there will be no replies!
-                pass
-
-            assert replies.code() == grpc.StatusCode.OK
-            raise replies
-
-    try:
-        _test_stream_stream()
-    except grpc.RpcError as e:
-        assert 'stream_stream: Hello World' in e.details()
+        if raises_exception:
+            assert '%s: Hello World' % service_method_type in e.details()
+        else:
+            raise

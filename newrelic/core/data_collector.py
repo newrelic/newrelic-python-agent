@@ -472,7 +472,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                     'collector being restarted. In the event that contact '
                     'cannot be made after a period of time then please '
                     'report this problem to New Relic support for further '
-                    'investigation. The error raised was %r.', message)
+                    'investigation. The exception raised was %r.', message)
 
         else:
             _logger.warning('Data collector is not contactable via the proxy '
@@ -481,7 +481,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                     'collector being restarted. In the event that contact '
                     'cannot be made after a period of time then please '
                     'report this problem to New Relic support for further '
-                    'investigation. The error raised was %r.',
+                    'investigation. The exception raised was %r.',
                     settings.proxy_host, settings.proxy_port,
                     settings.proxy_user, message)
 

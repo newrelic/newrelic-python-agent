@@ -120,18 +120,15 @@ def test_client(service_method_type, service_method_method_name,
 
         if isinstance(reply, tuple):
             reply, rendezvous = reply
-        elif service_method_method_name == 'future':
-            rendezvous = reply
 
-        if rendezvous:
-            reply = rendezvous.result()
+        try:
+            reply = list(reply)
+        except TypeError:
+            reply = [reply]
 
         expected_text = '%s: Hello World' % service_method_type
-        if streaming_response:
-            response_texts_correct = [r.text == expected_text for r in reply]
-            assert len(response_texts_correct) == message_count
-        else:
-            response_texts_correct = [reply.text == expected_text]
+        response_texts_correct = [r.text == expected_text for r in reply]
+        assert len(response_texts_correct) == message_count
         assert response_texts_correct and all(response_texts_correct)
 
     try:

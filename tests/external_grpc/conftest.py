@@ -1,7 +1,9 @@
 import pytest
+import random
 
 from testing_support.fixtures import (code_coverage_fixture,
         collector_agent_registration_fixture, collector_available_fixture)
+from testing_support.mock_external_grpc_server import MockExternalgRPCServer
 
 _coverage_source = [
     'newrelic.hooks.external_grpc',
@@ -21,9 +23,18 @@ collector_agent_registration = collector_agent_registration_fixture(
         app_name='Python Agent Test (external_grpc)',
         default_settings=_default_settings)
 
+
+@pytest.fixture(scope='module')
+def grpc_app_server():
+    port = random.randint(50000, 50100)
+    with MockExternalgRPCServer(port=port) as server:
+        yield server, port
+
+
 @pytest.fixture(scope='session')
 def session_initialization(code_coverage, collector_agent_registration):
     pass
+
 
 @pytest.fixture(scope='function')
 def requires_data_collector(collector_available_fixture):

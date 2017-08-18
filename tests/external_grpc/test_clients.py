@@ -1,28 +1,24 @@
 import grpc
 import pytest
-import random
 import six
 
 from newrelic.api.background_task import background_task
 
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_transaction_errors)
-from testing_support.mock_external_grpc_server import MockExternalgRPCServer
 
 from sample_application.sample_application_pb2_grpc import (
         add_SampleApplicationServicer_to_server, SampleApplicationStub)
 from sample_application.sample_application_pb2 import Message
 from sample_application import SampleApplicationServicer
 
-PORT = random.randint(50000, 50100)
-
 
 @pytest.fixture(scope='module')
-def mock_grpc_server():
-    with MockExternalgRPCServer(port=PORT) as server:
-        add_SampleApplicationServicer_to_server(
-                SampleApplicationServicer(), server)
-        yield
+def mock_grpc_server(grpc_app_server):
+    server, port = grpc_app_server
+    add_SampleApplicationServicer_to_server(
+            SampleApplicationServicer(), server)
+    return port
 
 
 def _message_stream(count=1):
@@ -65,6 +61,8 @@ _test_matrix = [
 def test_client(service_method_type, service_method_method_name,
         raises_exception, message_count, mock_grpc_server):
 
+    port = mock_grpc_server
+
     service_method_class_name = 'Do%s%s' % (
             service_method_type.title().replace('_', ''),
             'Raises' if raises_exception else '')
@@ -77,13 +75,13 @@ def test_client(service_method_type, service_method_method_name,
         expected_metrics_count = message_count
 
     _test_scoped_metrics = [
-            ('External/localhost:%s/gRPC/%s' % (PORT, service_method_type),
+            ('External/localhost:%s/gRPC/%s' % (port, service_method_type),
                 expected_metrics_count),
     ]
     _test_rollup_metrics = [
-            ('External/localhost:%s/gRPC/%s' % (PORT, service_method_type),
+            ('External/localhost:%s/gRPC/%s' % (port, service_method_type),
                 expected_metrics_count),
-            ('External/localhost:%s/all' % PORT, expected_metrics_count),
+            ('External/localhost:%s/all' % port, expected_metrics_count),
             ('External/allOther', expected_metrics_count),
             ('External/all', expected_metrics_count),
     ]
@@ -105,7 +103,7 @@ def test_client(service_method_type, service_method_method_name,
             background_task=True)
     @background_task()
     def _test_client():
-        channel = grpc.insecure_channel('localhost:%s' % PORT)
+        channel = grpc.insecure_channel('localhost:%s' % port)
         stub = SampleApplicationStub(channel)
 
         service_method_class = getattr(stub, service_method_class_name)

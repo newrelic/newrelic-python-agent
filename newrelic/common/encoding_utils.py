@@ -228,3 +228,43 @@ def generate_path_hash(name, seed):
 
     path_hash = (rotated ^ int(md5(name).hexdigest()[-8:], base=16))
     return '%08x' % path_hash
+
+
+def base64_encode(text):
+    """Base 64 encodes the UTF-8 encoded representation of the text. In Python
+    2 either a byte string or Unicode string can be provided for the text
+    input. In the case of a byte string, it will be interpreted as having
+    Latin-1 encoding. In Python 3 only a Unicode string can be provided for the
+    text input. The result will then a base64 encoded Unicode string.
+
+    """
+
+    # The input text must be a Unicode string, but where each character has an
+    # ordinal value less than 256. This means that where the text to be
+    # encrypted is a Unicode string, we need to encode it to UTF-8 and then
+    # back to Unicode as Latin-1 which will preserve the encoded byte string as
+    # is. Where the text to be b64 encoded is a byte string, we will not know
+    # what encoding it may have. What we therefore must do is first convert it
+    # to Unicode as Latin-1 before doing the UTF-8/Latin-1 conversion. This
+    # needs to be done as when deserializing we assume that the input will
+    # always be UTF-8. If we do not do this extra conversion for a byte string,
+    # we could later end up trying to decode a byte string which isn't UTF-8
+    # and so fail with a Unicode decoding error.
+
+    if isinstance(text, bytes):
+        text = text.decode('latin-1')
+    text = text.encode('utf-8').decode('latin-1')
+
+    # Re-encode as utf-8 when passing to b64 encoder
+    result = base64.b64encode(text.encode('utf-8'))
+
+    # The result from base64 encoding will be a byte string but since
+    # dealing with byte strings in Python 2 and Python 3 is quite
+    # different, it is safer to return a Unicode string for both. We can
+    # use ASCII when decoding the byte string as base64 encoding only
+    # produces characters within that codeset.
+
+    if six.PY3:
+        return result.decode('ascii')
+
+    return result

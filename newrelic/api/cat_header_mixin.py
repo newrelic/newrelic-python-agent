@@ -1,5 +1,5 @@
 from newrelic.common.encoding_utils import (obfuscate, deobfuscate,
-        json_encode, json_decode)
+        json_encode, json_decode, base64_encode)
 
 
 class CatHeaderMixin(object):
@@ -7,6 +7,7 @@ class CatHeaderMixin(object):
     cat_transaction_key = 'X-NewRelic-Transaction'
     cat_appdata_key = 'X-NewRelic-App-Data'
     cat_synthetics_key = 'X-NewRelic-Synthetics'
+    cat_metadata_key = 'x-newrelic-trace'
 
     def process_response_headers(self, response_headers):
         """
@@ -69,3 +70,18 @@ class CatHeaderMixin(object):
                     (cls.cat_synthetics_key, transaction.synthetics_header))
 
         return nr_headers
+
+    @staticmethod
+    def _convert_to_cat_metadata_value(nr_headers):
+        payload = json_encode(nr_headers)
+        cat_linking_value = base64_encode(payload)
+        return cat_linking_value
+
+    @classmethod
+    def get_request_metadata(cls, transaction):
+        nr_headers = dict(cls.generate_request_headers(transaction))
+
+        if not nr_headers:
+            return None
+
+        return cls._convert_to_cat_metadata_value(nr_headers)

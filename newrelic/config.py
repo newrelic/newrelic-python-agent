@@ -2013,6 +2013,10 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.external_grpc',
             'instrument_grpc__channel')
 
+    _process_module_definition('grpc._common',
+            'newrelic.hooks.external_grpc',
+            'instrument_grpc_common')
+
     _process_module_definition('pylons.wsgiapp',
             'newrelic.hooks.framework_pylons')
     _process_module_definition('pylons.controllers.core',

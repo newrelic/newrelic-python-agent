@@ -65,6 +65,30 @@ def wrap_external_future(module, object_path, library, url, method=None):
     wrap_function_wrapper(module, object_path, _wrap_future)
 
 
+def _nr_add_cat_value_(wrapped, instance, args, kwargs):
+    def _bind_params(application_metadata):
+        return application_metadata
+
+    transaction = current_transaction()
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    metadata = _bind_params(*args, **kwargs)
+
+    cat_value = ExternalTrace.get_request_metadata(transaction)
+    if cat_value:
+        metadata = metadata and list(metadata) or []
+
+        # Do not overwrite if headers are already set
+        for k, v in metadata:
+            if k == ExternalTrace.cat_metadata_key:
+                return wrapped(*args, **kwargs)
+
+        metadata.append((ExternalTrace.cat_metadata_key, cat_value))
+
+    return wrapped(metadata)
+
+
 def instrument_grpc__channel(module):
     wrap_external_trace(module, '_UnaryUnaryMultiCallable.__call__',
             'gRPC', _get_uri, 'unary_unary')
@@ -89,3 +113,8 @@ def instrument_grpc__channel(module):
 
     wrap_external_future(module, '_StreamStreamMultiCallable.__call__',
             'gRPC', _get_uri, 'stream_stream')
+
+
+def instrument_grpc_common(module):
+    wrap_function_wrapper(module, 'to_cygrpc_metadata',
+            _nr_add_cat_value_)

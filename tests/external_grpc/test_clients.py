@@ -45,14 +45,12 @@ _test_matrix = [
 
         ('unary_stream', '__call__', False, 1),
         ('unary_stream', '__call__', True, 1),
-        pytest.param('unary_stream', '__call__', False, 2,
-            marks=pytest.mark.xfail(reason='not implemented', strict=True)),
+        ('unary_stream', '__call__', False, 2),
         ('unary_stream', '__call__', True, 2),
 
         ('stream_stream', '__call__', False, 1),
         ('stream_stream', '__call__', True, 1),
-        pytest.param('stream_stream', '__call__', False, 2,
-            marks=pytest.mark.xfail(reason='not implemented', strict=True)),
+        ('stream_stream', '__call__', False, 2),
         ('stream_stream', '__call__', True, 2),
 )]
 

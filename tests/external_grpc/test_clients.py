@@ -28,36 +28,42 @@ def _message_stream(count=1):
 
 _test_matrix = [
     ('service_method_type,service_method_method_name,raises_exception,'
-    'message_count'), (
-        ('unary_unary', '__call__', False, 1),
-        ('unary_unary', '__call__', True, 1),
-        ('unary_unary', 'with_call', False, 1),
-        ('unary_unary', 'with_call', True, 1),
-        ('unary_unary', 'future', False, 1),
-        ('unary_unary', 'future', True, 1),
+    'message_count,cancel'), (
+        ('unary_unary', '__call__', False, 1, False),
+        ('unary_unary', '__call__', True, 1, False),
+        ('unary_unary', 'with_call', False, 1, False),
+        ('unary_unary', 'with_call', True, 1, False),
+        ('unary_unary', 'future', False, 1, False),
+        ('unary_unary', 'future', True, 1, False),
+        ('unary_unary', 'future', False, 1, True),
 
-        ('stream_unary', '__call__', False, 1),
-        ('stream_unary', '__call__', True, 1),
-        ('stream_unary', 'with_call', False, 1),
-        ('stream_unary', 'with_call', True, 1),
-        ('stream_unary', 'future', False, 1),
-        ('stream_unary', 'future', True, 1),
+        ('stream_unary', '__call__', False, 1, False),
+        ('stream_unary', '__call__', True, 1, False),
+        ('stream_unary', 'with_call', False, 1, False),
+        ('stream_unary', 'with_call', True, 1, False),
+        ('stream_unary', 'future', False, 1, False),
+        ('stream_unary', 'future', True, 1, False),
+        ('stream_unary', 'future', False, 1, True),
 
-        ('unary_stream', '__call__', False, 1),
-        ('unary_stream', '__call__', True, 1),
-        ('unary_stream', '__call__', False, 2),
-        ('unary_stream', '__call__', True, 2),
+        ('unary_stream', '__call__', False, 1, False),
+        ('unary_stream', '__call__', True, 1, False),
+        ('unary_stream', '__call__', False, 2, False),
+        ('unary_stream', '__call__', True, 2, False),
+        ('unary_stream', '__call__', False, 1, True),
+        ('unary_stream', '__call__', False, 2, True),
 
-        ('stream_stream', '__call__', False, 1),
-        ('stream_stream', '__call__', True, 1),
-        ('stream_stream', '__call__', False, 2),
-        ('stream_stream', '__call__', True, 2),
+        ('stream_stream', '__call__', False, 1, False),
+        ('stream_stream', '__call__', True, 1, False),
+        ('stream_stream', '__call__', False, 2, False),
+        ('stream_stream', '__call__', True, 2, False),
+        ('stream_stream', '__call__', False, 1, True),
+        ('stream_stream', '__call__', False, 2, True),
 )]
 
 
 @pytest.mark.parametrize(*_test_matrix)
 def test_client(service_method_type, service_method_method_name,
-        raises_exception, message_count, mock_grpc_server):
+        raises_exception, message_count, cancel, mock_grpc_server):
 
     port = mock_grpc_server
 
@@ -91,7 +97,7 @@ def test_client(service_method_type, service_method_method_name,
                 'test_clients:test_client.<locals>._test_client')
 
     _errors = []
-    if raises_exception:
+    if raises_exception or cancel:
         _errors.append('grpc._channel:_Rendezvous')
 
     @validate_transaction_errors(errors=_errors)
@@ -113,13 +119,17 @@ def test_client(service_method_type, service_method_method_name,
         else:
             request = Message(text='Hello World', count=message_count)
 
-        rendezvous = None
         reply = service_method_method(request)
 
         if isinstance(reply, tuple):
-            reply, rendezvous = reply
+            reply = reply[0]
+
+        if cancel:
+            reply.cancel()
 
         try:
+            # If the reply was canceled or the server code raises an exception,
+            # this will raise an exception which will be recorded by the agent
             reply = list(reply)
         except TypeError:
             reply = [reply]
@@ -134,5 +144,7 @@ def test_client(service_method_type, service_method_method_name,
     except grpc.RpcError as e:
         if raises_exception:
             assert '%s: Hello World' % service_method_type in e.details()
+        elif cancel:
+            assert e.code() == grpc.StatusCode.CANCELLED
         else:
             raise

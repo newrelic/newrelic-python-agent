@@ -1,3 +1,5 @@
+import time
+
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
         function_wrapper)
 from newrelic.api.transaction import current_transaction
@@ -27,11 +29,19 @@ def wrap_external_future(module, object_path, library, url, method=None):
 
         @function_wrapper
         def wrap_next(_wrapped, _instance, _args, _kwargs):
-            if not _instance._state.code:
-                with ExternalTrace(transaction, library, _url, method):
-                    return _wrapped(*_args, **_kwargs)
+            _start = time.time()
+            try:
+                result = _wrapped(*_args, **_kwargs)
+            except StopIteration:
+                raise
+            except:
+                with ExternalTrace(transaction, library, _url, method) as t:
+                    t.start_time = _start
+                    raise
             else:
-                return _wrapped(*_args, **_kwargs)
+                with ExternalTrace(transaction, library, _url, method) as t:
+                    t.start_time = _start
+                    return result
 
         future = wrapped(*args, **kwargs)
         future._next = wrap_next(future._next)

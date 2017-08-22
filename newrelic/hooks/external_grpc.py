@@ -34,10 +34,13 @@ def wrap_external_future(module, object_path, library, url, method=None):
                 result = _wrapped(*_args, **_kwargs)
             except StopIteration:
                 raise
-            except:
-                with ExternalTrace(transaction, library, _url, method) as t:
-                    t.start_time = _start
+            except Exception as e:
+                if hasattr(e, 'cancelled') and e.cancelled():
                     raise
+                else:
+                    with ExternalTrace(transaction, library, _url, method) as t:
+                        t.start_time = _start
+                        raise
             else:
                 with ExternalTrace(transaction, library, _url, method) as t:
                     t.start_time = _start

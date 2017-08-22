@@ -73,7 +73,10 @@ def test_client(service_method_type, service_method_method_name,
     streaming_request = service_method_type.split('_')[0] == 'stream'
     streaming_response = service_method_type.split('_')[1] == 'stream'
 
-    if not streaming_response or raises_exception:
+    if cancel:
+        # if cancelled, no communication happens over the wire
+        expected_metrics_count = None
+    elif not streaming_response or raises_exception:
         expected_metrics_count = 1
     else:
         expected_metrics_count = message_count

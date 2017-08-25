@@ -151,3 +151,82 @@ def test_client(service_method_type, service_method_method_name,
             assert e.code() == grpc.StatusCode.CANCELLED
         else:
             raise
+
+
+
+_test_matrix = [
+    ('service_method_type,service_method_method_name,future_response'), (
+        ('unary_unary', '__call__', False),
+        ('unary_unary', 'with_call', False),
+        ('unary_unary', 'future', True),
+
+        ('stream_unary', '__call__', False),
+        ('stream_unary', 'with_call', False),
+        ('stream_unary', 'future', True),
+
+        ('unary_stream', '__call__', True),
+
+        ('stream_stream', '__call__', True),
+)]
+
+
+@pytest.mark.parametrize(*_test_matrix)
+def test_bad_metadata(service_method_type, service_method_method_name,
+        future_response, mock_grpc_server):
+    port = mock_grpc_server
+
+    service_method_class_name = 'Do%s' % (
+            service_method_type.title().replace('_', ''))
+    streaming_request = service_method_type.split('_')[0] == 'stream'
+
+    _test_scoped_metrics = [
+            ('External/localhost:%s/gRPC/%s' % (port, service_method_type),
+                None),
+    ]
+    _test_rollup_metrics = [
+            ('External/localhost:%s/gRPC/%s' % (port, service_method_type),
+                None),
+            ('External/localhost:%s/all' % port, None),
+            ('External/allOther', None),
+            ('External/all', None),
+    ]
+
+    if six.PY2:
+        _test_transaction_name = 'test_clients:_test_bad_metadata'
+    else:
+        _test_transaction_name = (
+                'test_clients:test_bad_metadata.<locals>._test_bad_metadata')
+
+    if future_response:
+        expected_exception = grpc.RpcError
+    else:
+        expected_exception = ValueError
+
+    @validate_transaction_errors(errors=[])
+    @validate_transaction_metrics(_test_transaction_name,
+            scoped_metrics=_test_scoped_metrics,
+            rollup_metrics=_test_rollup_metrics,
+            background_task=True)
+    @background_task()
+    def _test_bad_metadata():
+        channel = grpc.insecure_channel('localhost:%s' % port)
+        stub = SampleApplicationStub(channel)
+
+        service_method_class = getattr(stub, service_method_class_name)
+        service_method_method = getattr(service_method_class,
+                service_method_method_name)
+
+        if streaming_request:
+            request = _message_stream(count=1)
+        else:
+            request = Message(text='Hello World', count=1)
+
+        with pytest.raises(expected_exception) as error:
+            # gRPC doesn't like capital letters in metadata keys
+            reply = service_method_method(request, metadata=[('ASDF', 'a')])
+            reply.result()
+
+        if future_response:
+            assert error.value.code() == grpc.StatusCode.INTERNAL
+
+    _test_bad_metadata()

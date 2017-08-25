@@ -12,6 +12,38 @@ def _get_uri(instance, *args, **kwargs):
     return 'grpc://%s/%s' % (target, method)
 
 
+def wrap_external_call(module, object_path, library, url, method=None):
+    def _wrap_call(wrapped, instance, args, kwargs):
+        if callable(url):
+            if instance is not None:
+                _url = url(instance, *args, **kwargs)
+            else:
+                _url = url(*args, **kwargs)
+
+        else:
+            _url = url
+
+        transaction = current_transaction()
+        if transaction is None:
+            return wrapped(*args, **kwargs)
+
+        import grpc
+
+        _start = time.time()
+        try:
+            result = wrapped(*args, **kwargs)
+        except grpc.RpcError as e:
+            with ExternalTrace(transaction, library, _url, method) as t:
+                t.start_time = _start
+                raise
+        else:
+            with ExternalTrace(transaction, library, _url, method) as t:
+                t.start_time = _start
+                return result
+
+    wrap_function_wrapper(module, object_path, _wrap_call)
+
+
 def wrap_external_future(module, object_path, library, url, method=None):
     def _wrap_future(wrapped, instance, args, kwargs):
         if callable(url):
@@ -29,12 +61,14 @@ def wrap_external_future(module, object_path, library, url, method=None):
 
         @function_wrapper
         def wrap_next(_wrapped, _instance, _args, _kwargs):
+            import grpc
+
             _start = time.time()
             try:
                 result = _wrapped(*_args, **_kwargs)
             except StopIteration:
                 raise
-            except Exception as e:
+            except grpc.RpcError as e:
                 if hasattr(e, 'cancelled') and e.cancelled():
                     raise
                 else:
@@ -79,31 +113,23 @@ def _nr_add_cat_value_(wrapped, instance, args, kwargs):
 
 
 def instrument_grpc__channel(module):
-    wrap_external_trace(module, '_UnaryUnaryMultiCallable.__call__',
+    wrap_external_call(module, '_UnaryUnaryMultiCallable.__call__',
             'gRPC', _get_uri, 'unary_unary')
-
-    wrap_external_trace(module, '_UnaryUnaryMultiCallable.with_call',
+    wrap_external_call(module, '_UnaryUnaryMultiCallable.with_call',
             'gRPC', _get_uri, 'unary_unary')
-
     wrap_external_future(module, '_UnaryUnaryMultiCallable.future',
             'gRPC', _get_uri, 'unary_unary')
-
     wrap_external_future(module, '_UnaryStreamMultiCallable.__call__',
             'gRPC', _get_uri, 'unary_stream')
-
-    wrap_external_trace(module, '_StreamUnaryMultiCallable.__call__',
+    wrap_external_call(module, '_StreamUnaryMultiCallable.__call__',
             'gRPC', _get_uri, 'stream_unary')
-
-    wrap_external_trace(module, '_StreamUnaryMultiCallable.with_call',
+    wrap_external_call(module, '_StreamUnaryMultiCallable.with_call',
             'gRPC', _get_uri, 'stream_unary')
-
     wrap_external_future(module, '_StreamUnaryMultiCallable.future',
             'gRPC', _get_uri, 'stream_unary')
-
     wrap_external_future(module, '_StreamStreamMultiCallable.__call__',
             'gRPC', _get_uri, 'stream_stream')
 
 
 def instrument_grpc_common(module):
-    wrap_function_wrapper(module, 'to_cygrpc_metadata',
-            _nr_add_cat_value_)
+    wrap_function_wrapper(module, 'to_cygrpc_metadata', _nr_add_cat_value_)

@@ -32,7 +32,7 @@ def wrap_external_call(module, object_path, library, url, method=None):
 
         try:
             result = wrapped(*args, **kwargs)
-        except grpc.RpcError as e:
+        except grpc.RpcError:
             with ExternalTrace(transaction, library, _url, method) as t:
                 t.start_time = _start
                 raise
@@ -72,7 +72,8 @@ def wrap_external_future(module, object_path, library, url, method=None):
                 if hasattr(e, 'cancelled') and e.cancelled():
                     raise
                 else:
-                    with ExternalTrace(transaction, library, _url, method) as t:
+                    with ExternalTrace(
+                            transaction, library, _url, method) as t:
                         t.start_time = _start
                         raise
             else:

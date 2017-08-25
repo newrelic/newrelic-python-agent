@@ -21,9 +21,9 @@ def mock_grpc_server(grpc_app_server):
     return port
 
 
-def _message_stream(count=1):
+def _message_stream(count=1, timesout=False):
     for i in range(count):
-        yield Message(text='Hello World', count=count)
+        yield Message(text='Hello World', count=count, timesout=timesout)
 
 
 _test_matrix = [
@@ -230,3 +230,57 @@ def test_bad_metadata(service_method_type, service_method_method_name,
             assert error.value.code() == grpc.StatusCode.INTERNAL
 
     _test_bad_metadata()
+
+
+@pytest.mark.parametrize(*_test_matrix)
+def test_future_timeout_error(service_method_type, service_method_method_name,
+        future_response, mock_grpc_server):
+    port = mock_grpc_server
+
+    service_method_class_name = 'Do%s' % (
+            service_method_type.title().replace('_', ''))
+    streaming_request = service_method_type.split('_')[0] == 'stream'
+
+    _test_scoped_metrics = [
+            ('External/localhost:%s/gRPC/%s' % (port, service_method_type), 1),
+    ]
+    _test_rollup_metrics = [
+            ('External/localhost:%s/gRPC/%s' % (port, service_method_type), 1),
+            ('External/localhost:%s/all' % port, 1),
+            ('External/allOther', 1),
+            ('External/all', 1),
+    ]
+
+    if six.PY2:
+        _test_transaction_name = 'test_clients:_test_future_timeout_error'
+    else:
+        _test_transaction_name = (
+                'test_clients:test_future_timeout_error.<locals>.'
+                '_test_future_timeout_error')
+
+    @validate_transaction_errors(errors=[])
+    @validate_transaction_metrics(_test_transaction_name,
+            scoped_metrics=_test_scoped_metrics,
+            rollup_metrics=_test_rollup_metrics,
+            background_task=True)
+    @background_task()
+    def _test_future_timeout_error():
+        channel = grpc.insecure_channel('localhost:%s' % port)
+        stub = SampleApplicationStub(channel)
+
+        service_method_class = getattr(stub, service_method_class_name)
+        service_method_method = getattr(service_method_class,
+                service_method_method_name)
+
+        if streaming_request:
+            request = _message_stream(count=1, timesout=True)
+        else:
+            request = Message(text='Hello World', count=1, timesout=True)
+
+        with pytest.raises(grpc.RpcError) as error:
+            reply = service_method_method(request, timeout=0.01)
+            list(reply)
+
+        assert error.value.code() == grpc.StatusCode.DEADLINE_EXCEEDED
+
+    _test_future_timeout_error()

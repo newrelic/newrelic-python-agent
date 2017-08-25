@@ -14,22 +14,22 @@ def _get_uri(instance, *args, **kwargs):
 
 def wrap_external_call(module, object_path, library, url, method=None):
     def _wrap_call(wrapped, instance, args, kwargs):
-        if callable(url):
-            if instance is not None:
-                _url = url(instance, *args, **kwargs)
-            else:
-                _url = url(*args, **kwargs)
-
-        else:
-            _url = url
-
         transaction = current_transaction()
         if transaction is None:
             return wrapped(*args, **kwargs)
 
         import grpc
 
+        if callable(url):
+            if instance is not None:
+                _url = url(instance, *args, **kwargs)
+            else:
+                _url = url(*args, **kwargs)
+        else:
+            _url = url
+
         _start = time.time()
+
         try:
             result = wrapped(*args, **kwargs)
         except grpc.RpcError as e:

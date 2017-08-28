@@ -11,6 +11,7 @@ from hashlib import md5
 
 from newrelic.packages import six
 
+
 # Functions for encoding/decoding JSON. These wrappers are used in order
 # to hide the differences between Python 2 and Python 3 implementations
 # of the json module functions as well as instigate some better defaults
@@ -49,7 +50,7 @@ def json_encode(obj, **kwargs):
     # The third is eliminate white space after separators to trim the
     # size of the data being sent.
 
-    if type(b'') is type(''):
+    if type(b'') is type(''):  # NOQA
         _kwargs['encoding'] = 'latin-1'
 
     def _encode(o):
@@ -74,6 +75,7 @@ def json_encode(obj, **kwargs):
 
     return json.dumps(obj, **_kwargs)
 
+
 def json_decode(s, **kwargs):
     # Nothing special to do here at this point but use a wrapper to be
     # consistent with encoding and allow for changes later.
@@ -82,6 +84,7 @@ def json_decode(s, **kwargs):
 
 # Functions for obfuscating/deobfuscating text string based on an XOR
 # cipher.
+
 
 def xor_cipher_genkey(key, length=None):
     """Generates a byte array for use in XOR cipher encrypt and decrypt
@@ -93,6 +96,7 @@ def xor_cipher_genkey(key, length=None):
     """
 
     return bytearray(key[:length], encoding='ascii')
+
 
 def xor_cipher_encrypt(text, key):
     """Encrypts the text using an XOR cipher where the key is provided
@@ -109,6 +113,7 @@ def xor_cipher_encrypt(text, key):
 
     return bytearray([ord(c) ^ key[i % len(key)] for i, c in enumerate(text)])
 
+
 def xor_cipher_decrypt(text, key):
     """Decrypts the text using an XOR cipher where the key is provided
     as a byte array. The key cannot be an empty byte array. Where the
@@ -120,6 +125,7 @@ def xor_cipher_decrypt(text, key):
     """
 
     return bytearray([c ^ key[i % len(key)] for i, c in enumerate(text)])
+
 
 def xor_cipher_encrypt_base64(text, key):
     """Encrypts the UTF-8 encoded representation of the text using an
@@ -171,6 +177,7 @@ def xor_cipher_encrypt_base64(text, key):
 
     return result
 
+
 def xor_cipher_decrypt_base64(text, key):
     """Decrypts the text using an XOR cipher where the key is provided
     as a byte array. The key cannot be an empty byte array. Where the
@@ -189,8 +196,10 @@ def xor_cipher_decrypt_base64(text, key):
 
     return bytes(result).decode('utf-8')
 
+
 obfuscate = xor_cipher_encrypt_base64
 deobfuscate = xor_cipher_decrypt_base64
+
 
 def unpack_field(field):
     """Decodes data that was compressed before being sent to the collector.
@@ -212,6 +221,7 @@ def unpack_field(field):
 
     data = json_decode(data)
     return data
+
 
 def generate_path_hash(name, seed):
     """Algorithm for generating the path hash:

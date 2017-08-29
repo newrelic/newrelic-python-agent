@@ -9,24 +9,41 @@ from newrelic.api.external_trace import ExternalTrace
 
 from testing_support.fixtures import override_application_settings
 
-from sample_application.sample_application_pb2_grpc import (
-        add_SampleApplicationServicer_to_server, SampleApplicationStub)
-from sample_application.sample_application_pb2 import Message
-from sample_application import CatApplicationServicer
-
 ENCODING_KEY = '1234567890123456789012345678901234567890'
 
 
 @pytest.fixture(scope='module')
 def grpc_cat_app_server(grpc_app_server):
+    from sample_application import CatApplicationServicer
+    from sample_application.sample_application_pb2_grpc import (
+            add_SampleApplicationServicer_to_server)
     server, port = grpc_app_server
     add_SampleApplicationServicer_to_server(
             CatApplicationServicer(), server)
     return port
 
 
-def _message_stream():
-    yield Message(text='Hello World')
+def _create_stub(port):
+    from sample_application.sample_application_pb2_grpc import (
+            SampleApplicationStub)
+    channel = grpc.insecure_channel('localhost:%s' % port)
+    stub = SampleApplicationStub(channel)
+    return stub
+
+
+def _create_request(streaming_request, count=1, timesout=False):
+    from sample_application.sample_application_pb2 import Message
+
+    def _message_stream():
+        for i in range(count):
+            yield Message(text='Hello World', count=count, timesout=timesout)
+
+    if streaming_request:
+        request = _message_stream()
+    else:
+        request = Message(text='Hello World', count=count, timesout=timesout)
+
+    return request
 
 
 _test_matrix = [
@@ -99,17 +116,13 @@ def test_grpc_cat(service_method_type, service_method_method_name,
         txn = current_transaction()
         txn.guid = 'THIS_TEST_IS_SO_GUID'
 
-        channel = grpc.insecure_channel('localhost:%s' % grpc_cat_app_server)
-        stub = SampleApplicationStub(channel)
+        stub = _create_stub(grpc_cat_app_server)
 
         service_method_class = getattr(stub, service_method_class_name)
         service_method_method = getattr(service_method_class,
                 service_method_method_name)
 
-        if streaming_request:
-            request = _message_stream()
-        else:
-            request = Message(text='Hello World')
+        request = _create_request(streaming_request)
 
         if user_sets_cat_metadata:
             reply = service_method_method(request,

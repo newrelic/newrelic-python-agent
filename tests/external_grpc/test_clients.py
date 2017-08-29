@@ -7,23 +7,39 @@ from newrelic.api.background_task import background_task
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_transaction_errors)
 
-from sample_application.sample_application_pb2_grpc import (
-        add_SampleApplicationServicer_to_server, SampleApplicationStub)
-from sample_application.sample_application_pb2 import Message
-from sample_application import SampleApplicationServicer
-
 
 @pytest.fixture(scope='module')
 def mock_grpc_server(grpc_app_server):
+    from sample_application.sample_application_pb2_grpc import (
+            add_SampleApplicationServicer_to_server)
+    from sample_application import SampleApplicationServicer
     server, port = grpc_app_server
     add_SampleApplicationServicer_to_server(
             SampleApplicationServicer(), server)
     return port
 
 
-def _message_stream(count=1, timesout=False):
-    for i in range(count):
-        yield Message(text='Hello World', count=count, timesout=timesout)
+def _create_stub(port):
+    from sample_application.sample_application_pb2_grpc import (
+            SampleApplicationStub)
+    channel = grpc.insecure_channel('localhost:%s' % port)
+    stub = SampleApplicationStub(channel)
+    return stub
+
+
+def _create_request(streaming_request, count=1, timesout=False):
+    from sample_application.sample_application_pb2 import Message
+
+    def _message_stream():
+        for i in range(count):
+            yield Message(text='Hello World', count=count, timesout=timesout)
+
+    if streaming_request:
+        request = _message_stream()
+    else:
+        request = Message(text='Hello World', count=count, timesout=timesout)
+
+    return request
 
 
 _test_matrix = [
@@ -110,17 +126,14 @@ def test_client(service_method_type, service_method_method_name,
             background_task=True)
     @background_task()
     def _test_client():
-        channel = grpc.insecure_channel('localhost:%s' % port)
-        stub = SampleApplicationStub(channel)
+        stub = _create_stub(port)
 
         service_method_class = getattr(stub, service_method_class_name)
         service_method_method = getattr(service_method_class,
                 service_method_method_name)
 
-        if streaming_request:
-            request = _message_stream(count=message_count)
-        else:
-            request = Message(text='Hello World', count=message_count)
+        request = _create_request(streaming_request, count=message_count,
+                timesout=False)
 
         reply = service_method_method(request)
 
@@ -151,7 +164,6 @@ def test_client(service_method_type, service_method_method_name,
             assert e.code() == grpc.StatusCode.CANCELLED
         else:
             raise
-
 
 
 _test_matrix = [
@@ -209,17 +221,13 @@ def test_bad_metadata(service_method_type, service_method_method_name,
             background_task=True)
     @background_task()
     def _test_bad_metadata():
-        channel = grpc.insecure_channel('localhost:%s' % port)
-        stub = SampleApplicationStub(channel)
+        stub = _create_stub(port)
 
         service_method_class = getattr(stub, service_method_class_name)
         service_method_method = getattr(service_method_class,
                 service_method_method_name)
 
-        if streaming_request:
-            request = _message_stream(count=1)
-        else:
-            request = Message(text='Hello World', count=1)
+        request = _create_request(streaming_request, count=1, timesout=False)
 
         with pytest.raises(expected_exception) as error:
             # gRPC doesn't like capital letters in metadata keys
@@ -265,17 +273,13 @@ def test_future_timeout_error(service_method_type, service_method_method_name,
             background_task=True)
     @background_task()
     def _test_future_timeout_error():
-        channel = grpc.insecure_channel('localhost:%s' % port)
-        stub = SampleApplicationStub(channel)
+        stub = _create_stub(port)
 
         service_method_class = getattr(stub, service_method_class_name)
         service_method_method = getattr(service_method_class,
                 service_method_method_name)
 
-        if streaming_request:
-            request = _message_stream(count=1, timesout=True)
-        else:
-            request = Message(text='Hello World', count=1, timesout=True)
+        request = _create_request(streaming_request, count=1, timesout=True)
 
         with pytest.raises(grpc.RpcError) as error:
             reply = service_method_method(request, timeout=0.01)
@@ -318,17 +322,13 @@ def test_server_down(service_method_type, service_method_method_name,
             background_task=True)
     @background_task()
     def _test_server_down():
-        channel = grpc.insecure_channel('localhost:%s' % port)
-        stub = SampleApplicationStub(channel)
+        stub = _create_stub(port)
 
         service_method_class = getattr(stub, service_method_class_name)
         service_method_method = getattr(service_method_class,
                 service_method_method_name)
 
-        if streaming_request:
-            request = _message_stream(count=1)
-        else:
-            request = Message(text='Hello World', count=1)
+        request = _create_request(streaming_request, count=1, timesout=False)
 
         with pytest.raises(grpc.RpcError) as error:
             reply = service_method_method(request)

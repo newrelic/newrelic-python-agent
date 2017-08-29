@@ -42,6 +42,14 @@ def _create_request(streaming_request, count=1, timesout=False):
     return request
 
 
+def _get_impl_type():
+    # the particular return value of this function determines which classes
+    # google uses to implement serialize and deserialze functions
+    # https://github.com/google/protobuf/blob/c7457ef65a7a8584b1e3bd396c401ccf8e275ffa/python/google/protobuf/reflection.py#L55-L58
+    from google.protobuf.internal import api_implementation
+    return api_implementation.Type()
+
+
 _test_matrix = [
     ('service_method_type,service_method_method_name,raises_exception,'
     'message_count,cancel'), (
@@ -88,6 +96,9 @@ def test_client(service_method_type, service_method_method_name,
             'Raises' if raises_exception else '')
     streaming_request = service_method_type.split('_')[0] == 'stream'
     streaming_response = service_method_type.split('_')[1] == 'stream'
+    future_response = (streaming_response or
+            service_method_method_name == 'future')
+    implementation_type = _get_impl_type()
 
     if cancel:
         # if cancelled, no communication happens over the wire
@@ -108,6 +119,38 @@ def test_client(service_method_type, service_method_method_name,
             ('External/allOther', expected_metrics_count),
             ('External/all', expected_metrics_count),
     ]
+
+    if not streaming_request:
+        if implementation_type == 'cpp':
+            _test_scoped_metrics.append(
+                (('Function/google.protobuf.pyext._message:'
+                        'CMessage.SerializeToString'), 1))
+            _test_rollup_metrics.append(
+                (('Function/google.protobuf.pyext._message:'
+                        'CMessage.SerializeToString'), 1))
+        else:
+            _test_scoped_metrics.append(
+                (('Function/<sample_application_pb2>:'
+                        'Message.SerializeToString'), 1))
+            _test_rollup_metrics.append(
+                (('Function/<sample_application_pb2>:'
+                        'Message.SerializeToString'), 1))
+
+    if not raises_exception and not future_response:
+        if implementation_type == 'cpp':
+            _test_scoped_metrics.append(
+                (('Function/google.protobuf.pyext.cpp_message:'
+                        'Message.FromString'), 1))
+            _test_rollup_metrics.append(
+                (('Function/google.protobuf.pyext.cpp_message:'
+                        'Message.FromString'), 1))
+        else:
+            _test_scoped_metrics.append(
+                (('Function/google.protobuf.internal.python_message:'
+                        'FromString'), 1))
+            _test_rollup_metrics.append(
+                (('Function/google.protobuf.internal.python_message:'
+                        'FromString'), 1))
 
     if six.PY2:
         _test_transaction_name = 'test_clients:_test_client'

@@ -1,9 +1,10 @@
 import time
 
+from newrelic.api.external_trace import ExternalTrace
+from newrelic.api.function_trace import FunctionTraceWrapper
+from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
         function_wrapper)
-from newrelic.api.transaction import current_transaction
-from newrelic.api.external_trace import (ExternalTrace, wrap_external_trace)
 
 
 def _get_uri(instance, *args, **kwargs):
@@ -89,6 +90,15 @@ def wrap_external_future(module, object_path, library, url, method=None):
     wrap_function_wrapper(module, object_path, _wrap_future)
 
 
+def _nr_wrap_GeneratedProtocolMessageType(wrapped, instance, args, kwargs):
+    wrapped(*args, **kwargs)
+
+    instance.SerializeToString = FunctionTraceWrapper(
+            instance.SerializeToString)
+    instance.FromString = staticmethod(FunctionTraceWrapper(
+            instance.FromString))
+
+
 def instrument_grpc__channel(module):
     wrap_external_call(module, '_UnaryUnaryMultiCallable.__call__',
             'gRPC', _get_uri, 'unary_unary')
@@ -106,3 +116,8 @@ def instrument_grpc__channel(module):
             'gRPC', _get_uri, 'stream_unary')
     wrap_external_future(module, '_StreamStreamMultiCallable.__call__',
             'gRPC', _get_uri, 'stream_stream')
+
+
+def instrument_google_protobuf_reflection(module):
+    wrap_function_wrapper(module, 'GeneratedProtocolMessageType.__init__',
+            _nr_wrap_GeneratedProtocolMessageType)

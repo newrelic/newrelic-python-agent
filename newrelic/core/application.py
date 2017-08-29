@@ -1761,7 +1761,12 @@ class Application(object):
 
             _logger.debug('Process agent commands for %r.', self._app_name)
 
-            agent_commands = self._active_session.get_agent_commands()
+            # Any exception on get agent commands shouldn't interrupt the
+            # harvest cycle
+            try:
+                agent_commands = self._active_session.get_agent_commands()
+            except:
+                return
 
             # Extract the command names from the agent_commands. This is
             # used to check for the presence of active_xray_sessions command

@@ -1012,6 +1012,9 @@ class Transaction(object):
         try:
             payload = base64_decode(cat_linking_value)
         except:
+            # `cat_linking_value` should always be able to be base64_decoded.
+            # If this is encountered, the data being sent is corrupt. No
+            # exception should be raised.
             return
 
         nr_headers = json_decode(payload)

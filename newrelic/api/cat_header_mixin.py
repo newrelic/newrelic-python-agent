@@ -20,7 +20,6 @@ class CatHeaderMixin(object):
             return
 
         appdata = None
-
         try:
             for k, v in response_headers:
                 if k.upper() == self.cat_appdata_key.upper():

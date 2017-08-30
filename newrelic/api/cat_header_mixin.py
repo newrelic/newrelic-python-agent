@@ -1,5 +1,5 @@
 from newrelic.common.encoding_utils import (obfuscate, deobfuscate,
-        json_encode, json_decode, base64_encode)
+        json_encode, json_decode, base64_encode, base64_decode)
 
 
 class CatHeaderMixin(object):
@@ -16,7 +16,6 @@ class CatHeaderMixin(object):
         [(HEADER_NAME0, HEADER_VALUE0), (HEADER_NAME1, HEADER_VALUE1)]
 
         """
-
         if not self.settings.cross_application_tracer.enabled:
             return
 
@@ -36,6 +35,11 @@ class CatHeaderMixin(object):
 
         except Exception:
             pass
+
+    def process_response_metadata(self, cat_linking_value):
+        payload = base64_decode(cat_linking_value)
+        nr_headers = json_decode(payload)
+        self.process_response_headers(nr_headers.items())
 
     @classmethod
     def generate_request_headers(cls, transaction):

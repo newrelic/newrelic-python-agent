@@ -278,3 +278,20 @@ def base64_encode(text):
         return result.decode('ascii')
 
     return result
+
+
+def base64_decode(text):
+    """Base 64 decodes text into a UTF-8 encoded string. This function assumes
+    the decoded text is UTF-8 encoded.
+
+    """
+    return base64.b64decode(text).decode('utf-8')
+
+
+def convert_to_cat_metadata_value(nr_headers):
+    if not nr_headers:
+        return None
+
+    payload = json_encode(nr_headers)
+    cat_linking_value = base64_encode(payload)
+    return cat_linking_value

@@ -521,6 +521,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/tests/test_cat_interface.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/tests/test_cross_process.py": {
         "hash": "n/a",
         "libraries": [

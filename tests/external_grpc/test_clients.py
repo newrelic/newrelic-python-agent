@@ -84,6 +84,25 @@ _test_matrix = [
         ('stream_stream', '__call__', False, 2, True),
 )]
 
+_metric_cpp_serialize_to_string_py2_py3 = (
+        ('Function/google.protobuf.pyext._message:'
+        'CMessage.SerializeToString'), 1)
+_metric_python_serialize_to_string_py2 = (
+        ('Function/<sample_application_pb2>:'
+        'Message.SerializeToString'), 1)
+_metric_python_serialize_to_string_py3 = (
+        ('Function/google.protobuf.internal.python_message:'
+        '_AddSerializeToStringMethod.<locals>.SerializeToString'), 1)
+_metric_cpp_from_string_py2_py3 = (
+        ('Function/google.protobuf.pyext.cpp_message:'
+        'Message.FromString'), 1)
+_metric_python_from_string_py2 = (
+        ('Function/google.protobuf.internal.python_message:'
+        'FromString'), 1)
+_metric_python_from_string_py3 = (
+        ('Function/google.protobuf.internal.python_message:'
+        '_AddStaticMethods.<locals>.FromString'), 1)
+
 
 @pytest.mark.parametrize(*_test_matrix)
 def test_client(service_method_type, service_method_method_name,
@@ -123,34 +142,32 @@ def test_client(service_method_type, service_method_method_name,
     if not streaming_request:
         if implementation_type == 'cpp':
             _test_scoped_metrics.append(
-                (('Function/google.protobuf.pyext._message:'
-                        'CMessage.SerializeToString'), 1))
+                    _metric_cpp_serialize_to_string_py2_py3)
             _test_rollup_metrics.append(
-                (('Function/google.protobuf.pyext._message:'
-                        'CMessage.SerializeToString'), 1))
+                    _metric_cpp_serialize_to_string_py2_py3)
         else:
-            _test_scoped_metrics.append(
-                (('Function/<sample_application_pb2>:'
-                        'Message.SerializeToString'), 1))
-            _test_rollup_metrics.append(
-                (('Function/<sample_application_pb2>:'
-                        'Message.SerializeToString'), 1))
+            if six.PY2:
+                _test_scoped_metrics.append(
+                        _metric_python_serialize_to_string_py2)
+                _test_rollup_metrics.append(
+                        _metric_python_serialize_to_string_py2)
+            else:
+                _test_scoped_metrics.append(
+                        _metric_python_serialize_to_string_py3)
+                _test_rollup_metrics.append(
+                        _metric_python_serialize_to_string_py3)
 
     if not raises_exception and not future_response:
         if implementation_type == 'cpp':
-            _test_scoped_metrics.append(
-                (('Function/google.protobuf.pyext.cpp_message:'
-                        'Message.FromString'), 1))
-            _test_rollup_metrics.append(
-                (('Function/google.protobuf.pyext.cpp_message:'
-                        'Message.FromString'), 1))
+            _test_scoped_metrics.append(_metric_cpp_from_string_py2_py3)
+            _test_rollup_metrics.append(_metric_cpp_from_string_py2_py3)
         else:
-            _test_scoped_metrics.append(
-                (('Function/google.protobuf.internal.python_message:'
-                        'FromString'), 1))
-            _test_rollup_metrics.append(
-                (('Function/google.protobuf.internal.python_message:'
-                        'FromString'), 1))
+            if six.PY2:
+                _test_scoped_metrics.append(_metric_python_from_string_py2)
+                _test_rollup_metrics.append(_metric_python_from_string_py2)
+            else:
+                _test_scoped_metrics.append(_metric_python_from_string_py3)
+                _test_rollup_metrics.append(_metric_python_from_string_py3)
 
     if six.PY2:
         _test_transaction_name = 'test_clients:_test_client'

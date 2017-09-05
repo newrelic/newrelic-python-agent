@@ -68,6 +68,10 @@ def wrap_external_future(module, object_path, library, url, method=None):
                     return result
 
         future = wrapped(*args, **kwargs)
+
+        # In non-streaming responses, result is typically called instead of
+        # using the iterator. In streaming calls, the iterator is typically
+        # used.
         future._next = wrap_next(future._next)
         future.result = wrap_result(future.result)
 

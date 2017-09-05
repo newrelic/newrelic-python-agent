@@ -47,9 +47,14 @@ def wrap_external_future(module, object_path, library, url, method=None):
                     return result
 
         _nr_start_time = time.time()
+        _result_called = []
 
         @function_wrapper
         def wrap_result(_wrapped, _instance, _args, _kwargs):
+            if _result_called:
+                return _wrapped(*_args, **_kwargs)
+
+            _result_called.append(True)
             try:
                 result = _wrapped(*_args, **_kwargs)
             except Exception:

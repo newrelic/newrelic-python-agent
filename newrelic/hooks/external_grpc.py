@@ -28,8 +28,6 @@ def wrap_external_future(module, object_path, library, url, method=None):
         if transaction is None:
             return wrapped(*args, **kwargs)
 
-        _nr_start_time = time.time()
-
         @function_wrapper
         def wrap_next(_wrapped, _instance, _args, _kwargs):
 
@@ -47,6 +45,8 @@ def wrap_external_future(module, object_path, library, url, method=None):
                 with ExternalTrace(transaction, library, _url, method) as t:
                     t.start_time = _start
                     return result
+
+        _nr_start_time = time.time()
 
         @function_wrapper
         def wrap_result(_wrapped, _instance, _args, _kwargs):

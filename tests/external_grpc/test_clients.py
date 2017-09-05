@@ -42,14 +42,6 @@ def _create_request(streaming_request, count=1, timesout=False):
     return request
 
 
-def _get_impl_type():
-    # the particular return value of this function determines which classes
-    # google uses to implement serialize and deserialze functions
-    # https://github.com/google/protobuf/blob/c7457ef65a7a8584b1e3bd396c401ccf8e275ffa/python/google/protobuf/reflection.py#L55-L58
-    from google.protobuf.internal import api_implementation
-    return api_implementation.Type()
-
-
 _test_matrix = [
     ('service_method_type,service_method_method_name,raises_exception,'
     'message_count,cancel'), (
@@ -83,25 +75,6 @@ _test_matrix = [
         ('stream_stream', '__call__', False, 1, True),
         ('stream_stream', '__call__', False, 2, True),
 )]
-
-_metric_cpp_serialize_to_string_py2_py3 = (
-        ('Function/google.protobuf.pyext._message:'
-        'CMessage.SerializeToString'), 1)
-_metric_python_serialize_to_string_py2 = (
-        ('Function/<sample_application_pb2>:'
-        'Message.SerializeToString'), 1)
-_metric_python_serialize_to_string_py3 = (
-        ('Function/google.protobuf.internal.python_message:'
-        '_AddSerializeToStringMethod.<locals>.SerializeToString'), 1)
-_metric_cpp_from_string_py2_py3 = (
-        ('Function/google.protobuf.pyext.cpp_message:'
-        'Message.FromString'), 1)
-_metric_python_from_string_py2 = (
-        ('Function/google.protobuf.internal.python_message:'
-        'FromString'), 1)
-_metric_python_from_string_py3 = (
-        ('Function/google.protobuf.internal.python_message:'
-        '_AddStaticMethods.<locals>.FromString'), 1)
 
 
 @pytest.mark.parametrize(*_test_matrix)

@@ -60,6 +60,8 @@ def wrap_external_future(module, object_path, library, url, method=None):
         if transaction is None:
             return wrapped(*args, **kwargs)
 
+        _nr_start_time = time.time()
+
         @function_wrapper
         def wrap_next(_wrapped, _instance, _args, _kwargs):
             import grpc
@@ -82,8 +84,28 @@ def wrap_external_future(module, object_path, library, url, method=None):
                     t.start_time = _start
                     return result
 
+        @function_wrapper
+        def wrap_result(_wrapped, _instance, _args, _kwargs):
+            import grpc
+
+            try:
+                result = _wrapped(*_args, **_kwargs)
+            except grpc.RpcError as e:
+                if hasattr(e, 'cancelled') and e.cancelled():
+                    raise
+                else:
+                    with ExternalTrace(
+                            transaction, library, _url, method) as t:
+                        t.start_time = _nr_start_time
+                        raise
+            else:
+                with ExternalTrace(transaction, library, _url, method) as t:
+                    t.start_time = _nr_start_time
+                    return result
+
         future = wrapped(*args, **kwargs)
         future._next = wrap_next(future._next)
+        future.result = wrap_result(future.result)
 
         return future
 

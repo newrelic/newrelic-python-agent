@@ -206,7 +206,7 @@ def test_client(service_method_type, service_method_method_name,
         try:
             # If the reply was canceled or the server code raises an exception,
             # this will raise an exception which will be recorded by the agent
-            reply = list(reply)
+            reply = list(reply) or [reply.result()]
         except TypeError:
             reply = [reply]
 

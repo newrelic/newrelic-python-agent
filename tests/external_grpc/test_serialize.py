@@ -44,16 +44,20 @@ def test_serialize_methods():
     from sample_application.sample_application_pb2 import Message
     m = Message(text='Hello World', count=1, timesout=False)
 
-    scoped, rollup = (
-        [('Function/sample_application_pb2:Message.SerializeToString', 1)],
-        [('Function/sample_application_pb2:Message.SerializeToString', 1)],
-    )
-
     if six.PY2:
         _test_transaction_name = 'test_serialize:_test'
+        _metric_name = ('Function/<sample_application_pb2>:'
+                'Message.SerializeToString')
     else:
         _test_transaction_name = (
                 'test_serialize:test_serialize_methods.<locals>._test')
+        _metric_name = ('Function/sample_application_pb2:'
+                'Message.SerializeToString')
+
+    scoped, rollup = (
+        [(_metric_name, 1)],
+        [(_metric_name, 1)],
+    )
 
     @validate_transaction_metrics(_test_transaction_name,
             scoped_metrics=scoped,

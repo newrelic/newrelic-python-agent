@@ -28,8 +28,9 @@ from newrelic.core.attribute_filter import (DST_NONE, DST_ERROR_COLLECTOR,
 from newrelic.core.config import DEFAULT_RESERVOIR_SIZE
 from newrelic.core.custom_event import create_custom_event
 from newrelic.core.stack_trace import exception_stack
-from newrelic.common.encoding_utils import (generate_path_hash, deobfuscate,
-        json_decode)
+from newrelic.common.encoding_utils import (generate_path_hash, obfuscate,
+        deobfuscate, json_encode, json_decode, base64_decode,
+        convert_to_cat_metadata_value)
 
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.api.time_trace import TimeTrace
@@ -962,6 +963,67 @@ class Transaction(object):
                     self._referring_path_hash = txn_header[3]
         except Exception:
             pass
+
+    def _generate_response_headers(self):
+        nr_headers = []
+
+        # Generate metrics and response headers for inbound cross
+        # process web external calls.
+
+        if self.client_cross_process_id is not None:
+
+            # Need to work out queueing time and duration up to this
+            # point for inclusion in metrics and response header. If the
+            # recording of the transaction had been prematurely stopped
+            # via an API call, only return time up until that call was
+            # made so it will match what is reported as duration for the
+            # transaction.
+
+            if self.queue_start:
+                queue_time = self.start_time - self.queue_start
+            else:
+                queue_time = 0
+
+            if self.end_time:
+                duration = self.end_time - self.start_time
+            else:
+                duration = time.time() - self.start_time
+
+            # Generate the additional response headers which provide
+            # information back to the caller. We need to freeze the
+            # transaction name before adding to the header.
+
+            self._freeze_path()
+
+            payload = (self._settings.cross_process_id, self.path, queue_time,
+                    duration, self._read_length, self.guid, self.record_tt)
+            app_data = json_encode(payload)
+
+            nr_headers.append(('X-NewRelic-App-Data', obfuscate(
+                    app_data, self._settings.encoding_key)))
+
+        return nr_headers
+
+    def get_response_metadata(self):
+        nr_headers = dict(self._generate_response_headers())
+        return convert_to_cat_metadata_value(nr_headers)
+
+    def process_request_metadata(self, cat_linking_value):
+        try:
+            payload = base64_decode(cat_linking_value)
+        except:
+            # `cat_linking_value` should always be able to be base64_decoded.
+            # If this is encountered, the data being sent is corrupt. No
+            # exception should be raised.
+            return
+
+        nr_headers = json_decode(payload)
+        # TODO: All the external CAT APIs really need to
+        # be refactored into the transaction class.
+        encoded_cross_process_id = nr_headers.get('X-NewRelic-ID')
+        encoded_txn_header = nr_headers.get('X-NewRelic-Transaction')
+        return self._process_incoming_cat_headers(encoded_cross_process_id,
+                encoded_txn_header)
 
     def set_transaction_name(self, name, group=None, priority=None):
 

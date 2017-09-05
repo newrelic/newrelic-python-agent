@@ -1483,27 +1483,6 @@ class Application(object):
                                 self._active_session.send_transaction_traces(
                                         slow_transaction_data)
 
-                    # Send the accumulated profile data back to the data
-                    # collector. Note that this come after we process
-                    # the agent commands as we might receive an agent
-                    # command to stop the profiling session, but still
-                    # send the data back.  Having the sending of the
-                    # results last ensures we send back that data from
-                    # the stopped profiling session immediately.
-
-                    _logger.debug('Send profiling data for harvest of '
-                            '%r.', self._app_name)
-
-                    self.report_profile_data()
-
-                    # Fetch agent commands sent from the data collector
-                    # and process them.
-
-                    _logger.debug('Process agent commands during '
-                            'harvest of %r.', self._app_name)
-
-                    self.process_agent_commands()
-
                     # Create a metric_normalizer based on normalize_name
                     # If metric rename rules are empty, set normalizer
                     # to None and the stats engine will skip steps as
@@ -1517,6 +1496,9 @@ class Application(object):
 
                     # Merge all ready internal metrics
                     stats.merge_custom_metrics(internal_metrics.metrics())
+
+                    # Clear sent internal metrics
+                    internal_metrics.reset_metric_stats()
 
                     # Pass the metric_normalizer to stats.metric_data to
                     # do metric renaming.
@@ -1538,9 +1520,6 @@ class Application(object):
 
                     stats.reset_metric_stats()
 
-                    # Clear sent internal metrics
-                    internal_metrics.reset_metric_stats()
-
                     # Successful, so we update the stats engine with the
                     # new metric IDs and reset the reporting period
                     # start time. If an error occurs after this point,
@@ -1553,6 +1532,26 @@ class Application(object):
                     self._merge_count = 0
                     self._period_start = period_end
                     self._stats_engine.update_metric_ids(metric_ids)
+
+                    # Fetch agent commands sent from the data collector
+                    # and process them.
+
+                    _logger.debug('Process agent commands during '
+                            'harvest of %r.', self._app_name)
+                    self.process_agent_commands()
+
+                    # Send the accumulated profile data back to the data
+                    # collector. Note that this come after we process
+                    # the agent commands as we might receive an agent
+                    # command to stop the profiling session, but still
+                    # send the data back.  Having the sending of the
+                    # results last ensures we send back that data from
+                    # the stopped profiling session immediately.
+
+                    _logger.debug('Send profiling data for harvest of '
+                            '%r.', self._app_name)
+
+                    self.report_profile_data()
 
                     # If this is a final forced harvest for the process
                     # then attempt to shutdown the session.
@@ -1762,7 +1761,12 @@ class Application(object):
 
             _logger.debug('Process agent commands for %r.', self._app_name)
 
-            agent_commands = self._active_session.get_agent_commands()
+            # Any exception on get agent commands shouldn't interrupt the
+            # harvest cycle
+            try:
+                agent_commands = self._active_session.get_agent_commands()
+            except:
+                return
 
             # Extract the command names from the agent_commands. This is
             # used to check for the presence of active_xray_sessions command

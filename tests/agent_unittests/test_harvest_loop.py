@@ -55,5 +55,6 @@ def test_application_harvest():
 
     app.harvest()
 
-    # Verify that the metric_data endpoint is the last endpoint called
-    assert endpoints_called[-1] == 'metric_data'
+    # Verify that the metric_data endpoint is the 2nd to last endpoint called
+    # Last endpoint called is get_agent_commands
+    assert endpoints_called[-2] == 'metric_data'

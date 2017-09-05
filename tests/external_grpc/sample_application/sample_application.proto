@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+service SampleApplication {
+    rpc DoUnaryUnary(Message) returns (Message) {}
+    rpc DoUnaryStream(Message) returns (stream Message) {}
+    rpc DoStreamUnary(stream Message) returns (Message) {}
+    rpc DoStreamStream(stream Message) returns (stream Message) {}
+
+    rpc DoUnaryUnaryRaises(Message) returns (Message) {}
+    rpc DoUnaryStreamRaises(Message) returns (stream Message) {}
+    rpc DoStreamUnaryRaises(stream Message) returns (Message) {}
+    rpc DoStreamStreamRaises(stream Message) returns (stream Message) {}
+}
+
+message Message {
+    string text = 1;
+    int32 count = 2;
+    bool timesout = 3;
+}

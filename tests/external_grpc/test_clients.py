@@ -115,14 +115,8 @@ def test_client(service_method_type, service_method_method_name,
             'Raises' if raises_exception else '')
     streaming_request = service_method_type.split('_')[0] == 'stream'
     streaming_response = service_method_type.split('_')[1] == 'stream'
-    future_response = (streaming_response or
-            service_method_method_name == 'future')
-    implementation_type = _get_impl_type()
 
-    if cancel:
-        # if cancelled, no communication happens over the wire
-        expected_metrics_count = None
-    elif not streaming_response or raises_exception:
+    if not streaming_response or raises_exception or cancel:
         expected_metrics_count = 1
     else:
         expected_metrics_count = message_count
@@ -138,36 +132,6 @@ def test_client(service_method_type, service_method_method_name,
             ('External/allOther', expected_metrics_count),
             ('External/all', expected_metrics_count),
     ]
-
-    if not streaming_request:
-        if implementation_type == 'cpp':
-            _test_scoped_metrics.append(
-                    _metric_cpp_serialize_to_string_py2_py3)
-            _test_rollup_metrics.append(
-                    _metric_cpp_serialize_to_string_py2_py3)
-        else:
-            if six.PY2:
-                _test_scoped_metrics.append(
-                        _metric_python_serialize_to_string_py2)
-                _test_rollup_metrics.append(
-                        _metric_python_serialize_to_string_py2)
-            else:
-                _test_scoped_metrics.append(
-                        _metric_python_serialize_to_string_py3)
-                _test_rollup_metrics.append(
-                        _metric_python_serialize_to_string_py3)
-
-    if not raises_exception and not future_response:
-        if implementation_type == 'cpp':
-            _test_scoped_metrics.append(_metric_cpp_from_string_py2_py3)
-            _test_rollup_metrics.append(_metric_cpp_from_string_py2_py3)
-        else:
-            if six.PY2:
-                _test_scoped_metrics.append(_metric_python_from_string_py2)
-                _test_rollup_metrics.append(_metric_python_from_string_py2)
-            else:
-                _test_scoped_metrics.append(_metric_python_from_string_py3)
-                _test_rollup_metrics.append(_metric_python_from_string_py3)
 
     if six.PY2:
         _test_transaction_name = 'test_clients:_test_client'
@@ -256,14 +220,14 @@ def test_bad_metadata(service_method_type, service_method_method_name,
 
     _test_scoped_metrics = [
             ('External/localhost:%s/gRPC/%s' % (port, service_method_type),
-                None),
+                1),
     ]
     _test_rollup_metrics = [
             ('External/localhost:%s/gRPC/%s' % (port, service_method_type),
-                None),
-            ('External/localhost:%s/all' % port, None),
-            ('External/allOther', None),
-            ('External/all', None),
+                1),
+            ('External/localhost:%s/all' % port, 1),
+            ('External/allOther', 1),
+            ('External/all', 1),
     ]
 
     if six.PY2:

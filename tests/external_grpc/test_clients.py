@@ -113,7 +113,9 @@ def test_client(service_method_type, service_method_method_name,
                 'test_clients:test_client.<locals>._test_client')
 
     _errors = []
-    if raises_exception or cancel:
+    if not streaming_response and cancel:
+        _errors.append('grpc:FutureCancelledError')
+    elif raises_exception or cancel:
         _errors.append('grpc._channel:_Rendezvous')
 
     @validate_transaction_errors(errors=_errors)
@@ -143,7 +145,7 @@ def test_client(service_method_type, service_method_method_name,
         try:
             # If the reply was canceled or the server code raises an exception,
             # this will raise an exception which will be recorded by the agent
-            if streaming_response or cancel:
+            if streaming_response:
                 reply = list(reply)
             else:
                 reply = [reply.result()]
@@ -164,6 +166,8 @@ def test_client(service_method_type, service_method_method_name,
             assert e.code() == grpc.StatusCode.CANCELLED
         else:
             raise
+    except grpc.FutureCancelledError:
+        assert cancel
 
 
 _test_matrix = [

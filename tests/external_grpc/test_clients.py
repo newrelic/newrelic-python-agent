@@ -42,14 +42,6 @@ def _create_request(streaming_request, count=1, timesout=False):
     return request
 
 
-def _get_impl_type():
-    # the particular return value of this function determines which classes
-    # google uses to implement serialize and deserialze functions
-    # https://github.com/google/protobuf/blob/c7457ef65a7a8584b1e3bd396c401ccf8e275ffa/python/google/protobuf/reflection.py#L55-L58
-    from google.protobuf.internal import api_implementation
-    return api_implementation.Type()
-
-
 _test_matrix = [
     ('service_method_type,service_method_method_name,raises_exception,'
     'message_count,cancel'), (
@@ -84,25 +76,6 @@ _test_matrix = [
         ('stream_stream', '__call__', False, 2, True),
 )]
 
-_metric_cpp_serialize_to_string_py2_py3 = (
-        ('Function/google.protobuf.pyext._message:'
-        'CMessage.SerializeToString'), 1)
-_metric_python_serialize_to_string_py2 = (
-        ('Function/<sample_application_pb2>:'
-        'Message.SerializeToString'), 1)
-_metric_python_serialize_to_string_py3 = (
-        ('Function/google.protobuf.internal.python_message:'
-        '_AddSerializeToStringMethod.<locals>.SerializeToString'), 1)
-_metric_cpp_from_string_py2_py3 = (
-        ('Function/google.protobuf.pyext.cpp_message:'
-        'Message.FromString'), 1)
-_metric_python_from_string_py2 = (
-        ('Function/google.protobuf.internal.python_message:'
-        'FromString'), 1)
-_metric_python_from_string_py3 = (
-        ('Function/google.protobuf.internal.python_message:'
-        '_AddStaticMethods.<locals>.FromString'), 1)
-
 
 @pytest.mark.parametrize(*_test_matrix)
 def test_client(service_method_type, service_method_method_name,
@@ -115,14 +88,8 @@ def test_client(service_method_type, service_method_method_name,
             'Raises' if raises_exception else '')
     streaming_request = service_method_type.split('_')[0] == 'stream'
     streaming_response = service_method_type.split('_')[1] == 'stream'
-    future_response = (streaming_response or
-            service_method_method_name == 'future')
-    implementation_type = _get_impl_type()
 
-    if cancel:
-        # if cancelled, no communication happens over the wire
-        expected_metrics_count = None
-    elif not streaming_response or raises_exception:
+    if not streaming_response or raises_exception or cancel:
         expected_metrics_count = 1
     else:
         expected_metrics_count = message_count
@@ -139,36 +106,6 @@ def test_client(service_method_type, service_method_method_name,
             ('External/all', expected_metrics_count),
     ]
 
-    if not streaming_request:
-        if implementation_type == 'cpp':
-            _test_scoped_metrics.append(
-                    _metric_cpp_serialize_to_string_py2_py3)
-            _test_rollup_metrics.append(
-                    _metric_cpp_serialize_to_string_py2_py3)
-        else:
-            if six.PY2:
-                _test_scoped_metrics.append(
-                        _metric_python_serialize_to_string_py2)
-                _test_rollup_metrics.append(
-                        _metric_python_serialize_to_string_py2)
-            else:
-                _test_scoped_metrics.append(
-                        _metric_python_serialize_to_string_py3)
-                _test_rollup_metrics.append(
-                        _metric_python_serialize_to_string_py3)
-
-    if not raises_exception and not future_response:
-        if implementation_type == 'cpp':
-            _test_scoped_metrics.append(_metric_cpp_from_string_py2_py3)
-            _test_rollup_metrics.append(_metric_cpp_from_string_py2_py3)
-        else:
-            if six.PY2:
-                _test_scoped_metrics.append(_metric_python_from_string_py2)
-                _test_rollup_metrics.append(_metric_python_from_string_py2)
-            else:
-                _test_scoped_metrics.append(_metric_python_from_string_py3)
-                _test_rollup_metrics.append(_metric_python_from_string_py3)
-
     if six.PY2:
         _test_transaction_name = 'test_clients:_test_client'
     else:
@@ -176,7 +113,9 @@ def test_client(service_method_type, service_method_method_name,
                 'test_clients:test_client.<locals>._test_client')
 
     _errors = []
-    if raises_exception or cancel:
+    if not streaming_response and cancel:
+        _errors.append('grpc:FutureCancelledError')
+    elif raises_exception or cancel:
         _errors.append('grpc._channel:_Rendezvous')
 
     @validate_transaction_errors(errors=_errors)
@@ -206,8 +145,11 @@ def test_client(service_method_type, service_method_method_name,
         try:
             # If the reply was canceled or the server code raises an exception,
             # this will raise an exception which will be recorded by the agent
-            reply = list(reply)
-        except TypeError:
+            if streaming_response:
+                reply = list(reply)
+            else:
+                reply = [reply.result()]
+        except (AttributeError, TypeError):
             reply = [reply]
 
         expected_text = '%s: Hello World' % service_method_type
@@ -224,6 +166,8 @@ def test_client(service_method_type, service_method_method_name,
             assert e.code() == grpc.StatusCode.CANCELLED
         else:
             raise
+    except grpc.FutureCancelledError:
+        assert cancel
 
 
 _test_matrix = [
@@ -253,14 +197,14 @@ def test_bad_metadata(service_method_type, service_method_method_name,
 
     _test_scoped_metrics = [
             ('External/localhost:%s/gRPC/%s' % (port, service_method_type),
-                None),
+                1),
     ]
     _test_rollup_metrics = [
             ('External/localhost:%s/gRPC/%s' % (port, service_method_type),
-                None),
-            ('External/localhost:%s/all' % port, None),
-            ('External/allOther', None),
-            ('External/all', None),
+                1),
+            ('External/localhost:%s/all' % port, 1),
+            ('External/allOther', 1),
+            ('External/all', 1),
     ]
 
     if six.PY2:
@@ -397,3 +341,67 @@ def test_server_down(service_method_type, service_method_method_name,
         assert error.value.code() == grpc.StatusCode.UNAVAILABLE
 
     _test_server_down()
+
+
+_test_matrix = [
+    ('service_method_type,service_method_method_name'), (
+        ('unary_unary', 'with_call'),
+        ('unary_unary', 'future'),
+
+        ('stream_unary', 'with_call'),
+        ('stream_unary', 'future'),
+
+)]
+
+
+@pytest.mark.parametrize(*_test_matrix)
+def test_repeated_result(service_method_type, service_method_method_name,
+        mock_grpc_server):
+    port = mock_grpc_server
+
+    service_method_class_name = 'Do%s' % (
+            service_method_type.title().replace('_', ''))
+    streaming_request = service_method_type.split('_')[0] == 'stream'
+
+    _test_scoped_metrics = [
+            ('External/localhost:%s/gRPC/%s' % (port, service_method_type),
+                1),
+    ]
+    _test_rollup_metrics = [
+            ('External/localhost:%s/gRPC/%s' % (port, service_method_type),
+                1),
+            ('External/localhost:%s/all' % port, 1),
+            ('External/allOther', 1),
+            ('External/all', 1),
+    ]
+
+    if six.PY2:
+        _test_transaction_name = 'test_clients:_test_repeated_result'
+    else:
+        _test_transaction_name = (
+                'test_clients:'
+                'test_repeated_result.<locals>._test_repeated_result')
+
+    @validate_transaction_errors(errors=[])
+    @validate_transaction_metrics(_test_transaction_name,
+            scoped_metrics=_test_scoped_metrics,
+            rollup_metrics=_test_rollup_metrics,
+            background_task=True)
+    @background_task()
+    def _test_repeated_result():
+        stub = _create_stub(port)
+
+        service_method_class = getattr(stub, service_method_class_name)
+        service_method_method = getattr(service_method_class,
+                service_method_method_name)
+
+        request = _create_request(streaming_request, count=1, timesout=False)
+
+        reply = service_method_method(request)
+        if isinstance(reply, tuple):
+            reply = reply[1]
+
+        reply.result()
+        reply.result()
+
+    _test_repeated_result()

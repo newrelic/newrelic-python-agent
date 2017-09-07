@@ -46,7 +46,7 @@ test_matrix = (
 def test_client(method, exc_expected):
 
     @validate_transaction_metrics(
-        'test_client:test_client.<locals>.task_test',
+        'test_client_async_await:test_client.<locals>.task_test',
         background_task=True,
         scoped_metrics=[
             ('External/example.com/aiohttp_client/%s' % method.upper(), 1),
@@ -92,7 +92,7 @@ def test_client_throw(method, exc_expected):
             coro.throw(ThrowerException())
 
     @validate_transaction_metrics(
-        'test_client:test_client_throw.<locals>.task_test',
+        'test_client_async_await:test_client_throw.<locals>.task_test',
         background_task=True,
         scoped_metrics=[
             ('External/example.com/aiohttp_client/%s' % method.upper(), 1),
@@ -125,7 +125,7 @@ def test_client_close(method, exc_expected):
             coro.close()
 
     @validate_transaction_metrics(
-        'test_client:test_client_close.<locals>.task_test',
+        'test_client_async_await:test_client_close.<locals>.task_test',
         background_task=True,
         scoped_metrics=[
             ('External/example.com/aiohttp_client/%s' % method.upper(), 1),

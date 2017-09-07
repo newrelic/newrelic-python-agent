@@ -2,52 +2,57 @@ import sys
 
 from newrelic.api.transaction import current_transaction
 from newrelic.api.external_trace import ExternalTrace
-from newrelic.common.object_wrapper import wrap_function_wrapper
-from asyncio.coroutines import CoroWrapper
+from newrelic.common.object_wrapper import wrap_function_wrapper, ObjectProxy
 
 
-class NRRequestCoroutineWrapper(CoroWrapper):
-    def __init__(self, url, method, gen, func=None):
-        super(NRRequestCoroutineWrapper, self).__init__(gen, func)
+class NRRequestCoroutineWrapper(ObjectProxy):
+    def __init__(self, url, method, wrapped, func=None):
+        super(NRRequestCoroutineWrapper, self).__init__(wrapped)
         txn = current_transaction()
-        self.trace = ExternalTrace(txn,
+        self._nr_trace = ExternalTrace(txn,
                 'aiohttp_client', url, method)
 
-    def __next__(self):
-        if not self.trace.transaction:
-            return self.gen.send(None)
+    def __iter__(self):
+        return self
 
-        if not self.trace.activated:
-            self.trace.__enter__()
-            if self.trace.transaction.current_node is self.trace:
+    def __await__(self):
+        return self
+
+    def __next__(self):
+        if not self._nr_trace.transaction:
+            return self.__wrapped__.send(None)
+
+        if not self._nr_trace.activated:
+            self._nr_trace.__enter__()
+            if self._nr_trace.transaction.current_node is self._nr_trace:
                 # externals should not have children
-                self.trace.transaction._pop_current(self.trace)
+                self._nr_trace.transaction._pop_current(self._nr_trace)
 
         try:
-            return self.gen.send(None)
+            return self.__wrapped__.send(None)
         except StopIteration:
-            self.trace.__exit__(None, None, None)
+            self._nr_trace.__exit__(None, None, None)
             raise
         except:
-            self.trace.__exit__(*sys.exc_info())
+            self._nr_trace.__exit__(*sys.exc_info())
             raise
 
     def throw(self, *args, **kwargs):
         try:
-            r = super(NRRequestCoroutineWrapper, self).throw(*args, **kwargs)
-            self.trace.__exit__(None, None, None)
+            r = self.__wrapped__.throw(*args, **kwargs)
+            self._nr_trace.__exit__(None, None, None)
             return r
         except:
-            self.trace.__exit__(*sys.exc_info())
+            self._nr_trace.__exit__(*sys.exc_info())
             raise
 
     def close(self):
         try:
-            r = super(NRRequestCoroutineWrapper, self).close()
-            self.trace.__exit__(None, None, None)
+            r = self.__wrapped__.close()
+            self._nr_trace.__exit__(None, None, None)
             return r
         except:
-            self.trace.__exit__(*sys.exc_info())
+            self._nr_trace.__exit__(*sys.exc_info())
             raise
 
 

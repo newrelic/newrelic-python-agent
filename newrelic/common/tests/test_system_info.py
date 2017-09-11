@@ -1,3 +1,4 @@
+import os
 import socket
 import unittest
 
@@ -49,6 +50,32 @@ class TestGetHostName(unittest.TestCase):
 
         hostname_2 = system_info.gethostname()
         self.assertEqual(hostname_1, hostname_2)
+
+    def test_gethostname_returns_dyno(self):
+        os.environ['DYNO'] = 'dynosaurus'
+        hostname = system_info.gethostname(use_dyno_names=True)
+
+        self.assertEqual(hostname, 'dynosaurus')
+
+    def test_gethostname_ignores_dyno_when_disabled(self):
+        os.environ['DYNO'] = 'dynosaurus'
+        hostname = system_info.gethostname(use_dyno_names=False)
+
+        self.assertEqual(hostname, 'mock-hostname-1')
+
+    def test_gethostname_dyno_prefixes_are_collapsed(self):
+        os.environ['DYNO'] = 'prefix.dynosaurus'
+        hostname = system_info.gethostname(use_dyno_names=True,
+                dyno_shorten_prefixes=['prefix'])
+
+        self.assertEqual(hostname, 'prefix.*')
+
+    def test_gethostname_dyno_unmatched_prefixes_dont_collapse(self):
+        os.environ['DYNO'] = 'dynosaurus'
+        hostname = system_info.gethostname(use_dyno_names=True,
+                dyno_shorten_prefixes=['prefix'])
+
+        self.assertEqual(hostname, 'dynosaurus')
 
 
 if __name__ == '__main__':

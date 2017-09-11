@@ -171,6 +171,10 @@ class DatastoreTracerDatabaseNameReportingSettings(Settings):
     pass
 
 
+class HerokuSettings(Settings):
+    pass
+
+
 _settings = Settings()
 _settings.attributes = AttributesSettings()
 _settings.thread_profiler = ThreadProfilerSettings()
@@ -202,6 +206,7 @@ _settings.datastore_tracer.instance_reporting = \
         DatastoreTracerInstanceReportingSettings()
 _settings.datastore_tracer.database_name_reporting = \
         DatastoreTracerDatabaseNameReportingSettings()
+_settings.heroku = HerokuSettings()
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 _settings.audit_log_file = os.environ.get('NEW_RELIC_AUDIT_LOG', None)
@@ -527,6 +532,9 @@ _settings.strip_exception_messages.whitelist = []
 
 _settings.datastore_tracer.instance_reporting.enabled = True
 _settings.datastore_tracer.database_name_reporting.enabled = True
+
+_settings.heroku.use_dyno_names = True
+_settings.heroku.dyno_name_prefixes_to_shorten = ['scheduler', 'run']
 
 
 def global_settings():

@@ -1139,7 +1139,8 @@ class ApplicationSession(object):
 
         app_names = [app_name] + linked_applications
 
-        hostname = system_info.gethostname()
+        hostname = system_info.gethostname(settings['heroku.use_dyno_names'],
+                settings['heroku.dyno_name_prefixes_to_shorten'])
 
         connect_settings = {}
         connect_settings['browser_monitoring.loader'] = (

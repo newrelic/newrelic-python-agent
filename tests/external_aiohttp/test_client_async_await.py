@@ -140,3 +140,43 @@ def test_client_close(method, exc_expected):
         loop.run_until_complete(self_driving_closer())
 
     task_test()
+
+
+@pytest.mark.parametrize('method,exc_expected', test_matrix)
+def test_await_request(method, exc_expected):
+
+    async def request_with_await(url):
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            coro = session._request(method.upper(), url)
+
+            # force await
+            result = await coro
+            return await result.text()
+
+    @validate_transaction_metrics(
+        'test_client_async_await:test_await_request.<locals>.task_test',
+        background_task=True,
+        scoped_metrics=[
+            ('External/example.com/aiohttp_client/%s' % method.upper(), 1),
+            ('External/example.org/aiohttp_client/%s' % method.upper(), 1),
+        ],
+        rollup_metrics=[
+            ('External/example.com/aiohttp_client/%s' % method.upper(), 1),
+            ('External/example.org/aiohttp_client/%s' % method.upper(), 1),
+        ],
+    )
+    @background_task()
+    def task_test():
+        loop = asyncio.get_event_loop()
+        coros = [request_with_await(u) for u in URLS]
+        future = asyncio.gather(*coros, return_exceptions=True)
+        text_list = loop.run_until_complete(future)
+        if exc_expected:
+            assert isinstance(text_list[0],
+                    aiohttp.client_exceptions.ClientResponseError)
+            assert isinstance(text_list[1],
+                    aiohttp.client_exceptions.ClientResponseError)
+        else:
+            assert text_list[0] == text_list[1]
+
+    task_test()

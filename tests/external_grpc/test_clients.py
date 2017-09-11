@@ -131,6 +131,10 @@ def test_client(service_method_type, service_method_method_name,
         service_method_method = getattr(service_method_class,
                 service_method_method_name)
 
+        # In the case that we're preparing to cancel a request it's important
+        # that the request does not return prior to cancelling. If the request
+        # returns prior to cancellation then the response might be valid. In
+        # order to force the request to not return, the timesout option is set.
         request = _create_request(streaming_request, count=message_count,
                 timesout=cancel)
 

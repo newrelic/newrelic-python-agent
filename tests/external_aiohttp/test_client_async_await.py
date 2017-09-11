@@ -180,3 +180,33 @@ def test_await_request(method, exc_expected):
             assert text_list[0] == text_list[1]
 
     task_test()
+
+
+test_matrix = (
+    # example.com and example.org do not accept websocket requests, hence an
+    # exception is expected but a metric will still be created
+    ('ws_connect', True),
+)
+
+
+@pytest.mark.parametrize('method,exc_expected', test_matrix)
+def test_ws_connect(method, exc_expected):
+
+    @validate_transaction_metrics(
+        'test_client_async_await:test_ws_connect.<locals>.task_test',
+        background_task=True,
+        scoped_metrics=[
+            ('External/example.com/aiohttp/GET', 1),
+            ('External/example.org/aiohttp/GET', 1),
+        ],
+        rollup_metrics=[
+            ('External/example.com/aiohttp/GET', 1),
+            ('External/example.org/aiohttp/GET', 1),
+        ],
+    )
+    @background_task()
+    def task_test():
+        loop = asyncio.get_event_loop()
+        task(loop, method, exc_expected)
+
+    task_test()

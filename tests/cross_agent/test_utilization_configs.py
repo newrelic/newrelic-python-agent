@@ -47,7 +47,7 @@ def _mock_total_physical_memory(mem):
 
 
 def _mock_gethostname(name):
-    def gethostname():
+    def gethostname(*args, **kwargs):
         return name
     return gethostname
 

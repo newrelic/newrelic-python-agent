@@ -10,7 +10,7 @@ class NRRequestCoroutineWrapper(ObjectProxy):
         super(NRRequestCoroutineWrapper, self).__init__(wrapped)
         transaction = current_transaction()
         self._nr_trace = ExternalTrace(transaction,
-                'aiohttp_client', url, method)
+                'aiohttp', url, method)
 
     def __iter__(self):
         return self

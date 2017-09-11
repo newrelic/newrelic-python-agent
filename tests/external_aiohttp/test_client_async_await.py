@@ -49,12 +49,12 @@ def test_client(method, exc_expected):
         'test_client_async_await:test_client.<locals>.task_test',
         background_task=True,
         scoped_metrics=[
-            ('External/example.com/aiohttp_client/%s' % method.upper(), 1),
-            ('External/example.org/aiohttp_client/%s' % method.upper(), 1),
+            ('External/example.com/aiohttp/%s' % method.upper(), 1),
+            ('External/example.org/aiohttp/%s' % method.upper(), 1),
         ],
         rollup_metrics=[
-            ('External/example.com/aiohttp_client/%s' % method.upper(), 1),
-            ('External/example.org/aiohttp_client/%s' % method.upper(), 1),
+            ('External/example.com/aiohttp/%s' % method.upper(), 1),
+            ('External/example.org/aiohttp/%s' % method.upper(), 1),
         ],
     )
     @background_task()
@@ -95,10 +95,10 @@ def test_client_throw(method, exc_expected):
         'test_client_async_await:test_client_throw.<locals>.task_test',
         background_task=True,
         scoped_metrics=[
-            ('External/example.com/aiohttp_client/%s' % method.upper(), 1),
+            ('External/example.com/aiohttp/%s' % method.upper(), 1),
         ],
         rollup_metrics=[
-            ('External/example.com/aiohttp_client/%s' % method.upper(), 1),
+            ('External/example.com/aiohttp/%s' % method.upper(), 1),
         ],
     )
     @background_task()
@@ -128,10 +128,10 @@ def test_client_close(method, exc_expected):
         'test_client_async_await:test_client_close.<locals>.task_test',
         background_task=True,
         scoped_metrics=[
-            ('External/example.com/aiohttp_client/%s' % method.upper(), 1),
+            ('External/example.com/aiohttp/%s' % method.upper(), 1),
         ],
         rollup_metrics=[
-            ('External/example.com/aiohttp_client/%s' % method.upper(), 1),
+            ('External/example.com/aiohttp/%s' % method.upper(), 1),
         ],
     )
     @background_task()
@@ -157,12 +157,12 @@ def test_await_request(method, exc_expected):
         'test_client_async_await:test_await_request.<locals>.task_test',
         background_task=True,
         scoped_metrics=[
-            ('External/example.com/aiohttp_client/%s' % method.upper(), 1),
-            ('External/example.org/aiohttp_client/%s' % method.upper(), 1),
+            ('External/example.com/aiohttp/%s' % method.upper(), 1),
+            ('External/example.org/aiohttp/%s' % method.upper(), 1),
         ],
         rollup_metrics=[
-            ('External/example.com/aiohttp_client/%s' % method.upper(), 1),
-            ('External/example.org/aiohttp_client/%s' % method.upper(), 1),
+            ('External/example.com/aiohttp/%s' % method.upper(), 1),
+            ('External/example.org/aiohttp/%s' % method.upper(), 1),
         ],
     )
     @background_task()

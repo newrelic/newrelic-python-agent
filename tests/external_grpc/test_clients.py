@@ -132,7 +132,7 @@ def test_client(service_method_type, service_method_method_name,
                 service_method_method_name)
 
         request = _create_request(streaming_request, count=message_count,
-                timesout=False)
+                timesout=cancel)
 
         reply = service_method_method(request)
 

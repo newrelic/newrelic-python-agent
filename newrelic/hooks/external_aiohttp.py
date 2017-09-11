@@ -8,8 +8,8 @@ from newrelic.common.object_wrapper import wrap_function_wrapper, ObjectProxy
 class NRRequestCoroutineWrapper(ObjectProxy):
     def __init__(self, url, method, wrapped, func=None):
         super(NRRequestCoroutineWrapper, self).__init__(wrapped)
-        txn = current_transaction()
-        self._nr_trace = ExternalTrace(txn,
+        transaction = current_transaction()
+        self._nr_trace = ExternalTrace(transaction,
                 'aiohttp_client', url, method)
 
     def __iter__(self):
@@ -66,6 +66,6 @@ def _nr_aiohttp_request_wrapper_(wrapped, instance, args, kwargs):
     return NRRequestCoroutineWrapper(url, method, coro, None)
 
 
-def instrument_client(module):
+def instrument_aiohttp_client(module):
     wrap_function_wrapper(module, 'ClientSession._request',
             _nr_aiohttp_request_wrapper_)

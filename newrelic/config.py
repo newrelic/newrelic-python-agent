@@ -2301,7 +2301,7 @@ def _process_module_builtin_defaults():
 
     _process_module_definition('aiohttp.client',
             'newrelic.hooks.external_aiohttp',
-            'instrument_client')
+            'instrument_aiohttp_client')
 
     _process_module_definition('requests.api',
             'newrelic.hooks.external_requests',

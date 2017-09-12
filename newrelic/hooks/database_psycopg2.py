@@ -51,9 +51,11 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
                         self._nr_dbapi2_module, self._nr_connect_params):
                     return self.__wrapped__.__exit__(exc, value, tb)
 
+
 class ConnectionFactory(DBAPI2ConnectionFactory):
 
     __connection_wrapper__ = ConnectionWrapper
+
 
 def instance_info(args, kwargs):
 
@@ -61,6 +63,7 @@ def instance_info(args, kwargs):
     host, port, db_name = _add_defaults(p_host, p_hostaddr, p_port, p_dbname)
 
     return (host, port, db_name)
+
 
 def _parse_connect_params(args, kwargs):
 
@@ -70,8 +73,8 @@ def _parse_connect_params(args, kwargs):
     dsn = _bind_params(*args, **kwargs)
 
     try:
-        if dsn and (dsn.startswith('postgres://')
-                or dsn.startswith('postgresql://')):
+        if dsn and (dsn.startswith('postgres://') or
+                dsn.startswith('postgresql://')):
 
             # Parse dsn as URI
             #
@@ -135,6 +138,7 @@ def _parse_connect_params(args, kwargs):
 
     return (host, hostaddr, port, db_name)
 
+
 def _add_defaults(parsed_host, parsed_hostaddr, parsed_port, parsed_database):
 
     # ENV variables set the default values
@@ -160,6 +164,7 @@ def _add_defaults(parsed_host, parsed_hostaddr, parsed_port, parsed_database):
 
     return (host, port, database)
 
+
 def instrument_psycopg2(module):
     register_database_client(module, database_product='Postgres',
             quoting_style='single', explain_query='explain',
@@ -169,6 +174,7 @@ def instrument_psycopg2(module):
     enable_datastore_instance_feature(module)
 
     wrap_object(module, 'connect', ConnectionFactory, (module,))
+
 
 def wrapper_psycopg2_register_type(wrapped, instance, args, kwargs):
     def _bind_params(obj, scope=None):
@@ -189,12 +195,12 @@ def wrapper_psycopg2_register_type(wrapped, instance, args, kwargs):
 # monkey patch the other references to it in other psycopg2 sub modules.
 # In doing that we need to make sure it has not already been monkey
 # patched by checking to see if it is already an ObjectProxy.
-
 def instrument_psycopg2__psycopg2(module):
     if hasattr(module, 'register_type'):
         if not isinstance(module.register_type, ObjectProxy):
             wrap_function_wrapper(module, 'register_type',
                     wrapper_psycopg2_register_type)
+
 
 def instrument_psycopg2_extensions(module):
     if hasattr(module, 'register_type'):
@@ -202,11 +208,13 @@ def instrument_psycopg2_extensions(module):
             wrap_function_wrapper(module, 'register_type',
                     wrapper_psycopg2_register_type)
 
+
 def instrument_psycopg2__json(module):
     if hasattr(module, 'register_type'):
         if not isinstance(module.register_type, ObjectProxy):
             wrap_function_wrapper(module, 'register_type',
                     wrapper_psycopg2_register_type)
+
 
 def instrument_psycopg2__range(module):
     if hasattr(module, 'register_type'):

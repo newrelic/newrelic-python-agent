@@ -9,7 +9,8 @@ from newrelic.common.object_wrapper import (wrap_object, ObjectProxy,
         wrap_function_wrapper)
 
 from newrelic.hooks.database_dbapi2 import (ConnectionWrapper as
-        DBAPI2ConnectionWrapper, ConnectionFactory as DBAPI2ConnectionFactory)
+        DBAPI2ConnectionWrapper, ConnectionFactory as DBAPI2ConnectionFactory,
+        CursorWrapper as DBAPI2CursorWrapper, DEFAULT)
 
 try:
     from urllib import unquote
@@ -22,7 +23,26 @@ except ImportError:
 
 from newrelic.packages.requests.packages.urllib3 import util as ul3_util
 
+
+class CursorWrapper(DBAPI2CursorWrapper):
+
+    def execute(self, sql, parameters=DEFAULT, *args, **kwargs):
+        if hasattr(sql, 'as_string'):
+            sql = sql.as_string(self.__wrapped__)
+
+        return super(CursorWrapper, self).execute(sql, parameters, *args,
+                **kwargs)
+
+    def executemany(self, sql, seq_of_parameters):
+        if hasattr(sql, 'as_string'):
+            sql = sql.as_string(self.__wrapped__)
+
+        return super(CursorWrapper, self).executemany(sql, seq_of_parameters)
+
+
 class ConnectionWrapper(DBAPI2ConnectionWrapper):
+
+    __cursor_wrapper__ = CursorWrapper
 
     def __enter__(self):
         transaction = current_transaction()

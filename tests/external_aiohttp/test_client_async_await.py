@@ -182,14 +182,14 @@ def test_await_request(method, exc_expected):
     task_test()
 
 
-test_matrix = (
+test_ws_matrix = (
     # example.com and example.org do not accept websocket requests, hence an
     # exception is expected but a metric will still be created
     ('ws_connect', True),
 )
 
 
-@pytest.mark.parametrize('method,exc_expected', test_matrix)
+@pytest.mark.parametrize('method,exc_expected', test_ws_matrix)
 def test_ws_connect(method, exc_expected):
 
     @validate_transaction_metrics(
@@ -208,5 +208,48 @@ def test_ws_connect(method, exc_expected):
     def task_test():
         loop = asyncio.get_event_loop()
         task(loop, method, exc_expected)
+
+    task_test()
+
+
+@pytest.mark.parametrize('method,exc_expected', test_matrix)
+def test_create_task(method, exc_expected):
+
+    # `loop.create_task` returns a Task object which uses the coroutine's
+    # `send` method, not `__next__`
+
+    async def fetch_task(url, loop):
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            coro = getattr(session, method)
+            resp = await loop.create_task(coro(url))
+            return await resp.text()
+
+    async def fetch_multiple(loop):
+        coros = [fetch_task(url, loop) for url in URLS]
+        return await asyncio.gather(*coros, return_exceptions=True)
+
+    @validate_transaction_metrics(
+        'test_client_async_await:test_create_task.<locals>.task_test',
+        background_task=True,
+        scoped_metrics=[
+            ('External/example.com/aiohttp/%s' % method.upper(), 1),
+            ('External/example.org/aiohttp/%s' % method.upper(), 1),
+        ],
+        rollup_metrics=[
+            ('External/example.com/aiohttp/%s' % method.upper(), 1),
+            ('External/example.org/aiohttp/%s' % method.upper(), 1),
+        ],
+    )
+    @background_task()
+    def task_test():
+        loop = asyncio.get_event_loop()
+        result = loop.run_until_complete(fetch_multiple(loop))
+        if exc_expected:
+            assert isinstance(result[0],
+                    aiohttp.client_exceptions.ClientResponseError)
+            assert isinstance(result[1],
+                    aiohttp.client_exceptions.ClientResponseError)
+        else:
+            assert result[0] == result[1]
 
     task_test()

@@ -19,8 +19,11 @@ class NRRequestCoroutineWrapper(ObjectProxy):
         return self
 
     def __next__(self):
+        return self.send(None)
+
+    def send(self, value):
         if not self._nr_trace.transaction:
-            return self.__wrapped__.send(None)
+            return self.__wrapped__.send(value)
 
         if not self._nr_trace.activated:
             self._nr_trace.__enter__()
@@ -29,7 +32,7 @@ class NRRequestCoroutineWrapper(ObjectProxy):
                 self._nr_trace.transaction._pop_current(self._nr_trace)
 
         try:
-            return self.__wrapped__.send(None)
+            return self.__wrapped__.send(value)
         except StopIteration:
             self._nr_trace.__exit__(None, None, None)
             raise

@@ -1,3 +1,4 @@
+import inspect
 import os
 
 from newrelic.api.database_trace import (enable_datastore_instance_feature,
@@ -28,14 +29,14 @@ class CursorWrapper(DBAPI2CursorWrapper):
 
     def execute(self, sql, parameters=DEFAULT, *args, **kwargs):
         if hasattr(sql, 'as_string'):
-            sql = sql.as_string(self.__wrapped__)
+            sql = sql.as_string(self)
 
         return super(CursorWrapper, self).execute(sql, parameters, *args,
                 **kwargs)
 
     def executemany(self, sql, seq_of_parameters):
         if hasattr(sql, 'as_string'):
-            sql = sql.as_string(self.__wrapped__)
+            sql = sql.as_string(self)
 
         return super(CursorWrapper, self).executemany(sql, seq_of_parameters)
 
@@ -210,6 +211,21 @@ def wrapper_psycopg2_register_type(wrapped, instance, args, kwargs):
     else:
         return wrapped(obj)
 
+
+def wrapper_psycopg2_as_string(wrapped, instance, args, kwargs):
+    def _bind_params(context, *args, **kwargs):
+        return context, args, kwargs
+
+    context, _args, _kwargs = _bind_params(*args, **kwargs)
+
+    # Unwrap the context for string conversion since psycopg2 uses duck typing
+    # and a TypeError will be raised if a wrapper is used.
+    if hasattr(context, '__wrapped__'):
+        context = context.__wrapped__
+
+    return wrapped(context, *_args, **_kwargs)
+
+
 # As we can't get in reliably and monkey patch the register_type()
 # function in psycopg2._psycopg2 before it is imported, we also need to
 # monkey patch the other references to it in other psycopg2 sub modules.
@@ -241,3 +257,17 @@ def instrument_psycopg2__range(module):
         if not isinstance(module.register_type, ObjectProxy):
             wrap_function_wrapper(module, 'register_type',
                     wrapper_psycopg2_register_type)
+
+
+def instrument_psycopg2_sql(module):
+    if (hasattr(module, 'Composable') and
+            hasattr(module.Composable, 'as_string')):
+        for name, cls in inspect.getmembers(module):
+            if not inspect.isclass(cls):
+                continue
+
+            if not issubclass(cls, module.Composable):
+                continue
+
+            wrap_function_wrapper(module, name + '.as_string',
+                    wrapper_psycopg2_as_string)

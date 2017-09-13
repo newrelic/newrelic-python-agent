@@ -78,3 +78,12 @@ def test_outbound_cross_process_headers_custom_headers(customer_headers,
     # always honor customer headers
     for expected_header, expected_value in customer_headers.items():
         assert headers.get(expected_header) == expected_value
+
+
+def test_outbound_cross_process_headers_no_txn(mock_header_server):
+
+    loop = asyncio.get_event_loop()
+    headers = loop.run_until_complete(fetch('http://localhost:8989'))
+
+    assert not headers.get(ExternalTrace.cat_id_key)
+    assert not headers.get(ExternalTrace.cat_transaction_key)

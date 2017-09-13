@@ -12,9 +12,9 @@ from testing_support.mock_external_http_server import (
 
 
 @asyncio.coroutine
-def fetch(url):
+def fetch(url, headers=None):
     session = aiohttp.client.ClientSession()
-    request = session._request('GET', url)
+    request = session._request('GET', url, headers=headers)
     response = yield from request
     response_text = yield from response.text()
     headers = {}
@@ -57,3 +57,24 @@ def test_outbound_cross_process_headers(cat_enabled, mock_header_server):
             assert not headers.get(ExternalTrace.cat_transaction_key)
 
     task_test()
+
+
+_nr_key = ExternalTrace.cat_id_key
+_customer_headers_tests = [
+        {'MY_CUSTOM_HEADER': 'I love cats'},
+        {_nr_key: 'I love dogs'},
+]
+
+
+@pytest.mark.parametrize('customer_headers', _customer_headers_tests)
+@background_task()
+def test_outbound_cross_process_headers_custom_headers(customer_headers,
+        mock_header_server):
+
+    loop = asyncio.get_event_loop()
+    headers = loop.run_until_complete(fetch('http://localhost:8989',
+        customer_headers.copy()))
+
+    # always honor customer headers
+    for expected_header, expected_value in customer_headers.items():
+        assert headers.get(expected_header) == expected_value

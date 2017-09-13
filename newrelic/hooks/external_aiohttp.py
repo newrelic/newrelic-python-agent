@@ -80,8 +80,13 @@ def _nr_wrap_PayloadWriter_write_headers(wrapped, instance, args, kwargs):
 
     status_line, headers, _args, _kwargs = _bind_write_headers(
             *args, **kwargs)
-    cat_headers = ExternalTrace.generate_request_headers(transaction)
-    updated_headers = dict(cat_headers + [(k, v) for k, v in headers.items()])
+
+    try:
+        cat_headers = ExternalTrace.generate_request_headers(transaction)
+        updated_headers = dict(cat_headers + [(k, v) for k, v in
+                headers.items()])
+    except:
+        return wrapped(*args, **kwargs)
 
     return wrapped(status_line, updated_headers, *_args, **_kwargs)
 

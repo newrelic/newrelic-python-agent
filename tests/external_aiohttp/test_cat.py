@@ -30,7 +30,7 @@ def fetch(url, headers=None):
     return headers
 
 
-@pytest.fixture()
+@pytest.fixture(scope='module')
 def mock_header_server():
     with MockExternalHTTPHResponseHeadersServer():
         yield
@@ -87,3 +87,21 @@ def test_outbound_cross_process_headers_no_txn(mock_header_server):
 
     assert not headers.get(ExternalTrace.cat_id_key)
     assert not headers.get(ExternalTrace.cat_transaction_key)
+
+
+@background_task()
+def test_outbound_cross_process_headers_exception(mock_header_server):
+
+    # corrupt the transaction object to force an error
+    transaction = current_transaction()
+    guid = transaction.guid
+    delattr(transaction, 'guid')
+
+    try:
+        loop = asyncio.get_event_loop()
+        headers = loop.run_until_complete(fetch('http://localhost:8989'))
+
+        assert not headers.get(ExternalTrace.cat_id_key)
+        assert not headers.get(ExternalTrace.cat_transaction_key)
+    finally:
+        transaction.guid = guid

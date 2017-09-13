@@ -2,11 +2,13 @@ import pytest
 import asyncio
 import aiohttp.client
 
-from testing_support.mock_external_http_server import (
-        MockExternalHTTPHResponseHeadersServer)
-from newrelic.api.transaction import current_transaction
 from newrelic.api.background_task import background_task
 from newrelic.api.external_trace import ExternalTrace
+from newrelic.api.transaction import current_transaction
+
+from testing_support.fixtures import override_application_settings
+from testing_support.mock_external_http_server import (
+        MockExternalHTTPHResponseHeadersServer)
 
 
 @asyncio.coroutine
@@ -34,13 +36,24 @@ def mock_header_server():
         yield
 
 
-@background_task()
-def test_outbound_cross_process_headers(mock_header_server):
-    loop = asyncio.get_event_loop()
-    headers = loop.run_until_complete(fetch('http://localhost:8989'))
+@pytest.mark.parametrize('cat_enabled', [True, False])
+def test_outbound_cross_process_headers(cat_enabled, mock_header_server):
 
-    transaction = current_transaction()
-    expected_headers = ExternalTrace.generate_request_headers(transaction)
+    @override_application_settings(
+            {'cross_application_tracer.enabled': cat_enabled})
+    @background_task()
+    def task_test():
+        loop = asyncio.get_event_loop()
+        headers = loop.run_until_complete(fetch('http://localhost:8989'))
 
-    for expected_header, expected_value in expected_headers:
-        assert headers.get(expected_header) == expected_value
+        transaction = current_transaction()
+        expected_headers = ExternalTrace.generate_request_headers(transaction)
+
+        for expected_header, expected_value in expected_headers:
+            assert headers.get(expected_header) == expected_value
+
+        if not cat_enabled:
+            assert not headers.get(ExternalTrace.cat_id_key)
+            assert not headers.get(ExternalTrace.cat_transaction_key)
+
+    task_test()

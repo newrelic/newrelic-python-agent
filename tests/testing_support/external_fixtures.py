@@ -130,7 +130,13 @@ def insert_incoming_headers(wrapped, instance, args, kwargs):
     return headers
 
 
-def validate_external_node_params(params=[]):
+def validate_external_node_params(params=[], forgone_params=[]):
+    """
+    Validate the parameters on the external node.
+
+    params: a list of tuples
+    forgone_params: a flat list
+    """
     @transient_function_wrapper('newrelic.api.external_trace',
             'ExternalTrace.process_response_headers')
     def _validate_external_node_params(wrapped, instance, args, kwargs):
@@ -146,6 +152,9 @@ def validate_external_node_params(params=[]):
 
         for name, value in params:
             assert instance.params[name] == value
+
+        for name in forgone_params:
+            assert name not in instance.params
 
         return result
 

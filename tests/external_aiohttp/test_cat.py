@@ -110,34 +110,48 @@ def test_outbound_cross_process_headers_exception(mock_header_server):
         transaction.guid = guid
 
 
-_test_cross_process_response_scoped_metrics = [
-        ('ExternalTransaction/localhost:8990/1#2/test', 1)]
+@pytest.mark.parametrize('cat_enabled', [True, False])
+def test_process_incoming_headers(cat_enabled):
 
-_test_cross_process_response_rollup_metrics = [
-        ('External/all', 1),
-        ('External/allOther', 1),
-        ('External/localhost:8990/all', 1),
-        ('ExternalApp/localhost:8990/1#2/all', 1),
-        ('ExternalTransaction/localhost:8990/1#2/test', 1)]
+    _test_cross_process_response_scoped_metrics = [
+            ('ExternalTransaction/localhost:8990/1#2/test', 1 if cat_enabled
+                else None)]
 
-_test_cross_process_response_external_node_params = [
-        ('cross_process_id', '1#2'),
-        ('external_txn_name', 'test'),
-        ('transaction_guid', '0123456789012345')]
+    _test_cross_process_response_rollup_metrics = [
+            ('External/all', 1),
+            ('External/allOther', 1),
+            ('External/localhost:8990/all', 1),
+            ('ExternalApp/localhost:8990/1#2/all', 1 if cat_enabled else None),
+            ('ExternalTransaction/localhost:8990/1#2/test', 1 if cat_enabled
+                else None)]
 
+    _test_cross_process_response_external_node_params = [
+            ('cross_process_id', '1#2'),
+            ('external_txn_name', 'test'),
+            ('transaction_guid', '0123456789012345')]
 
-@validate_transaction_metrics(
-        'test_cat:test_process_incoming_headers',
-        scoped_metrics=_test_cross_process_response_scoped_metrics,
-        rollup_metrics=_test_cross_process_response_rollup_metrics,
-        background_task=True)
-@validate_external_node_params(
-        params=_test_cross_process_response_external_node_params)
-@background_task()
-def test_process_incoming_headers():
-    transaction = current_transaction()
-    headers = dict(create_incoming_headers(transaction))
+    _test_cross_process_response_external_node_forgone_params = [
+            k for k, v in _test_cross_process_response_external_node_params]
 
-    with MockExternalHTTPServer(port=8990, response_headers=headers):
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(fetch('http://localhost:8990'))
+    @override_application_settings(
+            {'cross_application_tracer.enabled': cat_enabled})
+    @validate_transaction_metrics(
+            'test_cat:test_process_incoming_headers.<locals>.task_test',
+            scoped_metrics=_test_cross_process_response_scoped_metrics,
+            rollup_metrics=_test_cross_process_response_rollup_metrics,
+            background_task=True)
+    @validate_external_node_params(
+            params=(_test_cross_process_response_external_node_params if
+                cat_enabled else []),
+            forgone_params=([] if cat_enabled else
+                _test_cross_process_response_external_node_forgone_params))
+    @background_task()
+    def task_test():
+        transaction = current_transaction()
+        headers = dict(create_incoming_headers(transaction))
+
+        with MockExternalHTTPServer(port=8990, response_headers=headers):
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(fetch('http://localhost:8990'))
+
+    task_test()

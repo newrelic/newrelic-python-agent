@@ -13,6 +13,15 @@ from newrelic.packages.six.moves import BaseHTTPServer
 #    created by an external call.
 # 3) This app runs on a separate thread meaning it won't block the test app.
 
+RESPONSE = b'external response'
+
+
+class ExternalHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(RESPONSE)
+
 
 class MockExternalHTTPServer(threading.Thread):
     # To use this class in a test one needs to start and stop this server
@@ -20,21 +29,7 @@ class MockExternalHTTPServer(threading.Thread):
     # calls. For an example see:
     # ../framework_tornado_r3/test_async_application.py
 
-    RESPONSE = b'external response'
-
-    @staticmethod
-    def get_ExternalHandler(response_text, response_headers, response_code):
-        class ExternalHandler(BaseHTTPServer.BaseHTTPRequestHandler):
-            def do_GET(self):
-                self.send_response(response_code)
-                for k, v in response_headers.items():
-                    self.send_header(k, v)
-                self.end_headers()
-                self.wfile.write(response_text)
-        return ExternalHandler
-
-    def __init__(self, port=8989, response_text=None, response_headers=None,
-            response_code=200, *args, **kwargs):
+    def __init__(self, handler=ExternalHandler, port=8989, *args, **kwargs):
         super(MockExternalHTTPServer, self).__init__(*args, **kwargs)
         # We hardcode the port number to 8989. This allows us to easily use the
         # port number in the expected metrics that we validate without
@@ -46,13 +41,8 @@ class MockExternalHTTPServer(threading.Thread):
         # self.port = self.httpd.socket.getsockname()[1]
 
         self.port = port
-
-        external_handler = self.get_ExternalHandler(
-                response_text or self.RESPONSE,
-                response_headers or {}, response_code)
         self.httpd = BaseHTTPServer.HTTPServer(('localhost', port),
-                external_handler)
-
+                handler)
         self.daemon = True
 
     def __enter__(self):
@@ -73,6 +63,14 @@ class MockExternalHTTPServer(threading.Thread):
         self.join()
 
 
+class HeaderResponseHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+    def do_GET(self):
+        response = str(self.headers).encode('utf-8')
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(response)
+
+
 class MockExternalHTTPHResponseHeadersServer(MockExternalHTTPServer):
     """
     MockExternalHTTPHResponseHeadersServer will send the incoming
@@ -80,12 +78,7 @@ class MockExternalHTTPHResponseHeadersServer(MockExternalHTTPServer):
     httpclient request headers.
 
     """
-    @staticmethod
-    def get_ExternalHandler(response_text, response_headers, response_code):
-        class ExternalHandler(BaseHTTPServer.BaseHTTPRequestHandler):
-            def do_GET(self):
-                response = str(self.headers).encode('utf-8')
-                self.send_response(response_code)
-                self.end_headers()
-                self.wfile.write(response)
-        return ExternalHandler
+
+    def __init__(self, handler=HeaderResponseHandler, port=8989):
+        super(MockExternalHTTPHResponseHeadersServer, self).__init__(
+                handler=handler, port=port)

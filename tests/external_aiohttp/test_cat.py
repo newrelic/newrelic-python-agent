@@ -13,6 +13,8 @@ from testing_support.fixtures import (override_application_settings,
 from testing_support.mock_external_http_server import (
         MockExternalHTTPHResponseHeadersServer, MockExternalHTTPServer)
 
+from newrelic.packages.six.moves import BaseHTTPServer
+
 
 @asyncio.coroutine
 def fetch(url, headers=None, raise_for_status=False):
@@ -156,10 +158,19 @@ def test_process_incoming_headers(cat_enabled, response_code,
     @background_task()
     def task_test():
         transaction = current_transaction()
-        headers = dict(create_incoming_headers(transaction))
+        headers = create_incoming_headers(transaction)
 
-        with MockExternalHTTPServer(port=8990, response_headers=headers,
-                response_code=response_code):
+        def do_GET(self):
+            self.send_response(response_code)
+            for header, value in headers:
+                self.send_header(header, value)
+            self.end_headers()
+            self.wfile.write(b'')
+
+        handler = type('ResponseHandler',
+                (BaseHTTPServer.BaseHTTPRequestHandler,), {'do_GET': do_GET})
+
+        with MockExternalHTTPServer(handler=handler, port=8990):
             loop = asyncio.get_event_loop()
             loop.run_until_complete(fetch('http://localhost:8990',
                 raise_for_status=raise_for_status))

@@ -53,9 +53,7 @@ class NRRequestCoroutineWrapper(ObjectProxy):
 
     def throw(self, *args, **kwargs):
         try:
-            r = self.__wrapped__.throw(*args, **kwargs)
-            self._nr_trace.__exit__(None, None, None)
-            return r
+            return self.__wrapped__.throw(*args, **kwargs)
         except:
             self._nr_trace.__exit__(*sys.exc_info())
             raise

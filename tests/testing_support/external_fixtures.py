@@ -88,17 +88,12 @@ def validate_messagebroker_headers(wrapped, instance, args, kwargs):
 
     return result
 
-@transient_function_wrapper(httplib.__name__, 'HTTPResponse.getheaders')
-def insert_incoming_headers(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
 
-    if transaction is None:
-        return wrapped(*args, **kwargs)
-
+def create_incoming_headers(transaction):
     settings = transaction.settings
     encoding_key = settings.encoding_key
 
-    headers = list(wrapped(*args, **kwargs))
+    headers = []
 
     cross_process_id = '1#2'
     path = 'test'
@@ -119,6 +114,21 @@ def insert_incoming_headers(wrapped, instance, args, kwargs):
     headers.append(('X-NewRelic-App-Data', value))
 
     return headers
+
+
+@transient_function_wrapper(httplib.__name__, 'HTTPResponse.getheaders')
+def insert_incoming_headers(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    headers = list(wrapped(*args, **kwargs))
+
+    headers.extend(create_incoming_headers(transaction))
+
+    return headers
+
 
 def validate_external_node_params(params=[]):
     @transient_function_wrapper('newrelic.api.external_trace',

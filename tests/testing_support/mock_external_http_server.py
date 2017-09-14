@@ -22,13 +22,19 @@ class MockExternalHTTPServer(threading.Thread):
 
     RESPONSE = b'external response'
 
-    class ExternalHandler(BaseHTTPServer.BaseHTTPRequestHandler):
-        def do_GET(self):
-            self.send_response(200)
-            self.end_headers()
-            self.wfile.write(MockExternalHTTPServer.RESPONSE)
+    @staticmethod
+    def get_ExternalHandler(response_text, response_headers):
+        class ExternalHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                for k, v in response_headers.items():
+                    self.send_header(k, v)
+                self.end_headers()
+                self.wfile.write(response_text)
+        return ExternalHandler
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, port=8989, response_text=None, response_headers=None,
+            *args, **kwargs):
         super(MockExternalHTTPServer, self).__init__(*args, **kwargs)
         # We hardcode the port number to 8989. This allows us to easily use the
         # port number in the expected metrics that we validate without
@@ -39,9 +45,14 @@ class MockExternalHTTPServer(threading.Thread):
         #         MockExternalHTTPServer.ExternalHandler)
         # self.port = self.httpd.socket.getsockname()[1]
 
-        self.port = 8989
-        self.httpd = BaseHTTPServer.HTTPServer(('localhost', 8989),
-                self.ExternalHandler)
+        self.port = port
+
+        external_handler = self.get_ExternalHandler(
+                response_text or self.RESPONSE,
+                response_headers or {})
+        self.httpd = BaseHTTPServer.HTTPServer(('localhost', port),
+                external_handler)
+
         self.daemon = True
 
     def __enter__(self):
@@ -69,9 +80,12 @@ class MockExternalHTTPHResponseHeadersServer(MockExternalHTTPServer):
     httpclient request headers.
 
     """
-    class ExternalHandler(BaseHTTPServer.BaseHTTPRequestHandler):
-        def do_GET(self):
-            response = str(self.headers).encode('utf-8')
-            self.send_response(200)
-            self.end_headers()
-            self.wfile.write(response)
+    @staticmethod
+    def get_ExternalHandler(response_text, response_headers):
+        class ExternalHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+            def do_GET(self):
+                response = str(self.headers).encode('utf-8')
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(response)
+        return ExternalHandler

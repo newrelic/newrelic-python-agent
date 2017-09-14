@@ -23,10 +23,10 @@ class MockExternalHTTPServer(threading.Thread):
     RESPONSE = b'external response'
 
     @staticmethod
-    def get_ExternalHandler(response_text, response_headers):
+    def get_ExternalHandler(response_text, response_headers, response_code):
         class ExternalHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             def do_GET(self):
-                self.send_response(200)
+                self.send_response(response_code)
                 for k, v in response_headers.items():
                     self.send_header(k, v)
                 self.end_headers()
@@ -34,7 +34,7 @@ class MockExternalHTTPServer(threading.Thread):
         return ExternalHandler
 
     def __init__(self, port=8989, response_text=None, response_headers=None,
-            *args, **kwargs):
+            response_code=200, *args, **kwargs):
         super(MockExternalHTTPServer, self).__init__(*args, **kwargs)
         # We hardcode the port number to 8989. This allows us to easily use the
         # port number in the expected metrics that we validate without
@@ -49,7 +49,7 @@ class MockExternalHTTPServer(threading.Thread):
 
         external_handler = self.get_ExternalHandler(
                 response_text or self.RESPONSE,
-                response_headers or {})
+                response_headers or {}, response_code)
         self.httpd = BaseHTTPServer.HTTPServer(('localhost', port),
                 external_handler)
 
@@ -81,11 +81,11 @@ class MockExternalHTTPHResponseHeadersServer(MockExternalHTTPServer):
 
     """
     @staticmethod
-    def get_ExternalHandler(response_text, response_headers):
+    def get_ExternalHandler(response_text, response_headers, response_code):
         class ExternalHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             def do_GET(self):
                 response = str(self.headers).encode('utf-8')
-                self.send_response(200)
+                self.send_response(response_code)
                 self.end_headers()
                 self.wfile.write(response)
         return ExternalHandler

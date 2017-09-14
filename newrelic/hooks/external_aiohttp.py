@@ -43,7 +43,12 @@ class NRRequestCoroutineWrapper(ObjectProxy):
 
             self._nr_trace.__exit__(None, None, None)
             raise
-        except:
+        except Exception as e:
+            try:
+                self._nr_trace.process_response_headers(e.headers.items())
+            except:
+                pass
+
             self._nr_trace.__exit__(*sys.exc_info())
             raise
 

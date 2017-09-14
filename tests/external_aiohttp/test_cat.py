@@ -15,12 +15,17 @@ from testing_support.mock_external_http_server import (
 
 
 @asyncio.coroutine
-def fetch(url, headers=None):
-    session = aiohttp.client.ClientSession()
+def fetch(url, headers=None, raise_for_status=False):
+    session = aiohttp.client.ClientSession(raise_for_status=raise_for_status)
     request = session._request('GET', url, headers=headers)
-    response = yield from request
-    response_text = yield from response.text()
     headers = {}
+
+    try:
+        response = yield from request
+    except aiohttp.client_exceptions.ClientResponseError:
+        return headers
+
+    response_text = yield from response.text()
     for header in response_text.split('\n'):
         if not header:
             continue
@@ -111,7 +116,10 @@ def test_outbound_cross_process_headers_exception(mock_header_server):
 
 
 @pytest.mark.parametrize('cat_enabled', [True, False])
-def test_process_incoming_headers(cat_enabled):
+@pytest.mark.parametrize('response_code', [200, 404])
+@pytest.mark.parametrize('raise_for_status', [True, False])
+def test_process_incoming_headers(cat_enabled, response_code,
+        raise_for_status):
 
     _test_cross_process_response_scoped_metrics = [
             ('ExternalTransaction/localhost:8990/1#2/test', 1 if cat_enabled
@@ -150,8 +158,10 @@ def test_process_incoming_headers(cat_enabled):
         transaction = current_transaction()
         headers = dict(create_incoming_headers(transaction))
 
-        with MockExternalHTTPServer(port=8990, response_headers=headers):
+        with MockExternalHTTPServer(port=8990, response_headers=headers,
+                response_code=response_code):
             loop = asyncio.get_event_loop()
-            loop.run_until_complete(fetch('http://localhost:8990'))
+            loop.run_until_complete(fetch('http://localhost:8990',
+                raise_for_status=raise_for_status))
 
     task_test()

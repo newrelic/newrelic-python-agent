@@ -33,18 +33,27 @@ class NRRequestCoroutineWrapper(ObjectProxy):
 
         try:
             return self.__wrapped__.send(value)
-        except StopIteration:
+        except StopIteration as e:
+            try:
+                result = e.value
+                self._nr_trace.process_response_headers(result.headers.items())
+            except:
+                pass
+
             self._nr_trace.__exit__(None, None, None)
             raise
-        except:
+        except Exception as e:
+            try:
+                self._nr_trace.process_response_headers(e.headers.items())
+            except:
+                pass
+
             self._nr_trace.__exit__(*sys.exc_info())
             raise
 
     def throw(self, *args, **kwargs):
         try:
-            r = self.__wrapped__.throw(*args, **kwargs)
-            self._nr_trace.__exit__(None, None, None)
-            return r
+            return self.__wrapped__.throw(*args, **kwargs)
         except:
             self._nr_trace.__exit__(*sys.exc_info())
             raise

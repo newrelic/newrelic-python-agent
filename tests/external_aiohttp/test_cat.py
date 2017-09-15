@@ -1,6 +1,6 @@
 import pytest
 import asyncio
-import aiohttp.client
+import aiohttp
 
 from newrelic.api.background_task import background_task
 from newrelic.api.external_trace import ExternalTrace
@@ -15,8 +15,9 @@ from testing_support.mock_external_http_server import (
 
 
 @asyncio.coroutine
-def fetch(url, headers=None, raise_for_status=False):
-    session = aiohttp.client.ClientSession(raise_for_status=raise_for_status)
+def fetch(url, headers=None, raise_for_status=False, connector=None):
+    session = aiohttp.ClientSession(raise_for_status=raise_for_status,
+            connector=connector)
     request = session._request('GET', url, headers=headers)
     headers = {}
 
@@ -115,11 +116,33 @@ def test_outbound_cross_process_headers_exception(mock_header_server):
         transaction.guid = guid
 
 
+class PoorResolvingConnector(aiohttp.TCPConnector):
+    @asyncio.coroutine
+    def _resolve_host(self, host, port):
+        res = [{'hostname': host, 'host': host, 'port': 1234,
+                 'family': self._family, 'proto': 0, 'flags': 0}]
+        hosts = yield from super(PoorResolvingConnector,
+                self)._resolve_host(host, port)
+        for hinfo in hosts:
+            res.append(hinfo)
+        return res
+
+
 @pytest.mark.parametrize('cat_enabled', [True, False])
 @pytest.mark.parametrize('response_code', [200, 404])
 @pytest.mark.parametrize('raise_for_status', [True, False])
+@pytest.mark.parametrize('connector_class',
+        [None, PoorResolvingConnector])  # None will use default
 def test_process_incoming_headers(cat_enabled, response_code,
-        raise_for_status):
+        raise_for_status, connector_class):
+
+    # It was discovered via packnsend that the `throw` method of the `_request`
+    # coroutine is used in the case of poorly resolved hosts. An older version
+    # of the instrumentation ended the ExternalTrace anytime `throw` was called
+    # which meant that incoming CAT headers were never processed. The
+    # `PoorResolvingConnector` connector in this test ensures that `throw` is
+    # always called and thus makes sure the trace is not ended before
+    # StopIteration is called.
 
     _test_cross_process_response_scoped_metrics = [
             ('ExternalTransaction/localhost:8990/1#2/test', 1 if cat_enabled
@@ -140,6 +163,8 @@ def test_process_incoming_headers(cat_enabled, response_code,
 
     _test_cross_process_response_external_node_forgone_params = [
             k for k, v in _test_cross_process_response_external_node_params]
+
+    connector = connector_class() if connector_class else None
 
     @override_application_settings(
             {'cross_application_tracer.enabled': cat_enabled})
@@ -169,6 +194,6 @@ def test_process_incoming_headers(cat_enabled, response_code,
                 port=8990):
             loop = asyncio.get_event_loop()
             loop.run_until_complete(fetch('http://localhost:8990',
-                raise_for_status=raise_for_status))
+                raise_for_status=raise_for_status, connector=connector))
 
     task_test()

@@ -1421,6 +1421,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/external_aiohttp.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/external_botocore.py": {
         "hash": "n/a",
         "libraries": [

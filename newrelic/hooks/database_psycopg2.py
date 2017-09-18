@@ -1,3 +1,4 @@
+import inspect
 import os
 
 from newrelic.api.database_trace import (enable_datastore_instance_feature,
@@ -9,7 +10,8 @@ from newrelic.common.object_wrapper import (wrap_object, ObjectProxy,
         wrap_function_wrapper)
 
 from newrelic.hooks.database_dbapi2 import (ConnectionWrapper as
-        DBAPI2ConnectionWrapper, ConnectionFactory as DBAPI2ConnectionFactory)
+        DBAPI2ConnectionWrapper, ConnectionFactory as DBAPI2ConnectionFactory,
+        CursorWrapper as DBAPI2CursorWrapper, DEFAULT)
 
 try:
     from urllib import unquote
@@ -22,7 +24,26 @@ except ImportError:
 
 from newrelic.packages.requests.packages.urllib3 import util as ul3_util
 
+
+class CursorWrapper(DBAPI2CursorWrapper):
+
+    def execute(self, sql, parameters=DEFAULT, *args, **kwargs):
+        if hasattr(sql, 'as_string'):
+            sql = sql.as_string(self)
+
+        return super(CursorWrapper, self).execute(sql, parameters, *args,
+                **kwargs)
+
+    def executemany(self, sql, seq_of_parameters):
+        if hasattr(sql, 'as_string'):
+            sql = sql.as_string(self)
+
+        return super(CursorWrapper, self).executemany(sql, seq_of_parameters)
+
+
 class ConnectionWrapper(DBAPI2ConnectionWrapper):
+
+    __cursor_wrapper__ = CursorWrapper
 
     def __enter__(self):
         transaction = current_transaction()
@@ -51,9 +72,11 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
                         self._nr_dbapi2_module, self._nr_connect_params):
                     return self.__wrapped__.__exit__(exc, value, tb)
 
+
 class ConnectionFactory(DBAPI2ConnectionFactory):
 
     __connection_wrapper__ = ConnectionWrapper
+
 
 def instance_info(args, kwargs):
 
@@ -61,6 +84,7 @@ def instance_info(args, kwargs):
     host, port, db_name = _add_defaults(p_host, p_hostaddr, p_port, p_dbname)
 
     return (host, port, db_name)
+
 
 def _parse_connect_params(args, kwargs):
 
@@ -70,8 +94,8 @@ def _parse_connect_params(args, kwargs):
     dsn = _bind_params(*args, **kwargs)
 
     try:
-        if dsn and (dsn.startswith('postgres://')
-                or dsn.startswith('postgresql://')):
+        if dsn and (dsn.startswith('postgres://') or
+                dsn.startswith('postgresql://')):
 
             # Parse dsn as URI
             #
@@ -135,6 +159,7 @@ def _parse_connect_params(args, kwargs):
 
     return (host, hostaddr, port, db_name)
 
+
 def _add_defaults(parsed_host, parsed_hostaddr, parsed_port, parsed_database):
 
     # ENV variables set the default values
@@ -160,6 +185,7 @@ def _add_defaults(parsed_host, parsed_hostaddr, parsed_port, parsed_database):
 
     return (host, port, database)
 
+
 def instrument_psycopg2(module):
     register_database_client(module, database_product='Postgres',
             quoting_style='single', explain_query='explain',
@@ -169,6 +195,7 @@ def instrument_psycopg2(module):
     enable_datastore_instance_feature(module)
 
     wrap_object(module, 'connect', ConnectionFactory, (module,))
+
 
 def wrapper_psycopg2_register_type(wrapped, instance, args, kwargs):
     def _bind_params(obj, scope=None):
@@ -184,17 +211,32 @@ def wrapper_psycopg2_register_type(wrapped, instance, args, kwargs):
     else:
         return wrapped(obj)
 
+
+def wrapper_psycopg2_as_string(wrapped, instance, args, kwargs):
+    def _bind_params(context, *args, **kwargs):
+        return context, args, kwargs
+
+    context, _args, _kwargs = _bind_params(*args, **kwargs)
+
+    # Unwrap the context for string conversion since psycopg2 uses duck typing
+    # and a TypeError will be raised if a wrapper is used.
+    if hasattr(context, '__wrapped__'):
+        context = context.__wrapped__
+
+    return wrapped(context, *_args, **_kwargs)
+
+
 # As we can't get in reliably and monkey patch the register_type()
 # function in psycopg2._psycopg2 before it is imported, we also need to
 # monkey patch the other references to it in other psycopg2 sub modules.
 # In doing that we need to make sure it has not already been monkey
 # patched by checking to see if it is already an ObjectProxy.
-
 def instrument_psycopg2__psycopg2(module):
     if hasattr(module, 'register_type'):
         if not isinstance(module.register_type, ObjectProxy):
             wrap_function_wrapper(module, 'register_type',
                     wrapper_psycopg2_register_type)
+
 
 def instrument_psycopg2_extensions(module):
     if hasattr(module, 'register_type'):
@@ -202,14 +244,30 @@ def instrument_psycopg2_extensions(module):
             wrap_function_wrapper(module, 'register_type',
                     wrapper_psycopg2_register_type)
 
+
 def instrument_psycopg2__json(module):
     if hasattr(module, 'register_type'):
         if not isinstance(module.register_type, ObjectProxy):
             wrap_function_wrapper(module, 'register_type',
                     wrapper_psycopg2_register_type)
 
+
 def instrument_psycopg2__range(module):
     if hasattr(module, 'register_type'):
         if not isinstance(module.register_type, ObjectProxy):
             wrap_function_wrapper(module, 'register_type',
                     wrapper_psycopg2_register_type)
+
+
+def instrument_psycopg2_sql(module):
+    if (hasattr(module, 'Composable') and
+            hasattr(module.Composable, 'as_string')):
+        for name, cls in inspect.getmembers(module):
+            if not inspect.isclass(cls):
+                continue
+
+            if not issubclass(cls, module.Composable):
+                continue
+
+            wrap_function_wrapper(module, name + '.as_string',
+                    wrapper_psycopg2_as_string)

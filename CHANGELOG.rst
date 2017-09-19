@@ -1,5 +1,5 @@
-Unreleased
-----------
+2.94.0.79 (2017-09-19)
+----------------------
 
 - Add instrumentation for aiohttp client
 

@@ -183,36 +183,35 @@ update the version number in ``newrelic/__init__.py`` for the release.
 the ``B`` component of the ``A.B.C`` version number from the odd number used
 during development to the even number used for the release.
 
-3. Run locally ``./build.sh`` to force the licence validation script to be
-run and ensure package builds.
+3. Update ``CHANGELOG.rst`` to change ``unreleased`` to the to be released
+version including today's date.
 
-4. Run locally ``./tests.sh`` to ensure that all base level unit tests pass.
+  ```
+  2.94.0.79 (2017-09-19)
+  ----------------------
+  ```
 
-    This test can also be run in docker, with `packnsend`:
+4. Perform any other final adhoc local tests deemed necessary for the release.
 
-        docker/packnsend run ./tests.sh
+5. Create a release branch with `git checkout -b release/vA.B.C`
 
-5. Perform any other final adhoc local tests deemed necessary for the release.
-
-6. Create a release branch with `git checkout -b release/vA.B.C`
-
-7. Commit change made to ``newrelic/__init__.py`` into the release
-branch you just created. Format the commit message like this:
+6. Commit change made to ``newrelic/__init__.py`` and ``CHANGELOG.rst``
+into the release branch you just created. Format the commit message like this:
 
         Increment version to A.B.C for release.
 
-8. Push that branch up, and create a pull request from the release branch to
+7. Push that branch up, and create a pull request from the release branch to
 ``develop``. Get someone to add the "sidekick:approved" label and merge. This is
 necessary because no changes can to added to the code without being side-kick
 approved. Security will keep sending you emails if you don't do this.
 
-9. Create a PR from ``develop`` to ``master``. The PR should be titled:
+8. Create a PR from ``develop`` to ``master``. The PR should be titled:
 
         Merge develop into master for release A.B.C
 
-10. Get a buddy to sidekick and merge this PR.
+9. Get a buddy to sidekick and merge this PR.
 
-11. Switch back to the ``develop`` branch and perform a merge from
+10. Switch back to the ``develop`` branch and perform a merge from
 ``master`` back into the ``develop`` branch.
 
     Confirm that you are on the `develop` branch, then run:
@@ -223,14 +222,13 @@ approved. Security will keep sending you emails if you don't do this.
 as completely parallel paths of development with consequent strange results
 when trying to compare branches.
 
-12. Push both the ``develop`` and ``master`` branches back to the GIT repo.
+11. Push the ``develop`` branch back to the GIT repo.
 
     From the command line:
 
         git push origin develop
-        git push origin master
 
-13. Pushing these branches will trigger the following Jenkins jobs. Check that
+12. Pushing these branches will trigger the following Jenkins jobs. Check that
 they are triggered and complete successfully. If the automatic trigger does not
 work, then run the tests manually.
 
@@ -239,7 +237,7 @@ work, then run the tests manually.
     3. [`_INTEGRATION-TESTS-master_`](https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_INTEGRATION-TESTS-master_/)
     4. [`_UNIT-TESTS-master_`](https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_UNIT-TESTS-master_/)
 
-14. Tag the release in the ``master`` branch on the GIT repo with tag of
+13. Tag the release in the ``master`` branch on the GIT repo with tag of
 the form ``vA.B.C`` and ``vA.B.C.D``, where ``D`` is now the build number. Push
 the tags to Github master.
 
@@ -253,7 +251,7 @@ the tags to Github master.
         git push origin vA.B.C
         git push origin vA.B.C.D
 
-15. In Jenkins, build and upload the release to Artifactory.
+14. In Jenkins, build and upload the release to Artifactory.
 
     1. Log in and go to [build-and-archive-package][build].
     2. From the menu on the left select "Build with Parameters"
@@ -264,7 +262,7 @@ the tags to Github master.
 
 [build]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Deploy/job/build-and-archive-package/
 
-16. Check Artifactory upload
+15. Check Artifactory upload
 
     1. Go to [Artifactory][artifactory].
     2. In the navigator on the left, go to ``pypi-newrelic``->``A.B.C.D``->``newrelic-A.B.C.D.tar.gz``. Check that the Checksum for MD5 says ""(Uploaded: Identical)""
@@ -274,17 +272,17 @@ the tags to Github master.
 
 [artifactory]:https://pdx-artifacts.pdx.vm.datanerd.us/artifactory/webapp/browserepo.html?0
 
-17. Pause here, regroup before continuing
+16. Pause here, regroup before continuing
 
     1. Wait for release notes to be completed
     2. Check in with the rest of the team (mention @team in slack)
 
-18. Upload from Artifactory to PyPI
+17. Upload from Artifactory to PyPI
 
     1. Go back to Jenkins, and select the other project, [deploy-to-pypi][deploy-pypi]
     2. From the menu on the left select "Build with Parameters"
     3. From the drop down menu `PYPI_REPOSITORY`, select pypi-production. Type in the version number, including the build in the `AGENT_VERSION` box.
-    4. Push the build button
+    4. Push the build button, be sure you are wearing the celebration hat
     5. Go to PyPI and check that the version uploaded
     6. Validate that ``pip install`` of package into a virtual environment works
     7. Validate that a ``newrelic-admin validate-config`` test runs okay
@@ -292,17 +290,17 @@ the tags to Github master.
 
 [deploy-pypi]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Deploy/job/deploy-to-pypi/
 
-19. Upload from Artifactory to Amazon S3
+18. Upload from Artifactory to Amazon S3
 
   1. Go back to Jenkins, and select the other project, [deploy-to-s3][deploy-s3]
   2. From the menu on the left select "Build with Parameters"
   3. From the drop down menu `S3_RELEASE_TYPE`, select "release". Type in the version number, including the build in the `AGENT_VERSION` box.
-  4. Push the build button
+  4. Push the build button, be sure you are wearing the celebration hat
   5. Make sure the job finishes successfully
 
 [deploy-s3]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Deploy/job/deploy-to-s3/
 
-20. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM
+19. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM
 systems configuration page at: https://rpm-admin.newrelic.com/admin/system_configurations.
 
     If we need to notify existing users to update their older agents, also
@@ -312,34 +310,34 @@ update the ``min_python_agent_version`` to ``A.B.C.D``.
 sure APM is gated to the correct version, put in a PR to the [Agent Feature
 Service](https://source.datanerd.us/APM/agent_feature_service).
 
-21. Verify that the build number is correct in the version string in the release notes. If
+20. Verify that the build number is correct in the version string in the release notes. If
 it needs to change, edit the release notes, but get in touch with the Documentation team so
 that they can change the URL for the release notes page.
 
-22. Make the "Release Notes" public. (You don't need to have the Documentation
+21. Make the "Release Notes" public. (You don't need to have the Documentation
 Team do this step. We have the authority to publish release notes.)
 
-23. Contact the Documentation team so they can release any new or changed
+22. Contact the Documentation team so they can release any new or changed
 public documentation.
 
-24. Send an email to ``agent-releases@newrelic.com`` notifying them about
+23. Send an email to ``agent-releases@newrelic.com`` notifying them about
 the release. This will go to agent-team, partnership-team, and other
 interested parties. Include a copy of the public release notes, plus a
 separate section if necessary with additional details that may be relevant
 to internal parties.
 
-25. Send an email to ``python-support@newrelic.com`` with the Support notes
+24. Send an email to ``python-support@newrelic.com`` with the Support notes
 drafted in the pre-release steps.
 
-26. Notify Python Agent Slack channel that release is out!
+25. Notify Python Agent Slack channel that release is out!
 
-27. Publish the New & Noteworthy blog post on Jive for the key feature(s) or
+26. Publish the New & Noteworthy blog post on Jive for the key feature(s) or
 improvement(s) in the release.
 
-28. Create a branch off ``develop`` to increment the version number for
+27. Create a branch off ``develop`` to increment the version number for
 development by running `git checkout -b increment-development-version-A.B.C`
 
-29. Update the version number in``newrelic/__init__.py`` to be that of next development release number.
+28. Update the version number in``newrelic/__init__.py`` to be that of next development release number.
 
     That is, increment ``B`` if next version is minor version. With our
 odd/even numbering scheme, ``B`` should always be odd after this change.
@@ -348,19 +346,19 @@ odd/even numbering scheme, ``B`` should always be odd after this change.
 
         Increment version to A.B.C for development.
 
-30. Create a PR for merging in the increment branch into ``develop``.
+29. Create a PR for merging in the increment branch into ``develop``.
 
-31. Get a buddy to sidekick and merge this PR.
+30. Get a buddy to sidekick and merge this PR.
 
-32. Make sure that all JIRA stories associated with the release version have
+31. Make sure that all JIRA stories associated with the release version have
 been updated as having been released.
 
-33. Submit a pull request to [docker-state](https://source.datanerd.us/container-fabric/docker-state/blob/master/requirements.txt)
+32. Submit a pull request to [docker-state](https://source.datanerd.us/container-fabric/docker-state/blob/master/requirements.txt)
 to upgrade the agent version. Be sure it gets merged and deployed to
 production. This way we can immediately have a production app running this most
 recent agent version.
 
-34. Upgrade the agent version on [Sidekick Bot](https://source.datanerd.us/python-agent/sidekick-bot/blob/master/requirements.txt)
+33. Upgrade the agent version on [Sidekick Bot](https://source.datanerd.us/python-agent/sidekick-bot/blob/master/requirements.txt)
 and [redeploy it to production](https://source.datanerd.us/python-agent/sidekick-bot#deploying-to-grandcentral).
 
 Performing a Hotfix Release

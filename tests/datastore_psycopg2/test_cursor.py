@@ -1,6 +1,11 @@
+import pytest
 import psycopg2
 import psycopg2.extensions
 import psycopg2.extras
+try:
+    from psycopg2 import sql
+except ImportError:
+    sql = None
 
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs, override_application_settings)
@@ -69,6 +74,7 @@ else:
     _enable_scoped_metrics.append(('Function/psycopg2._psycopg:connect', 1))
     _disable_scoped_metrics.append(('Function/psycopg2._psycopg:connect', 1))
 
+
 _host = instance_hostname(DB_SETTINGS['host'])
 _port = DB_SETTINGS['port']
 
@@ -82,9 +88,9 @@ _disable_rollup_metrics.append(
         (_instance_metric_name, None)
 )
 
-# Query
 
-def _exercise_db(cursor_factory=None, row_type=tuple):
+# Query
+def _exercise_db(cursor_factory=None, row_type=tuple, wrapper=str):
     connection = psycopg2.connect(
             database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
             password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
@@ -101,24 +107,24 @@ def _exercise_db(cursor_factory=None, row_type=tuple):
         psycopg2.extensions.register_type(unicode_type, connection)
         psycopg2.extensions.register_type(unicode_type, cursor)
 
-        cursor.execute("""drop table if exists datastore_psycopg2""")
+        cursor.execute(wrapper("""drop table if exists datastore_psycopg2"""))
 
-        cursor.execute("""create table datastore_psycopg2 """
-                """(a integer, b real, c text)""")
+        cursor.execute(wrapper("""create table datastore_psycopg2 """
+                """(a integer, b real, c text)"""))
 
-        cursor.executemany("""insert into datastore_psycopg2 """
-                """values (%s, %s, %s)""", [(1, 1.0, '1.0'),
+        cursor.executemany(wrapper("""insert into datastore_psycopg2 """
+                """values (%s, %s, %s)"""), [(1, 1.0, '1.0'),
                 (2, 2.2, '2.2'), (3, 3.3, '3.3')])
 
-        cursor.execute("""select * from datastore_psycopg2""")
+        cursor.execute(wrapper("""select * from datastore_psycopg2"""))
 
         for row in cursor:
             assert isinstance(row, row_type)
 
-        cursor.execute("""update datastore_psycopg2 set a=%s, b=%s, """
-                """c=%s where a=%s""", (4, 4.0, '4.0', 1))
+        cursor.execute(wrapper("""update datastore_psycopg2 set a=%s, b=%s, """
+                """c=%s where a=%s"""), (4, 4.0, '4.0', 1))
 
-        cursor.execute("""delete from datastore_psycopg2 where a=2""")
+        cursor.execute(wrapper("""delete from datastore_psycopg2 where a=2"""))
 
         connection.commit()
 
@@ -131,8 +137,28 @@ def _exercise_db(cursor_factory=None, row_type=tuple):
     finally:
         connection.close()
 
+
+_test_matrix = ['wrapper', [
+    str,
+]]
+
+if PSYCOPG2_VERSION >= (2, 7):
+    # Composable SQL is expected to be available in versions 2.7 and up
+    assert sql, (
+            "Composable sql (from psycopg2 import sql) is expected to load"
+            "but is not loading")
+
+    # exercise with regular SQL wrapper
+    _test_matrix[1].append(sql.SQL)
+
+    # exercise with "Composed" SQL object
+    _test_matrix[1].append(lambda q: sql.Composed([sql.SQL(q)]))
+
+
 # Tests
 
+
+@pytest.mark.parametrize(*_test_matrix)
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
         'test_cursor:test_execute_via_cursor_enable_instance',
@@ -141,10 +167,11 @@ def _exercise_db(cursor_factory=None, row_type=tuple):
         background_task=True)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
-def test_execute_via_cursor_enable_instance():
-    _exercise_db(cursor_factory=None, row_type=tuple)
+def test_execute_via_cursor_enable_instance(wrapper):
+    _exercise_db(cursor_factory=None, row_type=tuple, wrapper=wrapper)
 
 
+@pytest.mark.parametrize(*_test_matrix)
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
         'test_cursor:test_execute_via_cursor_disable_instance',
@@ -153,10 +180,11 @@ def test_execute_via_cursor_enable_instance():
         background_task=True)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
-def test_execute_via_cursor_disable_instance():
-    _exercise_db(cursor_factory=None, row_type=tuple)
+def test_execute_via_cursor_disable_instance(wrapper):
+    _exercise_db(cursor_factory=None, row_type=tuple, wrapper=wrapper)
 
 
+@pytest.mark.parametrize(*_test_matrix)
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
         'test_cursor:test_execute_via_cursor_dict_enable_instance',
@@ -165,11 +193,12 @@ def test_execute_via_cursor_disable_instance():
         background_task=True)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
-def test_execute_via_cursor_dict_enable_instance():
+def test_execute_via_cursor_dict_enable_instance(wrapper):
     dict_factory = psycopg2.extras.RealDictCursor
-    _exercise_db(cursor_factory=dict_factory, row_type=dict)
+    _exercise_db(cursor_factory=dict_factory, row_type=dict, wrapper=wrapper)
 
 
+@pytest.mark.parametrize(*_test_matrix)
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
         'test_cursor:test_execute_via_cursor_dict_disable_instance',
@@ -178,6 +207,6 @@ def test_execute_via_cursor_dict_enable_instance():
         background_task=True)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
-def test_execute_via_cursor_dict_disable_instance():
+def test_execute_via_cursor_dict_disable_instance(wrapper):
     dict_factory = psycopg2.extras.RealDictCursor
-    _exercise_db(cursor_factory=dict_factory, row_type=dict)
+    _exercise_db(cursor_factory=dict_factory, row_type=dict, wrapper=wrapper)

@@ -2205,6 +2205,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('psycopg2._range',
             'newrelic.hooks.database_psycopg2',
             'instrument_psycopg2__range')
+    _process_module_definition('psycopg2.sql',
+            'newrelic.hooks.database_psycopg2',
+            'instrument_psycopg2_sql')
 
     _process_module_definition('psycopg2ct',
             'newrelic.hooks.database_psycopg2ct',
@@ -2298,6 +2301,13 @@ def _process_module_builtin_defaults():
     _process_module_definition('urllib3.connection',
             'newrelic.hooks.external_urllib3',
             'instrument_urllib3_connection')
+
+    _process_module_definition('aiohttp.client',
+            'newrelic.hooks.external_aiohttp',
+            'instrument_aiohttp_client')
+    _process_module_definition('aiohttp.http_writer',
+            'newrelic.hooks.external_aiohttp',
+            'instrument_aiohttp_http_writer')
 
     _process_module_definition('requests.api',
             'newrelic.hooks.external_requests',

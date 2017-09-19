@@ -9,25 +9,29 @@ class SampleApplicationServicer(_SampleApplicationServicer):
 
     def DoUnaryUnary(self, request, context):
         if request.timesout:
-            time.sleep(1)
+            while context.is_active():
+                time.sleep(0.1)
         return Message(text='unary_unary: %s' % request.text)
 
     def DoUnaryStream(self, request, context):
         if request.timesout:
-            time.sleep(1)
+            while context.is_active():
+                time.sleep(0.1)
         for i in range(request.count):
             yield Message(text='unary_stream: %s' % request.text)
 
     def DoStreamUnary(self, request_iter, context):
         for request in request_iter:
             if request.timesout:
-                time.sleep(1)
+                while context.is_active():
+                    time.sleep(0.1)
             return Message(text='stream_unary: %s' % request.text)
 
     def DoStreamStream(self, request_iter, context):
         for request in request_iter:
             if request.timesout:
-                time.sleep(1)
+                while context.is_active():
+                    time.sleep(0.1)
             yield Message(text='stream_stream: %s' % request.text)
 
     def DoUnaryUnaryRaises(self, request, context):

@@ -1,4 +1,5 @@
 import os
+import pytest
 import socket
 import unittest
 
@@ -70,12 +71,30 @@ class TestGetHostName(unittest.TestCase):
 
         self.assertEqual(hostname, 'prefix.*')
 
-    def test_gethostname_dyno_unmatched_prefixes_dont_collapse(self):
+    def test_gethostname_dyno_only_shortens_on_prefix_match(self):
         os.environ['DYNO'] = 'dynosaurus'
         hostname = system_info.gethostname(use_dyno_names=True,
-                dyno_shorten_prefixes=['prefix'])
-
+                dyno_shorten_prefixes=['meow'])
         self.assertEqual(hostname, 'dynosaurus')
+
+    def test_gethostname_prefixes_allow_csv(self):
+        os.environ['DYNO'] = 'dynosaurus.1'
+        hostname = system_info.gethostname(use_dyno_names=True,
+                dyno_shorten_prefixes=['rex', 'dynosaurus'])
+        self.assertEqual(hostname, 'dynosaurus.*')
+
+    def test_gethostname_prefix_empty_string(self):
+        os.environ['DYNO'] = 'dynosaurus.1'
+        hostname = system_info.gethostname(use_dyno_names=True,
+                dyno_shorten_prefixes=[''])
+        self.assertEqual(hostname, 'dynosaurus.1')
+
+    def test_gethostname_unsupported_object(self):
+        os.environ['DYNO'] = 'dynosaurus.1'
+
+        with pytest.raises(TypeError):
+            hostname = system_info.gethostname(use_dyno_names=True,
+                    dyno_shorten_prefixes=[{'meow': 'wruff'}])
 
 
 if __name__ == '__main__':

@@ -47,6 +47,8 @@ ENV_WITH_BAD_UTIL_CONF = {
     'NEW_RELIC_UTILIZATION_BILLING_HOSTNAME': 'env-hostname',
     'NEW_RELIC_UTILIZATION_TOTAL_RAM_MIB': '98765',
 }
+ENV_WITH_HEROKU = {'NEW_RELIC_HEROKU_USE_DYNO_NAMES': 'false',
+        'NEW_RELIC_HEROKU_DYNO_NAME_PREFIXES_TO_SHORTEN': 'meow wruff'}
 
 INITIAL_ENV = os.environ
 
@@ -92,6 +94,22 @@ def reset_agent_config(ini_contents, env_dict):
 
         return returned
     return reset
+
+
+@reset_agent_config(INI_FILE_WITHOUT_UTIL_CONF, ENV_WITHOUT_UTIL_CONF)
+def test_heroku_default():
+    settings = global_settings()
+    assert settings.heroku.use_dyno_names is True
+    assert settings.heroku.dyno_name_prefixes_to_shorten in \
+            (['scheduler', 'run'], ['run', 'scheduler'])
+
+
+@reset_agent_config(INI_FILE_WITHOUT_UTIL_CONF, ENV_WITH_HEROKU)
+def test_heroku_override():
+    settings = global_settings()
+    assert settings.heroku.use_dyno_names is False
+    assert settings.heroku.dyno_name_prefixes_to_shorten in \
+            (['meow', 'wruff'], ['wruff', 'meow'])
 
 
 @reset_agent_config(INI_FILE_WITHOUT_UTIL_CONF, ENV_WITH_UTIL_CONF)

@@ -338,7 +338,7 @@ def _resolve_hostname(use_dyno_names, dyno_shorten_prefixes):
         return socket.gethostname()
 
     for prefix in dyno_shorten_prefixes:
-        if dyno_name.startswith(prefix):
+        if prefix and dyno_name.startswith(prefix):
             return '%s.*' % prefix
 
     return dyno_name

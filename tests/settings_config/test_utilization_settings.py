@@ -52,6 +52,7 @@ INITIAL_ENV = os.environ
 
 # Tests for loading settings and testing for values precedence
 
+
 class Environ(object):
     def __init__(self, env_dict):
         self.env_dict = {}
@@ -64,6 +65,7 @@ class Environ(object):
     def __exit__(self, *args, **kwargs):
         os.environ.clear()
         os.environ = INITIAL_ENV
+
 
 def reset_agent_config(ini_contents, env_dict):
     @function_wrapper
@@ -91,6 +93,7 @@ def reset_agent_config(ini_contents, env_dict):
         return returned
     return reset
 
+
 @reset_agent_config(INI_FILE_WITHOUT_UTIL_CONF, ENV_WITH_UTIL_CONF)
 def test_billing_hostname_from_env_vars():
     settings = global_settings()
@@ -100,6 +103,7 @@ def test_billing_hostname_from_env_vars():
             '', [], [], newrelic.core.config.global_settings_dump())
     util_conf = local_config['utilization'].get('config')
     assert util_conf == {'hostname': 'env-hostname'}
+
 
 @reset_agent_config(INI_FILE_WITH_UTIL_CONF, ENV_WITH_UTIL_CONF)
 def test_billing_hostname_precedence():
@@ -112,17 +116,19 @@ def test_billing_hostname_precedence():
     util_conf = local_config['utilization'].get('config')
     assert util_conf == {'hostname': 'file-hostname'}
 
+
 @reset_agent_config(INI_FILE_WITHOUT_UTIL_CONF, ENV_WITHOUT_UTIL_CONF)
 def test_billing_hostname_with_blank_ini_file_no_env():
     settings = global_settings()
-    assert settings.utilization.billing_hostname == None
+    assert settings.utilization.billing_hostname is None
 
     # if no utilization config settings are set, the 'config' section is not in
     # the payload at all
     local_config, = ApplicationSession._create_connect_payload(
             '', [], [], newrelic.core.config.global_settings_dump())
     util_conf = local_config['utilization'].get('config')
-    assert util_conf == None
+    assert util_conf is None
+
 
 @reset_agent_config(INI_FILE_WITH_UTIL_CONF, ENV_WITHOUT_UTIL_CONF)
 def test_billing_hostname_with_set_in_ini_not_in_env():
@@ -134,6 +140,7 @@ def test_billing_hostname_with_set_in_ini_not_in_env():
     util_conf = local_config['utilization'].get('config')
     assert util_conf == {'hostname': 'file-hostname'}
 
+
 @reset_agent_config(INI_FILE_WITH_BAD_UTIL_CONF, ENV_WITHOUT_UTIL_CONF)
 def test_bad_value_in_ini_file():
     settings = global_settings()
@@ -144,6 +151,7 @@ def test_bad_value_in_ini_file():
     util_conf = local_config['utilization'].get('config')
     assert util_conf == {'hostname': 'file-hostname', 'total_ram_mib': 12345}
 
+
 @reset_agent_config(INI_FILE_WITHOUT_UTIL_CONF, ENV_WITH_BAD_UTIL_CONF)
 def test_bad_value_in_env_var():
     settings = global_settings()
@@ -153,6 +161,7 @@ def test_bad_value_in_env_var():
             '', [], [], newrelic.core.config.global_settings_dump())
     util_conf = local_config['utilization'].get('config')
     assert util_conf == {'hostname': 'env-hostname', 'total_ram_mib': 98765}
+
 
 # Tests for combining with server side settings
 
@@ -177,6 +186,7 @@ _server_side_config_settings_util_conf = [
     },
 ]
 
+
 @pytest.mark.parametrize('server_settings',
         _server_side_config_settings_util_conf)
 def test_remove_ignored_configs(server_settings):
@@ -184,17 +194,19 @@ def test_remove_ignored_configs(server_settings):
     agent_config = fixed_settings.get('agent_config', {})
     assert 'utilization.billing_hostname' not in agent_config
 
+
 @reset_agent_config(INI_FILE_WITH_UTIL_CONF, ENV_WITHOUT_UTIL_CONF)
 @pytest.mark.parametrize('server_settings',
         _server_side_config_settings_util_conf)
 def test_finalize_application_settings(server_settings):
     settings = global_settings()
 
-    final_settings = finalize_application_settings(
-            server_side_config=server_settings, settings=settings)
+    finalize_application_settings(server_side_config=server_settings,
+            settings=settings)
 
     # hostname set in ini_file and not in env vars
     assert settings.utilization.billing_hostname == 'file-hostname'
+
 
 # Tests for _environ_as_int
 
@@ -235,6 +247,7 @@ _tests_environ_as_int = [
         'expected_value': 7239,
     },
 ]
+
 
 @pytest.mark.parametrize('test', _tests_environ_as_int)
 def test__environ_as_int(test):

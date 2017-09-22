@@ -37,7 +37,7 @@ _backup_methods = {}
 # Mock out the calls used to create the connect payload.
 def setup_module(module):
     # Mock out the calls used to create the connect payload.
-    def gethostname():
+    def gethostname(*args, **kwargs):
         return HOST
     _backup_methods['gethostname'] = system_info.gethostname
     system_info.gethostname = gethostname
@@ -105,7 +105,9 @@ def default_settings():
             'utilization.detect_azure': True,
             'utilization.detect_docker': True,
             'utilization.detect_gcp': True,
-            'utilization.detect_pcf': True}
+            'utilization.detect_pcf': True,
+            'heroku.use_dyno_names': False,
+            'heroku.dyno_name_prefixes_to_shorten': []}
 
 
 def payload_asserts(payload, with_aws=True, with_gcp=True, with_pcf=True,

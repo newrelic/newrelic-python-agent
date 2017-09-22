@@ -1,3 +1,12 @@
+unreleased
+----------
+
+- Add support for displaying Heroku dyno names.
+
+  Heroku-friendly logic can now be applied to how dyno names are displayed.
+  This includes being able to collapse dynos based on prefix.
+
+
 2.94.0.79 (2017-09-19)
 ----------------------
 

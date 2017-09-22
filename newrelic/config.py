@@ -518,6 +518,10 @@ def _process_configuration(section):
     _process_setting(section,
                      'datastore_tracer.database_name_reporting.enabled',
                      'getboolean', None)
+    _process_setting(section, 'heroku.use_dyno_names',
+                     'getboolean', None)
+    _process_setting(section, 'heroku.dyno_name_prefixes_to_shorten',
+                     'get', _map_split_strings)
 
 
 # Loading of configuration from specified file and for specified

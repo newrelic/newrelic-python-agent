@@ -64,6 +64,10 @@ _test_django_post_1_10_url_resolver_scoped_metrics = [
     ('Function/django.urls.resolvers:RegexURLResolver.resolve', 'present'),
 ]
 
+_test_django_post_2_0_url_resolver_scoped_metrics = [
+    ('Function/django.urls.resolvers:URLResolver.resolve', 'present'),
+]
+
 _test_application_index_scoped_metrics = [
     ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
     ('Python/WSGI/Application', 1),
@@ -79,6 +83,9 @@ if DJANGO_VERSION >= (1, 5):
 if DJANGO_VERSION < (1, 10):
     _test_application_index_scoped_metrics.extend(
         _test_django_pre_1_10_url_resolver_scoped_metrics)
+elif DJANGO_VERSION >= (2, 0):
+    _test_application_index_scoped_metrics.extend(
+        _test_django_post_2_0_url_resolver_scoped_metrics)
 else:
     _test_application_index_scoped_metrics.extend(
         _test_django_post_1_10_url_resolver_scoped_metrics)
@@ -123,6 +130,9 @@ if DJANGO_VERSION >= (1, 5):
 if DJANGO_VERSION < (1, 10):
     _test_application_not_found_scoped_metrics.extend(
         _test_django_pre_1_10_url_resolver_scoped_metrics)
+elif DJANGO_VERSION >= (2, 0):
+    _test_application_not_found_scoped_metrics.extend(
+        _test_django_post_2_0_url_resolver_scoped_metrics)
 else:
     _test_application_not_found_scoped_metrics.extend(
         _test_django_post_1_10_url_resolver_scoped_metrics)
@@ -168,6 +178,9 @@ if DJANGO_VERSION >= (1, 5):
 if DJANGO_VERSION < (1, 10):
     _test_application_cbv_scoped_metrics.extend(
         _test_django_pre_1_10_url_resolver_scoped_metrics)
+elif DJANGO_VERSION >= (2, 0):
+    _test_application_cbv_scoped_metrics.extend(
+        _test_django_post_2_0_url_resolver_scoped_metrics)
 else:
     _test_application_cbv_scoped_metrics.extend(
         _test_django_post_1_10_url_resolver_scoped_metrics)
@@ -208,6 +221,9 @@ if DJANGO_VERSION >= (1, 5):
 if DJANGO_VERSION < (1, 10):
     _test_application_deferred_cbv_scoped_metrics.extend(
         _test_django_pre_1_10_url_resolver_scoped_metrics)
+elif DJANGO_VERSION >= (2, 0):
+    _test_application_deferred_cbv_scoped_metrics.extend(
+        _test_django_post_2_0_url_resolver_scoped_metrics)
 else:
     _test_application_deferred_cbv_scoped_metrics.extend(
         _test_django_post_1_10_url_resolver_scoped_metrics)
@@ -375,6 +391,9 @@ if DJANGO_VERSION < (1, 9):
 if DJANGO_VERSION < (1, 10):
     _test_application_inclusion_tag_scoped_metrics.extend(
         _test_django_pre_1_10_url_resolver_scoped_metrics)
+elif DJANGO_VERSION >= (2, 0):
+    _test_application_inclusion_tag_scoped_metrics.extend(
+        _test_django_post_2_0_url_resolver_scoped_metrics)
 else:
     _test_application_inclusion_tag_scoped_metrics.extend(
         _test_django_post_1_10_url_resolver_scoped_metrics)
@@ -428,6 +447,9 @@ _test_inclusion_tag_settings = {
 if DJANGO_VERSION < (1, 10):
     _test_inclusion_tag_template_tags_scoped_metrics.extend(
         _test_django_pre_1_10_url_resolver_scoped_metrics)
+elif DJANGO_VERSION >= (2, 0):
+    _test_inclusion_tag_template_tags_scoped_metrics.extend(
+        _test_django_post_2_0_url_resolver_scoped_metrics)
 else:
     _test_inclusion_tag_template_tags_scoped_metrics.extend(
         _test_django_post_1_10_url_resolver_scoped_metrics)
@@ -481,6 +503,9 @@ else:
 if DJANGO_VERSION < (1, 10):
     _test_template_render_exception_scoped_metrics_base.extend(
         _test_django_pre_1_10_url_resolver_scoped_metrics)
+elif DJANGO_VERSION >= (2, 0):
+    _test_template_render_exception_scoped_metrics_base.extend(
+        _test_django_post_2_0_url_resolver_scoped_metrics)
 else:
     _test_template_render_exception_scoped_metrics_base.extend(
         _test_django_post_1_10_url_resolver_scoped_metrics)

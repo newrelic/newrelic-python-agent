@@ -646,8 +646,13 @@ def instrument_django_core_urlresolvers(module):
     # a custom URL conf associated with a specific request, or a
     # resolver which uses the default URL conf.
 
-    module.RegexURLResolver.resolve = wrap_url_resolver(
-            module.RegexURLResolver.resolve)
+    if hasattr(module, 'RegexURLResolver'):
+        urlresolver = module.RegexURLResolver
+    else:
+        urlresolver = module.URLResolver
+
+    urlresolver.resolve = wrap_url_resolver(
+            urlresolver.resolve)
 
     # Wrap methods which resolve error handlers. For 403 and 404
     # we give these higher naming priority over any prior
@@ -657,21 +662,21 @@ def instrument_django_core_urlresolvers(module):
     # handler in place so error details identify the correct
     # transaction.
 
-    if hasattr(module.RegexURLResolver, 'resolve403'):
-        module.RegexURLResolver.resolve403 = wrap_url_resolver_nnn(
-                module.RegexURLResolver.resolve403, priority=3)
+    if hasattr(urlresolver, 'resolve403'):
+        urlresolver.resolve403 = wrap_url_resolver_nnn(
+                urlresolver.resolve403, priority=3)
 
-    if hasattr(module.RegexURLResolver, 'resolve404'):
-        module.RegexURLResolver.resolve404 = wrap_url_resolver_nnn(
-                module.RegexURLResolver.resolve404, priority=3)
+    if hasattr(urlresolver, 'resolve404'):
+        urlresolver.resolve404 = wrap_url_resolver_nnn(
+                urlresolver.resolve404, priority=3)
 
-    if hasattr(module.RegexURLResolver, 'resolve500'):
-        module.RegexURLResolver.resolve500 = wrap_url_resolver_nnn(
-                module.RegexURLResolver.resolve500, priority=1)
+    if hasattr(urlresolver, 'resolve500'):
+        urlresolver.resolve500 = wrap_url_resolver_nnn(
+                urlresolver.resolve500, priority=1)
 
-    if hasattr(module.RegexURLResolver, 'resolve_error_handler'):
-        module.RegexURLResolver.resolve_error_handler = wrap_url_resolver_nnn(
-                module.RegexURLResolver.resolve_error_handler, priority=1)
+    if hasattr(urlresolver, 'resolve_error_handler'):
+        urlresolver.resolve_error_handler = wrap_url_resolver_nnn(
+                urlresolver.resolve_error_handler, priority=1)
 
     # Wrap function for performing reverse URL lookup to strip any
     # instrumentation wrapper when view handler is passed in.

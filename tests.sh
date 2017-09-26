@@ -53,9 +53,9 @@ if test x"$*" = x""
 then
     TOX_TESTS=""
 
-    TOX_TESTS="$TOX_TESTS newrelic/common/tests"
-    TOX_TESTS="$TOX_TESTS newrelic/core/tests"
-    TOX_TESTS="$TOX_TESTS newrelic/api/tests"
+    TOX_TESTS="$TOX_TESTS newrelic/common"
+    TOX_TESTS="$TOX_TESTS newrelic/core"
+    TOX_TESTS="$TOX_TESTS newrelic/api"
     TOX_TESTS="$TOX_TESTS newrelic/tests"
 
     NEW_RELIC_ADMIN_TESTS=true

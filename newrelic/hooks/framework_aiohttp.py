@@ -4,50 +4,58 @@ from newrelic.api.transaction import set_background_task
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.application import application_instance
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
-        function_wrapper)
+        function_wrapper, ObjectProxy)
 from newrelic.common.object_names import callable_name
-from asyncio.coroutines import CoroWrapper
 
 
-class NRViewCoroutineWrapper(CoroWrapper):
-    def __init__(self, view_name, gen, func=None):
-        super(NRViewCoroutineWrapper, self).__init__(gen, func)
-        self.transaction = None
-        self.view_name = view_name
+class NRViewCoroutineWrapper(ObjectProxy):
+    def __init__(self, view_name, wrapped):
+        super(NRViewCoroutineWrapper, self).__init__(wrapped)
+        self._nr_transaction = None
+        self._nr_view_name = view_name
+
+    def __iter__(self):
+        return self
+
+    def __await__(self):
+        return self
 
     def __next__(self):
-        if not self.transaction:
+        return self.send(None)
+
+    def send(self, value):
+        if not self._nr_transaction:
             # create and start the transaction
             app = application_instance()
-            txn = BackgroundTask(app, self.view_name)
-            self.transaction = txn
+            txn = BackgroundTask(app, self._nr_view_name)
+            self._nr_transaction = txn
 
             if txn._settings:
                 txn.__enter__()
                 set_background_task(False)
                 txn.drop_transaction()
 
-        txn = self.transaction
+        txn = self._nr_transaction
 
         # transaction may not be active
         if not txn._settings:
-            return self.gen.send(None)
+            return self.__wrapped__.send(value)
 
         txn.save_transaction()
 
         try:
-            r = self.gen.send(None)
+            r = self.__wrapped__.send(value)
             txn.drop_transaction()
             return r
         except (GeneratorExit, StopIteration):
-            self.transaction.__exit__(None, None, None)
+            self._nr_transaction.__exit__(None, None, None)
             raise
         except:
-            self.transaction.__exit__(*sys.exc_info())
+            self._nr_transaction.__exit__(*sys.exc_info())
             raise
 
     def throw(self, *args, **kwargs):
-        txn = self.transaction
+        txn = self._nr_transaction
 
         # transaction may not be active
         if not txn._settings:
@@ -57,11 +65,11 @@ class NRViewCoroutineWrapper(CoroWrapper):
         try:
             return super(NRViewCoroutineWrapper, self).throw(*args, **kwargs)
         except:
-            self.transaction.__exit__(*sys.exc_info())
+            self._nr_transaction.__exit__(*sys.exc_info())
             raise
 
     def close(self):
-        txn = self.transaction
+        txn = self._nr_transaction
 
         # transaction may not be active
         if not txn._settings:
@@ -70,10 +78,10 @@ class NRViewCoroutineWrapper(CoroWrapper):
         txn.save_transaction()
         try:
             r = super(NRViewCoroutineWrapper, self).close()
-            self.transaction.__exit__(None, None, None)
+            self._nr_transaction.__exit__(None, None, None)
             return r
         except:
-            self.transaction.__exit__(*sys.exc_info())
+            self._nr_transaction.__exit__(*sys.exc_info())
             raise
 
 
@@ -88,7 +96,7 @@ def _nr_aiohttp_view_wrapper_(wrapped, instance, args, kwargs):
     name = instance and callable_name(instance) or callable_name(wrapped)
 
     # Wrap the coroutine
-    return NRViewCoroutineWrapper(name, coro, None)
+    return NRViewCoroutineWrapper(name, coro)
 
 
 def _nr_aiohttp_wrap_view_(wrapped, instance, args, kwargs):

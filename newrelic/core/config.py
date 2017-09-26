@@ -674,7 +674,7 @@ def apply_config_setting(settings_object, name, value):
     >>> value = False
     >>>
     >>> global_settings = global_settings()
-    >>> _apply_config_setting(global_settings, name, value)
+    >>> apply_config_setting(global_settings, name, value)
 
     """
 
@@ -696,8 +696,9 @@ def fetch_config_setting(settings_object, name):
     >>> name = 'browser_monitoring.auto_instrument'
     >>>
     >>> global_settings = global_settings()
-    >>> _fetch_config_setting(global_settings, name)
-    'browser_monitoring.auto_instrument'
+    >>> global_settings.browser_monitoring.auto_instrument = False
+    >>> fetch_config_setting(global_settings, name)
+    False
 
     """
 

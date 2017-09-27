@@ -549,9 +549,9 @@ def global_settings():
     settings will be taken.
 
     >>> global_settings = global_settings()
-    >>> global_settings.browser_monitoring.auto_instrument = False
+    >>> global_settings.browser_monitoring.auto_instrument = True
     >>> global_settings.browser_monitoring.auto_instrument
-    False
+    True
 
     """
 
@@ -671,7 +671,7 @@ def apply_config_setting(settings_object, name, value):
     one will be created and added automatically.
 
     >>> name = 'browser_monitoring.auto_instrument'
-    >>> value = False
+    >>> value = True
     >>>
     >>> global_settings = global_settings()
     >>> apply_config_setting(global_settings, name, value)
@@ -696,9 +696,9 @@ def fetch_config_setting(settings_object, name):
     >>> name = 'browser_monitoring.auto_instrument'
     >>>
     >>> global_settings = global_settings()
-    >>> global_settings.browser_monitoring.auto_instrument = False
+    >>> global_settings.browser_monitoring.auto_instrument = True
     >>> fetch_config_setting(global_settings, name)
-    False
+    True
 
     """
 
@@ -722,7 +722,7 @@ def apply_server_side_settings(server_side_config={}, settings=_settings):
     the resulting settings object will be cached for subsequent use
     within the application object the settings pertain to.
 
-    >>> server_config = { 'browser_monitoring.auto_instrument': False }
+    >>> server_config = {'browser_monitoring.auto_instrument': True}
     >>>
     >>> settings_snapshot = apply_server_side_settings(server_config)
 

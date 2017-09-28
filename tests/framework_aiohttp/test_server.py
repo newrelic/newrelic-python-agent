@@ -21,6 +21,10 @@ def aiohttp_app():
     case.tearDown()
 
 
+@pytest.mark.parametrize('expect100', [
+    True,
+    False,
+])
 @pytest.mark.parametrize('method', [
     'GET',
     'POST',
@@ -32,10 +36,11 @@ def aiohttp_app():
     ('/coro', '_target_application:index'),
     ('/class', '_target_application:HelloWorldView'),
 ])
-def test_valid_response(method, uri, metric_name, aiohttp_app):
+def test_valid_response(method, uri, metric_name, expect100, aiohttp_app):
     @asyncio.coroutine
     def fetch():
-        resp = yield from aiohttp_app.client.request(method, uri)
+        resp = yield from aiohttp_app.client.request(
+                method, uri, expect100=expect100)
         assert resp.status == 200
         text = yield from resp.text()
         assert "Hello Aiohttp!" in text

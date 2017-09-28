@@ -429,6 +429,7 @@ def validate_transaction_metrics(name, group='Function',
     def _validate_wrapper(wrapped, instance, args, kwargs):
 
         record_transaction_called = []
+        recorded_metrics = []
 
         @transient_function_wrapper('newrelic.core.stats_engine',
                 'StatsEngine.record_transaction')
@@ -441,49 +442,52 @@ def validate_transaction_metrics(name, group='Function',
                 raise
             else:
                 metrics = instance.stats_table
-
-                def _validate(name, scope, count):
-                    key = (name, scope)
-                    metric = metrics.get(key)
-
-                    def _metrics_table():
-                        return 'metric=%r, metrics=%r' % (key, metrics)
-
-                    def _metric_details():
-                        return 'metric=%r, count=%r' % (key, metric.call_count)
-
-                    if count is not None:
-                        assert metric is not None, _metrics_table()
-                        if count == 'present':
-                            assert metric.call_count > 0, _metric_details()
-                        else:
-                            assert metric.call_count == count, _metric_details()
-
-                    else:
-                        assert metric is None, _metrics_table()
-
-                for unscoped_metric in unscoped_metrics:
-                    _validate(unscoped_metric, '', 1)
-
-                for scoped_name, scoped_count in scoped_metrics:
-                    _validate(scoped_name, transaction_scope_name, scoped_count)
-
-                for rollup_name, rollup_count in rollup_metrics:
-                    _validate(rollup_name, '', rollup_count)
-
-                for custom_name, custom_count in custom_metrics:
-                    _validate(custom_name, '', custom_count)
-
-                custom_metric_names = set([name for name, _ in custom_metrics])
-                for name, _ in metrics:
-                    if name not in custom_metric_names:
-                        assert not name.startswith('Supportability/api/'), name
+                recorded_metrics.append(metrics)
 
             return result
 
+        def _validate(name, scope, count):
+            metrics = recorded_metrics[0]
+            key = (name, scope)
+            metric = metrics.get(key)
+
+            def _metrics_table():
+                return 'metric=%r, metrics=%r' % (key, metrics)
+
+            def _metric_details():
+                return 'metric=%r, count=%r' % (key, metric.call_count)
+
+            if count is not None:
+                assert metric is not None, _metrics_table()
+                if count == 'present':
+                    assert metric.call_count > 0, _metric_details()
+                else:
+                    assert metric.call_count == count, _metric_details()
+
+            else:
+                assert metric is None, _metrics_table()
+
         _new_wrapper = _validate_transaction_metrics(wrapped)
-        val = _new_wrapper(*args,**kwargs)
+        val = _new_wrapper(*args, **kwargs)
         assert record_transaction_called
+
+        for unscoped_metric in unscoped_metrics:
+            _validate(unscoped_metric, '', 1)
+
+        for scoped_name, scoped_count in scoped_metrics:
+            _validate(scoped_name, transaction_scope_name, scoped_count)
+
+        for rollup_name, rollup_count in rollup_metrics:
+            _validate(rollup_name, '', rollup_count)
+
+        for custom_name, custom_count in custom_metrics:
+            _validate(custom_name, '', custom_count)
+
+        custom_metric_names = set([name for name, _ in custom_metrics])
+        for name, _ in recorded_metrics[0]:
+            if name not in custom_metric_names:
+                assert not name.startswith('Supportability/api/'), name
+
         return val
 
     return _validate_wrapper

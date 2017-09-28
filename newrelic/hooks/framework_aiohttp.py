@@ -59,11 +59,11 @@ class NRViewCoroutineWrapper(ObjectProxy):
 
         # transaction may not be active
         if not txn._settings:
-            return super(NRViewCoroutineWrapper, self).throw(*args, **kwargs)
+            return self.__wrapped__.throw(*args, **kwargs)
 
         txn.save_transaction()
         try:
-            return super(NRViewCoroutineWrapper, self).throw(*args, **kwargs)
+            return self.__wrapped__.throw(*args, **kwargs)
         except:
             self._nr_transaction.__exit__(*sys.exc_info())
             raise
@@ -73,11 +73,11 @@ class NRViewCoroutineWrapper(ObjectProxy):
 
         # transaction may not be active
         if not txn._settings:
-            return super(NRViewCoroutineWrapper, self).close()
+            return self.__wrapped__.close()
 
         txn.save_transaction()
         try:
-            r = super(NRViewCoroutineWrapper, self).close()
+            r = self.__wrapped__.close()
             self._nr_transaction.__exit__(None, None, None)
             return r
         except:

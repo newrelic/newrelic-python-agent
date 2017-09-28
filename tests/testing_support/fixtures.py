@@ -446,8 +446,7 @@ def validate_transaction_metrics(name, group='Function',
 
             return result
 
-        def _validate(name, scope, count):
-            metrics = recorded_metrics[0]
+        def _validate(metrics, name, scope, count):
             key = (name, scope)
             metric = metrics.get(key)
 
@@ -470,21 +469,24 @@ def validate_transaction_metrics(name, group='Function',
         _new_wrapper = _validate_transaction_metrics(wrapped)
         val = _new_wrapper(*args, **kwargs)
         assert record_transaction_called
+        record_transaction_called.pop()
+        metrics = recorded_metrics.pop()
 
         for unscoped_metric in unscoped_metrics:
-            _validate(unscoped_metric, '', 1)
+            _validate(metrics, unscoped_metric, '', 1)
 
         for scoped_name, scoped_count in scoped_metrics:
-            _validate(scoped_name, transaction_scope_name, scoped_count)
+            _validate(metrics, scoped_name, transaction_scope_name,
+                    scoped_count)
 
         for rollup_name, rollup_count in rollup_metrics:
-            _validate(rollup_name, '', rollup_count)
+            _validate(metrics, rollup_name, '', rollup_count)
 
         for custom_name, custom_count in custom_metrics:
-            _validate(custom_name, '', custom_count)
+            _validate(metrics, custom_name, '', custom_count)
 
         custom_metric_names = set([name for name, _ in custom_metrics])
-        for name, _ in recorded_metrics[0]:
+        for name, _ in metrics:
             if name not in custom_metric_names:
                 assert not name.startswith('Supportability/api/'), name
 

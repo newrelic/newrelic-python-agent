@@ -552,28 +552,45 @@ def validate_internal_metrics(metrics=[]):
 def validate_transaction_errors(errors=[], required_params=[],
         forgone_params=[]):
 
+    captured_errors = []
+
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
     @catch_background_exceptions
-    def _validate_transaction_errors(wrapped, instance, args, kwargs):
+    def _capture_transaction_errors(wrapped, instance, args, kwargs):
         def _bind_params(transaction, *args, **kwargs):
             return transaction
 
         transaction = _bind_params(*args, **kwargs)
+        captured = transaction.errors
+
+        captured_errors.append(captured)
+
+        return wrapped(*args, **kwargs)
+
+    @function_wrapper
+    def _validate_transaction_errors(wrapped, instance, args, kwargs):
+        _new_wrapped = _capture_transaction_errors(wrapped)
+        output = _new_wrapped(*args, **kwargs)
+
+        expected = sorted(errors)
+
+        if captured_errors:
+            captured = captured_errors[0]
+        else:
+            captured = []
 
         if errors and isinstance(errors[0], (tuple, list)):
-            expected = sorted(errors)
-            captured = sorted([(e.type, e.message)
-                    for e in transaction.errors])
-
+            compare_to = sorted([(e.type, e.message)
+                    for e in captured])
         else:
-            expected = sorted(errors)
-            captured = sorted([e.type for e in transaction.errors])
+            compare_to = sorted([e.type for e in captured])
 
-        assert expected == captured, 'expected=%r, captured=%r, errors=%r' % (
-                expected, captured, transaction.errors)
+        assert expected == compare_to, (
+                'expected=%r, captured=%r, errors=%r' % (
+                expected, compare_to, captured))
 
-        for e in transaction.errors:
+        for e in captured:
             for name, value in required_params:
                 assert name in e.custom_params, ('name=%r, '
                         'params=%r' % (name, e.custom_params))
@@ -584,7 +601,7 @@ def validate_transaction_errors(errors=[], required_params=[],
                 assert name not in e.custom_params, ('name=%r, '
                         'params=%r' % (name, e.custom_params))
 
-        return wrapped(*args, **kwargs)
+        return output
 
     return _validate_transaction_errors
 

@@ -69,10 +69,7 @@ def load_flame_thrower(app, handler):
     return flame_thrower
 
 
-def make_app(with_middleware=False):
-    middlewares = []
-    if with_middleware:
-        middlewares.append(load_flame_thrower)
+def make_app(middlewares=None):
     app = web.Application(middlewares=middlewares)
     app.router.add_route('*', '/coro', index)
     app.router.add_route('*', '/class', HelloWorldView)

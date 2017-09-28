@@ -1,4 +1,5 @@
 import pytest
+import sys
 import asyncio
 from aiohttp.test_utils import AioHTTPTestCase
 from _target_application import make_app
@@ -6,21 +7,37 @@ from _target_application import make_app
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_transaction_errors, count_transactions)
 
+middlewares = [None]
+if sys.version_info >= (3, 5):
+    from _middleware_await import load_logic_blimps
+    middlewares.append(load_logic_blimps)
+
 
 class SimpleAiohttpApp(AioHTTPTestCase):
 
+    def __init__(self, middleware, *args, **kwargs):
+        super(SimpleAiohttpApp, self).__init__(*args, **kwargs)
+        self.middleware = None
+        if middleware:
+            self.middleware = [middleware]
+
     def get_app(self):
-        return make_app()
+        return make_app(self.middleware)
 
 
 @pytest.fixture(autouse=True)
-def aiohttp_app():
-    case = SimpleAiohttpApp()
+def aiohttp_app(request):
+    try:
+        middleware = request.getfixturevalue('middleware')
+    except:
+        middleware = None
+    case = SimpleAiohttpApp(middleware=middleware)
     case.setUp()
     yield case
     case.tearDown()
 
 
+@pytest.mark.parametrize('middleware', middlewares)
 @pytest.mark.parametrize('expect100', [
     True,
     False,
@@ -37,7 +54,8 @@ def aiohttp_app():
     ('/class', '_target_application:HelloWorldView'),
     ('/known_error', '_target_application:KnownErrorView'),
 ])
-def test_valid_response(method, uri, metric_name, expect100, aiohttp_app):
+def test_valid_response(method, uri, metric_name, expect100, middleware,
+        aiohttp_app):
     @asyncio.coroutine
     def fetch():
         resp = yield from aiohttp_app.client.request(
@@ -53,6 +71,7 @@ def test_valid_response(method, uri, metric_name, expect100, aiohttp_app):
     _test()
 
 
+@pytest.mark.parametrize('middleware', middlewares)
 @pytest.mark.parametrize('method', [
     'GET',
     'POST',
@@ -60,7 +79,7 @@ def test_valid_response(method, uri, metric_name, expect100, aiohttp_app):
     'PATCH',
     'DELETE',
 ])
-def test_error_exception(method, aiohttp_app):
+def test_error_exception(method, middleware, aiohttp_app):
     @asyncio.coroutine
     def fetch():
         resp = yield from aiohttp_app.client.request(method, '/error')
@@ -74,6 +93,7 @@ def test_error_exception(method, aiohttp_app):
     _test()
 
 
+@pytest.mark.parametrize('middleware', middlewares)
 @pytest.mark.parametrize('method', [
     'GET',
     'POST',
@@ -86,7 +106,8 @@ def test_error_exception(method, aiohttp_app):
     ('/class', '_target_application:HelloWorldView'),
     ('/known_error', '_target_application:KnownErrorView'),
 ])
-def test_simultaneous_requests(method, uri, metric_name, aiohttp_app):
+def test_simultaneous_requests(method, uri, metric_name, middleware,
+        aiohttp_app):
     @asyncio.coroutine
     def fetch():
         resp = yield from aiohttp_app.client.request(method, uri)

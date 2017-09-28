@@ -64,6 +64,9 @@ class NRViewCoroutineWrapper(ObjectProxy):
         txn.save_transaction()
         try:
             return self.__wrapped__.throw(*args, **kwargs)
+        except (GeneratorExit, StopIteration):
+            self._nr_transaction.__exit__(None, None, None)
+            raise
         except:
             self._nr_transaction.__exit__(*sys.exc_info())
             raise
@@ -80,6 +83,9 @@ class NRViewCoroutineWrapper(ObjectProxy):
             r = self.__wrapped__.close()
             self._nr_transaction.__exit__(None, None, None)
             return r
+        except (GeneratorExit, StopIteration):
+            self._nr_transaction.__exit__(None, None, None)
+            raise
         except:
             self._nr_transaction.__exit__(*sys.exc_info())
             raise

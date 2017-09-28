@@ -2478,3 +2478,13 @@ def validate_analytics_catmap_data(name, expected_attributes=(),
         return wrapped(*args, **kwargs)
 
     return _validate_analytics_sample_data
+
+
+def count_transactions(count_list):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _increment_count(wrapped, instance, args, kwargs):
+        count_list.append(True)
+        return wrapped(*args, **kwargs)
+
+    return _increment_count

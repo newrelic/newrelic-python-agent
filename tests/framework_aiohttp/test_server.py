@@ -4,7 +4,7 @@ from aiohttp.test_utils import AioHTTPTestCase
 from _target_application import make_app
 
 from testing_support.fixtures import (validate_transaction_metrics,
-        validate_transaction_errors)
+        validate_transaction_errors, count_transactions)
 
 
 class SimpleAiohttpApp(AioHTTPTestCase):
@@ -64,5 +64,44 @@ def test_error_exception(method, aiohttp_app):
     @validate_transaction_metrics('_target_application:error')
     def _test():
         aiohttp_app.loop.run_until_complete(fetch())
+
+    _test()
+
+
+@pytest.mark.parametrize('method', [
+    'GET',
+    'POST',
+    'PUT',
+    'PATCH',
+    'DELETE',
+])
+@pytest.mark.parametrize('uri,metric_name', [
+    ('/coro', '_target_application:index'),
+    ('/class', '_target_application:HelloWorldView'),
+])
+def test_simultaneous_requests(method, uri, metric_name, aiohttp_app):
+    @asyncio.coroutine
+    def fetch():
+        resp = yield from aiohttp_app.client.request(method, uri)
+        assert resp.status == 200
+        text = yield from resp.text()
+        assert "Hello Aiohttp!" in text
+        return resp
+
+    @asyncio.coroutine
+    def multi_fetch():
+        coros = [fetch() for i in range(2)]
+        combined = asyncio.gather(*coros)
+
+        responses = yield from combined
+        return responses
+
+    transactions = []
+
+    @validate_transaction_metrics(metric_name)
+    @count_transactions(transactions)
+    def _test():
+        aiohttp_app.loop.run_until_complete(multi_fetch())
+        assert len(transactions) == 2
 
     _test()

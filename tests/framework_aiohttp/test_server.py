@@ -35,6 +35,7 @@ def aiohttp_app():
 @pytest.mark.parametrize('uri,metric_name', [
     ('/coro', '_target_application:index'),
     ('/class', '_target_application:HelloWorldView'),
+    ('/known_error', '_target_application:KnownErrorView'),
 ])
 def test_valid_response(method, uri, metric_name, expect100, aiohttp_app):
     @asyncio.coroutine
@@ -83,6 +84,7 @@ def test_error_exception(method, aiohttp_app):
 @pytest.mark.parametrize('uri,metric_name', [
     ('/coro', '_target_application:index'),
     ('/class', '_target_application:HelloWorldView'),
+    ('/known_error', '_target_application:KnownErrorView'),
 ])
 def test_simultaneous_requests(method, uri, metric_name, aiohttp_app):
     @asyncio.coroutine

@@ -3,7 +3,8 @@ import asyncio
 from aiohttp.test_utils import AioHTTPTestCase
 from _target_application import make_app
 
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.fixtures import (validate_transaction_metrics,
+        validate_transaction_errors)
 
 
 class SimpleAiohttpApp(AioHTTPTestCase):
@@ -40,6 +41,27 @@ def test_valid_response(method, uri, metric_name, aiohttp_app):
         assert "Hello Aiohttp!" in text
 
     @validate_transaction_metrics(metric_name)
+    def _test():
+        aiohttp_app.loop.run_until_complete(fetch())
+
+    _test()
+
+
+@pytest.mark.parametrize('method', [
+    'GET',
+    'POST',
+    'PUT',
+    'PATCH',
+    'DELETE',
+])
+def test_error_exception(method, aiohttp_app):
+    @asyncio.coroutine
+    def fetch():
+        resp = yield from aiohttp_app.client.request(method, '/error')
+        assert resp.status == 500
+
+    @validate_transaction_errors(errors=['builtins:ValueError'])
+    @validate_transaction_metrics('_target_application:error')
     def _test():
         aiohttp_app.loop.run_until_complete(fetch())
 

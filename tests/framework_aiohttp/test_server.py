@@ -3,9 +3,11 @@ import sys
 import asyncio
 from aiohttp.test_utils import AioHTTPTestCase
 from _target_application import make_app, load_close_middleware
+from newrelic.core.config import global_settings
 
 from testing_support.fixtures import (validate_transaction_metrics,
-        validate_transaction_errors, count_transactions)
+        validate_transaction_errors, count_transactions,
+        override_generic_settings)
 
 middlewares = [None, load_close_middleware]
 if sys.version_info >= (3, 5):
@@ -37,6 +39,7 @@ def aiohttp_app(request):
     case.tearDown()
 
 
+@pytest.mark.parametrize('nr_enabled', [True, False])
 @pytest.mark.parametrize('middleware', middlewares)
 @pytest.mark.parametrize('expect100', [
     True,
@@ -55,7 +58,7 @@ def aiohttp_app(request):
     ('/known_error', '_target_application:KnownErrorView'),
 ])
 def test_valid_response(method, uri, metric_name, expect100, middleware,
-        aiohttp_app):
+        nr_enabled, aiohttp_app):
     @asyncio.coroutine
     def fetch():
         resp = yield from aiohttp_app.client.request(
@@ -64,13 +67,21 @@ def test_valid_response(method, uri, metric_name, expect100, middleware,
         text = yield from resp.text()
         assert "Hello Aiohttp!" in text
 
-    @validate_transaction_metrics(metric_name)
-    def _test():
-        aiohttp_app.loop.run_until_complete(fetch())
+    if nr_enabled:
+        @validate_transaction_metrics(metric_name)
+        def _test():
+            aiohttp_app.loop.run_until_complete(fetch())
+    else:
+        settings = global_settings()
+
+        @override_generic_settings(settings, {'enabled': False})
+        def _test():
+            aiohttp_app.loop.run_until_complete(fetch())
 
     _test()
 
 
+@pytest.mark.parametrize('nr_enabled', [True, False])
 @pytest.mark.parametrize('middleware', middlewares)
 @pytest.mark.parametrize('method', [
     'GET',
@@ -79,20 +90,28 @@ def test_valid_response(method, uri, metric_name, expect100, middleware,
     'PATCH',
     'DELETE',
 ])
-def test_error_exception(method, middleware, aiohttp_app):
+def test_error_exception(method, middleware, nr_enabled, aiohttp_app):
     @asyncio.coroutine
     def fetch():
         resp = yield from aiohttp_app.client.request(method, '/error')
         assert resp.status == 500
 
-    @validate_transaction_errors(errors=['builtins:ValueError'])
-    @validate_transaction_metrics('_target_application:error')
-    def _test():
-        aiohttp_app.loop.run_until_complete(fetch())
+    if nr_enabled:
+        @validate_transaction_errors(errors=['builtins:ValueError'])
+        @validate_transaction_metrics('_target_application:error')
+        def _test():
+            aiohttp_app.loop.run_until_complete(fetch())
+    else:
+        settings = global_settings()
+
+        @override_generic_settings(settings, {'enabled': False})
+        def _test():
+            aiohttp_app.loop.run_until_complete(fetch())
 
     _test()
 
 
+@pytest.mark.parametrize('nr_enabled', [True, False])
 @pytest.mark.parametrize('middleware', middlewares)
 @pytest.mark.parametrize('method', [
     'GET',
@@ -107,7 +126,7 @@ def test_error_exception(method, middleware, aiohttp_app):
     ('/known_error', '_target_application:KnownErrorView'),
 ])
 def test_simultaneous_requests(method, uri, metric_name, middleware,
-        aiohttp_app):
+        nr_enabled, aiohttp_app):
     @asyncio.coroutine
     def fetch():
         resp = yield from aiohttp_app.client.request(method, uri)
@@ -124,12 +143,19 @@ def test_simultaneous_requests(method, uri, metric_name, middleware,
         responses = yield from combined
         return responses
 
-    transactions = []
+    if nr_enabled:
+        transactions = []
 
-    @validate_transaction_metrics(metric_name)
-    @count_transactions(transactions)
-    def _test():
-        aiohttp_app.loop.run_until_complete(multi_fetch())
-        assert len(transactions) == 2
+        @validate_transaction_metrics(metric_name)
+        @count_transactions(transactions)
+        def _test():
+            aiohttp_app.loop.run_until_complete(multi_fetch())
+            assert len(transactions) == 2
+    else:
+        settings = global_settings()
+
+        @override_generic_settings(settings, {'enabled': False})
+        def _test():
+            aiohttp_app.loop.run_until_complete(multi_fetch())
 
     _test()

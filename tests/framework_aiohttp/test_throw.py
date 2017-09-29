@@ -2,9 +2,10 @@ import pytest
 import asyncio
 from aiohttp.test_utils import AioHTTPTestCase
 from _target_application import make_app, load_flame_thrower
+from newrelic.core.config import global_settings
 
 from testing_support.fixtures import (validate_transaction_metrics,
-        validate_transaction_errors)
+        validate_transaction_errors, override_generic_settings)
 
 
 class SimpleAiohttpApp(AioHTTPTestCase):
@@ -21,6 +22,7 @@ def aiohttp_app():
     case.tearDown()
 
 
+@pytest.mark.parametrize('nr_enabled', [True, False])
 @pytest.mark.parametrize('expect100', [
     True,
     False,
@@ -32,25 +34,38 @@ def aiohttp_app():
     'PATCH',
     'DELETE',
 ])
-@pytest.mark.parametrize('uri,metric_name', [
-    ('/coro', '_target_application:index'),
-    ('/class', '_target_application:HelloWorldView'),
+@pytest.mark.parametrize('uri,metric_name,error', [
+    ('/coro', '_target_application:index',
+            '_target_application:KnownException'),
+    ('/class', '_target_application:HelloWorldView',
+            '_target_application:KnownException'),
+    ('/error', '_target_application:error',
+            'builtins:ValueError'),
 ])
-def test_exception_raised(method, uri, metric_name, expect100, aiohttp_app):
+def test_exception_raised(method, uri, metric_name, error, expect100,
+        nr_enabled, aiohttp_app):
     @asyncio.coroutine
     def fetch():
         resp = yield from aiohttp_app.client.request(
                 method, uri, expect100=expect100)
         assert resp.status == 500
 
-    @validate_transaction_metrics(metric_name)
-    @validate_transaction_errors(errors=['_target_application:KnownException'])
-    def _test():
-        aiohttp_app.loop.run_until_complete(fetch())
+    if nr_enabled:
+        @validate_transaction_metrics(metric_name)
+        @validate_transaction_errors(errors=[error])
+        def _test():
+            aiohttp_app.loop.run_until_complete(fetch())
+    else:
+        settings = global_settings()
+
+        @override_generic_settings(settings, {'enabled': False})
+        def _test():
+            aiohttp_app.loop.run_until_complete(fetch())
 
     _test()
 
 
+@pytest.mark.parametrize('nr_enabled', [True, False])
 @pytest.mark.parametrize('expect100', [
     True,
     False,
@@ -65,7 +80,8 @@ def test_exception_raised(method, uri, metric_name, expect100, aiohttp_app):
 @pytest.mark.parametrize('uri,metric_name', [
     ('/known_error', '_target_application:KnownErrorView'),
 ])
-def test_exception_ignored(method, uri, metric_name, expect100, aiohttp_app):
+def test_exception_ignored(method, uri, metric_name, expect100, nr_enabled,
+        aiohttp_app):
     @asyncio.coroutine
     def fetch():
         resp = yield from aiohttp_app.client.request(
@@ -74,30 +90,16 @@ def test_exception_ignored(method, uri, metric_name, expect100, aiohttp_app):
         text = yield from resp.text()
         assert "Hello Aiohttp!" in text
 
-    @validate_transaction_errors(errors=[])
-    @validate_transaction_metrics(metric_name)
-    def _test():
-        aiohttp_app.loop.run_until_complete(fetch())
+    if nr_enabled:
+        @validate_transaction_errors(errors=[])
+        @validate_transaction_metrics(metric_name)
+        def _test():
+            aiohttp_app.loop.run_until_complete(fetch())
+    else:
+        settings = global_settings()
 
-    _test()
-
-
-@pytest.mark.parametrize('method', [
-    'GET',
-    'POST',
-    'PUT',
-    'PATCH',
-    'DELETE',
-])
-def test_error_exception(method, aiohttp_app):
-    @asyncio.coroutine
-    def fetch():
-        resp = yield from aiohttp_app.client.request(method, '/error')
-        assert resp.status == 500
-
-    @validate_transaction_errors(errors=['builtins:ValueError'])
-    @validate_transaction_metrics('_target_application:error')
-    def _test():
-        aiohttp_app.loop.run_until_complete(fetch())
+        @override_generic_settings(settings, {'enabled': False})
+        def _test():
+            aiohttp_app.loop.run_until_complete(fetch())
 
     _test()

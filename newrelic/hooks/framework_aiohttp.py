@@ -16,11 +16,14 @@ class NRViewCoroutineWrapper(ObjectProxy):
 
         environ = {
             'PATH_INFO': request.path,
-            'HTTP_HOST': request.host,
             'REQUEST_METHOD': request.method,
             'CONTENT_TYPE': request.content_type,
             'QUERY_STRING': request.query_string,
         }
+        for k, v in request.headers.items():
+            normalized_key = k.replace('-', '_').upper()
+            http_key = 'HTTP_%s' % normalized_key
+            environ[http_key] = v
         self._nr_environ = environ
 
     def __iter__(self):

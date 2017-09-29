@@ -136,10 +136,9 @@ def test_simultaneous_requests(method, uri, metric_name, middleware,
         return resp
 
     @asyncio.coroutine
-    def multi_fetch():
+    def multi_fetch(loop):
         coros = [fetch() for i in range(2)]
-        combined = asyncio.gather(*coros)
-
+        combined = asyncio.gather(*coros, loop=loop)
         responses = yield from combined
         return responses
 
@@ -149,13 +148,13 @@ def test_simultaneous_requests(method, uri, metric_name, middleware,
         @validate_transaction_metrics(metric_name)
         @count_transactions(transactions)
         def _test():
-            aiohttp_app.loop.run_until_complete(multi_fetch())
+            aiohttp_app.loop.run_until_complete(multi_fetch(aiohttp_app.loop))
             assert len(transactions) == 2
     else:
         settings = global_settings()
 
         @override_generic_settings(settings, {'enabled': False})
         def _test():
-            aiohttp_app.loop.run_until_complete(multi_fetch())
+            aiohttp_app.loop.run_until_complete(multi_fetch(aiohttp_app.loop))
 
     _test()

@@ -69,6 +69,26 @@ def load_flame_thrower(app, handler):
     return flame_thrower
 
 
+@asyncio.coroutine
+def load_close_middleware(app, handler):
+
+    @asyncio.coroutine
+    def coro_closer(request):
+        # start handler call
+        coro = handler(request)
+        try:
+            yield
+            next(coro)
+            coro.close()
+            return web.Response(text='Hello Aiohttp!')
+        except StopIteration as e:
+            return e.value
+        except Exception as e:
+            return web.Response(status=500, text=str(e))
+
+    return coro_closer
+
+
 def make_app(middlewares=None):
     app = web.Application(middlewares=middlewares)
     app.router.add_route('*', '/coro', index)

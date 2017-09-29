@@ -2,12 +2,12 @@ import pytest
 import sys
 import asyncio
 from aiohttp.test_utils import AioHTTPTestCase
-from _target_application import make_app
+from _target_application import make_app, load_close_middleware
 
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_transaction_errors, count_transactions)
 
-middlewares = [None]
+middlewares = [None, load_close_middleware]
 if sys.version_info >= (3, 5):
     from _middleware_await import load_logic_blimps
     middlewares.append(load_logic_blimps)

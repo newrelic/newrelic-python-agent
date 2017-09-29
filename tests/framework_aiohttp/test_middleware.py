@@ -4,7 +4,7 @@ from aiohttp.test_utils import AioHTTPTestCase
 from _target_application import make_app, load_flame_thrower
 
 from testing_support.fixtures import (validate_transaction_metrics,
-        validate_transaction_errors, count_transactions)
+        validate_transaction_errors)
 
 
 class SimpleAiohttpApp(AioHTTPTestCase):

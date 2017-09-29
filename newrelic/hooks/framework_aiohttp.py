@@ -1,7 +1,7 @@
 import sys
 
 from newrelic.api.transaction import set_background_task
-from newrelic.api.background_task import BackgroundTask
+from newrelic.api.web_transaction import WebTransaction
 from newrelic.api.application import application_instance
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
         function_wrapper, ObjectProxy)
@@ -9,10 +9,19 @@ from newrelic.common.object_names import callable_name
 
 
 class NRViewCoroutineWrapper(ObjectProxy):
-    def __init__(self, view_name, wrapped):
+    def __init__(self, view_name, wrapped, request):
         super(NRViewCoroutineWrapper, self).__init__(wrapped)
         self._nr_transaction = None
         self._nr_view_name = view_name
+
+        environ = {
+            'PATH_INFO': request.path,
+            'HTTP_HOST': request.host,
+            'REQUEST_METHOD': request.method,
+            'CONTENT_TYPE': request.content_type,
+            'QUERY_STRING': request.query_string,
+        }
+        self._nr_environ = environ
 
     def __iter__(self):
         return self
@@ -27,7 +36,14 @@ class NRViewCoroutineWrapper(ObjectProxy):
         if not self._nr_transaction:
             # create and start the transaction
             app = application_instance()
-            txn = BackgroundTask(app, self._nr_view_name)
+            txn = WebTransaction(app, self._nr_environ)
+            txn.set_transaction_name(
+                    self._nr_view_name, priority=1)
+
+            # TODO: add framework info
+            # transaction.add_framework_info(
+            #         name=framework[0], version=framework[1])
+
             self._nr_transaction = txn
 
             if txn._settings:
@@ -93,8 +109,13 @@ class NRViewCoroutineWrapper(ObjectProxy):
 
 @function_wrapper
 def _nr_aiohttp_view_wrapper_(wrapped, instance, args, kwargs):
+
+    def _bind_params(request, *_args, **_kwargs):
+        return request
+
     # get the coroutine
     coro = wrapped(*args, **kwargs)
+    request = _bind_params(*args, **kwargs)
 
     if hasattr(coro, '__iter__'):
         coro = iter(coro)
@@ -102,7 +123,7 @@ def _nr_aiohttp_view_wrapper_(wrapped, instance, args, kwargs):
     name = instance and callable_name(instance) or callable_name(wrapped)
 
     # Wrap the coroutine
-    return NRViewCoroutineWrapper(name, coro)
+    return NRViewCoroutineWrapper(name, coro, request)
 
 
 def _nr_aiohttp_wrap_view_(wrapped, instance, args, kwargs):

@@ -7,6 +7,6 @@ async def load_logic_blimps(app, handler):
         try:
             return await handler(request)
         except Exception as e:
-            return web.Response(status=418, text=str(e))
+            return web.Response(status=500, text=str(e))
 
     return logic_blimps

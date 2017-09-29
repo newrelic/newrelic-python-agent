@@ -43,9 +43,9 @@ class NRViewCoroutineWrapper(ObjectProxy):
             txn.set_transaction_name(
                     self._nr_view_name, priority=1)
 
-            # TODO: add framework info
-            # transaction.add_framework_info(
-            #         name=framework[0], version=framework[1])
+            import aiohttp
+            txn.add_framework_info(
+                    name='aiohttp', version=aiohttp.__version__)
 
             self._nr_transaction = txn
 

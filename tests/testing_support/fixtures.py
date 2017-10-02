@@ -429,6 +429,7 @@ def validate_transaction_metrics(name, group='Function',
     def _validate_wrapper(wrapped, instance, args, kwargs):
 
         record_transaction_called = []
+        recorded_metrics = []
 
         @transient_function_wrapper('newrelic.core.stats_engine',
                 'StatsEngine.record_transaction')
@@ -441,49 +442,54 @@ def validate_transaction_metrics(name, group='Function',
                 raise
             else:
                 metrics = instance.stats_table
-
-                def _validate(name, scope, count):
-                    key = (name, scope)
-                    metric = metrics.get(key)
-
-                    def _metrics_table():
-                        return 'metric=%r, metrics=%r' % (key, metrics)
-
-                    def _metric_details():
-                        return 'metric=%r, count=%r' % (key, metric.call_count)
-
-                    if count is not None:
-                        assert metric is not None, _metrics_table()
-                        if count == 'present':
-                            assert metric.call_count > 0, _metric_details()
-                        else:
-                            assert metric.call_count == count, _metric_details()
-
-                    else:
-                        assert metric is None, _metrics_table()
-
-                for unscoped_metric in unscoped_metrics:
-                    _validate(unscoped_metric, '', 1)
-
-                for scoped_name, scoped_count in scoped_metrics:
-                    _validate(scoped_name, transaction_scope_name, scoped_count)
-
-                for rollup_name, rollup_count in rollup_metrics:
-                    _validate(rollup_name, '', rollup_count)
-
-                for custom_name, custom_count in custom_metrics:
-                    _validate(custom_name, '', custom_count)
-
-                custom_metric_names = set([name for name, _ in custom_metrics])
-                for name, _ in metrics:
-                    if name not in custom_metric_names:
-                        assert not name.startswith('Supportability/api/'), name
+                recorded_metrics.append(metrics)
 
             return result
 
+        def _validate(metrics, name, scope, count):
+            key = (name, scope)
+            metric = metrics.get(key)
+
+            def _metrics_table():
+                return 'metric=%r, metrics=%r' % (key, metrics)
+
+            def _metric_details():
+                return 'metric=%r, count=%r' % (key, metric.call_count)
+
+            if count is not None:
+                assert metric is not None, _metrics_table()
+                if count == 'present':
+                    assert metric.call_count > 0, _metric_details()
+                else:
+                    assert metric.call_count == count, _metric_details()
+
+            else:
+                assert metric is None, _metrics_table()
+
         _new_wrapper = _validate_transaction_metrics(wrapped)
-        val = _new_wrapper(*args,**kwargs)
+        val = _new_wrapper(*args, **kwargs)
         assert record_transaction_called
+        record_transaction_called.pop()
+        metrics = recorded_metrics.pop()
+
+        for unscoped_metric in unscoped_metrics:
+            _validate(metrics, unscoped_metric, '', 1)
+
+        for scoped_name, scoped_count in scoped_metrics:
+            _validate(metrics, scoped_name, transaction_scope_name,
+                    scoped_count)
+
+        for rollup_name, rollup_count in rollup_metrics:
+            _validate(metrics, rollup_name, '', rollup_count)
+
+        for custom_name, custom_count in custom_metrics:
+            _validate(metrics, custom_name, '', custom_count)
+
+        custom_metric_names = set([name for name, _ in custom_metrics])
+        for name, _ in metrics:
+            if name not in custom_metric_names:
+                assert not name.startswith('Supportability/api/'), name
+
         return val
 
     return _validate_wrapper
@@ -548,28 +554,45 @@ def validate_internal_metrics(metrics=[]):
 def validate_transaction_errors(errors=[], required_params=[],
         forgone_params=[]):
 
+    captured_errors = []
+
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
     @catch_background_exceptions
-    def _validate_transaction_errors(wrapped, instance, args, kwargs):
+    def _capture_transaction_errors(wrapped, instance, args, kwargs):
         def _bind_params(transaction, *args, **kwargs):
             return transaction
 
         transaction = _bind_params(*args, **kwargs)
+        captured = transaction.errors
+
+        captured_errors.append(captured)
+
+        return wrapped(*args, **kwargs)
+
+    @function_wrapper
+    def _validate_transaction_errors(wrapped, instance, args, kwargs):
+        _new_wrapped = _capture_transaction_errors(wrapped)
+        output = _new_wrapped(*args, **kwargs)
+
+        expected = sorted(errors)
+
+        if captured_errors:
+            captured = captured_errors[0]
+        else:
+            captured = []
 
         if errors and isinstance(errors[0], (tuple, list)):
-            expected = sorted(errors)
-            captured = sorted([(e.type, e.message)
-                    for e in transaction.errors])
-
+            compare_to = sorted([(e.type, e.message)
+                    for e in captured])
         else:
-            expected = sorted(errors)
-            captured = sorted([e.type for e in transaction.errors])
+            compare_to = sorted([e.type for e in captured])
 
-        assert expected == captured, 'expected=%r, captured=%r, errors=%r' % (
-                expected, captured, transaction.errors)
+        assert expected == compare_to, (
+                'expected=%r, captured=%r, errors=%r' % (
+                expected, compare_to, captured))
 
-        for e in transaction.errors:
+        for e in captured:
             for name, value in required_params:
                 assert name in e.custom_params, ('name=%r, '
                         'params=%r' % (name, e.custom_params))
@@ -580,7 +603,7 @@ def validate_transaction_errors(errors=[], required_params=[],
                 assert name not in e.custom_params, ('name=%r, '
                         'params=%r' % (name, e.custom_params))
 
-        return wrapped(*args, **kwargs)
+        return output
 
     return _validate_transaction_errors
 
@@ -2455,3 +2478,13 @@ def validate_analytics_catmap_data(name, expected_attributes=(),
         return wrapped(*args, **kwargs)
 
     return _validate_analytics_sample_data
+
+
+def count_transactions(count_list):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _increment_count(wrapped, instance, args, kwargs):
+        count_list.append(True)
+        return wrapped(*args, **kwargs)
+
+    return _increment_count

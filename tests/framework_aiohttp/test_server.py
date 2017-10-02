@@ -7,8 +7,9 @@ from _target_application import make_app, load_close_middleware
 from newrelic.core.config import global_settings
 
 from testing_support.fixtures import (validate_transaction_metrics,
-        validate_transaction_errors, count_transactions,
-        override_generic_settings)
+        validate_transaction_errors, validate_transaction_event_attributes,
+        count_transactions, override_generic_settings,
+        override_application_settings)
 
 middlewares = [None, load_close_middleware]
 if sys.version_info >= (3, 5):
@@ -54,9 +55,9 @@ def aiohttp_app(request):
     'DELETE',
 ])
 @pytest.mark.parametrize('uri,metric_name', [
-    ('/coro', '_target_application:index'),
-    ('/class', '_target_application:HelloWorldView'),
-    ('/known_error', '_target_application:KnownErrorView'),
+    ('/coro?hello=world', '_target_application:index'),
+    ('/class?hello=world', '_target_application:HelloWorldView'),
+    ('/known_error?hello=world', '_target_application:KnownErrorView'),
 ])
 def test_valid_response(method, uri, metric_name, expect100, middleware,
         nr_enabled, aiohttp_app):
@@ -69,10 +70,21 @@ def test_valid_response(method, uri, metric_name, expect100, middleware,
         assert "Hello Aiohttp!" in text
 
     if nr_enabled:
+        @override_application_settings({'attributes.include': ['request.*']})
         @validate_transaction_metrics(metric_name,
             rollup_metrics=[
                 ('Python/Framework/aiohttp/%s' % aiohttp.__version__, 1),
             ],
+        )
+        @validate_transaction_event_attributes(
+            required_params={
+                'agent': ['request.headers.accept',
+                        'request.headers.contentType', 'request.headers.host',
+                        'request.headers.userAgent', 'request.method',
+                        'request.parameters.hello'],
+                'user': [],
+                'intrinsic': [],
+            },
         )
         def _test():
             aiohttp_app.loop.run_until_complete(fetch())
@@ -98,7 +110,8 @@ def test_valid_response(method, uri, metric_name, expect100, middleware,
 def test_error_exception(method, middleware, nr_enabled, aiohttp_app):
     @asyncio.coroutine
     def fetch():
-        resp = yield from aiohttp_app.client.request(method, '/error')
+        resp = yield from aiohttp_app.client.request(method,
+                '/error?hello=world')
         assert resp.status == 500
 
     if nr_enabled:
@@ -107,6 +120,21 @@ def test_error_exception(method, middleware, nr_enabled, aiohttp_app):
             rollup_metrics=[
                 ('Python/Framework/aiohttp/%s' % aiohttp.__version__, 1),
             ],
+        )
+        @validate_transaction_event_attributes(
+            required_params={
+                'agent': ['request.method', 'request.headers.contentType'],
+                'user': [],
+                'intrinsic': [],
+            },
+            forgone_params={
+                'agent': ['request.headers.accept',
+                        'request.headers.host',
+                        'request.headers.userAgent',
+                        'request.parameters.hello'],
+                'user': [],
+                'intrinsic': [],
+            },
         )
         def _test():
             aiohttp_app.loop.run_until_complete(fetch())
@@ -158,6 +186,13 @@ def test_simultaneous_requests(method, uri, metric_name, middleware,
             rollup_metrics=[
                 ('Python/Framework/aiohttp/%s' % aiohttp.__version__, 1),
             ],
+        )
+        @validate_transaction_event_attributes(
+            required_params={
+                'agent': ['request.method'],
+                'user': [],
+                'intrinsic': [],
+            },
         )
         @count_transactions(transactions)
         def _test():

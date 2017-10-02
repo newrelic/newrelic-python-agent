@@ -1,6 +1,5 @@
 import sys
 
-from newrelic.api.transaction import set_background_task
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.api.application import application_instance
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
@@ -51,7 +50,6 @@ class NRViewCoroutineWrapper(ObjectProxy):
 
             if txn._settings:
                 txn.__enter__()
-                set_background_task(False)
                 txn.drop_transaction()
 
         txn = self._nr_transaction

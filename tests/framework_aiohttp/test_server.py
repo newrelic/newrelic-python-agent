@@ -11,8 +11,8 @@ from testing_support.fixtures import (validate_transaction_metrics,
 
 middlewares = [None, load_close_middleware]
 if sys.version_info >= (3, 5):
-    from _middleware_await import load_logic_blimps
-    middlewares.append(load_logic_blimps)
+    from _middleware_await import load_coro_awaits
+    middlewares.append(load_coro_awaits)
 
 
 class SimpleAiohttpApp(AioHTTPTestCase):

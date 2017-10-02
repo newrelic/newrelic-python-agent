@@ -1,7 +1,7 @@
 import pytest
 import asyncio
 from aiohttp.test_utils import AioHTTPTestCase
-from _target_application import make_app, load_flame_thrower
+from _target_application import make_app, load_coro_throws
 from newrelic.core.config import global_settings
 
 from testing_support.fixtures import (validate_transaction_metrics,
@@ -11,7 +11,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
 class SimpleAiohttpApp(AioHTTPTestCase):
 
     def get_app(self):
-        return make_app([load_flame_thrower])
+        return make_app([load_coro_throws])
 
 
 @pytest.fixture(autouse=True)

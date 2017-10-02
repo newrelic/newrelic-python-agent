@@ -50,10 +50,10 @@ class KnownErrorView(web.View):
 
 
 @asyncio.coroutine
-def load_flame_thrower(app, handler):
+def load_coro_throws(app, handler):
 
     @asyncio.coroutine
-    def flame_thrower(request):
+    def coro_throws(request):
         # start handler call
         coro = handler(request)
         try:
@@ -66,7 +66,7 @@ def load_flame_thrower(app, handler):
         except Exception as e:
             return web.Response(status=500, text=str(e))
 
-    return flame_thrower
+    return coro_throws
 
 
 @asyncio.coroutine

@@ -1,17 +1,19 @@
+import asyncio
 import sys
 
+from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import WebTransaction
+from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.application import application_instance
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
         function_wrapper, ObjectProxy)
 from newrelic.common.object_names import callable_name
 
 
-class NRViewCoroutineWrapper(ObjectProxy):
-    def __init__(self, view_name, wrapped, request):
-        super(NRViewCoroutineWrapper, self).__init__(wrapped)
+class NRTransactionCoroutineWrapper(ObjectProxy):
+    def __init__(self, wrapped, request):
+        super(NRTransactionCoroutineWrapper, self).__init__(wrapped)
         self._nr_transaction = None
-        self._nr_view_name = view_name
 
         environ = {
             'PATH_INFO': request.path,
@@ -39,8 +41,6 @@ class NRViewCoroutineWrapper(ObjectProxy):
             # create and start the transaction
             app = application_instance()
             txn = WebTransaction(app, self._nr_environ)
-            txn.set_transaction_name(
-                    self._nr_view_name, priority=1)
 
             import aiohttp
             txn.add_framework_info(
@@ -110,6 +110,32 @@ class NRViewCoroutineWrapper(ObjectProxy):
 
 @function_wrapper
 def _nr_aiohttp_view_wrapper_(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
+    # get the coroutine
+    coro = wrapped(*args, **kwargs)
+
+    if hasattr(coro, '__iter__'):
+        coro = iter(coro)
+
+    name = instance and callable_name(instance) or callable_name(wrapped)
+    transaction.set_transaction_name(name, priority=1)
+
+    @asyncio.coroutine
+    def _inner():
+        with FunctionTrace(transaction, name):
+            result = yield from coro
+
+        return result
+
+    return _inner()
+
+
+@function_wrapper
+def _nr_aiohttp_transaction_wrapper_(wrapped, instance, args, kwargs):
 
     def _bind_params(request, *_args, **_kwargs):
         return request
@@ -121,10 +147,8 @@ def _nr_aiohttp_view_wrapper_(wrapped, instance, args, kwargs):
     if hasattr(coro, '__iter__'):
         coro = iter(coro)
 
-    name = instance and callable_name(instance) or callable_name(wrapped)
-
     # Wrap the coroutine
-    return NRViewCoroutineWrapper(name, coro, request)
+    return NRTransactionCoroutineWrapper(coro, request)
 
 
 def _nr_aiohttp_wrap_view_(wrapped, instance, args, kwargs):
@@ -133,6 +157,18 @@ def _nr_aiohttp_wrap_view_(wrapped, instance, args, kwargs):
     return result
 
 
+def _nr_aiohttp_wrap_transaction_(wrapped, instance, args, kwargs):
+    result = wrapped(*args, **kwargs)
+    result.request_handler = _nr_aiohttp_transaction_wrapper_(
+            result.request_handler)
+    return result
+
+
 def instrument_aiohttp_web_urldispatcher(module):
     wrap_function_wrapper(module, 'ResourceRoute.__init__',
             _nr_aiohttp_wrap_view_)
+
+
+def instrument_aiohttp_web(module):
+    wrap_function_wrapper(module, 'Application.make_handler',
+            _nr_aiohttp_wrap_transaction_)

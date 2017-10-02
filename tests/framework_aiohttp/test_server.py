@@ -1,6 +1,7 @@
 import pytest
 import sys
 import asyncio
+import aiohttp
 from aiohttp.test_utils import AioHTTPTestCase
 from _target_application import make_app, load_close_middleware
 from newrelic.core.config import global_settings
@@ -68,7 +69,11 @@ def test_valid_response(method, uri, metric_name, expect100, middleware,
         assert "Hello Aiohttp!" in text
 
     if nr_enabled:
-        @validate_transaction_metrics(metric_name)
+        @validate_transaction_metrics(metric_name,
+            rollup_metrics=[
+                ('Python/Framework/aiohttp/%s' % aiohttp.__version__, 1),
+            ],
+        )
         def _test():
             aiohttp_app.loop.run_until_complete(fetch())
     else:
@@ -98,7 +103,11 @@ def test_error_exception(method, middleware, nr_enabled, aiohttp_app):
 
     if nr_enabled:
         @validate_transaction_errors(errors=['builtins:ValueError'])
-        @validate_transaction_metrics('_target_application:error')
+        @validate_transaction_metrics('_target_application:error',
+            rollup_metrics=[
+                ('Python/Framework/aiohttp/%s' % aiohttp.__version__, 1),
+            ],
+        )
         def _test():
             aiohttp_app.loop.run_until_complete(fetch())
     else:
@@ -145,7 +154,11 @@ def test_simultaneous_requests(method, uri, metric_name, middleware,
     if nr_enabled:
         transactions = []
 
-        @validate_transaction_metrics(metric_name)
+        @validate_transaction_metrics(metric_name,
+            rollup_metrics=[
+                ('Python/Framework/aiohttp/%s' % aiohttp.__version__, 1),
+            ],
+        )
         @count_transactions(transactions)
         def _test():
             aiohttp_app.loop.run_until_complete(multi_fetch(aiohttp_app.loop))

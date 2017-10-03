@@ -49,26 +49,6 @@ class KnownErrorView(web.View):
     delete = _respond
 
 
-@asyncio.coroutine
-def load_close_middleware(app, handler):
-
-    @asyncio.coroutine
-    def coro_closer(request):
-        # start handler call
-        coro = handler(request)
-        if hasattr(coro, '__iter__'):
-            coro = iter(coro)
-        try:
-            yield
-            next(coro)
-            coro.close()
-            return web.Response(text='Hello Aiohttp!')
-        except StopIteration as e:
-            return e.value
-
-    return coro_closer
-
-
 def make_app(middlewares=None):
     app = web.Application(middlewares=middlewares)
     app.router.add_route('*', '/coro', index)

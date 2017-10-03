@@ -1,5 +1,6 @@
 import pytest
 import asyncio
+import aiohttp
 from aiohttp.test_utils import AioHTTPTestCase
 from _target_application import make_app, load_coro_throws
 from newrelic.core.config import global_settings
@@ -51,7 +52,11 @@ def test_exception_raised(method, uri, metric_name, error, expect100,
         assert resp.status == 500
 
     if nr_enabled:
-        @validate_transaction_metrics(metric_name)
+        @validate_transaction_metrics(metric_name,
+            rollup_metrics=[
+                ('Python/Framework/aiohttp/%s' % aiohttp.__version__, 1),
+            ],
+        )
         @validate_transaction_errors(errors=[error])
         def _test():
             aiohttp_app.loop.run_until_complete(fetch())
@@ -92,7 +97,11 @@ def test_exception_ignored(method, uri, metric_name, expect100, nr_enabled,
 
     if nr_enabled:
         @validate_transaction_errors(errors=[])
-        @validate_transaction_metrics(metric_name)
+        @validate_transaction_metrics(metric_name,
+            rollup_metrics=[
+                ('Python/Framework/aiohttp/%s' % aiohttp.__version__, 1),
+            ],
+        )
         def _test():
             aiohttp_app.loop.run_until_complete(fetch())
     else:

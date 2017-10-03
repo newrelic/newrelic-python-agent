@@ -56,6 +56,8 @@ def load_coro_throws(app, handler):
     def coro_throws(request):
         # start handler call
         coro = handler(request)
+        if hasattr(coro, '__iter__'):
+            coro = iter(coro)
         try:
             while True:
                 yield
@@ -76,6 +78,8 @@ def load_close_middleware(app, handler):
     def coro_closer(request):
         # start handler call
         coro = handler(request)
+        if hasattr(coro, '__iter__'):
+            coro = iter(coro)
         try:
             yield
             next(coro)
@@ -83,8 +87,6 @@ def load_close_middleware(app, handler):
             return web.Response(text='Hello Aiohttp!')
         except StopIteration as e:
             return e.value
-        except Exception as e:
-            return web.Response(status=500, text=str(e))
 
     return coro_closer
 

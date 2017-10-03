@@ -1,23 +1,66 @@
 import pytest
 import asyncio
 import aiohttp
-from aiohttp.test_utils import AioHTTPTestCase
-from _target_application import make_app, load_coro_throws
+from aiohttp import web
+from aiohttp.test_utils import (AioHTTPTestCase,
+        TestServer as _TestServer,
+        TestClient as _TestClient)
+from _target_application import make_app, KnownException
 from newrelic.core.config import global_settings
 
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_transaction_errors, override_generic_settings)
 
 
-class SimpleAiohttpApp(AioHTTPTestCase):
+class CustomAiohttpServer(_TestServer):
+    @asyncio.coroutine
+    def _make_factory(self, **kwargs):
+        server = yield from super(CustomAiohttpServer, self)._make_factory(
+                **kwargs)
+
+        handler = server.request_handler
+
+        @asyncio.coroutine
+        def coro_throws(request):
+            # start handler call
+            coro = handler(request)
+            if hasattr(coro, '__iter__'):
+                coro = iter(coro)
+            try:
+                while True:
+                    yield
+                    next(coro)
+                    coro.throw(KnownException)
+            except StopIteration as e:
+                return e.value
+            except Exception as e:
+                return web.Response(status=500, text=str(e))
+
+        server.request_handler = coro_throws
+
+        return server
+
+
+class AiohttpThrowApp(AioHTTPTestCase):
 
     def get_app(self):
-        return make_app([load_coro_throws])
+        return make_app()
+
+    @asyncio.coroutine
+    def _get_client(self, app):
+        """Return a TestClient instance."""
+        scheme = "http"
+        host = '127.0.0.1'
+        server_kwargs = {}
+        test_server = CustomAiohttpServer(
+                app,
+                scheme=scheme, host=host, **server_kwargs)
+        return _TestClient(test_server, loop=self.loop)
 
 
 @pytest.fixture(autouse=True)
 def aiohttp_app():
-    case = SimpleAiohttpApp()
+    case = AiohttpThrowApp()
     case.setUp()
     yield case
     case.tearDown()
@@ -40,8 +83,6 @@ def aiohttp_app():
             '_target_application:KnownException'),
     ('/class', '_target_application:HelloWorldView',
             '_target_application:KnownException'),
-    ('/error', '_target_application:error',
-            'builtins:ValueError'),
 ])
 def test_exception_raised(method, uri, metric_name, error, expect100,
         nr_enabled, aiohttp_app):

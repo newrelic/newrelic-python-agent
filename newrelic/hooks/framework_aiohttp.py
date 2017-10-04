@@ -156,6 +156,30 @@ def _nr_aiohttp_wrap_view_(wrapped, instance, args, kwargs):
     return result
 
 
+def _nr_aiohttp_wrap_wsgi_response_(wrapped, instance, args, kwargs):
+    result = wrapped(*args, **kwargs)
+
+    # We need to defer grabbing the response attribute in the case that the
+    # WSGI application chooses not to call start_response before the first
+    # iteration. The case where WSGI applications choose not to call
+    # start_response before iteration is documented in the WSGI spec
+    # (PEP-3333).
+    #
+    # > ...servers must not assume that start_response() has been called before
+    # they begin iterating over the iterable.
+    class ResponseProxy:
+        def __getattr__(self, name):
+            # instance.response should be overwritten at this point
+            if instance.response is self:
+                raise AttributeError("%r object has no attribute %r" % (
+                        type(instance).__name__, 'response'))
+            return getattr(instance.response, name)
+
+    instance.response = ResponseProxy()
+
+    return result
+
+
 def instrument_aiohttp_web_urldispatcher(module):
     wrap_function_wrapper(module, 'ResourceRoute.__init__',
             _nr_aiohttp_wrap_view_)
@@ -164,3 +188,8 @@ def instrument_aiohttp_web_urldispatcher(module):
 def instrument_aiohttp_web(module):
     wrap_function_wrapper(module, 'Application._handle',
             _nr_aiohttp_transaction_wrapper_)
+
+
+def instrument_aiohttp_wsgi(module):
+    wrap_function_wrapper(module, 'WsgiResponse.__init__',
+            _nr_aiohttp_wrap_wsgi_response_)

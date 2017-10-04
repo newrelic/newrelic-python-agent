@@ -94,7 +94,11 @@ def test_exception_raised(method, uri, metric_name, error, expect100,
 
     if nr_enabled:
         @validate_transaction_metrics(metric_name,
+            scoped_metrics=[
+                ('Function/%s' % metric_name, 1),
+            ],
             rollup_metrics=[
+                ('Function/%s' % metric_name, 1),
                 ('Python/Framework/aiohttp/%s' % aiohttp.__version__, 1),
             ],
         )
@@ -139,7 +143,11 @@ def test_exception_ignored(method, uri, metric_name, expect100, nr_enabled,
     if nr_enabled:
         @validate_transaction_errors(errors=[])
         @validate_transaction_metrics(metric_name,
+            scoped_metrics=[
+                ('Function/%s' % metric_name, 1),
+            ],
             rollup_metrics=[
+                ('Function/%s' % metric_name, 1),
                 ('Python/Framework/aiohttp/%s' % aiohttp.__version__, 1),
             ],
         )

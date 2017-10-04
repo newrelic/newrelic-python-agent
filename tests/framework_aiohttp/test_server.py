@@ -123,7 +123,11 @@ def test_valid_response(method, uri, metric_name, expect100, server_cls,
     if nr_enabled:
         @override_application_settings({'attributes.include': ['request.*']})
         @validate_transaction_metrics(metric_name,
+            scoped_metrics=[
+                ('Function/%s' % metric_name, 1),
+            ],
             rollup_metrics=[
+                ('Function/%s' % metric_name, 1),
                 ('Python/Framework/aiohttp/%s' % aiohttp.__version__, 1),
             ],
         )
@@ -168,7 +172,11 @@ def test_error_exception(method, nr_enabled, server_cls, aiohttp_app):
     if nr_enabled:
         @validate_transaction_errors(errors=['builtins:ValueError'])
         @validate_transaction_metrics('_target_application:error',
+            scoped_metrics=[
+                ('Function/_target_application:error', 1),
+            ],
             rollup_metrics=[
+                ('Function/_target_application:error', 1),
                 ('Python/Framework/aiohttp/%s' % aiohttp.__version__, 1),
             ],
         )
@@ -234,7 +242,11 @@ def test_simultaneous_requests(method, uri, metric_name, server_cls,
         transactions = []
 
         @validate_transaction_metrics(metric_name,
+            scoped_metrics=[
+                ('Function/%s' % metric_name, 1),
+            ],
             rollup_metrics=[
+                ('Function/%s' % metric_name, 1),
                 ('Python/Framework/aiohttp/%s' % aiohttp.__version__, 1),
             ],
         )

@@ -2,8 +2,11 @@ import pytest
 import sys
 import asyncio
 import aiohttp
-from aiohttp.test_utils import AioHTTPTestCase
-from _target_application import make_app, load_close_middleware
+from aiohttp import web
+from aiohttp.test_utils import (AioHTTPTestCase,
+        TestServer as _TestServer,
+        TestClient as _TestClient)
+from _target_application import make_app
 from newrelic.core.config import global_settings
 
 from testing_support.fixtures import (validate_transaction_metrics,
@@ -11,22 +14,66 @@ from testing_support.fixtures import (validate_transaction_metrics,
         count_transactions, override_generic_settings,
         override_application_settings)
 
-middlewares = [None, load_close_middleware]
+
+class CloseHandlerServer(_TestServer):
+    @asyncio.coroutine
+    def _make_factory(self, **kwargs):
+        server = yield from super(CloseHandlerServer, self)._make_factory(
+                **kwargs)
+
+        handler = server.request_handler
+
+        @asyncio.coroutine
+        def coro_closer(request):
+            # start handler call
+            coro = handler(request)
+            if hasattr(coro, '__iter__'):
+                coro = iter(coro)
+            try:
+                yield
+                next(coro)
+                coro.close()
+                return web.Response(text='Hello Aiohttp!')
+            except StopIteration as e:
+                return e.value
+
+        server.request_handler = coro_closer
+
+        return server
+
+
+servers = [None, CloseHandlerServer]
 if sys.version_info >= (3, 5):
-    from _middleware_await import load_coro_awaits
-    middlewares.append(load_coro_awaits)
+    from _server_await import AwaitHandlerServer
+    servers.append(AwaitHandlerServer)
 
 
 class SimpleAiohttpApp(AioHTTPTestCase):
 
-    def __init__(self, middleware, *args, **kwargs):
+    def __init__(self, server_cls, middleware, *args, **kwargs):
         super(SimpleAiohttpApp, self).__init__(*args, **kwargs)
+        self.server_cls = server_cls
         self.middleware = None
         if middleware:
             self.middleware = [middleware]
 
     def get_app(self):
         return make_app(self.middleware)
+
+    @asyncio.coroutine
+    def _get_client(self, app):
+        """Return a TestClient instance."""
+        if self.server_cls:
+            scheme = "http"
+            host = '127.0.0.1'
+            server_kwargs = {}
+            test_server = self.server_cls(
+                    app,
+                    scheme=scheme, host=host, **server_kwargs)
+            return _TestClient(test_server, loop=self.loop)
+        else:
+            client = yield from super(SimpleAiohttpApp, self)._get_client(app)
+            return client
 
 
 @pytest.fixture(autouse=True)
@@ -35,14 +82,18 @@ def aiohttp_app(request):
         middleware = request.getfixturevalue('middleware')
     except:
         middleware = None
-    case = SimpleAiohttpApp(middleware=middleware)
+    try:
+        server_cls = request.getfixturevalue('server_cls')
+    except:
+        server_cls = None
+    case = SimpleAiohttpApp(server_cls=server_cls, middleware=middleware)
     case.setUp()
     yield case
     case.tearDown()
 
 
 @pytest.mark.parametrize('nr_enabled', [True, False])
-@pytest.mark.parametrize('middleware', middlewares)
+@pytest.mark.parametrize('server_cls', servers)
 @pytest.mark.parametrize('expect100', [
     True,
     False,
@@ -59,7 +110,7 @@ def aiohttp_app(request):
     ('/class?hello=world', '_target_application:HelloWorldView'),
     ('/known_error?hello=world', '_target_application:KnownErrorView'),
 ])
-def test_valid_response(method, uri, metric_name, expect100, middleware,
+def test_valid_response(method, uri, metric_name, expect100, server_cls,
         nr_enabled, aiohttp_app):
     @asyncio.coroutine
     def fetch():
@@ -72,7 +123,11 @@ def test_valid_response(method, uri, metric_name, expect100, middleware,
     if nr_enabled:
         @override_application_settings({'attributes.include': ['request.*']})
         @validate_transaction_metrics(metric_name,
+            scoped_metrics=[
+                ('Function/%s' % metric_name, 1),
+            ],
             rollup_metrics=[
+                ('Function/%s' % metric_name, 1),
                 ('Python/Framework/aiohttp/%s' % aiohttp.__version__, 1),
             ],
         )
@@ -99,7 +154,7 @@ def test_valid_response(method, uri, metric_name, expect100, middleware,
 
 
 @pytest.mark.parametrize('nr_enabled', [True, False])
-@pytest.mark.parametrize('middleware', middlewares)
+@pytest.mark.parametrize('server_cls', servers)
 @pytest.mark.parametrize('method', [
     'GET',
     'POST',
@@ -107,7 +162,7 @@ def test_valid_response(method, uri, metric_name, expect100, middleware,
     'PATCH',
     'DELETE',
 ])
-def test_error_exception(method, middleware, nr_enabled, aiohttp_app):
+def test_error_exception(method, nr_enabled, server_cls, aiohttp_app):
     @asyncio.coroutine
     def fetch():
         resp = yield from aiohttp_app.client.request(method,
@@ -117,7 +172,11 @@ def test_error_exception(method, middleware, nr_enabled, aiohttp_app):
     if nr_enabled:
         @validate_transaction_errors(errors=['builtins:ValueError'])
         @validate_transaction_metrics('_target_application:error',
+            scoped_metrics=[
+                ('Function/_target_application:error', 1),
+            ],
             rollup_metrics=[
+                ('Function/_target_application:error', 1),
                 ('Python/Framework/aiohttp/%s' % aiohttp.__version__, 1),
             ],
         )
@@ -149,7 +208,7 @@ def test_error_exception(method, middleware, nr_enabled, aiohttp_app):
 
 
 @pytest.mark.parametrize('nr_enabled', [True, False])
-@pytest.mark.parametrize('middleware', middlewares)
+@pytest.mark.parametrize('server_cls', servers)
 @pytest.mark.parametrize('method', [
     'GET',
     'POST',
@@ -162,7 +221,7 @@ def test_error_exception(method, middleware, nr_enabled, aiohttp_app):
     ('/class', '_target_application:HelloWorldView'),
     ('/known_error', '_target_application:KnownErrorView'),
 ])
-def test_simultaneous_requests(method, uri, metric_name, middleware,
+def test_simultaneous_requests(method, uri, metric_name, server_cls,
         nr_enabled, aiohttp_app):
     @asyncio.coroutine
     def fetch():
@@ -183,7 +242,11 @@ def test_simultaneous_requests(method, uri, metric_name, middleware,
         transactions = []
 
         @validate_transaction_metrics(metric_name,
+            scoped_metrics=[
+                ('Function/%s' % metric_name, 1),
+            ],
             rollup_metrics=[
+                ('Function/%s' % metric_name, 1),
                 ('Python/Framework/aiohttp/%s' % aiohttp.__version__, 1),
             ],
         )

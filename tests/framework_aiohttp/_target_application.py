@@ -49,46 +49,6 @@ class KnownErrorView(web.View):
     delete = _respond
 
 
-@asyncio.coroutine
-def load_coro_throws(app, handler):
-
-    @asyncio.coroutine
-    def coro_throws(request):
-        # start handler call
-        coro = handler(request)
-        try:
-            while True:
-                yield
-                next(coro)
-                coro.throw(KnownException)
-        except StopIteration as e:
-            return e.value
-        except Exception as e:
-            return web.Response(status=500, text=str(e))
-
-    return coro_throws
-
-
-@asyncio.coroutine
-def load_close_middleware(app, handler):
-
-    @asyncio.coroutine
-    def coro_closer(request):
-        # start handler call
-        coro = handler(request)
-        try:
-            yield
-            next(coro)
-            coro.close()
-            return web.Response(text='Hello Aiohttp!')
-        except StopIteration as e:
-            return e.value
-        except Exception as e:
-            return web.Response(status=500, text=str(e))
-
-    return coro_closer
-
-
 def make_app(middlewares=None):
     app = web.Application(middlewares=middlewares)
     app.router.add_route('*', '/coro', index)

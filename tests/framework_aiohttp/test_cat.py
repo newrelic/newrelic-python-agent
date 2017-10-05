@@ -8,12 +8,21 @@ ENCODING_KEY = '1234567890123456789012345678901234567890'
 
 
 @pytest.mark.parametrize(
-    'inbound_payload,expected_intrinsics,forgone_intrinsics', [
+    'inbound_payload,expected_intrinsics,forgone_intrinsics,cat_id', [
+
+    # Valid payload from trusted account
     (["b854df4feb2b1f06", False, "7e249074f277923d", "5d2957be"],
     {"nr.referringTransactionGuid": "b854df4feb2b1f06",
     "nr.tripId": "7e249074f277923d",
     "nr.referringPathHash": "5d2957be"},
-    []),
+    [],
+    '1#1'),
+
+    # Valid payload from an untrusted account
+    (["b854df4feb2b1f06", False, "7e249074f277923d", "5d2957be"],
+    {},
+    ['nr.referringTransactionGuid', 'nr.tripId', 'nr.referringPathHash'],
+    '80#1'),
 ])
 @pytest.mark.parametrize('method', ['GET'])
 @pytest.mark.parametrize('uri,metric_name', [
@@ -21,12 +30,12 @@ ENCODING_KEY = '1234567890123456789012345678901234567890'
     ('/class?hello=world', '_target_application:HelloWorldView'),
 ])
 def test_inbound_cat_headers(method, uri, metric_name, inbound_payload,
-        expected_intrinsics, forgone_intrinsics, aiohttp_app):
+        expected_intrinsics, forgone_intrinsics, cat_id, aiohttp_app):
 
     @asyncio.coroutine
     def fetch():
         headers = make_cross_agent_headers(inbound_payload, ENCODING_KEY,
-                '1#1')
+                cat_id)
         resp = yield from aiohttp_app.client.request(method, uri,
                 headers=headers)
         assert resp.status == 200

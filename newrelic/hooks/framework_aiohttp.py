@@ -134,7 +134,6 @@ def _nr_aiohttp_view_wrapper_(wrapped, instance, args, kwargs):
     return _inner()
 
 
-@function_wrapper
 def _nr_aiohttp_transaction_wrapper_(wrapped, instance, args, kwargs):
 
     def _bind_params(request, *_args, **_kwargs):
@@ -157,18 +156,11 @@ def _nr_aiohttp_wrap_view_(wrapped, instance, args, kwargs):
     return result
 
 
-def _nr_aiohttp_wrap_transaction_(wrapped, instance, args, kwargs):
-    result = wrapped(*args, **kwargs)
-    result.request_handler = _nr_aiohttp_transaction_wrapper_(
-            result.request_handler)
-    return result
-
-
 def instrument_aiohttp_web_urldispatcher(module):
     wrap_function_wrapper(module, 'ResourceRoute.__init__',
             _nr_aiohttp_wrap_view_)
 
 
 def instrument_aiohttp_web(module):
-    wrap_function_wrapper(module, 'Application.make_handler',
-            _nr_aiohttp_wrap_transaction_)
+    wrap_function_wrapper(module, 'Application._handle',
+            _nr_aiohttp_transaction_wrapper_)

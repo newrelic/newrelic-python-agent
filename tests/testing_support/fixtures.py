@@ -3,6 +3,7 @@ import logging
 import os
 import pwd
 import pytest
+import subprocess
 import sys
 import threading
 import time
@@ -2501,3 +2502,35 @@ def count_transactions(count_list):
         return wrapped(*args, **kwargs)
 
     return _increment_count
+
+
+class Environ(object):
+    """Context manager for setting environment variables temporarily."""
+    def __init__(self, **kwargs):
+        self._original_environ = os.environ
+        self._environ_dict = kwargs
+
+    def __enter__(self):
+        for key, val in self._environ_dict.items():
+            os.environ[key] = str(val)
+
+    def __exit__(self, type, value, traceback):
+        os.environ.clear()
+        os.environ = self._original_environ
+
+
+class TerminatingPopen(subprocess.Popen):
+    """Context manager will terminate process when exiting, instead of waiting.
+    """
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        if self.stdout:
+            self.stdout.close()
+        if self.stderr:
+            self.stderr.close()
+        if self.stdin:
+            self.stdin.close()
+
+        self.terminate()

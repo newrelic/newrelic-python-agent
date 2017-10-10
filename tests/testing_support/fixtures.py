@@ -2465,31 +2465,45 @@ def function_not_called(module, name):
 
 def validate_analytics_catmap_data(name, expected_attributes=(),
         non_expected_attributes=()):
+
+    samples = []
+
     @transient_function_wrapper('newrelic.core.stats_engine',
             'SampledDataSet.add')
-    def _validate_analytics_sample_data(wrapped, instance, args, kwargs):
+    def _capture_samples(wrapped, instance, args, kwargs):
         def _bind_params(sample, *args, **kwargs):
             return sample
 
         sample = _bind_params(*args, **kwargs)
-
-        assert isinstance(sample, list)
-        assert len(sample) == 3
-
-        intrinsics, user_attributes, agent_attributes = sample
-
-        assert intrinsics['type'] == 'Transaction'
-        assert intrinsics['name'] == name
-        assert intrinsics['timestamp'] >= 0.0
-        assert intrinsics['duration'] >= 0.0
-
-        for key, value in expected_attributes.items():
-            assert intrinsics[key] == value
-
-        for key in non_expected_attributes:
-            assert intrinsics.get(key) is None
-
+        samples.append(sample)
         return wrapped(*args, **kwargs)
+
+    @function_wrapper
+    def _validate_analytics_sample_data(wrapped, instance, args, kwargs):
+        _new_wrapped = _capture_samples(wrapped)
+
+        result = _new_wrapped(*args, **kwargs)
+
+        _samples = [s for s in samples if s[0]['type'] == 'Transaction']
+        assert _samples, "No Transaction events captured."
+        for sample in _samples:
+            assert isinstance(sample, list)
+            assert len(sample) == 3
+
+            intrinsics, user_attributes, agent_attributes = sample
+
+            assert intrinsics['type'] == 'Transaction'
+            assert intrinsics['name'] == name
+            assert intrinsics['timestamp'] >= 0.0
+            assert intrinsics['duration'] >= 0.0
+
+            for key, value in expected_attributes.items():
+                assert intrinsics[key] == value
+
+            for key in non_expected_attributes:
+                assert intrinsics.get(key) is None
+
+        return result
 
     return _validate_analytics_sample_data
 

@@ -2,20 +2,18 @@ import pytest
 import asyncio
 import aiohttp
 from aiohttp import web
-from aiohttp.test_utils import (AioHTTPTestCase,
-        TestServer as _TestServer,
-        TestClient as _TestClient)
-from _target_application import make_app, KnownException
+from aiohttp.test_utils import TestServer as _TestServer
+from _target_application import KnownException
 from newrelic.core.config import global_settings
 
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_transaction_errors, override_generic_settings)
 
 
-class CustomAiohttpServer(_TestServer):
+class ThrowServer(_TestServer):
     @asyncio.coroutine
     def _make_factory(self, **kwargs):
-        server = yield from super(CustomAiohttpServer, self)._make_factory(
+        server = yield from super(ThrowServer, self)._make_factory(
                 **kwargs)
 
         handler = server.request_handler
@@ -41,31 +39,7 @@ class CustomAiohttpServer(_TestServer):
         return server
 
 
-class AiohttpThrowApp(AioHTTPTestCase):
-
-    def get_app(self):
-        return make_app()
-
-    @asyncio.coroutine
-    def _get_client(self, app):
-        """Return a TestClient instance."""
-        scheme = "http"
-        host = '127.0.0.1'
-        server_kwargs = {}
-        test_server = CustomAiohttpServer(
-                app,
-                scheme=scheme, host=host, **server_kwargs)
-        return _TestClient(test_server, loop=self.loop)
-
-
-@pytest.fixture(autouse=True)
-def aiohttp_app():
-    case = AiohttpThrowApp()
-    case.setUp()
-    yield case
-    case.tearDown()
-
-
+@pytest.mark.parametrize('server_cls', [ThrowServer])
 @pytest.mark.parametrize('nr_enabled', [True, False])
 @pytest.mark.parametrize('expect100', [
     True,
@@ -85,7 +59,7 @@ def aiohttp_app():
             '_target_application:KnownException'),
 ])
 def test_exception_raised(method, uri, metric_name, error, expect100,
-        nr_enabled, aiohttp_app):
+        nr_enabled, server_cls, aiohttp_app):
     @asyncio.coroutine
     def fetch():
         resp = yield from aiohttp_app.client.request(
@@ -115,6 +89,7 @@ def test_exception_raised(method, uri, metric_name, error, expect100,
     _test()
 
 
+@pytest.mark.parametrize('server_cls', [ThrowServer])
 @pytest.mark.parametrize('nr_enabled', [True, False])
 @pytest.mark.parametrize('expect100', [
     True,
@@ -131,7 +106,7 @@ def test_exception_raised(method, uri, metric_name, error, expect100,
     ('/known_error', '_target_application:KnownErrorView'),
 ])
 def test_exception_ignored(method, uri, metric_name, expect100, nr_enabled,
-        aiohttp_app):
+        server_cls, aiohttp_app):
     @asyncio.coroutine
     def fetch():
         resp = yield from aiohttp_app.client.request(

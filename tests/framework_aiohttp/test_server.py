@@ -3,10 +3,7 @@ import sys
 import asyncio
 import aiohttp
 from aiohttp import web
-from aiohttp.test_utils import (AioHTTPTestCase,
-        TestServer as _TestServer,
-        TestClient as _TestClient)
-from _target_application import make_app
+from aiohttp.test_utils import TestServer as _TestServer
 from newrelic.core.config import global_settings
 
 from testing_support.fixtures import (validate_transaction_metrics,
@@ -46,50 +43,6 @@ servers = [None, CloseHandlerServer]
 if sys.version_info >= (3, 5):
     from _server_await import AwaitHandlerServer
     servers.append(AwaitHandlerServer)
-
-
-class SimpleAiohttpApp(AioHTTPTestCase):
-
-    def __init__(self, server_cls, middleware, *args, **kwargs):
-        super(SimpleAiohttpApp, self).__init__(*args, **kwargs)
-        self.server_cls = server_cls
-        self.middleware = None
-        if middleware:
-            self.middleware = [middleware]
-
-    def get_app(self):
-        return make_app(self.middleware)
-
-    @asyncio.coroutine
-    def _get_client(self, app):
-        """Return a TestClient instance."""
-        if self.server_cls:
-            scheme = "http"
-            host = '127.0.0.1'
-            server_kwargs = {}
-            test_server = self.server_cls(
-                    app,
-                    scheme=scheme, host=host, **server_kwargs)
-            return _TestClient(test_server, loop=self.loop)
-        else:
-            client = yield from super(SimpleAiohttpApp, self)._get_client(app)
-            return client
-
-
-@pytest.fixture(autouse=True)
-def aiohttp_app(request):
-    try:
-        middleware = request.getfixturevalue('middleware')
-    except:
-        middleware = None
-    try:
-        server_cls = request.getfixturevalue('server_cls')
-    except:
-        server_cls = None
-    case = SimpleAiohttpApp(server_cls=server_cls, middleware=middleware)
-    case.setUp()
-    yield case
-    case.tearDown()
 
 
 @pytest.mark.parametrize('nr_enabled', [True, False])

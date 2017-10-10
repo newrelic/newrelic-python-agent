@@ -10,10 +10,26 @@ from newrelic.common.object_wrapper import (wrap_function_wrapper,
 from newrelic.common.object_names import callable_name
 
 
+def _nr_process_response(response, transaction):
+    headers = dict(response.headers)
+
+    status_str = str(response.status)
+    nr_headers = transaction.process_response(status_str,
+            headers.items())
+
+    nr_headers = dict(nr_headers)
+
+    # customer headers override NR headers
+    nr_headers.update(headers)
+
+    response._headers = nr_headers
+
+
 class NRTransactionCoroutineWrapper(ObjectProxy):
     def __init__(self, wrapped, request):
         super(NRTransactionCoroutineWrapper, self).__init__(wrapped)
         self._nr_transaction = None
+        self._nr_request = request
 
         environ = {
             'PATH_INFO': request.path,
@@ -64,11 +80,24 @@ class NRTransactionCoroutineWrapper(ObjectProxy):
             r = self.__wrapped__.send(value)
             txn.drop_transaction()
             return r
-        except (GeneratorExit, StopIteration):
+        except (GeneratorExit, StopIteration) as e:
+            try:
+                response = e.value
+                _nr_process_response(response, txn)
+            except:
+                pass
             self._nr_transaction.__exit__(None, None, None)
+            self._nr_request = None
             raise
         except:
-            self._nr_transaction.__exit__(*sys.exc_info())
+            exc_info = sys.exc_info()
+            try:
+                nr_headers = txn.process_response('500', ())
+                self._nr_request._nr_headers = dict(nr_headers)
+            except:
+                pass
+            self._nr_transaction.__exit__(*exc_info)
+            self._nr_request = None
             raise
 
     def throw(self, *args, **kwargs):
@@ -80,12 +109,27 @@ class NRTransactionCoroutineWrapper(ObjectProxy):
 
         txn.save_transaction()
         try:
-            return self.__wrapped__.throw(*args, **kwargs)
-        except (GeneratorExit, StopIteration):
+            r = self.__wrapped__.throw(*args, **kwargs)
+            txn.drop_transaction()
+            return r
+        except (GeneratorExit, StopIteration) as e:
+            try:
+                response = e.value
+                _nr_process_response(response, txn)
+            except:
+                pass
             self._nr_transaction.__exit__(None, None, None)
+            self._nr_request = None
             raise
         except:
-            self._nr_transaction.__exit__(*sys.exc_info())
+            exc_info = sys.exc_info()
+            try:
+                nr_headers = txn.process_response('500', ())
+                self._nr_request._nr_headers = dict(nr_headers)
+            except:
+                pass
+            self._nr_transaction.__exit__(*exc_info)
+            self._nr_request = None
             raise
 
     def close(self):
@@ -99,12 +143,17 @@ class NRTransactionCoroutineWrapper(ObjectProxy):
         try:
             r = self.__wrapped__.close()
             self._nr_transaction.__exit__(None, None, None)
+            self._nr_request = None
             return r
-        except (GeneratorExit, StopIteration):
-            self._nr_transaction.__exit__(None, None, None)
-            raise
         except:
-            self._nr_transaction.__exit__(*sys.exc_info())
+            exc_info = sys.exc_info()
+            try:
+                nr_headers = txn.process_response('', ())
+                self._nr_request._nr_headers = dict(nr_headers)
+            except:
+                pass
+            self._nr_transaction.__exit__(*exc_info)
+            self._nr_request = None
             raise
 
 
@@ -126,16 +175,18 @@ def _nr_aiohttp_view_wrapper_(wrapped, instance, args, kwargs):
 
     @asyncio.coroutine
     def _inner():
-        with FunctionTrace(transaction, name):
-            result = yield from coro
-
-        return result
+        try:
+            with FunctionTrace(transaction, name):
+                result = yield from coro
+            return result
+        except:
+            transaction.record_exception()
+            raise
 
     return _inner()
 
 
 def _nr_aiohttp_transaction_wrapper_(wrapped, instance, args, kwargs):
-
     def _bind_params(request, *_args, **_kwargs):
         return request
 
@@ -180,6 +231,22 @@ def _nr_aiohttp_wrap_wsgi_response_(wrapped, instance, args, kwargs):
     return result
 
 
+def _nr_aiohttp_response_prepare_(wrapped, instance, args, kwargs):
+
+    def _bind_params(request):
+        return request
+
+    request = _bind_params(*args, **kwargs)
+
+    nr_headers = getattr(request, '_nr_headers', None)
+    if nr_headers:
+        headers = dict(instance.headers)
+        nr_headers.update(headers)
+        instance._headers = nr_headers
+
+    return wrapped(*args, **kwargs)
+
+
 def instrument_aiohttp_web_urldispatcher(module):
     wrap_function_wrapper(module, 'ResourceRoute.__init__',
             _nr_aiohttp_wrap_view_)
@@ -193,3 +260,8 @@ def instrument_aiohttp_web(module):
 def instrument_aiohttp_wsgi(module):
     wrap_function_wrapper(module, 'WsgiResponse.__init__',
             _nr_aiohttp_wrap_wsgi_response_)
+
+
+def instrument_aiohttp_web_response(module):
+    wrap_function_wrapper(module, 'Response.prepare',
+            _nr_aiohttp_response_prepare_)

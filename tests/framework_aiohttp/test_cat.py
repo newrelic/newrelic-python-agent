@@ -1,6 +1,8 @@
 import asyncio
+import json
 import pytest
 
+from newrelic.common.encoding_utils import deobfuscate
 from testing_support.fixtures import (override_application_settings,
         make_cross_agent_headers, validate_analytics_catmap_data)
 
@@ -26,10 +28,11 @@ ENCODING_KEY = '1234567890123456789012345678901234567890'
 ])
 @pytest.mark.parametrize('method', ['GET'])
 @pytest.mark.parametrize('uri,metric_name', [
+    ('/error?hello=world', '_target_application:error'),
     ('/coro?hello=world', '_target_application:index'),
     ('/class?hello=world', '_target_application:HelloWorldView'),
 ])
-def test_inbound_cat_headers(method, uri, metric_name, inbound_payload,
+def test_cat_headers(method, uri, metric_name, inbound_payload,
         expected_intrinsics, forgone_intrinsics, cat_id, aiohttp_app):
 
     @asyncio.coroutine
@@ -38,9 +41,22 @@ def test_inbound_cat_headers(method, uri, metric_name, inbound_payload,
                 cat_id)
         resp = yield from aiohttp_app.client.request(method, uri,
                 headers=headers)
-        assert resp.status == 200
-        text = yield from resp.text()
-        assert "Hello Aiohttp!" in text
+
+        try:
+            resp_headers = dict(resp._nr_cat_header)
+        except TypeError:
+            resp_headers = dict(resp.headers)
+
+        if expected_intrinsics:
+            # test valid CAT response header
+            assert 'X-NewRelic-App-Data' in resp_headers
+
+            app_data = json.loads(deobfuscate(
+                    resp_headers['X-NewRelic-App-Data'], ENCODING_KEY))
+            assert app_data[0] == cat_id
+            assert app_data[1] == ('WebTransaction/Function/%s' % metric_name)
+        else:
+            'X-NewRelic-App-Data' not in resp_headers
 
     _custom_settings = {
             'cross_process_id': '1#1',

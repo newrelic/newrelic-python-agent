@@ -49,8 +49,8 @@ class KnownErrorView(web.View):
     delete = _respond
 
 
-def make_app(middlewares=None):
-    app = web.Application(middlewares=middlewares)
+def make_app(middlewares=None, loop=None):
+    app = web.Application(middlewares=middlewares, loop=loop)
     app.router.add_route('*', '/coro', index)
     app.router.add_route('*', '/class', HelloWorldView)
     app.router.add_route('*', '/error', error)

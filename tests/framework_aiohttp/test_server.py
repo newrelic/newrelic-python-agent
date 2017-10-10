@@ -1,9 +1,6 @@
 import pytest
-import sys
 import asyncio
 import aiohttp
-from aiohttp import web
-from aiohttp.test_utils import TestServer as _TestServer
 from newrelic.core.config import global_settings
 
 from testing_support.fixtures import (validate_transaction_metrics,
@@ -12,45 +9,17 @@ from testing_support.fixtures import (validate_transaction_metrics,
         override_application_settings)
 
 
-class CloseHandlerServer(_TestServer):
-    @asyncio.coroutine
-    def _make_factory(self, **kwargs):
-        server = yield from super(CloseHandlerServer, self)._make_factory(
-                **kwargs)
+BASE_REQUIRED_ATTRS = ['request.headers.contentType',
+            'request.method']
 
-        handler = server.request_handler
-
-        @asyncio.coroutine
-        def coro_closer(request):
-            # start handler call
-            coro = handler(request)
-            if hasattr(coro, '__iter__'):
-                coro = iter(coro)
-            try:
-                yield
-                next(coro)
-                coro.close()
-                return web.Response(text='Hello Aiohttp!')
-            except StopIteration as e:
-                return e.value
-
-        server.request_handler = coro_closer
-
-        return server
-
-
-servers = [None, CloseHandlerServer]
-if sys.version_info >= (3, 5):
-    from _server_await import AwaitHandlerServer
-    servers.append(AwaitHandlerServer)
+# The agent should not record these attributes in events unless the settings
+# explicitly say to do so
+BASE_FORGONE_ATTRS = ['request.parameters.hello',
+            'request.headers.accept', 'request.headers.host',
+            'request.headers.userAgent']
 
 
 @pytest.mark.parametrize('nr_enabled', [True, False])
-@pytest.mark.parametrize('server_cls', servers)
-@pytest.mark.parametrize('expect100', [
-    True,
-    False,
-])
 @pytest.mark.parametrize('method', [
     'GET',
     'POST',
@@ -58,69 +27,15 @@ if sys.version_info >= (3, 5):
     'PATCH',
     'DELETE',
 ])
-@pytest.mark.parametrize('uri,metric_name', [
-    ('/coro?hello=world', '_target_application:index'),
-    ('/class?hello=world', '_target_application:HelloWorldView'),
-    ('/known_error?hello=world', '_target_application:KnownErrorView'),
-])
-def test_valid_response(method, uri, metric_name, expect100, server_cls,
-        nr_enabled, aiohttp_app):
-    @asyncio.coroutine
-    def fetch():
-        resp = yield from aiohttp_app.client.request(
-                method, uri, expect100=expect100)
-        assert resp.status == 200
-        text = yield from resp.text()
-        assert "Hello Aiohttp!" in text
-
-    if nr_enabled:
-        @override_application_settings({'attributes.include': ['request.*']})
-        @validate_transaction_metrics(metric_name,
-            scoped_metrics=[
-                ('Function/%s' % metric_name, 1),
-            ],
-            rollup_metrics=[
-                ('Function/%s' % metric_name, 1),
-                ('Python/Framework/aiohttp/%s' % aiohttp.__version__, 1),
-            ],
-        )
-        @validate_transaction_event_attributes(
-            required_params={
-                'agent': ['request.headers.accept',
-                        'request.headers.contentType', 'request.headers.host',
-                        'request.headers.userAgent', 'request.method',
-                        'request.parameters.hello'],
-                'user': [],
-                'intrinsic': [],
-            },
-        )
-        def _test():
-            aiohttp_app.loop.run_until_complete(fetch())
-    else:
-        settings = global_settings()
-
-        @override_generic_settings(settings, {'enabled': False})
-        def _test():
-            aiohttp_app.loop.run_until_complete(fetch())
-
-    _test()
-
-
-@pytest.mark.parametrize('nr_enabled', [True, False])
-@pytest.mark.parametrize('server_cls', servers)
-@pytest.mark.parametrize('method', [
-    'GET',
-    'POST',
-    'PUT',
-    'PATCH',
-    'DELETE',
-])
-def test_error_exception(method, nr_enabled, server_cls, aiohttp_app):
+def test_error_exception(method, nr_enabled, aiohttp_app):
     @asyncio.coroutine
     def fetch():
         resp = yield from aiohttp_app.client.request(method,
                 '/error?hello=world')
         assert resp.status == 500
+
+    required_attrs = list(BASE_REQUIRED_ATTRS)
+    forgone_attrs = list(BASE_FORGONE_ATTRS)
 
     if nr_enabled:
         @validate_transaction_errors(errors=['builtins:ValueError'])
@@ -135,15 +50,12 @@ def test_error_exception(method, nr_enabled, server_cls, aiohttp_app):
         )
         @validate_transaction_event_attributes(
             required_params={
-                'agent': ['request.method', 'request.headers.contentType'],
+                'agent': required_attrs,
                 'user': [],
                 'intrinsic': [],
             },
             forgone_params={
-                'agent': ['request.headers.accept',
-                        'request.headers.host',
-                        'request.headers.userAgent',
-                        'request.parameters.hello'],
+                'agent': forgone_attrs,
                 'user': [],
                 'intrinsic': [],
             },
@@ -161,7 +73,6 @@ def test_error_exception(method, nr_enabled, server_cls, aiohttp_app):
 
 
 @pytest.mark.parametrize('nr_enabled', [True, False])
-@pytest.mark.parametrize('server_cls', servers)
 @pytest.mark.parametrize('method', [
     'GET',
     'POST',
@@ -174,7 +85,7 @@ def test_error_exception(method, nr_enabled, server_cls, aiohttp_app):
     ('/class', '_target_application:HelloWorldView'),
     ('/known_error', '_target_application:KnownErrorView'),
 ])
-def test_simultaneous_requests(method, uri, metric_name, server_cls,
+def test_simultaneous_requests(method, uri, metric_name,
         nr_enabled, aiohttp_app):
     @asyncio.coroutine
     def fetch():
@@ -191,9 +102,24 @@ def test_simultaneous_requests(method, uri, metric_name, server_cls,
         responses = yield from combined
         return responses
 
+    required_attrs = list(BASE_REQUIRED_ATTRS)
+    extra_required = list(BASE_FORGONE_ATTRS)
+
+    # we don't capture params
+    extra_required.remove('request.parameters.hello')
+
+    required_attrs.extend(extra_required)
+
+    required_attrs.extend(['response.status',
+            'response.headers.contentType'])
+
+    required_attrs.extend(['response.status',
+            'response.headers.contentType'])
+
     if nr_enabled:
         transactions = []
 
+        @override_application_settings({'attributes.include': ['request.*']})
         @validate_transaction_metrics(metric_name,
             scoped_metrics=[
                 ('Function/%s' % metric_name, 1),
@@ -205,7 +131,12 @@ def test_simultaneous_requests(method, uri, metric_name, server_cls,
         )
         @validate_transaction_event_attributes(
             required_params={
-                'agent': ['request.method'],
+                'agent': required_attrs,
+                'user': [],
+                'intrinsic': [],
+            },
+            forgone_params={
+                'agent': ['request.parameters.hello'],
                 'user': [],
                 'intrinsic': [],
             },

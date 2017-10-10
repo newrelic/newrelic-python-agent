@@ -81,9 +81,9 @@ def test_error_exception(method, nr_enabled, aiohttp_app):
     'DELETE',
 ])
 @pytest.mark.parametrize('uri,metric_name', [
-    ('/coro', '_target_application:index'),
-    ('/class', '_target_application:HelloWorldView'),
-    ('/known_error', '_target_application:KnownErrorView'),
+    ('/coro?hello=world', '_target_application:index'),
+    ('/class?hello=world', '_target_application:HelloWorldView'),
+    ('/known_error?hello=world', '_target_application:KnownErrorView'),
 ])
 def test_simultaneous_requests(method, uri, metric_name,
         nr_enabled, aiohttp_app):
@@ -104,9 +104,6 @@ def test_simultaneous_requests(method, uri, metric_name,
 
     required_attrs = list(BASE_REQUIRED_ATTRS)
     extra_required = list(BASE_FORGONE_ATTRS)
-
-    # we don't capture params
-    extra_required.remove('request.parameters.hello')
 
     required_attrs.extend(extra_required)
 
@@ -136,7 +133,7 @@ def test_simultaneous_requests(method, uri, metric_name,
                 'intrinsic': [],
             },
             forgone_params={
-                'agent': ['request.parameters.hello'],
+                'agent': [],
                 'user': [],
                 'intrinsic': [],
             },

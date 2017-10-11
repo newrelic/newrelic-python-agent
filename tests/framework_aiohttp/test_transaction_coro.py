@@ -6,7 +6,7 @@ from aiohttp import web
 from newrelic.core.config import global_settings
 
 from testing_support.fixtures import (validate_transaction_metrics,
-        override_generic_settings)
+        override_generic_settings, override_application_settings)
 
 
 class KnownException(Exception):
@@ -53,6 +53,7 @@ def coro_for_test(close_exception=None):
     (KnownException, None),
     (UncaughtException, UncaughtException),
     (web.HTTPGone, web.HTTPGone),
+    (web.HTTPNotFound, web.HTTPNotFound),
 ])
 def test_throw(injected, raises, nr_enabled):
     from newrelic.hooks.framework_aiohttp import NRTransactionCoroutineWrapper
@@ -97,8 +98,12 @@ def test_throw(injected, raises, nr_enabled):
             assert result
 
     if nr_enabled:
+        ignored = False
+        if hasattr(raises, 'status_code') and raises.status_code == 404:
+            ignored = True
+
         metrics = [('Python/Framework/aiohttp/%s' % aiohttp.__version__, 1)]
-        if raises:
+        if raises and not ignored:
             metrics.append(('Errors/all', 1))
         else:
             metrics.append(('Errors/all', None))
@@ -106,6 +111,9 @@ def test_throw(injected, raises, nr_enabled):
         _test = validate_transaction_metrics(
                 'coro_for_test', group='Uri',
                 rollup_metrics=metrics)(_test)
+
+        _test = override_application_settings({
+                'error_collector.ignore_status_codes': [404]})(_test)
     else:
         settings = global_settings()
         _test = override_generic_settings(settings, {'enabled': False})(_test)

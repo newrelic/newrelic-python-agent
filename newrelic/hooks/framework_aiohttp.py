@@ -280,6 +280,47 @@ def _nr_aiohttp_response_prepare_(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
+@function_wrapper
+def _nr_function_trace_coroutine_(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    coro = wrapped(*args, **kwargs)
+
+    if not transaction:
+        return coro
+
+    @asyncio.coroutine
+    def _inner():
+        name = callable_name(wrapped)
+        with FunctionTrace(transaction, name):
+            result = yield from coro
+        return result
+
+    return _inner()
+
+
+@function_wrapper
+def _nr_aiohttp_wrap_middleware_(wrapped, instance, args, kwargs):
+
+    @asyncio.coroutine
+    def _inner():
+        result = yield from wrapped(*args, **kwargs)
+        return _nr_function_trace_coroutine_(result)
+
+    return _inner()
+
+
+def _nr_aiohttp_wrap_application_init_(wrapped, instance, args, kwargs):
+    result = wrapped(*args, **kwargs)
+
+    if hasattr(instance, '_middlewares'):
+        for index, middleware in enumerate(instance._middlewares):
+            traced_middleware = _nr_aiohttp_wrap_middleware_(middleware)
+            instance._middlewares[index] = traced_middleware
+
+    return result
+
+
 def instrument_aiohttp_web_urldispatcher(module):
     wrap_function_wrapper(module, 'ResourceRoute.__init__',
             _nr_aiohttp_wrap_view_)
@@ -288,6 +329,8 @@ def instrument_aiohttp_web_urldispatcher(module):
 def instrument_aiohttp_web(module):
     wrap_function_wrapper(module, 'Application._handle',
             _nr_aiohttp_transaction_wrapper_)
+    wrap_function_wrapper(module, 'Application.__init__',
+            _nr_aiohttp_wrap_application_init_)
 
 
 def instrument_aiohttp_wsgi(module):

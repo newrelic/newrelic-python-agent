@@ -1,6 +1,8 @@
 import asyncio
 import pytest
 import sys
+import aiohttp
+from aiohttp import web
 from newrelic.core.config import global_settings
 
 from testing_support.fixtures import (validate_transaction_metrics,
@@ -50,6 +52,7 @@ def coro_for_test(close_exception=None):
 @pytest.mark.parametrize('injected,raises', [
     (KnownException, None),
     (UncaughtException, UncaughtException),
+    (web.HTTPGone, web.HTTPGone),
 ])
 def test_throw(injected, raises, nr_enabled):
     from newrelic.hooks.framework_aiohttp import NRTransactionCoroutineWrapper
@@ -94,8 +97,15 @@ def test_throw(injected, raises, nr_enabled):
             assert result
 
     if nr_enabled:
+        metrics = [('Python/Framework/aiohttp/%s' % aiohttp.__version__, 1)]
+        if raises:
+            metrics.append(('Errors/all', 1))
+        else:
+            metrics.append(('Errors/all', None))
+
         _test = validate_transaction_metrics(
-                'coro_for_test', group='Uri')(_test)
+                'coro_for_test', group='Uri',
+                rollup_metrics=metrics)(_test)
     else:
         settings = global_settings()
         _test = override_generic_settings(settings, {'enabled': False})(_test)

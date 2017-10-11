@@ -1,33 +1,33 @@
 import os
 import pytest
 import time
-
+import socket
 from newrelic.packages import requests
-from testing_support.fixtures import (Environ, TerminatingPopen)
+from testing_support.fixtures import TerminatingPopen
 
-
-def _locate(name, path):
-    for root, dirs, files in os.walk(path):
-        if name in files:
-            return os.path.join(root, name)
+pytest.importorskip('aiohttp')
 
 
 @pytest.mark.parametrize('nr_enabled', [True, False])
 def test_gunicorn_gaiohttp_worker(nr_enabled):
 
-    # Run gunicorn (commandline) in a subprocess, set to terminate
-    # at end of test. Both runner and commandline tool require string
-    # path to gunicorn-- locate this with os.walk to support running
-    # with tox.
-    gunicorn = _locate('gunicorn', '.tox')
-    cmd = '%s -b 127.0.0.1:8000 -k gaiohttp wsgi:app' % gunicorn
-    if nr_enabled:
-        cmd = ' '.join(('NEW_RELIC_CONFIG_FILE=gunicorn_gaiohttp.ini',
-                'newrelic-admin run-python', cmd))
+    bin_dir = os.path.join(os.environ['TOX_ENVDIR'], 'bin', 'gunicorn')
+    cmd = [bin_dir, '-b', '127.0.0.1:8000', '-k', 'gaiohttp',
+            'app:application']
 
-    with Environ(NEW_RELIC_CONFIG_FILE='gunicorn_gaiohttp.ini'):
-        with TerminatingPopen(cmd, shell=True):
-            time.sleep(1)
-            resp = requests.get('http://127.0.0.1:8000/ping')
-            assert resp.status_code == 200
-            assert resp.text == 'PONG'
+    with TerminatingPopen(cmd):
+        for _ in range(10):
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            try:
+                s.connect(('127.0.0.1', 8000))
+                break
+            except socket.error:
+                pass
+
+            time.sleep(0.1)
+        else:
+            assert False, "Server never started"
+
+        resp = requests.get('http://127.0.0.1:8000')
+        assert resp.status_code == 200
+        assert resp.text == 'PONG'

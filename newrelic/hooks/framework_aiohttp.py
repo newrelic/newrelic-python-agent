@@ -8,6 +8,15 @@ from newrelic.api.application import application_instance
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
         function_wrapper, ObjectProxy)
 from newrelic.common.object_names import callable_name
+from newrelic.core.config import ignore_status_code
+
+
+def should_ignore(exc, value, tb):
+    from aiohttp import web
+
+    if isinstance(value, web.HTTPException):
+        status_code = value.status_code
+        return ignore_status_code(status_code)
 
 
 def _nr_process_response(response, transaction):
@@ -97,7 +106,10 @@ class NRTransactionCoroutineWrapper(ObjectProxy):
                 _nr_process_response(e, txn)
             except:
                 pass
-            self._nr_transaction.__exit__(*exc_info)
+            if should_ignore(*exc_info):
+                self._nr_transaction.__exit__(None, None, None)
+            else:
+                self._nr_transaction.__exit__(*exc_info)
             self._nr_request = None
             raise
         except:
@@ -140,7 +152,10 @@ class NRTransactionCoroutineWrapper(ObjectProxy):
                 _nr_process_response(e, txn)
             except:
                 pass
-            self._nr_transaction.__exit__(*exc_info)
+            if should_ignore(*exc_info):
+                self._nr_transaction.__exit__(None, None, None)
+            else:
+                self._nr_transaction.__exit__(*exc_info)
             self._nr_request = None
             raise
         except:
@@ -202,7 +217,7 @@ def _nr_aiohttp_view_wrapper_(wrapped, instance, args, kwargs):
                 result = yield from coro
             return result
         except:
-            transaction.record_exception()
+            transaction.record_exception(ignore_errors=should_ignore)
             raise
 
     return _inner()

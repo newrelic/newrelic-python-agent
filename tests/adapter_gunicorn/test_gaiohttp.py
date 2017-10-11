@@ -13,19 +13,26 @@ def test_gunicorn_gaiohttp_worker(nr_enabled):
 
     nr_admin = os.path.join(os.environ['TOX_ENVDIR'], 'bin', 'newrelic-admin')
     gunicorn = os.path.join(os.environ['TOX_ENVDIR'], 'bin', 'gunicorn')
-    cmd = [nr_admin, 'run-program', gunicorn, '-b', '127.0.0.1:8000', '-k',
-            'gaiohttp', 'app:application']
+    cmd = [gunicorn, '-b', '127.0.0.1:8000', '-k', 'gaiohttp',
+            'app:application']
 
-    env = {
-        'NEW_RELIC_ENABLED': 'true',
-        'NEW_RELIC_HOST': 'staging-collector.newrelic.com',
-        'NEW_RELIC_LICENSE_KEY': '84325f47e9dec80613e262be4236088a9983d501',
-        'NEW_RELIC_APP_NAME': 'Python Agent Test (gunicorn)',
-        'NEW_RELIC_LOG': 'stderr',
-        'NEW_RELIC_LOG_LEVEL': 'debug',
-        'NEW_RELIC_STARTUP_TIMEOUT': '10.0',
-        'NEW_RELIC_SHUTDOWN_TIMEOUT': '10.0',
-    }
+    if nr_enabled:
+        env = {
+            'NEW_RELIC_ENABLED': 'true',
+            'NEW_RELIC_HOST': 'staging-collector.newrelic.com',
+            'NEW_RELIC_LICENSE_KEY': (
+                    '84325f47e9dec80613e262be4236088a9983d501'),
+            'NEW_RELIC_APP_NAME': 'Python Agent Test (gunicorn)',
+            'NEW_RELIC_LOG': 'stderr',
+            'NEW_RELIC_LOG_LEVEL': 'debug',
+            'NEW_RELIC_STARTUP_TIMEOUT': '10.0',
+            'NEW_RELIC_SHUTDOWN_TIMEOUT': '10.0',
+        }
+        new_cmd = [nr_admin, 'run-program']
+        new_cmd.extend(cmd)
+        cmd = new_cmd
+    else:
+        env = {}
 
     with TerminatingPopen(cmd, env=env):
         for _ in range(10):

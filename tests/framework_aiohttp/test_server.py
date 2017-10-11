@@ -41,6 +41,13 @@ BASE_FORGONE_ATTRS = ['request.parameters.hello',
         'aiohttp.web_exceptions:HTTPGone',
         410
     ),
+
+    (
+        '/raise_404?hello=world',
+        '_target_application:raise_404',
+        None,
+        404
+    ),
 ])
 def test_error_exception(method, uri, metric_name, error, status, nr_enabled,
         aiohttp_app):
@@ -54,7 +61,11 @@ def test_error_exception(method, uri, metric_name, error, status, nr_enabled,
     forgone_attrs = list(BASE_FORGONE_ATTRS)
 
     if nr_enabled:
-        @validate_transaction_errors(errors=[error])
+        errors = []
+        if error:
+            errors.append(error)
+
+        @validate_transaction_errors(errors=errors)
         @validate_transaction_metrics(metric_name,
             scoped_metrics=[
                 ('Function/%s' % metric_name, 1),
@@ -83,6 +94,8 @@ def test_error_exception(method, uri, metric_name, error, status, nr_enabled,
                 'intrinsic': {},
             },
         )
+        @override_application_settings({
+                'error_collector.ignore_status_codes': [404]})
         def _test():
             aiohttp_app.loop.run_until_complete(fetch())
     else:

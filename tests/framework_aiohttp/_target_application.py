@@ -18,6 +18,11 @@ def non_500_error(request):
     raise web.HTTPGone()
 
 
+@asyncio.coroutine
+def raise_404(request):
+    raise web.HTTPNotFound()
+
+
 class HelloWorldView(web.View):
 
     @asyncio.coroutine
@@ -61,5 +66,6 @@ def make_app(middlewares=None, loop=None):
     app.router.add_route('*', '/error', error)
     app.router.add_route('*', '/known_error', KnownErrorView)
     app.router.add_route('*', '/non_500_error', non_500_error)
+    app.router.add_route('*', '/raise_404', raise_404)
 
     return app

@@ -27,24 +27,40 @@ BASE_FORGONE_ATTRS = ['request.parameters.hello',
     'PATCH',
     'DELETE',
 ])
-def test_error_exception(method, nr_enabled, aiohttp_app):
+@pytest.mark.parametrize('uri,metric_name,error,status', [
+    (
+        '/error?hello=world',
+        '_target_application:error',
+        'builtins:ValueError',
+        500
+    ),
+
+    (
+        '/non_500_error?hello=world',
+        '_target_application:non_500_error',
+        'aiohttp.web_exceptions:HTTPGone',
+        410
+    ),
+])
+def test_error_exception(method, uri, metric_name, error, status, nr_enabled,
+        aiohttp_app):
     @asyncio.coroutine
     def fetch():
         resp = yield from aiohttp_app.client.request(method,
-                '/error?hello=world')
-        assert resp.status == 500
+                uri)
+        assert resp.status == status
 
     required_attrs = list(BASE_REQUIRED_ATTRS)
     forgone_attrs = list(BASE_FORGONE_ATTRS)
 
     if nr_enabled:
-        @validate_transaction_errors(errors=['builtins:ValueError'])
-        @validate_transaction_metrics('_target_application:error',
+        @validate_transaction_errors(errors=[error])
+        @validate_transaction_metrics(metric_name,
             scoped_metrics=[
-                ('Function/_target_application:error', 1),
+                ('Function/%s' % metric_name, 1),
             ],
             rollup_metrics=[
-                ('Function/_target_application:error', 1),
+                ('Function/%s' % metric_name, 1),
                 ('Python/Framework/aiohttp/%s' % aiohttp.__version__, 1),
             ],
         )
@@ -58,6 +74,13 @@ def test_error_exception(method, nr_enabled, aiohttp_app):
                 'agent': forgone_attrs,
                 'user': [],
                 'intrinsic': [],
+            },
+            exact_attrs={
+                'agent': {
+                    'response.status': str(status),
+                },
+                'user': {},
+                'intrinsic': {},
             },
         )
         def _test():

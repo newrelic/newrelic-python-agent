@@ -13,6 +13,11 @@ def error(request):
     raise ValueError("I'm bad at programming...")
 
 
+@asyncio.coroutine
+def non_500_error(request):
+    raise web.HTTPGone()
+
+
 class HelloWorldView(web.View):
 
     @asyncio.coroutine
@@ -55,5 +60,6 @@ def make_app(middlewares=None, loop=None):
     app.router.add_route('*', '/class', HelloWorldView)
     app.router.add_route('*', '/error', error)
     app.router.add_route('*', '/known_error', KnownErrorView)
+    app.router.add_route('*', '/non_500_error', non_500_error)
 
     return app

@@ -35,7 +35,7 @@ def test_gunicorn_gaiohttp_worker(nr_enabled):
         env = {}
 
     with TerminatingPopen(cmd, env=env):
-        for _ in range(10):
+        for _ in range(50):
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
                 s.connect(('127.0.0.1', 8000))

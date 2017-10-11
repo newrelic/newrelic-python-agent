@@ -74,6 +74,8 @@ class NRTransactionCoroutineWrapper(ObjectProxy):
         if not txn._settings:
             return self.__wrapped__.send(value)
 
+        import aiohttp.web as _web
+
         txn.save_transaction()
 
         try:
@@ -87,6 +89,15 @@ class NRTransactionCoroutineWrapper(ObjectProxy):
             except:
                 pass
             self._nr_transaction.__exit__(None, None, None)
+            self._nr_request = None
+            raise
+        except _web.HTTPException as e:
+            exc_info = sys.exc_info()
+            try:
+                _nr_process_response(e, txn)
+            except:
+                pass
+            self._nr_transaction.__exit__(*exc_info)
             self._nr_request = None
             raise
         except:
@@ -107,6 +118,8 @@ class NRTransactionCoroutineWrapper(ObjectProxy):
         if not txn._settings:
             return self.__wrapped__.throw(*args, **kwargs)
 
+        import aiohttp.web as _web
+
         txn.save_transaction()
         try:
             r = self.__wrapped__.throw(*args, **kwargs)
@@ -119,6 +132,15 @@ class NRTransactionCoroutineWrapper(ObjectProxy):
             except:
                 pass
             self._nr_transaction.__exit__(None, None, None)
+            self._nr_request = None
+            raise
+        except _web.HTTPException as e:
+            exc_info = sys.exc_info()
+            try:
+                _nr_process_response(e, txn)
+            except:
+                pass
+            self._nr_transaction.__exit__(*exc_info)
             self._nr_request = None
             raise
         except:

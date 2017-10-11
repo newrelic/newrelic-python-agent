@@ -11,11 +11,23 @@ pytest.importorskip('aiohttp')
 @pytest.mark.parametrize('nr_enabled', [True, False])
 def test_gunicorn_gaiohttp_worker(nr_enabled):
 
-    bin_dir = os.path.join(os.environ['TOX_ENVDIR'], 'bin', 'gunicorn')
-    cmd = [bin_dir, '-b', '127.0.0.1:8000', '-k', 'gaiohttp',
-            'app:application']
+    nr_admin = os.path.join(os.environ['TOX_ENVDIR'], 'bin', 'newrelic-admin')
+    gunicorn = os.path.join(os.environ['TOX_ENVDIR'], 'bin', 'gunicorn')
+    cmd = [nr_admin, 'run-program', gunicorn, '-b', '127.0.0.1:8000', '-k',
+            'gaiohttp', 'app:application']
 
-    with TerminatingPopen(cmd):
+    env = {
+        'NEW_RELIC_ENABLED': 'true',
+        'NEW_RELIC_HOST': 'staging-collector.newrelic.com',
+        'NEW_RELIC_LICENSE_KEY': '84325f47e9dec80613e262be4236088a9983d501',
+        'NEW_RELIC_APP_NAME': 'Python Agent Test (gunicorn)',
+        'NEW_RELIC_LOG': 'stderr',
+        'NEW_RELIC_LOG_LEVEL': 'debug',
+        'NEW_RELIC_STARTUP_TIMEOUT': '10.0',
+        'NEW_RELIC_SHUTDOWN_TIMEOUT': '10.0',
+    }
+
+    with TerminatingPopen(cmd, env=env):
         for _ in range(10):
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:

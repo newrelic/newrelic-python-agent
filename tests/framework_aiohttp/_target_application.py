@@ -5,7 +5,9 @@ from aiohttp import web
 @asyncio.coroutine
 def index(request):
     yield
-    return web.Response(text='Hello Aiohttp!')
+    resp = web.Response(text='Hello Aiohttp!')
+    resp.set_cookie('OM', 'NOM')
+    return resp
 
 
 @asyncio.coroutine
@@ -28,7 +30,9 @@ class HelloWorldView(web.View):
     @asyncio.coroutine
     def _respond(self):
         yield
-        return web.Response(text='Hello Aiohttp!')
+        resp = web.Response(text='Hello Aiohttp!')
+        resp.set_cookie('OM', 'NOM')
+        return resp
 
     get = _respond
     post = _respond

@@ -186,3 +186,28 @@ def test_simultaneous_requests(method, uri, metric_name,
             aiohttp_app.loop.run_until_complete(multi_fetch(aiohttp_app.loop))
 
     _test()
+
+
+@pytest.mark.parametrize('nr_enabled', [True, False])
+def test_system_response_creates_no_transaction(nr_enabled, aiohttp_app):
+    @asyncio.coroutine
+    def fetch():
+        resp = yield from aiohttp_app.client.request('GET', '/404_ahhhhhh')
+        assert resp.status == 404
+        return resp
+
+    if nr_enabled:
+        transactions = []
+
+        @count_transactions(transactions)
+        def _test():
+            aiohttp_app.loop.run_until_complete(fetch())
+            assert len(transactions) == 0
+    else:
+        settings = global_settings()
+
+        @override_generic_settings(settings, {'enabled': False})
+        def _test():
+            aiohttp_app.loop.run_until_complete(fetch())
+
+    _test()

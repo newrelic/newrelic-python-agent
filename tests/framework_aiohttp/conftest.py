@@ -1,6 +1,13 @@
 import asyncio
 from aiohttp.test_utils import (AioHTTPTestCase,
         TestClient as _TestClient)
+from aiohttp import ClientResponse
+
+try:
+    from aiohttp import HttpResponseParser
+except ImportError:
+    from aiohttp.http_parser import HttpResponseParser
+
 from _target_application import make_app
 import pytest
 
@@ -36,6 +43,40 @@ def requires_data_collector(collector_available_fixture):
     pass
 
 
+cat_headers = []
+
+
+class HeaderResponseParser(HttpResponseParser):
+
+    def parse_headers(self, lines):
+        for line in lines:
+            if line.startswith(b'X-NewRelic-App-Data:'):
+                decoded = line.decode('utf-8')
+                cat_header = tuple(decoded.split(': '))
+                cat_headers.append([cat_header])
+
+        return super(HeaderResponseParser, self).parse_headers(lines)
+
+
+class RealHeadersResponse(ClientResponse):
+    try:
+        _response_parser = HeaderResponseParser()
+    except TypeError:
+        pass
+
+    @asyncio.coroutine
+    def start(self, *args, **kwargs):
+        response = yield from super(RealHeadersResponse, self).start(*args,
+                **kwargs)
+
+        _nr_cat_header = None
+        if cat_headers:
+            _nr_cat_header = cat_headers.pop()
+        response._nr_cat_header = _nr_cat_header
+
+        return response
+
+
 class SimpleAiohttpApp(AioHTTPTestCase):
 
     def __init__(self, server_cls, middleware, *args, **kwargs):
@@ -45,23 +86,30 @@ class SimpleAiohttpApp(AioHTTPTestCase):
         if middleware:
             self.middleware = [middleware]
 
-    def get_app(self):
-        return make_app(self.middleware)
+    def get_app(self, *args, **kwargs):
+        return make_app(self.middleware, loop=self.loop)
 
     @asyncio.coroutine
     def _get_client(self, app):
         """Return a TestClient instance."""
+        client_constructor_arg = app
+
+        scheme = "http"
+        host = '127.0.0.1'
+        server_kwargs = {}
         if self.server_cls:
-            scheme = "http"
-            host = '127.0.0.1'
-            server_kwargs = {}
             test_server = self.server_cls(
                     app,
                     scheme=scheme, host=host, **server_kwargs)
-            return _TestClient(test_server, loop=self.loop)
-        else:
-            client = yield from super(SimpleAiohttpApp, self)._get_client(app)
-            return client
+            client_constructor_arg = test_server
+
+        try:
+            return _TestClient(client_constructor_arg,
+                    loop=self.loop,
+                    response_class=RealHeadersResponse)
+        except TypeError:
+            return _TestClient(client_constructor_arg,
+                    response_class=RealHeadersResponse)
 
 
 @pytest.fixture()

@@ -5,7 +5,9 @@ from aiohttp import web
 @asyncio.coroutine
 def index(request):
     yield
-    return web.Response(text='Hello Aiohttp!')
+    resp = web.Response(text='Hello Aiohttp!')
+    resp.set_cookie('OM', 'NOM')
+    return resp
 
 
 @asyncio.coroutine
@@ -13,12 +15,24 @@ def error(request):
     raise ValueError("I'm bad at programming...")
 
 
+@asyncio.coroutine
+def non_500_error(request):
+    raise web.HTTPGone()
+
+
+@asyncio.coroutine
+def raise_404(request):
+    raise web.HTTPNotFound()
+
+
 class HelloWorldView(web.View):
 
     @asyncio.coroutine
     def _respond(self):
         yield
-        return web.Response(text='Hello Aiohttp!')
+        resp = web.Response(text='Hello Aiohttp!')
+        resp.set_cookie('OM', 'NOM')
+        return resp
 
     get = _respond
     post = _respond
@@ -49,11 +63,13 @@ class KnownErrorView(web.View):
     delete = _respond
 
 
-def make_app(middlewares=None):
-    app = web.Application(middlewares=middlewares)
+def make_app(middlewares=None, loop=None):
+    app = web.Application(middlewares=middlewares, loop=loop)
     app.router.add_route('*', '/coro', index)
     app.router.add_route('*', '/class', HelloWorldView)
     app.router.add_route('*', '/error', error)
     app.router.add_route('*', '/known_error', KnownErrorView)
+    app.router.add_route('*', '/non_500_error', non_500_error)
+    app.router.add_route('*', '/raise_404', raise_404)
 
     return app

@@ -782,7 +782,7 @@ def validate_database_duration():
 
 
 def validate_transaction_event_attributes(required_params={},
-        forgone_params={}):
+        forgone_params={}, exact_attrs={}):
 
     captured_events = []
 
@@ -807,14 +807,16 @@ def validate_transaction_event_attributes(required_params={},
         assert captured_events, "No events captured"
         event_data = captured_events.pop(0)
 
-        check_event_attributes(event_data, required_params, forgone_params)
+        check_event_attributes(event_data, required_params, forgone_params,
+                exact_attrs)
 
         return result
 
     return _validate_transaction_event_attributes
 
 
-def check_event_attributes(event_data, required_params, forgone_params):
+def check_event_attributes(event_data, required_params, forgone_params,
+        exact_attrs=None):
     """Check the event attributes from a single (first) event in a
     SampledDataSet. If necessary, clear out previous errors from StatsEngine
     prior to saving error, so that the desired error is the only one present
@@ -836,6 +838,17 @@ def check_event_attributes(event_data, required_params, forgone_params):
             assert param not in agent_attributes
         for param in forgone_params['user']:
             assert param not in user_attributes
+
+    if exact_attrs:
+        for param, value in exact_attrs['agent'].items():
+            assert agent_attributes[param] == value, (
+                    (param, value), agent_attributes)
+        for param, value in exact_attrs['user']:
+            assert user_attributes[param] == value, (
+                    (param, value), user_attributes)
+        for param in exact_attrs['intrinsic']:
+            assert intrinsics[param] == value, (
+                    (param, value), intrinsics)
 
 
 def validate_non_transaction_error_event(required_intrinsics={}, num_errors=1,
@@ -2465,31 +2478,45 @@ def function_not_called(module, name):
 
 def validate_analytics_catmap_data(name, expected_attributes=(),
         non_expected_attributes=()):
+
+    samples = []
+
     @transient_function_wrapper('newrelic.core.stats_engine',
             'SampledDataSet.add')
-    def _validate_analytics_sample_data(wrapped, instance, args, kwargs):
+    def _capture_samples(wrapped, instance, args, kwargs):
         def _bind_params(sample, *args, **kwargs):
             return sample
 
         sample = _bind_params(*args, **kwargs)
-
-        assert isinstance(sample, list)
-        assert len(sample) == 3
-
-        intrinsics, user_attributes, agent_attributes = sample
-
-        assert intrinsics['type'] == 'Transaction'
-        assert intrinsics['name'] == name
-        assert intrinsics['timestamp'] >= 0.0
-        assert intrinsics['duration'] >= 0.0
-
-        for key, value in expected_attributes.items():
-            assert intrinsics[key] == value
-
-        for key in non_expected_attributes:
-            assert intrinsics.get(key) is None
-
+        samples.append(sample)
         return wrapped(*args, **kwargs)
+
+    @function_wrapper
+    def _validate_analytics_sample_data(wrapped, instance, args, kwargs):
+        _new_wrapped = _capture_samples(wrapped)
+
+        result = _new_wrapped(*args, **kwargs)
+
+        _samples = [s for s in samples if s[0]['type'] == 'Transaction']
+        assert _samples, "No Transaction events captured."
+        for sample in _samples:
+            assert isinstance(sample, list)
+            assert len(sample) == 3
+
+            intrinsics, user_attributes, agent_attributes = sample
+
+            assert intrinsics['type'] == 'Transaction'
+            assert intrinsics['name'] == name
+            assert intrinsics['timestamp'] >= 0.0
+            assert intrinsics['duration'] >= 0.0
+
+            for key, value in expected_attributes.items():
+                assert intrinsics[key] == value
+
+            for key in non_expected_attributes:
+                assert intrinsics.get(key) is None
+
+        return result
 
     return _validate_analytics_sample_data
 

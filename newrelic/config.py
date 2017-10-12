@@ -2306,6 +2306,9 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.external_urllib3',
             'instrument_urllib3_connection')
 
+    _process_module_definition('aiohttp.wsgi',
+            'newrelic.hooks.framework_aiohttp',
+            'instrument_aiohttp_wsgi')
     _process_module_definition('aiohttp.web',
             'newrelic.hooks.framework_aiohttp',
             'instrument_aiohttp_web')

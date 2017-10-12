@@ -1,7 +1,7 @@
 import asyncio
 import sys
 
-from newrelic.api.transaction import current_transaction
+from newrelic.api.transaction import current_transaction, ignore_transaction
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.application import application_instance
@@ -321,9 +321,16 @@ def _nr_aiohttp_wrap_application_init_(wrapped, instance, args, kwargs):
     return result
 
 
+def _nr_aiohttp_wrap_system_route_(wrapped, instance, args, kwargs):
+    ignore_transaction()
+    return wrapped(*args, **kwargs)
+
+
 def instrument_aiohttp_web_urldispatcher(module):
     wrap_function_wrapper(module, 'ResourceRoute.__init__',
             _nr_aiohttp_wrap_view_)
+    wrap_function_wrapper(module, 'SystemRoute._handler',
+            _nr_aiohttp_wrap_system_route_)
 
 
 def instrument_aiohttp_web(module):

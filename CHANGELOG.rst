@@ -1,6 +1,20 @@
 unreleased
 ----------
 
+- Add instrumentation for aiohttp framework
+
+  Data is now automatically collected for applications using the aiohttp
+  framework. Data for aiohttp applications will appear in both APM and
+  Insights. Additionally, cross application tracing is supported for incoming
+  requests for aiohttp applications. In addition to service maps, aiohttp
+  applications will now show the calling application in transaction traces.
+
+- Fix crash for gunicorn gaiohttp driver
+
+  Using gunicorn's gaiohttp worker with New Relic browser monitoring enabled
+  may have resulted in an application crash. This crash has been fixed and the
+  gaiohttp worker is now fully supported with the New Relic Python Agent.
+
 - Add support for displaying Heroku dyno names.
 
   Heroku-friendly logic can now be applied to how dyno names are displayed.

@@ -21,17 +21,13 @@ def should_ignore(exc, value, tb):
 
 def _nr_process_response(response, transaction):
     headers = dict(response.headers)
-
     status_str = str(response.status)
+
     nr_headers = transaction.process_response(status_str,
             headers.items())
 
-    nr_headers = dict(nr_headers)
-
-    # customer headers override NR headers
-    nr_headers.update(headers)
-
-    response._headers = nr_headers
+    for k, v in nr_headers:
+        response.headers.add(k, v)
 
 
 class NRTransactionCoroutineWrapper(ObjectProxy):

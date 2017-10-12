@@ -1511,6 +1511,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/framework_aiohttp.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/framework_bottle.py": {
         "hash": "n/a",
         "libraries": [

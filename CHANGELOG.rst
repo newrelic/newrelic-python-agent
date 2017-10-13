@@ -1,6 +1,9 @@
 unreleased
 ----------
 
+2.96.0.80 (2017-10-16)
+----------------------
+
 - Add instrumentation for aiohttp framework
 
   Data is now automatically collected for applications using the aiohttp
@@ -19,6 +22,11 @@ unreleased
 
   Heroku-friendly logic can now be applied to how dyno names are displayed.
   This includes being able to collapse dynos based on prefix.
+
+- Fix crash for pika versions 0.9.x and earlier
+
+  Using the agent with pika versions 0.9.x and earlier could have resulted in
+  an application crash. This issue has now been fixed.
 
 
 2.94.0.79 (2017-09-19)

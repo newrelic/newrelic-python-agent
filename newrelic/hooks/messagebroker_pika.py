@@ -167,7 +167,8 @@ def _nr_wrapper_Basic_Deliver_init_(wrapper, instance, args, kwargs):
 def _nr_wrap_BlockingChannel___init__(wrapped, instance, args, kwargs):
     ret = wrapped(*args, **kwargs)
     # Add the bound method to the set of methods not to trace.
-    _no_trace_methods.add(instance._on_consumer_message_delivery)
+    if hasattr(instance, '_on_consumer_message_delivery'):
+        _no_trace_methods.add(instance._on_consumer_message_delivery)
     return ret
 
 

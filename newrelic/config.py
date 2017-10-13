@@ -518,6 +518,10 @@ def _process_configuration(section):
     _process_setting(section,
                      'datastore_tracer.database_name_reporting.enabled',
                      'getboolean', None)
+    _process_setting(section, 'heroku.use_dyno_names',
+                     'getboolean', None)
+    _process_setting(section, 'heroku.dyno_name_prefixes_to_shorten',
+                     'get', _map_split_strings)
 
 
 # Loading of configuration from specified file and for specified
@@ -2301,6 +2305,22 @@ def _process_module_builtin_defaults():
     _process_module_definition('urllib3.connection',
             'newrelic.hooks.external_urllib3',
             'instrument_urllib3_connection')
+
+    _process_module_definition('aiohttp.wsgi',
+            'newrelic.hooks.framework_aiohttp',
+            'instrument_aiohttp_wsgi')
+    _process_module_definition('aiohttp.web',
+            'newrelic.hooks.framework_aiohttp',
+            'instrument_aiohttp_web')
+    _process_module_definition('aiohttp.web_reqrep',
+            'newrelic.hooks.framework_aiohttp',
+            'instrument_aiohttp_web_response')
+    _process_module_definition('aiohttp.web_response',
+            'newrelic.hooks.framework_aiohttp',
+            'instrument_aiohttp_web_response')
+    _process_module_definition('aiohttp.web_urldispatcher',
+            'newrelic.hooks.framework_aiohttp',
+            'instrument_aiohttp_web_urldispatcher')
 
     _process_module_definition('aiohttp.client',
             'newrelic.hooks.external_aiohttp',

@@ -171,6 +171,10 @@ class DatastoreTracerDatabaseNameReportingSettings(Settings):
     pass
 
 
+class HerokuSettings(Settings):
+    pass
+
+
 _settings = Settings()
 _settings.attributes = AttributesSettings()
 _settings.thread_profiler = ThreadProfilerSettings()
@@ -202,6 +206,7 @@ _settings.datastore_tracer.instance_reporting = \
         DatastoreTracerInstanceReportingSettings()
 _settings.datastore_tracer.database_name_reporting = \
         DatastoreTracerDatabaseNameReportingSettings()
+_settings.heroku = HerokuSettings()
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 _settings.audit_log_file = os.environ.get('NEW_RELIC_AUDIT_LOG', None)
@@ -528,6 +533,11 @@ _settings.strip_exception_messages.whitelist = []
 _settings.datastore_tracer.instance_reporting.enabled = True
 _settings.datastore_tracer.database_name_reporting.enabled = True
 
+_settings.heroku.use_dyno_names = _environ_as_bool(
+        'NEW_RELIC_HEROKU_USE_DYNO_NAMES', default=True)
+_settings.heroku.dyno_name_prefixes_to_shorten = list(_environ_as_set(
+        'NEW_RELIC_HEROKU_DYNO_NAME_PREFIXES_TO_SHORTEN', 'scheduler run'))
+
 
 def global_settings():
     """This returns the default global settings. Generally only used
@@ -539,9 +549,9 @@ def global_settings():
     settings will be taken.
 
     >>> global_settings = global_settings()
-    >>> global_settings.browser_monitoring.auto_instrument = False
+    >>> global_settings.browser_monitoring.auto_instrument = True
     >>> global_settings.browser_monitoring.auto_instrument
-    False
+    True
 
     """
 
@@ -661,10 +671,10 @@ def apply_config_setting(settings_object, name, value):
     one will be created and added automatically.
 
     >>> name = 'browser_monitoring.auto_instrument'
-    >>> value = False
+    >>> value = True
     >>>
     >>> global_settings = global_settings()
-    >>> _apply_config_setting(global_settings, name, value)
+    >>> apply_config_setting(global_settings, name, value)
 
     """
 
@@ -686,8 +696,9 @@ def fetch_config_setting(settings_object, name):
     >>> name = 'browser_monitoring.auto_instrument'
     >>>
     >>> global_settings = global_settings()
-    >>> _fetch_config_setting(global_settings, name)
-    'browser_monitoring.auto_instrument'
+    >>> global_settings.browser_monitoring.auto_instrument = True
+    >>> fetch_config_setting(global_settings, name)
+    True
 
     """
 
@@ -711,7 +722,7 @@ def apply_server_side_settings(server_side_config={}, settings=_settings):
     the resulting settings object will be cached for subsequent use
     within the application object the settings pertain to.
 
-    >>> server_config = { 'browser_monitoring.auto_instrument': False }
+    >>> server_config = {'browser_monitoring.auto_instrument': True}
     >>>
     >>> settings_snapshot = apply_server_side_settings(server_config)
 

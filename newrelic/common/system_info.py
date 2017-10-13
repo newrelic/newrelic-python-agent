@@ -332,11 +332,23 @@ def physical_memory_used():
     return 0
 
 
+def _resolve_hostname(use_dyno_names, dyno_shorten_prefixes):
+    dyno_name = os.environ.get('DYNO')
+    if not use_dyno_names or not dyno_name:
+        return socket.gethostname()
+
+    for prefix in dyno_shorten_prefixes:
+        if prefix and dyno_name.startswith(prefix):
+            return '%s.*' % prefix
+
+    return dyno_name
+
+
 _nr_cached_hostname = None
 _nr_cached_hostname_lock = threading.Lock()
 
 
-def gethostname():
+def gethostname(use_dyno_names=False, dyno_shorten_prefixes=()):
     """Cache the output of socket.gethostname().
 
     Keeps the reported hostname consistent throughout an agent run.
@@ -353,7 +365,8 @@ def gethostname():
 
     with _nr_cached_hostname_lock:
         if _nr_cached_hostname is None:
-            _nr_cached_hostname = socket.gethostname()
+            _nr_cached_hostname = _resolve_hostname(use_dyno_names,
+                    dyno_shorten_prefixes)
 
     return _nr_cached_hostname
 

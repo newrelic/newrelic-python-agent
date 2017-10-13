@@ -1,6 +1,9 @@
+import os
+import pytest
 import socket
 import unittest
 
+from mock import patch
 from newrelic.common import system_info
 
 
@@ -49,6 +52,51 @@ class TestGetHostName(unittest.TestCase):
 
         hostname_2 = system_info.gethostname()
         self.assertEqual(hostname_1, hostname_2)
+
+    def test_gethostname_returns_dyno(self):
+        with patch.dict('os.environ', {'DYNO': 'dynosaurus'}):
+            hostname = system_info.gethostname(use_dyno_names=True)
+
+            self.assertEqual(hostname, 'dynosaurus')
+
+    def test_gethostname_ignores_dyno_when_disabled(self):
+        with patch.dict('os.environ', {'DYNO': 'dynosaurus'}):
+            hostname = system_info.gethostname(use_dyno_names=False)
+
+            self.assertEqual(hostname, 'mock-hostname-1')
+
+    def test_gethostname_dyno_prefixes_are_collapsed(self):
+        with patch.dict('os.environ', {'DYNO': 'prefix.dynosaurus'}):
+            hostname = system_info.gethostname(use_dyno_names=True,
+                    dyno_shorten_prefixes=['prefix'])
+
+            self.assertEqual(hostname, 'prefix.*')
+
+    def test_gethostname_dyno_only_shortens_on_prefix_match(self):
+        with patch.dict('os.environ', {'DYNO': 'dynosaurus'}):
+            hostname = system_info.gethostname(use_dyno_names=True,
+                    dyno_shorten_prefixes=['meow'])
+
+            self.assertEqual(hostname, 'dynosaurus')
+
+    def test_gethostname_prefixes_allow_csv(self):
+        with patch.dict('os.environ', {'DYNO': 'dynosaurus.1'}):
+            hostname = system_info.gethostname(use_dyno_names=True,
+                    dyno_shorten_prefixes=['rex', 'dynosaurus'])
+
+            self.assertEqual(hostname, 'dynosaurus.*')
+
+    def test_gethostname_prefix_empty_string(self):
+        with patch.dict('os.environ', {'DYNO': 'dynosaurus.1'}):
+            hostname = system_info.gethostname(use_dyno_names=True,
+                    dyno_shorten_prefixes=[''])
+            self.assertEqual(hostname, 'dynosaurus.1')
+
+    def test_gethostname_unsupported_object(self):
+        with patch.dict('os.environ', {'DYNO': 'dynosaurus.1'}):
+            with pytest.raises(TypeError):
+                hostname = system_info.gethostname(use_dyno_names=True,
+                        dyno_shorten_prefixes=[{'meow': 'wruff'}])
 
 
 if __name__ == '__main__':

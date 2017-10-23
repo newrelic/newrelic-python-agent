@@ -11,6 +11,12 @@ def index(request):
 
 
 @asyncio.coroutine
+def hang(request):
+    while True:
+        yield
+
+
+@asyncio.coroutine
 def error(request):
     raise ValueError("I'm bad at programming...")
 
@@ -71,5 +77,6 @@ def make_app(middlewares=None, loop=None):
     app.router.add_route('*', '/known_error', KnownErrorView)
     app.router.add_route('*', '/non_500_error', non_500_error)
     app.router.add_route('*', '/raise_404', raise_404)
+    app.router.add_route('*', '/hang', hang)
 
     return app

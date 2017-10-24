@@ -1,6 +1,12 @@
 unreleased
 ----------
 
+- Ignore incomplete aiohttp transactions
+
+  In aiohttp, connections can be terminated prior to the HTTP response being
+  generated and sent. In those cases, the request handler may be cancelled.
+  These transactions are no longer reported.
+
 2.96.0.80 (2017-10-16)
 ----------------------
 

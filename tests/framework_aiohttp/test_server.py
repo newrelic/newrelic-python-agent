@@ -211,3 +211,29 @@ def test_system_response_creates_no_transaction(nr_enabled, aiohttp_app):
             aiohttp_app.loop.run_until_complete(fetch())
 
     _test()
+
+
+def test_aborted_connection_creates_no_transaction(aiohttp_app):
+    @asyncio.coroutine
+    def fetch():
+        try:
+            yield from aiohttp_app.client.request('GET', '/hang', timeout=0.1)
+        except asyncio.TimeoutError:
+            try:
+                # Force the client to disconnect (while the server is hanging)
+                yield from aiohttp_app.client.close()
+            # In aiohttp 1.X, this can result in a CancelledError being raised
+            except asyncio.CancelledError:
+                pass
+            return
+
+        assert False, "Request did not time out"
+
+    transactions = []
+
+    @count_transactions(transactions)
+    def _test():
+        aiohttp_app.loop.run_until_complete(fetch())
+        assert len(transactions) == 0
+
+    _test()

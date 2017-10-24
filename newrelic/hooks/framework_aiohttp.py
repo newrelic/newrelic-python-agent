@@ -142,6 +142,11 @@ class NRTransactionCoroutineWrapper(ObjectProxy):
             self._nr_transaction.__exit__(None, None, None)
             self._nr_request = None
             raise
+        except asyncio.CancelledError:
+            self._nr_transaction.ignore_transaction = True
+            self._nr_transaction.__exit__(None, None, None)
+            self._nr_request = None
+            raise
         except _web.HTTPException as e:
             exc_info = sys.exc_info()
             try:

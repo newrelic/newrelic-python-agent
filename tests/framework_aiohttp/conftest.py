@@ -90,17 +90,16 @@ class SimpleAiohttpApp(AioHTTPTestCase):
         return make_app(self.middleware, loop=self.loop)
 
     @asyncio.coroutine
-    def _get_client(self, app):
+    def _get_client(self, app_or_server):
         """Return a TestClient instance."""
-        client_constructor_arg = app
+        client_constructor_arg = app_or_server
 
-        scheme = "http"
+        scheme = 'http'
         host = '127.0.0.1'
         server_kwargs = {}
         if self.server_cls:
-            test_server = self.server_cls(
-                    app,
-                    scheme=scheme, host=host, **server_kwargs)
+            test_server = self.server_cls(app_or_server, scheme=scheme,
+                    host=host, **server_kwargs)
             client_constructor_arg = test_server
 
         try:
@@ -110,6 +109,8 @@ class SimpleAiohttpApp(AioHTTPTestCase):
         except TypeError:
             return _TestClient(client_constructor_arg,
                     response_class=RealHeadersResponse)
+
+    get_client = _get_client
 
 
 @pytest.fixture()

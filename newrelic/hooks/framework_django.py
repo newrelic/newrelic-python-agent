@@ -545,9 +545,12 @@ def wrap_view_handler(wrapped, priority=3):
 
             except:  # Catch all
                 exc_info = sys.exc_info()
-                # Store exc_info on the request to check response code prior to
-                # reporting
-                args[0]._nr_exc_info = exc_info
+                try:
+                    # Store exc_info on the request to check response code
+                    # prior to reporting
+                    args[0]._nr_exc_info = exc_info
+                except:
+                    transaction.record_exception(*exc_info)
                 raise
 
     result = FunctionWrapper(wrapped, wrapper)

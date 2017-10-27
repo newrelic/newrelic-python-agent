@@ -23,4 +23,4 @@ class MockExternalgRPCServer(object):
         return self.server
 
     def __exit__(self, type, value, tb):
-        self.server.stop(grace=0.1)
+        self.server.stop(grace=None)

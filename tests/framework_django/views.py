@@ -1,6 +1,7 @@
 from django.http import HttpResponse
 from django.views.generic.base import View, TemplateView
 from django.shortcuts import render
+from django.core.exceptions import PermissionDenied
 
 from newrelic.api.transaction import (get_browser_timing_header,
     get_browser_timing_footer)
@@ -12,6 +13,10 @@ def index(request):
 
 def exception(request):
     raise RuntimeError('exception')
+
+
+def permission_denied(request):
+    raise PermissionDenied()
 
 
 class MyView(View):

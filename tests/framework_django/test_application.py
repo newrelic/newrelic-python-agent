@@ -1,6 +1,6 @@
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, override_application_settings,
-    override_generic_settings)
+    override_generic_settings, override_ignore_status_codes)
 
 from newrelic.hooks.framework_django import django_settings
 
@@ -160,6 +160,15 @@ elif DJANGO_VERSION < (1, 10):
 def test_application_not_found():
     test_application = target_application()
     test_application.get('/not_found', status=404)
+
+
+@override_ignore_status_codes([403])
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics('views:permission_denied',
+        scoped_metrics=[])
+def test_ignored_status_code():
+    test_application = target_application()
+    test_application.get('/permission_denied', status=403)
 
 
 _test_application_cbv_scoped_metrics = [

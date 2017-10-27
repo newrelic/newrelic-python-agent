@@ -6,7 +6,7 @@ from newrelic.core.config import global_settings
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_transaction_errors, validate_transaction_event_attributes,
         count_transactions, override_generic_settings,
-        override_application_settings)
+        override_application_settings, override_ignore_status_codes)
 
 
 BASE_REQUIRED_ATTRS = ['request.headers.contentType',
@@ -94,8 +94,7 @@ def test_error_exception(method, uri, metric_name, error, status, nr_enabled,
                 'intrinsic': {},
             },
         )
-        @override_application_settings({
-                'error_collector.ignore_status_codes': [404]})
+        @override_ignore_status_codes([404])
         def _test():
             aiohttp_app.loop.run_until_complete(fetch())
     else:

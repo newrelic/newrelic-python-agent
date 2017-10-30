@@ -23,4 +23,8 @@ class MockExternalgRPCServer(object):
         return self.server
 
     def __exit__(self, type, value, tb):
+        # Set grace period to None so that the server shuts down immediately
+        # when the context manager exits. This will hopefully prevent tests
+        # from hanging while waiting for the server to shut down.
+        # https://github.com/grpc/grpc/blob/662ec97674dd0918f4db4c21f5f47038c535a9ba/src/python/grpcio/grpc/_server.py#L729
         self.server.stop(grace=None)

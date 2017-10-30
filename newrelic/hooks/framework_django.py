@@ -57,14 +57,6 @@ django_settings = extra_settings('import-hook:django',
         types=_settings_types, defaults=_settings_defaults)
 
 
-def should_ignore(exc, value, tb):
-    from django.http import Http404
-
-    if isinstance(value, Http404):
-        if ignore_status_code(404):
-            return True
-
-
 def should_add_browser_timing(response, transaction):
 
     # Don't do anything if receive a streaming response which
@@ -423,6 +415,28 @@ def _nr_wrapper_GZipMiddleware_process_response_(wrapped, instance, args,
     return wrapped(request, response)
 
 
+def _bind_get_response(request, *args, **kwargs):
+    return request
+
+
+def _nr_wrapper_BaseHandler_get_response_(wrapped, instance, args, kwargs):
+    response = wrapped(*args, **kwargs)
+
+    transaction = current_transaction()
+
+    if transaction is None:
+        return response
+
+    request = _bind_get_response(*args, **kwargs)
+
+    if hasattr(request, '_nr_exc_info'):
+        if not ignore_status_code(response.status_code):
+            transaction.record_exception(*request._nr_exc_info)
+        delattr(request, '_nr_exc_info')
+
+    return response
+
+
 # Post import hooks for modules.
 
 def instrument_django_core_handlers_base(module):
@@ -433,6 +447,9 @@ def instrument_django_core_handlers_base(module):
 
     wrap_post_function(module, 'BaseHandler.load_middleware',
             insert_and_wrap_middleware)
+
+    wrap_function_wrapper(module, 'BaseHandler.get_response',
+            _nr_wrapper_BaseHandler_get_response_)
 
 
 def instrument_django_gzip_middleware(module):
@@ -527,7 +544,13 @@ def wrap_view_handler(wrapped, priority=3):
                 return wrapped(*args, **kwargs)
 
             except:  # Catch all
-                transaction.record_exception(ignore_errors=should_ignore)
+                exc_info = sys.exc_info()
+                try:
+                    # Store exc_info on the request to check response code
+                    # prior to reporting
+                    args[0]._nr_exc_info = exc_info
+                except:
+                    transaction.record_exception(*exc_info)
                 raise
 
     result = FunctionWrapper(wrapped, wrapper)
@@ -635,11 +658,9 @@ def instrument_django_core_urlresolvers(module):
     # and then reraises a ViewDoesNotExist exception with
     # details of the original error and traceback being
     # lost. We thus intercept it here so can capture that
-    # traceback which is otherwise lost. Although we ignore
-    # a Http404 exception here, it probably is never the
-    # case that one can be raised by get_callable().
+    # traceback which is otherwise lost.
 
-    wrap_error_trace(module, 'get_callable', ignore_errors=should_ignore)
+    wrap_error_trace(module, 'get_callable')
 
     # Wrap methods which resolves a request to a view handler.
     # This can be called against a resolver initialised against

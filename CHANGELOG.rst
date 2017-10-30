@@ -7,6 +7,13 @@ unreleased
   generated and sent. In those cases, the request handler may be cancelled.
   These transactions are no longer reported.
 
+- Add support for the error_collector.ignore_status_codes setting in Django
+
+  Ignoring exceptions in Django was previously limited to the
+  error_collector.ignore_errors configuration option. Ignoring exceptions by
+  response status code is now supported for Django through the use of the
+  error_collector.ignore_status_codes configuration option.
+
 2.96.0.80 (2017-10-16)
 ----------------------
 

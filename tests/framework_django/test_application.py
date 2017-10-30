@@ -164,11 +164,18 @@ def test_application_not_found():
 
 @override_ignore_status_codes([403])
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics('views:permission_denied',
-        scoped_metrics=[])
+@validate_transaction_metrics('views:permission_denied')
 def test_ignored_status_code():
     test_application = target_application()
     test_application.get('/permission_denied', status=403)
+
+
+@override_ignore_status_codes([410])
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics('views:middleware_410')
+def test_middleware_ignore_status_codes():
+    test_application = target_application()
+    test_application.get('/middleware_410', status=410)
 
 
 _test_application_cbv_scoped_metrics = [

@@ -2,6 +2,7 @@ from django.http import HttpResponse
 from django.views.generic.base import View, TemplateView
 from django.shortcuts import render
 from django.core.exceptions import PermissionDenied
+from middleware import Custom410
 
 from newrelic.api.transaction import (get_browser_timing_header,
     get_browser_timing_footer)
@@ -17,6 +18,10 @@ def exception(request):
 
 def permission_denied(request):
     raise PermissionDenied()
+
+
+def middleware_410(request):
+    raise Custom410()
 
 
 class MyView(View):

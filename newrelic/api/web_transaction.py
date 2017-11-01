@@ -392,7 +392,11 @@ class WebTransaction(Transaction):
 
         additional_headers = []
 
-        # Extract the HTTP status response code.
+        # Set our internal response code based on WSGI status.
+        # Per spec, it is expected that this is a string. If this is not
+        # the case, skip setting the internal response code as we cannot
+        # make the determination. (An integer 200 for example when passed
+        # would raise as a 500 for WSGI applications).
 
         try:
             self.response_code = int(status.split(' ')[0])

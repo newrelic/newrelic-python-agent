@@ -101,15 +101,6 @@ use(extensions) {
                 logRotator { numToKeep(10) }
                 blockOnJobs('.*-Reset-Nodes')
 
-                wrappers {
-                    timeout {
-                        // abort if nothing is printed to stdout/stderr
-                        // in 120 seconds
-                        noActivity(120)
-                        abortBuild()
-                    }
-                }
-
                 parameters {
                     stringParam('GIT_REPOSITORY_BRANCH', 'develop',
                                 'Branch in git repository to run test against.')

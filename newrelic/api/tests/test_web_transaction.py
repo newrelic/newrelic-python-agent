@@ -288,6 +288,36 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
         finally:
             func_wrapper.close()
 
+    def test_process_response_status_int(self):
+        environ = {'REQUEST_URI': '/environ_process_response_status'}
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
+        status = 200
+        response_headers = {}
+        transaction.process_response(status, response_headers)
+
+        assert transaction.response_code == 0
+
+    def test_process_response_status_str(self):
+        environ = {'REQUEST_URI': '/environ_process_response_status_str'}
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
+        status = '410'
+        response_headers = {}
+        transaction.process_response(status, response_headers)
+
+        assert transaction.response_code == 410
+
+    def test_process_response_status_str_msg(self):
+        environ = {'REQUEST_URI': '/environ_process_response_status_str_msg'}
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
+        status = '200 OK'
+        response_headers = {}
+        transaction.process_response(status, response_headers)
+
+        assert transaction.response_code == 200
+
     def test_sync_application_call(self):
         # The application wrapper should always directly call application
         # regardless of rum settings

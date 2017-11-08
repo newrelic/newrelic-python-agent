@@ -14,6 +14,13 @@ unreleased
   response status code is now supported for Django through the use of the
   error_collector.ignore_status_codes configuration option.
 
+- Fix to include HTTP status for Tornado transactions
+
+  HTTP status would silently fail to be added to Tornado transactions. Now
+  it is recorded properly so that it is visible in RPM and queryable in
+  Insights.
+
+
 2.96.0.80 (2017-10-16)
 ----------------------
 

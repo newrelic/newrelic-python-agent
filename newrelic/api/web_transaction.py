@@ -31,8 +31,8 @@ _js_agent_footer_fragment = '<script type="text/javascript">'\
                             'window.NREUM||(NREUM={});NREUM.info=%s</script>'
 
 # Seconds since epoch for Jan 1 2000
-
 JAN_1_2000 = time.mktime((2000, 1, 1, 0, 0, 0, 0, 0, 0))
+
 
 def _lookup_environ_setting(environ, name, default=False):
     flag = environ.get(name, default)
@@ -47,6 +47,7 @@ def _lookup_environ_setting(environ, name, default=False):
         except AttributeError:
             pass
     return flag
+
 
 def _parse_synthetics_header(header):
     # Return a dictionary of values from Synthetics header
@@ -67,12 +68,15 @@ def _parse_synthetics_header(header):
 
     return synthetics
 
+
 def _remove_query_string(url):
     out = urlparse.urlsplit(url)
     return urlparse.urlunsplit((out.scheme, out.netloc, out.path, '', ''))
 
+
 def _is_websocket(environ):
     return environ.get('HTTP_UPGRADE') == 'websocket'
+
 
 class WebTransaction(Transaction):
 
@@ -254,7 +258,7 @@ class WebTransaction(Transaction):
 
             """
             for divisor in (1000000.0, 1000.0, 1.0):
-                converted_time = time_stamp/divisor
+                converted_time = time_stamp / divisor
 
                 # If queue_start is in the future, return 0.0.
 
@@ -388,7 +392,11 @@ class WebTransaction(Transaction):
 
         additional_headers = []
 
-        # Extract the HTTP status response code.
+        # Set our internal response code based on WSGI status.
+        # Per spec, it is expected that this is a string. If this is not
+        # the case, skip setting the internal response code as we cannot
+        # make the determination. (An integer 200 for example when passed
+        # would raise as a 500 for WSGI applications).
 
         try:
             self.response_code = int(status.split(' ')[0])
@@ -503,14 +511,15 @@ class WebTransaction(Transaction):
         if self._settings.js_agent_loader:
             header = _js_agent_header_fragment % self._settings.js_agent_loader
 
-            # To avoid any issues with browser encodings, we will make sure that
-            # the javascript we inject for the browser agent is ASCII encodable.
-            # Since we obfuscate all agent and user attributes, and the transaction
-            # name with base 64 encoding, this will preserve those strings, if
-            # they have values outside of the ASCII character set.
-            # In the case of Python 2, we actually then use the encoded value
-            # as we need a native string, which for Python 2 is a byte string.
-            # If encoding as ASCII fails we will return an empty string.
+            # To avoid any issues with browser encodings, we will make sure
+            # that the javascript we inject for the browser agent is ASCII
+            # encodable. Since we obfuscate all agent and user attributes, and
+            # the transaction name with base 64 encoding, this will preserve
+            # those strings, if they have values outside of the ASCII character
+            # set. In the case of Python 2, we actually then use the encoded
+            # value as we need a native string, which for Python 2 is a byte
+            # string. If encoding as ASCII fails we will return an empty
+            # string.
 
             try:
                 if six.PY2:
@@ -663,6 +672,7 @@ class WebTransaction(Transaction):
 
         return intrinsics
 
+
 class _WSGIApplicationIterable(object):
 
     def __init__(self, transaction, generator):
@@ -734,6 +744,7 @@ class _WSGIApplicationIterable(object):
         finally:
             self.closed = True
 
+
 class _WSGIInputWrapper(object):
 
     def __init__(self, transaction, input):
@@ -789,6 +800,7 @@ class _WSGIInputWrapper(object):
             self.__transaction._read_end = time.time()
         return lines
 
+
 class _WSGIApplicationMiddleware(object):
 
     # This is a WSGI middleware for automatically inserting RUM into
@@ -805,7 +817,7 @@ class _WSGIApplicationMiddleware(object):
     # streaming a response, the <head> itself isn't streamed out only
     # gradually.
 
-    search_maximum = 64*1024
+    search_maximum = 64 * 1024
 
     def __init__(self, application, environ, start_response, transaction):
         self.application = application
@@ -1146,6 +1158,7 @@ class _WSGIApplicationMiddleware(object):
             for data in self.response_data:
                 yield data
 
+
 def WSGIApplicationWrapper(wrapped, application=None, name=None,
         group=None, framework=None):
 
@@ -1276,7 +1289,7 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
                     status, response_headers, *args)
 
             _write = start_response(status,
-                    response_headers+additional_headers, *args)
+                    response_headers + additional_headers, *args)
 
             def write(data):
                 if not transaction._sent_start:
@@ -1318,9 +1331,11 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
 
     return FunctionWrapper(wrapped, _nr_wsgi_application_wrapper_)
 
+
 def wsgi_application(application=None, name=None, group=None, framework=None):
     return functools.partial(WSGIApplicationWrapper, application=application,
             name=name, group=group, framework=framework)
+
 
 def wrap_wsgi_application(module, object_path, application=None,
             name=None, group=None, framework=None):

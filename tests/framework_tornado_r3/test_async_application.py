@@ -47,6 +47,7 @@ from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
     tornado_validate_time_transaction_metrics,
     tornado_validate_errors, tornado_validate_transaction_cache_empty,
+    tornado_validate_transaction_status,
     tornado_run_validator, tornado_validate_tt_parenting)
 
 from remove_utilization_tester import remove_utilization_tester
@@ -95,6 +96,14 @@ class AllTests(object):
             ('FunctionNode', []),
         ]
     )
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_transaction_status(200)
+    def test_status_code_ok(self):
+        response = self.fetch_response('/')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, HelloRequestHandler.RESPONSE)
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()

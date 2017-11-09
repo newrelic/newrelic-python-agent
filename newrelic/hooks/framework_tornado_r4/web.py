@@ -18,6 +18,7 @@ import traceback
 from newrelic.api.application import application_instance
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.transaction import current_transaction
+from newrelic.api.transaction_context import TransactionContext
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (wrap_function_wrapper, ObjectProxy,
@@ -78,24 +79,18 @@ def _nr_request_handler_init(wrapped, instance, args, kwargs):
 
 
 def _nr_request_end(wrapped, instance, args, kwargs):
-    txn = None
-    if hasattr(instance, '_nr_transaction'):
-        txn = instance._nr_transaction
+    transaction = getattr(instance, '_nr_transaction', None)
+    if transaction is None:
+        return wrapped(*args, **kwargs)
 
-        current_txn = current_transaction()
-        if not current_txn:
-            txn.save_transaction()
-        elif current_txn is not txn:
-            _logger.error('Runtime instrumentation error. The wrong '
-                    'transaction is in the transaction cache when finish was '
-                    'called. Please report this issue to New Relic '
-                    'support.\n%s',
-                    ''.join(traceback.format_stack()[:-1]))
-            return wrapped(*args, **kwargs)
+    with TransactionContext(transaction):
+        try:
+            ret = wrapped(*args, **kwargs)
+        except Exception:
+            raise
+        finally:
+            transaction.__exit__(None, None, None)
 
-    ret = wrapped(*args, **kwargs)
-    if txn:
-        txn.__exit__(None, None, None)
     return ret
 
 
@@ -120,26 +115,20 @@ class NRFunctionTraceCoroutineWrapper(ObjectProxy):
         if not self._nr_trace.activated:
             self._nr_trace.__enter__()
 
-        self._nr_transaction.save_transaction()
-        try:
-            return self.__wrapped__.send(value)
-        except:
-            self._nr_trace.__exit__(None, None, None)
-            raise
-        finally:
-            if current_transaction() is self._nr_transaction:
-                self._nr_transaction.drop_transaction()
+        with TransactionContext(self._nr_transaction):
+            try:
+                return self.__wrapped__.send(value)
+            except:
+                self._nr_trace.__exit__(None, None, None)
+                raise
 
     def throw(self, *args, **kwargs):
-        self._nr_transaction.save_transaction()
-        try:
-            return self.__wrapped__.throw(*args, **kwargs)
-        except:
-            self._nr_trace.__exit__(None, None, None)
-            raise
-        finally:
-            if current_transaction() is self._nr_transaction:
-                self._nr_transaction.drop_transaction()
+        with TransactionContext(self._nr_transaction):
+            try:
+                return self.__wrapped__.throw(*args, **kwargs)
+            except:
+                self._nr_trace.__exit__(None, None, None)
+                raise
 
     def close(self):
         try:
@@ -173,14 +162,9 @@ def _nr_method(name):
             coro = wrapped(*args, **kwargs)
             return NRFunctionTraceCoroutineWrapper(coro, transaction, name)
         else:
-            with FunctionTrace(transaction, name):
-                transaction.save_transaction()
-
-                try:
+            with TransactionContext(transaction):
+                with FunctionTrace(transaction, name):
                     return wrapped(*args, **kwargs)
-                finally:
-                    if current_transaction() is transaction:
-                        transaction.drop_transaction()
 
     return wrapper
 

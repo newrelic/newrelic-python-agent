@@ -605,6 +605,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/tests/test_transaction.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/tests/test_transaction_name.py": {
         "hash": "n/a",
         "libraries": [
@@ -1698,6 +1704,18 @@
         ]
     },
     "newrelic/hooks/framework_tornado_r3/web.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/framework_tornado_r4/__init__.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/framework_tornado_r4/web.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

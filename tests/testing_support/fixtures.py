@@ -496,7 +496,7 @@ def validate_transaction_metrics(name, group='Function',
     return _validate_wrapper
 
 
-def capture_transaction_metrics(metrics_list):
+def capture_transaction_metrics(metrics_list, full_metrics=None):
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
     @catch_background_exceptions
@@ -507,6 +507,8 @@ def capture_transaction_metrics(metrics_list):
             raise
         else:
             metrics = instance.stats_table
+            if full_metrics is not None:
+                full_metrics.update(metrics)
             for metric in metrics.keys():
                 metrics_list.append(metric)
             metrics_list.sort()

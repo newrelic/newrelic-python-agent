@@ -56,12 +56,6 @@ def _nr_request_handler_init(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     app = application_instance()
-
-    def _bind_params(application, request, *args, **kwargs):
-        return request
-
-    request = _bind_params(*args, **kwargs)
-
     txn = WebTransaction(app, {})
     txn.__enter__()
 
@@ -69,20 +63,7 @@ def _nr_request_handler_init(wrapped, instance, args, kwargs):
         txn.drop_transaction()
         instance._nr_transaction = txn
 
-    if request.method not in instance.SUPPORTED_METHODS:
-        # If the method isn't one of the supported ones, then we expect the
-        # wrapped method to raise an exception for HTTPError(405). In this case
-        # we name the transaction after the wrapped method.
-        name = callable_name(instance)
-    else:
-        # Otherwise we name the transaction after the handler function that
-        # should end up being executed for the request.
-        method = getattr(instance, request.method.lower())
-        name = callable_name(method)
-
-        # Wrap the method with our FunctionTrace instrumentation
-        setattr(instance, request.method.lower(), _nr_method(name)(method))
-
+    name = callable_name(instance)
     txn.set_transaction_name(name)
 
     # Record framework information for generation of framework metrics.
@@ -91,20 +72,62 @@ def _nr_request_handler_init(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
-def _nr_request_end(wrapped, instance, args, kwargs):
-    transaction = getattr(instance, '_nr_transaction', None)
-    if transaction is None:
-        return wrapped(*args, **kwargs)
+def _nr_application_init(wrapped, instance, args, kwargs):
+    def _bind_params(handlers, *args, **kwargs):
+        return handlers or []
 
-    with TransactionContext(transaction):
-        try:
-            ret = wrapped(*args, **kwargs)
-        except Exception:
-            raise
-        finally:
+    handlers = _bind_params(*args, **kwargs)
+
+    for _, handler in handlers:
+        if not hasattr(handler, '_execute'):
+            # This handler probably does not inherit from RequestHandler so we
+            # ignore it. Tornado supports non class based views and this is
+            # probably one of those.
+            continue
+
+        # There are two cases we are protecting for by using this check. First
+        # is handlers that subclass from other user defined handlers. In that
+        # case, we want to be sure to wrap the original methods and not those
+        # from the parent class. Second is the case where more than one
+        # Application object is created in which case we again need to be sure
+        # we are wrapping the original method.
+        wrap_complete = hasattr(handler, '_nr_wrap_complete')
+
+        # Wrap on_finish which will end transactions
+        on_finish = handler.on_finish
+        if wrap_complete:
+            on_finish = getattr(on_finish, '__wrapped__', on_finish)
+        setattr(handler, 'on_finish', _nr_request_end(on_finish))
+
+        # Wrap all supported view methods with our FunctionTrace
+        # instrumentation
+        for request_method in handler.SUPPORTED_METHODS:
+            method = getattr(handler, request_method.lower(), None)
+            if not method:
+                continue
+
+            if wrap_complete:
+                method = getattr(method, '__wrapped__', method)
+
+            name = callable_name(method)
+            wrapped_method = _nr_method(name)(method)
+            setattr(handler, request_method.lower(), wrapped_method)
+
+        handler._nr_wrap_complete = True
+
+    return wrapped(*args, **kwargs)
+
+
+@function_wrapper
+def _nr_request_end(wrapped, instance, args, kwargs):
+    if hasattr(instance, '_nr_transaction'):
+        transaction = instance._nr_transaction
+        with TransactionContext(transaction):
             transaction.__exit__(None, None, None)
 
-    return ret
+    # Execute the wrapped on_finish after ending the transaction since the
+    # response has now already been sent.
+    return wrapped(*args, **kwargs)
 
 
 class NRFunctionTraceCoroutineWrapper(ObjectProxy):
@@ -159,6 +182,8 @@ def _nr_method(name):
         if transaction is None:
             return wrapped(*args, **kwargs)
 
+        transaction.set_transaction_name(name)
+
         if (_iscoroutinefunction_tornado(wrapped) and
                 inspect.isgeneratorfunction(wrapped.__wrapped__)):
             method = wrapped.__wrapped__
@@ -193,6 +218,8 @@ def instrument_tornado_web(module):
 
     remove_thread_utilization()
 
+    wrap_function_wrapper(module, 'Application.__init__',
+            _nr_application_init)
     wrap_function_wrapper(module, 'RequestHandler.__init__',
             _nr_request_handler_init)
     wrap_function_wrapper(module, 'RequestHandler.on_finish',

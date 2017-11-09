@@ -12,6 +12,11 @@ class SimpleHandler(tornado.web.RequestHandler):
         self.write("Hello, world")
 
 
+class OnFinishHandler(SimpleHandler):
+    def on_finish(self):
+        time.sleep(0.1)
+
+
 class CoroThrowHandler(tornado.web.RequestHandler):
     @tornado.gen.coroutine
     def get(self, fast=False):
@@ -90,6 +95,7 @@ def make_app():
         (r'/web-async(/.*)?', WebAsyncHandler),
         (r'/init(/.*)?', InitializeHandler),
         (r'/html-insertion', HTMLInsertionHandler),
+        (r'/on-finish(/.*)?', OnFinishHandler),
     ]
     if sys.version_info >= (3, 5):
         from _target_application_native import (NativeSimpleHandler,

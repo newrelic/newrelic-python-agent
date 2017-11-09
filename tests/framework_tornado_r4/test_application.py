@@ -1,6 +1,7 @@
-import sys
 import multiprocessing
 import pytest
+import six
+import sys
 import tornado
 
 from testing_support.fixtures import (validate_transaction_metrics,
@@ -21,6 +22,8 @@ else:
             'zmq.eventloop.ioloop.ZMQIOLoop']
 
 
+# If the name will be different for py2 and py3, the second argument here will
+# be a tuple (py2_name, py3_name)
 _tests = [
     ('/simple', '_target_application:SimpleHandler.get'),
     ('/coro', '_target_application:CoroHandler.get'),
@@ -28,6 +31,8 @@ _tests = [
     ('/coro-throw', '_target_application:CoroThrowHandler.get'),
     ('/web-async', '_target_application:WebAsyncHandler.get'),
     ('/init', '_target_application:InitializeHandler.get'),
+    ('/on-finish', ('_target_application:OnFinishHandler.get',
+            '_target_application:SimpleHandler.get')),
 ]
 if sys.version_info >= (3, 5):
     _tests.extend([
@@ -41,6 +46,12 @@ if sys.version_info >= (3, 5):
 @pytest.mark.parametrize('uri,name', _tests)
 @pytest.mark.parametrize('ioloop', loops)
 def test_simple(app, uri, name, ioloop):
+
+    if isinstance(name, tuple):
+        if six.PY2:
+            name = name[0]
+        else:
+            name = name[1]
 
     metric_list = []
     full_metrics = {}
@@ -62,6 +73,7 @@ def test_simple(app, uri, name, ioloop):
         unscoped_metric = (txn_metric_name, '')
         assert unscoped_metric in full_metrics, full_metrics
         assert full_metrics[unscoped_metric][1] >= 0.1
+        assert full_metrics[unscoped_metric][1] < 0.2
 
     _test()
 

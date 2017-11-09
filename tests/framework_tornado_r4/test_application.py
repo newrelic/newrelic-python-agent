@@ -4,7 +4,8 @@ import sys
 import tornado
 
 from testing_support.fixtures import (validate_transaction_metrics,
-        capture_transaction_metrics, override_generic_settings)
+        capture_transaction_metrics, override_generic_settings,
+        validate_transaction_errors)
 from newrelic.core.config import global_settings
 from tornado.ioloop import IOLoop
 
@@ -54,6 +55,7 @@ def test_simple(app, uri, name, ioloop):
         scoped_metrics=[(metric_name, 1)],
         custom_metrics=[(framework_metric_name, 1)],
     )
+    @validate_transaction_errors(errors=[])
     @capture_transaction_metrics(metric_list, full_metrics)
     def _test():
         response = app.fetch(uri)
@@ -72,6 +74,7 @@ def test_simple(app, uri, name, ioloop):
 def test_unsupported_method(app, ioloop):
 
     @validate_transaction_metrics('_target_application:SimpleHandler')
+    @validate_transaction_errors(errors=['tornado.web:HTTPError'])
     def _test():
         response = app.fetch('/simple',
                 method='TEAPOT', body=b'', allow_nonstandard_methods=True)
@@ -107,6 +110,7 @@ def test_html_insertion(app, ioloop):
     @override_generic_settings(settings, _test_html_insertion_settings)
     @validate_transaction_metrics(
             '_target_application:HTMLInsertionHandler.get')
+    @validate_transaction_errors(errors=[])
     def _test():
         response = app.fetch('/html-insertion')
         assert response.code == 200

@@ -653,6 +653,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/transaction_context.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/transaction_name.py": {
         "hash": "n/a",
         "libraries": [

@@ -605,6 +605,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/tests/test_transaction.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/tests/test_transaction_name.py": {
         "hash": "n/a",
         "libraries": [

@@ -5,7 +5,7 @@ import tornado
 
 from testing_support.fixtures import (validate_transaction_metrics,
         capture_transaction_metrics, override_generic_settings,
-        validate_transaction_errors)
+        validate_transaction_errors, override_ignore_status_codes)
 from newrelic.core.config import global_settings
 from tornado.ioloop import IOLoop
 
@@ -71,14 +71,31 @@ def test_simple(app, uri, name, ioloop):
 
 
 @pytest.mark.parametrize('ioloop', loops)
-def test_unsupported_method(app, ioloop):
+@pytest.mark.parametrize('nr_enabled,ignore_status_codes', [
+    (True, []),
+    (True, [405]),
+    (False, None),
+])
+def test_unsupported_method(app, ioloop, nr_enabled, ignore_status_codes):
 
-    @validate_transaction_metrics('_target_application:SimpleHandler')
-    @validate_transaction_errors(errors=['tornado.web:HTTPError'])
     def _test():
         response = app.fetch('/simple',
                 method='TEAPOT', body=b'', allow_nonstandard_methods=True)
         assert response.code == 405
+
+    if nr_enabled:
+        _test = override_ignore_status_codes(ignore_status_codes)(_test)
+        _test = validate_transaction_metrics(
+                '_target_application:SimpleHandler')(_test)
+
+        if ignore_status_codes:
+            _test = validate_transaction_errors(errors=[])(_test)
+        else:
+            _test = validate_transaction_errors(
+                    errors=['tornado.web:HTTPError'])(_test)
+    else:
+        settings = global_settings()
+        _test = override_generic_settings(settings, {'enabled': False})(_test)
 
     _test()
 

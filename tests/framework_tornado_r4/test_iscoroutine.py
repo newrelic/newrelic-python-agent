@@ -12,7 +12,7 @@ try:
 except ImportError:
     asyncio = None
 
-from newrelic.hooks.framework_tornado_r4.web import (
+from newrelic.hooks.framework_tornado_r4.routing import (
         _iscoroutinefunction_native, _iscoroutinefunction_tornado)
 
 

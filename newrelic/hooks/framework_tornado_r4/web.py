@@ -32,7 +32,7 @@ def _iscoroutinefunction_tornado(fn):
 
 
 def _iscoroutinefunction_native(fn):
-    return _inspect_iscoroutinefunction(fn) or _asyncio_iscoroutinefunction(fn)
+    return _asyncio_iscoroutinefunction(fn) or _inspect_iscoroutinefunction(fn)
 
 
 def _nr_request_handler_init(wrapped, instance, args, kwargs):

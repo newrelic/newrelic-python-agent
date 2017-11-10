@@ -57,6 +57,14 @@ class WebAsyncHandler(tornado.web.RequestHandler):
         self.finish()
 
 
+class InitializeHandler(tornado.web.RequestHandler):
+    def initialize(self, *args, **kwargs):
+        time.sleep(0.1)
+
+    def get(self, fast=False):
+        self.write("Hello, world")
+
+
 def make_app():
     handlers = [
         (r'/simple(/.*)?', SimpleHandler),
@@ -64,6 +72,7 @@ def make_app():
         (r'/coro-throw(/.*)?', CoroThrowHandler),
         (r'/fake-coro(/.*)?', FakeCoroHandler),
         (r'/web-async(/.*)?', WebAsyncHandler),
+        (r'/init(/.*)?', InitializeHandler),
     ]
     if sys.version_info >= (3, 5):
         from _target_application_native import (NativeSimpleHandler,

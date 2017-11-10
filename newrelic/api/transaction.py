@@ -283,21 +283,16 @@ class Transaction(object):
         # instrumentation error and return with hope that
         # will recover later.
 
-        truncated_nodes = False
         for _ in range(self._settings.agent_limits.max_outstanding_traces):
             if isinstance(self.current_node, Sentinel):
                 break
             self.current_node.__exit__(None, None, None)
-            truncated_nodes = True
         else:
             _logger.error('Transaction ended but current_node is not Sentinel.'
                     ' Current node is %r. Report this issue to New Relic '
                     'support.\n%s', self.current_node, ''.join(
                     traceback.format_stack()[:-1]))
             return
-
-        if truncated_nodes:
-            _logger.debug('Transaction has ended with active child nodes.')
 
         # Mark as stopped and drop the transaction from
         # thread/coroutine local storage.

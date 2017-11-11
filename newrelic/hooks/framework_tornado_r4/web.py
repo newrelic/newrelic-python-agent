@@ -36,14 +36,12 @@ def _iscoroutinefunction_native(fn):
 
 
 def _nr_request_handler_init(wrapped, instance, args, kwargs):
-    ret = wrapped(*args, **kwargs)
-
     if current_transaction() is not None:
         _logger.error('Attempting to make a request (new transaction) when a '
                 'transaction is already running. Please report this issue to '
                 'New Relic support.\n%s',
                 ''.join(traceback.format_stack()[:-1]))
-        return ret
+        return wrapped(*args, **kwargs)
 
     app = application_instance()
 
@@ -75,7 +73,7 @@ def _nr_request_handler_init(wrapped, instance, args, kwargs):
 
     txn.set_transaction_name(name)
 
-    return ret
+    return wrapped(*args, **kwargs)
 
 
 def _nr_request_end(wrapped, instance, args, kwargs):

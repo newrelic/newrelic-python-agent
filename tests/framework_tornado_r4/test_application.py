@@ -20,6 +20,7 @@ _tests = [
     ('/fake-coro', '_target_application:FakeCoroHandler.get'),
     ('/coro-throw', '_target_application:CoroThrowHandler.get'),
     ('/web-async', '_target_application:WebAsyncHandler.get'),
+    ('/init', '_target_application:InitializeHandler.get'),
 ]
 if sys.version_info >= (3, 5):
     _tests.extend([

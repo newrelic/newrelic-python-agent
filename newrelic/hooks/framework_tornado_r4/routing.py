@@ -101,8 +101,6 @@ def _nr_method(name):
         if transaction is None:
             return wrapped(*args, **kwargs)
 
-        transaction.set_transaction_name(name)
-
         if (_iscoroutinefunction_tornado(wrapped) and
                 inspect.isgeneratorfunction(wrapped.__wrapped__)):
             method = wrapped.__wrapped__

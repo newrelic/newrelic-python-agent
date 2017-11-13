@@ -30,6 +30,22 @@ def _nr_request_handler_init(wrapped, instance, args, kwargs):
                 ''.join(traceback.format_stack()[:-1]))
         return wrapped(*args, **kwargs)
 
+    def _bind_params(application, request, *args, **kwargs):
+        return request
+
+    request = _bind_params(*args, **kwargs)
+
+    if request.method not in instance.SUPPORTED_METHODS:
+        # If the method isn't one of the supported ones, then we expect the
+        # wrapped method to raise an exception for HTTPError(405). In this case
+        # we name the transaction after the wrapped method.
+        name = callable_name(instance)
+    else:
+        # Otherwise we name the transaction after the handler function that
+        # should end up being executed for the request.
+        method = getattr(instance, request.method.lower())
+        name = callable_name(method)
+
     app = application_instance()
     txn = WebTransaction(app, {})
     txn.__enter__()
@@ -38,7 +54,6 @@ def _nr_request_handler_init(wrapped, instance, args, kwargs):
         txn.drop_transaction()
         instance._nr_transaction = txn
 
-    name = callable_name(instance)
     txn.set_transaction_name(name)
 
     # Record framework information for generation of framework metrics.

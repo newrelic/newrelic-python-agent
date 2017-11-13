@@ -1,10 +1,14 @@
 import sys
 import pytest
+import tornado
+
 from testing_support.fixtures import (validate_transaction_metrics,
         capture_transaction_metrics, override_generic_settings)
 from newrelic.core.config import global_settings
 from tornado.ioloop import IOLoop
 
+
+VERSION = '.'.join(map(str, tornado.version_info))
 
 if (sys.version_info < (3, 4) or
         IOLoop.configurable_default().__name__ == 'AsyncIOLoop'):
@@ -38,11 +42,13 @@ def test_simple(app, uri, name, ioloop):
     metric_list = []
     full_metrics = {}
     metric_name = 'Function/%s' % name
+    framework_metric_name = 'Python/Framework/Tornado/ASYNC/%s' % VERSION
     txn_metric_name = 'WebTransaction/%s' % metric_name
 
     @validate_transaction_metrics(name,
         rollup_metrics=[(metric_name, 1)],
-        scoped_metrics=[(metric_name, 1)]
+        scoped_metrics=[(metric_name, 1)],
+        custom_metrics=[(framework_metric_name, 1)],
     )
     @capture_transaction_metrics(metric_list, full_metrics)
     def _test():

@@ -25,6 +25,7 @@ from newrelic.common.object_wrapper import (wrap_function_wrapper, ObjectProxy,
         function_wrapper)
 
 _logger = logging.getLogger(__name__)
+_VERSION = None
 
 
 def _iscoroutinefunction_tornado(fn):
@@ -33,6 +34,16 @@ def _iscoroutinefunction_tornado(fn):
 
 def _iscoroutinefunction_native(fn):
     return _asyncio_iscoroutinefunction(fn) or _inspect_iscoroutinefunction(fn)
+
+
+def _store_version_info():
+    import tornado
+    global _VERSION
+
+    try:
+        _VERSION = '.'.join(map(str, tornado.version_info))
+    except:
+        pass
 
 
 def _nr_request_handler_init(wrapped, instance, args, kwargs):
@@ -72,6 +83,9 @@ def _nr_request_handler_init(wrapped, instance, args, kwargs):
         setattr(instance, request.method.lower(), _nr_method(name)(method))
 
     txn.set_transaction_name(name)
+
+    # Record framework information for generation of framework metrics.
+    txn.add_framework_info('Tornado/ASYNC', _VERSION)
 
     return wrapped(*args, **kwargs)
 
@@ -172,3 +186,5 @@ def instrument_tornado_web(module):
             _nr_request_handler_init)
     wrap_function_wrapper(module, 'RequestHandler.on_finish',
             _nr_request_end)
+
+    _store_version_info()

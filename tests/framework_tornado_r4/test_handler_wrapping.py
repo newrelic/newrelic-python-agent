@@ -1,10 +1,8 @@
 import pytest
-import tornado.routing
-import tornado.web
 
 
-def get_handlers():
-    class BaseHandler(tornado.web.RequestHandler):
+def get_handlers(web):
+    class BaseHandler(web.RequestHandler):
         def get(self):
             pass
 
@@ -36,12 +34,19 @@ def get_handlers():
     }
 
 
-def get_handler():
-    class BaseHandler(tornado.web.RequestHandler):
+def get_handler(web):
+    class BaseHandler(web.RequestHandler):
         def get(self):
             pass
 
     return BaseHandler
+
+
+@pytest.fixture(scope='function')
+def web():
+    # prevent importing of tornado modules until test execution
+    import tornado.web as web
+    yield web
 
 
 @pytest.mark.parametrize('handler_name1,handler_name2', [
@@ -55,10 +60,10 @@ def get_handler():
         ('SubclassOverridesOnFinishHandler', 'BaseHandler'),
         ('BaseHandler', 'SubclassOverridesOnFinishHandler'),
 ])
-def test_handlers_wrapped(handler_name1, handler_name2):
+def test_handlers_wrapped(handler_name1, handler_name2, web):
 
     # get new instances of the handler classes
-    handler_fixtures = get_handlers()
+    handler_fixtures = get_handlers(web)
     handler1 = handler_fixtures.get(handler_name1, None)
     handler2 = handler_fixtures.get(handler_name2, None)
 
@@ -71,7 +76,7 @@ def test_handlers_wrapped(handler_name1, handler_name2):
         handlers.append((r'/handler2', handler2))
 
     # apply the instrumentation
-    tornado.web.Application(handlers)
+    web.Application(handlers)
 
     for _, handler in handlers:
         assert handler._nr_wrap_complete
@@ -85,10 +90,10 @@ def test_handlers_wrapped(handler_name1, handler_name2):
                 assert not hasattr(method.__wrapped__, '__wrapped__')
 
 
-def test_multiple_applications():
+def test_multiple_applications(web):
 
     # get new instance of the handler class
-    handler1 = get_handler()
+    handler1 = get_handler(web)
 
     # sanity check
     assert not hasattr(handler1, '_nr_wrap_complete')
@@ -96,10 +101,10 @@ def test_multiple_applications():
     handlers = [(r'/handler1', handler1)]
 
     # apply the instrumentation
-    tornado.web.Application(handlers)
+    web.Application(handlers)
 
     # apply the instrumentation again
-    tornado.web.Application(handlers)
+    web.Application(handlers)
 
     assert handler1._nr_wrap_complete
     assert hasattr(handler1.on_finish, '__wrapped__')
@@ -112,7 +117,7 @@ def test_multiple_applications():
             assert not hasattr(method.__wrapped__, '__wrapped__')
 
 
-def test_non_class_based_view():
+def test_non_class_based_view(web):
 
     def handler1():
         pass
@@ -123,16 +128,16 @@ def test_non_class_based_view():
     handlers = [(r'/handler1', handler1)]
 
     # apply the instrumentation
-    tornado.web.Application(handlers)
+    web.Application(handlers)
 
     assert not hasattr(handler1, '_nr_wrap_complete')
     assert not hasattr(handler1, '__wrapped__')
 
 
-def test_with_target_kwargs():
+def test_with_target_kwargs(web):
 
     # get new instance of the handler class
-    handler1 = get_handler()
+    handler1 = get_handler(web)
 
     # sanity check
     assert not hasattr(handler1, '_nr_wrap_complete')
@@ -140,7 +145,7 @@ def test_with_target_kwargs():
     handlers = [(r'/handler1', handler1, {'hello': 'world'})]
 
     # apply the instrumentation
-    tornado.web.Application(handlers)
+    web.Application(handlers)
 
     assert handler1._nr_wrap_complete
     assert hasattr(handler1.on_finish, '__wrapped__')
@@ -153,15 +158,17 @@ def test_with_target_kwargs():
             assert not hasattr(method.__wrapped__, '__wrapped__')
 
 
-def test_nested_routing():
+def test_nested_routing(web):
+
+    import tornado.routing
 
     # get new instance of the handler class
-    handler1 = get_handler()
+    handler1 = get_handler(web)
 
     # sanity check
     assert not hasattr(handler1, '_nr_wrap_complete')
 
-    tornado.web.Application([
+    web.Application([
         (tornado.routing.HostMatches('example.com'), [
             (r'/', handler1),
         ]),
@@ -178,16 +185,16 @@ def test_nested_routing():
             assert not hasattr(method.__wrapped__, '__wrapped__')
 
 
-def test_add_handlers():
+def test_add_handlers(web):
 
     # get new instance of the handler class
-    handler1 = get_handler()
+    handler1 = get_handler(web)
 
     # sanity check
     assert not hasattr(handler1, '_nr_wrap_complete')
 
     handlers = [(r'/handler1', handler1)]
-    app = tornado.web.Application()
+    app = web.Application()
     app.add_handlers(r'www.newrelic.com', handlers)
 
     assert handler1._nr_wrap_complete
@@ -201,10 +208,10 @@ def test_add_handlers():
             assert not hasattr(method.__wrapped__, '__wrapped__')
 
 
-def test_wrapping_subclass_does_not_wrap_parent_class():
+def test_wrapping_subclass_does_not_wrap_parent_class(web):
 
     # get new instances of the handler classes
-    handler_fixtures = get_handlers()
+    handler_fixtures = get_handlers(web)
     handler1 = handler_fixtures.get('BaseHandler')
     handler2 = handler_fixtures.get('SubclassOverridesPostHandler')
 
@@ -216,7 +223,7 @@ def test_wrapping_subclass_does_not_wrap_parent_class():
     handlers = [(r'/handler2', handler2)]
 
     # apply the instrumentation
-    tornado.web.Application(handlers)
+    web.Application(handlers)
 
     # handler2 is wrapped
     assert handler2._nr_wrap_complete

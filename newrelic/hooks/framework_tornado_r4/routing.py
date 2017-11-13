@@ -1,17 +1,4 @@
 import inspect
-try:
-    _inspect_iscoroutinefunction = inspect.iscoroutinefunction
-except AttributeError:
-    def _inspect_iscoroutinefunction(*args, **kwargs):
-        return False
-
-try:
-    import asyncio
-    _asyncio_iscoroutinefunction = asyncio.iscoroutinefunction
-except ImportError:
-    def _asyncio_iscoroutinefunction(*args, **kwargs):
-        return False
-
 import logging
 
 from newrelic.api.function_trace import FunctionTrace
@@ -20,15 +7,10 @@ from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (wrap_function_wrapper, ObjectProxy,
         function_wrapper)
 
+from newrelic.hooks.framework_tornado_r4.utils import (
+        _iscoroutinefunction_tornado, _iscoroutinefunction_native)
+
 _logger = logging.getLogger(__name__)
-
-
-def _iscoroutinefunction_tornado(fn):
-    return hasattr(fn, '__tornado_coroutine__')
-
-
-def _iscoroutinefunction_native(fn):
-    return _asyncio_iscoroutinefunction(fn) or _inspect_iscoroutinefunction(fn)
 
 
 def _nr_rulerouter_process_rule(wrapped, instance, args, kwargs):

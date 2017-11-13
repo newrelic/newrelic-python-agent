@@ -1733,6 +1733,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/framework_tornado_r4/utils.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/framework_tornado_r4/web.py": {
         "hash": "n/a",
         "libraries": [

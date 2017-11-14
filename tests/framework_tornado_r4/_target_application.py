@@ -62,6 +62,8 @@ class AsyncExternalHandler(tornado.web.RequestHandler):
             client = tornado.httpclient.AsyncHTTPClient()
         elif client_cls == 'CurlAsyncHTTPClient':
             client = tornado.curl_httpclient.CurlAsyncHTTPClient()
+        elif client_cls == 'HTTPClient':
+            client = tornado.httpclient.HTTPClient()
         else:
             raise ValueError("Received unknown client type: %s" % client_cls)
 
@@ -73,7 +75,10 @@ class AsyncExternalHandler(tornado.web.RequestHandler):
         else:
             raise ValueError("Received unknown request type: %s" % req_type)
 
-        response = yield client.fetch(req)
+        if client_cls == 'HTTPClient':
+            response = client.fetch(req)
+        else:
+            response = yield client.fetch(req)
         self.write(response.body)
 
 
@@ -84,6 +89,8 @@ class InvalidExternalMethod(tornado.web.RequestHandler):
             client = tornado.httpclient.AsyncHTTPClient()
         elif client_cls == 'CurlAsyncHTTPClient':
             client = tornado.curl_httpclient.CurlAsyncHTTPClient()
+        elif client_cls == 'HTTPClient':
+            client = tornado.httpclient.HTTPClient()
         else:
             raise ValueError("Received unknown client type: %s" % client_cls)
 
@@ -106,6 +113,8 @@ class InvalidExternalKwarg(tornado.web.RequestHandler):
             client = tornado.httpclient.AsyncHTTPClient()
         elif client_cls == 'CurlAsyncHTTPClient':
             client = tornado.curl_httpclient.CurlAsyncHTTPClient()
+        elif client_cls == 'HTTPClient':
+            client = tornado.httpclient.HTTPClient()
         else:
             raise ValueError("Received unknown client type: %s" % client_cls)
 

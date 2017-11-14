@@ -7,12 +7,12 @@ from testing_support.mock_external_http_server import (
 
 
 @pytest.mark.parametrize('client_class',
-        ['AsyncHTTPClient', 'CurlAsyncHTTPClient'])
+        ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @pytest.mark.parametrize('cat_enabled', [True, False])
 @pytest.mark.parametrize('request_type', ['uri', 'class'])
-def test_async_httpclient(app, cat_enabled, request_type, client_class):
+def test_httpclient(app, cat_enabled, request_type, client_class):
 
-    if cat_enabled:
+    if cat_enabled or ('Async' not in client_class):
         external = MockExternalHTTPHResponseHeadersServer()
         port = external.port
         uri = '/async-client/%s/%s/%s' % (port, request_type, client_class)
@@ -32,7 +32,7 @@ def test_async_httpclient(app, cat_enabled, request_type, client_class):
         scoped_metrics=expected_metrics
     )
     def _test():
-        if cat_enabled:
+        if cat_enabled or ('Async' not in client_class):
             with external:
                 response = app.fetch(uri)
         else:
@@ -64,7 +64,7 @@ def test_async_httpclient(app, cat_enabled, request_type, client_class):
 
 
 @pytest.mark.parametrize('client_class',
-        ['AsyncHTTPClient', 'CurlAsyncHTTPClient'])
+        ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @validate_transaction_metrics('_target_application:InvalidExternalMethod.get')
 def test_httpclient_invalid_method(app, client_class):
     uri = '/client-invalid-method/%s' % client_class
@@ -73,7 +73,7 @@ def test_httpclient_invalid_method(app, client_class):
 
 
 @pytest.mark.parametrize('client_class',
-        ['AsyncHTTPClient', 'CurlAsyncHTTPClient'])
+        ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @validate_transaction_metrics('_target_application:InvalidExternalKwarg.get')
 def test_httpclient_invalid_kwarg(app, client_class):
     uri = '/client-invalid-kwarg/%s' % client_class

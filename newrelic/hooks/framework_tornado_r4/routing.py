@@ -73,8 +73,7 @@ def _wrap_handlers(rule):
         if wrap_complete:
             method = getattr(method, '__wrapped__', method)
 
-        name = callable_name(method)
-        wrapped_method = _nr_method(name)(method)
+        wrapped_method = _nr_method(method)
         setattr(handler, request_method.lower(), wrapped_method)
 
     handler._nr_wrap_complete = True
@@ -92,17 +91,20 @@ def _nr_request_end(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
-def _nr_method(name):
+def _nr_method(method):
 
-    @function_wrapper
-    def wrapper(wrapped, instance, args, kwargs):
-        transaction = getattr(instance, '_nr_transaction', None)
+    name = callable_name(method)
 
-        if transaction is None:
-            return wrapped(*args, **kwargs)
+    if (_iscoroutinefunction_tornado(method) and
+            inspect.isgeneratorfunction(method.__wrapped__)):
 
-        if (_iscoroutinefunction_tornado(wrapped) and
-                inspect.isgeneratorfunction(wrapped.__wrapped__)):
+        @function_wrapper
+        def wrapper(wrapped, instance, args, kwargs):
+            transaction = getattr(instance, '_nr_transaction', None)
+
+            if transaction is None:
+                return wrapped(*args, **kwargs)
+
             method = wrapped.__wrapped__
 
             import tornado.gen
@@ -113,15 +115,33 @@ def _nr_method(name):
                 return NRFunctionTraceCoroutineWrapper(coro, transaction, name)
 
             return _wrapped_coro()
-        elif _iscoroutinefunction_native(wrapped):
+
+    elif _iscoroutinefunction_native(method):
+
+        @function_wrapper
+        def wrapper(wrapped, instance, args, kwargs):
+            transaction = getattr(instance, '_nr_transaction', None)
+
+            if transaction is None:
+                return wrapped(*args, **kwargs)
+
             coro = wrapped(*args, **kwargs)
             return NRFunctionTraceCoroutineWrapper(coro, transaction, name)
-        else:
+
+    else:
+
+        @function_wrapper
+        def wrapper(wrapped, instance, args, kwargs):
+            transaction = getattr(instance, '_nr_transaction', None)
+
+            if transaction is None:
+                return wrapped(*args, **kwargs)
+
             with TransactionContext(transaction):
                 with FunctionTrace(transaction, name):
                     return wrapped(*args, **kwargs)
 
-    return wrapper
+    return wrapper(method)
 
 
 class NRFunctionTraceCoroutineWrapper(ObjectProxy):

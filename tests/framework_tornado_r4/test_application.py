@@ -86,3 +86,32 @@ def test_nr_disabled(app, ioloop):
         assert response.code == 200
 
     _test()
+
+
+@pytest.mark.xfail(reason='Auto-RUM not implemented', strict=True)
+@pytest.mark.parametrize('ioloop', loops)
+def test_html_insertion(app, ioloop):
+
+    settings = global_settings()
+    _test_html_insertion_settings = {
+        'browser_monitoring.enabled': True,
+        'browser_monitoring.auto_instrument': True,
+        'js_agent_loader': u'<!-- NREUM HEADER -->',
+    }
+
+    @override_generic_settings(settings, _test_html_insertion_settings)
+    @validate_transaction_metrics(
+            '_target_application:HTMLInsertionHandler.get')
+    def _test():
+        response = app.fetch('/html-insertion')
+        assert response.code == 200
+        assert b'Hello World!' in response.body
+
+        # The 'NREUM HEADER' value comes from our override for the header.
+        # The 'NREUM.info' value comes from the programmatically generated
+        # footer added by the agent.
+
+        assert b'NREUM HEADER' in response.body
+        assert b'NREUM.info' in response.body
+
+    _test()

@@ -65,6 +65,22 @@ class InitializeHandler(tornado.web.RequestHandler):
         self.write("Hello, world")
 
 
+class HTMLInsertionHandler(tornado.web.RequestHandler):
+    HTML = """<html>
+    <head>
+        <meta charset="utf-8">
+        <title>My Website</title>
+    </head>
+    <body>
+        Hello World! There is no New Relic Browser here :(
+    </body>
+    </html>
+    """
+
+    def get(self):
+        self.finish(self.HTML)
+
+
 def make_app():
     handlers = [
         (r'/simple(/.*)?', SimpleHandler),
@@ -73,6 +89,7 @@ def make_app():
         (r'/fake-coro(/.*)?', FakeCoroHandler),
         (r'/web-async(/.*)?', WebAsyncHandler),
         (r'/init(/.*)?', InitializeHandler),
+        (r'/html-insertion', HTMLInsertionHandler),
     ]
     if sys.version_info >= (3, 5):
         from _target_application_native import (NativeSimpleHandler,

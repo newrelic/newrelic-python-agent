@@ -390,8 +390,6 @@ class WebTransaction(Transaction):
 
         """
 
-        additional_headers = []
-
         # Set our internal response code based on WSGI status.
         # Per spec, it is expected that this is a string. If this is not
         # the case, skip setting the internal response code as we cannot
@@ -418,45 +416,8 @@ class WebTransaction(Transaction):
         except Exception:
             pass
 
-        # Generate metrics and response headers for inbound cross
-        # process web external calls.
-
-        if self.client_cross_process_id is not None:
-
-            # Need to work out queueing time and duration up to this
-            # point for inclusion in metrics and response header. If the
-            # recording of the transaction had been prematurely stopped
-            # via an API call, only return time up until that call was
-            # made so it will match what is reported as duration for the
-            # transaction.
-
-            if self.queue_start:
-                queue_time = self.start_time - self.queue_start
-            else:
-                queue_time = 0
-
-            if self.end_time:
-                duration = self.end_time - self.start_time
-            else:
-                duration = time.time() - self.start_time
-
-            # Generate the additional response headers which provide
-            # information back to the caller. We need to freeze the
-            # transaction name before adding to the header.
-
-            self._freeze_path()
-
-            payload = (self._settings.cross_process_id, self.path, queue_time,
-                    duration, self._read_length, self.guid, self.record_tt)
-            app_data = json_encode(payload)
-
-            additional_headers.append(('X-NewRelic-App-Data', obfuscate(
-                    app_data, self._settings.encoding_key)))
-
-        # The additional headers returned need to be merged into the
-        # original response headers passed back by the application.
-
-        return additional_headers
+        # Generate CAT response headers
+        return self._generate_response_headers()
 
     def browser_timing_header(self):
         """Returns the JavaScript header to be included in any HTML

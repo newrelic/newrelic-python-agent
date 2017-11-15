@@ -14,6 +14,12 @@ class ProcessCatHeadersHandler(tornado.web.RequestHandler):
                     txn_header)
         self.write("Hello, world")
 
+        # Force a flush prior to calling finish
+        # This causes the headers to get written immediately. The tests which
+        # hit this endpoint will check that the response has been properly
+        # processed even though we send the headers here.
+        self.flush()
+
 
 class SimpleHandler(tornado.web.RequestHandler):
     def get(self, fast=False):

@@ -5,6 +5,18 @@ import tornado.gen
 import time
 
 
+def dummy(*args, **kwargs):
+    pass
+
+
+class BadGetStatusHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.write("Hello, world")
+
+    def get_status(self, *args, **kwargs):
+        raise ValueError("OOPS")
+
+
 class ProcessCatHeadersHandler(tornado.web.RequestHandler):
     def get(self, client_cross_process_id, txn_header):
         import newrelic.agent
@@ -120,6 +132,7 @@ def make_app():
         (r'/init(/.*)?', InitializeHandler),
         (r'/html-insertion', HTMLInsertionHandler),
         (r'/on-finish(/.*)?', OnFinishHandler),
+        (r'/bad-get-status', BadGetStatusHandler),
         (r'/force-cat-response/(\S+)/(\S+)', ProcessCatHeadersHandler),
     ]
     if sys.version_info >= (3, 5):
@@ -129,7 +142,7 @@ def make_app():
             (r'/native-simple(/.*)?', NativeSimpleHandler),
             (r'/native-web-async(/.*)?', NativeWebAsyncHandler),
         ])
-    return tornado.web.Application(handlers)
+    return tornado.web.Application(handlers, log_function=dummy)
 
 
 if __name__ == "__main__":

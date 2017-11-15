@@ -22,8 +22,6 @@ else:
             'zmq.eventloop.ioloop.ZMQIOLoop']
 
 
-# If the name will be different for py2 and py3, the second argument here will
-# be a tuple (py2_name, py3_name)
 _tests = [
     ('/simple', '_target_application:SimpleHandler.get'),
     ('/coro', '_target_application:CoroHandler.get'),
@@ -31,8 +29,9 @@ _tests = [
     ('/coro-throw', '_target_application:CoroThrowHandler.get'),
     ('/web-async', '_target_application:WebAsyncHandler.get'),
     ('/init', '_target_application:InitializeHandler.get'),
-    ('/on-finish', ('_target_application:OnFinishHandler.get',
-            '_target_application:SimpleHandler.get')),
+    pytest.param('/on-finish', '_target_application:OnFinishHandler.get',
+        marks=pytest.mark.xfail(six.PY3, strict=True,
+        reason='callable_name incorrectly names the view handler segment')),
 ]
 if sys.version_info >= (3, 5):
     _tests.extend([
@@ -46,12 +45,6 @@ if sys.version_info >= (3, 5):
 @pytest.mark.parametrize('uri,name', _tests)
 @pytest.mark.parametrize('ioloop', loops)
 def test_simple(app, uri, name, ioloop):
-
-    if isinstance(name, tuple):
-        if six.PY2:
-            name = name[0]
-        else:
-            name = name[1]
 
     metric_list = []
     full_metrics = {}

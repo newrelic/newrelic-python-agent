@@ -2370,7 +2370,7 @@ def code_coverage_fixture(source=['newrelic']):
 
         request.addfinalizer(finalize)
 
-        cov = coverage(source=source)
+        cov = coverage(source=source, branch=True)
         cov.start()
 
     return _code_coverage_fixture

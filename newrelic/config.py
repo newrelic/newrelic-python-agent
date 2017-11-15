@@ -2131,6 +2131,9 @@ def _process_module_builtin_defaults():
         _process_module_definition('tornado.routing',
                 'newrelic.hooks.framework_tornado_r4.routing',
                 'instrument_tornado_routing')
+        _process_module_definition('tornado.httputil',
+                'newrelic.hooks.framework_tornado_r4.httputil',
+                'instrument_tornado_httputil')
 
     else:
         _process_module_definition('tornado.wsgi',

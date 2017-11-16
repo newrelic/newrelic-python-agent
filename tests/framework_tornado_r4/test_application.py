@@ -1,4 +1,5 @@
 import sys
+import multiprocessing
 import pytest
 import tornado
 
@@ -6,6 +7,8 @@ from testing_support.fixtures import (validate_transaction_metrics,
         capture_transaction_metrics, override_generic_settings)
 from newrelic.core.config import global_settings
 from tornado.ioloop import IOLoop
+
+from remove_utilization_tester import remove_utilization_tester
 
 
 VERSION = '.'.join(map(str, tornado.version_info))
@@ -115,3 +118,19 @@ def test_html_insertion(app, ioloop):
         assert b'NREUM.info' in response.body
 
     _test()
+
+
+@pytest.mark.parametrize('now', [True, False])
+def test_thread_utilization_disabled(now):
+    # What we want to test here is code that is executed during agent
+    # initialization/registration. Thus we launch the agent in a new process so
+    # that we can run the import-initialization-registration process manually
+    # and make assertions against it.
+
+    q = multiprocessing.Queue()
+    process = multiprocessing.Process(target=remove_utilization_tester,
+            kwargs={'now': now, 'queue': q})
+    process.start()
+    result = q.get(timeout=15)
+
+    assert result == 'PASS'

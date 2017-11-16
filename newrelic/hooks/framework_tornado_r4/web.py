@@ -23,6 +23,7 @@ from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (wrap_function_wrapper, ObjectProxy,
         function_wrapper)
+from newrelic.core.agent import remove_thread_utilization
 
 _logger = logging.getLogger(__name__)
 _VERSION = None
@@ -182,6 +183,16 @@ def _nr_method(name):
 
 
 def instrument_tornado_web(module):
+
+    # Thread utilization data is meaningless in a tornado app. Remove it here,
+    # once, since we know that tornado has been imported now. The following
+    # call to agent_instance will initialize data sources, if they have not
+    # been already. Thus, we know that this is a single place that we can
+    # remove the thread utilization, regardless of the order of imports/agent
+    # registration.
+
+    remove_thread_utilization()
+
     wrap_function_wrapper(module, 'RequestHandler.__init__',
             _nr_request_handler_init)
     wrap_function_wrapper(module, 'RequestHandler.on_finish',

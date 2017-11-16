@@ -1,6 +1,5 @@
 import multiprocessing
 import pytest
-import six
 import sys
 import tornado
 
@@ -29,9 +28,7 @@ _tests = [
     ('/coro-throw', '_target_application:CoroThrowHandler.get'),
     ('/web-async', '_target_application:WebAsyncHandler.get'),
     ('/init', '_target_application:InitializeHandler.get'),
-    pytest.param('/on-finish', '_target_application:OnFinishHandler.get',
-        marks=pytest.mark.xfail(six.PY3, strict=True,
-        reason='callable_name incorrectly names the view handler segment')),
+    ('/on-finish', '_target_application:OnFinishHandler.get'),
 ]
 if sys.version_info >= (3, 5):
     _tests.extend([

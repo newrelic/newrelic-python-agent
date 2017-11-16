@@ -1,5 +1,7 @@
 import pytest
 
+from newrelic.common.object_wrapper import _NRBoundFunctionWrapper
+
 
 def get_handlers(web):
     class BaseHandler(web.RequestHandler):
@@ -68,8 +70,9 @@ def test_handlers_wrapped(handler_name1, handler_name2, web):
     handler2 = handler_fixtures.get(handler_name2, None)
 
     # sanity check
-    assert not hasattr(handler1, '_nr_wrap_complete')
-    assert not hasattr(handler2, '_nr_wrap_complete')
+    assert not isinstance(handler1.on_finish, _NRBoundFunctionWrapper)
+    if handler2:
+        assert not isinstance(handler2.on_finish, _NRBoundFunctionWrapper)
 
     handlers = [(r'/handler1', handler1)]
     if handler2:
@@ -79,7 +82,6 @@ def test_handlers_wrapped(handler_name1, handler_name2, web):
     web.Application(handlers)
 
     for _, handler in handlers:
-        assert handler._nr_wrap_complete
         assert hasattr(handler.on_finish, '__wrapped__')
         assert not hasattr(handler.on_finish.__wrapped__, '__wrapped__')
 
@@ -96,7 +98,7 @@ def test_multiple_applications(web):
     handler1 = get_handler(web)
 
     # sanity check
-    assert not hasattr(handler1, '_nr_wrap_complete')
+    assert not isinstance(handler1.on_finish, _NRBoundFunctionWrapper)
 
     handlers = [(r'/handler1', handler1)]
 
@@ -106,7 +108,6 @@ def test_multiple_applications(web):
     # apply the instrumentation again
     web.Application(handlers)
 
-    assert handler1._nr_wrap_complete
     assert hasattr(handler1.on_finish, '__wrapped__')
     assert not hasattr(handler1.on_finish.__wrapped__, '__wrapped__')
 
@@ -122,16 +123,13 @@ def test_non_class_based_view(web):
     def handler1():
         pass
 
-    # sanity check
-    assert not hasattr(handler1, '_nr_wrap_complete')
-
     handlers = [(r'/handler1', handler1)]
 
     # apply the instrumentation
     web.Application(handlers)
 
-    assert not hasattr(handler1, '_nr_wrap_complete')
-    assert not hasattr(handler1, '__wrapped__')
+    assert not isinstance(handler1, _NRBoundFunctionWrapper)
+    assert not hasattr(handler1, 'on_finish')
 
 
 def test_with_target_kwargs(web):
@@ -140,14 +138,13 @@ def test_with_target_kwargs(web):
     handler1 = get_handler(web)
 
     # sanity check
-    assert not hasattr(handler1, '_nr_wrap_complete')
+    assert not isinstance(handler1.on_finish, _NRBoundFunctionWrapper)
 
     handlers = [(r'/handler1', handler1, {'hello': 'world'})]
 
     # apply the instrumentation
     web.Application(handlers)
 
-    assert handler1._nr_wrap_complete
     assert hasattr(handler1.on_finish, '__wrapped__')
     assert not hasattr(handler1.on_finish.__wrapped__, '__wrapped__')
 
@@ -166,7 +163,7 @@ def test_nested_routing(web):
     handler1 = get_handler(web)
 
     # sanity check
-    assert not hasattr(handler1, '_nr_wrap_complete')
+    assert not isinstance(handler1.on_finish, _NRBoundFunctionWrapper)
 
     web.Application([
         (tornado.routing.HostMatches('example.com'), [
@@ -174,7 +171,6 @@ def test_nested_routing(web):
         ]),
     ])
 
-    assert handler1._nr_wrap_complete
     assert hasattr(handler1.on_finish, '__wrapped__')
     assert not hasattr(handler1.on_finish.__wrapped__, '__wrapped__')
 
@@ -191,13 +187,12 @@ def test_add_handlers(web):
     handler1 = get_handler(web)
 
     # sanity check
-    assert not hasattr(handler1, '_nr_wrap_complete')
+    assert not isinstance(handler1.on_finish, _NRBoundFunctionWrapper)
 
     handlers = [(r'/handler1', handler1)]
     app = web.Application()
     app.add_handlers(r'www.newrelic.com', handlers)
 
-    assert handler1._nr_wrap_complete
     assert hasattr(handler1.on_finish, '__wrapped__')
     assert not hasattr(handler1.on_finish.__wrapped__, '__wrapped__')
 
@@ -216,8 +211,8 @@ def test_wrapping_subclass_does_not_wrap_parent_class(web):
     handler2 = handler_fixtures.get('SubclassOverridesPostHandler')
 
     # sanity check
-    assert not hasattr(handler1, '_nr_wrap_complete')
-    assert not hasattr(handler2, '_nr_wrap_complete')
+    assert not isinstance(handler1.on_finish, _NRBoundFunctionWrapper)
+    assert not isinstance(handler2.on_finish, _NRBoundFunctionWrapper)
 
     # just use one handler
     handlers = [(r'/handler2', handler2)]
@@ -226,7 +221,6 @@ def test_wrapping_subclass_does_not_wrap_parent_class(web):
     web.Application(handlers)
 
     # handler2 is wrapped
-    assert handler2._nr_wrap_complete
     assert hasattr(handler2.on_finish, '__wrapped__')
     assert not hasattr(handler2.on_finish.__wrapped__, '__wrapped__')
 
@@ -236,7 +230,6 @@ def test_wrapping_subclass_does_not_wrap_parent_class(web):
         assert not hasattr(method.__wrapped__, '__wrapped__')
 
     # handler1 is not wrapped
-    assert not hasattr(handler1, '_nr_wrap_complete')
     assert not hasattr(handler1.on_finish, '__wrapped__')
 
     for request_method in handler1.SUPPORTED_METHODS:

@@ -3,9 +3,8 @@ import logging
 
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.transaction_context import TransactionContext
-from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (wrap_function_wrapper, ObjectProxy,
-        function_wrapper)
+        function_wrapper, _NRBoundFunctionWrapper)
 
 from newrelic.hooks.framework_tornado_r4.utils import (
         _iscoroutinefunction_tornado, _iscoroutinefunction_native)
@@ -30,6 +29,8 @@ def _wrap_handlers(rule):
     else:
         handler = rule.target
 
+    from tornado.web import RequestHandler
+
     if isinstance(handler, (tuple, list)):
         # Tornado supports nested rules. For example
         #
@@ -43,25 +44,21 @@ def _wrap_handlers(rule):
             _wrap_handlers(subrule)
         return
 
-    elif not hasattr(handler, '_execute'):
+    elif (not inspect.isclass(handler) or
+            not issubclass(handler, RequestHandler)):
         # This handler probably does not inherit from RequestHandler so we
         # ignore it. Tornado supports non class based views and this is
-        # probably one of those.
+        # probably one of those. It has also been observed that tornado's
+        # internals will pass class instances as well.
         return
-
-    # There are two cases we are protecting for by using this check. First
-    # is handlers that subclass from other user defined handlers. In that
-    # case, we want to be sure to wrap the original methods and not those
-    # from the parent class. Second is the case where more than one
-    # Application object is created in which case we again need to be sure
-    # we are wrapping the original method.
-    wrap_complete = hasattr(handler, '_nr_wrap_complete')
 
     # Wrap on_finish which will end transactions
     on_finish = handler.on_finish
-    if wrap_complete:
-        on_finish = getattr(on_finish, '__wrapped__', on_finish)
-    setattr(handler, 'on_finish', _nr_request_end(on_finish))
+    if not isinstance(on_finish, _NRBoundFunctionWrapper):
+        setattr(handler, 'on_finish', _nr_request_end(on_finish))
+
+    if not hasattr(handler, 'SUPPORTED_METHODS'):
+        return
 
     # Wrap all supported view methods with our FunctionTrace
     # instrumentation
@@ -70,13 +67,8 @@ def _wrap_handlers(rule):
         if not method:
             continue
 
-        if wrap_complete:
-            method = getattr(method, '__wrapped__', method)
-
-        wrapped_method = _nr_method(method)
-        setattr(handler, request_method.lower(), wrapped_method)
-
-    handler._nr_wrap_complete = True
+        if not isinstance(method, _NRBoundFunctionWrapper):
+            setattr(handler, request_method.lower(), _nr_method(method))
 
 
 @function_wrapper
@@ -93,9 +85,20 @@ def _nr_request_end(wrapped, instance, args, kwargs):
 
 def _nr_method(method):
 
-    name = callable_name(method)
+    if _iscoroutinefunction_native(method):
 
-    if (_iscoroutinefunction_tornado(method) and
+        @function_wrapper
+        def wrapper(wrapped, instance, args, kwargs):
+            transaction = getattr(instance, '_nr_transaction', None)
+
+            if transaction is None:
+                return wrapped(*args, **kwargs)
+
+            coro = wrapped(*args, **kwargs)
+            name = transaction.name
+            return NRFunctionTraceCoroutineWrapper(coro, transaction, name)
+
+    elif (_iscoroutinefunction_tornado(method) and
             inspect.isgeneratorfunction(method.__wrapped__)):
 
         @function_wrapper
@@ -106,6 +109,7 @@ def _nr_method(method):
                 return wrapped(*args, **kwargs)
 
             method = wrapped.__wrapped__
+            name = transaction.name
 
             import tornado.gen
 
@@ -116,18 +120,6 @@ def _nr_method(method):
 
             return _wrapped_coro()
 
-    elif _iscoroutinefunction_native(method):
-
-        @function_wrapper
-        def wrapper(wrapped, instance, args, kwargs):
-            transaction = getattr(instance, '_nr_transaction', None)
-
-            if transaction is None:
-                return wrapped(*args, **kwargs)
-
-            coro = wrapped(*args, **kwargs)
-            return NRFunctionTraceCoroutineWrapper(coro, transaction, name)
-
     else:
 
         @function_wrapper
@@ -137,6 +129,7 @@ def _nr_method(method):
             if transaction is None:
                 return wrapped(*args, **kwargs)
 
+            name = transaction.name
             with TransactionContext(transaction):
                 with FunctionTrace(transaction, name):
                     return wrapped(*args, **kwargs)

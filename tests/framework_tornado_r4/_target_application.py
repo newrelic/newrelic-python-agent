@@ -57,7 +57,8 @@ class EchoHeaderHandler(tornado.web.RequestHandler):
 
 class AsyncExternalHandler(tornado.web.RequestHandler):
     @tornado.gen.coroutine
-    def get(self, port, req_type, client_cls):
+    def get(self, port, req_type, client_cls, count=1):
+        count = int(count)
         if client_cls == 'AsyncHTTPClient':
             client = tornado.httpclient.AsyncHTTPClient()
         elif client_cls == 'CurlAsyncHTTPClient':
@@ -76,9 +77,12 @@ class AsyncExternalHandler(tornado.web.RequestHandler):
             raise ValueError("Received unknown request type: %s" % req_type)
 
         if client_cls == 'HTTPClient':
-            response = client.fetch(req)
+            for _ in range(count):
+                response = client.fetch(req)
         else:
-            response = yield client.fetch(req)
+            futures = [client.fetch(req) for _ in range(count)]
+            responses = yield tornado.gen.multi(futures)
+            response = responses[0]
         self.write(response.body)
 
 
@@ -235,7 +239,8 @@ def make_app():
                 {'response_code': 304}),
         (r'/204-cat-response/(\S+)/(\S+)', ProcessCatHeadersHandler,
                 {'response_code': 204}),
-        (r'/async-client/(\d+)/(\S+)/(\S+)', AsyncExternalHandler),
+        (r'/async-client/(\d+)/(\S+)/(\S+)/(\d+)', AsyncExternalHandler),
+        (r'/async-client/(\d+)/(\S+)/(\S+)$', AsyncExternalHandler),
         (r'/client-invalid-method/(\S+)', InvalidExternalMethod),
         (r'/client-invalid-kwarg/(\S+)', InvalidExternalKwarg),
         (r'/echo-headers', EchoHeaderHandler),

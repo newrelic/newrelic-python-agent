@@ -16,18 +16,22 @@ ENCODING_KEY = '1234567890123456789012345678901234567890'
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @pytest.mark.parametrize('cat_enabled', [True, False])
 @pytest.mark.parametrize('request_type', ['uri', 'class'])
-def test_httpclient(app, cat_enabled, request_type, client_class):
+@pytest.mark.parametrize('num_requests', [1, 2])
+def test_httpclient(app, cat_enabled, request_type, client_class,
+        num_requests):
 
     if cat_enabled or ('Async' not in client_class):
         external = MockExternalHTTPHResponseHeadersServer()
         port = external.port
-        uri = '/async-client/%s/%s/%s' % (port, request_type, client_class)
+        uri = '/async-client/%s/%s/%s/%s' % (port, request_type, client_class,
+                num_requests)
     else:
         port = app.get_http_port()
-        uri = '/async-client/%s/%s/%s' % (port, request_type, client_class)
+        uri = '/async-client/%s/%s/%s/%s' % (port, request_type, client_class,
+                num_requests)
 
     expected_metrics = [
-        ('External/localhost:%s/tornado.httpclient/GET' % port, 1)
+        ('External/localhost:%s/tornado.httpclient/GET' % port, num_requests)
     ]
 
     @override_application_settings(

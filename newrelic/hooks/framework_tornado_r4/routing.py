@@ -97,10 +97,9 @@ def _nr_record_exception(wrapped, instance, args, kwargs):
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    with TransactionContext(transaction):
-        exc_info = _bind_log_exception(*args, **kwargs)
-        transaction.record_exception(*exc_info, ignore_errors=should_ignore)
-        return wrapped(*args, **kwargs)
+    exc_info = _bind_log_exception(*args, **kwargs)
+    transaction.record_exception(*exc_info, ignore_errors=should_ignore)
+    return wrapped(*args, **kwargs)
 
 
 @function_wrapper

@@ -2,6 +2,7 @@ import inspect
 import logging
 
 from newrelic.api.function_trace import FunctionTrace
+from newrelic.core.config import ignore_status_code
 from newrelic.api.transaction_context import TransactionContext
 from newrelic.common.object_wrapper import (wrap_function_wrapper, ObjectProxy,
         function_wrapper, _NRBoundFunctionWrapper)
@@ -57,6 +58,11 @@ def _wrap_handlers(rule):
     if not isinstance(on_finish, _NRBoundFunctionWrapper):
         setattr(handler, 'on_finish', _nr_request_end(on_finish))
 
+    # wrap log_exception which records exceptions
+    log_exception = handler.log_exception
+    if not isinstance(log_exception, _NRBoundFunctionWrapper):
+        setattr(handler, 'log_exception', _nr_record_exception(log_exception))
+
     if not hasattr(handler, 'SUPPORTED_METHODS'):
         return
 
@@ -69,6 +75,31 @@ def _wrap_handlers(rule):
 
         if not isinstance(method, _NRBoundFunctionWrapper):
             setattr(handler, request_method.lower(), _nr_method(method))
+
+
+def _bind_log_exception(typ, value, tb, *args, **kwargs):
+    return (typ, value, tb)
+
+
+def should_ignore(exc, value, tb):
+    from tornado.web import HTTPError
+
+    if exc is HTTPError:
+        status_code = value.status_code
+        if ignore_status_code(status_code):
+            return True
+
+
+@function_wrapper
+def _nr_record_exception(wrapped, instance, args, kwargs):
+    transaction = getattr(instance, '_nr_transaction', None)
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    exc_info = _bind_log_exception(*args, **kwargs)
+    transaction.record_exception(*exc_info, ignore_errors=should_ignore)
+    return wrapped(*args, **kwargs)
 
 
 @function_wrapper

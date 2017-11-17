@@ -11,6 +11,9 @@ class SimpleHandler(tornado.web.RequestHandler):
             time.sleep(0.1)
         self.write("Hello, world")
 
+    def log_exception(self, *args, **kwargs):
+        pass
+
 
 class OnFinishHandler(SimpleHandler):
     def on_finish(self):

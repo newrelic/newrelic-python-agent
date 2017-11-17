@@ -18,19 +18,25 @@ class BadGetStatusHandler(tornado.web.RequestHandler):
 
 
 class ProcessCatHeadersHandler(tornado.web.RequestHandler):
-    def get(self, client_cross_process_id, txn_header):
-        import newrelic.agent
-        txn = newrelic.agent.current_transaction()
+    def get(self, client_cross_process_id, txn_header, flush):
+        flush = flush == 'flush'
+
+        import newrelic.api.transaction as _transaction
+        txn = _transaction.current_transaction()
         if txn:
             txn._process_incoming_cat_headers(client_cross_process_id,
                     txn_header)
         self.write("Hello, world")
 
-        # Force a flush prior to calling finish
-        # This causes the headers to get written immediately. The tests which
-        # hit this endpoint will check that the response has been properly
-        # processed even though we send the headers here.
-        self.flush()
+        if flush:
+            # Force a flush prior to calling finish
+            # This causes the headers to get written immediately. The tests
+            # which hit this endpoint will check that the response has been
+            # properly processed even though we send the headers here.
+            self.flush()
+
+            # change the headers to garbage
+            self.set_header('Content-Type', 'garbage')
 
 
 class SimpleHandler(tornado.web.RequestHandler):
@@ -133,7 +139,7 @@ def make_app():
         (r'/html-insertion', HTMLInsertionHandler),
         (r'/on-finish(/.*)?', OnFinishHandler),
         (r'/bad-get-status', BadGetStatusHandler),
-        (r'/force-cat-response/(\S+)/(\S+)', ProcessCatHeadersHandler),
+        (r'/force-cat-response/(\S+)/(\S+)/(\S+)', ProcessCatHeadersHandler),
     ]
     if sys.version_info >= (3, 5):
         from _target_application_native import (NativeSimpleHandler,

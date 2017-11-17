@@ -12,21 +12,24 @@ try:
 except ImportError:
     asyncio = None
 
-from newrelic.hooks.framework_tornado_r4.web import (
-        _iscoroutinefunction_native, _iscoroutinefunction_tornado)
+
+@pytest.fixture(scope='function')
+def utils():
+    import newrelic.hooks.framework_tornado_r4.utils as utils
+    return utils
 
 
 @pytest.mark.skipif(not _test_fixtures,
         reason='Native coroutines not supported in this Python version.')
-def test_native_coroutines():
+def test_native_coroutines(utils):
     method = _test_fixtures.Class1().get
-    assert _iscoroutinefunction_native(method)
-    assert not _iscoroutinefunction_tornado(method)
+    assert utils._iscoroutinefunction_native(method)
+    assert not utils._iscoroutinefunction_tornado(method)
 
 
 @pytest.mark.skipif(not asyncio,
         reason='No asyncio module in this Python version.')
-def test_asyncio_coroutine_function():
+def test_asyncio_coroutine_function(utils):
 
     class Handler(object):
         @asyncio.coroutine
@@ -34,13 +37,13 @@ def test_asyncio_coroutine_function():
             pass
 
     method = Handler().get
-    assert _iscoroutinefunction_native(method)
-    assert not _iscoroutinefunction_tornado(method)
+    assert utils._iscoroutinefunction_native(method)
+    assert not utils._iscoroutinefunction_tornado(method)
 
 
 @pytest.mark.skipif(not asyncio,
         reason='No asyncio module in this Python version.')
-def test_asyncio_coroutine_generator():
+def test_asyncio_coroutine_generator(utils):
 
     class Handler(object):
         @asyncio.coroutine
@@ -48,35 +51,35 @@ def test_asyncio_coroutine_generator():
             yield
 
     method = Handler().get
-    assert _iscoroutinefunction_native(method)
-    assert not _iscoroutinefunction_tornado(method)
+    assert utils._iscoroutinefunction_native(method)
+    assert not utils._iscoroutinefunction_tornado(method)
 
 
-def test_tornado_gen_coroutine_function():
-
-    class Handler(object):
-        @tornado.gen.coroutine
-        def get(self):
-            pass
-
-    method = Handler().get
-    assert not _iscoroutinefunction_native(method)
-    assert _iscoroutinefunction_tornado(method)
-
-
-def test_tornado_gen_coroutine_generator():
+def test_tornado_gen_coroutine_function(utils):
 
     class Handler(object):
         @tornado.gen.coroutine
         def get(self):
+            pass
+
+    method = Handler().get
+    assert not utils._iscoroutinefunction_native(method)
+    assert utils._iscoroutinefunction_tornado(method)
+
+
+def test_tornado_gen_coroutine_generator(utils):
+
+    class Handler(object):
+        @tornado.gen.coroutine
+        def get(self):
             yield
 
     method = Handler().get
-    assert not _iscoroutinefunction_native(method)
-    assert _iscoroutinefunction_tornado(method)
+    assert not utils._iscoroutinefunction_native(method)
+    assert utils._iscoroutinefunction_tornado(method)
 
 
-def test_tornado_gen_engine_function():
+def test_tornado_gen_engine_function(utils):
 
     class Handler(object):
         @tornado.gen.engine
@@ -84,11 +87,11 @@ def test_tornado_gen_engine_function():
             pass
 
     method = Handler().get
-    assert not _iscoroutinefunction_native(method)
-    assert _iscoroutinefunction_tornado(method)
+    assert not utils._iscoroutinefunction_native(method)
+    assert utils._iscoroutinefunction_tornado(method)
 
 
-def test_tornado_gen_engine_generator():
+def test_tornado_gen_engine_generator(utils):
 
     class Handler(object):
         @tornado.gen.engine
@@ -96,11 +99,11 @@ def test_tornado_gen_engine_generator():
             yield
 
     method = Handler().get
-    assert not _iscoroutinefunction_native(method)
-    assert _iscoroutinefunction_tornado(method)
+    assert not utils._iscoroutinefunction_native(method)
+    assert utils._iscoroutinefunction_tornado(method)
 
 
-def test_tornado_async_engine_function():
+def test_tornado_async_engine_function(utils):
 
     class Handler(object):
         @tornado.web.asynchronous
@@ -109,11 +112,11 @@ def test_tornado_async_engine_function():
             pass
 
     method = Handler().get
-    assert not _iscoroutinefunction_native(method)
-    assert _iscoroutinefunction_tornado(method)
+    assert not utils._iscoroutinefunction_native(method)
+    assert utils._iscoroutinefunction_tornado(method)
 
 
-def test_tornado_async_engine_generator():
+def test_tornado_async_engine_generator(utils):
 
     class Handler(object):
         @tornado.web.asynchronous
@@ -122,11 +125,11 @@ def test_tornado_async_engine_generator():
             yield
 
     method = Handler().get
-    assert not _iscoroutinefunction_native(method)
-    assert _iscoroutinefunction_tornado(method)
+    assert not utils._iscoroutinefunction_native(method)
+    assert utils._iscoroutinefunction_tornado(method)
 
 
-def test_tornado_web_async():
+def test_tornado_web_async(utils):
 
     class Handler(object):
         @tornado.web.asynchronous
@@ -134,19 +137,19 @@ def test_tornado_web_async():
             pass
 
     method = Handler().get
-    assert not _iscoroutinefunction_native(method)
-    assert not _iscoroutinefunction_tornado(method)
+    assert not utils._iscoroutinefunction_native(method)
+    assert not utils._iscoroutinefunction_tornado(method)
 
 
-def test_just_plain_method():
+def test_just_plain_method(utils):
 
     class Handler(object):
         def get(self):
             pass
 
     method = Handler().get
-    assert not _iscoroutinefunction_native(method)
-    assert not _iscoroutinefunction_tornado(method)
+    assert not utils._iscoroutinefunction_native(method)
+    assert not utils._iscoroutinefunction_tornado(method)
 
 
 # For legacy reasons, tornado allows for both decorators to be used at once.
@@ -155,7 +158,7 @@ def test_just_plain_method():
 # in this case." Since we do not know what they mean by "first", we test both
 # orderings.
 
-def test_tornado_async_coro_function():
+def test_tornado_async_coro_function(utils):
 
     class Handler(object):
         @tornado.web.asynchronous
@@ -164,11 +167,11 @@ def test_tornado_async_coro_function():
             pass
 
     method = Handler().get
-    assert not _iscoroutinefunction_native(method)
-    assert _iscoroutinefunction_tornado(method)
+    assert not utils._iscoroutinefunction_native(method)
+    assert utils._iscoroutinefunction_tornado(method)
 
 
-def test_tornado_async_coro_generator():
+def test_tornado_async_coro_generator(utils):
 
     class Handler(object):
         @tornado.web.asynchronous
@@ -177,11 +180,11 @@ def test_tornado_async_coro_generator():
             yield
 
     method = Handler().get
-    assert not _iscoroutinefunction_native(method)
-    assert _iscoroutinefunction_tornado(method)
+    assert not utils._iscoroutinefunction_native(method)
+    assert utils._iscoroutinefunction_tornado(method)
 
 
-def test_tornado_coro_async_function():
+def test_tornado_coro_async_function(utils):
 
     class Handler(object):
         @tornado.web.asynchronous
@@ -190,11 +193,11 @@ def test_tornado_coro_async_function():
             pass
 
     method = Handler().get
-    assert not _iscoroutinefunction_native(method)
-    assert _iscoroutinefunction_tornado(method)
+    assert not utils._iscoroutinefunction_native(method)
+    assert utils._iscoroutinefunction_tornado(method)
 
 
-def test_tornado_coro_async_generator():
+def test_tornado_coro_async_generator(utils):
 
     class Handler(object):
         @tornado.web.asynchronous
@@ -203,5 +206,5 @@ def test_tornado_coro_async_generator():
             yield
 
     method = Handler().get
-    assert not _iscoroutinefunction_native(method)
-    assert _iscoroutinefunction_tornado(method)
+    assert not utils._iscoroutinefunction_native(method)
+    assert utils._iscoroutinefunction_tornado(method)

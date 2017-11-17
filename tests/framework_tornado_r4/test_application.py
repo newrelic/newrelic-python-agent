@@ -1,6 +1,6 @@
-import sys
 import multiprocessing
 import pytest
+import sys
 import tornado
 
 from testing_support.fixtures import (validate_transaction_metrics,
@@ -28,6 +28,7 @@ _tests = [
     ('/coro-throw', '_target_application:CoroThrowHandler.get'),
     ('/web-async', '_target_application:WebAsyncHandler.get'),
     ('/init', '_target_application:InitializeHandler.get'),
+    ('/on-finish', '_target_application:OnFinishHandler.get'),
 ]
 if sys.version_info >= (3, 5):
     _tests.extend([
@@ -62,6 +63,7 @@ def test_simple(app, uri, name, ioloop):
         unscoped_metric = (txn_metric_name, '')
         assert unscoped_metric in full_metrics, full_metrics
         assert full_metrics[unscoped_metric][1] >= 0.1
+        assert full_metrics[unscoped_metric][1] < 0.2
 
     _test()
 

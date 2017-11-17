@@ -89,28 +89,30 @@ def _nr_process_response(wrapped, instance, args, kwargs):
     if not hasattr(instance, '_headers_written') or instance._headers_written:
         return wrapped(*args, **kwargs)
 
-    if hasattr(instance, '_nr_transaction'):
-        transaction = instance._nr_transaction
+    if not hasattr(instance, '_nr_transaction'):
+        return wrapped(*args, **kwargs)
 
-        get_status = getattr(instance, 'get_status', None)
-        try:
-            http_status = str(get_status())
-        except:
-            http_status = None
+    transaction = instance._nr_transaction
 
-        headers = getattr(instance, '_headers', None)
-        try:
-            headers = list(headers.get_all())
-        except:
-            pass
+    get_status = getattr(instance, 'get_status', None)
+    try:
+        http_status = str(get_status())
+    except:
+        http_status = None
 
-        cat_headers = transaction.process_response(http_status, headers)
+    headers = getattr(instance, '_headers', None)
+    try:
+        headers = list(headers.get_all())
+    except:
+        pass
 
-        try:
-            for k, v in cat_headers:
-                instance.set_header(k, v)
-        except:
-            pass
+    cat_headers = transaction.process_response(http_status, headers)
+
+    try:
+        for k, v in cat_headers:
+            instance.set_header(k, v)
+    except:
+        pass
 
     return wrapped(*args, **kwargs)
 

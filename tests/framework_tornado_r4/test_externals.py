@@ -68,6 +68,7 @@ def test_httpclient(app, cat_enabled, request_type, client_class,
                 sent_headers = sent_headers.decode('utf-8')
 
             # new relic shouldn't add anything to the outgoing
+            sent_headers = sent_headers.lower()
             assert 'x-newrelic' not in sent_headers, sent_headers
 
     _test()

@@ -3,7 +3,7 @@ from wsgiref.simple_server import make_server
 
 import pytest
 from testing_support.fixtures import (validate_transaction_metrics,
-        override_application_settings)
+        override_application_settings, validate_transaction_errors)
 
 from testing_support.mock_external_http_server import (
         MockExternalHTTPHResponseHeadersServer)
@@ -133,6 +133,7 @@ def test_client_cat_response_processing(app, cat_enabled, request_type,
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @validate_transaction_metrics('_target_application:InvalidExternalMethod.get')
+@validate_transaction_errors(errors=['tornado.web:HTTPError'])
 def test_httpclient_invalid_method(app, client_class):
     uri = '/client-invalid-method/%s' % client_class
     response = app.fetch(uri)
@@ -142,6 +143,7 @@ def test_httpclient_invalid_method(app, client_class):
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @validate_transaction_metrics('_target_application:InvalidExternalKwarg.get')
+@validate_transaction_errors(errors=['tornado.web:HTTPError'])
 def test_httpclient_invalid_kwarg(app, client_class):
     uri = '/client-invalid-kwarg/%s' % client_class
     response = app.fetch(uri)

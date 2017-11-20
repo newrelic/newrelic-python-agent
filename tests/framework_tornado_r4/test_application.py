@@ -8,7 +8,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
         capture_transaction_metrics, override_generic_settings,
         validate_transaction_errors, override_ignore_status_codes,
         validate_transaction_event_attributes, function_not_called,
-        override_application_settings)
+        override_application_settings, validate_transaction_trace_attributes)
 from newrelic.core.config import global_settings
 from tornado.ioloop import IOLoop
 
@@ -126,6 +126,7 @@ def test_environ(app, method, request_param_setting, sock_family):
             'intrinsic': {'port': app.get_http_port()},
         },
     )
+    @validate_transaction_trace_attributes(url='/simple/fast')
     def _test():
 
         if method in ('GET', 'DELETE'):

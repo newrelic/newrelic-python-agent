@@ -8,7 +8,8 @@ from testing_support.fixtures import (validate_transaction_metrics,
         capture_transaction_metrics, override_generic_settings,
         validate_transaction_errors, override_ignore_status_codes,
         validate_transaction_event_attributes, function_not_called,
-        override_application_settings, validate_transaction_trace_attributes)
+        override_application_settings, validate_transaction_trace_attributes,
+        validate_attributes)
 from newrelic.core.config import global_settings
 from tornado.ioloop import IOLoop
 
@@ -254,3 +255,24 @@ def test_thread_utilization_disabled(now):
     result = q.get(timeout=15)
 
     assert result == 'PASS'
+
+
+@pytest.mark.parametrize('header_key,agent_attr', [
+    ('Content-Type', 'request.headers.contentType'),
+    ('Referer', 'request.headers.referer'),
+    ('User-Agent', 'request.headers.userAgent'),
+])
+@pytest.mark.parametrize('ioloop', loops)
+def test_request_headers(app, ioloop, header_key, agent_attr):
+
+    required_attr_names = ['request.headers.host', 'request.method',
+            agent_attr]
+
+    @validate_transaction_metrics('_target_application:SimpleHandler.get')
+    @validate_transaction_errors(errors=[])
+    @validate_attributes('agent', required_attr_names=required_attr_names)
+    def _test():
+        response = app.fetch('/simple/fast', headers={header_key: 'tacocat'})
+        assert response.code == 200
+
+    _test()

@@ -96,8 +96,11 @@ def _nr_process_response(wrapped, instance, args, kwargs):
 
     get_status = getattr(instance, 'get_status', None)
     try:
-        http_status = str(get_status())
+        raw_status = get_status()
+        skip_cat_header_insertion = raw_status in (204, 304)
+        http_status = str(raw_status)
     except:
+        skip_cat_header_insertion = True
         http_status = None
 
     headers = getattr(instance, '_headers', None)
@@ -108,11 +111,12 @@ def _nr_process_response(wrapped, instance, args, kwargs):
 
     cat_headers = transaction.process_response(http_status, headers)
 
-    try:
-        for k, v in cat_headers:
-            instance.set_header(k, v)
-    except:
-        pass
+    if not skip_cat_header_insertion:
+        try:
+            for k, v in cat_headers:
+                instance.set_header(k, v)
+        except:
+            pass
 
     return wrapped(*args, **kwargs)
 

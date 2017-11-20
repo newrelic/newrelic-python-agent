@@ -1,11 +1,14 @@
 import multiprocessing
 import pytest
+import socket
 import sys
 import tornado
 
 from testing_support.fixtures import (validate_transaction_metrics,
         capture_transaction_metrics, override_generic_settings,
-        validate_transaction_errors, override_ignore_status_codes)
+        validate_transaction_errors, override_ignore_status_codes,
+        validate_transaction_event_attributes, function_not_called,
+        override_application_settings)
 from newrelic.core.config import global_settings
 from tornado.ioloop import IOLoop
 
@@ -57,6 +60,13 @@ def test_simple(app, uri, name, ioloop):
     )
     @validate_transaction_errors(errors=[])
     @capture_transaction_metrics(metric_list, full_metrics)
+    @validate_transaction_event_attributes(
+        exact_attrs={
+            'agent': {'request.method': 'GET'},
+            'user': {},
+            'intrinsic': {'port': app.get_http_port()},
+        },
+    )
     def _test():
         response = app.fetch(uri)
         assert response.code == 200
@@ -66,6 +76,80 @@ def test_simple(app, uri, name, ioloop):
         assert unscoped_metric in full_metrics, full_metrics
         assert full_metrics[unscoped_metric][1] >= 0.1
         assert full_metrics[unscoped_metric][1] < 0.2
+
+    _test()
+
+
+@pytest.mark.parametrize('method', [
+    'GET',
+    'POST',
+    'PUT',
+    'DELETE',
+    'PATCH'
+])
+@pytest.mark.parametrize('request_param_setting', [
+    'attributes.include',
+    'attributes.exclude'
+])
+@pytest.mark.parametrize('sock_family', [
+    socket.AF_INET,
+    socket.AF_INET6
+])
+def test_environ(app, method, request_param_setting, sock_family):
+
+    # Ensure that passing a port in the headers
+    # does not affect what New Relic records.
+    # This was an issue with r3 instrumentation.
+    headers = {'Host': 'localhost:1234'}
+
+    uri = '/simple/fast?foo=bar'
+    name = '_target_application:SimpleHandler.get'
+
+    metric_name = 'Function/%s' % name
+    framework_metric_name = 'Python/Framework/Tornado/ASYNC/%s' % VERSION
+
+    agent_exact_attrs = {'request.method': method}
+    if request_param_setting == 'attributes.include':
+        agent_exact_attrs['request.parameters.foo'] = 'bar'
+
+    @override_application_settings(
+            {request_param_setting: ['request.parameters.*']})
+    @validate_transaction_metrics(name,
+        rollup_metrics=[(metric_name, 1)],
+        scoped_metrics=[(metric_name, 1)],
+        custom_metrics=[(framework_metric_name, 1)],
+    )
+    @validate_transaction_event_attributes(
+        exact_attrs={
+            'agent': agent_exact_attrs,
+            'user': {},
+            'intrinsic': {'port': app.get_http_port()},
+        },
+    )
+    def _test():
+
+        if method in ('GET', 'DELETE'):
+            response = app.fetch(uri, method=method, headers=headers)
+        else:
+            response = app.fetch(uri, body=b'', method=method,
+                    headers=headers)
+
+        assert response.code == 200
+
+    _test()
+
+
+# TODO: PYTHON-2547 should re-enable this test.
+@pytest.mark.xfail(reason='Headers not added yet.', strict=True)
+@pytest.mark.parametrize('ioloop', loops)
+def test_websocket(app, ioloop):
+    headers = {'Upgrade': 'websocket'}
+
+    @function_not_called('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _test():
+        response = app.fetch('/simple/fast', headers=headers)
+        assert response.code == 200
 
     _test()
 

@@ -14,6 +14,11 @@ class SimpleHandler(tornado.web.RequestHandler):
     def log_exception(self, *args, **kwargs):
         pass
 
+    post = get
+    put = get
+    delete = get
+    patch = get
+
 
 class OnFinishHandler(SimpleHandler):
     def on_finish(self):

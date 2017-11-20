@@ -154,8 +154,6 @@ def test_environ(app, method, request_param_setting, sock_family):
     _test()
 
 
-# TODO: PYTHON-2547 should re-enable this test.
-@pytest.mark.xfail(reason='Headers not added yet.', strict=True)
 @pytest.mark.parametrize('ioloop', loops)
 def test_websocket(app, ioloop):
     headers = {'Upgrade': 'websocket'}

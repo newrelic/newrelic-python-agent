@@ -2471,11 +2471,21 @@ def function_not_called(module, name):
 
     """
 
+    called = []
+
     @transient_function_wrapper(module, name)
     def _function_not_called_(wrapped, instance, args, kwargs):
-        assert False
+        called.append(True)
+        return wrapped(*args, **kwargs)
 
-    return _function_not_called_
+    @function_wrapper
+    def wrapper(wrapped, instance, args, kwargs):
+        new_wrapper = _function_not_called_(wrapped)
+        result = new_wrapper(*args, **kwargs)
+        assert not called
+        return result
+
+    return wrapper
 
 
 def validate_analytics_catmap_data(name, expected_attributes=(),

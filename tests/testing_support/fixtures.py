@@ -845,10 +845,10 @@ def check_event_attributes(event_data, required_params, forgone_params,
         for param, value in exact_attrs['agent'].items():
             assert agent_attributes[param] == value, (
                     (param, value), agent_attributes)
-        for param, value in exact_attrs['user']:
+        for param, value in exact_attrs['user'].items():
             assert user_attributes[param] == value, (
                     (param, value), user_attributes)
-        for param in exact_attrs['intrinsic']:
+        for param, value in exact_attrs['intrinsic'].items():
             assert intrinsics[param] == value, (
                     (param, value), intrinsics)
 

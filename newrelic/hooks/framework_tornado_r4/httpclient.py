@@ -57,7 +57,7 @@ def _nr_wrapper_httpclient_AsyncHTTPClient_fetch_(
             trace.__exit__(None, None, None)
 
     trace.__enter__()
-    if trace.transaction.current_node is trace:
+    if trace.transaction and trace.transaction.current_node is trace:
         # externals should not have children
         trace.transaction._pop_current(trace)
 

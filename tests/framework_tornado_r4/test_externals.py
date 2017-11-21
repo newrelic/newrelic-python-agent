@@ -163,3 +163,17 @@ def test_httpclient_invalid_kwarg(app, client_class):
 def test_httpclient_fetch_crashes(app):
     response = app.fetch('/crash-client')
     assert response.code == 200
+
+
+@validate_transaction_metrics('_target_application:CrashClientHandler.get',
+    rollup_metrics=[('External/example.com/tornado.httpclient/GET', None)],
+    scoped_metrics=[('External/example.com/tornado.httpclient/GET', None)]
+)
+def test_httpclient_fetch_inside_terminal_node(app):
+    # Test that our instrumentation correctly handles the case when the parent
+    # is a terminal node
+
+    # This is protecting against a "pop_current" when the external trace never
+    # actually gets pushed
+    response = app.fetch('/client-terminal-trace')
+    assert response.code == 200

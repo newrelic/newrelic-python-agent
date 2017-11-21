@@ -99,12 +99,21 @@ class CrashClient(tornado.httpclient.AsyncHTTPClient):
 
 
 class CrashClientHandler(tornado.web.RequestHandler):
+    def __init__(self, application, request, terminal_trace=False, **kwargs):
+        super(CrashClientHandler, self).__init__(application, request,
+                **kwargs)
+        self.terminal_trace = terminal_trace
+
     @tornado.gen.coroutine
     def get(self):
         client = CrashClient()
+        from newrelic.api.function_trace import FunctionTrace
+        from newrelic.api.transaction import current_transaction
 
         try:
-            yield client.fetch('https://example.com')
+            with FunctionTrace(current_transaction(), 'trace',
+                    terminal=self.terminal_trace):
+                yield client.fetch('https://example.com')
         except ValueError:
             return
 
@@ -271,6 +280,8 @@ def make_app():
         (r'/client-invalid-method/(\S+)', InvalidExternalMethod),
         (r'/client-invalid-kwarg/(\S+)', InvalidExternalKwarg),
         (r'/crash-client', CrashClientHandler),
+        (r'/client-terminal-trace', CrashClientHandler,
+                {'terminal_trace': True}),
         (r'/echo-headers', EchoHeaderHandler),
     ]
     if sys.version_info >= (3, 5):

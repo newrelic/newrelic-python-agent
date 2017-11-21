@@ -12,6 +12,13 @@ from testing_support.mock_external_http_server import (
 ENCODING_KEY = '1234567890123456789012345678901234567890'
 
 
+@pytest.fixture(scope='module')
+def external():
+    external = MockExternalHTTPHResponseHeadersServer()
+    with external:
+        yield external
+
+
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @pytest.mark.parametrize('cat_enabled,user_header', [
@@ -23,17 +30,15 @@ ENCODING_KEY = '1234567890123456789012345678901234567890'
 @pytest.mark.parametrize('request_type', ['uri', 'class'])
 @pytest.mark.parametrize('num_requests', [1, 2])
 def test_httpclient(app, cat_enabled, request_type, client_class,
-        user_header, num_requests):
+        user_header, num_requests, external):
 
     if cat_enabled or ('Async' not in client_class):
-        external = MockExternalHTTPHResponseHeadersServer()
         port = external.port
-        uri = '/async-client/%s/%s/%s/%s/%s' % (port, request_type,
-                client_class, user_header, num_requests)
     else:
         port = app.get_http_port()
-        uri = '/async-client/%s/%s/%s/%s/%s' % (port, request_type,
-                client_class, user_header, num_requests)
+
+    uri = '/async-client/%s/%s/%s/%s/%s' % (port, request_type, client_class,
+            user_header, num_requests)
 
     expected_metrics = [
         ('External/localhost:%s/tornado.httpclient/GET' % port, num_requests)
@@ -47,12 +52,7 @@ def test_httpclient(app, cat_enabled, request_type, client_class,
         scoped_metrics=expected_metrics
     )
     def _test():
-        if cat_enabled or ('Async' not in client_class):
-            with external:
-                response = app.fetch(uri)
-        else:
-            response = app.fetch(uri)
-
+        response = app.fetch(uri)
         assert response.code == 200
 
         sent_headers = response.body
@@ -65,14 +65,10 @@ def test_httpclient(app, cat_enabled, request_type, client_class,
 
         if cat_enabled:
             # Check that we sent CAT headers
-            required_headers = (b'X-NewRelic-ID', b'X-NewRelic-Transaction')
-            forgone_headers = (b'X-NewRelic-App-Data',)
+            assert b'X-NewRelic-ID' in sent_headers
+            assert b'X-NewRelic-Transaction' in sent_headers
 
-            for header in required_headers:
-                assert header in sent_headers, (header, sent_headers)
-
-            for header in forgone_headers:
-                assert header not in sent_headers, (header, sent_headers)
+            assert b'X-NewRelic-App-Data' not in sent_headers
         else:
             if hasattr(sent_headers, 'decode'):
                 sent_headers = sent_headers.decode('utf-8')

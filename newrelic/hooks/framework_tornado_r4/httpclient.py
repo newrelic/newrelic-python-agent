@@ -38,6 +38,9 @@ def _nr_wrapper_httpclient_AsyncHTTPClient_fetch_(
     # Prepare outgoing CAT headers
     outgoing_headers = ExternalTrace.generate_request_headers(transaction)
     for header_name, header_value in outgoing_headers:
+        # User headers should override our CAT headers
+        if header_name in req.headers:
+            continue
         req.headers[header_name] = header_value
 
     trace = ExternalTrace(transaction,

@@ -14,21 +14,26 @@ ENCODING_KEY = '1234567890123456789012345678901234567890'
 
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
-@pytest.mark.parametrize('cat_enabled', [True, False])
+@pytest.mark.parametrize('cat_enabled,user_header', [
+    (True, None),
+    (True, 'X-NewRelic-ID'),
+    (True, 'X-NewRelic-Transaction'),
+    (False, None),
+])
 @pytest.mark.parametrize('request_type', ['uri', 'class'])
 @pytest.mark.parametrize('num_requests', [1, 2])
 def test_httpclient(app, cat_enabled, request_type, client_class,
-        num_requests):
+        user_header, num_requests):
 
     if cat_enabled or ('Async' not in client_class):
         external = MockExternalHTTPHResponseHeadersServer()
         port = external.port
-        uri = '/async-client/%s/%s/%s/%s' % (port, request_type, client_class,
-                num_requests)
+        uri = '/async-client/%s/%s/%s/%s/%s' % (port, request_type,
+                client_class, user_header, num_requests)
     else:
         port = app.get_http_port()
-        uri = '/async-client/%s/%s/%s/%s' % (port, request_type, client_class,
-                num_requests)
+        uri = '/async-client/%s/%s/%s/%s/%s' % (port, request_type,
+                client_class, user_header, num_requests)
 
     expected_metrics = [
         ('External/localhost:%s/tornado.httpclient/GET' % port, num_requests)
@@ -50,12 +55,18 @@ def test_httpclient(app, cat_enabled, request_type, client_class,
 
         assert response.code == 200
 
+        sent_headers = response.body
+
+        # User headers override all inserted NR headers
+        if user_header:
+            header_str = '%s: USER' % user_header
+            header_str = header_str.encode('utf-8')
+            assert header_str in sent_headers, (header_str, sent_headers)
+
         if cat_enabled:
             # Check that we sent CAT headers
             required_headers = (b'X-NewRelic-ID', b'X-NewRelic-Transaction')
             forgone_headers = (b'X-NewRelic-App-Data',)
-
-            sent_headers = response.body
 
             for header in required_headers:
                 assert header in sent_headers, (header, sent_headers)
@@ -63,7 +74,6 @@ def test_httpclient(app, cat_enabled, request_type, client_class,
             for header in forgone_headers:
                 assert header not in sent_headers, (header, sent_headers)
         else:
-            sent_headers = response.body
             if hasattr(sent_headers, 'decode'):
                 sent_headers = sent_headers.decode('utf-8')
 

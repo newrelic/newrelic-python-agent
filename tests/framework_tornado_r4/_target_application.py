@@ -57,7 +57,7 @@ class EchoHeaderHandler(tornado.web.RequestHandler):
 
 class AsyncExternalHandler(tornado.web.RequestHandler):
     @tornado.gen.coroutine
-    def get(self, port, req_type, client_cls, count=1):
+    def get(self, port, req_type, client_cls, header=None, count=1):
         count = int(count)
         if client_cls == 'AsyncHTTPClient':
             client = tornado.httpclient.AsyncHTTPClient()
@@ -68,19 +68,26 @@ class AsyncExternalHandler(tornado.web.RequestHandler):
         else:
             raise ValueError("Received unknown client type: %s" % client_cls)
 
+        headers = {}
+        if header and header != 'None':
+            headers[header] = 'USER'
+
         uri = 'http://localhost:%s/echo-headers' % port
         if req_type == 'class':
-            req = tornado.httpclient.HTTPRequest(uri)
+            req = tornado.httpclient.HTTPRequest(uri, headers=headers)
+            header_arg = None
         elif req_type == 'uri':
             req = uri
+            header_arg = headers
         else:
             raise ValueError("Received unknown request type: %s" % req_type)
 
         if client_cls == 'HTTPClient':
             for _ in range(count):
-                response = client.fetch(req)
+                response = client.fetch(req, headers=header_arg)
         else:
-            futures = [client.fetch(req) for _ in range(count)]
+            futures = [client.fetch(req, headers=header_arg) for _ in
+                    range(count)]
             responses = yield tornado.gen.multi(futures)
             response = responses[0]
         self.write(response.body)
@@ -239,7 +246,9 @@ def make_app():
                 {'response_code': 304}),
         (r'/204-cat-response/(\S+)/(\S+)', ProcessCatHeadersHandler,
                 {'response_code': 204}),
-        (r'/async-client/(\d+)/(\S+)/(\S+)/(\d+)', AsyncExternalHandler),
+        (r'/async-client/(\d+)/(\S+)/(\S+)/(\S+)/(\d+)$',
+                AsyncExternalHandler),
+        (r'/async-client/(\d+)/(\S+)/(\S+)/(\d+)$', AsyncExternalHandler),
         (r'/async-client/(\d+)/(\S+)/(\S+)$', AsyncExternalHandler),
         (r'/client-invalid-method/(\S+)', InvalidExternalMethod),
         (r'/client-invalid-kwarg/(\S+)', InvalidExternalKwarg),

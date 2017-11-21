@@ -93,6 +93,24 @@ class AsyncExternalHandler(tornado.web.RequestHandler):
         self.write(response.body)
 
 
+class CrashClient(tornado.httpclient.AsyncHTTPClient):
+    def fetch_impl(self, *args, **kwargs):
+        raise ValueError("BOOM")
+
+
+class CrashClientHandler(tornado.web.RequestHandler):
+    @tornado.gen.coroutine
+    def get(self):
+        client = CrashClient()
+
+        try:
+            yield client.fetch('https://example.com')
+        except ValueError:
+            return
+
+        raise Exception('Unreachable code reached!')
+
+
 class InvalidExternalMethod(tornado.web.RequestHandler):
     @tornado.gen.coroutine
     def get(self, client_cls):
@@ -252,6 +270,7 @@ def make_app():
         (r'/async-client/(\d+)/(\S+)/(\S+)$', AsyncExternalHandler),
         (r'/client-invalid-method/(\S+)', InvalidExternalMethod),
         (r'/client-invalid-kwarg/(\S+)', InvalidExternalKwarg),
+        (r'/crash-client', CrashClientHandler),
         (r'/echo-headers', EchoHeaderHandler),
     ]
     if sys.version_info >= (3, 5):

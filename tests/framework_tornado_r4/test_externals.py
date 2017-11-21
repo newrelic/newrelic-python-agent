@@ -154,3 +154,12 @@ def test_httpclient_invalid_kwarg(app, client_class):
     uri = '/client-invalid-kwarg/%s' % client_class
     response = app.fetch(uri)
     assert response.code == 503
+
+
+@validate_transaction_metrics('_target_application:CrashClientHandler.get',
+    rollup_metrics=[('External/example.com/tornado.httpclient/GET', 1)],
+    scoped_metrics=[('External/example.com/tornado.httpclient/GET', 1)]
+)
+def test_httpclient_fetch_crashes(app):
+    response = app.fetch('/crash-client')
+    assert response.code == 200

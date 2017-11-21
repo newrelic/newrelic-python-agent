@@ -5,6 +5,48 @@ import tornado.gen
 import time
 
 
+def dummy(*args, **kwargs):
+    pass
+
+
+class BadGetStatusHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.write("Hello, world")
+
+    def get_status(self, *args, **kwargs):
+        raise ValueError("OOPS")
+
+
+class ProcessCatHeadersHandler(tornado.web.RequestHandler):
+    def __init__(self, application, request, response_code=200, **kwargs):
+        super(ProcessCatHeadersHandler, self).__init__(application, request,
+                **kwargs)
+        self.response_code = response_code
+
+    def get(self, client_cross_process_id, txn_header, flush=None):
+        import newrelic.api.transaction as _transaction
+        txn = _transaction.current_transaction()
+        if txn:
+            txn._process_incoming_cat_headers(client_cross_process_id,
+                    txn_header)
+
+        if self.response_code != 200:
+            self.set_status(self.response_code)
+            return
+
+        self.write("Hello, world")
+
+        if flush == 'flush':
+            # Force a flush prior to calling finish
+            # This causes the headers to get written immediately. The tests
+            # which hit this endpoint will check that the response has been
+            # properly processed even though we send the headers here.
+            self.flush()
+
+            # change the headers to garbage
+            self.set_header('Content-Type', 'garbage')
+
+
 class SimpleHandler(tornado.web.RequestHandler):
     def get(self, fast=False):
         if not fast:
@@ -104,6 +146,12 @@ def make_app():
         (r'/init(/.*)?', InitializeHandler),
         (r'/html-insertion', HTMLInsertionHandler),
         (r'/on-finish(/.*)?', OnFinishHandler),
+        (r'/bad-get-status', BadGetStatusHandler),
+        (r'/force-cat-response/(\S+)/(\S+)/(\S+)', ProcessCatHeadersHandler),
+        (r'/304-cat-response/(\S+)/(\S+)', ProcessCatHeadersHandler,
+                {'response_code': 304}),
+        (r'/204-cat-response/(\S+)/(\S+)', ProcessCatHeadersHandler,
+                {'response_code': 204}),
     ]
     if sys.version_info >= (3, 5):
         from _target_application_native import (NativeSimpleHandler,
@@ -112,7 +160,7 @@ def make_app():
             (r'/native-simple(/.*)?', NativeSimpleHandler),
             (r'/native-web-async(/.*)?', NativeWebAsyncHandler),
         ])
-    return tornado.web.Application(handlers)
+    return tornado.web.Application(handlers, log_function=dummy)
 
 
 if __name__ == "__main__":

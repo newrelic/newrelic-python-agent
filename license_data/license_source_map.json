@@ -1727,6 +1727,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/framework_tornado_r4/httputil.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/framework_tornado_r4/routing.py": {
         "hash": "n/a",
         "libraries": [

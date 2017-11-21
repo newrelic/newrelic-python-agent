@@ -61,8 +61,18 @@ def test_simple(app, uri, name, ioloop):
     @validate_transaction_errors(errors=[])
     @capture_transaction_metrics(metric_list, full_metrics)
     @validate_transaction_event_attributes(
+        required_params={
+            'agent': ['response.headers.contentType'],
+            'user': [], 'intrinsic': [],
+        },
+        forgone_params={
+            'agent': [], 'user': [], 'intrinsic': [],
+        },
         exact_attrs={
-            'agent': {'request.method': 'GET'},
+            'agent': {
+                'request.method': 'GET',
+                'response.status': '200',
+            },
             'user': {},
             'intrinsic': {'port': app.get_http_port()},
         },
@@ -108,7 +118,7 @@ def test_environ(app, method, request_param_setting, sock_family):
     metric_name = 'Function/%s' % name
     framework_metric_name = 'Python/Framework/Tornado/ASYNC/%s' % VERSION
 
-    agent_exact_attrs = {'request.method': method}
+    agent_exact_attrs = {'request.method': method, 'response.status': '200'}
     if request_param_setting == 'attributes.include':
         agent_exact_attrs['request.parameters.foo'] = 'bar'
 
@@ -120,6 +130,10 @@ def test_environ(app, method, request_param_setting, sock_family):
         custom_metrics=[(framework_metric_name, 1)],
     )
     @validate_transaction_event_attributes(
+        required_params={
+            'agent': ['response.headers.contentType'],
+            'user': [], 'intrinsic': [],
+        },
         exact_attrs={
             'agent': agent_exact_attrs,
             'user': {},

@@ -85,6 +85,42 @@ def _nr_request_handler_init(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
+def _nr_process_response(wrapped, instance, args, kwargs):
+    if not hasattr(instance, '_headers_written') or instance._headers_written:
+        return wrapped(*args, **kwargs)
+
+    if not hasattr(instance, '_nr_transaction'):
+        return wrapped(*args, **kwargs)
+
+    transaction = instance._nr_transaction
+
+    get_status = getattr(instance, 'get_status', None)
+    try:
+        raw_status = get_status()
+        skip_cat_header_insertion = raw_status in (204, 304)
+        http_status = str(raw_status)
+    except:
+        skip_cat_header_insertion = True
+        http_status = None
+
+    headers = getattr(instance, '_headers', None)
+    try:
+        headers = list(headers.get_all())
+    except:
+        pass
+
+    cat_headers = transaction.process_response(http_status, headers)
+
+    if not skip_cat_header_insertion:
+        try:
+            for k, v in cat_headers:
+                instance.set_header(k, v)
+        except:
+            pass
+
+    return wrapped(*args, **kwargs)
+
+
 def instrument_tornado_web(module):
 
     # Thread utilization data is meaningless in a tornado app. Remove it here,
@@ -98,5 +134,7 @@ def instrument_tornado_web(module):
 
     wrap_function_wrapper(module, 'RequestHandler.__init__',
             _nr_request_handler_init)
+    wrap_function_wrapper(module, 'RequestHandler.flush',
+            _nr_process_response)
 
     _store_version_info()

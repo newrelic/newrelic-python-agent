@@ -22,6 +22,27 @@ def _store_version_info():
         pass
 
 
+def _get_environ(request):
+    # This creates a WSGI environ dictionary from a Tornado request.
+    environ = {
+        'REQUEST_URI': request.path,
+        'QUERY_STRING': request.query,
+        'REQUEST_METHOD': request.method,
+    }
+
+    try:
+        # We only want to record port for ipv4 and ipv6 socket families.
+        # Unix socket will just return a string instead of a tuple, so
+        # skip this.
+        sockname = request.server_connection.stream.socket.getsockname()
+        if isinstance(sockname, tuple):
+            environ['SERVER_PORT'] = sockname[1]
+    except:
+        pass
+
+    return environ
+
+
 def _nr_request_handler_init(wrapped, instance, args, kwargs):
     if current_transaction() is not None:
         _logger.error('Attempting to make a request (new transaction) when a '
@@ -46,8 +67,10 @@ def _nr_request_handler_init(wrapped, instance, args, kwargs):
         method = getattr(instance, request.method.lower())
         name = callable_name(method)
 
+    environ = _get_environ(request)
+
     app = application_instance()
-    txn = WebTransaction(app, {})
+    txn = WebTransaction(app, environ)
     txn.__enter__()
 
     if txn.enabled:

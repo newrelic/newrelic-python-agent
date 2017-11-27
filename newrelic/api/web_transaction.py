@@ -75,7 +75,7 @@ def _remove_query_string(url):
 
 
 def _is_websocket(environ):
-    return environ.get('HTTP_UPGRADE') == 'websocket'
+    return environ.get('HTTP_UPGRADE', '').lower() == 'websocket'
 
 
 class WebTransaction(Transaction):

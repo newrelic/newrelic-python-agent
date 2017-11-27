@@ -26,6 +26,12 @@ unreleased
   transaction traces. Now http status is automatically added to Tornado
   transaction events in Insights and transaction traces in APM.
 
+- Fix to allow concurrent traces
+
+  When generating multiple concurrent external requests through Tornado
+  client, only the first one would be recorded. Now all external traces are
+  recorded.
+
 
 2.96.0.80 (2017-10-16)
 ----------------------

@@ -466,6 +466,20 @@ class AsyncFetchRequestHandler(RequestHandler):
         self.finish(response.body)
 
 
+class AsyncExternalCountHandler(tornado.web.RequestHandler):
+    @tornado.gen.coroutine
+    def get(self, port, count):
+        count = int(count)
+        uri = 'http://localhost:%s' % port
+
+        client = tornado.httpclient.AsyncHTTPClient()
+        futures = [client.fetch(uri) for _ in range(count)]
+        responses = yield tornado.gen.multi(futures)
+        response = responses[0]
+
+        self.write(response.body)
+
+
 class ExpectedError(Exception):
     pass
 
@@ -1380,4 +1394,5 @@ def get_tornado_app():
         ('/wait-for-finish', WaitForFinishHandler),
         ('/exception-instead-of-finish', ExceptionInsteadOfFinishHandler),
         ('/cat-map/(\w+)', CatMapHandler),
+        (r'/async-client/(\d+)/(\d+)', AsyncExternalCountHandler),
     ])

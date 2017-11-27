@@ -69,14 +69,14 @@ class NRTransactionCoroutineWrapper(ObjectProxy):
 
             self._nr_transaction = txn
 
-            if txn._settings:
+            if txn.enabled:
                 txn.__enter__()
                 txn.drop_transaction()
 
         txn = self._nr_transaction
 
         # transaction may not be active
-        if not txn._settings:
+        if not txn.enabled:
             return self.__wrapped__.send(value)
 
         import aiohttp.web as _web
@@ -123,7 +123,7 @@ class NRTransactionCoroutineWrapper(ObjectProxy):
         txn = self._nr_transaction
 
         # transaction may not be active
-        if not txn._settings:
+        if not txn.enabled:
             return self.__wrapped__.throw(*args, **kwargs)
 
         import aiohttp.web as _web
@@ -174,7 +174,7 @@ class NRTransactionCoroutineWrapper(ObjectProxy):
         txn = self._nr_transaction
 
         # transaction may not be active
-        if not txn._settings:
+        if not txn.enabled:
             return self.__wrapped__.close()
 
         txn.save_transaction()

@@ -1,5 +1,5 @@
 import asyncio
-from aiohttp import web
+from aiohttp import web, WSMsgType
 
 
 @asyncio.coroutine
@@ -69,6 +69,22 @@ class KnownErrorView(web.View):
     delete = _respond
 
 
+@asyncio.coroutine
+def websocket_handler(request):
+
+    ws = web.WebSocketResponse()
+    yield from ws.prepare(request)
+
+    # receive messages for all eternity!
+    # (or until the client closes the socket)
+    while not ws.closed:
+        msg = yield from ws.receive()
+        if msg.type == WSMsgType.TEXT:
+            ws.send_str('/' + msg.data)
+
+    return ws
+
+
 def make_app(middlewares=None, loop=None):
     app = web.Application(middlewares=middlewares, loop=loop)
     app.router.add_route('*', '/coro', index)
@@ -78,5 +94,6 @@ def make_app(middlewares=None, loop=None):
     app.router.add_route('*', '/non_500_error', non_500_error)
     app.router.add_route('*', '/raise_404', raise_404)
     app.router.add_route('*', '/hang', hang)
+    app.router.add_route('*', '/ws', websocket_handler)
 
     return app

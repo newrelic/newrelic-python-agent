@@ -1,6 +1,12 @@
 unreleased
 ----------
 
+- Servicing aiohttp websocket requests results in an application crash
+
+  Servicing a websocket request in an aiohttp application may have resulted in
+  an application crash when using the New Relic python agent. The application
+  will now operate as expected when handling a websocket request.
+
 - Ignore incomplete aiohttp transactions
 
   In aiohttp, connections can be terminated prior to the HTTP response being
@@ -16,9 +22,9 @@ unreleased
 
 - Fix to include HTTP status for Tornado transactions
 
-  HTTP status would silently fail to be added to Tornado transactions. Now
-  it is recorded properly so that it is visible in RPM and queryable in
-  Insights.
+  HTTP status would fail to be added to Tornado transaction events and
+  transaction traces. Now http status is automatically added to Tornado
+  transaction events in Insights and transaction traces in APM.
 
 
 2.96.0.80 (2017-10-16)

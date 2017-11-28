@@ -4,6 +4,7 @@ from newrelic.api.transaction import current_transaction
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.common.object_names import callable_name
 
+
 def _nr_wrapper_APIView_dispatch_(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
@@ -22,7 +23,8 @@ def _nr_wrapper_APIView_dispatch_(wrapped, instance, args, kwargs):
     else:
         handler = view.http_method_not_allowed
 
-    view_func_callable_name = getattr(view, '_nr_view_func_callable_name', None)
+    view_func_callable_name = getattr(view, '_nr_view_func_callable_name',
+            None)
     if view_func_callable_name:
         if handler == view.http_method_not_allowed:
             name = '%s.%s' % (view_func_callable_name,
@@ -37,6 +39,7 @@ def _nr_wrapper_APIView_dispatch_(wrapped, instance, args, kwargs):
     with FunctionTrace(transaction, name):
         return wrapped(*args, **kwargs)
 
+
 @function_wrapper
 def _nr_wrapper_api_view_decorator_(wrapped, instance, args, kwargs):
     def _bind_params(func, *args, **kwargs):
@@ -49,14 +52,17 @@ def _nr_wrapper_api_view_decorator_(wrapped, instance, args, kwargs):
 
     return view
 
+
 def _nr_wrapper_api_view_(wrapped, instance, args, kwargs):
     decorator = wrapped(*args, **kwargs)
     decorator = _nr_wrapper_api_view_decorator_(decorator)
     return decorator
 
+
 def instrument_rest_framework_views(module):
     wrap_function_wrapper(module, 'APIView.dispatch',
             _nr_wrapper_APIView_dispatch_)
+
 
 def instrument_rest_framework_decorators(module):
     wrap_function_wrapper(module, 'api_view',

@@ -1,6 +1,10 @@
 unreleased
 ----------
 
+- Exceptions handled by Django REST Framework are now recorded
+
+  ... I'm not sure what to say here, please help!
+
 - Servicing aiohttp websocket requests results in an application crash
 
   Servicing a websocket request in an aiohttp application may have resulted in

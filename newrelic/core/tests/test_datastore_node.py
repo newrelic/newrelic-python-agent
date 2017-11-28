@@ -32,7 +32,7 @@ _ds_node = newrelic.core.datastore_node.DatastoreNode(
         host='localhost',
         port_path_or_id='1234',
         database_name='bar',
-        async=False)
+        is_async=False)
 
 
 def test_instance_hostname():

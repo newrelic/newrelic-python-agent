@@ -20,7 +20,7 @@ class TimeTrace(object):
         self.exclusive = 0.0
         self.activated = False
         self.exited = False
-        self.async = False
+        self.is_async = False
         self.has_async_children = False
         self.min_child_start_time = float('inf')
         self.exc_data = (None, None, None)
@@ -164,7 +164,7 @@ class TimeTrace(object):
 
         # Check to see if we're async
         if parent.exited or parent.has_async_children:
-            self.async = True
+            self.is_async = True
 
         # Give chance for derived class to finalize any data in
         # this object instance. The transaction is passed as a
@@ -238,7 +238,7 @@ class TimeTrace(object):
 
     def process_child(self, node):
         self.children.append(node)
-        if node.async:
+        if node.is_async:
 
             # record the lowest start time
             self.min_child_start_time = min(self.min_child_start_time,

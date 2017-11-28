@@ -35,7 +35,7 @@ _DatabaseNode = namedtuple('_DatabaseNode',
         'duration', 'exclusive', 'stack_trace', 'sql_format',
         'connect_params', 'cursor_params', 'sql_parameters',
         'execute_params', 'host', 'port_path_or_id', 'database_name',
-        'async'])
+        'is_async'])
 
 
 

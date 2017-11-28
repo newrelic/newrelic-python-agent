@@ -7,7 +7,7 @@ from newrelic.api.time_trace import TimeTrace
 
 class SimpleNode(object):
     def __init__(self, is_async, start_time, end_time):
-        self.async = is_async
+        self.is_async = is_async
         self.start_time = start_time
         self.end_time = end_time
         self.duration = self.end_time - self.start_time

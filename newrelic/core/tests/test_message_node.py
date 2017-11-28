@@ -11,7 +11,7 @@ _ms_node = newrelic.core.message_node.MessageNode(
         destination_type=None,
         destination_name=None,
         params={'hello': True},
-        async=False)
+        is_async=False)
 
 
 def test_library_property():

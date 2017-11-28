@@ -687,14 +687,15 @@ def validate_custom_parameters(required_params=[], forgone_params=[]):
 
 def validate_synthetics_event(required_attrs=[], forgone_attrs=[],
         should_exist=True):
+
+    failed = []
+
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
     def _validate_synthetics_event(wrapped, instance, args, kwargs):
+        result = wrapped(*args, **kwargs)
+
         try:
-            result = wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
             if not should_exist:
                 assert instance.synthetics_events == []
             else:
@@ -724,10 +725,21 @@ def validate_synthetics_event(required_attrs=[], forgone_attrs=[],
                 for name, value in forgone_attrs:
                     assert name not in flat_event, ('name=%r, value=%r,'
                         ' event=%r' % (name, value, flat_event))
+        except Exception as e:
+            failed.append(e)
 
         return result
 
-    return _validate_synthetics_event
+    @function_wrapper
+    def wrapper(wrapped, instance, args, kwargs):
+        _new_wrapper = _validate_synthetics_event(wrapped)
+        result = _new_wrapper(*args, **kwargs)
+        if failed:
+            e = failed.pop()
+            raise e
+        return result
+
+    return wrapper
 
 
 def validate_database_duration():

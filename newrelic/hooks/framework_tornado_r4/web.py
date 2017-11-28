@@ -40,6 +40,13 @@ def _get_environ(request):
     except:
         pass
 
+    for header, value in request.headers.items():
+        if header in ('Content-Type', 'Content-Length'):
+            wsgi_name = header.replace('-', '_').upper()
+        else:
+            wsgi_name = 'HTTP_' + header.replace('-', '_').upper()
+        environ[wsgi_name] = value
+
     return environ
 
 
@@ -55,6 +62,7 @@ def _nr_request_handler_init(wrapped, instance, args, kwargs):
         return request
 
     request = _bind_params(*args, **kwargs)
+    environ = _get_environ(request)
 
     if request.method not in instance.SUPPORTED_METHODS:
         # If the method isn't one of the supported ones, then we expect the

@@ -1,6 +1,7 @@
 import pytest
 from testing_support.fixtures import (make_cross_agent_headers,
-        override_application_settings, validate_transaction_event_attributes)
+        override_application_settings, validate_transaction_event_attributes,
+        validate_transaction_metrics)
 
 ENCODING_KEY = '1234567890123456789012345678901234567890'
 
@@ -65,3 +66,20 @@ def test_cat_headers_not_inserted_cases(app, status_code):
             (status_code, client_cross_process_id, txn_header))
     assert response.code == status_code
     assert 'X-NewRelic-App-Data' not in list(response.headers.keys())
+
+
+@override_application_settings(_custom_settings)
+@validate_transaction_metrics('_target_application:SimpleHandler.get',
+        rollup_metrics=[('ClientApplication/1#1/all', 1)])
+@validate_transaction_event_attributes(
+    required_params={'agent': [], 'user': [], 'intrinsic': []},
+    forgone_params={'agent': [], 'user': [], 'intrinsic': []},
+    exact_attrs={'agent': {}, 'user': {},
+        'intrinsic': {'nr.referringTransactionGuid': 'b854df4feb2b1f06'}},
+)
+def test_inbound_cat_metrics_and_intrinsics(app):
+    payload = ['b854df4feb2b1f06', False, '7e249074f277923d', '5d2957be']
+    headers = make_cross_agent_headers(payload, ENCODING_KEY, '1#1')
+
+    response = app.fetch('/simple/fast', headers=headers)
+    assert response.code == 200

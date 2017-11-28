@@ -5,12 +5,21 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.core.config import ignore_status_code
 from newrelic.api.transaction_context import TransactionContext
 from newrelic.common.object_wrapper import (wrap_function_wrapper, ObjectProxy,
-        function_wrapper, _NRBoundFunctionWrapper)
+        function_wrapper)
 
 from newrelic.hooks.framework_tornado_r4.utils import (
         _iscoroutinefunction_tornado, _iscoroutinefunction_native)
 
 _logger = logging.getLogger(__name__)
+_instrumented = set()
+
+
+def _wrap_if_not_wrapped(obj, attr, wrapper):
+    wrapped = getattr(obj, attr)
+    if not (hasattr(wrapped, '__wrapped__') and
+            wrapped.__wrapped__ in _instrumented):
+        setattr(obj, attr, wrapper(wrapped))
+        _instrumented.add(wrapped)
 
 
 def _nr_rulerouter_process_rule(wrapped, instance, args, kwargs):
@@ -47,21 +56,17 @@ def _wrap_handlers(rule):
 
     elif (not inspect.isclass(handler) or
             not issubclass(handler, RequestHandler)):
-        # This handler probably does not inherit from RequestHandler so we
-        # ignore it. Tornado supports non class based views and this is
-        # probably one of those. It has also been observed that tornado's
-        # internals will pass class instances as well.
+        # This handler does not inherit from RequestHandler so we ignore it.
+        # Tornado supports non class based views and this is probably one of
+        # those. It has also been observed that tornado's internals will pass
+        # class instances as well.
         return
 
     # Wrap on_finish which will end transactions
-    on_finish = handler.on_finish
-    if not isinstance(on_finish, _NRBoundFunctionWrapper):
-        setattr(handler, 'on_finish', _nr_request_end(on_finish))
+    _wrap_if_not_wrapped(handler, 'on_finish', _nr_request_end)
 
     # wrap log_exception which records exceptions
-    log_exception = handler.log_exception
-    if not isinstance(log_exception, _NRBoundFunctionWrapper):
-        setattr(handler, 'log_exception', _nr_record_exception(log_exception))
+    _wrap_if_not_wrapped(handler, 'log_exception', _nr_record_exception)
 
     if not hasattr(handler, 'SUPPORTED_METHODS'):
         return
@@ -73,8 +78,7 @@ def _wrap_handlers(rule):
         if not method:
             continue
 
-        if not isinstance(method, _NRBoundFunctionWrapper):
-            setattr(handler, request_method.lower(), _nr_method(method))
+        _wrap_if_not_wrapped(handler, request_method.lower(), _nr_method)
 
 
 def _bind_log_exception(typ, value, tb, *args, **kwargs):

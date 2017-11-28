@@ -1,3 +1,4 @@
+import pytest
 import webtest
 
 from testing_support.fixtures import (validate_transaction_metrics,
@@ -82,6 +83,32 @@ def test_application_view_error():
     test_application.get('/view_error/', status=500)
 
 
+_test_application_view_handle_error_scoped_metrics = list(_scoped_metrics)
+_test_application_view_handle_error_scoped_metrics.append(
+        ('Function/urls:ViewHandleError.get', 1))
+
+
+@pytest.mark.parametrize('status,should_record', [(418, True), (200, False)])
+@pytest.mark.parametrize('use_global_exc_handler', [True, False])
+def test_application_view_handle_error(status, should_record,
+        use_global_exc_handler):
+    errors = ['urls:Error'] if should_record else []
+
+    @validate_transaction_errors(errors=errors)
+    @validate_transaction_metrics('urls:ViewHandleError.get',
+        scoped_metrics=_test_application_view_handle_error_scoped_metrics)
+    def _test():
+        response = test_application.get(
+                '/view_handle_error/%s/%s/' % (status, use_global_exc_handler),
+                status=status)
+        if use_global_exc_handler:
+            response.mustcontain('exception was handled global')
+        else:
+            response.mustcontain('exception was handled not global')
+
+    _test()
+
+
 _test_api_view_view_name_get = 'urls:wrapped_view.get'
 _test_api_view_scoped_metrics_get = list(_scoped_metrics)
 _test_api_view_scoped_metrics_get.append(
@@ -102,7 +129,8 @@ _test_api_view_scoped_metrics_post.append(
         ('Function/%s' % _test_api_view_view_name_post, 1))
 
 
-@validate_transaction_errors(errors=[])
+@validate_transaction_errors(
+        errors=['rest_framework.exceptions:MethodNotAllowed'])
 @validate_transaction_metrics(_test_api_view_view_name_post,
     scoped_metrics=_test_api_view_scoped_metrics_post)
 def test_api_view_method_not_allowed():

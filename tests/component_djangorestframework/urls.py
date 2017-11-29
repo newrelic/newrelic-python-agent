@@ -6,6 +6,7 @@ except ImportError:
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.settings import APISettings, api_settings
 
 
 class View(APIView):
@@ -23,19 +24,27 @@ class ViewError(APIView):
 
 
 class ViewHandleError(APIView):
+    settings = APISettings(api_settings.user_settings,
+            api_settings.defaults, api_settings.import_strings)
+
     def get(self, request, status, global_exc):
         self.status = int(status)
         self.global_exc = global_exc == 'True'
         raise Error('omg cats')
 
-    def get_exception_handler(self):
-        return self._exception_handler
-
-    def _exception_handler(self, exc, context):
+    def _exception_handler(self, exc, context=None):
+        if context:
+            status = int(context['kwargs']['status'])
+        else:
+            status = self.status
         return Response([{'response': 'exception was handled global'}],
-                status=self.status)
+                status=status)
+
+    def get_exception_handler(self):
+        return self.settings.EXCEPTION_HANDLER
 
     def handle_exception(self, exc):
+        self.settings.EXCEPTION_HANDLER = self._exception_handler
         if self.global_exc:
             return super(ViewHandleError, self).handle_exception(exc)
         else:
@@ -52,7 +61,7 @@ urlpatterns = patterns('',
     url(r'^$', 'views.index', name='index'),
     url(r'^view/$', View.as_view()),
     url(r'^view_error/$', ViewError.as_view()),
-    url(r'^view_handle_error/(?P<status>\w+)/(?P<global_exc>\w+)/$',
+    url(r'^view_handle_error/(?P<status>\d+)/(?P<global_exc>\w+)/$',
         ViewHandleError.as_view()),
     url(r'^api_view/$', wrapped_view),
 )

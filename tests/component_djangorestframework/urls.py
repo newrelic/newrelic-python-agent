@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 
 class View(APIView):
     def get(self, request, format=None):
-        return Response([{"a": "b"}])
+        return Response([{'message': 'restframework view response'}])
 
 
 class Error(Exception):

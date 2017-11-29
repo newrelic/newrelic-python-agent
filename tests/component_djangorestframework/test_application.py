@@ -1,8 +1,11 @@
 import pytest
 import webtest
 
+from newrelic.core.config import global_settings
+
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors)
+    validate_transaction_errors, override_generic_settings,
+    function_not_called)
 
 from wsgi import application
 
@@ -69,6 +72,7 @@ if DJANGO_VERSION >= (1, 5):
 def test_application_view():
     response = test_application.get('/view/')
     assert response.status_int == 200
+    response.mustcontain('restframework view response')
 
 
 _test_application_view_error_scoped_metrics = list(_scoped_metrics)
@@ -135,3 +139,17 @@ _test_api_view_scoped_metrics_post.append(
     scoped_metrics=_test_api_view_scoped_metrics_post)
 def test_api_view_method_not_allowed():
     test_application.post('/api_view/', status=405)
+
+
+def test_application_view_agent_disabled():
+    settings = global_settings()
+
+    @override_generic_settings(settings, {'enabled': False})
+    @function_not_called('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _test():
+        response = test_application.get('/view/')
+        assert response.status_int == 200
+        response.mustcontain('restframework view response')
+
+    _test()

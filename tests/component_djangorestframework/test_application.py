@@ -1,7 +1,11 @@
+import pytest
 import webtest
 
+from newrelic.core.config import global_settings
+
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors)
+    validate_transaction_errors, override_generic_settings,
+    function_not_called)
 
 from wsgi import application
 
@@ -11,12 +15,11 @@ DJANGO_VERSION = tuple(map(int, django.get_version().split('.')[:2]))
 
 test_application = webtest.TestApp(application)
 
-_test_application_index_scoped_metrics = [
+_scoped_metrics = [
         ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
         ('Python/WSGI/Application', 1),
         ('Python/WSGI/Response', 1),
         ('Python/WSGI/Finalize', 1),
-        ('Function/views:index', 1),
         (('Function/django.middleware.common:'
                 'CommonMiddleware.process_request'), 1),
         (('Function/django.contrib.sessions.middleware:'
@@ -38,6 +41,9 @@ _test_application_index_scoped_metrics = [
         (('Function/django.middleware.common:'
                 'CommonMiddleware.process_response'), 1),
 ]
+
+_test_application_index_scoped_metrics = list(_scoped_metrics)
+_test_application_index_scoped_metrics.append(('Function/views:index', 1))
 
 if DJANGO_VERSION >= (1, 5):
     _test_application_index_scoped_metrics.extend([
@@ -52,33 +58,8 @@ def test_application_index():
     response.mustcontain('INDEX RESPONSE')
 
 
-_test_application_view_scoped_metrics = [
-        ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
-        ('Python/WSGI/Application', 1),
-        ('Python/WSGI/Response', 1),
-        ('Python/WSGI/Finalize', 1),
-        ('Function/urls:View.get', 1),
-        (('Function/django.middleware.common:'
-                'CommonMiddleware.process_request'), 1),
-        (('Function/django.contrib.sessions.middleware:'
-                'SessionMiddleware.process_request'), 1),
-        (('Function/django.contrib.auth.middleware:'
-                'AuthenticationMiddleware.process_request'), 1),
-        (('Function/django.contrib.messages.middleware:'
-                'MessageMiddleware.process_request'), 1),
-        (('Function/django.core.urlresolvers:'
-                'RegexURLResolver.resolve'), 1),
-        (('Function/django.middleware.csrf:'
-                'CsrfViewMiddleware.process_view'), 1),
-        (('Function/django.contrib.messages.middleware:'
-                'MessageMiddleware.process_response'), 1),
-        (('Function/django.middleware.csrf:'
-                'CsrfViewMiddleware.process_response'), 1),
-        (('Function/django.contrib.sessions.middleware:'
-                'SessionMiddleware.process_response'), 1),
-        (('Function/django.middleware.common:'
-                'CommonMiddleware.process_response'), 1),
-]
+_test_application_view_scoped_metrics = list(_scoped_metrics)
+_test_application_view_scoped_metrics.append(('Function/urls:View.get', 1))
 
 if DJANGO_VERSION >= (1, 5):
     _test_application_view_scoped_metrics.extend([
@@ -91,35 +72,12 @@ if DJANGO_VERSION >= (1, 5):
 def test_application_view():
     response = test_application.get('/view/')
     assert response.status_int == 200
+    response.mustcontain('restframework view response')
 
 
-_test_application_view_error_scoped_metrics = [
-        ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
-        ('Python/WSGI/Application', 1),
-        ('Python/WSGI/Response', 1),
-        ('Python/WSGI/Finalize', 1),
-        ('Function/urls:ViewError.get', 1),
-        (('Function/django.middleware.common:'
-                'CommonMiddleware.process_request'), 1),
-        (('Function/django.contrib.sessions.middleware:'
-                'SessionMiddleware.process_request'), 1),
-        (('Function/django.contrib.auth.middleware:'
-                'AuthenticationMiddleware.process_request'), 1),
-        (('Function/django.contrib.messages.middleware:'
-                'MessageMiddleware.process_request'), 1),
-        (('Function/django.core.urlresolvers:'
-                'RegexURLResolver.resolve'), 1),
-        (('Function/django.middleware.csrf:'
-                'CsrfViewMiddleware.process_view'), 1),
-        (('Function/django.contrib.messages.middleware:'
-                'MessageMiddleware.process_response'), 1),
-        (('Function/django.middleware.csrf:'
-                'CsrfViewMiddleware.process_response'), 1),
-        (('Function/django.contrib.sessions.middleware:'
-                'SessionMiddleware.process_response'), 1),
-        (('Function/django.middleware.common:'
-                'CommonMiddleware.process_response'), 1),
-]
+_test_application_view_error_scoped_metrics = list(_scoped_metrics)
+_test_application_view_error_scoped_metrics.append(
+        ('Function/urls:ViewError.get', 1))
 
 
 @validate_transaction_errors(errors=['urls:Error'])
@@ -129,35 +87,36 @@ def test_application_view_error():
     test_application.get('/view_error/', status=500)
 
 
-_test_api_view_view_name_get = 'urls:wrapped_view.get'
+_test_application_view_handle_error_scoped_metrics = list(_scoped_metrics)
+_test_application_view_handle_error_scoped_metrics.append(
+        ('Function/urls:ViewHandleError.get', 1))
 
-_test_api_view_scoped_metrics_get = [
-        ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
-        ('Python/WSGI/Application', 1),
-        ('Python/WSGI/Response', 1),
-        ('Python/WSGI/Finalize', 1),
-        ('Function/%s' % _test_api_view_view_name_get, 1),
-        (('Function/django.middleware.common:'
-                'CommonMiddleware.process_request'), 1),
-        (('Function/django.contrib.sessions.middleware:'
-                'SessionMiddleware.process_request'), 1),
-        (('Function/django.contrib.auth.middleware:'
-                'AuthenticationMiddleware.process_request'), 1),
-        (('Function/django.contrib.messages.middleware:'
-                'MessageMiddleware.process_request'), 1),
-        (('Function/django.core.urlresolvers:'
-                'RegexURLResolver.resolve'), 1),
-        (('Function/django.middleware.csrf:'
-                'CsrfViewMiddleware.process_view'), 1),
-        (('Function/django.contrib.messages.middleware:'
-                'MessageMiddleware.process_response'), 1),
-        (('Function/django.middleware.csrf:'
-                'CsrfViewMiddleware.process_response'), 1),
-        (('Function/django.contrib.sessions.middleware:'
-                'SessionMiddleware.process_response'), 1),
-        (('Function/django.middleware.common:'
-                'CommonMiddleware.process_response'), 1),
-]
+
+@pytest.mark.parametrize('status,should_record', [(418, True), (200, False)])
+@pytest.mark.parametrize('use_global_exc_handler', [True, False])
+def test_application_view_handle_error(status, should_record,
+        use_global_exc_handler):
+    errors = ['urls:Error'] if should_record else []
+
+    @validate_transaction_errors(errors=errors)
+    @validate_transaction_metrics('urls:ViewHandleError.get',
+        scoped_metrics=_test_application_view_handle_error_scoped_metrics)
+    def _test():
+        response = test_application.get(
+                '/view_handle_error/%s/%s/' % (status, use_global_exc_handler),
+                status=status)
+        if use_global_exc_handler:
+            response.mustcontain('exception was handled global')
+        else:
+            response.mustcontain('exception was handled not global')
+
+    _test()
+
+
+_test_api_view_view_name_get = 'urls:wrapped_view.get'
+_test_api_view_scoped_metrics_get = list(_scoped_metrics)
+_test_api_view_scoped_metrics_get.append(
+        ('Function/%s' % _test_api_view_view_name_get, 1))
 
 
 @validate_transaction_errors(errors=[])
@@ -169,38 +128,28 @@ def test_api_view_get():
 
 
 _test_api_view_view_name_post = 'urls:wrapped_view.http_method_not_allowed'
-
-_test_api_view_scoped_metrics_post = [
-        ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
-        ('Python/WSGI/Application', 1),
-        ('Python/WSGI/Response', 1),
-        ('Python/WSGI/Finalize', 1),
-        ('Function/%s' % _test_api_view_view_name_post, 1),
-        (('Function/django.middleware.common:'
-                'CommonMiddleware.process_request'), 1),
-        (('Function/django.contrib.sessions.middleware:'
-                'SessionMiddleware.process_request'), 1),
-        (('Function/django.contrib.auth.middleware:'
-                'AuthenticationMiddleware.process_request'), 1),
-        (('Function/django.contrib.messages.middleware:'
-                'MessageMiddleware.process_request'), 1),
-        (('Function/django.core.urlresolvers:'
-                'RegexURLResolver.resolve'), 1),
-        (('Function/django.middleware.csrf:'
-                'CsrfViewMiddleware.process_view'), 1),
-        (('Function/django.contrib.messages.middleware:'
-                'MessageMiddleware.process_response'), 1),
-        (('Function/django.middleware.csrf:'
-                'CsrfViewMiddleware.process_response'), 1),
-        (('Function/django.contrib.sessions.middleware:'
-                'SessionMiddleware.process_response'), 1),
-        (('Function/django.middleware.common:'
-                'CommonMiddleware.process_response'), 1),
-]
+_test_api_view_scoped_metrics_post = list(_scoped_metrics)
+_test_api_view_scoped_metrics_post.append(
+        ('Function/%s' % _test_api_view_view_name_post, 1))
 
 
-@validate_transaction_errors(errors=[])
+@validate_transaction_errors(
+        errors=['rest_framework.exceptions:MethodNotAllowed'])
 @validate_transaction_metrics(_test_api_view_view_name_post,
     scoped_metrics=_test_api_view_scoped_metrics_post)
 def test_api_view_method_not_allowed():
     test_application.post('/api_view/', status=405)
+
+
+def test_application_view_agent_disabled():
+    settings = global_settings()
+
+    @override_generic_settings(settings, {'enabled': False})
+    @function_not_called('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _test():
+        response = test_application.get('/view/')
+        assert response.status_int == 200
+        response.mustcontain('restframework view response')
+
+    _test()

@@ -81,6 +81,7 @@ packages = [
         "newrelic.hooks",
         "newrelic.hooks.framework_tornado",
         "newrelic.hooks.framework_tornado_r3",
+        "newrelic.hooks.framework_tornado_r4",
         "newrelic.network",
         "newrelic/packages",
         "newrelic/packages/requests",

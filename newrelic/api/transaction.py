@@ -272,17 +272,26 @@ class Transaction(object):
         if not self.enabled:
             return
 
+        if self._transaction_id != id(self):
+            return
+
+        if not self._settings:
+            return
+
         # Ensure that we are actually back at the top of
         # transaction call stack. Assume that it is an
         # instrumentation error and return with hope that
         # will recover later.
 
-        if not isinstance(self.current_node, Sentinel):
+        for _ in range(self._settings.agent_limits.max_outstanding_traces):
+            if isinstance(self.current_node, Sentinel):
+                break
+            self.current_node.__exit__(None, None, None)
+        else:
             _logger.error('Transaction ended but current_node is not Sentinel.'
                     ' Current node is %r. Report this issue to New Relic '
                     'support.\n%s', self.current_node, ''.join(
                     traceback.format_stack()[:-1]))
-
             return
 
         # Mark as stopped and drop the transaction from
@@ -297,12 +306,6 @@ class Transaction(object):
         # while original transaction was being recorded.
 
         self._state = self.STATE_STOPPED
-
-        if self._transaction_id != id(self):
-            return
-
-        if not self._settings:
-            return
 
         if not self._dead:
             try:

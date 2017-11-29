@@ -55,6 +55,7 @@ _FEATURE_FLAGS = set([
     'tornado.instrumentation.r1',
     'tornado.instrumentation.r2',
     'tornado.instrumentation.r3',
+    'tornado.instrumentation.r4',
     'django.instrumentation.inclusion-tags.r1',
 ])
 
@@ -451,6 +452,8 @@ def _process_configuration(section):
                      'getint', None)
     _process_setting(section, 'agent_limits.data_compression_level',
                      'getint', None)
+    _process_setting(section, 'agent_limits.max_outstanding_traces',
+                    'getint', None)
     _process_setting(section, 'console.listener_socket',
                      'get', _map_console_listener_socket)
     _process_setting(section, 'console.allow_interpreter_cmd',
@@ -2120,6 +2123,20 @@ def _process_module_builtin_defaults():
         _process_module_definition('tornado.gen',
                 'newrelic.hooks.framework_tornado_r1',
                 'instrument_tornado_gen')
+
+    elif 'tornado.instrumentation.r4' in _settings.feature_flag:
+        _process_module_definition('tornado.web',
+                'newrelic.hooks.framework_tornado_r4.web',
+                'instrument_tornado_web')
+        _process_module_definition('tornado.routing',
+                'newrelic.hooks.framework_tornado_r4.routing',
+                'instrument_tornado_routing')
+        _process_module_definition('tornado.httpclient',
+                'newrelic.hooks.framework_tornado_r4.httpclient',
+                'instrument_tornado_httpclient')
+        _process_module_definition('tornado.httputil',
+                'newrelic.hooks.framework_tornado_r4.httputil',
+                'instrument_tornado_httputil')
 
     else:
         _process_module_definition('tornado.wsgi',

@@ -1,9 +1,12 @@
 unreleased
 ----------
 
-- Exceptions handled by Django REST Framework are now recorded
+- Enabled reporting of handled exceptions in Django REST Framework
 
-  ... I'm not sure what to say here, please help!
+  Exceptions handled by Django REST Framework are now reported if the resulting
+  response code is not ignored (see
+  https://docs.newrelic.com/docs/agents/python-agent/configuration/python-agent-configuration#error-ignore-status-codes
+  for details on ignored status codes).
 
 - Servicing aiohttp websocket requests results in an application crash
 

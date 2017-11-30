@@ -1,8 +1,46 @@
-unreleased
-----------
+2.98.0 (2017-11-30)
+-------------------
 
-2.96.0.80 (2017-10-16)
-----------------------
+- Enabled reporting of handled exceptions in Django REST Framework
+
+  Exceptions handled by Django REST Framework are now reported if the resulting
+  response code is not ignored (see
+  https://docs.newrelic.com/docs/agents/python-agent/configuration/python-agent-configuration#error-ignore-status-codes
+  for details on ignored status codes).
+
+- Servicing aiohttp websocket requests results in an application crash
+
+  Servicing a websocket request in an aiohttp application may have resulted in
+  an application crash when using the New Relic python agent. The application
+  will now operate as expected when handling a websocket request.
+
+- Ignore incomplete aiohttp transactions
+
+  In aiohttp, connections can be terminated prior to the HTTP response being
+  generated and sent. In those cases, the request handler may be cancelled.
+  These transactions are no longer reported.
+
+- Add support for the error_collector.ignore_status_codes setting in Django
+
+  Ignoring exceptions in Django was previously limited to the
+  error_collector.ignore_errors configuration option. Ignoring exceptions by
+  response status code is now supported for Django through the use of the
+  error_collector.ignore_status_codes configuration option.
+
+- Fix to include HTTP status for Tornado transactions
+
+  HTTP status would fail to be added to Tornado transaction events and
+  transaction traces. Now http status is automatically added to Tornado
+  transaction events in Insights and transaction traces in APM.
+
+- Fix reporting of concurrent external requests in Tornado
+
+  External requests that execute in parallel in a tornado application may
+  not have been recorded. This issue has been addressed.
+
+
+2.96.0 (2017-10-16)
+-------------------
 
 - Add instrumentation for aiohttp framework
 
@@ -29,8 +67,8 @@ unreleased
   an application crash. This issue has now been fixed.
 
 
-2.94.0.79 (2017-09-19)
-----------------------
+2.94.0 (2017-09-19)
+-------------------
 
 - Add instrumentation for aiohttp client
 
@@ -47,8 +85,8 @@ unreleased
   application crash. The agent now correctly handles psycopg2 Composable
   objects.
 
-2.92.0.78 (2017-09-06)
-----------------------
+2.92.0 (2017-09-06)
+-------------------
 
 - Add API for cross application tracing of non-HTTP external services
 

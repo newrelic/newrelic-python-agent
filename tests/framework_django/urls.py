@@ -8,6 +8,9 @@ import views
 urlpatterns = [
     url(r'^$', views.index, name='index'),
     url(r'^exception$', views.exception, name='exception'),
+    url(r'^middleware_410$', views.middleware_410, name='middleware_410'),
+    url(r'^permission_denied$', views.permission_denied,
+            name='permission_denied'),
     url(r'^cbv$', views.MyView.as_view()),
     url(r'^deferred_cbv$', views.deferred_cbv),
     url(r'^html_insertion$', views.html_insertion, name='html_insertion'),

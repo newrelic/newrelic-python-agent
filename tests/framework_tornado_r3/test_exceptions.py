@@ -18,6 +18,7 @@ from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
     tornado_validate_errors, tornado_validate_transaction_cache_empty,
     tornado_validate_unscoped_metrics,
+    tornado_validate_transaction_status,
     tornado_validate_time_transaction_metrics)
 
 from _test_async_application import (AsyncLateExceptionRequestHandler,
@@ -52,6 +53,13 @@ class AllTests(object):
             'CallbackExceptionRequestHandler.get', 1),
             ('Function/_test_async_application:'
             'CallbackExceptionRequestHandler.counter_callback', 5)]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_transaction_status(500)
+    def test_status_code_bad(self):
+        response = self.fetch_exception('/sync-exception')
+        self.assertEqual(response.code, 500)
+        self.assertEqual(response.reason, INTERNAL_SERVER_ERROR)
 
     @tornado_validate_errors(errors=[select_python_version(
             py2='exceptions:NameError', py3='builtins:NameError')])

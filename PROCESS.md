@@ -292,11 +292,11 @@ the tags to Github master.
 
 18. Upload from Artifactory to Amazon S3
 
-  1. Go back to Jenkins, and select the other project, [deploy-to-s3][deploy-s3]
-  2. From the menu on the left select "Build with Parameters"
-  3. From the drop down menu `S3_RELEASE_TYPE`, select "release". Type in the version number, including the build in the `AGENT_VERSION` box.
-  4. Push the build button, be sure you are wearing the celebration hat
-  5. Make sure the job finishes successfully
+    1. Go back to Jenkins, and select the other project, [deploy-to-s3][deploy-s3]
+    2. From the menu on the left select "Build with Parameters"
+    3. From the drop down menu `S3_RELEASE_TYPE`, select "release". Type in the version number, including the build in the `AGENT_VERSION` box.
+    4. Push the build button, be sure you are wearing the celebration hat
+    5. Make sure the job finishes successfully
 
 [deploy-s3]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Deploy/job/deploy-to-s3/
 

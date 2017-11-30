@@ -5,6 +5,7 @@ from testing_support.fixtures import (code_coverage_fixture,
 
 _coverage_source = [
     'newrelic.hooks.framework_django',
+    'newrelic.hooks.component_djangorestframework',
 ]
 
 code_coverage = code_coverage_fixture(source=_coverage_source)

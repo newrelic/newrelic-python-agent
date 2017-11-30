@@ -605,6 +605,18 @@
             "New Relic"
         ]
     },
+    "newrelic/api/tests/test_transaction.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/test_transaction_context.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/tests/test_transaction_name.py": {
         "hash": "n/a",
         "libraries": [
@@ -642,6 +654,12 @@
         ]
     },
     "newrelic/api/transaction.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/transaction_context.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -1698,6 +1716,42 @@
         ]
     },
     "newrelic/hooks/framework_tornado_r3/web.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/framework_tornado_r4/__init__.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/framework_tornado_r4/httputil.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/framework_tornado_r4/routing.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/framework_tornado_r4/utils.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/framework_tornado_r4/httpclient.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/framework_tornado_r4/web.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

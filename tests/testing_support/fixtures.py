@@ -496,7 +496,7 @@ def validate_transaction_metrics(name, group='Function',
     return _validate_wrapper
 
 
-def capture_transaction_metrics(metrics_list):
+def capture_transaction_metrics(metrics_list, full_metrics=None):
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
     @catch_background_exceptions
@@ -507,6 +507,8 @@ def capture_transaction_metrics(metrics_list):
             raise
         else:
             metrics = instance.stats_table
+            if full_metrics is not None:
+                full_metrics.update(metrics)
             for metric in metrics.keys():
                 metrics_list.append(metric)
             metrics_list.sort()
@@ -685,14 +687,15 @@ def validate_custom_parameters(required_params=[], forgone_params=[]):
 
 def validate_synthetics_event(required_attrs=[], forgone_attrs=[],
         should_exist=True):
+
+    failed = []
+
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
     def _validate_synthetics_event(wrapped, instance, args, kwargs):
+        result = wrapped(*args, **kwargs)
+
         try:
-            result = wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
             if not should_exist:
                 assert instance.synthetics_events == []
             else:
@@ -722,10 +725,21 @@ def validate_synthetics_event(required_attrs=[], forgone_attrs=[],
                 for name, value in forgone_attrs:
                     assert name not in flat_event, ('name=%r, value=%r,'
                         ' event=%r' % (name, value, flat_event))
+        except Exception as e:
+            failed.append(e)
 
         return result
 
-    return _validate_synthetics_event
+    @function_wrapper
+    def wrapper(wrapped, instance, args, kwargs):
+        _new_wrapper = _validate_synthetics_event(wrapped)
+        result = _new_wrapper(*args, **kwargs)
+        if failed:
+            e = failed.pop()
+            raise e
+        return result
+
+    return wrapper
 
 
 def validate_database_duration():
@@ -843,10 +857,10 @@ def check_event_attributes(event_data, required_params, forgone_params,
         for param, value in exact_attrs['agent'].items():
             assert agent_attributes[param] == value, (
                     (param, value), agent_attributes)
-        for param, value in exact_attrs['user']:
+        for param, value in exact_attrs['user'].items():
             assert user_attributes[param] == value, (
                     (param, value), user_attributes)
-        for param in exact_attrs['intrinsic']:
+        for param, value in exact_attrs['intrinsic'].items():
             assert intrinsics[param] == value, (
                     (param, value), intrinsics)
 
@@ -1025,6 +1039,8 @@ def validate_tt_collector_json(required_params={},
             assert isinstance(trace[2], six.string_types)  # transaction name
             if trace[2].startswith('WebTransaction'):
                 assert isinstance(trace[3], six.string_types)  # request url
+                # query parameters should not be captured
+                assert '?' not in trace[3]
 
             # trace details -- python agent always uses condensed trace array
 
@@ -1130,22 +1146,27 @@ def validate_tt_collector_json(required_params={},
 
 
 def validate_transaction_trace_attributes(required_params={},
-        forgone_params={}, should_exist=True):
+        forgone_params={}, should_exist=True, url=None):
+
+    failed = []
+
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
     def _validate_transaction_trace_attributes(wrapped, instance, args,
             kwargs):
-        try:
-            result = wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
 
+        result = wrapped(*args, **kwargs)
+
+        try:
             # Now that transaction has been recorded, generate
             # a transaction trace
 
             connections = SQLConnections()
             trace_data = instance.transaction_trace_data(connections)
+
+            if url is not None:
+                trace_url = trace_data[0][3]
+                assert url == trace_url
 
             pack_data = unpack_field(trace_data[0][4])
             assert len(pack_data) == 2
@@ -1157,10 +1178,23 @@ def validate_transaction_trace_attributes(required_params={},
             assert 'agentAttributes' in parameters
 
             check_attributes(parameters, required_params, forgone_params)
+        except AssertionError as e:
+            failed.append(e)
 
         return result
 
-    return _validate_transaction_trace_attributes
+    @function_wrapper
+    def wrapper(wrapped, instance, args, kwargs):
+        _new_wrapper = _validate_transaction_trace_attributes(wrapped)
+        result = _new_wrapper(*args, **kwargs)
+
+        if failed:
+            e = failed.pop()
+            raise e
+
+        return result
+
+    return wrapper
 
 
 def validate_transaction_error_trace_attributes(required_params={},
@@ -2348,7 +2382,7 @@ def code_coverage_fixture(source=['newrelic']):
 
         request.addfinalizer(finalize)
 
-        cov = coverage(source=source)
+        cov = coverage(source=source, branch=True)
         cov.start()
 
     return _code_coverage_fixture
@@ -2469,11 +2503,21 @@ def function_not_called(module, name):
 
     """
 
+    called = []
+
     @transient_function_wrapper(module, name)
     def _function_not_called_(wrapped, instance, args, kwargs):
-        assert False
+        called.append(True)
+        return wrapped(*args, **kwargs)
 
-    return _function_not_called_
+    @function_wrapper
+    def wrapper(wrapped, instance, args, kwargs):
+        new_wrapper = _function_not_called_(wrapped)
+        result = new_wrapper(*args, **kwargs)
+        assert not called
+        return result
+
+    return wrapper
 
 
 def validate_analytics_catmap_data(name, expected_attributes=(),

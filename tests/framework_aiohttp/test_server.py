@@ -6,7 +6,7 @@ from newrelic.core.config import global_settings
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_transaction_errors, validate_transaction_event_attributes,
         count_transactions, override_generic_settings,
-        override_application_settings)
+        override_application_settings, override_ignore_status_codes)
 
 
 BASE_REQUIRED_ATTRS = ['request.headers.contentType',
@@ -94,8 +94,7 @@ def test_error_exception(method, uri, metric_name, error, status, nr_enabled,
                 'intrinsic': {},
             },
         )
-        @override_application_settings({
-                'error_collector.ignore_status_codes': [404]})
+        @override_ignore_status_codes([404])
         def _test():
             aiohttp_app.loop.run_until_complete(fetch())
     else:
@@ -209,5 +208,31 @@ def test_system_response_creates_no_transaction(nr_enabled, aiohttp_app):
         @override_generic_settings(settings, {'enabled': False})
         def _test():
             aiohttp_app.loop.run_until_complete(fetch())
+
+    _test()
+
+
+def test_aborted_connection_creates_no_transaction(aiohttp_app):
+    @asyncio.coroutine
+    def fetch():
+        try:
+            yield from aiohttp_app.client.request('GET', '/hang', timeout=0.1)
+        except asyncio.TimeoutError:
+            try:
+                # Force the client to disconnect (while the server is hanging)
+                yield from aiohttp_app.client.close()
+            # In aiohttp 1.X, this can result in a CancelledError being raised
+            except asyncio.CancelledError:
+                pass
+            return
+
+        assert False, "Request did not time out"
+
+    transactions = []
+
+    @count_transactions(transactions)
+    def _test():
+        aiohttp_app.loop.run_until_complete(fetch())
+        assert len(transactions) == 0
 
     _test()

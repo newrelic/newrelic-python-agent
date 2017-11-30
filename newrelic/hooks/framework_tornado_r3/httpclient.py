@@ -53,6 +53,12 @@ def _nr_wrapper_httpclient_AsyncHTTPClient_fetch_(
 
     transaction._ref_count += 1
     trace.__enter__()
+
+    # Because traces are terminal but can be generated concurrently in
+    # tornado, pop the trace immediately after entering.
+    if trace.transaction and trace.transaction.current_node is trace:
+        trace.transaction._pop_current(trace)
+
     try:
         future = wrapped(req, _cb, _raise_error)
         future.add_done_callback(external_trace_done)

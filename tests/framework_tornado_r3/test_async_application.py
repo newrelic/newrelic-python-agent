@@ -47,6 +47,7 @@ from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
     tornado_validate_time_transaction_metrics,
     tornado_validate_errors, tornado_validate_transaction_cache_empty,
+    tornado_validate_transaction_status,
     tornado_run_validator, tornado_validate_tt_parenting)
 
 from remove_utilization_tester import remove_utilization_tester
@@ -95,6 +96,14 @@ class AllTests(object):
             ('FunctionNode', []),
         ]
     )
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_transaction_status(200)
+    def test_status_code_ok(self):
+        response = self.fetch_response('/')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, HelloRequestHandler.RESPONSE)
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
@@ -668,6 +677,34 @@ class AllTests(object):
 
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, external.RESPONSE)
+
+    # The port number 8989 matches the port number in MockExternalHTTPServer
+    # The count matches the number of requests handler executes after inital
+    # get request.
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+             'AsyncExternalCountHandler.get', 1),
+            ('External/localhost:8989/tornado.httpclient/', 2),
+    ]
+    rollup_metrics = [('External/allWeb', 2), ('External/all', 2)]
+
+    # Test to make sure multiple concurrent requests are handled correctly.
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:AsyncExternalCountHandler.get',
+            scoped_metrics=scoped_metrics,
+            rollup_metrics=rollup_metrics,
+    )
+    def test_multiple_requests(self):
+        port = 8989
+        num_requests = 2
+
+        with MockExternalHTTPServer() as external:
+            response = self.fetch_response('/async-client/%s/%s' % (port,
+                    num_requests))
+
+        assert response.code == 200
 
     # The port number 8989 matches the port number in MockExternalHTTPServer
     scoped_metrics = [('Function/_test_async_application:'

@@ -56,7 +56,7 @@ def test_cat_headers(method, uri, metric_name, inbound_payload,
             assert app_data[0] == cat_id
             assert app_data[1] == ('WebTransaction/Function/%s' % metric_name)
         else:
-            'X-NewRelic-App-Data' not in resp_headers
+            assert 'X-NewRelic-App-Data' not in resp_headers
 
     _custom_settings = {
             'cross_process_id': '1#1',

@@ -371,6 +371,16 @@ def tornado_validate_errors(errors=[], app_exceptions=[],
     return _validate_errors
 
 
+def tornado_validate_transaction_status(status_code):
+    @function_wrapper
+    def _validator(wrapped, instance, args, kwargs):
+        wrapped(*args, **kwargs)
+        transaction_node, _, _ = _RECORDED_TRANSACTIONS[0]
+        assert transaction_node.response_code == status_code
+
+    return _validator
+
+
 def tornado_run_validator(func):
     """Get the transaction_node saved in _RECORDED_TRANSACTIONS[0]
     and run func(transaction_node).

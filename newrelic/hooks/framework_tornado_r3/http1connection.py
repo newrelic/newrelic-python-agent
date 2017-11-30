@@ -20,7 +20,7 @@ def _nr_wrapper_HTTP1Connection_write_headers_(wrapped, instance, args,
     start_line, headers = _bind_params(*args, **kwargs)
 
     try:
-        http_status = start_line[1]
+        http_status = str(start_line[1])
     except:
         cat_headers = []
     else:

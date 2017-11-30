@@ -102,13 +102,13 @@ use(extensions) {
                 blockOnJobs('.*-Reset-Nodes')
 
                 wrappers {
-                    timeout {
-                        // abort if nothing is printed to stdout/stderr
-                        // in 120 seconds
-                        noActivity(120)
-                        abortBuild()
-                    }
-                }
+                     timeout {
+                         // abort if nothing is printed to stdout/stderr
+                         // in 120 seconds
+                         noActivity(120)
+                         abortBuild()
+                     }
+                 }
 
                 parameters {
                     stringParam('GIT_REPOSITORY_BRANCH', 'develop',

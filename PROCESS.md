@@ -187,8 +187,8 @@ during development to the even number used for the release.
 version including today's date.
 
   ```
-  2.94.0.79 (2017-09-19)
-  ----------------------
+  2.94.0 (2017-09-19)
+  -------------------
   ```
 
 4. Perform any other final adhoc local tests deemed necessary for the release.
@@ -229,17 +229,20 @@ when trying to compare branches.
         git push origin develop
 
 12. Pushing these branches will trigger the following Jenkins jobs. Check that
-they are triggered and complete successfully. If the automatic trigger does not
-work, then run the tests manually.
+they are triggered and complete successfully [here][py-tests]. If the automatic
+trigger does not work, then run the tests manually.
 
     1. [`_INTEGRATION-TESTS-develop_`](https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_INTEGRATION-TESTS-develop_/)
     2. [`_UNIT-TESTS-develop_`](https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_UNIT-TESTS-develop_/)
     3. [`_INTEGRATION-TESTS-master_`](https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_INTEGRATION-TESTS-master_/)
     4. [`_UNIT-TESTS-master_`](https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_UNIT-TESTS-master_/)
 
+[py-tests]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/
+
 13. Tag the release in the ``master`` branch on the GIT repo with tag of
-the form ``vA.B.C`` and ``vA.B.C.D``, where ``D`` is now the build number. Push
-the tags to Github master.
+the form ``vA.B.C`` and ``vA.B.C.D``, where ``D`` is the build number. This
+value is the next number in the Build History section of
+[build-and-archive-package][build]. Push the tags to Github master.
 
     From the command line:
 
@@ -251,24 +254,27 @@ the tags to Github master.
         git push origin vA.B.C
         git push origin vA.B.C.D
 
+[build]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Deploy/job/build-and-archive-package/
+
 14. In Jenkins, build and upload the release to Artifactory.
 
     1. Log in and go to [build-and-archive-package][build].
-    2. From the menu on the left select "Build with Parameters"
-    3. Type in the version number INCLUDING the next build that will be created when you push the build button
-    4. Push the build button
+    2. From the menu on the left select "Build with Parameters".
+    3. Type in the version number INCLUDING the next build that will be created when you push the build button.
+    4. Push the build button.
 
-    This will build and upload the package to artifactory
+    This will build and upload the package to artifactory.
+    If the build fails, you must add a new tag for `vA.B.C.D` (see the previous step).
 
 [build]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Deploy/job/build-and-archive-package/
 
 15. Check Artifactory upload
 
     1. Go to [Artifactory][artifactory].
-    2. In the navigator on the left, go to ``pypi-newrelic``->``A.B.C.D``->``newrelic-A.B.C.D.tar.gz``. Check that the Checksum for MD5 says ""(Uploaded: Identical)""
-    3. Download the tarball and validate that a `pip install /path/to/package` works
-    4. Confirm that a `newrelic-admin validate-config` test runs okay
-    5. Create a small test app and confirm that starting it with `newrelic-admin run-program` runs okay
+    2. In the navigator on the left, go to ``pypi-newrelic``->``A.B.C.D``->``newrelic-A.B.C.D.tar.gz``. Check that the Checksum for MD5 says ""(Uploaded: Identical)"".
+    3. Download the tarball and validate that a `pip install /path/to/package` works.
+    4. Confirm that a `newrelic-admin validate-config` test runs okay.
+    5. Create a small test app and confirm that starting it with `newrelic-admin run-program` runs okay.
 
 [artifactory]:https://pdx-artifacts.pdx.vm.datanerd.us/artifactory/webapp/browserepo.html?0
 
@@ -279,24 +285,25 @@ the tags to Github master.
 
 17. Upload from Artifactory to PyPI
 
-    1. Go back to Jenkins, and select the other project, [deploy-to-pypi][deploy-pypi]
-    2. From the menu on the left select "Build with Parameters"
+    1. Go back to Jenkins, and select the other project, [deploy-to-pypi][deploy-pypi].
+    2. From the menu on the left select "Build with Parameters".
     3. From the drop down menu `PYPI_REPOSITORY`, select pypi-production. Type in the version number, including the build in the `AGENT_VERSION` box.
-    4. Push the build button, be sure you are wearing the celebration hat
-    5. Go to PyPI and check that the version uploaded
-    6. Validate that ``pip install`` of package into a virtual environment works
-    7. Validate that a ``newrelic-admin validate-config`` test runs okay
-    8. Create a small test app and confirm that starting it with `newrelic-admin run-program` runs okay
+    4. Push the build button.
+    5. Go to [PyPI][pypi] and check that the version uploaded.
+    6. Validate that ``pip install`` of package into a virtual environment works.
+    7. Validate that a ``newrelic-admin validate-config`` test runs okay.
+    8. Create a small test app and confirm that starting it with `newrelic-admin run-program` runs okay.
 
+[pypi]: https://pypi.python.org/pypi/newrelic
 [deploy-pypi]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Deploy/job/deploy-to-pypi/
 
 18. Upload from Artifactory to Amazon S3
 
-    1. Go back to Jenkins, and select the other project, [deploy-to-s3][deploy-s3]
-    2. From the menu on the left select "Build with Parameters"
+    1. Go back to Jenkins, and select the other project, [deploy-to-s3][deploy-s3].
+    2. From the menu on the left select "Build with Parameters".
     3. From the drop down menu `S3_RELEASE_TYPE`, select "release". Type in the version number, including the build in the `AGENT_VERSION` box.
-    4. Push the build button, be sure you are wearing the celebration hat
-    5. Make sure the job finishes successfully
+    4. Push the build button.
+    5. Make sure the job finishes successfully.
 
 [deploy-s3]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Deploy/job/deploy-to-s3/
 
@@ -337,10 +344,11 @@ improvement(s) in the release.
 27. Create a branch off ``develop`` to increment the version number for
 development by running `git checkout -b increment-development-version-A.B.C`
 
-28. Update the version number in``newrelic/__init__.py`` to be that of next development release number.
+    Increment ``B`` to the next minor version. With our odd/even numbering
+    scheme, ``B`` should always be odd after this change.
 
-    That is, increment ``B`` if next version is minor version. With our
-odd/even numbering scheme, ``B`` should always be odd after this change.
+28. Update the version number in``newrelic/__init__.py`` by incrementing ``B``
+as described in the previous step.
 
     Format the commit message like this:
 

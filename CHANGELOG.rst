@@ -1,5 +1,5 @@
-unreleased
-----------
+2.98.0 (2017-11-30)
+-------------------
 
 - Enabled reporting of handled exceptions in Django REST Framework
 
@@ -39,8 +39,8 @@ unreleased
   not have been recorded. This issue has been addressed.
 
 
-2.96.0.80 (2017-10-16)
-----------------------
+2.96.0 (2017-10-16)
+-------------------
 
 - Add instrumentation for aiohttp framework
 
@@ -67,8 +67,8 @@ unreleased
   an application crash. This issue has now been fixed.
 
 
-2.94.0.79 (2017-09-19)
-----------------------
+2.94.0 (2017-09-19)
+-------------------
 
 - Add instrumentation for aiohttp client
 
@@ -85,8 +85,8 @@ unreleased
   application crash. The agent now correctly handles psycopg2 Composable
   objects.
 
-2.92.0.78 (2017-09-06)
-----------------------
+2.92.0 (2017-09-06)
+-------------------
 
 - Add API for cross application tracing of non-HTTP external services
 

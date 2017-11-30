@@ -1,5 +1,5 @@
-unreleased
-----------
+2.98.0.81 (2017-11-30)
+----------------------
 
 - Enabled reporting of handled exceptions in Django REST Framework
 

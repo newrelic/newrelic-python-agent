@@ -474,7 +474,7 @@ class AsyncExternalCountHandler(tornado.web.RequestHandler):
 
         client = tornado.httpclient.AsyncHTTPClient()
         futures = [client.fetch(uri) for _ in range(count)]
-        responses = yield tornado.gen.multi(futures)
+        responses = yield tornado.gen.multi_future(futures)
         response = responses[0]
 
         self.write(response.body)

@@ -3,13 +3,9 @@ import newrelic.jenkins.extensions
 String organization = 'python-agent'
 String repoGHE = 'python_agent'
 String repoFull = "${organization}/${repoGHE}"
-String slackChannel = '#python-agent'
+String slackChannel = '#python-dev'
 String gitBranch
-Boolean isJaasHostname = InetAddress.getLocalHost().getHostName() == 'python-agent-build.pdx.vm.datanerd.us'
 
-if ( !isJaasHostname ) {
-    slackChannel = '#python-agent-verbose'
-}
 
 use(extensions) {
 

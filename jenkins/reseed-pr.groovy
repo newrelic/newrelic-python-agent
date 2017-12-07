@@ -131,34 +131,48 @@ use(extensions) {
             "newrelic/common/tests newrelic/core/tests newrelic/api/tests newrelic/tests newrelic/samplers/tests")
     def unitTestEnvs = getUnitTestEnvs()
 
-    multiJob('pr-test-multijob') {
-        description('Real multijob which runs the actual integration tests.')
-        logRotator { numToKeep(10) }
-        label('py-ec2-linux')
-        repository(repoFull, '${GIT_REPOSITORY_BRANCH}')
+    ['pullrequest', 'manual'].each { jobType ->
+        multiJob("_INTEGRATION-TESTS-${jobType}_") {
+            description('Real multijob which runs the actual integration tests.')
+            logRotator { numToKeep(10) }
+            label('py-ec2-linux')
+            repository(repoFull, '${GIT_REPOSITORY_BRANCH}')
 
-        parameters {
-            stringParam('GIT_REPOSITORY_BRANCH', 'develop',
-                        'Branch in git repository to run test against.')
-            stringParam('AGENT_FAKE_COLLECTOR', 'false',
-                        'Whether fake collector is used or not.')
-            stringParam('AGENT_PROXY_HOST', '',
-                        'URI for location of proxy. e.g. http://proxy_host:proxy_port')
-        }
+            parameters {
+                stringParam('GIT_REPOSITORY_BRANCH', 'develop',
+                            'Branch in git repository to run test against.')
+                stringParam('AGENT_FAKE_COLLECTOR', 'false',
+                            'Whether fake collector is used or not.')
+                stringParam('AGENT_PROXY_HOST', '',
+                            'URI for location of proxy. e.g. http://proxy_host:proxy_port')
+            }
 
-        steps {
-            phase('tox-tests', 'COMPLETED') {
-                for (test in packnsendTests) {
-                    for (testToRun in changedIntegrationTests) {
-                        // determine if test should be run by matching
-                        // against the directory
-                        if (test[1].startsWith(testToRun)) {
-                            job(test[0]) {
-                                killPhaseCondition('NEVER')
+            steps {
+                phase('tox-tests', 'COMPLETED') {
+                    for (test in packnsendTests) {
+                        for (testToRun in changedIntegrationTests) {
+                            // determine if test should be run by matching
+                            // against the directory
+                            if (jobType == 'manual' || test[1].startsWith(testToRun)) {
+                                job(test[0]) {
+                                    killPhaseCondition('NEVER')
+                                }
+                                break;
                             }
-                            break;
                         }
                     }
+                }
+            }
+
+            if (jobType == 'manual') {
+                // enable build-user-vars-plugin
+                wrappers { buildUserVars() }
+                // send private slack message
+                slackQuiet('@${BUILD_USER_ID}') {
+                    customMessage 'on branch `${GIT_REPOSITORY_BRANCH}`'
+                    notifySuccess true
+                    notifyNotBuilt true
+                    notifyAborted true
                 }
             }
         }

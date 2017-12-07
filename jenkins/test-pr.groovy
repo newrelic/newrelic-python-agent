@@ -39,6 +39,9 @@ use(extensions) {
             }
 
             steps {
+                phase('seed-multi-job', 'SUCCESSFUL') {
+                    job('reseed-pr-tests')
+                }
                 phase('run-all-the-tests', 'COMPLETED') {
                     job("_UNIT-TESTS-${jobType}_") {
                         killPhaseCondition('NEVER')

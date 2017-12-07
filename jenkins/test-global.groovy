@@ -5,13 +5,10 @@ String repoGHE = 'python_agent'
 String repoFull = "${organization}/${repoGHE}"
 String integTestSuffix = "__integration-test"
 String unitTestSuffix = "__unit-test"
-String slackChannel = '#python-agent'
+String slackChannelPrivate = '#python-dev'
+String slackChannelPublic = '#python-agent'
 String gitBranch
-Boolean isJaasHostname = InetAddress.getLocalHost().getHostName() == 'python-agent-build.pdx.vm.datanerd.us'
 
-if ( !isJaasHostname ) {
-    slackChannel = '#python-agent-verbose'
-}
 
 use(extensions) {
 
@@ -38,14 +35,11 @@ use(extensions) {
                 repositoryPR(repoFull)
                 gitBranch = '${ghprbActualCommit}'
                 mostRecent = 'true'
-            }
-            else if (jobType == 'develop') {
+            } else if (jobType == 'develop') {
                 repository(repoFull, jobType)
                 triggers {
-                    if (isJaasHostname) {
-                        // run daily on cron
-                        cron('H 0,12 * * 1-5')
-                    }
+                    // run daily on cron
+                    cron('H 0 * * 1-5')
                 }
                 gitBranch = jobType
                 mostRecent = 'false'
@@ -93,8 +87,13 @@ use(extensions) {
                     notifyNotBuilt true
                     notifyAborted true
                 }
-            } else if (jobType == 'master' || jobType == 'develop') {
-                slackQuiet(slackChannel) {
+            } else if (jobType == 'master' || jobType == 'mmf') {
+                slackQuiet(slackChannelPrivate) {
+                    notifyNotBuilt true
+                    notifyAborted true
+                }
+            } else if (jobType == 'develop') {
+                slackQuiet(slackChannelPrivate + ',' + slackChannelPublic) {
                     notifyNotBuilt true
                     notifyAborted true
                 }

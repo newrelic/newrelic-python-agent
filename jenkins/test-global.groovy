@@ -24,7 +24,7 @@ use(extensions) {
             '(_UNIT-TESTS-master_)'
     )
 
-    ['develop', 'master', 'pullrequest', 'manual'].each { jobType ->
+    ['pullrequest', 'manual'].each { jobType ->
         multiJob("_INTEGRATION-TESTS-${jobType}_") {
             description("Perform full suite of tests on Python Agent on the ${jobType} branch")
             logRotator { numToKeep(10) }
@@ -35,22 +35,6 @@ use(extensions) {
                 repositoryPR(repoFull)
                 gitBranch = '${ghprbActualCommit}'
                 mostRecent = 'true'
-            } else if (jobType == 'develop') {
-                repository(repoFull, jobType)
-                triggers {
-                    // run daily on cron
-                    cron('H 0 * * 1-5')
-                }
-                gitBranch = jobType
-                mostRecent = 'false'
-            } else if (jobType == 'master') {
-                repository(repoFull, jobType)
-                triggers {
-                    // trigger on push to master
-                    githubPush()
-                }
-                gitBranch = jobType
-                mostRecent = 'false'
             } else {
                 repository(repoFull, '${GIT_REPOSITORY_BRANCH}')
                 gitBranch = ''
@@ -70,10 +54,10 @@ use(extensions) {
 
             steps {
                 phase('seed-multi-job', 'SUCCESSFUL') {
-                    job('reseed-integration-tests')
+                    job('reseed-pr-tests')
                 }
-                phase('run-child-multijob', 'COMPLETED') {
-                    job('integration-test-multijob')
+                phase('test-multi-job', 'SUCCESSFUL') {
+                    job('pr-test-multijob')
                 }
             }
 
@@ -101,15 +85,15 @@ use(extensions) {
         }
     }
 
-    baseJob("reseed-integration-tests") {
+    baseJob("reseed-pr-tests") {
         label('master')
         repo(repoFull)
         branch('${GIT_REPOSITORY_BRANCH}')
 
         configure {
-            description('reseeds only integration-test-multijob')
+            description('reseeds only pr-test-multijob')
             logRotator { numToKeep(10) }
-            blockOnJobs(['integration-test-multijob', ".*${integTestSuffix}"])
+            blockOnJobs(['pr-test-multijob', ".*${integTestSuffix}"])
 
             parameters {
                 stringParam('GIT_REPOSITORY_BRANCH', 'develop',
@@ -119,7 +103,7 @@ use(extensions) {
             }
 
             steps {
-                reseedFrom('jenkins/test-integration.groovy')
+                reseedFrom('jenkins/reseed-pr.groovy')
             }
         }
     }

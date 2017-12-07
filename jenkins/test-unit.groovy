@@ -33,7 +33,7 @@ def getUnitTestEnvs = {
 use(extensions) {
    def unitTestEnvs = getUnitTestEnvs()
 
-    ['develop', 'master', 'pullrequest', 'manual'].each { jobType ->
+    ['develop', 'master'].each { jobType ->
         multiJob("_UNIT-TESTS-${jobType}_") {
             label('py-ec2-linux')
             description("Run unit tests (i.e. ./tests.sh) on the _${jobType}_ branch")
@@ -41,12 +41,13 @@ use(extensions) {
             concurrentBuild true
             blockOnJobs('python_agent-dsl-seed')
 
-            if (jobType == 'pullrequest') {
-                repositoryPR(repoFull)
-                gitBranch = '${ghprbActualCommit}'
-            } else if (jobType == 'manual') {
-                repository(repoFull, '${GIT_REPOSITORY_BRANCH}')
-                gitBranch = ''
+            if (jobType == 'develop') {
+                repository(repoFull, jobType)
+                triggers {
+                    // run daily on cron
+                    cron('H 0 * * 1-5')
+                }
+                gitBranch = jobType
             } else {
                 repository(repoFull, jobType)
                 triggers {
@@ -79,17 +80,7 @@ use(extensions) {
                 }
             }
 
-            if (jobType == 'manual') {
-                // enable build-user-vars-plugin
-                wrappers { buildUserVars() }
-                // send private slack message
-                slackQuiet('@${BUILD_USER_ID}') {
-                    customMessage 'on branch `${GIT_REPOSITORY_BRANCH}`'
-                    notifySuccess true
-                    notifyNotBuilt true
-                    notifyAborted true
-                }
-            } else if (jobType == 'master' || jobType == 'mmf') {
+            if (jobType == 'master' || jobType == 'mmf') {
                 slackQuiet(slackChannelPrivate) {
                     notifyNotBuilt true
                     notifyAborted true

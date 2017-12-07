@@ -57,6 +57,7 @@ then
     TOX_TESTS="$TOX_TESTS newrelic/core"
     TOX_TESTS="$TOX_TESTS newrelic/api"
     TOX_TESTS="$TOX_TESTS newrelic/tests"
+    TOX_TESTS="$TOX_TESTS newrelic/samplers"
 
     NEW_RELIC_ADMIN_TESTS=true
 else

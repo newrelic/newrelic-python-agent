@@ -149,14 +149,20 @@ use(extensions) {
             steps {
                 phase('tox-tests', 'COMPLETED') {
                     for (test in packnsendTests) {
-                        for (testToRun in changedIntegrationTests) {
-                            // determine if test should be run by matching
-                            // against the directory
-                            if (jobType == 'manual' || test[1].startsWith(testToRun)) {
-                                job(test[0]) {
-                                    killPhaseCondition('NEVER')
+                        if (jobType == 'manual') {
+                            job(test[0]) {
+                                killPhaseCondition('NEVER')
+                            }
+                        } else {
+                            for (testToRun in changedIntegrationTests) {
+                                // determine if test should be run by matching
+                                // against the directory
+                                if (test[1].startsWith(testToRun)) {
+                                    job(test[0]) {
+                                        killPhaseCondition('NEVER')
+                                    }
+                                    break;
                                 }
-                                break;
                             }
                         }
                     }
@@ -258,7 +264,7 @@ use(extensions) {
                         killPhaseCondition('NEVER')
                     }
 
-                    if (!changedUnitTests.isEmpty()) {
+                    if (jobType=='manual' || !changedUnitTests.isEmpty()) {
                         for (testEnv in unitTestEnvs) {
                             job("tests.sh-${testEnv}_${unitSuffix}") {
                                 killPhaseCondition('NEVER')

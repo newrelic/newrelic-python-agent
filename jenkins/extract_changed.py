@@ -175,6 +175,9 @@ def git_files_changed(nr_path, merge_target):
         if type(files_changed) is not str:
             files_changed = files_changed.decode('utf-8')
 
+        if not files_changed:
+            return set()
+
         # create a set of files changed
         files_changed = set([os.path.join(nr_path, _)
                 for _ in files_changed.strip().split('\n')])

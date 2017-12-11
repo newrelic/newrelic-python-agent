@@ -21,7 +21,7 @@ PYTHON_LIBRARIES = {'os', 'sys', 're', 'logging', 'weakref', 'time',
         'platform', 'timeit', 'Queue', 'builtins', 'cgi', 'cmd', 'code',
         'distutils.sysconfig', 'glob', 'pwd', 'ssl', 'itertools', 'optparse',
         'operator', 'shlex', 'queue', 'resource'}
-SPECIAL_FILES = {'tox.ini'}
+SPECIAL_FILES = {'tox.ini', 'tests.sh', 'setup.py', 'tox-admin.ini'}
 
 
 def extract_hook_mappings():

@@ -190,28 +190,25 @@ def should_test(testdir, nr_path, hooks, changed_files):
     # Add the directory of the file to the path
     sys.path.insert(0, testdir)
 
-    # prioritize tox files first
-    files_in_dir = sorted(os.listdir(testdir),
-            key=lambda x: 0 if x.endswith('ini') else 1)
+    try:
+        # Extract all top level python files in the testdir
+        # NOTE: this does not do a walk so nested tests are not extracted This
+        # is intentional since tests are (currently) only at the top level and
+        # import from subdirectories.
+        files_in_dir = os.listdir(testdir)
+        for filename in files_in_dir:
+            filename = os.path.join(testdir, filename)
 
-    # Extract all python files in the testdir
-    for filename in files_in_dir:
-        filename = os.path.join(testdir, filename)
+            if filename.endswith('.py'):
+                filenames.add(filename)
 
-        # Test if tox files have been updated
-        if filename.endswith('.ini'):
-            if filename in changed_files:
+        for filename_imported in get_imported_filenames(
+                filenames, nr_path, hooks):
+            if filename_imported in changed_files:
+                # As soon as a changed file is detected, return True
                 return True
-
-        if filename.endswith('.py'):
-            filenames.add(filename)
-
-    for filename_imported in get_imported_filenames(filenames, nr_path, hooks):
-        if filename_imported in changed_files:
-            # As soon as a changed file is detected, return True
-            return True
-
-    sys.path.remove(testdir)
+    finally:
+        sys.path.remove(testdir)
 
     return False
 
@@ -247,6 +244,17 @@ def main(testdirs, nr_path, merge_target):
         return 1
 
     tests_to_run = []
+
+    # Check if any changed files are in the test directory
+    for changed_file in changed_files:
+        for testdir in tests:
+            if changed_file.startswith(testdir):
+                rel_path = os.path.relpath(testdir, nr_path)
+                tests_to_run.append(rel_path)
+                # Optimization: we no longer need to explore the test dir
+                tests.remove(testdir)
+                break
+
     for test, run in zip(tests, pool.map(_should_test, tests)):
         if run:
             rel_test_path = os.path.relpath(test, nr_path)

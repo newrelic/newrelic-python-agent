@@ -128,7 +128,7 @@ use(extensions) {
     def changedIntegrationTests = getChangedTests("${WORKSPACE}/tests/*")
     // TODO: is there a way to autodetect these directories?
     def changedUnitTests = getChangedTests(
-            "newrelic/common/tests newrelic/core/tests newrelic/api/tests newrelic/tests newrelic/samplers/tests")
+            "newrelic/common/tests newrelic/core/tests newrelic/api/tests newrelic/tests newrelic/samplers/tests ${WORKSPACE}")
     def unitTestEnvs = getUnitTestEnvs()
 
     ['pullrequest', 'manual'].each { jobType ->
@@ -228,8 +228,6 @@ use(extensions) {
         }
     }
 
-    // TODO: if a test environ (such as py37) is added to the unittest tox on a
-    // PR, the reseed job won't run.
     ['pullrequest', 'manual'].each { jobType ->
         multiJob("_UNIT-TESTS-${jobType}_") {
             label('py-ec2-linux')

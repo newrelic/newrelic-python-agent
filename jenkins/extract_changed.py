@@ -266,6 +266,10 @@ def main(testdirs, nr_path, merge_target):
             tests_to_run.append('.')
             break
 
+    # NOTE: C files are not explored since they won't be able to be imported
+    # until they're compiled. This needs some thought in the future.
+    # TODO: figure out how to explore C file changes (and map them to the
+    # appropriate test runs)
     for test, run in zip(tests, pool.map(_should_test, tests)):
         if run:
             rel_test_path = os.path.relpath(test, nr_path)
@@ -290,9 +294,9 @@ def parse_args():
             nargs='?',
             help='Branch target for a merge')
     parser.add_argument('testdirs', type=str,
-            default=('tests',),
             nargs='+',
-            help='Directories to search for python files.')
+            help='List of test directories to traverse '
+                 'for dependency changes.')
 
     args = parser.parse_args()
 

@@ -21,6 +21,7 @@ PYTHON_LIBRARIES = {'os', 'sys', 're', 'logging', 'weakref', 'time',
         'platform', 'timeit', 'Queue', 'builtins', 'cgi', 'cmd', 'code',
         'distutils.sysconfig', 'glob', 'pwd', 'ssl', 'itertools', 'optparse',
         'operator', 'shlex', 'queue', 'resource'}
+SPECIAL_FILES = {'tox.ini'}
 
 
 def extract_hook_mappings():
@@ -257,6 +258,13 @@ def main(testdirs, nr_path, merge_target):
                 # Optimization: we no longer need to explore the test dir
                 tests.remove(testdir)
                 break
+
+    # Check for changed "special" top level files
+    for SPECIAL_FILE in SPECIAL_FILES:
+        if os.path.join(nr_path, SPECIAL_FILE) in changed_files:
+            # Add something to the tests to run (non-empty)
+            tests_to_run.append('.')
+            break
 
     for test, run in zip(tests, pool.map(_should_test, tests)):
         if run:

@@ -127,7 +127,7 @@ use(extensions) {
     def packnsendTests = getPacknsendTests("${WORKSPACE}", integrationSuffix, mostRecentOnly)
     def changedIntegrationTests = getChangedTests("${WORKSPACE}/tests/*")
     def changedUnitTests = getChangedTests(
-            "newrelic/*/tests newrelic/tests ${WORKSPACE}")
+            "newrelic/*/tests newrelic/tests")
     def unitTestEnvs = getUnitTestEnvs()
 
     ['pullrequest', 'manual'].each { jobType ->

@@ -126,9 +126,8 @@ def getChangedTests (String dirs) {
 use(extensions) {
     def packnsendTests = getPacknsendTests("${WORKSPACE}", integrationSuffix, mostRecentOnly)
     def changedIntegrationTests = getChangedTests("${WORKSPACE}/tests/*")
-    // TODO: is there a way to autodetect these directories?
     def changedUnitTests = getChangedTests(
-            "newrelic/common/tests newrelic/core/tests newrelic/api/tests newrelic/tests newrelic/samplers/tests ${WORKSPACE}")
+            "newrelic/*/tests newrelic/tests ${WORKSPACE}")
     def unitTestEnvs = getUnitTestEnvs()
 
     ['pullrequest', 'manual'].each { jobType ->

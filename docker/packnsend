@@ -17,7 +17,6 @@ APP_SERVICE_IMAGES="
     gearmand \
     postgresql \
     mysql \
-    devpi \
     mongodb \
     redis \
     elasticsearch \

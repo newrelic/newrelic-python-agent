@@ -3,12 +3,13 @@ import aiohttp
 import pytest
 
 from newrelic.api.background_task import background_task
+from newrelic.api.function_trace import function_trace
 from testing_support.fixtures import validate_transaction_metrics
 
 URLS = ['http://example.com', 'http://example.org']
 
 
-async def fetch(method, url, throw=False):
+async def fetch(method, url):
     async with aiohttp.ClientSession(raise_for_status=True) as session:
         _method = getattr(session, method)
         async with _method(url) as response:
@@ -251,5 +252,26 @@ def test_create_task(method, exc_expected):
                     aiohttp.client_exceptions.ClientResponseError)
         else:
             assert result[0] == result[1]
+
+    task_test()
+
+
+@pytest.mark.parametrize('method,exc_expected', test_matrix)
+def test_terminal_parent(method, exc_expected):
+    """
+    This test injects a terminal node into a simple background task workflow.
+    It was added to validate a bug where our coro.send() wrapper would fail
+    when transaction's current node was terminal.
+    """
+
+    @background_task()
+    def task_test():
+        loop = asyncio.get_event_loop()
+
+        @function_trace(terminal=True)
+        def execute_task():
+            task(loop, method, exc_expected)
+
+        execute_task()
 
     task_test()

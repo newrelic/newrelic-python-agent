@@ -22,6 +22,8 @@ Multijob to run all tests as defined by `tox.ini` files in the `tests/` director
 
 `master` and `develop` tests run on any push to the branch whereas `manual` can be kicked off ad-hoc. `develop` tests will also be run on cron daily.
 
+`pullrequest` tests automatically determine which tests need to be run by inspecting the imports of each test file and seeing if those files changed.
+
 **reseed-integration-tests:** The first step of this job is to parse the tox files and create the list of tests to run. If the job is related to a pull request then only the most recent package version is tested (see Test Configuration below). Tox environments are grouped so as to cut down on testing time. Because of this, depending on if the job is running only the most recent package version or not, a given tox environment could move between Jenkins jobs.
 
 **\*__integration-test:** These tests are are the subjobs to the **INTEGRATION-TESTS** multijob. They will pull packnsend images from the New Relic docker repository (cf-registry.nr-ops.net) then start all containers. If a container is already running, the action is a noop. The consequence of this is if an image changes in the docker repository, the jobs will not pick up this change automatically (see the Reset Nodes job).
@@ -30,6 +32,8 @@ Multijob to run all tests as defined by `tox.ini` files in the `tests/` director
 Multijob to run `./build.sh` then `./tests.sh`.
 
 `master` and `develop` tests run on any push to the branch whereas `manual` can be kicked off ad-hoc.
+
+`pullrequest` tests automatically determine which tests need to be run by inspecting the imports of each test file and seeing if those files changed.
 
 #### \_COMBINED-TESTS-[branch]\_
 Multijob to run both the unit and integration tests on the given branch.
@@ -75,6 +79,7 @@ We have installed the following plugins on our JaaS instance:
 
 We have installed the following packages on the JaaS master:
 + tox==2.4.1
++ python3.6 built and installed from source (https://www.python.org/ftp/python/3.6.3/Python-3.6.3.tgz) (./configure && sudo make install)
 
 ## Development
 

@@ -34,11 +34,14 @@ use(extensions) {
             parameters {
                 stringParam('GIT_REPOSITORY_BRANCH', gitBranch,
                             'Branch in git repository to run test against.')
-                stringParam('MOST_RECENT_ONLY', 'true',
+                stringParam('MOST_RECENT_ONLY', 'false',
                             'Run tests only on most recent version of all packages?')
             }
 
             steps {
+                phase('seed-multi-job', 'SUCCESSFUL') {
+                    job('reseed-pr-tests')
+                }
                 phase('run-all-the-tests', 'COMPLETED') {
                     job("_UNIT-TESTS-${jobType}_") {
                         killPhaseCondition('NEVER')

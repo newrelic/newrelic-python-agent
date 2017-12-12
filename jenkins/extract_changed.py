@@ -25,6 +25,19 @@ SPECIAL_FILES = {'tox.ini', 'tests.sh', 'setup.py', 'tox-admin.ini'}
 
 
 def extract_hook_mappings():
+    """Extract import hooks from newrelic/config.py
+
+    This function returns a dictionary in the format of
+    {package_name: newrelic_hook_file}
+
+    It also enumerates the import hooks against the list of feature flags that
+    exist since import hooks can change with feature flags.
+
+    The purpose of getting this dictionary is to map imports in a test file to
+    hooks that would be imported at runtime.
+
+    :rtype: dict
+    """
     from newrelic.config import (_process_module_builtin_defaults,
             _FEATURE_FLAGS)
     from newrelic.common.object_wrapper import wrap_function_wrapper
@@ -58,6 +71,11 @@ def extract_hook_mappings():
 
 
 class ImportVisitor(ast.NodeVisitor):
+    """Extract imported modules from an AST
+
+    This visits all ImportFrom and Import statements in the AST and records the
+    module that was imported in the modules attribute.
+    """
     def __init__(self, *args, **kwargs):
         super(ImportVisitor, self).__init__(*args, **kwargs)
         self.modules = set()
@@ -72,7 +90,20 @@ class ImportVisitor(ast.NodeVisitor):
             self.modules.update(modules)
 
 
-def get_imports(source):
+def get_imports(source, hooks):
+    """Return a list of modules imported by python source text
+
+    Some modules have hooks associated with them that will import at runtime.
+    Those modules will be mapped to newrelic hook files in addition to the raw
+    module.
+
+    :param source: Python source file string to extract imports from.
+    :type source: str
+    :param hooks: dictionary of module names to newrelic hook module names
+    :type hooks: dict
+
+    :rtype: list
+    """
     visitor = ImportVisitor()
 
     # Parse the source string into an AST
@@ -81,38 +112,73 @@ def get_imports(source):
     # Recursively walk the tree
     visitor.visit(tree)
 
+    # Determine if any hooks will fire and add them to the imported modules
+    modules = visitor.modules
+    final_modules = []
+    for module in modules:
+        final_modules.append(module)
+        if module in hooks:
+            final_modules.extend(hooks[module])
+
     # Return the extracted modules
-    return visitor.modules
+    return final_modules
 
 
-def translate_modules_to_filenames(modules, hooks):
+def translate_modules_to_filenames(modules):
+    """Translate module names to filenames.
+
+    This function will attempt to find a loader for each module and will yield
+    the filename associated with that module if found. This function returns a
+    generator yielding those filenames.
+
+    :param modules: iterable containing strings of module names
+    :type modules: list or set
+    :param hooks: dictionary of module names to newrelic hook module names
+    :type hooks: dict
+
+    :rtype: generator
+    """
     filenames = set()
 
     for module in modules:
-        explore = [module]
-        if module in hooks:
-            hook = hooks[module]
-            explore.extend(hook)
+        try:
+            result = pkgutil.find_loader(module)
+        except ImportError as e:
+            continue
 
-        for _module in explore:
-            try:
-                result = pkgutil.find_loader(_module)
-            except ImportError as e:
-                continue
+        # Some modules can't be found. That's cool.
+        if result:
+            if hasattr(result, 'get_filename'):
+                filename = result.get_filename()
 
-            if result:
-                if hasattr(result, 'get_filename'):
-                    filename = result.get_filename()
+                if not filename:
+                    continue
 
-                    if not filename:
-                        continue
-
-                    if filename not in filenames:
-                        yield filename
-                    filenames.add(filename)
+                if filename not in filenames:
+                    yield filename
+                filenames.add(filename)
 
 
-def get_imported_filenames(initial_filenames, nr_path, hooks):
+def traverse_imports(initial_filenames, nr_path, hooks):
+    """Recursive traversal of the import tree for a set of files
+
+    Given a set of filenames, travese the import tree and yield the filenames
+    of the imported files.
+
+    This allows the caller to progressively check if a file in the import path
+    has been changed and to then make a logical decision about that
+    information.
+
+    :param initial_filenames: Set of filenames to start the traversal (top of
+                              tree)
+    :type initial_filenames: list or set
+    :param nr_path: Path to the top level directory for the New Relic repo
+    :type nr_path: str
+    :param hooks: dictionary of module names to newrelic hook module names
+    :type hooks: dict
+
+    :rtype: generator
+    """
     filenames_imported = set(initial_filenames)
     need_extraction = list(initial_filenames)
 
@@ -125,7 +191,7 @@ def get_imported_filenames(initial_filenames, nr_path, hooks):
         except Exception as e:
             continue
 
-        modules_imported_by_source = get_imports(source)
+        modules_imported_by_source = get_imports(source, hooks)
 
         # order modules that are newrelic first
         modules_imported_sorted = sorted(modules_imported_by_source,
@@ -136,7 +202,7 @@ def get_imported_filenames(initial_filenames, nr_path, hooks):
                 if _ not in PYTHON_LIBRARIES]
 
         filenames_imported_by_source = translate_modules_to_filenames(
-                modules_filtered, hooks)
+                modules_filtered)
 
         for filename_imported in filenames_imported_by_source:
 
@@ -158,6 +224,18 @@ def get_imported_filenames(initial_filenames, nr_path, hooks):
 
 
 def git_files_changed(nr_path, merge_target):
+    """Extract files that have changed relative to the merge_target branch
+
+    This function queries GIT for information about which files have changed
+    relative to a target branch.
+
+    :param nr_path: Path to the top level directory for the New Relic repo
+    :type nr_path: str
+    :param merge_target: Name of the target branch to compare against.
+    :type merge_target: str
+
+    :rtype: set
+    """
     cwd = os.getcwd()
     os.chdir(nr_path)
     try:
@@ -189,6 +267,28 @@ def git_files_changed(nr_path, merge_target):
 
 
 def should_test(testdir, nr_path, hooks, changed_files):
+    """Determines if a test directory should be tested given a list of changes
+
+    Returns True if the files in testdir import files that have changed.
+
+    :param testdir: Directory to traverse for import changes
+    :type testdir: str
+    :param nr_path: Path to the top level directory for the New Relic repo
+    :type nr_path: str
+    :param hooks: dictionary of module names to newrelic hook module names
+    :type hooks: dict
+    :param changed_files: Set of files that have changed (used in determining
+                          if a test should be run)
+    :type changed_files: set
+
+    :rtype: bool
+    """
+    # Check if any changed files are in the test directory
+    # If yes, the test must be run.
+    for changed_file in changed_files:
+        if changed_file.startswith(testdir):
+            return True
+
     filenames = set()
 
     # Add the directory of the file to the path
@@ -206,7 +306,7 @@ def should_test(testdir, nr_path, hooks, changed_files):
             if filename.endswith('.py'):
                 filenames.add(filename)
 
-        for filename_imported in get_imported_filenames(
+        for filename_imported in traverse_imports(
                 filenames, nr_path, hooks):
             if filename_imported in changed_files:
                 # As soon as a changed file is detected, return True
@@ -248,16 +348,6 @@ def main(testdirs, nr_path, merge_target):
         return 1
 
     tests_to_run = []
-
-    # Check if any changed files are in the test directory
-    for changed_file in changed_files:
-        for testdir in tests:
-            if changed_file.startswith(testdir):
-                rel_path = os.path.relpath(testdir, nr_path)
-                tests_to_run.append(rel_path)
-                # Optimization: we no longer need to explore the test dir
-                tests.remove(testdir)
-                break
 
     # Check for changed "special" top level files
     for SPECIAL_FILE in SPECIAL_FILES:

@@ -1,6 +1,7 @@
 import uuid
 
 import boto3
+import botocore
 import moto
 
 from newrelic.api.background_task import background_task
@@ -12,20 +13,27 @@ AWS_REGION_NAME = 'us-west-2'
 
 TEST_BUCKET = 'python-agent-test-%s' % uuid.uuid4()
 
+BOTOCORE_VERSION = tuple(map(int, botocore.__version__.split('.')))
+if BOTOCORE_VERSION < (1, 7, 41):
+    S3_URL = 's3-us-west-2.amazonaws.com'
+else:
+    S3_URL = 's3.us-west-2.amazonaws.com'
+
 _s3_scoped_metrics = [
-    ('External/s3-us-west-2.amazonaws.com/botocore/GET', 2),
-    ('External/s3-us-west-2.amazonaws.com/botocore/PUT', 2),
-    ('External/s3-us-west-2.amazonaws.com/botocore/DELETE', 2),
+    ('External/%s/botocore/GET' % S3_URL, 2),
+    ('External/%s/botocore/PUT' % S3_URL, 2),
+    ('External/%s/botocore/DELETE' % S3_URL, 2),
 ]
 
 _s3_rollup_metrics = [
     ('External/all', 6),
     ('External/allOther', 6),
-    ('External/s3-us-west-2.amazonaws.com/all', 6),
-    ('External/s3-us-west-2.amazonaws.com/botocore/GET', 2),
-    ('External/s3-us-west-2.amazonaws.com/botocore/PUT', 2),
-    ('External/s3-us-west-2.amazonaws.com/botocore/DELETE', 2),
+    ('External/%s/all' % S3_URL, 6),
+    ('External/%s/botocore/GET' % S3_URL, 2),
+    ('External/%s/botocore/PUT' % S3_URL, 2),
+    ('External/%s/botocore/DELETE' % S3_URL, 2),
 ]
+
 
 @validate_transaction_metrics(
         'test_boto3_s3:test_s3',

@@ -33,7 +33,7 @@ def getUnitTestEnvs = {
 use(extensions) {
    def unitTestEnvs = getUnitTestEnvs()
 
-    ['develop', 'master'].each { jobType ->
+    ['develop', 'master', 'mmf'].each { jobType ->
         multiJob("_UNIT-TESTS-${jobType}_") {
             label('py-ec2-linux')
             description("Run unit tests (i.e. ./tests.sh) on the _${jobType}_ branch")
@@ -48,33 +48,61 @@ use(extensions) {
                     cron('H 0 * * 1-5')
                 }
                 gitBranch = jobType
-            } else {
+            } else if (jobType == 'master') {
                 repository(repoFull, jobType)
                 triggers {
-                    // run daily on cron
-                    cron('H 0 * * 1-5')
+                    // trigger on push to master
+                    githubPush()
                 }
                 gitBranch = jobType
+            } else if (jobType == 'mmf') {
+                // branch will be correctly set later with the
+                // get_mmf_branch.sh script
+                repository(repoFull, 'develop')
+                triggers {
+                    // run daily on cron
+                    cron('H 2 * * 1-5')
+                }
             }
 
-            parameters {
-                stringParam('GIT_REPOSITORY_BRANCH', gitBranch,
-                            'Branch in git repository to run test against.')
+            if (jobType != 'mmf') {
+                parameters {
+                    stringParam('GIT_REPOSITORY_BRANCH', gitBranch,
+                                'Branch in git repository to run test against.')
+                }
             }
 
             steps {
-                phase('unit-tests', 'COMPLETED') {
+                if (jobType == 'mmf') {
+                    shell('./jenkins/get_mmf_branch.sh')
+                }
 
+                phase('unit-tests', 'COMPLETED') {
                     job("devpi-pre-build-hook_${testSuffix}") {
                         killPhaseCondition('NEVER')
+                        if (jobType == 'mmf') {  // pass git branch to mmf test
+                            parameters {
+                                propertiesFile('jenkins/environ')
+                            }
+                        }
                     }
                     job("build.sh_${testSuffix}") {
                         killPhaseCondition('NEVER')
+                        if (jobType == 'mmf') {  // pass git branch to mmf test
+                            parameters {
+                                propertiesFile('jenkins/environ')
+                            }
+                        }
                     }
 
                     for (testEnv in unitTestEnvs) {
                         job("tests.sh-${testEnv}_${testSuffix}") {
                             killPhaseCondition('NEVER')
+                            if (jobType == 'mmf') {  // pass git branch to mmf test
+                                parameters {
+                                    propertiesFile('jenkins/environ')
+                                }
+                            }
                         }
                     }
                 }

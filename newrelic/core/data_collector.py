@@ -54,7 +54,7 @@ def collector_url(server=None):
     """Returns the URL for talking to the data collector. When no server
     'host:port' is specified then the main data collector host and port is
     taken from the agent configuration. When a server is explicitly passed
-    it would be the secondary data collector which subsequents requests
+    it would be the secondary data collector which subsequent requests
     in an agent session should be sent to.
 
     """
@@ -66,7 +66,7 @@ def collector_url(server=None):
     scheme = settings.ssl and 'https' or 'http'
 
     if not server or settings.port:
-        # When pulling port from agent configuration it should only be
+        # When pulling the port from agent configuration it should only be
         # set when testing against a local data collector. For staging
         # and production should not be set and would default to port 80
         # or 443 based on scheme name in URL and we don't explicitly
@@ -151,7 +151,7 @@ def _requests_proxy_scheme_workaround(wrapped, instance, args, kwargs):
 #
 #   https://github.com/kennethreitz/requests/commit/8b7fcfb49a38cd6ee1cbb4a52e0a4af57969abb3
 #
-# breaks proxying a HTTPS requests over a HTTPS proxy. The original seems to
+# breaks proxying an HTTPS requests over an HTTPS proxy. The original seems to
 # be more correct than the changed version and works in testing. Return the
 # functionality back to how it worked previously.
 
@@ -195,8 +195,8 @@ def _urllib3_ssl_recursion_workaround(wrapped, instance, args, kwargs):
 
 # Low level network functions and session management. When connecting to
 # the data collector it is initially done through the main data collector.
-# It is though then necessary to ask the data collector for the per
-# session data collector to use. Subsequent calls are then made to it.
+# It is then necessary to ask the data collector for the per-session data
+# collector to use. Subsequent calls are then made to it.
 
 
 _audit_log_fp = None
@@ -357,7 +357,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         raise DiscardDataForRequest(str(sys.exc_info()[1]))
 
     # Log details of call and/or payload for debugging. Use the JSON
-    # encoded value so know that what is encoded is correct.
+    # encoded value to know that what is encoded is correct.
 
     if settings.debug.log_data_collector_payloads:
         _logger.debug('Calling data collector with url=%r, method=%r and '
@@ -392,21 +392,21 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         session = requests.session()
         auto_close_session = True
 
-    # The 'requests' library can raise a number of exception derived
+    # The 'requests' library can raise a number of exceptions derived
     # from 'RequestException' before we even manage to get a connection
     # to the data collector.
     #
-    # The data collector can the generate a number of different types of
+    # The data collector can then generate a number of different types of
     # HTTP errors for requests. These are:
     #
     # 400 Bad Request - For incorrect method type or incorrectly
-    # construct parameters. We should not get this and if we do it would
+    # constructed parameters. We should not get this and if we do it would
     # likely indicate a problem with the implementation of the agent.
     #
     # 413 Request Entity Too Large - Where the request content was too
     # large. The limits on number of nodes in slow transaction traces
     # should in general prevent this, but not everything has size limits
-    # and so rogue data could still blow things out. Same data is not
+    # and so rogue data could still blow things out. The same data are not
     # going to work later on in a subsequent request, even if aggregated
     # with other data, so we need to log the details and then flag that
     # data should be thrown away.
@@ -417,7 +417,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
     # aggregated with other data, may not work, so we need to log the
     # details and then flag that data should be thrown away.
     #
-    # 503 Service Unavailable - This occurs when data collector, or core
+    # 503 Service Unavailable - This occurs when the data collector, or core
     # application is being restarted and not in state to be able to
     # accept requests. It should be a transient issue so should be able
     # to retain data and try again.
@@ -598,7 +598,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         raise DiscardDataForRequest()
 
     # Log details of response payload for debugging. Use the JSON
-    # encoded value so know that what original encoded value was.
+    # encoded value so we know what was the original encoded value.
 
     duration = time.time() - start
 
@@ -656,7 +656,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
     # create a metric for when they occur. Leave this here though to at
     # least log a metric for the case where a completely unexpected
     # server error response is received and the agent run does manage to
-    # continue and further requests don't just keep failing. Since do
+    # continue and further requests don't just keep failing. Since we do
     # not even expect the metric to be retained, use the original error
     # type as sent.
 
@@ -674,7 +674,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     elif error_type == 'NewRelic::Agent::PostTooBigException':
         # As far as we know we should never see this type of server side
-        # error as for JSON API we should always get back a HTTP 413
+        # error as the JSON API should always send back an HTTP 413
         # error response instead.
 
         internal_metric('Supportability/Python/Collector/Failures', 1)
@@ -712,8 +712,8 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
         raise ForceAgentDisconnect(message)
 
-    # We received an unexpected server side error we don't know what to
-    # do with. Ignoring PostTooBigException which we expect that we
+    # We received an unexpected server side error and we don't know what
+    # to do with it. Ignoring PostTooBigException which we expect that we
     # should never receive, unexpected server side errors are the only
     # ones we record a failure metric for as other server side errors
     # are really commands to have the agent do something.
@@ -755,7 +755,7 @@ def apply_high_security_mode_fixups(local_settings, server_settings):
         del server_settings['high_security']
 
     # Remove individual security settings from top level of configuration
-    # settings returned.
+    # settings.
 
     security_settings = ('capture_params', 'transaction_tracer.record_sql',
             'strip_exception_messages.enabled',
@@ -834,7 +834,7 @@ class ApplicationSession(object):
 
     def shutdown_session(self):
         """Called to perform orderly deregistration of agent run against
-        data collector, rather than simply dropping the connection and
+        the data collector, rather than simply dropping the connection and
         relying on data collector to surmise that agent run is finished
         due to no more data being reported.
 
@@ -868,7 +868,7 @@ class ApplicationSession(object):
 
     def send_errors(self, errors):
         """Called to submit errors. The errors should be an iterable
-        of individual errors details.
+        of individual error details.
 
         NOTE Although the details for each error carries a timestamp,
         the data collector appears to ignore it and overrides it with
@@ -1044,10 +1044,10 @@ class ApplicationSession(object):
             # we need to use. All communications after this point should go
             # to the secondary data collector.
             #
-            # We use the global requests session object for now as harvest
-            # for different applications are all done in turn. We will need
-            # to change this if use multiple threads as currently force
-            # session object to maintain only single connection to ensure
+            # We use the global requests session object for now as harvests
+            # for different applications are all done in turn. If multiple
+            # threads are used we will need to change this. We currently force
+            # session objects to maintain only a single connection to ensure
             # that keep alive is effective.
 
             payload = cls._create_connect_payload(app_name,
@@ -1092,7 +1092,7 @@ class ApplicationSession(object):
             pass
 
         else:
-            # Everything fine so we create the session object through which
+            # Everything is fine so we create the session object through which
             # subsequent communication with data collector will be done.
 
             session = cls(url, license_key, application_config)
@@ -1365,7 +1365,7 @@ def create_session(license_key, app_name, linked_applications,
     except NetworkInterfaceException:
         # The reason for errors of this type have already been logged.
         # No matter what the error we just pass back None. The upper
-        # layer will deal with not being successful.
+        # layer will deal with it not being successful.
 
         _logger.warning('Agent registration failed due to error in '
                 'uploading agent settings. Registration should retry '

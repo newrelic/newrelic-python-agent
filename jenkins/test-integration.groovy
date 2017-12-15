@@ -58,7 +58,7 @@ def getPacknsendTests (String workspace, String testSuffix, String mostRecentOnl
 use(extensions) {
     def packnsendTests = getPacknsendTests("${WORKSPACE}", testSuffix, "false")
 
-    ['develop', 'master'].each { jobType ->
+    ['develop', 'master', 'mmf'].each { jobType ->
         multiJob("_INTEGRATION-TESTS-${jobType}_") {
             concurrentBuild true
             description("Perform full suite of tests on Python Agent on the ${jobType} branch")
@@ -80,11 +80,21 @@ use(extensions) {
                     githubPush()
                 }
                 gitBranch = jobType
+            } else if (jobType == 'mmf') {
+                // branch will be correctly set later with the
+                // get_mmf_branch.sh script
+                repository(repoFull, 'develop')
+                triggers {
+                    // run daily on cron
+                    cron('H 2 * * 1-5')
+                }
             }
 
             parameters {
-                stringParam('GIT_REPOSITORY_BRANCH', gitBranch,
-                            'Branch in git repository to run test against.')
+                if (jobType != 'mmf') {
+                    stringParam('GIT_REPOSITORY_BRANCH', gitBranch,
+                                'Branch in git repository to run test against.')
+                }
                 stringParam('AGENT_FAKE_COLLECTOR', 'false',
                             'Whether fake collector is used or not.')
                 stringParam('AGENT_PROXY_HOST', '',
@@ -92,10 +102,19 @@ use(extensions) {
             }
 
             steps {
+                if (jobType == 'mmf') {
+                    shell('./jenkins/get_mmf_branch.sh')
+                }
+
                 phase('tox-tests', 'COMPLETED') {
                     for (test in packnsendTests) {
                         job(test[0]) {
                             killPhaseCondition('NEVER')
+                            if (jobType == 'mmf') {  // pass git branch to mmf test
+                                parameters {
+                                    propertiesFile('jenkins/environ')
+                                }
+                            }
                         }
                     }
                 }

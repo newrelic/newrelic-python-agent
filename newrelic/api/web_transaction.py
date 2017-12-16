@@ -351,13 +351,10 @@ class WebTransaction(Transaction):
                 if name in environ:
                     self._request_environment[name] = environ[name]
 
-        # Strip out the query params from the HTTP_REFERER if capture_params
-        # is disabled in the settings.
-
-        if (self._request_environment.get('HTTP_REFERER') and
-                not self.capture_params):
-            self._request_environment['HTTP_REFERER'] = \
-                _remove_query_string(self._request_environment['HTTP_REFERER'])
+        # Strip query params from referer URL.
+        if 'HTTP_REFERER' in self._request_environment:
+            self._request_environment['HTTP_REFERER'] = _remove_query_string(
+                    self._request_environment['HTTP_REFERER'])
 
         try:
             if 'CONTENT_LENGTH' in self._request_environment:

@@ -782,7 +782,8 @@ class SQLStatement(object):
     @property
     def obfuscated(self):
         if self._obfuscated is None:
-            self._obfuscated = _obfuscate_sql(self.uncommented, self.database)
+            self._obfuscated = _uncomment_sql(_obfuscate_sql(self.sql,
+                self.database))
         return self._obfuscated
 
     @property

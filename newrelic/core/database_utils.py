@@ -46,6 +46,8 @@ _any_quotes_re = re.compile(_any_quotes_p)
 
 _int_re = re.compile(r'(?<!:)\b\d+\b')
 
+_bool_re = re.compile(r'true|false|null', re.IGNORECASE)
+
 _quotes_table = {
     'single': _single_quotes_re,
     'double': _double_quotes_re,
@@ -68,6 +70,10 @@ def _obfuscate_sql(sql, database):
     # not match numbers within identifier names.
 
     sql = _int_re.sub('?', sql)
+
+    # Replace boolean values
+
+    sql = _bool_re.sub('?', sql)
 
     return sql
 

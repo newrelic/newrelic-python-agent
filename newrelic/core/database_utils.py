@@ -26,11 +26,14 @@ _logger = logging.getLogger(__name__)
 
 _single_quotes_p = "'(?:[^']|'')*'"
 _double_quotes_p = '"(?:[^"]|"")*"'
+_dollar_quotes_p = r'(\$(?!\d)[^$]*?\$).*?(?:\1|$)'
 _any_quotes_p = _single_quotes_p + '|' + _double_quotes_p
+_single_dollar_p = _single_quotes_p + '|' + _dollar_quotes_p
 
 _single_quotes_re = re.compile(_single_quotes_p)
 _double_quotes_re = re.compile(_double_quotes_p)
 _any_quotes_re = re.compile(_any_quotes_p)
+_single_dollar_re = re.compile(_single_dollar_p)
 
 # See http://www.regular-expressions.info/examplesprogrammer.html.
 #
@@ -52,6 +55,7 @@ _quotes_table = {
     'single': _single_quotes_re,
     'double': _double_quotes_re,
     'single+double': _any_quotes_re,
+    'single+dollar': _single_dollar_re,
 }
 
 _quotes_default = _single_quotes_re

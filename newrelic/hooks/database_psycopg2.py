@@ -192,7 +192,7 @@ def _add_defaults(parsed_host, parsed_hostaddr, parsed_port, parsed_database):
 
 def instrument_psycopg2(module):
     register_database_client(module, database_product='Postgres',
-            quoting_style='single', explain_query='explain',
+            quoting_style='single+dollar', explain_query='explain',
             explain_stmts=('select', 'insert', 'update', 'delete'),
             instance_info=instance_info)
 

@@ -24,8 +24,8 @@ _logger = logging.getLogger(__name__)
 # no backslash. Uses two successive instances of quote character in
 # middle of the string to indicate one embedded quote.
 
-_single_quotes_p = "'(?:[^']|'')*'"
-_double_quotes_p = '"(?:[^"]|"")*"'
+_single_quotes_p = r"'(?:[^']|'')*?(?:\\'.*|'(?!'))"
+_double_quotes_p = r'"(?:[^"]|"")*?(?:\\".*|"(?!"))'
 _dollar_quotes_p = r'(\$(?!\d)[^$]*?\$).*?(?:\1|$)'
 _any_quotes_p = _single_quotes_p + '|' + _double_quotes_p
 _single_dollar_p = _single_quotes_p + '|' + _dollar_quotes_p

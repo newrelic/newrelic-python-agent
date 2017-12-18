@@ -47,7 +47,7 @@ _single_dollar_re = re.compile(_single_dollar_p)
 # follows on from a ':'. This is because ':1' can be used as positional
 # parameter with database adapters where 'paramstyle' is 'numeric'.
 
-_int_re = re.compile(r'(?<!:)\b\d+\b')
+_int_re = re.compile(r'\b-?(?:[0-9]+\.)?[0-9]+([eE][+-]?[0-9]+)?')
 _uuid_re = re.compile(r'\{?(?:[0-9a-f]\-*){32}\}?')
 _bool_re = re.compile(r'true|false|null', re.IGNORECASE)
 

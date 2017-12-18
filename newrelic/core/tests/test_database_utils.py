@@ -912,9 +912,9 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(expected_result, actual_result)
 
     def test_obfuscate_integer_word_boundaries(self):
-        sql = 'A1 #2 ,3 .4 (5) =6 <7 /9 B9C'
+        sql = 'A1 ,2 .3 (4) =5 <6 /7 B8C'
         statement = SQLStatement(sql, DUMMY_DATABASE)
-        expected_result = 'A1 #? ,? .? (?) =? <? /? B9C'
+        expected_result = 'A1 ,? .? (?) =? <? /? B8C'
         actual_result = statement.obfuscated
         self.assertEqual(expected_result, actual_result)
 

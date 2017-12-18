@@ -157,17 +157,17 @@ _identifier_re = re.compile('[\',"`\[\]\(\)]*')
 def _extract_identifier(token):
     return _identifier_re.sub('', token).strip().lower()
 
+
 # Helper function for removing C style comments embedded in SQL statements.
 
-
-_uncomment_sql_p = r'/\*.*?\*/'
-_uncomment_sql_q = r'--.*?\n'
+_uncomment_sql_p = r'(?:#|--).*?(?=\r|\n|$)'
+_uncomment_sql_q = r'\/\*(?:[^\/]|\/[^*])*?(?:\*\/|\/\*.*)'
 _uncomment_sql_x = r'(%s)|(%s)' % (_uncomment_sql_p, _uncomment_sql_q)
 _uncomment_sql_re = re.compile(_uncomment_sql_x, re.DOTALL)
 
 
 def _uncomment_sql(sql):
-    return _uncomment_sql_re.sub('', sql)
+    return _uncomment_sql_re.sub('?', sql)
 
 # Parser routines for the different SQL statement operation types.
 #

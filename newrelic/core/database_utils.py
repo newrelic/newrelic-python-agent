@@ -27,13 +27,17 @@ _logger = logging.getLogger(__name__)
 _single_quotes_p = r"'(?:[^']|'')*?(?:\\'.*|'(?!'))"
 _double_quotes_p = r'"(?:[^"]|"")*?(?:\\".*|"(?!"))'
 _dollar_quotes_p = r'(\$(?!\d)[^$]*?\$).*?(?:\1|$)'
+_oracle_quotes_p = (r"q'\[.*?(?:\]'|$)|q'\{.*?(?:\}'|$)|"
+        r"q'\<.*?(?:\>'|$)|q'\(.*?(?:\)'|$)")
 _any_quotes_p = _single_quotes_p + '|' + _double_quotes_p
 _single_dollar_p = _single_quotes_p + '|' + _dollar_quotes_p
+_single_oracle_p = _single_quotes_p + '|' + _oracle_quotes_p
 
 _single_quotes_re = re.compile(_single_quotes_p)
 _double_quotes_re = re.compile(_double_quotes_p)
 _any_quotes_re = re.compile(_any_quotes_p)
 _single_dollar_re = re.compile(_single_dollar_p)
+_single_oracle_re = re.compile(_single_oracle_p)
 
 # See http://www.regular-expressions.info/examplesprogrammer.html.
 #
@@ -59,6 +63,7 @@ _quotes_table = {
     'double': _double_quotes_re,
     'single+double': _any_quotes_re,
     'single+dollar': _single_dollar_re,
+    'single+oracle': _single_oracle_re,
 }
 
 _quotes_default = _single_quotes_re

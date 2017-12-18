@@ -45,7 +45,7 @@ _any_quotes_re = re.compile(_any_quotes_p)
 # parameter with database adapters where 'paramstyle' is 'numeric'.
 
 _int_re = re.compile(r'(?<!:)\b\d+\b')
-
+_uuid_re = re.compile(r'\{?(?:[0-9a-f]\-*){32}\}?')
 _bool_re = re.compile(r'true|false|null', re.IGNORECASE)
 
 _quotes_table = {
@@ -63,6 +63,10 @@ def _obfuscate_sql(sql, database):
     # Substitute quoted strings first.
 
     sql = quotes_re.sub('?', sql)
+
+    # Replace uuids
+
+    sql = _uuid_re.sub('?', sql)
 
     # Replace straight integer values. This will pick up
     # integers by themselves but also as part of floating point

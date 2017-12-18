@@ -47,9 +47,12 @@ _single_dollar_re = re.compile(_single_dollar_p)
 # follows on from a ':'. This is because ':1' can be used as positional
 # parameter with database adapters where 'paramstyle' is 'numeric'.
 
-_int_re = re.compile(r'\b-?(?:[0-9]+\.)?[0-9]+([eE][+-]?[0-9]+)?')
-_uuid_re = re.compile(r'\{?(?:[0-9a-f]\-*){32}\}?')
-_bool_re = re.compile(r'true|false|null', re.IGNORECASE)
+_uuid_p = r'\{?(?:[0-9a-f]\-*){32}\}?'
+_int_p = r'\b-?(?:[0-9]+\.)?[0-9]+([eE][+-]?[0-9]+)?'
+_hex_p = r'0x[0-9a-f]+'
+_bool_p = r'true|false|null'
+_all_literals_p = _uuid_p + '|' + _hex_p + '|' + _int_p + '|' + _bool_p
+_all_literals_re = re.compile(_all_literals_p, re.IGNORECASE)
 
 _quotes_table = {
     'single': _single_quotes_re,
@@ -68,20 +71,9 @@ def _obfuscate_sql(sql, database):
 
     sql = quotes_re.sub('?', sql)
 
-    # Replace uuids
+    # Replace all other sensitive fields
 
-    sql = _uuid_re.sub('?', sql)
-
-    # Replace straight integer values. This will pick up
-    # integers by themselves but also as part of floating point
-    # numbers. Because of word boundary checks in pattern will
-    # not match numbers within identifier names.
-
-    sql = _int_re.sub('?', sql)
-
-    # Replace boolean values
-
-    sql = _bool_re.sub('?', sql)
+    sql = _all_literals_re.sub('?', sql)
 
     return sql
 

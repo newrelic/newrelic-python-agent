@@ -10,6 +10,7 @@ from newrelic.hooks.database_dbapi2 import (CursorWrapper as
 
 DEFAULT = object()
 
+
 class CursorWrapper(DBAPI2CursorWrapper):
 
     def executescript(self, sql_script):
@@ -17,6 +18,7 @@ class CursorWrapper(DBAPI2CursorWrapper):
         with DatabaseTrace(transaction, sql_script, self._nr_dbapi2_module,
                 self._nr_connect_params):
             return self.__wrapped__.executescript(sql_script)
+
 
 class ConnectionWrapper(DBAPI2ConnectionWrapper):
 
@@ -72,9 +74,11 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
                 self._nr_connect_params):
             return self.__wrapped__.executescript(sql_script)
 
+
 class ConnectionFactory(DBAPI2ConnectionFactory):
 
     __connection_wrapper__ = ConnectionWrapper
+
 
 def instance_info(args, kwargs):
     def _bind_params(database, *args, **kwargs):
@@ -86,11 +90,13 @@ def instance_info(args, kwargs):
 
     return (host, port, database)
 
+
 def instrument_sqlite3_dbapi2(module):
-    register_database_client(module, 'SQLite', 'single',
+    register_database_client(module, 'SQLite', quoting_style='single+double',
             instance_info=instance_info)
 
     wrap_object(module, 'connect', ConnectionFactory, (module,))
+
 
 def instrument_sqlite3(module):
     # This case is to handle where the sqlite3 module was already
@@ -102,6 +108,6 @@ def instrument_sqlite3(module):
 
     if not isinstance(module.connect, ConnectionFactory):
         register_database_client(module, 'SQLite',
-                instance_info=instance_info)
+                quoting_style='single+double', instance_info=instance_info)
 
         wrap_object(module, 'connect', ConnectionFactory, (module,))

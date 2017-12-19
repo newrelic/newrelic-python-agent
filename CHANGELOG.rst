@@ -1,3 +1,12 @@
+unreleased
+----------
+
+- Using the aiohttp client results in an application crash
+
+  Under certain circumstances, using the aiohttp client may have resulted in an
+  application crash. This issue has been addressed.
+
+
 2.98.0 (2017-11-30)
 -------------------
 

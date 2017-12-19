@@ -34,6 +34,10 @@ class CursorWrapper(DBAPI2CursorWrapper):
         return super(CursorWrapper, self).execute(sql, parameters, *args,
                 **kwargs)
 
+    def __enter__(self):
+        self.__wrapped__.__enter__()
+        return self
+
     def executemany(self, sql, seq_of_parameters):
         if hasattr(sql, 'as_string'):
             sql = sql.as_string(self)

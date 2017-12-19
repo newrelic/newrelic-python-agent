@@ -16,7 +16,6 @@ from newrelic.api.background_task import background_task
 
 
 # Settings
-
 _enable_instance_settings = {
     'datastore_tracer.instance_reporting.enabled': True,
 }
@@ -24,8 +23,8 @@ _disable_instance_settings = {
     'datastore_tracer.instance_reporting.enabled': False,
 }
 
-# Metrics
 
+# Metrics
 _base_scoped_metrics = (
         ('Datastore/statement/Postgres/datastore_psycopg2/select', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2/insert', 1),
@@ -90,57 +89,69 @@ _disable_rollup_metrics.append(
 
 
 # Query
-def _exercise_db(cursor_factory=None, row_type=tuple, wrapper=str):
+def _execute(connection, cursor, row_type, wrapper):
+    unicode_type = psycopg2.extensions.UNICODE
+    psycopg2.extensions.register_type(unicode_type)
+    psycopg2.extensions.register_type(unicode_type, connection)
+    psycopg2.extensions.register_type(unicode_type, cursor)
+
+    sql = """drop table if exists datastore_psycopg2"""
+    cursor.execute(wrapper(sql))
+
+    sql = """create table datastore_psycopg2 (a integer, b real, c text)"""
+    cursor.execute(wrapper(sql))
+
+    sql = """insert into datastore_psycopg2 values (%s, %s, %s)"""
+    params = [(1, 1.0, '1.0'), (2, 2.2, '2.2'), (3, 3.3, '3.3')]
+    cursor.executemany(wrapper(sql), params)
+
+    sql = """select * from datastore_psycopg2"""
+    cursor.execute(wrapper(sql))
+
+    for row in cursor:
+        assert isinstance(row, row_type)
+
+    sql = """update datastore_psycopg2 set a=%s, b=%s, c=%s where a=%s"""
+    params = (4, 4.0, '4.0', 1)
+    cursor.execute(wrapper(sql), params)
+
+    sql = """delete from datastore_psycopg2 where a=2"""
+    cursor.execute(wrapper(sql))
+
+    connection.commit()
+
+    cursor.callproc('now')
+    cursor.callproc('pg_sleep', (0.25,))
+
+    connection.rollback()
+    connection.commit()
+
+
+def _exercise_db(cursor_factory=None, use_cur_context=False, row_type=tuple,
+        wrapper=str):
     connection = psycopg2.connect(
             database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
             password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
             port=DB_SETTINGS['port'])
+    kwargs = {'cursor_factory': cursor_factory} if cursor_factory else {}
 
     try:
-        if cursor_factory:
-            cursor = connection.cursor(cursor_factory=cursor_factory)
+        if use_cur_context:
+            with connection.cursor(**kwargs) as cursor:
+                _execute(connection, cursor, row_type, wrapper)
         else:
-            cursor = connection.cursor()
-
-        unicode_type = psycopg2.extensions.UNICODE
-        psycopg2.extensions.register_type(unicode_type)
-        psycopg2.extensions.register_type(unicode_type, connection)
-        psycopg2.extensions.register_type(unicode_type, cursor)
-
-        cursor.execute(wrapper("""drop table if exists datastore_psycopg2"""))
-
-        cursor.execute(wrapper("""create table datastore_psycopg2 """
-                """(a integer, b real, c text)"""))
-
-        cursor.executemany(wrapper("""insert into datastore_psycopg2 """
-                """values (%s, %s, %s)"""), [(1, 1.0, '1.0'),
-                (2, 2.2, '2.2'), (3, 3.3, '3.3')])
-
-        cursor.execute(wrapper("""select * from datastore_psycopg2"""))
-
-        for row in cursor:
-            assert isinstance(row, row_type)
-
-        cursor.execute(wrapper("""update datastore_psycopg2 set a=%s, b=%s, """
-                """c=%s where a=%s"""), (4, 4.0, '4.0', 1))
-
-        cursor.execute(wrapper("""delete from datastore_psycopg2 where a=2"""))
-
-        connection.commit()
-
-        cursor.callproc('now')
-        cursor.callproc('pg_sleep', (0.25,))
-
-        connection.rollback()
-        connection.commit()
-
+            cursor = connection.cursor(**kwargs)
+            _execute(connection, cursor, row_type, wrapper)
     finally:
         connection.close()
 
 
-_test_matrix = ['wrapper', [
-    str,
-]]
+_test_matrix = ['wrapper,use_cur_context', [(str, False)]]
+
+
+if PSYCOPG2_VERSION >= (2, 5):
+    # with statement support for connections/cursors added in 2.5 and up
+    _test_matrix[1].append((str, True))
 
 if PSYCOPG2_VERSION >= (2, 7):
     # Composable SQL is expected to be available in versions 2.7 and up
@@ -149,15 +160,15 @@ if PSYCOPG2_VERSION >= (2, 7):
             "but is not loading")
 
     # exercise with regular SQL wrapper
-    _test_matrix[1].append(sql.SQL)
+    _test_matrix[1].append((sql.SQL, True))
+    _test_matrix[1].append((sql.SQL, False))
 
     # exercise with "Composed" SQL object
-    _test_matrix[1].append(lambda q: sql.Composed([sql.SQL(q)]))
+    _test_matrix[1].append((lambda q: sql.Composed([sql.SQL(q)]), True))
+    _test_matrix[1].append((lambda q: sql.Composed([sql.SQL(q)]), False))
 
 
 # Tests
-
-
 @pytest.mark.parametrize(*_test_matrix)
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
@@ -167,8 +178,9 @@ if PSYCOPG2_VERSION >= (2, 7):
         background_task=True)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
-def test_execute_via_cursor_enable_instance(wrapper):
-    _exercise_db(cursor_factory=None, row_type=tuple, wrapper=wrapper)
+def test_execute_via_cursor_enable_instance(wrapper, use_cur_context):
+    _exercise_db(cursor_factory=None, use_cur_context=use_cur_context,
+            row_type=tuple, wrapper=wrapper)
 
 
 @pytest.mark.parametrize(*_test_matrix)
@@ -180,8 +192,9 @@ def test_execute_via_cursor_enable_instance(wrapper):
         background_task=True)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
-def test_execute_via_cursor_disable_instance(wrapper):
-    _exercise_db(cursor_factory=None, row_type=tuple, wrapper=wrapper)
+def test_execute_via_cursor_disable_instance(wrapper, use_cur_context):
+    _exercise_db(cursor_factory=None, use_cur_context=use_cur_context,
+            row_type=tuple, wrapper=wrapper)
 
 
 @pytest.mark.parametrize(*_test_matrix)
@@ -193,9 +206,10 @@ def test_execute_via_cursor_disable_instance(wrapper):
         background_task=True)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
-def test_execute_via_cursor_dict_enable_instance(wrapper):
+def test_execute_via_cursor_dict_enable_instance(wrapper, use_cur_context):
     dict_factory = psycopg2.extras.RealDictCursor
-    _exercise_db(cursor_factory=dict_factory, row_type=dict, wrapper=wrapper)
+    _exercise_db(cursor_factory=dict_factory, use_cur_context=use_cur_context,
+            row_type=dict, wrapper=wrapper)
 
 
 @pytest.mark.parametrize(*_test_matrix)
@@ -207,6 +221,7 @@ def test_execute_via_cursor_dict_enable_instance(wrapper):
         background_task=True)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
-def test_execute_via_cursor_dict_disable_instance(wrapper):
+def test_execute_via_cursor_dict_disable_instance(wrapper, use_cur_context):
     dict_factory = psycopg2.extras.RealDictCursor
-    _exercise_db(cursor_factory=dict_factory, row_type=dict, wrapper=wrapper)
+    _exercise_db(cursor_factory=dict_factory, use_cur_context=use_cur_context,
+            row_type=dict, wrapper=wrapper)

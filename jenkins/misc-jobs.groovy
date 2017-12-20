@@ -32,7 +32,7 @@ use(extensions) {
             blockOnJobs('.*', 'GLOBAL', 'DISABLED')
 
             steps {
-                reseedFrom('jenkins/**/*.groovy')
+                reseedFrom('jenkins/*.groovy')
             }
 
             slackQuiet(slackChannel)

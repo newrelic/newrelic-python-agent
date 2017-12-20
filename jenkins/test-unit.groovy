@@ -65,42 +65,59 @@ use(extensions) {
                 }
             }
 
-            if (jobType != 'mmf') {
-                parameters {
+            parameters {
+                if (jobType == 'mmf') {
+                    choiceParam('GIT_REPOSITORY_BRANCH', [''],
+                        'Branch in git repository to run test against. ' +
+                        'Will be set dynamically by the job.\n' +
+                        'If you wish to run a test on a specific branch, ' +
+                        'use the <b>_COMBINED-TESTS-manual_</b> job.')
+                } else {
                     stringParam('GIT_REPOSITORY_BRANCH', gitBranch,
-                                'Branch in git repository to run test against.')
+                        'Branch in git repository to run test against.')
                 }
             }
 
             steps {
                 if (jobType == 'mmf') {
-                    shell('./jenkins/get_mmf_branch.sh')
+                    // get the mmf branch
+                    shell('./jenkins/scripts/get_mmf_branch.sh')
+                    // set it as an env var
+                    environmentVariables {
+                        propertiesFile('jenkins/environ')
+                    }
+                    // promote it to a first rate parameter so it can be passed
+                    // to child jobs
+                    systemGroovyScriptFile('jenkins/scripts/set_mmf_branch.groovy')
                 }
 
-                phase('unit-tests', 'COMPLETED') {
-                    job("devpi-pre-build-hook_${testSuffix}") {
-                        killPhaseCondition('NEVER')
-                        if (jobType == 'mmf') {  // pass git branch to mmf test
-                            parameters {
-                                propertiesFile('jenkins/environ')
+                conditionalSteps {
+                    condition {
+                        if (jobType == 'mmf') {
+                            not {
+                                stringsMatch('${GIT_REPOSITORY_BRANCH}', '', false)
                             }
-                        }
-                    }
-                    job("build.sh_${testSuffix}") {
-                        killPhaseCondition('NEVER')
-                        if (jobType == 'mmf') {  // pass git branch to mmf test
-                            parameters {
-                                propertiesFile('jenkins/environ')
-                            }
+                        } else {
+                            alwaysRun()
                         }
                     }
 
-                    for (testEnv in unitTestEnvs) {
-                        job("tests.sh-${testEnv}_${testSuffix}") {
-                            killPhaseCondition('NEVER')
-                            if (jobType == 'mmf') {  // pass git branch to mmf test
-                                parameters {
-                                    propertiesFile('jenkins/environ')
+                    // do not run the following jobs if the above condition
+                    // fails
+                    runner('DontRun')
+
+                    steps {
+                        phase('unit-tests', 'COMPLETED') {
+                            job("devpi-pre-build-hook_${testSuffix}") {
+                                killPhaseCondition('NEVER')
+                            }
+                            job("build.sh_${testSuffix}") {
+                                killPhaseCondition('NEVER')
+                            }
+
+                            for (testEnv in unitTestEnvs) {
+                                job("tests.sh-${testEnv}_${testSuffix}") {
+                                    killPhaseCondition('NEVER')
                                 }
                             }
                         }

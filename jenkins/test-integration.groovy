@@ -110,11 +110,6 @@ use(extensions) {
                     for (test in packnsendTests) {
                         job(test[0]) {
                             killPhaseCondition('NEVER')
-                            if (jobType == 'mmf') {  // pass git branch to mmf test
-                                parameters {
-                                    propertiesFile('jenkins/environ')
-                                }
-                            }
                         }
                     }
                 }

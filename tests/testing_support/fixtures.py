@@ -1531,6 +1531,64 @@ def validate_tt_parameters(required_params={}, forgone_params={}):
     return _validate_tt_parameters
 
 
+def validate_tt_segment_params(forgone_params=(), present_params=()):
+    recorded_traces = []
+
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _extract_trace(wrapped, instance, args, kwargs):
+        result = wrapped(*args, **kwargs)
+
+        # Now that transaction has been recorded, generate
+        # a transaction trace
+
+        connections = SQLConnections()
+        trace_data = instance.transaction_trace_data(connections)
+        # Save the recorded traces
+        recorded_traces.extend(trace_data)
+
+        return result
+
+    @function_wrapper
+    def validator(wrapped, instance, args, kwargs):
+        new_wrapper = _extract_trace(wrapped)
+        result = new_wrapper(*args, **kwargs)
+
+        # Verify that traces have been recorded
+        assert recorded_traces
+
+        # Extract the first transaction trace
+        transaction_trace = recorded_traces[0]
+        pack_data = unpack_field(transaction_trace[4])
+
+        # Extract the root segment from the root node
+        root_segment = pack_data[0][3]
+
+        recorded_params = set()
+
+        def _validate_segment_params(segment):
+            segment_params = set(segment[3].keys())
+
+            recorded_params.update(segment_params)
+
+            for child_segment in segment[4]:
+                _validate_segment_params(child_segment)
+
+        _validate_segment_params(root_segment)
+
+        # Verify that the params in present params have been recorded
+        present_params_set = set(present_params)
+        assert recorded_params.issuperset(present_params_set)
+
+        # Verify that all forgone params are omitted
+        recorded_forgone_params = (recorded_params & set(forgone_params))
+        assert not recorded_forgone_params
+
+        return result
+
+    return validator
+
+
 def validate_browser_attributes(required_params={}, forgone_params={}):
     @transient_function_wrapper('newrelic.api.web_transaction',
             'WebTransaction.browser_timing_footer')

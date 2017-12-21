@@ -91,9 +91,15 @@ use(extensions) {
             }
 
             parameters {
-                if (jobType != 'mmf') {
+                if (jobType == 'mmf') {
+                    choiceParam('GIT_REPOSITORY_BRANCH', [''],
+                        'Branch in git repository to run test against. ' +
+                        'Will be set dynamically by the job.\n' +
+                        'If you wish to run a test on a specific branch, ' +
+                        'use the <b>_COMBINED-TESTS-manual_</b> job.')
+                } else {
                     stringParam('GIT_REPOSITORY_BRANCH', gitBranch,
-                                'Branch in git repository to run test against.')
+                        'Branch in git repository to run test against.')
                 }
                 stringParam('AGENT_FAKE_COLLECTOR', 'false',
                             'Whether fake collector is used or not.')
@@ -103,13 +109,39 @@ use(extensions) {
 
             steps {
                 if (jobType == 'mmf') {
-                    shell('./jenkins/get_mmf_branch.sh')
+                    // get the mmf branch
+                    shell('./jenkins/scripts/get_mmf_branch.sh')
+                    // set it as an env var
+                    environmentVariables {
+                        propertiesFile('jenkins/environ')
+                    }
+                    // promote it to a first rate parameter so it can be passed
+                    // to child jobs
+                    systemGroovyScriptFile('jenkins/scripts/set_mmf_branch.groovy')
                 }
 
-                phase('tox-tests', 'COMPLETED') {
-                    for (test in packnsendTests) {
-                        job(test[0]) {
-                            killPhaseCondition('NEVER')
+                conditionalSteps {
+                    condition {
+                        if (jobType == 'mmf') {
+                            not {
+                                stringsMatch('${GIT_REPOSITORY_BRANCH}', '', false)
+                            }
+                        } else {
+                            alwaysRun()
+                        }
+                    }
+
+                    // do not run the following jobs if the above condition
+                    // fails
+                    runner('DontRun')
+
+                    steps {
+                        phase('tox-tests', 'COMPLETED') {
+                            for (test in packnsendTests) {
+                                job(test[0]) {
+                                    killPhaseCondition('NEVER')
+                                }
+                            }
                         }
                     }
                 }

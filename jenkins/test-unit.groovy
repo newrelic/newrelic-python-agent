@@ -166,7 +166,7 @@ use(extensions) {
                 }
 
                 steps {
-                    shell('./jenkins/prep_node_for_test.sh')
+                    shell('./jenkins/scripts/prep_node_for_test.sh')
                     shell("./docker/packnsend run /data/tests.sh ${testEnv}")
                 }
             }

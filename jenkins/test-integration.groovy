@@ -29,7 +29,7 @@ def getPacknsendTests (String workspace, String testSuffix, String mostRecentOnl
         println "Reseed to run tests on only most recent package versions? ${mostRecentOnly}"
 
         def proc = (
-            "python2.7 ${workspace}/jenkins/parse_integration_test_tox_files.py " +
+            "python2.7 ${workspace}/jenkins/scripts/parse_integration_test_tox_files.py " +
                 "--test-suffix ${testSuffix} " +
                 "--max-group-size ${maxEnvsPerContainer} " +
                 "--most-recent-only ${mostRecentOnly} " +
@@ -165,7 +165,7 @@ use(extensions) {
                         env('NEW_RELIC_PROXY_HOST', '${AGENT_PROXY_HOST}')
                         env('DOCKER_HOST', 'unix:///var/run/docker.sock')
                     }
-                    shell('./jenkins/prep_node_for_test.sh')
+                    shell('./jenkins/scripts/prep_node_for_test.sh')
 
                     if (composePath) {
                         shell("./docker/packnsend run -c ${composePath} tox -c ${toxPath} -e ${testEnvs}")

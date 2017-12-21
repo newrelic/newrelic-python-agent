@@ -1,13 +1,14 @@
-import unittest
-import time
+import pytest
 import sys
-
-import newrelic.tests.test_cases
+import time
+import unittest
 
 import newrelic.api.settings
 import newrelic.api.application
 import newrelic.api.transaction
 import newrelic.api.web_transaction
+import newrelic.tests.test_cases
+
 
 is_pypy = '__pypy__' in sys.builtin_module_names
 
@@ -679,6 +680,28 @@ class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
                     wrapped(environ, start_response))
         finally:
             func_wrapper.close()
+
+
+@pytest.mark.parametrize('capture_params', [
+        None,
+        False,
+        True,
+])
+def test_http_referer_header_stripped_transaction(capture_params):
+    # Make sure that 'HTTP_REFERER' header params are stripped, regardless of
+    # 'capture_params' config.
+    url = "http://www.wruff.org"
+    params = "?token=meow"
+    environ = {"HTTP_REFERER": url + params, "REQUEST_URI": "DUMMY",
+            "newrelic.enabled": "true"}
+
+    if capture_params is not None:
+        environ["newrelic.capture_request_params"] = capture_params
+
+    transaction = newrelic.api.web_transaction.WebTransaction(
+            application, environ)
+    assert transaction._request_environment["HTTP_REFERER"] == url
+    assert transaction.capture_params == capture_params
 
 
 if __name__ == '__main__':

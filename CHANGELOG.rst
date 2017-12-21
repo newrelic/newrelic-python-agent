@@ -6,6 +6,11 @@ unreleased
   Under certain circumstances, using the aiohttp client may have resulted in an
   application crash. This issue has been addressed.
 
+- Database queries made with psycopg2 may not have been recorded
+
+  When using the "with" statement to create a cursor, time spent on database
+  calls may not have been properly recorded. This issue has been addressed.
+
 
 2.98.0 (2017-11-30)
 -------------------

@@ -28,7 +28,8 @@ from testing_support.fixtures import (override_application_settings,
         validate_request_params_omitted, validate_attributes_complete,
         validate_non_transaction_error_event, reset_core_stats_engine,
         validate_custom_event_in_application_stats_engine,
-        validate_custom_event_count, validate_tt_segment_params)
+        validate_custom_event_count, validate_tt_segment_params,
+        validate_application_errors)
 
 
 def test_hsm_configuration_default():
@@ -46,6 +47,7 @@ _hsm_local_config_file_settings_disabled = [
         'capture_params': True,
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': False,
+        'strip_exception_messages.whitelist': [],
         'custom_insights_events.enabled': True,
         'message_tracer.segment_parameters_enabled': True,
     },
@@ -55,6 +57,7 @@ _hsm_local_config_file_settings_disabled = [
         'capture_params': False,
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': False,
+        'strip_exception_messages.whitelist': [],
         'custom_insights_events.enabled': False,
         'message_tracer.segment_parameters_enabled': True,
     },
@@ -64,6 +67,7 @@ _hsm_local_config_file_settings_disabled = [
         'capture_params': False,
         'transaction_tracer.record_sql': 'obfuscated',
         'strip_exception_messages.enabled': True,
+        'strip_exception_messages.whitelist': [],
         'custom_insights_events.enabled': True,
         'message_tracer.segment_parameters_enabled': False,
     },
@@ -73,8 +77,19 @@ _hsm_local_config_file_settings_disabled = [
         'capture_params': False,
         'transaction_tracer.record_sql': 'off',
         'strip_exception_messages.enabled': True,
+        'strip_exception_messages.whitelist': [],
         'custom_insights_events.enabled': False,
         'message_tracer.segment_parameters_enabled': False,
+    },
+    {
+        'high_security': False,
+        'ssl': True,
+        'capture_params': True,
+        'transaction_tracer.record_sql': 'raw',
+        'strip_exception_messages.enabled': False,
+        'strip_exception_messages.whitelist': ['builtins:Exception'],
+        'custom_insights_events.enabled': True,
+        'message_tracer.segment_parameters_enabled': True,
     },
 ]
 
@@ -85,6 +100,7 @@ _hsm_local_config_file_settings_enabled = [
         'capture_params': True,
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': True,
+        'strip_exception_messages.whitelist': [],
         'custom_insights_events.enabled': True,
         'message_tracer.segment_parameters_enabled': True,
     },
@@ -94,6 +110,7 @@ _hsm_local_config_file_settings_enabled = [
         'capture_params': None,
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': True,
+        'strip_exception_messages.whitelist': [],
         'custom_insights_events.enabled': True,
         'message_tracer.segment_parameters_enabled': True,
     },
@@ -103,6 +120,7 @@ _hsm_local_config_file_settings_enabled = [
         'capture_params': True,
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': True,
+        'strip_exception_messages.whitelist': [],
         'custom_insights_events.enabled': True,
         'message_tracer.segment_parameters_enabled': True,
     },
@@ -112,6 +130,7 @@ _hsm_local_config_file_settings_enabled = [
         'capture_params': False,
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': True,
+        'strip_exception_messages.whitelist': [],
         'custom_insights_events.enabled': True,
         'message_tracer.segment_parameters_enabled': True,
     },
@@ -121,6 +140,7 @@ _hsm_local_config_file_settings_enabled = [
         'capture_params': True,
         'transaction_tracer.record_sql': 'obfuscated',
         'strip_exception_messages.enabled': True,
+        'strip_exception_messages.whitelist': [],
         'custom_insights_events.enabled': True,
         'message_tracer.segment_parameters_enabled': True,
     },
@@ -130,6 +150,7 @@ _hsm_local_config_file_settings_enabled = [
         'capture_params': True,
         'transaction_tracer.record_sql': 'off',
         'strip_exception_messages.enabled': True,
+        'strip_exception_messages.whitelist': [],
         'custom_insights_events.enabled': True,
         'message_tracer.segment_parameters_enabled': False,
     },
@@ -139,8 +160,19 @@ _hsm_local_config_file_settings_enabled = [
         'capture_params': True,
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': False,
+        'strip_exception_messages.whitelist': [],
         'custom_insights_events.enabled': False,
         'message_tracer.segment_parameters_enabled': False,
+    },
+    {
+        'high_security': True,
+        'ssl': True,
+        'capture_params': True,
+        'transaction_tracer.record_sql': 'raw',
+        'strip_exception_messages.enabled': True,
+        'strip_exception_messages.whitelist': ['builtins:Exception'],
+        'custom_insights_events.enabled': True,
+        'message_tracer.segment_parameters_enabled': True,
     },
 ]
 
@@ -163,6 +195,7 @@ def test_local_config_file_override_hsm_disabled(settings):
     original_capture_params = settings.capture_params
     original_record_sql = settings.transaction_tracer.record_sql
     original_strip_messages = settings.strip_exception_messages.enabled
+    original_whitelist = settings.strip_exception_messages.whitelist
     original_custom_events = settings.custom_insights_events.enabled
     original_message_segment_params_enabled = (
             settings.message_tracer.segment_parameters_enabled)
@@ -173,6 +206,7 @@ def test_local_config_file_override_hsm_disabled(settings):
     assert settings.capture_params == original_capture_params
     assert settings.transaction_tracer.record_sql == original_record_sql
     assert settings.strip_exception_messages.enabled == original_strip_messages
+    assert settings.strip_exception_messages.whitelist == original_whitelist
     assert settings.custom_insights_events.enabled == original_custom_events
     assert (settings.message_tracer.segment_parameters_enabled ==
             original_message_segment_params_enabled)
@@ -186,6 +220,7 @@ def test_local_config_file_override_hsm_enabled(settings):
     assert settings.capture_params not in (True, None)
     assert settings.transaction_tracer.record_sql in ('off', 'obfuscated')
     assert settings.strip_exception_messages.enabled
+    assert settings.strip_exception_messages.whitelist == []
     assert settings.custom_insights_events.enabled is False
     assert settings.message_tracer.segment_parameters_enabled is False
 
@@ -425,6 +460,7 @@ _intrinsic_attributes = {'error.class': callable_name(TestException),
 @validate_non_transaction_error_event(
         required_intrinsics=_intrinsic_attributes,
         required_user={'key-1': 'value-1'})
+@validate_application_errors([(callable_name(TestException), _err_message)])
 def test_non_transaction_error_parameters_hsm_disabled():
     try:
         raise TestException(_err_message)
@@ -442,6 +478,8 @@ _intrinsic_attributes = {'error.class': callable_name(TestException),
 @validate_non_transaction_error_event(
         required_intrinsics=_intrinsic_attributes,
         forgone_user={'key-1': 'value-1'})
+@validate_application_errors([(callable_name(TestException),
+        STRIP_EXCEPTION_MESSAGE)])
 def test_non_transaction_error_parameters_hsm_enabled():
     try:
         raise TestException(_err_message)

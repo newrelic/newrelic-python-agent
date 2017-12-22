@@ -802,6 +802,11 @@ def apply_local_high_security_mode_setting(settings):
         _logger.info(log_template, 'strip_exception_messages.enabled',
                 False, True)
 
+    if settings.strip_exception_messages.whitelist:
+        _logger.info(log_template, 'strip_exception_messages.whitelist',
+                settings.strip_exception_messages.whitelist, [])
+        settings.strip_exception_messages.whitelist = []
+
     if settings.custom_insights_events.enabled:
         settings.custom_insights_events.enabled = False
         _logger.info(log_template, 'custom_insights_events.enabled', True,

@@ -29,7 +29,7 @@ class FunctionTrace(TimeTrace):
         self.group = group
         self.label = label
 
-        if self.should_record_params:
+        if self.should_record_segment_params:
             self.params = params
         else:
             self.params = None

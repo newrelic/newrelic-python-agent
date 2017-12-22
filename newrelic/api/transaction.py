@@ -670,7 +670,7 @@ class Transaction(object):
         return queue_wait
 
     @property
-    def should_record_params(self):
+    def should_record_segment_params(self):
         # Only record parameters when it is safe to do so
         return (self.settings and
                 not self.settings.high_security)

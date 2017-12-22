@@ -24,7 +24,7 @@ class TimeTrace(object):
         self.has_async_children = False
         self.min_child_start_time = float('inf')
         self.exc_data = (None, None, None)
-        self.should_record_params = False
+        self.should_record_segment_params = False
 
         if transaction:
             # Don't do further tracing of transaction if
@@ -40,7 +40,8 @@ class TimeTrace(object):
                     not self.parent.terminal_node()):
                 self.parent.increment_child_count()
 
-            self.should_record_params = transaction.should_record_params
+            self.should_record_segment_params = (
+                    transaction.should_record_segment_params)
 
     def __enter__(self):
         if not self.transaction:

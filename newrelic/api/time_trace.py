@@ -273,6 +273,6 @@ class TimeTrace(object):
     @property
     def should_record_params(self):
         # Only record parameters when it is safe to do so
-        return bool(self.transaction and
+        return (self.transaction and
                 self.transaction.settings and
                 not self.transaction.settings.high_security)

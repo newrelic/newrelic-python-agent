@@ -94,7 +94,7 @@ class TransactionNoneTestCase(newrelic.tests.test_cases.TestCase):
         self.assertEqual(self.time_trace.exclusive, 1.0)
 
     def test_should_record_params_no_transaction(self):
-        self.assertEqual(self.time_trace.should_record_params, False)
+        self.assertEqual(self.time_trace.should_record_params, None)
 
 
 class TransactionWithoutSettingsTestCase(newrelic.tests.test_cases.TestCase):
@@ -107,7 +107,7 @@ class TransactionWithoutSettingsTestCase(newrelic.tests.test_cases.TestCase):
         self.time_trace = TimeTrace(FakeTransaction(has_settings=False))
 
     def test_should_record_params_transaction_without_settings(self):
-        self.assertEqual(self.time_trace.should_record_params, False)
+        self.assertEqual(self.time_trace.should_record_params, None)
 
 
 class TransactionHSMOffTestCase(newrelic.tests.test_cases.TestCase):

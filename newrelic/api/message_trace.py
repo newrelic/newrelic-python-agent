@@ -17,22 +17,26 @@ class MessageTrace(TimeTrace, CatHeaderMixin):
 
     def __init__(self, transaction, library, operation,
             destination_type, destination_name,
-            params={}):
+            params=None):
 
         super(MessageTrace, self).__init__(transaction)
-        self.params = {}
 
         if transaction:
             self.library = transaction._intern_string(library)
             self.operation = transaction._intern_string(operation)
 
-            # Only record parameters when not high security mode and only
-            # when enabled in settings.
-            if transaction.settings.message_tracer.segment_parameters_enabled:
-                self.params = params
         else:
             self.library = library
             self.operation = operation
+
+        # Only record parameters when not high security mode and only
+        # when enabled in settings.
+        if (self.should_record_segment_params and
+                transaction.settings.
+                message_tracer.segment_parameters_enabled):
+            self.params = params
+        else:
+            self.params = None
 
         self.destination_type = destination_type
         self.destination_name = destination_name

@@ -6,6 +6,7 @@ import webtest
 from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.message_trace import MessageTrace
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.api.transaction import (capture_request_params,
         add_custom_parameter, record_exception, current_transaction,
@@ -581,6 +582,26 @@ def test_function_trace_params_dropped_in_hsm(hsm_enabled):
     def _test():
         with FunctionTrace(current_transaction(), 'trace',
                 params={'secret': 'super secret'}):
+            pass
+
+    if hsm_enabled:
+        _test = override_application_settings(
+            _test_transaction_settings_hsm_enabled_capture_params)(_test)
+        _test = validate_tt_segment_params(forgone_params=('secret',))(_test)
+    else:
+        _test = override_application_settings(
+            _test_transaction_settings_hsm_disabled)(_test)
+        _test = validate_tt_segment_params(present_params=('secret',))(_test)
+
+    _test()
+
+
+@pytest.mark.parametrize('hsm_enabled', [True, False])
+def test_message_trace_params_dropped_in_hsm(hsm_enabled):
+    @background_task()
+    def _test():
+        with MessageTrace(current_transaction(), 'library', 'operation',
+                'dest_type', 'dest_name', params={'secret': 'super secret'}):
             pass
 
     if hsm_enabled:

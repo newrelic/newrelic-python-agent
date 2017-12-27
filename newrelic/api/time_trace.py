@@ -24,21 +24,24 @@ class TimeTrace(object):
         self.has_async_children = False
         self.min_child_start_time = float('inf')
         self.exc_data = (None, None, None)
-
-        # Don't do further tracing of transaction if
-        # it has been explicitly stopped.
-
-        if transaction and transaction.stopped:
-            self.transaction = None
-            return
+        self.should_record_segment_params = False
 
         if transaction:
+            # Don't do further tracing of transaction if
+            # it has been explicitly stopped.
+            if transaction.stopped:
+                self.transaction = None
+                return
+
             self.parent = self.transaction.active_node()
 
-        # parent shall track children immediately
-        if (self.parent is not None and
-                not self.parent.terminal_node()):
-            self.parent.increment_child_count()
+            # parent shall track children immediately
+            if (self.parent is not None and
+                    not self.parent.terminal_node()):
+                self.parent.increment_child_count()
+
+            self.should_record_segment_params = (
+                    transaction.should_record_segment_params)
 
     def __enter__(self):
         if not self.transaction:

@@ -33,7 +33,7 @@ def getUnitTestEnvs = {
 use(extensions) {
    def unitTestEnvs = getUnitTestEnvs()
 
-    ['develop', 'master'].each { jobType ->
+    ['develop', 'master', 'mmf'].each { jobType ->
         multiJob("_UNIT-TESTS-${jobType}_") {
             label('py-ec2-linux')
             description("Run unit tests (i.e. ./tests.sh) on the _${jobType}_ branch")
@@ -48,33 +48,78 @@ use(extensions) {
                     cron('H 0 * * 1-5')
                 }
                 gitBranch = jobType
-            } else {
+            } else if (jobType == 'master') {
                 repository(repoFull, jobType)
                 triggers {
-                    // run daily on cron
-                    cron('H 0 * * 1-5')
+                    // trigger on push to master
+                    githubPush()
                 }
                 gitBranch = jobType
+            } else if (jobType == 'mmf') {
+                // branch will be correctly set later with the
+                // get_mmf_branch.sh script
+                repository(repoFull, 'develop')
+                triggers {
+                    // run daily on cron
+                    cron('H 2 * * 1-5')
+                }
             }
 
             parameters {
-                stringParam('GIT_REPOSITORY_BRANCH', gitBranch,
-                            'Branch in git repository to run test against.')
+                if (jobType == 'mmf') {
+                    choiceParam('GIT_REPOSITORY_BRANCH', [''],
+                        'Branch in git repository to run test against. ' +
+                        'Will be set dynamically by the job.\n' +
+                        'If you wish to run a test on a specific branch, ' +
+                        'use the <b>_COMBINED-TESTS-manual_</b> job.')
+                } else {
+                    stringParam('GIT_REPOSITORY_BRANCH', gitBranch,
+                        'Branch in git repository to run test against.')
+                }
             }
 
             steps {
-                phase('unit-tests', 'COMPLETED') {
-
-                    job("devpi-pre-build-hook_${testSuffix}") {
-                        killPhaseCondition('NEVER')
+                if (jobType == 'mmf') {
+                    // get the mmf branch
+                    shell('./jenkins/scripts/get_mmf_branch.sh')
+                    // set it as an env var
+                    environmentVariables {
+                        propertiesFile('jenkins/environ')
                     }
-                    job("build.sh_${testSuffix}") {
-                        killPhaseCondition('NEVER')
+                    // promote it to a first rate parameter so it can be passed
+                    // to child jobs
+                    systemGroovyScriptFile('jenkins/scripts/set_mmf_branch.groovy')
+                }
+
+                conditionalSteps {
+                    condition {
+                        if (jobType == 'mmf') {
+                            not {
+                                stringsMatch('${GIT_REPOSITORY_BRANCH}', '', false)
+                            }
+                        } else {
+                            alwaysRun()
+                        }
                     }
 
-                    for (testEnv in unitTestEnvs) {
-                        job("tests.sh-${testEnv}_${testSuffix}") {
-                            killPhaseCondition('NEVER')
+                    // do not run the following jobs if the above condition
+                    // fails
+                    runner('DontRun')
+
+                    steps {
+                        phase('unit-tests', 'COMPLETED') {
+                            job("devpi-pre-build-hook_${testSuffix}") {
+                                killPhaseCondition('NEVER')
+                            }
+                            job("build.sh_${testSuffix}") {
+                                killPhaseCondition('NEVER')
+                            }
+
+                            for (testEnv in unitTestEnvs) {
+                                job("tests.sh-${testEnv}_${testSuffix}") {
+                                    killPhaseCondition('NEVER')
+                                }
+                            }
                         }
                     }
                 }
@@ -121,7 +166,7 @@ use(extensions) {
                 }
 
                 steps {
-                    shell('./jenkins/prep_node_for_test.sh')
+                    shell('./jenkins/scripts/prep_node_for_test.sh')
                     shell("./docker/packnsend run /data/tests.sh ${testEnv}")
                 }
             }

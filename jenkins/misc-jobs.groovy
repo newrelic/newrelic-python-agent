@@ -32,7 +32,7 @@ use(extensions) {
             blockOnJobs('.*', 'GLOBAL', 'DISABLED')
 
             steps {
-                reseedFrom('jenkins/**/*.groovy')
+                reseedFrom('jenkins/*.groovy')
             }
 
             slackQuiet(slackChannel)
@@ -58,7 +58,7 @@ use(extensions) {
                 environmentVariables {
                     env('DOCKER_HOST', 'unix:///var/run/docker.sock')
                 }
-                shell('./jenkins/packnsend-buildnpush.sh')
+                shell('./jenkins/scripts/packnsend-buildnpush.sh')
             }
 
             slackQuiet(slackChannel)
@@ -98,7 +98,7 @@ use(extensions) {
                 environmentVariables {
                     env('DOCKER_HOST', 'unix:///var/run/docker.sock')
                 }
-                shell('./jenkins/refresh_docker_containers.sh')
+                shell('./jenkins/scripts/refresh_docker_containers.sh')
             }
 
             slackQuiet(slackChannel)

@@ -7,13 +7,22 @@ from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, override_generic_settings,
     function_not_called)
 
-from wsgi import application
-
 import django
 
 DJANGO_VERSION = tuple(map(int, django.get_version().split('.')[:2]))
 
-test_application = webtest.TestApp(application)
+
+@pytest.fixture(scope='module')
+def target_application():
+    from wsgi import application
+    test_application = webtest.TestApp(application)
+    return test_application
+
+
+if DJANGO_VERSION >= (1, 10):
+    url_module_path = 'django.urls.resolvers'
+else:
+    url_module_path = 'django.core.urlresolvers'
 
 _scoped_metrics = [
         ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
@@ -28,7 +37,7 @@ _scoped_metrics = [
                 'AuthenticationMiddleware.process_request'), 1),
         (('Function/django.contrib.messages.middleware:'
                 'MessageMiddleware.process_request'), 1),
-        (('Function/django.core.urlresolvers:'
+        (('Function/%s:' % url_module_path +
                 'RegexURLResolver.resolve'), 1),
         (('Function/django.middleware.csrf:'
                 'CsrfViewMiddleware.process_view'), 1),
@@ -53,8 +62,8 @@ if DJANGO_VERSION >= (1, 5):
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:index',
         scoped_metrics=_test_application_index_scoped_metrics)
-def test_application_index():
-    response = test_application.get('')
+def test_application_index(target_application):
+    response = target_application.get('')
     response.mustcontain('INDEX RESPONSE')
 
 
@@ -69,8 +78,8 @@ if DJANGO_VERSION >= (1, 5):
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('urls:View.get',
     scoped_metrics=_test_application_view_scoped_metrics)
-def test_application_view():
-    response = test_application.get('/view/')
+def test_application_view(target_application):
+    response = target_application.get('/view/')
     assert response.status_int == 200
     response.mustcontain('restframework view response')
 
@@ -83,8 +92,8 @@ _test_application_view_error_scoped_metrics.append(
 @validate_transaction_errors(errors=['urls:Error'])
 @validate_transaction_metrics('urls:ViewError.get',
     scoped_metrics=_test_application_view_error_scoped_metrics)
-def test_application_view_error():
-    test_application.get('/view_error/', status=500)
+def test_application_view_error(target_application):
+    target_application.get('/view_error/', status=500)
 
 
 _test_application_view_handle_error_scoped_metrics = list(_scoped_metrics)
@@ -95,14 +104,14 @@ _test_application_view_handle_error_scoped_metrics.append(
 @pytest.mark.parametrize('status,should_record', [(418, True), (200, False)])
 @pytest.mark.parametrize('use_global_exc_handler', [True, False])
 def test_application_view_handle_error(status, should_record,
-        use_global_exc_handler):
+        use_global_exc_handler, target_application):
     errors = ['urls:Error'] if should_record else []
 
     @validate_transaction_errors(errors=errors)
     @validate_transaction_metrics('urls:ViewHandleError.get',
         scoped_metrics=_test_application_view_handle_error_scoped_metrics)
     def _test():
-        response = test_application.get(
+        response = target_application.get(
                 '/view_handle_error/%s/%s/' % (status, use_global_exc_handler),
                 status=status)
         if use_global_exc_handler:
@@ -122,8 +131,8 @@ _test_api_view_scoped_metrics_get.append(
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(_test_api_view_view_name_get,
     scoped_metrics=_test_api_view_scoped_metrics_get)
-def test_api_view_get():
-    response = test_application.get('/api_view/')
+def test_api_view_get(target_application):
+    response = target_application.get('/api_view/')
     response.mustcontain('wrapped_view response')
 
 
@@ -137,18 +146,18 @@ _test_api_view_scoped_metrics_post.append(
         errors=['rest_framework.exceptions:MethodNotAllowed'])
 @validate_transaction_metrics(_test_api_view_view_name_post,
     scoped_metrics=_test_api_view_scoped_metrics_post)
-def test_api_view_method_not_allowed():
-    test_application.post('/api_view/', status=405)
+def test_api_view_method_not_allowed(target_application):
+    target_application.post('/api_view/', status=405)
 
 
-def test_application_view_agent_disabled():
+def test_application_view_agent_disabled(target_application):
     settings = global_settings()
 
     @override_generic_settings(settings, {'enabled': False})
     @function_not_called('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
     def _test():
-        response = test_application.get('/view/')
+        response = target_application.get('/view/')
         assert response.status_int == 200
         response.mustcontain('restframework view response')
 

@@ -21,8 +21,23 @@ def target_application():
 
 if DJANGO_VERSION >= (1, 10):
     url_module_path = 'django.urls.resolvers'
+
+    # Django 1.10 new style middleware removed individual process_* methods.
+    # All middleware in Django 1.10+ is called through the __call__ methods on
+    # middlwares.
+    process_request_method = ''
+    process_view_method = ''
+    process_response_method = ''
 else:
     url_module_path = 'django.core.urlresolvers'
+    process_request_method = '.process_request'
+    process_view_method = '.process_view'
+    process_response_method = '.process_response'
+
+if DJANGO_VERSION >= (2, 0):
+    url_resolver_cls = 'URLResolver'
+else:
+    url_resolver_cls = 'RegexURLResolver'
 
 _scoped_metrics = [
         ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
@@ -30,25 +45,25 @@ _scoped_metrics = [
         ('Python/WSGI/Response', 1),
         ('Python/WSGI/Finalize', 1),
         (('Function/django.middleware.common:'
-                'CommonMiddleware.process_request'), 1),
+                'CommonMiddleware' + process_request_method), 1),
         (('Function/django.contrib.sessions.middleware:'
-                'SessionMiddleware.process_request'), 1),
+                'SessionMiddleware' + process_request_method), 1),
         (('Function/django.contrib.auth.middleware:'
-                'AuthenticationMiddleware.process_request'), 1),
+                'AuthenticationMiddleware' + process_request_method), 1),
         (('Function/django.contrib.messages.middleware:'
-                'MessageMiddleware.process_request'), 1),
+                'MessageMiddleware' + process_request_method), 1),
         (('Function/%s:' % url_module_path +
-                'RegexURLResolver.resolve'), 1),
+                '%s.resolve' % url_resolver_cls), 1),
         (('Function/django.middleware.csrf:'
-                'CsrfViewMiddleware.process_view'), 1),
+                'CsrfViewMiddleware' + process_view_method), 1),
         (('Function/django.contrib.messages.middleware:'
-                'MessageMiddleware.process_response'), 1),
+                'MessageMiddleware' + process_response_method), 1),
         (('Function/django.middleware.csrf:'
-                'CsrfViewMiddleware.process_response'), 1),
+                'CsrfViewMiddleware' + process_response_method), 1),
         (('Function/django.contrib.sessions.middleware:'
-                'SessionMiddleware.process_response'), 1),
+                'SessionMiddleware' + process_response_method), 1),
         (('Function/django.middleware.common:'
-                'CommonMiddleware.process_response'), 1),
+                'CommonMiddleware' + process_response_method), 1),
 ]
 
 _test_application_index_scoped_metrics = list(_scoped_metrics)

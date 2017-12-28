@@ -29,7 +29,7 @@ def getPacknsendTests (String workspace, String testSuffix, String mostRecentOnl
         println "Reseed to run tests on only most recent package versions? ${mostRecentOnly}"
 
         def proc = (
-            "python2.7 ${workspace}/jenkins/parse_integration_test_tox_files.py " +
+            "python2.7 ${workspace}/jenkins/scripts/parse_integration_test_tox_files.py " +
                 "--test-suffix ${testSuffix} " +
                 "--max-group-size ${maxEnvsPerContainer} " +
                 "--most-recent-only ${mostRecentOnly} " +
@@ -58,7 +58,7 @@ def getPacknsendTests (String workspace, String testSuffix, String mostRecentOnl
 use(extensions) {
     def packnsendTests = getPacknsendTests("${WORKSPACE}", testSuffix, "false")
 
-    ['develop', 'master'].each { jobType ->
+    ['develop', 'master', 'mmf'].each { jobType ->
         multiJob("_INTEGRATION-TESTS-${jobType}_") {
             concurrentBuild true
             description("Perform full suite of tests on Python Agent on the ${jobType} branch")
@@ -80,11 +80,27 @@ use(extensions) {
                     githubPush()
                 }
                 gitBranch = jobType
+            } else if (jobType == 'mmf') {
+                // branch will be correctly set later with the
+                // get_mmf_branch.sh script
+                repository(repoFull, 'develop')
+                triggers {
+                    // run daily on cron
+                    cron('H 2 * * 1-5')
+                }
             }
 
             parameters {
-                stringParam('GIT_REPOSITORY_BRANCH', gitBranch,
-                            'Branch in git repository to run test against.')
+                if (jobType == 'mmf') {
+                    choiceParam('GIT_REPOSITORY_BRANCH', [''],
+                        'Branch in git repository to run test against. ' +
+                        'Will be set dynamically by the job.\n' +
+                        'If you wish to run a test on a specific branch, ' +
+                        'use the <b>_COMBINED-TESTS-manual_</b> job.')
+                } else {
+                    stringParam('GIT_REPOSITORY_BRANCH', gitBranch,
+                        'Branch in git repository to run test against.')
+                }
                 stringParam('AGENT_FAKE_COLLECTOR', 'false',
                             'Whether fake collector is used or not.')
                 stringParam('AGENT_PROXY_HOST', '',
@@ -92,10 +108,40 @@ use(extensions) {
             }
 
             steps {
-                phase('tox-tests', 'COMPLETED') {
-                    for (test in packnsendTests) {
-                        job(test[0]) {
-                            killPhaseCondition('NEVER')
+                if (jobType == 'mmf') {
+                    // get the mmf branch
+                    shell('./jenkins/scripts/get_mmf_branch.sh')
+                    // set it as an env var
+                    environmentVariables {
+                        propertiesFile('jenkins/environ')
+                    }
+                    // promote it to a first rate parameter so it can be passed
+                    // to child jobs
+                    systemGroovyScriptFile('jenkins/scripts/set_mmf_branch.groovy')
+                }
+
+                conditionalSteps {
+                    condition {
+                        if (jobType == 'mmf') {
+                            not {
+                                stringsMatch('${GIT_REPOSITORY_BRANCH}', '', false)
+                            }
+                        } else {
+                            alwaysRun()
+                        }
+                    }
+
+                    // do not run the following jobs if the above condition
+                    // fails
+                    runner('DontRun')
+
+                    steps {
+                        phase('tox-tests', 'COMPLETED') {
+                            for (test in packnsendTests) {
+                                job(test[0]) {
+                                    killPhaseCondition('NEVER')
+                                }
+                            }
                         }
                     }
                 }
@@ -151,7 +197,7 @@ use(extensions) {
                         env('NEW_RELIC_PROXY_HOST', '${AGENT_PROXY_HOST}')
                         env('DOCKER_HOST', 'unix:///var/run/docker.sock')
                     }
-                    shell('./jenkins/prep_node_for_test.sh')
+                    shell('./jenkins/scripts/prep_node_for_test.sh')
 
                     if (composePath) {
                         shell("./docker/packnsend run -c ${composePath} tox -c ${toxPath} -e ${testEnvs}")

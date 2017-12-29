@@ -6,6 +6,7 @@ import webtest
 from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.message_trace import MessageTrace
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.api.transaction import (capture_request_params,
         add_custom_parameter, record_exception, current_transaction,
@@ -46,6 +47,7 @@ _hsm_local_config_file_settings_disabled = [
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': False,
         'custom_insights_events.enabled': True,
+        'message_tracer.segment_parameters_enabled': True,
     },
     {
         'high_security': False,
@@ -54,6 +56,7 @@ _hsm_local_config_file_settings_disabled = [
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': False,
         'custom_insights_events.enabled': False,
+        'message_tracer.segment_parameters_enabled': True,
     },
     {
         'high_security': False,
@@ -62,6 +65,7 @@ _hsm_local_config_file_settings_disabled = [
         'transaction_tracer.record_sql': 'obfuscated',
         'strip_exception_messages.enabled': True,
         'custom_insights_events.enabled': True,
+        'message_tracer.segment_parameters_enabled': False,
     },
     {
         'high_security': False,
@@ -70,6 +74,7 @@ _hsm_local_config_file_settings_disabled = [
         'transaction_tracer.record_sql': 'off',
         'strip_exception_messages.enabled': True,
         'custom_insights_events.enabled': False,
+        'message_tracer.segment_parameters_enabled': False,
     },
 ]
 
@@ -81,6 +86,7 @@ _hsm_local_config_file_settings_enabled = [
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': True,
         'custom_insights_events.enabled': True,
+        'message_tracer.segment_parameters_enabled': True,
     },
     {
         'high_security': True,
@@ -89,6 +95,7 @@ _hsm_local_config_file_settings_enabled = [
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': True,
         'custom_insights_events.enabled': True,
+        'message_tracer.segment_parameters_enabled': True,
     },
     {
         'high_security': True,
@@ -97,6 +104,7 @@ _hsm_local_config_file_settings_enabled = [
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': True,
         'custom_insights_events.enabled': True,
+        'message_tracer.segment_parameters_enabled': True,
     },
     {
         'high_security': True,
@@ -105,6 +113,7 @@ _hsm_local_config_file_settings_enabled = [
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': True,
         'custom_insights_events.enabled': True,
+        'message_tracer.segment_parameters_enabled': True,
     },
     {
         'high_security': True,
@@ -113,6 +122,7 @@ _hsm_local_config_file_settings_enabled = [
         'transaction_tracer.record_sql': 'obfuscated',
         'strip_exception_messages.enabled': True,
         'custom_insights_events.enabled': True,
+        'message_tracer.segment_parameters_enabled': True,
     },
     {
         'high_security': True,
@@ -121,6 +131,7 @@ _hsm_local_config_file_settings_enabled = [
         'transaction_tracer.record_sql': 'off',
         'strip_exception_messages.enabled': True,
         'custom_insights_events.enabled': True,
+        'message_tracer.segment_parameters_enabled': False,
     },
     {
         'high_security': True,
@@ -129,6 +140,7 @@ _hsm_local_config_file_settings_enabled = [
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': False,
         'custom_insights_events.enabled': False,
+        'message_tracer.segment_parameters_enabled': False,
     },
 ]
 
@@ -152,6 +164,8 @@ def test_local_config_file_override_hsm_disabled(settings):
     original_record_sql = settings.transaction_tracer.record_sql
     original_strip_messages = settings.strip_exception_messages.enabled
     original_custom_events = settings.custom_insights_events.enabled
+    original_message_segment_params_enabled = (
+            settings.message_tracer.segment_parameters_enabled)
 
     apply_local_high_security_mode_setting(settings)
 
@@ -160,6 +174,8 @@ def test_local_config_file_override_hsm_disabled(settings):
     assert settings.transaction_tracer.record_sql == original_record_sql
     assert settings.strip_exception_messages.enabled == original_strip_messages
     assert settings.custom_insights_events.enabled == original_custom_events
+    assert (settings.message_tracer.segment_parameters_enabled ==
+            original_message_segment_params_enabled)
 
 
 @parameterize_hsm_local_config(_hsm_local_config_file_settings_enabled)
@@ -171,6 +187,7 @@ def test_local_config_file_override_hsm_enabled(settings):
     assert settings.transaction_tracer.record_sql in ('off', 'obfuscated')
     assert settings.strip_exception_messages.enabled
     assert settings.custom_insights_events.enabled is False
+    assert settings.message_tracer.segment_parameters_enabled is False
 
 
 _server_side_config_settings_hsm_disabled = [
@@ -581,6 +598,26 @@ def test_function_trace_params_dropped_in_hsm(hsm_enabled):
     def _test():
         with FunctionTrace(current_transaction(), 'trace',
                 params={'secret': 'super secret'}):
+            pass
+
+    if hsm_enabled:
+        _test = override_application_settings(
+            _test_transaction_settings_hsm_enabled_capture_params)(_test)
+        _test = validate_tt_segment_params(forgone_params=('secret',))(_test)
+    else:
+        _test = override_application_settings(
+            _test_transaction_settings_hsm_disabled)(_test)
+        _test = validate_tt_segment_params(present_params=('secret',))(_test)
+
+    _test()
+
+
+@pytest.mark.parametrize('hsm_enabled', [True, False])
+def test_message_trace_params_dropped_in_hsm(hsm_enabled):
+    @background_task()
+    def _test():
+        with MessageTrace(current_transaction(), 'library', 'operation',
+                'dest_type', 'dest_name', params={'secret': 'super secret'}):
             pass
 
     if hsm_enabled:

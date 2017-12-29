@@ -45,9 +45,11 @@ class DummyDB(object):
         self.quoting_style = quoting_style
 
 
-@pytest.mark.xfail()
 @pytest.mark.parametrize(_parameters, load_tests())
 def test_sql_obfuscation(obfuscated, dialects, sql, malformed, pathological):
+
+    if malformed or pathological:
+        pytest.skip()
 
     quoting_styles = get_quoting_styles(dialects)
 

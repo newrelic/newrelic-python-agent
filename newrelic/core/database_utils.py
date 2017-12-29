@@ -34,10 +34,20 @@ _single_dollar_p = _single_quotes_p + '|' + _dollar_quotes_p
 _single_oracle_p = _single_quotes_p + '|' + _oracle_quotes_p
 
 _single_quotes_re = re.compile(_single_quotes_p)
-_double_quotes_re = re.compile(_double_quotes_p)
 _any_quotes_re = re.compile(_any_quotes_p)
 _single_dollar_re = re.compile(_single_dollar_p)
 _single_oracle_re = re.compile(_single_oracle_p)
+
+# Cleanup regexes. Presence of a quote will indicate that the now obfuscated
+# sql was actually malformed.
+
+_single_quotes_cleanup_p = r"'"
+_any_quotes_cleanup_p = r'\'|"'
+_single_dollar_cleanup_p = r"'|\$(?!\?)"
+
+_any_quotes_cleanup_re = re.compile(_any_quotes_cleanup_p)
+_single_quotes_cleanup_re = re.compile(_single_quotes_cleanup_p)
+_single_dollar_cleanup_re = re.compile(_single_dollar_cleanup_p)
 
 # See http://www.regular-expressions.info/examplesprogrammer.html.
 #
@@ -59,18 +69,16 @@ _all_literals_p = _uuid_p + '|' + _hex_p + '|' + _int_p + '|' + _bool_p
 _all_literals_re = re.compile(_all_literals_p, re.IGNORECASE)
 
 _quotes_table = {
-    'single': _single_quotes_re,
-    'double': _double_quotes_re,
-    'single+double': _any_quotes_re,
-    'single+dollar': _single_dollar_re,
-    'single+oracle': _single_oracle_re,
+    'single': (_single_quotes_re, _single_quotes_cleanup_re),
+    'single+double': (_any_quotes_re, _any_quotes_cleanup_re),
+    'single+dollar': (_single_dollar_re, _single_dollar_cleanup_re),
+    'single+oracle': (_single_oracle_re, _single_quotes_cleanup_re),
 }
-
-_quotes_default = _single_quotes_re
 
 
 def _obfuscate_sql(sql, database):
-    quotes_re = _quotes_table.get(database.quoting_style, _single_quotes_re)
+    quotes_re, quotes_cleanup_re = _quotes_table.get(database.quoting_style,
+            _single_quotes_re)
 
     # Substitute quoted strings first.
 
@@ -79,6 +87,12 @@ def _obfuscate_sql(sql, database):
     # Replace all other sensitive fields
 
     sql = _all_literals_re.sub('?', sql)
+
+    # Determine if the obfuscated query was malformed by searching for
+    # remaining quote characters
+
+    if re.search(quotes_cleanup_re, sql):
+        sql = '?'
 
     return sql
 

@@ -1,12 +1,13 @@
 try:
-    from django.conf.urls.defaults import patterns, url
+    from django.conf.urls.defaults import url
 except ImportError:
-    from django.conf.urls import patterns, url
+    from django.conf.urls import url
 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.settings import APISettings, api_settings
+from views import index
 
 
 class View(APIView):
@@ -57,11 +58,11 @@ def wrapped_view(request):
     return Response({'message': 'wrapped_view response'})
 
 
-urlpatterns = patterns('',
-    url(r'^$', 'views.index', name='index'),
+urlpatterns = [
+    url(r'^$', index, name='index'),
     url(r'^view/$', View.as_view()),
     url(r'^view_error/$', ViewError.as_view()),
     url(r'^view_handle_error/(?P<status>\d+)/(?P<global_exc>\w+)/$',
         ViewHandleError.as_view()),
     url(r'^api_view/$', wrapped_view),
-)
+]

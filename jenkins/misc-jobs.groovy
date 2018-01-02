@@ -65,6 +65,35 @@ use(extensions) {
         }
     }
 
+    baseJob("${testPrefix}-build-pip-cache") {
+        label('py-ec2-linux')
+        repo(repoFull)
+        branch('${GIT_BRANCH}')
+
+        configure {
+            description('A job to build the PIP cache image and push it to ' +
+                    'the repo. Once complete, the reset nodes job should be run.')
+
+            triggers {
+                // run daily on cron
+                cron('H 0 * * 1-5')
+            }
+
+            parameters {
+                stringParam('GIT_BRANCH', 'develop', '')
+            }
+
+            steps {
+                environmentVariables {
+                    env('DOCKER_HOST', 'unix:///var/run/docker.sock')
+                }
+                shell('./jenkins/scripts/packnsend-build-pip-cache.sh')
+            }
+
+            slackQuiet(slackChannel)
+        }
+    }
+
     baseJob("${testPrefix}-Reset-Nodes") {
         repo(repoFull)
         branch('${GIT_BRANCH}')

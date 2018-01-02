@@ -53,7 +53,7 @@ testing.log
 .tags
 .solano*
 
-/docker/devpi/package-lists
+/docker/cache/package-lists
 /jenkins/environ
 
 # web2py testing

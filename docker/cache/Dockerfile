@@ -22,6 +22,4 @@ COPY package-lists /home/guest/package-lists/
 
 RUN chown -R guest.users /home/guest && chmod +x /home/guest/build.sh
 
-USER guest:users
-
-RUN /home/guest/build.sh
+RUN su guest -c /home/guest/build.sh && chown -R guest.users /cache

@@ -108,7 +108,7 @@ use(extensions) {
 
                     steps {
                         phase('unit-tests', 'COMPLETED') {
-                            job("devpi-pre-build-hook_${testSuffix}") {
+                            job("cache-pre-build-hook_${testSuffix}") {
                                 killPhaseCondition('NEVER')
                             }
                             job("build.sh_${testSuffix}") {
@@ -173,13 +173,13 @@ use(extensions) {
         }
     }
 
-    baseJob("devpi-pre-build-hook_${testSuffix}") {
+    baseJob("cache-pre-build-hook_${testSuffix}") {
         label('py-ec2-linux')
         repo(repoFull)
         branch('${GIT_REPOSITORY_BRANCH}')
 
         configure {
-            description('Run the devpi pre-build hook and test the parseconfig.py script.')
+            description('Run the cache pre-build hook.')
             logRotator { numToKeep(10) }
             blockOnJobs('.*-Reset-Nodes')
             concurrentBuild true
@@ -199,8 +199,7 @@ use(extensions) {
             }
 
             steps {
-                shell('./docker/devpi/pre-build.sh')
-                shell('./docker/packnsend run python ./docker/devpi/test_parseconfig.py')
+                shell('./docker/cache/pre-build.sh')
             }
         }
     }

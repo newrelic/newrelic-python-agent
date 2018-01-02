@@ -70,7 +70,7 @@ use(extensions) {
                 repository(repoFull, jobType)
                 triggers {
                     // run daily on cron
-                    cron('H 0 * * 1-5')
+                    cron('H 1 * * 1-5')
                 }
                 gitBranch = jobType
             } else if (jobType == 'master') {

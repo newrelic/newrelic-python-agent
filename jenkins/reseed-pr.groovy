@@ -264,7 +264,7 @@ use(extensions) {
             steps {
                 phase('unit-tests', 'COMPLETED') {
 
-                    job("devpi-pre-build-hook_${unitSuffix}") {
+                    job("cache-pre-build-hook_${unitSuffix}") {
                         killPhaseCondition('NEVER')
                     }
                     job("build.sh_${unitSuffix}") {

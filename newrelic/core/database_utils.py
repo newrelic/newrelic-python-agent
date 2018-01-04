@@ -65,7 +65,12 @@ _uuid_p = r'\{?(?:[0-9a-f]\-?){32}\}?'
 _int_p = r'(?<!:)-?\b(?:[0-9]+\.)?[0-9]+(e[+-]?[0-9]+)?'
 _hex_p = r'0x[0-9a-f]+'
 _bool_p = r'\b(?:true|false|null)\b'
-_all_literals_p = _uuid_p + '|' + _hex_p + '|' + _int_p + '|' + _bool_p
+
+# Join all leterals into one compiled regular expression. Longest expressions
+# first to avoid the situation of partial matches on shorter expressions. UUIDs
+# might be an example.
+
+_all_literals_p = '(' + ')|('.join([_uuid_p, _hex_p, _int_p, _bool_p]) + ')'
 _all_literals_re = re.compile(_all_literals_p, re.IGNORECASE)
 
 _quotes_table = {

@@ -61,7 +61,7 @@ _single_dollar_cleanup_re = re.compile(_single_dollar_cleanup_p)
 # follows on from a ':'. This is because ':1' can be used as positional
 # parameter with database adapters where 'paramstyle' is 'numeric'.
 
-_uuid_p = r'\{?(?:[0-9a-f]\-*){32}\}?'
+_uuid_p = r'\{?(?:[0-9a-f]\-?){32}\}?'
 _int_p = r'\b-?(?:[0-9]+\.)?[0-9]+([eE][+-]?[0-9]+)?'
 _hex_p = r'0x[0-9a-f]+'
 _bool_p = r'\b(?:true|false|null)\b'

@@ -957,6 +957,15 @@ class TestDatabase(unittest.TestCase):
             self.assertEqual(expected_result, actual_result)
             self.assertEqual(hash(expected_result), hash(actual_result))
 
+    def test_unsupported_quoting_style(self):
+        dummy_database = DummySQLDatabase()
+        dummy_database.quoting_style = 'cookies'
+        sql = 'SELECT * FROM foo'
+        expected_result = sql
+        statement = SQLStatement(sql, dummy_database)
+        actual_result = statement.obfuscated
+        self.assertEqual(expected_result, actual_result)
+
 
 class TestDatabaseHelpers(unittest.TestCase):
 

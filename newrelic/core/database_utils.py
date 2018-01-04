@@ -83,7 +83,7 @@ _quotes_table = {
 
 def _obfuscate_sql(sql, database):
     quotes_re, quotes_cleanup_re = _quotes_table.get(database.quoting_style,
-            _single_quotes_re)
+            (_single_quotes_re, _single_quotes_cleanup_re))
 
     # Substitute quoted strings first.
 
@@ -96,7 +96,7 @@ def _obfuscate_sql(sql, database):
     # Determine if the obfuscated query was malformed by searching for
     # remaining quote characters
 
-    if re.search(quotes_cleanup_re, sql):
+    if quotes_cleanup_re.search(sql):
         sql = '?'
 
     return sql

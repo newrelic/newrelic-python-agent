@@ -47,6 +47,9 @@ then
     export PIP_TRUSTED_HOST=$DEVPI_PORT_3141_TCP_ADDR
 fi
 
+# Test to see if the cache directory is set up. If so, set up the cache
+[ -d /cache ] && export PIP_CACHE_DIR=/cache
+
 # Make sure tox will pass docker-related environment variables to the
 # tox test environment. Plus, the tox test environment will also need
 # PACKNSEND_DB_USER.

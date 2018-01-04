@@ -192,7 +192,7 @@ _uncomment_sql_re = re.compile(_uncomment_sql_x, re.DOTALL)
 
 
 def _uncomment_sql(sql):
-    return _uncomment_sql_re.sub('?', sql)
+    return _uncomment_sql_re.sub('', sql)
 
 # Parser routines for the different SQL statement operation types.
 #

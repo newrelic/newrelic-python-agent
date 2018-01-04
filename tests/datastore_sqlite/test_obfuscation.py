@@ -34,3 +34,21 @@ def test_quoting_styles(sqlite3_cursor, sql, obfuscated):
         sqlite3_cursor.execute(sql)
 
     test()
+
+
+_parameter_tests = [
+    ('INSERT INTO a VALUES (:1, :2)', 'INSERT INTO a VALUES (:1, :2)'),
+    ('INSERT INTO a VALUES (?, ?)', 'INSERT INTO a VALUES (?, ?)'),
+]
+
+
+@pytest.mark.parametrize('sql,obfuscated', _parameter_tests)
+def test_parameters(sqlite3_cursor, sql, obfuscated):
+
+    @validate_sql_obfuscation([obfuscated])
+    @background_task()
+    def test():
+        sqlite3_cursor.executemany(sql,
+                [('hello', 'world'), ('love', 'python')])
+
+    test()

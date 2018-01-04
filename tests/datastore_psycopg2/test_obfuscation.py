@@ -45,3 +45,19 @@ def test_quoting_styles(psycopg2_cursor, sql, obfuscated):
         psycopg2_cursor.execute(sql)
 
     test()
+
+
+_parameter_tests = [
+    ('INSERT INTO a VALUES (%s, %s)', 'INSERT INTO a VALUES (%s, %s)'),
+]
+
+
+@pytest.mark.parametrize('sql,obfuscated', _parameter_tests)
+def test_parameters(psycopg2_cursor, sql, obfuscated):
+
+    @validate_sql_obfuscation([obfuscated])
+    @background_task()
+    def test():
+        psycopg2_cursor.execute(sql, ('hello', 'world'))
+
+    test()

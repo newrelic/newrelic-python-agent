@@ -17,9 +17,7 @@ for venv in $(find /venvs -maxdepth 1 -type d | grep -v "/venvs$"); do
     $venv/bin/pip install -U "wheel<0.30.0"
 done
 
-CONFIGS="py26 py27 py33 py34 py35 py36"
-
-for PY_FULL in $CONFIGS
+for PY_FULL in $(ls -1 /venvs | grep -v "^pypy")
 do
     echo "PY_FULL: $PY_FULL"
     while read PACKAGE || test -n "$PACKAGE"

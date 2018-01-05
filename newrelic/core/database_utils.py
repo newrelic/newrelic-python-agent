@@ -66,7 +66,7 @@ _int_p = r'(?<!:)-?\b(?:[0-9]+\.)?[0-9]+(e[+-]?[0-9]+)?'
 _hex_p = r'0x[0-9a-f]+'
 _bool_p = r'\b(?:true|false|null)\b'
 
-# Join all leterals into one compiled regular expression. Longest expressions
+# Join all literals into one compiled regular expression. Longest expressions
 # first to avoid the situation of partial matches on shorter expressions. UUIDs
 # might be an example.
 

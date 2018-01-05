@@ -80,7 +80,10 @@ use(extensions) {
             }
 
             parameters {
-                stringParam('GIT_BRANCH', 'develop', '')
+                stringParam('GIT_BRANCH', 'develop', "Generally, we don't want " +
+                        "to change this setting. This parameter is here in case " +
+                        "we want to rebuild the cache on a branch (for a PR, for " +
+                        "example)")
             }
 
             steps {

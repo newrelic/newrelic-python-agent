@@ -700,7 +700,7 @@ class AllTests(object):
         port = 8989
         num_requests = 2
 
-        with MockExternalHTTPServer() as external:
+        with MockExternalHTTPServer():
             response = self.fetch_response('/async-client/%s/%s' % (port,
                     num_requests))
 

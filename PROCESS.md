@@ -272,7 +272,7 @@ value is the next number in the Build History section of
     4. Confirm that a `newrelic-admin validate-config` test runs okay.
     5. Create a small test app and confirm that starting it with `newrelic-admin run-program` runs okay.
 
-[artifactory]:https://pdx-artifacts.pdx.vm.datanerd.us/artifactory/webapp/browserepo.html?0
+[artifactory]:https://artifacts.datanerd.us/webapp/#/artifacts/browse/tree/General/pypi-newrelic/newrelic
 
 16. Pause here, regroup before continuing
 

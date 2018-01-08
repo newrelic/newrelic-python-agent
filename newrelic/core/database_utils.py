@@ -24,13 +24,30 @@ _logger = logging.getLogger(__name__)
 # no backslash. Uses two successive instances of quote character in
 # middle of the string to indicate one embedded quote.
 
-_single_quotes_p = "'(?:[^']|'')*'"
-_double_quotes_p = '"(?:[^"]|"")*"'
+_single_quotes_p = r"'(?:[^']|'')*?(?:\\'.*|'(?!'))"
+_double_quotes_p = r'"(?:[^"]|"")*?(?:\\".*|"(?!"))'
+_dollar_quotes_p = r'(\$(?!\d)[^$]*?\$).*?(?:\1|$)'
+_oracle_quotes_p = (r"q'\[.*?(?:\]'|$)|q'\{.*?(?:\}'|$)|"
+        r"q'\<.*?(?:\>'|$)|q'\(.*?(?:\)'|$)")
 _any_quotes_p = _single_quotes_p + '|' + _double_quotes_p
+_single_dollar_p = _single_quotes_p + '|' + _dollar_quotes_p
+_single_oracle_p = _single_quotes_p + '|' + _oracle_quotes_p
 
 _single_quotes_re = re.compile(_single_quotes_p)
-_double_quotes_re = re.compile(_double_quotes_p)
 _any_quotes_re = re.compile(_any_quotes_p)
+_single_dollar_re = re.compile(_single_dollar_p)
+_single_oracle_re = re.compile(_single_oracle_p)
+
+# Cleanup regexes. Presence of a quote will indicate that the now obfuscated
+# sql was actually malformed.
+
+_single_quotes_cleanup_p = r"'"
+_any_quotes_cleanup_p = r'\'|"'
+_single_dollar_cleanup_p = r"'|\$(?!\?)"
+
+_any_quotes_cleanup_re = re.compile(_any_quotes_cleanup_p)
+_single_quotes_cleanup_re = re.compile(_single_quotes_cleanup_p)
+_single_dollar_cleanup_re = re.compile(_single_dollar_cleanup_p)
 
 # See http://www.regular-expressions.info/examplesprogrammer.html.
 #
@@ -44,30 +61,43 @@ _any_quotes_re = re.compile(_any_quotes_p)
 # follows on from a ':'. This is because ':1' can be used as positional
 # parameter with database adapters where 'paramstyle' is 'numeric'.
 
-_int_re = re.compile(r'(?<!:)\b\d+\b')
+_uuid_p = r'\{?(?:[0-9a-f]\-?){32}\}?'
+_int_p = r'(?<!:)-?\b(?:[0-9]+\.)?[0-9]+(e[+-]?[0-9]+)?'
+_hex_p = r'0x[0-9a-f]+'
+_bool_p = r'\b(?:true|false|null)\b'
+
+# Join all literals into one compiled regular expression. Longest expressions
+# first to avoid the situation of partial matches on shorter expressions. UUIDs
+# might be an example.
+
+_all_literals_p = '(' + ')|('.join([_uuid_p, _hex_p, _int_p, _bool_p]) + ')'
+_all_literals_re = re.compile(_all_literals_p, re.IGNORECASE)
 
 _quotes_table = {
-    'single': _single_quotes_re,
-    'double': _double_quotes_re,
-    'single+double': _any_quotes_re,
+    'single': (_single_quotes_re, _single_quotes_cleanup_re),
+    'single+double': (_any_quotes_re, _any_quotes_cleanup_re),
+    'single+dollar': (_single_dollar_re, _single_dollar_cleanup_re),
+    'single+oracle': (_single_oracle_re, _single_quotes_cleanup_re),
 }
-
-_quotes_default = _single_quotes_re
 
 
 def _obfuscate_sql(sql, database):
-    quotes_re = _quotes_table.get(database.quoting_style, _single_quotes_re)
+    quotes_re, quotes_cleanup_re = _quotes_table.get(database.quoting_style,
+            (_single_quotes_re, _single_quotes_cleanup_re))
 
     # Substitute quoted strings first.
 
     sql = quotes_re.sub('?', sql)
 
-    # Replace straight integer values. This will pick up
-    # integers by themselves but also as part of floating point
-    # numbers. Because of word boundary checks in pattern will
-    # not match numbers within identifier names.
+    # Replace all other sensitive fields
 
-    sql = _int_re.sub('?', sql)
+    sql = _all_literals_re.sub('?', sql)
+
+    # Determine if the obfuscated query was malformed by searching for
+    # remaining quote characters
+
+    if quotes_cleanup_re.search(sql):
+        sql = '?'
 
     return sql
 
@@ -157,11 +187,11 @@ _identifier_re = re.compile('[\',"`\[\]\(\)]*')
 def _extract_identifier(token):
     return _identifier_re.sub('', token).strip().lower()
 
+
 # Helper function for removing C style comments embedded in SQL statements.
 
-
-_uncomment_sql_p = r'/\*.*?\*/'
-_uncomment_sql_q = r'--.*?\n'
+_uncomment_sql_p = r'(?:#|--).*?(?=\r|\n|$)'
+_uncomment_sql_q = r'\/\*(?:[^\/]|\/[^*])*?(?:\*\/|\/\*.*)'
 _uncomment_sql_x = r'(%s)|(%s)' % (_uncomment_sql_p, _uncomment_sql_q)
 _uncomment_sql_re = re.compile(_uncomment_sql_x, re.DOTALL)
 
@@ -782,7 +812,8 @@ class SQLStatement(object):
     @property
     def obfuscated(self):
         if self._obfuscated is None:
-            self._obfuscated = _obfuscate_sql(self.uncommented, self.database)
+            self._obfuscated = _uncomment_sql(_obfuscate_sql(self.sql,
+                self.database))
         return self._obfuscated
 
     @property

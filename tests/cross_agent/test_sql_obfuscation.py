@@ -9,8 +9,7 @@ CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures',
     'sql_obfuscation'))
 
-_parameters_list = ['obfuscated', 'dialects', 'sql', 'malformed',
-        'pathological']
+_parameters_list = ['obfuscated', 'dialects', 'sql', 'pathological']
 _parameters = ','.join(_parameters_list)
 
 
@@ -45,9 +44,11 @@ class DummyDB(object):
         self.quoting_style = quoting_style
 
 
-@pytest.mark.xfail()
 @pytest.mark.parametrize(_parameters, load_tests())
-def test_sql_obfuscation(obfuscated, dialects, sql, malformed, pathological):
+def test_sql_obfuscation(obfuscated, dialects, sql, pathological):
+
+    if pathological:
+        pytest.skip()
 
     quoting_styles = get_quoting_styles(dialects)
 

@@ -154,11 +154,7 @@ page. Increment the build number by one from the previous release. Most likely,
 that will be the build number for the release version. If it isn't, it will
 need to be changed during the release process.
 
-3.  Draft the New & Noteworthy blog post for Jive. This should be a short summary
-of what the feature is, focusing on how it benefits our customers, and written
-in a way that will make sense to both Engineering and Sales/Marketing.
-
-4.  Draft the Support notes for the release. This is where we describe key things that
+3.  Draft the Support notes for the release. This is where we describe key things that
 Support will need to know about the release, but aren't necessarily in the public
 documentation, such as specific problems to look out for, new configuration settings,
 etc. Include links to the release notes and any changed or new documentation.
@@ -338,35 +334,32 @@ drafted in the pre-release steps.
 
 25. Notify Python Agent Slack channel that release is out!
 
-26. Publish the New & Noteworthy blog post on Jive for the key feature(s) or
-improvement(s) in the release.
-
-27. Create a branch off ``develop`` to increment the version number for
+26. Create a branch off ``develop`` to increment the version number for
 development by running `git checkout -b increment-development-version-A.B.C`
 
     Increment ``B`` to the next minor version. With our odd/even numbering
     scheme, ``B`` should always be odd after this change.
 
-28. Update the version number in``newrelic/__init__.py`` by incrementing ``B``
+27. Update the version number in``newrelic/__init__.py`` by incrementing ``B``
 as described in the previous step.
 
     Format the commit message like this:
 
         Increment version to A.B.C for development.
 
-29. Create a PR for merging in the increment branch into ``develop``.
+28. Create a PR for merging in the increment branch into ``develop``.
 
-30. Get a buddy to sidekick and merge this PR.
+29. Get a buddy to sidekick and merge this PR.
 
-31. Make sure that all JIRA stories associated with the release version have
+30. Make sure that all JIRA stories associated with the release version have
 been updated as having been released.
 
-32. Submit a pull request to [docker-state](https://source.datanerd.us/container-fabric/docker-state/blob/master/requirements.txt)
+31. Submit a pull request to [docker-state](https://source.datanerd.us/container-fabric/docker-state/blob/master/requirements.txt)
 to upgrade the agent version. Be sure it gets merged and deployed to
 production. This way we can immediately have a production app running this most
 recent agent version.
 
-33. Upgrade the agent version on [Sidekick Bot](https://source.datanerd.us/python-agent/sidekick-bot/blob/master/requirements.txt)
+32. Upgrade the agent version on [Sidekick Bot](https://source.datanerd.us/python-agent/sidekick-bot/blob/master/requirements.txt)
 and [redeploy it to production](https://source.datanerd.us/python-agent/sidekick-bot#deploying-to-grandcentral).
 
 Performing a Hotfix Release

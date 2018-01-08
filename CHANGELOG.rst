@@ -11,6 +11,12 @@ unreleased
   When using the "with" statement to create a cursor, time spent on database
   calls may not have been properly recorded. This issue has been addressed.
 
+- Usage of the pika library resulted in a memory leak
+
+  When using the pika library with New Relic, Channel objects would not be
+  cleared from memory as expected. This would result in abnormally high memory
+  utilization in some cases. The memory leak has now been fixed.
+
 
 2.98.0 (2017-11-30)
 -------------------

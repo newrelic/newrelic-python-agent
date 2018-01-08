@@ -535,7 +535,7 @@ class AllTests(object):
             for i in range(0, num_chunks):
                 to_send = '%s\r\n%s\r\n' % (chunk_hex, chunk)
                 conn.send(to_send.encode('ascii'))
-            conn.send('0\r\n'.encode('ascii'))
+            conn.send('0\r\n\r\n'.encode('ascii'))
             resp = conn.getresponse()
             msg = resp.read()
             self.assertEqual(msg, SimpleStreamingRequestHandler.RESPONSE)

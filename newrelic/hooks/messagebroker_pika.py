@@ -10,10 +10,9 @@ from newrelic.api.message_trace import MessageTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (wrap_function_wrapper, wrap_object,
-        FunctionWrapper)
+        FunctionWrapper, function_wrapper, resolve_path, apply_patch)
 
 
-_no_trace_methods = set()
 _START_KEY = '_nr_start_time'
 KWARGS_ERROR = 'Supportability/hooks/pika/kwargs_error'
 
@@ -166,9 +165,10 @@ def _nr_wrapper_Basic_Deliver_init_(wrapper, instance, args, kwargs):
 
 def _nr_wrap_BlockingChannel___init__(wrapped, instance, args, kwargs):
     ret = wrapped(*args, **kwargs)
-    # Add the bound method to the set of methods not to trace.
-    if hasattr(instance, '_on_consumer_message_delivery'):
-        _no_trace_methods.add(instance._on_consumer_message_delivery)
+    impl = getattr(instance, '_impl', None)
+    # Patch in the original basic_consume to avoid wrapping twice
+    if impl and hasattr(impl, '_nr_basic_consume'):
+        impl.basic_consume = impl.basic_consume.__wrapped__
     return ret
 
 
@@ -307,11 +307,10 @@ def _ConsumeGeneratorWrapper(wrapped):
 
 def _wrap_Channel_consume_callback(module, obj, bind_params,
         callback_referrer):
+
+    @function_wrapper
     def _nr_wrapper_Channel_consume_(wrapped, instance, args, kwargs):
         callback, queue = bind_params(*args, **kwargs)
-        if callback in _no_trace_methods:
-            # This is an internal callback that should not be wrapped.
-            return wrapped(*args, **kwargs)
         name = callable_name(callback)
 
         @functools.wraps(callback)
@@ -389,7 +388,14 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
 
         return wrapped(*args, **kwargs)
 
-    wrap_function_wrapper(module, obj, _nr_wrapper_Channel_consume_)
+    # Normally, wrap_object(module, object, ...) would be used here.
+    # Since we need to attach the _nr_basic_consume attribute to the class, we
+    # use resolve_path to retrieve the class object (parent), apply the
+    # patch (as wrap_object would) and attach the _nr_basic_consume attribute
+    # after patching the method.
+    (parent, attribute, original) = resolve_path(module, obj)
+    apply_patch(parent, attribute, _nr_wrapper_Channel_consume_(original))
+    parent._nr_basic_consume = True
 
 
 def _disable_channel_transactions(wrapped, instance, args, kwargs):

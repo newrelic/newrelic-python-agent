@@ -1,6 +1,10 @@
 unreleased
 ----------
 
+- Security Updates
+
+  See the associated `security bulletin <https://docs.newrelic.com/docs/accounts-partnerships/accounts/security-bulletins/security-bulletin-nr18-01>`_.
+
 - Using the aiohttp client results in an application crash
 
   Under certain circumstances, using the aiohttp client may have resulted in an

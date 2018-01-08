@@ -670,6 +670,12 @@ class Transaction(object):
         return queue_wait
 
     @property
+    def should_record_segment_params(self):
+        # Only record parameters when it is safe to do so
+        return (self.settings and
+                not self.settings.high_security)
+
+    @property
     def trace_intrinsics(self):
         """Intrinsic attributes for transaction traces and error traces"""
         i_attrs = {}

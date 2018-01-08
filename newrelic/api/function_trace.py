@@ -28,7 +28,12 @@ class FunctionTrace(TimeTrace):
         self.name = name
         self.group = group
         self.label = label
-        self.params = params
+
+        if self.should_record_segment_params:
+            self.params = params
+        else:
+            self.params = None
+
         self.terminal = terminal
         self.rollup = terminal and rollup or None
 

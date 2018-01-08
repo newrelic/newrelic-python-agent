@@ -807,6 +807,12 @@ def apply_local_high_security_mode_setting(settings):
         _logger.info(log_template, 'custom_insights_events.enabled', True,
                 False)
 
+    if settings.message_tracer.segment_parameters_enabled:
+        settings.message_tracer.segment_parameters_enabled = False
+        _logger.info(log_template,
+                'message_tracer.segment_parameters_enabled',
+                True, False)
+
     return settings
 
 

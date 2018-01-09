@@ -88,6 +88,11 @@ def app(request):
             from _target_application import make_app
             return make_app()
 
+        def get_url(self, path):
+            # Allow for testing ipv6 by using localhost instead of 127.0.0.1
+            return '%s://localhost:%s%s' % (self.get_protocol(),
+                    self.get_http_port(), path)
+
         def runTest(self, *args, **kwargs):
             pass
 

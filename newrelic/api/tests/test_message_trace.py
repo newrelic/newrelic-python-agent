@@ -91,7 +91,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                     transaction, library='RabbitMQ', operation='Consume',
                     destination_type='Exchange', destination_name='x',
                     params=params) as mt:
-                assert mt.params == {}
+                assert not mt.params
 
 
 if __name__ == '__main__':

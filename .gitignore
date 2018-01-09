@@ -54,6 +54,7 @@ testing.log
 .solano*
 
 /docker/devpi/package-lists
+/jenkins/environ
 
 # web2py testing
 /tests/framework_web2py/applications/*/cache/

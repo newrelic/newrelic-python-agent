@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import pytest
 import unittest
 
 from newrelic.core.database_utils import (SQLStatement,
@@ -24,93 +25,93 @@ GENERAL_PARSE_TESTS = [
 ]
 
 COMMENT_PARSE_TESTS = [
-  (
+(
     # Multi-line comment (Java Agent TestCase)
     ('dude1', 'select'),
     """/* this comment
             is crazy.
             yo
         */ select * from dude1"""
-  ),
-  (
+),
+(
     # Comment in middle (dotNet Agent TestCase)
     ('dude2', 'select'),
     """select *
     /* ignore the comment */
     from dude2
     """
-  ),
-  (
+),
+(
     # Comment using -- at the beginning
     ('cats1', 'select'),
     """-- This is a comment to be ignored
     select * from cats1"""
-  ),
-  (
+),
+(
     # Comment using -- in the middle
     ('cats2', 'select'),
     """select *
     -- This is a comment to be ignored
     from cats2"""
-  ),
+),
 ]
 
 SELECT_PARSE_TESTS = [
-  (
+(
     # Select.
     ('student_details', 'select'),
     """SELECT first_name FROM student_details"""
-  ),
-  (
+),
+(
     # Select using alias.
     ('student_details', 'select'),
     """SELECT first_name Name FROM student_details"""
-  ),
-  (
+),
+(
     # Select using alias.
     ('student_details', 'select'),
     """SELECT first_name AS Name FROM student_details"""
-  ),
-  (
+),
+(
     # Select using table alias.
     ('student_details', 'select'),
     """SELECT s.first_name FROM student_details s"""
-  ),
-  (
+),
+(
     # Select using table alias.
     ('student_details', 'select'),
     """SELECT s.first_name FROM student_details AS s"""
-  ),
-  (
+),
+(
     # Select with condition.
     ('student_details', 'select'),
     """SELECT first_name, last_name FROM student_details WHERE id = 100"""
-  ),
-  (
+),
+(
     # Select with condition and alias.
     ('employee', 'select'),
     """SELECT name, salary, salary*1.2 AS new_salary FROM employee
     WHERE salary*1.2 > 30000"""
-  ),
-  (
+),
+(
     # Select with sub query.
     ('student_details', 'select'),
     """SELECT id, first_name FROM student_details WHERE first_name
     IN (SELECT first_name FROM student_details WHERE subject= 'Science')"""
-  ),
-  (
+),
+(
     # "Select with correlated sub query using table alias.
     ('product', 'select'),
     """SELECT p.product_name FROM product p WHERE p.product_id = (SELECT
     o.product_id FROM order_items o WHERE o.product_id = p.product_id)"""
-  ),
-  (
+),
+(
     # Select with correlated sub query using table alias.
     ('employee', 'select'),
     """SELECT employee_number, name FROM employee AS e1 WHERE salary >
     (SELECT avg(salary) FROM employee WHERE department = e1.department)"""
-  ),
-  (
+),
+(
     # Select with correlated sub query using aliases.
     ('app_devicesoftware', 'select'),
     """SELECT * FROM ( SELECT s.*, ds.version AS version2, ds.installed
@@ -119,8 +120,8 @@ SELECT_PARSE_TESTS = [
     AND s.approved = true AND v.approved = True AND installed IS NOT NULL
     AND ds.version IS NOT NULL ORDER BY name ASC, ds.version DESC,
     installed ASC ) AS temp GROUP BY id ORDER BY installed DESC LIMIT ?"""
-  ),
-  (
+),
+(
     # Select with correlated sub query using aliases.
     ('app_component', 'select'),
     """SELECT COUNT(t.manufacturer_id) AS total, v.* FROM ( SELECT
@@ -128,16 +129,16 @@ SELECT_PARSE_TESTS = [
     c.model, c.manufacturer_id ) AS t, app_vendor v WHERE v.id =
     t.manufacturer_id AND v.approved = true GROUP BY t.manufacturer_id ORDER BY
     COUNT(t.manufacturer_id) DESC LIMIT ?"""
-  ),
-  (
+),
+(
     # Select with correlated sub query using aliases.
     ('photos', 'select'),
     """SELECT count(?) AS count_1 FROM (SELECT DISTINCT photos.id AS photos_id
     FROM photos, item_map WHERE item_map.to_id IN (%s) AND item_map.to_type =
     %s AND item_map.from_id = photos.id AND item_map.from_type = %s AND
     item_map.deleted = %s) AS anon_1"""
-  ),
-  (
+),
+(
     # Select with sub query.
     ('entity_entity', 'select'),
     """SELECT COUNT(*) FROM (SELECT "entity_entity"."id" AS "id",
@@ -156,60 +157,60 @@ SELECT_PARSE_TESTS = [
     WHERE (NOT (("entity_site"."category_id" IN (%s, %s) AND NOT
     ("entity_site"."id" IS NULL))) AND "entity_entity"."id" <= %s
     ) LIMIT ?) subquery"""
-  ),
-  (
+),
+(
     # Select from union of sub queries.
     ('t1', 'select'),
     """select * from (select * from t1 union select * from t2)"""
-  ),
-  (
+),
+(
     # Select from union of sub queries.
     ('t1', 'select'),
     """select * from ((select * from t1) union (select * from t2))"""
-  ),
-  (
+),
+(
     # Select from union all of sub queries.
     ('t1', 'select'),
     """select * from (select * from t1 union all select * from t2)"""
-  ),
-  (
+),
+(
     # Select from union all of sub queries.
     ('t1', 'select'),
     """select * from ((select * from t1) union all (select * from t2))"""
-  ),
-  (
+),
+(
     # Select from union all of sub queries with limit.
     ('t1', 'select'),
     """(select * from (select * from t1 union all select * from t2)) limit 1"""
-  ),
-  (
+),
+(
     # Additional nested brackets.
     ('t1', 'select'),
     """((select * from (select * from t1))) limit 1"""
-  ),
-  (
+),
+(
     # Additional nested brackets with a space.
     ('t1', 'select'),
     """( ( select * from (select * from t1))) limit 1"""
-  ),
-  (
+),
+(
     # Additional nested brackets.
     ('t1', 'select'),
     """(select * from ((select * from t1))) limit 1"""
-  ),
-  (
+),
+(
     # Select with sub query. (Java agent test case)
     ('dude', 'select'),
     """select * from (select * from dude)""",
-  ),
-  (
+),
+(
     # Select with sub query. (Java agent test case)
     ('customers', 'select'),
     """SELECT t.* FROM (SELECT ROW_NUMBER() OVER(ORDER BY customers.ad_channel
     DESC) AS _row_num, * FROM [customers] WHERE (? = ?)) AS t WHERE t._row_num
     BETWEEN ? AND ?""",
-  ),
-  (
+),
+(
     # Select with sub query. (Java agent test case)
     ('prod_lock', 'select'),
     """select * from (select s.rush, NVL(NVL(o.postor, o.finalizer),
@@ -229,8 +230,8 @@ SELECT_PARSE_TESTS = [
     o.orderid=a.orderid and a.orderid=l.orderid and a.orderid=p.orderid and
     a.orderid=bl.orderid order by s.dtb_release, decode(s.rush, ?, ?, ?, ?,
     decode(s.rush, ?, ?, ?)) , a.orderid ) where rownum <= ?""",
-  ),
-  (
+),
+(
     # Select with sub query. (Java agent test case)
     ('plan_features_view', 'select'),
     """select ent.PLAN_PLAN_PRIORITY, ent.TYPE_ID, ent.TYPE,
@@ -252,8 +253,8 @@ SELECT_PARSE_TESTS = [
     rel.REL_ENTITY_TYPE_ID=ent.TYPE_ID and rel.REL_GROUP_ID=gu.GROUP_ID and
     gu.USER_ID=?)))) and seq.NODE_ID=ent.ID order by PRIMARY_RELEASE
     desc,seq.HIERARCH_SEQ,seq.LVL,seq.SN""",
-  ),
-  (
+),
+(
     # Select with sub query. (Java agent test case)
     ('product', 'select'),
     """SELECT
@@ -261,8 +262,8 @@ SELECT_PARSE_TESTS = [
     FROM `Product` WHERE Id IN (SELECT ProductId FROM ProductTaxonomy WHERE
     TaxId=220) AND Active = 1 AND Id NOT IN (Select AssocId FROM
     ProductPairing) ORDER BY Name LIMIT 15 OFFSET 120""",
-  ),
-  (
+),
+(
     # Select with sub query. (Java agent test case)
     ('std_data.city_deals', 'select'),
     """select citydeal1_.cd_id as cd1_1_1_, merchant1_.dm_id as dm1_1_1_,
@@ -324,13 +325,13 @@ SELECT_PARSE_TESTS = [
     citydeal1_ inner join std_data.deal_merchant merchant1_ on
     citydeal1_.cd_merchant_id=merchant1_.dm_id where citydeal1_.cd_id=1
     limit 1""",
-  ),
-  (
+),
+(
     # Select. (dotNet agent test case)
     ('dude', 'select'),
     """select * from [dude]"""
-  ),
-  (
+),
+(
     # Select with sub query. (PHP agent test case)
     ('hp_comments', 'select'),
     """(SELECT SQL_CALC_FOUND_ROWS c., e.entry_id, e.entry_title,
@@ -406,8 +407,8 @@ SELECT_PARSE_TESTS = [
     e.`entry_id` = c.`entry_id` AND `ee`.`entry_extra_id` = `e`.`entry_id`
     AND `published` = ? AND `removed` = ? AND `user_id` = ? ) ORDER BY
     `created_on` DESC LIMIT ?, ? / app?.nyc.huffpo.net, slave-db /""",
-  ),
-  (
+),
+(
     # Select with sub query.
     ('pstat_tenant', 'select'),
     """SELECT MAX(c) FROM (SELECT `pstat_tenant`.`id` AS `id`,
@@ -422,21 +423,21 @@ SELECT_PARSE_TESTS = [
     JOIN `bloc_bloc` ON (`bloc_bloc_tenants`.`bloc_id` = `bloc_bloc`.`id`) LEFT
     OUTER JOIN `document` ON (`bloc_bloc`.`id` = `document`.`bloc_id`) GROUP BY
     `pstat_tenant`.`id` ORDER BY NULL) subquery"""
-  ),
-  (
+),
+(
     # Select with special char in table name
     ('v$session', 'select'),
     """SELECT count(*) theCount FROM v$session WHERE client_info = ?"""
-  ),
-  # Select with special char in table name
-  (
+),
+(
+    # Select with special char in table name
     ('customers', 'select'),
     """SELECT Customers.CustID, Customers.Name, Orders.OrderID, Orders.Status
        FROM {Customers} LEFT OUTER JOIN
           Orders ON Customers.CustID=Orders.CustID
        WHERE Orders.Status='OPEN'""",
-  ),
-  (
+),
+(
     # Select with special char in table name
     ('krusher', 'select'),
     """select krusher?_.id as id?_?_, location?_.id as id?_?_, followers?_.id
@@ -466,8 +467,8 @@ SELECT_PARSE_TESTS = [
     join friend followers?_ on krusher?_.id=followers?_.krusher_to left outer
     join friend followees?_ on krusher?_.id=followees?_.krusher_from where
     krusher?_.facebook_oauth_token=?"""
-  ),
-  (
+),
+(
     # Select. (Java Agent TestCase)
     ('prod_peml', 'select'),
     """select pemlid, message, to_char(dt_modified, 'MM/DD\"<br>\"HH:MIAM'),
@@ -478,192 +479,192 @@ SELECT_PARSE_TESTS = [
     replace(cust_notes, ' ', '<BR>'), rep, decode(peml_type, '1', 'req',
     'opt'), NVL(sign(sysdate-(900/86400)-NVL(dt_yes, dt_no)), '0') from
     prod_peml where orderid='776371' order by pemlid"""
-  ),
-  (
+),
+(
     # Select with double-quoted table name (Java Agent TestCase)
     ('metrics2', 'select'),
     """
     SELECT * from "metrics2"
     """
-  ),
-  (
+),
+(
     # Select with single-quoted table name (Java Agent TestCase)
     ('metrics1', 'select'),
     """SELECT * from 'metrics1'"""
-  ),
-  (
+),
+(
     # Select large value set.
     ('t1', 'select'),
-    """SELECT * from 't1' WHERE c1 in (%s""" + (50000*""",%s""") + """)""",
-  ),
-  (
+    """SELECT * from 't1' WHERE c1 in (%s""" + (50000 * """,%s""") + """)""",
+),
+(
     # Select with table name in parenthesis (php agent TestCase)
     # FAIL
     ('foobar', 'select'),
     """SELECT * FROM (foobar)"""
-  ),
-  (
+),
+(
     # Select with no from clause.
     # FAIL
     ('', 'select'),
     """select now() as time"""
-  ),
-  (
+),
+(
     # Select with schema.
     ('schema.table', 'select'),
     '''SELECT * from schema.table'''
-  ),
-  (
+),
+(
     # Select with quoted schema.
     ('schema.table', 'select'),
     '''SELECT * from "schema"."table"'''
-  ),
-  (
+),
+(
     # Select with quoted schema.
     ('schema.table', 'select'),
     """SELECT * from 'schema'.'table'"""
-  ),
-  (
+),
+(
     # Select with quoted schema.
     ('schema.table', 'select'),
     '''SELECT * from `schema`.`table`'''
-  ),
+),
 ]
 
 DELETE_PARSE_TESTS = [
-  (
+(
     # Delete.
     ('employee', 'delete'),
     """DELETE FROM employee"""
-  ),
-  (
+),
+(
     # Delete with condition.
     ('employee', 'delete'),
     """DELETE FROM employee WHERE id = 100"""
-  ),
-  (
+),
+(
     # Delete with sub query.
     ('t1', 'delete'),
     """DELETE FROM t1 WHERE s11 > ANY (SELECT COUNT(*) /* no hint */ FROM
     t2 WHERE NOT EXISTS (SELECT * FROM t3 WHERE ROW(5*t2.s1,77)= (SELECT
     50,11*s1 FROM t4 UNION SELECT 50,77 FROM (SELECT * FROM t5) AS t5)))"""
-  ),
+),
 ]
 
 INSERT_PARSE_TESTS = [
-  (
+(
     # Insert.
     ('employee', 'insert'),
     """INSERT INTO employee
     VALUES (105, 'Srinath', 'Aeronautics', 27, 33000)"""
-  ),
-  (
+),
+(
     # Insert.
     ('employee', 'insert'),
     """INSERT INTO employee (id, name, dept, age, salary location)
     VALUES (105, 'Srinath', 'Aeronautics', 27, 33000)"""
-  ),
-  (
+),
+(
     # Insert from select.
     ('employee', 'insert'),
     """INSERT INTO employee SELECT * FROM temp_employee"""
-  ),
-  (
+),
+(
     # Insert from select.
     ('employee', 'insert'),
     """INSERT INTO employee (id, name, dept, age, salary location) SELECT
     emp_id, emp_name, dept, age, salary, location FROM temp_employee"""
-  ),
-  (
+),
+(
     # Insert with no space between table name and ()
     ('test', 'insert'),
     """insert   into test(id, name) values(6, 'Bubba')"""
-  )
+)
 ]
 
 UPDATE_PARSE_TESTS = [
-  (
+(
     # Update.
     ('employee', 'update'),
     """UPDATE employee SET location ='Mysore' WHERE id = 101"""
-  ),
-  (
+),
+(
     # Update.
     ('employee', 'update'),
     """UPDATE employee SET salary = salary + (salary * 0.2)"""
-  ),
-  (
+),
+(
     # Update.
     ('users_user', 'update'),
     """UPDATE users_user SET birthday=%(birthday)s,
     change_date=TIMEZONE(%(TIMEZONE_1)s, now()) WHERE users_user.id =
     %(users_user_id)s"""
-  ),
+),
 ]
 
 CREATE_PARSE_TESTS = [
-  (
+(
     # Create.
     ('temp_employee', 'create'),
     """CREATE TABLE temp_employee SELECT * FROM employee"""
-  ),
-  (
+),
+(
     # Create.
     ('employee', 'create'),
     """CREATE TABLE employee ( id number(5), name char(20), dept char(10),
     age number(2), salary number(10), location char(10) )"""
-  ),
-  (
+),
+(
     # Create.
     # FAIL
     ('my table', 'create'),
     """CREATE TABLE "my table" ("my column" INT)"""
-  ),
+),
 ]
 
 CALL_PARSE_TESTS = [
-  (
+(
     # Call.
     ('foo', 'call'),
     """CALL FOO(1, 2) """
-  ),
-  (
+),
+(
     # Call.
     ('foo', 'call'),
     """CALL FOO 1 2 """
-  ),
+),
 ]
 
 EXEC_PARSE_TESTS = [
-  (
+(
     # Call.
     ('tsip_api_rates_lookup_intl', 'exec'),
     """EXEC TSIP_API_RATES_LOOKUP_INTL"""
-  ),
-  (
+),
+(
     # Call.
     ('dagetaccount', 'execute'),
     """EXECUTE DAGetAccount @AccountID=?,@IncludeLotLinks=?"""
-  ),
+),
 ]
 
 SHOW_PARSE_TESTS = [
-  (
+(
     # Show.
     ('profiles', 'show'),
     """SHOW PROFILES"""
-  ),
-  (
+),
+(
     # Show.
     ('columns from mytable from mydb', 'show'),
     """SHOW COLUMNS FROM mytable FROM mydb"""
-  ),
-  (
+),
+(
     # Show.
     ('columns from mydb.mytable', 'show'),
     """SHOW COLUMNS FROM mydb.mytable"""
-  ),
-  (
+),
+(
     # Show long name
     ('wow_this_is_a_really_long_name_isnt_it_cmon_man_it_s_crazy_no_way_bruh',
         'show'),
@@ -673,152 +674,154 @@ SHOW_PARSE_TESTS = [
 ]
 
 SET_PARSE_TESTS = [
-  (
+(
     # Set.
     ('language', 'set'),
     """SET LANGUAGE Australian"""
-  ),
-  (
+),
+(
     # Set.
     ('auto', 'set'),
     """SET AUTO COMMIT ON"""
-  ),
-  (
+),
+(
     # Set.
     ('transaction', 'set'),
     """SET TRANSACTION ISOLATION LEVEL SERIALIZABLE"""
-  ),
-  (
+),
+(
     # Set with equals sign
     ('character_set_results', 'set'),
     """SET character_set_results=NULL"""
-  ),
-  (
+),
+(
     # Compound statment
     # FAIL
     ('foo', 'set'),
     """set FOO=17; set BAR=18"""
-  ),
+),
 ]
 
 ALTER_PARSE_TESTS = [
-  # alter
-  (
-      ('session', 'alter'),
-      """ALTER SESSION SET ISOLATION_LEVEL = READ COMMITTED"""
-  ),
+(
+    # alter
+    ('session', 'alter'),
+    """ALTER SESSION SET ISOLATION_LEVEL = READ COMMITTED"""
+),
 ]
 
 SQL_NORMALIZE_TESTS = [
-  """SELECT c1 FROM t1 WHERE c1 IN (1)""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( 1)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (1 )""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( 1 )""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n1 )""",
-  """SELECT c1 FROM t1 WHERE c1 IN (1\n)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n1\n)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (1,2)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (1,2,3)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (1, 2, 3, 4 )""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( 1,2)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (1 ,2)""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( 1 ,2)""",
-  """SELECT c1 FROM t1 WHERE c1 IN ('1')""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( '1')""",
-  """SELECT c1 FROM t1 WHERE c1 IN ('1' )""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( '1' )""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n'1')""",
-  """SELECT c1 FROM t1 WHERE c1 IN ('1'\n )""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n'1'\n)""",
-  """SELECT c1 FROM t1 WHERE c1 IN ('1','2')""",
-  """SELECT c1 FROM t1 WHERE c1 IN ('1','2','3')""",
-  """SELECT c1 FROM t1 WHERE c1 IN ('1', '2', '3', '4' )""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( '1','2')""",
-  """SELECT c1 FROM t1 WHERE c1 IN ('1' ,'2')""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( '1' ,'2')""",
-  """SELECT c1 FROM t1 WHERE c1 IN (?)""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( ?)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (? )""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( ? )""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n? )""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( ?\n)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n?\n)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (?,?)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (?,?,?)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (?, ?,?, ? )""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( ?,?)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (? ,?)""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( ? ,?)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (:1)""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( :1)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (:1 )""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( :1 )""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n:1 )""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( :1\n)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n:1\n)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (:1,:2)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (:1,:2,:3)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (:1, :2, :3, :4 )""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( :1,:2)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (:1 ,:2)""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( :1 ,:2)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (:v1)""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( :v1)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (:v1 )""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( :v1 )""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n:v1 )""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( :v1\n)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n:v1\n)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (:v1,:v2)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (:v1,:v2,:v3)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (:v1, :v2, :v3, :v4 )""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( :v1,:v2)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (:v1 ,:v2)""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( :v1 ,:v2)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (%s)""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( %s)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (%s )""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( %s )""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n%s )""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( %s\n)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n%s\n)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (%s,%s)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (%s,%s,%s)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (%s, %s,%s , %s )""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( %s,%s)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (%s ,%s)""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( %s ,%s)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (%(v1)s)""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( %(v1)s)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (%(v1)s )""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( %(v1)s )""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n%(v1)s )""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( %(v1)s\n)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n%(v1)s )""",
-  """SELECT c1 FROM t1 WHERE c1 IN (%(v1)s,%(v2)s)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (%(v1)s,%(v2)s,%(v3)s)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (%(v1)s, %(v2)s, %(v3)s , %(v4)s )""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( %(v1)s,%(v2)s)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (%(v1)s ,%(v2)s)""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( %(v1)s ,%(v2)s)""",
-  """ SELECT c1 FROM t1 WHERE c1 IN (1)""",
-  """  SELECT c1 FROM t1 WHERE c1 IN (1)""",
-  """ \n SELECT c1 FROM t1 WHERE c1 IN (1)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (1) """,
-  """SELECT c1 FROM t1 WHERE c1 IN (1)  """,
-  """SELECT c1 FROM t1 WHERE c1 IN (1) \n """,
-  """SELECT  c1 FROM t1 WHERE c1 IN (1)""",
-  """SELECT \n c1 FROM t1 WHERE c1 IN (1)""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( 1)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (  1)""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( \n 1)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (1 )""",
-  """SELECT c1 FROM t1 WHERE c1 IN (1  )""",
-  """SELECT c1 FROM t1 WHERE c1 IN (1 \n )""",
-  """SELECT c1 FROM t1 WHERE c1 IN (""" + (50000*"""%s,""") + """%s)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (""" + (50000*""":1,""") + """%s)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (""" + (50000*"""%(name)s,""") + """%s)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (1)""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( 1)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (1 )""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( 1 )""",
+    """SELECT c1 FROM t1 WHERE c1 IN (\n1 )""",
+    """SELECT c1 FROM t1 WHERE c1 IN (1\n)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (\n1\n)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (1,2)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (1,2,3)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (1, 2, 3, 4 )""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( 1,2)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (1 ,2)""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( 1 ,2)""",
+    """SELECT c1 FROM t1 WHERE c1 IN ('1')""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( '1')""",
+    """SELECT c1 FROM t1 WHERE c1 IN ('1' )""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( '1' )""",
+    """SELECT c1 FROM t1 WHERE c1 IN (\n'1')""",
+    """SELECT c1 FROM t1 WHERE c1 IN ('1'\n )""",
+    """SELECT c1 FROM t1 WHERE c1 IN (\n'1'\n)""",
+    """SELECT c1 FROM t1 WHERE c1 IN ('1','2')""",
+    """SELECT c1 FROM t1 WHERE c1 IN ('1','2','3')""",
+    """SELECT c1 FROM t1 WHERE c1 IN ('1', '2', '3', '4' )""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( '1','2')""",
+    """SELECT c1 FROM t1 WHERE c1 IN ('1' ,'2')""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( '1' ,'2')""",
+    """SELECT c1 FROM t1 WHERE c1 IN (?)""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( ?)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (? )""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( ? )""",
+    """SELECT c1 FROM t1 WHERE c1 IN (\n? )""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( ?\n)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (\n?\n)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (?,?)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (?,?,?)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (?, ?,?, ? )""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( ?,?)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (? ,?)""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( ? ,?)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (:1)""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( :1)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (:1 )""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( :1 )""",
+    """SELECT c1 FROM t1 WHERE c1 IN (\n:1 )""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( :1\n)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (\n:1\n)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (:1,:2)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (:1,:2,:3)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (:1, :2, :3, :4 )""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( :1,:2)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (:1 ,:2)""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( :1 ,:2)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (:v1)""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( :v1)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (:v1 )""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( :v1 )""",
+    """SELECT c1 FROM t1 WHERE c1 IN (\n:v1 )""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( :v1\n)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (\n:v1\n)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (:v1,:v2)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (:v1,:v2,:v3)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (:v1, :v2, :v3, :v4 )""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( :v1,:v2)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (:v1 ,:v2)""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( :v1 ,:v2)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (%s)""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( %s)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (%s )""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( %s )""",
+    """SELECT c1 FROM t1 WHERE c1 IN (\n%s )""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( %s\n)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (\n%s\n)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (%s,%s)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (%s,%s,%s)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (%s, %s,%s , %s )""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( %s,%s)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (%s ,%s)""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( %s ,%s)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (%(v1)s)""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( %(v1)s)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (%(v1)s )""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( %(v1)s )""",
+    """SELECT c1 FROM t1 WHERE c1 IN (\n%(v1)s )""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( %(v1)s\n)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (\n%(v1)s )""",
+    """SELECT c1 FROM t1 WHERE c1 IN (%(v1)s,%(v2)s)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (%(v1)s,%(v2)s,%(v3)s)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (%(v1)s, %(v2)s, %(v3)s , %(v4)s )""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( %(v1)s,%(v2)s)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (%(v1)s ,%(v2)s)""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( %(v1)s ,%(v2)s)""",
+    """ SELECT c1 FROM t1 WHERE c1 IN (1)""",
+    """  SELECT c1 FROM t1 WHERE c1 IN (1)""",
+    """ \n SELECT c1 FROM t1 WHERE c1 IN (1)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (1) """,
+    """SELECT c1 FROM t1 WHERE c1 IN (1)  """,
+    """SELECT c1 FROM t1 WHERE c1 IN (1) \n """,
+    """SELECT  c1 FROM t1 WHERE c1 IN (1)""",
+    """SELECT \n c1 FROM t1 WHERE c1 IN (1)""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( 1)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (  1)""",
+    """SELECT c1 FROM t1 WHERE c1 IN ( \n 1)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (1 )""",
+    """SELECT c1 FROM t1 WHERE c1 IN (1  )""",
+    """SELECT c1 FROM t1 WHERE c1 IN (1 \n )""",
+    """SELECT c1 FROM t1 WHERE c1 IN (""" + (50000 * """%s,""") + """%s)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (""" + (50000 * """:1,""") + """%s)""",
+    """SELECT c1 FROM t1 WHERE c1 IN (""" + (
+            50000 * """%(name)s,""") + """%s)""",
 ]
+
 
 class DummySQLDatabase(object):
     database_product = 'Postgres'
@@ -826,7 +829,9 @@ class DummySQLDatabase(object):
     explain_query = None
     explain_stmts = ()
 
+
 DUMMY_DATABASE = DummySQLDatabase()
+
 
 class TestDatabase(unittest.TestCase):
 
@@ -868,11 +873,12 @@ class TestDatabase(unittest.TestCase):
             actual_result = statement.target, statement.operation
             self.assertEqual(expected_result, actual_result)
 
-    #def test_parse_create_tests(self):
-    #    for expected_result, sql in CREATE_PARSE_TESTS:
-    #        statement = SQLStatement(sql, DUMMY_DATABASE)
-    #        actual_result = statement.target, statement.operation
-    #        self.assertEqual(expected_result, actual_result)
+    @pytest.mark.skip()
+    def test_parse_create_tests(self):
+        for expected_result, sql in CREATE_PARSE_TESTS:
+            statement = SQLStatement(sql, DUMMY_DATABASE)
+            actual_result = statement.target, statement.operation
+            self.assertEqual(expected_result, actual_result)
 
     def test_parse_call_tests(self):
         for expected_result, sql in CALL_PARSE_TESTS:
@@ -880,29 +886,33 @@ class TestDatabase(unittest.TestCase):
             actual_result = statement.target, statement.operation
             self.assertEqual(expected_result, actual_result)
 
-    #def test_parse_exec_tests(self):
-    #    for expected_result, sql in EXEC_PARSE_TESTS:
-    #        statement = SQLStatement(sql, DUMMY_DATABASE)
-    #        actual_result = statement.target, statement.operation
-    #        self.assertEqual(expected_result, actual_result)
+    @pytest.mark.skip()
+    def test_parse_exec_tests(self):
+        for expected_result, sql in EXEC_PARSE_TESTS:
+            statement = SQLStatement(sql, DUMMY_DATABASE)
+            actual_result = statement.target, statement.operation
+            self.assertEqual(expected_result, actual_result)
 
-    #def test_parse_alter_tests(self):
-    #    for expected_result, sql in ALTER_PARSE_TESTS:
-    #        statement = SQLStatement(sql, DUMMY_DATABASE)
-    #        actual_result = statement.target, statement.operation
-    #        self.assertEqual(expected_result, actual_result)
+    @pytest.mark.skip()
+    def test_parse_alter_tests(self):
+        for expected_result, sql in ALTER_PARSE_TESTS:
+            statement = SQLStatement(sql, DUMMY_DATABASE)
+            actual_result = statement.target, statement.operation
+            self.assertEqual(expected_result, actual_result)
 
-    #def test_parse_show_tests(self):
-    #    for expected_result, sql in SHOW_PARSE_TESTS:
-    #        statement = SQLStatement(sql, DUMMY_DATABASE)
-    #        actual_result = statement.target, statement.operation
-    #        self.assertEqual(expected_result, actual_result)
+    @pytest.mark.skip()
+    def test_parse_show_tests(self):
+        for expected_result, sql in SHOW_PARSE_TESTS:
+            statement = SQLStatement(sql, DUMMY_DATABASE)
+            actual_result = statement.target, statement.operation
+            self.assertEqual(expected_result, actual_result)
 
-    #def test_parse_set_tests(self):
-    #    for expected_result, sql in SET_PARSE_TESTS:
-    #        statement = SQLStatement(sql, DUMMY_DATABASE)
-    #        actual_result = statement.target, statement.operation
-    #        self.assertEqual(expected_result, actual_result)
+    @pytest.mark.skip()
+    def test_parse_set_tests(self):
+        for expected_result, sql in SET_PARSE_TESTS:
+            statement = SQLStatement(sql, DUMMY_DATABASE)
+            actual_result = statement.target, statement.operation
+            self.assertEqual(expected_result, actual_result)
 
     def test_obfuscate_numeric_literals(self):
         sql = 'SELECT * FROM t1 WHERE t2.c3 = 1 AND 2 = 3'
@@ -912,9 +922,9 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(expected_result, actual_result)
 
     def test_obfuscate_integer_word_boundaries(self):
-        sql = 'A1 #2 ,3 .4 (5) =6 <7 /9 B9C'
+        sql = 'A1 ,2 .3 (4) =5 <6 /7 B8C'
         statement = SQLStatement(sql, DUMMY_DATABASE)
-        expected_result = 'A1 #? ,? .? (?) =? <? /? B9C'
+        expected_result = 'A1 ,? .? (?) =? <? /? B8C'
         actual_result = statement.obfuscated
         self.assertEqual(expected_result, actual_result)
 
@@ -947,6 +957,16 @@ class TestDatabase(unittest.TestCase):
             self.assertEqual(expected_result, actual_result)
             self.assertEqual(hash(expected_result), hash(actual_result))
 
+    def test_unsupported_quoting_style(self):
+        dummy_database = DummySQLDatabase()
+        dummy_database.quoting_style = 'cookies'
+        sql = 'SELECT * FROM foo'
+        expected_result = sql
+        statement = SQLStatement(sql, dummy_database)
+        actual_result = statement.obfuscated
+        self.assertEqual(expected_result, actual_result)
+
+
 class TestDatabaseHelpers(unittest.TestCase):
 
     def test_explain_plan_results(self):
@@ -970,6 +990,7 @@ class TestDatabaseHelpers(unittest.TestCase):
         expected = None
         actual = _query_result_dicts_to_tuples(columns, rows)
         self.assertEqual(expected, actual)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -27,8 +27,11 @@ class NRRequestCoroutineWrapper(ObjectProxy):
 
         if not self._nr_trace.activated:
             self._nr_trace.__enter__()
-            if self._nr_trace.transaction.current_node is self._nr_trace:
+
+            if (self._nr_trace.transaction and
+                    self._nr_trace.transaction.current_node is self._nr_trace):
                 # externals should not have children
+                # This is so we do not miss concurrent external traces.
                 self._nr_trace.transaction._pop_current(self._nr_trace)
 
         try:

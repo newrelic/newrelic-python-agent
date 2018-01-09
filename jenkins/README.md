@@ -20,7 +20,13 @@ Jobs are grouped into three views:
 #### \_INTEGRATION-TESTS-[branch]\_
 Multijob to run all tests as defined by `tox.ini` files in the `tests/` directory. The tests will all run in parallel in EC2 worker nodes.
 
-`master` and `develop` tests run on any push to the branch whereas `manual` can be kicked off ad-hoc. `develop` tests will also be run on cron daily.
+`develop` tests run on cron every weeknight.
+
+`master` tests run on any push to master.
+
+`pullrequest` tests automatically determine which tests need to be run by inspecting the imports of each test file and seeing if those files changed.
+
+`mmf` tests run on cron every weeknight. They will run against the most recently committed branch that contains the string `/mmf-`.
 
 **reseed-integration-tests:** The first step of this job is to parse the tox files and create the list of tests to run. If the job is related to a pull request then only the most recent package version is tested (see Test Configuration below). Tox environments are grouped so as to cut down on testing time. Because of this, depending on if the job is running only the most recent package version or not, a given tox environment could move between Jenkins jobs.
 
@@ -29,7 +35,13 @@ Multijob to run all tests as defined by `tox.ini` files in the `tests/` director
 #### \_UNIT-TESTS-[branch]\_
 Multijob to run `./build.sh` then `./tests.sh`.
 
-`master` and `develop` tests run on any push to the branch whereas `manual` can be kicked off ad-hoc.
+`develop` tests run on cron every weeknight.
+
+`master` test run on any push to master.
+
+`pullrequest` tests automatically determine which tests need to be run by inspecting the imports of each test file and seeing if those files changed.
+
+`mmf` tests run on cron every weeknight. They will run against the most recently committed branch that contains the string `/mmf-`.
 
 #### \_COMBINED-TESTS-[branch]\_
 Multijob to run both the unit and integration tests on the given branch.
@@ -75,6 +87,7 @@ We have installed the following plugins on our JaaS instance:
 
 We have installed the following packages on the JaaS master:
 + tox==2.4.1
++ python3.6 built and installed from source (https://www.python.org/ftp/python/3.6.3/Python-3.6.3.tgz) (./configure && sudo make install)
 
 ## Development
 

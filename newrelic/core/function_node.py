@@ -9,7 +9,7 @@ from newrelic.packages import six
 _FunctionNode = namedtuple('_FunctionNode',
         ['group', 'name', 'children', 'start_time', 'end_time',
         'duration', 'exclusive', 'label', 'params', 'rollup',
-        'async'])
+        'is_async'])
 
 
 

@@ -6,12 +6,7 @@ String repoFull = "${organization}/${repoGHE}"
 String testPrefix = "${organization}-tools"
 String integTestSuffix = "__integration-test"
 String unitTestSuffix = "__unit-test"
-String slackChannel = '#python-agent'
-Boolean isJaasHostname = InetAddress.getLocalHost().getHostName() == 'python-agent-build.pdx.vm.datanerd.us'
-
-if ( !isJaasHostname ) {
-    slackChannel = '#python-agent-verbose'
-}
+String slackChannel = '#python-dev'
 
 
 // Views for any tool-like jobs
@@ -37,7 +32,7 @@ use(extensions) {
             blockOnJobs('.*', 'GLOBAL', 'DISABLED')
 
             steps {
-                reseedFrom('jenkins/**/*.groovy')
+                reseedFrom('jenkins/*.groovy')
             }
 
             slackQuiet(slackChannel)
@@ -63,7 +58,7 @@ use(extensions) {
                 environmentVariables {
                     env('DOCKER_HOST', 'unix:///var/run/docker.sock')
                 }
-                shell('./jenkins/packnsend-buildnpush.sh')
+                shell('./jenkins/scripts/packnsend-buildnpush.sh')
             }
 
             slackQuiet(slackChannel)
@@ -103,7 +98,7 @@ use(extensions) {
                 environmentVariables {
                     env('DOCKER_HOST', 'unix:///var/run/docker.sock')
                 }
-                shell('./jenkins/refresh_docker_containers.sh')
+                shell('./jenkins/scripts/refresh_docker_containers.sh')
             }
 
             slackQuiet(slackChannel)

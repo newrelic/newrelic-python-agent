@@ -1,3 +1,30 @@
+unreleased
+----------
+
+2.100.0 (2017-01-09)
+--------------------
+
+- Security Updates
+
+  See the associated `security bulletin <https://docs.newrelic.com/docs/accounts-partnerships/accounts/security-bulletins/security-bulletin-nr18-01>`_.
+
+- Using the aiohttp client results in an application crash
+
+  Under certain circumstances, using the aiohttp client may have resulted in an
+  application crash. This issue has been addressed.
+
+- Database queries made with psycopg2 may not have been recorded
+
+  When using the "with" statement to create a cursor, time spent on database
+  calls may not have been properly recorded. This issue has been addressed.
+
+- Usage of the pika library resulted in a memory leak
+
+  When using the pika library with New Relic, Channel objects would not be
+  cleared from memory as expected. This would result in abnormally high memory
+  utilization in some cases. The memory leak has now been fixed.
+
+
 2.98.0 (2017-11-30)
 -------------------
 

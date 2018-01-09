@@ -20,25 +20,28 @@ class TimeTrace(object):
         self.exclusive = 0.0
         self.activated = False
         self.exited = False
-        self.async = False
+        self.is_async = False
         self.has_async_children = False
         self.min_child_start_time = float('inf')
         self.exc_data = (None, None, None)
-
-        # Don't do further tracing of transaction if
-        # it has been explicitly stopped.
-
-        if transaction and transaction.stopped:
-            self.transaction = None
-            return
+        self.should_record_segment_params = False
 
         if transaction:
+            # Don't do further tracing of transaction if
+            # it has been explicitly stopped.
+            if transaction.stopped:
+                self.transaction = None
+                return
+
             self.parent = self.transaction.active_node()
 
-        # parent shall track children immediately
-        if (self.parent is not None and
-                not self.parent.terminal_node()):
-            self.parent.increment_child_count()
+            # parent shall track children immediately
+            if (self.parent is not None and
+                    not self.parent.terminal_node()):
+                self.parent.increment_child_count()
+
+            self.should_record_segment_params = (
+                    transaction.should_record_segment_params)
 
     def __enter__(self):
         if not self.transaction:
@@ -164,7 +167,7 @@ class TimeTrace(object):
 
         # Check to see if we're async
         if parent.exited or parent.has_async_children:
-            self.async = True
+            self.is_async = True
 
         # Give chance for derived class to finalize any data in
         # this object instance. The transaction is passed as a
@@ -238,7 +241,7 @@ class TimeTrace(object):
 
     def process_child(self, node):
         self.children.append(node)
-        if node.async:
+        if node.is_async:
 
             # record the lowest start time
             self.min_child_start_time = min(self.min_child_start_time,

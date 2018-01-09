@@ -3,12 +3,8 @@ import newrelic.jenkins.extensions
 String organization = 'python-agent'
 String repoGHE = 'python_agent'
 String repoFull = "${organization}/${repoGHE}"
-String slackChannel = '#python-agent'
-Boolean isJaasHostname = InetAddress.getLocalHost().getHostName() == 'python-agent-build.pdx.vm.datanerd.us'
+String slackChannel = '#python-dev'
 
-if ( !isJaasHostname ) {
-    slackChannel = '#python-agent-verbose'
-}
 
 // Views for any build and deploy jobs
 

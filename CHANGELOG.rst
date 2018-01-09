@@ -1,6 +1,9 @@
 unreleased
 ----------
 
+2.100.0 (2017-01-09)
+--------------------
+
 - Security Updates
 
   See the associated `security bulletin <https://docs.newrelic.com/docs/accounts-partnerships/accounts/security-bulletins/security-bulletin-nr18-01>`_.

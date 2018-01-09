@@ -104,9 +104,7 @@ def test_simple(app, uri, name, ioloop):
 ])
 @pytest.mark.parametrize('sock_family', [
     socket.AF_INET,
-    # FIXME: this needs to be debugged with
-    # https://newrelic.atlassian.net/browse/PYTHON-2624
-    # socket.AF_INET6
+    socket.AF_INET6,
 ])
 def test_environ(app, method, request_param_setting, sock_family):
 

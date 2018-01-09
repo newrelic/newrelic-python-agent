@@ -107,6 +107,11 @@ use(extensions) {
                         '<h3>Don\'t forget to wake up all EC2 nodes before ' +
                         'running this job!</h3>')
 
+            triggers {
+                upstream("${testPrefix}-build-pip-cache")
+                upstream("${testPrefix}-Packnsend-Build-and-Push")
+            }
+
             concurrentBuild true
             logRotator { numToKeep(10) }
 

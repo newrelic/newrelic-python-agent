@@ -203,11 +203,15 @@ into the release branch you just created. Format the commit message like this:
 be added to the code without being side-kick approved. Security will keep
 sending you emails if you don't do this.
 
+![example-pr](https://source.datanerd.us/storage/user/985/files/f9c98530-f499-11e7-8563-e893db331423)
+
 8. Create a PR from ``develop`` to ``master``. The body of the pull request
 should contain the text `[skip-ci]` so that jenkins doesn't run the PR. The PR
 should be titled:
 
         Merge develop into master for release A.B.C
+
+![example-pr](https://source.datanerd.us/storage/user/985/files/166ebfe8-f49a-11e7-9f2d-ae9da4fb3359)
 
 9. Get a buddy to sidekick and merge this PR.
 

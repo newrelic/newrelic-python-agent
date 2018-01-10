@@ -14,6 +14,13 @@ try {
    mostRecentOnly = "false"
 }
 
+String targetBranch
+try {
+    targetBranch = "origin/${ghprbTargetBranch}"
+} catch (all) {
+    targetBranch = "origin/develop"
+}
+
 def getPacknsendTests (String workspace, String testSuffix, String mostRecentOnly) {
     Integer maxEnvsPerContainer = 14
 
@@ -85,7 +92,7 @@ def getUnitTestEnvs = {
     List<String> unitTestEnvs = new String(stdout).split('\n')
 }
 
-def getChangedTests (String dirs) {
+def getChangedTests (String dirs, String targetBranch) {
 
     // Get list of directories which have python files that import changed files.
     //
@@ -100,6 +107,7 @@ def getChangedTests (String dirs) {
     def proc = (
         "/usr/local/bin/python3.6 ${WORKSPACE}/jenkins/scripts/extract_changed.py " +
             "-nr_path ${WORKSPACE} " +
+            "-branch ${targetBranch} " +
             "${dirs}"
     )
     println("Running ${proc}")
@@ -125,9 +133,8 @@ def getChangedTests (String dirs) {
 
 use(extensions) {
     def packnsendTests = getPacknsendTests("${WORKSPACE}", integrationSuffix, mostRecentOnly)
-    def changedIntegrationTests = getChangedTests("${WORKSPACE}/tests/*")
-    def changedUnitTests = getChangedTests(
-            "newrelic/*/tests newrelic/tests")
+    def changedIntegrationTests = getChangedTests("${WORKSPACE}/tests/*", targetBranch)
+    def changedUnitTests = getChangedTests("newrelic/*/tests newrelic/tests", targetBranch)
     def unitTestEnvs = getUnitTestEnvs()
 
     ['pullrequest', 'manual'].each { jobType ->

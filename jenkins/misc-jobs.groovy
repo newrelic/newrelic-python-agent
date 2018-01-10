@@ -65,6 +65,38 @@ use(extensions) {
         }
     }
 
+    baseJob("${testPrefix}-build-pip-cache") {
+        label('py-ec2-linux')
+        repo(repoFull)
+        branch('${GIT_BRANCH}')
+
+        configure {
+            description('A job to build the PIP cache image and push it to ' +
+                    'the repo. Once complete, the reset nodes job should be run.')
+
+            triggers {
+                // run daily on cron
+                cron('H 0 * * 1-5')
+            }
+
+            parameters {
+                stringParam('GIT_BRANCH', 'develop', "Generally, we don't want " +
+                        "to change this setting. This parameter is here in case " +
+                        "we want to rebuild the cache on a branch (for a PR, for " +
+                        "example)")
+            }
+
+            steps {
+                environmentVariables {
+                    env('DOCKER_HOST', 'unix:///var/run/docker.sock')
+                }
+                shell('./jenkins/scripts/packnsend-build-pip-cache.sh')
+            }
+
+            slackQuiet(slackChannel)
+        }
+    }
+
     baseJob("${testPrefix}-Reset-Nodes") {
         repo(repoFull)
         branch('${GIT_BRANCH}')
@@ -74,6 +106,11 @@ use(extensions) {
                         'packnsend pull then restart all containers. ' +
                         '<h3>Don\'t forget to wake up all EC2 nodes before ' +
                         'running this job!</h3>')
+
+            triggers {
+                upstream("${testPrefix}-build-pip-cache")
+                upstream("${testPrefix}-Packnsend-Build-and-Push")
+            }
 
             concurrentBuild true
             logRotator { numToKeep(10) }

@@ -6,7 +6,7 @@ WORK_DIRECTORY=".`pwd | sed -e s%$ROOT_DIRECTORY%%`"
 NR_DOCKER_REPO=cf-registry.nr-ops.net
 PYTHON_AGENT_IMG_PATH=$NR_DOCKER_REPO/python-agent
 
-TEST_IMAGE_NAME=python-base
+TEST_IMAGE_NAME=cache
 
 TMPDIR=${TMPDIR:-/tmp}
 
@@ -24,7 +24,7 @@ APP_SERVICE_IMAGES="
     rabbitmq
     "
 
-ALL_IMAGES="python-base $APP_SERVICE_IMAGES"
+ALL_IMAGES="python-base $TEST_IMAGE_NAME $APP_SERVICE_IMAGES"
 DATE=`date '+%Y%m%d%H%M%S'`
 
 cleanup_containers()
@@ -259,7 +259,7 @@ launch_remote_command()
     fi
 
     echo "Starting test container and running command."
-    echo "Command: $@"
+    echo "RUN_CMD: $(echo $RUN_CMD | tr -s ' ')"
 
     CONTAINER_ID=$($RUN_CMD | tail -n1)
     test -n "$CONTAINER_ID" || exit 1
@@ -397,6 +397,8 @@ push_docker_base_images()
 
     echo "Push docker base images."
     echo "$IMAGE_LIST"
+    [[ -n $BUILD_TAG ]] && echo "Build tag: $BUILD_TAG"
+
 
     for IMG in $IMAGE_LIST
     do
@@ -407,6 +409,11 @@ push_docker_base_images()
 
         docker tag $IMG $PYTHON_AGENT_IMG_PATH/$IMG
         docker push $PYTHON_AGENT_IMG_PATH/$IMG
+
+        # If build tag is set - tag image with build number
+        [[ -n $BUILD_TAG ]] && \
+            docker tag $PYTHON_AGENT_IMG_PATH/$IMG $PYTHON_AGENT_IMG_PATH/$IMG:$BUILD_TAG && \
+            docker push $PYTHON_AGENT_IMG_PATH/$IMG:$BUILD_TAG
 
     done
 }

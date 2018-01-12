@@ -1,4 +1,6 @@
+import tornado
 import threading
+import six
 from wsgiref.simple_server import make_server
 
 import pytest
@@ -11,6 +13,11 @@ from testing_support.mock_external_http_server import (
 
 ENCODING_KEY = '1234567890123456789012345678901234567890'
 
+skipif_tornadomaster_py3 = pytest.mark.skipif(
+        tornado.version_info >= (5, 0) and six.PY3,
+        reason=('Instrumentation is broken for Tornado 5.0. Running these '
+            'tests results in a hang.'))
+
 
 @pytest.fixture(scope='module')
 def external():
@@ -19,6 +26,7 @@ def external():
         yield external
 
 
+@skipif_tornadomaster_py3
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @pytest.mark.parametrize('cat_enabled,user_header', [
@@ -80,6 +88,7 @@ def test_httpclient(app, cat_enabled, request_type, client_class,
     _test()
 
 
+@skipif_tornadomaster_py3
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @pytest.mark.parametrize('cat_enabled', [True, False])
@@ -136,6 +145,7 @@ def test_client_cat_response_processing(app, cat_enabled, request_type,
     server_thread.join(0.1)
 
 
+@skipif_tornadomaster_py3
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @validate_transaction_metrics('_target_application:InvalidExternalMethod.get')
@@ -146,6 +156,7 @@ def test_httpclient_invalid_method(app, client_class):
     assert response.code == 503
 
 
+@skipif_tornadomaster_py3
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @validate_transaction_metrics('_target_application:InvalidExternalKwarg.get')
@@ -156,6 +167,7 @@ def test_httpclient_invalid_kwarg(app, client_class):
     assert response.code == 503
 
 
+@skipif_tornadomaster_py3
 @validate_transaction_metrics('_target_application:CrashClientHandler.get',
     rollup_metrics=[('External/example.com/tornado.httpclient/GET', 1)],
     scoped_metrics=[('External/example.com/tornado.httpclient/GET', 1)]
@@ -165,6 +177,7 @@ def test_httpclient_fetch_crashes(app):
     assert response.code == 200
 
 
+@skipif_tornadomaster_py3
 @validate_transaction_metrics('_target_application:CrashClientHandler.get',
     rollup_metrics=[('External/example.com/tornado.httpclient/GET', None)],
     scoped_metrics=[('External/example.com/tornado.httpclient/GET', None)]

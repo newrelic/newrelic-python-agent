@@ -1,5 +1,7 @@
 import pytest
+import six
 import sys
+import tornado
 
 from tornado.ioloop import IOLoop
 
@@ -28,6 +30,12 @@ if (sys.version_info < (3, 4) or
 else:
     loops = [None, 'tornado.platform.asyncio.AsyncIOLoop',
             'zmq.eventloop.ioloop.ZMQIOLoop']
+
+
+skipif_tornadomaster_py3 = pytest.mark.skipif(
+        tornado.version_info >= (5, 0) and six.PY3,
+        reason=('Instrumentation is broken for Tornado 5.0. Running these '
+            'tests results in a hang.'))
 
 
 @pytest.fixture(scope='module')
@@ -65,6 +73,7 @@ def test_valid_synthetics_event(app, ioloop):
     _test()
 
 
+@skipif_tornadomaster_py3
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @pytest.mark.parametrize('cat_enabled', [True, False])

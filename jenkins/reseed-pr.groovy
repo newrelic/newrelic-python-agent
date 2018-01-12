@@ -142,7 +142,11 @@ use(extensions) {
             description('Real multijob which runs the actual integration tests.')
             logRotator { numToKeep(10) }
             label('py-ec2-linux')
-            repository(repoFull, '${GIT_REPOSITORY_BRANCH}')
+            if (jobType == 'pullrequest') {
+                repositoryPR(repoFull)
+            } else {
+                repository(repoFull, '${GIT_REPOSITORY_BRANCH}')
+            }
 
             parameters {
                 stringParam('GIT_REPOSITORY_BRANCH', 'develop',
@@ -196,10 +200,9 @@ use(extensions) {
     packnsendTests.each { testName, toxPath, testEnvs, composePath ->
         baseJob(testName) {
             label('py-ec2-linux')
-            repo(repoFull)
-            branch('${GIT_REPOSITORY_BRANCH}')
 
             configure {
+                repositoryPR(repoFull)
                 description("Run tox file ${toxPath}")
                 logRotator { numToKeep(10) }
                 blockOnJobs('.*-Reset-Nodes')

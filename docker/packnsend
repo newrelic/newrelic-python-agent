@@ -266,11 +266,11 @@ launch_remote_command()
 
     STATUS=100
 
+    echo
+
     { docker logs -f $CONTAINER_ID && \
         echo "Calling docker wait." && \
         STATUS=$(docker wait $CONTAINER_ID) ; } || kill $$
-
-    echo
 
     if test -n "$INTERACTIVE"
     then

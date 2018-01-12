@@ -12,6 +12,19 @@
 
 set -e
 
+function create_venvs {
+    virtualenv /venvs/py26 -p /usr/bin/python2.6
+    virtualenv /venvs/py27 -p /usr/bin/python2.7
+    virtualenv /venvs/py33 -p /usr/bin/python3.3
+    virtualenv /venvs/py34 -p /usr/bin/python3.4
+    virtualenv /venvs/py35 -p /usr/bin/python3.5
+    virtualenv /venvs/py36 -p /usr/bin/python3.6
+    virtualenv /venvs/pypy -p /usr/local/bin/pypy
+    virtualenv /venvs/pypy3 -p /usr/local/bin/pypy3
+}
+
+create_venvs
+
 for venv in $(find /venvs -maxdepth 1 -type d | grep -v "/venvs$"); do
     $venv/bin/pip install -U "pip<=9.0.1"
 
@@ -50,8 +63,10 @@ do
             --cache-dir=/cache \
             $PACKAGE ||
         echo "$PY_FULL: $PACKAGE failed to build -- ignoring"
-
     done < /home/guest/package-lists/packages-compiled.txt
 done
 
 rm -rf /downloads/*
+rm -rf /venvs/*
+
+create_venvs

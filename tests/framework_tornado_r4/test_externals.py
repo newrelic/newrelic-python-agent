@@ -1,6 +1,7 @@
 import tornado
 import threading
 import six
+import sys
 from wsgiref.simple_server import make_server
 
 import pytest
@@ -14,9 +15,12 @@ from testing_support.mock_external_http_server import (
 ENCODING_KEY = '1234567890123456789012345678901234567890'
 
 skipif_tornadomaster_py3 = pytest.mark.skipif(
-        tornado.version_info >= (5, 0) and six.PY3,
-        reason=('Instrumentation is broken for Tornado 5.0. Running these '
-            'tests results in a hang.'))
+    tornado.version_info >= (5, 0) and six.PY3,
+    reason=('Instrumentation is broken for Tornado 5.0. Running these '
+        'tests results in a hang.'))
+skipif_tornadomaster_pypy = pytest.mark.skipif(
+    tornado.version_info >= (5, 0) and '__pypy__' in sys.builtin_module_names,
+    reason=('Instrumentation is broken for Tornado 5.0.'))
 
 
 @pytest.fixture(scope='module')
@@ -146,6 +150,7 @@ def test_client_cat_response_processing(app, cat_enabled, request_type,
 
 
 @skipif_tornadomaster_py3
+@skipif_tornadomaster_pypy
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @validate_transaction_metrics('_target_application:InvalidExternalMethod.get')

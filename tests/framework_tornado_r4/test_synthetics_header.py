@@ -24,8 +24,10 @@ _override_settings = {
     'synthetics.enabled': True,
 }
 
-if (sys.version_info < (3, 4) or
-        IOLoop.configurable_default().__name__ == 'AsyncIOLoop'):
+if IOLoop.configurable_default().__name__ == 'AsyncIOLoop':
+    # This is Python 3 and Tornado v5, only the default is allowable
+    loops = [None]
+elif sys.version_info < (3, 4):
     loops = [None, 'zmq.eventloop.ioloop.ZMQIOLoop']
 else:
     loops = [None, 'tornado.platform.asyncio.AsyncIOLoop',

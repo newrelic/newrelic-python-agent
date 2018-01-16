@@ -18,8 +18,10 @@ from remove_utilization_tester import remove_utilization_tester
 
 VERSION = '.'.join(map(str, tornado.version_info))
 
-if (sys.version_info < (3, 4) or
-        IOLoop.configurable_default().__name__ == 'AsyncIOLoop'):
+if IOLoop.configurable_default().__name__ == 'AsyncIOLoop':
+    # This is Python 3 and Tornado v5, only the default is allowable
+    loops = [None]
+elif sys.version_info < (3, 4):
     loops = [None, 'zmq.eventloop.ioloop.ZMQIOLoop']
 else:
     loops = [None, 'tornado.platform.asyncio.AsyncIOLoop',

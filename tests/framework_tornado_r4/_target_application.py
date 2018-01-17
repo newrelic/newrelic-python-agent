@@ -122,7 +122,9 @@ class CrashClientHandler(tornado.web.RequestHandler):
 
 class InvalidExternalMethod(tornado.web.RequestHandler):
     @tornado.gen.coroutine
-    def get(self, client_cls):
+    def get(self, client_cls, raise_error):
+        raise_error = raise_error == 'True'
+
         if client_cls == 'AsyncHTTPClient':
             client = tornado.httpclient.AsyncHTTPClient()
         elif client_cls == 'CurlAsyncHTTPClient':
@@ -136,12 +138,11 @@ class InvalidExternalMethod(tornado.web.RequestHandler):
         uri = 'http://localhost:%s' % port
         req = tornado.httpclient.HTTPRequest(uri, method='COOKIES')
         try:
-            yield client.fetch(req)
+            yield client.fetch(req, raise_error=raise_error)
         except KeyError:
             raise tornado.web.HTTPError(503)
 
-        # we should never reach here
-        self.write('Failed')
+        self.write('COOKIES')
 
 
 class InvalidExternalKwarg(tornado.web.RequestHandler):
@@ -277,7 +278,7 @@ def make_app():
                 AsyncExternalHandler),
         (r'/async-client/(\d+)/(\S+)/(\S+)/(\d+)$', AsyncExternalHandler),
         (r'/async-client/(\d+)/(\S+)/(\S+)$', AsyncExternalHandler),
-        (r'/client-invalid-method/(\S+)', InvalidExternalMethod),
+        (r'/client-invalid-method/(\S+)/(\S+)', InvalidExternalMethod),
         (r'/client-invalid-kwarg/(\S+)', InvalidExternalKwarg),
         (r'/crash-client', CrashClientHandler),
         (r'/client-terminal-trace', CrashClientHandler,

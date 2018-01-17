@@ -157,16 +157,29 @@ def test_client_cat_response_processing(app, cat_enabled, request_type,
 
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
+@pytest.mark.parametrize('raise_error', [True, False])
 @validate_transaction_metrics('_target_application:InvalidExternalMethod.get')
-@validate_transaction_errors(errors=['tornado.web:HTTPError'])
-def test_httpclient_invalid_method(app, client_class):
+def test_httpclient_invalid_method(app, client_class, raise_error):
 
     if _tornadomaster_py3 and client_class == 'HTTPClient':
         pytest.skip()
 
-    uri = '/client-invalid-method/%s' % client_class
-    response = app.fetch(uri)
-    assert response.code == 503
+    errors = []
+    if raise_error:
+        errors = ['tornado.web:HTTPError']
+
+    @validate_transaction_errors(errors=errors)
+    def _test():
+        uri = '/client-invalid-method/%s/%s' % (client_class, raise_error)
+        response = app.fetch(uri)
+
+        if raise_error:
+            assert response.code == 503
+        else:
+            assert response.code == 200
+            assert response.body == b'COOKIES'
+
+    _test()
 
 
 @pytest.mark.parametrize('client_class',

@@ -1,8 +1,7 @@
-import tornado
-import threading
 import six
 import socket
-import sys
+import threading
+import tornado
 from wsgiref.simple_server import make_server
 
 import pytest
@@ -15,13 +14,7 @@ from testing_support.mock_external_http_server import (
 
 ENCODING_KEY = '1234567890123456789012345678901234567890'
 
-skipif_tornadomaster_py3 = pytest.mark.skipif(
-    tornado.version_info >= (5, 0) and six.PY3,
-    reason=('Instrumentation is broken for Tornado 5.0. Running these '
-        'tests results in a hang.'))
-skipif_tornadomaster_pypy = pytest.mark.skipif(
-    tornado.version_info >= (5, 0) and '__pypy__' in sys.builtin_module_names,
-    reason=('Instrumentation is broken for Tornado 5.0.'))
+_tornadomaster_py3 = tornado.version_info >= (5, 0) and six.PY3
 
 
 @pytest.fixture(scope='module')
@@ -40,7 +33,6 @@ def _get_open_port():
     return port
 
 
-@skipif_tornadomaster_py3
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @pytest.mark.parametrize('cat_enabled,user_header', [
@@ -53,6 +45,9 @@ def _get_open_port():
 @pytest.mark.parametrize('num_requests', [1, 2])
 def test_httpclient(app, cat_enabled, request_type, client_class,
         user_header, num_requests, external):
+
+    if _tornadomaster_py3 and client_class == 'HTTPClient':
+        pytest.skip()
 
     if cat_enabled or ('Async' not in client_class):
         port = external.port
@@ -102,13 +97,16 @@ def test_httpclient(app, cat_enabled, request_type, client_class,
     _test()
 
 
-@skipif_tornadomaster_py3
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @pytest.mark.parametrize('cat_enabled', [True, False])
 @pytest.mark.parametrize('request_type', ['uri', 'class'])
 def test_client_cat_response_processing(app, cat_enabled, request_type,
         client_class):
+
+    if _tornadomaster_py3 and client_class == 'HTTPClient':
+        pytest.skip()
+
     _custom_settings = {
         'cross_process_id': '1#1',
         'encoding_key': ENCODING_KEY,
@@ -157,30 +155,34 @@ def test_client_cat_response_processing(app, cat_enabled, request_type,
     server_thread.join(0.1)
 
 
-@skipif_tornadomaster_py3
-@skipif_tornadomaster_pypy
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @validate_transaction_metrics('_target_application:InvalidExternalMethod.get')
 @validate_transaction_errors(errors=['tornado.web:HTTPError'])
 def test_httpclient_invalid_method(app, client_class):
+
+    if _tornadomaster_py3 and client_class == 'HTTPClient':
+        pytest.skip()
+
     uri = '/client-invalid-method/%s' % client_class
     response = app.fetch(uri)
     assert response.code == 503
 
 
-@skipif_tornadomaster_py3
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @validate_transaction_metrics('_target_application:InvalidExternalKwarg.get')
 @validate_transaction_errors(errors=['tornado.web:HTTPError'])
 def test_httpclient_invalid_kwarg(app, client_class):
+
+    if _tornadomaster_py3 and client_class == 'HTTPClient':
+        pytest.skip()
+
     uri = '/client-invalid-kwarg/%s' % client_class
     response = app.fetch(uri)
     assert response.code == 503
 
 
-@skipif_tornadomaster_py3
 @validate_transaction_metrics('_target_application:CrashClientHandler.get',
     rollup_metrics=[('External/example.com/tornado.httpclient/GET', 1)],
     scoped_metrics=[('External/example.com/tornado.httpclient/GET', 1)]
@@ -190,7 +192,6 @@ def test_httpclient_fetch_crashes(app):
     assert response.code == 200
 
 
-@skipif_tornadomaster_py3
 @validate_transaction_metrics('_target_application:CrashClientHandler.get',
     rollup_metrics=[('External/example.com/tornado.httpclient/GET', None)],
     scoped_metrics=[('External/example.com/tornado.httpclient/GET', None)]

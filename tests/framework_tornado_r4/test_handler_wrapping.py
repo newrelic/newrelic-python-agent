@@ -157,7 +157,11 @@ def test_with_target_kwargs(web):
 
 def test_nested_routing(web):
 
-    import tornado.routing
+    try:
+        import tornado.routing
+    except ImportError:
+        # this is an earlier version of tornado, skip this test
+        pytest.skip('No routing module in this Tornado version')
 
     # get new instance of the handler class
     handler1 = get_handler(web)

@@ -1,6 +1,7 @@
 import io
 import pytest
 import socket
+import sys
 import threading
 import tornado
 
@@ -252,6 +253,9 @@ def test_httpclient_fetch_crashes(app):
     assert response.code == 200
 
 
+@pytest.mark.xfail(tornado.version_info < (4, 5) and
+        '__pypy__' in sys.builtin_module_names, strict=True,
+        reason='PYTHON-2569')
 @validate_transaction_metrics('_target_application:CrashClientHandler.get',
     rollup_metrics=[('External/example.com/tornado.httpclient/GET', None)],
     scoped_metrics=[('External/example.com/tornado.httpclient/GET', None)]

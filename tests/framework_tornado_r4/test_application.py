@@ -179,7 +179,10 @@ def test_websocket(app, ioloop):
     pytest.param(True, [],
         marks=pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
             reason='PYTHON-2569')),
-    (True, [405]),
+    pytest.param(True, [405],
+        marks=pytest.mark.xfail(tornado.version_info < (4, 5) and
+            '__pypy__' in sys.builtin_module_names, strict=True,
+            reason='PYTHON-2569')),
     (False, None),
 ])
 def test_unsupported_method(app, ioloop, nr_enabled, ignore_status_codes):
@@ -265,6 +268,9 @@ def test_thread_utilization_disabled(now):
     assert result == 'PASS'
 
 
+@pytest.mark.xfail(tornado.version_info < (4, 5) and
+        '__pypy__' in sys.builtin_module_names, strict=True,
+        reason='PYTHON-2569')
 @pytest.mark.parametrize('header_key,agent_attr', [
     ('Content-Type', 'request.headers.contentType'),
     ('Referer', 'request.headers.referer'),

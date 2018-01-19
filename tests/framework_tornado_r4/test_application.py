@@ -46,6 +46,8 @@ if sys.version_info >= (3, 5):
     ])
 
 
+@pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
+        reason='PYTHON-2629')
 @pytest.mark.parametrize('uri,name', _tests)
 @pytest.mark.parametrize('ioloop', loops)
 def test_simple(app, uri, name, ioloop):
@@ -93,6 +95,8 @@ def test_simple(app, uri, name, ioloop):
     _test()
 
 
+@pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
+        reason='PYTHON-2629')
 @pytest.mark.parametrize('method', [
     'GET',
     'POST',
@@ -172,7 +176,9 @@ def test_websocket(app, ioloop):
 
 @pytest.mark.parametrize('ioloop', loops)
 @pytest.mark.parametrize('nr_enabled,ignore_status_codes', [
-    (True, []),
+    pytest.param(True, [],
+        marks=pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
+            reason='PYTHON-2569')),
     (True, [405]),
     (False, None),
 ])

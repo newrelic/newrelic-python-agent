@@ -1,13 +1,15 @@
 import io
+import pytest
 import socket
 import threading
+import tornado
+
 from wsgiref.simple_server import make_server
+
 from newrelic.api.background_task import background_task
 
-import pytest
 from testing_support.fixtures import (validate_transaction_metrics,
         override_application_settings)
-
 from testing_support.mock_external_http_server import (
         MockExternalHTTPHResponseHeadersServer)
 
@@ -85,6 +87,8 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True,
         return response
 
 
+@pytest.mark.skipif(tornado.version_info < (4, 5), strict=True,
+        reason='PYTHON-2641')
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient',
             'CustomAsyncHTTPClient'])
@@ -147,6 +151,8 @@ def test_httpclient(cat_enabled, request_type, client_class,
     _test()
 
 
+@pytest.mark.skipif(tornado.version_info < (4, 5),
+        reason='PYTHON-2641 PYTHON-2569')
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @pytest.mark.parametrize('cat_enabled', [True, False])
@@ -214,8 +220,10 @@ def test_client_cat_response_processing(cat_enabled, request_type,
     server_thread.join(0.1)
 
 
-@pytest.mark.parametrize('client_class',
-        ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
+@pytest.mark.skipif(tornado.version_info < (4, 5), strict=True,
+    reason='PYTHON-2629')
+@pytest.mark.parametrize('client_class', ['AsyncHTTPClient',
+    'CurlAsyncHTTPClient', 'HTTPClient'])
 @validate_transaction_metrics('make_request',
         background_task=True)
 def test_httpclient_invalid_method(client_class, external):
@@ -233,6 +241,8 @@ def test_httpclient_invalid_kwarg(client_class, external):
         make_request(external.port, 'uri', client_class, boop='1234')
 
 
+@pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
+        reason='PYTHON-2569')
 @validate_transaction_metrics('_target_application:CrashClientHandler.get',
     rollup_metrics=[('External/example.com/tornado.httpclient/GET', 1)],
     scoped_metrics=[('External/example.com/tornado.httpclient/GET', 1)]

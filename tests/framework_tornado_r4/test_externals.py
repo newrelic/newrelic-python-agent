@@ -1,7 +1,5 @@
-import six
 import socket
 import threading
-import tornado
 from wsgiref.simple_server import make_server
 
 import pytest
@@ -13,8 +11,6 @@ from testing_support.mock_external_http_server import (
 
 
 ENCODING_KEY = '1234567890123456789012345678901234567890'
-
-_tornadomaster_py3 = tornado.version_info >= (5, 0) and six.PY3
 
 
 @pytest.fixture(scope='module')
@@ -46,9 +42,6 @@ def _get_open_port():
 @pytest.mark.parametrize('num_requests', [1, 2])
 def test_httpclient(app, cat_enabled, request_type, client_class,
         user_header, num_requests, external):
-
-    if _tornadomaster_py3 and client_class == 'HTTPClient':
-        pytest.skip()
 
     if cat_enabled or ('Async' not in client_class):
         port = external.port
@@ -104,10 +97,6 @@ def test_httpclient(app, cat_enabled, request_type, client_class,
 @pytest.mark.parametrize('request_type', ['uri', 'class'])
 def test_client_cat_response_processing(app, cat_enabled, request_type,
         client_class):
-
-    if _tornadomaster_py3 and client_class == 'HTTPClient':
-        pytest.skip()
-
     _custom_settings = {
         'cross_process_id': '1#1',
         'encoding_key': ENCODING_KEY,
@@ -162,9 +151,6 @@ def test_client_cat_response_processing(app, cat_enabled, request_type,
 @validate_transaction_metrics('_target_application:InvalidExternalMethod.get')
 def test_httpclient_invalid_method(app, client_class, raise_error):
 
-    if _tornadomaster_py3 and client_class == 'HTTPClient':
-        pytest.skip()
-
     errors = []
     if raise_error:
         errors = ['tornado.web:HTTPError']
@@ -188,10 +174,6 @@ def test_httpclient_invalid_method(app, client_class, raise_error):
 @validate_transaction_metrics('_target_application:InvalidExternalKwarg.get')
 @validate_transaction_errors(errors=['tornado.web:HTTPError'])
 def test_httpclient_invalid_kwarg(app, client_class):
-
-    if _tornadomaster_py3 and client_class == 'HTTPClient':
-        pytest.skip()
-
     uri = '/client-invalid-kwarg/%s' % client_class
     response = app.fetch(uri)
     assert response.code == 503

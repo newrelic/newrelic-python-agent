@@ -34,7 +34,8 @@ def _get_open_port():
 
 
 @pytest.mark.parametrize('client_class',
-        ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
+        ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient',
+            'CustomAsyncHTTPClient'])
 @pytest.mark.parametrize('cat_enabled,user_header', [
     (True, None),
     (True, 'X-NewRelic-ID'),

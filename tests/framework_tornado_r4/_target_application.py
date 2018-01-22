@@ -1,3 +1,4 @@
+import io
 import sys
 import tornado.ioloop
 import tornado.web
@@ -55,6 +56,14 @@ class EchoHeaderHandler(tornado.web.RequestHandler):
         self.write(response)
 
 
+class CustomAsyncHTTPClient(tornado.httpclient.AsyncHTTPClient):
+    def fetch_impl(self, request, callback):
+        body = str(request.headers).encode('utf-8')
+        response = tornado.httpclient.HTTPResponse(request=request, code=200,
+                buffer=io.BytesIO(body))
+        callback(response)
+
+
 class AsyncExternalHandler(tornado.web.RequestHandler):
     @tornado.gen.coroutine
     def get(self, port, req_type, client_cls, header=None, count=1):
@@ -65,6 +74,8 @@ class AsyncExternalHandler(tornado.web.RequestHandler):
             client = tornado.curl_httpclient.CurlAsyncHTTPClient()
         elif client_cls == 'HTTPClient':
             client = tornado.httpclient.HTTPClient()
+        elif client_cls == 'CustomAsyncHTTPClient':
+            client = CustomAsyncHTTPClient()
         else:
             raise ValueError("Received unknown client type: %s" % client_cls)
 

@@ -82,7 +82,7 @@ def app(request):
 
         def get_new_ioloop(self):
             IOLoop.configure(ioloop)
-            return IOLoop.instance()
+            return IOLoop()
 
         def get_app(self):
             from _target_application import make_app

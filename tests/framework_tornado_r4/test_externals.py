@@ -1,6 +1,7 @@
 import tornado
 import threading
 import six
+import socket
 import sys
 from wsgiref.simple_server import make_server
 
@@ -28,6 +29,15 @@ def external():
     external = MockExternalHTTPHResponseHeadersServer()
     with external:
         yield external
+
+
+def _get_open_port():
+    # https://stackoverflow.com/questions/2838244/get-open-tcp-port-in-python/2838309#2838309
+    s = socket.socket()
+    s.bind(('', 0))
+    port = s.getsockname()[1]
+    s.close()
+    return port
 
 
 @skipif_tornadomaster_py3
@@ -122,9 +132,7 @@ def test_client_cat_response_processing(app, cat_enabled, request_type,
         start_response(status, response_headers)
         return [b'BEEEEEP']
 
-    # always serve on a consistent port
-    port = app.get_http_port()
-    wsgi_port = port + 1
+    wsgi_port = _get_open_port()
     uri = '/async-client/%s/%s/%s' % (wsgi_port, request_type, client_class)
     server = make_server('127.0.0.1', wsgi_port, _response_app)
 

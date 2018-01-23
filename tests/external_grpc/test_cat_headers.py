@@ -50,40 +50,36 @@ _test_matrix = [
         'service_method_type,'
         'service_method_method_name,'
         'cat_enabled,'
-        'user_sets_cat_metadata', (
+        'user_sets_cat_metadata,'
+        'expect_cat', (
 
-        ('unary_unary', '__call__', True, True),
-        ('unary_unary', 'with_call', True, True),
-        ('stream_unary', '__call__', True, True),
-        ('stream_unary', 'with_call', True, True),
-        ('unary_stream', '__call__', True, True),
-        ('stream_stream', '__call__', True, True),
+        ('unary_unary', '__call__', True, True, True),
+        ('unary_unary', 'with_call', True, True, True),
+        ('stream_unary', '__call__', True, True, True),
+        ('stream_unary', 'with_call', True, True, True),
+        ('unary_stream', '__call__', True, True, True),
+        ('stream_stream', '__call__', True, True, True),
 
-        pytest.param('unary_unary', '__call__', True, False,
-            marks=pytest.mark.xfail(reason='CAT removed', strict=True)),
-        pytest.param('unary_unary', 'with_call', True, False,
-            marks=pytest.mark.xfail(reason='CAT removed', strict=True)),
-        pytest.param('stream_unary', '__call__', True, False,
-            marks=pytest.mark.xfail(reason='CAT removed', strict=True)),
-        pytest.param('stream_unary', 'with_call', True, False,
-            marks=pytest.mark.xfail(reason='CAT removed', strict=True)),
-        pytest.param('unary_stream', '__call__', True, False,
-            marks=pytest.mark.xfail(reason='CAT removed', strict=True)),
-        pytest.param('stream_stream', '__call__', True, False,
-            marks=pytest.mark.xfail(reason='CAT removed', strict=True)),
+        # CAT was removed from these calls
+        ('unary_unary', '__call__', True, False, False),
+        ('unary_unary', 'with_call', True, False, False),
+        ('stream_unary', '__call__', True, False, False),
+        ('stream_unary', 'with_call', True, False, False),
+        ('unary_stream', '__call__', True, False, False),
+        ('stream_stream', '__call__', True, False, False),
 
-        ('unary_unary', '__call__', False, False),
-        ('unary_unary', 'with_call', False, False),
-        ('stream_unary', '__call__', False, False),
-        ('stream_unary', 'with_call', False, False),
-        ('unary_stream', '__call__', False, False),
-        ('stream_stream', '__call__', False, False),
+        ('unary_unary', '__call__', False, False, True),
+        ('unary_unary', 'with_call', False, False, True),
+        ('stream_unary', '__call__', False, False, True),
+        ('stream_unary', 'with_call', False, False, True),
+        ('unary_stream', '__call__', False, False, True),
+        ('stream_stream', '__call__', False, False, True),
 )]
 
 
 @pytest.mark.parametrize(*_test_matrix)
 def test_grpc_cat(service_method_type, service_method_method_name,
-        cat_enabled, user_sets_cat_metadata, grpc_cat_app_server):
+        cat_enabled, user_sets_cat_metadata, expect_cat, grpc_cat_app_server):
     service_method_class_name = 'Do%s' % (
             service_method_type.title().replace('_', ''))
     streaming_request = service_method_type.split('_')[0] == 'stream'
@@ -137,13 +133,13 @@ def test_grpc_cat(service_method_type, service_method_method_name,
             for response in reply:
                 # extract CAT value
                 cat_value = response.text.split(' ')[-1]
-                if cat_enabled:
+                if cat_enabled and expect_cat:
                     assert cat_value in expected_cat_value, response.text
                 else:
                     assert cat_value not in expected_cat_value, response.text
         else:
             cat_value = reply.text.split(' ')[-1]
-            if cat_enabled:
+            if cat_enabled and expect_cat:
                 assert cat_value in expected_cat_value, reply.text
             else:
                 assert cat_value not in expected_cat_value, reply.text

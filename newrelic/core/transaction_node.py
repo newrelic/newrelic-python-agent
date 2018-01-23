@@ -528,18 +528,10 @@ class TransactionNode(_TransactionNode):
         _add_call_time('WebFrontend/QueueTime', 'queueDuration')
 
         _add_call_time('External/all', 'externalDuration')
-        _add_call_time('Database/all', 'databaseDuration')
+        _add_call_time('Datastore/all', 'databaseDuration')
         _add_call_time('Memcache/all', 'memcacheDuration')
 
         _add_call_count('External/all', 'externalCallCount')
-        _add_call_count('Database/all', 'databaseCallCount')
-
-        # As we transition to using Datastore metrics, we now
-        # include 'Datastore/all' totals in databaseDuration and
-        # databaseCallCount. After transition we can remove the
-        # 'Database/all' checks above.
-
-        _add_call_time('Datastore/all', 'databaseDuration')
         _add_call_count('Datastore/all', 'databaseCallCount')
 
         self._event_intrinsics_cache = intrinsics.copy()

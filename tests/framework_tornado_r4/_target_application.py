@@ -149,7 +149,10 @@ class InvalidExternalMethod(tornado.web.RequestHandler):
         uri = 'http://localhost:%s' % port
         req = tornado.httpclient.HTTPRequest(uri, method='COOKIES')
         try:
-            yield client.fetch(req, raise_error=raise_error)
+            result = client.fetch(req, raise_error=raise_error)
+            # HTTPClient returns a HTTPResponse object which is not yieldable
+            if client_cls != 'HTTPClient':
+                yield result
         except KeyError:
             raise tornado.web.HTTPError(503)
 

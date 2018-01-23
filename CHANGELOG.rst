@@ -1,6 +1,12 @@
 unreleased
 ----------
 
+- gRPC instrumentation used on Python 2.x can cause a memory leak
+
+  When using gRPC on Python 2, gRPC futures would not be garbage collected
+  resulting in a memory leak. gRPC futures will now be garbage collected.
+
+
 2.100.0 (2017-01-09)
 --------------------
 

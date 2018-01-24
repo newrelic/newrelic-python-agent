@@ -216,17 +216,12 @@ def test_client_cat_response_processing(cat_enabled, request_type,
 
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
-@pytest.mark.parametrize('raise_error', [True, False])
 @validate_transaction_metrics('make_request',
         background_task=True)
-def test_httpclient_invalid_method(client_class, raise_error, external):
-    try:
+def test_httpclient_invalid_method(client_class, external):
+    with pytest.raises(KeyError):
         make_request(external.port, 'uri', client_class,
-                method='COOKIES', raise_error=raise_error)
-    except KeyError:
-        assert raise_error
-    else:
-        assert not raise_error
+                method='COOKIES')
 
 
 @pytest.mark.parametrize('client_class',

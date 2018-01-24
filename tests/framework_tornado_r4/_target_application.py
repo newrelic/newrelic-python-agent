@@ -1,4 +1,3 @@
-import io
 import sys
 import tornado.ioloop
 import tornado.web
@@ -56,51 +55,30 @@ class EchoHeaderHandler(tornado.web.RequestHandler):
         self.write(response)
 
 
-class CustomAsyncHTTPClient(tornado.httpclient.AsyncHTTPClient):
-    def fetch_impl(self, request, callback):
-        body = str(request.headers).encode('utf-8')
-        response = tornado.httpclient.HTTPResponse(request=request, code=200,
-                buffer=io.BytesIO(body))
-        callback(response)
-
-
 class AsyncExternalHandler(tornado.web.RequestHandler):
     @tornado.gen.coroutine
-    def get(self, port, req_type, client_cls, header=None, count=1):
-        count = int(count)
+    def get(self, port, req_type, client_cls):
         if client_cls == 'AsyncHTTPClient':
             client = tornado.httpclient.AsyncHTTPClient()
         elif client_cls == 'CurlAsyncHTTPClient':
             client = tornado.curl_httpclient.CurlAsyncHTTPClient()
         elif client_cls == 'HTTPClient':
             client = tornado.httpclient.HTTPClient()
-        elif client_cls == 'CustomAsyncHTTPClient':
-            client = CustomAsyncHTTPClient()
         else:
             raise ValueError("Received unknown client type: %s" % client_cls)
 
-        headers = {}
-        if header and header != 'None':
-            headers[header] = 'USER'
-
         uri = 'http://localhost:%s/echo-headers' % port
         if req_type == 'class':
-            req = tornado.httpclient.HTTPRequest(uri, headers=headers)
-            header_arg = None
+            req = tornado.httpclient.HTTPRequest(uri)
         elif req_type == 'uri':
             req = uri
-            header_arg = headers
         else:
             raise ValueError("Received unknown request type: %s" % req_type)
 
         if client_cls == 'HTTPClient':
-            for _ in range(count):
-                response = client.fetch(req, headers=header_arg)
+            response = client.fetch(req)
         else:
-            futures = [client.fetch(req, headers=header_arg) for _ in
-                    range(count)]
-            responses = yield tornado.gen.multi(futures)
-            response = responses[0]
+            response = yield client.fetch(req)
         self.write(response.body)
 
 
@@ -129,58 +107,6 @@ class CrashClientHandler(tornado.web.RequestHandler):
             return
 
         raise Exception('Unreachable code reached!')
-
-
-class InvalidExternalMethod(tornado.web.RequestHandler):
-    @tornado.gen.coroutine
-    def get(self, client_cls, raise_error):
-        raise_error = raise_error == 'True'
-
-        if client_cls == 'AsyncHTTPClient':
-            client = tornado.httpclient.AsyncHTTPClient()
-        elif client_cls == 'CurlAsyncHTTPClient':
-            client = tornado.curl_httpclient.CurlAsyncHTTPClient()
-        elif client_cls == 'HTTPClient':
-            client = tornado.httpclient.HTTPClient()
-        else:
-            raise ValueError("Received unknown client type: %s" % client_cls)
-
-        port = self.request.server_connection.stream.socket.getsockname()[1]
-        uri = 'http://localhost:%s' % port
-        req = tornado.httpclient.HTTPRequest(uri, method='COOKIES')
-        try:
-            result = client.fetch(req, raise_error=raise_error)
-            # HTTPClient returns a HTTPResponse object which is not yieldable
-            if client_cls != 'HTTPClient':
-                yield result
-        except KeyError:
-            raise tornado.web.HTTPError(503)
-
-        self.write('COOKIES')
-
-
-class InvalidExternalKwarg(tornado.web.RequestHandler):
-    @tornado.gen.coroutine
-    def get(self, client_cls):
-        if client_cls == 'AsyncHTTPClient':
-            client = tornado.httpclient.AsyncHTTPClient()
-        elif client_cls == 'CurlAsyncHTTPClient':
-            client = tornado.curl_httpclient.CurlAsyncHTTPClient()
-        elif client_cls == 'HTTPClient':
-            client = tornado.httpclient.HTTPClient()
-        else:
-            raise ValueError("Received unknown client type: %s" % client_cls)
-
-        port = self.request.server_connection.stream.socket.getsockname()[1]
-        uri = 'http://localhost:%s' % port
-
-        try:
-            yield client.fetch(uri, boop='1234')
-        except TypeError:
-            raise tornado.web.HTTPError(503)
-
-        # we should never reach here
-        self.write('Failed')
 
 
 class SimpleHandler(tornado.web.RequestHandler):
@@ -288,12 +214,7 @@ def make_app():
                 {'response_code': 304}),
         (r'/204-cat-response/(\S+)/(\S+)', ProcessCatHeadersHandler,
                 {'response_code': 204}),
-        (r'/async-client/(\d+)/(\S+)/(\S+)/(\S+)/(\d+)$',
-                AsyncExternalHandler),
-        (r'/async-client/(\d+)/(\S+)/(\S+)/(\d+)$', AsyncExternalHandler),
         (r'/async-client/(\d+)/(\S+)/(\S+)$', AsyncExternalHandler),
-        (r'/client-invalid-method/(\S+)/(\S+)', InvalidExternalMethod),
-        (r'/client-invalid-kwarg/(\S+)', InvalidExternalKwarg),
         (r'/crash-client', CrashClientHandler),
         (r'/client-terminal-trace', CrashClientHandler,
                 {'terminal_trace': True}),

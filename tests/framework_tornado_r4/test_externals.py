@@ -1,20 +1,18 @@
-import six
+import io
 import socket
 import threading
-import tornado
 from wsgiref.simple_server import make_server
+from newrelic.api.background_task import background_task
 
 import pytest
 from testing_support.fixtures import (validate_transaction_metrics,
-        override_application_settings, validate_transaction_errors)
+        override_application_settings)
 
 from testing_support.mock_external_http_server import (
         MockExternalHTTPHResponseHeadersServer)
 
 
 ENCODING_KEY = '1234567890123456789012345678901234567890'
-
-_tornadomaster_py3 = tornado.version_info >= (5, 0) and six.PY3
 
 
 @pytest.fixture(scope='module')
@@ -33,6 +31,59 @@ def _get_open_port():
     return port
 
 
+@background_task(name='make_request')
+def make_request(port, req_type, client_cls, count=1, **kwargs):
+    import tornado.gen
+    import tornado.httpclient
+    import tornado.curl_httpclient
+    import tornado.ioloop
+
+    class CustomAsyncHTTPClient(tornado.httpclient.AsyncHTTPClient):
+        def fetch_impl(self, request, callback):
+            body = str(request.headers).encode('utf-8')
+            response = tornado.httpclient.HTTPResponse(request=request,
+                    code=200, buffer=io.BytesIO(body))
+            callback(response)
+
+    if client_cls == 'AsyncHTTPClient':
+        client = tornado.httpclient.AsyncHTTPClient()
+    elif client_cls == 'CurlAsyncHTTPClient':
+        client = tornado.curl_httpclient.CurlAsyncHTTPClient()
+    elif client_cls == 'HTTPClient':
+        client = tornado.httpclient.HTTPClient()
+    elif client_cls == 'CustomAsyncHTTPClient':
+        client = CustomAsyncHTTPClient()
+    else:
+        raise ValueError("Received unknown client type: %s" % client_cls)
+
+    uri = 'http://localhost:%s/echo-headers' % port
+    if req_type == 'class':
+        req = tornado.httpclient.HTTPRequest(uri, **kwargs)
+        kwargs = {}
+    elif req_type == 'uri':
+        req = uri
+    else:
+        raise ValueError("Received unknown request type: %s" % req_type)
+
+    @tornado.gen.coroutine
+    def _make_request():
+
+        futures = [client.fetch(req, **kwargs)
+                for _ in range(count)]
+        responses = yield tornado.gen.multi(futures)
+        response = responses[0]
+
+        raise tornado.gen.Return(response)
+
+    if client_cls == 'HTTPClient':
+        for _ in range(count):
+            response = client.fetch(req, **kwargs)
+        return response
+    else:
+        response = tornado.ioloop.IOLoop.current().run_sync(_make_request)
+        return response
+
+
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient',
             'CustomAsyncHTTPClient'])
@@ -44,19 +95,10 @@ def _get_open_port():
 ])
 @pytest.mark.parametrize('request_type', ['uri', 'class'])
 @pytest.mark.parametrize('num_requests', [1, 2])
-def test_httpclient(app, cat_enabled, request_type, client_class,
+def test_httpclient(cat_enabled, request_type, client_class,
         user_header, num_requests, external):
 
-    if _tornadomaster_py3 and client_class == 'HTTPClient':
-        pytest.skip()
-
-    if cat_enabled or ('Async' not in client_class):
-        port = external.port
-    else:
-        port = app.get_http_port()
-
-    uri = '/async-client/%s/%s/%s/%s/%s' % (port, request_type, client_class,
-            user_header, num_requests)
+    port = external.port
 
     expected_metrics = [
         ('External/localhost:%s/tornado.httpclient/GET' % port, num_requests)
@@ -65,12 +107,18 @@ def test_httpclient(app, cat_enabled, request_type, client_class,
     @override_application_settings(
             {'cross_application_tracer.enabled': cat_enabled})
     @validate_transaction_metrics(
-        '_target_application:AsyncExternalHandler.get',
+        'make_request',
+        background_task=True,
         rollup_metrics=expected_metrics,
         scoped_metrics=expected_metrics
     )
     def _test():
-        response = app.fetch(uri)
+        headers = {}
+        if user_header:
+            headers = {user_header: 'USER'}
+
+        response = make_request(port, request_type, client_class,
+                headers=headers, count=num_requests)
         assert response.code == 200
 
         sent_headers = response.body
@@ -102,12 +150,8 @@ def test_httpclient(app, cat_enabled, request_type, client_class,
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @pytest.mark.parametrize('cat_enabled', [True, False])
 @pytest.mark.parametrize('request_type', ['uri', 'class'])
-def test_client_cat_response_processing(app, cat_enabled, request_type,
+def test_client_cat_response_processing(cat_enabled, request_type,
         client_class):
-
-    if _tornadomaster_py3 and client_class == 'HTTPClient':
-        pytest.skip()
-
     _custom_settings = {
         'cross_process_id': '1#1',
         'encoding_key': ENCODING_KEY,
@@ -132,7 +176,6 @@ def test_client_cat_response_processing(app, cat_enabled, request_type,
         return [b'BEEEEEP']
 
     wsgi_port = _get_open_port()
-    uri = '/async-client/%s/%s/%s' % (wsgi_port, request_type, client_class)
     server = make_server('127.0.0.1', wsgi_port, _response_app)
 
     expected_metrics = [
@@ -141,13 +184,14 @@ def test_client_cat_response_processing(app, cat_enabled, request_type,
     ]
 
     @validate_transaction_metrics(
-        '_target_application:AsyncExternalHandler.get',
+        'make_request',
+        background_task=True,
         rollup_metrics=expected_metrics,
         scoped_metrics=expected_metrics
     )
     @override_application_settings(_custom_settings)
     def _test():
-        response = app.fetch(uri)
+        response = make_request(wsgi_port, request_type, client_class)
         assert response.code == 200
 
     server_thread = threading.Thread(target=server.handle_request)
@@ -159,42 +203,25 @@ def test_client_cat_response_processing(app, cat_enabled, request_type,
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @pytest.mark.parametrize('raise_error', [True, False])
-@validate_transaction_metrics('_target_application:InvalidExternalMethod.get')
-def test_httpclient_invalid_method(app, client_class, raise_error):
-
-    if _tornadomaster_py3 and client_class == 'HTTPClient':
-        pytest.skip()
-
-    errors = []
-    if raise_error:
-        errors = ['tornado.web:HTTPError']
-
-    @validate_transaction_errors(errors=errors)
-    def _test():
-        uri = '/client-invalid-method/%s/%s' % (client_class, raise_error)
-        response = app.fetch(uri)
-
-        if raise_error:
-            assert response.code == 503
-        else:
-            assert response.code == 200
-            assert response.body == b'COOKIES'
-
-    _test()
+@validate_transaction_metrics('make_request',
+        background_task=True)
+def test_httpclient_invalid_method(client_class, raise_error, external):
+    try:
+        make_request(external.port, 'uri', client_class,
+                method='COOKIES', raise_error=raise_error)
+    except KeyError:
+        assert raise_error
+    else:
+        assert not raise_error
 
 
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
-@validate_transaction_metrics('_target_application:InvalidExternalKwarg.get')
-@validate_transaction_errors(errors=['tornado.web:HTTPError'])
-def test_httpclient_invalid_kwarg(app, client_class):
-
-    if _tornadomaster_py3 and client_class == 'HTTPClient':
-        pytest.skip()
-
-    uri = '/client-invalid-kwarg/%s' % client_class
-    response = app.fetch(uri)
-    assert response.code == 503
+@validate_transaction_metrics('make_request',
+        background_task=True)
+def test_httpclient_invalid_kwarg(client_class, external):
+    with pytest.raises(TypeError):
+        make_request(external.port, 'uri', client_class, boop='1234')
 
 
 @validate_transaction_metrics('_target_application:CrashClientHandler.get',

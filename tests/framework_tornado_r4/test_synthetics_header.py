@@ -72,17 +72,22 @@ def test_valid_synthetics_event(app, ioloop):
     _test()
 
 
-@pytest.mark.parametrize('client_class',
-        ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
+client_classes = ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient']
+if _tornadomaster_py3:
+    # tornado v5 on py3 makes it so that using HTTPClient from within a tornado
+    # webapp is impossible. As such, synthetics header forwarding (where
+    # inbound synthetics headers are forwarded through external calls) cannot
+    # occur and therefore don't need to be tested (it will fail if tried)
+    client_classes.remove('HTTPClient')
+
+
+@pytest.mark.parametrize('client_class', client_classes)
 @pytest.mark.parametrize('cat_enabled', [True, False])
 @pytest.mark.parametrize('synthetics_enabled', [True, False])
 @pytest.mark.parametrize('request_type', ['uri', 'class'])
 @override_application_settings(_override_settings)
 def test_synthetics_headers_sent_on_external_requests(app, cat_enabled,
         synthetics_enabled, request_type, client_class, external):
-
-    if _tornadomaster_py3 and client_class == 'HTTPClient':
-        pytest.skip()
 
     if cat_enabled or ('Async' not in client_class):
         port = external.port

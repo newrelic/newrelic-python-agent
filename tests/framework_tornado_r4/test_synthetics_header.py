@@ -34,10 +34,7 @@ else:
             'zmq.eventloop.ioloop.ZMQIOLoop']
 
 
-skipif_tornadomaster_py3 = pytest.mark.skipif(
-        tornado.version_info >= (5, 0) and six.PY3,
-        reason=('Instrumentation is broken for Tornado 5.0. Running these '
-            'tests results in a hang.'))
+_tornadomaster_py3 = tornado.version_info >= (5, 0) and six.PY3
 
 
 @pytest.fixture(scope='module')
@@ -75,7 +72,6 @@ def test_valid_synthetics_event(app, ioloop):
     _test()
 
 
-@skipif_tornadomaster_py3
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @pytest.mark.parametrize('cat_enabled', [True, False])
@@ -84,6 +80,9 @@ def test_valid_synthetics_event(app, ioloop):
 @override_application_settings(_override_settings)
 def test_synthetics_headers_sent_on_external_requests(app, cat_enabled,
         synthetics_enabled, request_type, client_class, external):
+
+    if _tornadomaster_py3 and client_class == 'HTTPClient':
+        pytest.skip()
 
     if cat_enabled or ('Async' not in client_class):
         port = external.port

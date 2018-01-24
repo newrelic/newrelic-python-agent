@@ -31,6 +31,7 @@ def _get_open_port():
     return port
 
 
+@background_task(name='make_request')
 def make_request(port, req_type, client_cls, count=1, **kwargs):
     import tornado.gen
     import tornado.httpclient
@@ -106,12 +107,11 @@ def test_httpclient(cat_enabled, request_type, client_class,
     @override_application_settings(
             {'cross_application_tracer.enabled': cat_enabled})
     @validate_transaction_metrics(
-        'test_httpclient',
+        'make_request',
         background_task=True,
         rollup_metrics=expected_metrics,
         scoped_metrics=expected_metrics
     )
-    @background_task(name='test_httpclient')
     def _test():
         headers = {}
         if user_header:
@@ -184,13 +184,12 @@ def test_client_cat_response_processing(cat_enabled, request_type,
     ]
 
     @validate_transaction_metrics(
-        '_test',
+        'make_request',
         background_task=True,
         rollup_metrics=expected_metrics,
         scoped_metrics=expected_metrics
     )
     @override_application_settings(_custom_settings)
-    @background_task(name='_test')
     def _test():
         response = make_request(wsgi_port, request_type, client_class)
         assert response.code == 200
@@ -204,9 +203,8 @@ def test_client_cat_response_processing(cat_enabled, request_type,
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @pytest.mark.parametrize('raise_error', [True, False])
-@validate_transaction_metrics('test_httpclient_invalid_method',
+@validate_transaction_metrics('make_request',
         background_task=True)
-@background_task(name='test_httpclient_invalid_method')
 def test_httpclient_invalid_method(client_class, raise_error, external):
     try:
         make_request(external.port, 'uri', client_class,
@@ -219,9 +217,8 @@ def test_httpclient_invalid_method(client_class, raise_error, external):
 
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
-@validate_transaction_metrics('test_httpclient_invalid_kwarg',
+@validate_transaction_metrics('make_request',
         background_task=True)
-@background_task(name='test_httpclient_invalid_kwarg')
 def test_httpclient_invalid_kwarg(client_class, external):
     try:
         make_request(external.port, 'uri', client_class, boop='1234')

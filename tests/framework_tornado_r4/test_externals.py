@@ -220,10 +220,8 @@ def test_httpclient_invalid_method(client_class, raise_error, external):
 @validate_transaction_metrics('make_request',
         background_task=True)
 def test_httpclient_invalid_kwarg(client_class, external):
-    try:
+    with pytest.raises(TypeError):
         make_request(external.port, 'uri', client_class, boop='1234')
-    except TypeError:
-        pass
 
 
 @validate_transaction_metrics('_target_application:CrashClientHandler.get',

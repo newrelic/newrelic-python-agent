@@ -32,7 +32,8 @@ def _get_open_port():
 
 
 @background_task(name='make_request')
-def make_request(port, req_type, client_cls, count=1, **kwargs):
+def make_request(port, req_type, client_cls, count=1, raise_error=True,
+        **kwargs):
     import tornado.gen
     import tornado.httpclient
     import tornado.curl_httpclient
@@ -68,7 +69,7 @@ def make_request(port, req_type, client_cls, count=1, **kwargs):
     @tornado.gen.coroutine
     def _make_request():
 
-        futures = [client.fetch(req, **kwargs)
+        futures = [client.fetch(req, raise_error=raise_error, **kwargs)
                 for _ in range(count)]
         responses = yield tornado.gen.multi(futures)
         response = responses[0]
@@ -77,7 +78,7 @@ def make_request(port, req_type, client_cls, count=1, **kwargs):
 
     if client_cls == 'HTTPClient':
         for _ in range(count):
-            response = client.fetch(req, **kwargs)
+            response = client.fetch(req, raise_error=raise_error, **kwargs)
         return response
     else:
         response = tornado.ioloop.IOLoop.current().run_sync(_make_request)
@@ -150,8 +151,13 @@ def test_httpclient(cat_enabled, request_type, client_class,
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @pytest.mark.parametrize('cat_enabled', [True, False])
 @pytest.mark.parametrize('request_type', ['uri', 'class'])
+@pytest.mark.parametrize('response_code,raise_error', [
+    (500, True),
+    (500, False),
+    (200, False),
+])
 def test_client_cat_response_processing(cat_enabled, request_type,
-        client_class):
+        client_class, raise_error, response_code):
     _custom_settings = {
         'cross_process_id': '1#1',
         'encoding_key': ENCODING_KEY,
@@ -161,7 +167,6 @@ def test_client_cat_response_processing(cat_enabled, request_type,
     }
 
     def _response_app(environ, start_response):
-        status = '200 OK'
         # payload
         # (
         #     u'1#1', u'WebTransaction/Function/app:beep',
@@ -172,7 +177,7 @@ def test_client_cat_response_processing(cat_enabled, request_type,
         response_headers = [('X-NewRelic-App-Data',
                 'ahACFwQUGxpuVVNmQVVbRVZbTVleXBxyQFhUTFBfXx1SREUMV'
                 'V1cQBMeAxgEGAULFR0AHhFQUQJWAAgAUwVQVgJQDgsOEh1UUlhGU2o='), ]
-        start_response(status, response_headers)
+        start_response('%d kittens' % response_code, response_headers)
         return [b'BEEEEEP']
 
     wsgi_port = _get_open_port()
@@ -191,8 +196,17 @@ def test_client_cat_response_processing(cat_enabled, request_type,
     )
     @override_application_settings(_custom_settings)
     def _test():
-        response = make_request(wsgi_port, request_type, client_class)
-        assert response.code == 200
+        import tornado.httpclient
+        try:
+            response = make_request(wsgi_port, request_type, client_class,
+                    raise_error=raise_error)
+        except tornado.httpclient.HTTPError as e:
+            assert raise_error
+            response = e.response
+        else:
+            assert not raise_error
+
+        assert response.code == response_code
 
     server_thread = threading.Thread(target=server.handle_request)
     server_thread.start()
@@ -202,17 +216,12 @@ def test_client_cat_response_processing(cat_enabled, request_type,
 
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
-@pytest.mark.parametrize('raise_error', [True, False])
 @validate_transaction_metrics('make_request',
         background_task=True)
-def test_httpclient_invalid_method(client_class, raise_error, external):
-    try:
+def test_httpclient_invalid_method(client_class, external):
+    with pytest.raises(KeyError):
         make_request(external.port, 'uri', client_class,
-                method='COOKIES', raise_error=raise_error)
-    except KeyError:
-        assert raise_error
-    else:
-        assert not raise_error
+                method='COOKIES')
 
 
 @pytest.mark.parametrize('client_class',

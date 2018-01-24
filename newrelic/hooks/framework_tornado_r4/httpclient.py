@@ -33,9 +33,8 @@ def wrap_handle_response(raise_error, trace):
 
         response = _bind_params(*args, **kwargs)
 
-        if not raise_error or not response.error:
-            # Process CAT response headers
-            trace.process_response_headers(response.headers.get_all())
+        # Process CAT response headers
+        trace.process_response_headers(response.headers.get_all())
 
         trace.__exit__(None, None, None)
 

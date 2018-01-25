@@ -142,10 +142,18 @@ use(extensions) {
     unitTestEnvs.each { testEnv ->
         baseJob("tests.sh-${testEnv}_${testSuffix}") {
             label('py-ec2-linux')
-            repo(repoFull)
-            branch('${GIT_REPOSITORY_BRANCH}')
 
             configure {
+                scm {
+                    git {
+                        remote {
+                            datanerd repoFull
+                            name 'origin'
+                            refspec '+refs/pull/*:refs/remotes/origin/pr/* +refs/heads/*:refs/remotes/origin/*'
+                        }
+                        branch('${GIT_REPOSITORY_BRANCH}')
+                    }
+                }
                 description("Runs ./tests.sh with the ${testEnv} environment")
                 logRotator { numToKeep(10) }
                 blockOnJobs('.*-Reset-Nodes')
@@ -175,10 +183,18 @@ use(extensions) {
 
     baseJob("cache-pre-build-hook_${testSuffix}") {
         label('py-ec2-linux')
-        repo(repoFull)
-        branch('${GIT_REPOSITORY_BRANCH}')
 
         configure {
+            scm {
+                git {
+                    remote {
+                        datanerd repoFull
+                        name 'origin'
+                        refspec '+refs/pull/*:refs/remotes/origin/pr/* +refs/heads/*:refs/remotes/origin/*'
+                    }
+                    branch('${GIT_REPOSITORY_BRANCH}')
+                }
+            }
             description('Run the cache pre-build hook.')
             logRotator { numToKeep(10) }
             blockOnJobs('.*-Reset-Nodes')
@@ -206,10 +222,18 @@ use(extensions) {
 
     baseJob("build.sh_${testSuffix}") {
         label('py-ec2-linux')
-        repo(repoFull)
-        branch('${GIT_REPOSITORY_BRANCH}')
 
         configure {
+            scm {
+                git {
+                    remote {
+                        datanerd repoFull
+                        name 'origin'
+                        refspec '+refs/pull/*:refs/remotes/origin/pr/* +refs/heads/*:refs/remotes/origin/*'
+                    }
+                    branch('${GIT_REPOSITORY_BRANCH}')
+                }
+            }
             description('Run ./build.sh')
             logRotator { numToKeep(10) }
             concurrentBuild true

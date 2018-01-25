@@ -1,4 +1,7 @@
 import pytest
+import sys
+import tornado
+
 from testing_support.fixtures import (make_cross_agent_headers,
         override_application_settings, validate_transaction_event_attributes,
         validate_transaction_metrics)
@@ -15,6 +18,8 @@ _custom_settings = {
 }
 
 
+@pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
+        reason='PYTHON-2569')
 @override_application_settings(_custom_settings)
 @validate_transaction_event_attributes(
     required_params={
@@ -68,6 +73,9 @@ def test_cat_headers_not_inserted_cases(app, status_code):
     assert 'X-NewRelic-App-Data' not in list(response.headers.keys())
 
 
+@pytest.mark.xfail(tornado.version_info < (4, 5) and
+        '__pypy__' in sys.builtin_module_names, strict=True,
+        reason='PYTHON-2569')
 @override_application_settings(_custom_settings)
 @validate_transaction_metrics('_target_application:SimpleHandler.get',
         rollup_metrics=[('ClientApplication/1#1/all', 1)])

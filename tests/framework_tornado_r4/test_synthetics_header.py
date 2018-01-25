@@ -81,6 +81,8 @@ if _tornadomaster_py3:
     client_classes.remove('HTTPClient')
 
 
+@pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
+        reason='PYTHON-2541 PYTHON-2642')
 @pytest.mark.parametrize('client_class', client_classes)
 @pytest.mark.parametrize('cat_enabled', [True, False])
 @pytest.mark.parametrize('synthetics_enabled', [True, False])

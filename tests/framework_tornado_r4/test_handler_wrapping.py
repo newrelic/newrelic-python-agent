@@ -1,4 +1,5 @@
 import pytest
+import tornado
 
 from newrelic.common.object_wrapper import _NRBoundFunctionWrapper
 
@@ -51,6 +52,8 @@ def web():
     yield web
 
 
+@pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
+        reason='PYTHON-2569')
 @pytest.mark.parametrize('handler_name1,handler_name2', [
         ('BaseHandler', None),
         ('MethodNotFoundHandler', None),
@@ -92,6 +95,8 @@ def test_handlers_wrapped(handler_name1, handler_name2, web):
                 assert not hasattr(method.__wrapped__, '__wrapped__')
 
 
+@pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
+        reason='PYTHON-2569')
 def test_multiple_applications(web):
 
     # get new instance of the handler class
@@ -132,6 +137,8 @@ def test_non_class_based_view(web):
     assert not hasattr(handler1, 'on_finish')
 
 
+@pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
+        reason='PYTHON-2569')
 def test_with_target_kwargs(web):
 
     # get new instance of the handler class
@@ -157,7 +164,11 @@ def test_with_target_kwargs(web):
 
 def test_nested_routing(web):
 
-    import tornado.routing
+    try:
+        import tornado.routing
+    except ImportError:
+        # this is an earlier version of tornado, skip this test
+        pytest.skip('No routing module in this Tornado version')
 
     # get new instance of the handler class
     handler1 = get_handler(web)
@@ -181,6 +192,8 @@ def test_nested_routing(web):
             assert not hasattr(method.__wrapped__, '__wrapped__')
 
 
+@pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
+        reason='PYTHON-2569')
 def test_add_handlers(web):
 
     # get new instance of the handler class
@@ -203,6 +216,8 @@ def test_add_handlers(web):
             assert not hasattr(method.__wrapped__, '__wrapped__')
 
 
+@pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
+        reason='PYTHON-2569')
 def test_wrapping_subclass_does_not_wrap_parent_class(web):
 
     # get new instances of the handler classes

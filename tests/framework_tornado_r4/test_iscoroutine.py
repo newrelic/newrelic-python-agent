@@ -55,6 +55,8 @@ def test_asyncio_coroutine_generator(utils):
     assert not utils._iscoroutinefunction_tornado(method)
 
 
+@pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
+        reason='PYTHON-2574')
 def test_tornado_gen_coroutine_function(utils):
 
     class Handler(object):
@@ -67,6 +69,8 @@ def test_tornado_gen_coroutine_function(utils):
     assert utils._iscoroutinefunction_tornado(method)
 
 
+@pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
+        reason='PYTHON-2574')
 def test_tornado_gen_coroutine_generator(utils):
 
     class Handler(object):
@@ -79,6 +83,8 @@ def test_tornado_gen_coroutine_generator(utils):
     assert utils._iscoroutinefunction_tornado(method)
 
 
+@pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
+        reason='PYTHON-2574')
 def test_tornado_gen_engine_function(utils):
 
     class Handler(object):
@@ -91,6 +97,8 @@ def test_tornado_gen_engine_function(utils):
     assert utils._iscoroutinefunction_tornado(method)
 
 
+@pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
+        reason='PYTHON-2574')
 def test_tornado_gen_engine_generator(utils):
 
     class Handler(object):
@@ -103,6 +111,8 @@ def test_tornado_gen_engine_generator(utils):
     assert utils._iscoroutinefunction_tornado(method)
 
 
+@pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
+        reason='PYTHON-2574')
 def test_tornado_async_engine_function(utils):
 
     class Handler(object):
@@ -116,6 +126,8 @@ def test_tornado_async_engine_function(utils):
     assert utils._iscoroutinefunction_tornado(method)
 
 
+@pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
+        reason='PYTHON-2574')
 def test_tornado_async_engine_generator(utils):
 
     class Handler(object):
@@ -158,6 +170,8 @@ def test_just_plain_method(utils):
 # in this case." Since we do not know what they mean by "first", we test both
 # orderings.
 
+@pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
+        reason='PYTHON-2574')
 def test_tornado_async_coro_function(utils):
 
     class Handler(object):
@@ -171,6 +185,8 @@ def test_tornado_async_coro_function(utils):
     assert utils._iscoroutinefunction_tornado(method)
 
 
+@pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
+        reason='PYTHON-2574')
 def test_tornado_async_coro_generator(utils):
 
     class Handler(object):
@@ -184,6 +200,8 @@ def test_tornado_async_coro_generator(utils):
     assert utils._iscoroutinefunction_tornado(method)
 
 
+@pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
+        reason='PYTHON-2574')
 def test_tornado_coro_async_function(utils):
 
     class Handler(object):
@@ -197,6 +215,8 @@ def test_tornado_coro_async_function(utils):
     assert utils._iscoroutinefunction_tornado(method)
 
 
+@pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
+        reason='PYTHON-2574')
 def test_tornado_coro_async_generator(utils):
 
     class Handler(object):

@@ -36,8 +36,10 @@ def _nr_rulerouter_process_rule(wrapped, instance, args, kwargs):
 def _wrap_handlers(rule):
     if isinstance(rule, (tuple, list)):
         handler = rule[1]
-    else:
+    elif hasattr(rule, 'target'):
         handler = rule.target
+    else:
+        handler = rule.handler_class
 
     from tornado.web import RequestHandler
 

@@ -7,10 +7,9 @@ def _bind_make_coroutine_wrapper(func, *args, **kwargs):
 
 def wrap_make_coroutine_wrapper(wrapped, instance, args, kwargs):
     coro = wrapped(*args, **kwargs)
-    if not hasattr(coro, '__wrapped__'):
-        original_func = _bind_make_coroutine_wrapper(*args, **kwargs)
-        coro.__wrapped__ = original_func
-        coro.__tornado_coroutine__ = True
+    original_func = _bind_make_coroutine_wrapper(*args, **kwargs)
+    coro.__wrapped__ = original_func
+    coro.__tornado_coroutine__ = True
     return coro
 
 

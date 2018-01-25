@@ -244,3 +244,24 @@ def test_wrapping_subclass_does_not_wrap_parent_class(web):
     assert handler1.on_finish is not handler2.on_finish
     assert handler1.get is not handler2.get
     assert handler1.post is not handler2.post
+
+
+def test_urlspecs(web):
+
+    # get new instance of the handler class
+    handler1 = get_handler(web)
+
+    # sanity check
+    assert not isinstance(handler1.on_finish, _NRBoundFunctionWrapper)
+
+    handlers = [web.URLSpec(r'/handler1', handler1, name='handler1')]
+    web.Application(handlers)
+
+    assert hasattr(handler1.on_finish, '__wrapped__')
+    assert not hasattr(handler1.on_finish.__wrapped__, '__wrapped__')
+
+    for request_method in handler1.SUPPORTED_METHODS:
+        method = getattr(handler1, request_method.lower(), None)
+        if method:
+            assert hasattr(method, '__wrapped__')
+            assert not hasattr(method.__wrapped__, '__wrapped__')

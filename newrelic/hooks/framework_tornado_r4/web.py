@@ -38,7 +38,7 @@ def _get_environ(request):
         # We only want to record port for ipv4 and ipv6 socket families.
         # Unix socket will just return a string instead of a tuple, so
         # skip this.
-        sockname = request.server_connection.stream.socket.getsockname()
+        sockname = request.connection.stream.socket.getsockname()
         if isinstance(sockname, tuple):
             environ['SERVER_PORT'] = sockname[1]
     except:

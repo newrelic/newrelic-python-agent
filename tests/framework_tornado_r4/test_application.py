@@ -46,8 +46,6 @@ if sys.version_info >= (3, 5) and tornado.version_info >= (4, 3):
     ])
 
 
-@pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
-        reason='PYTHON-2629')
 @pytest.mark.parametrize('uri,name', _tests)
 @pytest.mark.parametrize('ioloop', loops)
 def test_simple(app, uri, name, ioloop):
@@ -95,8 +93,6 @@ def test_simple(app, uri, name, ioloop):
     _test()
 
 
-@pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
-        reason='PYTHON-2629')
 @pytest.mark.parametrize('method', [
     'GET',
     'POST',

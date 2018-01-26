@@ -220,7 +220,7 @@ def make_app():
                 {'terminal_trace': True}),
         (r'/echo-headers', EchoHeaderHandler),
     ]
-    if sys.version_info >= (3, 5):
+    if sys.version_info >= (3, 5) and tornado.version_info >= (4, 3):
         from _target_application_native import (NativeSimpleHandler,
                 NativeWebAsyncHandler)
         handlers.extend([

@@ -2,7 +2,6 @@ import io
 import pytest
 import socket
 import threading
-import tornado
 
 from wsgiref.simple_server import make_server
 
@@ -73,7 +72,7 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True,
 
         futures = [client.fetch(req, raise_error=raise_error, **kwargs)
                 for _ in range(count)]
-        responses = yield tornado.gen.multi(futures)
+        responses = yield tornado.gen.multi_future(futures)
         response = responses[0]
 
         raise tornado.gen.Return(response)
@@ -87,8 +86,6 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True,
         return response
 
 
-@pytest.mark.skipif(tornado.version_info < (4, 5), strict=True,
-        reason='PYTHON-2641')
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient',
             'CustomAsyncHTTPClient'])
@@ -128,6 +125,12 @@ def test_httpclient(cat_enabled, request_type, client_class,
 
         sent_headers = response.body
 
+        if client_class == 'CustomAsyncHTTPClient':
+            # The CustomAsyncHTTPClient class is not designed to actually send
+            # out a request. We just use it to make sure our instrumentation
+            # gets applied and nothing crashes.
+            return
+
         # User headers override all inserted NR headers
         if user_header:
             header_str = '%s: USER' % user_header
@@ -151,7 +154,6 @@ def test_httpclient(cat_enabled, request_type, client_class,
     _test()
 
 
-@pytest.mark.skipif(tornado.version_info < (4, 5), reason='PYTHON-2641')
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @pytest.mark.parametrize('cat_enabled', [True, False])
@@ -201,12 +203,18 @@ def test_client_cat_response_processing(cat_enabled, request_type,
     )
     @override_application_settings(_custom_settings)
     def _test():
+        import tornado
         import tornado.httpclient
         try:
             response = make_request(wsgi_port, request_type, client_class,
                     raise_error=raise_error)
         except tornado.httpclient.HTTPError as e:
-            assert raise_error
+            # Tornado 4.1 has a bug in HTTPClient where an error is always
+            # raised even when `raise_error` kwarg is passed
+            _tornado0401_httpclient_throw_bug = (
+                    tornado.version_info < (4, 2) and
+                    client_class == 'HTTPClient')
+            assert raise_error or _tornado0401_httpclient_throw_bug
             response = e.response
         else:
             assert not raise_error
@@ -219,8 +227,6 @@ def test_client_cat_response_processing(cat_enabled, request_type,
     server_thread.join(0.1)
 
 
-@pytest.mark.skipif(tornado.version_info < (4, 5), strict=True,
-    reason='PYTHON-2629')
 @pytest.mark.parametrize('client_class', ['AsyncHTTPClient',
     'CurlAsyncHTTPClient', 'HTTPClient'])
 @validate_transaction_metrics('make_request',

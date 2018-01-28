@@ -300,10 +300,7 @@ def _parse_ignore_status_codes(value, target):
 
         except ValueError:
             if negate:
-                try:
-                    target.remove(int(item))
-                except KeyError:
-                    pass # item not in target
+                target.discard(int(item))
             else:
                 target.add(int(item))
     return target

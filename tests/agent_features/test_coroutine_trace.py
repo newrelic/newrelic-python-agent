@@ -154,3 +154,26 @@ def test_coroutine_caught_exception():
     _test()
 
     assert full_metrics[('Function/coro', '')].total_call_time >= 0.2
+
+
+@validate_transaction_metrics('test_coroutine_handles_terminal_nodes',
+        background_task=True,
+        scoped_metrics=[('Function/parent', 1), ('Function/coro', None)],
+        rollup_metrics=[('Function/parent', 1), ('Function/coro', None)])
+@background_task(name='test_coroutine_handles_terminal_nodes')
+def test_coroutine_handles_terminal_nodes():
+    # somtimes coroutines can be called underneath terminal nodes
+    # In this case, the trace shouldn't actually be created and we also
+    # shouldn't get any errors
+
+    @function_trace(name='coro')
+    def coro():
+        yield
+
+    @function_trace(name='parent', terminal=True)
+    def parent():
+        # parent calls child
+        for _ in coro():
+            pass
+
+    parent()

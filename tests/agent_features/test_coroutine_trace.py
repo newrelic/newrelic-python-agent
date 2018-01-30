@@ -98,11 +98,15 @@ def test_coroutine_parenting():
     _test()
 
 
+class MyException(Exception):
+    pass
+
+
 @validate_transaction_metrics('test_coroutine_error',
         background_task=True,
         scoped_metrics=[('Function/coro', 1)],
         rollup_metrics=[('Function/coro', 1)])
-@validate_transaction_errors(errors=['builtins:ValueError'])
+@validate_transaction_errors(errors=['test_coroutine_trace:MyException'])
 def test_coroutine_error():
     @function_trace(name='coro')
     def coro():
@@ -111,11 +115,11 @@ def test_coroutine_error():
     @background_task(name='test_coroutine_error')
     def _test():
         gen = coro()
-        gen.throw(ValueError)
+        gen.throw(MyException)
 
     try:
         _test()
-    except ValueError:
+    except MyException:
         pass
 
 

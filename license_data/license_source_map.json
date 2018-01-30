@@ -143,6 +143,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/coroutine_trace.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/database_trace.py": {
         "hash": "n/a",
         "libraries": [

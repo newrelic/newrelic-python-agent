@@ -177,3 +177,25 @@ def test_coroutine_handles_terminal_nodes():
             pass
 
     parent()
+
+
+@validate_transaction_metrics('test_coroutine_close_ends_trace',
+        background_task=True,
+        scoped_metrics=[('Function/coro', 1)],
+        rollup_metrics=[('Function/coro', 1)])
+@background_task(name='test_coroutine_close_ends_trace')
+def test_coroutine_close_ends_trace():
+    @function_trace(name='coro')
+    def coro():
+        yield
+
+    gen = coro()
+
+    # kickstart the coroutine
+    next(gen)
+
+    # trace should be ended/recorded by close
+    gen.close()
+
+    # We may call gen.close as many times as we want
+    gen.close()

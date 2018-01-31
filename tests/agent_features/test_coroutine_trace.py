@@ -55,7 +55,7 @@ def test_coroutine_timing(trace, metric):
     assert full_metrics[metric_key].total_call_time >= 0.2
 
 
-def test_coroutine_parenting():
+def test_coroutine_siblings():
     # The expected segment map looks like this
     # parent
     # | child
@@ -87,11 +87,11 @@ def test_coroutine_parenting():
             else:
                 coros.append(coro)
 
-    @validate_transaction_metrics('test_coroutine_parenting',
+    @validate_transaction_metrics('test_coroutine_siblings',
             background_task=True,
             scoped_metrics=[('Function/child', 2)],
             rollup_metrics=[('Function/child', 2)])
-    @background_task(name='test_coroutine_parenting')
+    @background_task(name='test_coroutine_siblings')
     def _test():
         parent()
 
@@ -203,3 +203,39 @@ def test_coroutine_close_ends_trace():
 
     # We may call gen.close as many times as we want
     gen.close()
+
+
+@validate_transaction_metrics('test_coroutine_parents',
+        background_task=True,
+        scoped_metrics=[('Function/child', 1), ('Function/parent', 1)],
+        rollup_metrics=[('Function/child', 1), ('Function/parent', 1)])
+def test_coroutine_parents():
+
+    @function_trace(name='child')
+    def child():
+        yield
+        time.sleep(0.1)
+        yield
+
+    @function_trace(name='parent')
+    def parent():
+        time.sleep(0.1)
+        yield
+        for _ in child():
+            pass
+
+    metrics = []
+    full_metrics = {}
+
+    @capture_transaction_metrics(metrics, full_metrics)
+    @background_task(name='test_coroutine_parents')
+    def _test():
+        for _ in parent():
+            pass
+
+    _test()
+
+    # Check that the child time is subtracted from the parent time (parenting
+    # relationship is correctly established)
+    key = ('Function/parent', '')
+    assert full_metrics[key].total_exclusive_call_time < 0.2

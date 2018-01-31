@@ -124,10 +124,8 @@ def test_coroutine_error():
         gen = coro()
         gen.throw(MyException)
 
-    try:
+    with pytest.raises(MyException):
         _test()
-    except MyException:
-        pass
 
 
 @validate_transaction_metrics('test_coroutine_caught_exception',

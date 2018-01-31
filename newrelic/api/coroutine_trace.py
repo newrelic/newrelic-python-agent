@@ -62,8 +62,6 @@ class CoroutineTrace(ObjectProxy):
 
         # get the coroutine
         coro = wrapped()
-        if hasattr(coro, '__iter__'):
-            coro = iter(coro)
 
         # Wrap the coroutine
         super(CoroutineTrace, self).__init__(coro)

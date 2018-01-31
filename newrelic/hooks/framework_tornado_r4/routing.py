@@ -38,8 +38,10 @@ def _wrap_handlers(rule):
         handler = rule[1]
     elif hasattr(rule, 'target'):
         handler = rule.target
-    else:
+    elif hasattr(rule, 'handler_class'):
         handler = rule.handler_class
+    else:
+        return
 
     from tornado.web import RequestHandler
 

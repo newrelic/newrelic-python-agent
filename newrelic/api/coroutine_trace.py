@@ -20,10 +20,20 @@ class TraceContext(object):
         if not self.trace:
             return self
 
-        # In the case that the function trace is already active, notify the
-        # transaction that this coroutine is now the current node (for
-        # automatic parenting)
-        self.trace.transaction._push_current(self.trace)
+        if not self.trace.activated:
+            self.trace.__enter__()
+
+            # Transaction can be cleared by calling enter (such as when tracing
+            # as a child of a terminal node)
+            # In this case, we clear out the transaction and defer to the
+            # wrapped function
+            if not self.trace.transaction:
+                self.trace = None
+        else:
+            # In the case that the function trace is already active, notify the
+            # transaction that this coroutine is now the current node (for
+            # automatic parenting)
+            self.trace.transaction._push_current(self.trace)
 
         return self
 
@@ -50,23 +60,10 @@ class CoroutineTrace(ObjectProxy):
 
         self._nr_trace_context = TraceContext(trace)
 
-        # Start the trace on the coroutine
-        trace.__enter__()
-
-        # Transaction can be cleared by calling enter (such as when tracing
-        # as a child of a terminal node)
-        # In this case, we clear out the transaction and defer to the
-        # wrapped function
-        if not trace.transaction:
-            self._nr_trace_context.trace = None
-        else:
-            trace.transaction._pop_current(trace)
-
-        with self._nr_trace_context:
-            # get the coroutine
-            coro = wrapped()
-            if hasattr(coro, '__iter__'):
-                coro = iter(coro)
+        # get the coroutine
+        coro = wrapped()
+        if hasattr(coro, '__iter__'):
+            coro = iter(coro)
 
         # Wrap the coroutine
         super(CoroutineTrace, self).__init__(coro)

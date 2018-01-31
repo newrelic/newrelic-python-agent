@@ -4,7 +4,8 @@ import sys
 import time
 
 from testing_support.fixtures import (validate_transaction_metrics,
-        capture_transaction_metrics, validate_transaction_errors)
+        capture_transaction_metrics, validate_transaction_errors,
+        validate_tt_parenting)
 from newrelic.api.background_task import background_task
 from newrelic.api.database_trace import database_trace
 from newrelic.api.datastore_trace import datastore_trace
@@ -56,6 +57,19 @@ def test_coroutine_timing(trace, metric):
     assert full_metrics[metric_key].total_call_time >= 0.2
 
 
+@validate_tt_parenting(
+    ('TransactionNode', [
+        ('FunctionNode', [
+            ('FunctionNode', []),
+            ('FunctionNode', []),
+        ]),
+    ],
+))
+@validate_transaction_metrics('test_coroutine_siblings',
+        background_task=True,
+        scoped_metrics=[('Function/child', 2)],
+        rollup_metrics=[('Function/child', 2)])
+@background_task(name='test_coroutine_siblings')
 def test_coroutine_siblings():
     # The expected segment map looks like this
     # parent
@@ -88,15 +102,7 @@ def test_coroutine_siblings():
             else:
                 coros.append(coro)
 
-    @validate_transaction_metrics('test_coroutine_siblings',
-            background_task=True,
-            scoped_metrics=[('Function/child', 2)],
-            rollup_metrics=[('Function/child', 2)])
-    @background_task(name='test_coroutine_siblings')
-    def _test():
-        parent()
-
-    _test()
+    parent()
 
 
 class MyException(Exception):
@@ -206,6 +212,13 @@ def test_coroutine_close_ends_trace():
     gen.close()
 
 
+@validate_tt_parenting(
+    ('TransactionNode', [
+        ('FunctionNode', [
+            ('FunctionNode', []),
+        ]),
+    ],
+))
 @validate_transaction_metrics('test_coroutine_parents',
         background_task=True,
         scoped_metrics=[('Function/child', 1), ('Function/parent', 1)],

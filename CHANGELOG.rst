@@ -12,6 +12,11 @@ unreleased
   errors did not prevent metrics on Dropbox from being sent. These errors have
   been removed.
 
+- Values from negated ranges were sometimes added to ignore_status_codes
+
+  Negated status codes not found in the current ignore_status_codes were 
+  added if they were part of a range of values. This issue has been addressed.
+
 
 2.100.0 (2017-01-09)
 --------------------

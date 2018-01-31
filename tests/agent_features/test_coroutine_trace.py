@@ -309,5 +309,31 @@ def test_coroutine_functions_outside_of_transaction(trace):
     assert [_ for _ in coro()] == ['foo', 'foo']
 
 
+@validate_transaction_metrics(
+        'test_catching_generator_exit_causes_runtime_error',
+        background_task=True,
+        scoped_metrics=[('Function/coro', 1)],
+        rollup_metrics=[('Function/coro', 1)])
+@background_task(name='test_catching_generator_exit_causes_runtime_error')
+def test_catching_generator_exit_causes_runtime_error():
+
+    @function_trace(name='coro')
+    def coro():
+        try:
+            yield
+        except GeneratorExit:
+            yield
+
+    gen = coro()
+
+    # kickstart the coroutine (we're inside the try now)
+    next(gen)
+
+    # Generators cannot catch generator exit exceptions (which are injected by
+    # close). This will result in a runtime error.
+    with pytest.raises(RuntimeError):
+        gen.close()
+
+
 if sys.version_info >= (3, 5):
     from _test_async_coroutine_trace import *  # NOQA

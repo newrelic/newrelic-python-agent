@@ -269,5 +269,23 @@ def test_throw_yields_a_value():
         pass
 
 
+@pytest.mark.parametrize('trace', [
+    function_trace(name='simple_gen'),
+    external_trace(library='lib', url='http://foo.com'),
+    database_trace('select * from foo'),
+    datastore_trace('lib', 'foo', 'bar'),
+    message_trace('lib', 'op', 'typ', 'name'),
+    memcache_trace('cmd'),
+])
+def test_coroutine_functions_outside_of_transaction(trace):
+
+    @trace
+    def coro():
+        for _ in range(2):
+            yield 'foo'
+
+    assert [_ for _ in coro()] == ['foo', 'foo']
+
+
 if sys.version_info >= (3, 5):
     from _test_async_coroutine_trace import *  # NOQA

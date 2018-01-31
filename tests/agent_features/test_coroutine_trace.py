@@ -1,5 +1,6 @@
 import functools
 import pytest
+import sys
 import time
 
 from testing_support.fixtures import (validate_transaction_metrics,
@@ -239,3 +240,7 @@ def test_coroutine_parents():
     # relationship is correctly established)
     key = ('Function/parent', '')
     assert full_metrics[key].total_exclusive_call_time < 0.2
+
+
+if sys.version_info >= (3, 5):
+    from _test_async_coroutine_trace import *  # NOQA

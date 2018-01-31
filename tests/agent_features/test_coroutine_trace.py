@@ -242,5 +242,32 @@ def test_coroutine_parents():
     assert full_metrics[key].total_exclusive_call_time < 0.2
 
 
+@validate_transaction_metrics('test_throw_yields_a_value',
+        background_task=True,
+        scoped_metrics=[('Function/coro', 1)],
+        rollup_metrics=[('Function/coro', 1)])
+@background_task(name='test_throw_yields_a_value')
+def test_throw_yields_a_value():
+
+    @function_trace(name='coro')
+    def coro():
+        for _ in range(2):
+            try:
+                yield
+            except MyException:
+                yield 'foobar'
+
+    c = coro()
+
+    # kickstart the coroutine
+    next(c)
+
+    assert c.throw(MyException) == 'foobar'
+
+    # finish consumption of the coroutine if necessary
+    for _ in c:
+        pass
+
+
 if sys.version_info >= (3, 5):
     from _test_async_coroutine_trace import *  # NOQA

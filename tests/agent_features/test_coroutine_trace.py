@@ -335,5 +335,34 @@ def test_catching_generator_exit_causes_runtime_error():
         gen.close()
 
 
+@validate_transaction_metrics(
+        'test_coroutine_time_excludes_creation_time',
+        background_task=True,
+        scoped_metrics=[('Function/coro', 1)],
+        rollup_metrics=[('Function/coro', 1)])
+def test_coroutine_time_excludes_creation_time():
+
+    @function_trace(name='coro')
+    def coro():
+        yield
+
+    metrics = []
+    full_metrics = {}
+
+    @capture_transaction_metrics(metrics, full_metrics)
+    @background_task(name='test_coroutine_time_excludes_creation_time')
+    def _test():
+        gen = coro()
+        time.sleep(0.1)
+        for _ in gen:
+            pass
+
+    _test()
+
+    # check that the trace does not include the time between creation and
+    # consumption
+    assert full_metrics[('Function/coro', '')].total_call_time < 0.1
+
+
 if sys.version_info >= (3, 5):
     from _test_async_coroutine_trace import *  # NOQA

@@ -364,5 +364,38 @@ def test_coroutine_time_excludes_creation_time():
     assert full_metrics[('Function/coro', '')].total_call_time < 0.1
 
 
+@validate_tt_parenting(
+    ('TransactionNode', [
+        ('FunctionNode', []),  # coro
+        ('FunctionNode', [  # child
+            ('FunctionNode', []),  # child-coro
+        ]),
+    ],
+))
+@background_task(name='test_coroutine_saves_trace')
+def test_coroutine_saves_trace():
+    @function_trace(name='coro')
+    def coro():
+        yield
+
+    @function_trace(name='child')
+    def child(_coro):
+        yield
+        # This should exhaust the coro and hopefully not change the current
+        # node
+        list(_coro)
+
+        # If the current node has been changed, this coroutine will be childed
+        # underneath a node other than "child" which is incorrect.
+        for _ in coro():
+            pass
+
+    _coro = coro()
+    _child = child(_coro)
+
+    # Run the child until complete
+    list(_child)
+
+
 if sys.version_info >= (3, 5):
     from _test_async_coroutine_trace import *  # NOQA

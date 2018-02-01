@@ -15,11 +15,13 @@ else:
 class TraceContext(object):
     def __init__(self, trace):
         self.trace = trace
+        self.current_trace = None
 
     def __enter__(self):
         if not self.trace:
             return self
 
+        self.current_trace = self.trace.transaction.current_node
         if not self.trace.activated:
             self.trace.__enter__()
 
@@ -33,7 +35,7 @@ class TraceContext(object):
             # In the case that the function trace is already active, notify the
             # transaction that this coroutine is now the current node (for
             # automatic parenting)
-            self.trace.transaction._push_current(self.trace)
+            self.trace.transaction.current_node = self.trace
 
         return self
 
@@ -41,18 +43,23 @@ class TraceContext(object):
         if not self.trace:
             return
 
+        txn = self.trace.transaction
         if exc in (StopIteration, GeneratorExit):
             self.trace.__exit__(None, None, None)
             self.trace = None
         elif exc:
             self.trace.__exit__(exc, value, tb)
             self.trace = None
-        else:
-            # Since the coroutine is returning control to the parent at this
-            # point, we should notify the transaction that this coroutine is no
-            # longer the current node for parenting purposes
-            if self.trace.transaction.current_node is self.trace:
-                self.trace.transaction._pop_current(self.trace)
+
+        # Since the coroutine is returning control to the parent at this
+        # point, we should notify the transaction that this coroutine is no
+        # longer the current node for parenting purposes
+        if self.current_trace:
+            txn.current_node = self.current_trace
+
+            # Clear out the current trace so that it cannot be reused in future
+            # exits and doesn't maintain a dangling reference to a trace.
+            self.current_trace = None
 
 
 class CoroutineTrace(ObjectProxy):

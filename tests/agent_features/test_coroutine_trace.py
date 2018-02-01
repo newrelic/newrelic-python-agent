@@ -6,6 +6,7 @@ import time
 from testing_support.fixtures import (validate_transaction_metrics,
         capture_transaction_metrics, validate_transaction_errors,
         validate_tt_parenting)
+from newrelic.api.transaction import current_transaction
 from newrelic.api.background_task import background_task
 from newrelic.api.database_trace import database_trace
 from newrelic.api.datastore_trace import datastore_trace
@@ -395,6 +396,29 @@ def test_coroutine_saves_trace():
 
     # Run the child until complete
     list(_child)
+
+
+@validate_transaction_metrics(
+        'test_supportability_metric',
+        background_task=True,
+        scoped_metrics=[('Function/coro', 1)],
+        rollup_metrics=[('Supportability/Python/'
+                'TraceContext/ExitNodeMismatch', 1),
+                ('Function/coro', 1)],
+)
+@background_task(name='test_supportability_metric')
+def test_supportability_metric():
+    txn = current_transaction()
+    current_node = txn.current_node
+
+    @function_trace(name='coro')
+    def coro():
+        # change the current node for no good reason
+        txn.current_node = current_node
+        yield
+
+    for _ in coro():
+        pass
 
 
 if sys.version_info >= (3, 5):

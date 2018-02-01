@@ -1,6 +1,9 @@
 import inspect
+import logging
 
 from newrelic.common.object_wrapper import ObjectProxy
+
+_logger = logging.getLogger(__name__)
 
 
 if hasattr(inspect, 'iscoroutinefunction'):
@@ -44,6 +47,18 @@ class TraceContext(object):
             return
 
         txn = self.trace.transaction
+
+        # If the current node has been changed, record this as an error in a
+        # supportability metric.
+        if txn.current_node is not self.trace:
+            txn.record_custom_metric(
+                    'Supportability/Python/TraceContext/ExitNodeMismatch',
+                    {'count': 1})
+            _logger.debug('Trace context exited with an unexpected current '
+                    'node. Current trace is %r. Expected trace is %r. '
+                    'Please report this issue to New Relic Support.',
+                    self.current_trace, self.trace)
+
         if exc in (StopIteration, GeneratorExit):
             self.trace.__exit__(None, None, None)
             self.trace = None

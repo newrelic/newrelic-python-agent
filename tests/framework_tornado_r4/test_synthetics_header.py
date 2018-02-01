@@ -89,13 +89,6 @@ if _tornadomaster_py3:
 def test_synthetics_headers_sent_on_external_requests(app, cat_enabled,
         synthetics_enabled, request_type, client_class, external):
 
-    if (tornado.version_info >= (4, 3) and
-            tornado.version_info < (4, 4) and
-            synthetics_enabled and
-            not cat_enabled and
-            'Async' in client_class):
-        pytest.xfail(reason='PYTHON-2642')
-
     if cat_enabled or ('Async' not in client_class):
         port = external.port
     else:

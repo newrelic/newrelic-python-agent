@@ -51,7 +51,7 @@ class ProcessCatHeadersHandler(tornado.web.RequestHandler):
 
 class EchoHeaderHandler(tornado.web.RequestHandler):
     def get(self):
-        response = str(self.request.headers).encode('utf-8')
+        response = str(self.request.headers.__dict__).encode('utf-8')
         self.write(response)
 
 

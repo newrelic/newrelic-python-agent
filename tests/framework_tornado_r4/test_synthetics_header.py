@@ -81,8 +81,6 @@ if _tornadomaster_py3:
     client_classes.remove('HTTPClient')
 
 
-@pytest.mark.xfail(tornado.version_info < (4, 5), strict=True,
-        reason='PYTHON-2541 PYTHON-2642')
 @pytest.mark.parametrize('client_class', client_classes)
 @pytest.mark.parametrize('cat_enabled', [True, False])
 @pytest.mark.parametrize('synthetics_enabled', [True, False])
@@ -90,6 +88,13 @@ if _tornadomaster_py3:
 @override_application_settings(_override_settings)
 def test_synthetics_headers_sent_on_external_requests(app, cat_enabled,
         synthetics_enabled, request_type, client_class, external):
+
+    if (tornado.version_info >= (4, 3) and
+            tornado.version_info < (4, 4) and
+            synthetics_enabled and
+            not cat_enabled and
+            'Async' in client_class):
+        pytest.xfail(reason='PYTHON-2642')
 
     if cat_enabled or ('Async' not in client_class):
         port = external.port

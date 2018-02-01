@@ -37,26 +37,31 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True,
         **kwargs):
     import tornado.gen
     import tornado.httpclient
-    import tornado.curl_httpclient
     import tornado.ioloop
 
     class CustomAsyncHTTPClient(tornado.httpclient.AsyncHTTPClient):
         def fetch_impl(self, request, callback):
-            body = str(request.headers).encode('utf-8')
+            out = []
+            for k, v in request.headers.items():
+                out.append('%s: %s' % (k, v))
+            body = '\n'.join(out).encode('utf-8')
             response = tornado.httpclient.HTTPResponse(request=request,
                     code=200, buffer=io.BytesIO(body))
             callback(response)
 
+    cls = tornado.httpclient.AsyncHTTPClient
     if client_cls == 'AsyncHTTPClient':
-        client = tornado.httpclient.AsyncHTTPClient()
+        cls.configure(None)
     elif client_cls == 'CurlAsyncHTTPClient':
-        client = tornado.curl_httpclient.CurlAsyncHTTPClient()
+        cls.configure('tornado.curl_httpclient.CurlAsyncHTTPClient')
     elif client_cls == 'HTTPClient':
-        client = tornado.httpclient.HTTPClient()
+        cls = tornado.httpclient.HTTPClient
     elif client_cls == 'CustomAsyncHTTPClient':
-        client = CustomAsyncHTTPClient()
+        cls.configure(CustomAsyncHTTPClient)
     else:
         raise ValueError("Received unknown client type: %s" % client_cls)
+
+    client = cls(force_instance=True)
 
     uri = 'http://localhost:%s/echo-headers' % port
     if req_type == 'class':
@@ -124,12 +129,6 @@ def test_httpclient(cat_enabled, request_type, client_class,
         assert response.code == 200
 
         sent_headers = response.body
-
-        if client_class == 'CustomAsyncHTTPClient':
-            # The CustomAsyncHTTPClient class is not designed to actually send
-            # out a request. We just use it to make sure our instrumentation
-            # gets applied and nothing crashes.
-            return
 
         # User headers override all inserted NR headers
         if user_header:

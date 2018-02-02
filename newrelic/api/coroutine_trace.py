@@ -21,8 +21,18 @@ def _iscoroutinefunction_tornado(fn):
 
 
 class TraceContext(object):
+    # Assumption made for this context manager: no other object maintains a
+    # reference to trace after the TraceContext is constructed.
+    # This is important because the assumption made by the logic below is that
+    # only the TraceContext object can call __enter__ on the trace (which may
+    # delete the transaction).
+
     def __init__(self, trace):
-        self.trace = trace
+        if not trace.transaction:
+            self.trace = None
+        else:
+            self.trace = trace
+
         self.current_trace = None
 
     def __enter__(self):
@@ -80,6 +90,19 @@ class TraceContext(object):
             # Clear out the current trace so that it cannot be reused in future
             # exits and doesn't maintain a dangling reference to a trace.
             self.current_trace = None
+
+    def __del__(self):
+        # If the trace goes out of scope, it's possible it's still active.
+        # It's important that we end the trace so that the trace is reported.
+        # It's also important that we don't change the current node as part of
+        # this reporting.
+        if self.trace and self.trace.activated:
+            txn = self.trace.transaction
+            if txn:
+                current_trace = txn.current_node
+                self.trace.__exit__(None, None, None)
+                if current_trace is not self.trace:
+                    txn.current_node = current_trace
 
 
 class CoroutineTrace(ObjectProxy):

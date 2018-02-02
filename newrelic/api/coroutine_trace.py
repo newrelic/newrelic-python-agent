@@ -15,6 +15,10 @@ else:
         return inspect.isgeneratorfunction(wrapped)
 
 
+def _iscoroutinefunction_tornado(fn):
+    return hasattr(fn, '__tornado_coroutine__')
+
+
 class TraceContext(object):
     def __init__(self, trace):
         self.trace = trace
@@ -122,6 +126,15 @@ class CoroutineTrace(ObjectProxy):
 
 
 def return_value_fn(wrapped):
+    if _iscoroutinefunction_tornado(wrapped):
+        _logger.warning('A tornado coroutine function (tornado.gen.coroutine) '
+                'has been incorrectly wrapped. To trace a tornado coroutine, '
+                'the New Relic trace decorator must wrap the underlying '
+                'function/generator. For more information see '
+                'https://docs.newrelic.com/docs/agents/python-agent/'
+                'web-frameworks-servers/'
+                'using-trace-decorators-tornado-coroutines')
+
     if is_coroutine_function(wrapped):
         def return_value(trace, fn):
             return CoroutineTrace(fn, trace)

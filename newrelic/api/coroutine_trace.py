@@ -135,8 +135,7 @@ def return_value_fn(wrapped):
         _logger.warning('The tornado coroutine function %r '
                 '(tornado.gen.coroutine) has been incorrectly wrapped. To '
                 'trace a tornado coroutine, the New Relic trace decorator '
-                'must wrap the underlying function/generator. For more '
-                'information see '
+                'must be the innermost decorator. For more information see '
                 'https://docs.newrelic.com/docs/agents/python-agent/'
                 'web-frameworks-servers/'
                 'using-trace-decorators-tornado-coroutines', coro_name)

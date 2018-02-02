@@ -15,6 +15,8 @@ from newrelic.api.external_trace import external_trace
 from newrelic.api.memcache_trace import memcache_trace
 from newrelic.api.message_trace import message_trace
 
+is_pypy = hasattr(sys, 'pypy_version_info')
+
 
 @pytest.mark.parametrize('trace,metric', [
     (functools.partial(function_trace, name='simple_gen'),
@@ -435,8 +437,24 @@ def test_incomplete_coroutine():
         for _ in range(5):
             yield
 
-    for _ in coro():
+    c = coro()
+    for _ in c:
         break
+
+    if is_pypy:
+        # pypy is not guaranteed to delete the coroutine when it goes out of
+        # scope. This code "helps" pypy along. The test above is really just to
+        # verify that incomplete coroutines will "eventually" be cleaned up. In
+        # pypy, unfortunately that means it may not be reported all the time. A
+        # customer would be expected to call gc directly; however, they already
+        # have to handle this case since incomplete generators are well
+        # documented as having problems with pypy's gc.
+
+        # See: http://doc.pypy.org/en/latest/cpython_differences.html#differences-related-to-garbage-collection-strategies
+        # https://bitbucket.org/pypy/pypy/issues/736
+        del c
+        import gc
+        gc.collect()
 
 
 if sys.version_info >= (3, 5):

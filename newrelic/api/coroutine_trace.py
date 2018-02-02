@@ -2,6 +2,7 @@ import inspect
 import logging
 
 from newrelic.common.object_wrapper import ObjectProxy
+from newrelic.common.object_names import callable_name
 
 _logger = logging.getLogger(__name__)
 
@@ -127,13 +128,18 @@ class CoroutineTrace(ObjectProxy):
 
 def return_value_fn(wrapped):
     if _iscoroutinefunction_tornado(wrapped):
-        _logger.warning('A tornado coroutine function (tornado.gen.coroutine) '
-                'has been incorrectly wrapped. To trace a tornado coroutine, '
-                'the New Relic trace decorator must wrap the underlying '
-                'function/generator. For more information see '
+        if hasattr(wrapped, '__wrapped__'):
+            coro_name = callable_name(wrapped.__wrapped__)
+        else:
+            coro_name = callable_name(wrapped)
+        _logger.warning('The tornado coroutine function %r '
+                '(tornado.gen.coroutine) has been incorrectly wrapped. To '
+                'trace a tornado coroutine, the New Relic trace decorator '
+                'must wrap the underlying function/generator. For more '
+                'information see '
                 'https://docs.newrelic.com/docs/agents/python-agent/'
                 'web-frameworks-servers/'
-                'using-trace-decorators-tornado-coroutines')
+                'using-trace-decorators-tornado-coroutines', coro_name)
 
     if is_coroutine_function(wrapped):
         def return_value(trace, fn):

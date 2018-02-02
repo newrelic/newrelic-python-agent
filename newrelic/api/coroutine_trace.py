@@ -104,10 +104,6 @@ class TraceContext(object):
                 if current_trace is not self.trace:
                     txn.current_node = current_trace
 
-        # Delete any remaining references
-        self.trace = None
-        self.current_trace = None
-
 
 class CoroutineTrace(ObjectProxy):
     def __init__(self, wrapped, trace):

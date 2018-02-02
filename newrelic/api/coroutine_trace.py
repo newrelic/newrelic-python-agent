@@ -2,6 +2,7 @@ import inspect
 import logging
 
 from newrelic.common.object_wrapper import ObjectProxy
+from newrelic.common.object_names import callable_name
 
 _logger = logging.getLogger(__name__)
 
@@ -13,6 +14,10 @@ if hasattr(inspect, 'iscoroutinefunction'):
 else:
     def is_coroutine_function(wrapped):
         return inspect.isgeneratorfunction(wrapped)
+
+
+def _iscoroutinefunction_tornado(fn):
+    return hasattr(fn, '__tornado_coroutine__')
 
 
 class TraceContext(object):
@@ -122,6 +127,18 @@ class CoroutineTrace(ObjectProxy):
 
 
 def return_value_fn(wrapped):
+    if _iscoroutinefunction_tornado(wrapped):
+        if hasattr(wrapped, '__wrapped__'):
+            coro_name = callable_name(wrapped.__wrapped__)
+        else:
+            coro_name = callable_name(wrapped)
+        _logger.warning('The tornado coroutine function %r '
+                '(tornado.gen.coroutine) has been incorrectly wrapped. To '
+                'trace a tornado coroutine, the New Relic trace decorator '
+                'must be the innermost decorator. For more information see '
+                'https://docs.newrelic.com/docs/agents/python-agent/'
+                'trace-decorators-tornado-coroutines', coro_name)
+
     if is_coroutine_function(wrapped):
         def return_value(trace, fn):
             return CoroutineTrace(fn, trace)

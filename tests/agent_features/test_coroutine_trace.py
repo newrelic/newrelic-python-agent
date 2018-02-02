@@ -421,5 +421,23 @@ def test_supportability_metric():
         pass
 
 
+@validate_transaction_metrics(
+        'test_incomplete_coroutine',
+        background_task=True,
+        scoped_metrics=[('Function/coro', 1)],
+        rollup_metrics=[('Function/coro', 1)],
+)
+@background_task(name='test_incomplete_coroutine')
+def test_incomplete_coroutine():
+
+    @function_trace(name='coro')
+    def coro():
+        for _ in range(5):
+            yield
+
+    for _ in coro():
+        break
+
+
 if sys.version_info >= (3, 5):
     from _test_async_coroutine_trace import *  # NOQA

@@ -137,8 +137,7 @@ def return_value_fn(wrapped):
                 'trace a tornado coroutine, the New Relic trace decorator '
                 'must be the innermost decorator. For more information see '
                 'https://docs.newrelic.com/docs/agents/python-agent/'
-                'web-frameworks-servers/'
-                'using-trace-decorators-tornado-coroutines', coro_name)
+                'trace-decorators-tornado-coroutines', coro_name)
 
     if is_coroutine_function(wrapped):
         def return_value(trace, fn):

@@ -181,7 +181,9 @@ def capture_harvest_errors():
         if (metric_name.startswith(
                 'Supportability/Python/Harvest/Exception') and
                 not metric_name.endswith('DiscardDataForRequest') and
-                not metric_name.endswith('RetryDataForRequest')):
+                not metric_name.endswith('RetryDataForRequest') and
+                not metric_name.endswith(('newrelic.packages.requests.'
+                        'packages.urllib3.exceptions:ClosedPoolError'))):
             traceback.print_exception(*sys.exc_info())
             exception = AssertionError(
                     'Exception metric created %s' % metric_name)

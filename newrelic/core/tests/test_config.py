@@ -92,31 +92,63 @@ class TestIgnoreStatusCodes(unittest.TestCase):
         newrelic.core.config._parse_ignore_status_codes('!101', values)
         self.assertEqual(values, set([100, 102]))
 
+    def test_remove_single_not_already_in_set(self):
+        values = set([100, 101, 102])
+        newrelic.core.config._parse_ignore_status_codes('!404', values)
+        self.assertEqual(values, set([100, 101, 102]))
+
     def test_remove_single_many(self):
         values = set([100, 101, 102])
         newrelic.core.config._parse_ignore_status_codes('!101 !102', values)
         self.assertEqual(values, set([100]))
 
+    def test_remove_single_many_not_already_in_set(self):
+        values = set([100, 101, 102])
+        newrelic.core.config._parse_ignore_status_codes('!101 !102 !404 !503', values)
+        self.assertEqual(values, set([100]))
+
     def test_remove_range(self):
         values = set(range(100, 106))
         newrelic.core.config._parse_ignore_status_codes('!101-104', values)
-        self.assertEqual(values, set([100,105]))
+        self.assertEqual(values, set([100, 105]))
+
+    def test_remove_range_not_already_in_set(self):
+        values = set(range(100, 106))
+        newrelic.core.config._parse_ignore_status_codes('!102-108', values)
+        self.assertEqual(values, set([100, 101]))
 
     def test_remove_range_many(self):
         values = set(range(100, 106))
         newrelic.core.config._parse_ignore_status_codes('!101-102 !103-104',
                 values)
-        self.assertEqual(values, set([100,105]))
+        self.assertEqual(values, set([100, 105]))
+
+    def test_remove_range_many_not_already_in_set(self):
+        values = set(range(100, 106))
+        newrelic.core.config._parse_ignore_status_codes('!101-102 !103-104 !500-503',
+                values)
+        self.assertEqual(values, set([100, 105]))
 
     def test_remove_range_length_one(self):
         values = set([100, 101, 102])
         newrelic.core.config._parse_ignore_status_codes('!101-101', values)
         self.assertEqual(values, set([100, 102]))
 
+    def test_remove_range_length_one_not_already_in_set(self):
+        values = set([100, 101, 102])
+        newrelic.core.config._parse_ignore_status_codes('!403-404', values)
+        self.assertEqual(values, set([100, 101, 102]))
+
     def test_add_and_remove(self):
         values = set()
         newrelic.core.config._parse_ignore_status_codes(
                 '100-110 200 201 202 !201 !101-109', values)
+        self.assertEqual(values, set([100, 110, 200, 202]))
+
+    def test_add_and_remove_not_already_in_set(self):
+        values = set()
+        newrelic.core.config._parse_ignore_status_codes(
+                '100-110 200 201 202 !201 !101-109 !403-404', values)
         self.assertEqual(values, set([100, 110, 200, 202]))
 
 class TestCreateSettingsSnapshot(unittest.TestCase):

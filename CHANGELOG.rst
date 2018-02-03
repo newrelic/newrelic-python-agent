@@ -25,6 +25,17 @@ unreleased
   When using gRPC on Python 2, gRPC futures would not be garbage collected
   resulting in a memory leak. gRPC futures will now be garbage collected.
 
+- Instrumentation for Dropbox v8.0 and newer caused error log messages
+
+  Dropbox client version 8.0 or higher raised instrumentation errors. These
+  errors did not prevent metrics on Dropbox from being sent. These errors have
+  been removed.
+
+- Values from negated ranges were sometimes added to ignore_status_codes
+
+  Negated status codes not found in the current ignore_status_codes were 
+  added if they were part of a range of values. This issue has been addressed.
+
 
 2.100.0 (2017-01-09)
 --------------------

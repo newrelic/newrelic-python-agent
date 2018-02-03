@@ -24,10 +24,10 @@ use(extensions) {
 
     baseJob("reseed-pr-tests") {
         label('master')
-        repo(repoFull)
         branch('${GIT_REPOSITORY_BRANCH}')
 
         configure {
+            repositoryPR(repoFull)
             description('reseeds only pr-test-multijob')
             logRotator { numToKeep(10) }
             blockOnJobs(['pr-test-multijob', ".*${integTestSuffix}"])

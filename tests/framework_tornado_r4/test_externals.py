@@ -1,13 +1,14 @@
 import io
+import pytest
 import socket
 import threading
+
 from wsgiref.simple_server import make_server
+
 from newrelic.api.background_task import background_task
 
-import pytest
 from testing_support.fixtures import (validate_transaction_metrics,
         override_application_settings)
-
 from testing_support.mock_external_http_server import (
         MockExternalHTTPHResponseHeadersServer)
 
@@ -36,26 +37,31 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True,
         **kwargs):
     import tornado.gen
     import tornado.httpclient
-    import tornado.curl_httpclient
     import tornado.ioloop
 
     class CustomAsyncHTTPClient(tornado.httpclient.AsyncHTTPClient):
         def fetch_impl(self, request, callback):
-            body = str(request.headers).encode('utf-8')
+            out = []
+            for k, v in request.headers.items():
+                out.append('%s: %s' % (k, v))
+            body = '\n'.join(out).encode('utf-8')
             response = tornado.httpclient.HTTPResponse(request=request,
                     code=200, buffer=io.BytesIO(body))
             callback(response)
 
+    cls = tornado.httpclient.AsyncHTTPClient
     if client_cls == 'AsyncHTTPClient':
-        client = tornado.httpclient.AsyncHTTPClient()
+        cls.configure(None)
     elif client_cls == 'CurlAsyncHTTPClient':
-        client = tornado.curl_httpclient.CurlAsyncHTTPClient()
+        cls.configure('tornado.curl_httpclient.CurlAsyncHTTPClient')
     elif client_cls == 'HTTPClient':
-        client = tornado.httpclient.HTTPClient()
+        cls = tornado.httpclient.HTTPClient
     elif client_cls == 'CustomAsyncHTTPClient':
-        client = CustomAsyncHTTPClient()
+        cls.configure(CustomAsyncHTTPClient)
     else:
         raise ValueError("Received unknown client type: %s" % client_cls)
+
+    client = cls(force_instance=True)
 
     uri = 'http://localhost:%s/echo-headers' % port
     if req_type == 'class':
@@ -71,7 +77,7 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True,
 
         futures = [client.fetch(req, raise_error=raise_error, **kwargs)
                 for _ in range(count)]
-        responses = yield tornado.gen.multi(futures)
+        responses = yield tornado.gen.multi_future(futures)
         response = responses[0]
 
         raise tornado.gen.Return(response)
@@ -196,12 +202,19 @@ def test_client_cat_response_processing(cat_enabled, request_type,
     )
     @override_application_settings(_custom_settings)
     def _test():
+        import tornado
         import tornado.httpclient
         try:
             response = make_request(wsgi_port, request_type, client_class,
                     raise_error=raise_error)
         except tornado.httpclient.HTTPError as e:
-            assert raise_error
+            # Tornado 4.1 has a bug in HTTPClient where an error is always
+            # raised even when `raise_error` kwarg is passed.
+            # https://github.com/tornadoweb/tornado/blob/v4.1.0/tornado/httpclient.py#L103
+            _tornado0401_httpclient_throw_bug = (
+                    tornado.version_info < (4, 2) and
+                    client_class == 'HTTPClient')
+            assert raise_error or _tornado0401_httpclient_throw_bug
             response = e.response
         else:
             assert not raise_error
@@ -214,8 +227,8 @@ def test_client_cat_response_processing(cat_enabled, request_type,
     server_thread.join(0.1)
 
 
-@pytest.mark.parametrize('client_class',
-        ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
+@pytest.mark.parametrize('client_class', ['AsyncHTTPClient',
+    'CurlAsyncHTTPClient', 'HTTPClient'])
 @validate_transaction_metrics('make_request',
         background_task=True)
 def test_httpclient_invalid_method(client_class, external):

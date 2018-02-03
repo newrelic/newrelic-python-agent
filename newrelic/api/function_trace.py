@@ -1,5 +1,6 @@
 import functools
 
+from newrelic.api.coroutine_trace import return_value_fn
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
@@ -50,6 +51,8 @@ class FunctionTrace(TimeTrace):
 def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
             params=None, terminal=False, rollup=None):
 
+    return_value = return_value_fn(wrapped)
+
     def dynamic_wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction()
 
@@ -95,9 +98,9 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
         else:
             _params = params
 
-        with FunctionTrace(transaction, _name, _group, _label, _params,
-                terminal, rollup):
-            return wrapped(*args, **kwargs)
+        trace = FunctionTrace(transaction, _name, _group, _label, _params,
+                terminal, rollup)
+        return return_value(trace, lambda: wrapped(*args, **kwargs))
 
     def literal_wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction()
@@ -107,9 +110,9 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
 
         _name = name or callable_name(wrapped)
 
-        with FunctionTrace(transaction, _name, group, label, params,
-                terminal, rollup):
-            return wrapped(*args, **kwargs)
+        trace = FunctionTrace(transaction, _name, group, label, params,
+                terminal, rollup)
+        return return_value(trace, lambda: wrapped(*args, **kwargs))
 
     if (callable(name) or callable(group) or callable(label) or
             callable(params)):

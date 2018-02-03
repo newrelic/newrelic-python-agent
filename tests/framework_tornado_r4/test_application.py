@@ -37,7 +37,7 @@ _tests = [
     ('/init', '_target_application:InitializeHandler.get'),
     ('/on-finish', '_target_application:OnFinishHandler.get'),
 ]
-if sys.version_info >= (3, 5):
+if sys.version_info >= (3, 5) and tornado.version_info >= (4, 3):
     _tests.extend([
         ('/native-simple',
                 '_target_application_native:NativeSimpleHandler.get'),

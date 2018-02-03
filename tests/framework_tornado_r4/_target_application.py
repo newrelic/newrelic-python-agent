@@ -51,7 +51,7 @@ class ProcessCatHeadersHandler(tornado.web.RequestHandler):
 
 class EchoHeaderHandler(tornado.web.RequestHandler):
     def get(self):
-        response = str(self.request.headers).encode('utf-8')
+        response = str(self.request.headers.__dict__).encode('utf-8')
         self.write(response)
 
 
@@ -220,7 +220,7 @@ def make_app():
                 {'terminal_trace': True}),
         (r'/echo-headers', EchoHeaderHandler),
     ]
-    if sys.version_info >= (3, 5):
+    if sys.version_info >= (3, 5) and tornado.version_info >= (4, 3):
         from _target_application_native import (NativeSimpleHandler,
                 NativeWebAsyncHandler)
         handlers.extend([

@@ -2143,6 +2143,9 @@ def _process_module_builtin_defaults():
         _process_module_definition('tornado.httputil',
                 'newrelic.hooks.framework_tornado_r4.httputil',
                 'instrument_tornado_httputil')
+        _process_module_definition('tornado.gen',
+                'newrelic.hooks.framework_tornado_r4.gen',
+                'instrument_tornado_gen')
 
     else:
         _process_module_definition('tornado.wsgi',

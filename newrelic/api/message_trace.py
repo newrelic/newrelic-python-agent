@@ -1,5 +1,6 @@
 import functools
 
+from newrelic.api.coroutine_trace import return_value_fn
 from newrelic.api.cat_header_mixin import CatHeaderMixin
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import current_transaction
@@ -52,6 +53,8 @@ class MessageTrace(TimeTrace, CatHeaderMixin):
 def MessageTraceWrapper(wrapped, library, operation, destination_type,
         destination_name, params={}):
 
+    return_value = return_value_fn(wrapped)
+
     def _nr_message_trace_wrapper_(wrapped, instance, args, kwargs):
         transaction = current_transaction()
 
@@ -90,9 +93,9 @@ def MessageTraceWrapper(wrapped, library, operation, destination_type,
         else:
             _destination_name = destination_name
 
-        with MessageTrace(transaction, _library, _operation,
-                _destination_type, _destination_name, params={}):
-            return wrapped(*args, **kwargs)
+        trace = MessageTrace(transaction, _library, _operation,
+                _destination_type, _destination_name, params={})
+        return return_value(trace, lambda: wrapped(*args, **kwargs))
 
     return FunctionWrapper(wrapped, _nr_message_trace_wrapper_)
 

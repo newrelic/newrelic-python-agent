@@ -1,5 +1,7 @@
 import pytest
+import six
 import sys
+import tornado
 
 from tornado.ioloop import IOLoop
 
@@ -22,12 +24,17 @@ _override_settings = {
     'synthetics.enabled': True,
 }
 
-if (sys.version_info < (3, 4) or
-        IOLoop.configurable_default().__name__ == 'AsyncIOLoop'):
+if IOLoop.configurable_default().__name__ == 'AsyncIOLoop':
+    # This is Python 3 and Tornado v5, only the default is allowable
+    loops = [None]
+elif sys.version_info < (3, 4):
     loops = [None, 'zmq.eventloop.ioloop.ZMQIOLoop']
 else:
     loops = [None, 'tornado.platform.asyncio.AsyncIOLoop',
             'zmq.eventloop.ioloop.ZMQIOLoop']
+
+
+_tornadomaster_py3 = tornado.version_info >= (5, 0) and six.PY3
 
 
 @pytest.fixture(scope='module')
@@ -65,8 +72,16 @@ def test_valid_synthetics_event(app, ioloop):
     _test()
 
 
-@pytest.mark.parametrize('client_class',
-        ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
+client_classes = ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient']
+if _tornadomaster_py3:
+    # tornado v5 on py3 makes it so that using HTTPClient from within a tornado
+    # webapp is impossible. As such, synthetics header forwarding (where
+    # inbound synthetics headers are forwarded through external calls) cannot
+    # occur and therefore don't need to be tested (it will fail if tried)
+    client_classes.remove('HTTPClient')
+
+
+@pytest.mark.parametrize('client_class', client_classes)
 @pytest.mark.parametrize('cat_enabled', [True, False])
 @pytest.mark.parametrize('synthetics_enabled', [True, False])
 @pytest.mark.parametrize('request_type', ['uri', 'class'])

@@ -1,5 +1,6 @@
 import functools
 
+from newrelic.api.coroutine_trace import return_value_fn
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
@@ -98,6 +99,8 @@ def DatastoreTraceWrapper(wrapped, product, target, operation):
 
     """
 
+    return_value = return_value_fn(wrapped)
+
     def _nr_datastore_trace_wrapper_(wrapped, instance, args, kwargs):
         transaction = current_transaction()
 
@@ -128,8 +131,8 @@ def DatastoreTraceWrapper(wrapped, product, target, operation):
         else:
             _operation = operation
 
-        with DatastoreTrace(transaction, _product, _target, _operation):
-            return wrapped(*args, **kwargs)
+        trace = DatastoreTrace(transaction, _product, _target, _operation)
+        return return_value(trace, lambda: wrapped(*args, **kwargs))
 
     return FunctionWrapper(wrapped, _nr_datastore_trace_wrapper_)
 

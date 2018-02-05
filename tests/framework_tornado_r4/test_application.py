@@ -18,8 +18,10 @@ from remove_utilization_tester import remove_utilization_tester
 
 VERSION = '.'.join(map(str, tornado.version_info))
 
-if (sys.version_info < (3, 4) or
-        IOLoop.configurable_default().__name__ == 'AsyncIOLoop'):
+if IOLoop.configurable_default().__name__ == 'AsyncIOLoop':
+    # This is Python 3 and Tornado v5, only the default is allowable
+    loops = [None]
+elif sys.version_info < (3, 4):
     loops = [None, 'zmq.eventloop.ioloop.ZMQIOLoop']
 else:
     loops = [None, 'tornado.platform.asyncio.AsyncIOLoop',
@@ -35,7 +37,7 @@ _tests = [
     ('/init', '_target_application:InitializeHandler.get'),
     ('/on-finish', '_target_application:OnFinishHandler.get'),
 ]
-if sys.version_info >= (3, 5):
+if sys.version_info >= (3, 5) and tornado.version_info >= (4, 3):
     _tests.extend([
         ('/native-simple',
                 '_target_application_native:NativeSimpleHandler.get'),
@@ -104,9 +106,7 @@ def test_simple(app, uri, name, ioloop):
 ])
 @pytest.mark.parametrize('sock_family', [
     socket.AF_INET,
-    # FIXME: this needs to be debugged with
-    # https://newrelic.atlassian.net/browse/PYTHON-2624
-    # socket.AF_INET6
+    socket.AF_INET6,
 ])
 def test_environ(app, method, request_param_setting, sock_family):
 

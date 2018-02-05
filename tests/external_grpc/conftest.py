@@ -1,3 +1,4 @@
+import gc
 import pytest
 import random
 
@@ -39,3 +40,21 @@ def session_initialization(code_coverage, collector_agent_registration):
 @pytest.fixture(scope='function')
 def requires_data_collector(collector_available_fixture):
     pass
+
+
+@pytest.fixture(scope='function')
+def gc_garbage_empty():
+    yield
+
+    # garbage collect until everything is reachable
+    while gc.collect():
+        pass
+
+    from grpc._channel import _Rendezvous
+    rendezvous_stored = sum(1 for o in gc.get_objects()
+            if hasattr(o, '__class__') and isinstance(o, _Rendezvous))
+
+    assert rendezvous_stored == 0
+
+    # make sure that even python knows there isn't any garbage remaining
+    assert not gc.garbage

@@ -14,6 +14,13 @@ try {
    mostRecentOnly = "false"
 }
 
+String targetBranch
+try {
+    targetBranch = "origin/${ghprbTargetBranch}"
+} catch (all) {
+    targetBranch = "origin/develop"
+}
+
 def getPacknsendTests (String workspace, String testSuffix, String mostRecentOnly) {
     Integer maxEnvsPerContainer = 14
 
@@ -85,7 +92,7 @@ def getUnitTestEnvs = {
     List<String> unitTestEnvs = new String(stdout).split('\n')
 }
 
-def getChangedTests (String dirs) {
+def getChangedTests (String dirs, String targetBranch) {
 
     // Get list of directories which have python files that import changed files.
     //
@@ -100,6 +107,7 @@ def getChangedTests (String dirs) {
     def proc = (
         "/usr/local/bin/python3.6 ${WORKSPACE}/jenkins/scripts/extract_changed.py " +
             "-nr_path ${WORKSPACE} " +
+            "-branch ${targetBranch} " +
             "${dirs}"
     )
     println("Running ${proc}")
@@ -125,9 +133,8 @@ def getChangedTests (String dirs) {
 
 use(extensions) {
     def packnsendTests = getPacknsendTests("${WORKSPACE}", integrationSuffix, mostRecentOnly)
-    def changedIntegrationTests = getChangedTests("${WORKSPACE}/tests/*")
-    def changedUnitTests = getChangedTests(
-            "newrelic/*/tests newrelic/tests")
+    def changedIntegrationTests = getChangedTests("${WORKSPACE}/tests/*", targetBranch)
+    def changedUnitTests = getChangedTests("newrelic/*/tests newrelic/tests", targetBranch)
     def unitTestEnvs = getUnitTestEnvs()
 
     ['pullrequest', 'manual'].each { jobType ->
@@ -135,7 +142,11 @@ use(extensions) {
             description('Real multijob which runs the actual integration tests.')
             logRotator { numToKeep(10) }
             label('py-ec2-linux')
-            repository(repoFull, '${GIT_REPOSITORY_BRANCH}')
+            if (jobType == 'pullrequest') {
+                repositoryPR(repoFull)
+            } else {
+                repository(repoFull, '${GIT_REPOSITORY_BRANCH}')
+            }
 
             parameters {
                 stringParam('GIT_REPOSITORY_BRANCH', 'develop',
@@ -189,10 +200,9 @@ use(extensions) {
     packnsendTests.each { testName, toxPath, testEnvs, composePath ->
         baseJob(testName) {
             label('py-ec2-linux')
-            repo(repoFull)
-            branch('${GIT_REPOSITORY_BRANCH}')
 
             configure {
+                repositoryPR(repoFull)
                 description("Run tox file ${toxPath}")
                 logRotator { numToKeep(10) }
                 blockOnJobs('.*-Reset-Nodes')
@@ -257,7 +267,7 @@ use(extensions) {
             steps {
                 phase('unit-tests', 'COMPLETED') {
 
-                    job("devpi-pre-build-hook_${unitSuffix}") {
+                    job("cache-pre-build-hook_${unitSuffix}") {
                         killPhaseCondition('NEVER')
                     }
                     job("build.sh_${unitSuffix}") {

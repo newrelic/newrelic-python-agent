@@ -20,7 +20,6 @@ PYPIRC=$GIT_REPO_ROOT/deploy/.pypirc
 
 ARTIFACTORY=https://pdx-artifacts.pdx.vm.datanerd.us
 ARTIFACTORY_PYPI_URL=$ARTIFACTORY/simple/pypi-newrelic
-ARTIFACTORY_USER=python-agent
 
 DOWNLOAD_USER=download
 DOWNLOAD_HOSTS="chi-www-1 chi-www-2"

@@ -104,8 +104,7 @@ use(extensions) {
 
             wrappers {
                 credentialsBinding {
-                    string('ARTIFACTORY_PASSWORD',
-                           'febb789c-eac3-4251-9428-b540d3f2a8b3')
+                    usernamePassword('ARTIFACTORY_USER', 'ARTIFACTORY_PASSWORD', 'artifactory-jenkins-build-bot')
                 }
             }
 

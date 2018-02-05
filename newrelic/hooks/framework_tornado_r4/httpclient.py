@@ -2,7 +2,8 @@ import sys
 
 from newrelic.api.transaction import current_transaction
 from newrelic.api.external_trace import ExternalTrace
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.object_wrapper import (wrap_function_wrapper,
+        function_wrapper)
 
 
 def _prepare_request(*args, **kwargs):
@@ -20,6 +21,41 @@ def _prepare_request(*args, **kwargs):
         request = HTTPRequest(url, **_kwargs)
 
     return request, callback, raise_error
+
+
+def wrap_handle_response(raise_error, trace):
+    @function_wrapper
+    def wrapper(wrapped, instance, args, kwargs):
+        result = wrapped(*args, **kwargs)
+
+        def _bind_params(response, *args, **kwargs):
+            return response
+
+        response = _bind_params(*args, **kwargs)
+
+        # Process CAT response headers
+        trace.process_response_headers(response.headers.get_all())
+
+        trace.__exit__(None, None, None)
+
+        return result
+    return wrapper
+
+
+@function_wrapper
+def wrap_fetch_impl(wrapped, instance, args, kwargs):
+    _nr_args = getattr(instance, '_nr_args', None)
+
+    if not _nr_args:
+        return wrapped(*args, **kwargs)
+
+    def _bind_params(request, callback, *args, **kwargs):
+        return request, callback
+
+    request, handle_response = _bind_params(*args, **kwargs)
+    wrapped_handle_response = wrap_handle_response(*_nr_args)(handle_response)
+
+    return wrapped(request, wrapped_handle_response)
 
 
 def _nr_wrapper_httpclient_AsyncHTTPClient_fetch_(
@@ -43,19 +79,15 @@ def _nr_wrapper_httpclient_AsyncHTTPClient_fetch_(
             continue
         req.headers[header_name] = header_value
 
+    # wrap the fetch_impl on the unbound method
+    instance_type = type(instance)
+    if not hasattr(instance_type, '_nr_wrapped'):
+        instance_type.fetch_impl = wrap_fetch_impl(instance_type.fetch_impl)
+        instance_type._nr_wrapped = True
+
     trace = ExternalTrace(transaction,
             'tornado.httpclient', req.url, req.method.upper())
-
-    def external_trace_done(future):
-        exc_info = future.exc_info()
-        if exc_info:
-            trace.__exit__(*exc_info)
-        else:
-            response = future.result()
-            # Process CAT response headers
-            trace.process_response_headers(response.headers.get_all())
-            trace.__exit__(None, None, None)
-
+    instance._nr_args = (_raise_error, trace)
     trace.__enter__()
     if trace.transaction and trace.transaction.current_node is trace:
         # externals should not have children
@@ -63,7 +95,6 @@ def _nr_wrapper_httpclient_AsyncHTTPClient_fetch_(
 
     try:
         future = wrapped(req, _cb, _raise_error)
-        future.add_done_callback(external_trace_done)
     except Exception:
         trace.__exit__(*sys.exc_info())
         raise

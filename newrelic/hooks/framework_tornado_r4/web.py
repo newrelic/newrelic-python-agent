@@ -8,6 +8,8 @@ from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.core.agent import remove_thread_utilization
 
+from newrelic.hooks.framework_tornado_r4.routing import _wrap_handlers
+
 _logger = logging.getLogger(__name__)
 _VERSION = None
 
@@ -20,6 +22,8 @@ def _store_version_info():
         _VERSION = '.'.join(map(str, tornado.version_info))
     except:
         pass
+
+    return tornado.version_info
 
 
 def _get_environ(request):
@@ -34,7 +38,7 @@ def _get_environ(request):
         # We only want to record port for ipv4 and ipv6 socket families.
         # Unix socket will just return a string instead of a tuple, so
         # skip this.
-        sockname = request.server_connection.stream.socket.getsockname()
+        sockname = request.connection.stream.socket.getsockname()
         if isinstance(sockname, tuple):
             environ['SERVER_PORT'] = sockname[1]
     except:
@@ -129,6 +133,12 @@ def _nr_process_response(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
+def _nr_application_add_handlers(wrapped, instance, args, kwargs):
+    result = wrapped(*args, **kwargs)
+    _wrap_handlers(args)
+    return result
+
+
 def instrument_tornado_web(module):
 
     # Thread utilization data is meaningless in a tornado app. Remove it here,
@@ -145,4 +155,8 @@ def instrument_tornado_web(module):
     wrap_function_wrapper(module, 'RequestHandler.flush',
             _nr_process_response)
 
-    _store_version_info()
+    version_info = _store_version_info()
+
+    if version_info and version_info < (4, 5):
+        wrap_function_wrapper(module, 'Application.add_handlers',
+                _nr_application_add_handlers)

@@ -1,7 +1,7 @@
 import pytest
 import socket
 
-from testing_support.fixtures import (code_coverage_fixture,
+from testing_support.fixtures import (code_coverage_fixture,  # noqa
         collector_agent_registration_fixture, collector_available_fixture)
 
 _default_settings = {
@@ -44,7 +44,7 @@ def app(request):
             if ioloop is None:
                 ioloop = PollIOLoop.configurable_default()
 
-    def _bind_unused_port(reuse_port=False):
+    def _bind_unused_port():
         from tornado import netutil
         # For tests that use the sock_family fixture, this allows
         # us to make sure that socket is correctly set-up and bound.
@@ -58,8 +58,8 @@ def app(request):
         else:
             address = '::1'
 
-        sock = netutil.bind_sockets(None, address=address, family=sock_family,
-                                    reuse_port=reuse_port)[0]
+        sock = netutil.bind_sockets(None, address=address,
+                family=sock_family)[0]
         port = sock.getsockname()[1]
         return sock, port
 
@@ -82,11 +82,16 @@ def app(request):
 
         def get_new_ioloop(self):
             IOLoop.configure(ioloop)
-            return IOLoop.instance()
+            return IOLoop()
 
         def get_app(self):
             from _target_application import make_app
             return make_app()
+
+        def get_url(self, path):
+            # Allow for testing ipv6 by using localhost instead of 127.0.0.1
+            return '%s://localhost:%s%s' % (self.get_protocol(),
+                    self.get_http_port(), path)
 
         def runTest(self, *args, **kwargs):
             pass

@@ -2,10 +2,11 @@
 
 # Upload source distribution package in `dist` directory to Artifactory.
 #
-# If running locally, you'll need to set two environment variables:
+# If running locally, you'll need to set three environment variables:
 #
-#   1. ARTIFACTORY_PASSWORD
-#   2. AGENT_VERSION
+#   1. ARTIFACTORY_USER
+#   2. ARTIFACTORY_PASSWORD
+#   3. AGENT_VERSION
 #
 # Requires: git, md5sum, and curl.
 
@@ -25,6 +26,13 @@ echo "Checking environment variables."
 # Source common variables
 
 . ./deploy/common.sh
+
+if test x"$ARTIFACTORY_USER" = x""
+then
+    echo
+    echo "ERROR: ARTIFACTORY_USER environment variable is not set."
+    exit 1
+fi
 
 if test x"$ARTIFACTORY_PASSWORD" = x""
 then

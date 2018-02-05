@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+
+# Seed the pip cache with all of the packages that the tox tests
+# need. This should eliminate the need to download any packages from PyPI,
+# greatly speeding up our tests.
+
+# Seeding the cache is done by downloading all packages in a virtualenv.
+# Downloading to a throwaway directory is preferable to installing and
+# uninstalling, since it is faster. To make it possible to download multiple
+# versions of the same package, it's necessary to delete and recreate the
+# throwaway directory between installs.
+
+set -e
+
+function create_venvs {
+    virtualenv /venvs/py26 -p /usr/bin/python2.6
+    virtualenv /venvs/py27 -p /usr/bin/python2.7
+    virtualenv /venvs/py33 -p /usr/bin/python3.3
+    virtualenv /venvs/py34 -p /usr/bin/python3.4
+    virtualenv /venvs/py35 -p /usr/bin/python3.5
+    virtualenv /venvs/py36 -p /usr/bin/python3.6
+    virtualenv /venvs/pypy -p /usr/local/bin/pypy
+    virtualenv /venvs/pypy3 -p /usr/local/bin/pypy3
+}
+
+create_venvs
+
+for venv in $(find /venvs -maxdepth 1 -type d | grep -v "/venvs$"); do
+    $venv/bin/pip install -U "pip<=9.0.1"
+
+    # This downgrade of wheel is unfortunately only required for py26 since the
+    # wheel package abruptly dropped support for py26 (in a way that breaks
+    # py26 builds)
+    #
+    # If py26 is ever deprecated, we should remove this downgrade.
+    $venv/bin/pip install -U "wheel<0.30.0"
+done
+
+for PY_FULL in $(ls -1 /venvs | grep -v "^pypy")
+do
+    echo "PY_FULL: $PY_FULL"
+    while read PACKAGE || test -n "$PACKAGE"
+    do
+        # Some packages must be installed in source format only
+        echo "$PY_FULL: $PACKAGE downloading"
+        /venvs/$PY_FULL/bin/pip download \
+            -d /downloads \
+            --cache-dir=/cache \
+            --no-binary :all: \
+            $PACKAGE ||
+        echo "$PY_FULL: $PACKAGE download failed -- ignoring"
+
+        # Clean out /downloads, so it's possible to install multiple versions
+        # of the same package
+
+        rm -rf /downloads/*
+    done < /home/guest/package-lists/packages-source.txt
+
+    while read PACKAGE || test -n "$PACKAGE"
+    do
+        echo "$PY_FULL: $PACKAGE building"
+        /venvs/$PY_FULL/bin/pip install -U \
+            --cache-dir=/cache \
+            $PACKAGE ||
+        echo "$PY_FULL: $PACKAGE failed to build -- ignoring"
+    done < /home/guest/package-lists/packages-compiled.txt
+done
+
+rm -rf /downloads/*
+rm -rf /venvs/*
+
+create_venvs

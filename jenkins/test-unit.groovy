@@ -45,7 +45,7 @@ use(extensions) {
                 repository(repoFull, jobType)
                 triggers {
                     // run daily on cron
-                    cron('H 0 * * 1-5')
+                    cron('H 2 * * 1-5')
                 }
                 gitBranch = jobType
             } else if (jobType == 'master') {
@@ -61,7 +61,7 @@ use(extensions) {
                 repository(repoFull, 'develop')
                 triggers {
                     // run daily on cron
-                    cron('H 2 * * 1-5')
+                    cron('H 4 * * 1-5')
                 }
             }
 
@@ -108,7 +108,7 @@ use(extensions) {
 
                     steps {
                         phase('unit-tests', 'COMPLETED') {
-                            job("devpi-pre-build-hook_${testSuffix}") {
+                            job("cache-pre-build-hook_${testSuffix}") {
                                 killPhaseCondition('NEVER')
                             }
                             job("build.sh_${testSuffix}") {
@@ -142,10 +142,18 @@ use(extensions) {
     unitTestEnvs.each { testEnv ->
         baseJob("tests.sh-${testEnv}_${testSuffix}") {
             label('py-ec2-linux')
-            repo(repoFull)
-            branch('${GIT_REPOSITORY_BRANCH}')
 
             configure {
+                scm {
+                    git {
+                        remote {
+                            datanerd repoFull
+                            name 'origin'
+                            refspec '+refs/pull/*:refs/remotes/origin/pr/* +refs/heads/*:refs/remotes/origin/*'
+                        }
+                        branch('${GIT_REPOSITORY_BRANCH}')
+                    }
+                }
                 description("Runs ./tests.sh with the ${testEnv} environment")
                 logRotator { numToKeep(10) }
                 blockOnJobs('.*-Reset-Nodes')
@@ -173,13 +181,21 @@ use(extensions) {
         }
     }
 
-    baseJob("devpi-pre-build-hook_${testSuffix}") {
+    baseJob("cache-pre-build-hook_${testSuffix}") {
         label('py-ec2-linux')
-        repo(repoFull)
-        branch('${GIT_REPOSITORY_BRANCH}')
 
         configure {
-            description('Run the devpi pre-build hook and test the parseconfig.py script.')
+            scm {
+                git {
+                    remote {
+                        datanerd repoFull
+                        name 'origin'
+                        refspec '+refs/pull/*:refs/remotes/origin/pr/* +refs/heads/*:refs/remotes/origin/*'
+                    }
+                    branch('${GIT_REPOSITORY_BRANCH}')
+                }
+            }
+            description('Run the cache pre-build hook.')
             logRotator { numToKeep(10) }
             blockOnJobs('.*-Reset-Nodes')
             concurrentBuild true
@@ -199,18 +215,25 @@ use(extensions) {
             }
 
             steps {
-                shell('./docker/devpi/pre-build.sh')
-                shell('./docker/packnsend run python ./docker/devpi/test_parseconfig.py')
+                shell('./docker/cache/pre-build.sh')
             }
         }
     }
 
     baseJob("build.sh_${testSuffix}") {
         label('py-ec2-linux')
-        repo(repoFull)
-        branch('${GIT_REPOSITORY_BRANCH}')
 
         configure {
+            scm {
+                git {
+                    remote {
+                        datanerd repoFull
+                        name 'origin'
+                        refspec '+refs/pull/*:refs/remotes/origin/pr/* +refs/heads/*:refs/remotes/origin/*'
+                    }
+                    branch('${GIT_REPOSITORY_BRANCH}')
+                }
+            }
             description('Run ./build.sh')
             logRotator { numToKeep(10) }
             concurrentBuild true

@@ -294,13 +294,13 @@ def _parse_ignore_status_codes(value, target):
             values = set(range(int(start), int(end) + 1))
 
             if negate:
-                target.symmetric_difference_update(values)
+                target.difference_update(values)
             else:
                 target.update(values)
 
         except ValueError:
             if negate:
-                target.remove(int(item))
+                target.discard(int(item))
             else:
                 target.add(int(item))
     return target

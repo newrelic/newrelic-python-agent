@@ -86,4 +86,4 @@ New Relic for Python is free-to-use, proprietary software. Please see the LICENS
 Copyright
 ---------
 
-Copyright (c) 2010-2017 New Relic, Inc. All rights reserved.
+Copyright (c) 2010-2018 New Relic, Inc. All rights reserved.

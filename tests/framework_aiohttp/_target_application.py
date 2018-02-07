@@ -86,25 +86,31 @@ def websocket_handler(request):
 
 
 @asyncio.coroutine
-def fetch(method, url):
-    with ClientSession(raise_for_status=True) as session:
+def fetch(method, url, loop):
+    with ClientSession(loop=loop) as session:
         _method = getattr(session, method)
-        response = yield from asyncio.wait_for(_method(url), timeout=None)
+        response = yield from asyncio.wait_for(
+                _method(url), timeout=None, loop=loop)
         text = yield from response.text()
     return text
 
 
 @asyncio.coroutine
-def fetch_multiple(method):
+def fetch_multiple(method, loop):
     URLS = ['https://example.com', 'https://example.org']
-    coros = [fetch(method, url) for url in URLS]
-    responses = yield from asyncio.gather(*coros)
+    coros = [fetch(method, url, loop) for url in URLS]
+    responses = yield from asyncio.gather(*coros, loop=loop)
     return '\n'.join(responses)
 
 
 @asyncio.coroutine
 def multi_fetch_handler(request):
-    responses = yield from fetch_multiple('get')
+    try:
+        loop = request.loop
+    except AttributeError:
+        loop = request.task._loop
+
+    responses = yield from fetch_multiple('get', loop)
     return web.Response(text=responses, content_type='text/html')
 
 

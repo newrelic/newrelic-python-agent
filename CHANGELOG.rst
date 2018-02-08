@@ -1,6 +1,11 @@
 unreleased
 ----------
 
+- Disabling SSL connections to New Relic has been deprecated
+  
+  SSL connections are enabled by default. In a future release, the option to
+  disable SSL will be removed.
+
 2.102.0 (2018-02-05)
 --------------------
 

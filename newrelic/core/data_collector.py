@@ -63,7 +63,7 @@ def collector_url(server=None):
 
     url = '%s://%s/agent_listener/invoke_raw_method'
 
-    scheme = settings.ssl and 'https' or 'http'
+    scheme = 'https'
 
     if not server or settings.port:
         # When pulling the port from agent configuration it should only be
@@ -86,18 +86,12 @@ def proxy_server():
 
     """
 
-    # For backward compatibility from when using requests prior to 2.0.0,
-    # we take the proxy_scheme as not being set to mean that we should
-    # derive it from whether SSL is being used. This will still be overridden
-    # if the proxy scheme was defined as part of proxy URL in proxy_host.
-
     settings = global_settings()
 
-    ssl = settings.ssl
     proxy_scheme = settings.proxy_scheme
 
     if proxy_scheme is None:
-        proxy_scheme = ssl and 'https' or 'http'
+        proxy_scheme = 'https'
 
     return proxy_details(proxy_scheme, settings.proxy_host,
             settings.proxy_port, settings.proxy_user, settings.proxy_pass)
@@ -108,11 +102,7 @@ def connection_type(proxies):
 
     """
 
-    settings = global_settings()
-
-    ssl = settings.ssl
-
-    request_scheme = ssl and 'https' or 'http'
+    request_scheme = 'https'
 
     if proxies is None:
         return 'direct/%s' % request_scheme

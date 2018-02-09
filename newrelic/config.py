@@ -296,8 +296,6 @@ def _process_configuration(section):
                      'get', None)
     _process_setting(section, 'port',
                      'getint', None)
-    _process_setting(section, 'ssl',
-                     'getboolean', None)
     _process_setting(section, 'proxy_scheme',
                      'get', None)
     _process_setting(section, 'proxy_host',
@@ -791,10 +789,6 @@ def apply_local_high_security_mode_setting(settings):
     log_template = ('Overriding setting for %r because High '
                     'Security Mode has been activated. The original '
                     'setting was %r. The new setting is %r.')
-
-    if not settings.ssl:
-        settings.ssl = True
-        _logger.info(log_template, 'ssl', False, True)
 
     # capture_params is a deprecated setting for users, and has three
     # possible values:

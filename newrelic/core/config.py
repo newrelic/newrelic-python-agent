@@ -12,6 +12,7 @@ the global defaults or those from local agent configuration.
 import os
 import logging
 import copy
+import re
 
 from newrelic.core.attribute_filter import AttributeFilter
 
@@ -316,6 +317,19 @@ def _parse_attributes(s):
     return valid
 
 
+def default_host(license_key):
+    if not license_key:
+        return 'collector.newrelic.com'
+
+    region_aware_match = re.match('^(.+?)x', license_key)
+    if not region_aware_match:
+        return 'collector.newrelic.com'
+
+    region = region_aware_match.group(1)
+    host = 'collector.' + region + '.nr-data.net'
+    return host
+
+
 _LOG_LEVEL = {
     'CRITICAL': logging.CRITICAL,
     'ERROR': logging.ERROR,
@@ -340,7 +354,8 @@ _settings.api_key = os.environ.get('NEW_RELIC_API_KEY', None)
 
 _settings.ssl = _environ_as_bool('NEW_RELIC_SSL', True)
 
-_settings.host = os.environ.get('NEW_RELIC_HOST', 'collector.newrelic.com')
+_settings.host = os.environ.get('NEW_RELIC_HOST',
+        default_host(_settings.license_key))
 _settings.port = int(os.environ.get('NEW_RELIC_PORT', '0'))
 
 _settings.proxy_scheme = os.environ.get('NEW_RELIC_PROXY_SCHEME', None)

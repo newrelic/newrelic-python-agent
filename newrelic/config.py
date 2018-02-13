@@ -13,7 +13,7 @@ from newrelic.packages import six
 from newrelic.common.log_file import initialize_logging
 from newrelic.common.object_names import expand_builtin_exception_name
 from newrelic.core.config import (Settings, apply_config_setting,
-        fetch_config_setting)
+        fetch_config_setting, default_host)
 
 import newrelic.core.agent
 import newrelic.core.config
@@ -178,6 +178,15 @@ def _map_inc_excl_attributes(s):
     return newrelic.core.config._parse_attributes(s)
 
 
+def _map_default_host_value(license_key):
+    # If the license key is region aware, we should override the default host
+    # to be the region aware host
+    _default_host = default_host(license_key)
+    _settings.host = os.environ.get('NEW_RELIC_HOST', _default_host)
+
+    return license_key
+
+
 # Processing of a single setting from configuration file.
 
 def _raise_configuration_error(section, option=None):
@@ -279,7 +288,7 @@ def _process_configuration(section):
     _process_setting(section, 'labels',
                      'get', _map_labels)
     _process_setting(section, 'license_key',
-                     'get', None)
+                     'get', _map_default_host_value)
     _process_setting(section, 'api_key',
                      'get', None)
     _process_setting(section, 'host',

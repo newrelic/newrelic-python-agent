@@ -15,9 +15,9 @@ def future_arg(request):
     @asyncio.coroutine
     def _coro():
         try:
-            for _ in range(2):
-                yield
-                assert current_transaction() is not None
+            assert current_transaction() is not None
+            yield
+            assert current_transaction() is not None
         finally:
             loop.stop()
 

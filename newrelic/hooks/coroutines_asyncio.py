@@ -26,8 +26,9 @@ def instrument_asyncio_tasks(module):
     if not hasattr(module, 'coroutines'):
         return
 
-    if not hasattr(module, 'ensure_future'):
-        return
-
-    wrap_function_wrapper(module, 'ensure_future',
-            wrap_ensure_future(module.coroutines))
+    if hasattr(module, 'ensure_future'):
+        wrap_function_wrapper(module, 'ensure_future',
+                wrap_ensure_future(module.coroutines))
+    elif hasattr(module, 'async'):
+        wrap_function_wrapper(module, 'async',
+                wrap_ensure_future(module.coroutines))

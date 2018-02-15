@@ -2,7 +2,6 @@ import os
 import sys
 import logging
 import traceback
-import warnings
 
 try:
     import ConfigParser
@@ -296,6 +295,8 @@ def _process_configuration(section):
                      'get', None)
     _process_setting(section, 'port',
                      'getint', None)
+    _process_setting(section, 'ssl',
+                     'getboolean', None)
     _process_setting(section, 'proxy_scheme',
                      'get', None)
     _process_setting(section, 'proxy_host',
@@ -764,16 +765,10 @@ def translate_deprecated_settings(settings, cached_settings):
                 'request parameters, add "request.parameters.*" to '
                 'attributes.exclude.')
 
-    # Log a DeprecationWarning for customers who have disabled SSL. Disabling
-    # SSL will be disallowed in a future agent version.
     if not settings.ssl:
-        msg = ('Disabling SSL will be disallowed in a future agent version. '
-               'Please enable ssl by removing ssl=false from your New Relic '
-               'configuration file or by removing the NEW_RELIC_SSL '
-               'environment variable from the application environment.')
-
-        warnings.warn(msg, DeprecationWarning, stacklevel=2)
-        _logger.warning(msg)
+        settings.ssl = True
+        _logger.info('Ignoring deprecated setting: ssl. Enabling ssl is now '
+                'mandatory. Setting ssl=true.')
 
     return settings
 

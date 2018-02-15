@@ -48,6 +48,10 @@ if sys.version_info >= (3, 5):
 def test_ensure_future(explicit_loop, arg_type, future_arg):
     # Avoid importing asyncio until after the instrumentation hooks are set up
     import asyncio
+    try:
+        from asyncio import ensure_future
+    except ImportError:
+        from asyncio import async as ensure_future
 
     loop = asyncio.get_event_loop()
 
@@ -57,14 +61,14 @@ def test_ensure_future(explicit_loop, arg_type, future_arg):
         loop.stop()
         raise TimeoutError("Test timed out")
 
-    timeout_future = asyncio.ensure_future(timeout())
+    timeout_future = ensure_future(timeout())
 
     kwargs = {}
     if explicit_loop:
         kwargs['loop'] = loop
 
     # Call ensure future prior to dropping the transaction
-    task = asyncio.ensure_future(future_arg(), **kwargs)
+    task = ensure_future(future_arg(), **kwargs)
 
     # Drop the transaction explicitly.
     txn = current_transaction()

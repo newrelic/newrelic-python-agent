@@ -13,11 +13,11 @@ def future_arg(request):
     loop = asyncio.get_event_loop()
 
     @asyncio.coroutine
-    def _coro():
+    def _coro(txn):
         try:
-            assert current_transaction() is not None
+            assert current_transaction() is txn
             yield
-            assert current_transaction() is not None
+            assert current_transaction() is txn
         finally:
             loop.stop()
 
@@ -27,7 +27,7 @@ def future_arg(request):
         future = asyncio.Future()
         future.add_done_callback(lambda f: loop.stop())
         future.set_result(True)
-        return lambda: future
+        return lambda txn: future
     elif arg_type == 'coroutine':
         return _coro
     elif arg_type == 'awaitable':
@@ -44,49 +44,59 @@ if sys.version_info >= (3, 5):
 
 @pytest.mark.parametrize('arg_type', arg_types)
 @pytest.mark.parametrize('explicit_loop', [True, False])
-@background_task(name='test_ensure_future')
-def test_ensure_future(explicit_loop, arg_type, future_arg):
-    # Avoid importing asyncio until after the instrumentation hooks are set up
-    import asyncio
-    try:
-        from asyncio import ensure_future
-    except ImportError:
-        from asyncio import async as ensure_future
+@pytest.mark.parametrize('in_transaction', [True, False])
+def test_ensure_future(explicit_loop, arg_type, future_arg, in_transaction):
+    def _test():
+        # Avoid importing asyncio until after the instrumentation hooks are set
+        # up
+        import asyncio
+        if hasattr(asyncio, 'ensure_future'):
+            ensure_future = asyncio.ensure_future
+        else:
+            ensure_future = asyncio.async
 
-    loop = asyncio.get_event_loop()
-
-    @asyncio.coroutine
-    def timeout():
-        yield from asyncio.sleep(2.0)
-        loop.stop()
-        raise TimeoutError("Test timed out")
-
-    timeout_future = ensure_future(timeout())
-
-    kwargs = {}
-    if explicit_loop:
-        kwargs['loop'] = loop
-
-    # Call ensure future prior to dropping the transaction
-    task = ensure_future(future_arg(), **kwargs)
-
-    # Drop the transaction explicitly.
-    txn = current_transaction()
-    txn.drop_transaction()
-
-    try:
         loop = asyncio.get_event_loop()
 
-        # This should run the coroutine until it calls stop
-        loop.run_forever()
+        @asyncio.coroutine
+        def timeout():
+            yield from asyncio.sleep(2.0)
+            loop.stop()
+            raise TimeoutError("Test timed out")
 
-        # Cancel the timeout
-        timeout_future.cancel()
+        timeout_future = ensure_future(timeout())
 
-        # Cause any exception to be reraised here
-        task.result()
-    finally:
-        # Put the transaction back prior to transaction __exit__
-        # Since transaction __exit__ calls drop_transaction, the transaction is
-        # expected to be in the transaction cache
-        txn.save_transaction()
+        kwargs = {}
+        if explicit_loop:
+            kwargs['loop'] = loop
+
+        txn = current_transaction()
+
+        # Call ensure future prior to dropping the transaction
+        task = ensure_future(future_arg(txn), **kwargs)
+
+        # Drop the transaction explicitly.
+        if in_transaction:
+            txn.drop_transaction()
+
+        try:
+            loop = asyncio.get_event_loop()
+
+            # This should run the coroutine until it calls stop
+            loop.run_forever()
+
+            # Cancel the timeout
+            timeout_future.cancel()
+
+            # Cause any exception to be reraised here
+            task.result()
+        finally:
+            # Put the transaction back prior to transaction __exit__
+            # Since transaction __exit__ calls drop_transaction, the
+            # transaction is expected to be in the transaction cache
+            if in_transaction:
+                txn.save_transaction()
+
+    if in_transaction:
+        background_task(name='test_ensure_future')(_test)()
+    else:
+        _test()

@@ -1928,6 +1928,10 @@ def _process_module_definition(target, module, function='instrument'):
 
 
 def _process_module_builtin_defaults():
+    _process_module_definition('asyncio.tasks',
+            'newrelic.hooks.coroutines_asyncio',
+            'instrument_asyncio_tasks')
+
     _process_module_definition('django.core.handlers.base',
             'newrelic.hooks.framework_django',
             'instrument_django_core_handlers_base')

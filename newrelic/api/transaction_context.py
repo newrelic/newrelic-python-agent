@@ -1,4 +1,5 @@
 from newrelic.api.transaction import current_transaction
+from newrelic.common.object_wrapper import ObjectProxy
 
 
 class TransactionContext(object):
@@ -24,3 +25,35 @@ class TransactionContext(object):
 
         if self.restore_transaction:
             self.restore_transaction.save_transaction()
+
+
+class CoroutineTransactionContext(ObjectProxy):
+    def __init__(self, coro, transaction):
+
+        self._nr_transaction_context = TransactionContext(transaction)
+
+        # Wrap the coroutine
+        super(CoroutineTransactionContext, self).__init__(coro)
+
+    def __iter__(self):
+        return self
+
+    def __await__(self):
+        return self
+
+    def __next__(self):
+        return self.send(None)
+
+    next = __next__
+
+    def send(self, value):
+        with self._nr_transaction_context:
+            return self.__wrapped__.send(value)
+
+    def throw(self, *args, **kwargs):
+        with self._nr_transaction_context:
+            return self.__wrapped__.throw(*args, **kwargs)
+
+    def close(self):
+        with self._nr_transaction_context:
+            return self.__wrapped__.close()

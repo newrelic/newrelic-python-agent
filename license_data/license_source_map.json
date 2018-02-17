@@ -293,6 +293,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/tests/test_transaction_context_await.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/tests/html_insertion/attachment_mentioned_in_inline.html": {
         "hash": "n/a",
         "libraries": [
@@ -1278,6 +1284,12 @@
         ]
     },
     "newrelic/hooks/component_tastypie.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/coroutines_asyncio.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

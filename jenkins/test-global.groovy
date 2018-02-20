@@ -25,6 +25,7 @@ use(extensions) {
     baseJob("reseed-pr-tests") {
         label('master')
         branch('${GIT_REPOSITORY_BRANCH}')
+        wipeOutWorkspace(true)
 
         configure {
             repositoryPR(repoFull)

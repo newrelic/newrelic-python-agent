@@ -1,6 +1,22 @@
 unreleased
 ----------
 
+2.104.0 (2018-02-20)
+--------------------
+
+- Using asyncio.gather or asyncio.ensure_future now tracks transaction context.
+
+  Prior to this release, using asyncio.gather or asyncio.ensure_future may
+  result in certain traces (such as external calls) not being reported in the
+  transaction. Traces scheduled with asyncio.gather or asyncio.ensure_future
+  from within the context of a transaction should now be properly attributed to
+  the transaction.
+
+- Disabling SSL connections to New Relic has been deprecated
+  
+  SSL connections are enabled by default. In a future release, the option to
+  disable SSL will be removed.
+
 2.102.0 (2018-02-05)
 --------------------
 

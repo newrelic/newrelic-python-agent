@@ -1,5 +1,5 @@
 import asyncio
-from aiohttp import web, WSMsgType
+from aiohttp import web, WSMsgType, ClientSession
 
 
 @asyncio.coroutine
@@ -85,6 +85,35 @@ def websocket_handler(request):
     return ws
 
 
+@asyncio.coroutine
+def fetch(method, url, loop):
+    with ClientSession(loop=loop) as session:
+        _method = getattr(session, method)
+        response = yield from asyncio.wait_for(
+                _method(url), timeout=None, loop=loop)
+        text = yield from response.text()
+    return text
+
+
+@asyncio.coroutine
+def fetch_multiple(method, loop):
+    URLS = ['https://example.com', 'https://example.org']
+    coros = [fetch(method, url, loop) for url in URLS]
+    responses = yield from asyncio.gather(*coros, loop=loop)
+    return '\n'.join(responses)
+
+
+@asyncio.coroutine
+def multi_fetch_handler(request):
+    try:
+        loop = request.loop
+    except AttributeError:
+        loop = request.task._loop
+
+    responses = yield from fetch_multiple('get', loop)
+    return web.Response(text=responses, content_type='text/html')
+
+
 def make_app(middlewares=None, loop=None):
     app = web.Application(middlewares=middlewares, loop=loop)
     app.router.add_route('*', '/coro', index)
@@ -95,5 +124,10 @@ def make_app(middlewares=None, loop=None):
     app.router.add_route('*', '/raise_404', raise_404)
     app.router.add_route('*', '/hang', hang)
     app.router.add_route('*', '/ws', websocket_handler)
+    app.router.add_route('*', '/multi_fetch', multi_fetch_handler)
 
     return app
+
+
+if __name__ == '__main__':
+    web.run_app(make_app(), host='127.0.0.1')

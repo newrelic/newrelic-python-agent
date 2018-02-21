@@ -48,4 +48,3 @@ def network_config(args):
     print('proxy_port = %r' % _settings.proxy_port)
     print('proxy_user = %r' % _settings.proxy_user)
     print('proxy_pass = %r' % _settings.proxy_pass)
-    print('ssl = %r' % _settings.ssl)

@@ -101,12 +101,6 @@ def initialize_agent(app_name=None, default_settings={}):
             'staging-collector.newrelic.com')
     settings.port = int(os.environ.get('NEW_RELIC_PORT', '0'))
 
-    if settings.host == 'localhost':
-        settings.license_key = 'bootstrap_newrelic_admin_license_key_000'
-        if settings.port == 0:
-            settings.port = 8081
-        settings.ssl = False
-
     settings.startup_timeout = float(os.environ.get(
             'NEW_RELIC_STARTUP_TIMEOUT', 20.0))
     settings.shutdown_timeout = float(os.environ.get(
@@ -242,7 +236,7 @@ def collector_agent_registration_fixture(app_name=None, default_settings={},
 
         url = '%s://%s/deployments.xml'
 
-        scheme = settings.ssl and 'https' or 'http'
+        scheme = 'https'
         server = settings.port and '%s:%d' % (api_host,
                 settings.port) or api_host
 

@@ -1,6 +1,11 @@
 unreleased
 ----------
 
+- SSL connections to New Relic are now mandatory.
+
+  Prior to this version, using an SSL connection to New Relic was the default
+  behavior. SSL connections are now enforced (not overrideable).
+
 2.104.0 (2018-02-20)
 --------------------
 

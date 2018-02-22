@@ -109,5 +109,6 @@ def instrument_aiohttp_client(module):
 
 
 def instrument_aiohttp_http_writer(module):
-    wrap_function_wrapper(module, 'PayloadWriter.write_headers',
-            _nr_wrap_PayloadWriter_write_headers)
+    if hasattr(module, 'PayloadWriter'):
+        wrap_function_wrapper(module, 'PayloadWriter.write_headers',
+                _nr_wrap_PayloadWriter_write_headers)

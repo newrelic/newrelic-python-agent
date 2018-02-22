@@ -8,6 +8,10 @@ from testing_support.fixtures import validate_transaction_metrics
 
 URLS = ['http://example.com', 'http://example.org']
 
+version_info = tuple(int(_) for _ in aiohttp.__version__.split('.'))
+xfailif_aiohttp1 = pytest.mark.xfail(version_info < (2, 0), strict=True,
+        reason='PYTHON-2678')
+
 
 async def fetch(method, url):
     async with aiohttp.ClientSession(raise_for_status=True) as session:
@@ -43,6 +47,7 @@ test_matrix = (
 )
 
 
+@xfailif_aiohttp1
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_client(method, exc_expected):
 
@@ -66,6 +71,7 @@ def test_client(method, exc_expected):
     task_test()
 
 
+@xfailif_aiohttp1
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_client_no_txn(method, exc_expected):
 
@@ -76,6 +82,7 @@ def test_client_no_txn(method, exc_expected):
     task_test()
 
 
+@xfailif_aiohttp1
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_client_throw(method, exc_expected):
 
@@ -112,6 +119,7 @@ def test_client_throw(method, exc_expected):
     task_test()
 
 
+@xfailif_aiohttp1
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_client_close(method, exc_expected):
 
@@ -143,6 +151,7 @@ def test_client_close(method, exc_expected):
     task_test()
 
 
+@xfailif_aiohttp1
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_await_request(method, exc_expected):
 
@@ -190,6 +199,7 @@ test_ws_matrix = (
 )
 
 
+@xfailif_aiohttp1
 @pytest.mark.parametrize('method,exc_expected', test_ws_matrix)
 def test_ws_connect(method, exc_expected):
 
@@ -213,6 +223,7 @@ def test_ws_connect(method, exc_expected):
     task_test()
 
 
+@xfailif_aiohttp1
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_create_task(method, exc_expected):
 
@@ -256,6 +267,7 @@ def test_create_task(method, exc_expected):
     task_test()
 
 
+@xfailif_aiohttp1
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_terminal_parent(method, exc_expected):
     """

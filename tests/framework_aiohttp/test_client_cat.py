@@ -14,6 +14,8 @@ from testing_support.mock_external_http_server import (
         MockExternalHTTPHResponseHeadersServer, MockExternalHTTPServer)
 
 version_info = tuple(int(_) for _ in aiohttp.__version__.split('.'))
+xfailif_aiohttp1 = pytest.mark.xfail(version_info < (2, 0), strict=True,
+        reason='PYTHON-2678')
 
 
 @asyncio.coroutine
@@ -47,6 +49,7 @@ def mock_header_server():
         yield
 
 
+@xfailif_aiohttp1
 @pytest.mark.parametrize('cat_enabled', [True, False])
 def test_outbound_cross_process_headers(cat_enabled, mock_header_server):
 
@@ -81,6 +84,7 @@ _customer_headers_tests = [
 ]
 
 
+@xfailif_aiohttp1
 @pytest.mark.parametrize('customer_headers', _customer_headers_tests)
 @background_task()
 def test_outbound_cross_process_headers_custom_headers(customer_headers,
@@ -95,6 +99,7 @@ def test_outbound_cross_process_headers_custom_headers(customer_headers,
         assert headers.get(expected_header) == expected_value
 
 
+@xfailif_aiohttp1
 def test_outbound_cross_process_headers_no_txn(mock_header_server):
 
     loop = asyncio.get_event_loop()
@@ -104,6 +109,7 @@ def test_outbound_cross_process_headers_no_txn(mock_header_server):
     assert not headers.get(ExternalTrace.cat_transaction_key)
 
 
+@xfailif_aiohttp1
 @background_task()
 def test_outbound_cross_process_headers_exception(mock_header_server):
 
@@ -134,6 +140,7 @@ class PoorResolvingConnector(aiohttp.TCPConnector):
         return res
 
 
+@xfailif_aiohttp1
 @pytest.mark.parametrize('cat_enabled', [True, False])
 @pytest.mark.parametrize('response_code', [200, 404])
 @pytest.mark.parametrize('raise_for_status', [True, False])

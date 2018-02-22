@@ -124,10 +124,6 @@ def test_error_exception(method, uri, metric_name, error, status, nr_enabled,
 def test_simultaneous_requests(method, uri, metric_name,
         nr_enabled, aiohttp_app):
 
-    # FIXME: PYTHON-2673 -- aiohttp 3.x does not support `yield from`
-    if version_info >= (3, 0) and 'coro' not in uri:
-        pytest.xfail()
-
     @asyncio.coroutine
     def fetch():
         resp = yield from aiohttp_app.client.request(method, uri)

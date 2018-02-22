@@ -208,6 +208,8 @@ def _nr_aiohttp_view_wrapper_(wrapped, instance, args, kwargs):
 
     if hasattr(coro, '__iter__'):
         coro = iter(coro)
+    elif hasattr(coro, '__await__'):
+        coro = coro.__await__()
 
     name = instance and callable_name(instance) or callable_name(wrapped)
     transaction.set_transaction_name(name, priority=1)

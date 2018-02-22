@@ -55,7 +55,7 @@ def test_outbound_cross_process_headers(cat_enabled, mock_header_server):
 
     # FIXME
     if cat_enabled and version_info >= (3, 0):
-        pytest.xfail('PYTHON-2672')
+        pytest.xfail('PYTHON-2670')
 
     @override_application_settings(
             {'cross_application_tracer.enabled': cat_enabled})
@@ -130,11 +130,11 @@ def test_outbound_cross_process_headers_exception(mock_header_server):
 
 class PoorResolvingConnector(aiohttp.TCPConnector):
     @asyncio.coroutine
-    def _resolve_host(self, host, port):
+    def _resolve_host(self, host, port, *args, **kwargs):
         res = [{'hostname': host, 'host': host, 'port': 1234,
                  'family': self._family, 'proto': 0, 'flags': 0}]
         hosts = yield from super(PoorResolvingConnector,
-                self)._resolve_host(host, port)
+                self)._resolve_host(host, port, *args, **kwargs)
         for hinfo in hosts:
             res.append(hinfo)
         return res
@@ -148,10 +148,6 @@ class PoorResolvingConnector(aiohttp.TCPConnector):
         [None, PoorResolvingConnector])  # None will use default
 def test_process_incoming_headers(cat_enabled, response_code,
         raise_for_status, connector_class):
-
-    # FIXME
-    if connector_class and version_info >= (3, 0):
-        pytest.xfail('PYTHON-2672')
 
     # It was discovered via packnsend that the `throw` method of the `_request`
     # coroutine is used in the case of poorly resolved hosts. An older version

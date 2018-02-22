@@ -169,7 +169,7 @@ def test_process_incoming_headers(cat_enabled, response_code,
     @override_application_settings(
             {'cross_application_tracer.enabled': cat_enabled})
     @validate_transaction_metrics(
-            'test_cat:test_process_incoming_headers.<locals>.task_test',
+            'test_client_cat:test_process_incoming_headers.<locals>.task_test',
             scoped_metrics=_test_cross_process_response_scoped_metrics,
             rollup_metrics=_test_cross_process_response_rollup_metrics,
             background_task=True)

@@ -47,7 +47,7 @@ test_matrix = (
 def test_client(method, exc_expected):
 
     @validate_transaction_metrics(
-        'test_client_async_await:test_client.<locals>.task_test',
+        '_test_client_async_await:test_client.<locals>.task_test',
         background_task=True,
         scoped_metrics=[
             ('External/example.com/aiohttp/%s' % method.upper(), 1),
@@ -93,7 +93,7 @@ def test_client_throw(method, exc_expected):
             coro.throw(ThrowerException())
 
     @validate_transaction_metrics(
-        'test_client_async_await:test_client_throw.<locals>.task_test',
+        '_test_client_async_await:test_client_throw.<locals>.task_test',
         background_task=True,
         scoped_metrics=[
             ('External/example.com/aiohttp/%s' % method.upper(), 1),
@@ -126,7 +126,7 @@ def test_client_close(method, exc_expected):
             coro.close()
 
     @validate_transaction_metrics(
-        'test_client_async_await:test_client_close.<locals>.task_test',
+        '_test_client_async_await:test_client_close.<locals>.task_test',
         background_task=True,
         scoped_metrics=[
             ('External/example.com/aiohttp/%s' % method.upper(), 1),
@@ -155,7 +155,7 @@ def test_await_request(method, exc_expected):
             return await result.text()
 
     @validate_transaction_metrics(
-        'test_client_async_await:test_await_request.<locals>.task_test',
+        '_test_client_async_await:test_await_request.<locals>.task_test',
         background_task=True,
         scoped_metrics=[
             ('External/example.com/aiohttp/%s' % method.upper(), 1),
@@ -194,7 +194,7 @@ test_ws_matrix = (
 def test_ws_connect(method, exc_expected):
 
     @validate_transaction_metrics(
-        'test_client_async_await:test_ws_connect.<locals>.task_test',
+        '_test_client_async_await:test_ws_connect.<locals>.task_test',
         background_task=True,
         scoped_metrics=[
             ('External/example.com/aiohttp/GET', 1),
@@ -230,7 +230,7 @@ def test_create_task(method, exc_expected):
         return await asyncio.gather(*coros, return_exceptions=True)
 
     @validate_transaction_metrics(
-        'test_client_async_await:test_create_task.<locals>.task_test',
+        '_test_client_async_await:test_create_task.<locals>.task_test',
         background_task=True,
         scoped_metrics=[
             ('External/example.com/aiohttp/%s' % method.upper(), 1),

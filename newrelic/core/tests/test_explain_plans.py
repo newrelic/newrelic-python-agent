@@ -3,7 +3,7 @@ import sys
 import pytest
 
 from newrelic.core.database_utils import (_obfuscate_explain_plan_postgresql,
-    _obfuscate_explain_plan_postgresql_substitute)
+    _obfuscate_explain_plan_postgresql_substitute, _could_be_multi_query)
 
 _test_explain_plan_obfuscation_postgresql_mask_true_tests = [
 
@@ -895,3 +895,20 @@ def test_explain_plan_obfuscation_postgresql_mask_false(original,
     generated = '\n'.join(item[0] for item in output_rows)
 
     assert expected_complete == generated
+
+
+_test_multi_query_strings_tests = [
+    ('select * from mytable ; insert into mytable values (1, 2)', True),
+    ('select * from mytable ; insert into mytable values (1, 2);', True),
+    ('select * from mytable -- comment with ; semicolon', True),
+    ('select * from mytable where foo=";"', True),
+    (';select * from mytable', True),
+    ('select * from mytable;', False),
+    ('select * from mytable;;;;;;', False),
+    ('select * from mytable;\n\n', False),
+]
+
+
+@pytest.mark.parametrize('sql,expected', _test_multi_query_strings_tests)
+def test_multi_query_strings(sql, expected):
+    assert _could_be_multi_query(sql) == expected

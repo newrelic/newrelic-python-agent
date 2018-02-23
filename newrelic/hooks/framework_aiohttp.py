@@ -1,3 +1,4 @@
+import itertools
 import asyncio
 import sys
 
@@ -410,26 +411,39 @@ def _nr_aiohttp_request_wrapper_(wrapped, instance, args, kwargs):
     return NRRequestCoroutineWrapper(url, method, coro, None)
 
 
-def _bind_write_headers(status_line, headers, *args, **kwargs):
-    return status_line, headers, args, kwargs
+class HeaderProxy(ObjectProxy):
+    def __init__(self, wrapped, nr_headers):
+        super(HeaderProxy, self).__init__(wrapped)
+        self._nr_headers = nr_headers
+
+    def items(self):
+        nr_headers = dict(self._nr_headers)
+
+        # Remove all conflicts
+        for key, _ in self._nr_headers:
+            if key in self:
+                nr_headers.pop(key)
+
+        return itertools.chain(
+                self.__wrapped__.items(), nr_headers.items())
 
 
-def _nr_wrap_PayloadWriter_write_headers(wrapped, instance, args, kwargs):
+def _nr_aiohttp_add_cat_headers_(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    status_line, headers, _args, _kwargs = _bind_write_headers(
-            *args, **kwargs)
-
     try:
         cat_headers = ExternalTrace.generate_request_headers(transaction)
-        updated_headers = dict(cat_headers + [(k, v) for k, v in
-                headers.items()])
     except:
         return wrapped(*args, **kwargs)
 
-    return wrapped(status_line, updated_headers, *_args, **_kwargs)
+    tmp = instance.headers
+    instance.headers = HeaderProxy(tmp, cat_headers)
+    try:
+        return wrapped(*args, **kwargs)
+    finally:
+        instance.headers = tmp
 
 
 def instrument_aiohttp_client(module):
@@ -437,10 +451,18 @@ def instrument_aiohttp_client(module):
             _nr_aiohttp_request_wrapper_)
 
 
-def instrument_aiohttp_http_writer(module):
-    if hasattr(module, 'PayloadWriter'):
-        wrap_function_wrapper(module, 'PayloadWriter.write_headers',
-                _nr_wrap_PayloadWriter_write_headers)
+def instrument_aiohttp_client_reqrep(module):
+    import aiohttp
+    version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
+
+    if version_info >= (2, 0):
+        wrap_function_wrapper(module, 'ClientRequest.send',
+                _nr_aiohttp_add_cat_headers_)
+
+
+def instrument_aiohttp_protocol(module):
+    wrap_function_wrapper(module, 'Request.send_headers',
+            _nr_aiohttp_add_cat_headers_)
 
 
 def instrument_aiohttp_web_urldispatcher(module):

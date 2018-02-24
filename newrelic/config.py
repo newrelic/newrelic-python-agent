@@ -2363,12 +2363,11 @@ def _process_module_builtin_defaults():
     _process_module_definition('aiohttp.web_urldispatcher',
             'newrelic.hooks.framework_aiohttp',
             'instrument_aiohttp_web_urldispatcher')
-
     _process_module_definition('aiohttp.client',
-            'newrelic.hooks.external_aiohttp',
+            'newrelic.hooks.framework_aiohttp',
             'instrument_aiohttp_client')
     _process_module_definition('aiohttp.http_writer',
-            'newrelic.hooks.external_aiohttp',
+            'newrelic.hooks.framework_aiohttp',
             'instrument_aiohttp_http_writer')
 
     _process_module_definition('requests.api',

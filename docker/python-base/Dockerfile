@@ -14,20 +14,29 @@ RUN apt-get install -y \
     vim \
     wget \
     git \
+    build-essential \
     software-properties-common \
     python-software-properties
 
 # Install python versions.
-RUN add-apt-repository ppa:fkrull/deadsnakes && \
-    add-apt-repository ppa:jonathonf/python-3.6 && \
+RUN wget https://www.python.org/ftp/python/3.5.5/Python-3.5.5.tgz && \
+    tar xfz Python-3.5.5.tgz && \
+    cd Python-3.5.5 && \
+    ./configure && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf Python-3.5.5 && \
+    rm Python-3.5.5.tgz
+
+RUN add-apt-repository -y ppa:deadsnakes/ppa && \
     apt-get update && \
     apt-get install -y \
-    python2.6 python2.6-dev \
-    python2.7 python2.7-dev \
-    python3.3 python3.3-dev \
-    python3.4 python3.4-dev \
-    python3.5 python3.5-dev \
-    python3.6 python3.6-dev
+    python2.6-dbg \
+    python2.7-dbg \
+    python3.3-dbg \
+    python3.4-dbg \
+    python3.6-dbg
 
 RUN wget https://bitbucket.org/pypy/pypy/downloads/pypy2-v5.9.0-linux64.tar.bz2 && \
     tar -C /usr/local -xf pypy2-v5.9.0-linux64.tar.bz2 && \
@@ -52,7 +61,6 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
     libffi-dev \
     freetds-dev \
     libmemcached-dev \
-    build-essential \
     redis-server \
     mysql-server \
     libmysqlclient-dev \

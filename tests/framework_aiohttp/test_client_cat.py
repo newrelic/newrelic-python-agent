@@ -39,7 +39,8 @@ def fetch(url, headers=None, raise_for_status=False, connector=None):
         except ValueError:
             continue
         headers[h.strip()] = v.strip()
-    session.close()
+    f = session.close()
+    yield from asyncio.ensure_future(f)
     return headers
 
 

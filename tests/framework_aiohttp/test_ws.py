@@ -2,7 +2,7 @@ import asyncio
 import aiohttp
 from testing_support.fixtures import function_not_called
 
-version_info = tuple(int(_) for _ in aiohttp.__version__.split('.'))
+version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
 
 
 @function_not_called('newrelic.core.stats_engine',

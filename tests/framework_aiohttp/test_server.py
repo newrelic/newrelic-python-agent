@@ -7,7 +7,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
         validate_transaction_errors, validate_transaction_event_attributes,
         count_transactions, override_generic_settings,
         override_application_settings, override_ignore_status_codes)
-version_info = tuple(int(_) for _ in aiohttp.__version__.split('.'))
+version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
 
 
 BASE_REQUIRED_ATTRS = ['request.headers.contentType',

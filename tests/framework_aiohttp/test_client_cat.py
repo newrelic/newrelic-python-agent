@@ -13,7 +13,7 @@ from testing_support.fixtures import (override_application_settings,
 from testing_support.mock_external_http_server import (
         MockExternalHTTPHResponseHeadersServer, MockExternalHTTPServer)
 
-version_info = tuple(int(_) for _ in aiohttp.__version__.split('.'))
+version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
 
 if version_info < (2, 0):
     _expected_error_class = aiohttp.errors.HttpProcessingError

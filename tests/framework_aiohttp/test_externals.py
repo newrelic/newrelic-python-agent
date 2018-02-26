@@ -4,7 +4,7 @@ import asyncio
 
 from testing_support.fixtures import validate_transaction_metrics
 
-version_info = tuple(int(_) for _ in aiohttp.__version__.split('.'))
+version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
 
 
 @pytest.mark.xfail(version_info >= (3, 0), reason='aiohttp 3.x PYTHON-2674',

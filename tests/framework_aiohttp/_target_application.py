@@ -80,7 +80,9 @@ def websocket_handler(request):
     while not ws.closed:
         msg = yield from ws.receive()
         if msg.type == WSMsgType.TEXT:
-            ws.send_str('/' + msg.data)
+            result = ws.send_str('/' + msg.data)
+            if hasattr(result, '__await__'):
+                yield from result.__await__()
 
     return ws
 

@@ -9,14 +9,13 @@ from testing_support.fixtures import validate_transaction_metrics
 URLS = ['http://example.com', 'http://example.org']
 
 version_info = tuple(int(_) for _ in aiohttp.__version__.split('.'))
-xfailif_aiohttp1 = pytest.mark.xfail(version_info < (2, 0), strict=True,
-        reason='PYTHON-2678')
 
 
 async def fetch(method, url):
-    async with aiohttp.ClientSession(raise_for_status=True) as session:
+    async with aiohttp.ClientSession() as session:
         _method = getattr(session, method)
         async with _method(url) as response:
+            response.raise_for_status()
             return await response.text()
 
 
@@ -25,15 +24,21 @@ async def fetch_multiple(method):
     return await asyncio.gather(*coros, return_exceptions=True)
 
 
+if version_info < (2, 0):
+    _expected_error_class = aiohttp.errors.HttpProcessingError
+else:
+    _expected_error_class = aiohttp.client_exceptions.ClientResponseError
+
+
 def task(loop, method, exc_expected):
     text_list = loop.run_until_complete(fetch_multiple(method))
     if exc_expected:
         assert isinstance(text_list[0],
-                aiohttp.client_exceptions.ClientResponseError)
+                _expected_error_class), text_list[0].__class__
         assert isinstance(text_list[1],
-                aiohttp.client_exceptions.ClientResponseError)
+                _expected_error_class), text_list[1].__class__
     else:
-        assert text_list[0] == text_list[1]
+        assert text_list[0] == text_list[1], text_list
 
 
 test_matrix = (
@@ -47,7 +52,6 @@ test_matrix = (
 )
 
 
-@xfailif_aiohttp1
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_client_async_await(method, exc_expected):
 
@@ -71,7 +75,6 @@ def test_client_async_await(method, exc_expected):
     task_test()
 
 
-@xfailif_aiohttp1
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_client_no_txn_async_await(method, exc_expected):
 
@@ -82,7 +85,6 @@ def test_client_no_txn_async_await(method, exc_expected):
     task_test()
 
 
-@xfailif_aiohttp1
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_client_throw_async_await(method, exc_expected):
 
@@ -90,7 +92,7 @@ def test_client_throw_async_await(method, exc_expected):
         pass
 
     async def self_driving_thrower():
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
+        async with aiohttp.ClientSession() as session:
             coro = session._request(method.upper(), URLS[0])
 
             # activate the coroutine
@@ -119,12 +121,11 @@ def test_client_throw_async_await(method, exc_expected):
     task_test()
 
 
-@xfailif_aiohttp1
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_client_close_async_await(method, exc_expected):
 
     async def self_driving_closer():
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
+        async with aiohttp.ClientSession() as session:
             coro = session._request(method.upper(), URLS[0])
 
             # activate the coroutine
@@ -151,16 +152,16 @@ def test_client_close_async_await(method, exc_expected):
     task_test()
 
 
-@xfailif_aiohttp1
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_await_request_async_await(method, exc_expected):
 
     async def request_with_await(url):
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
+        async with aiohttp.ClientSession() as session:
             coro = session._request(method.upper(), url)
 
             # force await
             result = await coro
+            result.raise_for_status()
             return await result.text()
 
     @validate_transaction_metrics(
@@ -183,11 +184,11 @@ def test_await_request_async_await(method, exc_expected):
         text_list = loop.run_until_complete(future)
         if exc_expected:
             assert isinstance(text_list[0],
-                    aiohttp.client_exceptions.ClientResponseError)
+                    _expected_error_class), text_list[0].__class__
             assert isinstance(text_list[1],
-                    aiohttp.client_exceptions.ClientResponseError)
+                    _expected_error_class), text_list[1].__class__
         else:
-            assert text_list[0] == text_list[1]
+            assert text_list[0] == text_list[1], text_list
 
     task_test()
 
@@ -199,7 +200,6 @@ test_ws_matrix = (
 )
 
 
-@xfailif_aiohttp1
 @pytest.mark.parametrize('method,exc_expected', test_ws_matrix)
 def test_ws_connect_async_await(method, exc_expected):
 
@@ -223,7 +223,6 @@ def test_ws_connect_async_await(method, exc_expected):
     task_test()
 
 
-@xfailif_aiohttp1
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_create_task_async_await(method, exc_expected):
 
@@ -231,9 +230,10 @@ def test_create_task_async_await(method, exc_expected):
     # `send` method, not `__next__`
 
     async def fetch_task(url, loop):
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
+        async with aiohttp.ClientSession() as session:
             coro = getattr(session, method)
             resp = await loop.create_task(coro(url))
+            resp.raise_for_status()
             return await resp.text()
 
     async def fetch_multiple(loop):
@@ -258,16 +258,15 @@ def test_create_task_async_await(method, exc_expected):
         result = loop.run_until_complete(fetch_multiple(loop))
         if exc_expected:
             assert isinstance(result[0],
-                    aiohttp.client_exceptions.ClientResponseError)
+                    _expected_error_class), result[0].__class__
             assert isinstance(result[1],
-                    aiohttp.client_exceptions.ClientResponseError)
+                    _expected_error_class), result[1].__class__
         else:
             assert result[0] == result[1]
 
     task_test()
 
 
-@xfailif_aiohttp1
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_terminal_parent_async_await(method, exc_expected):
     """

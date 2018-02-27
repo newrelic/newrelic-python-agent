@@ -3,6 +3,7 @@ import asyncio
 import sys
 
 from newrelic.api.application import application_instance
+from newrelic.api.coroutine_trace import is_coroutine_function
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.transaction import current_transaction, ignore_transaction
@@ -440,10 +441,22 @@ def _nr_aiohttp_add_cat_headers_(wrapped, instance, args, kwargs):
 
     tmp = instance.headers
     instance.headers = HeaderProxy(tmp, cat_headers)
-    try:
-        return wrapped(*args, **kwargs)
-    finally:
-        instance.headers = tmp
+
+    if is_coroutine_function(wrapped):
+        @asyncio.coroutine
+        def new_coro():
+            try:
+                result = yield from wrapped(*args, **kwargs)
+                return result
+            finally:
+                instance.headers = tmp
+
+        return new_coro()
+    else:
+        try:
+            return wrapped(*args, **kwargs)
+        finally:
+            instance.headers = tmp
 
 
 def instrument_aiohttp_client(module):

@@ -5,7 +5,7 @@ import sys
 from newrelic.api.application import application_instance
 from newrelic.api.coroutine_trace import is_coroutine_function
 from newrelic.api.external_trace import ExternalTrace
-from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.function_trace import function_trace
 from newrelic.api.transaction import current_transaction, ignore_transaction
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.object_names import callable_name
@@ -205,28 +205,10 @@ def _nr_aiohttp_view_wrapper_(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    # get the coroutine
-    coro = wrapped(*args, **kwargs)
-
-    if hasattr(coro, '__iter__'):
-        coro = iter(coro)
-    elif hasattr(coro, '__await__'):
-        coro = coro.__await__()
-
     name = instance and callable_name(instance) or callable_name(wrapped)
     transaction.set_transaction_name(name, priority=1)
 
-    @asyncio.coroutine
-    def _inner():
-        try:
-            with FunctionTrace(transaction, name):
-                result = yield from coro
-            return result
-        except:
-            transaction.record_exception(ignore_errors=should_ignore)
-            raise
-
-    return _inner()
+    return function_trace(name=name)(wrapped)(*args, **kwargs)
 
 
 def _nr_aiohttp_transaction_wrapper_(wrapped, instance, args, kwargs):
@@ -291,31 +273,12 @@ def _nr_aiohttp_response_prepare_(wrapped, instance, args, kwargs):
 
 
 @function_wrapper
-def _nr_function_trace_coroutine_(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
-
-    coro = wrapped(*args, **kwargs)
-
-    if not transaction:
-        return coro
-
-    @asyncio.coroutine
-    def _inner():
-        name = callable_name(wrapped)
-        with FunctionTrace(transaction, name):
-            result = yield from coro
-        return result
-
-    return _inner()
-
-
-@function_wrapper
 def _nr_aiohttp_wrap_middleware_(wrapped, instance, args, kwargs):
 
     @asyncio.coroutine
     def _inner():
         result = yield from wrapped(*args, **kwargs)
-        return _nr_function_trace_coroutine_(result)
+        return function_trace()(result)
 
     return _inner()
 

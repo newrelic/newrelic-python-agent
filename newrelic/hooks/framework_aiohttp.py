@@ -3,8 +3,8 @@ import asyncio
 import sys
 
 from newrelic.api.application import application_instance
-from newrelic.api.coroutine_trace import is_coroutine_function
-from newrelic.api.external_trace import ExternalTrace, wrap_external_trace
+from newrelic.api.coroutine_trace import is_coroutine_function, CoroutineTrace
+from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import function_trace
 from newrelic.api.transaction import current_transaction, ignore_transaction
 from newrelic.api.web_transaction import WebTransaction
@@ -346,17 +346,43 @@ def _nr_aiohttp_add_cat_headers_(wrapped, instance, args, kwargs):
             instance.headers = tmp
 
 
-def _bind_request_method(instance, method, url, *args, **kwargs):
-    return method
+def _bind_request(method, url, *args, **kwargs):
+    return method, url
 
 
-def _bind_request_url(instance, method, url, *args, **kwargs):
-    return url
+def _nr_aiohttp_request_wrapper_(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    method, url = _bind_request(*args, **kwargs)
+    trace = ExternalTrace(transaction, 'aiohttp', url, method)
+
+    @asyncio.coroutine
+    def _coro():
+        try:
+            response = yield from wrapped(*args, **kwargs)
+
+            try:
+                trace.process_response_headers(response.headers.items())
+            except:
+                pass
+
+            return response
+        except Exception as e:
+            try:
+                trace.process_response_headers(e.headers.items())
+            except:
+                pass
+
+            raise
+
+    return CoroutineTrace(_coro, trace)
 
 
 def instrument_aiohttp_client(module):
-    wrap_external_trace(module, 'ClientSession._request', 'aiohttp',
-            _bind_request_url, _bind_request_method)
+    wrap_function_wrapper(module, 'ClientSession._request',
+            _nr_aiohttp_request_wrapper_)
 
 
 def instrument_aiohttp_client_reqrep(module):

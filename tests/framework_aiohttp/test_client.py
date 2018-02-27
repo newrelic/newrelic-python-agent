@@ -9,7 +9,7 @@ from testing_support.fixtures import validate_transaction_metrics
 
 URLS = ['http://example.com', 'http://example.org']
 
-version_info = tuple(int(_) for _ in aiohttp.__version__.split('.'))
+version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
 skipif_aiohttp3 = pytest.mark.skipif(version_info >= (3, 0),
         reason='This version of aiohttp does not support yield from syntax')
 

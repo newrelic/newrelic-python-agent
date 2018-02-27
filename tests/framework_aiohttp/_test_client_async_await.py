@@ -8,7 +8,7 @@ from testing_support.fixtures import validate_transaction_metrics
 
 URLS = ['http://example.com', 'http://example.org']
 
-version_info = tuple(int(_) for _ in aiohttp.__version__.split('.'))
+version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
 
 
 async def fetch(method, url):

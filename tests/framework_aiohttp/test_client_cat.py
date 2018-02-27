@@ -62,10 +62,6 @@ def mock_header_server():
 @pytest.mark.parametrize('cat_enabled', [True, False])
 def test_outbound_cross_process_headers(cat_enabled, mock_header_server):
 
-    # FIXME
-    if version_info >= (3, 0) or version_info < (2, 0) and cat_enabled:
-        pytest.xfail('PYTHON-2670')
-
     @override_application_settings(
             {'cross_application_tracer.enabled': cat_enabled})
     @background_task()
@@ -88,13 +84,11 @@ def test_outbound_cross_process_headers(cat_enabled, mock_header_server):
 
 _nr_key = ExternalTrace.cat_id_key
 _customer_headers_tests = [
-        {'MY_CUSTOM_HEADER': 'I love cats'},
-        {_nr_key: 'I love dogs'},
+        {'Boogers': 'I love cats'},
+        {_nr_key.title(): 'I love dogs'},
 ]
 
 
-@pytest.mark.xfail(version_info < (2, 0), strict=True,
-        reason='Header casing is incorrect PYTHON-2670')
 @pytest.mark.parametrize('customer_headers', _customer_headers_tests)
 @background_task()
 def test_outbound_cross_process_headers_custom_headers(customer_headers,

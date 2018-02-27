@@ -4,7 +4,7 @@ import sys
 
 from newrelic.api.application import application_instance
 from newrelic.api.coroutine_trace import is_coroutine_function
-from newrelic.api.external_trace import ExternalTrace
+from newrelic.api.external_trace import ExternalTrace, wrap_external_trace
 from newrelic.api.function_trace import function_trace
 from newrelic.api.transaction import current_transaction, ignore_transaction
 from newrelic.api.web_transaction import WebTransaction
@@ -299,82 +299,6 @@ def _nr_aiohttp_wrap_system_route_(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
-class NRRequestCoroutineWrapper(ObjectProxy):
-    def __init__(self, url, method, wrapped, func=None):
-        super(NRRequestCoroutineWrapper, self).__init__(wrapped)
-        transaction = current_transaction()
-        self._nr_trace = ExternalTrace(transaction,
-                'aiohttp', url, method)
-
-    def __iter__(self):
-        return self
-
-    def __await__(self):
-        return self
-
-    def __next__(self):
-        return self.send(None)
-
-    def send(self, value):
-        if not self._nr_trace.transaction:
-            return self.__wrapped__.send(value)
-
-        if not self._nr_trace.activated:
-            self._nr_trace.__enter__()
-
-            if (self._nr_trace.transaction and
-                    self._nr_trace.transaction.current_node is self._nr_trace):
-                # externals should not have children
-                # This is so we do not miss concurrent external traces.
-                self._nr_trace.transaction._pop_current(self._nr_trace)
-
-        try:
-            return self.__wrapped__.send(value)
-        except StopIteration as e:
-            try:
-                result = e.value
-                self._nr_trace.process_response_headers(result.headers.items())
-            except:
-                pass
-
-            self._nr_trace.__exit__(None, None, None)
-            raise
-        except Exception as e:
-            try:
-                self._nr_trace.process_response_headers(e.headers.items())
-            except:
-                pass
-
-            self._nr_trace.__exit__(*sys.exc_info())
-            raise
-
-    def throw(self, *args, **kwargs):
-        try:
-            return self.__wrapped__.throw(*args, **kwargs)
-        except:
-            self._nr_trace.__exit__(*sys.exc_info())
-            raise
-
-    def close(self):
-        try:
-            r = self.__wrapped__.close()
-            self._nr_trace.__exit__(None, None, None)
-            return r
-        except:
-            self._nr_trace.__exit__(*sys.exc_info())
-            raise
-
-
-def _bind_request(method, url, *args, **kwargs):
-    return method, url
-
-
-def _nr_aiohttp_request_wrapper_(wrapped, instance, args, kwargs):
-    coro = wrapped(*args, **kwargs)
-    method, url = _bind_request(*args, **kwargs)
-    return NRRequestCoroutineWrapper(url, method, coro, None)
-
-
 class HeaderProxy(ObjectProxy):
     def __init__(self, wrapped, nr_headers):
         super(HeaderProxy, self).__init__(wrapped)
@@ -422,9 +346,17 @@ def _nr_aiohttp_add_cat_headers_(wrapped, instance, args, kwargs):
             instance.headers = tmp
 
 
+def _bind_request_method(instance, method, url, *args, **kwargs):
+    return method
+
+
+def _bind_request_url(instance, method, url, *args, **kwargs):
+    return url
+
+
 def instrument_aiohttp_client(module):
-    wrap_function_wrapper(module, 'ClientSession._request',
-            _nr_aiohttp_request_wrapper_)
+    wrap_external_trace(module, 'ClientSession._request', 'aiohttp',
+            _bind_request_url, _bind_request_method)
 
 
 def instrument_aiohttp_client_reqrep(module):

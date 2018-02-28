@@ -13,17 +13,30 @@ from testing_support.fixtures import (override_application_settings,
 from testing_support.mock_external_http_server import (
         MockExternalHTTPHResponseHeadersServer, MockExternalHTTPServer)
 
+version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
+
+if version_info < (2, 0):
+    _expected_error_class = aiohttp.errors.HttpProcessingError
+else:
+    _expected_error_class = aiohttp.client_exceptions.ClientResponseError
+
 
 @asyncio.coroutine
 def fetch(url, headers=None, raise_for_status=False, connector=None):
-    session = aiohttp.ClientSession(raise_for_status=raise_for_status,
-            connector=connector)
+
+    kwargs = {}
+    if version_info >= (2, 0):
+        kwargs = {'raise_for_status': raise_for_status}
+
+    session = aiohttp.ClientSession(connector=connector, **kwargs)
     request = session._request('GET', url, headers=headers)
     headers = {}
 
     try:
         response = yield from request
-    except aiohttp.client_exceptions.ClientResponseError:
+        if raise_for_status and version_info < (2, 0):
+            response.raise_for_status()
+    except _expected_error_class:
         return headers
 
     response_text = yield from response.text()
@@ -35,7 +48,8 @@ def fetch(url, headers=None, raise_for_status=False, connector=None):
         except ValueError:
             continue
         headers[h.strip()] = v.strip()
-    session.close()
+    f = session.close()
+    yield from asyncio.ensure_future(f)
     return headers
 
 
@@ -70,8 +84,8 @@ def test_outbound_cross_process_headers(cat_enabled, mock_header_server):
 
 _nr_key = ExternalTrace.cat_id_key
 _customer_headers_tests = [
-        {'MY_CUSTOM_HEADER': 'I love cats'},
-        {_nr_key: 'I love dogs'},
+        {'Boogers': 'I love cats'},
+        {_nr_key.title(): 'I love dogs'},
 ]
 
 
@@ -118,11 +132,11 @@ def test_outbound_cross_process_headers_exception(mock_header_server):
 
 class PoorResolvingConnector(aiohttp.TCPConnector):
     @asyncio.coroutine
-    def _resolve_host(self, host, port):
+    def _resolve_host(self, host, port, *args, **kwargs):
         res = [{'hostname': host, 'host': host, 'port': 1234,
                  'family': self._family, 'proto': 0, 'flags': 0}]
         hosts = yield from super(PoorResolvingConnector,
-                self)._resolve_host(host, port)
+                self)._resolve_host(host, port, *args, **kwargs)
         for hinfo in hosts:
             res.append(hinfo)
         return res
@@ -169,7 +183,7 @@ def test_process_incoming_headers(cat_enabled, response_code,
     @override_application_settings(
             {'cross_application_tracer.enabled': cat_enabled})
     @validate_transaction_metrics(
-            'test_cat:test_process_incoming_headers.<locals>.task_test',
+            'test_client_cat:test_process_incoming_headers.<locals>.task_test',
             scoped_metrics=_test_cross_process_response_scoped_metrics,
             rollup_metrics=_test_cross_process_response_rollup_metrics,
             background_task=True)

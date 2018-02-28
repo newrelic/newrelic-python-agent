@@ -1,4 +1,5 @@
 import asyncio
+import sys
 from aiohttp import web, WSMsgType, ClientSession
 
 
@@ -80,18 +81,34 @@ def websocket_handler(request):
     while not ws.closed:
         msg = yield from ws.receive()
         if msg.type == WSMsgType.TEXT:
-            ws.send_str('/' + msg.data)
+            result = ws.send_str('/' + msg.data)
+            if hasattr(result, '__await__'):
+                yield from result.__await__()
 
     return ws
 
 
 @asyncio.coroutine
 def fetch(method, url, loop):
-    with ClientSession(loop=loop) as session:
+    session = ClientSession(loop=loop)
+
+    if hasattr(session, '__aenter__'):
+        yield from session.__aenter__()
+    else:
+        session.__enter__()
+
+    try:
         _method = getattr(session, method)
         response = yield from asyncio.wait_for(
                 _method(url), timeout=None, loop=loop)
         text = yield from response.text()
+
+    finally:
+        if hasattr(session, '__aexit__'):
+            yield from session.__aexit__(*sys.exc_info())
+        else:
+            session.__exit__(*sys.exc_info())
+
     return text
 
 

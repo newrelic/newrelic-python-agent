@@ -1,13 +1,16 @@
+import itertools
 import asyncio
 import sys
 
+from newrelic.api.application import application_instance
+from newrelic.api.coroutine_trace import is_coroutine_function, CoroutineTrace
+from newrelic.api.external_trace import ExternalTrace
+from newrelic.api.function_trace import function_trace
 from newrelic.api.transaction import current_transaction, ignore_transaction
 from newrelic.api.web_transaction import WebTransaction
-from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.application import application_instance
+from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
         function_wrapper, ObjectProxy)
-from newrelic.common.object_names import callable_name
 from newrelic.core.config import ignore_status_code
 
 
@@ -202,26 +205,10 @@ def _nr_aiohttp_view_wrapper_(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    # get the coroutine
-    coro = wrapped(*args, **kwargs)
-
-    if hasattr(coro, '__iter__'):
-        coro = iter(coro)
-
     name = instance and callable_name(instance) or callable_name(wrapped)
     transaction.set_transaction_name(name, priority=1)
 
-    @asyncio.coroutine
-    def _inner():
-        try:
-            with FunctionTrace(transaction, name):
-                result = yield from coro
-            return result
-        except:
-            transaction.record_exception(ignore_errors=should_ignore)
-            raise
-
-    return _inner()
+    return function_trace(name=name)(wrapped)(*args, **kwargs)
 
 
 def _nr_aiohttp_transaction_wrapper_(wrapped, instance, args, kwargs):
@@ -286,31 +273,12 @@ def _nr_aiohttp_response_prepare_(wrapped, instance, args, kwargs):
 
 
 @function_wrapper
-def _nr_function_trace_coroutine_(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
-
-    coro = wrapped(*args, **kwargs)
-
-    if not transaction:
-        return coro
-
-    @asyncio.coroutine
-    def _inner():
-        name = callable_name(wrapped)
-        with FunctionTrace(transaction, name):
-            result = yield from coro
-        return result
-
-    return _inner()
-
-
-@function_wrapper
 def _nr_aiohttp_wrap_middleware_(wrapped, instance, args, kwargs):
 
     @asyncio.coroutine
     def _inner():
         result = yield from wrapped(*args, **kwargs)
-        return _nr_function_trace_coroutine_(result)
+        return function_trace()(result)
 
     return _inner()
 
@@ -329,6 +297,106 @@ def _nr_aiohttp_wrap_application_init_(wrapped, instance, args, kwargs):
 def _nr_aiohttp_wrap_system_route_(wrapped, instance, args, kwargs):
     ignore_transaction()
     return wrapped(*args, **kwargs)
+
+
+class HeaderProxy(ObjectProxy):
+    def __init__(self, wrapped, nr_headers):
+        super(HeaderProxy, self).__init__(wrapped)
+        self._nr_headers = nr_headers
+
+    def items(self):
+        nr_headers = dict(self._nr_headers)
+
+        # Remove all conflicts
+        for key, _ in self._nr_headers:
+            if key in self:
+                nr_headers.pop(key)
+
+        return itertools.chain(
+                self.__wrapped__.items(), nr_headers.items())
+
+
+def _nr_aiohttp_add_cat_headers_(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    try:
+        cat_headers = ExternalTrace.generate_request_headers(transaction)
+    except:
+        return wrapped(*args, **kwargs)
+
+    tmp = instance.headers
+    instance.headers = HeaderProxy(tmp, cat_headers)
+
+    if is_coroutine_function(wrapped):
+        @asyncio.coroutine
+        def new_coro():
+            try:
+                result = yield from wrapped(*args, **kwargs)
+                return result
+            finally:
+                instance.headers = tmp
+
+        return new_coro()
+    else:
+        try:
+            return wrapped(*args, **kwargs)
+        finally:
+            instance.headers = tmp
+
+
+def _bind_request(method, url, *args, **kwargs):
+    return method, url
+
+
+def _nr_aiohttp_request_wrapper_(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    method, url = _bind_request(*args, **kwargs)
+    trace = ExternalTrace(transaction, 'aiohttp', url, method)
+
+    @asyncio.coroutine
+    def _coro():
+        try:
+            response = yield from wrapped(*args, **kwargs)
+
+            try:
+                trace.process_response_headers(response.headers.items())
+            except:
+                pass
+
+            return response
+        except Exception as e:
+            try:
+                trace.process_response_headers(e.headers.items())
+            except:
+                pass
+
+            raise
+
+    return CoroutineTrace(_coro, trace)
+
+
+def instrument_aiohttp_client(module):
+    wrap_function_wrapper(module, 'ClientSession._request',
+            _nr_aiohttp_request_wrapper_)
+
+
+def instrument_aiohttp_client_reqrep(module):
+    import aiohttp
+    version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
+
+    if version_info >= (2, 0):
+        wrap_function_wrapper(module, 'ClientRequest.send',
+                _nr_aiohttp_add_cat_headers_)
+
+
+def instrument_aiohttp_protocol(module):
+    wrap_function_wrapper(module, 'Request.send_headers',
+            _nr_aiohttp_add_cat_headers_)
 
 
 def instrument_aiohttp_web_urldispatcher(module):

@@ -1,6 +1,13 @@
 unreleased
 ----------
 
+2.106.0 (2018-02-28)
+--------------------
+
+- Support for AIOHTTP 3
+
+  AIOHTTP major version 3 is now supported by the New Relic Python agent.
+
 2.104.0 (2018-02-20)
 --------------------
 

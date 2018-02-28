@@ -354,7 +354,7 @@ interested parties. Include a copy of the public release notes, plus a
 separate section if necessary with additional details that may be relevant
 to internal parties.
 
-28. Send an email to ``python-support@newrelic.com`` with the Support notes
+28. Send an email to ``gts-python@newrelic.com`` with the Support notes
 drafted in the pre-release steps.
 
 29. Notify Python Agent Slack channel that release is out!

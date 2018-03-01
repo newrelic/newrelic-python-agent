@@ -1,6 +1,12 @@
 unreleased
 ----------
 
+- Add automatic tracing of AIOHTTP 3 middleware
+
+  In addition to the old-style middleware previously supported, the AIOHTTP 3
+  style middleware is now automatically traced as part of the AIOHTTP
+  instrumentation package.
+
 2.106.0 (2018-02-28)
 --------------------
 

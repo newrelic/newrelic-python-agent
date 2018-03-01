@@ -288,7 +288,10 @@ def _nr_aiohttp_wrap_application_init_(wrapped, instance, args, kwargs):
 
     if hasattr(instance, '_middlewares'):
         for index, middleware in enumerate(instance._middlewares):
-            traced_middleware = _nr_aiohttp_wrap_middleware_(middleware)
+            if getattr(middleware, '__middleware_version__', None) == 1:
+                traced_middleware = function_trace()(middleware)
+            else:
+                traced_middleware = _nr_aiohttp_wrap_middleware_(middleware)
             instance._middlewares[index] = traced_middleware
 
     return result

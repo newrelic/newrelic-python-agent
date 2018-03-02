@@ -39,7 +39,8 @@ RUN add-apt-repository -y ppa:deadsnakes/ppa && \
     python2.7-dev \
     python3.3-dev \
     python3.4-dev \
-    python3.6-dev
+    python3.6-dev \
+    python3.7-dev
 
 RUN wget https://bitbucket.org/pypy/pypy/downloads/pypy2-v5.9.0-linux64.tar.bz2 && \
     tar -C /usr/local -xf pypy2-v5.9.0-linux64.tar.bz2 && \

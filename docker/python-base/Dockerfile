@@ -54,7 +54,7 @@ RUN wget https://bitbucket.org/pypy/pypy/downloads/pypy2-v5.9.0-linux64.tar.bz2 
 # Pip.
 RUN wget https://bootstrap.pypa.io/get-pip.py && \
     python get-pip.py && \
-    pip install -U pip==9.0.1 virtualenv==15.1.0 tox==2.3.2
+    pip install -U pip==9.0.1 virtualenv==15.1.0 tox==2.9.1
 
 # Needed for tests.
 # The DEBIAN_FRONTEND env var prevents mysql-server from prompting for a root

@@ -790,6 +790,8 @@ class Transaction(object):
             a_attrs['request.headers.userAgent'] = req_env['HTTP_USER_AGENT']
         if req_env.get('REQUEST_METHOD', None):
             a_attrs['request.method'] = req_env['REQUEST_METHOD']
+        if self._request_uri:
+            a_attrs['request.uri'] = self._request_uri
 
         resp_props = self._response_properties
 

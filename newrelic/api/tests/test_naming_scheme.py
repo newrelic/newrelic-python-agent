@@ -1,19 +1,17 @@
 import unittest
-import time
 
 import newrelic.packages.six as six
 
-from newrelic.api.application import application_instance
-from newrelic.core.config import global_settings, apply_server_side_settings
+from newrelic.core.config import global_settings, finalize_application_settings
 from newrelic.api.web_transaction import WebTransaction, wsgi_application
 from newrelic.api.transaction import current_transaction
 from newrelic.api.object_wrapper import callable_name
 
 class MockApplication(object):
     def __init__(self, settings, name='Python Application'):
-        self.global_settings = apply_server_side_settings()
+        self.global_settings = finalize_application_settings()
         self.global_settings.enabled = True
-        self.settings = apply_server_side_settings(settings)
+        self.settings = finalize_application_settings(settings)
         self.name = name
         self.active = True
         self.enabled = True

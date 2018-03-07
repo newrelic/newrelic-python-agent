@@ -38,7 +38,6 @@ _DatabaseNode = namedtuple('_DatabaseNode',
         'is_async'])
 
 
-
 class DatabaseNode(_DatabaseNode):
 
     def __new__(cls, *args, **kwargs):
@@ -69,6 +68,11 @@ class DatabaseNode(_DatabaseNode):
     @property
     def formatted(self):
         return self.statement.formatted(self.sql_format)
+
+    def explain_plan(self, connections):
+        return explain_plan(connections, self.statement, self.connect_params,
+                self.cursor_params, self.sql_parameters, self.execute_params,
+                self.sql_format)
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
@@ -225,11 +229,7 @@ class DatabaseNode(_DatabaseNode):
             # transaction traces being generated.
 
             if getattr(self, 'generate_explain_plan', None):
-                explain_plan_data = explain_plan(connections,
-                        self.statement, self.connect_params,
-                        self.cursor_params, self.sql_parameters,
-                        self.execute_params, self.sql_format)
-
+                explain_plan_data = self.explain_plan(connections)
                 if explain_plan_data:
                     params['explain_plan'] = explain_plan_data
 

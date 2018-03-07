@@ -633,11 +633,25 @@ def _query_result_dicts_to_tuples(columns, rows):
     return [tuple([row[col] for col in columns]) for row in rows]
 
 
+def _could_be_multi_query(sql):
+    return sql.rstrip().rstrip(';').count(';') > 0
+
+
 def _explain_plan(connections, sql, database, connect_params, cursor_params,
         sql_parameters, execute_params):
-    query = '%s %s' % (database.explain_query, sql)
 
     settings = global_settings()
+
+    if _could_be_multi_query(sql):
+        if settings.debug.log_explain_plan_queries:
+            _logger.debug('Skipping explain plan for %r on %r due to '
+                    'semicolons in the query string.', sql, database.client)
+        else:
+            _logger.debug('Skipping explain plan on %s due to '
+                    'semicolons in the query string.', database.client)
+        return None
+
+    query = '%s %s' % (database.explain_query, sql)
 
     if settings.debug.log_explain_plan_queries:
         _logger.debug('Executing explain plan for %r on %r.', query,

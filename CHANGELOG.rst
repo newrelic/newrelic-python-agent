@@ -51,6 +51,12 @@ unreleased
   style middleware is now automatically traced as part of the AIOHTTP
   instrumentation package.
 
+- Add optional request.uri attribute to transaction events
+
+  The Python agent will now optionally report request.uri as an attribute on
+  transaction events. To enable this feature, add request.uri to the
+  attributes.include list in the newrelic.ini configuration file.
+
 2.106.0 (2018-02-28)
 --------------------
 

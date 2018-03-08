@@ -7,8 +7,11 @@ import unittest
 import newrelic.packages.six as six
 from newrelic.packages.six.moves import builtins
 
-from newrelic.common.object_names import (callable_name, _module_name,
-        expand_builtin_exception_name, _object_context_py2, _object_context_py3)
+from newrelic.common.object_names import (callable_name,
+        expand_builtin_exception_name, _object_context_py2,
+        _object_context_py3)
+
+import newrelic.common.tests._test_object_names as _test_object_names
 
 if six.PY3:
     try:
@@ -17,7 +20,7 @@ if six.PY3:
     except ImportError:
         # python 3.0 - 3.3
         from imp import reload
-import newrelic.common.tests._test_object_names as _test_object_names
+
 
 class TestCallableName(unittest.TestCase):
 
@@ -156,7 +159,8 @@ class TestCallableName(unittest.TestCase):
         if six.PY3:
             self.assertEqual(
                     callable_name(_test_object_names._class3._asdict),
-                    _test_object_names._module_fqdn('_class3._asdict', '<namedtuple__class3>'))
+                    _test_object_names._module_fqdn('_class3._asdict',
+                        '<namedtuple__class3>'))
         else:
             self.assertEqual(
                     callable_name(_test_object_names._class3._asdict),
@@ -247,12 +251,14 @@ class TestCallableName(unittest.TestCase):
     def test_builtin_class_type_slotwrapper(self):
         self.assertEqual(
                 callable_name(int.__add__),
-                _test_object_names._module_fqdn('int.__add__', builtins.__name__))
+                _test_object_names._module_fqdn('int.__add__',
+                    builtins.__name__))
 
     def test_builtin_class_instance_slotwrapper(self):
         self.assertEqual(
                 callable_name(int().__add__),
-                _test_object_names._module_fqdn('int.__add__', builtins.__name__))
+                _test_object_names._module_fqdn('int.__add__',
+                    builtins.__name__))
 
     def test_nested_class_type(self):
         if six.PY3:
@@ -279,23 +285,29 @@ class TestCallableName(unittest.TestCase):
     def test_nested_class_type_instancemethod(self):
         if six.PY3:
             self.assertEqual(
-                    callable_name(_test_object_names._class5._class6._function1),
-                    _test_object_names._module_fqdn('_class5._class6._function1'))
+                    callable_name(
+                        _test_object_names._class5._class6._function1),
+                    _test_object_names._module_fqdn(
+                        '_class5._class6._function1'))
         else:
             # Cannot work out nested contexts for Python 2.
             self.assertEqual(
-                    callable_name(_test_object_names._class5._class6._function1),
+                    callable_name(
+                        _test_object_names._class5._class6._function1),
                     _test_object_names._module_fqdn('_class6._function1'))
 
     def test_nested_class_instance_instancemethod(self):
         if six.PY3:
             self.assertEqual(
-                    callable_name(_test_object_names._class5._class6()._function1),
-                    _test_object_names._module_fqdn('_class5._class6._function1'))
+                    callable_name(
+                        _test_object_names._class5._class6()._function1),
+                    _test_object_names._module_fqdn(
+                        '_class5._class6._function1'))
         else:
             # Cannot work out nested contexts for Python 2.
             self.assertEqual(
-                    callable_name(_test_object_names._class5._class6()._function1),
+                    callable_name(
+                        _test_object_names._class5._class6()._function1),
                     _test_object_names._module_fqdn('_class6._function1'))
 
     def test_extension_class_type(self):
@@ -489,6 +501,7 @@ class TestCallableName(unittest.TestCase):
                     callable_name(_test_object_names._class11()._function2),
                     _test_object_names._module_fqdn('_function2'))
 
+
 class TestCallableNameCaching(unittest.TestCase):
 
     def setUp(self):
@@ -557,6 +570,7 @@ class TestCallableNameCaching(unittest.TestCase):
         self.assertEqual(
                 callable_name(function),
                 self.cached_callable_name)
+
 
 class TestParentChildNameCaching(unittest.TestCase):
 
@@ -756,6 +770,7 @@ class TestParentChildNameCaching(unittest.TestCase):
                     callable_name(_test_object_names._class11()._function2),
                     _test_object_names._module_fqdn('_function2'))
 
+
 class TestAddCachedName(unittest.TestCase):
 
     def setUp(self):
@@ -791,6 +806,7 @@ class TestAddCachedName(unittest.TestCase):
         self.assertFalse(hasattr(self.bound_method, '_nr_object_path'))
         callable_name(self.bound_method)
         self.assertFalse(hasattr(self.bound_method, '_nr_object_path'))
+
 
 class TestExpandBuiltinExceptionName(unittest.TestCase):
 
@@ -840,6 +856,7 @@ class TestExpandBuiltinExceptionName(unittest.TestCase):
         result = expand_builtin_exception_name('MyModule:KeyError')
         self.assertEqual(result, 'MyModule:KeyError')
 
+
 class TestModuleName(unittest.TestCase):
 
     def setUp(self):
@@ -848,14 +865,18 @@ class TestModuleName(unittest.TestCase):
         self.this_file_name = __name__
 
         class _class7(_test_object_names._class1):
-            def _function4(self): pass
+            def _function4(self):
+                pass
 
         class _class8(_test_object_names._class2):
-            def _function4(self): pass
+            def _function4(self):
+                pass
 
-        class _class11(_test_object_names._class4): pass
+        class _class11(_test_object_names._class4):
+            pass
 
-        class _exception(Exception): pass
+        class _exception(Exception):
+            pass
 
         self._class7 = _class7
         self._class8 = _class8
@@ -914,7 +935,8 @@ class TestModuleName(unittest.TestCase):
                 _test_object_names._class7._function5,
                 self.other_file_name)
 
-    def test_subclass_old_class_wrapped_instance_instancemethod_other_file(self):
+    def test_subclass_old_class_wrapped_instance_instancemethod_other_file(
+            self):
         self.assertModuleName(
                 _test_object_names._class7()._function5,
                 self.other_file_name)
@@ -959,7 +981,8 @@ class TestModuleName(unittest.TestCase):
                 _test_object_names._class8._function5,
                 self.other_file_name)
 
-    def test_subclass_new_class_wrapped_instance_instancemethod_other_file(self):
+    def test_subclass_new_class_wrapped_instance_instancemethod_other_file(
+            self):
         self.assertModuleName(
                 _test_object_names._class8()._function5,
                 self.other_file_name)
@@ -972,22 +995,26 @@ class TestModuleName(unittest.TestCase):
                 test_object,
                 self.other_file_name)
 
-    def test_subclass_new_class_type_instancemethod_wraps_decorator_other_file(self):
+    def test_subclass_new_class_type_instancemethod_wraps_decorator_other_file(
+            self):
         self.assertModuleName(
                 _test_object_names._class11._function1,
                 self.other_file_name)
 
-    def test_subclass_new_class_instance_instancemethod_wraps_decorator_other_file(self):
+    def test_subcls_new_cls_instance_instancemethod_wraps_decorator_other_file(
+            self):
         self.assertModuleName(
                 _test_object_names._class11()._function1,
                 self.other_file_name)
 
-    def test_subclass_new_class_type_instancemethod_desc_decorator_other_file(self):
+    def test_subclass_new_class_type_instancemethod_desc_decorator_other_file(
+            self):
         self.assertModuleName(
                 _test_object_names._class11._function2,
                 self.other_file_name)
 
-    def test_subclass_new_class_instance_instancemethod_desc_decorator_other_file(self):
+    def test_subcls_new_cls_instance_instancemethod_desc_decorator_other_file(
+            self):
         self.assertModuleName(
                 _test_object_names._class11()._function2,
                 self.other_file_name)
@@ -1058,7 +1085,8 @@ class TestModuleName(unittest.TestCase):
                 self._class7._function5,
                 self.this_file_name)
 
-    def test_subclass_old_class_wrapped_instance_instancemethod_this_file(self):
+    def test_subclass_old_class_wrapped_instance_instancemethod_this_file(
+            self):
         self.assertModuleName(
                 self._class7()._function5,
                 self.this_file_name)
@@ -1115,7 +1143,8 @@ class TestModuleName(unittest.TestCase):
                 self._class8._function5,
                 self.this_file_name)
 
-    def test_subclass_new_class_wrapped_instance_instancemethod_this_file(self):
+    def test_subclass_new_class_wrapped_instance_instancemethod_this_file(
+            self):
         self.assertModuleName(
                 self._class8()._function5,
                 self.this_file_name)
@@ -1130,12 +1159,14 @@ class TestModuleName(unittest.TestCase):
 
     @pytest.mark.skipif(six.PY3,
             reason='Yet to be able to work out module name of subclass')
-    def test_subclass_new_class_type_instancemethod_wraps_decorator_this_file(self):
+    def test_subclass_new_class_type_instancemethod_wraps_decorator_this_file(
+            self):
         self.assertModuleName(
                 self._class11._function1,
                 self.this_file_name)
 
-    def test_subclass_new_class_instance_instancemethod_wraps_decorator_this_file(self):
+    def test_subcls_new_cls_instance_instancemethod_wraps_decorator_this_file(
+            self):
         self.assertModuleName(
                 self._class11()._function1,
                 self.this_file_name)
@@ -1144,7 +1175,8 @@ class TestModuleName(unittest.TestCase):
             reason='Yet to be able to work out module name of subclass')
     @pytest.mark.skipif(not six.PY3,
             reason='Cannot work out class name for Python 2')
-    def test_subclass_new_class_type_instancemethod_desc_decorator_this_file(self):
+    def test_subclass_new_class_type_instancemethod_desc_decorator_this_file(
+            self):
         self.assertModuleName(
                 self._class11._function2,
                 self.this_file_name)
@@ -1153,7 +1185,8 @@ class TestModuleName(unittest.TestCase):
             reason='Yet to be able to work out module name of subclass')
     @pytest.mark.skipif(not six.PY3,
             reason='Cannot work out class name for Python 2')
-    def test_subclass_new_class_instance_instancemethod_desc_decorator_this_file(self):
+    def test_subcls_new_class_instance_instancemethod_desc_decorator_this_file(
+            self):
         self.assertModuleName(
                 self._class11()._function2,
                 self.this_file_name)
@@ -1167,6 +1200,7 @@ class TestModuleName(unittest.TestCase):
         self.assertModuleName(
                 self._exception(),
                 self.this_file_name)
+
 
 @pytest.mark.skipif(not six.PY3, reason='This is a python 3 test only')
 class TestPython3UnableToGetSubclassName(unittest.TestCase):
@@ -1191,14 +1225,18 @@ class TestPython3UnableToGetSubclassName(unittest.TestCase):
         self.other_file_name = _test_object_names.__name__
 
         class _class7(_test_object_names._class1):
-            def _function4(self): pass
+            def _function4(self):
+                pass
 
         class _class8(_test_object_names._class2):
-            def _function4(self): pass
+            def _function4(self):
+                pass
 
-        class _class11(_test_object_names._class4): pass
+        class _class11(_test_object_names._class4):
+            pass
 
-        class _exception(Exception): pass
+        class _exception(Exception):
+            pass
 
         self._class7 = _class7
         self._class8 = _class8
@@ -1256,23 +1294,27 @@ class TestPython3UnableToGetSubclassName(unittest.TestCase):
                 self.other_file_name,
                 '_class2._function5')
 
-    def test_subclass_new_class_type_instancemethod_wraps_decorator_this_file(self):
+    def test_subclass_new_class_type_instancemethod_wraps_decorator_this_file(
+            self):
         self.assertCallableName(
                 self._class11._function1,
                 self.other_file_name,
                 '_class4._function1')
 
-    def test_subclass_new_class_type_instancemethod_desc_decorator_this_file(self):
+    def test_subclass_new_class_type_instancemethod_desc_decorator_this_file(
+            self):
         self.assertCallableName(
                 self._class11._function2,
                 self.other_file_name,
                 '_class4._function2')
 
-    def test_subclass_new_class_instance_instancemethod_desc_decorator_this_file(self):
+    def test_subcls_new_cls_instance_instancemethod_desc_decorator_this_file(
+            self):
         self.assertCallableName(
                 self._class11()._function2,
                 self.other_file_name,
                 '_class4._function2')
+
 
 @pytest.mark.skipif(six.PY3, reason='This is a python 2 test only')
 class TestPython2UnableToGetClassName(unittest.TestCase):
@@ -1291,14 +1333,18 @@ class TestPython2UnableToGetClassName(unittest.TestCase):
         self.other_file_name = _test_object_names.__name__
 
         class _class7(_test_object_names._class1):
-            def _function4(self): pass
+            def _function4(self):
+                pass
 
         class _class8(_test_object_names._class2):
-            def _function4(self): pass
+            def _function4(self):
+                pass
 
-        class _class11(_test_object_names._class4): pass
+        class _class11(_test_object_names._class4):
+            pass
 
-        class _exception(Exception): pass
+        class _exception(Exception):
+            pass
 
         self._class7 = _class7
         self._class8 = _class8
@@ -1332,17 +1378,20 @@ class TestPython2UnableToGetClassName(unittest.TestCase):
                 self.other_file_name,
                 '_function3')
 
-    def test_subclass_new_class_type_instancemethod_desc_decorator_this_file(self):
+    def test_subclass_new_class_type_instancemethod_desc_decorator_this_file(
+            self):
         self.assertCallableName(
                 self._class11._function2,
                 self.other_file_name,
                 '_function2')
 
-    def test_subclass_new_class_instance_instancemethod_desc_decorator_this_file(self):
+    def test_subcls_new_class_instance_instancemethod_desc_decorator_this_file(
+            self):
         self.assertCallableName(
                 self._class11()._function2,
                 self.other_file_name,
                 '_function2')
+
 
 if __name__ == '__main__':
     unittest.main()

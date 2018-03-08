@@ -1,4 +1,3 @@
-import logging
 import pytest
 import sys
 import time
@@ -14,11 +13,13 @@ import newrelic.api.generator_trace
 settings = newrelic.api.settings.settings()
 application = newrelic.api.application.application_instance()
 
+
 @newrelic.api.generator_trace.generator_trace()
 def _test_function_1():
     for i in range(4):
         time.sleep(0.5)
         yield time.time()
+
 
 class TestCase(newrelic.tests.test_cases.TestCase):
 
@@ -27,7 +28,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
     @pytest.mark.xfail(sys.version_info >= (3, 7), strict=True,
             reason='PYTHON-2700')
     def test_function_trace_decorator(self):
-        environ = { "REQUEST_URI": "/generator_trace_decorator" }
+        environ = {"REQUEST_URI": "/generator_trace_decorator"}
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
@@ -36,6 +37,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             for item in result:
                 pass
             time.sleep(0.1)
+
 
 if __name__ == '__main__':
     unittest.main()

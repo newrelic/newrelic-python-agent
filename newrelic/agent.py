@@ -40,11 +40,6 @@ from newrelic.api.transaction import (
 from newrelic.api.transaction_context import (
         TransactionContext as __TransactionContext)
 
-# DEPRECATED - The name_transaction call is deprecated and the
-# set_transaction_name function should be used instead.
-
-from newrelic.api.transaction import name_transaction as __name_transaction
-
 # DEPRECATED - The add_user_attribute call is deprecated and the
 # add_custom_parameter function should be used instead.
 
@@ -215,8 +210,6 @@ record_custom_event = __wrap_api_call(__record_custom_event,
         'record_custom_event')
 TransactionContext = __wrap_api_call(__TransactionContext,
         'TransactionContext')
-name_transaction = __wrap_api_call(__name_transaction,
-        'name_transaction')
 add_user_attribute = __wrap_api_call(__add_user_attribute,
         'add_user_attribute')
 wsgi_application = __wsgi_application

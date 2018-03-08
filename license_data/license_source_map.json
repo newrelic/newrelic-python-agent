@@ -233,12 +233,6 @@
             "New Relic"
         ]
     },
-    "newrelic/api/name_transaction.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/api/object_wrapper.py": {
         "hash": "n/a",
         "libraries": [

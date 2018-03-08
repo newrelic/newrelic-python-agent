@@ -53,7 +53,8 @@ def test_ensure_future(explicit_loop, arg_type, future_arg, in_transaction):
         if hasattr(asyncio, 'ensure_future'):
             ensure_future = asyncio.ensure_future
         else:
-            ensure_future = asyncio.async
+            # use getattr because `async` is a keyword in py37
+            ensure_future = getattr(asyncio, 'async')
 
         loop = asyncio.get_event_loop()
 

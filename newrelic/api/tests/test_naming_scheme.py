@@ -1,11 +1,10 @@
 import unittest
 
-import newrelic.packages.six as six
-
-from newrelic.core.config import global_settings, finalize_application_settings
-from newrelic.api.web_transaction import WebTransaction, wsgi_application
+from newrelic.core.config import finalize_application_settings
+from newrelic.api.web_transaction import wsgi_application
 from newrelic.api.transaction import current_transaction
 from newrelic.api.object_wrapper import callable_name
+
 
 class MockApplication(object):
     def __init__(self, settings, name='Python Application'):
@@ -17,12 +16,16 @@ class MockApplication(object):
         self.enabled = True
         self.thread_utilization = None
         self.attribute_filter = None
+
     def activate(self):
         pass
+
     def normalize_name(self, name, rule_type):
         return name, False
+
     def record_transaction(self, data, *args):
         return None
+
 
 class TestCase(unittest.TestCase):
 
@@ -252,7 +255,8 @@ class TestCase(unittest.TestCase):
 
         # Should be named after the innermost specific name and group.
 
-        @wsgi_application(application=application, name='Name-2', group='Group')
+        @wsgi_application(application=application, name='Name-2',
+                group='Group')
         def test_application_2(environ, start_response):
             transaction = current_transaction()
 
@@ -263,7 +267,8 @@ class TestCase(unittest.TestCase):
 
         path_2 = u'WebTransaction/Group/Name-2'
 
-        @wsgi_application(application=application, name='Name-1', group='Group')
+        @wsgi_application(application=application, name='Name-1',
+                group='Group')
         def test_application_1(environ, start_response):
             transaction = current_transaction()
 
@@ -275,30 +280,6 @@ class TestCase(unittest.TestCase):
             return test_application_2(environ, start_response)
 
         path_1 = u'WebTransaction/Group/Name-1'
-
-        environ = {}
-        environ['REQUEST_URI'] = '/url'
-
-        test_application_1(environ, None).close()
-
-    def test_uri_name(self):
-        settings = {}
-        settings['transaction_name.naming_scheme'] = 'uri'
-
-        application = MockApplication(settings)
-
-        # Should be named after the specific name and group.
-
-        @wsgi_application(application=application, name='Name', group='Group')
-        def test_application_1(environ, start_response):
-            transaction = current_transaction()
-
-            self.assertNotEqual(transaction, None)
-            self.assertTrue(transaction.enabled)
-
-            self.assertEqual(transaction.path, path_1)
-
-        path_1 = u'WebTransaction/Group/Name'
 
         environ = {}
         environ['REQUEST_URI'] = '/url'
@@ -469,6 +450,7 @@ class TestCase(unittest.TestCase):
         environ['REQUEST_URI'] = '/url'
 
         test_application_1(environ, None).close()
+
 
 if __name__ == '__main__':
     unittest.main()

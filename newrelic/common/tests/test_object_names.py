@@ -1,6 +1,7 @@
 import datetime
 import inspect
 import pytest
+import sys
 import unittest
 
 import newrelic.packages.six as six
@@ -147,6 +148,8 @@ class TestCallableName(unittest.TestCase):
                 callable_name(_test_object_names._class3(1)),
                 _test_object_names._module_fqdn('_class3'))
 
+    @pytest.mark.xfail(sys.version_info >= (3, 7), strict=True,
+            reason='PYTHON-2699')
     def test_generated_class_type_instancemethod(self):
         # Cannot work out module name of method bound class for
         # Python 3. Make consistent between 2 and use Python 3.

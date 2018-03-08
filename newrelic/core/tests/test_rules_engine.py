@@ -1,3 +1,5 @@
+import pytest
+import sys
 import unittest
 
 import newrelic.packages.six as six
@@ -96,6 +98,8 @@ class TestRulesEngine(unittest.TestCase):
             ("/wallabies/ArticleDetails/tabid/bar/ArticleID/bar/Default.aspx",
             False), result)
 
+    @pytest.mark.xfail(sys.version_info >= (3, 7), strict=True,
+            reason='PYTHON-2695')
     def test_rule_on_each_segment(self):
         rule = dict(match_expression = u".*",
                     replacement = u"X",

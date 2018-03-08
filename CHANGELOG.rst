@@ -6,6 +6,19 @@ unreleased
   Prior to this version, using an SSL connection to New Relic was the default
   behavior. SSL connections are now enforced (not overrideable).
 
+- Add automatic tracing of AIOHTTP 3 middleware
+
+  In addition to the old-style middleware previously supported, the AIOHTTP 3
+  style middleware is now automatically traced as part of the AIOHTTP
+  instrumentation package.
+
+2.106.0 (2018-02-28)
+--------------------
+
+- Support for AIOHTTP 3
+
+  AIOHTTP major version 3 is now supported by the New Relic Python agent.
+
 2.104.0 (2018-02-20)
 --------------------
 

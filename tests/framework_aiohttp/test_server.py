@@ -7,6 +7,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
         validate_transaction_errors, validate_transaction_event_attributes,
         count_transactions, override_generic_settings,
         override_application_settings, override_ignore_status_codes)
+version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
 
 
 BASE_REQUIRED_ATTRS = ['request.headers.contentType',
@@ -122,6 +123,7 @@ def test_error_exception(method, uri, metric_name, error, status, nr_enabled,
 ])
 def test_simultaneous_requests(method, uri, metric_name,
         nr_enabled, aiohttp_app):
+
     @asyncio.coroutine
     def fetch():
         resp = yield from aiohttp_app.client.request(method, uri)

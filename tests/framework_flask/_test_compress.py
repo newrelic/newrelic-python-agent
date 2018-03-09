@@ -1,7 +1,13 @@
+try:
+    from io import BytesIO as IO
+except ImportError:
+    import StringIO as IO
+
 import webtest
 
 from flask import Flask
 from flask import Response
+from flask import send_file
 from flask_compress import Compress
 
 from newrelic.api.transaction import (get_browser_timing_header,
@@ -54,6 +60,32 @@ def html_insertion_named_attachment_header():
     response.headers.add('Content-Disposition',
                 'attachment; filename="X"')
     return response
+
+
+@application.route('/html_served_from_file')
+def html_served_from_file():
+    file = IO()
+    contents = b"""
+    <!DOCTYPE html><html><head>Some header</head>
+    <body><h1>My First Heading</h1><p>My first paragraph.</p>
+    </body></html>
+    """
+    file.write(contents)
+    file.seek(0)
+    return send_file(file, mimetype='text/html')
+
+
+@application.route('/text_served_from_file')
+def text_served_from_file():
+    file = IO()
+    contents = b"""
+    <!DOCTYPE html><html><head>Some header</head>
+    <body><h1>My First Heading</h1><p>My first paragraph.</p>
+    </body></html>
+    """
+    file.write(contents)
+    file.seek(0)
+    return send_file(file, mimetype='text/plain')
 
 _test_application = webtest.TestApp(application)
 

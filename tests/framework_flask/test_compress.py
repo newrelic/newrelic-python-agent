@@ -49,6 +49,19 @@ def test_html_insertion_flask_middleware():
     response.mustcontain('NREUM HEADER', 'NREUM.info')
 
 
+@override_application_settings(_test_html_insertion_settings)
+def test_html_inserted_for_html_served_from_file():
+    application = target_application()
+    headers = { 'Accept-Encoding': 'gzip' }
+    response = application.get('/html_served_from_file', headers=headers, status=200)
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    response.mustcontain('NREUM HEADER', 'NREUM.info')
+
+
 _test_html_insertion_manual_settings = {
     'browser_monitoring.enabled': True,
     'browser_monitoring.auto_instrument': True,
@@ -89,6 +102,20 @@ def test_html_insertion_named_attachment_header_flask_middleware():
     # footer added by the agent.
 
     response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
+
+
+@override_application_settings(_test_html_insertion_settings)
+def test_text_served_from_file():
+    application = target_application()
+    response = application.get(
+            '/text_served_from_file', status=200)
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
+
 
 def test_empty_content_type():
     application = target_application()

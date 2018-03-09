@@ -33,6 +33,7 @@ def test_compress_middleware():
 _test_html_insertion_settings = {
     'browser_monitoring.enabled': True,
     'browser_monitoring.auto_instrument': True,
+    'browser_monitoring.content_type': ['text/html'],
     'js_agent_loader': u'<!-- NREUM HEADER -->',
 }
 
@@ -65,6 +66,7 @@ def test_html_inserted_for_html_served_from_file():
 _test_html_insertion_manual_settings = {
     'browser_monitoring.enabled': True,
     'browser_monitoring.auto_instrument': True,
+    'browser_monitoring.content_type': ['text/html'],
     'js_agent_loader': u'<!-- NREUM HEADER -->',
 }
 
@@ -117,6 +119,7 @@ def test_text_served_from_file():
     response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
 
 
+@override_application_settings(_test_html_insertion_settings)
 def test_empty_content_type():
     application = target_application()
     response = application.get('/empty_content_type')
@@ -124,4 +127,4 @@ def test_empty_content_type():
     # Make sure agent doesn't blow up, if content type is ''
 
     assert response.headers['Content-Type'] == ''
-    response.mustcontain('Empty Content Type Header')
+    response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])

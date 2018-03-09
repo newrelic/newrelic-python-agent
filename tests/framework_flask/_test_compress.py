@@ -91,6 +91,8 @@ _test_application = webtest.TestApp(application)
 
 @application.route('/empty_content_type')
 def empty_content_type():
-    response = Response('Empty Content Type Header', mimetype='')
+    response = Response(response='<!DOCTYPE html><html><head>Some header</head>'
+            '<body><h1>My First Heading</h1><p>My first paragraph.</p>'
+            '</body></html>', mimetype='')
     assert response.mimetype is None
     return response

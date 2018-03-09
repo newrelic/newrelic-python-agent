@@ -21,10 +21,12 @@ def _setting_boolean(value):
 
 _settings_types = {
     'browser_monitoring.auto_instrument': _setting_boolean,
+    'browser_monitoring.auto_instrument_passthrough': _setting_boolean,
 }
 
 _settings_defaults = {
     'browser_monitoring.auto_instrument': True,
+    'browser_monitoring.auto_instrument_passthrough': True,
 }
 
 flask_compress_settings = extra_settings('import-hook:flask_compress',
@@ -102,6 +104,10 @@ def _nr_wrapper_Compress_after_request(wrapped, instance, args, kwargs):
     # likely to be streaming a file or other large response.
     direct_passthrough = getattr(response, 'direct_passthrough', None)
     if direct_passthrough:
+        if not (flask_compress_settings.
+                browser_monitoring.auto_instrument_passthrough):
+            return wrapped(*args, **kwargs)
+
         # In those cases, if the mimetype is still a supported browser
         # insertion mimetype is not an attachment, and will be compressed, then
         # we should try to go ahead and insert browser stuff since Flask
@@ -109,7 +115,7 @@ def _nr_wrapper_Compress_after_request(wrapped, instance, args, kwargs):
         #
         # In order to do that, we have to disable direct_passthrough on the
         # response since we have to immediately read the contents of the file.
-        if ctype == 'text/html':
+        elif ctype == 'text/html':
             response.direct_passthrough = False
         else:
             return wrapped(*args, **kwargs)

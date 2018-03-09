@@ -35,6 +35,7 @@ _s3_rollup_metrics = [
     ('External/s3.amazonaws.com/botocore/DELETE', 2),
 ]
 
+
 @validate_transaction_metrics(
         'test_botocore_s3:test_s3',
         scoped_metrics=_s3_scoped_metrics,

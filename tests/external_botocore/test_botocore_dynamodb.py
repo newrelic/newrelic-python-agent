@@ -31,6 +31,7 @@ _dynamodb_rollup_metrics = [
     ('External/dynamodb.us-east-1.amazonaws.com/botocore/POST', 5),
 ]
 
+
 @validate_transaction_metrics(
         'test_botocore_dynamodb:test_dynamodb',
         scoped_metrics=_dynamodb_scoped_metrics,

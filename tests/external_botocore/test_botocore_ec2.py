@@ -30,6 +30,7 @@ _ec2_rollup_metrics = [
     ('External/ec2.us-east-1.amazonaws.com/botocore/POST', 3),
 ]
 
+
 @validate_transaction_metrics(
         'test_botocore_ec2:test_ec2',
         scoped_metrics=_ec2_scoped_metrics,

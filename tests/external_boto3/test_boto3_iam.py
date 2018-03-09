@@ -28,6 +28,7 @@ _iam_rollup_metrics = [
     ('External/iam.amazonaws.com/botocore/POST', 3),
 ]
 
+
 @validate_transaction_metrics(
         'test_boto3_iam:test_iam',
         scoped_metrics=_iam_scoped_metrics,

@@ -30,6 +30,7 @@ _sqs_rollup_metrics = [
     ('External/queue.amazonaws.com/botocore/POST', 6),
 ]
 
+
 @validate_transaction_metrics(
         'test_botocore_sqs:test_sqs',
         scoped_metrics=_sqs_scoped_metrics,

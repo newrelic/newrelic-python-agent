@@ -36,14 +36,6 @@ def _nr_wrapper_Compress_after_request(wrapped, instance, args, kwargs):
 
     response = _params(*args, **kwargs)
 
-    # If the response has direct_passthrough flagged, then is
-    # likely to be streaming a file or other large response.
-    # Leave the response alone in this situation even though
-    # it looked like flask_compress doesn't honour it.
-
-    #if getattr(response, 'direct_passthrough', None):
-    #    return wrapped(*args, **kwargs)
-
     # Need to be running within a valid web transaction.
 
     transaction = current_transaction()
@@ -105,6 +97,22 @@ def _nr_wrapper_Compress_after_request(wrapped, instance, args, kwargs):
 
     if not header:
         return wrapped(*args, **kwargs)
+
+    # If the response has direct_passthrough flagged, then is
+    # likely to be streaming a file or other large response.
+    direct_passthrough = getattr(response, 'direct_passthrough', None)
+    if direct_passthrough:
+        # In those cases, if the mimetype is still a supported browser
+        # insertion mimetype is not an attachment, and will be compressed, then
+        # we should try to go ahead and insert browser stuff since Flask
+        # Compress change the response anyway.
+        #
+        # In order to do that, we have to disable direct_passthrough on the
+        # response since we have to immediately read the contents of the file.
+        if ctype == 'text/html':
+            response.direct_passthrough = False
+        else:
+            return wrapped(*args, **kwargs)
 
     def html_to_be_inserted():
         return six.b(header) + six.b(transaction.browser_timing_footer())

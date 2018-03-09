@@ -1,4 +1,5 @@
 import pytest
+import sys
 
 import webtest
 import threading
@@ -170,6 +171,8 @@ _test_async_application_engine_multi_list_prepare_get_scoped_metrics = [
 ]
 
 
+@pytest.mark.xfail(sys.version_info >= (3, 7), strict=True,
+        reason='PYTHON-2702')
 @setup_application_server
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[])
@@ -191,6 +194,8 @@ _test_async_application_engine_multi_yield_prepare_get_scoped_metrics = [
 ]
 
 
+@pytest.mark.xfail(sys.version_info >= (3, 7), strict=True,
+        reason='PYTHON-2702')
 @setup_application_server
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[])
@@ -212,6 +217,8 @@ _test_async_application_engine_cascade_prepare_get_scoped_metrics = [
 ]
 
 
+@pytest.mark.xfail(sys.version_info >= (3, 7), strict=True,
+        reason='PYTHON-2702')
 @setup_application_server
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[])
@@ -233,6 +240,9 @@ _test_async_application_engine_external_prepare_get_scoped_metrics = [
 ]
 
 
+@pytest.mark.xfail(
+        sys.version_info >= (3, 7) and tornado.version_info >= (3, 1),
+        strict=True, reason='PYTHON-2702')
 @requires_coroutine
 @setup_application_server
 @raise_background_exceptions()
@@ -303,6 +313,8 @@ _test_async_application_engine_get_scoped_metrics = [
 ]
 
 
+@pytest.mark.xfail(sys.version_info >= (3, 7), strict=True,
+        reason='PYTHON-2702')
 @setup_application_server
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[])
@@ -368,6 +380,9 @@ _test_async_application_coroutine_get_scoped_metrics = [
 ]
 
 
+@pytest.mark.xfail(
+        sys.version_info >= (3, 7) and tornado.version_info >= (3, 1),
+        strict=True, reason='PYTHON-2702')
 @requires_coroutine
 @setup_application_server
 @raise_background_exceptions()

@@ -29,6 +29,14 @@ unreleased
   wrap_callable has been deprecated in favor of FunctionWrapper.
   wrap_callable will be removed in a future release.
 
+- Remove data-source admin command
+
+  The platform API (used by newrelic-admin data-source) has been removed.
+  Please use data sources
+  (https://docs.newrelic.com/docs/agents/python-agent/supported-features/
+  python-custom-metrics#registering-a-data-source) in place of the platform
+  API.
+
 - SSL connections to New Relic are now mandatory.
 
   Prior to this version, using an SSL connection to New Relic was the default

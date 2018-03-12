@@ -1,6 +1,22 @@
 unreleased
 ----------
 
+- Removed previously deprecated APIs
+
+  The following APIs have been removed:
+    - transaction (use current_transaction)
+    - name_transaction (use set_transaction_name)
+    - Application.record_metric (use Application.record_custom_metric)
+    - Application.record_metrics (use Application.record_custom_metrics)
+    - Transaction.notice_error (use Transaction.record_exception)
+    - Transaction.record_metric (use Transaction.record_custom_metric)
+
+- Deprecate Transaction.add_user_attribute
+
+  Transaction.add_user_attribute has been deprecated in favor of
+  Transaction.add_custom_parameter. Transaction.add_user_attribute will be
+  removed in a future release.
+
 - SSL connections to New Relic are now mandatory.
 
   Prior to this version, using an SSL connection to New Relic was the default

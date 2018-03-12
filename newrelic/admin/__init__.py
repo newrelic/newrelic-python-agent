@@ -4,7 +4,6 @@ import sys
 import logging
 
 _builtin_plugins = [
-    'data_source',
     'debug_console',
     'generate_config',
     'license_info',

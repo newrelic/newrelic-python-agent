@@ -17,6 +17,12 @@ unreleased
   Transaction.add_custom_parameter. Transaction.add_user_attribute will be
   removed in a future release.
 
+- Deprecate Transaction.add_user_attributes
+
+  Transaction.add_user_attributes has been deprecated in favor of
+  Transaction.add_custom_parameters. Transaction.add_user_attributes will be
+  removed in a future release.
+
 - SSL connections to New Relic are now mandatory.
 
   Prior to this version, using an SSL connection to New Relic was the default

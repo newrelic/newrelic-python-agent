@@ -1353,6 +1353,9 @@ class Transaction(object):
         self.add_custom_parameter(name, value)
 
     def add_user_attributes(self, items):
+        warnings.warn('API change. Use add_custom_parameters() '
+                'instead of add_user_attributes().', DeprecationWarning,
+                stacklevel=2)
         self.add_custom_parameters(items)
 
     def add_framework_info(self, name, version=None):

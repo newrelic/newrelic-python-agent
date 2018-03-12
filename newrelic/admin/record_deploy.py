@@ -45,11 +45,10 @@ def local_config(args):
         host = 'staging-api.newrelic.com'
 
     port = settings.port
-    ssl = settings.ssl
 
     url = '%s://%s/deployments.xml'
 
-    scheme = ssl and 'https' or 'http'
+    scheme = 'https'
     server = port and '%s:%d' % (host, port) or host
 
     url = url % (scheme, server)

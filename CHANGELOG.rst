@@ -1,6 +1,11 @@
 unreleased
 ----------
 
+- SSL connections to New Relic are now mandatory.
+
+  Prior to this version, using an SSL connection to New Relic was the default
+  behavior. SSL connections are now enforced (not overrideable).
+
 - Add automatic tracing of AIOHTTP 3 middleware
 
   In addition to the old-style middleware previously supported, the AIOHTTP 3

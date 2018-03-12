@@ -189,8 +189,6 @@ def validate_config(args):
     _logger.debug('Proxy port is %r.', _settings.proxy_port)
     _logger.debug('Proxy user is %r.', _settings.proxy_user)
 
-    _logger.debug('SSL enabled is %r.', _settings.ssl)
-
     _logger.debug('License key is %r.', _settings.license_key)
 
     _timeout = 30.0

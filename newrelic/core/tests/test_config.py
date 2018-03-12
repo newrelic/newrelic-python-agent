@@ -156,13 +156,6 @@ class TestCreateSettingsSnapshot(unittest.TestCase):
     def setUp(self):
         self.local = copy.deepcopy(newrelic.core.config.global_settings())
 
-    def test_high_security_off_override_ssl(self):
-        server = {'ssl': False}
-        self.local.high_security = False
-        self.local.ssl = True
-        c = newrelic.core.config.apply_server_side_settings(server, self.local)
-        self.assertFalse(c.ssl)
-
     def test_high_security_off_override_capture_params(self):
         server = {'capture_params': False}
         self.local.high_security = False
@@ -176,13 +169,6 @@ class TestCreateSettingsSnapshot(unittest.TestCase):
         self.local.transaction_tracer.record_sql = 'raw'
         c = newrelic.core.config.apply_server_side_settings(server, self.local)
         self.assertEqual(c.transaction_tracer.record_sql, 'off')
-
-    def test_high_security_on_keep_local_ssl(self):
-        server = {}
-        self.local.high_security = True
-        self.local.ssl = True
-        c = newrelic.core.config.apply_server_side_settings(server, self.local)
-        self.assertTrue(c.ssl)
 
     def test_high_security_on_keep_local_capture_params(self):
         server = {}

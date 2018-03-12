@@ -2,7 +2,6 @@ import os
 import sys
 import logging
 import traceback
-import warnings
 
 try:
     import ConfigParser
@@ -14,7 +13,7 @@ from newrelic.packages import six
 from newrelic.common.log_file import initialize_logging
 from newrelic.common.object_names import expand_builtin_exception_name
 from newrelic.core.config import (Settings, apply_config_setting,
-        fetch_config_setting)
+        fetch_config_setting, default_host)
 
 import newrelic.core.agent
 import newrelic.core.config
@@ -179,6 +178,15 @@ def _map_inc_excl_attributes(s):
     return newrelic.core.config._parse_attributes(s)
 
 
+def _map_default_host_value(license_key):
+    # If the license key is region aware, we should override the default host
+    # to be the region aware host
+    _default_host = default_host(license_key)
+    _settings.host = os.environ.get('NEW_RELIC_HOST', _default_host)
+
+    return license_key
+
+
 # Processing of a single setting from configuration file.
 
 def _raise_configuration_error(section, option=None):
@@ -280,7 +288,7 @@ def _process_configuration(section):
     _process_setting(section, 'labels',
                      'get', _map_labels)
     _process_setting(section, 'license_key',
-                     'get', None)
+                     'get', _map_default_host_value)
     _process_setting(section, 'api_key',
                      'get', None)
     _process_setting(section, 'host',
@@ -757,16 +765,10 @@ def translate_deprecated_settings(settings, cached_settings):
                 'request parameters, add "request.parameters.*" to '
                 'attributes.exclude.')
 
-    # Log a DeprecationWarning for customers who have disabled SSL. Disabling
-    # SSL will be disallowed in a future agent version.
     if not settings.ssl:
-        msg = ('Disabling SSL will be disallowed in a future agent version. '
-               'Please enable ssl by removing ssl=false from your New Relic '
-               'configuration file or by removing the NEW_RELIC_SSL '
-               'environment variable from the application environment.')
-
-        warnings.warn(msg, DeprecationWarning, stacklevel=2)
-        _logger.warning(msg)
+        settings.ssl = True
+        _logger.info('Ignoring deprecated setting: ssl. Enabling ssl is now '
+                'mandatory. Setting ssl=true.')
 
     return settings
 
@@ -782,10 +784,6 @@ def apply_local_high_security_mode_setting(settings):
     log_template = ('Overriding setting for %r because High '
                     'Security Mode has been activated. The original '
                     'setting was %r. The new setting is %r.')
-
-    if not settings.ssl:
-        settings.ssl = True
-        _logger.info(log_template, 'ssl', False, True)
 
     # capture_params is a deprecated setting for users, and has three
     # possible values:

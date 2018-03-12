@@ -6,6 +6,7 @@ import traceback
 import logging
 import itertools
 import random
+import warnings
 
 from collections import deque
 
@@ -1346,6 +1347,9 @@ class Transaction(object):
             self.add_custom_parameter(name, value)
 
     def add_user_attribute(self, name, value):
+        warnings.warn('API change. Use add_custom_parameter() '
+                'instead of add_user_attribute().', DeprecationWarning,
+                stacklevel=2)
         self.add_custom_parameter(name, value)
 
     def add_user_attributes(self, items):
@@ -1450,6 +1454,9 @@ def add_custom_parameter(key, value):
 
 
 def add_user_attribute(key, value):
+    warnings.warn('API change. Use add_custom_parameter() '
+            'instead of add_user_attribute().', DeprecationWarning,
+            stacklevel=2)
     return add_custom_parameter(key, value)
 
 

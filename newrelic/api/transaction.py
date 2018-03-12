@@ -1077,9 +1077,6 @@ class Transaction(object):
         self._group = group
         self._name = name
 
-    def name_transaction(self, name, group=None, priority=None):
-        return self.set_transaction_name(name, group, priority)
-
     def record_exception(self, exc=None, value=None, tb=None,
                          params={}, ignore_errors=[]):
 

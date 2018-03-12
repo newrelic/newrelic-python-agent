@@ -10,6 +10,7 @@ unreleased
     - Application.record_metrics (use Application.record_custom_metrics)
     - Transaction.notice_error (use Transaction.record_exception)
     - Transaction.record_metric (use Transaction.record_custom_metric)
+    - Transaction.name_transaction (use Transaction.set_transaction_name)
 
 - Deprecate Transaction.add_user_attribute
 

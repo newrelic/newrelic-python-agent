@@ -7,18 +7,6 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
-def platform_url(host='platform-api.newrelic.com', port=None, ssl=True):
-    """Returns the URL for talking to the data collector when reporting
-    platform metrics.
-
-    """
-
-    url = '%s://%s/platform/v1/metrics'
-
-    scheme = ssl and 'https' or 'http'
-    server = port and '%s:%d' % (host, port) or host
-
-    return url % (scheme, server)
 
 def proxy_details(proxy_scheme, proxy_host, proxy_port, proxy_user,
         proxy_pass):
@@ -78,4 +66,4 @@ def proxy_details(proxy_scheme, proxy_host, proxy_port, proxy_user,
 
     proxy = '%s://%s%s' % (proxy_scheme, netloc, path)
 
-    return { 'http': proxy, 'https': proxy }
+    return {'http': proxy, 'https': proxy}

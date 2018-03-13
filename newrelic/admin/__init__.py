@@ -4,7 +4,6 @@ import sys
 import logging
 
 _builtin_plugins = [
-    'data_source',
     'debug_console',
     'generate_config',
     'license_info',
@@ -20,6 +19,7 @@ _builtin_plugins = [
 
 _commands = {}
 
+
 def command(name, options='', description='', hidden=False,
         log_intercept=True, deprecated=False):
     def wrapper(callback):
@@ -33,11 +33,13 @@ def command(name, options='', description='', hidden=False,
         return callback
     return wrapper
 
+
 def usage(name):
     details = _commands[name]
     if details.deprecated:
         print("[WARNING] This command is deprecated and will be removed")
     print('Usage: newrelic-admin %s %s' % (name, details.options))
+
 
 @command('help', '[command]', hidden=True)
 def help(args):
@@ -73,6 +75,7 @@ def help(args):
                     description = '[DEPRECATED] ' + description
                 print(description)
 
+
 def setup_log_intercept():
     # Send any errors or warnings to standard output as well so more
     # obvious as use may have trouble finding the relevant messages in
@@ -98,10 +101,12 @@ def setup_log_intercept():
     _stdout_handler.setFormatter(_stdout_formatter)
     _stdout_logger.addHandler(_stdout_handler)
 
+
 def load_internal_plugins():
     for name in _builtin_plugins:
         module_name = '%s.%s' % (__name__, name)
         __import__(module_name)
+
 
 def load_external_plugins():
     try:
@@ -113,6 +118,7 @@ def load_external_plugins():
 
     for entrypoint in pkg_resources.iter_entry_points(group=group):
         __import__(entrypoint.module_name)
+
 
 def main():
     try:
@@ -132,6 +138,7 @@ def main():
         setup_log_intercept()
 
     callback(sys.argv[2:])
+
 
 load_internal_plugins()
 load_external_plugins()

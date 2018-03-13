@@ -24,6 +24,11 @@ unreleased
   Transaction.add_custom_parameters. Transaction.add_user_attributes will be
   removed in a future release.
 
+- Deprecate wrap_callable
+
+  wrap_callable has been deprecated in favor of FunctionWrapper.
+  wrap_callable will be removed in a future release.
+
 - SSL connections to New Relic are now mandatory.
 
   Prior to this version, using an SSL connection to New Relic was the default

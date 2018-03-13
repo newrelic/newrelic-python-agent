@@ -4,9 +4,9 @@ import time
 import threading
 import traceback
 import logging
-import warnings
 import itertools
 import random
+import warnings
 
 from collections import deque
 
@@ -1077,9 +1077,6 @@ class Transaction(object):
         self._group = group
         self._name = name
 
-    def name_transaction(self, name, group=None, priority=None):
-        return self.set_transaction_name(name, group, priority)
-
     def record_exception(self, exc=None, value=None, tb=None,
                          params={}, ignore_errors=[]):
 
@@ -1247,13 +1244,6 @@ class Transaction(object):
 
         self._errors.append(node)
 
-    def notice_error(self, exc, value, tb, params={}, ignore_errors=[]):
-        warnings.warn('Internal API change. Use record_exception() '
-                'instead of notice_error().', DeprecationWarning,
-                stacklevel=2)
-
-        self.record_exception(exc, value, tb, params, ignore_errors)
-
     def record_custom_metric(self, name, value):
         self._custom_metrics.record_custom_metric(name, value)
 
@@ -1273,13 +1263,6 @@ class Transaction(object):
         event = create_custom_event(event_type, params)
         if event:
             self._custom_events.add(event)
-
-    def record_metric(self, name, value):
-        warnings.warn('Internal API change. Use record_custom_metric() '
-                'instead of record_metric().', DeprecationWarning,
-                stacklevel=2)
-
-        return self.record_custom_metric(name, value)
 
     def active_node(self):
         return self.current_node
@@ -1361,9 +1344,15 @@ class Transaction(object):
             self.add_custom_parameter(name, value)
 
     def add_user_attribute(self, name, value):
+        warnings.warn('API change. Use add_custom_parameter() '
+                'instead of add_user_attribute().', DeprecationWarning,
+                stacklevel=2)
         self.add_custom_parameter(name, value)
 
     def add_user_attributes(self, items):
+        warnings.warn('API change. Use add_custom_parameters() '
+                'instead of add_user_attributes().', DeprecationWarning,
+                stacklevel=2)
         self.add_custom_parameters(items)
 
     def add_framework_info(self, name, version=None):
@@ -1417,22 +1406,7 @@ def current_transaction(active_only=True):
     return current
 
 
-def transaction():
-    warnings.warn('Internal API change. Use current_transaction() '
-            'instead of transaction().', DeprecationWarning, stacklevel=2)
-
-    return current_transaction()
-
-
 def set_transaction_name(name, group=None, priority=None):
-    transaction = current_transaction()
-    if transaction:
-        transaction.set_transaction_name(name, group, priority)
-
-
-def name_transaction(name, group=None, priority=None):
-    warnings.warn('API change. Use set_transaction_name() instead of '
-            'name_transaction().', DeprecationWarning, stacklevel=2)
     transaction = current_transaction()
     if transaction:
         transaction.set_transaction_name(name, group, priority)
@@ -1480,6 +1454,9 @@ def add_custom_parameter(key, value):
 
 
 def add_user_attribute(key, value):
+    warnings.warn('API change. Use add_custom_parameter() '
+            'instead of add_user_attribute().', DeprecationWarning,
+            stacklevel=2)
     return add_custom_parameter(key, value)
 
 

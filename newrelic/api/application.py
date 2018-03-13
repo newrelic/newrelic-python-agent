@@ -1,10 +1,10 @@
 import threading
-import warnings
 
 import newrelic.core.config
 import newrelic.core.agent
 
 import newrelic.packages.six as six
+
 
 class Application(object):
 
@@ -108,13 +108,6 @@ class Application(object):
         if self.active:
             self._agent.record_custom_metric(self._name, name, value)
 
-    def record_metric(self, name, value):
-        warnings.warn('Internal API change. Use record_custom_metric() '
-                'instead of record_metric().', DeprecationWarning,
-                stacklevel=2)
-
-        return self.record_custom_metric(name, value)
-
     def record_custom_metrics(self, metrics):
         if self.active and metrics:
             self._agent.record_custom_metrics(self._name, metrics)
@@ -122,13 +115,6 @@ class Application(object):
     def record_custom_event(self, event_type, params):
         if self.active:
             self._agent.record_custom_event(self._name, event_type, params)
-
-    def record_metrics(self, metrics):
-        warnings.warn('Internal API change. Use record_custom_metrics() '
-                'instead of record_metrics().', DeprecationWarning,
-                stacklevel=2)
-
-        return self.record_custom_metrics(metrics)
 
     def record_transaction(self, data, profile_samples=None):
         if self.active:
@@ -139,19 +125,16 @@ class Application(object):
             return self._agent.normalize_name(self._name, name, rule_type)
         return name, False
 
+
 def application_instance(name=None):
     return Application._instance(name)
 
-def application():
-   warnings.warn('Internal API change. Use application_instance() '
-           'instead of application().', DeprecationWarning, stacklevel=2)
-
-   return application_instance()
 
 def register_application(name=None, timeout=None):
     instance = application_instance(name)
     instance.activate(timeout)
     return instance
+
 
 def application_settings(name=None):
     instance = application_instance(name)

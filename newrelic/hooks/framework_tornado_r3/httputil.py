@@ -2,7 +2,7 @@ import logging
 import weakref
 
 from newrelic.hooks.framework_tornado_r3.util import purge_current_transaction
-from newrelic.api.application import application as application_instance
+from newrelic.api.application import application_instance
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper

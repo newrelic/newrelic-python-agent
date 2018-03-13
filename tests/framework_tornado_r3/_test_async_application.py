@@ -5,7 +5,7 @@ import threading
 import time
 import tornado
 
-from newrelic.api.application import application as nr_app
+from newrelic.api.application import application_instance as nr_app
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import function_trace
 from newrelic.api.transaction import set_transaction_name, current_transaction

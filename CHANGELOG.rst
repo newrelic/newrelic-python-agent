@@ -1,6 +1,9 @@
 unreleased
 ----------
 
+3.0.0 (2018-03-14)
+------------------
+
 - Removed previously deprecated APIs
 
   The following APIs have been removed:

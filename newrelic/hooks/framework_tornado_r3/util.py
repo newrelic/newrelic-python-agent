@@ -2,7 +2,7 @@ import logging
 import sys
 import traceback
 
-from newrelic.api.application import application as application_instance
+from newrelic.api.application import application_instance
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.transaction import Sentinel, current_transaction
 from newrelic.common.object_names import callable_name

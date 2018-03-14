@@ -1,4 +1,4 @@
-from newrelic.api.application import application as default_application
+from newrelic.api.application import application_instance as default_application
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
         FunctionWrapper)
 from newrelic.api.background_task import BackgroundTask

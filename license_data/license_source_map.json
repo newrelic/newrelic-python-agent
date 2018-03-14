@@ -41,12 +41,6 @@
             "New Relic"
         ]
     },
-    "newrelic/admin/data_source.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/admin/debug_console.py": {
         "hash": "n/a",
         "libraries": [
@@ -228,12 +222,6 @@
         ]
     },
     "newrelic/api/message_transaction.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/api/name_transaction.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -1889,12 +1877,6 @@
             "New Relic"
         ]
     },
-    "newrelic/network/platform_api.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/network/tests/__init__.py": {
         "hash": "n/a",
         "libraries": [
@@ -1902,12 +1884,6 @@
         ]
     },
     "newrelic/network/tests/test_addresses.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/network/tests/test_platform_api.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -2469,12 +2445,6 @@
         "hash": "dec047f8b665eb44e3fb68ac1ed31c57",
         "libraries": [
             "wrapt"
-        ]
-    },
-    "newrelic/platform.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
         ]
     },
     "newrelic/samplers/__init__.py": {

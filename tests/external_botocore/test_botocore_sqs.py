@@ -1,3 +1,4 @@
+import sys
 import uuid
 
 import botocore.session
@@ -5,6 +6,11 @@ import moto
 
 from newrelic.api.background_task import background_task
 from testing_support.fixtures import validate_transaction_metrics
+
+# patch moto to support py37
+if sys.version_info >= (3, 7):
+    import re
+    moto.packages.responses.responses.re._pattern_type = re.Pattern
 
 AWS_ACCESS_KEY_ID = 'AAAAAAAAAAAACCESSKEY'
 AWS_SECRET_ACCESS_KEY = 'AAAAAASECRETKEY'
@@ -23,6 +29,7 @@ _sqs_rollup_metrics = [
     ('External/queue.amazonaws.com/all', 6),
     ('External/queue.amazonaws.com/botocore/POST', 6),
 ]
+
 
 @validate_transaction_metrics(
         'test_botocore_sqs:test_sqs',

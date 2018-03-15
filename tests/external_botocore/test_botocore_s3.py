@@ -1,3 +1,4 @@
+import sys
 import uuid
 
 import botocore.session
@@ -5,6 +6,11 @@ import moto
 
 from newrelic.api.background_task import background_task
 from testing_support.fixtures import validate_transaction_metrics
+
+# patch moto to support py37
+if sys.version_info >= (3, 7):
+    import re
+    moto.packages.responses.responses.re._pattern_type = re.Pattern
 
 
 AWS_ACCESS_KEY_ID = 'AAAAAAAAAAAACCESSKEY'
@@ -28,6 +34,7 @@ _s3_rollup_metrics = [
     ('External/s3.amazonaws.com/botocore/PUT', 2),
     ('External/s3.amazonaws.com/botocore/DELETE', 2),
 ]
+
 
 @validate_transaction_metrics(
         'test_botocore_s3:test_s3',

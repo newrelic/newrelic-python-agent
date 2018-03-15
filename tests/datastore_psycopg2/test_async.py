@@ -70,15 +70,19 @@ _disable_rollup_metrics.append(
         (_instance_metric_name, None)
 )
 
+
 # Query
 
 def _exercise_db():
     wait = psycopg2.extras.wait_select
 
+    # `async` is a keyword in Python 3.7+
+    kwasync = {'async': 1}
+
     async_conn = psycopg2.connect(
             database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
             password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port'], async=1
+            port=DB_SETTINGS['port'], **kwasync
     )
     wait(async_conn)
     async_cur = async_conn.cursor()
@@ -101,6 +105,7 @@ def _exercise_db():
         assert isinstance(row, tuple)
 
     async_conn.close()
+
 
 # Tests
 

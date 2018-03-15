@@ -1,3 +1,4 @@
+import sys
 import uuid
 
 import botocore.session
@@ -5,6 +6,11 @@ import moto
 
 from newrelic.api.background_task import background_task
 from testing_support.fixtures import validate_transaction_metrics
+
+# patch moto to support py37
+if sys.version_info >= (3, 7):
+    import re
+    moto.packages.responses.responses.re._pattern_type = re.Pattern
 
 
 AWS_ACCESS_KEY_ID = 'AAAAAAAAAAAACCESSKEY'
@@ -24,6 +30,7 @@ _dynamodb_rollup_metrics = [
     ('External/dynamodb.us-east-1.amazonaws.com/all', 5),
     ('External/dynamodb.us-east-1.amazonaws.com/botocore/POST', 5),
 ]
+
 
 @validate_transaction_metrics(
         'test_botocore_dynamodb:test_dynamodb',

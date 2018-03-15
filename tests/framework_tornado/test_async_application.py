@@ -1,4 +1,5 @@
 import pytest
+import sys
 
 import webtest
 import threading
@@ -17,11 +18,14 @@ from newrelic.common.object_wrapper import function_wrapper
 
 requires_coroutine = pytest.mark.skipif(tornado.version_info[:2] < (3, 0),
     reason="Tornado only added gen.coroutine in 3.0.")
-requires_coroutine_error = pytest.mark.skipif(tornado.version_info[:2] < (3, 1),
+requires_coroutine_error = pytest.mark.skipif(
+    tornado.version_info[:2] < (3, 1),
     reason="Tornado only exceptions in gen.coroutine in 3.1.")
+
 
 def select_python_version(py2, py3):
     return six.PY3 and py3 or py2
+
 
 def _ioloop_metric_name(method_name=None):
 
@@ -44,12 +48,14 @@ def _ioloop_metric_name(method_name=None):
 
     return metric_name
 
+
 server_thread = None
 server_ready = threading.Event()
 
 # HTTP listener port will be of form 1mmnn.
 
 http_port = int('1%02d%02d' % tornado.version_info[:2])
+
 
 @function_wrapper
 def setup_application_server(wrapped, instance, args, kwargs):
@@ -68,6 +74,7 @@ def setup_application_server(wrapped, instance, args, kwargs):
 
     return wrapped(*args, **kwargs)
 
+
 def teardown_module(module):
     global server_thread
 
@@ -75,12 +82,14 @@ def teardown_module(module):
     if server_thread is not None:
         server_thread.join()
 
+
 _test_application = webtest.TestApp('http://localhost:%d' % http_port)
 
 _test_async_application_main_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
     ('Function/_test_async_application:MainHandler.get', 1)
 ]
+
 
 @setup_application_server
 @raise_background_exceptions()
@@ -92,6 +101,7 @@ def test_async_application_main_get():
     response = _test_application.get('/main')
     response.mustcontain('MAIN RESPONSE')
 
+
 _test_async_application_asynchronous_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
     ('Function/_test_async_application:AsynchronousHandler.get', 1),
@@ -99,15 +109,18 @@ _test_async_application_asynchronous_get_scoped_metrics = [
     ('Function/tornado.simple_httpclient:SimpleAsyncHTTPClient.fetch', 1),
 ]
 
+
 @setup_application_server
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics('_test_async_application:AsynchronousHandler.get',
+@validate_transaction_metrics(
+    '_test_async_application:AsynchronousHandler.get',
     scoped_metrics=_test_async_application_asynchronous_get_scoped_metrics)
 @wait_for_background_threads()
 def test_async_application_asynchronous_get():
     response = _test_application.get('/asynchronous')
     response.mustcontain('ASYNCHRONOUS RESPONSE')
+
 
 _test_async_application_immediate_prepare_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
@@ -115,97 +128,135 @@ _test_async_application_immediate_prepare_get_scoped_metrics = [
     ('Function/_test_async_application:ImmediatePrepareHandler.get', 1),
 ]
 
+
 @setup_application_server
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics('_test_async_application:ImmediatePrepareHandler.get',
-    scoped_metrics=_test_async_application_immediate_prepare_get_scoped_metrics)
+@validate_transaction_metrics(
+    '_test_async_application:ImmediatePrepareHandler.get',
+    scoped_metrics=_test_async_application_immediate_prepare_get_scoped_metrics
+)
 @wait_for_background_threads()
 def test_async_application_immediate_prepare_get():
     response = _test_application.get('/immediate_prepare')
     response.mustcontain('PREPARE RESPONSE')
 
+
 _test_async_application_engine_immediate_prepare_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
-    ('Function/_test_async_application:EngineImmediatePrepareHandler.prepare', 1),
+    ('Function/_test_async_application:EngineImmediatePrepareHandler.prepare',
+        1),
     ('Function/_test_async_application:EngineImmediatePrepareHandler.get', 1),
 ]
+
 
 @setup_application_server
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics('_test_async_application:EngineImmediatePrepareHandler.get',
-    scoped_metrics=_test_async_application_engine_immediate_prepare_get_scoped_metrics)
+@validate_transaction_metrics(
+    '_test_async_application:EngineImmediatePrepareHandler.get',
+    scoped_metrics=(
+        _test_async_application_engine_immediate_prepare_get_scoped_metrics))
 @wait_for_background_threads()
 def test_async_application_engine_immediate_prepare_get():
     response = _test_application.get('/engine_immediate_prepare')
     response.mustcontain('PREPARE RESPONSE')
 
+
 _test_async_application_engine_multi_list_prepare_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
-    ('Function/_test_async_application:EngineMultiListPrepareHandler.prepare', 1),
+    ('Function/_test_async_application:EngineMultiListPrepareHandler.prepare',
+        1),
     ('Function/_test_async_application:EngineMultiListPrepareHandler.get', 1),
 ]
 
+
+@pytest.mark.xfail(sys.version_info >= (3, 7), strict=True,
+        reason='PYTHON-2702')
 @setup_application_server
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics('_test_async_application:EngineMultiListPrepareHandler.get',
-    scoped_metrics=_test_async_application_engine_multi_list_prepare_get_scoped_metrics)
+@validate_transaction_metrics(
+    '_test_async_application:EngineMultiListPrepareHandler.get',
+    scoped_metrics=(
+        _test_async_application_engine_multi_list_prepare_get_scoped_metrics))
 @wait_for_background_threads()
 def test_async_application_engine_multi_list_prepare_get():
     response = _test_application.get('/engine_multi_list_prepare')
     response.mustcontain('PREPARE RESPONSE')
 
+
 _test_async_application_engine_multi_yield_prepare_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
-    ('Function/_test_async_application:EngineMultiYieldPrepareHandler.prepare', 1),
+    ('Function/_test_async_application:EngineMultiYieldPrepareHandler.prepare',
+        1),
     ('Function/_test_async_application:EngineMultiYieldPrepareHandler.get', 1),
 ]
 
+
+@pytest.mark.xfail(sys.version_info >= (3, 7), strict=True,
+        reason='PYTHON-2702')
 @setup_application_server
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics('_test_async_application:EngineMultiYieldPrepareHandler.get',
-    scoped_metrics=_test_async_application_engine_multi_yield_prepare_get_scoped_metrics)
+@validate_transaction_metrics(
+    '_test_async_application:EngineMultiYieldPrepareHandler.get',
+    scoped_metrics=(
+        _test_async_application_engine_multi_yield_prepare_get_scoped_metrics))
 @wait_for_background_threads()
 def test_async_application_engine_multi_yield_prepare_get():
     response = _test_application.get('/engine_multi_yield_prepare')
     response.mustcontain('PREPARE RESPONSE')
 
+
 _test_async_application_engine_cascade_prepare_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
-    ('Function/_test_async_application:EngineCascadePrepareHandler.prepare', 1),
+    ('Function/_test_async_application:EngineCascadePrepareHandler.prepare',
+        1),
     ('Function/_test_async_application:EngineCascadePrepareHandler.get', 1),
 ]
 
+
+@pytest.mark.xfail(sys.version_info >= (3, 7), strict=True,
+        reason='PYTHON-2702')
 @setup_application_server
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics('_test_async_application:EngineCascadePrepareHandler.get',
-    scoped_metrics=_test_async_application_engine_cascade_prepare_get_scoped_metrics)
+@validate_transaction_metrics(
+    '_test_async_application:EngineCascadePrepareHandler.get',
+    scoped_metrics=(
+        _test_async_application_engine_cascade_prepare_get_scoped_metrics))
 @wait_for_background_threads()
 def test_async_application_engine_cascade_prepare_get():
     response = _test_application.get('/engine_cascade_prepare')
     response.mustcontain('PREPARE RESPONSE')
 
+
 _test_async_application_engine_external_prepare_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
-    ('Function/_test_async_application:EngineExternalPrepareHandler.prepare', 1),
+    ('Function/_test_async_application:EngineExternalPrepareHandler.prepare',
+        1),
     ('Function/_test_async_application:EngineExternalPrepareHandler.get', 1),
 ]
 
+
+@pytest.mark.xfail(
+        sys.version_info >= (3, 7) and tornado.version_info >= (3, 1),
+        strict=True, reason='PYTHON-2702')
 @requires_coroutine
 @setup_application_server
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics('_test_async_application:EngineExternalPrepareHandler.get',
-    scoped_metrics=_test_async_application_engine_external_prepare_get_scoped_metrics)
+@validate_transaction_metrics(
+    '_test_async_application:EngineExternalPrepareHandler.get',
+    scoped_metrics=(
+        _test_async_application_engine_external_prepare_get_scoped_metrics))
 @wait_for_background_threads()
 def test_async_application_engine_external_prepare_get():
     response = _test_application.get('/engine_external_prepare')
     response.mustcontain('PREPARE RESPONSE')
 
+
 _test_async_application_template_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
     ('Template/Render/<string>', 1),
@@ -219,6 +270,7 @@ _test_async_application_template_get_scoped_metrics = [
     ('Template/Block/body', 1),
     ('Function/_test_async_application:TemplateHandler.get', 1),
 ]
+
 
 @setup_application_server
 @raise_background_exceptions()
@@ -230,6 +282,7 @@ def test_async_application_template_get():
     response = _test_application.get('/template')
     response.mustcontain('TEMPLATE RESPONSE')
 
+
 _test_async_application_delay_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
     ('Function/_test_async_application:DelayHandler.get', 1),
@@ -237,6 +290,7 @@ _test_async_application_delay_get_scoped_metrics = [
     ('Python/Tornado/Callback/Wait', 1),
     (_ioloop_metric_name('add_timeout'), 1),
 ]
+
 
 @setup_application_server
 @raise_background_exceptions()
@@ -248,15 +302,19 @@ def test_async_application_delay_get():
     response = _test_application.get('/delay')
     response.mustcontain('DELAY RESPONSE')
 
+
 _test_async_application_engine_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
     ('Function/_test_async_application:EngineHandler.get', 1),
     ('Function/_test_async_application:EngineHandler.get (yield)', 2),
     ('Function/_test_async_application:EngineHandler.finish', 1),
     ('Function/_test_async_application:EngineHandler.callback', 1),
-    #('Python/Tornado/Callback/Wait', 1),
+    # ('Python/Tornado/Callback/Wait', 1),
 ]
 
+
+@pytest.mark.xfail(sys.version_info >= (3, 7), strict=True,
+        reason='PYTHON-2702')
 @setup_application_server
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[])
@@ -267,25 +325,29 @@ def test_async_application_engine_get():
     response = _test_application.get('/engine')
     response.mustcontain('DELAY RESPONSE')
 
+
 _test_async_application_engine_return_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
     ('Function/_test_async_application:EngineReturnHandler.get', 1),
     ('Function/_test_async_application:EngineReturnHandler.get (yield)', 2),
     ('Function/_test_async_application:EngineReturnHandler.finish', 1),
     ('Function/_test_async_application:EngineReturnHandler.callback', 1),
-    #('Python/Tornado/Callback/Wait', 1),
+    # ('Python/Tornado/Callback/Wait', 1),
 ]
+
 
 @requires_coroutine
 @setup_application_server
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics('_test_async_application:EngineReturnHandler.get',
+@validate_transaction_metrics(
+    '_test_async_application:EngineReturnHandler.get',
     scoped_metrics=_test_async_application_engine_return_get_scoped_metrics)
 @wait_for_background_threads()
 def test_async_application_engine_return_get():
     response = _test_application.get('/engine_return')
     response.mustcontain('RETURN RESPONSE')
+
 
 _test_async_application_engine_error_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
@@ -293,8 +355,9 @@ _test_async_application_engine_error_get_scoped_metrics = [
     ('Function/_test_async_application:EngineErrorHandler.get (yield)', 2),
     ('Function/_test_async_application:EngineErrorHandler.finish', 1),
     ('Function/_test_async_application:EngineErrorHandler.callback', 1),
-    #('Python/Tornado/Callback/Wait', 1),
+    # ('Python/Tornado/Callback/Wait', 1),
 ]
+
 
 @setup_application_server
 @raise_background_exceptions()
@@ -306,15 +369,20 @@ _test_async_application_engine_error_get_scoped_metrics = [
 def test_async_application_engine_error_get():
     _test_application.get('/engine_error', status=500)
 
+
 _test_async_application_coroutine_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
     ('Function/_test_async_application:CoroutineHandler.get', 1),
     ('Function/_test_async_application:CoroutineHandler.get (yield)', 2),
     ('Function/_test_async_application:CoroutineHandler.finish', 1),
     ('Function/_test_async_application:CoroutineHandler.callback', 1),
-    #('Python/Tornado/Callback/Wait', 1),
+    # ('Python/Tornado/Callback/Wait', 1),
 ]
 
+
+@pytest.mark.xfail(
+        sys.version_info >= (3, 7) and tornado.version_info >= (3, 1),
+        strict=True, reason='PYTHON-2702')
 @requires_coroutine
 @setup_application_server
 @raise_background_exceptions()
@@ -326,25 +394,29 @@ def test_async_application_coroutine_get():
     response = _test_application.get('/coroutine')
     response.mustcontain('DELAY RESPONSE')
 
+
 _test_async_application_coroutine_return_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
     ('Function/_test_async_application:CoroutineReturnHandler.get', 1),
     ('Function/_test_async_application:CoroutineReturnHandler.get (yield)', 2),
     ('Function/_test_async_application:CoroutineReturnHandler.finish', 1),
     ('Function/_test_async_application:CoroutineReturnHandler.callback', 1),
-    #('Python/Tornado/Callback/Wait', 1),
+    # ('Python/Tornado/Callback/Wait', 1),
 ]
+
 
 @requires_coroutine
 @setup_application_server
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics('_test_async_application:CoroutineReturnHandler.get',
+@validate_transaction_metrics(
+    '_test_async_application:CoroutineReturnHandler.get',
     scoped_metrics=_test_async_application_coroutine_return_get_scoped_metrics)
 @wait_for_background_threads()
 def test_async_application_coroutine_return_get():
     response = _test_application.get('/coroutine_return')
     response.mustcontain('RETURN RESPONSE')
+
 
 _test_async_application_coroutine_error_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
@@ -352,25 +424,29 @@ _test_async_application_coroutine_error_get_scoped_metrics = [
     ('Function/_test_async_application:CoroutineErrorHandler.get (yield)', 2),
     ('Function/_test_async_application:CoroutineErrorHandler.finish', 1),
     ('Function/_test_async_application:CoroutineErrorHandler.callback', 1),
-    #('Python/Tornado/Callback/Wait', 1),
+    # ('Python/Tornado/Callback/Wait', 1),
 ]
+
 
 @requires_coroutine_error
 @setup_application_server
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[select_python_version(
     py2='exceptions:RuntimeError', py3='builtins:RuntimeError')])
-@validate_transaction_metrics('_test_async_application:CoroutineErrorHandler.get',
+@validate_transaction_metrics(
+    '_test_async_application:CoroutineErrorHandler.get',
     scoped_metrics=_test_async_application_coroutine_error_get_scoped_metrics)
 @wait_for_background_threads()
 def test_async_application_coroutine_error_get():
     _test_application.get('/coroutine_error', status=500)
+
 
 _test_async_application_404_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
     ('Function/tornado.web:ErrorHandler.prepare', 1),
     ('Function/tornado.web:ErrorHandler.finish', 1),
 ]
+
 
 @setup_application_server
 @raise_background_exceptions()
@@ -382,11 +458,13 @@ def test_async_application_404():
     response = _test_application.get('/missing', status=404)
     response.mustcontain(no=['XXX'])
 
+
 _test_async_application_raise_404_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
     ('Function/_test_async_application:Raise404Handler.get', 1),
     ('Function/_test_async_application:Raise404Handler.finish', 1),
 ]
+
 
 @setup_application_server
 @raise_background_exceptions()
@@ -398,12 +476,14 @@ def test_async_application_raise_404():
     response = _test_application.get('/raise404', status=404)
     response.mustcontain(no=['XXX'])
 
+
 _test_async_application_main_post_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
     ('Function/_test_async_application:MainHandler.post', 1),
     ('Function/tornado.httputil:parse_body_arguments', 1),
     ('Function/_test_async_application:MainHandler.finish', 1),
 ]
+
 
 @setup_application_server
 @raise_background_exceptions()
@@ -415,12 +495,14 @@ def test_async_application_main_post():
     response = _test_application.post('/main', params={'a': 'b'})
     response.mustcontain('MAIN RESPONSE')
 
+
 _test_async_application_main_put_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
     ('Function/_test_async_application:MainHandler.put', 1),
     ('Function/tornado.httputil:parse_body_arguments', 1),
     ('Function/_test_async_application:MainHandler.finish', 1),
 ]
+
 
 @setup_application_server
 @raise_background_exceptions()

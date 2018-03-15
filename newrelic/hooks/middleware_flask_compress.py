@@ -10,14 +10,16 @@ from newrelic.packages import six
 _logger = logging.getLogger(__name__)
 
 _boolean_states = {
-   '1': True, 'yes': True, 'true': True, 'on': True,
-   '0': False, 'no': False, 'false': False, 'off': False
+    '1': True, 'yes': True, 'true': True, 'on': True,
+    '0': False, 'no': False, 'false': False, 'off': False
 }
+
 
 def _setting_boolean(value):
     if value.lower() not in _boolean_states:
         raise ValueError('Not a boolean: %s' % value)
     return _boolean_states[value.lower()]
+
 
 _settings_types = {
     'browser_monitoring.auto_instrument': _setting_boolean,
@@ -31,6 +33,7 @@ _settings_defaults = {
 
 flask_compress_settings = extra_settings('import-hook:flask_compress',
         types=_settings_types, defaults=_settings_defaults)
+
 
 def _nr_wrapper_Compress_after_request(wrapped, instance, args, kwargs):
     def _params(response, *args, **kwargs):
@@ -70,7 +73,6 @@ def _nr_wrapper_Compress_after_request(wrapped, instance, args, kwargs):
 
     if ctype not in transaction.settings.browser_monitoring.content_type:
         return wrapped(*args, **kwargs)
-
 
     # Don't risk it if content encoding already set.
 
@@ -141,6 +143,7 @@ def _nr_wrapper_Compress_after_request(wrapped, instance, args, kwargs):
         response.headers['Content-Length'] = str(len(response.get_data()))
 
     return wrapped(*args, **kwargs)
+
 
 def instrument_flask_compress(module):
     wrap_function_wrapper(module, 'Compress.after_request',

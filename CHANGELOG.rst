@@ -1,6 +1,12 @@
 unreleased
 ----------
 
+- Add request.uri attribute to transaction and error events
+
+  The Python agent will now report request.uri as an attribute on transaction
+  events and error events. To disable this feature, add request.uri to the
+  attributes.exclude list in the newrelic.ini configuration file.
+
 3.0.0 (2018-03-14)
 ------------------
 

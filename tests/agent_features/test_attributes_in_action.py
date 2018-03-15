@@ -27,14 +27,14 @@ REQ_PARAMS = ['request.parameters.' + URL_PARAM,
 USER_ATTRS = ['puppies', 'sunshine']
 
 TRACE_ERROR_AGENT_KEYS = ['wsgi.output.seconds', 'response.status',
-        'request.method', 'request.headers.contentType',
+        'request.method', 'request.headers.contentType', 'request.uri',
         'request.headers.contentLength', 'response.headers.contentLength',
         'response.headers.contentType']
 
 AGENT_KEYS_ALL = TRACE_ERROR_AGENT_KEYS + REQ_PARAMS
 
 TRANS_EVENT_INTRINSICS = ('name', 'duration', 'type', 'timestamp', 'totalTime')
-TRANS_EVENT_AGENT_KEYS = ['response.status', 'request.method',
+TRANS_EVENT_AGENT_KEYS = ['response.status', 'request.method', 'request.uri',
         'request.headers.contentType', 'request.headers.contentLength',
         'response.headers.contentLength', 'response.headers.contentType']
 
@@ -429,7 +429,8 @@ _expected_attributes_event = {'agent': ['wsgi.output.seconds',
         'request.headers.contentLength'], 'user': ERROR_USER_ATTRS,
         'intrinsic': ERROR_EVENT_INTRINSICS}
 
-_expected_absent_attributes = {'agent': ['request.method'] + REQ_PARAMS,
+_expected_absent_attributes = {
+        'agent': ['request.method', 'request.uri'] + REQ_PARAMS,
         'user': []}
 
 
@@ -459,7 +460,7 @@ _expected_attributes = {'agent': ['response.status',
         'user': USER_ATTRS, 'intrinsic': TRANS_EVENT_INTRINSICS}
 
 _expected_absent_attributes = {'agent': ['request.method',
-        'wsgi.output.seconds'] + REQ_PARAMS, 'user': []}
+        'wsgi.output.seconds', 'request.uri'] + REQ_PARAMS, 'user': []}
 
 
 @validate_transaction_event_attributes(_expected_attributes,

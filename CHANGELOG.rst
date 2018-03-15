@@ -1,6 +1,56 @@
 unreleased
 ----------
 
+- Add request.uri attribute to transaction and error events
+
+  The Python agent will now report request.uri as an attribute on transaction
+  events and error events. To disable this feature, add request.uri to the
+  attributes.exclude list in the newrelic.ini configuration file.
+
+3.0.0 (2018-03-14)
+------------------
+
+- Removed previously deprecated APIs
+
+  The following APIs have been removed:
+    - transaction (use current_transaction)
+    - name_transaction (use set_transaction_name)
+    - Application.record_metric (use Application.record_custom_metric)
+    - Application.record_metrics (use Application.record_custom_metrics)
+    - Transaction.notice_error (use Transaction.record_exception)
+    - Transaction.record_metric (use Transaction.record_custom_metric)
+    - Transaction.name_transaction (use Transaction.set_transaction_name)
+
+- Deprecate Transaction.add_user_attribute
+
+  Transaction.add_user_attribute has been deprecated in favor of
+  Transaction.add_custom_parameter. Transaction.add_user_attribute will be
+  removed in a future release.
+
+- Deprecate Transaction.add_user_attributes
+
+  Transaction.add_user_attributes has been deprecated in favor of
+  Transaction.add_custom_parameters. Transaction.add_user_attributes will be
+  removed in a future release.
+
+- Deprecate wrap_callable
+
+  wrap_callable has been deprecated in favor of FunctionWrapper.
+  wrap_callable will be removed in a future release.
+
+- Remove data-source admin command
+
+  The platform API (used by newrelic-admin data-source) has been removed.
+  Please use data sources
+  (https://docs.newrelic.com/docs/agents/python-agent/supported-features/
+  python-custom-metrics#registering-a-data-source) in place of the platform
+  API.
+
+- SSL connections to New Relic are now mandatory.
+
+  Prior to this version, using an SSL connection to New Relic was the default
+  behavior. SSL connections are now enforced (not overrideable).
+
 - Add automatic tracing of AIOHTTP 3 middleware
 
   In addition to the old-style middleware previously supported, the AIOHTTP 3

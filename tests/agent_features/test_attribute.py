@@ -50,7 +50,7 @@ def test_intrinsics():
 
 
 _required_agent = ['request.method', 'wsgi.output.seconds', 'response.status',
-        'request.headers.host', 'request.headers.accept',
+        'request.headers.host', 'request.headers.accept', 'request.uri',
         'response.headers.contentType', 'response.headers.contentLength']
 _forgone_agent = []
 

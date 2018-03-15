@@ -9,7 +9,6 @@ import time
 import logging
 import threading
 import atexit
-import warnings
 import traceback
 
 import newrelic
@@ -25,6 +24,7 @@ from newrelic.samplers.memory_usage import memory_usage_data_source
 from newrelic.core.thread_utilization import thread_utilization_data_source
 
 _logger = logging.getLogger(__name__)
+
 
 def check_environment():
     # If running under uWSGI, then must be version 1.2.6 or newer. Must
@@ -59,6 +59,7 @@ def check_environment():
                     'then threading will not be enabled and you will see no '
                     'data being reported by the agent. For more details see '
                     'https://newrelic.com/docs/python/python-agent-and-uwsgi.')
+
 
 class Agent(object):
 
@@ -477,13 +478,6 @@ class Agent(object):
 
         application.record_custom_metric(name, value)
 
-    def record_metric(self, app_name, name, value):
-        warnings.warn('Internal API change. Use record_custom_metric() '
-                'instead of record_metric().', DeprecationWarning,
-                stacklevel=2)
-
-        return self.record_custom_metric(app_name, name, value)
-
     def record_custom_metrics(self, app_name, metrics):
         """Records the metrics for the named application. If there has
         been no prior request to activate the application, the metric is
@@ -504,13 +498,6 @@ class Agent(object):
             return
 
         application.record_custom_event(event_type, params)
-
-    def record_metrics(self, app_name, metrics):
-        warnings.warn('Internal API change. Use record_custom_metrics() '
-                'instead of record_metrics().', DeprecationWarning,
-                stacklevel=2)
-
-        return self.record_custom_metrics(app_name, metrics)
 
     def record_transaction(self, app_name, data, profile_samples=None):
         """Processes the raw transaction data, generating and recording
@@ -535,8 +522,6 @@ class Agent(object):
 
     def _harvest_loop(self):
         _logger.debug('Entering harvest loop.')
-
-        settings = newrelic.core.config.global_settings()
 
         self._next_harvest = time.time()
 
@@ -630,12 +615,11 @@ class Agent(object):
         self._last_harvest = time.time()
 
         for application in list(six.itervalues(self._applications)):
-              try:
-                  application.harvest(shutdown)
-
-              except Exception:
-                  _logger.exception('Failed to harvest data '
-                                    'for %s.' % application.name)
+            try:
+                application.harvest(shutdown)
+            except Exception:
+                _logger.exception('Failed to harvest data '
+                                  'for %s.' % application.name)
 
         self._harvest_duration = time.time() - self._last_harvest
 
@@ -681,6 +665,7 @@ class Agent(object):
         self._harvest_shutdown.set()
         self._harvest_thread.join(timeout)
 
+
 def agent_instance():
     """Returns the agent object. This function should always be used and
     instances of the agent object should never be created directly to
@@ -694,15 +679,11 @@ def agent_instance():
 
     return Agent.agent_singleton()
 
-def agent():
-   warnings.warn('Internal API change. Use agent_instance() '
-           'instead of agent().', DeprecationWarning, stacklevel=2)
-
-   return agent_instance()
 
 def shutdown_agent(timeout=None):
     agent = agent_instance()
     agent.shutdown_agent(timeout)
+
 
 def register_data_source(source, application=None, name=None,
         settings=None, **properties):
@@ -711,9 +692,11 @@ def register_data_source(source, application=None, name=None,
             application and application.name or None, name, settings,
             **properties)
 
+
 def _remove_thread_utilization():
     agent = agent_instance()
     agent.remove_thread_utilization()
+
 
 def remove_thread_utilization():
     with Agent._instance_lock:

@@ -42,7 +42,6 @@ def test_hsm_configuration_default():
 _hsm_local_config_file_settings_disabled = [
     {
         'high_security': False,
-        'ssl': True,
         'capture_params': True,
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': False,
@@ -51,7 +50,6 @@ _hsm_local_config_file_settings_disabled = [
     },
     {
         'high_security': False,
-        'ssl': False,
         'capture_params': False,
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': False,
@@ -60,7 +58,6 @@ _hsm_local_config_file_settings_disabled = [
     },
     {
         'high_security': False,
-        'ssl': False,
         'capture_params': False,
         'transaction_tracer.record_sql': 'obfuscated',
         'strip_exception_messages.enabled': True,
@@ -69,7 +66,6 @@ _hsm_local_config_file_settings_disabled = [
     },
     {
         'high_security': False,
-        'ssl': False,
         'capture_params': False,
         'transaction_tracer.record_sql': 'off',
         'strip_exception_messages.enabled': True,
@@ -81,7 +77,6 @@ _hsm_local_config_file_settings_disabled = [
 _hsm_local_config_file_settings_enabled = [
     {
         'high_security': True,
-        'ssl': True,
         'capture_params': True,
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': True,
@@ -90,7 +85,6 @@ _hsm_local_config_file_settings_enabled = [
     },
     {
         'high_security': True,
-        'ssl': True,
         'capture_params': None,
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': True,
@@ -99,7 +93,6 @@ _hsm_local_config_file_settings_enabled = [
     },
     {
         'high_security': True,
-        'ssl': False,
         'capture_params': True,
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': True,
@@ -108,7 +101,6 @@ _hsm_local_config_file_settings_enabled = [
     },
     {
         'high_security': True,
-        'ssl': True,
         'capture_params': False,
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': True,
@@ -117,7 +109,6 @@ _hsm_local_config_file_settings_enabled = [
     },
     {
         'high_security': True,
-        'ssl': True,
         'capture_params': True,
         'transaction_tracer.record_sql': 'obfuscated',
         'strip_exception_messages.enabled': True,
@@ -126,7 +117,6 @@ _hsm_local_config_file_settings_enabled = [
     },
     {
         'high_security': True,
-        'ssl': True,
         'capture_params': True,
         'transaction_tracer.record_sql': 'off',
         'strip_exception_messages.enabled': True,
@@ -135,7 +125,6 @@ _hsm_local_config_file_settings_enabled = [
     },
     {
         'high_security': True,
-        'ssl': True,
         'capture_params': True,
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': False,
@@ -159,7 +148,6 @@ def parameterize_hsm_local_config(settings_list):
 
 @parameterize_hsm_local_config(_hsm_local_config_file_settings_disabled)
 def test_local_config_file_override_hsm_disabled(settings):
-    original_ssl = settings.ssl
     original_capture_params = settings.capture_params
     original_record_sql = settings.transaction_tracer.record_sql
     original_strip_messages = settings.strip_exception_messages.enabled
@@ -169,7 +157,6 @@ def test_local_config_file_override_hsm_disabled(settings):
 
     apply_local_high_security_mode_setting(settings)
 
-    assert settings.ssl == original_ssl
     assert settings.capture_params == original_capture_params
     assert settings.transaction_tracer.record_sql == original_record_sql
     assert settings.strip_exception_messages.enabled == original_strip_messages
@@ -182,7 +169,6 @@ def test_local_config_file_override_hsm_disabled(settings):
 def test_local_config_file_override_hsm_enabled(settings):
     apply_local_high_security_mode_setting(settings)
 
-    assert settings.ssl
     assert settings.capture_params not in (True, None)
     assert settings.transaction_tracer.record_sql in ('off', 'obfuscated')
     assert settings.strip_exception_messages.enabled

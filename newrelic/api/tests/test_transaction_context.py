@@ -5,12 +5,107 @@ import newrelic.api.application
 import newrelic.api.background_task
 import newrelic.api.transaction_context as transaction_context
 import newrelic.tests.test_cases
+from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.transaction import current_transaction
 
 application = newrelic.api.application.application_instance()
 
 
 class TestTransactionContext(newrelic.tests.test_cases.TestCase):
+
+    def test_exited_trace_is_not_restored(self):
+        txn = newrelic.api.background_task.BackgroundTask(application,
+                'test_exited_trace_is_not_restored')
+
+        with txn:
+            trace = FunctionTrace(txn, 'foobar')
+            trace.__enter__()
+            try:
+                txn.drop_transaction()
+
+                with transaction_context.TransactionContext(txn):
+                    trace.__exit__(None, None, None)
+
+                assert txn.current_node is not trace
+            finally:
+                txn.save_transaction()
+
+    def test_trace_is_restored(self):
+        txn = newrelic.api.background_task.BackgroundTask(application,
+                'test_trace_is_restored')
+
+        with txn:
+            trace = FunctionTrace(txn, 'foobar')
+            trace.__enter__()
+            try:
+                txn.drop_transaction()
+
+                with transaction_context.TransactionContext(txn):
+                    assert txn.current_node is trace
+
+                assert txn.current_node is trace
+            finally:
+                txn.save_transaction()
+
+    def test_target_transaction_is_not_active(self):
+        txn = newrelic.api.background_task.BackgroundTask(application,
+                'test_target_transaction_is_not_active')
+
+        with txn:
+            txn.stop_recording()
+            txn.drop_transaction()
+            try:
+                with transaction_context.TransactionContext(txn):
+                    assert current_transaction(active_only=False) is txn
+            finally:
+                txn.save_transaction()
+
+    def test_source_transaction_is_not_active(self):
+        txn = newrelic.api.background_task.BackgroundTask(application,
+                'test_source_transaction_is_not_active')
+
+        with txn:
+            txn.stop_recording()
+            txn.drop_transaction()
+            try:
+                with transaction_context.TransactionContext(None):
+                    assert current_transaction(active_only=False) is None
+            finally:
+                txn.save_transaction()
+
+            assert txn.stopped
+            assert current_transaction(active_only=False) is txn
+
+    def test_swapping_same_inactive_transaction(self):
+        txn = newrelic.api.background_task.BackgroundTask(application,
+                'test_swapping_same_inactive_transaction')
+
+        with txn:
+            txn.stop_recording()
+
+            with transaction_context.TransactionContext(txn):
+                assert current_transaction(active_only=False) is txn
+
+            assert current_transaction(active_only=False) is txn
+
+    def test_swapping_same_active_transaction(self):
+        txn = newrelic.api.background_task.BackgroundTask(application,
+                'test_swapping_same_active_transaction')
+
+        with txn:
+            with transaction_context.TransactionContext(txn):
+                assert current_transaction(active_only=False) is txn
+
+            assert current_transaction(active_only=False) is txn
+
+    def test_enter_returns_self(self):
+        txn = newrelic.api.background_task.BackgroundTask(application,
+                'test_enter_returns_self')
+
+        context = transaction_context.TransactionContext(txn)
+
+        with context as _context:
+            assert context is _context
 
     def test_transaction_context_basic(self):
         txn = newrelic.api.background_task.BackgroundTask(application,

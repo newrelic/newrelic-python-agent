@@ -14,6 +14,12 @@ unreleased
   Flask Compress, the use of the Flask send_file helper to send html files
   resulted in an application crash. This issue has now been resolved.
 
+- Fix incorrect parenting for traces of coroutines scheduled with asyncio
+  gather/ensure_future
+
+  Coroutines scheduled with asyncio gather/ensure_future may have been reported
+  as being a child of the wrong function. This issue has now been corrected.
+
 3.0.0 (2018-03-14)
 ------------------
 

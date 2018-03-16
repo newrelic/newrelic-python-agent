@@ -6,6 +6,8 @@ class TransactionContext(object):
 
     def __init__(self, transaction):
         self.transaction = transaction
+        if transaction:
+            self.trace = transaction.current_node
         self.restore_transaction = None
 
     def __enter__(self):
@@ -16,9 +18,16 @@ class TransactionContext(object):
 
         if self.transaction:
             self.transaction.save_transaction()
+            self.restore_trace = self.transaction.current_node
+            self.transaction.current_node = self.trace
+
+        return self
 
     def __exit__(self, exc, value, tb):
         if self.transaction:
+            # only restore if the trace is not already exited
+            if self.restore_trace and not self.restore_trace.exited:
+                self.transaction.current_node = self.restore_trace
             current = current_transaction(active_only=False)
             if current is self.transaction:
                 self.transaction.drop_transaction()

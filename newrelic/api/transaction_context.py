@@ -21,6 +21,8 @@ class TransactionContext(object):
             self.restore_trace = self.transaction.current_node
             self.transaction.current_node = self.trace
 
+        return self
+
     def __exit__(self, exc, value, tb):
         if self.transaction:
             # only restore if the trace is not already exited

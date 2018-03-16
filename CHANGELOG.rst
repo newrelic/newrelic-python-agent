@@ -7,6 +7,13 @@ unreleased
   events and error events. To disable this feature, add request.uri to the
   attributes.exclude list in the newrelic.ini configuration file.
 
+- Using send_file with Flask Compress middleware may have caused an application
+  crash
+
+  When using browser monitoring auto instrumentation on an application using
+  Flask Compress, the use of the Flask send_file helper to send html files
+  resulted in an application crash. This issue has now been resolved.
+
 3.0.0 (2018-03-14)
 ------------------
 

@@ -1,7 +1,13 @@
+try:
+    from io import BytesIO as IO
+except ImportError:
+    import StringIO as IO
+
 import webtest
 
 from flask import Flask
 from flask import Response
+from flask import send_file
 from flask_compress import Compress
 
 from newrelic.api.transaction import (get_browser_timing_header,
@@ -12,15 +18,18 @@ application = Flask(__name__)
 compress = Compress()
 compress.init_app(application)
 
+
 @application.route('/compress')
 def index_page():
-    return '<body>' + 500*'X' + '</body>'
+    return '<body>' + 500 * 'X' + '</body>'
+
 
 @application.route('/html_insertion')
 def html_insertion():
-    return  ('<!DOCTYPE html><html><head>Some header</head>'
-            '<body><h1>My First Heading</h1><p>My first paragraph.</p>'
-            '</body></html>')
+    return ('<!DOCTYPE html><html><head>Some header</head>'
+           '<body><h1>My First Heading</h1><p>My first paragraph.</p>'
+           '</body></html>')
+
 
 @application.route('/html_insertion_manual')
 def html_insertion_manual():
@@ -37,28 +46,63 @@ def html_insertion_manual():
             '<body><h1>My First Heading</h1><p>My first paragraph.</p>'
             '</body></html>')
 
+
 @application.route('/html_insertion_unnamed_attachment_header')
 def html_insertion_unnamed_attachment_header():
-    response = Response(response='<!DOCTYPE html><html><head>Some header</head>'
+    response = Response(
+            response='<!DOCTYPE html><html><head>Some header</head>'
             '<body><h1>My First Heading</h1><p>My first paragraph.</p>'
             '</body></html>')
     response.headers.add('Content-Disposition',
                 'attachment')
     return response
 
+
 @application.route('/html_insertion_named_attachment_header')
 def html_insertion_named_attachment_header():
-    response = Response(response='<!DOCTYPE html><html><head>Some header</head>'
+    response = Response(
+            response='<!DOCTYPE html><html><head>Some header</head>'
             '<body><h1>My First Heading</h1><p>My first paragraph.</p>'
             '</body></html>')
     response.headers.add('Content-Disposition',
                 'attachment; filename="X"')
     return response
 
+
+@application.route('/html_served_from_file')
+def html_served_from_file():
+    file = IO()
+    contents = b"""
+    <!DOCTYPE html><html><head>Some header</head>
+    <body><h1>My First Heading</h1><p>My first paragraph.</p>
+    </body></html>
+    """
+    file.write(contents)
+    file.seek(0)
+    return send_file(file, mimetype='text/html')
+
+
+@application.route('/text_served_from_file')
+def text_served_from_file():
+    file = IO()
+    contents = b"""
+    <!DOCTYPE html><html><head>Some header</head>
+    <body><h1>My First Heading</h1><p>My first paragraph.</p>
+    </body></html>
+    """
+    file.write(contents)
+    file.seek(0)
+    return send_file(file, mimetype='text/plain')
+
+
 _test_application = webtest.TestApp(application)
+
 
 @application.route('/empty_content_type')
 def empty_content_type():
-    response = Response('Empty Content Type Header', mimetype='')
+    response = Response(
+            response='<!DOCTYPE html><html><head>Some header</head>'
+            '<body><h1>My First Heading</h1><p>My first paragraph.</p>'
+            '</body></html>', mimetype='')
     assert response.mimetype is None
     return response

@@ -5,7 +5,7 @@ from testing_support.fixtures import (code_coverage_fixture,  # noqa
 
 _coverage_source = [
     'newrelic.hooks.framework_flask',
-    'newrelic.hooks.component_flask_restful',
+    'newrelic.hooks.component_flask_rest',
 ]
 
 code_coverage = code_coverage_fixture(source=_coverage_source)

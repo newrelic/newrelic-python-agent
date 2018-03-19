@@ -2008,11 +2008,11 @@ def _process_module_builtin_defaults():
             'instrument_flask_compress')
 
     _process_module_definition('flask_restful',
-            'newrelic.hooks.component_flask_restful',
-            'instrument_flask_restful')
+            'newrelic.hooks.component_flask_rest',
+            'instrument_flask_rest')
     _process_module_definition('flask_restplus.api',
-            'newrelic.hooks.component_flask_restful',
-            'instrument_flask_restful')
+            'newrelic.hooks.component_flask_rest',
+            'instrument_flask_rest')
 
     # _process_module_definition('web.application',
     #        'newrelic.hooks.framework_webpy')

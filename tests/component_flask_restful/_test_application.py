@@ -6,8 +6,6 @@ from werkzeug.exceptions import HTTPException
 
 
 app = Flask(__name__)
-# force flask-restful to handle all exceptions
-app.config['PROPAGATE_EXCEPTIONS'] = False
 api = Api(app)
 
 
@@ -35,4 +33,9 @@ class ExceptionResource(Resource):
 
 api.add_resource(IndexResource, '/index')
 api.add_resource(ExceptionResource, '/exception/<string:exception>/<int:code>')
-_test_application = webtest.TestApp(app)
+
+
+def get_test_application(propagate_exceptions=False):
+    app.config['PROPAGATE_EXCEPTIONS'] = propagate_exceptions
+    test_application = webtest.TestApp(app)
+    return test_application

@@ -1,11 +1,12 @@
 unreleased
 ----------
 
-- Record Flask RESTful exceptions
+- Record Flask RESTful and Flask RestPlus exceptions
 
-  Since Flask RESTful handles all errors that are raised in its handlers, they
-  were not being captured by the normal Flask instrumentation in the Python
-  agent. Exception handling has now been added.
+  Since Flask RESTful and Flask RestPlus handle all errors that are raised in
+  their handlers, these errors were not being captured by the normal Flask
+  instrumentation in the Python agent. Exception handling has now been added
+  for these two components.
 
 - Add request.uri attribute to transaction and error events
 

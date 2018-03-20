@@ -25,8 +25,6 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     requires_collector = True
 
-    @pytest.mark.xfail(sys.version_info >= (3, 7), strict=True,
-            reason='PYTHON-2700')
     def test_function_trace_decorator(self):
         environ = {"REQUEST_URI": "/generator_trace_decorator"}
         transaction = newrelic.api.web_transaction.WebTransaction(

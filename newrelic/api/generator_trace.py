@@ -81,7 +81,7 @@ def GeneratorTraceWrapper(wrapped, name=None, group=None, label=None,
                                 yielded = generator.send(value)
 
                         except StopIteration:
-                            raise
+                            break
 
                         except Exception:
                             raise

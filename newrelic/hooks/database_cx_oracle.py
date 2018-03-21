@@ -14,6 +14,18 @@ class AcquireProxy(ObjectProxy):
                 self.__wrapped__.acquire,
                 self._nr_dbapi2_module)(*args, **kwargs)
 
+    def drop(self, connection, *args, **kwargs):
+        if isinstance(connection, ObjectProxy):
+            connection = connection.__wrapped__
+
+        return self.__wrapped__.drop(connection, *args, **kwargs)
+
+    def release(self, connection, *args, **kwargs):
+        if isinstance(connection, ObjectProxy):
+            connection = connection.__wrapped__
+
+        return self.__wrapped__.release(connection, *args, **kwargs)
+
 
 class SessionPoolProxy(ObjectProxy):
 

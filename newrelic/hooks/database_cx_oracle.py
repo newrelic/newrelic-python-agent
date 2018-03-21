@@ -4,9 +4,9 @@ from newrelic.common.object_wrapper import wrap_object, ObjectProxy
 from newrelic.hooks.database_dbapi2 import ConnectionFactory
 
 
-class AcquireProxy(ObjectProxy):
+class SessionPoolProxy(ObjectProxy):
     def __init__(self, pool, dbapi2_module):
-        super(AcquireProxy, self).__init__(pool)
+        super(SessionPoolProxy, self).__init__(pool)
         self._nr_dbapi2_module = dbapi2_module
 
     def acquire(self, *args, **kwargs):
@@ -27,15 +27,15 @@ class AcquireProxy(ObjectProxy):
         return self.__wrapped__.release(connection, *args, **kwargs)
 
 
-class SessionPoolProxy(ObjectProxy):
+class CreateSessionPoolProxy(ObjectProxy):
 
     def __init__(self, pool_init, dbapi2_module):
-        super(SessionPoolProxy, self).__init__(pool_init)
+        super(CreateSessionPoolProxy, self).__init__(pool_init)
         self._nr_dbapi2_module = dbapi2_module
 
     def __call__(self, *args, **kwargs):
         pool = self.__wrapped__(*args, **kwargs)
-        return AcquireProxy(pool, self._nr_dbapi2_module)
+        return SessionPoolProxy(pool, self._nr_dbapi2_module)
 
 
 def instrument_cx_oracle(module):
@@ -43,4 +43,4 @@ def instrument_cx_oracle(module):
             quoting_style='single+oracle')
 
     wrap_object(module, 'connect', ConnectionFactory, (module,))
-    wrap_object(module, 'SessionPool', SessionPoolProxy, (module,))
+    wrap_object(module, 'SessionPool', CreateSessionPoolProxy, (module,))

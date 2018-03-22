@@ -36,4 +36,4 @@ def test_envproxy(use_proxy, monkeypatch):
         url = 'http://127.0.0.1:%d' % dummy_server.port
 
         resp = requests.get(url)
-        assert (url in resp.text) is False
+        assert url not in resp.text

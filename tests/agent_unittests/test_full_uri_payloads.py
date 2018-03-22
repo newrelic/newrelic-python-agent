@@ -3,8 +3,10 @@ import pytest
 import time
 
 from newrelic.core.config import global_settings, global_settings_dump
-from newrelic.core.data_collector import create_session
+from newrelic.core.data_collector import (create_session, collector_url,
+        send_request)
 from newrelic.packages.requests.adapters import HTTPAdapter, urldefragauth
+from newrelic.packages.requests import Session
 
 
 class FullURIAdapter(HTTPAdapter):
@@ -74,3 +76,15 @@ def test_full_uri_payload(session, method, args):
 
     # An exception will be raised here if there's a problem with the response
     sender(*args)
+
+
+def test_full_uri_preconnect(base_settings):
+    session = Session()
+
+    # Mount an adapter that will force the full URI to be sent
+    session.mount('https://', FullURIAdapter())
+    session.mount('http://', FullURIAdapter())
+
+    # An exception will be raised here if there's a problem with the response
+    send_request(session, collector_url(), 'preconnect',
+            base_settings.license_key)

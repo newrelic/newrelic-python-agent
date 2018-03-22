@@ -4,7 +4,7 @@ import time
 
 from newrelic.core.config import global_settings, global_settings_dump
 from newrelic.core.data_collector import (create_session, collector_url,
-        send_request)
+        send_request, ApplicationSession)
 from newrelic.packages.requests.adapters import HTTPAdapter, urldefragauth
 from newrelic.packages.requests import Session
 
@@ -12,6 +12,22 @@ from newrelic.packages.requests import Session
 class FullURIAdapter(HTTPAdapter):
     def request_url(self, request, proxies):
         return urldefragauth(request.url)
+
+
+class FullURIApplicationSession(ApplicationSession):
+
+    @classmethod
+    def send_request(cls, session, url, method, license_key,
+            agent_run_id=None, payload=()):
+        session = Session()
+
+        # Mount an adapter that will force the full URI to be sent
+        session.mount('https://', FullURIAdapter())
+        session.mount('http://', FullURIAdapter())
+
+        return ApplicationSession.send_request(
+                session, url, method, license_key, agent_run_id, payload
+        )
 
 
 @pytest.fixture(scope='module')
@@ -88,3 +104,13 @@ def test_full_uri_preconnect(base_settings):
     # An exception will be raised here if there's a problem with the response
     send_request(session, collector_url(), 'preconnect',
             base_settings.license_key)
+
+
+def test_full_uri_protocol_15(base_settings):
+    environment = ()
+    linked_apps = []
+    app_name = 'Python Agent Test'
+
+    session = FullURIApplicationSession.create_session(
+            None, app_name, linked_apps, environment, global_settings_dump())
+    session.shutdown_session()

@@ -34,6 +34,7 @@ class FullURIApplicationSession(ApplicationSession):
 def base_settings():
     settings = global_settings()
 
+    settings.app_name = 'Python Agent Test'
     settings.license_key = os.environ.get('NEW_RELIC_LICENSE_KEY',
             '84325f47e9dec80613e262be4236088a9983d501')
     settings.host = os.environ.get('NEW_RELIC_HOST',
@@ -47,10 +48,10 @@ def base_settings():
 def session(base_settings):
     environment = ()
     linked_apps = []
-    app_name = 'Python Agent Test'
 
     session = create_session(
-            None, app_name, linked_apps, environment, global_settings_dump())
+            None, base_settings.app_name,
+            linked_apps, environment, global_settings_dump())
 
     # Mount an adapter that will force the full URI to be sent
     assert session._requests_session is session.requests_session
@@ -109,8 +110,8 @@ def test_full_uri_preconnect(base_settings):
 def test_full_uri_protocol_15(base_settings):
     environment = ()
     linked_apps = []
-    app_name = 'Python Agent Test'
 
     session = FullURIApplicationSession.create_session(
-            None, app_name, linked_apps, environment, global_settings_dump())
+            None, base_settings.app_name,
+            linked_apps, environment, global_settings_dump())
     session.shutdown_session()

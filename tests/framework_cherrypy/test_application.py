@@ -1,9 +1,10 @@
+import pytest
 import webtest
 
 from newrelic.packages import six
 
 from testing_support.fixtures import (validate_transaction_errors,
-            override_application_settings)
+        override_application_settings, override_ignore_status_codes)
 
 import cherrypy
 
@@ -25,6 +26,16 @@ class Application(object):
     @cherrypy.expose
     def not_found_as_http_error(self):
         raise cherrypy.HTTPError(404)
+
+    @cherrypy.expose
+    def not_found_as_str_http_error(self):
+        raise cherrypy.HTTPError('404 Not Found')
+
+    @cherrypy.expose
+    def bad_http_error(self):
+        # this will raise HTTPError with status code 500 because 10 is not a
+        # valid status code
+        raise cherrypy.HTTPError('10 Invalid status code')
 
     @cherrypy.expose
     def internal_redirect(self):
@@ -133,3 +144,20 @@ def test_html_insertion():
     # footer added by the agent.
 
     response.mustcontain('NREUM HEADER', 'NREUM.info')
+
+
+@pytest.mark.parametrize('endpoint',
+    ['/not_found_as_http_error', '/not_found_as_str_http_error',
+    '/bad_http_error'])
+@pytest.mark.parametrize('ignore_overrides,expected_errors', [
+    ([], ['cherrypy._cperror:HTTPError']),
+    ([404, 500], []),
+])
+def test_ignore_status_code(endpoint, ignore_overrides, expected_errors):
+
+    @validate_transaction_errors(errors=expected_errors)
+    @override_ignore_status_codes(ignore_overrides)
+    def _test():
+        test_application.get(endpoint, status=[404, 500])
+
+    _test()

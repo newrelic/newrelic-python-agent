@@ -41,7 +41,8 @@ def should_ignore(exc, value, tb):
     # Ignore certain exceptions based on HTTP status codes.
 
     if isinstance(value, (HTTPError, HTTPRedirect)):
-        if ignore_status_code(value.status):
+        code = getattr(value, 'code', value.status)
+        if ignore_status_code(code):
             return True
 
     # Ignore certain exceptions based on their name.

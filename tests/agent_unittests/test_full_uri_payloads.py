@@ -77,6 +77,7 @@ EMPTY_SAMPLES = {
     ('get_xray_metadata', (0,)),
     ('send_errors', ([[]],)),
     ('send_agent_command_results', ({0: {}},)),
+    ('agent_settings', ({},))
 ])
 def test_full_uri_payload(session, method, args):
     sender = getattr(session, method)
@@ -85,13 +86,13 @@ def test_full_uri_payload(session, method, args):
     sender(*args)
 
 
-def test_full_uri_preconnect(session):
-    # An exception will be raised here if there's a problem with the response
-    session.send_request(session.requests_session, session.collector_url,
-            'preconnect', session.license_key)
-
-
 def test_full_uri_protocol_15():
+    """Exercises the following endpoints:
+
+    * preconnect
+    * connect
+    * shutdown
+    """
     initialize_agent(
         app_name='Python Agent Test (test_full_uri_payloads)',
         default_settings=_default_settings)

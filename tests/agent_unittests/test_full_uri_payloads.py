@@ -1,10 +1,10 @@
-import os
 import pytest
 import time
 
+from testing_support.fixtures import (collector_agent_registration_fixture,
+        initialize_agent)
 from newrelic.core.config import global_settings, global_settings_dump
-from newrelic.core.data_collector import (create_session, collector_url,
-        send_request, ApplicationSession)
+from newrelic.core.data_collector import ApplicationSession
 from newrelic.packages.requests.adapters import HTTPAdapter, urldefragauth
 from newrelic.packages.requests import Session
 
@@ -30,28 +30,20 @@ class FullURIApplicationSession(ApplicationSession):
         )
 
 
-@pytest.fixture(scope='module')
-def base_settings():
-    settings = global_settings()
-
-    settings.app_name = 'Python Agent Test'
-    settings.license_key = os.environ.get('NEW_RELIC_LICENSE_KEY',
-            '84325f47e9dec80613e262be4236088a9983d501')
-    settings.host = os.environ.get('NEW_RELIC_HOST',
-            'staging-collector.newrelic.com')
-    settings.port = int(os.environ.get('NEW_RELIC_PORT', '0'))
-
-    return settings
+_default_settings = {
+    'debug.log_data_collector_payloads': True,
+    'debug.record_transaction_failure': True,
+    'startup_timeout': 10.0,
+}
+application = collector_agent_registration_fixture(
+        app_name='Python Agent Test (test_full_uri_payloads)',
+        default_settings=_default_settings)
 
 
 @pytest.fixture(scope='module')
-def session(base_settings):
-    environment = ()
-    linked_apps = []
-
-    session = create_session(
-            None, base_settings.app_name,
-            linked_apps, environment, global_settings_dump())
+def session(application):
+    session = application._agent.application(application.name)._active_session
+    assert session is not None
 
     # Mount an adapter that will force the full URI to be sent
     assert session._requests_session is session.requests_session
@@ -64,8 +56,6 @@ def session(base_settings):
 
     # Restore the original HTTP adapters
     session.requests_session.adapters = original_adapters
-
-    session.shutdown_session()
 
 
 NOW = time.time()
@@ -95,23 +85,21 @@ def test_full_uri_payload(session, method, args):
     sender(*args)
 
 
-def test_full_uri_preconnect(base_settings):
-    session = Session()
-
-    # Mount an adapter that will force the full URI to be sent
-    session.mount('https://', FullURIAdapter())
-    session.mount('http://', FullURIAdapter())
-
+def test_full_uri_preconnect(session):
     # An exception will be raised here if there's a problem with the response
-    send_request(session, collector_url(), 'preconnect',
-            base_settings.license_key)
+    session.send_request(session.requests_session, session.collector_url,
+            'preconnect', session.license_key)
 
 
-def test_full_uri_protocol_15(base_settings):
+def test_full_uri_protocol_15():
+    initialize_agent(
+        app_name='Python Agent Test (test_full_uri_payloads)',
+        default_settings=_default_settings)
+
     environment = ()
     linked_apps = []
 
     session = FullURIApplicationSession.create_session(
-            None, base_settings.app_name,
+            None, global_settings().app_name,
             linked_apps, environment, global_settings_dump())
     session.shutdown_session()

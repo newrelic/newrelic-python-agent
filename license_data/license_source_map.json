@@ -1271,6 +1271,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/component_flask_rest.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/component_tastypie.py": {
         "hash": "n/a",
         "libraries": [

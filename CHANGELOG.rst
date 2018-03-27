@@ -1,6 +1,13 @@
 unreleased
 ----------
 
+- Record Flask RESTful and Flask RestPlus exceptions
+
+  Since Flask RESTful and Flask RestPlus handle all errors that are raised in
+  their handlers, these errors were not being captured by the normal Flask
+  instrumentation in the Python agent. Exception handling has now been added
+  for these two components.
+
 - Add request.uri attribute to transaction and error events
 
   The Python agent will now report request.uri as an attribute on transaction
@@ -19,6 +26,7 @@ unreleased
 
   Coroutines scheduled with asyncio gather/ensure_future may have been reported
   as being a child of the wrong function. This issue has now been corrected.
+
 
 3.0.0 (2018-03-14)
 ------------------
@@ -70,12 +78,14 @@ unreleased
   style middleware is now automatically traced as part of the AIOHTTP
   instrumentation package.
 
+
 2.106.0 (2018-02-28)
 --------------------
 
 - Support for AIOHTTP 3
 
   AIOHTTP major version 3 is now supported by the New Relic Python agent.
+
 
 2.104.0 (2018-02-20)
 --------------------
@@ -89,9 +99,10 @@ unreleased
   the transaction.
 
 - Disabling SSL connections to New Relic has been deprecated
-  
+
   SSL connections are enabled by default. In a future release, the option to
   disable SSL will be removed.
+
 
 2.102.0 (2018-02-05)
 --------------------
@@ -242,6 +253,7 @@ unreleased
   (psycopg2.sql.Composable) to execute or executemany resulted in an
   application crash. The agent now correctly handles psycopg2 Composable
   objects.
+
 
 2.92.0 (2017-09-06)
 -------------------

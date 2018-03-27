@@ -5,6 +5,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
     override_generic_settings)
 
 from newrelic.core.config import global_settings
+from newrelic.common.object_names import callable_name
 
 
 def target_application(propagate_exceptions=False):
@@ -56,8 +57,12 @@ def test_application_raises(exception, status_code, ignore_status_code,
             application = target_application(propagate_exceptions)
             application.get('/exception/%s/%i' % (exception,
                 status_code), status=status_code, expect_errors=True)
-        except:  # capture all exceptions because they are expected
-            pass
+        except Exception as e:
+            assert propagate_exceptions
+
+            # check that the exception is the expected one
+            if callable_name(type(e)) != exception:
+                raise
 
     if ignore_status_code:
         _test = validate_transaction_errors(errors=[])(_test)

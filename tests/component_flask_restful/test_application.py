@@ -1,7 +1,10 @@
 import pytest
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors, override_ignore_status_codes)
+    validate_transaction_errors, override_ignore_status_codes,
+    override_generic_settings)
+
+from newrelic.core.config import global_settings
 
 
 def target_application(propagate_exceptions=False):
@@ -62,5 +65,18 @@ def test_application_raises(exception, status_code, ignore_status_code,
     else:
         _test = validate_transaction_errors(errors=[exception])(_test)
         _test = override_ignore_status_codes([])(_test)
+
+    _test()
+
+
+def test_application_outside_transaction():
+
+    _settings = global_settings()
+
+    @override_generic_settings(_settings, {'enabled': False})
+    def _test():
+        application = target_application()
+        application.get('/exception/werkzeug.exceptions:HTTPException/404',
+                status=404)
 
     _test()

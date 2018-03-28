@@ -467,3 +467,5 @@ release as a new version.
    ```
    @channel Agent version A.B.C.D removed from PyPI and downloads.newrelic.com
    ```
+
+1. Update [docker-state](https://source.datanerd.us/container-fabric/docker-state/blob/master/requirements.txt) and [Sidekick Bot](https://source.datanerd.us/python-agent/sidekick-bot/blob/master/requirements.txt) to point to the previously released agent version.

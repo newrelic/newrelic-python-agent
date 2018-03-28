@@ -61,7 +61,7 @@ abort_if_key_does_not_exist_or_error()
     RETURN_STATUS=$?
     set -e
 
-    if test $RETURN_STATUS -gt 1
+    if test $RETURN_STATUS -ne 0
     then
         echo
         echo "ERROR: Running command \`$CMD\` failed."

@@ -1,6 +1,13 @@
 unreleased
 ----------
 
+- Fix logic for ignoring CherryPy exceptions
+
+  Previously it was assumed that CherryPy `HTTPError` is always instantiated
+  with an integer value for the status code. However, CherryPy also accepts
+  string values that include the status code and message. Exceptions defined in
+  this way are now properly ignored.
+
 - Record Flask RESTful and Flask RestPlus exceptions
 
   Since Flask RESTful and Flask RestPlus handle all errors that are raised in
@@ -31,7 +38,8 @@ unreleased
 
   Any customers using Cheroot with an unsupported application framework will 
   now see transaction metrics.
-  
+
+
 3.0.0 (2018-03-14)
 ------------------
 

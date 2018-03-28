@@ -445,6 +445,8 @@ release as a new version.
    @channel The process to unpublish agent version A.B.C.D is starting.
    ```
 
+1. Remove all content from the [release notes](https://docs.newrelic.com/docs/release-notes/agent-release-notes/python-release-notes) and republish them.
+
 1. Notify the #documentation channel hero and ask them to unpublish the [release notes](https://docs.newrelic.com/docs/release-notes/agent-release-notes/python-release-notes)
 
 1. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM [systems configuration page](https://rpm-admin.newrelic.com/admin/system_configurations) to point to the previous agent version.

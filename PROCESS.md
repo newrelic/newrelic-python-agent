@@ -445,7 +445,7 @@ release as a new version.
    @channel The process to unpublish agent version A.B.C.D is starting.
    ```
 
-1. Remove all content from the [release notes](https://docs.newrelic.com/docs/release-notes/agent-release-notes/python-release-notes) and republish them.
+1. Replace content from the [release notes](https://docs.newrelic.com/docs/release-notes/agent-release-notes/python-release-notes) with "Removed" and republish them.
 
 1. Notify the #documentation channel hero and ask them to unpublish the [release notes](https://docs.newrelic.com/docs/release-notes/agent-release-notes/python-release-notes)
 

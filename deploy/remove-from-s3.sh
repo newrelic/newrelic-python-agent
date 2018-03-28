@@ -61,21 +61,24 @@ abort_if_key_does_not_exist_or_error()
     RETURN_STATUS=$?
     set -e
 
+    # Return codes from `aws s3 ls` command:
+    #   0          : Key prefix exists
+    #   1          : Key prefix does not exist
+    #   All others : Error
+    #
+    # http://docs.aws.amazon.com/cli/latest/topic/return-codes.html
+
     if test $RETURN_STATUS -ne 0
+    then
+        echo
+        echo "ERROR: Key $S3_KEY does not exist."
+        exit 1
+
+    elif test $RETURN_STATUS -gt 1
     then
         echo
         echo "ERROR: Running command \`$CMD\` failed."
         echo "       Confirm networking, permissions, aws keys, and S3_DIR then try again."
-        exit 1
-    fi
-    
-    # count the number of non-blank lines in the result
-    LINE_COUNT=$(echo "$COMMAND_RESULT" | sed '/^\s*$/d' | wc -l)
-
-    if test $LINE_COUNT -eq 0
-    then
-        echo
-        echo "ERROR: Key $S3_KEY does not exist."
         exit 1
     fi
 }

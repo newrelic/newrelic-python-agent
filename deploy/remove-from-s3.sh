@@ -70,7 +70,7 @@ abort_if_key_does_not_exist_or_error()
     fi
     
     # count the number of non-blank lines in the result
-    LINE_COUNT=$(echo "$COMMAND_RESULT" | tr -d "\n\r\t " | wc -l | tr -d "\n\r\t  ")
+    LINE_COUNT=$(echo "$COMMAND_RESULT" | sed '/^\s*$/d' | wc -l)
 
     if test $LINE_COUNT -eq 0
     then

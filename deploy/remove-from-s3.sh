@@ -1,14 +1,14 @@
 #!/bin/sh
 
 # Upload source distribution package in `dist` directory to
-# S3 bucket defined at $AWS_BUCKET/$AWS_BUCKET_PREFIX/.
+# S3 bucket defined at $AWS_BUCKET/$S3_RELEASE_TYPE/.
 #
 # Required environment variables
 #
 #   1. AGENT_VERSION
 #   2. AWS_ACCESS_KEY_ID
 #   3. AWS_SECRET_ACCESS_KEY
-#   4. AWS_BUCKET_PREFIX (either "testing", "release", or "archive")
+#   4. S3_RELEASE_TYPE (either "testing", "release", or "archive")
 #
 # Requires: git and awscli
 
@@ -69,7 +69,8 @@ abort_if_key_does_not_exist_or_error()
         exit 1
     fi
     
-    LINE_COUNT=$(echo "$COMMAND_RESULT" | sed '/^\s*$/d' | wc -l) # count the number of non-blank lines in the result
+    # count the number of non-blank lines in the result
+    LINE_COUNT=$(echo "$COMMAND_RESULT" | tr -d "\n\r\t " | wc -l | tr -d "\n\r\t  ")
 
     if test $LINE_COUNT -eq 0
     then

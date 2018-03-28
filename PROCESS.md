@@ -449,7 +449,7 @@ release as a new version.
 
 1. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM [systems configuration page](https://rpm-admin.newrelic.com/admin/system_configurations) to point to the previous agent version.
 
-1. Run the [undeploy-from-s3](https://python-agent-build.pdx.vm.datanerd.us/view/PY_Deploy/job/undeploy-from-s3/) job on Jenkins. Use the full version number (in the form of ``A.B.C.D``).
+1. Run the [undeploy-from-s3](https://python-agent-build.pdx.vm.datanerd.us/view/PY_Deploy/job/undeploy-from-s3/) job on Jenkins using the most recent agent version. Use the full version number (in the form of ``A.B.C.D``).
 
 1. Verify that the bad version is removed from the [downloads](http://download.newrelic.com/python_agent/release/) site.
 

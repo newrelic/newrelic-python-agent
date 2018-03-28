@@ -455,7 +455,7 @@ release as a new version.
 
 1. Verify that the bad version is removed from the [downloads](http://download.newrelic.com/python_agent/release/) site.
 
-1. Log in to [pypi](https://pypi.org/account/login/) using the credentials stored in lastpass.
+1. Log in to [pypi](https://pypi.org/account/login/) using the credentials stored in lastpass under the Shared #python-agent folder.
 
 1. Navigate to the release page https://pypi.org/manage/project/newrelic/release/A.B.C.D (replace ``A.B.C.D`` with the version number of the bad version)
 

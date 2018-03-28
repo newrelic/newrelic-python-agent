@@ -8,6 +8,8 @@ from testing_support.fixtures import (validate_transaction_errors,
 
 import cherrypy
 
+CHERRYPY_VERSION = tuple(int(v) for v in cherrypy.__version__.split('.'))
+
 
 class Application(object):
 
@@ -146,9 +148,13 @@ def test_html_insertion():
     response.mustcontain('NREUM HEADER', 'NREUM.info')
 
 
-@pytest.mark.parametrize('endpoint',
-    ['/not_found_as_http_error', '/not_found_as_str_http_error',
-    '/bad_http_error'])
+_error_endpoints = ['/not_found_as_http_error']
+if CHERRYPY_VERSION >= (3, 2):
+    _error_endpoints.extend(['/not_found_as_str_http_error',
+        '/bad_http_error'])
+
+
+@pytest.mark.parametrize('endpoint', _error_endpoints)
 @pytest.mark.parametrize('ignore_overrides,expected_errors', [
     ([], ['cherrypy._cperror:HTTPError']),
     ([404, 500], []),

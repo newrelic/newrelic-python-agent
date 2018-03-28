@@ -27,7 +27,11 @@ unreleased
   Coroutines scheduled with asyncio gather/ensure_future may have been reported
   as being a child of the wrong function. This issue has now been corrected.
 
+- Add instrumentation hooks for the Cheroot WSGI server
 
+  Any customers using Cheroot with an unsupported application framework will 
+  now see transaction metrics.
+  
 3.0.0 (2018-03-14)
 ------------------
 

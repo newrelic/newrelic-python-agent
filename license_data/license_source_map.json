@@ -1199,6 +1199,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/adapter_cheroot.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/adapter_flup.py": {
         "hash": "n/a",
         "libraries": [

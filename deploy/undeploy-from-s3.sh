@@ -19,8 +19,6 @@
 set -e
 
 GIT_REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "$GIT_REPO_ROOT"
 
-cd $GIT_REPO_ROOT
-
-deploy/download-from-artifactory.sh
-deploy/upload-to-s3.sh
+deploy/remove-from-s3.sh

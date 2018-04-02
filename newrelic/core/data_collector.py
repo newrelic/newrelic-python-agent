@@ -157,10 +157,10 @@ def _requests_request_url_workaround(wrapped, instance, args, kwargs):
 
     request, proxies = _bind_params(*args, **kwargs)
 
-    if not proxies:
-        return wrapped(*args, **kwargs)
+    if 'https' in proxies:
+        return urldefragauth(request.url)
 
-    return urldefragauth(request.url)
+    return wrapped(*args, **kwargs)
 
 
 # This is a monkey patch for urllib3 + python3.6 + gevent/eventlet.

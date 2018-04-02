@@ -70,12 +70,17 @@ class DatabaseTrace(TimeTrace):
         # Check for `async=1` keyword argument in connect_params, which
         # indicates that psycopg2 driver is being used in async mode.
 
+        # In python 3.7+ the arg will be 'async_' because 'async' is a keyword
+        # However, note that psycopg2 v2.7+ allows either one as aliases, so
+        # we have to check both.
+
         try:
             _, kwargs = self.connect_params
         except TypeError:
             return False
         else:
-            return 'async' in kwargs and kwargs['async']
+            return ('async' in kwargs and kwargs['async']) \
+                or ('async_' in kwargs and kwargs['async_'])
 
     def _log_async_warning(self):
         # Only log the warning the first time.

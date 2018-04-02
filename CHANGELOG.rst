@@ -29,9 +29,18 @@ unreleased
 
 - Add instrumentation hooks for the Cheroot WSGI server
 
-  Any customers using Cheroot with an unsupported application framework will 
+  Any customers using Cheroot with an unsupported application framework will
   now see transaction metrics.
-  
+
+- Do not run explain plans for psycopg2 connections using the `async_` kwarg
+
+  As "async" is now a keyword in Python 3.7, psycopg2 now allows "async_" as an
+  alias for its "async" kwarg for psycopg2.connect as of psycopg2 v2.7.4.
+  Previously, explain plans were attempted for these connections and a
+  traceback would be seen in the logs. This has now been fixed.
+
+
+
 3.0.0 (2018-03-14)
 ------------------
 

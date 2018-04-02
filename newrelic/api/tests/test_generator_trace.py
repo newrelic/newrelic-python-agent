@@ -15,7 +15,7 @@ application = newrelic.api.application.application_instance()
 @newrelic.api.generator_trace.generator_trace()
 def _test_function_1():
     for i in range(4):
-        time.sleep(0.5)
+        time.sleep(0.1)
         yield time.time()
 
 
@@ -28,11 +28,14 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
-            time.sleep(0.1)
             result = _test_function_1()
-            for item in result:
-                pass
-            time.sleep(0.1)
+            prev_t = 0
+            for t in result:
+                assert t > prev_t, "Time has gone backwards!"
+                prev_t = t
+
+        assert transaction.total_time >= 0.4
+        assert len(transaction.current_node.children) == 6
 
 
 if __name__ == '__main__':

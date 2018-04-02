@@ -48,6 +48,7 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/operation/Postgres/commit', 2),
         ('Datastore/operation/Postgres/rollback', 1)]
 
+
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
         rollup_metrics=_test_execute_via_cursor_rollup_metrics,
@@ -63,7 +64,9 @@ def test_execute_via_cursor():
     cursor = connection.cursor()
 
     psycopg2ct.extensions.register_type(psycopg2ct.extensions.UNICODE)
-    psycopg2ct.extensions.register_type(psycopg2ct.extensions.UNICODE, connection)
+    psycopg2ct.extensions.register_type(
+        psycopg2ct.extensions.UNICODE,
+        connection)
     psycopg2ct.extensions.register_type(psycopg2ct.extensions.UNICODE, cursor)
 
     cursor.execute("""drop table if exists datastore_psycopg2ct""")
@@ -77,7 +80,8 @@ def test_execute_via_cursor():
 
     cursor.execute("""select * from datastore_psycopg2ct""")
 
-    for row in cursor: pass
+    for row in cursor:
+        pass
 
     cursor.execute("""update datastore_psycopg2ct set a=%s, b=%s, c=%s """
             """where a=%s""", (4, 4.0, '4.0', 1))
@@ -92,12 +96,14 @@ def test_execute_via_cursor():
     connection.rollback()
     connection.commit()
 
+
 _test_async_mode_scoped_metrics = [
         ('Function/psycopg2ct:connect', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2ct/select', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2ct/insert', 1),
         ('Datastore/operation/Postgres/drop', 1),
         ('Datastore/operation/Postgres/create', 1)]
+
 
 _test_async_mode_rollup_metrics = [
         ('Datastore/all', 5),
@@ -110,6 +116,7 @@ _test_async_mode_rollup_metrics = [
         ('Datastore/statement/Postgres/datastore_psycopg2ct/insert', 1),
         ('Datastore/operation/Postgres/drop', 1),
         ('Datastore/operation/Postgres/create', 1)]
+
 
 @validate_stats_engine_explain_plan_output_is_none()
 @validate_transaction_slow_sql_count(num_slow_sql=4)

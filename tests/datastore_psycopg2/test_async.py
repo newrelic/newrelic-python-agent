@@ -71,15 +71,15 @@ _disable_rollup_metrics.append(
 )
 
 async_keyword_list = ['async']
-if ('2.5' not in psycopg2.__version__) and ('2.6' not in psycopg2.__version__):
+if PSYCOPG2_VERSION >= (2, 7, 4):
     async_keyword_list.append('async_')
 
 
-def _exercise_db():
+def _exercise_db(async_keyword):
     wait = psycopg2.extras.wait_select
 
-    # `async` is a keyword in Python 3.7+
-    kwasync = {'async': 1}
+    kwasync = {}
+    kwasync[async_keyword] = 1
 
     async_conn = psycopg2.connect(
             database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],

@@ -40,7 +40,6 @@ unreleased
   traceback would be seen in the logs. This has now been fixed.
 
 
-
 3.0.0 (2018-03-14)
 ------------------
 

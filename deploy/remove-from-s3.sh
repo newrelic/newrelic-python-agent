@@ -20,19 +20,18 @@ cd $(git rev-parse --show-toplevel)
 
 # Define upload function
 
-upload_to_s3()
+remove_from_s3()
 {
-    if test $# -ne 2
+    if test $# -ne 1
     then
         echo
-        echo "ERROR: Wrong number of arguments to upload_to_s3."
+        echo "ERROR: Wrong number of arguments to remove_from_s3."
         exit 1
     fi
 
-    SRC=$1
-    DST=$2
+    S3_KEY=$1
 
-    CMD="aws s3 cp $SRC $DST"
+    CMD="aws s3 rm $S3_KEY"
 
     echo
     echo "Running awscli command:"
@@ -41,7 +40,7 @@ upload_to_s3()
     $CMD
 }
 
-abort_if_key_exists_or_error()
+abort_if_key_does_not_exist_or_error()
 {
     if test $# -ne 1
     then
@@ -58,7 +57,7 @@ abort_if_key_exists_or_error()
     echo $CMD
 
     set +e
-    $CMD
+    COMMAND_RESULT=$($CMD)
     RETURN_STATUS=$?
     set -e
 
@@ -69,10 +68,10 @@ abort_if_key_exists_or_error()
     #
     # http://docs.aws.amazon.com/cli/latest/topic/return-codes.html
 
-    if test $RETURN_STATUS -eq 0
+    if test $RETURN_STATUS -ne 0
     then
         echo
-        echo "ERROR: Key $S3_KEY already exists."
+        echo "ERROR: Key $S3_KEY does not exist."
         exit 1
 
     elif test $RETURN_STATUS -gt 1
@@ -87,7 +86,7 @@ abort_if_key_exists_or_error()
 # Set and validate environment variables
 
 echo
-echo "=== Start uploading ==="
+echo "=== Starting anti-upload process ==="
 echo
 echo "Checking environment variables"
 
@@ -129,24 +128,20 @@ echo "... MD5_NAME       = $MD5_NAME"
 echo "... MD5_PATH       = $MD5_PATH"
 echo "... S3_DIR         = $S3_DIR"
 
-# Make sure permissions are right before uploading
-
-chmod 644 $PACKAGE_PATH
-chmod 644 $MD5_PATH
-
-# Bail, if package version already exists in S3.
+# Bail, if package version does not exist in S3.
 
 echo
 echo "Checking for existing files in S3"
 
 S3_PACKAGE_URI=${S3_DIR}${PACKAGE_NAME}
+S3_PACKAGE_MD5_URI="$S3_PACKAGE_URI.md5"
 
-abort_if_key_exists_or_error $S3_PACKAGE_URI
+abort_if_key_does_not_exist_or_error $S3_PACKAGE_URI
 
 # Upload to S3
 
 echo
-echo "Uploading to S3"
+echo "Removing from S3"
 
-upload_to_s3 $PACKAGE_PATH $S3_DIR
-upload_to_s3 $MD5_PATH $S3_DIR
+remove_from_s3 $S3_PACKAGE_URI
+remove_from_s3 $S3_PACKAGE_MD5_URI

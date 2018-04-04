@@ -16,6 +16,7 @@ _test_http_http_request_rollup_metrics = [
         ('External/www.example.com/all', 1),
         ('External/www.example.com/httplib/', 1)]
 
+
 @validate_transaction_metrics(
         'test_http:test_http_http_request',
         scoped_metrics=_test_http_http_request_scoped_metrics,
@@ -26,8 +27,9 @@ def test_http_http_request():
     connection = httplib.HTTPConnection('www.example.com', 80)
     connection.request('GET', '/')
     response = connection.getresponse()
-    data = response.read()
+    response.read()
     connection.close()
+
 
 _test_http_https_request_scoped_metrics = [
         ('External/www.example.com/httplib/', 1)]
@@ -37,6 +39,7 @@ _test_http_https_request_rollup_metrics = [
         ('External/allOther', 1),
         ('External/www.example.com/all', 1),
         ('External/www.example.com/httplib/', 1)]
+
 
 @validate_transaction_metrics(
         'test_http:test_http_https_request',
@@ -48,8 +51,9 @@ def test_http_https_request():
     connection = httplib.HTTPSConnection('www.example.com', 443)
     connection.request('GET', '/')
     response = connection.getresponse()
-    data = response.read()
+    response.read()
     connection.close()
+
 
 @background_task()
 @cache_outgoing_headers
@@ -58,8 +62,9 @@ def test_http_cross_process_request():
     connection = httplib.HTTPConnection('www.example.com', 80)
     connection.request('GET', '/')
     response = connection.getresponse()
-    data = response.read()
+    response.read()
     connection.close()
+
 
 _test_http_cross_process_response_scoped_metrics = [
         ('ExternalTransaction/www.example.com/1#2/test', 1)]
@@ -76,6 +81,7 @@ _test_http_cross_process_response_external_node_params = [
         ('external_txn_name', 'test'),
         ('transaction_guid', '0123456789012345')]
 
+
 @validate_transaction_metrics(
         'test_http:test_http_cross_process_response',
         scoped_metrics=_test_http_cross_process_response_scoped_metrics,
@@ -89,5 +95,5 @@ def test_http_cross_process_response():
     connection = httplib.HTTPConnection('www.example.com', 80)
     connection.request('GET', '/')
     response = connection.getresponse()
-    data = response.read()
+    response.read()
     connection.close()

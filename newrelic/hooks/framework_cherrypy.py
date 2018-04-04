@@ -31,9 +31,11 @@ from newrelic.common.object_wrapper import (ObjectProxy, function_wrapper,
         wrap_function_wrapper)
 from newrelic.core.config import ignore_status_code
 
+
 def framework_details():
     import cherrypy
     return ('CherryPy', getattr(cherrypy, '__version__', None))
+
 
 def should_ignore(exc, value, tb):
     from cherrypy import HTTPError, HTTPRedirect
@@ -41,7 +43,13 @@ def should_ignore(exc, value, tb):
     # Ignore certain exceptions based on HTTP status codes.
 
     if isinstance(value, (HTTPError, HTTPRedirect)):
-        if ignore_status_code(value.status):
+        # In the case of an HTTPRedirect, value will not have a code attr.
+        # In the case of an HTTPError that is malformed (e.g.
+        # HTTPError("10 Bad error")), value will not have a code attr.
+        # In both of those cases, we fall back to value.status
+        code = getattr(value, 'code', value.status)
+
+        if ignore_status_code(code):
             return True
 
     # Ignore certain exceptions based on their name.
@@ -54,6 +62,7 @@ def should_ignore(exc, value, tb):
 
     if fullname in ignore_exceptions:
         return True
+
 
 @function_wrapper
 def handler_wrapper(wrapped, instance, args, kwargs):
@@ -76,6 +85,7 @@ def handler_wrapper(wrapped, instance, args, kwargs):
             transaction.record_exception(ignore_errors=should_ignore)
             raise
 
+
 class ResourceProxy(ObjectProxy):
 
     def __getattr__(self, name):
@@ -85,6 +95,7 @@ class ResourceProxy(ObjectProxy):
 
         attr = super(ResourceProxy, self).__getattr__(name)
         return name.isupper() and handler_wrapper(attr) or attr
+
 
 def wrapper_Dispatcher_find_handler(wrapped, instance, args, kwargs):
     transaction = current_transaction()
@@ -138,6 +149,7 @@ def wrapper_Dispatcher_find_handler(wrapped, instance, args, kwargs):
 
     return obj, vpath
 
+
 def wrapper_RoutesDispatcher_find_handler(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
@@ -169,12 +181,15 @@ def wrapper_RoutesDispatcher_find_handler(wrapped, instance, args, kwargs):
 
     return handler
 
+
 def instrument_cherrypy__cpreqbody(module):
     wrap_function_trace(module, 'process_multipart')
     wrap_function_trace(module, 'process_multipart_form_data')
 
+
 def instrument_cherrypy__cprequest(module):
     wrap_function_trace(module, 'Request.handle_error')
+
 
 def instrument_cherrypy__cpdispatch(module):
     wrap_function_wrapper(module, 'Dispatcher.find_handler',
@@ -182,9 +197,11 @@ def instrument_cherrypy__cpdispatch(module):
     wrap_function_wrapper(module, 'RoutesDispatcher.find_handler',
             wrapper_RoutesDispatcher_find_handler)
 
+
 def instrument_cherrypy__cpwsgi(module):
     wrap_wsgi_application(module, 'CPWSGIApp.__call__',
             framework=framework_details())
+
 
 def instrument_cherrypy__cptree(module):
     wrap_wsgi_application(module, 'Application.__call__',

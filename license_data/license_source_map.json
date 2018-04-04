@@ -1199,6 +1199,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/adapter_cheroot.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/adapter_flup.py": {
         "hash": "n/a",
         "libraries": [
@@ -1266,6 +1272,12 @@
         ]
     },
     "newrelic/hooks/component_piston.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/component_flask_rest.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

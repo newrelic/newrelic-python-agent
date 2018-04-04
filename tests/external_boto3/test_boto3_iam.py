@@ -1,3 +1,4 @@
+import sys
 import uuid
 
 import boto3
@@ -5,6 +6,11 @@ import moto
 
 from newrelic.api.background_task import background_task
 from testing_support.fixtures import validate_transaction_metrics
+
+# patch moto to support py37
+if sys.version_info >= (3, 7):
+    import re
+    moto.packages.responses.responses.re._pattern_type = re.Pattern
 
 AWS_ACCESS_KEY_ID = 'AAAAAAAAAAAACCESSKEY'
 AWS_SECRET_ACCESS_KEY = 'AAAAAASECRETKEY'
@@ -21,6 +27,7 @@ _iam_rollup_metrics = [
     ('External/iam.amazonaws.com/all', 3),
     ('External/iam.amazonaws.com/botocore/POST', 3),
 ]
+
 
 @validate_transaction_metrics(
         'test_boto3_iam:test_iam',

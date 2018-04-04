@@ -1,8 +1,11 @@
 import sys
 import pytest
 
-from newrelic.api.transaction import current_transaction
 from newrelic.api.background_task import background_task
+from newrelic.api.function_trace import function_trace
+from newrelic.api.transaction import current_transaction
+
+from testing_support.fixtures import capture_transaction_metrics
 
 
 @pytest.fixture()
@@ -53,7 +56,8 @@ def test_ensure_future(explicit_loop, arg_type, future_arg, in_transaction):
         if hasattr(asyncio, 'ensure_future'):
             ensure_future = asyncio.ensure_future
         else:
-            ensure_future = asyncio.async
+            # use getattr because `async` is a keyword in py37
+            ensure_future = getattr(asyncio, 'async')
 
         loop = asyncio.get_event_loop()
 
@@ -100,3 +104,46 @@ def test_ensure_future(explicit_loop, arg_type, future_arg, in_transaction):
         background_task(name='test_ensure_future')(_test)()
     else:
         _test()
+
+
+def test_exclusive_time():
+
+    full_metrics = {}
+
+    @capture_transaction_metrics([], full_metrics)
+    @background_task(name='test_exclusive_time')
+    def _test():
+        # Avoid importing asyncio until after the instrumentation hooks are set
+        # up
+        import asyncio
+        if hasattr(asyncio, 'ensure_future'):
+            ensure_future = asyncio.ensure_future
+        else:
+            # use getattr because `async` is a keyword in py37
+            ensure_future = getattr(asyncio, 'async')
+
+        @asyncio.coroutine
+        @function_trace(name='_coro')
+        def _coro():
+            yield from asyncio.sleep(0.1)
+
+        @asyncio.coroutine
+        def middle():
+            yield from ensure_future(_coro())
+
+        @asyncio.coroutine
+        @function_trace(name='main')
+        def main():
+            yield from ensure_future(middle())
+
+        asyncio.get_event_loop().run_until_complete(main())
+
+    _test()
+
+    coro_metric = ('Function/_coro', '')
+    main_metric = ('Function/main', '')
+
+    coro_exclusive_time = full_metrics[coro_metric][2]
+    main_exclusive_time = full_metrics[main_metric][2]
+
+    assert main_exclusive_time < coro_exclusive_time

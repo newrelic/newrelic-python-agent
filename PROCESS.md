@@ -428,3 +428,44 @@ When providing a custom build of the agent to a customer, we will typically buil
 5. Download the tarball from Artifactory. Run manual smoke tests to verify that the agent is working as expected. Manually testing with an application is a good idea. Running `newrelic-admin validate-config newrelic.ini` is also helpful.
 
 6. Work with the Product Manager to send the custom build to the customer.
+
+Undeploying an Agent
+--------------------
+
+Removing an agent is something that should be carefully considered prior taking
+action. Keep in mind that undeploying an agent will very likely result in
+broken customer builds. Those problems may exceed the scope of the original
+issue. When practical, it's best to "roll forward" by redeploying the previous
+release as a new version.
+
+1. Notify the team's manager and group lead prior to proceeding with unpublishing the agent. If after hours, page the manager on-call.
+
+1. Notify the #python-agent room with the following message:
+   ```
+   @channel The process to unpublish agent version A.B.C.D is starting.
+   ```
+
+1. Replace content from the [release notes](https://docs.newrelic.com/docs/release-notes/agent-release-notes/python-release-notes) with "Removed" and republish them.
+
+1. Notify the #documentation channel hero and ask them to unpublish the [release notes](https://docs.newrelic.com/docs/release-notes/agent-release-notes/python-release-notes)
+
+1. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM [systems configuration page](https://rpm-admin.newrelic.com/admin/system_configurations) to point to the previous agent version.
+
+1. Run the [undeploy-from-s3](https://python-agent-build.pdx.vm.datanerd.us/view/PY_Deploy/job/undeploy-from-s3/) job on Jenkins using the most recent agent version. Use the full version number (in the form of ``A.B.C.D``).
+
+1. Verify that the bad version is removed from the [downloads](http://download.newrelic.com/python_agent/release/) site.
+
+1. Log in to [pypi](https://pypi.org/account/login/) using the credentials stored in lastpass under the Shared #python-agent folder.
+
+1. Navigate to the release page https://pypi.org/manage/project/newrelic/release/A.B.C.D (replace ``A.B.C.D`` with the version number of the bad version)
+
+1. Click the Delete Release button. **There is no going back** Once a package has been removed from PyPI, it can not be redeployed at the same version number. After this point, the procedure must be completed.
+
+1. Verify that pip install works and that [legacy pypi](https://pypi.python.org/pypi?%3Aaction=pkg_edit&name=newrelic) shows the previous package version as "Hide? No" (when a new version is deployed, the previous version will be automatically hidden). Verify that `pip install --no-cache newrelic` now installs the correct version.
+
+1. Notify the #python-agent room with the following message:
+   ```
+   @channel Agent version A.B.C.D removed from PyPI and downloads.newrelic.com
+   ```
+
+1. Update [docker-state](https://source.datanerd.us/container-fabric/docker-state/blob/master/requirements.txt) and [Sidekick Bot](https://source.datanerd.us/python-agent/sidekick-bot/blob/master/requirements.txt) to point to the previously released agent version.

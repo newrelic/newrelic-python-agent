@@ -1,11 +1,15 @@
+import pytest
 import webtest
 
 from newrelic.packages import six
 
 from testing_support.fixtures import (validate_transaction_errors,
-            override_application_settings)
+        override_application_settings, override_ignore_status_codes)
 
 import cherrypy
+
+CHERRYPY_VERSION = tuple(int(v) for v in cherrypy.__version__.split('.'))
+
 
 class Application(object):
 
@@ -24,6 +28,16 @@ class Application(object):
     @cherrypy.expose
     def not_found_as_http_error(self):
         raise cherrypy.HTTPError(404)
+
+    @cherrypy.expose
+    def not_found_as_str_http_error(self):
+        raise cherrypy.HTTPError('404 Not Found')
+
+    @cherrypy.expose
+    def bad_http_error(self):
+        # this will raise HTTPError with status code 500 because 10 is not a
+        # valid status code
+        raise cherrypy.HTTPError('10 Invalid status code')
 
     @cherrypy.expose
     def internal_redirect(self):
@@ -47,68 +61,81 @@ class Application(object):
             '<body><h1>My First Heading</h1><p>My first paragraph.</p>'
             '</body></html>')
 
+
 application = cherrypy.Application(Application())
 test_application = webtest.TestApp(application)
+
 
 @validate_transaction_errors(errors=[])
 def test_application_index():
     response = test_application.get('')
     response.mustcontain('INDEX RESPONSE')
 
+
 @validate_transaction_errors(errors=[])
 def test_application_index_agent_disabled():
-    environ = { 'newrelic.enabled': False }
+    environ = {'newrelic.enabled': False}
     response = test_application.get('', extra_environ=environ)
     response.mustcontain('INDEX RESPONSE')
 
+
 @validate_transaction_errors(errors=[])
 def test_application_missing():
-    response = test_application.get('/missing', status=404)
+    test_application.get('/missing', status=404)
+
 
 if six.PY3:
     _test_application_unexpected_exception_errors = ['builtins:RuntimeError']
 else:
     _test_application_unexpected_exception_errors = ['exceptions:RuntimeError']
 
+
 @validate_transaction_errors(
         errors=_test_application_unexpected_exception_errors)
 def test_application_unexpected_exception():
-    response = test_application.get('/error', status=500)
+    test_application.get('/error', status=500)
+
 
 @validate_transaction_errors(errors=[])
 def test_application_not_found():
-    response = test_application.get('/not_found', status=404)
+    test_application.get('/not_found', status=404)
+
 
 @validate_transaction_errors(errors=[])
 def test_application_not_found_as_http_error():
-    response = test_application.get('/not_found_as_http_error', status=404)
+    test_application.get('/not_found_as_http_error', status=404)
+
 
 @validate_transaction_errors(errors=[])
 def test_application_internal_redirect():
     response = test_application.get('/internal_redirect')
     response.mustcontain('INDEX RESPONSE')
 
+
 @validate_transaction_errors(errors=[])
 def test_application_external_redirect():
-    response = test_application.get('/external_redirect', status=302)
+    test_application.get('/external_redirect', status=302)
+
 
 @validate_transaction_errors(errors=[])
 def test_application_upload_files():
-    response = test_application.post('/upload_files',
-            upload_files=[('files', __file__)])
+    test_application.post('/upload_files', upload_files=[('files', __file__)])
+
 
 @validate_transaction_errors(errors=[])
 def test_application_encode_multipart():
     content_type, body = test_application.encode_multipart(
             params=[('field', 'value')], files=[('files', __file__)])
-    response = test_application.request('/encode_multipart',
-            method='POST', content_type=content_type, body=body)
+    test_application.request('/encode_multipart', method='POST',
+            content_type=content_type, body=body)
+
 
 _test_html_insertion_settings = {
     'browser_monitoring.enabled': True,
     'browser_monitoring.auto_instrument': True,
     'js_agent_loader': u'<!-- NREUM HEADER -->',
 }
+
 
 @override_application_settings(_test_html_insertion_settings)
 def test_html_insertion():
@@ -119,3 +146,24 @@ def test_html_insertion():
     # footer added by the agent.
 
     response.mustcontain('NREUM HEADER', 'NREUM.info')
+
+
+_error_endpoints = ['/not_found_as_http_error']
+if CHERRYPY_VERSION >= (3, 2):
+    _error_endpoints.extend(['/not_found_as_str_http_error',
+        '/bad_http_error'])
+
+
+@pytest.mark.parametrize('endpoint', _error_endpoints)
+@pytest.mark.parametrize('ignore_overrides,expected_errors', [
+    ([], ['cherrypy._cperror:HTTPError']),
+    ([404, 500], []),
+])
+def test_ignore_status_code(endpoint, ignore_overrides, expected_errors):
+
+    @validate_transaction_errors(errors=expected_errors)
+    @override_ignore_status_codes(ignore_overrides)
+    def _test():
+        test_application.get(endpoint, status=[404, 500])
+
+    _test()

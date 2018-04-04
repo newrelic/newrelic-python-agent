@@ -2007,6 +2007,13 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.middleware_flask_compress',
             'instrument_flask_compress')
 
+    _process_module_definition('flask_restful',
+            'newrelic.hooks.component_flask_rest',
+            'instrument_flask_rest')
+    _process_module_definition('flask_restplus.api',
+            'newrelic.hooks.component_flask_rest',
+            'instrument_flask_rest')
+
     # _process_module_definition('web.application',
     #        'newrelic.hooks.framework_webpy')
     # _process_module_definition('web.template',
@@ -2554,6 +2561,10 @@ def _process_module_builtin_defaults():
     _process_module_definition('cherrypy.wsgiserver',
             'newrelic.hooks.adapter_cherrypy',
             'instrument_cherrypy_wsgiserver')
+            
+    _process_module_definition('cheroot.wsgi',                                       
+            'newrelic.hooks.adapter_cheroot',                                       
+            'instrument_cheroot_wsgiserver')
 
     _process_module_definition('pyramid.router',
             'newrelic.hooks.framework_pyramid',

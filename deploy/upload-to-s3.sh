@@ -1,14 +1,14 @@
 #!/bin/sh
 
 # Upload source distribution package in `dist` directory to
-# S3 bucket defined at $AWS_BUCKET/$AWS_BUCKET_PREFIX/.
+# S3 bucket defined at $AWS_BUCKET/$S3_RELEASE_TYPE/.
 #
 # Required environment variables
 #
 #   1. AGENT_VERSION
 #   2. AWS_ACCESS_KEY_ID
 #   3. AWS_SECRET_ACCESS_KEY
-#   4. AWS_BUCKET_PREFIX (either "testing", "release", or "archive")
+#   4. S3_RELEASE_TYPE (either "testing", "release", or "archive")
 #
 # Requires: git and awscli
 

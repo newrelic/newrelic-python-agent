@@ -10,39 +10,36 @@ from newrelic.packages import six
 _logger = logging.getLogger(__name__)
 
 _boolean_states = {
-   '1': True, 'yes': True, 'true': True, 'on': True,
-   '0': False, 'no': False, 'false': False, 'off': False
+    '1': True, 'yes': True, 'true': True, 'on': True,
+    '0': False, 'no': False, 'false': False, 'off': False
 }
+
 
 def _setting_boolean(value):
     if value.lower() not in _boolean_states:
         raise ValueError('Not a boolean: %s' % value)
     return _boolean_states[value.lower()]
 
+
 _settings_types = {
     'browser_monitoring.auto_instrument': _setting_boolean,
+    'browser_monitoring.auto_instrument_passthrough': _setting_boolean,
 }
 
 _settings_defaults = {
     'browser_monitoring.auto_instrument': True,
+    'browser_monitoring.auto_instrument_passthrough': True,
 }
 
 flask_compress_settings = extra_settings('import-hook:flask_compress',
         types=_settings_types, defaults=_settings_defaults)
+
 
 def _nr_wrapper_Compress_after_request(wrapped, instance, args, kwargs):
     def _params(response, *args, **kwargs):
         return response
 
     response = _params(*args, **kwargs)
-
-    # If the response has direct_passthrough flagged, then is
-    # likely to be streaming a file or other large response.
-    # Leave the response alone in this situation even though
-    # it looked like flask_compress doesn't honour it.
-
-    #if getattr(response, 'direct_passthrough', None):
-    #    return wrapped(*args, **kwargs)
 
     # Need to be running within a valid web transaction.
 
@@ -77,7 +74,6 @@ def _nr_wrapper_Compress_after_request(wrapped, instance, args, kwargs):
     if ctype not in transaction.settings.browser_monitoring.content_type:
         return wrapped(*args, **kwargs)
 
-
     # Don't risk it if content encoding already set.
 
     if 'Content-Encoding' in response.headers:
@@ -106,6 +102,26 @@ def _nr_wrapper_Compress_after_request(wrapped, instance, args, kwargs):
     if not header:
         return wrapped(*args, **kwargs)
 
+    # If the response has direct_passthrough flagged, then is
+    # likely to be streaming a file or other large response.
+    direct_passthrough = getattr(response, 'direct_passthrough', None)
+    if direct_passthrough:
+        if not (flask_compress_settings.
+                browser_monitoring.auto_instrument_passthrough):
+            return wrapped(*args, **kwargs)
+
+        # In those cases, if the mimetype is still a supported browser
+        # insertion mimetype is not an attachment, and will be compressed, then
+        # we should try to go ahead and insert browser stuff since Flask
+        # Compress change the response anyway.
+        #
+        # In order to do that, we have to disable direct_passthrough on the
+        # response since we have to immediately read the contents of the file.
+        elif ctype == 'text/html':
+            response.direct_passthrough = False
+        else:
+            return wrapped(*args, **kwargs)
+
     def html_to_be_inserted():
         return six.b(header) + six.b(transaction.browser_timing_footer())
 
@@ -127,6 +143,7 @@ def _nr_wrapper_Compress_after_request(wrapped, instance, args, kwargs):
         response.headers['Content-Length'] = str(len(response.get_data()))
 
     return wrapped(*args, **kwargs)
+
 
 def instrument_flask_compress(module):
     wrap_function_wrapper(module, 'Compress.after_request',

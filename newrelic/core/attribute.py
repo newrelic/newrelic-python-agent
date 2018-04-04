@@ -29,6 +29,7 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set((
         'request.method',
         'request.headers.contentType',
         'request.headers.contentLength',
+        'request.uri',
         'response.status',
         'response.headers.contentLength',
         'response.headers.contentType',

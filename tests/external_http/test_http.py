@@ -1,4 +1,4 @@
-import http.client as httplib
+import six
 
 from testing_support.fixtures import validate_transaction_metrics
 from testing_support.external_fixtures import (cache_outgoing_headers,
@@ -7,14 +7,21 @@ from testing_support.external_fixtures import (cache_outgoing_headers,
 
 from newrelic.api.background_task import background_task
 
+if six.PY2:
+    import httplib
+    _external_metric = 'External/www.example.com/httplib/'
+else:
+    import http.client as httplib
+    _external_metric = 'External/www.example.com/http/'
+
 _test_http_http_request_scoped_metrics = [
-        ('External/www.example.com/httplib/', 1)]
+        (_external_metric, 1)]
 
 _test_http_http_request_rollup_metrics = [
         ('External/all', 1),
         ('External/allOther', 1),
         ('External/www.example.com/all', 1),
-        ('External/www.example.com/httplib/', 1)]
+        (_external_metric, 1)]
 
 
 @validate_transaction_metrics(
@@ -32,13 +39,13 @@ def test_http_http_request():
 
 
 _test_http_https_request_scoped_metrics = [
-        ('External/www.example.com/httplib/', 1)]
+        (_external_metric, 1)]
 
 _test_http_https_request_rollup_metrics = [
         ('External/all', 1),
         ('External/allOther', 1),
         ('External/www.example.com/all', 1),
-        ('External/www.example.com/httplib/', 1)]
+        (_external_metric, 1)]
 
 
 @validate_transaction_metrics(

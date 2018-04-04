@@ -12,7 +12,10 @@ from newrelic.common.object_wrapper import (wrap_function_wrapper,
 
 _logger = logging.getLogger(__name__)
 
-class GeneratorReturn(Exception): pass
+
+class GeneratorReturn(Exception):
+    pass
+
 
 def _nr_wrapper_gen_coroutine_generator_(generator):
     # This wrapper is applied around the generator returned by any
@@ -129,6 +132,7 @@ def _nr_wrapper_gen_coroutine_generator_(generator):
     finally:
         generator.close()
 
+
 def _nr_wrapper_gen_Runner___init___(wrapped, instance, args, kwargs):
     # This wrapper intercepts the initialisation function of the Runner
     # class and wraps the generator.
@@ -146,6 +150,7 @@ def _nr_wrapper_gen_Runner___init___(wrapped, instance, args, kwargs):
     generator = _nr_wrapper_gen_coroutine_generator_(generator)
 
     return wrapped(generator, *_args, **_kwargs)
+
 
 @function_wrapper
 def _nr_wrapper_gen_coroutine_function_(wrapped, instance, args, kwargs):
@@ -172,6 +177,7 @@ def _nr_wrapper_gen_coroutine_function_(wrapped, instance, args, kwargs):
     with FunctionTrace(transaction, '%s (coroutine)' % name):
         return wrapped(*args, **kwargs)
 
+
 def _nr_wrapper_gen_coroutine_(wrapped, instance, args, kwargs):
     # This wrapper is used to wrap both gen.engine and gen.coroutine
     # decorators. We use it to apply a further wrapper around any
@@ -185,6 +191,7 @@ def _nr_wrapper_gen_coroutine_(wrapped, instance, args, kwargs):
     # function under Python 2.
 
     return _nr_wrapper_gen_coroutine_function_(wrapped(*args, **kwargs))
+
 
 def _nr_wrapper_Task_start_(wrapped, instance, args, kwargs):
     # This wrapper is used around the start() method of the Task class.
@@ -200,6 +207,7 @@ def _nr_wrapper_Task_start_(wrapped, instance, args, kwargs):
 
     with FunctionTrace(transaction, name):
         return wrapped(*args, **kwargs)
+
 
 def instrument_tornado_gen(module):
     # The Return class type was introduced in Tornado 3.0.

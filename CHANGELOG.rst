@@ -1,6 +1,9 @@
 unreleased
 ----------
 
+3.2.0 (2018-04-04)
+------------------
+
 - Fix CherryPy ignore by status code for exceptions using reason phrases
 
   CherryPy accepts string values for `HTTPError` status (reason phrases). When

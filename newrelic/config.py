@@ -2561,9 +2561,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('cherrypy.wsgiserver',
             'newrelic.hooks.adapter_cherrypy',
             'instrument_cherrypy_wsgiserver')
-            
-    _process_module_definition('cheroot.wsgi',                                       
-            'newrelic.hooks.adapter_cheroot',                                       
+
+    _process_module_definition('cheroot.wsgi',
+            'newrelic.hooks.adapter_cheroot',
             'instrument_cheroot_wsgiserver')
 
     _process_module_definition('pyramid.router',

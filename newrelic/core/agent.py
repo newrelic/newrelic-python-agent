@@ -12,6 +12,7 @@ import atexit
 import traceback
 
 import newrelic
+import newrelic.api.import_hook
 import newrelic.core.config
 import newrelic.core.application
 
@@ -341,6 +342,8 @@ class Agent(object):
                 linked_applications = sorted(set(linked_applications))
                 application = newrelic.core.application.Application(
                         app_name, linked_applications)
+                application._uninstrumented = (
+                        newrelic.api.import_hook._uninstrumented_modules)
                 self._applications[app_name] = application
                 activate_session = True
 

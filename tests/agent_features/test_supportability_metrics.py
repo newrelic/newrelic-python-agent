@@ -1,3 +1,5 @@
+import pytest
+import subprocess
 import sys
 
 import newrelic.agent
@@ -81,3 +83,10 @@ def test_end_of_transaction():
     @newrelic.agent.function_trace()
     def _nothing():
         pass
+
+
+@pytest.mark.parametrize('correct_order', [True, False])
+def test_import_order_supportability_metrics(correct_order):
+    cmd = ['python', 'uninstrumented_tester.py', str(correct_order)]
+    returncode = subprocess.call(cmd)
+    assert returncode == 0

@@ -57,6 +57,7 @@ _FEATURE_FLAGS = set([
     'tornado.instrumentation.r3',
     'tornado.instrumentation.r4',
     'django.instrumentation.inclusion-tags.r1',
+    'distributed_tracing',
 ])
 
 # Names of configuration file and deployment environment. This

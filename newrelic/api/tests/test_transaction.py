@@ -80,6 +80,25 @@ class TestTraceEndsAfterTransaction(newrelic.tests.test_cases.TestCase):
         assert not trace_1.exited
         assert trace_2.exited
 
+    def test_async_children_not_completed(self):
+        with self.transaction:
+            trace_1 = FunctionTrace(
+                    self.transaction, 'I am going to be a little late')
+            trace_1.__enter__()
+
+            trace_2 = FunctionTrace(
+                    self.transaction, 'I am going to be a little later')
+            trace_2.__enter__()
+            self.transaction._pop_current(trace_2)
+
+            trace_3 = FunctionTrace(
+                    self.transaction, 'I am going to be a little later')
+            trace_3.__enter__()
+            self.transaction._pop_current(trace_3)
+
+        assert not self.transaction.enabled
+        assert trace_1.exited
+
 
 if __name__ == '__main__':
     unittest.main()

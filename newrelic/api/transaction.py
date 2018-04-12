@@ -286,7 +286,7 @@ class Transaction(object):
         for _ in range(self._settings.agent_limits.max_outstanding_traces):
             if isinstance(self.current_node, Sentinel):
                 break
-            self.current_node.__exit__(None, None, None)
+            self.current_node._force_exit(None, None, None)
         else:
             _logger.error('Transaction ended but current_node is not Sentinel.'
                     ' Current node is %r. Report this issue to New Relic '

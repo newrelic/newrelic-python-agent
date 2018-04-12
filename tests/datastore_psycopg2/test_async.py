@@ -70,14 +70,16 @@ _disable_rollup_metrics.append(
         (_instance_metric_name, None)
 )
 
+async_keyword_list = ['async']
+if PSYCOPG2_VERSION >= (2, 7, 4):
+    async_keyword_list.append('async_')
 
-# Query
 
-def _exercise_db():
+def _exercise_db(async_keyword):
     wait = psycopg2.extras.wait_select
 
-    # `async` is a keyword in Python 3.7+
-    kwasync = {'async': 1}
+    kwasync = {}
+    kwasync[async_keyword] = 1
 
     async_conn = psycopg2.connect(
             database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
@@ -122,8 +124,9 @@ def _exercise_db():
         background_task=True)
 @validate_transaction_errors(errors=[])
 @background_task()
-def test_async_mode_enable_instance():
-    _exercise_db()
+@pytest.mark.parametrize('async_keyword', async_keyword_list)
+def test_async_mode_enable_instance(async_keyword):
+    _exercise_db(async_keyword)
 
 
 @pytest.mark.skipif(PSYCOPG2_VERSION < (2, 2),
@@ -139,5 +142,6 @@ def test_async_mode_enable_instance():
         background_task=True)
 @validate_transaction_errors(errors=[])
 @background_task()
-def test_async_mode_disable_instance():
-    _exercise_db()
+@pytest.mark.parametrize('async_keyword', async_keyword_list)
+def test_async_mode_disable_instance(async_keyword):
+    _exercise_db(async_keyword)

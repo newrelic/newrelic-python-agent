@@ -1,6 +1,14 @@
 unreleased
 ----------
 
+- Do not run explain plans for psycopg2 connections using the `async_` kwarg
+
+  As "async" is now a keyword in Python 3.7, psycopg2 now allows "async_" as an
+  alias for its "async" kwarg for psycopg2.connect as of psycopg2 v2.7.4.
+  Previously, explain plans were attempted for these connections and a
+  traceback would be seen in the logs. This has now been fixed.
+
+
 3.2.0 (2018-04-04)
 ------------------
 

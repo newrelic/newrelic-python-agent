@@ -923,11 +923,13 @@ class Transaction(object):
                 self.path) or self._settings.apdex_t)
 
     def create_distributed_tracing_payload(self):
-        # FIXME: this processing should move to the finalize application
-        # settings so that the value is stored in settings
         settings = self._settings
-        account_id, application_id = \
-            map(int, settings.cross_process_id.split('#'))
+        account_id = settings.account_id
+        application_id = settings.application_id
+
+        if (not isinstance(account_id, int) or
+                not isinstance(application_id, int)):
+            return None
 
         data = dict(
             ty='App',

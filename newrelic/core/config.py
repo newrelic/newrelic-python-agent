@@ -419,6 +419,7 @@ _settings.metric_name_rules = []
 _settings.transaction_name_rules = []
 _settings.transaction_segment_terms = []
 
+_settings.account_id = None
 _settings.cross_process_id = None
 _settings.trusted_account_ids = []
 _settings.encoding_key = None
@@ -792,6 +793,26 @@ def finalize_application_settings(server_side_config={}, settings=_settings):
 
     application_settings.attribute_filter = AttributeFilter(
             flatten_settings(application_settings))
+
+    # This will be removed at some future point
+    # Special case for account_id which will be sent instead of
+    # cross_process_id in the future
+    if application_settings.cross_process_id is not None:
+        vals = application_settings.cross_process_id.split('#')
+
+        if application_settings.account_id is not None:
+            vals[0] = application_settings.account_id
+
+        if application_settings.application_id is not None:
+            vals[1] = application_settings.application_id
+
+        try:
+            account_id, application_id = map(int, vals)
+
+            application_settings.account_id = account_id
+            application_settings.application_id = application_id
+        except ValueError:
+            pass
 
     return application_settings
 

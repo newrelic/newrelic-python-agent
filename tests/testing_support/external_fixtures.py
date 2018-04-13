@@ -32,11 +32,12 @@ def cache_outgoing_headers(wrapped, instance, args, kwargs):
         cache = transaction._test_request_headers = {}
 
     try:
-        transaction._test_request_headers[header].extend(values)
+        cache[header].extend(values)
     except KeyError:
-        transaction._test_request_headers[header] = list(values)
+        cache[header] = list(values)
 
     return wrapped(*args, **kwargs)
+
 
 def validate_outbound_headers(header_id='X-NewRelic-ID',
         header_transaction='X-NewRelic-Transaction'):
@@ -50,7 +51,7 @@ def validate_outbound_headers(header_id='X-NewRelic-ID',
     values = headers[header_id]
     if isinstance(values, list):
         assert len(values) == 1, headers
-        assert type(values[0]) == type('')
+        assert isinstance(values[0], type(''))
         value = values[0]
     else:
         value = values
@@ -63,7 +64,7 @@ def validate_outbound_headers(header_id='X-NewRelic-ID',
     values = headers[header_transaction]
     if isinstance(values, list):
         assert len(values) == 1, headers
-        assert type(values[0]) == type('')
+        assert isinstance(values[0], type(''))
         value = values[0]
     else:
         value = values
@@ -76,6 +77,7 @@ def validate_outbound_headers(header_id='X-NewRelic-ID',
     assert trip_id == transaction.trip_id
     assert path_hash == transaction.path_hash
 
+
 def validate_distributed_tracing_header(header='X-NewRelic-Trace'):
     transaction = current_transaction()
     headers = transaction._test_request_headers
@@ -87,7 +89,7 @@ def validate_distributed_tracing_header(header='X-NewRelic-Trace'):
     values = headers[header]
     if isinstance(values, list):
         assert len(values) == 1, headers
-        assert type(values[0]) == type('')
+        assert isinstance(values[0], type(''))
         value = values[0]
     else:
         value = values
@@ -124,6 +126,7 @@ def validate_distributed_tracing_header(header='X-NewRelic-Trace'):
     # Verify timestamp is an integer
     assert isinstance(data['ti'], int)
 
+
 @function_wrapper
 def validate_cross_process_headers(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
@@ -137,6 +140,7 @@ def validate_cross_process_headers(wrapped, instance, args, kwargs):
         validate_outbound_headers()
 
     return result
+
 
 @function_wrapper
 def validate_messagebroker_headers(wrapped, instance, args, kwargs):
@@ -167,7 +171,7 @@ def create_incoming_headers(transaction):
 
     value = obfuscate(app_data, encoding_key)
 
-    assert type(value) == type('')
+    assert isinstance(value, type(''))
 
     headers.append(('X-NewRelic-App-Data', value))
 
@@ -218,6 +222,7 @@ def validate_external_node_params(params=[], forgone_params=[]):
 
     return _validate_external_node_params
 
+
 def validate_synthetics_external_trace_header(required_header=(),
         should_exist=True):
     @transient_function_wrapper('newrelic.core.stats_engine',
@@ -253,6 +258,7 @@ def validate_synthetics_external_trace_header(required_header=(),
                 class _Transaction(object):
                     def __init__(self, wrapped):
                         self.__wrapped__ = wrapped
+
                     def __getattr__(self, name):
                         return getattr(self.__wrapped__, name)
 

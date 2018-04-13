@@ -1,3 +1,4 @@
+import functools
 import pika
 import pytest
 import six
@@ -51,6 +52,7 @@ else:
 
 
 @parametrized_connection
+@pytest.mark.parametrize('callback_as_partial', [True, False])
 @validate_transaction_metrics(
         ('test_pika_async_connection_consume:'
                 'test_async_connection_basic_get_inside_txn'),
@@ -59,7 +61,8 @@ else:
         background_task=True)
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
-def test_async_connection_basic_get_inside_txn(producer, ConnectionClass):
+def test_async_connection_basic_get_inside_txn(producer, ConnectionClass,
+        callback_as_partial):
     def on_message(channel, method_frame, header_frame, body):
         assert method_frame
         assert body == BODY
@@ -67,6 +70,9 @@ def test_async_connection_basic_get_inside_txn(producer, ConnectionClass):
         channel.close()
         connection.close()
         connection.ioloop.stop()
+
+    if callback_as_partial:
+        on_message = functools.partial(on_message)
 
     def on_open_channel(channel):
         channel.basic_get(callback=on_message, queue=QUEUE)
@@ -87,7 +93,9 @@ def test_async_connection_basic_get_inside_txn(producer, ConnectionClass):
 
 
 @parametrized_connection
-def test_select_connection_basic_get_outside_txn(producer, ConnectionClass):
+@pytest.mark.parametrize('callback_as_partial', [True, False])
+def test_select_connection_basic_get_outside_txn(producer, ConnectionClass,
+        callback_as_partial):
     metrics_list = []
 
     @capture_transaction_metrics(metrics_list)
@@ -99,6 +107,9 @@ def test_select_connection_basic_get_outside_txn(producer, ConnectionClass):
             channel.close()
             connection.close()
             connection.ioloop.stop()
+
+        if callback_as_partial:
+            on_message = functools.partial(on_message)
 
         def on_open_channel(channel):
             channel.basic_get(callback=on_message, queue=QUEUE)
@@ -169,6 +180,7 @@ _test_async_connection_basic_get_empty_metrics = [
 
 
 @parametrized_connection
+@pytest.mark.parametrize('callback_as_partial', [True, False])
 @validate_transaction_metrics(
         ('test_pika_async_connection_consume:'
                 'test_async_connection_basic_get_empty'),
@@ -177,11 +189,15 @@ _test_async_connection_basic_get_empty_metrics = [
         background_task=True)
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
-def test_async_connection_basic_get_empty(ConnectionClass):
+def test_async_connection_basic_get_empty(ConnectionClass,
+        callback_as_partial):
     QUEUE = 'test_async_empty'
 
     def on_message(channel, method_frame, header_frame, body):
         assert False, body.decode('UTF-8')
+
+    if callback_as_partial:
+        on_message = functools.partial(on_message)
 
     def on_open_channel(channel):
         channel.basic_get(callback=on_message, queue=QUEUE)

@@ -1,4 +1,3 @@
-import functools
 import sys
 import time
 import types
@@ -123,16 +122,16 @@ def _nr_wrapper_basic_get(wrapped, instance, args, kwargs):
     if callback is None:
         return wrapped(*args, **kwargs)
 
-    @functools.wraps(callback)
-    def wrapped_callback(*args, **kwargs):
+    @function_wrapper
+    def callback_wrapper(_wrapped, _instance, _args, _kwargs):
         transaction = current_transaction()
 
         if transaction is None:
-            return callback(*args, **kwargs)
+            return callback(*_args, **_kwargs)
 
-        if not kwargs:
-            method, properties = args[1:3]
-            start_time = getattr(wrapped_callback, '_nr_start_time', None)
+        if not _kwargs:
+            method, properties = _args[1:3]
+            start_time = getattr(callback_wrapper, '_nr_start_time', None)
 
             _add_consume_rabbitmq_trace(transaction,
                     method=method,
@@ -145,14 +144,14 @@ def _nr_wrapper_basic_get(wrapped, instance, args, kwargs):
 
         name = callable_name(callback)
         with FunctionTrace(transaction=transaction, name=name):
-            return callback(*args, **kwargs)
+            return callback(*_args, **_kwargs)
 
-    wrapped_callback._nr_start_time = time.time()
+    callback_wrapper._nr_start_time = time.time()
     if len(args) > 0:
         args = list(args)
-        args[0] = wrapped_callback
+        args[0] = callback_wrapper(callback)
     else:
-        kwargs['callback'] = wrapped_callback
+        kwargs['callback'] = callback_wrapper(callback)
 
     return wrapped(*args, **kwargs)
 

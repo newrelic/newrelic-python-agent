@@ -1,18 +1,18 @@
-import sys
+import argparse
 import os
 
 
-def uninstrumented_tester(correct_order=True):
+def uninstrumented_tester(correct_order=True, license_key=None, host=None):
 
-    config_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-            'uninstrumented.ini')
+    os.environ['NEW_RELIC_LICENSE_KEY'] = license_key
+    os.environ['NEW_RELIC_HOST'] = host
 
     if correct_order:
 
         from newrelic.config import initialize
         from newrelic.api.application import register_application
 
-        initialize(config_file)
+        initialize()
         register_application(name='Python Agent Test (uninstrumented 1)',
                 timeout=10)
         register_application(name='Python Agent Test (uninstrumented 2)',
@@ -33,7 +33,7 @@ def uninstrumented_tester(correct_order=True):
         from newrelic.config import initialize
         from newrelic.api.application import register_application
 
-        initialize(config_file)
+        initialize()
         register_application(name='Python Agent Test (uninstrumented 1)',
                 timeout=10)
         register_application(name='Python Agent Test (uninstrumented 2)',
@@ -57,6 +57,16 @@ def uninstrumented_tester(correct_order=True):
     _test()
 
 
+def _get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--correct-order', type=bool)
+    parser.add_argument('--license-key', type=str)
+    parser.add_argument('--host', type=str)
+
+    return parser.parse_args()
+
+
 if __name__ == '__main__':
-    correct_order = sys.argv[1] == 'True'
-    uninstrumented_tester(correct_order=correct_order)
+    args = _get_args()
+    uninstrumented_tester(correct_order=args.correct_order,
+            license_key=args.license_key, host=args.host)

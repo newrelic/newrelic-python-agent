@@ -100,5 +100,28 @@ class TestTraceEndsAfterTransaction(newrelic.tests.test_cases.TestCase):
         assert trace_1.exited
 
 
+class TestTransactionApis(newrelic.tests.test_cases.TestCase):
+
+    requires_collector = True
+
+    def setUp(self):
+        environ = {'REQUEST_URI': '/transaction_apis'}
+        self.transaction = WebTransaction(application, environ)
+
+    def tearDown(self):
+        if current_transaction():
+            self.transaction.drop_transaction()
+
+    def test_create_distributed_tracing_payload_text(self):
+        with self.transaction:
+            payload = self.transaction.create_distributed_tracing_payload()
+            assert type(payload.text()) is str
+
+    def test_create_distributed_tracing_payload_http_safe(self):
+        with self.transaction:
+            payload = self.transaction.create_distributed_tracing_payload()
+            assert type(payload.http_safe()) is str
+
+
 if __name__ == '__main__':
     unittest.main()

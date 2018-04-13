@@ -313,19 +313,19 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
         callback, queue = bind_params(*args, **kwargs)
         name = callable_name(callback)
 
-        @functools.wraps(callback)
-        def wrapped_callback(*args, **kwargs):
+        @function_wrapper
+        def callback_wrapper(_wrapped, _instance, _args, _kwargs):
             transaction = current_transaction(active_only=False)
 
             if transaction and (transaction.ignore_transaction or
                     transaction.stopped):
-                return callback(*args, **kwargs)
+                return callback(*_args, **_kwargs)
             elif transaction:
                 with FunctionTrace(transaction=transaction, name=name):
-                    return callback(*args, **kwargs)
+                    return callback(*_args, **_kwargs)
             else:
                 if hasattr(instance, '_nr_disable_txn_tracing'):
-                    return callback(*args, **kwargs)
+                    return callback(*_args, **_kwargs)
                 # Keyword arguments are unknown since this is a user
                 # defined callback
                 exchange = 'Unknown'
@@ -334,8 +334,8 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
                 reply_to = None
                 correlation_id = None
                 unknown_kwargs = False
-                if not kwargs:
-                    method, properties = args[1:3]
+                if not _kwargs:
+                    method, properties = _args[1:3]
                     exchange = method.exchange or 'Default'
                     routing_key = getattr(method, 'routing_key', None)
                     if properties is not None:
@@ -378,13 +378,13 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
                     # Process CAT headers
                     mt._process_incoming_cat_headers(cat_id, cat_transaction)
 
-                    return callback(*args, **kwargs)
+                    return _wrapped(*_args, **_kwargs)
 
         if len(args) > 0:
             args = list(args)
-            args[0] = wrapped_callback
+            args[0] = callback_wrapper(callback)
         else:
-            kwargs[callback_referrer] = wrapped_callback
+            kwargs[callback_referrer] = callback_wrapper(callback)
 
         return wrapped(*args, **kwargs)
 

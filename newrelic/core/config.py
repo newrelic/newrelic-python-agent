@@ -797,22 +797,27 @@ def finalize_application_settings(server_side_config={}, settings=_settings):
     # This will be removed at some future point
     # Special case for account_id which will be sent instead of
     # cross_process_id in the future
+    vals = [application_settings.account_id,
+            application_settings.application_id]
+
     if application_settings.cross_process_id is not None:
-        vals = application_settings.cross_process_id.split('#')
+        derived_vals = application_settings.cross_process_id.split('#')
 
-        if application_settings.account_id is not None:
-            vals[0] = application_settings.account_id
+        for idx, val in enumerate(vals):
+            if val is None:
+                vals[idx] = derived_vals[idx]
 
-        if application_settings.application_id is not None:
-            vals[1] = application_settings.application_id
+    for idx, val in enumerate(vals):
+        if val is None:
+            continue
 
         try:
-            account_id, application_id = map(int, vals)
-
-            application_settings.account_id = account_id
-            application_settings.application_id = application_id
+            vals[idx] = int(val)
         except ValueError:
             pass
+
+    application_settings.account_id = vals[0]
+    application_settings.application_id = vals[1]
 
     return application_settings
 

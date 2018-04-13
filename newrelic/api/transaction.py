@@ -929,18 +929,23 @@ class Transaction(object):
         account_id, application_id = \
             map(int, settings.cross_process_id.split('#'))
 
+        data = dict(
+            ty='App',
+            ac=account_id,
+            ap=application_id,
+            id=self.guid,
+            tr=self.trace_id,
+            pr=self.priority,
+            sa=self.sampled,
+            ti=int(time.time() * 1000.0),
+        )
+
+        if self.referring_transaction_guid:
+            data['pa'] = self.referring_transaction_guid
+
         return DistributedTracePayload(
             v=(0, 1),
-            d=dict(
-                ty='App',
-                ac=account_id,
-                ap=application_id,
-                id=self.guid,
-                tr=self.trace_id,
-                pr=self.priority,
-                sa=self.sampled,
-                ti=int(time.time() * 1000.0),
-            )
+            d=data,
         )
 
     def _process_incoming_cat_headers(self, encoded_cross_process_id,

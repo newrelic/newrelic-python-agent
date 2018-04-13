@@ -299,7 +299,7 @@ def convert_to_cat_metadata_value(nr_headers):
 
 class DistributedTracePayload(dict):
 
-    def to_text(self):
+    def text(self):
         return json_encode(self)
 
     @classmethod
@@ -307,8 +307,8 @@ class DistributedTracePayload(dict):
         d = json_decode(value)
         return cls(d)
 
-    def to_http_safe(self):
-        return base64_encode(self.to_text())
+    def http_safe(self):
+        return base64_encode(self.text())
 
     @classmethod
     def from_http_safe(cls, value):

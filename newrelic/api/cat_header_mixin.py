@@ -59,7 +59,7 @@ class CatHeaderMixin(object):
         if settings.cross_application_tracer.enabled:
             if 'distributed_tracing' in settings.feature_flag:
                 payload = transaction.create_distributed_tracing_payload()
-                encoded_header = payload.to_http_safe()
+                encoded_header = payload.http_safe()
                 nr_headers.append(
                         (cls.cat_distributed_trace_key, encoded_header))
 

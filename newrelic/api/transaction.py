@@ -30,7 +30,7 @@ from newrelic.core.custom_event import create_custom_event
 from newrelic.core.stack_trace import exception_stack
 from newrelic.common.encoding_utils import (generate_path_hash, obfuscate,
         deobfuscate, json_encode, json_decode, base64_decode,
-        convert_to_cat_metadata_value)
+        convert_to_cat_metadata_value, DistributedTracePayload)
 
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.api.time_trace import TimeTrace
@@ -152,11 +152,16 @@ class Transaction(object):
         # 16-digit random hex. Padded with zeros in the front.
         self.guid = '%016x' % random.getrandbits(64)
 
+        # This may be overridden by processing an inbound CAT header
+        self.priority = random.random()
+
         self.client_cross_process_id = None
         self.client_account_id = None
         self.client_application_id = None
         self.referring_transaction_guid = None
         self.record_tt = False
+        self.sampled = False
+        self._trace_id = None
         self._trip_id = None
         self._referring_path_hash = None
         self._alternate_path_hashes = {}
@@ -595,6 +600,10 @@ class Transaction(object):
         return self._trip_id or self.guid
 
     @property
+    def trace_id(self):
+        return self._trace_id or self.guid
+
+    @property
     def alternate_path_hashes(self):
         """Return the alternate path hashes but not including the current path
         hash.
@@ -912,6 +921,27 @@ class Transaction(object):
 
             self.apdex = (self._settings.web_transactions_apdex.get(
                 self.path) or self._settings.apdex_t)
+
+    def create_distributed_tracing_payload(self):
+        # FIXME: this processing should move to the finalize application
+        # settings so that the value is stored in settings
+        settings = self._settings
+        account_id, application_id = \
+            map(int, settings.cross_process_id.split('#'))
+
+        return DistributedTracePayload(
+            v=(0, 1),
+            d=dict(
+                ty='App',
+                ac=account_id,
+                ap=application_id,
+                id=self.guid,
+                tr=self.trace_id,
+                pr=self.priority,
+                sa=self.sampled,
+                ti=int(time.time() * 1000.0),
+            )
+        )
 
     def _process_incoming_cat_headers(self, encoded_cross_process_id,
             encoded_txn_header):

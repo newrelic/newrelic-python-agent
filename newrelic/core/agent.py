@@ -12,7 +12,6 @@ import atexit
 import traceback
 
 import newrelic
-import newrelic.api.import_hook
 import newrelic.core.config
 import newrelic.core.application
 
@@ -291,7 +290,7 @@ class Agent(object):
             return application.attribute_filter
 
     def activate_application(self, app_name, linked_applications=[],
-                             timeout=None):
+                             timeout=None, uninstrumented_modules=None):
         """Initiates activation for the named application if this has
         not been done previously. If an attempt to trigger the
         activation of the application has already been performed,
@@ -342,8 +341,7 @@ class Agent(object):
                 linked_applications = sorted(set(linked_applications))
                 application = newrelic.core.application.Application(
                         app_name, linked_applications)
-                application._uninstrumented = (
-                        newrelic.api.import_hook._uninstrumented_modules)
+                application._uninstrumented = uninstrumented_modules
                 self._applications[app_name] = application
                 activate_session = True
 

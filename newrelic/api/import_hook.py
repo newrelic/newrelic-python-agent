@@ -16,6 +16,8 @@ _import_hooks = {}
 _ok_modules = ['urllib', 'urllib2', 'httplib', 'http.client', 'urllib.request',
         'newrelic.agent']
 
+_uninstrumented_modules = set()
+
 
 def register_import_hook(name, callable):
     imp.acquire_lock()
@@ -44,6 +46,17 @@ def register_import_hook(name, callable):
                             'initialize the New Relic agent before all '
                             'other modules for best monitoring '
                             'results.' % module)
+
+                    # Add the module name to the set of uninstrumented modules.
+                    # During harvest, this set will be used to produce metrics.
+                    # The adding of names here and the reading of them during
+                    # harvest should be thread safe. This is because the code
+                    # here is only run during `initialize` which will no-op if
+                    # run multiple times (even if in a thread). The set is read
+                    # from the harvest thread which will run one minute after
+                    # `initialize` is called.
+
+                    _uninstrumented_modules.add(module.__name__)
 
                 _import_hooks[name] = None
 

@@ -115,6 +115,8 @@ class Application(object):
 
         self._active_xrays = {}
 
+        self._uninstrumented = set()
+
     @property
     def name(self):
         return self._app_name
@@ -1326,6 +1328,15 @@ class Application(object):
                 # periods have occurred.
 
                 stats.record_custom_metric('Instance/Reporting', 0)
+
+                # If an import order issue was detected, send a metric for each
+                # uninstrumented module
+
+                for uninstrumented in self._uninstrumented:
+                    internal_count_metric(
+                            'Supportability/Python/Uninstrumented', 1)
+                    internal_count_metric('Supportability/Uninstrumented/'
+                            '%s' % uninstrumented, 1)
 
                 # Create our time stamp as to when this reporting period
                 # ends and start reporting the data.

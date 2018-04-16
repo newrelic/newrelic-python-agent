@@ -54,9 +54,13 @@ def uninstrumented_tester(correct_order=True, license_key=None, host=None):
     _test()
 
 
+def _str2bool(v):
+    return v.lower() == 'true'
+
+
 def _get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--correct-order', type=bool)
+    parser.add_argument('--correct-order', type=_str2bool)
     parser.add_argument('--license-key', type=str)
     parser.add_argument('--host', type=str)
 

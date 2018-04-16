@@ -783,6 +783,8 @@ def apply_server_side_settings(server_side_config={}, settings=_settings):
 
         if len(derived_vals) == 2:
             for idx, val in enumerate(derived_vals):
+                # only override the value if the server side does not provide
+                # the value specifically
                 if vals[idx] is None:
                     vals[idx] = derived_vals[idx]
 

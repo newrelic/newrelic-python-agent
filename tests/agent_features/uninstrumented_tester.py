@@ -2,6 +2,17 @@ import argparse
 import os
 
 
+def initialize_agent():
+    from newrelic.config import initialize
+    from newrelic.api.application import register_application
+
+    initialize()
+    register_application(name='Python Agent Test (uninstrumented 1)',
+            timeout=10)
+    register_application(name='Python Agent Test (uninstrumented 2)',
+            timeout=10)
+
+
 def uninstrumented_tester(correct_order=True, license_key=None, host=None):
 
     os.environ['NEW_RELIC_LICENSE_KEY'] = license_key
@@ -9,14 +20,7 @@ def uninstrumented_tester(correct_order=True, license_key=None, host=None):
 
     if correct_order:
 
-        from newrelic.config import initialize
-        from newrelic.api.application import register_application
-
-        initialize()
-        register_application(name='Python Agent Test (uninstrumented 1)',
-                timeout=10)
-        register_application(name='Python Agent Test (uninstrumented 2)',
-                timeout=10)
+        initialize_agent()
 
         import sqlite3
 
@@ -30,14 +34,7 @@ def uninstrumented_tester(correct_order=True, license_key=None, host=None):
 
         import sqlite3  # noqa
 
-        from newrelic.config import initialize
-        from newrelic.api.application import register_application
-
-        initialize()
-        register_application(name='Python Agent Test (uninstrumented 1)',
-                timeout=10)
-        register_application(name='Python Agent Test (uninstrumented 2)',
-                timeout=10)
+        initialize_agent()
 
         metrics = [
                 ('Supportability/Uninstrumented/sqlite3', 1),

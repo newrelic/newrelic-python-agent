@@ -1,7 +1,5 @@
 import unittest
 
-import copy
-
 import newrelic.api.settings
 
 from newrelic.api.application import application_instance
@@ -127,28 +125,6 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         with self.transaction:
             payload = self.transaction.create_distributed_tracing_payload()
             assert type(payload.http_safe()) is str
-
-    def test_distributed_trace_malformed_account_id(self):
-        with self.transaction:
-            settings = self.transaction.settings
-            broken_settings = copy.deepcopy(settings)
-            broken_settings.account_id = 'cookies'
-
-            self.transaction._settings = broken_settings
-
-            payload = self.transaction.create_distributed_tracing_payload()
-            assert not payload
-
-    def test_distributed_trace_malformed_application_id(self):
-        with self.transaction:
-            settings = self.transaction.settings
-            broken_settings = copy.deepcopy(settings)
-            broken_settings.application_id = 'cookies'
-
-            self.transaction._settings = broken_settings
-
-            payload = self.transaction.create_distributed_tracing_payload()
-            assert not payload
 
     def test_distributed_trace_no_referring_transaction(self):
         with self.transaction:

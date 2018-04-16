@@ -241,34 +241,6 @@ class TestCrossProcessIdParsing(unittest.TestCase):
         settings = newrelic.core.config.apply_server_side_settings(config)
         assert settings.application_id == '800'
 
-    def test_cross_process_id_fail(self):
-        config = {
-            'foo': 'x#y',
-        }
-        settings = newrelic.core.config.apply_server_side_settings(config)
-        assert settings.account_id is None
-        assert settings.application_id is None
-
-    def test_parse_account_id_fail(self):
-        config = {
-            'cross_process_id': '1#1',
-            'account_id': 'x',
-        }
-        settings = newrelic.core.config.apply_server_side_settings(config)
-        # leave the original malformed account_id intact
-        assert settings.account_id == 'x'
-        assert settings.application_id == '1'
-
-    def test_parse_application_id_fail(self):
-        config = {
-            'cross_process_id': '1#1',
-            'application_id': 'x',
-        }
-        settings = newrelic.core.config.apply_server_side_settings(config)
-        # leave the original malformed application_id intact
-        assert settings.application_id == 'x'
-        assert settings.account_id == '1'
-
 
 if __name__ == '__main__':
     unittest.main()

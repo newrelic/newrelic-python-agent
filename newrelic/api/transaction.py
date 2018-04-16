@@ -927,12 +927,6 @@ class Transaction(object):
         account_id = settings.account_id
         application_id = settings.application_id
 
-        try:
-            account_id = int(account_id)
-            application_id = int(application_id)
-        except (TypeError, ValueError):
-            return None
-
         data = dict(
             ty='App',
             ac=account_id,

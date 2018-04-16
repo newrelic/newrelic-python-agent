@@ -115,7 +115,7 @@ class Application(object):
 
         self._active_xrays = {}
 
-        self._uninstrumented = set()
+        self._uninstrumented = None
 
     @property
     def name(self):
@@ -1332,11 +1332,12 @@ class Application(object):
                 # If an import order issue was detected, send a metric for each
                 # uninstrumented module
 
-                for uninstrumented in self._uninstrumented:
-                    internal_count_metric(
-                            'Supportability/Python/Uninstrumented', 1)
-                    internal_count_metric('Supportability/Uninstrumented/'
-                            '%s' % uninstrumented, 1)
+                if self._uninstrumented:
+                    for uninstrumented in self._uninstrumented:
+                        internal_count_metric(
+                                'Supportability/Python/Uninstrumented', 1)
+                        internal_count_metric('Supportability/Uninstrumented/'
+                                '%s' % uninstrumented, 1)
 
                 # Create our time stamp as to when this reporting period
                 # ends and start reporting the data.

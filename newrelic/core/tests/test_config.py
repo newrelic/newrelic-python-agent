@@ -247,6 +247,14 @@ class TestCrossProcessIdParsing(unittest.TestCase):
         settings = newrelic.core.config.apply_server_side_settings(config)
         assert settings.application_id == '800'
 
+    def test_parse_invalid_cross_process_id(self):
+        config = {
+            'cross_process_id': '700#800#900',
+        }
+        settings = newrelic.core.config.apply_server_side_settings(config)
+        assert not settings.account_id
+        assert not settings.application_id
+
 
 if __name__ == '__main__':
     unittest.main()

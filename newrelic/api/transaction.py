@@ -927,8 +927,10 @@ class Transaction(object):
         account_id = settings.account_id
         application_id = settings.application_id
 
-        if (not isinstance(account_id, int) or
-                not isinstance(application_id, int)):
+        try:
+            account_id = int(account_id)
+            application_id = int(application_id)
+        except (TypeError, ValueError):
             return None
 
         data = dict(

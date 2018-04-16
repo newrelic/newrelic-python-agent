@@ -221,31 +221,31 @@ class TestCrossProcessIdParsing(unittest.TestCase):
         config = {
             'cross_process_id': '800#900',
         }
-        settings = newrelic.core.config.finalize_application_settings(config)
-        assert settings.account_id == 800
-        assert settings.application_id == 900
+        settings = newrelic.core.config.apply_server_side_settings(config)
+        assert settings.account_id == '800'
+        assert settings.application_id == '900'
 
     def test_parse_account_id_success(self):
         config = {
             'cross_process_id': '1#1',
             'account_id': '800',
         }
-        settings = newrelic.core.config.finalize_application_settings(config)
-        assert settings.account_id == 800
+        settings = newrelic.core.config.apply_server_side_settings(config)
+        assert settings.account_id == '800'
 
     def test_parse_application_id_success(self):
         config = {
             'cross_process_id': '1#1',
             'application_id': '800',
         }
-        settings = newrelic.core.config.finalize_application_settings(config)
-        assert settings.application_id == 800
+        settings = newrelic.core.config.apply_server_side_settings(config)
+        assert settings.application_id == '800'
 
     def test_cross_process_id_fail(self):
         config = {
             'foo': 'x#y',
         }
-        settings = newrelic.core.config.finalize_application_settings(config)
+        settings = newrelic.core.config.apply_server_side_settings(config)
         assert settings.account_id is None
         assert settings.application_id is None
 
@@ -254,20 +254,20 @@ class TestCrossProcessIdParsing(unittest.TestCase):
             'cross_process_id': '1#1',
             'account_id': 'x',
         }
-        settings = newrelic.core.config.finalize_application_settings(config)
+        settings = newrelic.core.config.apply_server_side_settings(config)
         # leave the original malformed account_id intact
         assert settings.account_id == 'x'
-        assert settings.application_id == 1
+        assert settings.application_id == '1'
 
     def test_parse_application_id_fail(self):
         config = {
             'cross_process_id': '1#1',
             'application_id': 'x',
         }
-        settings = newrelic.core.config.finalize_application_settings(config)
+        settings = newrelic.core.config.apply_server_side_settings(config)
         # leave the original malformed application_id intact
         assert settings.application_id == 'x'
-        assert settings.account_id == 1
+        assert settings.account_id == '1'
 
 
 if __name__ == '__main__':

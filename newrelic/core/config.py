@@ -772,6 +772,22 @@ def apply_server_side_settings(server_side_config={}, settings=_settings):
     for (name, value) in agent_config.items():
         apply_config_setting(settings_snapshot, name, value)
 
+    # This will be removed at some future point
+    # Special case for account_id which will be sent instead of
+    # cross_process_id in the future
+    vals = [settings_snapshot.account_id,
+            settings_snapshot.application_id]
+
+    if settings_snapshot.cross_process_id is not None:
+        derived_vals = settings_snapshot.cross_process_id.split('#')
+
+        for idx, val in enumerate(vals):
+            if val is None:
+                vals[idx] = derived_vals[idx]
+
+    settings_snapshot.account_id = vals[0]
+    settings_snapshot.application_id = vals[1]
+
     # Reapply on top any local setting overrides.
 
     for name in _settings.debug.local_settings_overrides:
@@ -793,31 +809,6 @@ def finalize_application_settings(server_side_config={}, settings=_settings):
 
     application_settings.attribute_filter = AttributeFilter(
             flatten_settings(application_settings))
-
-    # This will be removed at some future point
-    # Special case for account_id which will be sent instead of
-    # cross_process_id in the future
-    vals = [application_settings.account_id,
-            application_settings.application_id]
-
-    if application_settings.cross_process_id is not None:
-        derived_vals = application_settings.cross_process_id.split('#')
-
-        for idx, val in enumerate(vals):
-            if val is None:
-                vals[idx] = derived_vals[idx]
-
-    for idx, val in enumerate(vals):
-        if val is None:
-            continue
-
-        try:
-            vals[idx] = int(val)
-        except ValueError:
-            pass
-
-    application_settings.account_id = vals[0]
-    application_settings.application_id = vals[1]
 
     return application_settings
 

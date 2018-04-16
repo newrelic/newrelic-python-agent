@@ -8,6 +8,12 @@ unreleased
   Previously, explain plans were attempted for these connections and a
   traceback would be seen in the logs. This has now been fixed.
 
+- Fix traceback when using callbacks as partials in pika consumers
+
+  When passing a callback that is a functools partial to pika channel
+  consumers, a traceback occurred in some instances. This issue has now been
+  fixed.
+
 
 3.2.0 (2018-04-04)
 ------------------

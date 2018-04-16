@@ -4,7 +4,11 @@ import sys
 
 import newrelic.agent
 
+from newrelic.core.agent import agent_instance
+
 from testing_support.fixtures import validate_transaction_metrics
+from testing_support.validators.validate_metric_payload import (
+        validate_metric_payload)
 
 
 _unscoped_metrics = [
@@ -93,3 +97,15 @@ def test_import_order_supportability_metrics(correct_order):
             '--host', settings.host]
     returncode = subprocess.call(cmd)
     assert returncode == 0
+
+
+@validate_metric_payload(metrics=[
+        ('Supportability/Python/Uninstrumented', None),
+])
+def test_uninstrumented_none():
+    # tests a bug that returned "TypeError: 'NoneType' object is not iterable"
+    app_name = 'Python Agent Test (uninstrumented 3)'
+    agent = agent_instance()
+    agent.activate_application(app_name)
+    application = agent._applications.get(app_name)
+    application.harvest()

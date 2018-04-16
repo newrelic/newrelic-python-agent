@@ -126,6 +126,9 @@ def validate_distributed_tracing_header(header='X-NewRelic-Trace'):
     # Verify timestamp is an integer
     assert isinstance(data['ti'], int)
 
+    # Verify that priority is a float
+    assert isinstance(data['pr'], float)
+
 
 @function_wrapper
 def validate_cross_process_headers(wrapped, instance, args, kwargs):

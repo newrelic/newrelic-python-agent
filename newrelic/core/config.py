@@ -775,18 +775,19 @@ def apply_server_side_settings(server_side_config={}, settings=_settings):
     # This will be removed at some future point
     # Special case for account_id which will be sent instead of
     # cross_process_id in the future
-    vals = [settings_snapshot.account_id,
-            settings_snapshot.application_id]
 
     if settings_snapshot.cross_process_id is not None:
+        vals = [settings_snapshot.account_id,
+                settings_snapshot.application_id]
         derived_vals = settings_snapshot.cross_process_id.split('#')
 
-        for idx, val in enumerate(vals):
-            if val is None:
-                vals[idx] = derived_vals[idx]
+        if len(derived_vals) == 2:
+            for idx, val in enumerate(derived_vals):
+                if vals[idx] is None:
+                    vals[idx] = derived_vals[idx]
 
-    settings_snapshot.account_id = vals[0]
-    settings_snapshot.application_id = vals[1]
+            settings_snapshot.account_id = vals[0]
+            settings_snapshot.application_id = vals[1]
 
     # Reapply on top any local setting overrides.
 

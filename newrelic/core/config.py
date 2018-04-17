@@ -419,6 +419,7 @@ _settings.metric_name_rules = []
 _settings.transaction_name_rules = []
 _settings.transaction_segment_terms = []
 
+_settings.account_id = None
 _settings.cross_process_id = None
 _settings.trusted_account_ids = []
 _settings.encoding_key = None
@@ -770,6 +771,25 @@ def apply_server_side_settings(server_side_config={}, settings=_settings):
 
     for (name, value) in agent_config.items():
         apply_config_setting(settings_snapshot, name, value)
+
+    # This will be removed at some future point
+    # Special case for account_id which will be sent instead of
+    # cross_process_id in the future
+
+    if settings_snapshot.cross_process_id is not None:
+        vals = [settings_snapshot.account_id,
+                settings_snapshot.application_id]
+        derived_vals = settings_snapshot.cross_process_id.split('#')
+
+        if len(derived_vals) == 2:
+            for idx, val in enumerate(derived_vals):
+                # only override the value if the server side does not provide
+                # the value specifically
+                if vals[idx] is None:
+                    vals[idx] = derived_vals[idx]
+
+            settings_snapshot.account_id = vals[0]
+            settings_snapshot.application_id = vals[1]
 
     # Reapply on top any local setting overrides.
 

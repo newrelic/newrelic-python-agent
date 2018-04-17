@@ -13,6 +13,10 @@ settings = newrelic.api.settings.settings()
 application = application_instance()
 
 
+DISTRIBUTED_TRACE_KEYS_REQUIRED = (
+        'ty', 'ac', 'ap', 'id', 'tr', 'pr', 'sa', 'ti')
+
+
 class TestTraceEndsAfterTransaction(newrelic.tests.test_cases.TestCase):
 
     requires_collector = True
@@ -98,6 +102,74 @@ class TestTraceEndsAfterTransaction(newrelic.tests.test_cases.TestCase):
 
         assert not self.transaction.enabled
         assert trace_1.exited
+
+
+class TestTransactionApis(newrelic.tests.test_cases.TestCase):
+
+    requires_collector = True
+
+    def setUp(self):
+        environ = {'REQUEST_URI': '/transaction_apis'}
+        self.transaction = WebTransaction(application, environ)
+
+    def tearDown(self):
+        if current_transaction():
+            self.transaction.drop_transaction()
+
+    def test_create_distributed_tracing_payload_text(self):
+        with self.transaction:
+            payload = self.transaction.create_distributed_tracing_payload()
+            assert type(payload.text()) is str
+
+    def test_create_distributed_tracing_payload_http_safe(self):
+        with self.transaction:
+            payload = self.transaction.create_distributed_tracing_payload()
+            assert type(payload.http_safe()) is str
+
+    def test_distributed_trace_no_referring_transaction(self):
+        with self.transaction:
+            payload = self.transaction.create_distributed_tracing_payload()
+            assert payload['v'] == (0, 1)
+
+            data = payload['d']
+
+            # Check required keys
+            assert all(k in data for k in DISTRIBUTED_TRACE_KEYS_REQUIRED)
+
+            # Type is always App
+            assert data['ty'] == 'App'
+
+            # IDs should be the transaction GUID
+            assert data['id'] == self.transaction.guid
+            assert data['tr'] == self.transaction.guid
+
+            # Parent should be excluded
+            assert 'pa' not in data
+
+    def test_distributed_trace_referring_transaction(self):
+        with self.transaction:
+            self.transaction.referring_transaction_guid = 'abcde'
+            self.transaction._trace_id = 'qwerty'
+            self.transaction.priority = 0.0
+
+            payload = self.transaction.create_distributed_tracing_payload()
+            assert payload['v'] == (0, 1)
+
+            data = payload['d']
+
+            # Type is always App
+            assert data['ty'] == 'App'
+
+            # Check required keys
+            assert all(k in data for k in DISTRIBUTED_TRACE_KEYS_REQUIRED)
+
+            # ID should be the transaction GUID
+            assert data['id'] == self.transaction.guid
+
+            # Parent data should be forwarded
+            assert data['pa'] == 'abcde'
+            assert data['tr'] == 'qwerty'
+            assert data['pr'] == 0.0
 
 
 if __name__ == '__main__':

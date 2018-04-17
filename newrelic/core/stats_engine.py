@@ -256,7 +256,7 @@ class SampledDataSet(object):
 
     @property
     def samples(self):
-        return [x[-1] for x in self.pq]
+        return (x[-1] for x in self.pq)
 
     @property
     def num_samples(self):
@@ -1490,8 +1490,8 @@ class StatsEngine(object):
 
         else:
             if snapshot.__transaction_events.num_samples == 1:
-                self.__transaction_events.add(
-                        snapshot.__transaction_events.samples[0])
+                self.__transaction_events.add(next(iter(
+                        snapshot.__transaction_events.samples)))
 
     def _merge_synthetics_events(self, snapshot, rollback=False):
 

@@ -8,7 +8,7 @@ class TestSampledDataSet(unittest.TestCase):
     def test_empty_set(self):
         instance = SampledDataSet()
 
-        self.assertEqual(instance.samples, [])
+        self.assertEqual(list(instance.samples), [])
         self.assertEqual(instance.capacity, 100)
         self.assertEqual(instance.num_seen, 0)
 
@@ -17,7 +17,7 @@ class TestSampledDataSet(unittest.TestCase):
 
         instance.add(1)
 
-        self.assertEqual(instance.samples, [1])
+        self.assertEqual(list(instance.samples), [1])
         self.assertEqual(instance.num_seen, 1)
 
     def test_at_capacity(self):

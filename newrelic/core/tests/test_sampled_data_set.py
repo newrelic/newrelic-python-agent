@@ -2,6 +2,7 @@ import unittest
 
 from newrelic.core.stats_engine import SampledDataSet
 
+
 class TestSampledDataSet(unittest.TestCase):
 
     def test_empty_set(self):
@@ -72,6 +73,49 @@ class TestSampledDataSet(unittest.TestCase):
 
         self.assertEqual(a.num_seen, count_a + count_b)
         self.assertEqual(a.num_samples, capacity)
+
+    def test_priority_over_capacity_dropped(self):
+        x_priority = 1
+        y_priority = 0
+
+        instance = SampledDataSet(100)
+
+        for i in range(100):
+            instance.add('x', priority=x_priority)
+
+        self.assertEqual(instance.num_samples, 100)
+        self.assertEqual(instance.num_seen, 100)
+
+        # we will not add this sample 'y' because its priority
+        # is smaller than all 'x' samples
+        instance.add('y', priority=y_priority)
+        self.assertEqual(False, instance.is_sampled_at(y_priority))
+
+        self.assertEqual(instance.num_samples, 100)
+        self.assertEqual(instance.num_seen, 101)
+        self.assertNotIn('y', instance.samples)
+
+    def test_priority_over_capacity_kept(self):
+        x_priority = 0
+        y_priority = 1
+
+        instance = SampledDataSet(100)
+
+        for i in range(100):
+            instance.add('x', priority=x_priority)
+
+        self.assertEqual(instance.num_samples, 100)
+        self.assertEqual(instance.num_seen, 100)
+
+        # this time, we should keep 'y' because
+        # its priority is higher than any 'x'
+        instance.add('y', priority=y_priority)
+        self.assertEqual(True, instance.is_sampled_at(y_priority))
+
+        self.assertEqual(instance.num_samples, 100)
+        self.assertEqual(instance.num_seen, 101)
+        self.assertIn('y', instance.samples)
+
 
 if __name__ == '__main__':
     unittest.main()

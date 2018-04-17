@@ -13,6 +13,7 @@ import random
 import zlib
 import time
 import sys
+from heapq import heappush, heappop
 
 import newrelic.packages.six as six
 
@@ -248,15 +249,18 @@ class SlowSqlStats(list):
 
 
 class SampledDataSet(object):
-
     def __init__(self, capacity=100):
-        self.samples = []
+        self.pq = []
         self.capacity = capacity
         self.num_seen = 0
 
     @property
+    def samples(self):
+        return [x[-1] for x in self.pq]
+
+    @property
     def num_samples(self):
-        return len(self.samples)
+        return len(self.pq)
 
     @property
     def sampling_info(self):
@@ -266,24 +270,42 @@ class SampledDataSet(object):
         }
 
     def reset(self):
-        self.samples = []
+        self.pq = []
         self.num_seen = 0
 
-    def add(self, sample):
-        if self.num_samples < self.capacity:
-            self.samples.append(sample)
-        else:
-            index = random.randint(0, self.num_seen)
-            if index < self.capacity:
-                self.samples[index] = sample
+    def is_sampled_at(self, priority):
+        if len(self.pq) < self.capacity:
+            return True
+
+        # self.pq[0] is always the minimal
+        # priority sample in the queue
+        if priority > self.pq[0][0]:
+            return True
+
+        return False
+
+    def add(self, sample, priority=None):
         self.num_seen += 1
 
+        if priority is None:
+            priority = random.random()
+
+        if not self.is_sampled_at(priority):
+            return
+
+        if len(self.pq) >= self.capacity:
+            heappop(self.pq)
+
+        entry = (priority, self.num_seen, sample)
+        heappush(self.pq, entry)
+
     def merge(self, other_data_set):
-        for item in other_data_set.samples:
-            self.add(item)
+        for priority, num_seen, sample in other_data_set.pq:
+            self.add(sample, priority)
 
-        # Make sure num_seen includes total items seen from merged set
-
+        # Merge the num_seen from the other_data_set, but take care not to
+        # double-count the actual samples of other_data_set since the .add
+        # call above will add one to self.num_seen each time
         self.num_seen += other_data_set.num_seen - other_data_set.num_samples
 
 

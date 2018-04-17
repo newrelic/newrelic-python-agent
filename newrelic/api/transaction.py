@@ -499,6 +499,7 @@ class Transaction(object):
                 trace_intrinsics=self.trace_intrinsics,
                 agent_attributes=self.agent_attributes,
                 user_attributes=self.user_attributes,
+                priority=self.priority,
         )
 
         # Clear settings as we are all done and don't need it

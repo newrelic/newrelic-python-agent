@@ -299,6 +299,8 @@ def convert_to_cat_metadata_value(nr_headers):
 
 class DistributedTracePayload(dict):
 
+    version = (0, 1)
+
     def text(self):
         return json_encode(self)
 

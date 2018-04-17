@@ -943,7 +943,7 @@ class Transaction(object):
             data['pa'] = self.referring_transaction_guid
 
         return DistributedTracePayload(
-            v=(0, 1),
+            v=DistributedTracePayload.version,
             d=data,
         )
 

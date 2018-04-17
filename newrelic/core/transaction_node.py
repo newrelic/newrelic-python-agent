@@ -27,7 +27,7 @@ _TransactionNode = namedtuple('_TransactionNode',
         'synthetics_job_id', 'synthetics_monitor_id', 'synthetics_header',
         'is_part_of_cat', 'trip_id', 'path_hash', 'referring_path_hash',
         'alternate_path_hashes', 'trace_intrinsics', 'agent_attributes',
-        'user_attributes'])
+        'user_attributes', 'priority'])
 
 
 class TransactionNode(_TransactionNode):

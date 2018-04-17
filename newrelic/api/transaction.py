@@ -166,6 +166,8 @@ class Transaction(object):
         self._referring_path_hash = None
         self._alternate_path_hashes = {}
         self.is_part_of_cat = False
+        self.is_distributed_trace = False
+        self._created_distributed_tracing_payload = False
 
         self.synthetics_resource_id = None
         self.synthetics_job_id = None
@@ -942,10 +944,78 @@ class Transaction(object):
         if self.referring_transaction_guid:
             data['pa'] = self.referring_transaction_guid
 
+        self._created_distributed_tracing_payload = True
+
         return DistributedTracePayload(
             v=DistributedTracePayload.version,
             d=data,
         )
+
+    def accept_distributed_trace_payload(self, payload, transport_type='http'):
+
+        if (not payload or self.is_distributed_trace or
+                self._created_distributed_tracing_payload):
+            return False
+
+        try:
+            payload = DistributedTracePayload.from_http_safe(payload)
+        except:
+            try:
+                payload = DistributedTracePayload.from_text(payload)
+            except:
+                pass
+
+        if not isinstance(payload, dict):
+            return False
+
+        try:
+            major_version = int(payload.get('v', (-1, -1))[0])
+
+            if major_version > DistributedTracePayload.version[0]:
+                return False
+
+            data = payload.get('d', {})
+            account_id = int(data.get('ac'))
+
+            if account_id not in self._settings.trusted_account_ids:
+                return False
+
+            priority = data.get('pr', self.priority)
+            sampled = data.get('sa')
+            grandparent_id = data.get('pa')
+            parent_id = data.get('id')
+            transport_start = data.get('ti') / 1000.0
+
+            if sampled is None:
+                sampled = self._calculate_sampled_value()
+
+            if sampled:
+                priority += 1
+
+            self.parent_type = data.get('ty')
+            self.parent_app = data.get('ap')
+            self.parent_account = account_id
+            self.parent_transport_type = transport_type
+            self.parent_transport_duration = transport_start - time.time()
+            self._trace_id = data.get('tr')
+            self.priority = priority
+            self.sampled = sampled
+
+            if grandparent_id:
+                self.grandparent_id = grandparent_id
+
+            if parent_id:
+                self.parent_id = parent_id
+
+            self.is_distributed_trace = True
+
+            return True
+
+        except:
+            return False
+
+    def _calculate_sampled_value(self):
+        return True
 
     def _process_incoming_cat_headers(self, encoded_cross_process_id,
             encoded_txn_header):

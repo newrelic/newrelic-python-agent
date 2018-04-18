@@ -336,9 +336,15 @@ class WebTransaction(Transaction):
 
         # Process the New Relic cross process ID header and extract
         # the relevant details.
-        client_cross_process_id = environ.get('HTTP_X_NEWRELIC_ID')
-        txn_header = environ.get('HTTP_X_NEWRELIC_TRANSACTION')
-        self._process_incoming_cat_headers(client_cross_process_id, txn_header)
+
+        if 'distributed_tracing' in settings.feature_flag:
+            distributed_header = environ.get('HTTP_X_NEWRELIC_TRACE')
+            self.accept_distributed_trace_payload(distributed_header)
+        else:
+            client_cross_process_id = environ.get('HTTP_X_NEWRELIC_ID')
+            txn_header = environ.get('HTTP_X_NEWRELIC_TRANSACTION')
+            self._process_incoming_cat_headers(client_cross_process_id,
+                    txn_header)
 
         # Capture WSGI request environ dictionary values. We capture
         # content length explicitly as will need it for cross process

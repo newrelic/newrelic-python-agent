@@ -980,17 +980,9 @@ class Transaction(object):
             if account_id not in self._settings.trusted_account_ids:
                 return False
 
-            priority = data.get('pr', self.priority)
-            sampled = data.get('sa')
             grandparent_id = data.get('pa')
             parent_id = data.get('id')
             transport_start = data.get('ti') / 1000.0
-
-            if sampled is None:
-                sampled = self._calculate_sampled_value()
-
-            if sampled:
-                priority += 1
 
             self.parent_type = data.get('ty')
             self.parent_app = data.get('ap')
@@ -998,8 +990,8 @@ class Transaction(object):
             self.parent_transport_type = transport_type
             self.parent_transport_duration = transport_start - time.time()
             self._trace_id = data.get('tr')
-            self.priority = priority
-            self.sampled = sampled
+            self.priority = data.get('pr', self.priority)
+            self.sampled = data.get('sa', self.sampled)
 
             if grandparent_id:
                 self.grandparent_id = grandparent_id
@@ -1013,9 +1005,6 @@ class Transaction(object):
 
         except:
             return False
-
-    def _calculate_sampled_value(self):
-        return True
 
     def _process_incoming_cat_headers(self, encoded_cross_process_id,
             encoded_txn_header):

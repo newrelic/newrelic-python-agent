@@ -301,7 +301,6 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
                     'id': '7d3efb1b173fecfa',
                     'tr': 'd6b4ba0c3a712ca',
                     'ti': 1518469636035,
-                    'sa': False,
                     'pr': priority
                 }
             }
@@ -323,7 +322,6 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
                     'id': '7d3efb1b173fecfa',
                     'tr': 'd6b4ba0c3a712ca',
                     'ti': 1518469636035,
-                    'sa': False,
                 }
             }
             original_priority = self.transaction.priority
@@ -331,7 +329,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             assert result
             assert self.transaction.priority == original_priority
 
-    def test_accept_distributed_trace_payload_sampled_increases_priority(self):
+    def test_accept_distributed_trace_payload_sampled_not_found(self):
         with self.transaction:
             payload = {
                 'v': [0, 1],
@@ -345,11 +343,10 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
                     'ti': 1518469636035,
                 }
             }
-            original_priority = self.transaction.priority
-            self.transaction._calculate_sampled_value = lambda: True
+            original_sampled = self.transaction.sampled
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
-            assert self.transaction.priority == original_priority + 1
+            assert self.transaction.sampled == original_sampled
 
     def test_accept_distributed_trace_payload_parent_grandparent_ids(self):
         with self.transaction:

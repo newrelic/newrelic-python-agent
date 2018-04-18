@@ -56,6 +56,9 @@ class TestSampledDataSet(unittest.TestCase):
         self.assertEqual(a.num_seen, count_a + count_b)
         self.assertEqual(a.num_seen, a.num_samples)
 
+        samples = list(a.samples)
+        self.assertEqual(len(samples), a.num_seen)
+
     def test_merge_sampled_data_set_over_capacity(self):
         capacity = 100
         a = SampledDataSet(capacity=capacity)
@@ -74,6 +77,9 @@ class TestSampledDataSet(unittest.TestCase):
         self.assertEqual(a.num_seen, count_a + count_b)
         self.assertEqual(a.num_samples, capacity)
 
+        samples = list(a.samples)
+        self.assertEqual(len(samples), capacity)
+
     def test_priority_over_capacity_dropped(self):
         x_priority = 1
         y_priority = 0
@@ -91,9 +97,12 @@ class TestSampledDataSet(unittest.TestCase):
         instance.add('y', priority=y_priority)
         self.assertEqual(False, instance.is_sampled_at(y_priority))
 
+        samples = list(instance.samples)
+
         self.assertEqual(instance.num_samples, 100)
         self.assertEqual(instance.num_seen, 101)
-        self.assertNotIn('y', instance.samples)
+        self.assertNotIn('y', samples)
+        self.assertEqual(100, len(samples))
 
     def test_priority_over_capacity_kept(self):
         x_priority = 0
@@ -112,9 +121,12 @@ class TestSampledDataSet(unittest.TestCase):
         instance.add('y', priority=y_priority)
         self.assertEqual(True, instance.is_sampled_at(y_priority))
 
+        samples = list(instance.samples)
+
         self.assertEqual(instance.num_samples, 100)
         self.assertEqual(instance.num_seen, 101)
-        self.assertIn('y', instance.samples)
+        self.assertIn('y', samples)
+        self.assertEqual(100, len(samples))
 
 
 if __name__ == '__main__':

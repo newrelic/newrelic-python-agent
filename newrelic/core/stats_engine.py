@@ -13,7 +13,7 @@ import random
 import zlib
 import time
 import sys
-from heapq import heappush, heappop
+from heapq import heappush, heapreplace
 
 import newrelic.packages.six as six
 
@@ -293,14 +293,14 @@ class SampledDataSet(object):
         if not self.is_sampled_at(priority):
             return
 
+        entry = (priority, sample)
         if len(self.pq) >= self.capacity:
-            heappop(self.pq)
-
-        entry = (priority, self.num_seen, sample)
-        heappush(self.pq, entry)
+            heapreplace(self.pq, entry)
+        else:
+            heappush(self.pq, entry)
 
     def merge(self, other_data_set):
-        for priority, num_seen, sample in other_data_set.pq:
+        for priority, sample in other_data_set.pq:
             self.add(sample, priority)
 
         # Merge the num_seen from the other_data_set, but take care not to

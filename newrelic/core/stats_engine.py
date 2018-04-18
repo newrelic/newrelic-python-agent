@@ -276,30 +276,36 @@ class SampledDataSet(object):
         self.num_seen = 0
 
     def is_sampled_at(self, priority):
-        if self.num_seen < self.capacity:
-            return True
+        # In order to answer the question of whether something is sampled, the
+        # priority queue must be in the heap form if at capacity
+        if self.heap or self.num_seen >= self.capacity:
+            self.heap = self.heap or heapify(self.pq) or True
 
-        # self.pq[0] is always the minimal
-        # priority sample in the queue
-        if priority > self.pq[0][0]:
-            return True
+            # self.pq[0] is always the minimal
+            # priority sample in the queue
+            if priority > self.pq[0][0]:
+                return True
+            else:
+                return False
 
-        return False
+        # Always sample if under capacity
+        return True
 
     def add(self, sample, priority=None):
-        self.num_seen += 1
-
         if priority is None:
             priority = random.random()
 
-        entry = (priority, sample)
-        if self.heap or self.num_seen > self.capacity:
-            self.heap = self.heap or heapify(self.pq) or True
-            if priority <= self.pq[0][0]:
-                return
-            heapreplace(self.pq, entry)
-        else:
-            self.pq.append(entry)
+        # Is sampled at will transform the heap if required to determine
+        # priority sampling
+        sampled = self.is_sampled_at(priority)
+        self.num_seen += 1
+
+        if sampled:
+            entry = (priority, sample)
+            if self.heap:
+                heapreplace(self.pq, entry)
+            else:
+                self.pq.append(entry)
 
     def merge(self, other_data_set):
         for priority, sample in other_data_set.pq:

@@ -128,6 +128,16 @@ class TestSampledDataSet(unittest.TestCase):
         self.assertIn('y', samples)
         self.assertEqual(100, len(samples))
 
+    def test_sampled_at_uses_heap(self):
+        instance = SampledDataSet(2)
+
+        instance.add('x', priority=3)
+        instance.add('x', priority=1)
+
+        # Dataset should now be sampling
+        # priority 2 should override min priority 1
+        self.assertTrue(instance.is_sampled_at(2))
+
 
 if __name__ == '__main__':
     unittest.main()

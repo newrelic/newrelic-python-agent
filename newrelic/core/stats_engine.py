@@ -276,7 +276,7 @@ class SampledDataSet(object):
         self.num_seen = 0
 
     def is_sampled_at(self, priority):
-        if len(self.pq) < self.capacity:
+        if self.num_seen < self.capacity:
             return True
 
         # self.pq[0] is always the minimal
@@ -292,12 +292,11 @@ class SampledDataSet(object):
         if priority is None:
             priority = random.random()
 
-        if not self.is_sampled_at(priority):
-            return
-
         entry = (priority, sample)
-        if len(self.pq) >= self.capacity:
+        if self.heap or self.num_seen > self.capacity:
             self.heap = self.heap or heapify(self.pq) or True
+            if priority <= self.pq[0][0]:
+                return
             heapreplace(self.pq, entry)
         else:
             self.pq.append(entry)

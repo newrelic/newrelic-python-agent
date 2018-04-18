@@ -13,7 +13,7 @@ import random
 import zlib
 import time
 import sys
-from heapq import heappush, heapreplace
+from heapq import heapreplace, heapify
 
 import newrelic.packages.six as six
 
@@ -251,6 +251,7 @@ class SlowSqlStats(list):
 class SampledDataSet(object):
     def __init__(self, capacity=100):
         self.pq = []
+        self.heap = False
         self.capacity = capacity
         self.num_seen = 0
 
@@ -271,6 +272,7 @@ class SampledDataSet(object):
 
     def reset(self):
         self.pq = []
+        self.heap = False
         self.num_seen = 0
 
     def is_sampled_at(self, priority):
@@ -295,9 +297,10 @@ class SampledDataSet(object):
 
         entry = (priority, sample)
         if len(self.pq) >= self.capacity:
+            self.heap = self.heap or heapify(self.pq) or True
             heapreplace(self.pq, entry)
         else:
-            heappush(self.pq, entry)
+            self.pq.append(entry)
 
     def merge(self, other_data_set):
         for priority, sample in other_data_set.pq:

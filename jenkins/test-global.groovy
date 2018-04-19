@@ -41,6 +41,7 @@ use(extensions) {
             }
 
             steps {
+                shell("git fetch --tags --progress git@source.datanerd.us:${repoFull}.git +refs/heads/*:refs/remotes/origin/*")
                 reseedFrom('jenkins/reseed-pr.groovy')
             }
         }

@@ -101,7 +101,7 @@ class TestSampledDataSet(unittest.TestCase):
 
         self.assertEqual(instance.num_samples, 100)
         self.assertEqual(instance.num_seen, 101)
-        self.assertNotIn('y', samples)
+        self.assertTrue('y' not in samples)
         self.assertEqual(100, len(samples))
 
     def test_priority_over_capacity_kept(self):
@@ -125,7 +125,7 @@ class TestSampledDataSet(unittest.TestCase):
 
         self.assertEqual(instance.num_samples, 100)
         self.assertEqual(instance.num_seen, 101)
-        self.assertIn('y', samples)
+        self.assertTrue('y' in samples)
         self.assertEqual(100, len(samples))
 
     def test_sampled_at_uses_heap(self):

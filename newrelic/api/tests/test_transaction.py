@@ -369,23 +369,6 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             assert self.transaction.parent_id == parent_id
             assert self.transaction.grandparent_id == grandparent_id
 
-    def test_accept_distributed_trace_payload_no_parent_grandparent_ids(self):
-        with self.transaction:
-            payload = {
-                'v': [0, 1],
-                'd': {
-                    'ty': 'Mobile',
-                    'ac': '1',
-                    'ap': '2827902',
-                    'tr': 'd6b4ba0c3a712ca',
-                    'ti': 1518469636035,
-                }
-            }
-            result = self.transaction.accept_distributed_trace_payload(payload)
-            assert result
-            assert not hasattr(self.transaction, 'parent_id')
-            assert not hasattr(self.transaction, 'grandparent_id')
-
     def test_accept_distributed_trace_payload_trace_id(self):
         with self.transaction:
             trace_id = 'qwerty'

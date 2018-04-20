@@ -37,6 +37,9 @@ from newrelic.api.time_trace import TimeTrace
 
 _logger = logging.getLogger(__name__)
 
+DISTRIBUTED_TRACE_KEYS_REQUIRED = (
+        'ty', 'ac', 'ap', 'id', 'tr', 'ti')
+
 
 class Sentinel(TimeTrace):
     def __init__(self):
@@ -970,16 +973,19 @@ class Transaction(object):
                 return False
 
             data = payload.get('d', {})
+            if not all(k in data for k in DISTRIBUTED_TRACE_KEYS_REQUIRED):
+                return False
+
             account_id = int(data.get('ac'))
 
             if account_id not in self._settings.trusted_account_ids:
                 return False
 
             grandparent_id = data.get('pa')
-            parent_id = data.get('id')
             transport_start = data.get('ti') / 1000.0
 
             self.parent_type = data.get('ty')
+            self.parent_id = data.get('id')
             self.parent_app = data.get('ap')
             self.parent_account = account_id
             self.parent_transport_type = transport_type
@@ -990,9 +996,6 @@ class Transaction(object):
 
             if grandparent_id:
                 self.grandparent_id = grandparent_id
-
-            if parent_id:
-                self.parent_id = parent_id
 
             self.is_distributed_trace = True
 

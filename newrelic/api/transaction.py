@@ -960,7 +960,11 @@ class Transaction(object):
             return False
 
         try:
-            major_version = int(payload.get('v', (-1, -1))[0])
+            version = payload.get('v')
+            major_version = version and int(version[0])
+
+            if major_version is None:
+                return False
 
             if major_version > DistributedTracePayload.version[0]:
                 return False

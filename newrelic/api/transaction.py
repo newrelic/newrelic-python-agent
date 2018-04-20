@@ -157,19 +157,25 @@ class Transaction(object):
 
         # This may be overridden by processing an inbound CAT header
         self.priority = random.random()
+        self.parent_type = None
+        self.parent_id = None
+        self.parent_app = None
+        self.parent_account = None
+        self.parent_transport_type = None
+        self.parent_transport_duration = None
+        self._trace_id = None
+        self.sampled = False
+        self.is_distributed_trace = False
 
         self.client_cross_process_id = None
         self.client_account_id = None
         self.client_application_id = None
         self.referring_transaction_guid = None
         self.record_tt = False
-        self.sampled = False
-        self._trace_id = None
         self._trip_id = None
         self._referring_path_hash = None
         self._alternate_path_hashes = {}
         self.is_part_of_cat = False
-        self.is_distributed_trace = False
 
         self.synthetics_resource_id = None
         self.synthetics_job_id = None

@@ -37,6 +37,9 @@ from newrelic.api.time_trace import TimeTrace
 
 _logger = logging.getLogger(__name__)
 
+DISTRIBUTED_TRACE_KEYS_REQUIRED = (
+        'ty', 'ac', 'ap', 'id', 'tr', 'ti')
+
 
 class Sentinel(TimeTrace):
     def __init__(self):
@@ -154,14 +157,21 @@ class Transaction(object):
 
         # This may be overridden by processing an inbound CAT header
         self.priority = random.random()
+        self.parent_type = None
+        self.parent_id = None
+        self.parent_app = None
+        self.parent_account = None
+        self.parent_transport_type = None
+        self.parent_transport_duration = None
+        self._trace_id = None
+        self.sampled = False
+        self.is_distributed_trace = False
 
         self.client_cross_process_id = None
         self.client_account_id = None
         self.client_application_id = None
         self.referring_transaction_guid = None
         self.record_tt = False
-        self.sampled = False
-        self._trace_id = None
         self._trip_id = None
         self._referring_path_hash = None
         self._alternate_path_hashes = {}
@@ -942,10 +952,64 @@ class Transaction(object):
         if self.referring_transaction_guid:
             data['pa'] = self.referring_transaction_guid
 
+        self.is_distributed_trace = True
+
         return DistributedTracePayload(
-            v=(0, 1),
+            v=DistributedTracePayload.version,
             d=data,
         )
+
+    def accept_distributed_trace_payload(self, payload, transport_type='http'):
+
+        if (not payload or self.is_distributed_trace):
+            return False
+
+        payload = DistributedTracePayload.decode(payload)
+        if not payload:
+            return False
+
+        try:
+            version = payload.get('v')
+            major_version = version and int(version[0])
+
+            if major_version is None:
+                return False
+
+            if major_version > DistributedTracePayload.version[0]:
+                return False
+
+            data = payload.get('d', {})
+            if not all(k in data for k in DISTRIBUTED_TRACE_KEYS_REQUIRED):
+                return False
+
+            account_id = data.get('ac')
+
+            if account_id not in (
+                    str(i) for i in self._settings.trusted_account_ids):
+                return False
+
+            grandparent_id = data.get('pa')
+            transport_start = data.get('ti') / 1000.0
+
+            self.parent_type = data.get('ty')
+            self.parent_id = data.get('id')
+            self.parent_app = data.get('ap')
+            self.parent_account = account_id
+            self.parent_transport_type = transport_type
+            self.parent_transport_duration = transport_start - time.time()
+            self._trace_id = data.get('tr')
+            self.priority = data.get('pr', self.priority)
+            self.sampled = data.get('sa', self.sampled)
+
+            if grandparent_id:
+                self.grandparent_id = grandparent_id
+
+            self.is_distributed_trace = True
+
+            return True
+
+        except:
+            return False
 
     def _process_incoming_cat_headers(self, encoded_cross_process_id,
             encoded_txn_header):

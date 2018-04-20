@@ -1,3 +1,4 @@
+import copy
 import unittest
 
 import newrelic.api.application
@@ -69,6 +70,13 @@ class TestCatInterface(newrelic.tests.test_cases.TestCase):
     def setUp(self):
         super(TestCatInterface, self).setUp()
         self.app_api = newrelic.api.application.application_instance()
+        self.agent_settings = copy.deepcopy(self.app_api.settings)
+
+    def tearDown(self):
+        super(TestCatInterface, self).tearDown()
+        agent = newrelic.core.agent.agent_instance()
+        app = agent.application(self.app_api.name)
+        app._active_session.configuration = self.agent_settings
 
     def prepare_transaction(self, txn):
         txn.client_cross_process_id = "Meow"

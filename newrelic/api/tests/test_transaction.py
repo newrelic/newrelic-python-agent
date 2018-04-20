@@ -1,3 +1,4 @@
+import json
 import unittest
 
 import newrelic.api.settings
@@ -170,6 +171,241 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             assert data['pa'] == 'abcde'
             assert data['tr'] == 'qwerty'
             assert data['pr'] == 0.0
+
+    def test_accept_distributed_trace_payload_encoded(self):
+        with self.transaction:
+            payload = ('eyJ2IjpbMCwxXSwiZCI6eyJ0eSI6IkFwcCIsImFjIjoiMjAyNjQiLC'
+                'JhcCI6IjEwMTk1IiwiaWQiOiIyNjFhY2E5YmM4YWVjMzc0IiwidHIiOiIyNjF'
+                'hY2E5YmM4YWVjMzc0IiwicHIiOjAuMjczMTM1OTc2NTQ0MjQ1NCwic2EiOmZh'
+                'bHNlLCJ0aSI6MTUyNDAxMDIyNjYxMH19')
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert result
+
+    def test_accept_distributed_trace_payload_json(self):
+        with self.transaction:
+            payload = {
+                'v': [0, 1],
+                'd': {
+                    'ty': 'Mobile',
+                    'ac': '1',
+                    'ap': '2827902',
+                    'pa': '5e5733a911cfbc73',
+                    'id': '7d3efb1b173fecfa',
+                    'tr': 'd6b4ba0c3a712ca',
+                    'ti': 1518469636035,
+                }
+            }
+            payload = json.dumps(payload)
+            assert isinstance(payload, str)
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert result
+
+    def test_accept_distributed_trace_payload_discard_version(self):
+        with self.transaction:
+            payload = {
+                'v': [999, 0],
+                'd': {
+                    'ty': 'Mobile',
+                    'ac': '1',
+                    'ap': '2827902',
+                    'pa': '5e5733a911cfbc73',
+                    'id': '7d3efb1b173fecfa',
+                    'tr': 'd6b4ba0c3a712ca',
+                    'ti': 1518469636035,
+                }
+            }
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert not result
+
+    def test_accept_distributed_trace_payload_ignore_version(self):
+        with self.transaction:
+            payload = {
+                'v': [0, 999],
+                'd': {
+                    'ty': 'Mobile',
+                    'ac': '1',
+                    'ap': '2827902',
+                    'pa': '5e5733a911cfbc73',
+                    'id': '7d3efb1b173fecfa',
+                    'tr': 'd6b4ba0c3a712ca',
+                    'ti': 1518469636035,
+                    'new_item': 'this field should not matter',
+                }
+            }
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert result
+
+    def test_accept_distributed_trace_payload_ignores_second_call(self):
+        with self.transaction:
+            payload = {
+                'v': [0, 1],
+                'd': {
+                    'ty': 'Mobile',
+                    'ac': '1',
+                    'ap': '2827902',
+                    'pa': '5e5733a911cfbc73',
+                    'id': '7d3efb1b173fecfa',
+                    'tr': 'd6b4ba0c3a712ca',
+                    'ti': 1518469636035,
+                }
+            }
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert result
+            assert self.transaction.is_distributed_trace
+            assert self.transaction.parent_type == 'Mobile'
+
+            payload = {
+                'v': [0, 1],
+                'd': {
+                    'ty': 'App',
+                    'ac': '1',
+                    'ap': '2827902',
+                    'pa': '5e5733a911cfbc73',
+                    'id': '7d3efb1b173fecfa',
+                    'tr': 'd6b4ba0c3a712ca',
+                    'ti': 1518469636035,
+                }
+            }
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert not result
+            assert self.transaction.is_distributed_trace
+            assert self.transaction.parent_type == 'Mobile'
+
+    def test_accept_distributed_trace_payload_discard_accounts(self):
+        with self.transaction:
+            payload = {
+                'v': [0, 1],
+                'd': {
+                    'ty': 'Mobile',
+                    'ac': '9999999999999',  # non-trusted account
+                    'ap': '2827902',
+                    'pa': '5e5733a911cfbc73',
+                    'id': '7d3efb1b173fecfa',
+                    'tr': 'd6b4ba0c3a712ca',
+                    'ti': 1518469636035,
+                }
+            }
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert not result
+
+    def test_accept_distributed_trace_payload_priority_found(self):
+        with self.transaction:
+            priority = 0.123456789
+            payload = {
+                'v': [0, 1],
+                'd': {
+                    'ty': 'Mobile',
+                    'ac': '1',
+                    'ap': '2827902',
+                    'pa': '5e5733a911cfbc73',
+                    'id': '7d3efb1b173fecfa',
+                    'tr': 'd6b4ba0c3a712ca',
+                    'ti': 1518469636035,
+                    'pr': priority
+                }
+            }
+            original_priority = self.transaction.priority
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert result
+            assert self.transaction.priority != original_priority
+            assert self.transaction.priority == priority
+
+    def test_accept_distributed_trace_payload_priority_not_found(self):
+        with self.transaction:
+            payload = {
+                'v': [0, 1],
+                'd': {
+                    'ty': 'Mobile',
+                    'ac': '1',
+                    'ap': '2827902',
+                    'pa': '5e5733a911cfbc73',
+                    'id': '7d3efb1b173fecfa',
+                    'tr': 'd6b4ba0c3a712ca',
+                    'ti': 1518469636035,
+                }
+            }
+            original_priority = self.transaction.priority
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert result
+            assert self.transaction.priority == original_priority
+
+    def test_accept_distributed_trace_payload_sampled_not_found(self):
+        with self.transaction:
+            payload = {
+                'v': [0, 1],
+                'd': {
+                    'ty': 'Mobile',
+                    'ac': '1',
+                    'ap': '2827902',
+                    'pa': '5e5733a911cfbc73',
+                    'id': '7d3efb1b173fecfa',
+                    'tr': 'd6b4ba0c3a712ca',
+                    'ti': 1518469636035,
+                }
+            }
+            original_sampled = self.transaction.sampled
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert result
+            assert self.transaction.sampled == original_sampled
+
+    def test_accept_distributed_trace_payload_parent_grandparent_ids(self):
+        with self.transaction:
+            parent_id = 'parent id'
+            grandparent_id = 'grandparent id'
+            payload = {
+                'v': [0, 1],
+                'd': {
+                    'ty': 'Mobile',
+                    'ac': '1',
+                    'ap': '2827902',
+                    'pa': grandparent_id,
+                    'id': parent_id,
+                    'tr': 'd6b4ba0c3a712ca',
+                    'ti': 1518469636035,
+                }
+            }
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert result
+            assert self.transaction.parent_id == parent_id
+            assert self.transaction.grandparent_id == grandparent_id
+
+    def test_accept_distributed_trace_payload_trace_id(self):
+        with self.transaction:
+            trace_id = 'qwerty'
+            payload = {
+                'v': [0, 1],
+                'd': {
+                    'ty': 'Mobile',
+                    'ac': '1',
+                    'ap': '2827902',
+                    'pa': '5e5733a911cfbc73',
+                    'id': '7d3efb1b173fecfa',
+                    'tr': trace_id,
+                    'ti': 1518469636035,
+                }
+            }
+            assert self.transaction.trace_id != trace_id
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert result
+            assert self.transaction.trace_id == trace_id
+
+    def test_accept_distributed_trace_payload_after_create_payload(self):
+        with self.transaction:
+            payload = {
+                'v': [0, 1],
+                'd': {
+                    'ty': 'Mobile',
+                    'ac': '1',
+                    'ap': '2827902',
+                    'pa': '5e5733a911cfbc73',
+                    'id': '7d3efb1b173fecfa',
+                    'tr': 'd6b4ba0c3a712ca',
+                    'ti': 1518469636035,
+                }
+            }
+            self.transaction.create_distributed_tracing_payload()
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert not result
 
 
 if __name__ == '__main__':

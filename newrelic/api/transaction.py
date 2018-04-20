@@ -167,7 +167,6 @@ class Transaction(object):
         self._alternate_path_hashes = {}
         self.is_part_of_cat = False
         self.is_distributed_trace = False
-        self._created_distributed_tracing_payload = False
 
         self.synthetics_resource_id = None
         self.synthetics_job_id = None
@@ -944,7 +943,7 @@ class Transaction(object):
         if self.referring_transaction_guid:
             data['pa'] = self.referring_transaction_guid
 
-        self._created_distributed_tracing_payload = True
+        self.is_distributed_trace = True
 
         return DistributedTracePayload(
             v=DistributedTracePayload.version,
@@ -953,8 +952,7 @@ class Transaction(object):
 
     def accept_distributed_trace_payload(self, payload, transport_type='http'):
 
-        if (not payload or self.is_distributed_trace or
-                self._created_distributed_tracing_payload):
+        if (not payload or self.is_distributed_trace):
             return False
 
         try:

@@ -316,3 +316,17 @@ class DistributedTracePayload(dict):
     def from_http_safe(cls, value):
         text = base64_decode(value)
         return cls.from_text(text)
+
+    @classmethod
+    def decode(cls, payload):
+        if isinstance(payload, dict):
+            return cls(payload)
+
+        decoders = (cls.from_http_safe, cls.from_text)
+        for decoder in decoders:
+            try:
+                payload = decoder(payload)
+            except:
+                pass
+            else:
+                return payload

@@ -955,15 +955,8 @@ class Transaction(object):
         if (not payload or self.is_distributed_trace):
             return False
 
-        try:
-            payload = DistributedTracePayload.from_http_safe(payload)
-        except:
-            try:
-                payload = DistributedTracePayload.from_text(payload)
-            except:
-                pass
-
-        if not isinstance(payload, dict):
+        payload = DistributedTracePayload.decode(payload)
+        if not payload:
             return False
 
         try:

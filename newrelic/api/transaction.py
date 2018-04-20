@@ -982,9 +982,10 @@ class Transaction(object):
             if not all(k in data for k in DISTRIBUTED_TRACE_KEYS_REQUIRED):
                 return False
 
-            account_id = int(data.get('ac'))
+            account_id = data.get('ac')
 
-            if account_id not in self._settings.trusted_account_ids:
+            if account_id not in (
+                    str(i) for i in self._settings.trusted_account_ids):
                 return False
 
             grandparent_id = data.get('pa')

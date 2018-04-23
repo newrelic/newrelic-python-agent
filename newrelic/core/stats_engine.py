@@ -1491,13 +1491,10 @@ class StatsEngine(object):
         # sampling that gives equal probability for keeping all events
 
         if rollback:
-            for sample in snapshot.__transaction_events.samples:
-                self.__transaction_events.add(sample)
-
+            self.__transaction_events.merge(snapshot.__transaction_events)
         else:
             if snapshot.__transaction_events.num_samples == 1:
-                self.__transaction_events.add(next(iter(
-                        snapshot.__transaction_events.samples)))
+                self.__transaction_events.merge(snapshot.__transaction_events)
 
     def _merge_synthetics_events(self, snapshot, rollback=False):
 

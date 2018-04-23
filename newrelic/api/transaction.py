@@ -1362,7 +1362,7 @@ class Transaction(object):
 
         event = create_custom_event(event_type, params)
         if event:
-            self._custom_events.add(event)
+            self._custom_events.add(event, priority=self.priority)
 
     def active_node(self):
         return self.current_node

@@ -95,7 +95,7 @@ class TestSampledDataSet(unittest.TestCase):
         # we will not add this sample 'y' because its priority
         # is smaller than all 'x' samples
         instance.add('y', priority=y_priority)
-        self.assertEqual(False, instance.is_sampled_at(y_priority))
+        self.assertEqual(False, instance.should_sample(y_priority))
 
         samples = list(instance.samples)
 
@@ -119,7 +119,7 @@ class TestSampledDataSet(unittest.TestCase):
         # this time, we should keep 'y' because
         # its priority is higher than any 'x'
         instance.add('y', priority=y_priority)
-        self.assertEqual(True, instance.is_sampled_at(y_priority))
+        self.assertEqual(True, instance.should_sample(y_priority))
 
         samples = list(instance.samples)
 
@@ -136,7 +136,7 @@ class TestSampledDataSet(unittest.TestCase):
 
         # Dataset should now be sampling
         # priority 2 should override min priority 1
-        self.assertTrue(instance.is_sampled_at(2))
+        self.assertTrue(instance.should_sample(2))
 
 
 if __name__ == '__main__':

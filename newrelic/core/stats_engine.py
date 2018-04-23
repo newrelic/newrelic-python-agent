@@ -275,7 +275,7 @@ class SampledDataSet(object):
         self.heap = False
         self.num_seen = 0
 
-    def is_sampled_at(self, priority):
+    def should_sample(self, priority):
         if self.heap:
             # self.pq[0] is always the minimal
             # priority sample in the queue
@@ -300,7 +300,7 @@ class SampledDataSet(object):
         elif not self.heap:
             self.pq.append(entry)
         else:
-            sampled = self.is_sampled_at(priority)
+            sampled = self.should_sample(priority)
             if not sampled:
                 return
             heapreplace(self.pq, entry)

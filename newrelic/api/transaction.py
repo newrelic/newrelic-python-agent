@@ -159,6 +159,7 @@ class Transaction(object):
         self.priority = random.random()
         self.parent_type = None
         self.parent_id = None
+        self.grandparent_id = None
         self.parent_app = None
         self.parent_account = None
         self.parent_transport_type = None

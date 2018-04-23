@@ -26,8 +26,9 @@ _TransactionNode = namedtuple('_TransactionNode',
         'referring_transaction_guid', 'record_tt', 'synthetics_resource_id',
         'synthetics_job_id', 'synthetics_monitor_id', 'synthetics_header',
         'is_part_of_cat', 'trip_id', 'path_hash', 'referring_path_hash',
-        'alternate_path_hashes', 'trace_intrinsics', 'agent_attributes',
-        'user_attributes', 'priority'])
+        'alternate_path_hashes', 'trace_intrinsics',
+        'distributed_trace_intrinsics', 'agent_attributes', 'user_attributes',
+        'priority'])
 
 
 class TransactionNode(_TransactionNode):
@@ -490,7 +491,7 @@ class TransactionNode(_TransactionNode):
 
             return self._event_intrinsics_cache.copy()
 
-        intrinsics = {}
+        intrinsics = self.distributed_trace_intrinsics.copy()
 
         intrinsics['timestamp'] = self.start_time
         intrinsics['duration'] = self.response_time

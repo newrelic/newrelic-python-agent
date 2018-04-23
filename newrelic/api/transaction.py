@@ -508,6 +508,7 @@ class Transaction(object):
                 referring_path_hash=self._referring_path_hash,
                 alternate_path_hashes=self.alternate_path_hashes,
                 trace_intrinsics=self.trace_intrinsics,
+                distributed_trace_intrinsics=self.distributed_trace_intrinsics,
                 agent_attributes=self.agent_attributes,
                 user_attributes=self.user_attributes,
                 priority=self.priority,
@@ -728,6 +729,42 @@ class Transaction(object):
 
         # if self._cpu_user_time_value:
         #     i_attrs['cpu_time'] = self._cpu_user_time_value
+
+        i_attrs.update(self.distributed_trace_intrinsics)
+
+        return i_attrs
+
+    @property
+    def distributed_trace_intrinsics(self):
+        i_attrs = {}
+
+        if not self.is_distributed_trace:
+            return i_attrs
+
+        if self.parent_type:
+            i_attrs['parent.type'] = self.parent_type
+        if self.parent_account:
+            i_attrs['parent.account'] = self.parent_account
+        if self.parent_app:
+            i_attrs['parent.app'] = self.parent_app
+        if self.parent_transport_type:
+            i_attrs['parent.transportType'] = self.parent_transport_type
+        if self.parent_transport_duration:
+            i_attrs['parent.transportDuration'] = \
+                    self.parent_transport_duration
+        if self.grandparent_id:
+            i_attrs['grandparentId'] = self.grandparent_id
+        if self.parent_id:
+            i_attrs['parentId'] = self.parent_id
+        if self.guid:
+            i_attrs['guid'] = self.guid
+        if self.trace_id:
+            i_attrs['traceId'] = self.trace_id
+            i_attrs['nr.tripId'] = self.trace_id
+        if self.priority is not None:
+            i_attrs['priority'] = self.priority
+        if self.sampled is not None:
+            i_attrs['sampled'] = self.sampled
 
         return i_attrs
 

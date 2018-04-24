@@ -997,7 +997,7 @@ class Transaction(object):
             self.parent_app = data.get('ap')
             self.parent_account = account_id
             self.parent_transport_type = transport_type
-            self.parent_transport_duration = transport_start - time.time()
+            self.parent_transport_duration = time.time() - transport_start
             self._trace_id = data.get('tr')
             self.priority = data.get('pr', self.priority)
             self.sampled = data.get('sa', self.sampled)

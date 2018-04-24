@@ -63,6 +63,7 @@ def target_wsgi_application(environ, start_response):
     txn_name = txn_name.split('/', 3)
 
     guid = environ.get('guid')
+    old_cat = environ.get('old_cat') == 'True'
     txn = current_transaction()
 
     txn.guid = guid
@@ -82,9 +83,13 @@ def target_wsgi_application(environ, start_response):
         # A 500 error is returned because 'assert' statements in the wsgi app
         # are ignored.
 
-        if (expected_outbound_header !=
-                generated_outbound_header['X-NewRelic-Transaction']):
-            status = '500 Outbound Headers Check Failed.'
+        if old_cat:
+            if (expected_outbound_header !=
+                    generated_outbound_header['X-NewRelic-Transaction']):
+                status = '500 Outbound Headers Check Failed.'
+        else:
+            if 'X-NewRelic-Transaction' in generated_outbound_header:
+                status = '500 Outbound Headers Check Failed.'
         r = urlopen('http://www.example.com')
         r.read(10)
 
@@ -110,9 +115,10 @@ target_application = webtest.TestApp(target_wsgi_application)
 
 
 @pytest.mark.parametrize(_parameters, load_tests())
+@pytest.mark.parametrize('old_cat', (True, False))
 def test_cat_map(name, appName, transactionName, transactionGuid,
         inboundPayload, outboundRequests, expectedIntrinsicFields,
-        nonExpectedIntrinsicFields):
+        nonExpectedIntrinsicFields, old_cat):
     global OUTBOUD_REQUESTS
     OUTBOUD_REQUESTS = outboundRequests or {}
 
@@ -124,13 +130,23 @@ def test_cat_map(name, appName, transactionName, transactionGuid,
             'transaction_tracer.transaction_threshold': 0.0,
     }
 
-    if expectedIntrinsicFields:
+    if not old_cat:
+        _custom_settings.update({
+            'feature_flag': set(('distributed_tracing',)),
+        })
+
+    if expectedIntrinsicFields and old_cat:
         _external_node_params = {
                 'path_hash': expectedIntrinsicFields['nr.pathHash'],
                 'trip_id': expectedIntrinsicFields['nr.tripId'],
         }
     else:
         _external_node_params = []
+
+    if not old_cat:
+        # since no better cat headers will be generated, no intrinsics should
+        # be added
+        expectedIntrinsicFields = {}
 
     @validate_tt_parameters(required_params=_external_node_params)
     @validate_analytics_catmap_data(transactionName,
@@ -147,9 +163,14 @@ def test_cat_map(name, appName, transactionName, transactionGuid,
             txn_name = transactionName
             guid = transactionGuid
 
+        # Only generate old cat style headers. This will test to make sure we
+        # are properly ignoring these headers when the agent is using better
+        # cat.
+
         headers = make_cross_agent_headers(inboundPayload, ENCODING_KEY, '1#1')
         response = target_application.get('/', headers=headers,
-                extra_environ={'txn': txn_name, 'guid': guid})
+                extra_environ={'txn': txn_name, 'guid': guid,
+                    'old_cat': str(old_cat)})
 
         # Validation of analytic data happens in the decorator.
 

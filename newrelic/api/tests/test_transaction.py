@@ -407,6 +407,20 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
 
+    def test_distributed_trace_attributes_default(self):
+        with self.transaction:
+            assert self.transaction.priority < 1
+            assert self.transaction.parent_type is None
+            assert self.transaction.parent_id is None
+            assert self.transaction.grandparent_id is None
+            assert self.transaction.parent_app is None
+            assert self.transaction.parent_account is None
+            assert self.transaction.parent_transport_type is None
+            assert self.transaction.parent_transport_duration is None
+            assert self.transaction.trace_id == self.transaction.guid
+            assert self.transaction.sampled is False
+            assert self.transaction.is_distributed_trace is False
+
 
 if __name__ == '__main__':
     unittest.main()

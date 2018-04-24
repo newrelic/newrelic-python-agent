@@ -1,4 +1,5 @@
 import json
+import time
 import unittest
 
 import newrelic.api.settings
@@ -406,6 +407,28 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             self.transaction.create_distributed_tracing_payload()
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
+
+    def test_accept_distributed_trace_payload_transport_duration(self):
+        # Mark a payload as sent 1 second ago
+        ti = int(time.time() * 1000.0) - 1000
+        with self.transaction:
+            payload = {
+                'v': [0, 1],
+                'd': {
+                    'ty': 'Mobile',
+                    'ac': '1',
+                    'ap': '2827902',
+                    'pa': '5e5733a911cfbc73',
+                    'id': '7d3efb1b173fecfa',
+                    'tr': 'd6b4ba0c3a712ca',
+                    'ti': ti,
+                }
+            }
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert result
+
+            # Transport duration is at least 1 second
+            assert self.transaction.parent_transport_duration > 1
 
     def test_distributed_trace_attributes_default(self):
         with self.transaction:

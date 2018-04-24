@@ -1,10 +1,17 @@
 import json
+import pytest
 import webtest
 
+from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import wsgi_application
 
-from testing_support.fixtures import override_application_settings
+from testing_support.fixtures import (override_application_settings,
+        validate_attributes)
+
+distributed_trace_intrinsics = ['parent.type', 'parent.app', 'parent.account',
+        'parent.transportType', 'parent.transportDuration', 'grandparentId',
+        'parentId', 'guid', 'nr.tripId', 'traceId', 'priority']
 
 
 @wsgi_application()
@@ -61,3 +68,37 @@ def test_distributed_tracing_web_transaction():
 
     response = test_application.get('/', headers=headers)
     assert 'X-NewRelic-App-Data' not in response.headers
+
+
+@pytest.mark.parametrize('accept_payload', [True, False])
+def test_distributed_trace_attributes(accept_payload):
+    if accept_payload:
+        _required_intrinsics = distributed_trace_intrinsics
+        _forgone_intrinsics = []
+    else:
+        _required_intrinsics = []
+        _forgone_intrinsics = distributed_trace_intrinsics
+
+    @validate_attributes('intrinsic', _required_intrinsics,
+            _forgone_intrinsics)
+    @background_task(name='test_distributed_trace_attributes')
+    def _test():
+        txn = current_transaction()
+
+        payload = {
+            "v": [0, 1],
+            "d": {
+                "ty": "Mobile",
+                "ac": "332029",
+                "ap": "2827902",
+                "pa": "5e5733a911cfbc73",
+                "id": "7d3efb1b173fecfa",
+                "tr": "d6b4ba0c3a712ca",
+                "ti": 1518469636035
+            }
+        }
+        if accept_payload:
+            result = txn.accept_distributed_trace_payload(payload)
+            assert result
+
+    _test()

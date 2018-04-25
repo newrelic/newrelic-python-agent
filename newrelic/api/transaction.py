@@ -976,7 +976,9 @@ class Transaction(object):
         account_id = settings.account_id
         application_id = settings.application_id
 
-        if not (account_id and application_id):
+        if not (account_id and
+                application_id and
+                settings.cross_application_tracer.enabled):
             return
 
         data = dict(
@@ -1004,6 +1006,11 @@ class Transaction(object):
         if not self.enabled:
             return False
 
+        settings = self._settings
+        if not (settings.cross_application_tracer.enabled and
+                settings.trusted_account_ids):
+            return
+
         if (not payload or self.is_distributed_trace):
             return False
 
@@ -1028,7 +1035,7 @@ class Transaction(object):
             account_id = data.get('ac')
 
             if account_id not in (
-                    str(i) for i in self._settings.trusted_account_ids):
+                    str(i) for i in settings.trusted_account_ids):
                 return False
 
             grandparent_id = data.get('pa')

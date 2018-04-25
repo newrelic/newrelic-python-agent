@@ -444,6 +444,29 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             assert self.transaction.sampled is False
             assert self.transaction.is_distributed_trace is False
 
+    def test_create_payload_prior_to_connect(self):
+        self.transaction.enabled = False
+        with self.transaction:
+            assert not self.transaction.create_distributed_tracing_payload()
+
+    def test_accept_payload_prior_to_connect(self):
+        self.transaction.enabled = False
+        with self.transaction:
+            payload = {
+                'v': [0, 1],
+                'd': {
+                    'ty': 'Mobile',
+                    'ac': '1',
+                    'ap': '2827902',
+                    'pa': '5e5733a911cfbc73',
+                    'id': '7d3efb1b173fecfa',
+                    'tr': 'd6b4ba0c3a712ca',
+                    'ti': 1518469636035,
+                }
+            }
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert not result
+
 
 if __name__ == '__main__':
     unittest.main()

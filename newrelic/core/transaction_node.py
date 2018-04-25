@@ -26,9 +26,10 @@ _TransactionNode = namedtuple('_TransactionNode',
         'referring_transaction_guid', 'record_tt', 'synthetics_resource_id',
         'synthetics_job_id', 'synthetics_monitor_id', 'synthetics_header',
         'is_part_of_cat', 'trip_id', 'path_hash', 'referring_path_hash',
-        'alternate_path_hashes', 'trace_intrinsics',
-        'distributed_trace_intrinsics', 'agent_attributes', 'user_attributes',
-        'priority'])
+        'alternate_path_hashes', 'trace_intrinsics', 'agent_attributes',
+        'distributed_trace_intrinsics', 'user_attributes', 'priority',
+        'parent_transport_duration', 'parent_id', 'parent_type',\
+        'parent_account', 'parent_app', 'parent_transport_type'])
 
 
 class TransactionNode(_TransactionNode):
@@ -49,6 +50,14 @@ class TransactionNode(_TransactionNode):
             return result
         self._string_table = StringTable()
         return self._string_table
+
+    def make_dt_metric_tag(self):
+        if self.parent_id is not None:
+            return "%s/%s/%s/%s/all" % (
+                self.parent_type, self.parent_account,
+                self.parent_app, self.parent_transport_type)
+        else:
+            return "Unknown/Unknown/Unknown/Unknown/all"
 
     def time_metrics(self, stats):
         """Return a generator yielding the timed metrics for the
@@ -143,6 +152,24 @@ class TransactionNode(_TransactionNode):
                 duration=self.total_time,
                 exclusive=self.total_time)
 
+        # Generate Distributed Tracing metrics
+
+        if 'distributed_tracing' in self.settings.feature_flag:
+            dt_tag = self.make_dt_metric_tag()
+
+            yield TimeMetric(
+                    name="DurationByCaller/%s" % dt_tag,
+                    scope='',
+                    duration=self.duration,
+                    exclusive=self.duration)
+
+            if self.parent_id is not None:
+                yield TimeMetric(
+                        name="TransportDuration/%s" % dt_tag,
+                        scope='',
+                        duration=self.parent_transport_duration,
+                        exclusive=self.parent_transport_duration)
+
         # Generate Error metrics
 
         if self.errors:
@@ -176,8 +203,14 @@ class TransactionNode(_TransactionNode):
                         duration=0.0,
                         exclusive=None)
 
-        # Now for the children.
+            if 'distributed_tracing' in self.settings.feature_flag:
+                yield TimeMetric(
+                    name='ErrorsByCaller/%s' % self.make_dt_metric_tag(),
+                    scope='',
+                    duration=0.0,
+                    exclusive=None)
 
+        # Now for the children.
         for child in self.children:
             for metric in child.time_metrics(stats, self, self):
                 yield metric

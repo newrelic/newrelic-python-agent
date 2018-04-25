@@ -10,7 +10,8 @@ from testing_support.fixtures import (override_application_settings,
         validate_attributes, validate_transaction_event_attributes,
         validate_error_event_attributes)
 
-distributed_trace_intrinsics = ['guid', 'nr.tripId', 'traceId', 'priority']
+distributed_trace_intrinsics = ['guid', 'nr.tripId', 'traceId', 'priority',
+        'sampled']
 inbound_payload_intrinsics = ['parent.type', 'parent.app', 'parent.account',
         'parent.transportType', 'parent.transportDuration', 'parentId']
 
@@ -144,3 +145,28 @@ def test_distributed_trace_attributes(accept_payload, has_grandparent):
             txn.record_exception()
 
     _test()
+
+
+_forgone_attributes = {
+    'agent': [],
+    'user': [],
+    'intrinsic': (inbound_payload_intrinsics +
+                  distributed_trace_intrinsics +
+                  ['grandparentId']),
+}
+
+
+@override_application_settings(_override_settings)
+@validate_transaction_event_attributes(
+        {}, _forgone_attributes)
+@validate_error_event_attributes(
+        {}, _forgone_attributes)
+@validate_attributes('intrinsic',
+        {}, _forgone_attributes['intrinsic'])
+@background_task(name='test_distributed_trace_attrs_omitted')
+def test_distributed_trace_attrs_omitted():
+    txn = current_transaction()
+    try:
+        raise ValueError('cookies')
+    except ValueError:
+        txn.record_exception()

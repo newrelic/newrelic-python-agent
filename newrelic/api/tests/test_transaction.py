@@ -487,5 +487,24 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
 
+    def test_accept_payload_feature_flag_off(self):
+        self.transaction._settings.feature_flag = set()
+        with self.transaction:
+            payload = {
+                'v': [0, 1],
+                'd': {
+                    'ty': 'Mobile',
+                    'ac': '1',
+                    'ap': '2827902',
+                    'pa': '5e5733a911cfbc73',
+                    'id': '7d3efb1b173fecfa',
+                    'tr': 'd6b4ba0c3a712ca',
+                    'ti': 1518469636035,
+                }
+            }
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert not result
+
+
 if __name__ == '__main__':
     unittest.main()

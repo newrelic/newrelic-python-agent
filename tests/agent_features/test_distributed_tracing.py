@@ -12,8 +12,7 @@ from testing_support.fixtures import (override_application_settings,
 
 distributed_trace_intrinsics = ['guid', 'nr.tripId', 'traceId', 'priority']
 inbound_payload_intrinsics = ['parent.type', 'parent.app', 'parent.account',
-        'parent.transportType', 'parent.transportDuration', 'grandparentId',
-        'parentId']
+        'parent.transportType', 'parent.transportDuration', 'parentId']
 
 
 @wsgi_application()
@@ -72,20 +71,30 @@ def test_distributed_tracing_web_transaction():
     assert 'X-NewRelic-App-Data' not in response.headers
 
 
-@pytest.mark.parametrize('accept_payload', [True, False])
-def test_distributed_trace_attributes(accept_payload):
+@pytest.mark.parametrize('accept_payload,has_grandparent', [
+    (True, True),
+    (True, False),
+    (False, False),
+])
+def test_distributed_trace_attributes(accept_payload, has_grandparent):
     if accept_payload:
         _required_intrinsics = (
                 distributed_trace_intrinsics + inbound_payload_intrinsics)
+        _forgone_intrinsics = []
+        if has_grandparent:
+            _required_intrinsics.append('grandparentId')
+        else:
+            _forgone_intrinsics.append('grandparentId')
+
         _required_attributes = {
                 'intrinsic': _required_intrinsics, 'agent': [], 'user': []}
-        _forgone_intrinsics = []
         _forgone_attributes = {'intrinsic': [], 'agent': [], 'user': []}
     else:
         _required_intrinsics = distributed_trace_intrinsics
+        _forgone_intrinsics = inbound_payload_intrinsics + ['grandparentId']
+
         _required_attributes = {
                 'intrinsic': _required_intrinsics, 'agent': [], 'user': []}
-        _forgone_intrinsics = inbound_payload_intrinsics
         _forgone_attributes = {
                 'intrinsic': _forgone_intrinsics, 'agent': [], 'user': []}
 
@@ -105,12 +114,14 @@ def test_distributed_trace_attributes(accept_payload):
                 "ty": "Mobile",
                 "ac": "332029",
                 "ap": "2827902",
-                "pa": "5e5733a911cfbc73",
                 "id": "7d3efb1b173fecfa",
                 "tr": "d6b4ba0c3a712ca",
                 "ti": 1518469636035
             }
         }
+        if has_grandparent:
+            payload['d']['pa'] = "5e5733a911cfbc73"
+
         if accept_payload:
             result = txn.accept_distributed_trace_payload(payload)
             assert result

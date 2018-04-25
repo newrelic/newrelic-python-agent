@@ -894,7 +894,7 @@ class StatsEngine(object):
                 settings.collect_error_events):
             events = transaction.error_events(self.__stats_table)
             for event in events:
-                self.__error_events.add(event)
+                self.__error_events.add(event, priority=transaction.priority)
 
         # Capture any sql traces if transaction tracer enabled.
 
@@ -943,7 +943,7 @@ class StatsEngine(object):
                 settings.transaction_events.enabled):
 
             event = transaction.transaction_event(self.__stats_table)
-            self.__transaction_events.add(event)
+            self.__transaction_events.add(event, priority=transaction.priority)
 
         # Merge in custom events
 
@@ -1491,13 +1491,10 @@ class StatsEngine(object):
         # sampling that gives equal probability for keeping all events
 
         if rollback:
-            for sample in snapshot.__transaction_events.samples:
-                self.__transaction_events.add(sample)
-
+            self.__transaction_events.merge(snapshot.__transaction_events)
         else:
             if snapshot.__transaction_events.num_samples == 1:
-                self.__transaction_events.add(next(iter(
-                        snapshot.__transaction_events.samples)))
+                self.__transaction_events.merge(snapshot.__transaction_events)
 
     def _merge_synthetics_events(self, snapshot, rollback=False):
 

@@ -10,9 +10,10 @@ from testing_support.fixtures import (override_application_settings,
         validate_attributes, validate_transaction_event_attributes,
         validate_error_event_attributes)
 
-distributed_trace_intrinsics = ['parent.type', 'parent.app', 'parent.account',
+distributed_trace_intrinsics = ['guid', 'nr.tripId', 'traceId', 'priority']
+inbound_payload_intrinsics = ['parent.type', 'parent.app', 'parent.account',
         'parent.transportType', 'parent.transportDuration', 'grandparentId',
-        'parentId', 'guid', 'nr.tripId', 'traceId', 'priority']
+        'parentId']
 
 
 @wsgi_application()
@@ -74,17 +75,19 @@ def test_distributed_tracing_web_transaction():
 @pytest.mark.parametrize('accept_payload', [True, False])
 def test_distributed_trace_attributes(accept_payload):
     if accept_payload:
-        _required_intrinsics = distributed_trace_intrinsics
+        _required_intrinsics = (
+                distributed_trace_intrinsics + inbound_payload_intrinsics)
         _required_attributes = {
                 'intrinsic': _required_intrinsics, 'agent': [], 'user': []}
         _forgone_intrinsics = []
         _forgone_attributes = {'intrinsic': [], 'agent': [], 'user': []}
     else:
-        _required_intrinsics = []
-        _required_attributes = {'intrinsic': [], 'agent': [], 'user': []}
-        _forgone_intrinsics = distributed_trace_intrinsics
-        _forgone_attributes = {
+        _required_intrinsics = distributed_trace_intrinsics
+        _required_attributes = {
                 'intrinsic': _required_intrinsics, 'agent': [], 'user': []}
+        _forgone_intrinsics = inbound_payload_intrinsics
+        _forgone_attributes = {
+                'intrinsic': _forgone_intrinsics, 'agent': [], 'user': []}
 
     @validate_transaction_event_attributes(
             _required_attributes, _forgone_attributes)
@@ -111,6 +114,8 @@ def test_distributed_trace_attributes(accept_payload):
         if accept_payload:
             result = txn.accept_distributed_trace_payload(payload)
             assert result
+        else:
+            txn.create_distributed_tracing_payload()
 
         try:
             raise ValueError('cookies')

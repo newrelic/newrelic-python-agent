@@ -113,6 +113,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
     def setUp(self):
         environ = {'REQUEST_URI': '/transaction_apis'}
         self.transaction = WebTransaction(application, environ)
+        self.transaction._settings.cross_application_tracer.enabled = True
+        self.transaction._settings.feature_flag = set(['distributed_tracing'])
 
     def tearDown(self):
         if current_transaction():
@@ -467,6 +469,23 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
 
+    def test_accept_payload_cat_disabled(self):
+        self.transaction._settings.cross_application_tracer.enabled = False
+        with self.transaction:
+            payload = {
+                'v': [0, 1],
+                'd': {
+                    'ty': 'Mobile',
+                    'ac': '1',
+                    'ap': '2827902',
+                    'pa': '5e5733a911cfbc73',
+                    'id': '7d3efb1b173fecfa',
+                    'tr': 'd6b4ba0c3a712ca',
+                    'ti': 1518469636035,
+                }
+            }
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert not result
 
 if __name__ == '__main__':
     unittest.main()

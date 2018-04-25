@@ -23,6 +23,9 @@ REQUEST_HEADERS = [('Content-Type', 'text/html; charset=utf-8'),
 
 REQ_PARAMS = ['request.parameters.' + URL_PARAM,
         'request.parameters.' + URL_PARAM2]
+DISTRIBUTED_TRACE_ATTRS = ['nr.tripId', 'traceId', 'priority', 'parent.type',
+        'parent.app', 'parent.account', 'parent.transportType',
+        'parent.transportDuration', 'parentId']
 
 USER_ATTRS = ['puppies', 'sunshine']
 
@@ -83,7 +86,8 @@ _expected_attributes = {'agent': TRACE_ERROR_AGENT_KEYS,
 _expected_attributes_event = {'agent': TRACE_ERROR_AGENT_KEYS,
         'user': ERROR_USER_ATTRS, 'intrinsic': ERROR_EVENT_INTRINSICS}
 
-_expected_absent_attributes = {'agent': REQ_PARAMS, 'user': []}
+_expected_absent_attributes = {'agent': REQ_PARAMS, 'user': [],
+        'intrinsic': DISTRIBUTED_TRACE_ATTRS}
 
 
 @validate_error_event_attributes(_expected_attributes_event,

@@ -1641,7 +1641,8 @@ def validate_browser_attributes(required_params={}, forgone_params={}):
     return _validate_browser_attributes
 
 
-def validate_error_event_attributes(required_params={}, forgone_params={}):
+def validate_error_event_attributes(required_params={}, forgone_params={},
+        exact_attrs={}):
     """Check the error event for attributes, expect only one error to be
     present in the transaction.
     """
@@ -1656,7 +1657,8 @@ def validate_error_event_attributes(required_params={}, forgone_params={}):
 
             event_data = instance.error_events
 
-            check_event_attributes(event_data, required_params, forgone_params)
+            check_event_attributes(
+                    event_data, required_params, forgone_params, exact_attrs)
 
         return result
 

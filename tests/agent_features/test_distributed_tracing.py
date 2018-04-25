@@ -81,8 +81,17 @@ def test_distributed_trace_attributes(accept_payload, has_grandparent):
         _required_intrinsics = (
                 distributed_trace_intrinsics + inbound_payload_intrinsics)
         _forgone_intrinsics = []
+        _exact_attributes = {'agent': {}, 'user': {}, 'intrinsic': {
+            'parent.type': 'Mobile',
+            'parent.app': '2827902',
+            'parent.account': '332029',
+            'parent.transportType': 'http',
+            'parentId': '7d3efb1b173fecfa',
+            'traceId': 'd6b4ba0c3a712ca',
+        }}
         if has_grandparent:
             _required_intrinsics.append('grandparentId')
+            _exact_attributes['grandparentId'] = '5e5733a911cfbc73'
         else:
             _forgone_intrinsics.append('grandparentId')
 
@@ -97,11 +106,12 @@ def test_distributed_trace_attributes(accept_payload, has_grandparent):
                 'intrinsic': _required_intrinsics, 'agent': [], 'user': []}
         _forgone_attributes = {
                 'intrinsic': _forgone_intrinsics, 'agent': [], 'user': []}
+        _exact_attributes = None
 
     @validate_transaction_event_attributes(
-            _required_attributes, _forgone_attributes)
+            _required_attributes, _forgone_attributes, _exact_attributes)
     @validate_error_event_attributes(
-            _required_attributes, _forgone_attributes)
+            _required_attributes, _forgone_attributes, _exact_attributes)
     @validate_attributes('intrinsic',
             _required_intrinsics, _forgone_intrinsics)
     @background_task(name='test_distributed_trace_attributes')

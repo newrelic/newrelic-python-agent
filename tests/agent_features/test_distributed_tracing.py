@@ -15,6 +15,21 @@ distributed_trace_intrinsics = ['guid', 'nr.tripId', 'traceId', 'priority',
 inbound_payload_intrinsics = ['parent.type', 'parent.app', 'parent.account',
         'parent.transportType', 'parent.transportDuration', 'parentId']
 
+payload = {
+    'v': [0, 1],
+    'd': {
+        'ac': '1',
+        'ap': '2827902',
+        'id': '7d3efb1b173fecfa',
+        'pa': '5e5733a911cfbc73',
+        'pr': 10.001,
+        'sa': True,
+        'ti': 1518469636035,
+        'tr': 'd6b4ba0c3a712ca',
+        'ty': 'App',
+    }
+}
+
 
 @wsgi_application()
 def target_wsgi_application(environ, start_response):
@@ -52,20 +67,6 @@ _override_settings = {
 
 @override_application_settings(_override_settings)
 def test_distributed_tracing_web_transaction():
-    payload = {
-        'v': [0, 1],
-        'd': {
-            'ac': '1',
-            'ap': '2827902',
-            'id': '7d3efb1b173fecfa',
-            'pa': '5e5733a911cfbc73',
-            'pr': 10.001,
-            'sa': True,
-            'ti': 1518469636035,
-            'tr': 'd6b4ba0c3a712ca',
-            'ty': 'App',
-        }
-    }
     headers = {'X-NewRelic-Trace': json.dumps(payload)}
 
     response = test_application.get('/', headers=headers)

@@ -756,15 +756,12 @@ class Transaction(object):
             i_attrs['grandparentId'] = self.grandparent_id
         if self.parent_id:
             i_attrs['parentId'] = self.parent_id
-        if self.guid:
-            i_attrs['guid'] = self.guid
-        if self.trace_id:
-            i_attrs['traceId'] = self.trace_id
-            i_attrs['nr.tripId'] = self.trace_id
-        if self.priority is not None:
-            i_attrs['priority'] = self.priority
-        if self.sampled is not None:
-            i_attrs['sampled'] = self.sampled
+
+        i_attrs['traceId'] = self.trace_id
+        i_attrs['nr.tripId'] = self.trace_id
+        i_attrs['guid'] = self.guid
+        i_attrs['priority'] = self.priority
+        i_attrs['sampled'] = self.sampled
 
         return i_attrs
 

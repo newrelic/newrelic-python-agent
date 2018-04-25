@@ -7,7 +7,8 @@ from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import wsgi_application
 
 from testing_support.fixtures import (override_application_settings,
-        validate_attributes)
+        validate_attributes, validate_transaction_event_attributes,
+        validate_error_event_attributes)
 
 distributed_trace_intrinsics = ['parent.type', 'parent.app', 'parent.account',
         'parent.transportType', 'parent.transportDuration', 'grandparentId',
@@ -74,13 +75,23 @@ def test_distributed_tracing_web_transaction():
 def test_distributed_trace_attributes(accept_payload):
     if accept_payload:
         _required_intrinsics = distributed_trace_intrinsics
+        _required_attributes = {
+                'intrinsic': _required_intrinsics, 'agent': [], 'user': []}
         _forgone_intrinsics = []
+        _forgone_attributes = {'intrinsic': [], 'agent': [], 'user': []}
     else:
         _required_intrinsics = []
+        _required_attributes = {'intrinsic': [], 'agent': [], 'user': []}
         _forgone_intrinsics = distributed_trace_intrinsics
+        _forgone_attributes = {
+                'intrinsic': _required_intrinsics, 'agent': [], 'user': []}
 
-    @validate_attributes('intrinsic', _required_intrinsics,
-            _forgone_intrinsics)
+    @validate_transaction_event_attributes(
+            _required_attributes, _forgone_attributes)
+    @validate_error_event_attributes(
+            _required_attributes, _forgone_attributes)
+    @validate_attributes('intrinsic',
+            _required_intrinsics, _forgone_intrinsics)
     @background_task(name='test_distributed_trace_attributes')
     def _test():
         txn = current_transaction()
@@ -100,5 +111,10 @@ def test_distributed_trace_attributes(accept_payload):
         if accept_payload:
             result = txn.accept_distributed_trace_payload(payload)
             assert result
+
+        try:
+            raise ValueError('cookies')
+        except ValueError:
+            txn.record_exception()
 
     _test()

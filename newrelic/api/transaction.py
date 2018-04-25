@@ -975,9 +975,12 @@ class Transaction(object):
         settings = self._settings
         account_id = settings.account_id
         application_id = settings.application_id
+        distributed_tracing_enabled = \
+            'distributed_tracing' in settings.feature_flag
 
         if not (account_id and
                 application_id and
+                distributed_tracing_enabled and
                 settings.cross_application_tracer.enabled):
             return
 
@@ -1007,9 +1010,12 @@ class Transaction(object):
             return False
 
         settings = self._settings
+        distributed_tracing_enabled = \
+            'distributed_tracing' in settings.feature_flag
         if not (settings.cross_application_tracer.enabled and
+                distributed_tracing_enabled and
                 settings.trusted_account_ids):
-            return
+            return False
 
         if (not payload or self.is_distributed_trace):
             return False

@@ -969,9 +969,15 @@ class Transaction(object):
                 self.path) or self._settings.apdex_t)
 
     def create_distributed_tracing_payload(self):
+        if not self.enabled:
+            return
+
         settings = self._settings
         account_id = settings.account_id
         application_id = settings.application_id
+
+        if not (account_id and application_id):
+            return
 
         data = dict(
             ty='App',
@@ -995,6 +1001,8 @@ class Transaction(object):
         )
 
     def accept_distributed_trace_payload(self, payload, transport_type='http'):
+        if not self.enabled:
+            return False
 
         if (not payload or self.is_distributed_trace):
             return False

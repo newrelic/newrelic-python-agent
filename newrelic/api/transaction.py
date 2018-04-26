@@ -744,6 +744,12 @@ class Transaction(object):
     def distributed_trace_intrinsics(self):
         i_attrs = {}
 
+        i_attrs['traceId'] = self.trace_id
+        i_attrs['nr.tripId'] = self.trace_id
+        i_attrs['guid'] = self.guid
+        i_attrs['priority'] = self.priority
+        i_attrs['sampled'] = self.sampled
+
         if not self.is_distributed_trace:
             return i_attrs
 
@@ -762,12 +768,6 @@ class Transaction(object):
             i_attrs['grandparentId'] = self.grandparent_id
         if self.parent_id:
             i_attrs['parentId'] = self.parent_id
-
-        i_attrs['traceId'] = self.trace_id
-        i_attrs['nr.tripId'] = self.trace_id
-        i_attrs['guid'] = self.guid
-        i_attrs['priority'] = self.priority
-        i_attrs['sampled'] = self.sampled
 
         return i_attrs
 

@@ -163,9 +163,7 @@ def test_distributed_trace_attributes(accept_payload, has_grandparent):
 _forgone_attributes = {
     'agent': [],
     'user': [],
-    'intrinsic': (inbound_payload_intrinsics +
-                  distributed_trace_intrinsics +
-                  ['grandparentId']),
+    'intrinsic': (inbound_payload_intrinsics + ['grandparentId']),
 }
 
 

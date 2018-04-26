@@ -57,6 +57,7 @@ class Application(object):
         self._active_session = None
         self._harvest_enabled = False
 
+        self.last_harvest_transaction_count = 0
         self._transaction_count = 0
         self._last_transaction = 0.0
 
@@ -1263,16 +1264,16 @@ class Application(object):
                 _logger.debug('Snapshotting metrics for harvest of %r.',
                         self._app_name)
 
-                transaction_count = self._transaction_count
-                global_events_account = self._global_events_account
-
                 with self._stats_lock:
+                    transaction_count = self._transaction_count
+                    self.last_harvest_transaction_count = transaction_count
                     self._transaction_count = 0
                     self._last_transaction = 0.0
 
                     stats = self._stats_engine.harvest_snapshot()
 
                 with self._stats_custom_lock:
+                    global_events_account = self._global_events_account
                     self._global_events_account = 0
 
                     stats_custom = self._stats_custom_engine.harvest_snapshot()

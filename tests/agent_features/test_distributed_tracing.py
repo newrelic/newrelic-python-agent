@@ -4,9 +4,10 @@ import webtest
 import pytest
 import copy
 
-from newrelic.api.background_task import background_task
+from newrelic.api.application import application_instance
+from newrelic.api.background_task import BackgroundTask
 from newrelic.api.transaction import current_transaction
-from newrelic.api.web_transaction import wsgi_application
+from newrelic.api.web_transaction import wsgi_application, WebTransaction
 
 from testing_support.fixtures import (override_application_settings,
         validate_attributes, validate_transaction_event_attributes,
@@ -16,6 +17,7 @@ distributed_trace_intrinsics = ['guid', 'nr.tripId', 'traceId', 'priority',
         'sampled']
 inbound_payload_intrinsics = ['parent.type', 'parent.app', 'parent.account',
         'parent.transportType', 'parent.transportDuration', 'parentId']
+
 
 payload = {
     'v': [0, 1],
@@ -183,15 +185,16 @@ def test_distributed_trace_attrs_omitted():
 
 # test our distributed_trace metrics by creating a transaction and then forcing
 # it to process a distributed trace payload
+@pytest.mark.parametrize('web_transaction', (True, False))
 @pytest.mark.parametrize('gen_error', (True, False))
 @pytest.mark.parametrize('has_parent', (True, False))
-def test_distributed_tracing_metrics(gen_error, has_parent):
+def test_distributed_tracing_metrics(web_transaction, gen_error, has_parent):
     def _make_dt_tag(pi):
         return "%s/%s/%s/%s/all" % tuple(pi[x] for x in pi)
 
     # figure out which metrics we'll see based on the test params
-    # note: we always see DurationByCaller/etc/all if we ever process
-    # a distributed trace
+    # note: we'll always see DurationByCaller if the distributed
+    # tracing flag is turned on
     metrics = ['DurationByCaller']
     if gen_error:
         metrics.append('ErrorsByCaller')
@@ -211,28 +214,36 @@ def test_distributed_tracing_metrics(gen_error, has_parent):
 
     # now run the test
     transaction_name = "test_dt_metrics_%s" % '_'.join(metrics)
-    _rollup_metrics = [("%s/%s" % (x, tag), 1) for x in metrics]
-    _custom_metrics = [] if gen_error is False else [
-        ('Supportability/api/record_exception', 1),
-        ('Supportability/api/background_task', None)
+    _rollup_metrics = [
+        ("%s/%s%s" % (x, tag, bt), 1)
+        for x in metrics
+        for bt in ['', 'Web' if web_transaction else 'Other']
     ]
+
+    def _make_test_transaction():
+        application = application_instance()
+
+        if not web_transaction:
+            return BackgroundTask(application, transaction_name)
+
+        environ = {'REQUEST_URI': '/trace_ends_after_txn'}
+        tn = WebTransaction(application, environ)
+        tn.set_transaction_name(transaction_name)
+        return tn
 
     @override_application_settings(_override_settings)
     @validate_transaction_metrics(
         transaction_name,
-        background_task=True,
-        rollup_metrics=_rollup_metrics,
-        custom_metrics=_custom_metrics
-    )
-    @background_task(name=transaction_name)
+        background_task=not(web_transaction),
+        rollup_metrics=_rollup_metrics)
     def _test():
-        transaction = current_transaction()
-        transaction.accept_distributed_trace_payload(dt_payload)
+        with _make_test_transaction() as transaction:
+            transaction.accept_distributed_trace_payload(dt_payload)
 
-        if gen_error:
-            try:
-                1 / 0
-            except ZeroDivisionError:
-                record_exception()
+            if gen_error:
+                try:
+                    1 / 0
+                except ZeroDivisionError:
+                    transaction.record_exception()
 
     _test()

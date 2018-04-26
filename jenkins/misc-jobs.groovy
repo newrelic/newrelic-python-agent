@@ -136,6 +136,7 @@ use(extensions) {
                     env('DOCKER_HOST', 'unix:///var/run/docker.sock')
                 }
                 shell('./jenkins/scripts/refresh_docker_containers.sh')
+                shell('./jenkins/scripts/remove_workspace_dirs.sh')
             }
 
             slackQuiet(slackChannel)

@@ -51,6 +51,10 @@ class TransactionNode(_TransactionNode):
         self._string_table = StringTable()
         return self._string_table
 
+    @property
+    def distributed_trace_received(self):
+        return self.parent_id is not None
+
     def time_metrics(self, stats):
         """Return a generator yielding the timed metrics for the
         top level web transaction as well as all the child nodes.
@@ -149,7 +153,7 @@ class TransactionNode(_TransactionNode):
         # Generate Distributed Tracing metrics
 
         if 'distributed_tracing' in self.settings.feature_flag:
-            if self.parent_id is not None:
+            if self.distributed_trace_received:
                 dt_tag = "%s/%s/%s/%s/all" % (
                     self.parent_type, self.parent_account,
                     self.parent_app, self.parent_transport_type)
@@ -163,7 +167,7 @@ class TransactionNode(_TransactionNode):
                     duration=self.duration,
                     exclusive=self.duration)
 
-                if self.parent_id is not None:
+                if self.distributed_trace_received:
                     yield TimeMetric(
                         name="TransportDuration/%s%s" % (dt_tag, bonus_tag),
                         scope='',

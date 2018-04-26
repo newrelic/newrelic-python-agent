@@ -17,7 +17,7 @@ JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures',
 
 _parameters_list = ['test_name', 'inbound_payload', 'trusted_account_ids',
         'exact_intrinsics', 'expected_intrinsics', 'unexpected_intrinsics',
-        'expected_metrics', 'base_64_encoded_payload']
+        'expected_metrics', 'base_64_encoded_payload', 'background_task']
 _parameters = ','.join(_parameters_list)
 
 
@@ -44,6 +44,8 @@ def target_wsgi_application(environ, start_response):
 
     txn = current_transaction()
     txn.set_transaction_name(transaction_name)
+    if set_background_task:
+        txn.background_task = True
 
     start_response(status, response_headers)
     return [output]
@@ -51,15 +53,18 @@ def target_wsgi_application(environ, start_response):
 
 test_application = webtest.TestApp(target_wsgi_application)
 transaction_name = None
+set_background_task = False
 
 
 @pytest.mark.parametrize(_parameters, load_tests())
 def test_distributed_tracing(test_name, inbound_payload, trusted_account_ids,
         exact_intrinsics, expected_intrinsics, unexpected_intrinsics,
-        expected_metrics, base_64_encoded_payload):
+        expected_metrics, base_64_encoded_payload, background_task):
 
     global transaction_name
+    global set_background_task
     transaction_name = test_name
+    set_background_task = background_task is True
 
     override_settings = {
         'trusted_account_ids': trusted_account_ids,
@@ -78,7 +83,8 @@ def test_distributed_tracing(test_name, inbound_payload, trusted_account_ids,
 
     @override_application_settings(override_settings)
     @validate_transaction_metrics(test_name,
-            rollup_metrics=expected_metrics)
+            rollup_metrics=expected_metrics,
+            background_task=background_task)
     @validate_transaction_event_attributes(
             required_params, forgone_params, exact_attrs)
     @validate_error_event_attributes(

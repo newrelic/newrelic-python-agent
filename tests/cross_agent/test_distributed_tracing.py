@@ -1,4 +1,5 @@
 import json
+import base64
 import os
 import pytest
 import webtest
@@ -16,7 +17,7 @@ JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures',
 
 _parameters_list = ['test_name', 'inbound_payload', 'trusted_account_ids',
         'exact_intrinsics', 'expected_intrinsics', 'unexpected_intrinsics',
-        'expected_metrics']
+        'expected_metrics', 'base_64_encoded_payload']
 _parameters = ','.join(_parameters_list)
 
 
@@ -54,8 +55,8 @@ transaction_name = None
 
 @pytest.mark.parametrize(_parameters, load_tests())
 def test_distributed_tracing(test_name, inbound_payload, trusted_account_ids,
-        exact_intrinsics, expected_intrinsics,
-        unexpected_intrinsics, expected_metrics):
+        exact_intrinsics, expected_intrinsics, unexpected_intrinsics,
+        expected_metrics, base_64_encoded_payload):
 
     global transaction_name
     transaction_name = test_name
@@ -70,6 +71,11 @@ def test_distributed_tracing(test_name, inbound_payload, trusted_account_ids,
             'intrinsic': unexpected_intrinsics}
     exact_attrs = {'agent': {}, 'user': {}, 'intrinsic': exact_intrinsics}
 
+    payload = json.dumps(inbound_payload)
+    if base_64_encoded_payload:
+        payload = base64.b64encode(payload.encode('utf-8'))
+    headers = {'X-NewRelic-Trace': payload}
+
     @override_application_settings(override_settings)
     @validate_transaction_metrics(test_name,
             rollup_metrics=expected_metrics)
@@ -80,7 +86,6 @@ def test_distributed_tracing(test_name, inbound_payload, trusted_account_ids,
     @validate_attributes('intrinsic',
             expected_intrinsics, unexpected_intrinsics)
     def _test():
-        headers = {'X-NewRelic-Trace': json.dumps(inbound_payload)}
         response = test_application.get('/', headers=headers)
         assert 'X-NewRelic-App-Data' not in response.headers
 

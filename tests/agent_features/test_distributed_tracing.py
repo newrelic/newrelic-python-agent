@@ -206,7 +206,7 @@ def test_distributed_tracing_metrics(web_transaction, gen_error, has_parent):
     tag = None
     dt_payload = copy.deepcopy(payload)
 
-    # if has_parent is True, our metric name will info about the parent,
+    # if has_parent is True, our metric name will be info about the parent,
     # otherwise it is Unknown/Unknown/Unknown/Unknown
     if has_parent:
         tag = _make_dt_tag(parent_info)

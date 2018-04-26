@@ -28,7 +28,7 @@ _TransactionNode = namedtuple('_TransactionNode',
         'is_part_of_cat', 'trip_id', 'path_hash', 'referring_path_hash',
         'alternate_path_hashes', 'trace_intrinsics', 'agent_attributes',
         'distributed_trace_intrinsics', 'user_attributes', 'priority',
-        'parent_transport_duration', 'parent_id', 'parent_type',\
+        'parent_transport_duration', 'parent_id', 'parent_type',
         'parent_account', 'parent_app', 'parent_transport_type'])
 
 
@@ -50,14 +50,6 @@ class TransactionNode(_TransactionNode):
             return result
         self._string_table = StringTable()
         return self._string_table
-
-    def make_dt_metric_tag(self):
-        if self.parent_id is not None:
-            return "%s/%s/%s/%s/all" % (
-                self.parent_type, self.parent_account,
-                self.parent_app, self.parent_transport_type)
-        else:
-            return "Unknown/Unknown/Unknown/Unknown/all"
 
     def time_metrics(self, stats):
         """Return a generator yielding the timed metrics for the
@@ -157,7 +149,12 @@ class TransactionNode(_TransactionNode):
         # Generate Distributed Tracing metrics
 
         if 'distributed_tracing' in self.settings.feature_flag:
-            dt_tag = self.make_dt_metric_tag()
+            if self.parent_id is not None:
+                dt_tag = "%s/%s/%s/%s/all" % (
+                    self.parent_type, self.parent_account,
+                    self.parent_app, self.parent_transport_type)
+            else:
+                dt_tag = "Unknown/Unknown/Unknown/Unknown/all"
 
             for bonus_tag in ['', metric_suffix]:
                 yield TimeMetric(

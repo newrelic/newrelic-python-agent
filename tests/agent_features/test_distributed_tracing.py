@@ -1,11 +1,10 @@
 import json
 import pytest
 import webtest
-import pytest
 import copy
 
 from newrelic.api.application import application_instance
-from newrelic.api.background_task import BackgroundTask
+from newrelic.api.background_task import background_task, BackgroundTask
 from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import wsgi_application, WebTransaction
 
@@ -182,6 +181,7 @@ def test_distributed_trace_attrs_omitted():
         raise ValueError('cookies')
     except ValueError:
         txn.record_exception()
+
 
 # test our distributed_trace metrics by creating a transaction and then forcing
 # it to process a distributed trace payload

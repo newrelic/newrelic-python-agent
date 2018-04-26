@@ -137,8 +137,10 @@ class TransactionNode(_TransactionNode):
 
         if self.type == 'WebTransaction':
             metric_prefix = 'WebTransactionTotalTime'
+            metric_suffix = 'Web'
         else:
             metric_prefix = 'OtherTransactionTotalTime'
+            metric_suffix = 'Other'
 
         yield TimeMetric(
                 name='%s/%s' % (metric_prefix, self.name_for_metric),
@@ -157,18 +159,26 @@ class TransactionNode(_TransactionNode):
         if 'distributed_tracing' in self.settings.feature_flag:
             dt_tag = self.make_dt_metric_tag()
 
-            yield TimeMetric(
-                    name="DurationByCaller/%s" % dt_tag,
+            for bonus_tag in ['', metric_suffix]:
+                yield TimeMetric(
+                    name="DurationByCaller/%s%s" % (dt_tag, bonus_tag),
                     scope='',
                     duration=self.duration,
                     exclusive=self.duration)
 
-            if self.parent_id is not None:
-                yield TimeMetric(
-                        name="TransportDuration/%s" % dt_tag,
+                if self.parent_id is not None:
+                    yield TimeMetric(
+                        name="TransportDuration/%s%s" % (dt_tag, bonus_tag),
                         scope='',
                         duration=self.parent_transport_duration,
                         exclusive=self.parent_transport_duration)
+
+                if self.errors:
+                    yield TimeMetric(
+                        name='ErrorsByCaller/%s%s' % (dt_tag, bonus_tag),
+                        scope='',
+                        duration=0.0,
+                        exclusive=None)
 
         # Generate Error metrics
 
@@ -188,24 +198,8 @@ class TransactionNode(_TransactionNode):
                     exclusive=None)
 
             # Generate rollup metric for WebTransaction errors.
-            if self.type == 'WebTransaction':
-                yield TimeMetric(
-                        name='Errors/allWeb',
-                        scope='',
-                        duration=0.0,
-                        exclusive=None)
-
-            # Generate rollup metric for OtherTransaction errors.
-            if self.type != 'WebTransaction':
-                yield TimeMetric(
-                        name='Errors/allOther',
-                        scope='',
-                        duration=0.0,
-                        exclusive=None)
-
-            if 'distributed_tracing' in self.settings.feature_flag:
-                yield TimeMetric(
-                    name='ErrorsByCaller/%s' % self.make_dt_metric_tag(),
+            yield TimeMetric(
+                    name='Errors/all%s' % metric_suffix,
                     scope='',
                     duration=0.0,
                     exclusive=None)

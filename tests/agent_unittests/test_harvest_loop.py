@@ -127,15 +127,15 @@ def test_last_harvest_transaction_count():
     app.record_transaction(node)
 
     # Harvest has not run yet
-    assert app.last_harvest_transaction_count == 0
+    assert app._last_harvest_transaction_count == 0
 
     app.harvest()
 
     # Harvested 1 transaction
-    assert app.last_harvest_transaction_count == 1
+    assert app._last_harvest_transaction_count == 1
 
     app.record_transaction(node)
     app.harvest()
 
     # Harvested 1 transaction
-    assert app.last_harvest_transaction_count == 1
+    assert app._last_harvest_transaction_count == 1

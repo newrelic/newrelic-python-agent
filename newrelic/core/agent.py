@@ -521,9 +521,9 @@ class Agent(object):
 
         return application.normalize_name(name, rule_type)
 
-    def last_harvest_transaction_count(self, app_name):
+    def sampling_probability(self, app_name):
         application = self._applications.get(app_name, None)
-        return application.last_harvest_transaction_count
+        return application.sampling_probability()
 
     def _harvest_loop(self):
         _logger.debug('Entering harvest loop.')

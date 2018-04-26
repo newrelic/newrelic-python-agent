@@ -131,16 +131,7 @@ class Application(object):
         if not self.active:
             return 0.0
 
-        last_harvest_transaction_count = \
-                self._agent.last_harvest_transaction_count(self._name)
-
-        # TODO: add sampling computation here
-        # The computation will be something like:
-        # 10.0 / last_harvest_transaction_count
-        #     for last_harvest_transaction_count > 0
-        # 1.0 for last_harvest_transaction_count == 0 and current_count < 10
-
-        return 0.0
+        return self._agent.sampling_probability(self._name)
 
 
 def application_instance(name=None):

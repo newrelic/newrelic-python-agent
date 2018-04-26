@@ -17,7 +17,8 @@ JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures',
 
 _parameters_list = ['test_name', 'inbound_payload', 'trusted_account_ids',
         'exact_intrinsics', 'expected_intrinsics', 'unexpected_intrinsics',
-        'expected_metrics', 'base_64_encoded_payload', 'background_task']
+        'expected_metrics', 'base_64_encoded_payload', 'background_task',
+        'raises_exception']
 _parameters = ','.join(_parameters_list)
 
 
@@ -43,28 +44,36 @@ def target_wsgi_application(environ, start_response):
                         ('Content-Length', str(len(output)))]
 
     txn = current_transaction()
-    txn.set_transaction_name(transaction_name)
-    if set_background_task:
+    txn.set_transaction_name(test_settings['test_name'])
+
+    if test_settings['background_task']:
         txn.background_task = True
+
+    if test_settings['raises_exception']:
+        try:
+            1 / 0
+        except ZeroDivisionError:
+            txn.record_exception()
 
     start_response(status, response_headers)
     return [output]
 
 
 test_application = webtest.TestApp(target_wsgi_application)
-transaction_name = None
-set_background_task = False
 
 
 @pytest.mark.parametrize(_parameters, load_tests())
 def test_distributed_tracing(test_name, inbound_payload, trusted_account_ids,
         exact_intrinsics, expected_intrinsics, unexpected_intrinsics,
-        expected_metrics, base_64_encoded_payload, background_task):
+        expected_metrics, base_64_encoded_payload, background_task,
+        raises_exception):
 
-    global transaction_name
-    global set_background_task
-    transaction_name = test_name
-    set_background_task = background_task is True
+    global test_settings
+    test_settings = {
+        'test_name': test_name,
+        'background_task': background_task,
+        'raises_exception': raises_exception,
+    }
 
     override_settings = {
         'trusted_account_ids': trusted_account_ids,

@@ -45,7 +45,7 @@ def target_wsgi_application(environ, start_response):
 test_application = webtest.TestApp(target_wsgi_application)
 
 _override_settings = {
-    'trusted_account_ids': [1],
+    'trusted_account_ids': [1, 332029],
     'feature_flag': set(['distributed_tracing']),
 }
 
@@ -109,6 +109,7 @@ def test_distributed_trace_attributes(accept_payload, has_grandparent):
                 'intrinsic': _forgone_intrinsics, 'agent': [], 'user': []}
         _exact_attributes = None
 
+    @override_application_settings(_override_settings)
     @validate_transaction_event_attributes(
             _required_attributes, _forgone_attributes, _exact_attributes)
     @validate_error_event_attributes(

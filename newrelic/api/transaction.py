@@ -969,9 +969,20 @@ class Transaction(object):
                 self.path) or self._settings.apdex_t)
 
     def create_distributed_tracing_payload(self):
+        if not self.enabled:
+            return
+
         settings = self._settings
         account_id = settings.account_id
         application_id = settings.application_id
+        distributed_tracing_enabled = \
+            'distributed_tracing' in settings.feature_flag
+
+        if not (account_id and
+                application_id and
+                distributed_tracing_enabled and
+                settings.cross_application_tracer.enabled):
+            return
 
         data = dict(
             ty='App',
@@ -995,6 +1006,16 @@ class Transaction(object):
         )
 
     def accept_distributed_trace_payload(self, payload, transport_type='http'):
+        if not self.enabled:
+            return False
+
+        settings = self._settings
+        distributed_tracing_enabled = \
+            'distributed_tracing' in settings.feature_flag
+        if not (settings.cross_application_tracer.enabled and
+                distributed_tracing_enabled and
+                settings.trusted_account_ids):
+            return False
 
         if (not payload or self.is_distributed_trace):
             return False
@@ -1020,7 +1041,7 @@ class Transaction(object):
             account_id = data.get('ac')
 
             if account_id not in (
-                    str(i) for i in self._settings.trusted_account_ids):
+                    str(i) for i in settings.trusted_account_ids):
                 return False
 
             grandparent_id = data.get('pa')

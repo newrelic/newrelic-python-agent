@@ -48,5 +48,50 @@
             ["Supportability/DistributedTrace/CreatePayload/Success", null],
             ["Supportability/DistributedTrace/CreatePayload/Exception", null]
         ]
+    },
+    {
+        "test_name": "non_trusted_account",
+        "inbound_payload": {
+            "v": [0, 1],
+            "d": {
+                "ac": "99999999999",
+                "ap": "2827902",
+                "id": "7d3efb1b173fecfa",
+                "pa": "5e5733a911cfbc73",
+                "pr": 10.001,
+                "sa": true,
+                "ti": 1518469636035,
+                "tr": "d6b4ba0c3a712ca",
+                "ty": "App"
+            }
+        },
+        "trusted_account_ids": [1],
+        "exact_intrinsics": {},
+        "expected_intrinsics": [
+            "guid", "nr.tripId", "traceId", "priority", "sampled"
+        ],
+        "unexpected_intrinsics": [
+            "parent.transportDuration", "parent.type", "parent.app",
+            "parent.account", "parent.transportType", "grandparentId",
+            "parentId"
+        ],
+        "expected_metrics": [
+            ["DurationByCaller/App/99999999999/2827902/http/all", null],
+            ["DurationByCaller/App/99999999999/2827902/http/allWeb", null],
+            ["ErrorsByCaller/App/99999999999/2827902/http/all", null],
+            ["ErrorsByCaller/App/99999999999/2827902/http/allWeb", null],
+            ["TransportDuration/App/99999999999/2827902/http/all", null],
+            ["TransportDuration/App/99999999999/2827902/http/allWeb", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Success", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Exception", null],
+            ["Supportability/DistributedTrace/AcceptPayload/ParseException", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/CreateBeforeAccept", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Multiple", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/MajorVersion", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Null", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/UntrustedAccount", 1],
+            ["Supportability/DistributedTrace/CreatePayload/Success", null],
+            ["Supportability/DistributedTrace/CreatePayload/Exception", null]
+        ]
     }
 ]

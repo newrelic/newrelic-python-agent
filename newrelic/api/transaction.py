@@ -159,6 +159,7 @@ class Transaction(object):
         self.priority = random.random()
         self.parent_type = None
         self.parent_id = None
+        self.grandparent_id = None
         self.parent_app = None
         self.parent_account = None
         self.parent_transport_type = None
@@ -507,6 +508,7 @@ class Transaction(object):
                 referring_path_hash=self._referring_path_hash,
                 alternate_path_hashes=self.alternate_path_hashes,
                 trace_intrinsics=self.trace_intrinsics,
+                distributed_trace_intrinsics=self.distributed_trace_intrinsics,
                 agent_attributes=self.agent_attributes,
                 user_attributes=self.user_attributes,
                 priority=self.priority,
@@ -727,6 +729,39 @@ class Transaction(object):
 
         # if self._cpu_user_time_value:
         #     i_attrs['cpu_time'] = self._cpu_user_time_value
+
+        i_attrs.update(self.distributed_trace_intrinsics)
+
+        return i_attrs
+
+    @property
+    def distributed_trace_intrinsics(self):
+        i_attrs = {}
+
+        if not self.is_distributed_trace:
+            return i_attrs
+
+        if self.parent_type:
+            i_attrs['parent.type'] = self.parent_type
+        if self.parent_account:
+            i_attrs['parent.account'] = self.parent_account
+        if self.parent_app:
+            i_attrs['parent.app'] = self.parent_app
+        if self.parent_transport_type:
+            i_attrs['parent.transportType'] = self.parent_transport_type
+        if self.parent_transport_duration:
+            i_attrs['parent.transportDuration'] = \
+                    self.parent_transport_duration
+        if self.grandparent_id:
+            i_attrs['grandparentId'] = self.grandparent_id
+        if self.parent_id:
+            i_attrs['parentId'] = self.parent_id
+
+        i_attrs['traceId'] = self.trace_id
+        i_attrs['nr.tripId'] = self.trace_id
+        i_attrs['guid'] = self.guid
+        i_attrs['priority'] = self.priority
+        i_attrs['sampled'] = self.sampled
 
         return i_attrs
 
@@ -996,7 +1031,7 @@ class Transaction(object):
             self.parent_app = data.get('ap')
             self.parent_account = account_id
             self.parent_transport_type = transport_type
-            self.parent_transport_duration = transport_start - time.time()
+            self.parent_transport_duration = time.time() - transport_start
             self._trace_id = data.get('tr')
             self.priority = data.get('pr', self.priority)
             self.sampled = data.get('sa', self.sampled)

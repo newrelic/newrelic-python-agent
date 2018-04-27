@@ -18,7 +18,7 @@ JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures',
 _parameters_list = ['test_name', 'inbound_payload', 'trusted_account_ids',
         'exact_intrinsics', 'expected_intrinsics', 'unexpected_intrinsics',
         'expected_metrics', 'base_64_encoded_payload', 'background_task',
-        'raises_exception']
+        'raises_exception', 'feature_flag']
 _parameters = ','.join(_parameters_list)
 
 
@@ -66,7 +66,7 @@ test_application = webtest.TestApp(target_wsgi_application)
 def test_distributed_tracing(test_name, inbound_payload, trusted_account_ids,
         exact_intrinsics, expected_intrinsics, unexpected_intrinsics,
         expected_metrics, base_64_encoded_payload, background_task,
-        raises_exception):
+        raises_exception, feature_flag):
 
     global test_settings
     test_settings = {
@@ -77,8 +77,10 @@ def test_distributed_tracing(test_name, inbound_payload, trusted_account_ids,
 
     override_settings = {
         'trusted_account_ids': trusted_account_ids,
-        'feature_flag': set(['distributed_tracing']),
     }
+    if feature_flag is not False:
+        override_settings['feature_flag'] = set(['distributed_tracing'])
+
     required_params = {'agent': [], 'user': [],
             'intrinsic': expected_intrinsics}
     forgone_params = {'agent': [], 'user': [],

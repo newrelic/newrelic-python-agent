@@ -1,4 +1,3 @@
-import logging
 import unittest
 
 import newrelic.tests.test_cases
@@ -7,6 +6,7 @@ import newrelic.api.settings
 import newrelic.api.application
 
 settings = newrelic.api.settings.settings()
+
 
 class TestCase(newrelic.tests.test_cases.TestCase):
 
@@ -44,6 +44,11 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         self.assertTrue(hasattr(attribute_filter, 'apply'))
         self.assertTrue(hasattr(attribute_filter, 'rules'))
         self.assertTrue(hasattr(attribute_filter, 'enabled_destinations'))
+
+    def test_sampling_probability(self):
+        application = newrelic.api.application.application_instance()
+        self.assertEqual(type(application.sampling_probability()), type(0.0))
+
 
 if __name__ == '__main__':
     unittest.main()

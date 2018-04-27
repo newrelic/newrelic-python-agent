@@ -512,6 +512,12 @@ class Transaction(object):
                 agent_attributes=self.agent_attributes,
                 user_attributes=self.user_attributes,
                 priority=self.priority,
+                parent_id=self.parent_id,
+                parent_transport_duration=self.parent_transport_duration,
+                parent_type=self.parent_type,
+                parent_account=self.parent_account,
+                parent_app=self.parent_app,
+                parent_transport_type=self.parent_transport_type
         )
 
         # Clear settings as we are all done and don't need it

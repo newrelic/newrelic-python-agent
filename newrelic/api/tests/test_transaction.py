@@ -155,7 +155,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
     def test_distributed_trace_referring_transaction(self):
         with self.transaction:
-            self.transaction.referring_transaction_guid = 'abcde'
+            self.transaction.parent_id = 'abcde'
             self.transaction._trace_id = 'qwerty'
             self.transaction.priority = 0.0
 
@@ -564,6 +564,29 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             assert ('Supportability/DistributedTrace/'
                     'AcceptPayload/ParseException'
                     in self.transaction._transaction_metrics)
+    def test_create_after_accept_correct_payload(self):
+        with self.transaction:
+            inbound_payload = {
+                'v': [0, 1],
+                'd': {
+                    'ty': 'Mobile',
+                    'ac': '1',
+                    'ap': '2827902',
+                    'pa': '5e5733a911cfbc73',
+                    'id': '7d3efb1b173fecfa',
+                    'tr': 'd6b4ba0c3a712ca',
+                    'ti': 1518469636035,
+                }
+            }
+            result = self.transaction.accept_distributed_trace_payload(
+                    inbound_payload)
+            assert result
+            outbound_payload = \
+                    self.transaction.create_distributed_tracing_payload()
+            data = outbound_payload['d']
+            assert data['ty'] == 'App'
+            assert data['pa'] == '7d3efb1b173fecfa'
+            assert data['tr'] == 'd6b4ba0c3a712ca'
 
 
 if __name__ == '__main__':

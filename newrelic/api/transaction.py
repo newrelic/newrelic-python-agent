@@ -1006,8 +1006,8 @@ class Transaction(object):
                 ti=int(time.time() * 1000.0),
             )
 
-            if self.referring_transaction_guid:
-                data['pa'] = self.referring_transaction_guid
+            if self.parent_id:
+                data['pa'] = self.parent_id
 
             self.is_distributed_trace = True
 

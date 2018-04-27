@@ -124,6 +124,9 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         with self.transaction:
             payload = self.transaction.create_distributed_tracing_payload()
             assert type(payload.text()) is str
+            assert ('Supportability/DistributedTrace/'
+                    'CreatePayload/Success'
+                    in self.transaction._transaction_metrics)
 
     def test_create_distributed_tracing_payload_http_safe(self):
         with self.transaction:
@@ -202,6 +205,9 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             assert isinstance(payload, str)
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
+            assert ('Supportability/DistributedTrace/'
+                    'AcceptPayload/Success'
+                    in self.transaction._transaction_metrics)
 
     def test_accept_distributed_trace_payload_discard_version(self):
         with self.transaction:
@@ -219,6 +225,9 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             }
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
+            assert ('Supportability/DistributedTrace/'
+                    'AcceptPayload/Ignored/MajorVersion'
+                    in self.transaction._transaction_metrics)
 
     def test_accept_distributed_trace_payload_ignore_version(self):
         with self.transaction:
@@ -273,6 +282,9 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             assert not result
             assert self.transaction.is_distributed_trace
             assert self.transaction.parent_type == 'Mobile'
+            assert ('Supportability/DistributedTrace/'
+                    'AcceptPayload/Ignored/Multiple'
+                    in self.transaction._transaction_metrics)
 
     def test_accept_distributed_trace_payload_discard_accounts(self):
         with self.transaction:
@@ -290,6 +302,9 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             }
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
+            assert ('Supportability/DistributedTrace/'
+                    'AcceptPayload/Ignored/UntrustedAccount'
+                    in self.transaction._transaction_metrics)
 
     def test_accept_distributed_trace_payload_priority_found(self):
         with self.transaction:
@@ -312,6 +327,27 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             assert result
             assert self.transaction.priority != original_priority
             assert self.transaction.priority == priority
+
+    def test_accept_distributed_trace_payload_id_missing(self):
+        with self.transaction:
+            payload = {
+                'v': [0, 1],
+                'd': {
+                    'ty': 'Mobile',
+                    'ac': '1',
+                    'ap': '2827902',
+                    'pa': '5e5733a911cfbc73',
+                    'tr': 'd6b4ba0c3a712ca',
+                    'ti': 1518469636035,
+                }
+            }
+            payload = json.dumps(payload)
+            assert isinstance(payload, str)
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert not result
+            assert ('Supportability/DistributedTrace/'
+                    'AcceptPayload/ParseException'
+                    in self.transaction._transaction_metrics)
 
     def test_accept_distributed_trace_payload_priority_not_found(self):
         with self.transaction:
@@ -409,6 +445,9 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             self.transaction.create_distributed_tracing_payload()
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
+            assert ('Supportability/DistributedTrace/'
+                    'AcceptPayload/Ignored/CreateBeforeAccept'
+                    in self.transaction._transaction_metrics)
 
     def test_accept_distributed_trace_payload_transport_duration(self):
         # Mark a payload as sent 1 second ago
@@ -504,6 +543,27 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             }
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
+
+    def test_accept_empty_payload(self):
+        with self.transaction:
+            payload = {}
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert not result
+            assert len(self.transaction._transaction_metrics) == 1
+            assert ('Supportability/DistributedTrace/'
+                    'AcceptPayload/Ignored/Null'
+                    in self.transaction._transaction_metrics)
+
+    def test_accept_malformed_payload(self):
+        with self.transaction:
+            assert len(self.transaction._transaction_metrics) == 0
+            payload = '{'
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert not result
+            assert len(self.transaction._transaction_metrics) == 1
+            assert ('Supportability/DistributedTrace/'
+                    'AcceptPayload/ParseException'
+                    in self.transaction._transaction_metrics)
 
 
 if __name__ == '__main__':

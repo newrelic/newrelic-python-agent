@@ -994,26 +994,32 @@ class Transaction(object):
                 settings.cross_application_tracer.enabled):
             return
 
-        data = dict(
-            ty='App',
-            ac=account_id,
-            ap=application_id,
-            id=self.guid,
-            tr=self.trace_id,
-            pr=self.priority,
-            sa=self.sampled,
-            ti=int(time.time() * 1000.0),
-        )
+        try:
+            data = dict(
+                ty='App',
+                ac=account_id,
+                ap=application_id,
+                id=self.guid,
+                tr=self.trace_id,
+                pr=self.priority,
+                sa=self.sampled,
+                ti=int(time.time() * 1000.0),
+            )
 
-        if self.referring_transaction_guid:
-            data['pa'] = self.referring_transaction_guid
+            if self.referring_transaction_guid:
+                data['pa'] = self.referring_transaction_guid
 
-        self.is_distributed_trace = True
+            self.is_distributed_trace = True
 
-        return DistributedTracePayload(
-            v=DistributedTracePayload.version,
-            d=data,
-        )
+            self._record_supportability('Supportability/DistributedTrace/'
+                    'CreatePayload/Success')
+            return DistributedTracePayload(
+                v=DistributedTracePayload.version,
+                d=data,
+            )
+        except:
+            self._record_supportability('Supportability/DistributedTrace/'
+                    'CreatePayload/Exception')
 
     def accept_distributed_trace_payload(self, payload, transport_type='http'):
         if not self.enabled:

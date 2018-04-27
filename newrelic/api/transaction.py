@@ -974,6 +974,10 @@ class Transaction(object):
             self.apdex = (self._settings.web_transactions_apdex.get(
                 self.path) or self._settings.apdex_t)
 
+    def _record_supportability(self, metric_name):
+        m = self._transaction_metrics.get(metric_name, 0)
+        self._transaction_metrics[metric_name] = m + 1
+
     def create_distributed_tracing_payload(self):
         if not self.enabled:
             return
@@ -1015,6 +1019,11 @@ class Transaction(object):
         if not self.enabled:
             return False
 
+        if not payload:
+            self._record_supportability('Supportability/DistributedTrace/'
+                    'AcceptPayload/Ignored/Null')
+            return False
+
         settings = self._settings
         distributed_tracing_enabled = \
             'distributed_tracing' in settings.feature_flag
@@ -1023,11 +1032,19 @@ class Transaction(object):
                 settings.trusted_account_ids):
             return False
 
-        if (not payload or self.is_distributed_trace):
+        if self.is_distributed_trace:
+            if self.parent_id:
+                self._record_supportability('Supportability/DistributedTrace/'
+                        'AcceptPayload/Ignored/Multiple')
+            else:
+                self._record_supportability('Supportability/DistributedTrace/'
+                        'AcceptPayload/Ignored/CreateBeforeAccept')
             return False
 
         payload = DistributedTracePayload.decode(payload)
         if not payload:
+            self._record_supportability('Supportability/DistributedTrace/'
+                    'AcceptPayload/ParseException')
             return False
 
         try:
@@ -1038,16 +1055,22 @@ class Transaction(object):
                 return False
 
             if major_version > DistributedTracePayload.version[0]:
+                self._record_supportability('Supportability/DistributedTrace/'
+                        'AcceptPayload/Ignored/MajorVersion')
                 return False
 
             data = payload.get('d', {})
             if not all(k in data for k in DISTRIBUTED_TRACE_KEYS_REQUIRED):
+                self._record_supportability('Supportability/DistributedTrace/'
+                        'AcceptPayload/ParseException')
                 return False
 
             account_id = data.get('ac')
 
             if account_id not in (
                     str(i) for i in settings.trusted_account_ids):
+                self._record_supportability('Supportability/DistributedTrace/'
+                        'AcceptPayload/Ignored/UntrustedAccount')
                 return False
 
             grandparent_id = data.get('pa')
@@ -1068,9 +1091,13 @@ class Transaction(object):
 
             self.is_distributed_trace = True
 
+            self._record_supportability('Supportability/DistributedTrace/'
+                    'AcceptPayload/Success')
             return True
 
         except:
+            self._record_supportability('Supportability/DistributedTrace/'
+                    'AcceptPayload/Exception')
             return False
 
     def _process_incoming_cat_headers(self, encoded_cross_process_id,

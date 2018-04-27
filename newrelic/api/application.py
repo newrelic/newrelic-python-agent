@@ -127,6 +127,12 @@ class Application(object):
             return self._agent.normalize_name(self._name, name, rule_type)
         return name, False
 
+    def sampling_probability(self):
+        if not self.active:
+            return 0.0
+
+        return self._agent.sampling_probability(self._name)
+
 
 def application_instance(name=None):
     return Application._instance(name)

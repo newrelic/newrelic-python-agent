@@ -124,6 +124,9 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         with self.transaction:
             payload = self.transaction.create_distributed_tracing_payload()
             assert type(payload.text()) is str
+            assert ('Supportability/DistributedTrace/'
+                    'CreatePayload/Success'
+                    in self.transaction._transaction_metrics)
 
     def test_create_distributed_tracing_payload_http_safe(self):
         with self.transaction:

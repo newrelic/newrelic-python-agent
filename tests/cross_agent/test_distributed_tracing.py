@@ -18,7 +18,7 @@ JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures',
 _parameters_list = ['test_name', 'inbound_payload', 'trusted_account_ids',
         'exact_intrinsics', 'expected_intrinsics', 'unexpected_intrinsics',
         'expected_metrics', 'base_64_encoded_payload', 'background_task',
-        'raises_exception', 'feature_flag']
+        'raises_exception', 'feature_flag', 'second_inbound_payload']
 _parameters = ','.join(_parameters_list)
 
 
@@ -55,6 +55,11 @@ def target_wsgi_application(environ, start_response):
         except ZeroDivisionError:
             txn.record_exception()
 
+    second_inbound_payload = test_settings['second_inbound_payload']
+    if second_inbound_payload:
+        result = txn.accept_distributed_trace_payload(second_inbound_payload)
+        assert not result
+
     start_response(status, response_headers)
     return [output]
 
@@ -66,13 +71,14 @@ test_application = webtest.TestApp(target_wsgi_application)
 def test_distributed_tracing(test_name, inbound_payload, trusted_account_ids,
         exact_intrinsics, expected_intrinsics, unexpected_intrinsics,
         expected_metrics, base_64_encoded_payload, background_task,
-        raises_exception, feature_flag):
+        raises_exception, feature_flag, second_inbound_payload):
 
     global test_settings
     test_settings = {
         'test_name': test_name,
         'background_task': background_task,
         'raises_exception': raises_exception,
+        'second_inbound_payload': second_inbound_payload,
     }
 
     override_settings = {
@@ -87,7 +93,7 @@ def test_distributed_tracing(test_name, inbound_payload, trusted_account_ids,
             'intrinsic': unexpected_intrinsics}
     exact_attrs = {'agent': {}, 'user': {}, 'intrinsic': exact_intrinsics}
 
-    payload = json.dumps(inbound_payload)
+    payload = json.dumps(inbound_payload) if inbound_payload else ''
     if base_64_encoded_payload:
         payload = base64.b64encode(payload.encode('utf-8'))
     headers = {'X-NewRelic-Trace': payload}

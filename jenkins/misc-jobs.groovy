@@ -61,7 +61,9 @@ use(extensions) {
                 shell('./jenkins/scripts/packnsend-buildnpush.sh')
             }
 
-            slackQuiet(slackChannel)
+            slackQuiet(slackChannel) {
+                startNotification true
+            }
         }
     }
 

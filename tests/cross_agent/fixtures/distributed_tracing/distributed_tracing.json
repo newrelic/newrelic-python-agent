@@ -109,6 +109,59 @@
     },
 
     {
+        "test_name": "no_parent_id_in_payload",
+        "inbound_payload": {
+            "v": [0, 1],
+            "d": {
+                "ac": "1",
+                "ap": "2827902",
+                "id": "7d3efb1b173fecfa",
+                "pr": 10.001,
+                "sa": true,
+                "ti": 1518469636035,
+                "tr": "d6b4ba0c3a712ca",
+                "ty": "App"
+            }
+        },
+        "trusted_account_ids": [1],
+        "exact_intrinsics": {
+            "parent.type": "App",
+            "parent.app": "2827902",
+            "parent.account": "1",
+            "parent.transportType": "http",
+            "parentId": "7d3efb1b173fecfa",
+            "nr.tripId": "d6b4ba0c3a712ca",
+            "traceId": "d6b4ba0c3a712ca",
+            "priority": 10.001,
+            "sampled": true
+        },
+        "expected_intrinsics": ["parent.transportDuration", "guid"],
+        "unexpected_intrinsics": ["grandparentId"],
+        "expected_metrics": [
+            ["DurationByCaller/App/1/2827902/http/all", 1],
+            ["DurationByCaller/App/1/2827902/http/allWeb", 1],
+            ["DurationByCaller/App/1/2827902/http/allOther", null],
+            ["ErrorsByCaller/App/1/2827902/http/all", null],
+            ["ErrorsByCaller/App/1/2827902/http/allWeb", null],
+            ["ErrorsByCaller/App/1/2827902/http/allOther", null],
+            ["TransportDuration/App/1/2827902/http/all", 1],
+            ["TransportDuration/App/1/2827902/http/allWeb", 1],
+            ["TransportDuration/App/1/2827902/http/allOther", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Success", 1],
+            ["Supportability/DistributedTrace/AcceptPayload/Exception", null],
+            ["Supportability/DistributedTrace/AcceptPayload/ParseException", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/CreateBeforeAccept", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Multiple", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/MajorVersion", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Null", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/UntrustedAccount", null],
+            ["Supportability/DistributedTrace/CreatePayload/Success", null],
+            ["Supportability/DistributedTrace/CreatePayload/Exception", null]
+        ]
+    },
+
+
+    {
         "test_name": "background_task_metrics",
         "inbound_payload": {
             "v": [0, 1],

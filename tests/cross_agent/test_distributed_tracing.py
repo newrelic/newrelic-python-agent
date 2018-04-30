@@ -88,7 +88,7 @@ def target_wsgi_application(environ, start_response):
             assert resp.status_code == 200
 
         with MockExternalHTTPServer() as external:
-            for expected_payload_d in test_settings['outbound_payloads_d']:
+            for expected_payload_d in outbound_payloads_d:
                 make_outbound_request()
 
                 if feature_flag:

@@ -141,18 +141,21 @@ def test_distributed_tracing(test_name, inbound_payload, trusted_account_ids,
         payload = base64.b64encode(payload.encode('utf-8'))
     headers = {'X-NewRelic-Trace': payload}
 
-    @override_application_settings(override_settings)
     @validate_transaction_metrics(test_name,
             rollup_metrics=expected_metrics,
             background_task=background_task)
     @validate_transaction_event_attributes(
-            required_params, forgone_params, exact_attrs)
-    @validate_error_event_attributes(
             required_params, forgone_params, exact_attrs)
     @validate_attributes('intrinsic',
             expected_intrinsics, unexpected_intrinsics)
     def _test():
         response = test_application.get('/', headers=headers)
         assert 'X-NewRelic-App-Data' not in response.headers
+
+    if raises_exception:
+        _test = validate_error_event_attributes(
+                required_params, forgone_params, exact_attrs)(_test)
+
+    _test = override_application_settings(override_settings)(_test)
 
     _test()

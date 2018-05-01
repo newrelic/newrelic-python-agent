@@ -11,8 +11,9 @@ representing one test.
 Each test will include these fields:
 
 + `test_name`: A string representing the test name.
-+ `inbound_payload`: Dictionary representing a distributed trace payload as
-  described in the spec.
++ `inbound_payloads`: List of dictionary representing distributed trace
+  payloads as described in the spec. AcceptDistributedTracePayload should be
+  called with each payload in turn.
 + `trusted_account_ids`: List of integers. These accounts are trusted for the
   given test.
 + `exact_intrinsics`: Dictionary. Each key, value pair in the dictionary
@@ -25,7 +26,7 @@ Each test will include these fields:
   included on events or traces.
 + `expected_metrics`: List. Each list item itself is also a list of length two.
   The first item in the list is a metric name (unscoped). The second item is
-  the expected number of occurances of that metric. When a `null` is
+  the expected number of occurrences of that metric. When a `null` is
   encountered, then the metric is expected to be absent.
 
 ## Optional fields

@@ -20,11 +20,10 @@ CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures',
     'distributed_tracing'))
 
-_parameters_list = ['test_name', 'inbound_payload', 'trusted_account_ids',
+_parameters_list = ['test_name', 'inbound_payloads', 'trusted_account_ids',
         'exact_intrinsics', 'expected_intrinsics', 'unexpected_intrinsics',
         'expected_metrics', 'base_64_encoded_payload', 'background_task',
-        'raises_exception', 'feature_flag', 'second_inbound_payload',
-        'outbound_payloads_d']
+        'raises_exception', 'feature_flag', 'outbound_payloads_d']
 _parameters = ','.join(_parameters_list)
 
 
@@ -72,9 +71,9 @@ def target_wsgi_application(environ, start_response):
         except ZeroDivisionError:
             txn.record_exception()
 
-    second_inbound_payload = test_settings['second_inbound_payload']
-    if second_inbound_payload:
-        result = txn.accept_distributed_trace_payload(second_inbound_payload)
+    inbound_payloads = test_settings['inbound_payloads']
+    if len(inbound_payloads) == 2:
+        result = txn.accept_distributed_trace_payload(inbound_payloads[1])
         assert not result
 
     outbound_payloads_d = test_settings['outbound_payloads_d']
@@ -108,18 +107,17 @@ test_application = webtest.TestApp(target_wsgi_application)
 
 
 @pytest.mark.parametrize(_parameters, load_tests())
-def test_distributed_tracing(test_name, inbound_payload, trusted_account_ids,
+def test_distributed_tracing(test_name, inbound_payloads, trusted_account_ids,
         exact_intrinsics, expected_intrinsics, unexpected_intrinsics,
         expected_metrics, base_64_encoded_payload, background_task,
-        raises_exception, feature_flag, second_inbound_payload,
-        outbound_payloads_d):
+        raises_exception, feature_flag, outbound_payloads_d):
 
     global test_settings
     test_settings = {
         'test_name': test_name,
         'background_task': background_task,
         'raises_exception': raises_exception,
-        'second_inbound_payload': second_inbound_payload,
+        'inbound_payloads': inbound_payloads,
         'outbound_payloads_d': outbound_payloads_d,
         'feature_flag': feature_flag,
     }
@@ -136,7 +134,7 @@ def test_distributed_tracing(test_name, inbound_payload, trusted_account_ids,
             'intrinsic': unexpected_intrinsics}
     exact_attrs = {'agent': {}, 'user': {}, 'intrinsic': exact_intrinsics}
 
-    payload = json.dumps(inbound_payload) if inbound_payload else ''
+    payload = json.dumps(inbound_payloads[0]) if inbound_payloads else ''
     if base_64_encoded_payload:
         payload = base64.b64encode(payload.encode('utf-8'))
     headers = {'X-NewRelic-Trace': payload}

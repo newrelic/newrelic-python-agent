@@ -14,6 +14,7 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.pre_function import wrap_pre_function
 from newrelic.api.object_wrapper import callable_name, ObjectWrapper
 from newrelic.api.transaction import current_transaction
+from newrelic.core.agent import shutdown_agent
 
 
 def CeleryTaskWrapper(wrapped, application=None, name=None):
@@ -202,3 +203,11 @@ def instrument_celery_loaders_base(module):
 
     wrap_pre_function(module, 'BaseLoader.init_worker',
             force_application_activation)
+
+
+def instrument_billiard_pool(module):
+
+    def force_agent_shutdown(*args, **kwargs):
+        shutdown_agent()
+
+    wrap_pre_function(module, 'Worker._do_exit', force_agent_shutdown)

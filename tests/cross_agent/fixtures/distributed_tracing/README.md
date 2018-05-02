@@ -11,9 +11,9 @@ representing one test.
 Each test will include these fields:
 
 + `test_name`: A string representing the test name.
-+ `inbound_payloads`: List of dictionary representing distributed trace
-  payloads as described in the spec. AcceptDistributedTracePayload should be
-  called with each payload in turn.
++ `inbound_payloads`: List representing distributed trace payloads as described
+  in the spec. AcceptDistributedTracePayload should be called with each payload
+  in turn.
 + `trusted_account_ids`: List of integers. These accounts are trusted for the
   given test.
 + `exact_intrinsics`: Dictionary. Each key, value pair in the dictionary
@@ -35,7 +35,6 @@ Each test could also include these fields:
 
 + `comment`: A comment describing the test and anything that may be special
   about it.
-+ `base_64_encoded_payload`: Boolean, defaults to false. Whether the payload
   should be base64 encoded or not.
 + `background_task`: Boolean, defaults to false. Whether the test should be run
   as a background task (as opposed to a web transaction).

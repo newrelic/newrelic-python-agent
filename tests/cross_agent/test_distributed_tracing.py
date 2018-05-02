@@ -1,5 +1,4 @@
 import json
-import base64
 import os
 import pytest
 import requests
@@ -22,8 +21,8 @@ JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures',
 
 _parameters_list = ['test_name', 'inbound_payloads', 'trusted_account_ids',
         'exact_intrinsics', 'expected_intrinsics', 'unexpected_intrinsics',
-        'expected_metrics', 'base_64_encoded_payload', 'background_task',
-        'raises_exception', 'feature_flag', 'outbound_payloads_d']
+        'expected_metrics', 'background_task', 'raises_exception',
+        'feature_flag', 'outbound_payloads_d']
 _parameters = ','.join(_parameters_list)
 
 
@@ -123,8 +122,8 @@ test_application = webtest.TestApp(target_wsgi_application)
 @pytest.mark.parametrize(_parameters, load_tests())
 def test_distributed_tracing(test_name, inbound_payloads, trusted_account_ids,
         exact_intrinsics, expected_intrinsics, unexpected_intrinsics,
-        expected_metrics, base_64_encoded_payload, background_task,
-        raises_exception, feature_flag, outbound_payloads_d):
+        expected_metrics, background_task, raises_exception, feature_flag,
+        outbound_payloads_d):
 
     global test_settings
     test_settings = {
@@ -149,8 +148,6 @@ def test_distributed_tracing(test_name, inbound_payloads, trusted_account_ids,
     exact_attrs = {'agent': {}, 'user': {}, 'intrinsic': exact_intrinsics}
 
     payload = json.dumps(inbound_payloads[0]) if inbound_payloads else ''
-    if base_64_encoded_payload:
-        payload = base64.b64encode(payload.encode('utf-8'))
     headers = {'X-NewRelic-Trace': payload}
 
     @validate_transaction_metrics(test_name,

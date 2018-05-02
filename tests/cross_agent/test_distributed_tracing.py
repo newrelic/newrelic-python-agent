@@ -75,6 +75,11 @@ def target_wsgi_application(environ, start_response):
     if len(inbound_payloads) == 2:
         result = txn.accept_distributed_trace_payload(inbound_payloads[1])
         assert not result
+    elif not inbound_payloads:
+        # WebTransaction will not call accept_distributed_trace_payload when
+        # the payload is falsey. Therefore, we must call it directly here.
+        result = txn.accept_distributed_trace_payload(inbound_payloads)
+        assert not result
 
     outbound_payloads_d = test_settings['outbound_payloads_d']
     feature_flag = test_settings['feature_flag'] is not False

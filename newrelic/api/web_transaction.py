@@ -339,7 +339,7 @@ class WebTransaction(Transaction):
 
         if 'distributed_tracing' in settings.feature_flag:
             distributed_header = environ.get('HTTP_X_NEWRELIC_TRACE')
-            if distributed_header is not None:
+            if distributed_header:
                 self.accept_distributed_trace_payload(distributed_header)
         else:
             client_cross_process_id = environ.get('HTTP_X_NEWRELIC_ID')

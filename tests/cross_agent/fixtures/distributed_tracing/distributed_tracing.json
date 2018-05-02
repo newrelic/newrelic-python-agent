@@ -354,7 +354,7 @@
         "unexpected_intrinsics": [
             "parent.type", "parent.app", "parent.account",
             "parent.transportType", "grandparentId", "parentId", "nr.tripId",
-            "traceId", "priority", "sampled", "parent.transportDuration", "guid"
+            "priority", "parent.transportDuration"
         ],
         "expected_metrics": [
             ["DurationByCaller/App/1/2827902/http/all", null],
@@ -403,7 +403,7 @@
         "unexpected_intrinsics": [
             "parent.transportDuration", "parent.type", "parent.app",
             "parent.account", "parent.transportType", "grandparentId",
-            "parentId", "guid", "nr.tripId", "traceId", "priority", "sampled"
+            "parentId", "nr.tripId", "priority"
         ],
         "expected_metrics": [
             ["DurationByCaller/App/99999999999/2827902/http/all", null],
@@ -452,7 +452,7 @@
         "unexpected_intrinsics": [
             "parent.transportDuration", "parent.type", "parent.app",
             "parent.account", "parent.transportType", "grandparentId",
-            "parentId", "guid", "nr.tripId", "traceId", "priority", "sampled"
+            "parentId", "nr.tripId", "priority"
         ],
         "expected_metrics": [
             ["DurationByCaller/App/1/2827902/http/all", null],
@@ -543,7 +543,7 @@
         "unexpected_intrinsics": [
             "parent.transportDuration", "parent.type", "parent.app",
             "parent.account", "parent.transportType", "grandparentId",
-            "parentId", "guid", "nr.tripId", "traceId", "priority", "sampled"
+            "parentId", "nr.tripId", "priority"
         ],
         "expected_metrics": [
             ["DurationByCaller/App/1/2827902/http/all", null],
@@ -582,7 +582,7 @@
         "unexpected_intrinsics": [
             "parent.transportDuration", "parent.type", "parent.app",
             "parent.account", "parent.transportType", "grandparentId",
-            "parentId", "guid", "nr.tripId", "traceId", "priority", "sampled"
+            "parentId", "nr.tripId", "priority"
         ],
         "expected_metrics": [
             ["DurationByCaller/App/1/2827902/http/all", null],

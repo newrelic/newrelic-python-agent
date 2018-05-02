@@ -744,6 +744,9 @@ class Transaction(object):
     def distributed_trace_intrinsics(self):
         i_attrs = {}
 
+        if 'distributed_tracing' not in self._settings.feature_flag:
+            return i_attrs
+
         if not self.is_distributed_trace:
             return i_attrs
 

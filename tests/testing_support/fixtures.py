@@ -1646,23 +1646,35 @@ def validate_error_event_attributes(required_params={}, forgone_params={},
     """Check the error event for attributes, expect only one error to be
     present in the transaction.
     """
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
-    def _validate_error_event_attributes(wrapped, instance, args, kwargs):
-        try:
-            result = wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
+    error_data_samples = []
 
-            event_data = instance.error_events
+    @function_wrapper
+    def _validate_wrapper(wrapped, instance, args, kwargs):
 
-            check_event_attributes(
-                    event_data, required_params, forgone_params, exact_attrs)
+        @transient_function_wrapper('newrelic.core.stats_engine',
+                'StatsEngine.record_transaction')
+        def _validate_error_event_attributes(wrapped, instance, args, kwargs):
+            try:
+                result = wrapped(*args, **kwargs)
+            except:
+                raise
+            else:
 
-        return result
+                event_data = instance.error_events
+                for sample in event_data.samples:
+                    error_data_samples.append(sample)
 
-    return _validate_error_event_attributes
+                check_event_attributes(event_data, required_params,
+                        forgone_params, exact_attrs)
+
+            return result
+
+        _new_wrapper = _validate_error_event_attributes(wrapped)
+        val = _new_wrapper(*args, **kwargs)
+        assert error_data_samples
+        return val
+
+    return _validate_wrapper
 
 
 def validate_error_trace_attributes_outside_transaction(err_name,

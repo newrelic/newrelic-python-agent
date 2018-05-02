@@ -14,7 +14,7 @@ from testing_support.fixtures import (override_application_settings,
         validate_transaction_metrics, validate_transaction_event_attributes,
         validate_error_event_attributes, validate_attributes)
 from testing_support.mock_external_http_server import (
-        MockExternalHTTPServer)
+        MockExternalHTTPHResponseHeadersServer)
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures',
@@ -86,7 +86,16 @@ def target_wsgi_application(environ, start_response):
             resp = requests.get('http://localhost:%d' % external.port)
             assert resp.status_code == 200
 
-        with MockExternalHTTPServer() as external:
+            if feature_flag:
+                assert b'X-NewRelic-ID' not in resp.content
+                assert b'X-NewRelic-Transaction' not in resp.content
+                assert b'X-NewRelic-Trace' in resp.content
+            else:
+                assert b'X-NewRelic-ID' in resp.content
+                assert b'X-NewRelic-Transaction' in resp.content
+                assert b'X-NewRelic-Trace' not in resp.content
+
+        with MockExternalHTTPHResponseHeadersServer() as external:
             for expected_payload_d in outbound_payloads_d:
                 make_outbound_request()
 

@@ -66,7 +66,7 @@ class Transaction(object):
         self._state = self.STATE_PENDING
         self._settings = None
 
-        self._priority = 0
+        self._name_priority = 0
         self._group = None
         self._name = None
 
@@ -156,7 +156,6 @@ class Transaction(object):
         self.guid = '%016x' % random.getrandbits(64)
 
         # This may be overridden by processing an inbound CAT header
-        self.priority = random.random()
         self.parent_type = None
         self.parent_id = None
         self.grandparent_id = None
@@ -165,7 +164,9 @@ class Transaction(object):
         self.parent_transport_type = None
         self.parent_transport_duration = None
         self._trace_id = None
-        self.sampled = False
+        self._priority = None
+        self._sampled = None
+
         self.is_distributed_trace = False
 
         self.client_cross_process_id = None
@@ -545,6 +546,14 @@ class Transaction(object):
                     (self.background_task, profile_samples))
 
     @property
+    def sampled(self):
+        return self._sampled
+
+    @property
+    def priority(self):
+        return self._priority
+
+    @property
     def state(self):
         return self._state
 
@@ -769,8 +778,10 @@ class Transaction(object):
         i_attrs['traceId'] = self.trace_id
         i_attrs['nr.tripId'] = self.trace_id
         i_attrs['guid'] = self.guid
-        i_attrs['priority'] = self.priority
+
+        self._compute_sampled_and_priority()
         i_attrs['sampled'] = self.sampled
+        i_attrs['priority'] = self.priority
 
         return i_attrs
 
@@ -934,9 +945,18 @@ class Transaction(object):
                         len(self._profile_samples), 2))
                 self._profile_skip = 2 * self._profile_skip
 
+    def _compute_sampled_and_priority(self):
+        if self._priority is None:
+            self._priority = random.random()
+
+        if self._sampled is None:
+            self._sampled = self._application.compute_sampled(self.priority)
+            if self._sampled:
+                self._priority += 1
+
     def _freeze_path(self):
         if self._frozen_path is None:
-            self._priority = None
+            self._name_priority = None
 
             if self._group == 'Uri' and self._name != '/':
                 # Apply URL normalization rules. We would only have raw
@@ -998,14 +1018,15 @@ class Transaction(object):
             return
 
         try:
+            self._compute_sampled_and_priority()
             data = dict(
                 ty='App',
                 ac=account_id,
                 ap=application_id,
                 id=self.guid,
                 tr=self.trace_id,
-                pr=self.priority,
                 sa=self.sampled,
+                pr=self.priority,
                 ti=int(time.time() * 1000.0),
             )
 
@@ -1092,8 +1113,8 @@ class Transaction(object):
             self.parent_transport_type = transport_type
             self.parent_transport_duration = time.time() - transport_start
             self._trace_id = data.get('tr')
-            self.priority = data.get('pr', self.priority)
-            self.sampled = data.get('sa', self.sampled)
+            self._priority = data.get('pr', self._priority)
+            self._sampled = data.get('sa', self._sampled)
 
             if grandparent_id:
                 self.grandparent_id = grandparent_id
@@ -1241,14 +1262,14 @@ class Transaction(object):
         # same or greater than existing priority. If no priority
         # always override the existing name/group if not frozen.
 
-        if self._priority is None:
+        if self._name_priority is None:
             return
 
-        if priority is not None and priority < self._priority:
+        if priority is not None and priority < self._name_priority:
             return
 
         if priority is not None:
-            self._priority = priority
+            self._name_priority = priority
 
         # The name can be a URL for the default case. URLs are
         # supposed to be ASCII but can get a URL with illegal
@@ -1585,7 +1606,7 @@ class Transaction(object):
         print >> file, 'Transaction Name: %s' % (
                 self._name)
         print >> file, 'Name Priority: %r' % (
-                self._priority)
+                self._name_priority)
         print >> file, 'Frozen Path: %s' % (
                 self._frozen_path)
         print >> file, 'AutoRUM Disabled: %s' % (

@@ -145,6 +145,9 @@ class Application(object):
 
         return 0.0
 
+    def compute_sampled(self, priority):
+        return False
+
     def dump(self, file):
         """Dumps details about the application to the file object."""
 

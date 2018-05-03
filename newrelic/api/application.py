@@ -127,11 +127,12 @@ class Application(object):
             return self._agent.normalize_name(self._name, name, rule_type)
         return name, False
 
-    def sampling_probability(self):
-        if not self.active:
-            return 0.0
+    def compute_sampled(self, priority):
+        dist_tracing_en = 'distributed_tracing' in self.settings.feature_flag
+        if not(self.active) or not(dist_tracing_en):
+            return False
 
-        return self._agent.sampling_probability(self._name)
+        return self._agent.compute_sampled(self._name, priority)
 
 
 def application_instance(name=None):

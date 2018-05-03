@@ -505,6 +505,7 @@ _settings.agent_limits.synthetics_transactions = 20
 _settings.agent_limits.data_compression_threshold = 64 * 1024
 _settings.agent_limits.data_compression_level = None
 _settings.agent_limits.max_outstanding_traces = 100
+_settings.agent_limits.sampling_target = 10
 
 _settings.console.listener_socket = None
 _settings.console.allow_interpreter_cmd = False

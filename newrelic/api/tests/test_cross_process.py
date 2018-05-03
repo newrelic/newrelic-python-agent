@@ -38,6 +38,9 @@ class TestCase(unittest.TestCase):
             def record_transaction(self, *args, **kwargs):
                 pass
 
+            def compute_sampled(self, priority):
+                return False
+
         application = Application()
 
         application.global_settings = apply_server_side_settings()

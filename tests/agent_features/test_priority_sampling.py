@@ -19,10 +19,10 @@ def test_priority_used_in_transaction_events(first_transaction_saved):
         stats_engine = core_application_stats_engine()
 
         with BackgroundTask(application(), name='T1') as txn:
-            txn.priority = first_priority
+            txn._priority = first_priority
 
         with BackgroundTask(application(), name='T2') as txn:
-            txn.priority = second_priority
+            txn._priority = second_priority
 
         transaction_events = list(stats_engine.transaction_events.samples)
         assert len(transaction_events) == 1
@@ -48,14 +48,14 @@ def test_priority_used_in_transaction_error_events(first_transaction_saved):
     @reset_core_stats_engine()
     def _test():
         with BackgroundTask(application(), name='T1') as txn:
-            txn.priority = first_priority
+            txn._priority = first_priority
             try:
                 raise ValueError('OOPS')
             except ValueError:
                 txn.record_exception()
 
         with BackgroundTask(application(), name='T2') as txn:
-            txn.priority = second_priority
+            txn._priority = second_priority
             try:
                 raise ValueError('OOPS')
             except ValueError:
@@ -88,11 +88,11 @@ def test_priority_used_in_transaction_custom_events(first_transaction_saved):
     @reset_core_stats_engine()
     def _test():
         with BackgroundTask(application(), name='T1') as txn:
-            txn.priority = first_priority
+            txn._priority = first_priority
             txn.record_custom_event('foobar', {'foo': 'bar'})
 
         with BackgroundTask(application(), name='T2') as txn:
-            txn.priority = second_priority
+            txn._priority = second_priority
             txn.record_custom_event('barbaz', {'foo': 'bar'})
 
         # Stats engine

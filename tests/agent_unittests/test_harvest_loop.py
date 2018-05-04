@@ -62,7 +62,7 @@ def test_application_harvest():
     assert endpoints_called[-2] == 'metric_data'
 
 
-def test_last_harvest_transaction_count():
+def test_transaction_count():
     settings = global_settings()
     settings.developer_mode = True
     settings.collect_custom_events = False
@@ -127,15 +127,18 @@ def test_last_harvest_transaction_count():
     app.record_transaction(node)
 
     # Harvest has not run yet
-    assert app._last_harvest_transaction_count == 0
+    assert app._transaction_count == 1
 
     app.harvest()
 
-    # Harvested 1 transaction
-    assert app._last_harvest_transaction_count == 1
+    # Harvest resets the transaction count
+    assert app._transaction_count == 0
 
+    # Record a transaction
     app.record_transaction(node)
+    assert app._transaction_count == 1
+
     app.harvest()
 
-    # Harvested 1 transaction
-    assert app._last_harvest_transaction_count == 1
+    # Harvest resets the transaction count
+    assert app._transaction_count == 0

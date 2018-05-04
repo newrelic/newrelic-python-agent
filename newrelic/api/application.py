@@ -127,6 +127,13 @@ class Application(object):
             return self._agent.normalize_name(self._name, name, rule_type)
         return name, False
 
+    def compute_sampled(self, priority):
+        if (not self.active or
+                'distributed_tracing' not in self.settings.feature_flag):
+            return False
+
+        return self._agent.compute_sampled(self._name, priority)
+
 
 def application_instance(name=None):
     return Application._instance(name)

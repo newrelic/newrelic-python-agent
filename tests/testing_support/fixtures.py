@@ -753,7 +753,7 @@ def validate_database_duration():
 
             assert transaction_events.num_seen == 1
 
-            event = transaction_events.samples[0]
+            event = next(iter(transaction_events.samples))
             intrinsics = event[0]
 
             # As long as we are sending 'Database' metrics, then
@@ -833,7 +833,8 @@ def check_event_attributes(event_data, required_params, forgone_params,
     in the data set.
     """
 
-    intrinsics, user_attributes, agent_attributes = event_data.samples[0]
+    intrinsics, user_attributes, agent_attributes = next(iter(
+            event_data.samples))
 
     if required_params:
         for param in required_params['agent']:
@@ -949,7 +950,7 @@ def validate_application_error_event_count(num_errors):
         else:
 
             stats = core_application_stats_engine(None)
-            assert len(stats.error_events.samples) == num_errors
+            assert len(list(stats.error_events.samples)) == num_errors
 
         return result
 
@@ -1368,7 +1369,7 @@ def validate_error_event_collector_json(num_errors=1):
             raise
         else:
 
-            samples = instance.error_events.samples
+            samples = list(instance.error_events.samples)
             s_info = instance.error_events_sampling_info()
             agent_run_id = 666
 
@@ -1416,7 +1417,7 @@ def validate_transaction_event_collector_json():
         except:
             raise
         else:
-            samples = instance.transaction_events.samples
+            samples = list(instance.transaction_events.samples)
 
             # recreate what happens right before data is sent to the collector
             # in data_collector.py during the harvest via analytic_event_data
@@ -1462,7 +1463,7 @@ def validate_custom_event_collector_json(num_events=1):
 
             agent_run_id = 666
             sampling_info = stats.custom_events.sampling_info
-            samples = stats.custom_events.samples
+            samples = list(stats.custom_events.samples)
 
             # Emulate the payload used in data_collector.py
 
@@ -1640,26 +1641,40 @@ def validate_browser_attributes(required_params={}, forgone_params={}):
     return _validate_browser_attributes
 
 
-def validate_error_event_attributes(required_params={}, forgone_params={}):
+def validate_error_event_attributes(required_params={}, forgone_params={},
+        exact_attrs={}):
     """Check the error event for attributes, expect only one error to be
     present in the transaction.
     """
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
-    def _validate_error_event_attributes(wrapped, instance, args, kwargs):
-        try:
-            result = wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
+    error_data_samples = []
 
-            event_data = instance.error_events
+    @function_wrapper
+    def _validate_wrapper(wrapped, instance, args, kwargs):
 
-            check_event_attributes(event_data, required_params, forgone_params)
+        @transient_function_wrapper('newrelic.core.stats_engine',
+                'StatsEngine.record_transaction')
+        def _validate_error_event_attributes(wrapped, instance, args, kwargs):
+            try:
+                result = wrapped(*args, **kwargs)
+            except:
+                raise
+            else:
 
-        return result
+                event_data = instance.error_events
+                for sample in event_data.samples:
+                    error_data_samples.append(sample)
 
-    return _validate_error_event_attributes
+                check_event_attributes(event_data, required_params,
+                        forgone_params, exact_attrs)
+
+            return result
+
+        _new_wrapper = _validate_error_event_attributes(wrapped)
+        val = _new_wrapper(*args, **kwargs)
+        assert error_data_samples
+        return val
+
+    return _validate_wrapper
 
 
 def validate_error_trace_attributes_outside_transaction(err_name,
@@ -1957,7 +1972,7 @@ def validate_transaction_error_event_count(num_errors=1):
             raise
         else:
 
-            error_events = instance.error_events.samples
+            error_events = list(instance.error_events.samples)
             assert len(error_events) == num_errors
 
         return result
@@ -2237,7 +2252,7 @@ def validate_custom_event_in_application_stats_engine(required_event):
             stats = core_application_stats_engine(None)
             assert stats.custom_events.num_samples == 1
 
-            custom_event = stats.custom_events.samples[0]
+            custom_event = next(iter(stats.custom_events.samples))
             _validate_custom_event(custom_event, required_event)
 
         return result

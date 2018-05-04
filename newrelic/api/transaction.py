@@ -1113,8 +1113,10 @@ class Transaction(object):
             self.parent_transport_type = transport_type
             self.parent_transport_duration = time.time() - transport_start
             self._trace_id = data.get('tr')
-            self._priority = data.get('pr', self._priority)
-            self._sampled = data.get('sa', self._sampled)
+
+            if 'pr' in data:
+                self._priority = data.get('pr')
+                self._sampled = data.get('sa', self._sampled)
 
             if grandparent_id:
                 self.grandparent_id = grandparent_id

@@ -627,6 +627,54 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             assert self.transaction.sampled is False
             assert self.transaction.priority == -1.0
 
+    def test_sampled_true_and_priority_missing(self):
+        payload = {
+            'v': [0, 1],
+            'd': {
+                'ty': 'Mobile',
+                'ac': '1',
+                'ap': '2827902',
+                'pa': '5e5733a911cfbc73',
+                'id': '7d3efb1b173fecfa',
+                'tr': 'd6b4ba0c3a712ca',
+                'ti': 1518469636035,
+                'sa': True,
+            }
+        }
+
+        with self.transaction:
+            self.transaction.accept_distributed_trace_payload(payload)
+
+            # If priority is missing, sampled should not be set
+            assert self.transaction.sampled is None
+
+            # Priority should not be set if missing
+            assert self.transaction.priority is None
+
+    def test_priority_but_sampled_missing(self):
+        payload = {
+            'v': [0, 1],
+            'd': {
+                'ty': 'Mobile',
+                'ac': '1',
+                'ap': '2827902',
+                'pa': '5e5733a911cfbc73',
+                'id': '7d3efb1b173fecfa',
+                'tr': 'd6b4ba0c3a712ca',
+                'ti': 1518469636035,
+                'pr': 0.8,
+            }
+        }
+
+        with self.transaction:
+            self.transaction.accept_distributed_trace_payload(payload)
+
+            # Sampled remains uncomputed
+            assert self.transaction.sampled is None
+
+            # Priority should be set to payload priority
+            assert self.transaction.priority == 0.8
+
     def test_sampled_becomes_false(self):
         with self.transaction:
             # priority forced to -1.0 to ensure that .sampled becomes False

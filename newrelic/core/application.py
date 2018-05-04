@@ -57,9 +57,12 @@ class Application(object):
         self._active_session = None
         self._harvest_enabled = False
 
-        self._last_harvest_transaction_count = 0
         self._transaction_count = 0
+        self._transaction_sampled_count = 0
         self._last_transaction = 0.0
+        self._min_sampling_priority = 0.0
+        # Before registration, do not collect any "sampled" transactions
+        self._max_sampled = 0.0
 
         self._global_events_account = 0
 
@@ -135,6 +138,13 @@ class Application(object):
         return self.configuration is not None
 
     def compute_sampled(self, priority):
+        with self._stats_lock:
+            if self._transaction_sampled_count >= self._max_sampled:
+                return False
+            elif priority >= self._min_sampling_priority:
+                self._transaction_sampled_count += 1
+                return True
+
         return False
 
     def dump(self, file):
@@ -435,6 +445,13 @@ class Application(object):
 
             with self._stats_lock:
                 self._stats_engine.reset_stats(configuration)
+
+                # For the first harvest, collect a max of self._sampling_target
+                # number of "sampled" transactions.
+
+                self._sampling_target = (
+                        configuration.agent_limits.sampling_target)
+                self._max_sampled = self._sampling_target
 
             with self._stats_custom_lock:
                 self._stats_custom_engine.reset_stats(configuration)
@@ -1269,7 +1286,18 @@ class Application(object):
 
                 with self._stats_lock:
                     transaction_count = self._transaction_count
-                    self._last_harvest_transaction_count = transaction_count
+                    if transaction_count:
+                        sampling_ratio = (
+                                float(self._sampling_target) /
+                                transaction_count)
+                        sampling_ratio = min(sampling_ratio, 1.0)
+                        self._min_sampling_priority = (1.0 - sampling_ratio)
+
+                    # For subsequent harvests, collect a max of twice the
+                    # self._sampling_target value.
+
+                    self._max_sampled = 2 * self._sampling_target
+                    self._transaction_sampled_count = 0
                     self._transaction_count = 0
                     self._last_transaction = 0.0
 

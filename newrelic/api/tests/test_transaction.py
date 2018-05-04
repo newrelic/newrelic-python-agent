@@ -142,9 +142,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         self.transaction._settings.cross_application_tracer.enabled = True
         self.transaction._settings.feature_flag = set(['distributed_tracing'])
 
-        self.application._sampled_count = 0
-        self.application._harvest_count = 0
-        self.application._last_harvest_transaction_count = 0
+        self.application._transaction_sampled_count = 0
+        self.application._min_sampling_priority = 0.0
 
     def tearDown(self):
         if current_transaction():
@@ -520,6 +519,11 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         with self.transaction:
             assert not self.transaction.create_distributed_tracing_payload()
 
+    def test_create_payload_cat_disabled(self):
+        self.transaction._settings.cross_application_tracer.enabled = False
+        with self.transaction:
+            assert not self.transaction.create_distributed_tracing_payload()
+
     def test_accept_payload_prior_to_connect(self):
         self.transaction.enabled = False
         with self.transaction:
@@ -595,6 +599,14 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
                     'AcceptPayload/ParseException'
                     in self.transaction._transaction_metrics)
 
+    def test_accept_version_missing(self):
+        with self.transaction:
+            payload = {
+                'cookies': 'om nom nom',
+            }
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert not result
+
     def test_create_after_accept_correct_payload(self):
         with self.transaction:
             inbound_payload = {
@@ -627,6 +639,96 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             assert self.transaction.sampled is False
             assert self.transaction.priority == -1.0
 
+    def test_sampled_create_payload(self):
+        with self.transaction:
+            self.transaction._priority = 1.0
+            payload = self.transaction.create_distributed_tracing_payload()
+
+            assert payload['d']['sa'] is True
+            assert self.transaction.sampled is True
+
+            assert payload['d']['pr'] == 2.0
+            assert self.transaction.priority == 2.0
+
+    def test_sampled_accept_payload(self):
+        payload = {
+            'v': [0, 1],
+            'd': {
+                'ty': 'Mobile',
+                'ac': '1',
+                'ap': '2827902',
+                'pa': '5e5733a911cfbc73',
+                'id': '7d3efb1b173fecfa',
+                'tr': 'd6b4ba0c3a712ca',
+                'ti': 1518469636035,
+                'sa': True,
+                'pr': 1.8
+            }
+        }
+
+        with self.transaction:
+            self.transaction.accept_distributed_trace_payload(payload)
+
+            assert self.transaction.sampled is True
+            assert self.transaction.priority == 1.8
+
+    def test_sampled_true_and_priority_missing(self):
+        payload = {
+            'v': [0, 1],
+            'd': {
+                'ty': 'Mobile',
+                'ac': '1',
+                'ap': '2827902',
+                'pa': '5e5733a911cfbc73',
+                'id': '7d3efb1b173fecfa',
+                'tr': 'd6b4ba0c3a712ca',
+                'ti': 1518469636035,
+                'sa': True,
+            }
+        }
+
+        with self.transaction:
+            self.transaction.accept_distributed_trace_payload(payload)
+
+            # If priority is missing, sampled should not be set
+            assert self.transaction.sampled is None
+
+            # Priority should not be set if missing
+            assert self.transaction.priority is None
+
+    def test_priority_but_sampled_missing(self):
+        payload = {
+            'v': [0, 1],
+            'd': {
+                'ty': 'Mobile',
+                'ac': '1',
+                'ap': '2827902',
+                'pa': '5e5733a911cfbc73',
+                'id': '7d3efb1b173fecfa',
+                'tr': 'd6b4ba0c3a712ca',
+                'ti': 1518469636035,
+                'pr': 0.8,
+            }
+        }
+
+        with self.transaction:
+            self.transaction.accept_distributed_trace_payload(payload)
+
+            # Sampled remains uncomputed
+            assert self.transaction.sampled is None
+
+            # Priority should be set to payload priority
+            assert self.transaction.priority == 0.8
+
+    def test_sampled_becomes_true(self):
+        with self.transaction:
+            self.transaction._priority = 1.0
+            self.transaction._compute_sampled_and_priority()
+            assert self.transaction.sampled is True
+            assert self.transaction.priority == 2.0
+            assert self.transaction.sampled is True
+            assert self.transaction.priority == 2.0
+
     def test_sampled_becomes_false(self):
         with self.transaction:
             # priority forced to -1.0 to ensure that .sampled becomes False
@@ -635,6 +737,36 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
             assert self.transaction.sampled is False
             assert self.transaction.priority == -1.0
+            assert self.transaction.sampled is False
+            assert self.transaction.priority == -1.0
+
+    def test_compute_sampled_true_multiple_calls(self):
+        with self.transaction:
+            # Force sampled to become true
+            self.transaction._priority = 1.0
+
+            self.transaction._compute_sampled_and_priority()
+
+            assert self.transaction.sampled is True
+            assert self.transaction.priority == 2.0
+
+            self.transaction._compute_sampled_and_priority()
+
+            assert self.transaction.sampled is True
+            assert self.transaction.priority == 2.0
+
+    def test_compute_sampled_false_multiple_calls(self):
+        with self.transaction:
+            # Force sampled to become true
+            self.transaction._priority = -1.0
+
+            self.transaction._compute_sampled_and_priority()
+
+            assert self.transaction.sampled is False
+            assert self.transaction.priority == -1.0
+
+            self.transaction._compute_sampled_and_priority()
+
             assert self.transaction.sampled is False
             assert self.transaction.priority == -1.0
 

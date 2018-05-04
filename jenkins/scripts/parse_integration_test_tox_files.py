@@ -45,6 +45,12 @@ def parse_args():
         help=('The jenkins workspace, helpful for finding the test files, '
               'defaults to current working directory'),
     )
+    parser.add_argument('--include-cext',
+        default=True,
+        choices=[True, False],
+        type=str2bool,
+        help='Include tox environments that contain `with-extensions`'
+    )
 
     args = parser.parse_args()
 
@@ -62,7 +68,7 @@ def test_dirs(workspace):
             yield name
 
 
-def get_envs(tox_file, restrict_to=None):
+def get_envs(tox_file, restrict_to=None, include_cext=True):
     """
     Use the tox API to get the list of environments defined in the given tox
     file. If requesting most_recent_only, return only those environments that
@@ -71,6 +77,8 @@ def get_envs(tox_file, restrict_to=None):
     envs = tox.config.parseconfig(['-c', tox_file]).envlist
     if restrict_to:
         envs = [env for env in envs if restrict_to in env]
+    if not include_cext:
+        envs = [env for env in envs if 'with-extensions' not in env]
     return envs
 
 
@@ -157,7 +165,8 @@ def parse_tox_file(tox_path):
     return most_recent, is_disabled, max_group_size
 
 
-def get_tests(test_suffix, most_recent_only, max_group_size_global, test_dir):
+def get_tests(test_suffix, most_recent_only, max_group_size_global, test_dir,
+        include_cext=True):
     """
     Get a list of tests to run found in the given test_dir. Returns list of
     lists representing a test.
@@ -175,7 +184,8 @@ def get_tests(test_suffix, most_recent_only, max_group_size_global, test_dir):
     restrict_to = most_recent_only and most_recent
     max_group_size = max_group_size_local or max_group_size_global
 
-    test_envs = get_envs(tox_path, restrict_to=restrict_to)
+    test_envs = get_envs(tox_path, restrict_to=restrict_to,
+            include_cext=include_cext)
     for env_group, group_name in possibly_group_envs(test_envs,
             max_group_size):
         test_name = create_test_name(test_dir, group_name, test_suffix)
@@ -196,12 +206,13 @@ def main(args):
     most_recent_only = str2bool(args.most_recent_only)
     max_group_size = args.max_group_size
     workspace = args.workspace or os.getcwd()
+    include_cext = args.include_cext
 
     tests = []
 
     for test_dir in test_dirs(workspace):
         tests.extend(get_tests(test_suffix, most_recent_only, max_group_size,
-            test_dir))
+            test_dir, include_cext))
     return json.dumps(tests)
 
 

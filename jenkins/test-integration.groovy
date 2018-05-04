@@ -153,7 +153,7 @@ use(extensions) {
                     notifyAborted true
                 }
             } else if (jobType == 'develop') {
-                slackQuiet(slackChannelPrivate + ',' + slackChannelPublic) {
+                slackQuiet(slackChannelPrivate) {
                     notifyNotBuilt true
                     notifyAborted true
                 }

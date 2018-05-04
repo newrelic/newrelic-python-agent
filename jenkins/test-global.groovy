@@ -5,7 +5,6 @@ String repoGHE = 'python_agent'
 String repoFull = "${organization}/${repoGHE}"
 String integTestSuffix = "__pr-integration-test"
 String slackChannelPrivate = '#python-dev'
-String slackChannelPublic = '#python-agent'
 String gitBranch
 
 

@@ -969,6 +969,14 @@ class TestDatabase(unittest.TestCase):
 
 class TestDatabaseHelpers(unittest.TestCase):
 
+    # REGRESSION: we still correctly identify the target even if there's a
+    #             trailing semicolon
+    def test_ignores_trailing_semicolon(self):
+        s = SQLStatement('select * from foo;')
+        self.assertEqual(s.uncommented, 'select * from foo;')
+        self.assertEqual(s.operation, 'select')
+        self.assertEqual(s.target, 'foo')
+
     def test_explain_plan_results(self):
         columns = ['QUERY PLAN']
         rows = [{'QUERY PLAN': 'Index scan'}]

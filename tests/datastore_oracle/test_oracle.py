@@ -66,9 +66,10 @@ def test_connection_pools():
     _execute(connection)
 
 
+@pytest.mark.parametrize('unwrapped', (True, False))
 @pytest.mark.parametrize('method', ('drop', 'release'))
 @background_task(name='test_connection_pool_methods')
-def test_connection_pool_methods(method):
+def test_connection_pool_methods(method, unwrapped):
     pool = cx_Oracle.SessionPool(
             user='SYSTEM', password='password',
             min=1, max=2, increment=1, dsn=dsn)
@@ -79,6 +80,9 @@ def test_connection_pool_methods(method):
     # the pool. These methods should unwrap the proxy prior to calling the
     # oracle library.
     method = getattr(pool, method)
+
+    if unwrapped:
+        connection = connection.__wrapped__
 
     # This should not generate an exception
     method(connection)

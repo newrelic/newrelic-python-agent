@@ -398,6 +398,7 @@ def _parse_operation(sql):
 
 
 def _parse_target(sql, operation):
+    sql = sql.rstrip(';')
     parse = _operation_table.get(operation, None)
     return parse and parse(sql) or ''
 

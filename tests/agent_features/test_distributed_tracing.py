@@ -38,7 +38,7 @@ parent_info = {
     'parent_type': payload['d']['ty'],
     'parent_account': payload['d']['ac'],
     'parent_app': payload['d']['ap'],
-    'parent_transport_type': 'http'
+    'parent_transport_type': 'HTTP'
 }
 
 
@@ -56,7 +56,7 @@ def target_wsgi_application(environ, start_response):
     assert txn.parent_type == 'App'
     assert txn.parent_app == '2827902'
     assert txn.parent_account == '1'
-    assert txn.parent_transport_type == 'http'
+    assert txn.parent_transport_type == 'HTTP'
     assert isinstance(txn.parent_transport_duration, float)
     assert txn._trace_id == 'd6b4ba0c3a712ca'
     assert txn.priority == 10.001
@@ -98,7 +98,7 @@ def test_distributed_trace_attributes(accept_payload, has_grandparent):
             'parent.type': 'Mobile',
             'parent.app': '2827902',
             'parent.account': '332029',
-            'parent.transportType': 'http',
+            'parent.transportType': 'HTTP',
             'parentId': '7d3efb1b173fecfa',
             'traceId': 'd6b4ba0c3a712ca',
         }}

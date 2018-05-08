@@ -27,6 +27,7 @@ except ImportError:
 
 DEFAULT_RESERVOIR_SIZE = 1200
 ERROR_EVENT_RESERVOIR_SIZE = 100
+SPAN_EVENT_RESERVOIR_SIZE = 1000
 
 # settings that should be completely ignored if set server side
 IGNORED_SERVER_SIDE_SETTINGS = ['utilization.logical_processors',
@@ -440,6 +441,9 @@ _settings.transaction_events.attributes.include = []
 
 _settings.custom_insights_events.enabled = True
 _settings.custom_insights_events.max_samples_stored = DEFAULT_RESERVOIR_SIZE
+
+_settings.span_events.enabled = True
+_settings.span_events.max_samples_stored = SPAN_EVENT_RESERVOIR_SIZE
 
 _settings.transaction_tracer.enabled = True
 _settings.transaction_tracer.transaction_threshold = None

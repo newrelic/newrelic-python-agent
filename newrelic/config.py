@@ -420,6 +420,10 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'custom_insights_events.max_samples_stored',
                      'getint', None)
+    _process_setting(section, 'span_events.enabled',
+                     'getboolean', None)
+    _process_setting(section, 'span_events.max_samples_stored',
+                     'getint', None)
     _process_setting(section, 'local_daemon.socket_path',
                      'get', None)
     _process_setting(section, 'local_daemon.synchronous_startup',

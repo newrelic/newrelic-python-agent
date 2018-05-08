@@ -529,6 +529,11 @@ SELECT_PARSE_TESTS = [
     ('schema.table', 'select'),
     '''SELECT * from `schema`.`table`'''
 ),
+(
+    # regression to ensure ";" doesn't get included with the target
+    ('foo', 'select'),
+    '''select * from foo;'''
+)
 ]
 
 DELETE_PARSE_TESTS = [

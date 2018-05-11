@@ -40,7 +40,7 @@ class CommonUtilization(object):
             resp.raise_for_status()
         except Exception as e:
             resp = None
-            _logger.debug('Error fetching %s data from %r: %r',
+            _logger.debug('Unable to fetch %s data from %r: %r',
                     cls.VENDOR_NAME, cls.METADATA_URL, e)
 
         return resp

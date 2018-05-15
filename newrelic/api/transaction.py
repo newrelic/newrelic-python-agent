@@ -1045,7 +1045,7 @@ class Transaction(object):
             self._record_supportability('Supportability/DistributedTrace/'
                     'CreatePayload/Exception')
 
-    def accept_distributed_trace_payload(self, payload, transport_type='http'):
+    def accept_distributed_trace_payload(self, payload, transport_type='HTTP'):
         if not self.enabled:
             return False
 

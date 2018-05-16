@@ -27,18 +27,27 @@ class TimeTrace(object):
         self.should_record_segment_params = False
 
         if transaction:
+
             # Don't do further tracing of transaction if
             # it has been explicitly stopped.
-            if transaction.stopped:
+            if transaction.stopped or not transaction.enabled:
                 self.transaction = None
                 return
 
-            self.parent = self.transaction.active_node()
+            self.parent = transaction.active_node()
 
             # parent shall track children immediately
-            if (self.parent is not None and
-                    not self.parent.terminal_node()):
-                self.parent.increment_child_count()
+            if self.parent is not None:
+                # The parent may be exited if the stack is not consistent. This
+                # can occur when using ensure_future to schedule coroutines
+                # instead of using async/await keywords. In those cases, we
+                # must not trace.
+                if self.parent.exited:
+                    self.parent = None
+                    self.transaction = None
+                    return
+                elif not self.parent.terminal_node():
+                    self.parent.increment_child_count()
 
             self.should_record_segment_params = (
                     transaction.should_record_segment_params)

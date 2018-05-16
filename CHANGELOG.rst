@@ -1,5 +1,5 @@
-unreleased
-----------
+3.2.1 (2018-05-16)
+------------------
 
 - Do not run explain plans for psycopg2 connections using the `async_` kwarg
 

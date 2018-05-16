@@ -295,3 +295,38 @@ def convert_to_cat_metadata_value(nr_headers):
     payload = json_encode(nr_headers)
     cat_linking_value = base64_encode(payload)
     return cat_linking_value
+
+
+class DistributedTracePayload(dict):
+
+    version = (0, 1)
+
+    def text(self):
+        return json_encode(self)
+
+    @classmethod
+    def from_text(cls, value):
+        d = json_decode(value)
+        return cls(d)
+
+    def http_safe(self):
+        return base64_encode(self.text())
+
+    @classmethod
+    def from_http_safe(cls, value):
+        text = base64_decode(value)
+        return cls.from_text(text)
+
+    @classmethod
+    def decode(cls, payload):
+        if isinstance(payload, dict):
+            return cls(payload)
+
+        decoders = (cls.from_http_safe, cls.from_text)
+        for decoder in decoders:
+            try:
+                payload = decoder(payload)
+            except:
+                pass
+            else:
+                return payload

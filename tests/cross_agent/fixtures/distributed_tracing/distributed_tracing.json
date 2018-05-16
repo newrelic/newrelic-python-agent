@@ -1,0 +1,817 @@
+[
+    {
+        "test_name": "sanity_check",
+        "inbound_payloads": [
+            {
+                "v": [0, 1],
+                "d": {
+                    "ac": "1",
+                    "ap": "2827902",
+                    "id": "7d3efb1b173fecfa",
+                    "pa": "5e5733a911cfbc73",
+                    "pr": 10.001,
+                    "sa": true,
+                    "ti": 1518469636035,
+                    "tr": "d6b4ba0c3a712ca",
+                    "ty": "App"
+                }
+            }
+        ],
+        "trusted_account_ids": [1],
+        "exact_intrinsics": {
+            "parent.type": "App",
+            "parent.app": "2827902",
+            "parent.account": "1",
+            "parent.transportType": "HTTP",
+            "grandparentId": "5e5733a911cfbc73",
+            "parentId": "7d3efb1b173fecfa",
+            "nr.tripId": "d6b4ba0c3a712ca",
+            "traceId": "d6b4ba0c3a712ca",
+            "priority": 10.001,
+            "sampled": true
+        },
+        "expected_intrinsics": ["parent.transportDuration", "guid"],
+        "unexpected_intrinsics": [],
+        "expected_metrics": [
+            ["DurationByCaller/App/1/2827902/HTTP/all", 1],
+            ["DurationByCaller/App/1/2827902/HTTP/allWeb", 1],
+            ["DurationByCaller/App/1/2827902/HTTP/allOther", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/all", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allWeb", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allOther", null],
+            ["TransportDuration/App/1/2827902/HTTP/all", 1],
+            ["TransportDuration/App/1/2827902/HTTP/allWeb", 1],
+            ["TransportDuration/App/1/2827902/HTTP/allOther", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Success", 1],
+            ["Supportability/DistributedTrace/AcceptPayload/Exception", null],
+            ["Supportability/DistributedTrace/AcceptPayload/ParseException", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/CreateBeforeAccept", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Multiple", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/MajorVersion", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Null", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/UntrustedAccount", null],
+            ["Supportability/DistributedTrace/CreatePayload/Success", null],
+            ["Supportability/DistributedTrace/CreatePayload/Exception", null]
+        ]
+    },
+
+    {
+        "test_name": "base_64_encoded_payload",
+        "inbound_payloads": [
+            "eyJ2IjogWzAsIDFdLCAiZCI6IHsiYWMiOiAiMSIsICJhcCI6ICIyODI3OTAyIiwgImlkIjogIjdkM2VmYjFiMTczZmVjZmEiLCAicGEiOiAiNWU1NzMzYTkxMWNmYmM3MyIsICJwciI6IDEwLjAwMSwgInNhIjogdHJ1ZSwgInRpIjogMTUxODQ2OTYzNjAzNSwgInRyIjogImQ2YjRiYTBjM2E3MTJjYSIsICJ0eSI6ICJBcHAifX0="
+        ],
+        "trusted_account_ids": [1],
+        "exact_intrinsics": {
+            "parent.type": "App",
+            "parent.app": "2827902",
+            "parent.account": "1",
+            "parent.transportType": "HTTP",
+            "grandparentId": "5e5733a911cfbc73",
+            "parentId": "7d3efb1b173fecfa",
+            "nr.tripId": "d6b4ba0c3a712ca",
+            "traceId": "d6b4ba0c3a712ca",
+            "priority": 10.001,
+            "sampled": true
+        },
+        "expected_intrinsics": ["parent.transportDuration", "guid"],
+        "unexpected_intrinsics": [],
+        "expected_metrics": [
+            ["DurationByCaller/App/1/2827902/HTTP/all", 1],
+            ["DurationByCaller/App/1/2827902/HTTP/allWeb", 1],
+            ["DurationByCaller/App/1/2827902/HTTP/allOther", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/all", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allWeb", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allWebOther", null],
+            ["TransportDuration/App/1/2827902/HTTP/all", 1],
+            ["TransportDuration/App/1/2827902/HTTP/allWeb", 1],
+            ["TransportDuration/App/1/2827902/HTTP/allOther", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Success", 1],
+            ["Supportability/DistributedTrace/AcceptPayload/Exception", null],
+            ["Supportability/DistributedTrace/AcceptPayload/ParseException", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/CreateBeforeAccept", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Multiple", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/MajorVersion", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Null", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/UntrustedAccount", null],
+            ["Supportability/DistributedTrace/CreatePayload/Success", null],
+            ["Supportability/DistributedTrace/CreatePayload/Exception", null]
+        ]
+    },
+
+    {
+        "test_name": "no_parent_id_in_payload",
+        "inbound_payloads": [
+            {
+                "v": [0, 1],
+                "d": {
+                    "ac": "1",
+                    "ap": "2827902",
+                    "id": "7d3efb1b173fecfa",
+                    "pr": 10.001,
+                    "sa": true,
+                    "ti": 1518469636035,
+                    "tr": "d6b4ba0c3a712ca",
+                    "ty": "App"
+                }
+            }
+        ],
+        "trusted_account_ids": [1],
+        "exact_intrinsics": {
+            "parent.type": "App",
+            "parent.app": "2827902",
+            "parent.account": "1",
+            "parent.transportType": "HTTP",
+            "parentId": "7d3efb1b173fecfa",
+            "nr.tripId": "d6b4ba0c3a712ca",
+            "traceId": "d6b4ba0c3a712ca",
+            "priority": 10.001,
+            "sampled": true
+        },
+        "expected_intrinsics": ["parent.transportDuration", "guid"],
+        "unexpected_intrinsics": ["grandparentId"],
+        "expected_metrics": [
+            ["DurationByCaller/App/1/2827902/HTTP/all", 1],
+            ["DurationByCaller/App/1/2827902/HTTP/allWeb", 1],
+            ["DurationByCaller/App/1/2827902/HTTP/allOther", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/all", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allWeb", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allOther", null],
+            ["TransportDuration/App/1/2827902/HTTP/all", 1],
+            ["TransportDuration/App/1/2827902/HTTP/allWeb", 1],
+            ["TransportDuration/App/1/2827902/HTTP/allOther", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Success", 1],
+            ["Supportability/DistributedTrace/AcceptPayload/Exception", null],
+            ["Supportability/DistributedTrace/AcceptPayload/ParseException", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/CreateBeforeAccept", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Multiple", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/MajorVersion", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Null", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/UntrustedAccount", null],
+            ["Supportability/DistributedTrace/CreatePayload/Success", null],
+            ["Supportability/DistributedTrace/CreatePayload/Exception", null]
+        ]
+    },
+
+
+    {
+        "test_name": "background_task_metrics",
+        "inbound_payloads": [
+            {
+                "v": [0, 1],
+                "d": {
+                    "ac": "1",
+                    "ap": "2827902",
+                    "id": "7d3efb1b173fecfa",
+                    "pa": "5e5733a911cfbc73",
+                    "pr": 10.001,
+                    "sa": true,
+                    "ti": 1518469636035,
+                    "tr": "d6b4ba0c3a712ca",
+                    "ty": "App"
+                }
+            }
+        ],
+        "background_task": true,
+        "trusted_account_ids": [1],
+        "exact_intrinsics": {
+            "parent.type": "App",
+            "parent.app": "2827902",
+            "parent.account": "1",
+            "parent.transportType": "HTTP",
+            "grandparentId": "5e5733a911cfbc73",
+            "parentId": "7d3efb1b173fecfa",
+            "nr.tripId": "d6b4ba0c3a712ca",
+            "traceId": "d6b4ba0c3a712ca",
+            "priority": 10.001,
+            "sampled": true
+        },
+        "expected_intrinsics": ["parent.transportDuration", "guid"],
+        "unexpected_intrinsics": [],
+        "expected_metrics": [
+            ["DurationByCaller/App/1/2827902/HTTP/all", 1],
+            ["DurationByCaller/App/1/2827902/HTTP/allWeb", null],
+            ["DurationByCaller/App/1/2827902/HTTP/allOther", 1],
+            ["ErrorsByCaller/App/1/2827902/HTTP/all", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allWeb", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allOther", null],
+            ["TransportDuration/App/1/2827902/HTTP/all", 1],
+            ["TransportDuration/App/1/2827902/HTTP/allWeb", null],
+            ["TransportDuration/App/1/2827902/HTTP/allOther", 1],
+            ["Supportability/DistributedTrace/AcceptPayload/Success", 1],
+            ["Supportability/DistributedTrace/AcceptPayload/Exception", null],
+            ["Supportability/DistributedTrace/AcceptPayload/ParseException", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/CreateBeforeAccept", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Multiple", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/MajorVersion", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Null", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/UntrustedAccount", null],
+            ["Supportability/DistributedTrace/CreatePayload/Success", null],
+            ["Supportability/DistributedTrace/CreatePayload/Exception", null]
+        ]
+    },
+
+    {
+        "test_name": "web_transaction_raises_exception",
+        "inbound_payloads": [
+            {
+                "v": [0, 1],
+                "d": {
+                    "ac": "1",
+                    "ap": "2827902",
+                    "id": "7d3efb1b173fecfa",
+                    "pa": "5e5733a911cfbc73",
+                    "pr": 10.001,
+                    "sa": true,
+                    "ti": 1518469636035,
+                    "tr": "d6b4ba0c3a712ca",
+                    "ty": "App"
+                }
+            }
+        ],
+        "raises_exception": true,
+        "trusted_account_ids": [1],
+        "exact_intrinsics": {
+            "parent.type": "App",
+            "parent.app": "2827902",
+            "parent.account": "1",
+            "parent.transportType": "HTTP",
+            "grandparentId": "5e5733a911cfbc73",
+            "parentId": "7d3efb1b173fecfa",
+            "nr.tripId": "d6b4ba0c3a712ca",
+            "traceId": "d6b4ba0c3a712ca",
+            "priority": 10.001,
+            "sampled": true
+        },
+        "expected_intrinsics": ["parent.transportDuration", "guid"],
+        "unexpected_intrinsics": [],
+        "expected_metrics": [
+            ["DurationByCaller/App/1/2827902/HTTP/all", 1],
+            ["DurationByCaller/App/1/2827902/HTTP/allWeb", 1],
+            ["DurationByCaller/App/1/2827902/HTTP/allOther", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/all", 1],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allWeb", 1],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allOther", null],
+            ["TransportDuration/App/1/2827902/HTTP/all", 1],
+            ["TransportDuration/App/1/2827902/HTTP/allWeb", 1],
+            ["TransportDuration/App/1/2827902/HTTP/allOther", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Success", 1],
+            ["Supportability/DistributedTrace/AcceptPayload/Exception", null],
+            ["Supportability/DistributedTrace/AcceptPayload/ParseException", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/CreateBeforeAccept", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Multiple", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/MajorVersion", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Null", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/UntrustedAccount", null],
+            ["Supportability/DistributedTrace/CreatePayload/Success", null],
+            ["Supportability/DistributedTrace/CreatePayload/Exception", null]
+        ]
+    },
+
+    {
+        "test_name": "background_task_raises_exception",
+        "inbound_payloads": [
+            {
+                "v": [0, 1],
+                "d": {
+                    "ac": "1",
+                    "ap": "2827902",
+                    "id": "7d3efb1b173fecfa",
+                    "pa": "5e5733a911cfbc73",
+                    "pr": 10.001,
+                    "sa": true,
+                    "ti": 1518469636035,
+                    "tr": "d6b4ba0c3a712ca",
+                    "ty": "App"
+                }
+            }
+        ],
+        "raises_exception": true,
+        "background_task": true,
+        "trusted_account_ids": [1],
+        "exact_intrinsics": {
+            "parent.type": "App",
+            "parent.app": "2827902",
+            "parent.account": "1",
+            "parent.transportType": "HTTP",
+            "grandparentId": "5e5733a911cfbc73",
+            "parentId": "7d3efb1b173fecfa",
+            "nr.tripId": "d6b4ba0c3a712ca",
+            "traceId": "d6b4ba0c3a712ca",
+            "priority": 10.001,
+            "sampled": true
+        },
+        "expected_intrinsics": ["parent.transportDuration", "guid"],
+        "unexpected_intrinsics": [],
+        "expected_metrics": [
+            ["DurationByCaller/App/1/2827902/HTTP/all", 1],
+            ["DurationByCaller/App/1/2827902/HTTP/allWeb", null],
+            ["DurationByCaller/App/1/2827902/HTTP/allOther", 1],
+            ["ErrorsByCaller/App/1/2827902/HTTP/all", 1],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allWeb", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allOther", 1],
+            ["TransportDuration/App/1/2827902/HTTP/all", 1],
+            ["TransportDuration/App/1/2827902/HTTP/allWeb", null],
+            ["TransportDuration/App/1/2827902/HTTP/allOther", 1],
+            ["Supportability/DistributedTrace/AcceptPayload/Success", 1],
+            ["Supportability/DistributedTrace/AcceptPayload/Exception", null],
+            ["Supportability/DistributedTrace/AcceptPayload/ParseException", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/CreateBeforeAccept", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Multiple", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/MajorVersion", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Null", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/UntrustedAccount", null],
+            ["Supportability/DistributedTrace/CreatePayload/Success", null],
+            ["Supportability/DistributedTrace/CreatePayload/Exception", null]
+        ]
+    },
+
+    {
+        "test_name": "no_feature_flag",
+        "comment": "Note that this test will send one outbound request, but since the feature flag is disabled, it should be asserted that no outbound distributed tracing payload is created.",
+        "inbound_payloads": [
+            {
+                "v": [0, 1],
+                "d": {
+                    "ac": "1",
+                    "ap": "2827902",
+                    "id": "7d3efb1b173fecfa",
+                    "pa": "5e5733a911cfbc73",
+                    "pr": 10.001,
+                    "sa": true,
+                    "ti": 1518469636035,
+                    "tr": "d6b4ba0c3a712ca",
+                    "ty": "App"
+                }
+            }
+        ],
+        "outbound_payloads_d": [
+            "this test should send one outbound request"
+        ],
+        "feature_flag": false,
+        "trusted_account_ids": [1],
+        "exact_intrinsics": {},
+        "expected_intrinsics": [],
+        "unexpected_intrinsics": [
+            "parent.type", "parent.app", "parent.account",
+            "parent.transportType", "grandparentId", "parentId", "nr.tripId",
+            "priority", "parent.transportDuration"
+        ],
+        "expected_metrics": [
+            ["DurationByCaller/App/1/2827902/HTTP/all", null],
+            ["DurationByCaller/App/1/2827902/HTTP/allWeb", null],
+            ["DurationByCaller/App/1/2827902/HTTP/allOther", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/all", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allWeb", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allOther", null],
+            ["TransportDuration/App/1/2827902/HTTP/all", null],
+            ["TransportDuration/App/1/2827902/HTTP/allWeb", null],
+            ["TransportDuration/App/1/2827902/HTTP/allOther", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Success", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Exception", null],
+            ["Supportability/DistributedTrace/AcceptPayload/ParseException", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/CreateBeforeAccept", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Multiple", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/MajorVersion", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Null", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/UntrustedAccount", null],
+            ["Supportability/DistributedTrace/CreatePayload/Success", null],
+            ["Supportability/DistributedTrace/CreatePayload/Exception", null]
+        ]
+    },
+
+    {
+        "test_name": "non_trusted_account",
+        "inbound_payloads": [
+            {
+                "v": [0, 1],
+                "d": {
+                    "ac": "99999999999",
+                    "ap": "2827902",
+                    "id": "7d3efb1b173fecfa",
+                    "pa": "5e5733a911cfbc73",
+                    "pr": 10.001,
+                    "sa": true,
+                    "ti": 1518469636035,
+                    "tr": "d6b4ba0c3a712ca",
+                    "ty": "App"
+                }
+            }
+        ],
+        "trusted_account_ids": [1],
+        "exact_intrinsics": {},
+        "expected_intrinsics": [],
+        "unexpected_intrinsics": [
+            "parent.transportDuration", "parent.type", "parent.app",
+            "parent.account", "parent.transportType", "grandparentId",
+            "parentId", "nr.tripId", "priority"
+        ],
+        "expected_metrics": [
+            ["DurationByCaller/App/99999999999/2827902/HTTP/all", null],
+            ["DurationByCaller/App/99999999999/2827902/HTTP/allWeb", null],
+            ["DurationByCaller/App/99999999999/2827902/HTTP/allOther", null],
+            ["ErrorsByCaller/App/99999999999/2827902/HTTP/all", null],
+            ["ErrorsByCaller/App/99999999999/2827902/HTTP/allWeb", null],
+            ["ErrorsByCaller/App/99999999999/2827902/HTTP/allOther", null],
+            ["TransportDuration/App/99999999999/2827902/HTTP/all", null],
+            ["TransportDuration/App/99999999999/2827902/HTTP/allWeb", null],
+            ["TransportDuration/App/99999999999/2827902/HTTP/allOther", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Success", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Exception", null],
+            ["Supportability/DistributedTrace/AcceptPayload/ParseException", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/CreateBeforeAccept", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Multiple", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/MajorVersion", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Null", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/UntrustedAccount", 1],
+            ["Supportability/DistributedTrace/CreatePayload/Success", null],
+            ["Supportability/DistributedTrace/CreatePayload/Exception", null]
+        ]
+    },
+
+    {
+        "test_name": "major_version_too_big",
+        "inbound_payloads": [
+            {
+                "v": [9999, 0],
+                "d": {
+                    "ac": "1",
+                    "ap": "2827902",
+                    "id": "7d3efb1b173fecfa",
+                    "pa": "5e5733a911cfbc73",
+                    "pr": 10.001,
+                    "sa": true,
+                    "ti": 1518469636035,
+                    "tr": "d6b4ba0c3a712ca",
+                    "ty": "App"
+                }
+            }
+        ],
+        "trusted_account_ids": [1],
+        "exact_intrinsics": {},
+        "expected_intrinsics": [],
+        "unexpected_intrinsics": [
+            "parent.transportDuration", "parent.type", "parent.app",
+            "parent.account", "parent.transportType", "grandparentId",
+            "parentId", "nr.tripId", "priority"
+        ],
+        "expected_metrics": [
+            ["DurationByCaller/App/1/2827902/HTTP/all", null],
+            ["DurationByCaller/App/1/2827902/HTTP/allWeb", null],
+            ["DurationByCaller/App/1/2827902/HTTP/allOther", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/all", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allWeb", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allOther", null],
+            ["TransportDuration/App/1/2827902/HTTP/all", null],
+            ["TransportDuration/App/1/2827902/HTTP/allWeb", null],
+            ["TransportDuration/App/1/2827902/HTTP/allOther", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Success", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Exception", null],
+            ["Supportability/DistributedTrace/AcceptPayload/ParseException", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/CreateBeforeAccept", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Multiple", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/MajorVersion", 1],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Null", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/UntrustedAccount", null],
+            ["Supportability/DistributedTrace/CreatePayload/Success", null],
+            ["Supportability/DistributedTrace/CreatePayload/Exception", null]
+        ]
+    },
+
+    {
+        "test_name": "minor_version_too_big",
+        "inbound_payloads": [
+            {
+                "v": [0, 9999],
+                "d": {
+                    "ac": "1",
+                    "ap": "2827902",
+                    "id": "7d3efb1b173fecfa",
+                    "pa": "5e5733a911cfbc73",
+                    "pr": 10.001,
+                    "sa": true,
+                    "ti": 1518469636035,
+                    "tr": "d6b4ba0c3a712ca",
+                    "ty": "App",
+                    "xx": "what does this field do? no one knows..."
+                }
+            }
+        ],
+        "trusted_account_ids": [1],
+        "exact_intrinsics": {
+            "parent.type": "App",
+            "parent.app": "2827902",
+            "parent.account": "1",
+            "parent.transportType": "HTTP",
+            "grandparentId": "5e5733a911cfbc73",
+            "parentId": "7d3efb1b173fecfa",
+            "nr.tripId": "d6b4ba0c3a712ca",
+            "traceId": "d6b4ba0c3a712ca",
+            "priority": 10.001,
+            "sampled": true
+        },
+        "expected_intrinsics": ["parent.transportDuration", "guid"],
+        "unexpected_intrinsics": [],
+        "expected_metrics": [
+            ["DurationByCaller/App/1/2827902/HTTP/all", 1],
+            ["DurationByCaller/App/1/2827902/HTTP/allWeb", 1],
+            ["DurationByCaller/App/1/2827902/HTTP/allOther", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/all", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allWeb", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allOther", null],
+            ["TransportDuration/App/1/2827902/HTTP/all", 1],
+            ["TransportDuration/App/1/2827902/HTTP/allWeb", 1],
+            ["TransportDuration/App/1/2827902/HTTP/allOther", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Success", 1],
+            ["Supportability/DistributedTrace/AcceptPayload/Exception", null],
+            ["Supportability/DistributedTrace/AcceptPayload/ParseException", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/CreateBeforeAccept", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Multiple", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/MajorVersion", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Null", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/UntrustedAccount", null],
+            ["Supportability/DistributedTrace/CreatePayload/Success", null],
+            ["Supportability/DistributedTrace/CreatePayload/Exception", null]
+        ]
+    },
+
+    {
+        "test_name": "null_payload",
+        "inbound_payloads": [],
+        "trusted_account_ids": [1],
+        "exact_intrinsics": {},
+        "expected_intrinsics": [],
+        "unexpected_intrinsics": [
+            "parent.transportDuration", "parent.type", "parent.app",
+            "parent.account", "parent.transportType", "grandparentId",
+            "parentId", "nr.tripId", "priority"
+        ],
+        "expected_metrics": [
+            ["DurationByCaller/App/1/2827902/HTTP/all", null],
+            ["DurationByCaller/App/1/2827902/HTTP/allWeb", null],
+            ["DurationByCaller/App/1/2827902/HTTP/allOther", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/all", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allWeb", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allOther", null],
+            ["TransportDuration/App/1/2827902/HTTP/all", null],
+            ["TransportDuration/App/1/2827902/HTTP/allWeb", null],
+            ["TransportDuration/App/1/2827902/HTTP/allOther", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Success", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Exception", null],
+            ["Supportability/DistributedTrace/AcceptPayload/ParseException", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/CreateBeforeAccept", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Multiple", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/MajorVersion", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Null", 1],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/UntrustedAccount", null],
+            ["Supportability/DistributedTrace/CreatePayload/Success", null],
+            ["Supportability/DistributedTrace/CreatePayload/Exception", null]
+        ]
+    },
+
+    {
+        "test_name": "parsing_exception",
+        "inbound_payloads": [
+            {
+                "v": [0, 1],
+                "d": {}
+            }
+        ],
+        "trusted_account_ids": [1],
+        "exact_intrinsics": {},
+        "expected_intrinsics": [],
+        "unexpected_intrinsics": [
+            "parent.transportDuration", "parent.type", "parent.app",
+            "parent.account", "parent.transportType", "grandparentId",
+            "parentId", "nr.tripId", "priority"
+        ],
+        "expected_metrics": [
+            ["DurationByCaller/App/1/2827902/HTTP/all", null],
+            ["DurationByCaller/App/1/2827902/HTTP/allWeb", null],
+            ["DurationByCaller/App/1/2827902/HTTP/allOther", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/all", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allWeb", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allOther", null],
+            ["TransportDuration/App/1/2827902/HTTP/all", null],
+            ["TransportDuration/App/1/2827902/HTTP/allWeb", null],
+            ["TransportDuration/App/1/2827902/HTTP/allOther", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Success", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Exception", null],
+            ["Supportability/DistributedTrace/AcceptPayload/ParseException", 1],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/CreateBeforeAccept", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Multiple", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/MajorVersion", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Null", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/UntrustedAccount", null],
+            ["Supportability/DistributedTrace/CreatePayload/Success", null],
+            ["Supportability/DistributedTrace/CreatePayload/Exception", null]
+        ]
+    },
+
+    {
+        "test_name": "multiple_accept_calls",
+        "comment": "For this test, the agent should call AcceptPayload twice. DurationByCaller and TransportDuration metrics should be created for the first payload and a Supportability metric for multiple accepted payloads should be created for the second.",
+        "inbound_payloads": [
+            {
+                "v": [0, 1],
+                "d": {
+                    "ac": "1",
+                    "ap": "2827902",
+                    "id": "7d3efb1b173fecfa",
+                    "pa": "5e5733a911cfbc73",
+                    "pr": 10.001,
+                    "sa": true,
+                    "ti": 1518469636035,
+                    "tr": "d6b4ba0c3a712ca",
+                    "ty": "App"
+                }
+            },
+            {
+                "v": [0, 1],
+                "d": {
+                    "ac": "1",
+                    "ap": "2827903",
+                    "id": "7d3efb2b173fecfb",
+                    "pa": "5e5733a911cfbc74",
+                    "pr": 11.001,
+                    "sa": false,
+                    "ti": 1518469636036,
+                    "tr": "d6b4ba0c3a712cb",
+                    "ty": "App"
+                }
+            }
+        ],
+        "trusted_account_ids": [1],
+        "exact_intrinsics": {
+            "parent.type": "App",
+            "parent.app": "2827902",
+            "parent.account": "1",
+            "parent.transportType": "HTTP",
+            "grandparentId": "5e5733a911cfbc73",
+            "parentId": "7d3efb1b173fecfa",
+            "nr.tripId": "d6b4ba0c3a712ca",
+            "traceId": "d6b4ba0c3a712ca",
+            "priority": 10.001,
+            "sampled": true
+        },
+        "expected_intrinsics": ["parent.transportDuration", "guid"],
+        "unexpected_intrinsics": [],
+        "expected_metrics": [
+            ["DurationByCaller/App/1/2827902/HTTP/all", 1],
+            ["DurationByCaller/App/1/2827902/HTTP/allWeb", 1],
+            ["DurationByCaller/App/1/2827902/HTTP/allOther", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/all", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allWeb", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allOther", null],
+            ["TransportDuration/App/1/2827902/HTTP/all", 1],
+            ["TransportDuration/App/1/2827902/HTTP/allWeb", 1],
+            ["TransportDuration/App/1/2827902/HTTP/allOther", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Success", 1],
+            ["Supportability/DistributedTrace/AcceptPayload/Exception", null],
+            ["Supportability/DistributedTrace/AcceptPayload/ParseException", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/CreateBeforeAccept", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Multiple", 1],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/MajorVersion", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Null", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/UntrustedAccount", null],
+            ["Supportability/DistributedTrace/CreatePayload/Success", null],
+            ["Supportability/DistributedTrace/CreatePayload/Exception", null]
+        ]
+    },
+
+    {
+        "test_name": "outbound_payload_after_inbound_payload",
+        "inbound_payloads": [
+            {
+                "v": [0, 1],
+                "d": {
+                    "ac": "1",
+                    "ap": "2827902",
+                    "id": "7d3efb1b173fecfa",
+                    "pa": "5e5733a911cfbc73",
+                    "pr": 10.001,
+                    "sa": true,
+                    "ti": 1518469636035,
+                    "tr": "d6b4ba0c3a712ca",
+                    "ty": "App"
+                }
+            }
+        ],
+        "outbound_payloads_d": [
+            {
+                "pa": "7d3efb1b173fecfa",
+                "pr": 10.001,
+                "sa": true,
+                "tr": "d6b4ba0c3a712ca",
+                "ty": "App"
+            }
+        ],
+        "trusted_account_ids": [1],
+        "exact_intrinsics": {
+            "parent.type": "App",
+            "parent.app": "2827902",
+            "parent.account": "1",
+            "parent.transportType": "HTTP",
+            "grandparentId": "5e5733a911cfbc73",
+            "parentId": "7d3efb1b173fecfa",
+            "nr.tripId": "d6b4ba0c3a712ca",
+            "traceId": "d6b4ba0c3a712ca",
+            "priority": 10.001,
+            "sampled": true
+        },
+        "expected_intrinsics": ["parent.transportDuration", "guid"],
+        "unexpected_intrinsics": [],
+        "expected_metrics": [
+            ["DurationByCaller/App/1/2827902/HTTP/all", 1],
+            ["DurationByCaller/App/1/2827902/HTTP/allWeb", 1],
+            ["DurationByCaller/App/1/2827902/HTTP/allOther", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/all", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allWeb", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allOther", null],
+            ["TransportDuration/App/1/2827902/HTTP/all", 1],
+            ["TransportDuration/App/1/2827902/HTTP/allWeb", 1],
+            ["TransportDuration/App/1/2827902/HTTP/allOther", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Success", 1],
+            ["Supportability/DistributedTrace/AcceptPayload/Exception", null],
+            ["Supportability/DistributedTrace/AcceptPayload/ParseException", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/CreateBeforeAccept", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Multiple", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/MajorVersion", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Null", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/UntrustedAccount", null],
+            ["Supportability/DistributedTrace/CreatePayload/Success", 1],
+            ["Supportability/DistributedTrace/CreatePayload/Exception", null]
+        ]
+    },
+
+    {
+        "test_name": "two_outbound_payloads",
+        "inbound_payloads": [
+            {
+                "v": [0, 1],
+                "d": {
+                    "ac": "1",
+                    "ap": "2827902",
+                    "id": "7d3efb1b173fecfa",
+                    "pa": "5e5733a911cfbc73",
+                    "pr": 10.001,
+                    "sa": true,
+                    "ti": 1518469636035,
+                    "tr": "d6b4ba0c3a712ca",
+                    "ty": "App"
+                }
+            }
+        ],
+        "outbound_payloads_d": [
+            {
+                "pa": "7d3efb1b173fecfa",
+                "pr": 10.001,
+                "sa": true,
+                "tr": "d6b4ba0c3a712ca",
+                "ty": "App"
+            },
+            {
+                "pa": "7d3efb1b173fecfa",
+                "pr": 10.001,
+                "sa": true,
+                "tr": "d6b4ba0c3a712ca",
+                "ty": "App"
+            }
+        ],
+        "trusted_account_ids": [1],
+        "exact_intrinsics": {
+            "parent.type": "App",
+            "parent.app": "2827902",
+            "parent.account": "1",
+            "parent.transportType": "HTTP",
+            "grandparentId": "5e5733a911cfbc73",
+            "parentId": "7d3efb1b173fecfa",
+            "nr.tripId": "d6b4ba0c3a712ca",
+            "traceId": "d6b4ba0c3a712ca",
+            "priority": 10.001,
+            "sampled": true
+        },
+        "expected_intrinsics": ["parent.transportDuration", "guid"],
+        "unexpected_intrinsics": [],
+        "expected_metrics": [
+            ["DurationByCaller/App/1/2827902/HTTP/all", 1],
+            ["DurationByCaller/App/1/2827902/HTTP/allWeb", 1],
+            ["DurationByCaller/App/1/2827902/HTTP/allOther", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/all", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allWeb", null],
+            ["ErrorsByCaller/App/1/2827902/HTTP/allOther", null],
+            ["TransportDuration/App/1/2827902/HTTP/all", 1],
+            ["TransportDuration/App/1/2827902/HTTP/allWeb", 1],
+            ["TransportDuration/App/1/2827902/HTTP/allOther", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Success", 1],
+            ["Supportability/DistributedTrace/AcceptPayload/Exception", null],
+            ["Supportability/DistributedTrace/AcceptPayload/ParseException", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/CreateBeforeAccept", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Multiple", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/MajorVersion", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/Null", null],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/UntrustedAccount", null],
+            ["Supportability/DistributedTrace/CreatePayload/Success", 2],
+            ["Supportability/DistributedTrace/CreatePayload/Exception", null]
+        ]
+    }
+]

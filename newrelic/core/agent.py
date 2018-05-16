@@ -290,7 +290,7 @@ class Agent(object):
             return application.attribute_filter
 
     def activate_application(self, app_name, linked_applications=[],
-                             timeout=None):
+                             timeout=None, uninstrumented_modules=None):
         """Initiates activation for the named application if this has
         not been done previously. If an attempt to trigger the
         activation of the application has already been performed,
@@ -341,6 +341,7 @@ class Agent(object):
                 linked_applications = sorted(set(linked_applications))
                 application = newrelic.core.application.Application(
                         app_name, linked_applications)
+                application._uninstrumented = uninstrumented_modules
                 self._applications[app_name] = application
                 activate_session = True
 
@@ -519,6 +520,10 @@ class Agent(object):
             return name, False
 
         return application.normalize_name(name, rule_type)
+
+    def compute_sampled(self, app_name, priority):
+        application = self._applications.get(app_name, None)
+        return application.compute_sampled(priority)
 
     def _harvest_loop(self):
         _logger.debug('Entering harvest loop.')

@@ -13,6 +13,7 @@ import random
 import zlib
 import time
 import sys
+from heapq import heapreplace, heapify
 
 import newrelic.packages.six as six
 
@@ -248,15 +249,19 @@ class SlowSqlStats(list):
 
 
 class SampledDataSet(object):
-
     def __init__(self, capacity=100):
-        self.samples = []
+        self.pq = []
+        self.heap = False
         self.capacity = capacity
         self.num_seen = 0
 
     @property
+    def samples(self):
+        return (x[-1] for x in self.pq)
+
+    @property
     def num_samples(self):
-        return len(self.samples)
+        return len(self.pq)
 
     @property
     def sampling_info(self):
@@ -266,24 +271,47 @@ class SampledDataSet(object):
         }
 
     def reset(self):
-        self.samples = []
+        self.pq = []
+        self.heap = False
         self.num_seen = 0
 
-    def add(self, sample):
-        if self.num_samples < self.capacity:
-            self.samples.append(sample)
-        else:
-            index = random.randint(0, self.num_seen)
-            if index < self.capacity:
-                self.samples[index] = sample
+    def should_sample(self, priority):
+        if self.heap:
+            # self.pq[0] is always the minimal
+            # priority sample in the queue
+            if priority > self.pq[0][0]:
+                return True
+            else:
+                return False
+
+        # Always sample if under capacity
+        return True
+
+    def add(self, sample, priority=None):
         self.num_seen += 1
 
+        if priority is None:
+            priority = random.random()
+
+        entry = (priority, sample)
+        if self.num_seen == self.capacity:
+            self.pq.append(entry)
+            self.heap = self.heap or heapify(self.pq) or True
+        elif not self.heap:
+            self.pq.append(entry)
+        else:
+            sampled = self.should_sample(priority)
+            if not sampled:
+                return
+            heapreplace(self.pq, entry)
+
     def merge(self, other_data_set):
-        for item in other_data_set.samples:
-            self.add(item)
+        for priority, sample in other_data_set.pq:
+            self.add(sample, priority)
 
-        # Make sure num_seen includes total items seen from merged set
-
+        # Merge the num_seen from the other_data_set, but take care not to
+        # double-count the actual samples of other_data_set since the .add
+        # call above will add one to self.num_seen each time
         self.num_seen += other_data_set.num_seen - other_data_set.num_samples
 
 
@@ -866,7 +894,7 @@ class StatsEngine(object):
                 settings.collect_error_events):
             events = transaction.error_events(self.__stats_table)
             for event in events:
-                self.__error_events.add(event)
+                self.__error_events.add(event, priority=transaction.priority)
 
         # Capture any sql traces if transaction tracer enabled.
 
@@ -915,7 +943,7 @@ class StatsEngine(object):
                 settings.transaction_events.enabled):
 
             event = transaction.transaction_event(self.__stats_table)
-            self.__transaction_events.add(event)
+            self.__transaction_events.add(event, priority=transaction.priority)
 
         # Merge in custom events
 
@@ -1463,13 +1491,10 @@ class StatsEngine(object):
         # sampling that gives equal probability for keeping all events
 
         if rollback:
-            for sample in snapshot.__transaction_events.samples:
-                self.__transaction_events.add(sample)
-
+            self.__transaction_events.merge(snapshot.__transaction_events)
         else:
             if snapshot.__transaction_events.num_samples == 1:
-                self.__transaction_events.add(
-                        snapshot.__transaction_events.samples[0])
+                self.__transaction_events.merge(snapshot.__transaction_events)
 
     def _merge_synthetics_events(self, snapshot, rollback=False):
 

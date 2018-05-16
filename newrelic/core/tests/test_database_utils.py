@@ -529,6 +529,11 @@ SELECT_PARSE_TESTS = [
     ('schema.table', 'select'),
     '''SELECT * from `schema`.`table`'''
 ),
+(
+    # regression to ensure ";" doesn't get included with the target
+    ('foo', 'select'),
+    '''select * from foo;'''
+)
 ]
 
 DELETE_PARSE_TESTS = [
@@ -632,6 +637,11 @@ CALL_PARSE_TESTS = [
     # Call.
     ('foo', 'call'),
     """CALL FOO 1 2 """
+),
+(
+    # Call.
+    ('foo.bar', 'call'),
+    """CALL FOO.BAR(1, 2) """
 ),
 ]
 

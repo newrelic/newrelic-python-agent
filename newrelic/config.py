@@ -57,6 +57,7 @@ _FEATURE_FLAGS = set([
     'tornado.instrumentation.r3',
     'tornado.instrumentation.r4',
     'django.instrumentation.inclusion-tags.r1',
+    'distributed_tracing',
 ])
 
 # Names of configuration file and deployment environment. This
@@ -462,6 +463,8 @@ def _process_configuration(section):
     _process_setting(section, 'agent_limits.data_compression_level',
                      'getint', None)
     _process_setting(section, 'agent_limits.max_outstanding_traces',
+                    'getint', None)
+    _process_setting(section, 'agent_limits.sampling_target',
                     'getint', None)
     _process_setting(section, 'console.listener_socket',
                      'get', _map_console_listener_socket)
@@ -2561,9 +2564,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('cherrypy.wsgiserver',
             'newrelic.hooks.adapter_cherrypy',
             'instrument_cherrypy_wsgiserver')
-            
-    _process_module_definition('cheroot.wsgi',                                       
-            'newrelic.hooks.adapter_cheroot',                                       
+
+    _process_module_definition('cheroot.wsgi',
+            'newrelic.hooks.adapter_cheroot',
             'instrument_cheroot_wsgiserver')
 
     _process_module_definition('pyramid.router',

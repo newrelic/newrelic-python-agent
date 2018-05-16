@@ -130,6 +130,10 @@ class TimeTrace(object):
         # ----------------------------------------------------------------------
         self.complete_trace()
 
+    def _force_exit(self, exc, value, tb):
+        self.child_count = len(self.children)
+        return self.__exit__(exc, value, tb)
+
     def complete_trace(self):
         # we shouldn't continue if we're still running
         if not self.exited:

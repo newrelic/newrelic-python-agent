@@ -1,4 +1,6 @@
+import functools
 import pika
+import pytest
 import six
 
 from newrelic.api.background_task import background_task
@@ -114,6 +116,7 @@ else:
         ('Function/test_pika_blocking_connection_consume:on_message', None))
 
 
+@pytest.mark.parametrize('as_partial', [True, False])
 @validate_transaction_metrics(
         _txn_name,
         scoped_metrics=_test_blocking_conn_basic_consume_no_txn_metrics,
@@ -121,11 +124,15 @@ else:
         background_task=True,
         group='Message/RabbitMQ/Exchange/%s' % EXCHANGE)
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
-def test_blocking_connection_basic_consume_outside_transaction(producer):
+def test_blocking_connection_basic_consume_outside_transaction(producer,
+        as_partial):
     def on_message(channel, method_frame, header_frame, body):
         assert hasattr(method_frame, '_nr_start_time')
         assert body == BODY
         channel.stop_consuming()
+
+    if as_partial:
+        on_message = functools.partial(on_message)
 
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
@@ -153,6 +160,7 @@ else:
         ('Function/test_pika_blocking_connection_consume:on_message', 1))
 
 
+@pytest.mark.parametrize('as_partial', [True, False])
 @validate_transaction_metrics(
         ('test_pika_blocking_connection_consume:'
                 'test_blocking_connection_basic_consume_inside_txn'),
@@ -161,11 +169,14 @@ else:
         background_task=True)
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
-def test_blocking_connection_basic_consume_inside_txn(producer):
+def test_blocking_connection_basic_consume_inside_txn(producer, as_partial):
     def on_message(channel, method_frame, header_frame, body):
         assert hasattr(method_frame, '_nr_start_time')
         assert body == BODY
         channel.stop_consuming()
+
+    if as_partial:
+        on_message = functools.partial(on_message)
 
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
@@ -194,6 +205,7 @@ else:
         ('Function/test_pika_blocking_connection_consume:on_message', None))
 
 
+@pytest.mark.parametrize('as_partial', [True, False])
 @validate_transaction_metrics(
         ('test_pika_blocking_connection_consume:'
                 'test_blocking_connection_basic_consume_stopped_txn'),
@@ -202,13 +214,16 @@ else:
         background_task=True)
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
-def test_blocking_connection_basic_consume_stopped_txn(producer):
+def test_blocking_connection_basic_consume_stopped_txn(producer, as_partial):
     def on_message(channel, method_frame, header_frame, body):
         assert hasattr(method_frame, '_nr_start_time')
         assert body == BODY
         channel.stop_consuming()
 
     end_of_transaction()
+
+    if as_partial:
+        on_message = functools.partial(on_message)
 
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:

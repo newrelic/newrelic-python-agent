@@ -151,12 +151,22 @@ class TestCallableName(unittest.TestCase):
                 callable_name(_test_object_names._class3(1)),
                 _test_object_names._module_fqdn('_class3'))
 
-    @pytest.mark.xfail(sys.version_info >= (3, 7), strict=True,
-            reason='PYTHON-2699')
     def test_generated_class_type_instancemethod(self):
         # Cannot work out module name of method bound class for
         # Python 3. Make consistent between 2 and use Python 3.
-        if six.PY3:
+
+        # new for python 3.7: namedtuple is no longer created by
+        # building a string and then exec()-ing it, so its instances'
+        # methods' __module__ attributes are actually set correctly
+        # see JIRA issue 2699.
+        if sys.version_info[0:2] >= (3, 7):
+            self.assertEqual(
+                callable_name(_test_object_names._class3._asdict),
+                _test_object_names._module_fqdn(
+                    '_class3._asdict',
+                    'collections'))
+
+        elif six.PY3:
             self.assertEqual(
                     callable_name(_test_object_names._class3._asdict),
                     _test_object_names._module_fqdn('_class3._asdict',

@@ -58,7 +58,11 @@ class Application(object):
         self._harvest_enabled = False
 
         self._transaction_count = 0
+        self._transaction_sampled_count = 0
         self._last_transaction = 0.0
+        self._min_sampling_priority = 0.0
+        # Before registration, do not collect any "sampled" transactions
+        self._max_sampled = 0.0
 
         self._global_events_account = 0
 
@@ -115,6 +119,8 @@ class Application(object):
 
         self._active_xrays = {}
 
+        self._uninstrumented = None
+
     @property
     def name(self):
         return self._app_name
@@ -130,6 +136,16 @@ class Application(object):
     @property
     def active(self):
         return self.configuration is not None
+
+    def compute_sampled(self, priority):
+        with self._stats_lock:
+            if self._transaction_sampled_count >= self._max_sampled:
+                return False
+            elif priority >= self._min_sampling_priority:
+                self._transaction_sampled_count += 1
+                return True
+
+        return False
 
     def dump(self, file):
         """Dumps details about the application to the file object."""
@@ -429,6 +445,13 @@ class Application(object):
 
             with self._stats_lock:
                 self._stats_engine.reset_stats(configuration)
+
+                # For the first harvest, collect a max of self._sampling_target
+                # number of "sampled" transactions.
+
+                self._sampling_target = (
+                        configuration.agent_limits.sampling_target)
+                self._max_sampled = self._sampling_target
 
             with self._stats_custom_lock:
                 self._stats_custom_engine.reset_stats(configuration)
@@ -1261,16 +1284,27 @@ class Application(object):
                 _logger.debug('Snapshotting metrics for harvest of %r.',
                         self._app_name)
 
-                transaction_count = self._transaction_count
-                global_events_account = self._global_events_account
-
                 with self._stats_lock:
+                    transaction_count = self._transaction_count
+                    if transaction_count:
+                        sampling_ratio = (
+                                float(self._sampling_target) /
+                                transaction_count)
+                        sampling_ratio = min(sampling_ratio, 1.0)
+                        self._min_sampling_priority = (1.0 - sampling_ratio)
+
+                    # For subsequent harvests, collect a max of twice the
+                    # self._sampling_target value.
+
+                    self._max_sampled = 2 * self._sampling_target
+                    self._transaction_sampled_count = 0
                     self._transaction_count = 0
                     self._last_transaction = 0.0
 
                     stats = self._stats_engine.harvest_snapshot()
 
                 with self._stats_custom_lock:
+                    global_events_account = self._global_events_account
                     self._global_events_account = 0
 
                     stats_custom = self._stats_custom_engine.harvest_snapshot()
@@ -1326,6 +1360,16 @@ class Application(object):
                 # periods have occurred.
 
                 stats.record_custom_metric('Instance/Reporting', 0)
+
+                # If an import order issue was detected, send a metric for each
+                # uninstrumented module
+
+                if self._uninstrumented:
+                    for uninstrumented in self._uninstrumented:
+                        internal_count_metric(
+                                'Supportability/Python/Uninstrumented', 1)
+                        internal_count_metric('Supportability/Uninstrumented/'
+                                '%s' % uninstrumented, 1)
 
                 # Create our time stamp as to when this reporting period
                 # ends and start reporting the data.

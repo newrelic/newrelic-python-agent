@@ -30,12 +30,15 @@ from newrelic.core.custom_event import create_custom_event
 from newrelic.core.stack_trace import exception_stack
 from newrelic.common.encoding_utils import (generate_path_hash, obfuscate,
         deobfuscate, json_encode, json_decode, base64_decode,
-        convert_to_cat_metadata_value)
+        convert_to_cat_metadata_value, DistributedTracePayload)
 
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.api.time_trace import TimeTrace
 
 _logger = logging.getLogger(__name__)
+
+DISTRIBUTED_TRACE_KEYS_REQUIRED = (
+        'ty', 'ac', 'ap', 'id', 'tr', 'ti')
 
 
 class Sentinel(TimeTrace):
@@ -63,7 +66,7 @@ class Transaction(object):
         self._state = self.STATE_PENDING
         self._settings = None
 
-        self._priority = 0
+        self._name_priority = 0
         self._group = None
         self._name = None
 
@@ -151,6 +154,20 @@ class Transaction(object):
 
         # 16-digit random hex. Padded with zeros in the front.
         self.guid = '%016x' % random.getrandbits(64)
+
+        # This may be overridden by processing an inbound CAT header
+        self.parent_type = None
+        self.parent_id = None
+        self.grandparent_id = None
+        self.parent_app = None
+        self.parent_account = None
+        self.parent_transport_type = None
+        self.parent_transport_duration = None
+        self._trace_id = None
+        self._priority = None
+        self._sampled = None
+
+        self.is_distributed_trace = False
 
         self.client_cross_process_id = None
         self.client_account_id = None
@@ -286,7 +303,7 @@ class Transaction(object):
         for _ in range(self._settings.agent_limits.max_outstanding_traces):
             if isinstance(self.current_node, Sentinel):
                 break
-            self.current_node.__exit__(None, None, None)
+            self.current_node._force_exit(None, None, None)
         else:
             _logger.error('Transaction ended but current_node is not Sentinel.'
                     ' Current node is %r. Report this issue to New Relic '
@@ -492,8 +509,16 @@ class Transaction(object):
                 referring_path_hash=self._referring_path_hash,
                 alternate_path_hashes=self.alternate_path_hashes,
                 trace_intrinsics=self.trace_intrinsics,
+                distributed_trace_intrinsics=self.distributed_trace_intrinsics,
                 agent_attributes=self.agent_attributes,
                 user_attributes=self.user_attributes,
+                priority=self.priority,
+                parent_id=self.parent_id,
+                parent_transport_duration=self.parent_transport_duration,
+                parent_type=self.parent_type,
+                parent_account=self.parent_account,
+                parent_app=self.parent_app,
+                parent_transport_type=self.parent_transport_type
         )
 
         # Clear settings as we are all done and don't need it
@@ -519,6 +544,14 @@ class Transaction(object):
 
             self._application.record_transaction(node,
                     (self.background_task, profile_samples))
+
+    @property
+    def sampled(self):
+        return self._sampled
+
+    @property
+    def priority(self):
+        return self._priority
 
     @property
     def state(self):
@@ -593,6 +626,10 @@ class Transaction(object):
     @property
     def trip_id(self):
         return self._trip_id or self.guid
+
+    @property
+    def trace_id(self):
+        return self._trace_id or self.guid
 
     @property
     def alternate_path_hashes(self):
@@ -707,6 +744,44 @@ class Transaction(object):
 
         # if self._cpu_user_time_value:
         #     i_attrs['cpu_time'] = self._cpu_user_time_value
+
+        i_attrs.update(self.distributed_trace_intrinsics)
+
+        return i_attrs
+
+    @property
+    def distributed_trace_intrinsics(self):
+        i_attrs = {}
+
+        if 'distributed_tracing' not in self._settings.feature_flag:
+            return i_attrs
+
+        if not self.is_distributed_trace:
+            return i_attrs
+
+        if self.parent_type:
+            i_attrs['parent.type'] = self.parent_type
+        if self.parent_account:
+            i_attrs['parent.account'] = self.parent_account
+        if self.parent_app:
+            i_attrs['parent.app'] = self.parent_app
+        if self.parent_transport_type:
+            i_attrs['parent.transportType'] = self.parent_transport_type
+        if self.parent_transport_duration:
+            i_attrs['parent.transportDuration'] = \
+                    self.parent_transport_duration
+        if self.grandparent_id:
+            i_attrs['grandparentId'] = self.grandparent_id
+        if self.parent_id:
+            i_attrs['parentId'] = self.parent_id
+
+        i_attrs['traceId'] = self.trace_id
+        i_attrs['nr.tripId'] = self.trace_id
+        i_attrs['guid'] = self.guid
+
+        self._compute_sampled_and_priority()
+        i_attrs['sampled'] = self.sampled
+        i_attrs['priority'] = self.priority
 
         return i_attrs
 
@@ -870,9 +945,18 @@ class Transaction(object):
                         len(self._profile_samples), 2))
                 self._profile_skip = 2 * self._profile_skip
 
+    def _compute_sampled_and_priority(self):
+        if self._priority is None:
+            self._priority = random.random()
+
+        if self._sampled is None:
+            self._sampled = self._application.compute_sampled(self.priority)
+            if self._sampled:
+                self._priority += 1
+
     def _freeze_path(self):
         if self._frozen_path is None:
-            self._priority = None
+            self._name_priority = None
 
             if self._group == 'Uri' and self._name != '/':
                 # Apply URL normalization rules. We would only have raw
@@ -912,6 +996,141 @@ class Transaction(object):
 
             self.apdex = (self._settings.web_transactions_apdex.get(
                 self.path) or self._settings.apdex_t)
+
+    def _record_supportability(self, metric_name):
+        m = self._transaction_metrics.get(metric_name, 0)
+        self._transaction_metrics[metric_name] = m + 1
+
+    def create_distributed_tracing_payload(self):
+        if not self.enabled:
+            return
+
+        settings = self._settings
+        account_id = settings.account_id
+        application_id = settings.application_id
+        distributed_tracing_enabled = \
+            'distributed_tracing' in settings.feature_flag
+
+        if not (account_id and
+                application_id and
+                distributed_tracing_enabled and
+                settings.cross_application_tracer.enabled):
+            return
+
+        try:
+            self._compute_sampled_and_priority()
+            data = dict(
+                ty='App',
+                ac=account_id,
+                ap=application_id,
+                id=self.guid,
+                tr=self.trace_id,
+                sa=self.sampled,
+                pr=self.priority,
+                ti=int(time.time() * 1000.0),
+            )
+
+            if self.parent_id:
+                data['pa'] = self.parent_id
+
+            self.is_distributed_trace = True
+
+            self._record_supportability('Supportability/DistributedTrace/'
+                    'CreatePayload/Success')
+            return DistributedTracePayload(
+                v=DistributedTracePayload.version,
+                d=data,
+            )
+        except:
+            self._record_supportability('Supportability/DistributedTrace/'
+                    'CreatePayload/Exception')
+
+    def accept_distributed_trace_payload(self, payload, transport_type='HTTP'):
+        if not self.enabled:
+            return False
+
+        if not payload:
+            self._record_supportability('Supportability/DistributedTrace/'
+                    'AcceptPayload/Ignored/Null')
+            return False
+
+        settings = self._settings
+        distributed_tracing_enabled = \
+            'distributed_tracing' in settings.feature_flag
+        if not (settings.cross_application_tracer.enabled and
+                distributed_tracing_enabled and
+                settings.trusted_account_ids):
+            return False
+
+        if self.is_distributed_trace:
+            if self.parent_id:
+                self._record_supportability('Supportability/DistributedTrace/'
+                        'AcceptPayload/Ignored/Multiple')
+            else:
+                self._record_supportability('Supportability/DistributedTrace/'
+                        'AcceptPayload/Ignored/CreateBeforeAccept')
+            return False
+
+        payload = DistributedTracePayload.decode(payload)
+        if not payload:
+            self._record_supportability('Supportability/DistributedTrace/'
+                    'AcceptPayload/ParseException')
+            return False
+
+        try:
+            version = payload.get('v')
+            major_version = version and int(version[0])
+
+            if major_version is None:
+                return False
+
+            if major_version > DistributedTracePayload.version[0]:
+                self._record_supportability('Supportability/DistributedTrace/'
+                        'AcceptPayload/Ignored/MajorVersion')
+                return False
+
+            data = payload.get('d', {})
+            if not all(k in data for k in DISTRIBUTED_TRACE_KEYS_REQUIRED):
+                self._record_supportability('Supportability/DistributedTrace/'
+                        'AcceptPayload/ParseException')
+                return False
+
+            account_id = data.get('ac')
+
+            if account_id not in (
+                    str(i) for i in settings.trusted_account_ids):
+                self._record_supportability('Supportability/DistributedTrace/'
+                        'AcceptPayload/Ignored/UntrustedAccount')
+                return False
+
+            grandparent_id = data.get('pa')
+            transport_start = data.get('ti') / 1000.0
+
+            self.parent_type = data.get('ty')
+            self.parent_id = data.get('id')
+            self.parent_app = data.get('ap')
+            self.parent_account = account_id
+            self.parent_transport_type = transport_type
+            self.parent_transport_duration = time.time() - transport_start
+            self._trace_id = data.get('tr')
+
+            if 'pr' in data:
+                self._priority = data.get('pr')
+                self._sampled = data.get('sa', self._sampled)
+
+            if grandparent_id:
+                self.grandparent_id = grandparent_id
+
+            self.is_distributed_trace = True
+
+            self._record_supportability('Supportability/DistributedTrace/'
+                    'AcceptPayload/Success')
+            return True
+
+        except:
+            self._record_supportability('Supportability/DistributedTrace/'
+                    'AcceptPayload/Exception')
+            return False
 
     def _process_incoming_cat_headers(self, encoded_cross_process_id,
             encoded_txn_header):
@@ -1045,14 +1264,14 @@ class Transaction(object):
         # same or greater than existing priority. If no priority
         # always override the existing name/group if not frozen.
 
-        if self._priority is None:
+        if self._name_priority is None:
             return
 
-        if priority is not None and priority < self._priority:
+        if priority is not None and priority < self._name_priority:
             return
 
         if priority is not None:
-            self._priority = priority
+            self._name_priority = priority
 
         # The name can be a URL for the default case. URLs are
         # supposed to be ASCII but can get a URL with illegal
@@ -1264,7 +1483,7 @@ class Transaction(object):
 
         event = create_custom_event(event_type, params)
         if event:
-            self._custom_events.add(event)
+            self._custom_events.add(event, priority=self.priority)
 
     def active_node(self):
         return self.current_node
@@ -1389,7 +1608,7 @@ class Transaction(object):
         print >> file, 'Transaction Name: %s' % (
                 self._name)
         print >> file, 'Name Priority: %r' % (
-                self._priority)
+                self._name_priority)
         print >> file, 'Frozen Path: %s' % (
                 self._frozen_path)
         print >> file, 'AutoRUM Disabled: %s' % (

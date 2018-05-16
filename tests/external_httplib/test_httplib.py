@@ -1,9 +1,11 @@
+import pytest
 try:
     import http.client as httplib
 except ImportError:
     import httplib
 
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.fixtures import (validate_transaction_metrics,
+        override_application_settings)
 from testing_support.external_fixtures import (cache_outgoing_headers,
     validate_cross_process_headers, insert_incoming_headers,
     validate_external_node_params)
@@ -86,15 +88,23 @@ def test_httplib_http_with_port_request():
         connection.close()
 
 
-@background_task()
-@cache_outgoing_headers
-@validate_cross_process_headers
-def test_httplib_cross_process_request():
-    connection = httplib.HTTPConnection('www.example.com', 80)
-    connection.request('GET', '/')
-    response = connection.getresponse()
-    response.read()
-    connection.close()
+@pytest.mark.parametrize('distributed_tracing', (True, False))
+def test_httplib_cross_process_request(distributed_tracing):
+    @background_task(name='test_httplib:test_httplib_cross_process_request')
+    @cache_outgoing_headers
+    @validate_cross_process_headers
+    def _test():
+        connection = httplib.HTTPConnection('www.example.com', 80)
+        connection.request('GET', '/')
+        response = connection.getresponse()
+        response.read()
+        connection.close()
+
+    if distributed_tracing:
+        _test = override_application_settings(
+                {'feature_flag': set(('distributed_tracing',))})(_test)
+
+    _test()
 
 
 _test_httplib_cross_process_response_scoped_metrics = [

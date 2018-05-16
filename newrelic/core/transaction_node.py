@@ -27,7 +27,9 @@ _TransactionNode = namedtuple('_TransactionNode',
         'synthetics_job_id', 'synthetics_monitor_id', 'synthetics_header',
         'is_part_of_cat', 'trip_id', 'path_hash', 'referring_path_hash',
         'alternate_path_hashes', 'trace_intrinsics', 'agent_attributes',
-        'user_attributes'])
+        'distributed_trace_intrinsics', 'user_attributes', 'priority',
+        'parent_transport_duration', 'parent_id', 'parent_type',
+        'parent_account', 'parent_app', 'parent_transport_type'])
 
 
 class TransactionNode(_TransactionNode):
@@ -48,6 +50,10 @@ class TransactionNode(_TransactionNode):
             return result
         self._string_table = StringTable()
         return self._string_table
+
+    @property
+    def distributed_trace_received(self):
+        return self.parent_id is not None
 
     def time_metrics(self, stats):
         """Return a generator yielding the timed metrics for the
@@ -127,8 +133,10 @@ class TransactionNode(_TransactionNode):
 
         if self.type == 'WebTransaction':
             metric_prefix = 'WebTransactionTotalTime'
+            metric_suffix = 'Web'
         else:
             metric_prefix = 'OtherTransactionTotalTime'
+            metric_suffix = 'Other'
 
         yield TimeMetric(
                 name='%s/%s' % (metric_prefix, self.name_for_metric),
@@ -141,6 +149,37 @@ class TransactionNode(_TransactionNode):
                 scope='',
                 duration=self.total_time,
                 exclusive=self.total_time)
+
+        # Generate Distributed Tracing metrics
+
+        if 'distributed_tracing' in self.settings.feature_flag:
+            if self.distributed_trace_received:
+                dt_tag = "%s/%s/%s/%s/all" % (
+                    self.parent_type, self.parent_account,
+                    self.parent_app, self.parent_transport_type)
+            else:
+                dt_tag = "Unknown/Unknown/Unknown/Unknown/all"
+
+            for bonus_tag in ['', metric_suffix]:
+                yield TimeMetric(
+                    name="DurationByCaller/%s%s" % (dt_tag, bonus_tag),
+                    scope='',
+                    duration=self.duration,
+                    exclusive=self.duration)
+
+                if self.distributed_trace_received:
+                    yield TimeMetric(
+                        name="TransportDuration/%s%s" % (dt_tag, bonus_tag),
+                        scope='',
+                        duration=self.parent_transport_duration,
+                        exclusive=self.parent_transport_duration)
+
+                if self.errors:
+                    yield TimeMetric(
+                        name='ErrorsByCaller/%s%s' % (dt_tag, bonus_tag),
+                        scope='',
+                        duration=0.0,
+                        exclusive=None)
 
         # Generate Error metrics
 
@@ -160,23 +199,13 @@ class TransactionNode(_TransactionNode):
                     exclusive=None)
 
             # Generate rollup metric for WebTransaction errors.
-            if self.type == 'WebTransaction':
-                yield TimeMetric(
-                        name='Errors/allWeb',
-                        scope='',
-                        duration=0.0,
-                        exclusive=None)
-
-            # Generate rollup metric for OtherTransaction errors.
-            if self.type != 'WebTransaction':
-                yield TimeMetric(
-                        name='Errors/allOther',
-                        scope='',
-                        duration=0.0,
-                        exclusive=None)
+            yield TimeMetric(
+                    name='Errors/all%s' % metric_suffix,
+                    scope='',
+                    duration=0.0,
+                    exclusive=None)
 
         # Now for the children.
-
         for child in self.children:
             for metric in child.time_metrics(stats, self, self):
                 yield metric
@@ -490,7 +519,7 @@ class TransactionNode(_TransactionNode):
 
             return self._event_intrinsics_cache.copy()
 
-        intrinsics = {}
+        intrinsics = self.distributed_trace_intrinsics.copy()
 
         intrinsics['timestamp'] = self.start_time
         intrinsics['duration'] = self.response_time

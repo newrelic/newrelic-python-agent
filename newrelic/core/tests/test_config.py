@@ -3,14 +3,16 @@ import unittest
 
 import newrelic.core.config
 
+
 class TestSettings(unittest.TestCase):
 
     def test_category_creation(self):
-        d = {'a1': 1, 'a2.b2': 2, 'a3.b3.c3': 3 }
+        d = {'a1': 1, 'a2.b2': 2, 'a3.b3.c3': 3}
         c = newrelic.core.config.apply_server_side_settings(d)
         self.assertEqual(1, c.a1)
         self.assertEqual(2, c.a2.b2)
         self.assertEqual(3, c.a3.b3.c3)
+
 
 class TestTransactionTracerConfig(unittest.TestCase):
 
@@ -21,16 +23,17 @@ class TestTransactionTracerConfig(unittest.TestCase):
         self.assertEqual(None, tt.transaction_threshold)
 
     def test_enabled(self):
-        d = {'transaction_tracer.enabled': False }
+        d = {'transaction_tracer.enabled': False}
         c = newrelic.core.config.apply_server_side_settings(d)
         tt = c.transaction_tracer
         self.assertFalse(tt.enabled)
 
     def test_transaction_threshold(self):
-        d = {'transaction_tracer.transaction_threshold': 0.666 }
+        d = {'transaction_tracer.transaction_threshold': 0.666}
         c = newrelic.core.config.apply_server_side_settings(d)
         tt = c.transaction_tracer
         self.assertEqual(0.666, tt.transaction_threshold)
+
 
 class TestUtilizationConfig(unittest.TestCase):
 
@@ -40,20 +43,20 @@ class TestUtilizationConfig(unittest.TestCase):
         self.assertTrue(c.utilization.detect_docker)
 
     def test_detect_aws_false(self):
-        d = {'utilization.detect_aws': False }
+        d = {'utilization.detect_aws': False}
         c = newrelic.core.config.apply_server_side_settings(d)
         self.assertFalse(c.utilization.detect_aws)
         self.assertTrue(c.utilization.detect_docker)
 
     def test_docker_false(self):
-        d = {'utilization.detect_docker': False }
+        d = {'utilization.detect_docker': False}
         c = newrelic.core.config.apply_server_side_settings(d)
         self.assertTrue(c.utilization.detect_aws)
         self.assertFalse(c.utilization.detect_docker)
 
     def test_detect_utilization_false(self):
         d = {'utilization.detect_aws': False,
-             'utilization.detect_docker': False }
+             'utilization.detect_docker': False}
         c = newrelic.core.config.apply_server_side_settings(d)
         self.assertFalse(c.utilization.detect_aws)
         self.assertFalse(c.utilization.detect_docker)
@@ -104,7 +107,8 @@ class TestIgnoreStatusCodes(unittest.TestCase):
 
     def test_remove_single_many_not_already_in_set(self):
         values = set([100, 101, 102])
-        newrelic.core.config._parse_ignore_status_codes('!101 !102 !404 !503', values)
+        newrelic.core.config._parse_ignore_status_codes(
+                '!101 !102 !404 !503', values)
         self.assertEqual(values, set([100]))
 
     def test_remove_range(self):
@@ -125,8 +129,8 @@ class TestIgnoreStatusCodes(unittest.TestCase):
 
     def test_remove_range_many_not_already_in_set(self):
         values = set(range(100, 106))
-        newrelic.core.config._parse_ignore_status_codes('!101-102 !103-104 !500-503',
-                values)
+        newrelic.core.config._parse_ignore_status_codes(
+                '!101-102 !103-104 !500-503', values)
         self.assertEqual(values, set([100, 105]))
 
     def test_remove_range_length_one(self):
@@ -150,6 +154,7 @@ class TestIgnoreStatusCodes(unittest.TestCase):
         newrelic.core.config._parse_ignore_status_codes(
                 '100-110 200 201 202 !201 !101-109 !403-404', values)
         self.assertEqual(values, set([100, 110, 200, 202]))
+
 
 class TestCreateSettingsSnapshot(unittest.TestCase):
 
@@ -184,6 +189,7 @@ class TestCreateSettingsSnapshot(unittest.TestCase):
         c = newrelic.core.config.apply_server_side_settings(server, self.local)
         self.assertEqual(c.transaction_tracer.record_sql, 'obfuscated')
 
+
 class TestAgentAttributesValid(unittest.TestCase):
     def test_valid_wildcards(self):
         result = newrelic.core.config._parse_attributes('a.b* b* c.* AB* *')
@@ -202,18 +208,52 @@ class TestAgentAttributesValid(unittest.TestCase):
         self.assertEqual(result, ['aa', 'Ab', 'c', 'a_b'])
 
     def test_validate_attribute_size(self):
-        result = newrelic.core.config._parse_attributes('a'*255 + ' abc')
-        self.assertEqual(result, ['a'*255, 'abc'])
-        result = newrelic.core.config._parse_attributes('a'*256 + ' abc')
+        result = newrelic.core.config._parse_attributes('a' * 255 + ' abc')
+        self.assertEqual(result, ['a' * 255, 'abc'])
+        result = newrelic.core.config._parse_attributes('a' * 256 + ' abc')
         self.assertEqual(result, ['abc'])
 
     def test_unicode_strings_length(self):
-        result = newrelic.core.config._parse_attributes(u'\u00F6'*127 +
+        result = newrelic.core.config._parse_attributes(u'\u00F6' * 127 +
                 u' \U0001F6B2')
-        self.assertEqual(result, [u'\u00F6'*127, u'\U0001F6B2'])
-        result = newrelic.core.config._parse_attributes(u"\u00F6"*128 +
+        self.assertEqual(result, [u'\u00F6' * 127, u'\U0001F6B2'])
+        result = newrelic.core.config._parse_attributes(u"\u00F6" * 128 +
                 u' \U0001F6B2')
         self.assertEqual(result, [u'\U0001F6B2'])
+
+
+class TestCrossProcessIdParsing(unittest.TestCase):
+    def test_parse_from_cross_process_id_success(self):
+        config = {
+            'cross_process_id': '800#900',
+        }
+        settings = newrelic.core.config.apply_server_side_settings(config)
+        assert settings.account_id == '800'
+        assert settings.application_id == '900'
+
+    def test_parse_account_id_success(self):
+        config = {
+            'cross_process_id': '1#1',
+            'account_id': '800',
+        }
+        settings = newrelic.core.config.apply_server_side_settings(config)
+        assert settings.account_id == '800'
+
+    def test_parse_application_id_success(self):
+        config = {
+            'cross_process_id': '1#1',
+            'application_id': '800',
+        }
+        settings = newrelic.core.config.apply_server_side_settings(config)
+        assert settings.application_id == '800'
+
+    def test_parse_invalid_cross_process_id(self):
+        config = {
+            'cross_process_id': '700#800#900',
+        }
+        settings = newrelic.core.config.apply_server_side_settings(config)
+        assert not settings.account_id
+        assert not settings.application_id
 
 
 if __name__ == '__main__':

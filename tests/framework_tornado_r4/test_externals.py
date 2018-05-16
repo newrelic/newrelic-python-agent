@@ -5,8 +5,12 @@ import threading
 
 from wsgiref.simple_server import make_server
 
+from newrelic.api.transaction import current_transaction
 from newrelic.api.background_task import background_task
 
+from testing_support.external_fixtures import (
+        validate_distributed_tracing_header,
+        validate_outbound_headers)
 from testing_support.fixtures import (validate_transaction_metrics,
         override_application_settings)
 from testing_support.mock_external_http_server import (
@@ -102,8 +106,9 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True,
 ])
 @pytest.mark.parametrize('request_type', ['uri', 'class'])
 @pytest.mark.parametrize('num_requests', [1, 2])
+@pytest.mark.parametrize('distributed_tracing', [True, False])
 def test_httpclient(cat_enabled, request_type, client_class,
-        user_header, num_requests, external):
+        user_header, num_requests, distributed_tracing, external):
 
     port = external.port
 
@@ -111,14 +116,20 @@ def test_httpclient(cat_enabled, request_type, client_class,
         ('External/localhost:%s/tornado.httpclient/GET' % port, num_requests)
     ]
 
+    feature_flag = set()
+    if distributed_tracing:
+        feature_flag.add('distributed_tracing')
+
     @override_application_settings(
-            {'cross_application_tracer.enabled': cat_enabled})
+            {'cross_application_tracer.enabled': cat_enabled,
+             'feature_flag': feature_flag})
     @validate_transaction_metrics(
-        'make_request',
+        'test_externals:test_httpclient',
         background_task=True,
         rollup_metrics=expected_metrics,
         scoped_metrics=expected_metrics
     )
+    @background_task(name='test_externals:test_httpclient')
     def _test():
         headers = {}
         if user_header:
@@ -128,27 +139,36 @@ def test_httpclient(cat_enabled, request_type, client_class,
                 headers=headers, count=num_requests)
         assert response.code == 200
 
-        sent_headers = response.body
+        body = response.body
+        if hasattr(body, 'decode'):
+            body = body.decode('utf-8')
+
+        headers = {}
+        for header_line in body.split('\n'):
+            if ':' not in header_line:
+                continue
+            header_key, header_val = header_line.split(':', 1)
+            header_key = header_key.strip()
+            header_val = header_val.strip()
+            headers[header_key] = header_val
 
         # User headers override all inserted NR headers
         if user_header:
-            header_str = '%s: USER' % user_header
-            header_str = header_str.encode('utf-8')
-            assert header_str in sent_headers, (header_str, sent_headers)
+            assert headers[user_header] == 'USER'
+        elif cat_enabled:
+            t = current_transaction()
+            assert t
+            t._test_request_headers = headers
 
-        if cat_enabled:
-            # Check that we sent CAT headers
-            assert b'X-NewRelic-ID' in sent_headers
-            assert b'X-NewRelic-Transaction' in sent_headers
-
-            assert b'X-NewRelic-App-Data' not in sent_headers
+            if distributed_tracing:
+                validate_distributed_tracing_header()
+            else:
+                validate_outbound_headers()
         else:
-            if hasattr(sent_headers, 'decode'):
-                sent_headers = sent_headers.decode('utf-8')
-
             # new relic shouldn't add anything to the outgoing
-            sent_headers = sent_headers.lower()
-            assert 'x-newrelic' not in sent_headers, sent_headers
+            assert 'x-newrelic' not in body, body
+
+        assert 'X-NewRelic-App-Data' not in headers
 
     _test()
 

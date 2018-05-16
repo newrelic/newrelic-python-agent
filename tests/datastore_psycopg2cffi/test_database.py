@@ -49,6 +49,7 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/operation/Postgres/commit', 3),
         ('Datastore/operation/Postgres/rollback', 1)]
 
+
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
         rollup_metrics=_test_execute_via_cursor_rollup_metrics,
@@ -64,8 +65,12 @@ def test_execute_via_cursor():
         cursor = connection.cursor()
 
         psycopg2cffi.extensions.register_type(psycopg2cffi.extensions.UNICODE)
-        psycopg2cffi.extensions.register_type(psycopg2cffi.extensions.UNICODE, connection)
-        psycopg2cffi.extensions.register_type(psycopg2cffi.extensions.UNICODE, cursor)
+        psycopg2cffi.extensions.register_type(
+            psycopg2cffi.extensions.UNICODE,
+            connection)
+        psycopg2cffi.extensions.register_type(
+            psycopg2cffi.extensions.UNICODE,
+            cursor)
 
         cursor.execute("""drop table if exists datastore_psycopg2cffi""")
 
@@ -78,7 +83,8 @@ def test_execute_via_cursor():
 
         cursor.execute("""select * from datastore_psycopg2cffi""")
 
-        for row in cursor: pass
+        for row in cursor:
+            pass
 
         cursor.execute("""update datastore_psycopg2cffi set a=%s, b=%s, """
                 """c=%s where a=%s""", (4, 4.0, '4.0', 1))
@@ -93,17 +99,20 @@ def test_execute_via_cursor():
         connection.rollback()
         connection.commit()
 
+
 _test_rollback_on_exception_scoped_metrics = [
         ('Function/psycopg2cffi:connect', 1),
         ('Function/psycopg2cffi._impl.connection:Connection.__enter__', 1),
         ('Function/psycopg2cffi._impl.connection:Connection.__exit__', 1),
         ('Datastore/operation/Postgres/rollback', 1)]
 
+
 _test_rollback_on_exception_rollup_metrics = [
         ('Datastore/all', 2),
         ('Datastore/allOther', 2),
         ('Datastore/Postgres/all', 2),
         ('Datastore/Postgres/allOther', 2)]
+
 
 @validate_transaction_metrics('test_database:test_rollback_on_exception',
         scoped_metrics=_test_rollback_on_exception_scoped_metrics,
@@ -116,11 +125,12 @@ def test_rollback_on_exception():
         with psycopg2cffi.connect(
                 database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
                 password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-                port=DB_SETTINGS['port']) as connection:
+                port=DB_SETTINGS['port']):
 
             raise RuntimeError('error')
     except RuntimeError:
         pass
+
 
 _test_async_mode_scoped_metrics = [
         ('Function/psycopg2cffi:connect', 1),
@@ -140,6 +150,7 @@ _test_async_mode_rollup_metrics = [
         ('Datastore/statement/Postgres/datastore_psycopg2cffi/insert', 1),
         ('Datastore/operation/Postgres/drop', 1),
         ('Datastore/operation/Postgres/create', 1)]
+
 
 @validate_stats_engine_explain_plan_output_is_none()
 @validate_transaction_slow_sql_count(num_slow_sql=4)

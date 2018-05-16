@@ -5,7 +5,6 @@ String repoGHE = 'python_agent'
 String repoFull = "${organization}/${repoGHE}"
 String integTestSuffix = "__pr-integration-test"
 String slackChannelPrivate = '#python-dev'
-String slackChannelPublic = '#python-agent'
 String gitBranch
 
 
@@ -41,6 +40,7 @@ use(extensions) {
             }
 
             steps {
+                shell("git fetch --tags --progress git@source.datanerd.us:${repoFull}.git +refs/heads/*:refs/remotes/origin/*")
                 reseedFrom('jenkins/reseed-pr.groovy')
             }
         }

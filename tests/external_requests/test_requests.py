@@ -3,7 +3,8 @@ import requests
 import requests.exceptions
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors, validate_tt_parenting)
+    validate_transaction_errors, validate_tt_parenting,
+    override_application_settings)
 from testing_support.external_fixtures import (cache_outgoing_headers,
     validate_cross_process_headers, insert_incoming_headers,
     validate_external_node_params)
@@ -147,12 +148,21 @@ def test_wrong_datatype_url_get():
         pass
 
 
-@validate_transaction_errors(errors=[])
-@background_task()
-@cache_outgoing_headers
-@validate_cross_process_headers
-def test_requests_cross_process_request():
-    requests.get('http://www.example.com/')
+@pytest.mark.parametrize('distributed_tracing', (True, False))
+def test_requests_cross_process_request(distributed_tracing):
+
+    @validate_transaction_errors(errors=[])
+    @background_task(name='test_requests:test_requests_cross_process_request')
+    @cache_outgoing_headers
+    @validate_cross_process_headers
+    def _test():
+        requests.get('http://www.example.com/')
+
+    if distributed_tracing:
+        _test = override_application_settings(
+                {'feature_flag': set(('distributed_tracing',))})(_test)
+
+    _test()
 
 
 _test_requests_cross_process_response_scoped_metrics = [

@@ -1,10 +1,12 @@
 import functools
 import types
+import sys
 
 from newrelic.api.transaction import current_transaction
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.common.object_names import callable_name
+
 
 def GeneratorTraceWrapper(wrapped, name=None, group=None, label=None,
             params=None):
@@ -81,7 +83,7 @@ def GeneratorTraceWrapper(wrapped, name=None, group=None, label=None,
                                 yielded = generator.send(value)
 
                         except StopIteration:
-                            raise
+                            break
 
                         except Exception:
                             raise
@@ -111,9 +113,11 @@ def GeneratorTraceWrapper(wrapped, name=None, group=None, label=None,
 
     return FunctionWrapper(wrapped, wrapper)
 
+
 def generator_trace(name=None, group=None, label=None, params=None):
     return functools.partial(GeneratorTraceWrapper, name=name,
             group=group, label=label, params=params)
+
 
 def wrap_generator_trace(module, object_path, name=None,
         group=None, label=None, params=None):

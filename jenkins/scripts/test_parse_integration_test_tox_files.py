@@ -238,6 +238,19 @@ _test_get_envs_django_0110_envs = [
     'pypy-Django0110-new-middleware-without-extensions',
 ]
 
+_test_get_envs_django_0110_envs_no_cext = [
+    'py27-Django0110-old-middleware-without-extensions',
+    'py27-Django0110-new-middleware-without-extensions',
+    'py34-Django0110-old-middleware-without-extensions',
+    'py34-Django0110-new-middleware-without-extensions',
+    'py35-Django0110-old-middleware-without-extensions',
+    'py35-Django0110-new-middleware-without-extensions',
+    'py36-Django0110-old-middleware-without-extensions',
+    'py36-Django0110-new-middleware-without-extensions',
+    'pypy-Django0110-old-middleware-without-extensions',
+    'pypy-Django0110-new-middleware-without-extensions',
+]
+
 
 class TestGetEnvs(unittest.TestCase):
 
@@ -322,6 +335,16 @@ class TestGetEnvs(unittest.TestCase):
 
         actual = get_envs(self.tox_file.name, restrict_to='not_Django0110')
         expected = []
+
+        self.assertEqual(actual, expected)
+
+    def test_multi_version_tox_file_exclude_cext_environments(self):
+        self.tox_file = self.get_tox_file(
+                _test_get_envs_tox_file_multi_version)
+
+        actual = get_envs(self.tox_file.name, restrict_to='Django0110',
+                include_cext=False)
+        expected = _test_get_envs_django_0110_envs_no_cext
 
         self.assertEqual(actual, expected)
 

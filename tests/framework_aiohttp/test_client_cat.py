@@ -7,7 +7,7 @@ from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import current_transaction
 
 from testing_support.external_fixtures import (create_incoming_headers,
-        validate_external_node_params)
+        validate_external_node_params, validate_cross_process_headers)
 from testing_support.fixtures import (override_application_settings,
         validate_transaction_metrics)
 from testing_support.mock_external_http_server import (
@@ -59,25 +59,36 @@ def mock_header_server():
         yield
 
 
-@pytest.mark.parametrize('cat_enabled', [True, False])
-def test_outbound_cross_process_headers(cat_enabled, mock_header_server):
+@pytest.mark.parametrize('cat_enabled', (True, False))
+@pytest.mark.parametrize('distributed_tracing', (True, False))
+def test_outbound_cross_process_headers(cat_enabled, distributed_tracing,
+        mock_header_server):
 
-    @override_application_settings(
-            {'cross_application_tracer.enabled': cat_enabled})
-    @background_task()
+    feature_flag = set()
+    if distributed_tracing:
+        feature_flag.add('distributed_tracing')
+
     def task_test():
         loop = asyncio.get_event_loop()
         headers = loop.run_until_complete(fetch('http://localhost:8989'))
 
         transaction = current_transaction()
-        expected_headers = ExternalTrace.generate_request_headers(transaction)
-
-        for expected_header, expected_value in expected_headers:
-            assert headers.get(expected_header) == expected_value
+        transaction._test_request_headers = headers
 
         if not cat_enabled:
             assert not headers.get(ExternalTrace.cat_id_key)
             assert not headers.get(ExternalTrace.cat_transaction_key)
+            assert not headers.get(ExternalTrace.cat_distributed_trace_key)
+
+    if cat_enabled:
+        task_test = validate_cross_process_headers(task_test)
+
+    task_test = background_task(
+            name='test_client_cat:'
+                 'test_outbound_cross_process_headers')(task_test)
+    task_test = override_application_settings({
+                        'cross_application_tracer.enabled': cat_enabled,
+                        'feature_flag': feature_flag})(task_test)
 
     task_test()
 

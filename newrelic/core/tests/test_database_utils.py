@@ -638,6 +638,11 @@ CALL_PARSE_TESTS = [
     ('foo', 'call'),
     """CALL FOO 1 2 """
 ),
+(
+    # Call.
+    ('foo.bar', 'call'),
+    """CALL FOO.BAR(1, 2) """
+),
 ]
 
 EXEC_PARSE_TESTS = [

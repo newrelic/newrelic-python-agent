@@ -312,7 +312,7 @@ def _parse_drop(sql):
     return _join_identifier(_parse_table_re.search(sql))
 
 
-_parse_call_p = r'\s*CALL\s+(?!\()(\w+)'
+_parse_call_p = r'\s*CALL\s+(?!\()(\w+(\.\w+)*)'
 _parse_call_re = re.compile(_parse_call_p, re.IGNORECASE)
 
 

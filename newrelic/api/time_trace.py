@@ -159,6 +159,8 @@ class TimeTrace(object):
                     'after the trace had been finalized. Trace: %r \n%s',
                     self, ''.join(traceback.format_stack()[:-1]))
 
+            return
+
         # Wipe out transaction reference so can't use object
         # again. Retain reference as local variable for use in
         # this call though.

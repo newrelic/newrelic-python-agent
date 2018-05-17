@@ -1,6 +1,7 @@
 import asyncio
 import sys
 from aiohttp import web, WSMsgType, ClientSession
+from newrelic.api.function_trace import function_trace
 
 
 @asyncio.coroutine
@@ -30,6 +31,29 @@ def non_500_error(request):
 @asyncio.coroutine
 def raise_404(request):
     raise web.HTTPNotFound()
+
+
+@asyncio.coroutine
+@function_trace()
+def wait():
+    yield from asyncio.sleep(0.1)
+
+
+@asyncio.coroutine
+def run_task(loop):
+    yield from wait()
+    loop.stop()
+
+
+@asyncio.coroutine
+def background(request):
+    try:
+        loop = request.loop
+    except AttributeError:
+        loop = request.task._loop
+
+    asyncio.tasks.ensure_future(run_task(loop))
+    return web.Response(text='Background Task Scheduled')
 
 
 class HelloWorldView(web.View):
@@ -140,6 +164,7 @@ def make_app(middlewares=None, loop=None):
     app.router.add_route('*', '/non_500_error', non_500_error)
     app.router.add_route('*', '/raise_404', raise_404)
     app.router.add_route('*', '/hang', hang)
+    app.router.add_route('*', '/background', background)
     app.router.add_route('*', '/ws', websocket_handler)
     app.router.add_route('*', '/multi_fetch', multi_fetch_handler)
 

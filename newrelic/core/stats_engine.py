@@ -957,6 +957,13 @@ class StatsEngine(object):
                 settings.custom_insights_events.enabled):
             self.custom_events.merge(transaction.custom_events)
 
+        # Merge in span events
+
+        if (settings.span_events.enabled and
+                'span_events' in settings.feature_flag):
+            for event in transaction.span_events(self.__stats_table):
+                self.__span_events.add(event, priority=transaction.priority)
+
     def metric_data(self, normalizer=None):
         """Returns a list containing the low level metric data for
         sending to the core application pertaining to the reporting

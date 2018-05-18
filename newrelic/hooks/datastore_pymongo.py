@@ -7,6 +7,7 @@ _pymongo_client_methods = ('save', 'insert', 'update', 'drop', 'remove',
     'options', 'group', 'rename', 'distinct', 'map_reduce',
     'inline_map_reduce', 'find_and_modify')
 
+
 def instrument_pymongo_connection(module):
     # Must name function explicitly as pymongo overrides the
     # __getattr__() method in a way that breaks introspection.
@@ -17,6 +18,7 @@ def instrument_pymongo_connection(module):
             name='%s:Connection.__init__' % module.__name__,
             terminal=True, rollup=rollup)
 
+
 def instrument_pymongo_mongo_client(module):
     # Must name function explicitly as pymongo overrides the
     # __getattr__() method in a way that breaks introspection.
@@ -26,6 +28,7 @@ def instrument_pymongo_mongo_client(module):
     wrap_function_trace(module, 'MongoClient.__init__',
             name='%s:MongoClient.__init__' % module.__name__,
             terminal=True, rollup=rollup)
+
 
 def instrument_pymongo_collection(module):
     def _collection_name(collection, *args, **kwargs):

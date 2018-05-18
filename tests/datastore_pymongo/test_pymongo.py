@@ -9,6 +9,7 @@ from newrelic.api.background_task import background_task
 
 MONGODB_HOST, MONGODB_PORT = mongodb_settings()
 
+
 def _exercise_mongo(db):
     db.my_collection.save({"x": 10})
     db.my_collection.save({"x": 8})
@@ -24,6 +25,7 @@ def _exercise_mongo(db):
         item["x"]
 
     [item["x"] for item in db.my_collection.find().limit(2).skip(1)]
+
 
 # Common Metrics for tests that use _exercise_mongo().
 
@@ -55,6 +57,7 @@ _test_pymongo_connection_scoped_metrics = (_test_pymongo_scoped_metrics +
 _test_pymongo_connection_rollup_metrics = (_test_pymongo_rollup_metrics +
         [('Function/pymongo.connection:Connection.__init__', 1)])
 
+
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
         'test_pymongo:test_mongodb_connection_operation',
@@ -67,6 +70,7 @@ def test_mongodb_connection_operation():
     db = connection.test
     _exercise_mongo(db)
 
+
 # Add MongoClient metric
 
 _test_pymongo_mongo_client_scoped_metrics = (_test_pymongo_scoped_metrics +
@@ -74,6 +78,7 @@ _test_pymongo_mongo_client_scoped_metrics = (_test_pymongo_scoped_metrics +
 
 _test_pymongo_mongo_client_rollup_metrics = (_test_pymongo_rollup_metrics +
         [('Function/pymongo.mongo_client:MongoClient.__init__', 1)])
+
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
@@ -87,12 +92,14 @@ def test_mongodb_mongo_client_operation():
     db = client.test
     _exercise_mongo(db)
 
+
 @validate_database_duration()
 @background_task()
 def test_mongodb_database_duration():
     client = pymongo.MongoClient(MONGODB_HOST, MONGODB_PORT)
     db = client.test
     _exercise_mongo(db)
+
 
 @validate_database_duration()
 @background_task()

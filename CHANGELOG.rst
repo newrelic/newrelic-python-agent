@@ -1,6 +1,12 @@
 unreleased
 ----------
 
+- Improve support for PyMongo v3.x
+
+  PyMongo v3 added many new methods on the `pymongo.Collection` object that did
+  not exist in v2. These methods have now been instrumented. Calls to these
+  methods will now appear in APM.
+
 
 3.2.1 (2018-05-16)
 ------------------

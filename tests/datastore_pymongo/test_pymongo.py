@@ -1,4 +1,5 @@
 import pymongo
+import pytest
 import sqlite3
 
 from testing_support.fixtures import (validate_transaction_metrics,
@@ -58,6 +59,8 @@ _test_pymongo_connection_rollup_metrics = (_test_pymongo_rollup_metrics +
         [('Function/pymongo.connection:Connection.__init__', 1)])
 
 
+@pytest.mark.skipif(pymongo.version_tuple >= (3, 0),
+        reason='PyMongo version does not have pymongo.Connection.')
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
         'test_pymongo:test_mongodb_connection_operation',

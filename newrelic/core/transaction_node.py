@@ -566,3 +566,8 @@ class TransactionNode(_TransactionNode):
         self._event_intrinsics_cache = intrinsics.copy()
 
         return intrinsics
+
+    def span_events(self, stats):
+        for child in self.children:
+            for event in child.span_events(stats, self):
+                yield event

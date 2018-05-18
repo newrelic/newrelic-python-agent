@@ -14,7 +14,6 @@ _ExternalNode = namedtuple('_ExternalNode',
         'duration', 'exclusive', 'params', 'is_async'])
 
 
-
 class ExternalNode(_ExternalNode):
 
     @property
@@ -147,3 +146,15 @@ class ExternalNode(_ExternalNode):
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,
                 label=None)
+
+    def span_event(self, base_attrs=None):
+        i_attrs = base_attrs and base_attrs.copy() or {}
+
+        return [i_attrs, {}, {}]
+
+    def span_events(self, stats, root):
+        yield self.span_event()
+
+        for child in self.children:
+            for event in child.span_events(stats, root):
+                yield event

@@ -86,6 +86,55 @@ class TestStatsEngineSpanEvents(unittest.TestCase):
         self.assertEqual(stats.span_events.num_samples, 0)
         self.assertEqual(stats.span_events.num_seen, 0)
 
+    def test_span_events_harvest_snapshot(self):
+        stats = StatsEngine()
+
+        stats.span_events.add('event')
+        self.assertEqual(stats.span_events.num_samples, 1)
+        self.assertEqual(stats.span_events.num_seen, 1)
+
+        snapshot = stats.harvest_snapshot()
+        self.assertEqual(snapshot.span_events.num_samples, 1)
+        self.assertEqual(snapshot.span_events.num_seen, 1)
+
+        self.assertEqual(stats.span_events.num_samples, 0)
+        self.assertEqual(stats.span_events.num_seen, 0)
+        self.assertEqual(stats.span_events.capacity, 1000)
+
+    def test_span_events_merge(self):
+        stats = StatsEngine()
+        stats.reset_stats(self.settings)
+
+        stats.span_events.add('event')
+        self.assertEqual(stats.span_events.num_samples, 1)
+        self.assertEqual(stats.span_events.num_seen, 1)
+
+        snapshot = StatsEngine()
+        snapshot.span_events.add('event')
+        self.assertEqual(snapshot.span_events.num_samples, 1)
+        self.assertEqual(snapshot.span_events.num_seen, 1)
+
+        stats.merge(snapshot)
+        self.assertEqual(stats.span_events.num_samples, 2)
+        self.assertEqual(stats.span_events.num_seen, 2)
+
+    def test_span_events_rollback(self):
+        stats = StatsEngine()
+        stats.reset_stats(self.settings)
+
+        stats.span_events.add('event')
+        self.assertEqual(stats.span_events.num_samples, 1)
+        self.assertEqual(stats.span_events.num_seen, 1)
+
+        snapshot = StatsEngine()
+        snapshot.span_events.add('event')
+        self.assertEqual(snapshot.span_events.num_samples, 1)
+        self.assertEqual(snapshot.span_events.num_seen, 1)
+
+        stats.rollback(snapshot)
+        self.assertEqual(stats.span_events.num_samples, 2)
+        self.assertEqual(stats.span_events.num_seen, 2)
+
 
 if __name__ == '__main__':
     unittest.main()

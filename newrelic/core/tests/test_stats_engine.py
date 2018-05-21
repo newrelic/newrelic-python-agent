@@ -46,5 +46,46 @@ class TestStatsEngineCustomEvents(unittest.TestCase):
         self.assertEqual(stats.custom_events.num_seen, 0)
 
 
+class TestStatsEngineSpanEvents(unittest.TestCase):
+
+    def setUp(self):
+        self.settings = global_settings()
+
+    def test_span_events_initial_values(self):
+        stats = StatsEngine()
+        self.assertEqual(stats.span_events.capacity, 1000)
+        self.assertEqual(stats.span_events.num_samples, 0)
+        self.assertEqual(stats.span_events.num_seen, 0)
+
+    def test_span_events_reset_stats_set_capacity_enabled(self):
+        stats = StatsEngine()
+        self.assertEqual(stats.span_events.capacity, 1000)
+
+        self.settings.span_events.max_samples_stored = 321
+        stats.reset_stats(self.settings)
+
+        self.assertEqual(stats.span_events.capacity, 321)
+
+    def test_span_events_reset_stats_set_capacity_disabled(self):
+        stats = StatsEngine()
+        self.assertEqual(stats.span_events.capacity, 1000)
+
+        self.settings.span_events.max_samples_stored = 321
+        stats.reset_stats(None)
+
+        self.assertEqual(stats.span_events.capacity, 1000)
+
+    def test_span_events_reset_stats_after_adding_samples(self):
+        stats = StatsEngine()
+
+        stats.span_events.add('event')
+        self.assertEqual(stats.span_events.num_samples, 1)
+        self.assertEqual(stats.span_events.num_seen, 1)
+
+        stats.reset_stats(self.settings)
+        self.assertEqual(stats.span_events.num_samples, 0)
+        self.assertEqual(stats.span_events.num_seen, 0)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -17,6 +17,7 @@ from heapq import heapreplace, heapify
 
 import newrelic.packages.six as six
 
+from newrelic.core import config
 from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR
 from newrelic.core.attribute import create_user_attributes
 
@@ -349,7 +350,7 @@ class StatsEngine(object):
         self.__transaction_events = SampledDataSet()
         self.__error_events = SampledDataSet()
         self.__custom_events = SampledDataSet()
-        self.__span_events = SampledDataSet()
+        self.__span_events = SampledDataSet(config.SPAN_EVENT_RESERVOIR_SIZE)
         self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__slow_transaction_map = {}
@@ -1348,7 +1349,8 @@ class StatsEngine(object):
             self.__span_events = SampledDataSet(
                     self.__settings.span_events.max_samples_stored)
         else:
-            self.__span_events = SampledDataSet()
+            self.__span_events = SampledDataSet(
+                    config.SPAN_EVENT_RESERVOIR_SIZE)
 
     def reset_synthetics_events(self):
         """Resets the accumulated statistics back to initial state for

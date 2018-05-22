@@ -143,6 +143,10 @@ class Application(object):
                 return False
             elif priority >= self._min_sampling_priority:
                 self._transaction_sampled_count += 1
+
+                if self._transaction_sampled_count > self._sampling_target:
+                    self._calc_min_sampling_priority()
+
                 return True
 
         return False
@@ -1287,11 +1291,7 @@ class Application(object):
                 with self._stats_lock:
                     transaction_count = self._transaction_count
                     if transaction_count:
-                        sampling_ratio = (
-                                float(self._sampling_target) /
-                                transaction_count)
-                        sampling_ratio = min(sampling_ratio, 1.0)
-                        self._min_sampling_priority = (1.0 - sampling_ratio)
+                        self._calc_min_sampling_priority()
 
                     # For subsequent harvests, collect a max of twice the
                     # self._sampling_target value.
@@ -1723,6 +1723,19 @@ class Application(object):
 
         with self._stats_lock:
             self._stats_engine.merge_custom_metrics(internal_metrics.metrics())
+
+    # NOTE: only call under lock!
+    def _calc_min_sampling_priority(self):
+        target = self._sampling_target
+        if self._transaction_sampled_count > target:
+            ratio = target / self._transaction_sampled_count
+            target = target ** (ratio) - target ** 0.51
+
+        sampling_ratio = 0
+        if self._transaction_count > 0:
+            sampling_ratio = float(target) / self._transaction_count
+        sampling_ratio = min(1.0, sampling_ratio)
+        self._min_sampling_priority = (1.0 - sampling_ratio)
 
     def report_profile_data(self):
         """Report back any profile data. This may be partial thread

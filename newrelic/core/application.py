@@ -1728,7 +1728,7 @@ class Application(object):
     def _calc_min_sampling_priority(self):
         target = self._sampling_target
         if self._transaction_sampled_count > target:
-            ratio = target / self._transaction_sampled_count
+            ratio = target / float(self._transaction_sampled_count)
             target = target ** (ratio) - target ** 0.51
 
         sampling_ratio = 0

@@ -136,5 +136,5 @@ class TestSamplingProbability(newrelic.tests.test_cases.TestCase):
             self.application._transaction_sampled_count = tsc
             self.application._calc_min_sampling_priority()
 
-            diff = self.application._min_sampling_priority - expectedMSP[tsc]
-            self.assertEqual(diff < 0.001, True)
+            self.assertAlmostEqual(self.application._min_sampling_priority,
+                    expectedMSP[tsc])

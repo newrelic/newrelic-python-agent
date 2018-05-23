@@ -62,11 +62,11 @@ class TestSamplingProbability(newrelic.tests.test_cases.TestCase):
 
     def test_sampling_probability_max_sampled(self):
         # Set max_sampled to 20
-        target = 20
+        target = 2 * self.application._sampling_target
         self.application._max_sampled = target
 
         for _ in range(20):
-            assert self.application.compute_sampled(0.0) is True
+            assert self.application.compute_sampled(1.0) is True
 
         assert self.application.compute_sampled(1.0) is False
         self.assertEqual(self.application._transaction_sampled_count, 20)
@@ -121,3 +121,19 @@ class TestSamplingProbability(newrelic.tests.test_cases.TestCase):
 
         self.assertEqual(self.application._transaction_sampled_count, 0)
         self.assertEqual(self.application._transaction_count, 0)
+
+    def test_exponential_backoff(self):
+        self.application._transaction_count = 100
+
+        expectedMSP = [
+            0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9,
+            0.9512462826139941, 0.9642301587871667, 0.9735792049702137,
+            0.9805646189006507, 0.9859434773568351, 0.9901897153501046,
+            0.9936126144884015, 0.9964212290549166, 0.998761182830125
+        ]
+
+        for tsc in range(0, 20):
+            self.application._transaction_sampled_count = tsc
+            self.application._calc_min_sampling_priority()
+            diff = self.application._min_sampling_priority - expectedMSP[tsc]
+            self.assertEqual(diff < 0.001, True)

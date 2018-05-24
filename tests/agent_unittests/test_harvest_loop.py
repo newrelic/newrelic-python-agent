@@ -41,8 +41,8 @@ required_metrics = [
     ('Instance/Reporting', ''),
 ]
 
-
 endpoints_called = []
+span_endpoints_called = []
 
 
 @validate_metric_payload(metrics=required_metrics,
@@ -51,10 +51,10 @@ def test_application_harvest():
     settings = global_settings()
     settings.developer_mode = True
     settings.license_key = '**NOT A LICENSE KEY**'
+    settings.feature_flag = {}
 
     app = Application('Python Agent Test (Harvest Loop)')
     app.connect_to_data_collector()
-
     app.harvest()
 
     # Verify that the metric_data endpoint is the 2nd to last endpoint called
@@ -62,11 +62,32 @@ def test_application_harvest():
     assert endpoints_called[-2] == 'metric_data'
 
 
+@validate_metric_payload(metrics=required_metrics,
+        endpoints_called=span_endpoints_called)
+def test_application_harvest_with_spans():
+
+    settings = global_settings()
+    settings.developer_mode = True
+    settings.license_key = '**NOT A LICENSE KEY**'
+    settings.feature_flag = set(['span_events'])
+
+    app = Application('Python Agent Test (Harvest Loop)')
+    app.connect_to_data_collector()
+    app._stats_engine.span_events.add('event')
+    app.harvest()
+
+    # Verify that the metric_data endpoint is the 2nd to last and
+    # span_event_data is the 3rd to last endpoint called
+    assert endpoints_called[-2] == 'metric_data'
+    assert span_endpoints_called[-3] == 'span_event_data'
+
+
 def test_transaction_count():
     settings = global_settings()
     settings.developer_mode = True
     settings.collect_custom_events = False
     settings.license_key = '**NOT A LICENSE KEY**'
+    settings.feature_flag = {}
 
     app = Application('Python Agent Test (Harvest Loop)')
     app.connect_to_data_collector()

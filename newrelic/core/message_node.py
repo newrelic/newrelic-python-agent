@@ -2,6 +2,7 @@ from collections import namedtuple
 
 import newrelic.core.trace_node
 
+from newrelic.core.generic_node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
 
 _MessageNode = namedtuple('_MessageNode',
@@ -10,7 +11,7 @@ _MessageNode = namedtuple('_MessageNode',
         'destination_type', 'params', 'is_async'])
 
 
-class MessageNode(_MessageNode):
+class MessageNode(_MessageNode, GenericNodeMixin):
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
@@ -48,15 +49,3 @@ class MessageNode(_MessageNode):
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,
                 label=None)
-
-    def span_event(self, base_attrs=None):
-        i_attrs = base_attrs and base_attrs.copy() or {}
-
-        return [i_attrs, {}, {}]
-
-    def span_events(self, stats, root):
-        yield self.span_event()
-
-        for child in self.children:
-            for event in child.span_events(stats, root):
-                yield event

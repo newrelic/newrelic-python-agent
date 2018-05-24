@@ -4,6 +4,7 @@ import newrelic.core.trace_node
 
 from newrelic.common import system_info
 from newrelic.core.database_utils import sql_statement, explain_plan
+from newrelic.core.generic_node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
 
 
@@ -38,7 +39,7 @@ _DatabaseNode = namedtuple('_DatabaseNode',
         'is_async'])
 
 
-class DatabaseNode(_DatabaseNode):
+class DatabaseNode(_DatabaseNode, GenericNodeMixin):
 
     def __new__(cls, *args, **kwargs):
         node = _DatabaseNode.__new__(cls, *args, **kwargs)
@@ -236,15 +237,3 @@ class DatabaseNode(_DatabaseNode):
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,
                 label=None)
-
-    def span_event(self, base_attrs=None):
-        i_attrs = base_attrs and base_attrs.copy() or {}
-
-        return [i_attrs, {}, {}]
-
-    def span_events(self, stats, root):
-        yield self.span_event()
-
-        for child in self.children:
-            for event in child.span_events(stats, root):
-                yield event

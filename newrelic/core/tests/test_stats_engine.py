@@ -2,7 +2,7 @@ import unittest
 
 
 from newrelic.core.config import (global_settings, SPAN_EVENT_RESERVOIR_SIZE,
-                                  DEFAULT_RESERVOIR_SIZE)
+    DEFAULT_RESERVOIR_SIZE, apply_server_side_settings)
 from newrelic.core.stats_engine import StatsEngine
 
 
@@ -136,6 +136,25 @@ class TestStatsEngineSpanEvents(unittest.TestCase):
         stats.rollback(snapshot)
         self.assertEqual(stats.span_events.num_samples, 2)
         self.assertEqual(stats.span_events.num_seen, 2)
+
+    def test_server_side_config_of_reservoir_size(self):
+        # default case
+        stats = StatsEngine()
+        self.assertEqual(stats.span_events.capacity, SPAN_EVENT_RESERVOIR_SIZE)
+
+        # over-capacity case: stats-engine should not allow us have a span
+        # event capacity larger than SPAN_EVENT_RESERVOIR_SIZE
+        over_capacity_settings = {
+            'span_events.max_samples_stored': 2 * SPAN_EVENT_RESERVOIR_SIZE
+        }
+        stats.reset_stats(apply_server_side_settings(over_capacity_settings))
+        self.assertEqual(stats.span_events.capacity, SPAN_EVENT_RESERVOIR_SIZE)
+
+        # under-capacity case: stats-engine should allow us have a span event
+        # capacity larger than SPAN_EVENT_RESERVOIR_SIZE
+        under_capacity_settings = {'span_events.max_samples_stored': 500}
+        stats.reset_stats(apply_server_side_settings(under_capacity_settings))
+        self.assertEqual(stats.span_events.capacity, 500)
 
 
 if __name__ == '__main__':

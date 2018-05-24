@@ -1266,6 +1266,8 @@ _developer_mode_responses = {
 
     'error_event_data': None,
 
+    'span_event_data': None,
+
     'custom_event_data': None,
 
     'shutdown': None,

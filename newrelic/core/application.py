@@ -1420,15 +1420,6 @@ class Application(object):
                         self._active_session.send_transaction_events(
                                 all_analytic_events)
 
-                    if 'span_events' in stats.settings.feature_flag:
-                        spans = stats.span_events
-                        if spans.num_samples > 0:
-                            _logger.debug('Sending span event data '
-                                    'for harvest of %r.', self._app_name)
-
-                            self._active_session.send_span_events(
-                                spans.sampling_info, spans.samples)
-
                     # Report internal metrics about sample data set
                     # for analytics.
 
@@ -1447,6 +1438,19 @@ class Application(object):
 
                     stats.reset_transaction_events()
                     stats.reset_synthetics_events()
+
+                    # Send span events
+
+                    if 'span_events' in stats.settings.feature_flag:
+                        spans = stats.span_events
+                        if spans.num_samples > 0:
+                            _logger.debug('Sending span event data '
+                                    'for harvest of %r.', self._app_name)
+
+                            self._active_session.send_span_events(
+                                spans.sampling_info, spans.samples)
+
+                        stats.reset_span_events()
 
                     # Send error events
 

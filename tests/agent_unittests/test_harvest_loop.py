@@ -73,12 +73,15 @@ def test_application_harvest_with_spans():
 
     app = Application('Python Agent Test (Harvest Loop)')
     app.connect_to_data_collector()
+
     app._stats_engine.span_events.add('event')
+    assert app._stats_engine.span_events.num_samples == 1
     app.harvest()
+    assert app._stats_engine.span_events.num_samples == 0
 
     # Verify that the metric_data endpoint is the 2nd to last and
     # span_event_data is the 3rd to last endpoint called
-    assert endpoints_called[-2] == 'metric_data'
+    assert span_endpoints_called[-2] == 'metric_data'
     assert span_endpoints_called[-3] == 'span_event_data'
 
 

@@ -14,6 +14,7 @@ from newrelic.core.string_table import StringTable
 from newrelic.core.attribute import create_user_attributes
 from newrelic.core.attribute_filter import (DST_ERROR_COLLECTOR,
         DST_TRANSACTION_TRACER, DST_TRANSACTION_EVENTS)
+from newrelic.core.generic_node_mixin import GenericNodeMixin
 
 
 _TransactionNode = namedtuple('_TransactionNode',
@@ -32,7 +33,7 @@ _TransactionNode = namedtuple('_TransactionNode',
         'parent_account', 'parent_app', 'parent_transport_type'])
 
 
-class TransactionNode(_TransactionNode):
+class TransactionNode(_TransactionNode, GenericNodeMixin):
 
     """Class holding data corresponding to the root of the transaction. All
     the nodes of interest recorded for the transaction are held as a tree
@@ -566,8 +567,3 @@ class TransactionNode(_TransactionNode):
         self._event_intrinsics_cache = intrinsics.copy()
 
         return intrinsics
-
-    def span_events(self, stats):
-        for child in self.children:
-            for event in child.span_events(stats, self):
-                yield event

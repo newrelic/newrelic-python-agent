@@ -10,7 +10,7 @@ from newrelic.packages import six
 _FunctionNode = namedtuple('_FunctionNode',
         ['group', 'name', 'children', 'start_time', 'end_time',
         'duration', 'exclusive', 'label', 'params', 'rollup',
-        'is_async'])
+        'is_async', 'guid'])
 
 
 class FunctionNode(_FunctionNode, GenericNodeMixin):

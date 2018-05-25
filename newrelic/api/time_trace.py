@@ -1,6 +1,7 @@
+import logging
+import random
 import time
 import traceback
-import logging
 
 _logger = logging.getLogger(__name__)
 
@@ -25,6 +26,8 @@ class TimeTrace(object):
         self.min_child_start_time = float('inf')
         self.exc_data = (None, None, None)
         self.should_record_segment_params = False
+        # 16-digit random hex. Padded with zeros in the front.
+        self.guid = '%016x' % random.getrandbits(64)
 
         if transaction:
             # Don't do further tracing of transaction if

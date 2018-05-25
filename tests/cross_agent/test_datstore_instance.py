@@ -66,7 +66,9 @@ def test_datastore_instance(name, system_hostname, db_hostname,
             host=db_hostname,
             port_path_or_id=port_path_or_id,
             database_name=database_path,
-            is_async=False)
+            is_async=False,
+            guid=None,
+    )
 
     empty_stats = StatsEngine()
     transaction = current_transaction()

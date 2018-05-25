@@ -27,6 +27,10 @@ except ImportError:
 
 DEFAULT_RESERVOIR_SIZE = 1200
 ERROR_EVENT_RESERVOIR_SIZE = 100
+
+# SPAN_EVENT_RESERVOIR_SIZE is both the default value for the span event
+# reservoir capacity, as well as its maximum possible value. server-side
+# config could adjust it lower, but not higher, than this value.
 SPAN_EVENT_RESERVOIR_SIZE = 1000
 
 # settings that should be completely ignored if set server side

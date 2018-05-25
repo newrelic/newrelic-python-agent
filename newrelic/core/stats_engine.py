@@ -350,7 +350,7 @@ class StatsEngine(object):
         self.__transaction_events = SampledDataSet()
         self.__error_events = SampledDataSet()
         self.__custom_events = SampledDataSet()
-        self.__span_events = SampledDataSet(config.SPAN_EVENT_RESERVOIR_SIZE)
+        self.__span_events = SampledDataSet(self.maximum_allowed_span_events)
         self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__slow_transaction_map = {}
@@ -406,6 +406,14 @@ class StatsEngine(object):
     @property
     def error_events(self):
         return self.__error_events
+
+    @property
+    def maximum_allowed_span_events(self):
+        if self.__settings is not None:
+            return min(self.__settings.span_events.max_samples_stored,
+                config.SPAN_EVENT_RESERVOIR_SIZE)
+        else:
+            return config.SPAN_EVENT_RESERVOIR_SIZE
 
     def error_events_sampling_info(self):
         sampling_info = {
@@ -1352,12 +1360,7 @@ class StatsEngine(object):
             self.__custom_events = SampledDataSet()
 
     def reset_span_events(self):
-        if self.__settings is not None:
-            self.__span_events = SampledDataSet(
-                    self.__settings.span_events.max_samples_stored)
-        else:
-            self.__span_events = SampledDataSet(
-                    config.SPAN_EVENT_RESERVOIR_SIZE)
+        self.__span_events = SampledDataSet(self.maximum_allowed_span_events)
 
     def reset_synthetics_events(self):
         """Resets the accumulated statistics back to initial state for

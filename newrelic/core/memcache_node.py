@@ -7,7 +7,7 @@ from newrelic.core.metric import TimeMetric
 
 _MemcacheNode = namedtuple('_MemcacheNode',
         ['command', 'children', 'start_time', 'end_time', 'duration',
-        'exclusive', 'is_async'])
+        'exclusive', 'is_async', 'guid'])
 
 
 class MemcacheNode(_MemcacheNode, GenericNodeMixin):

@@ -1441,7 +1441,8 @@ class Application(object):
 
                     # Send span events
 
-                    if 'span_events' in stats.settings.feature_flag:
+                    if ('span_events' in stats.settings.feature_flag and
+                            stats.settings.span_events.enabled):
                         spans = stats.span_events
                         if spans.num_samples > 0:
                             _logger.debug('Sending span event data '

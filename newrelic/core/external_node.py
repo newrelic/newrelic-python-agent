@@ -7,6 +7,7 @@ from collections import namedtuple
 
 import newrelic.core.trace_node
 
+from newrelic.core.generic_node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
 
 _ExternalNode = namedtuple('_ExternalNode',
@@ -14,8 +15,7 @@ _ExternalNode = namedtuple('_ExternalNode',
         'duration', 'exclusive', 'params', 'is_async'])
 
 
-
-class ExternalNode(_ExternalNode):
+class ExternalNode(_ExternalNode, GenericNodeMixin):
 
     @property
     def details(self):

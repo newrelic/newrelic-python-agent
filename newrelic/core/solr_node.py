@@ -2,6 +2,7 @@ from collections import namedtuple
 
 import newrelic.core.trace_node
 
+from newrelic.core.generic_node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
 
 _SolrNode = namedtuple('_SolrNode',
@@ -9,7 +10,7 @@ _SolrNode = namedtuple('_SolrNode',
         'duration', 'exclusive'])
 
 
-class SolrNode(_SolrNode):
+class SolrNode(_SolrNode, GenericNodeMixin):
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this

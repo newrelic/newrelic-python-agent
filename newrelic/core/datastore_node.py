@@ -3,6 +3,7 @@ from collections import namedtuple
 import newrelic.core.trace_node
 
 from newrelic.common import system_info
+from newrelic.core.generic_node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
 
 _DatastoreNode = namedtuple('_DatastoreNode',
@@ -11,8 +12,7 @@ _DatastoreNode = namedtuple('_DatastoreNode',
         'database_name', 'is_async'])
 
 
-
-class DatastoreNode(_DatastoreNode):
+class DatastoreNode(_DatastoreNode, GenericNodeMixin):
 
     @property
     def instance_hostname(self):

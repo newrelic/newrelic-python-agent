@@ -2,6 +2,7 @@ from collections import namedtuple
 
 import newrelic.core.trace_node
 
+from newrelic.core.generic_node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
 
 _MemcacheNode = namedtuple('_MemcacheNode',
@@ -9,8 +10,7 @@ _MemcacheNode = namedtuple('_MemcacheNode',
         'exclusive', 'is_async'])
 
 
-
-class MemcacheNode(_MemcacheNode):
+class MemcacheNode(_MemcacheNode, GenericNodeMixin):
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this

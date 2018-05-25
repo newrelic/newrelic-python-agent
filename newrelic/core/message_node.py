@@ -2,6 +2,7 @@ from collections import namedtuple
 
 import newrelic.core.trace_node
 
+from newrelic.core.generic_node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
 
 _MessageNode = namedtuple('_MessageNode',
@@ -10,7 +11,7 @@ _MessageNode = namedtuple('_MessageNode',
         'destination_type', 'params', 'is_async'])
 
 
-class MessageNode(_MessageNode):
+class MessageNode(_MessageNode, GenericNodeMixin):
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this

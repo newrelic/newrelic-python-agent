@@ -4,6 +4,7 @@ import newrelic.core.trace_node
 
 from newrelic.common import system_info
 from newrelic.core.database_utils import sql_statement, explain_plan
+from newrelic.core.generic_node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
 
 
@@ -38,7 +39,7 @@ _DatabaseNode = namedtuple('_DatabaseNode',
         'is_async'])
 
 
-class DatabaseNode(_DatabaseNode):
+class DatabaseNode(_DatabaseNode, GenericNodeMixin):
 
     def __new__(cls, *args, **kwargs):
         node = _DatabaseNode.__new__(cls, *args, **kwargs)

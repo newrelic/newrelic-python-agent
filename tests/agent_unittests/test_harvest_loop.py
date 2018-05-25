@@ -5,6 +5,8 @@ from newrelic.core.application import Application
 from newrelic.core.stats_engine import CustomMetrics
 from newrelic.core.transaction_node import TransactionNode
 
+from newrelic.network.exceptions import RetryDataForRequest
+
 
 def validate_metric_payload(metrics=[], endpoints_called=[]):
     @transient_function_wrapper('newrelic.core.data_collector',
@@ -25,6 +27,24 @@ def validate_metric_payload(metrics=[], endpoints_called=[]):
 
             for metric in metrics:
                 assert metric in sent_metrics, metric
+
+        return wrapped(*args, **kwargs)
+
+    return send_request_wrapper
+
+
+def failing_endpoint(endpoint, raises=RetryDataForRequest):
+    @transient_function_wrapper('newrelic.core.data_collector',
+            'DeveloperModeSession.send_request')
+    def send_request_wrapper(wrapped, instance, args, kwargs):
+        def _bind_params(session, url, method, license_key,
+                agent_run_id=None, payload=()):
+            return method
+
+        method = _bind_params(*args, **kwargs)
+
+        if method == endpoint:
+            raise raises()
 
         return wrapped(*args, **kwargs)
 
@@ -83,6 +103,26 @@ def test_application_harvest_with_spans():
     # span_event_data is the 3rd to last endpoint called
     assert span_endpoints_called[-2] == 'metric_data'
     assert span_endpoints_called[-3] == 'span_event_data'
+
+
+@failing_endpoint('metric_data')
+def test_failed_spans_harvest():
+
+    # Test that if an endpoint call that occurs after we successfully send span
+    # data fails, we do not try to send span data again with the next harvest.
+
+    settings = global_settings()
+    settings.developer_mode = True
+    settings.license_key = '**NOT A LICENSE KEY**'
+    settings.feature_flag = set(['span_events'])
+
+    app = Application('Python Agent Test (Harvest Loop)')
+    app.connect_to_data_collector()
+
+    app._stats_engine.span_events.add('event')
+    assert app._stats_engine.span_events.num_samples == 1
+    app.harvest()
+    assert app._stats_engine.span_events.num_samples == 0
 
 
 def test_transaction_count():

@@ -1,3 +1,5 @@
+import pytest
+
 from newrelic.common.object_wrapper import transient_function_wrapper
 from newrelic.core.config import global_settings
 
@@ -82,14 +84,22 @@ def test_application_harvest():
     assert endpoints_called[-2] == 'metric_data'
 
 
+@pytest.mark.parametrize('span_events_enabled,span_events_feature_flag', [
+        (True, True),
+        (True, False),
+        (False, True),
+])
 @validate_metric_payload(metrics=required_metrics,
         endpoints_called=span_endpoints_called)
-def test_application_harvest_with_spans():
+def test_application_harvest_with_spans(span_events_enabled,
+        span_events_feature_flag):
 
     settings = global_settings()
     settings.developer_mode = True
     settings.license_key = '**NOT A LICENSE KEY**'
-    settings.feature_flag = set(['span_events'])
+    settings.feature_flag = (
+            set(['span_events']) if span_events_feature_flag else set())
+    settings.span_events.enabled = span_events_enabled
 
     app = Application('Python Agent Test (Harvest Loop)')
     app.connect_to_data_collector()
@@ -102,7 +112,11 @@ def test_application_harvest_with_spans():
     # Verify that the metric_data endpoint is the 2nd to last and
     # span_event_data is the 3rd to last endpoint called
     assert span_endpoints_called[-2] == 'metric_data'
-    assert span_endpoints_called[-3] == 'span_event_data'
+
+    if span_events_enabled and span_events_feature_flag:
+        assert span_endpoints_called[-3] == 'span_event_data'
+    else:
+        assert span_endpoints_called[-3] != 'span_event_data'
 
 
 @failing_endpoint('metric_data')
@@ -115,6 +129,7 @@ def test_failed_spans_harvest():
     settings.developer_mode = True
     settings.license_key = '**NOT A LICENSE KEY**'
     settings.feature_flag = set(['span_events'])
+    settings.span_events.enabled = True
 
     app = Application('Python Agent Test (Harvest Loop)')
     app.connect_to_data_collector()

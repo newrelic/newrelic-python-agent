@@ -1439,6 +1439,20 @@ class Application(object):
                     stats.reset_transaction_events()
                     stats.reset_synthetics_events()
 
+                    # Send span events
+
+                    if ('span_events' in stats.settings.feature_flag and
+                            stats.settings.span_events.enabled):
+                        spans = stats.span_events
+                        if spans.num_samples > 0:
+                            _logger.debug('Sending span event data '
+                                    'for harvest of %r.', self._app_name)
+
+                            self._active_session.send_span_events(
+                                spans.sampling_info, spans.samples)
+
+                        stats.reset_span_events()
+
                     # Send error events
 
                     if (configuration.collect_error_events and

@@ -4,7 +4,7 @@ String organization = 'python-agent'
 String repoGHE = 'python_agent'
 String repoFull = "${organization}/${repoGHE}"
 String testSuffix = "__unit-test"
-String slackChannelPrivate = '#python-dev'
+String slackChannel = '#python-agent'
 String gitBranch
 
 
@@ -125,12 +125,12 @@ use(extensions) {
             }
 
             if (jobType == 'master' || jobType == 'mmf') {
-                slackQuiet(slackChannelPrivate) {
+                slackQuiet(slackChannel) {
                     notifyNotBuilt true
                     notifyAborted true
                 }
             } else if (jobType == 'develop') {
-                slackQuiet(slackChannelPrivate) {
+                slackQuiet(slackChannel) {
                     notifyNotBuilt true
                     notifyAborted true
                 }

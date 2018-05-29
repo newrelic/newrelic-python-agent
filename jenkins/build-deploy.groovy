@@ -3,7 +3,7 @@ import newrelic.jenkins.extensions
 String organization = 'python-agent'
 String repoGHE = 'python_agent'
 String repoFull = "${organization}/${repoGHE}"
-String slackChannel = '#python-dev'
+String slackChannel = '#python-agent'
 
 
 // Views for any build and deploy jobs

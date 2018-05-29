@@ -123,6 +123,7 @@ class TestSamplingProbability(newrelic.tests.test_cases.TestCase):
         self.assertEqual(self.application._transaction_count, 0)
 
     def test_exponential_backoff(self):
+        self.application._last_transaction_count = 100
         self.application._transaction_count = 100
 
         expectedMSP = [
@@ -138,3 +139,45 @@ class TestSamplingProbability(newrelic.tests.test_cases.TestCase):
 
             self.assertAlmostEqual(self.application._min_sampling_priority,
                     expectedMSP[tsc])
+
+    def test_exponential_backoff_updating(self):
+        target = self.application.configuration.agent_limits.sampling_target
+        self.application._max_sampled = 2 * target
+
+        # setup counts to near the exponential_backoff point
+        self.application._last_transaction_count = 100
+        self.application._transaction_count = 9
+        self.application._transaction_sampled_count = 9
+        self.application._calc_min_sampling_priority()
+
+        # 1.0 - 10/100 = 0.9
+        self.assertAlmostEqual(self.application._min_sampling_priority, 0.9)
+
+        ######################################
+        # new transaction, with priority = 1.0
+
+        self.application.compute_sampled(1.0)
+
+        # mock call to record transaction
+        self.application._transaction_count += 1
+
+        self.assertEqual(self.application._last_transaction_count, 100)
+        self.assertEqual(self.application._transaction_count, 10)
+        self.assertEqual(self.application._transaction_sampled_count, 10)
+        self.assertAlmostEqual(self.application._min_sampling_priority, 0.9)
+
+        ######################################
+        # new transaction, with priority = 1.0
+
+        self.application.compute_sampled(1.0)
+
+        # mock call to record transaction
+        self.application._transaction_count += 1
+
+        self.assertEqual(self.application._last_transaction_count, 100)
+        self.assertEqual(self.application._transaction_count, 11)
+        self.assertEqual(self.application._transaction_sampled_count, 11)
+
+        # 1.0 - (10 ** (10/11) - 10 ** 0.51)/100 = 0.9512463
+        msp = 0.9512463
+        self.assertAlmostEqual(self.application._min_sampling_priority, msp)

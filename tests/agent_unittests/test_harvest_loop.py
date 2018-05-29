@@ -27,8 +27,14 @@ def validate_metric_payload(metrics=[], endpoints_called=[]):
                 metric_key = (metric_info['name'], metric_info['scope'])
                 sent_metrics[metric_key] = metric_values
 
-            for metric in metrics:
-                assert metric in sent_metrics, metric
+            for metric_name, count in metrics:
+                metric_key = (metric_name, '')  # only search unscoped
+
+                if count is not None:
+                    assert metric_key in sent_metrics, metric_key
+                    assert sent_metrics[metric_key][0] == count, metric_key
+                else:
+                    assert metric_key not in sent_metrics, metric_key
 
         return wrapped(*args, **kwargs)
 
@@ -54,13 +60,13 @@ def failing_endpoint(endpoint, raises=RetryDataForRequest):
 
 
 required_metrics = [
-    ('Supportability/Events/TransactionError/Seen', ''),
-    ('Supportability/Events/TransactionError/Sent', ''),
-    ('Supportability/Events/Customer/Seen', ''),
-    ('Supportability/Events/Customer/Sent', ''),
-    ('Supportability/Python/RequestSampler/requests', ''),
-    ('Supportability/Python/RequestSampler/samples', ''),
-    ('Instance/Reporting', ''),
+    ('Supportability/Events/TransactionError/Seen', 0),
+    ('Supportability/Events/TransactionError/Sent', 0),
+    ('Supportability/Events/Customer/Seen', 0),
+    ('Supportability/Events/Customer/Sent', 0),
+    ('Supportability/Python/RequestSampler/requests', 1),
+    ('Supportability/Python/RequestSampler/samples', 1),
+    ('Instance/Reporting', 1),
 ]
 
 endpoints_called = []

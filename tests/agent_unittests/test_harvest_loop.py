@@ -89,25 +89,33 @@ def test_application_harvest():
     assert endpoints_called[-2] == 'metric_data'
 
 
-@pytest.mark.parametrize('span_events_enabled,span_events_feature_flag', [
-        (True, True),
-        (True, False),
-        (False, True),
+@pytest.mark.parametrize(
+    'span_events_enabled,span_events_feature_flag,spans_created', [
+        (True, True, 1),
+        (True, True, 15),
+        (True, False, 1),
+        (False, True, 1),
 ])
 def test_application_harvest_with_spans(span_events_enabled,
-        span_events_feature_flag):
+        span_events_feature_flag, spans_created):
 
     span_endpoints_called = []
+    max_samples_stored = 10
 
-    count = None
     if span_events_enabled and span_events_feature_flag:
-        count = 1
+        seen = spans_created
+        sent = min(spans_created, max_samples_stored)
+        discarded = seen - sent
+    else:
+        seen = None
+        sent = None
+        discarded = None
 
     spans_required_metrics = list(required_metrics)
     spans_required_metrics.extend([
-        ('Supportability/SpanEvent/TotalEventsSeen', count),
-        ('Supportability/SpanEvent/TotalEventsSent', count),
-        ('Supportability/SpanEvent/Discarded', count and 0),
+        ('Supportability/SpanEvent/TotalEventsSeen', seen),
+        ('Supportability/SpanEvent/TotalEventsSent', sent),
+        ('Supportability/SpanEvent/Discarded', discarded),
     ])
 
     @validate_metric_payload(metrics=spans_required_metrics,
@@ -119,12 +127,16 @@ def test_application_harvest_with_spans(span_events_enabled,
         settings.feature_flag = (
                 set(['span_events']) if span_events_feature_flag else set())
         settings.span_events.enabled = span_events_enabled
+        settings.span_events.max_samples_stored = max_samples_stored
 
         app = Application('Python Agent Test (Harvest Loop)')
         app.connect_to_data_collector()
 
-        app._stats_engine.span_events.add('event')
-        assert app._stats_engine.span_events.num_samples == 1
+        for _ in range(spans_created):
+            app._stats_engine.span_events.add('event')
+
+        assert app._stats_engine.span_events.num_samples == (
+                min(spans_created, max_samples_stored))
         app.harvest()
         assert app._stats_engine.span_events.num_samples == 0
 

@@ -812,7 +812,6 @@ class TestSpanEventIntrinsics(newrelic.tests.test_cases.TestCase):
             self.transaction._priority = 0.0
 
             i_attrs = self.transaction.span_event_intrinsics
-            assert i_attrs['type'] == 'Span'
             assert i_attrs['traceId'] == self.transaction.trace_id
             assert i_attrs['appLocalRootId'] == self.transaction.guid
             assert i_attrs['sampled'] is False  # MockApplication returns False

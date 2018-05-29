@@ -757,7 +757,6 @@ class Transaction(object):
         if 'span_events' not in self._settings.feature_flag:
             return i_attrs
 
-        i_attrs['type'] = 'Span'
         i_attrs['traceId'] = self.trace_id
         i_attrs['appLocalRootId'] = self.guid
 

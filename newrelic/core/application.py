@@ -57,6 +57,7 @@ class Application(object):
         self._active_session = None
         self._harvest_enabled = False
 
+        self._last_transaction_count = 0
         self._transaction_count = 0
         self._transaction_sampled_count = 0
         self._last_transaction = 0.0
@@ -1291,6 +1292,7 @@ class Application(object):
                 with self._stats_lock:
                     transaction_count = self._transaction_count
                     if transaction_count:
+                        self._last_transaction_count = transaction_count
                         self._calc_min_sampling_priority()
 
                     # For subsequent harvests, collect a max of twice the
@@ -1733,7 +1735,8 @@ class Application(object):
 
         sampling_ratio = 0
         if self._transaction_count > 0:
-            sampling_ratio = float(target) / self._transaction_count
+            sampling_ratio = float(target) / self._last_transaction_count
+
         sampling_ratio = min(1.0, sampling_ratio)
         self._min_sampling_priority = (1.0 - sampling_ratio)
 

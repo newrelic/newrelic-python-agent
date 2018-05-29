@@ -229,6 +229,7 @@ def test_transaction_count():
             agent_attributes=[],
             user_attributes=[],
             priority=1.0,
+            sampled=True,
             parent_transport_duration=None,
             parent_id=None,
             parent_type=None,

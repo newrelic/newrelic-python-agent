@@ -468,6 +468,8 @@ class Transaction(object):
                 self.record_custom_metric('Python/Framework/%s/%s' %
                     (framework, version), 1)
 
+        self._compute_sampled_and_priority()
+
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
                 path=self.path,
@@ -514,6 +516,7 @@ class Transaction(object):
                 agent_attributes=self.agent_attributes,
                 user_attributes=self.user_attributes,
                 priority=self.priority,
+                sampled=self.sampled,
                 parent_id=self.parent_id,
                 parent_transport_duration=self.parent_transport_duration,
                 parent_type=self.parent_type,

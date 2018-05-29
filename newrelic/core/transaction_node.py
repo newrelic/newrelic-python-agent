@@ -28,9 +28,10 @@ _TransactionNode = namedtuple('_TransactionNode',
         'synthetics_job_id', 'synthetics_monitor_id', 'synthetics_header',
         'is_part_of_cat', 'trip_id', 'path_hash', 'referring_path_hash',
         'alternate_path_hashes', 'trace_intrinsics', 'agent_attributes',
-        'distributed_trace_intrinsics', 'user_attributes', 'priority',
-        'parent_transport_duration', 'parent_id', 'parent_type',
-        'parent_account', 'parent_app', 'parent_transport_type'])
+        'span_event_intrinsics', 'distributed_trace_intrinsics',
+        'user_attributes', 'priority', 'parent_transport_duration',
+        'parent_id', 'parent_type', 'parent_account', 'parent_app',
+        'parent_transport_type'])
 
 
 class TransactionNode(_TransactionNode, GenericNodeMixin):

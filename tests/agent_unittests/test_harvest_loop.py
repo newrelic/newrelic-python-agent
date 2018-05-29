@@ -224,6 +224,7 @@ def test_transaction_count():
             referring_path_hash=None,
             alternate_path_hashes=[],
             trace_intrinsics={},
+            span_event_intrinsics={},
             distributed_trace_intrinsics={},
             agent_attributes=[],
             user_attributes=[],

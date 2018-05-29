@@ -11,7 +11,8 @@ class GenericNodeMixin(object):
 
         root = root or self
 
-        yield self.span_event()
+        base_attrs = getattr(root, 'span_event_intrinsics', None)
+        yield self.span_event(base_attrs)
 
         for child in self.children:
             for event in child.span_events(stats, root):

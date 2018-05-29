@@ -70,7 +70,6 @@ required_metrics = [
 ]
 
 endpoints_called = []
-span_endpoints_called = []
 
 
 @validate_metric_payload(metrics=required_metrics,
@@ -95,34 +94,50 @@ def test_application_harvest():
         (True, False),
         (False, True),
 ])
-@validate_metric_payload(metrics=required_metrics,
-        endpoints_called=span_endpoints_called)
 def test_application_harvest_with_spans(span_events_enabled,
         span_events_feature_flag):
 
-    settings = global_settings()
-    settings.developer_mode = True
-    settings.license_key = '**NOT A LICENSE KEY**'
-    settings.feature_flag = (
-            set(['span_events']) if span_events_feature_flag else set())
-    settings.span_events.enabled = span_events_enabled
+    span_endpoints_called = []
 
-    app = Application('Python Agent Test (Harvest Loop)')
-    app.connect_to_data_collector()
-
-    app._stats_engine.span_events.add('event')
-    assert app._stats_engine.span_events.num_samples == 1
-    app.harvest()
-    assert app._stats_engine.span_events.num_samples == 0
-
-    # Verify that the metric_data endpoint is the 2nd to last and
-    # span_event_data is the 3rd to last endpoint called
-    assert span_endpoints_called[-2] == 'metric_data'
-
+    count = None
     if span_events_enabled and span_events_feature_flag:
-        assert span_endpoints_called[-3] == 'span_event_data'
-    else:
-        assert span_endpoints_called[-3] != 'span_event_data'
+        count = 1
+
+    spans_required_metrics = list(required_metrics)
+    spans_required_metrics.extend([
+        ('Supportability/SpanEvent/TotalEventsSeen', count),
+        ('Supportability/SpanEvent/TotalEventsSent', count),
+        ('Supportability/SpanEvent/Discarded', count and 0),
+    ])
+
+    @validate_metric_payload(metrics=spans_required_metrics,
+            endpoints_called=span_endpoints_called)
+    def _test():
+        settings = global_settings()
+        settings.developer_mode = True
+        settings.license_key = '**NOT A LICENSE KEY**'
+        settings.feature_flag = (
+                set(['span_events']) if span_events_feature_flag else set())
+        settings.span_events.enabled = span_events_enabled
+
+        app = Application('Python Agent Test (Harvest Loop)')
+        app.connect_to_data_collector()
+
+        app._stats_engine.span_events.add('event')
+        assert app._stats_engine.span_events.num_samples == 1
+        app.harvest()
+        assert app._stats_engine.span_events.num_samples == 0
+
+        # Verify that the metric_data endpoint is the 2nd to last and
+        # span_event_data is the 3rd to last endpoint called
+        assert span_endpoints_called[-2] == 'metric_data'
+
+        if span_events_enabled and span_events_feature_flag:
+            assert span_endpoints_called[-3] == 'span_event_data'
+        else:
+            assert span_endpoints_called[-3] != 'span_event_data'
+
+    _test()
 
 
 @failing_endpoint('metric_data')

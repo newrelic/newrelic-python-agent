@@ -6,7 +6,7 @@ String repoFull = "${organization}/${repoGHE}"
 String testPrefix = "${organization}-tools"
 String integTestSuffix = "__integration-test"
 String unitTestSuffix = "__unit-test"
-String slackChannel = '#python-dev'
+String slackChannel = '#python-agent'
 
 
 // Views for any tool-like jobs

@@ -1451,6 +1451,16 @@ class Application(object):
                             self._active_session.send_span_events(
                                 spans.sampling_info, spans.samples)
 
+                        # As per spec
+                        spans_seen = spans.num_seen
+                        spans_sampled = spans.num_samples
+                        internal_count_metric('Supportability/SpanEvent/'
+                                'TotalEventsSeen', spans_seen)
+                        internal_count_metric('Supportability/SpanEvent/'
+                                'TotalEventsSent', spans_sampled)
+                        internal_count_metric('Supportability/SpanEvent/'
+                                'Discarded', spans_seen - spans_sampled)
+
                         stats.reset_span_events()
 
                     # Send error events

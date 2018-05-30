@@ -1039,7 +1039,7 @@ class Transaction(object):
                 ti=int(time.time() * 1000.0),
             )
 
-            if 'span_events' in settings.feature_flag:
+            if 'span_events' in settings.feature_flag and self.current_node:
                 data['id'] = self.current_node.guid
                 data['pa'] = getattr(self.current_node.parent, 'guid',
                         self.guid)

@@ -7,6 +7,15 @@ unreleased
   not exist in v2. These methods have now been instrumented. Calls to these
   methods will now appear in APM.
 
+- Scheduling tasks that run after a transaction ends causes an error
+
+  Coroutines scheduled to execute after a transaction ends using create_task or
+  ensure_future may have caused the runtime instrumentation error:
+     The transaction already completed meaning a child called complete trace
+     after the trace had been finalized.
+  and subsequent crash. Coroutines that execute beyond the end of a transaction
+  will no longer cause an error.
+
 
 3.2.1 (2018-05-16)
 ------------------

@@ -13,6 +13,28 @@ application = newrelic.api.application.application_instance()
 
 class TestTransactionContext(newrelic.tests.test_cases.TestCase):
 
+    def test_exited_transaction_is_not_swapped_in(self):
+        txn = newrelic.api.background_task.BackgroundTask(application,
+                'test_exited_transaction_is_not_swapped_in')
+
+        with txn:
+            context = transaction_context.TransactionContext(txn)
+
+        with context:
+            assert current_transaction(active_only=False) is None
+
+    def test_exited_transaction_is_not_restored(self):
+        txn = newrelic.api.background_task.BackgroundTask(application,
+                'test_exited_transaction_is_not_restored')
+
+        txn.__enter__()
+        context = transaction_context.TransactionContext(None)
+        with context:
+            txn.save_transaction()
+            txn.__exit__(None, None, None)
+
+        assert current_transaction(active_only=False) is None
+
     def test_exited_trace_is_not_restored(self):
         txn = newrelic.api.background_task.BackgroundTask(application,
                 'test_exited_trace_is_not_restored')

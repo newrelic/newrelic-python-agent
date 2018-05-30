@@ -146,7 +146,12 @@ class Application(object):
                 self._transaction_sampled_count += 1
 
                 if self._transaction_sampled_count > self._sampling_target:
-                    self._calc_min_sampling_priority()
+                    target = self._sampling_target
+                    if self._transaction_sampled_count > target:
+                        ratio = target / float(self._transaction_sampled_count)
+                        target = target ** (ratio) - target ** 0.51
+
+                    self._calc_min_sampling_priority(target=target)
 
                 return True
 
@@ -1727,11 +1732,9 @@ class Application(object):
             self._stats_engine.merge_custom_metrics(internal_metrics.metrics())
 
     # NOTE: only call under lock!
-    def _calc_min_sampling_priority(self):
-        target = self._sampling_target
-        if self._transaction_sampled_count > target:
-            ratio = target / float(self._transaction_sampled_count)
-            target = target ** (ratio) - target ** 0.51
+    def _calc_min_sampling_priority(self, target=None):
+        if target is None:
+            target = self._sampling_target
 
         sampling_ratio = 0
         if self._transaction_count > 0:

@@ -52,6 +52,7 @@ def background(request):
     except AttributeError:
         loop = request.task._loop
 
+    asyncio.set_event_loop(loop)
     asyncio.tasks.ensure_future(run_task(loop))
     return web.Response(text='Background Task Scheduled')
 

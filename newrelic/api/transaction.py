@@ -1033,15 +1033,20 @@ class Transaction(object):
                 ty='App',
                 ac=account_id,
                 ap=application_id,
-                id=self.guid,
                 tr=self.trace_id,
                 sa=self.sampled,
                 pr=self.priority,
                 ti=int(time.time() * 1000.0),
             )
 
-            if self.parent_id:
-                data['pa'] = self.parent_id
+            if 'span_events' in settings.feature_flag:
+                data['id'] = self.current_node.guid
+                data['pa'] = getattr(self.current_node.parent, 'guid',
+                        self.guid)
+            else:
+                data['id'] = self.guid
+                if self.parent_id:
+                    data['pa'] = self.parent_id
 
             self.is_distributed_trace = True
 

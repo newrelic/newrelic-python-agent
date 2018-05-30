@@ -899,6 +899,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/adaptive_sampling.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/agent.py": {
         "hash": "n/a",
         "libraries": [

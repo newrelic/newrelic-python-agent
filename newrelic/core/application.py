@@ -31,6 +31,7 @@ from newrelic.core.profile_sessions import profile_session_manager
 
 from newrelic.core.database_utils import SQLConnections
 from newrelic.common.object_names import callable_name
+from newrelic.core.adaptive_sampling import AdaptiveSampling
 
 _logger = logging.getLogger(__name__)
 
@@ -57,13 +58,10 @@ class Application(object):
         self._active_session = None
         self._harvest_enabled = False
 
-        self._previous_transaction_count = 0
         self._transaction_count = 0
-        self._transaction_sampled_count = 0
         self._last_transaction = 0.0
-        self._min_sampling_priority = 0.0
-        # Before registration, do not collect any "sampled" transactions
-        self._max_sampled = 0.0
+
+        self.adaptive_sampling = None
 
         self._global_events_account = 0
 
@@ -139,23 +137,11 @@ class Application(object):
         return self.configuration is not None
 
     def compute_sampled(self, priority):
+        if self.adaptive_sampling is None:
+            return False
+
         with self._stats_lock:
-            if self._transaction_sampled_count >= self._max_sampled:
-                return False
-            elif priority >= self._min_sampling_priority:
-                self._transaction_sampled_count += 1
-
-                if self._transaction_sampled_count > self._sampling_target:
-                    target = self._sampling_target
-                    if self._transaction_sampled_count > target:
-                        ratio = target / float(self._transaction_sampled_count)
-                        target = target ** (ratio) - target ** 0.51
-
-                    self._calc_min_sampling_priority(target=target)
-
-                return True
-
-        return False
+            return self.adaptive_sampling.should_sample_at(priority)
 
     def dump(self, file):
         """Dumps details about the application to the file object."""
@@ -456,12 +442,8 @@ class Application(object):
             with self._stats_lock:
                 self._stats_engine.reset_stats(configuration)
 
-                # For the first harvest, collect a max of self._sampling_target
-                # number of "sampled" transactions.
-
-                self._sampling_target = (
+                self.adaptive_sampling = AdaptiveSampling(
                         configuration.agent_limits.sampling_target)
-                self._max_sampled = self._sampling_target
 
             with self._stats_custom_lock:
                 self._stats_custom_engine.reset_stats(configuration)
@@ -1296,15 +1278,8 @@ class Application(object):
 
                 with self._stats_lock:
                     transaction_count = self._transaction_count
-                    if transaction_count:
-                        self._previous_transaction_count = transaction_count
-                        self._calc_min_sampling_priority()
+                    self.adaptive_sampling.reset(transaction_count)
 
-                    # For subsequent harvests, collect a max of twice the
-                    # self._sampling_target value.
-
-                    self._max_sampled = 2 * self._sampling_target
-                    self._transaction_sampled_count = 0
                     self._transaction_count = 0
                     self._last_transaction = 0.0
 
@@ -1730,18 +1705,6 @@ class Application(object):
 
         with self._stats_lock:
             self._stats_engine.merge_custom_metrics(internal_metrics.metrics())
-
-    # NOTE: only call under lock!
-    def _calc_min_sampling_priority(self, target=None):
-        if target is None:
-            target = self._sampling_target
-
-        sampling_ratio = 0
-        if self._transaction_count > 0:
-            sampling_ratio = float(target) / self._previous_transaction_count
-
-        sampling_ratio = min(1.0, sampling_ratio)
-        self._min_sampling_priority = (1.0 - sampling_ratio)
 
     def report_profile_data(self):
         """Report back any profile data. This may be partial thread

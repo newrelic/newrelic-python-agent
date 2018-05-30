@@ -207,6 +207,61 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             assert data['tr'] == 'qwerty'
             assert data['pr'] == self.transaction._priority
 
+    def test_distributed_trace_with_spans_no_parent(self):
+        self.transaction._settings.feature_flag.add('span_events')
+        with self.transaction:
+            self.transaction.current_node.guid = 'abcde'
+            self.transaction.guid = 'this is guid'
+            self.transaction._trace_id = 'qwerty'
+            self.transaction._priority = 1.0
+
+            payload = self.transaction.create_distributed_tracing_payload()
+            assert payload['v'] == (0, 1)
+
+            data = payload['d']
+
+            # Type is always App
+            assert data['ty'] == 'App'
+
+            # Check required keys
+            assert all(k in data for k in DISTRIBUTED_TRACE_KEYS_REQUIRED)
+
+            # ID and parent should be from the span
+            assert data['id'] == 'abcde'
+            assert data['pa'] == 'this is guid'
+
+            # Parent data should be forwarded
+            assert data['tr'] == 'qwerty'
+            assert data['pr'] == self.transaction._priority
+
+    def test_distributed_trace_with_spans_with_parent(self):
+        self.transaction._settings.feature_flag.add('span_events')
+        with self.transaction:
+            with FunctionTrace(self.transaction, 'trace_1') as trace:
+                trace.guid = 'abcde'
+                trace.parent.guid = 'this is guid'
+                self.transaction._trace_id = 'qwerty'
+                self.transaction._priority = 1.0
+
+                payload = self.transaction.create_distributed_tracing_payload()
+                assert payload['v'] == (0, 1)
+
+                data = payload['d']
+
+                # Type is always App
+                assert data['ty'] == 'App'
+
+                # Check required keys
+                assert all(k in data for k in DISTRIBUTED_TRACE_KEYS_REQUIRED)
+
+                # ID and parent should be from the span
+                assert data['id'] == 'abcde'
+                assert data['pa'] == 'this is guid'
+
+                # Parent data should be forwarded
+                assert data['tr'] == 'qwerty'
+                assert data['pr'] == self.transaction._priority
+
     def test_accept_distributed_trace_payload_encoded(self):
         with self.transaction:
             payload = ('eyJ2IjpbMCwxXSwiZCI6eyJ0eSI6IkFwcCIsImFjIjoiMjAyNjQiLC'

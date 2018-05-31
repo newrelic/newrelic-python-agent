@@ -33,6 +33,7 @@ class AdaptiveSampling(object):
         # self._sampling_target value.
         self.max_sampled = 2 * self.sampling_target
         self.transaction_count = transaction_count
+        self.sampled_count = 0
         self._update_min_priority(self.sampling_target)
 
     def _update_min_priority(self, target):

@@ -10,7 +10,7 @@ class AdaptiveSampling(object):
         self.transaction_count = 0
         self.sampled_count = 0
 
-    def should_sample_at(self, priority):
+    def compute_sampled(self, priority):
         if self.sampled_count >= self.max_sampled:
             return False
         elif priority >= self.min_sampling_priority:

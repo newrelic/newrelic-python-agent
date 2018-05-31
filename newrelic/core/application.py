@@ -141,7 +141,7 @@ class Application(object):
             return False
 
         with self._stats_lock:
-            return self.adaptive_sampling.should_sample_at(priority)
+            return self.adaptive_sampling.compute_sampled(priority)
 
     def dump(self, file):
         """Dumps details about the application to the file object."""

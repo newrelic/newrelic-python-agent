@@ -1061,6 +1061,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/tests/test_adaptive_sampling.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/tests/test_application.py": {
         "hash": "n/a",
         "libraries": [

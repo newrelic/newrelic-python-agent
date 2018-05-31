@@ -29,7 +29,7 @@ _TransactionNode = namedtuple('_TransactionNode',
         'is_part_of_cat', 'trip_id', 'path_hash', 'referring_path_hash',
         'alternate_path_hashes', 'trace_intrinsics', 'agent_attributes',
         'span_event_intrinsics', 'distributed_trace_intrinsics',
-        'user_attributes', 'priority', 'parent_transport_duration',
+        'user_attributes', 'priority', 'sampled', 'parent_transport_duration',
         'parent_id', 'parent_type', 'parent_account', 'parent_app',
         'parent_transport_type'])
 

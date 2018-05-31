@@ -514,6 +514,7 @@ class Transaction(object):
                 agent_attributes=self.agent_attributes,
                 user_attributes=self.user_attributes,
                 priority=self.priority,
+                sampled=self.sampled,
                 parent_id=self.parent_id,
                 parent_transport_duration=self.parent_transport_duration,
                 parent_type=self.parent_type,

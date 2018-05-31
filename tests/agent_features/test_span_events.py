@@ -2,18 +2,21 @@ import pytest
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace
+from newrelic.api.transaction import current_transaction
 
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_span_events import (
         validate_span_events)
 
 
-@pytest.mark.parametrize('span_events_enabled,spans_feature_flag', [
-        (True, True),
-        (True, False),
-        (False, True),
+@pytest.mark.parametrize(
+    'span_events_enabled,spans_feature_flag,txn_sampled', [
+        (True, True, True),
+        (True, False, True),
+        (False, True, True),
+        (True, True, False),
 ])
-def test_span_events(span_events_enabled, spans_feature_flag):
+def test_span_events(span_events_enabled, spans_feature_flag, txn_sampled):
 
     @function_trace()
     def function():
@@ -25,7 +28,7 @@ def test_span_events(span_events_enabled, spans_feature_flag):
     }
 
     count = 0
-    if span_events_enabled and spans_feature_flag:
+    if span_events_enabled and spans_feature_flag and txn_sampled:
         count = 2  # root span & function traced span
 
     @validate_span_events(count=count)
@@ -33,5 +36,9 @@ def test_span_events(span_events_enabled, spans_feature_flag):
     @background_task()
     def _test():
         function()
+
+        # force transaction._sampled value
+        transaction = current_transaction()
+        transaction._sampled = txn_sampled
 
     _test()

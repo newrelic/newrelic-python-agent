@@ -209,6 +209,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
     def test_distributed_trace_with_spans_no_parent(self):
         self.transaction._settings.feature_flag.add('span_events')
+        self.transaction._settings.span_events.enabled = True
         with self.transaction:
             self.transaction.current_node.guid = 'abcde'
             self.transaction.guid = 'this is guid'
@@ -236,6 +237,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
     def test_distributed_trace_with_spans_with_parent(self):
         self.transaction._settings.feature_flag.add('span_events')
+        self.transaction._settings.span_events.enabled = True
         with self.transaction:
             with FunctionTrace(self.transaction, 'trace_1') as trace:
                 trace.guid = 'abcde'
@@ -262,12 +264,40 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
                 assert data['tr'] == 'qwerty'
                 assert data['pr'] == self.transaction._priority
 
+    def test_distributed_trace_with_spans_not_enabled(self):
+        self.transaction._settings.feature_flag.add('span_events')
+        self.transaction._settings.span_events.enabled = False
+        with self.transaction:
+            self.transaction.parent_id = 'abcde'
+            self.transaction._trace_id = 'qwerty'
+            self.transaction._priority = 1.0
+
+            payload = self.transaction.create_distributed_tracing_payload()
+            assert payload['v'] == (0, 1)
+
+            data = payload['d']
+
+            # Type is always App
+            assert data['ty'] == 'App'
+
+            # Check required keys
+            assert all(k in data for k in DISTRIBUTED_TRACE_KEYS_REQUIRED)
+
+            # ID should be the transaction GUID
+            assert data['id'] == self.transaction.guid
+
+            # Parent data should be forwarded
+            assert data['pa'] == 'abcde'
+            assert data['tr'] == 'qwerty'
+            assert data['pr'] == self.transaction._priority
+
     def test_distributed_trace_with_spans_transaction_not_entered(self):
         # When the transaction has not been entered, there will be no nodes to
         # pull span guids from. Therefore we fall back to the original
         # behavior.
 
         self.transaction._settings.feature_flag.add('span_events')
+        self.transaction._settings.span_events.enabled = True
 
         self.transaction.parent_id = 'abcde'
         self.transaction._trace_id = 'qwerty'

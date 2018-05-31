@@ -45,3 +45,13 @@ class TestApplicationLocking(newrelic.tests.test_cases.TestCase):
 
         # Check that sampled count is now 1
         assert self.application.adaptive_sampling.sampled_count == 1
+
+
+class TestUnactivatedApplication(newrelic.tests.test_cases.TestCase):
+
+    def setUp(self):
+        super(TestUnactivatedApplication, self).setUp()
+        self.application = newrelic.core.application.Application('foobar')
+
+    def test_compute_sampled_returns_false(self):
+        assert self.application.compute_sampled(1.0) is False

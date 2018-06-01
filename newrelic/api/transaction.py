@@ -520,7 +520,8 @@ class Transaction(object):
                 parent_type=self.parent_type,
                 parent_account=self.parent_account,
                 parent_app=self.parent_app,
-                parent_transport_type=self.parent_transport_type
+                parent_transport_type=self.parent_transport_type,
+                root_span_guid=root.guid,
         )
 
         # Clear settings as we are all done and don't need it
@@ -737,6 +738,10 @@ class Transaction(object):
         if self.total_time:
             i_attrs['totalTime'] = self.total_time
 
+        if ('distributed_tracing' in self._settings.feature_flag or
+                'span_events' in self._settings.feature_flag):
+            i_attrs['guid'] = self.guid
+
         # Add in special CPU time value for UI to display CPU burn.
 
         # XXX Disable cpu time value for CPU burn as was
@@ -795,7 +800,6 @@ class Transaction(object):
 
         i_attrs['traceId'] = self.trace_id
         i_attrs['nr.tripId'] = self.trace_id
-        i_attrs['guid'] = self.guid
 
         self._compute_sampled_and_priority()
         i_attrs['sampled'] = self.sampled

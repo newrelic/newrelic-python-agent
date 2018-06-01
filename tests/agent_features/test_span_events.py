@@ -1,8 +1,8 @@
 import pytest
 
+from newrelic.api.transaction import current_transaction
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace
-from newrelic.api.transaction import current_transaction
 
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_span_events import (
@@ -17,10 +17,20 @@ from testing_support.validators.validate_span_events import (
         (True, True, False),
 ])
 def test_span_events(span_events_enabled, spans_feature_flag, txn_sampled):
+    guid = 'dbb536c53b749e0b'
+    sentinel_guid = '0687e0c371ea2c4e'
+    function_guid = '482439c52de807ee'
+    priority = 0.5
 
-    @function_trace()
-    def function():
+    @function_trace(name='child')
+    def child():
         pass
+
+    @function_trace(name='function')
+    def function():
+        txn = current_transaction()
+        txn.current_node.guid = function_guid
+        child()
 
     _settings = {
         'span_events.enabled': span_events_enabled,
@@ -29,16 +39,50 @@ def test_span_events(span_events_enabled, spans_feature_flag, txn_sampled):
 
     count = 0
     if span_events_enabled and spans_feature_flag and txn_sampled:
-        count = 2  # root span & function traced span
+        count = 1
 
-    @validate_span_events(count=count)
+    exact_intrinsics_common = {
+        'type': 'Span',
+        'appLocalRootId': guid,
+        'sampled': txn_sampled,
+        'priority': priority,
+        'category': 'generic',
+    }
+    expected_intrinsics = ('timestamp', 'duration')
+
+    exact_intrinsics_root = exact_intrinsics_common.copy()
+    exact_intrinsics_root['name'] = 'Function/transaction'
+    exact_intrinsics_root['parentId'] = guid
+
+    exact_intrinsics_function = exact_intrinsics_common.copy()
+    exact_intrinsics_function['name'] = 'function'
+    exact_intrinsics_function['parentId'] = sentinel_guid
+    exact_intrinsics_function['grandparentId'] = guid
+
+    exact_intrinsics_child = exact_intrinsics_common.copy()
+    exact_intrinsics_child['name'] = 'child'
+    exact_intrinsics_child['parentId'] = function_guid
+    exact_intrinsics_child['grandparentId'] = sentinel_guid
+
+    @validate_span_events(count=count,
+            exact_intrinsics=exact_intrinsics_root,
+            expected_intrinsics=expected_intrinsics)
+    @validate_span_events(count=count,
+            exact_intrinsics=exact_intrinsics_function,
+            expected_intrinsics=expected_intrinsics)
+    @validate_span_events(count=count,
+            exact_intrinsics=exact_intrinsics_child,
+            expected_intrinsics=expected_intrinsics)
     @override_application_settings(_settings)
-    @background_task()
+    @background_task(name='transaction')
     def _test():
-        function()
+        # Force intrinsics
+        txn = current_transaction()
+        txn.current_node.guid = sentinel_guid
+        txn.guid = guid
+        txn._priority = priority
+        txn._sampled = txn_sampled
 
-        # force transaction._sampled value
-        transaction = current_transaction()
-        transaction._sampled = txn_sampled
+        function()
 
     _test()

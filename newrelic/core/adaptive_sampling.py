@@ -21,6 +21,7 @@ class AdaptiveSampling(object):
             if self.sampled_count > target:
                 ratio = target / float(self.sampled_count)
                 target = target ** ratio - target ** 0.51
+                target = max(0.0, target)
 
                 self._update_min_priority(target)
 
@@ -37,10 +38,8 @@ class AdaptiveSampling(object):
         self._update_min_priority(self.sampling_target)
 
     def _update_min_priority(self, target):
-        sampling_ratio = 0
-        if self.transaction_count > 0:
+        if self.transaction_count > target:
             sampling_ratio = float(target) / self.transaction_count
-            sampling_ratio = min(1.0, sampling_ratio)
-            self.min_sampling_priority = (1.0 - sampling_ratio)
+            self.min_sampling_priority = 1.0 - sampling_ratio
         else:
             self.min_sampling_priority = 0.0

@@ -31,7 +31,7 @@ _TransactionNode = namedtuple('_TransactionNode',
         'span_event_intrinsics', 'distributed_trace_intrinsics',
         'user_attributes', 'priority', 'sampled', 'parent_transport_duration',
         'parent_id', 'parent_type', 'parent_account', 'parent_app',
-        'parent_transport_type', 'root_span_guid'])
+        'parent_transport_type', 'root_span_guid', 'trace_id'])
 
 
 class TransactionNode(_TransactionNode, GenericNodeMixin):
@@ -530,6 +530,10 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
         if ('distributed_tracing' in self.settings.feature_flag or
                 'span_events' in self.settings.feature_flag):
             intrinsics['guid'] = self.guid
+            intrinsics['sampled'] = self.sampled
+            intrinsics['priority'] = self.priority
+            intrinsics['traceId'] = self.trace_id
+            intrinsics['nr.tripId'] = self.trace_id
 
         intrinsics['timestamp'] = self.start_time
         intrinsics['duration'] = self.response_time

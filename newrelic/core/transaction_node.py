@@ -572,3 +572,28 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
         self._event_intrinsics_cache = intrinsics.copy()
 
         return intrinsics
+
+    def span_event(self, *args, **kwargs):
+        i_attrs, a_attrs, u_attrs = \
+                super(TransactionNode, self).span_event(*args, **kwargs)
+
+        # GUID needs to come from Sentinel for the root span event since that
+        # is what's forwarded in the distributed trace payload.
+        i_attrs['guid'] = self.root_span_guid
+
+        return [i_attrs, a_attrs, u_attrs]
+
+    def span_events(self, stats):
+        base_attrs = self.span_event_intrinsics
+
+        yield self.span_event(base_attrs,
+                parent_guid=self.guid,
+                grandparent_guid=self.parent_id)
+
+        for child in self.children:
+            for event in child.span_events(
+                    stats,
+                    base_attrs,
+                    parent_guid=self.root_span_guid,
+                    grandparent_guid=self.guid):
+                yield event

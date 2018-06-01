@@ -899,7 +899,7 @@
             "New Relic"
         ]
     },
-    "newrelic/core/adaptive_sampling.py": {
+    "newrelic/core/adaptive_sampler.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -1061,7 +1061,7 @@
             "New Relic"
         ]
     },
-    "newrelic/core/tests/test_adaptive_sampling.py": {
+    "newrelic/core/tests/test_adaptive_sampler.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

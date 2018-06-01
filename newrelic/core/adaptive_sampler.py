@@ -1,4 +1,4 @@
-class AdaptiveSampling(object):
+class AdaptiveSampler(object):
     def __init__(self, sampling_target):
         self.min_sampling_priority = 0.0
 

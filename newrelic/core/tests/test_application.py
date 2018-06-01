@@ -32,7 +32,7 @@ class TestApplicationLocking(newrelic.tests.test_cases.TestCase):
         try:
             # Assert that the sampled count does not change yet (since the lock
             # is acquired)
-            assert self.application.adaptive_sampling.sampled_count == 0
+            assert self.application.adaptive_sampler.sampled_count == 0
         finally:
             # Release the lock
             self.application._stats_lock.release()
@@ -44,7 +44,7 @@ class TestApplicationLocking(newrelic.tests.test_cases.TestCase):
         self.application._stats_lock.acquire()
 
         # Check that sampled count is now 1
-        assert self.application.adaptive_sampling.sampled_count == 1
+        assert self.application.adaptive_sampler.sampled_count == 1
 
 
 class TestUnactivatedApplication(newrelic.tests.test_cases.TestCase):

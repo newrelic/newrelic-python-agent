@@ -31,7 +31,7 @@ from newrelic.core.profile_sessions import profile_session_manager
 
 from newrelic.core.database_utils import SQLConnections
 from newrelic.common.object_names import callable_name
-from newrelic.core.adaptive_sampling import AdaptiveSampling
+from newrelic.core.adaptive_sampler import AdaptiveSampler
 
 _logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class Application(object):
         self._transaction_count = 0
         self._last_transaction = 0.0
 
-        self.adaptive_sampling = None
+        self.adaptive_sampler = None
 
         self._global_events_account = 0
 
@@ -137,11 +137,11 @@ class Application(object):
         return self.configuration is not None
 
     def compute_sampled(self, priority):
-        if self.adaptive_sampling is None:
+        if self.adaptive_sampler is None:
             return False
 
         with self._stats_lock:
-            return self.adaptive_sampling.compute_sampled(priority)
+            return self.adaptive_sampler.compute_sampled(priority)
 
     def dump(self, file):
         """Dumps details about the application to the file object."""
@@ -442,7 +442,7 @@ class Application(object):
             with self._stats_lock:
                 self._stats_engine.reset_stats(configuration)
 
-                self.adaptive_sampling = AdaptiveSampling(
+                self.adaptive_sampler = AdaptiveSampler(
                         configuration.agent_limits.sampling_target)
 
             with self._stats_custom_lock:
@@ -1278,7 +1278,7 @@ class Application(object):
 
                 with self._stats_lock:
                     transaction_count = self._transaction_count
-                    self.adaptive_sampling.reset(transaction_count)
+                    self.adaptive_sampler.reset(transaction_count)
 
                     self._transaction_count = 0
                     self._last_transaction = 0.0

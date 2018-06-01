@@ -65,3 +65,12 @@ class TestAdaptiveSampler(newrelic.tests.test_cases.TestCase):
                     expected_min_priority[sample_num])
 
             self.adaptive_sampler.compute_sampled(1.0)
+
+    def test_target_zero(self):
+        self.adaptive_sampler = AdaptiveSampler(0)
+
+        assert self.adaptive_sampler.compute_sampled(1.0) is False
+
+        self.adaptive_sampler.reset(0)
+
+        assert self.adaptive_sampler.compute_sampled(1.0) is False

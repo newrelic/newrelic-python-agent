@@ -31,7 +31,7 @@ _TransactionNode = namedtuple('_TransactionNode',
         'span_event_intrinsics', 'distributed_trace_intrinsics',
         'user_attributes', 'priority', 'sampled', 'parent_transport_duration',
         'parent_id', 'parent_type', 'parent_account', 'parent_app',
-        'parent_transport_type'])
+        'parent_transport_type', 'root_span_guid'])
 
 
 class TransactionNode(_TransactionNode, GenericNodeMixin):

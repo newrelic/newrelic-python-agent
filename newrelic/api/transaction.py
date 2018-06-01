@@ -520,7 +520,8 @@ class Transaction(object):
                 parent_type=self.parent_type,
                 parent_account=self.parent_account,
                 parent_app=self.parent_app,
-                parent_transport_type=self.parent_transport_type
+                parent_transport_type=self.parent_transport_type,
+                root_span_guid=root.guid,
         )
 
         # Clear settings as we are all done and don't need it

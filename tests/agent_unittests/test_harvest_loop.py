@@ -236,6 +236,7 @@ def test_transaction_count():
             parent_account=None,
             parent_app=None,
             parent_transport_type=None,
+            root_span_guid=None,
     )
 
     app.record_transaction(node)

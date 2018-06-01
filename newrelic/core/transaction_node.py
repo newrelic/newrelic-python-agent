@@ -54,6 +54,10 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
         return self._string_table
 
     @property
+    def name(self):
+        return self.name_for_metric
+
+    @property
     def distributed_trace_received(self):
         return self.parent_id is not None
 

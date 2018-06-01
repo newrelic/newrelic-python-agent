@@ -796,7 +796,6 @@ class Transaction(object):
 
         i_attrs['traceId'] = self.trace_id
         i_attrs['nr.tripId'] = self.trace_id
-        i_attrs['guid'] = self.guid
 
         self._compute_sampled_and_priority()
         i_attrs['sampled'] = self.sampled

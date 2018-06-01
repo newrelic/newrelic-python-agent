@@ -523,6 +523,10 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
 
         intrinsics = self.distributed_trace_intrinsics.copy()
 
+        if ('distributed_tracing' in self.settings.feature_flag or
+                'span_events' in self.settings.feature_flag):
+            intrinsics['guid'] = self.guid
+
         intrinsics['timestamp'] = self.start_time
         intrinsics['duration'] = self.response_time
 

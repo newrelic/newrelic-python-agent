@@ -20,7 +20,7 @@ def validate_span_events(exact_intrinsics={}, expected_intrinsics=[], count=1):
 
         @transient_function_wrapper('newrelic.core.stats_engine',
                 'StatsEngine.record_transaction')
-        def _validate_transaction_metrics(wrapped, instance, args, kwargs):
+        def capture_span_events(wrapped, instance, args, kwargs):
             record_transaction_called.append(True)
             try:
                 result = wrapped(*args, **kwargs)
@@ -32,7 +32,7 @@ def validate_span_events(exact_intrinsics={}, expected_intrinsics=[], count=1):
 
             return result
 
-        _new_wrapper = _validate_transaction_metrics(wrapped)
+        _new_wrapper = capture_span_events(wrapped)
         val = _new_wrapper(*args, **kwargs)
         assert record_transaction_called
         captured_events = recorded_span_events.pop()

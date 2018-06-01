@@ -793,36 +793,5 @@ class TestTransactionDeterministic(newrelic.tests.test_cases.TestCase):
             assert self.transaction.priority == 1.0
 
 
-class TestSpanEventIntrinsics(newrelic.tests.test_cases.TestCase):
-
-    def setUp(self):
-        environ = {'REQUEST_URI': '/span_event_intrinsics'}
-        mock_app = MockApplication()
-
-        self.transaction = WebTransaction(mock_app, environ)
-        self.transaction._settings.span_events.enabled = True
-        self.transaction._settings.feature_flag = set(['span_events'])
-
-    def tearDown(self):
-        if current_transaction():
-            self.transaction.drop_transaction()
-
-    def test_span_event_intrinsics_enabled(self):
-        with self.transaction:
-            self.transaction._priority = 0.0
-
-            i_attrs = self.transaction.span_event_intrinsics
-            assert i_attrs['traceId'] == self.transaction.trace_id
-            assert i_attrs['appLocalRootId'] == self.transaction.guid
-            assert i_attrs['sampled'] is False  # MockApplication returns False
-            assert i_attrs['priority'] == 0.0
-
-    def test_span_event_intrinsics_disabled(self):
-        self.transaction._settings.feature_flag = set()
-        with self.transaction:
-            i_attrs = self.transaction.span_event_intrinsics
-            assert not i_attrs
-
-
 if __name__ == '__main__':
     unittest.main()

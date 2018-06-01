@@ -28,10 +28,10 @@ _TransactionNode = namedtuple('_TransactionNode',
         'synthetics_job_id', 'synthetics_monitor_id', 'synthetics_header',
         'is_part_of_cat', 'trip_id', 'path_hash', 'referring_path_hash',
         'alternate_path_hashes', 'trace_intrinsics', 'agent_attributes',
-        'span_event_intrinsics', 'distributed_trace_intrinsics',
-        'user_attributes', 'priority', 'sampled', 'parent_transport_duration',
-        'parent_id', 'parent_type', 'parent_account', 'parent_app',
-        'parent_transport_type', 'root_span_guid', 'trace_id'])
+        'distributed_trace_intrinsics', 'user_attributes', 'priority',
+        'sampled', 'parent_transport_duration', 'parent_id', 'parent_type',
+        'parent_account', 'parent_app', 'parent_transport_type',
+        'root_span_guid', 'trace_id'])
 
 
 class TransactionNode(_TransactionNode, GenericNodeMixin):
@@ -592,7 +592,12 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
         return [i_attrs, a_attrs, u_attrs]
 
     def span_events(self, stats):
-        base_attrs = self.span_event_intrinsics
+        base_attrs = {
+            'appLocalRootId': self.guid,
+            'traceId': self.trace_id,
+            'sampled': self.sampled,
+            'priority': self.priority,
+        }
 
         yield self.span_event(base_attrs,
                 parent_guid=self.guid,

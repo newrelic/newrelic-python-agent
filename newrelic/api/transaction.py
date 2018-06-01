@@ -515,7 +515,6 @@ class Transaction(object):
                 referring_path_hash=self._referring_path_hash,
                 alternate_path_hashes=self.alternate_path_hashes,
                 trace_intrinsics=self.trace_intrinsics,
-                span_event_intrinsics=self.span_event_intrinsics,
                 distributed_trace_intrinsics=self.distributed_trace_intrinsics,
                 agent_attributes=self.agent_attributes,
                 user_attributes=self.user_attributes,
@@ -765,16 +764,6 @@ class Transaction(object):
 
         i_attrs.update(self.distributed_trace_intrinsics)
 
-        return i_attrs
-
-    @property
-    def span_event_intrinsics(self):
-        i_attrs = {}
-
-        if 'span_events' not in self._settings.feature_flag:
-            return i_attrs
-
-        i_attrs['appLocalRootId'] = self.guid
         return i_attrs
 
     @property

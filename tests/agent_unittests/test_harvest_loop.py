@@ -224,7 +224,6 @@ def test_transaction_count():
             referring_path_hash=None,
             alternate_path_hashes=[],
             trace_intrinsics={},
-            span_event_intrinsics={},
             distributed_trace_intrinsics={},
             agent_attributes=[],
             user_attributes=[],
@@ -237,6 +236,7 @@ def test_transaction_count():
             parent_app=None,
             parent_transport_type=None,
             root_span_guid=None,
+            trace_id=None,
     )
 
     app.record_transaction(node)

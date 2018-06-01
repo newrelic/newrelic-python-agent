@@ -738,6 +738,10 @@ class Transaction(object):
         if self.total_time:
             i_attrs['totalTime'] = self.total_time
 
+        if ('distributed_tracing' in self._settings.feature_flag or
+                'span_events' in self._settings.feature_flag):
+            i_attrs['guid'] = self.guid
+
         # Add in special CPU time value for UI to display CPU burn.
 
         # XXX Disable cpu time value for CPU burn as was

@@ -793,5 +793,24 @@ class TestTransactionDeterministic(newrelic.tests.test_cases.TestCase):
             assert self.transaction.priority == 1.0
 
 
+class TestTransactionComputation(newrelic.tests.test_cases.TestCase):
+
+    requires_collector = True
+
+    def setUp(self):
+        super(TestTransactionComputation, self).setUp()
+
+        environ = {'REQUEST_URI': '/transaction_computation'}
+        self.transaction = WebTransaction(application, environ)
+        self.transaction._settings.feature_flag = set(['distributed_tracing'])
+
+    def test_sampled_is_always_computed(self):
+        with self.transaction:
+            pass
+
+        assert self.transaction.sampled is not None
+        assert self.transaction.priority is not None
+
+
 if __name__ == '__main__':
     unittest.main()

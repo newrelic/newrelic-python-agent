@@ -1,7 +1,6 @@
 import json
 import time
 import unittest
-import copy
 
 import newrelic.api.settings
 
@@ -164,7 +163,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
     }
 
     def _make_test_payload(self, v=None, **custom_fields):
-        payload = copy.deepcopy(TestTransactionApis.standard_test_payload)
+        payload = TestTransactionApis.standard_test_payload.copy()
+        payload['d'] = payload['d'].copy()
 
         if v is not None:
             payload['v'] = v

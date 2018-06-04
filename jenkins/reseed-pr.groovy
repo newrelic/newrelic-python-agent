@@ -124,12 +124,13 @@ def getChangedTests (String dirs, String targetBranch) {
     proc.consumeProcessOutput(stdout, stderr)
     proc.waitForOrKill(20000)
 
+    println("=======")
+    println("stdout:\n${stdout}")
+    println("=======")
+    println("stderr:\n${stderr}")
+    println("=======")
+
     if ( proc.exitValue() != 0 ) {
-        println("=======")
-        println("stdout:\n${stdout}")
-        println("=======")
-        println("stderr:\n${stderr}")
-        println("=======")
         throw new Exception("Process failed with code ${proc.exitValue()}")
     }
 
@@ -140,7 +141,7 @@ use(extensions) {
     def packnsendTests = getPacknsendTests("${WORKSPACE}", integrationSuffix,
             mostRecentOnly, includeCExtensions)
     def changedIntegrationTests = getChangedTests("${WORKSPACE}/tests/*", targetBranch)
-    def changedUnitTests = getChangedTests("newrelic/*/tests newrelic/tests", targetBranch)
+    def changedUnitTests = getChangedTests("${WORKSPACE}/newrelic/*/tests ${WORKSPACE}/newrelic/tests", targetBranch)
     def unitTestEnvs = getUnitTestEnvs()
 
     ['pullrequest', 'manual'].each { jobType ->

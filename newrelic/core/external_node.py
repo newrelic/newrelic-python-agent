@@ -29,6 +29,21 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
 
         return self._details
 
+    def _make_netloc(self):
+        hostname = self.details.hostname or 'unknown'
+
+        try:
+            scheme = self.details.scheme.lower()
+            port = self.details.port
+        except Exception:
+            scheme = None
+            port = None
+
+        if (scheme, port) in (('http', 80), ('https', 443)):
+            port = None
+
+        return port and ('%s:%s' % (hostname, port)) or hostname
+
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
         external node as well as all the child nodes.
@@ -45,20 +60,6 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
             yield TimeMetric(name='External/allOther', scope='',
                     duration=self.duration, exclusive=self.exclusive)
 
-        hostname = self.details.hostname or 'unknown'
-
-        try:
-            scheme = self.details.scheme.lower()
-            port = self.details.port
-        except Exception:
-            scheme = None
-            port = None
-
-        if (scheme, port) in (('http', 80), ('https', 443)):
-            port = None
-
-        netloc = port and ('%s:%s' % (hostname, port)) or hostname
-
         try:
 
             # Remove cross_process_id from the params dict otherwise it shows
@@ -70,6 +71,7 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
             self.cross_process_id = None
             self.external_txn_name = None
 
+        netloc = self._make_netloc()
         name = 'External/%s/all' % netloc
 
         yield TimeMetric(name=name, scope='', duration=self.duration,
@@ -103,21 +105,8 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
 
     def trace_node(self, stats, root, connections):
 
-        hostname = self.details.hostname or 'unknown'
-
-        try:
-            scheme = self.details.scheme.lower()
-            port = self.details.port
-        except Exception:
-            scheme = None
-            port = None
-
-        if (scheme, port) in (('http', 80), ('https', 443)):
-            port = None
-
-        netloc = port and ('%s:%s' % (hostname, port)) or hostname
-
         method = self.method or ''
+        netloc = self._make_netloc()
 
         if self.cross_process_id is None:
             name = 'External/%s/%s/%s' % (netloc, self.library, method)
@@ -147,3 +136,18 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,
                 label=None)
+
+
+    def span_event(self, **kwargs):
+        # NOTE: external_nodes don't have a name attribute, so we have to
+        # define one in order to make the super() call
+        self.name = self.params.get('external_txn_name', '')
+        attrs = super(GenericNodeMixin, self).span_event(**kwargs)
+        i_attrs = attrs[0]
+
+        i_attrs['category'] = 'external'
+        i_attrs['externalUri'] = self._make_netloc()
+        i_attrs['externalLibrary'] = self.library
+        i_attrs['externalProcedure'] = self.name
+
+        return attrs

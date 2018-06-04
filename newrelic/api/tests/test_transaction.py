@@ -287,18 +287,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
     def test_accept_distributed_trace_payload_json(self):
         with self.transaction:
-            payload = {
-                'v': [0, 1],
-                'd': {
-                    'ty': 'Mobile',
-                    'ac': '1',
-                    'ap': '2827902',
-                    'pa': '5e5733a911cfbc73',
-                    'id': '7d3efb1b173fecfa',
-                    'tr': 'd6b4ba0c3a712ca',
-                    'ti': 1518469636035,
-                }
-            }
+            payload = self._make_test_payload()
             payload = json.dumps(payload)
             assert isinstance(payload, str)
             result = self.transaction.accept_distributed_trace_payload(payload)
@@ -309,18 +298,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
     def test_accept_distributed_trace_payload_discard_version(self):
         with self.transaction:
-            payload = {
-                'v': [999, 0],
-                'd': {
-                    'ty': 'Mobile',
-                    'ac': '1',
-                    'ap': '2827902',
-                    'pa': '5e5733a911cfbc73',
-                    'id': '7d3efb1b173fecfa',
-                    'tr': 'd6b4ba0c3a712ca',
-                    'ti': 1518469636035,
-                }
-            }
+            payload = self._make_test_payload(v=[999, 0])
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
             assert ('Supportability/DistributedTrace/'
@@ -329,53 +307,21 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
     def test_accept_distributed_trace_payload_ignore_version(self):
         with self.transaction:
-            payload = {
-                'v': [0, 999],
-                'd': {
-                    'ty': 'Mobile',
-                    'ac': '1',
-                    'ap': '2827902',
-                    'pa': '5e5733a911cfbc73',
-                    'id': '7d3efb1b173fecfa',
-                    'tr': 'd6b4ba0c3a712ca',
-                    'ti': 1518469636035,
-                    'new_item': 'this field should not matter',
-                }
-            }
+            payload = self._make_test_payload(
+                v=[0, 999], new_item='this field should not matter')
+
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
 
     def test_accept_distributed_trace_payload_ignores_second_call(self):
         with self.transaction:
-            payload = {
-                'v': [0, 1],
-                'd': {
-                    'ty': 'Mobile',
-                    'ac': '1',
-                    'ap': '2827902',
-                    'pa': '5e5733a911cfbc73',
-                    'id': '7d3efb1b173fecfa',
-                    'tr': 'd6b4ba0c3a712ca',
-                    'ti': 1518469636035,
-                }
-            }
+            payload = self._make_test_payload()
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
             assert self.transaction.is_distributed_trace
             assert self.transaction.parent_type == 'Mobile'
 
-            payload = {
-                'v': [0, 1],
-                'd': {
-                    'ty': 'App',
-                    'ac': '1',
-                    'ap': '2827902',
-                    'pa': '5e5733a911cfbc73',
-                    'id': '7d3efb1b173fecfa',
-                    'tr': 'd6b4ba0c3a712ca',
-                    'ti': 1518469636035,
-                }
-            }
+            payload = self._make_test_payload()
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
             assert self.transaction.is_distributed_trace
@@ -386,18 +332,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
     def test_accept_distributed_trace_payload_discard_accounts(self):
         with self.transaction:
-            payload = {
-                'v': [0, 1],
-                'd': {
-                    'ty': 'Mobile',
-                    'ac': '9999999999999',  # non-trusted account
-                    'ap': '2827902',
-                    'pa': '5e5733a911cfbc73',
-                    'id': '7d3efb1b173fecfa',
-                    'tr': 'd6b4ba0c3a712ca',
-                    'ti': 1518469636035,
-                }
-            }
+            payload = self._make_test_payload(ac='9999999999999')
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
             assert ('Supportability/DistributedTrace/'
@@ -407,19 +342,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
     def test_accept_distributed_trace_payload_priority_found(self):
         with self.transaction:
             priority = 0.123456789
-            payload = {
-                'v': [0, 1],
-                'd': {
-                    'ty': 'Mobile',
-                    'ac': '1',
-                    'ap': '2827902',
-                    'pa': '5e5733a911cfbc73',
-                    'id': '7d3efb1b173fecfa',
-                    'tr': 'd6b4ba0c3a712ca',
-                    'ti': 1518469636035,
-                    'pr': priority
-                }
-            }
+            payload = self._make_test_payload(pr=priority)
+
             original_priority = self.transaction.priority
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
@@ -428,17 +352,9 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
     def test_accept_distributed_trace_payload_id_missing(self):
         with self.transaction:
-            payload = {
-                'v': [0, 1],
-                'd': {
-                    'ty': 'Mobile',
-                    'ac': '1',
-                    'ap': '2827902',
-                    'pa': '5e5733a911cfbc73',
-                    'tr': 'd6b4ba0c3a712ca',
-                    'ti': 1518469636035,
-                }
-            }
+            payload = self._make_test_payload()
+            del payload['d']['id']
+
             payload = json.dumps(payload)
             assert isinstance(payload, str)
             result = self.transaction.accept_distributed_trace_payload(payload)
@@ -449,18 +365,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
     def test_accept_distributed_trace_payload_priority_not_found(self):
         with self.transaction:
-            payload = {
-                'v': [0, 1],
-                'd': {
-                    'ty': 'Mobile',
-                    'ac': '1',
-                    'ap': '2827902',
-                    'pa': '5e5733a911cfbc73',
-                    'id': '7d3efb1b173fecfa',
-                    'tr': 'd6b4ba0c3a712ca',
-                    'ti': 1518469636035,
-                }
-            }
+            payload = self._make_test_payload()
             original_priority = self.transaction.priority
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
@@ -468,18 +373,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
     def test_accept_distributed_trace_payload_sampled_not_found(self):
         with self.transaction:
-            payload = {
-                'v': [0, 1],
-                'd': {
-                    'ty': 'Mobile',
-                    'ac': '1',
-                    'ap': '2827902',
-                    'pa': '5e5733a911cfbc73',
-                    'id': '7d3efb1b173fecfa',
-                    'tr': 'd6b4ba0c3a712ca',
-                    'ti': 1518469636035,
-                }
-            }
+            payload = self._make_test_payload()
             original_sampled = self.transaction.sampled
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
@@ -489,18 +383,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         with self.transaction:
             parent_id = 'parent id'
             grandparent_id = 'grandparent id'
-            payload = {
-                'v': [0, 1],
-                'd': {
-                    'ty': 'Mobile',
-                    'ac': '1',
-                    'ap': '2827902',
-                    'pa': grandparent_id,
-                    'id': parent_id,
-                    'tr': 'd6b4ba0c3a712ca',
-                    'ti': 1518469636035,
-                }
-            }
+            payload = self._make_test_payload(id=parent_id, pa=grandparent_id)
+
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
             assert self.transaction.parent_id == parent_id
@@ -509,18 +393,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
     def test_accept_distributed_trace_payload_trace_id(self):
         with self.transaction:
             trace_id = 'qwerty'
-            payload = {
-                'v': [0, 1],
-                'd': {
-                    'ty': 'Mobile',
-                    'ac': '1',
-                    'ap': '2827902',
-                    'pa': '5e5733a911cfbc73',
-                    'id': '7d3efb1b173fecfa',
-                    'tr': trace_id,
-                    'ti': 1518469636035,
-                }
-            }
+            payload = self._make_test_payload(tr=trace_id)
+
             assert self.transaction.trace_id != trace_id
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
@@ -528,18 +402,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
     def test_accept_distributed_trace_payload_after_create_payload(self):
         with self.transaction:
-            payload = {
-                'v': [0, 1],
-                'd': {
-                    'ty': 'Mobile',
-                    'ac': '1',
-                    'ap': '2827902',
-                    'pa': '5e5733a911cfbc73',
-                    'id': '7d3efb1b173fecfa',
-                    'tr': 'd6b4ba0c3a712ca',
-                    'ti': 1518469636035,
-                }
-            }
+            payload = self._make_test_payload()
             self.transaction.create_distributed_tracing_payload()
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
@@ -551,18 +414,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         # Mark a payload as sent 1 second ago
         ti = int(time.time() * 1000.0) - 1000
         with self.transaction:
-            payload = {
-                'v': [0, 1],
-                'd': {
-                    'ty': 'Mobile',
-                    'ac': '1',
-                    'ap': '2827902',
-                    'pa': '5e5733a911cfbc73',
-                    'id': '7d3efb1b173fecfa',
-                    'tr': 'd6b4ba0c3a712ca',
-                    'ti': ti,
-                }
-            }
+            payload = self._make_test_payload(ti=ti)
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
 
@@ -596,54 +448,21 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
     def test_accept_payload_prior_to_connect(self):
         self.transaction.enabled = False
         with self.transaction:
-            payload = {
-                'v': [0, 1],
-                'd': {
-                    'ty': 'Mobile',
-                    'ac': '1',
-                    'ap': '2827902',
-                    'pa': '5e5733a911cfbc73',
-                    'id': '7d3efb1b173fecfa',
-                    'tr': 'd6b4ba0c3a712ca',
-                    'ti': 1518469636035,
-                }
-            }
+            payload = self._make_test_payload()
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
 
     def test_accept_payload_cat_disabled(self):
         self.transaction._settings.cross_application_tracer.enabled = False
         with self.transaction:
-            payload = {
-                'v': [0, 1],
-                'd': {
-                    'ty': 'Mobile',
-                    'ac': '1',
-                    'ap': '2827902',
-                    'pa': '5e5733a911cfbc73',
-                    'id': '7d3efb1b173fecfa',
-                    'tr': 'd6b4ba0c3a712ca',
-                    'ti': 1518469636035,
-                }
-            }
+            payload = self._make_test_payload()
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
 
     def test_accept_payload_feature_flag_off(self):
         self.transaction._settings.feature_flag = set()
         with self.transaction:
-            payload = {
-                'v': [0, 1],
-                'd': {
-                    'ty': 'Mobile',
-                    'ac': '1',
-                    'ap': '2827902',
-                    'pa': '5e5733a911cfbc73',
-                    'id': '7d3efb1b173fecfa',
-                    'tr': 'd6b4ba0c3a712ca',
-                    'ti': 1518469636035,
-                }
-            }
+            payload = self._make_test_payload()
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
 
@@ -678,18 +497,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
     def test_create_after_accept_correct_payload(self):
         with self.transaction:
-            inbound_payload = {
-                'v': [0, 1],
-                'd': {
-                    'ty': 'Mobile',
-                    'ac': '1',
-                    'ap': '2827902',
-                    'pa': '5e5733a911cfbc73',
-                    'id': '7d3efb1b173fecfa',
-                    'tr': 'd6b4ba0c3a712ca',
-                    'ti': 1518469636035,
-                }
-            }
+            inbound_payload = self._make_test_payload()
             result = self.transaction.accept_distributed_trace_payload(
                     inbound_payload)
             assert result
@@ -720,20 +528,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             assert self.transaction.priority == 2.0
 
     def test_sampled_accept_payload(self):
-        payload = {
-            'v': [0, 1],
-            'd': {
-                'ty': 'Mobile',
-                'ac': '1',
-                'ap': '2827902',
-                'pa': '5e5733a911cfbc73',
-                'id': '7d3efb1b173fecfa',
-                'tr': 'd6b4ba0c3a712ca',
-                'ti': 1518469636035,
-                'sa': True,
-                'pr': 1.8
-            }
-        }
+        payload = self._make_test_payload(sa=True, pr=1.8)
 
         with self.transaction:
             self.transaction.accept_distributed_trace_payload(payload)
@@ -742,19 +537,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             assert self.transaction.priority == 1.8
 
     def test_sampled_true_and_priority_missing(self):
-        payload = {
-            'v': [0, 1],
-            'd': {
-                'ty': 'Mobile',
-                'ac': '1',
-                'ap': '2827902',
-                'pa': '5e5733a911cfbc73',
-                'id': '7d3efb1b173fecfa',
-                'tr': 'd6b4ba0c3a712ca',
-                'ti': 1518469636035,
-                'sa': True,
-            }
-        }
+        payload = self._make_test_payload(sa=True)
 
         with self.transaction:
             self.transaction.accept_distributed_trace_payload(payload)
@@ -766,19 +549,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             assert self.transaction.priority is None
 
     def test_priority_but_sampled_missing(self):
-        payload = {
-            'v': [0, 1],
-            'd': {
-                'ty': 'Mobile',
-                'ac': '1',
-                'ap': '2827902',
-                'pa': '5e5733a911cfbc73',
-                'id': '7d3efb1b173fecfa',
-                'tr': 'd6b4ba0c3a712ca',
-                'ti': 1518469636035,
-                'pr': 0.8,
-            }
-        }
+        payload = self._make_test_payload(pr=0.8)
 
         with self.transaction:
             self.transaction.accept_distributed_trace_payload(payload)

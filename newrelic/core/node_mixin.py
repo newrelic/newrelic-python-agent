@@ -22,14 +22,14 @@ class GenericNodeMixin(object):
             stats, base_attrs=None, parent_guid=None, grandparent_guid=None):
 
         yield self.span_event(
-                base_attrs,
+                base_attrs=base_attrs,
                 parent_guid=parent_guid,
                 grandparent_guid=grandparent_guid)
 
         for child in self.children:
             for event in child.span_events(
                     stats,
-                    base_attrs,
+                    base_attrs=base_attrs,
                     parent_guid=self.guid,
                     grandparent_guid=parent_guid):
                 yield event

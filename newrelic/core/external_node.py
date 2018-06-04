@@ -137,7 +137,6 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
                 end_time=end_time, name=name, params=params, children=children,
                 label=None)
 
-
     def span_event(self, **kwargs):
         # NOTE: external_nodes don't have a name attribute, so we have to
         # define one in order to make the super() call

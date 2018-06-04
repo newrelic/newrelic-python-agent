@@ -533,7 +533,6 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
             intrinsics['sampled'] = self.sampled
             intrinsics['priority'] = self.priority
             intrinsics['traceId'] = self.trace_id
-            intrinsics['nr.tripId'] = self.trace_id
 
         intrinsics['timestamp'] = self.start_time
         intrinsics['duration'] = self.response_time

@@ -4,7 +4,7 @@ import newrelic.core.trace_node
 
 from newrelic.common import system_info
 from newrelic.core.database_utils import sql_statement, explain_plan
-from newrelic.core.generic_node_mixin import GenericNodeMixin
+from newrelic.core.node_mixin import DatastoreNodeMixin
 from newrelic.core.metric import TimeMetric
 
 
@@ -39,7 +39,7 @@ _DatabaseNode = namedtuple('_DatabaseNode',
         'is_async', 'guid'])
 
 
-class DatabaseNode(_DatabaseNode, GenericNodeMixin):
+class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
 
     def __new__(cls, *args, **kwargs):
         node = _DatabaseNode.__new__(cls, *args, **kwargs)
@@ -241,25 +241,3 @@ class DatabaseNode(_DatabaseNode, GenericNodeMixin):
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,
                 label=None)
-
-    def span_event(self, *args, **kwargs):
-        attrs = super(DatabaseNode, self).span_event(*args, **kwargs)
-        i_attrs = attrs[0]
-
-        i_attrs['category'] = 'datastore'
-        i_attrs['datastoreProduct'] = self.product
-        i_attrs['datastoreOperation'] = self.operation
-
-        if self.database_name:
-            i_attrs['datastoreName'] = self.database_name
-
-        if self.target:
-            i_attrs['datastoreCollection'] = self.target
-
-        if self.host:
-            i_attrs['datastoreHost'] = self.instance_hostname
-
-        if self.port_path_or_id:
-            i_attrs['datastorePortPathOrId'] = self.port_path_or_id
-
-        return attrs

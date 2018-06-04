@@ -750,7 +750,6 @@ class Transaction(object):
             i_attrs['sampled'] = self.sampled
             i_attrs['priority'] = self.priority
             i_attrs['traceId'] = self.trace_id
-            i_attrs['nr.tripId'] = self.trace_id
 
         # Add in special CPU time value for UI to display CPU burn.
 
@@ -791,6 +790,8 @@ class Transaction(object):
             i_attrs['grandparentId'] = self.grandparent_id
         if self.parent_id:
             i_attrs['parentId'] = self.parent_id
+
+        i_attrs['nr.tripId'] = self.trace_id
 
         return i_attrs
 

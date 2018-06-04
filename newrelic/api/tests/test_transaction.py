@@ -1,6 +1,7 @@
 import json
 import time
 import unittest
+import copy
 
 import newrelic.api.settings
 
@@ -148,6 +149,32 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
     def tearDown(self):
         if current_transaction():
             self.transaction.drop_transaction()
+
+    standard_test_payload = {
+        'v': [0, 1],
+        'd': {
+            'ty': 'Mobile',
+            'ac': '1',
+            'ap': '2827902',
+            'pa': '5e5733a911cfbc73',
+            'id': '7d3efb1b173fecfa',
+            'tr': 'd6b4ba0c3a712ca',
+            'ti': 1518469636035,
+        }
+    }
+
+    def _make_test_payload(self, v=None, **custom_fields):
+        payload = copy.deepcopy(TestTransactionApis.standard_test_payload)
+
+        if v is not None:
+            payload['v'] = v
+
+        for field_name in custom_fields:
+            payload['d'][field_name] = custom_fields[field_name]
+
+        return payload
+
+    ################################
 
     def test_create_distributed_tracing_payload_text(self):
         with self.transaction:

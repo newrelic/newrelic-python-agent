@@ -182,30 +182,72 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             # Parent should be excluded
             assert 'pa' not in data
 
+    ##############################################
+
+    def _standard_trace_test(self, expected_id, expected_parent_id):
+        self.transaction._trace_id = 'qwerty'
+        self.transaction._priority = 1.0
+
+        payload = self.transaction.create_distributed_tracing_payload()
+        assert payload['v'] == (0, 1)
+
+        data = payload['d']
+
+        # Type is always App
+        assert data['ty'] == 'App'
+
+        # Check required keys
+        assert all(k in data for k in DISTRIBUTED_TRACE_KEYS_REQUIRED)
+
+        assert data['tr'] == 'qwerty'
+        assert data['pr'] == self.transaction._priority
+
+        assert data['id'] == expected_id
+        assert data['pa'] == expected_parent_id
+
     def test_distributed_trace_referring_transaction(self):
         with self.transaction:
             self.transaction.parent_id = 'abcde'
-            self.transaction._trace_id = 'qwerty'
-            self.transaction._priority = 1.0
 
-            payload = self.transaction.create_distributed_tracing_payload()
-            assert payload['v'] == (0, 1)
+            # ID should be the transaction GUID, Parent data should be
+            # forwarded
+            self._standard_trace_test(self.transaction.guid, 'abcde')
 
-            data = payload['d']
+    def test_distributed_trace_with_spans_no_parent(self):
+        self.transaction._settings.feature_flag.add('span_events')
+        self.transaction._settings.span_events.enabled = True
 
-            # Type is always App
-            assert data['ty'] == 'App'
+        with self.transaction:
+            self.transaction.current_node.guid = 'abcde'
+            self.transaction.guid = 'this is guid'
 
-            # Check required keys
-            assert all(k in data for k in DISTRIBUTED_TRACE_KEYS_REQUIRED)
+            # ID and parent should be from the span
+            self._standard_trace_test('abcde', 'this is guid')
 
-            # ID should be the transaction GUID
-            assert data['id'] == self.transaction.guid
+    def test_distributed_trace_with_spans_with_parent(self):
+        self.transaction._settings.feature_flag.add('span_events')
+        self.transaction._settings.span_events.enabled = True
 
-            # Parent data should be forwarded
-            assert data['pa'] == 'abcde'
-            assert data['tr'] == 'qwerty'
-            assert data['pr'] == self.transaction._priority
+        with self.transaction:
+            with FunctionTrace(self.transaction, 'trace_1') as trace:
+                trace.guid = 'abcde'
+                trace.parent.guid = 'this is guid'
+
+                # ID and parent should be from the span
+                self._standard_trace_test('abcde', 'this is guid')
+
+    def test_distributed_trace_with_spans_not_enabled(self):
+        self.transaction._settings.feature_flag.add('span_events')
+        self.transaction._settings.span_events.enabled = False
+
+        with self.transaction:
+            self.transaction.parent_id = 'abcde'
+
+            # ID should be the transaction GUID, Parent data should be
+            # forwarded
+            self._standard_trace_test(self.transaction.guid, 'abcde')
+
+    ##############################################
 
     def test_accept_distributed_trace_payload_encoded(self):
         with self.transaction:

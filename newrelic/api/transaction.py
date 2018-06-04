@@ -468,6 +468,12 @@ class Transaction(object):
                 self.record_custom_metric('Python/Framework/%s/%s' %
                     (framework, version), 1)
 
+        if ('distributed_tracing' in self._settings.feature_flag or
+                'span_events' in self._settings.feature_flag):
+            # Sampled and priority need to be computed at the end of the
+            # transaction when distributed tracing or span events are enabled.
+            self._compute_sampled_and_priority()
+
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
                 path=self.path,
@@ -509,7 +515,6 @@ class Transaction(object):
                 referring_path_hash=self._referring_path_hash,
                 alternate_path_hashes=self.alternate_path_hashes,
                 trace_intrinsics=self.trace_intrinsics,
-                span_event_intrinsics=self.span_event_intrinsics,
                 distributed_trace_intrinsics=self.distributed_trace_intrinsics,
                 agent_attributes=self.agent_attributes,
                 user_attributes=self.user_attributes,
@@ -522,6 +527,7 @@ class Transaction(object):
                 parent_app=self.parent_app,
                 parent_transport_type=self.parent_transport_type,
                 root_span_guid=root.guid,
+                trace_id=self.trace_id,
         )
 
         # Clear settings as we are all done and don't need it
@@ -741,6 +747,9 @@ class Transaction(object):
         if ('distributed_tracing' in self._settings.feature_flag or
                 'span_events' in self._settings.feature_flag):
             i_attrs['guid'] = self.guid
+            i_attrs['sampled'] = self.sampled
+            i_attrs['priority'] = self.priority
+            i_attrs['traceId'] = self.trace_id
 
         # Add in special CPU time value for UI to display CPU burn.
 
@@ -753,22 +762,6 @@ class Transaction(object):
         #     i_attrs['cpu_time'] = self._cpu_user_time_value
 
         i_attrs.update(self.distributed_trace_intrinsics)
-
-        return i_attrs
-
-    @property
-    def span_event_intrinsics(self):
-        i_attrs = {}
-
-        if 'span_events' not in self._settings.feature_flag:
-            return i_attrs
-
-        i_attrs['traceId'] = self.trace_id
-        i_attrs['appLocalRootId'] = self.guid
-
-        self._compute_sampled_and_priority()
-        i_attrs['sampled'] = self.sampled
-        i_attrs['priority'] = self.priority
 
         return i_attrs
 
@@ -798,12 +791,7 @@ class Transaction(object):
         if self.parent_id:
             i_attrs['parentId'] = self.parent_id
 
-        i_attrs['traceId'] = self.trace_id
         i_attrs['nr.tripId'] = self.trace_id
-
-        self._compute_sampled_and_priority()
-        i_attrs['sampled'] = self.sampled
-        i_attrs['priority'] = self.priority
 
         return i_attrs
 

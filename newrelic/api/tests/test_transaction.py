@@ -793,35 +793,23 @@ class TestTransactionDeterministic(newrelic.tests.test_cases.TestCase):
             assert self.transaction.priority == 1.0
 
 
-class TestSpanEventIntrinsics(newrelic.tests.test_cases.TestCase):
+class TestTransactionComputation(newrelic.tests.test_cases.TestCase):
+
+    requires_collector = True
 
     def setUp(self):
-        environ = {'REQUEST_URI': '/span_event_intrinsics'}
-        mock_app = MockApplication()
+        super(TestTransactionComputation, self).setUp()
 
-        self.transaction = WebTransaction(mock_app, environ)
-        self.transaction._settings.span_events.enabled = True
-        self.transaction._settings.feature_flag = set(['span_events'])
+        environ = {'REQUEST_URI': '/transaction_computation'}
+        self.transaction = WebTransaction(application, environ)
+        self.transaction._settings.feature_flag = set(['distributed_tracing'])
 
-    def tearDown(self):
-        if current_transaction():
-            self.transaction.drop_transaction()
-
-    def test_span_event_intrinsics_enabled(self):
+    def test_sampled_is_always_computed(self):
         with self.transaction:
-            self.transaction._priority = 0.0
+            pass
 
-            i_attrs = self.transaction.span_event_intrinsics
-            assert i_attrs['traceId'] == self.transaction.trace_id
-            assert i_attrs['appLocalRootId'] == self.transaction.guid
-            assert i_attrs['sampled'] is False  # MockApplication returns False
-            assert i_attrs['priority'] == 0.0
-
-    def test_span_event_intrinsics_disabled(self):
-        self.transaction._settings.feature_flag = set()
-        with self.transaction:
-            i_attrs = self.transaction.span_event_intrinsics
-            assert not i_attrs
+        assert self.transaction.sampled is not None
+        assert self.transaction.priority is not None
 
 
 if __name__ == '__main__':

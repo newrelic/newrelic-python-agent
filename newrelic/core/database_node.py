@@ -70,6 +70,20 @@ class DatabaseNode(_DatabaseNode, GenericNodeMixin):
     def formatted(self):
         return self.statement.formatted(self.sql_format)
 
+    @property
+    def name(self):
+        product = self.product
+        operation = self.operation or 'other'
+        target = self.target
+
+        if target:
+            name = 'Datastore/statement/%s/%s/%s' % (product, target,
+                    operation)
+        else:
+            name = 'Datastore/operation/%s/%s' % (product, operation)
+
+        return name
+
     def explain_plan(self, connections):
         return explain_plan(connections, self.statement, self.connect_params,
                 self.cursor_params, self.sql_parameters, self.execute_params,
@@ -177,17 +191,7 @@ class DatabaseNode(_DatabaseNode, GenericNodeMixin):
                 database_name=self.database_name)
 
     def trace_node(self, stats, root, connections):
-        product = self.product
-        operation = self.operation or 'other'
-        target = self.target
-
-        if target:
-            name = 'Datastore/statement/%s/%s/%s' % (product, target,
-                    operation)
-        else:
-            name = 'Datastore/operation/%s/%s' % (product, operation)
-
-        name = root.string_table.cache(name)
+        name = root.string_table.cache(self.name)
 
         start_time = newrelic.core.trace_node.node_start_time(root, self)
         end_time = newrelic.core.trace_node.node_end_time(root, self)
@@ -237,3 +241,25 @@ class DatabaseNode(_DatabaseNode, GenericNodeMixin):
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,
                 label=None)
+
+    def span_event(self, *args, **kwargs):
+        attrs = super(DatabaseNode, self).span_event(*args, **kwargs)
+        i_attrs = attrs[0]
+
+        i_attrs['category'] = 'datastore'
+        i_attrs['datastoreProduct'] = self.product
+        i_attrs['datastoreOperation'] = self.operation
+
+        if self.database_name:
+            i_attrs['datastoreName'] = self.database_name
+
+        if self.target:
+            i_attrs['datastoreCollection'] = self.target
+
+        if self.host:
+            i_attrs['datastoreHost'] = self.instance_hostname
+
+        if self.port_path_or_id:
+            i_attrs['datastorePortPathOrId'] = self.port_path_or_id
+
+        return attrs

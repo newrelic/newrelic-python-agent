@@ -147,3 +147,57 @@ def test_exclusive_time():
     main_exclusive_time = full_metrics[main_metric][2]
 
     assert main_exclusive_time < coro_exclusive_time
+
+
+@background_task(name='test_parent_trace_is_exited')
+def test_parent_trace_is_exited():
+    # Avoid importing asyncio until after the instrumentation hooks are set
+    # up
+    import asyncio
+    if hasattr(asyncio, 'ensure_future'):
+        ensure_future = asyncio.ensure_future
+    else:
+        # use getattr because `async` is a keyword in py37
+        ensure_future = getattr(asyncio, 'async')
+
+    futures = []
+    loop = asyncio.get_event_loop()
+
+    @asyncio.coroutine
+    @function_trace(name='parent')
+    def parent():
+        f = ensure_future(middle())
+        futures.append(f)
+
+    @asyncio.coroutine
+    def middle():
+        yield
+        yield from child()
+
+    @asyncio.coroutine
+    @function_trace(name='child')
+    def child():
+        yield
+        loop.stop()
+
+    @asyncio.coroutine
+    def timeout():
+        yield from asyncio.sleep(1)
+        loop.stop()
+        assert False
+
+    loop.run_until_complete(parent())
+    task = ensure_future(timeout())
+
+    loop.run_forever()
+
+    # Cancel timeout task - assertion will fire below if future did not
+    # complete
+    if not task.done():
+        task.cancel()
+
+    # Check that the future is complete
+    assert futures[0].done()
+
+    # Trigger an error if there is one
+    futures[0].result()

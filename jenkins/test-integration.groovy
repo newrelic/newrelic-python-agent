@@ -5,7 +5,7 @@ String organization = 'python-agent'
 String repoGHE = 'python_agent'
 String repoFull = "${organization}/${repoGHE}"
 String testSuffix = "__integration-test"
-String slackChannelPrivate = '#python-dev'
+String slackChannel = '#python-agent'
 
 def getPacknsendTests (String workspace, String testSuffix, String mostRecentOnly) {
         Integer maxEnvsPerContainer = 14
@@ -147,12 +147,12 @@ use(extensions) {
             }
 
             if (jobType == 'master' || jobType == 'mmf') {
-                slackQuiet(slackChannelPrivate) {
+                slackQuiet(slackChannel) {
                     notifyNotBuilt true
                     notifyAborted true
                 }
             } else if (jobType == 'develop') {
-                slackQuiet(slackChannelPrivate) {
+                slackQuiet(slackChannel) {
                     notifyNotBuilt true
                     notifyAborted true
                 }

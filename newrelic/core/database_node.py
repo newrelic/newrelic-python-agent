@@ -70,20 +70,6 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
     def formatted(self):
         return self.statement.formatted(self.sql_format)
 
-    @property
-    def name(self):
-        product = self.product
-        operation = self.operation or 'other'
-        target = self.target
-
-        if target:
-            name = 'Datastore/statement/%s/%s/%s' % (product, target,
-                    operation)
-        else:
-            name = 'Datastore/operation/%s/%s' % (product, operation)
-
-        return name
-
     def explain_plan(self, connections):
         return explain_plan(connections, self.statement, self.connect_params,
                 self.cursor_params, self.sql_parameters, self.execute_params,

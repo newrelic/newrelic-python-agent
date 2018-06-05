@@ -37,6 +37,20 @@ class GenericNodeMixin(object):
 
 class DatastoreNodeMixin(GenericNodeMixin):
 
+    @property
+    def name(self):
+        product = self.product
+        target = self.target
+        operation = self.operation or 'other'
+
+        if target:
+            name = 'Datastore/statement/%s/%s/%s' % (product, target,
+                    operation)
+        else:
+            name = 'Datastore/operation/%s/%s' % (product, operation)
+
+        return name
+
     def span_event(self, *args, **kwargs):
         attrs = super(DatastoreNodeMixin, self).span_event(*args, **kwargs)
         i_attrs = attrs[0]

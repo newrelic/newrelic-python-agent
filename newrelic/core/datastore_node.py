@@ -22,20 +22,6 @@ class DatastoreNode(_DatastoreNode, DatastoreNodeMixin):
             hostname = self.host
         return hostname
 
-    @property
-    def name(self):
-        product = self.product
-        target = self.target
-        operation = self.operation or 'other'
-
-        if target:
-            name = 'Datastore/statement/%s/%s/%s' % (product, target,
-                    operation)
-        else:
-            name = 'Datastore/operation/%s/%s' % (product, operation)
-
-        return name
-
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
         database node as well as all the child nodes.

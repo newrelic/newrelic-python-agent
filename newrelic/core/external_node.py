@@ -7,7 +7,7 @@ from collections import namedtuple
 
 import newrelic.core.trace_node
 
-from newrelic.core.node_mixin import GenericNodeMixin
+from newrelic.core.node_mixin import ExternalNodeMixin
 from newrelic.core.metric import TimeMetric
 
 _ExternalNode = namedtuple('_ExternalNode',
@@ -15,7 +15,7 @@ _ExternalNode = namedtuple('_ExternalNode',
         'duration', 'exclusive', 'params', 'is_async', 'guid'])
 
 
-class ExternalNode(_ExternalNode, GenericNodeMixin):
+class ExternalNode(_ExternalNode, ExternalNodeMixin):
 
     @property
     def details(self):
@@ -29,7 +29,8 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
 
         return self._details
 
-    def _make_netloc(self):
+    @property
+    def netloc(self):
         hostname = self.details.hostname or 'unknown'
 
         try:
@@ -42,10 +43,8 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
         if (scheme, port) in (('http', 80), ('https', 443)):
             port = None
 
-        return port and ('%s:%s' % (hostname, port)) or hostname
-
-    def _make_name(self, netloc):
-        return 'External/%s/%s/%s' % (netloc, self.library, self.method or '')
+        netloc = port and ('%s:%s' % (hostname, port)) or hostname
+        return netloc
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
@@ -63,6 +62,8 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
             yield TimeMetric(name='External/allOther', scope='',
                     duration=self.duration, exclusive=self.exclusive)
 
+        netloc = self.netloc
+
         try:
 
             # Remove cross_process_id from the params dict otherwise it shows
@@ -74,14 +75,15 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
             self.cross_process_id = None
             self.external_txn_name = None
 
-        netloc = self._make_netloc()
         name = 'External/%s/all' % netloc
 
         yield TimeMetric(name=name, scope='', duration=self.duration,
                   exclusive=self.exclusive)
 
         if self.cross_process_id is None:
-            name = self._make_name(netloc)
+            method = self.method or ''
+
+            name = 'External/%s/%s/%s' % (netloc, self.library, method)
 
             yield TimeMetric(name=name, scope='', duration=self.duration,
                     exclusive=self.exclusive)
@@ -106,10 +108,12 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
 
     def trace_node(self, stats, root, connections):
 
-        netloc = self._make_netloc()
+        netloc = self.netloc
+
+        method = self.method or ''
 
         if self.cross_process_id is None:
-            name = self._make_name(netloc)
+            name = 'External/%s/%s/%s' % (netloc, self.library, method)
         else:
             name = 'ExternalTransaction/%s/%s/%s' % (netloc,
                                                      self.cross_process_id,
@@ -136,18 +140,3 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,
                 label=None)
-
-    def span_event(self, **kwargs):
-
-        netloc = self._make_netloc()
-        self.name = self._make_name(netloc)
-
-        attrs = super(ExternalNode, self).span_event(**kwargs)
-        i_attrs = attrs[0]
-
-        i_attrs['category'] = 'external'
-        i_attrs['externalUri'] = self._make_netloc()
-        i_attrs['externalLibrary'] = self.library
-        i_attrs['externalProcedure'] = self.method or ''
-
-        return attrs

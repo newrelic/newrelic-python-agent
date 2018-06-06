@@ -72,3 +72,22 @@ class DatastoreNodeMixin(GenericNodeMixin):
             i_attrs['datastorePortPathOrId'] = self.port_path_or_id
 
         return attrs
+
+
+class ExternalNodeMixin(GenericNodeMixin):
+
+    @property
+    def name(self):
+        return 'External/%s/%s/%s' % (
+                self.netloc, self.library, self.method or '')
+
+    def span_event(self, *args, **kwargs):
+        attrs = super(ExternalNodeMixin, self).span_event(*args, **kwargs)
+        i_attrs = attrs[0]
+
+        i_attrs['category'] = 'external'
+        i_attrs['externalUri'] = self._make_netloc()
+        i_attrs['externalLibrary'] = self.library
+        i_attrs['externalProcedure'] = self.method or ''
+
+        return attrs

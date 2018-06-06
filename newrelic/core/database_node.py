@@ -4,7 +4,7 @@ import newrelic.core.trace_node
 
 from newrelic.common import system_info
 from newrelic.core.database_utils import sql_statement, explain_plan
-from newrelic.core.generic_node_mixin import GenericNodeMixin
+from newrelic.core.node_mixin import DatastoreNodeMixin
 from newrelic.core.metric import TimeMetric
 
 
@@ -39,7 +39,7 @@ _DatabaseNode = namedtuple('_DatabaseNode',
         'is_async', 'guid'])
 
 
-class DatabaseNode(_DatabaseNode, GenericNodeMixin):
+class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
 
     def __new__(cls, *args, **kwargs):
         node = _DatabaseNode.__new__(cls, *args, **kwargs)
@@ -177,17 +177,7 @@ class DatabaseNode(_DatabaseNode, GenericNodeMixin):
                 database_name=self.database_name)
 
     def trace_node(self, stats, root, connections):
-        product = self.product
-        operation = self.operation or 'other'
-        target = self.target
-
-        if target:
-            name = 'Datastore/statement/%s/%s/%s' % (product, target,
-                    operation)
-        else:
-            name = 'Datastore/operation/%s/%s' % (product, operation)
-
-        name = root.string_table.cache(name)
+        name = root.string_table.cache(self.name)
 
         start_time = newrelic.core.trace_node.node_start_time(root, self)
         end_time = newrelic.core.trace_node.node_end_time(root, self)

@@ -14,7 +14,7 @@ from newrelic.core.string_table import StringTable
 from newrelic.core.attribute import create_user_attributes
 from newrelic.core.attribute_filter import (DST_ERROR_COLLECTOR,
         DST_TRANSACTION_TRACER, DST_TRANSACTION_EVENTS)
-from newrelic.core.generic_node_mixin import GenericNodeMixin
+from newrelic.core.node_mixin import GenericNodeMixin
 
 
 _TransactionNode = namedtuple('_TransactionNode',

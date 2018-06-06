@@ -2,7 +2,7 @@ from collections import namedtuple
 
 import newrelic.core.trace_node
 
-from newrelic.core.generic_node_mixin import GenericNodeMixin
+from newrelic.core.node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
 
 _MessageNode = namedtuple('_MessageNode',

@@ -1,3 +1,9 @@
+try:
+    import urlparse
+except ImportError:
+    import urllib.parse as urlparse
+
+
 class GenericNodeMixin(object):
 
     def span_event(
@@ -85,8 +91,12 @@ class ExternalNodeMixin(GenericNodeMixin):
         attrs = super(ExternalNodeMixin, self).span_event(*args, **kwargs)
         i_attrs = attrs[0]
 
+        details = self.details
+        url = urlparse.urlunsplit((details.scheme, details.netloc,
+                details.path, '', ''))
+
         i_attrs['category'] = 'external'
-        i_attrs['externalUri'] = self._make_netloc()
+        i_attrs['externalUri'] = url
         i_attrs['externalLibrary'] = self.library
 
         if self.method:

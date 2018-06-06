@@ -29,7 +29,7 @@ def test_span_events(test_external):
     expected_count = int(test_external)
 
     exact_intrinsics = {
-        'name': '',
+        'name': 'External/www.example.com/%s/' % external_library_name,
         'type': 'Span',
         'appLocalRootId': guid,
         'sampled': True,

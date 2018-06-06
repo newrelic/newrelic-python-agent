@@ -44,6 +44,9 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
 
         return port and ('%s:%s' % (hostname, port)) or hostname
 
+    def _make_name(self, netloc):
+        return 'External/%s/%s/%s' % (netloc, self.library, self.method or '')
+
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
         external node as well as all the child nodes.
@@ -78,9 +81,7 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
                   exclusive=self.exclusive)
 
         if self.cross_process_id is None:
-            method = self.method or ''
-
-            name = 'External/%s/%s/%s' % (netloc, self.library, method)
+            name = self._make_name(netloc)
 
             yield TimeMetric(name=name, scope='', duration=self.duration,
                     exclusive=self.exclusive)
@@ -105,11 +106,10 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
 
     def trace_node(self, stats, root, connections):
 
-        method = self.method or ''
         netloc = self._make_netloc()
 
         if self.cross_process_id is None:
-            name = 'External/%s/%s/%s' % (netloc, self.library, method)
+            name = self._make_name(netloc)
         else:
             name = 'ExternalTransaction/%s/%s/%s' % (netloc,
                                                      self.cross_process_id,
@@ -138,15 +138,16 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
                 label=None)
 
     def span_event(self, **kwargs):
-        # NOTE: external_nodes don't have a name attribute, so we have to
-        # define one in order to make the super() call
-        self.name = self.params.get('external_txn_name', '')
-        attrs = super(GenericNodeMixin, self).span_event(**kwargs)
+
+        netloc = self._make_netloc()
+        self.name = self._make_name(netloc)
+
+        attrs = super(ExternalNode, self).span_event(**kwargs)
         i_attrs = attrs[0]
 
         i_attrs['category'] = 'external'
         i_attrs['externalUri'] = self._make_netloc()
         i_attrs['externalLibrary'] = self.library
-        i_attrs['externalProcedure'] = self.name
+        i_attrs['externalProcedure'] = self.method or ''
 
         return attrs

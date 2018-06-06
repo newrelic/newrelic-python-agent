@@ -33,3 +33,42 @@ class GenericNodeMixin(object):
                     parent_guid=self.guid,
                     grandparent_guid=parent_guid):
                 yield event
+
+
+class DatastoreNodeMixin(GenericNodeMixin):
+
+    @property
+    def name(self):
+        product = self.product
+        target = self.target
+        operation = self.operation or 'other'
+
+        if target:
+            name = 'Datastore/statement/%s/%s/%s' % (product, target,
+                    operation)
+        else:
+            name = 'Datastore/operation/%s/%s' % (product, operation)
+
+        return name
+
+    def span_event(self, *args, **kwargs):
+        attrs = super(DatastoreNodeMixin, self).span_event(*args, **kwargs)
+        i_attrs = attrs[0]
+
+        i_attrs['category'] = 'datastore'
+        i_attrs['datastoreProduct'] = self.product
+        i_attrs['datastoreOperation'] = self.operation
+
+        if self.database_name:
+            i_attrs['datastoreName'] = self.database_name
+
+        if self.target:
+            i_attrs['datastoreCollection'] = self.target
+
+        if self.host:
+            i_attrs['datastoreHost'] = self.instance_hostname
+
+        if self.port_path_or_id:
+            i_attrs['datastorePortPathOrId'] = self.port_path_or_id
+
+        return attrs

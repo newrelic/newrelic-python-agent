@@ -37,6 +37,7 @@ def validate_span_events(exact_intrinsics={}, expected_intrinsics=[], count=1):
         assert record_transaction_called
         captured_events = recorded_span_events.pop()
 
+        mismatches = []
         matching_span_events = 0
         for captured_event in captured_events:
             intrinsics, agent_attrs, user_attrs = captured_event
@@ -51,13 +52,21 @@ def validate_span_events(exact_intrinsics={}, expected_intrinsics=[], count=1):
             else:
                 for key, value in exact_intrinsics.items():
                     if intrinsics.get(key) != value:
+                        mismatches.append('key: %s, value:<%s><%s>' % (
+                            key, value, intrinsics.get(key)))
                         break
                 else:
                     matching_span_events += 1
 
         def _span_details():
-            return 'matching_span_events=%d, count=%d, captured_events=%s' % (
-                    matching_span_events, count, captured_events)
+            details = [
+                'matching_span_events=%d' % matching_span_events,
+                'count=%d' % count,
+                'mismatches=%s' % mismatches,
+                'captured_events=%s' % captured_events
+            ]
+
+            return "\n".join(details)
 
         assert matching_span_events == count, _span_details()
 

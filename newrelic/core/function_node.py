@@ -97,3 +97,11 @@ class FunctionNode(_FunctionNode, GenericNodeMixin):
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,
                 label=self.label)
+
+    def span_event(self, *args, **kwargs):
+        attrs = super(FunctionNode, self).span_event(*args, **kwargs)
+        i_attrs = attrs[0]
+
+        i_attrs['name'] = '%s/%s' % (self.group, self.name)
+
+        return attrs

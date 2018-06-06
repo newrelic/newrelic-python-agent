@@ -38,7 +38,6 @@ def test_span_events(test_external):
         'category': 'external',
         'externalUri': 'www.example.com',
         'externalLibrary': external_library_name,
-        'externalProcedure': ''
     }
     expected_intrinsics = ('timestamp', 'duration')
 

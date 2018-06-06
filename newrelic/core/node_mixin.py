@@ -88,6 +88,8 @@ class ExternalNodeMixin(GenericNodeMixin):
         i_attrs['category'] = 'external'
         i_attrs['externalUri'] = self._make_netloc()
         i_attrs['externalLibrary'] = self.library
-        i_attrs['externalProcedure'] = self.method or ''
+
+        if self.method:
+            i_attrs['externalProcedure'] = self.method
 
         return attrs

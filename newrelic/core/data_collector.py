@@ -990,6 +990,17 @@ class ApplicationSession(object):
                 'custom_event_data', self.license_key, self.agent_run_id,
                 payload)
 
+    def send_span_events(self, sampling_info, span_event_data):
+        """Called to submit sample set for span events.
+
+        """
+
+        payload = (self.agent_run_id, sampling_info, span_event_data)
+
+        return self.send_request(self.requests_session, self.collector_url,
+                'span_event_data', self.license_key, self.agent_run_id,
+                payload)
+
     @classmethod
     def create_session(cls, license_key, app_name, linked_applications,
             environment, settings):
@@ -1254,6 +1265,8 @@ _developer_mode_responses = {
     'analytic_event_data': None,
 
     'error_event_data': None,
+
+    'span_event_data': None,
 
     'custom_event_data': None,
 

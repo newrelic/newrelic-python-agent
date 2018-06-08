@@ -14,6 +14,7 @@ from newrelic.core.string_table import StringTable
 from newrelic.core.attribute import create_user_attributes
 from newrelic.core.attribute_filter import (DST_ERROR_COLLECTOR,
         DST_TRANSACTION_TRACER, DST_TRANSACTION_EVENTS)
+from newrelic.core.node_mixin import GenericNodeMixin
 
 
 _TransactionNode = namedtuple('_TransactionNode',
@@ -28,11 +29,12 @@ _TransactionNode = namedtuple('_TransactionNode',
         'is_part_of_cat', 'trip_id', 'path_hash', 'referring_path_hash',
         'alternate_path_hashes', 'trace_intrinsics', 'agent_attributes',
         'distributed_trace_intrinsics', 'user_attributes', 'priority',
-        'parent_transport_duration', 'parent_id', 'parent_type',
-        'parent_account', 'parent_app', 'parent_transport_type'])
+        'sampled', 'parent_transport_duration', 'parent_id', 'parent_type',
+        'parent_account', 'parent_app', 'parent_transport_type',
+        'root_span_guid', 'trace_id'])
 
 
-class TransactionNode(_TransactionNode):
+class TransactionNode(_TransactionNode, GenericNodeMixin):
 
     """Class holding data corresponding to the root of the transaction. All
     the nodes of interest recorded for the transaction are held as a tree
@@ -50,6 +52,10 @@ class TransactionNode(_TransactionNode):
             return result
         self._string_table = StringTable()
         return self._string_table
+
+    @property
+    def name(self):
+        return self.name_for_metric
 
     @property
     def distributed_trace_received(self):
@@ -521,6 +527,13 @@ class TransactionNode(_TransactionNode):
 
         intrinsics = self.distributed_trace_intrinsics.copy()
 
+        if ('distributed_tracing' in self.settings.feature_flag or
+                'span_events' in self.settings.feature_flag):
+            intrinsics['guid'] = self.guid
+            intrinsics['sampled'] = self.sampled
+            intrinsics['priority'] = self.priority
+            intrinsics['traceId'] = self.trace_id
+
         intrinsics['timestamp'] = self.start_time
         intrinsics['duration'] = self.response_time
 
@@ -566,3 +579,33 @@ class TransactionNode(_TransactionNode):
         self._event_intrinsics_cache = intrinsics.copy()
 
         return intrinsics
+
+    def span_event(self, *args, **kwargs):
+        attrs = super(TransactionNode, self).span_event(*args, **kwargs)
+        i_attrs = attrs[0]
+
+        # GUID needs to come from Sentinel for the root span event since that
+        # is what's forwarded in the distributed trace payload.
+        i_attrs['guid'] = self.root_span_guid
+
+        return attrs
+
+    def span_events(self, stats):
+        base_attrs = {
+            'appLocalRootId': self.guid,
+            'traceId': self.trace_id,
+            'sampled': self.sampled,
+            'priority': self.priority,
+        }
+
+        yield self.span_event(base_attrs,
+                parent_guid=self.guid,
+                grandparent_guid=self.parent_id)
+
+        for child in self.children:
+            for event in child.span_events(
+                    stats,
+                    base_attrs,
+                    parent_guid=self.root_span_guid,
+                    grandparent_guid=self.guid):
+                yield event

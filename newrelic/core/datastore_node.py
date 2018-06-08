@@ -3,16 +3,16 @@ from collections import namedtuple
 import newrelic.core.trace_node
 
 from newrelic.common import system_info
+from newrelic.core.node_mixin import DatastoreNodeMixin
 from newrelic.core.metric import TimeMetric
 
 _DatastoreNode = namedtuple('_DatastoreNode',
         ['product', 'target', 'operation', 'children', 'start_time',
         'end_time', 'duration', 'exclusive', 'host', 'port_path_or_id',
-        'database_name', 'is_async'])
+        'database_name', 'is_async', 'guid'])
 
 
-
-class DatastoreNode(_DatastoreNode):
+class DatastoreNode(_DatastoreNode, DatastoreNodeMixin):
 
     @property
     def instance_hostname(self):
@@ -95,17 +95,7 @@ class DatastoreNode(_DatastoreNode):
                     duration=self.duration, exclusive=self.exclusive)
 
     def trace_node(self, stats, root, connections):
-        product = self.product
-        target = self.target
-        operation = self.operation or 'other'
-
-        if target:
-            name = 'Datastore/statement/%s/%s/%s' % (product, target,
-                    operation)
-        else:
-            name = 'Datastore/operation/%s/%s' % (product, operation)
-
-        name = root.string_table.cache(name)
+        name = root.string_table.cache(self.name)
 
         start_time = newrelic.core.trace_node.node_start_time(root, self)
         end_time = newrelic.core.trace_node.node_end_time(root, self)

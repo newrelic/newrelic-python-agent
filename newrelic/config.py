@@ -58,6 +58,7 @@ _FEATURE_FLAGS = set([
     'tornado.instrumentation.r4',
     'django.instrumentation.inclusion-tags.r1',
     'distributed_tracing',
+    'span_events',
 ])
 
 # Names of configuration file and deployment environment. This
@@ -419,6 +420,10 @@ def _process_configuration(section):
     _process_setting(section, 'custom_insights_events.enabled',
                      'getboolean', None)
     _process_setting(section, 'custom_insights_events.max_samples_stored',
+                     'getint', None)
+    _process_setting(section, 'span_events.enabled',
+                     'getboolean', None)
+    _process_setting(section, 'span_events.max_samples_stored',
                      'getint', None)
     _process_setting(section, 'local_daemon.socket_path',
                      'get', None)

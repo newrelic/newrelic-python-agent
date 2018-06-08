@@ -2,6 +2,7 @@ from collections import namedtuple
 
 import newrelic.core.trace_node
 
+from newrelic.core.node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
 
 from newrelic.packages import six
@@ -9,11 +10,10 @@ from newrelic.packages import six
 _FunctionNode = namedtuple('_FunctionNode',
         ['group', 'name', 'children', 'start_time', 'end_time',
         'duration', 'exclusive', 'label', 'params', 'rollup',
-        'is_async'])
+        'is_async', 'guid'])
 
 
-
-class FunctionNode(_FunctionNode):
+class FunctionNode(_FunctionNode, GenericNodeMixin):
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
@@ -97,3 +97,11 @@ class FunctionNode(_FunctionNode):
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,
                 label=self.label)
+
+    def span_event(self, *args, **kwargs):
+        attrs = super(FunctionNode, self).span_event(*args, **kwargs)
+        i_attrs = attrs[0]
+
+        i_attrs['name'] = '%s/%s' % (self.group, self.name)
+
+        return attrs

@@ -77,7 +77,8 @@ EMPTY_SAMPLES = {
     ('get_xray_metadata', (0,)),
     ('send_errors', ([[]],)),
     ('send_agent_command_results', ({0: {}},)),
-    ('agent_settings', ({},))
+    ('agent_settings', ({},)),
+    ('send_span_events', (EMPTY_SAMPLES, ())),
 ])
 def test_full_uri_payload(session, method, args):
     sender = getattr(session, method)

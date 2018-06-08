@@ -1019,6 +1019,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/node_mixin.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/profile_sessions.py": {
         "hash": "n/a",
         "libraries": [

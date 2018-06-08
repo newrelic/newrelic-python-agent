@@ -22,14 +22,14 @@ class GenericNodeMixin(object):
             stats, base_attrs=None, parent_guid=None, grandparent_guid=None):
 
         yield self.span_event(
-                base_attrs,
+                base_attrs=base_attrs,
                 parent_guid=parent_guid,
                 grandparent_guid=grandparent_guid)
 
         for child in self.children:
             for event in child.span_events(
                     stats,
-                    base_attrs,
+                    base_attrs=base_attrs,
                     parent_guid=self.guid,
                     grandparent_guid=parent_guid):
                 yield event
@@ -70,5 +70,26 @@ class DatastoreNodeMixin(GenericNodeMixin):
 
         if self.port_path_or_id:
             i_attrs['datastorePortPathOrId'] = self.port_path_or_id
+
+        return attrs
+
+
+class ExternalNodeMixin(GenericNodeMixin):
+
+    @property
+    def name(self):
+        return 'External/%s/%s/%s' % (
+                self.netloc, self.library, self.method or '')
+
+    def span_event(self, *args, **kwargs):
+        attrs = super(ExternalNodeMixin, self).span_event(*args, **kwargs)
+        i_attrs = attrs[0]
+
+        i_attrs['category'] = 'external'
+        i_attrs['externalUri'] = self.url_with_path
+        i_attrs['externalLibrary'] = self.library
+
+        if self.method:
+            i_attrs['externalProcedure'] = self.method
 
         return attrs

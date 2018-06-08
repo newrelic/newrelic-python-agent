@@ -30,6 +30,13 @@ class ExternalNode(_ExternalNode, ExternalNodeMixin):
         return self._details
 
     @property
+    def url_with_path(self):
+        details = self.details
+        url = urlparse.urlunsplit((details.scheme, details.netloc,
+                details.path, '', ''))
+        return url
+
+    @property
     def netloc(self):
         hostname = self.details.hostname or 'unknown'
 
@@ -130,11 +137,7 @@ class ExternalNode(_ExternalNode, ExternalNodeMixin):
 
         params = self.params
 
-        details = self.details
-        url = urlparse.urlunsplit((details.scheme, details.netloc,
-                details.path, '', ''))
-
-        params['url'] = url
+        params['url'] = self.url_with_path
         params['exclusive_duration_millis'] = 1000.0 * self.exclusive
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,

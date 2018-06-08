@@ -2,7 +2,14 @@ import pytest
 
 from newrelic.api.transaction import current_transaction
 from newrelic.api.background_task import background_task
-from newrelic.api.function_trace import function_trace
+
+from newrelic.api.database_trace import DatabaseTrace
+from newrelic.api.datastore_trace import DatastoreTrace
+from newrelic.api.external_trace import ExternalTrace
+from newrelic.api.function_trace import FunctionTrace, function_trace
+from newrelic.api.memcache_trace import MemcacheTrace
+from newrelic.api.message_trace import MessageTrace
+from newrelic.api.solr_trace import SolrTrace
 
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_span_events import (
@@ -84,5 +91,29 @@ def test_span_events(span_events_enabled, spans_feature_flag, txn_sampled):
         txn._sampled = txn_sampled
 
         function()
+
+    _test()
+
+
+@pytest.mark.parametrize('trace_type,args', (
+    (DatabaseTrace, ('select * from foo', )),
+    (DatastoreTrace, ('db_product', 'db_target', 'db_operation')),
+    (ExternalTrace, ('lib', 'url')),
+    (FunctionTrace, ('name', )),
+    (MemcacheTrace, ('command', )),
+    (MessageTrace, ('lib', 'operation', 'dst_type', 'dst_name')),
+    (SolrTrace, ('lib', 'command')),
+))
+def test_each_span_type(trace_type, args):
+
+    @validate_span_events(count=2)
+    @override_application_settings({'feature_flag': set(['span_events'])})
+    @background_task(name='test_each_span_type')
+    def _test():
+        transaction = current_transaction()
+        transaction._sampled = True
+
+        with trace_type(transaction, *args):
+            pass
 
     _test()

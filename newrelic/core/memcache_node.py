@@ -12,6 +12,10 @@ _MemcacheNode = namedtuple('_MemcacheNode',
 
 class MemcacheNode(_MemcacheNode, GenericNodeMixin):
 
+    @property
+    def name(self):
+        return 'Memcache/%s' % self.command
+
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
         memcache node as well as all the child nodes.
@@ -37,10 +41,7 @@ class MemcacheNode(_MemcacheNode, GenericNodeMixin):
                 duration=self.duration, exclusive=self.exclusive)
 
     def trace_node(self, stats, root, connections):
-
-        name = 'Memcache/%s' % self.command
-
-        name = root.string_table.cache(name)
+        name = root.string_table.cache(self.name)
 
         start_time = newrelic.core.trace_node.node_start_time(root, self)
         end_time = newrelic.core.trace_node.node_end_time(root, self)

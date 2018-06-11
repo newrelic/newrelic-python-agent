@@ -1,6 +1,12 @@
 unreleased
 ----------
 
+- Improved handling of celery max-tasks-per-child
+
+  Data recorded by the Python Agent may not have been reported when
+  celery was operated with the max-tasks-per-child setting. All data is now
+  reported independent of the max tasks per child setting.
+
 - Improve support for PyMongo v3.x
 
   PyMongo v3 added many new methods on the `pymongo.Collection` object that did

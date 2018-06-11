@@ -210,4 +210,5 @@ def instrument_billiard_pool(module):
     def force_agent_shutdown(*args, **kwargs):
         shutdown_agent()
 
-    wrap_pre_function(module, 'Worker._do_exit', force_agent_shutdown)
+    if hasattr(module, 'Worker'):
+        wrap_pre_function(module, 'Worker._do_exit', force_agent_shutdown)

@@ -12,9 +12,10 @@ from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.pre_function import wrap_pre_function
-from newrelic.api.web_transaction import WebTransaction
 from newrelic.api.object_wrapper import callable_name, ObjectWrapper
 from newrelic.api.transaction import current_transaction
+from newrelic.core.agent import shutdown_agent
+
 
 def CeleryTaskWrapper(wrapped, application=None, name=None):
 
@@ -23,10 +24,10 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
 
         if callable(name):
             # Start Hotfix v2.2.1.
-            #if instance and inspect.ismethod(wrapped):
-            #    _name = name(instance, *args, **kwargs)
-            #else:
-            #    _name = name(*args, **kwargs)
+            # if instance and inspect.ismethod(wrapped):
+            #     _name = name(instance, *args, **kwargs)
+            # else:
+            #     _name = name(*args, **kwargs)
 
             if instance is not None:
                 _name = name(instance, *args, **kwargs)
@@ -71,8 +72,8 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
         #      running inside of an existing transaction, we want to create
         #      a new background transaction for it.
 
-        if transaction and (transaction.ignore_transaction
-                or transaction.stopped):
+        if transaction and (transaction.ignore_transaction or
+                transaction.stopped):
             return wrapped(*args, **kwargs)
 
         elif transaction:
@@ -84,7 +85,7 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
                 return wrapped(*args, **kwargs)
 
     # Start Hotfix v2.2.1.
-    #obj = ObjectWrapper(wrapped, None, wrapper)
+    # obj = ObjectWrapper(wrapped, None, wrapper)
     # End Hotfix v2.2.1.
 
     # Celery tasks that inherit from celery.app.task must implement a run()
@@ -108,7 +109,7 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
     # optimization on functions that were monkey-patched.
 
     # Start Hotfix v2.2.1.
-    #obj.__dict__['run'] = obj.__call__
+    # obj.__dict__['run'] = obj.__call__
 
     class _ObjectWrapper(ObjectWrapper):
         def run(self, *args, **kwargs):
@@ -118,6 +119,7 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
     # End Hotfix v2.2.1.
 
     return obj
+
 
 def instrument_celery_app_task(module):
 
@@ -146,6 +148,7 @@ def instrument_celery_app_task(module):
             module.BaseTask.__call__ = CeleryTaskWrapper(
                     module.BaseTask.__call__, name=task_name)
 
+
 def instrument_celery_execute_trace(module):
 
     # Triggered for 'celery.execute_trace'.
@@ -169,6 +172,7 @@ def instrument_celery_execute_trace(module):
 
         module.build_tracer = build_tracer
 
+
 def instrument_celery_worker(module):
 
     # Triggered for 'celery.worker' and 'celery.concurrency.processes'.
@@ -191,6 +195,7 @@ def instrument_celery_worker(module):
 
         module.process_initializer = process_initializer
 
+
 def instrument_celery_loaders_base(module):
 
     def force_application_activation(*args, **kwargs):
@@ -198,3 +203,12 @@ def instrument_celery_loaders_base(module):
 
     wrap_pre_function(module, 'BaseLoader.init_worker',
             force_application_activation)
+
+
+def instrument_billiard_pool(module):
+
+    def force_agent_shutdown(*args, **kwargs):
+        shutdown_agent()
+
+    if hasattr(module, 'Worker'):
+        wrap_pre_function(module, 'Worker._do_exit', force_agent_shutdown)

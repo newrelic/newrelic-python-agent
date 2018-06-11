@@ -17,6 +17,7 @@ from heapq import heapreplace, heapify
 
 import newrelic.packages.six as six
 
+from newrelic.core import config
 from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR
 from newrelic.core.attribute import create_user_attributes
 
@@ -349,6 +350,7 @@ class StatsEngine(object):
         self.__transaction_events = SampledDataSet()
         self.__error_events = SampledDataSet()
         self.__custom_events = SampledDataSet()
+        self.__span_events = SampledDataSet(self.maximum_allowed_span_events)
         self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__slow_transaction_map = {}
@@ -390,6 +392,10 @@ class StatsEngine(object):
         return self.__custom_events
 
     @property
+    def span_events(self):
+        return self.__span_events
+
+    @property
     def synthetics_events(self):
         return self.__synthetics_events
 
@@ -400,6 +406,14 @@ class StatsEngine(object):
     @property
     def error_events(self):
         return self.__error_events
+
+    @property
+    def maximum_allowed_span_events(self):
+        if self.__settings is not None:
+            return min(self.__settings.span_events.max_samples_stored,
+                config.SPAN_EVENT_RESERVOIR_SIZE)
+        else:
+            return config.SPAN_EVENT_RESERVOIR_SIZE
 
     def error_events_sampling_info(self):
         sampling_info = {
@@ -951,6 +965,13 @@ class StatsEngine(object):
                 settings.custom_insights_events.enabled):
             self.custom_events.merge(transaction.custom_events)
 
+        # Merge in span events
+
+        if (transaction.sampled and 'span_events' in settings.feature_flag and
+                settings.span_events.enabled):
+            for event in transaction.span_events(self.__stats_table):
+                self.__span_events.add(event, priority=transaction.priority)
+
     def metric_data(self, normalizer=None):
         """Returns a list containing the low level metric data for
         sending to the core application pertaining to the reporting
@@ -1302,6 +1323,7 @@ class StatsEngine(object):
         self.reset_transaction_events()
         self.reset_error_events()
         self.reset_custom_events()
+        self.reset_span_events()
 
     def reset_metric_stats(self):
         """Resets the accumulated statistics back to initial state for
@@ -1336,6 +1358,9 @@ class StatsEngine(object):
                     self.__settings.custom_insights_events.max_samples_stored)
         else:
             self.__custom_events = SampledDataSet()
+
+    def reset_span_events(self):
+        self.__span_events = SampledDataSet(self.maximum_allowed_span_events)
 
     def reset_synthetics_events(self):
         """Resets the accumulated statistics back to initial state for
@@ -1409,6 +1434,7 @@ class StatsEngine(object):
         self.reset_transaction_events()
         self.reset_error_events()
         self.reset_custom_events()
+        self.reset_span_events()
 
         return stats
 
@@ -1440,6 +1466,7 @@ class StatsEngine(object):
         self._merge_error_events(snapshot)
         self._merge_error_traces(snapshot)
         self._merge_custom_events(snapshot)
+        self._merge_span_events(snapshot)
         self._merge_sql(snapshot)
         self._merge_traces(snapshot)
 
@@ -1461,6 +1488,7 @@ class StatsEngine(object):
         self._merge_synthetics_events(snapshot, rollback=True)
         self._merge_error_events(snapshot)
         self._merge_custom_events(snapshot, rollback=True)
+        self._merge_span_events(snapshot, rollback=True)
 
     def merge_metric_stats(self, snapshot):
         """Merges metric data from a snapshot. This is used both when merging
@@ -1530,6 +1558,10 @@ class StatsEngine(object):
     def _merge_custom_events(self, snapshot, rollback=False):
 
         self.__custom_events.merge(snapshot.custom_events)
+
+    def _merge_span_events(self, snapshot, rollback=False):
+
+        self.__span_events.merge(snapshot.span_events)
 
     def _merge_error_traces(self, snapshot):
 

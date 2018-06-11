@@ -899,6 +899,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/adaptive_sampler.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/agent.py": {
         "hash": "n/a",
         "libraries": [
@@ -1013,6 +1019,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/node_mixin.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/profile_sessions.py": {
         "hash": "n/a",
         "libraries": [
@@ -1050,6 +1062,12 @@
         ]
     },
     "newrelic/core/tests/__init__.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/core/tests/test_adaptive_sampler.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

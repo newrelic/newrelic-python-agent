@@ -2,15 +2,19 @@ from collections import namedtuple
 
 import newrelic.core.trace_node
 
+from newrelic.core.node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
 
 _MemcacheNode = namedtuple('_MemcacheNode',
         ['command', 'children', 'start_time', 'end_time', 'duration',
-        'exclusive', 'is_async'])
+        'exclusive', 'is_async', 'guid'])
 
 
+class MemcacheNode(_MemcacheNode, GenericNodeMixin):
 
-class MemcacheNode(_MemcacheNode):
+    @property
+    def name(self):
+        return 'Memcache/%s' % self.command
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
@@ -37,10 +41,7 @@ class MemcacheNode(_MemcacheNode):
                 duration=self.duration, exclusive=self.exclusive)
 
     def trace_node(self, stats, root, connections):
-
-        name = 'Memcache/%s' % self.command
-
-        name = root.string_table.cache(name)
+        name = root.string_table.cache(self.name)
 
         start_time = newrelic.core.trace_node.node_start_time(root, self)
         end_time = newrelic.core.trace_node.node_end_time(root, self)

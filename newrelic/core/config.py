@@ -28,6 +28,11 @@ except ImportError:
 DEFAULT_RESERVOIR_SIZE = 1200
 ERROR_EVENT_RESERVOIR_SIZE = 100
 
+# SPAN_EVENT_RESERVOIR_SIZE is both the default value for the span event
+# reservoir capacity, as well as its maximum possible value. server-side
+# config could adjust it lower, but not higher, than this value.
+SPAN_EVENT_RESERVOIR_SIZE = 1000
+
 # settings that should be completely ignored if set server side
 IGNORED_SERVER_SIDE_SETTINGS = ['utilization.logical_processors',
         'utilization.total_ram_mib', 'utilization.billing_hostname']
@@ -176,6 +181,10 @@ class HerokuSettings(Settings):
     pass
 
 
+class SpanEventSettings(Settings):
+    pass
+
+
 _settings = Settings()
 _settings.attributes = AttributesSettings()
 _settings.thread_profiler = ThreadProfilerSettings()
@@ -208,6 +217,7 @@ _settings.datastore_tracer.instance_reporting = \
 _settings.datastore_tracer.database_name_reporting = \
         DatastoreTracerDatabaseNameReportingSettings()
 _settings.heroku = HerokuSettings()
+_settings.span_events = SpanEventSettings()
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 _settings.audit_log_file = os.environ.get('NEW_RELIC_AUDIT_LOG', None)
@@ -440,6 +450,9 @@ _settings.transaction_events.attributes.include = []
 
 _settings.custom_insights_events.enabled = True
 _settings.custom_insights_events.max_samples_stored = DEFAULT_RESERVOIR_SIZE
+
+_settings.span_events.enabled = True
+_settings.span_events.max_samples_stored = SPAN_EVENT_RESERVOIR_SIZE
 
 _settings.transaction_tracer.enabled = True
 _settings.transaction_tracer.transaction_threshold = None

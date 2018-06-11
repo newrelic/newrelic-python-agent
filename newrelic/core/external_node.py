@@ -7,15 +7,15 @@ from collections import namedtuple
 
 import newrelic.core.trace_node
 
+from newrelic.core.node_mixin import ExternalNodeMixin
 from newrelic.core.metric import TimeMetric
 
 _ExternalNode = namedtuple('_ExternalNode',
         ['library', 'url', 'method', 'children', 'start_time', 'end_time',
-        'duration', 'exclusive', 'params', 'is_async'])
+        'duration', 'exclusive', 'params', 'is_async', 'guid'])
 
 
-
-class ExternalNode(_ExternalNode):
+class ExternalNode(_ExternalNode, ExternalNodeMixin):
 
     @property
     def details(self):
@@ -28,6 +28,30 @@ class ExternalNode(_ExternalNode):
             self._details = urlparse.urlparse('http://unknown.url')
 
         return self._details
+
+    @property
+    def url_with_path(self):
+        details = self.details
+        url = urlparse.urlunsplit((details.scheme, details.netloc,
+                details.path, '', ''))
+        return url
+
+    @property
+    def netloc(self):
+        hostname = self.details.hostname or 'unknown'
+
+        try:
+            scheme = self.details.scheme.lower()
+            port = self.details.port
+        except Exception:
+            scheme = None
+            port = None
+
+        if (scheme, port) in (('http', 80), ('https', 443)):
+            port = None
+
+        netloc = port and ('%s:%s' % (hostname, port)) or hostname
+        return netloc
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
@@ -45,19 +69,7 @@ class ExternalNode(_ExternalNode):
             yield TimeMetric(name='External/allOther', scope='',
                     duration=self.duration, exclusive=self.exclusive)
 
-        hostname = self.details.hostname or 'unknown'
-
-        try:
-            scheme = self.details.scheme.lower()
-            port = self.details.port
-        except Exception:
-            scheme = None
-            port = None
-
-        if (scheme, port) in (('http', 80), ('https', 443)):
-            port = None
-
-        netloc = port and ('%s:%s' % (hostname, port)) or hostname
+        netloc = self.netloc
 
         try:
 
@@ -103,19 +115,7 @@ class ExternalNode(_ExternalNode):
 
     def trace_node(self, stats, root, connections):
 
-        hostname = self.details.hostname or 'unknown'
-
-        try:
-            scheme = self.details.scheme.lower()
-            port = self.details.port
-        except Exception:
-            scheme = None
-            port = None
-
-        if (scheme, port) in (('http', 80), ('https', 443)):
-            port = None
-
-        netloc = port and ('%s:%s' % (hostname, port)) or hostname
+        netloc = self.netloc
 
         method = self.method or ''
 
@@ -137,11 +137,7 @@ class ExternalNode(_ExternalNode):
 
         params = self.params
 
-        details = self.details
-        url = urlparse.urlunsplit((details.scheme, details.netloc,
-                details.path, '', ''))
-
-        params['url'] = url
+        params['url'] = self.url_with_path
         params['exclusive_duration_millis'] = 1000.0 * self.exclusive
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,

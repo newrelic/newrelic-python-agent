@@ -2,21 +2,25 @@ from collections import namedtuple
 
 import newrelic.core.trace_node
 
+from newrelic.core.node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
 
 _SolrNode = namedtuple('_SolrNode',
         ['library', 'command', 'children', 'start_time', 'end_time',
-        'duration', 'exclusive'])
+        'duration', 'exclusive', 'guid', 'is_async'])
 
 
-class SolrNode(_SolrNode):
+class SolrNode(_SolrNode, GenericNodeMixin):
+
+    @property
+    def name(self):
+        return 'SolrClient/%s/%s' % (self.library, self.command)
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
         memcache node as well as all the child nodes.
 
         """
-
         yield TimeMetric(name='Solr/all', scope='',
                 duration=self.duration, exclusive=self.exclusive)
 
@@ -36,10 +40,7 @@ class SolrNode(_SolrNode):
                 duration=self.duration, exclusive=self.exclusive)
 
     def trace_node(self, stats, root, connections):
-
-        name = 'SolrClient/%s/%s' % (self.library, self.command)
-
-        name = root.string_table.cache(name)
+        name = root.string_table.cache(self.name)
 
         start_time = newrelic.core.trace_node.node_start_time(root, self)
         end_time = newrelic.core.trace_node.node_end_time(root, self)

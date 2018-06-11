@@ -31,6 +31,7 @@ from newrelic.core.profile_sessions import profile_session_manager
 
 from newrelic.core.database_utils import SQLConnections
 from newrelic.common.object_names import callable_name
+from newrelic.core.adaptive_sampler import AdaptiveSampler
 
 _logger = logging.getLogger(__name__)
 
@@ -58,11 +59,9 @@ class Application(object):
         self._harvest_enabled = False
 
         self._transaction_count = 0
-        self._transaction_sampled_count = 0
         self._last_transaction = 0.0
-        self._min_sampling_priority = 0.0
-        # Before registration, do not collect any "sampled" transactions
-        self._max_sampled = 0.0
+
+        self.adaptive_sampler = None
 
         self._global_events_account = 0
 
@@ -138,14 +137,11 @@ class Application(object):
         return self.configuration is not None
 
     def compute_sampled(self, priority):
-        with self._stats_lock:
-            if self._transaction_sampled_count >= self._max_sampled:
-                return False
-            elif priority >= self._min_sampling_priority:
-                self._transaction_sampled_count += 1
-                return True
+        if self.adaptive_sampler is None:
+            return False
 
-        return False
+        with self._stats_lock:
+            return self.adaptive_sampler.compute_sampled(priority)
 
     def dump(self, file):
         """Dumps details about the application to the file object."""
@@ -446,12 +442,8 @@ class Application(object):
             with self._stats_lock:
                 self._stats_engine.reset_stats(configuration)
 
-                # For the first harvest, collect a max of self._sampling_target
-                # number of "sampled" transactions.
-
-                self._sampling_target = (
+                self.adaptive_sampler = AdaptiveSampler(
                         configuration.agent_limits.sampling_target)
-                self._max_sampled = self._sampling_target
 
             with self._stats_custom_lock:
                 self._stats_custom_engine.reset_stats(configuration)
@@ -1286,18 +1278,8 @@ class Application(object):
 
                 with self._stats_lock:
                     transaction_count = self._transaction_count
-                    if transaction_count:
-                        sampling_ratio = (
-                                float(self._sampling_target) /
-                                transaction_count)
-                        sampling_ratio = min(sampling_ratio, 1.0)
-                        self._min_sampling_priority = (1.0 - sampling_ratio)
+                    self.adaptive_sampler.reset(transaction_count)
 
-                    # For subsequent harvests, collect a max of twice the
-                    # self._sampling_target value.
-
-                    self._max_sampled = 2 * self._sampling_target
-                    self._transaction_sampled_count = 0
                     self._transaction_count = 0
                     self._last_transaction = 0.0
 
@@ -1438,6 +1420,30 @@ class Application(object):
 
                     stats.reset_transaction_events()
                     stats.reset_synthetics_events()
+
+                    # Send span events
+
+                    if ('span_events' in stats.settings.feature_flag and
+                            stats.settings.span_events.enabled):
+                        spans = stats.span_events
+                        if spans.num_samples > 0:
+                            _logger.debug('Sending span event data '
+                                    'for harvest of %r.', self._app_name)
+
+                            self._active_session.send_span_events(
+                                spans.sampling_info, spans.samples)
+
+                        # As per spec
+                        spans_seen = spans.num_seen
+                        spans_sampled = spans.num_samples
+                        internal_count_metric('Supportability/SpanEvent/'
+                                'TotalEventsSeen', spans_seen)
+                        internal_count_metric('Supportability/SpanEvent/'
+                                'TotalEventsSent', spans_sampled)
+                        internal_count_metric('Supportability/SpanEvent/'
+                                'Discarded', spans_seen - spans_sampled)
+
+                        stats.reset_span_events()
 
                     # Send error events
 

@@ -468,6 +468,12 @@ class Transaction(object):
                 self.record_custom_metric('Python/Framework/%s/%s' %
                     (framework, version), 1)
 
+        if ('distributed_tracing' in self._settings.feature_flag or
+                'span_events' in self._settings.feature_flag):
+            # Sampled and priority need to be computed at the end of the
+            # transaction when distributed tracing or span events are enabled.
+            self._compute_sampled_and_priority()
+
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
                 path=self.path,
@@ -513,12 +519,15 @@ class Transaction(object):
                 agent_attributes=self.agent_attributes,
                 user_attributes=self.user_attributes,
                 priority=self.priority,
+                sampled=self.sampled,
                 parent_id=self.parent_id,
                 parent_transport_duration=self.parent_transport_duration,
                 parent_type=self.parent_type,
                 parent_account=self.parent_account,
                 parent_app=self.parent_app,
-                parent_transport_type=self.parent_transport_type
+                parent_transport_type=self.parent_transport_type,
+                root_span_guid=root.guid,
+                trace_id=self.trace_id,
         )
 
         # Clear settings as we are all done and don't need it
@@ -735,6 +744,13 @@ class Transaction(object):
         if self.total_time:
             i_attrs['totalTime'] = self.total_time
 
+        if ('distributed_tracing' in self._settings.feature_flag or
+                'span_events' in self._settings.feature_flag):
+            i_attrs['guid'] = self.guid
+            i_attrs['sampled'] = self.sampled
+            i_attrs['priority'] = self.priority
+            i_attrs['traceId'] = self.trace_id
+
         # Add in special CPU time value for UI to display CPU burn.
 
         # XXX Disable cpu time value for CPU burn as was
@@ -775,13 +791,7 @@ class Transaction(object):
         if self.parent_id:
             i_attrs['parentId'] = self.parent_id
 
-        i_attrs['traceId'] = self.trace_id
         i_attrs['nr.tripId'] = self.trace_id
-        i_attrs['guid'] = self.guid
-
-        self._compute_sampled_and_priority()
-        i_attrs['sampled'] = self.sampled
-        i_attrs['priority'] = self.priority
 
         return i_attrs
 
@@ -1023,15 +1033,21 @@ class Transaction(object):
                 ty='App',
                 ac=account_id,
                 ap=application_id,
-                id=self.guid,
                 tr=self.trace_id,
                 sa=self.sampled,
                 pr=self.priority,
                 ti=int(time.time() * 1000.0),
             )
 
-            if self.parent_id:
-                data['pa'] = self.parent_id
+            if ('span_events' in settings.feature_flag and
+                    settings.span_events.enabled and self.current_node):
+                data['id'] = self.current_node.guid
+                data['pa'] = getattr(self.current_node.parent, 'guid',
+                        self.guid)
+            else:
+                data['id'] = self.guid
+                if self.parent_id:
+                    data['pa'] = self.parent_id
 
             self.is_distributed_trace = True
 

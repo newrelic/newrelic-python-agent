@@ -238,3 +238,22 @@ def test_aborted_connection_creates_no_transaction(aiohttp_app):
         assert len(transactions) == 0
 
     _test()
+
+
+def test_work_after_request_not_recorded(aiohttp_app):
+    resp = aiohttp_app.loop.run_until_complete(
+            aiohttp_app.client.request('GET', '/background'))
+    assert resp.status == 200
+
+    @asyncio.coroutine
+    def timeout():
+        yield from asyncio.sleep(1)
+        aiohttp_app.loop.stop()
+        assert False
+
+    task = aiohttp_app.loop.create_task(timeout())
+    aiohttp_app.loop.run_forever()
+
+    # Check that the timeout didn't fire
+    assert not task.done()
+    task.cancel()

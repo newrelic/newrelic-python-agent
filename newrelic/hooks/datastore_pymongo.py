@@ -5,7 +5,13 @@ _pymongo_client_methods = ('save', 'insert', 'update', 'drop', 'remove',
     'find_one', 'find', 'count', 'create_index', 'ensure_index',
     'drop_indexes', 'drop_index', 'reindex', 'index_information',
     'options', 'group', 'rename', 'distinct', 'map_reduce',
-    'inline_map_reduce', 'find_and_modify')
+    'inline_map_reduce', 'find_and_modify', 'initialize_unordered_bulk_op',
+    'initialize_ordered_bulk_op', 'bulk_write', 'insert_one', 'insert_many',
+    'replace_one', 'update_one', 'update_many', 'delete_one', 'delete_many',
+    'find_raw_batches', 'parallel_scan', 'create_indexes', 'list_indexes',
+    'aggregate', 'aggregate_raw_batches', 'find_one_and_delete',
+    'find_one_and_replace', 'find_one_and_update')
+
 
 def instrument_pymongo_connection(module):
     # Must name function explicitly as pymongo overrides the
@@ -17,6 +23,7 @@ def instrument_pymongo_connection(module):
             name='%s:Connection.__init__' % module.__name__,
             terminal=True, rollup=rollup)
 
+
 def instrument_pymongo_mongo_client(module):
     # Must name function explicitly as pymongo overrides the
     # __getattr__() method in a way that breaks introspection.
@@ -26,6 +33,7 @@ def instrument_pymongo_mongo_client(module):
     wrap_function_trace(module, 'MongoClient.__init__',
             name='%s:MongoClient.__init__' % module.__name__,
             terminal=True, rollup=rollup)
+
 
 def instrument_pymongo_collection(module):
     def _collection_name(collection, *args, **kwargs):

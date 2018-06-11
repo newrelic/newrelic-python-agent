@@ -1,6 +1,9 @@
 unreleased
 ----------
 
+3.2.2 (2018-06-11)
+------------------
+
 - Improved handling of celery max-tasks-per-child
 
   Data recorded by the Python Agent may not have been reported when

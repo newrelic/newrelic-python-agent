@@ -104,22 +104,36 @@ To "compile" locally, follow these steps then compare the resultant xml files wi
   cd more-jenkins-dsl
   ```
 
-2. Build the required jar
+2. Install java version 8. (gradle and groovy use some sort of reflection that is now illegal in newer versions of java. *shrugs*)
+
+  ```
+  brew tap caskroom/versions
+  brew cask install java8
+  export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.8.0_172.jdk/Contents/Home
+  ```
+
+3. Build the required jar
 
   ```
   ./gradlew build
   ```
 
-3. From within the repo, copy all groovy files and their dependencies to the `jenkins` directory
+4. The `WORKSPACE` environment variable will tell the groovy scripts where to find your `tests` directory.
 
   ```
-  cp ../python_agent/jenkins/* jenkins
+  export WORKSPACE=/full/path/to/your/python_agent
   ```
 
-4. Now generate the xml. The `WORKSPACE` environment variable will tell the groovy scripts where to find your `tests` directory.
+5. From within the repo, copy all groovy files and their dependencies to the `jenkins` directory
 
   ```
-  WORKSPACE=/path/to/your/python_agent ./gradlew generateJenkinsDsl
+  cp -R $WORKSPACE/jenkins/* jenkins/ && rm jenkins/scripts/*.groovy
   ```
 
-5. View the new xml files in `build/dsl-workspace`
+6. Now generate the xml.
+
+  ```
+  ./gradlew generateJenkinsDsl
+  ```
+
+7. View the new xml files in `build/dsl-workspace`

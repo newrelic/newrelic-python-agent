@@ -447,6 +447,9 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
             if value:
                 intrinsics[key] = value
 
+        if self.errors:
+            intrinsics['error'] = True
+
         if self.path_hash:
             intrinsics['nr.guid'] = self.guid
             intrinsics['nr.tripId'] = self.trip_id

@@ -21,7 +21,8 @@ use(extensions) {
             }
 
             steps {
-                shell('docker/packnsend run jenkins/scripts/run_benchmark.sh')
+                shell('./jenkins/scripts/prep_node_for_test.sh')
+                shell('./docker/packnsend run ./jenkins/scripts/run_benchmark.sh')
             }
 
             slackQuiet(slackChannel)

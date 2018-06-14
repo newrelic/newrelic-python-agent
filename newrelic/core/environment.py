@@ -12,15 +12,16 @@ import sys
 import os
 import platform
 
-try:
-    import pkg_resources
-except ImportError:
-    pass
+# try:
+#     import pkg_resources
+# except ImportError:
+#     pass
 
 try:
     import newrelic.core._thread_utilization
 except ImportError:
     pass
+
 
 def environment_settings():
     """Returns an array of arrays of environment settings
@@ -35,7 +36,6 @@ def environment_settings():
 
     if 'NEW_RELIC_ADMIN_COMMAND' in os.environ:
         env.append(('Admin Command', os.environ['NEW_RELIC_ADMIN_COMMAND']))
-        del os.environ['NEW_RELIC_ADMIN_COMMAND']
 
     # System information.
 
@@ -181,13 +181,13 @@ def environment_settings():
             # information for and will work out on case by case basis
             # how to extract that from the modules themselves.
 
-            #try:
-            #    if 'pkg_resources' in sys.modules:
-            #        version = pkg_resources.get_distribution(name).version
-            #        if version:
-            #            name = '%s (%s)' % (name, version)
-            #except Exception:
-            #    pass
+            # try:
+            #     if 'pkg_resources' in sys.modules:
+            #         version = pkg_resources.get_distribution(name).version
+            #         if version:
+            #             name = '%s (%s)' % (name, version)
+            # except Exception:
+            #     pass
 
             plugins.append(name)
 

@@ -315,7 +315,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     params['method'] = method
     params['license_key'] = license_key
-    params['protocol_version'] = '15'
+    params['protocol_version'] = '16'
     params['marshal_format'] = 'json'
 
     if agent_run_id:
@@ -1038,8 +1038,9 @@ class ApplicationSession(object):
 
             url = collector_url()
 
-            redirect_host = cls.send_request(None, url,
+            result = cls.send_request(None, url,
                     'preconnect', license_key)
+            redirect_host = result['redirect_host']
 
             # Then we perform a connect to the actual data collector host
             # we need to use. All communications after this point should go
@@ -1226,7 +1227,7 @@ class ApplicationSession(object):
 
 
 _developer_mode_responses = {
-    'preconnect': u'fake-collector.newrelic.com',
+    'preconnect': {u'redirect_host': u'fake-collector.newrelic.com'},
 
     'agent_settings': [],
 
@@ -1293,7 +1294,7 @@ class DeveloperModeSession(ApplicationSession):
 
         params['method'] = method
         params['license_key'] = license_key
-        params['protocol_version'] = '15'
+        params['protocol_version'] = '16'
         params['marshal_format'] = 'json'
 
         if agent_run_id:

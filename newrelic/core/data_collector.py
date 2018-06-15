@@ -1261,6 +1261,7 @@ _developer_mode_responses = {
         u'agent_run_id': 1234567,
         u'product_level': 50,
         u'trusted_account_ids': [12345],
+        u'trusted_account_key': 12345,
         u'url_rules': [],
         u'collect_errors': True,
         u'cross_process_id': u'12345#67890',

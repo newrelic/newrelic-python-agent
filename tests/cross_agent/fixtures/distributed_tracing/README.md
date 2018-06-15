@@ -16,6 +16,7 @@ Each test will include these fields:
   in turn.
 + `trusted_account_ids`: List of integers. These accounts are trusted for the
   given test.
++ `trusted_account_key`: Integer. The earliest ancestor trusted account id.
 + `exact_intrinsics`: Dictionary. Each key, value pair in the dictionary
   represents one intrinsic that should be included on events and traces. The
   key and value should be expected exactly.

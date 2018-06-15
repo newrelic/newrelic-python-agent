@@ -1068,7 +1068,8 @@ class Transaction(object):
             'distributed_tracing' in settings.feature_flag
         if not (settings.cross_application_tracer.enabled and
                 distributed_tracing_enabled and
-                settings.trusted_account_ids):
+                settings.trusted_account_ids and
+                settings.trusted_account_key):
             return False
 
         if self.is_distributed_trace:

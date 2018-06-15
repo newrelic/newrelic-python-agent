@@ -1,6 +1,12 @@
 unreleased
 ----------
 
+- Agent raises a KeyError: 'NEW_RELIC_ADMIN_COMMAND' exception causing a crash
+
+  Under certain conditions, using the newrelic-admin wrapper script could cause
+  an application to crash shortly after startup with a KeyError exception. The
+  cause of the crash has been addressed.
+
 3.2.2 (2018-06-11)
 ------------------
 

@@ -282,7 +282,7 @@ def test_adaptive_sampling(transaction_node):
     app.connect_to_data_collector()
 
     # First harvest, first N should be sampled
-    for _ in range(settings.agent_limits.sampling_target):
+    for _ in range(settings.sampling_target):
         assert app.compute_sampled(1.0) is True
 
     assert app.compute_sampled(1.0) is False
@@ -292,7 +292,7 @@ def test_adaptive_sampling(transaction_node):
         app.harvest()
 
         # Subsequent harvests should allow sampling of 2X the target
-        for _ in range(2 * settings.agent_limits.sampling_target):
+        for _ in range(2 * settings.sampling_target):
             assert app.compute_sampled(1.0) is True
 
         # No further samples should be saved

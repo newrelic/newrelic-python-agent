@@ -435,6 +435,8 @@ _settings.account_id = None
 _settings.trusted_account_ids = []
 _settings.trusted_account_key = None
 _settings.encoding_key = None
+_settings.sampling_target = 10
+_settings.sampling_target_period_in_seconds = 60
 
 _settings.max_payload_size_in_bytes = 1000000
 
@@ -522,7 +524,6 @@ _settings.agent_limits.synthetics_transactions = 20
 _settings.agent_limits.data_compression_threshold = 64 * 1024
 _settings.agent_limits.data_compression_level = None
 _settings.agent_limits.max_outstanding_traces = 100
-_settings.agent_limits.sampling_target = 10
 
 _settings.console.listener_socket = None
 _settings.console.allow_interpreter_cmd = False

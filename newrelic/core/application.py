@@ -443,7 +443,7 @@ class Application(object):
                 self._stats_engine.reset_stats(configuration)
 
                 self.adaptive_sampler = AdaptiveSampler(
-                        configuration.agent_limits.sampling_target)
+                        configuration.sampling_target)
 
             with self._stats_custom_lock:
                 self._stats_custom_engine.reset_stats(configuration)

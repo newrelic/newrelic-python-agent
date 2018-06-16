@@ -431,6 +431,7 @@ _settings.transaction_segment_terms = []
 
 _settings.account_id = None
 _settings.cross_process_id = None
+_settings.account_id = None
 _settings.trusted_account_ids = []
 _settings.trusted_account_key = None
 _settings.encoding_key = None

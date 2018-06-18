@@ -10,6 +10,7 @@ _default_settings = {
     'agent_limits.data_compression_threshold': 10000000,
     'debug.record_transaction_failure': True,
     'startup_timeout': 10.0,
+    'developer_mode': False,
 }
 NOW = time.time()
 EMPTY_SAMPLES = {

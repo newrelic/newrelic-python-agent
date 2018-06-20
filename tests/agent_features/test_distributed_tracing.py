@@ -199,7 +199,7 @@ def test_distributed_tracing_metrics(web_transaction, gen_error, has_parent):
         tag = _make_dt_tag(parent_info)
     else:
         tag = _make_dt_tag(dict((x, 'Unknown') for x in parent_info.keys()))
-        del dt_payload['d']['id']
+        del dt_payload['d']['tr']
 
     # now run the test
     transaction_name = "test_dt_metrics_%s" % '_'.join(metrics)

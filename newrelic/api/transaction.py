@@ -786,6 +786,8 @@ class Transaction(object):
         if self.parent_transport_duration:
             i_attrs['parent.transportDuration'] = \
                     self.parent_transport_duration
+        if self.parent_tx:
+            i_attrs['parentId'] = self.parent_tx
 
         i_attrs['nr.tripId'] = self.trace_id
 

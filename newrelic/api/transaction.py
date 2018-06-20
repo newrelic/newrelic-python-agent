@@ -158,7 +158,6 @@ class Transaction(object):
         # This may be overridden by processing an inbound CAT header
         self.parent_type = None
         self.parent_id = None
-        self.grandparent_id = None
         self.parent_app = None
         self.parent_account = None
         self.parent_transport_type = None
@@ -786,8 +785,6 @@ class Transaction(object):
         if self.parent_transport_duration:
             i_attrs['parent.transportDuration'] = \
                     self.parent_transport_duration
-        if self.grandparent_id:
-            i_attrs['grandparentId'] = self.grandparent_id
         if self.parent_id:
             i_attrs['parentId'] = self.parent_id
 
@@ -1119,7 +1116,6 @@ class Transaction(object):
                         'AcceptPayload/Ignored/UntrustedAccount')
                 return False
 
-            grandparent_id = data.get('pa')
             transport_start = data.get('ti') / 1000.0
 
             self.parent_type = data.get('ty')
@@ -1133,9 +1129,6 @@ class Transaction(object):
             if 'pr' in data:
                 self._priority = data.get('pr')
                 self._sampled = data.get('sa', self._sampled)
-
-            if grandparent_id:
-                self.grandparent_id = grandparent_id
 
             self.is_distributed_trace = True
 

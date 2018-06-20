@@ -61,7 +61,6 @@ def target_wsgi_application(environ, start_response):
     assert txn._trace_id == 'd6b4ba0c3a712ca'
     assert txn.priority == 10.001
     assert txn.sampled
-    assert txn.grandparent_id == '5e5733a911cfbc73'
     assert txn.parent_id == '7d3efb1b173fecfa'
 
     start_response(status, response_headers)
@@ -84,12 +83,8 @@ def test_distributed_tracing_web_transaction():
     assert 'X-NewRelic-App-Data' not in response.headers
 
 
-@pytest.mark.parametrize('accept_payload,has_grandparent', [
-    (True, True),
-    (True, False),
-    (False, False),
-])
-def test_distributed_trace_attributes(accept_payload, has_grandparent):
+@pytest.mark.parametrize('accept_payload', (True, False))
+def test_distributed_trace_attributes(accept_payload):
     if accept_payload:
         _required_intrinsics = (
                 distributed_trace_intrinsics + inbound_payload_intrinsics)
@@ -102,11 +97,7 @@ def test_distributed_trace_attributes(accept_payload, has_grandparent):
             'parentId': '7d3efb1b173fecfa',
             'traceId': 'd6b4ba0c3a712ca',
         }}
-        if has_grandparent:
-            _required_intrinsics.append('grandparentId')
-            _exact_attributes['grandparentId'] = '5e5733a911cfbc73'
-        else:
-            _forgone_intrinsics.append('grandparentId')
+        _forgone_intrinsics.append('grandparentId')
 
         _required_attributes = {
                 'intrinsic': _required_intrinsics, 'agent': [], 'user': []}
@@ -143,8 +134,7 @@ def test_distributed_trace_attributes(accept_payload, has_grandparent):
                 "ti": 1518469636035
             }
         }
-        if has_grandparent:
-            payload['d']['pa'] = "5e5733a911cfbc73"
+        payload['d']['pa'] = "5e5733a911cfbc73"
 
         if accept_payload:
             result = txn.accept_distributed_trace_payload(payload)

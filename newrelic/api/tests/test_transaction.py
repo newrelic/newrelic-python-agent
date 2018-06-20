@@ -379,17 +379,6 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             assert result
             assert self.transaction.sampled == original_sampled
 
-    def test_accept_distributed_trace_payload_parent_grandparent_ids(self):
-        with self.transaction:
-            parent_id = 'parent id'
-            grandparent_id = 'grandparent id'
-            payload = self._make_test_payload(id=parent_id, pa=grandparent_id)
-
-            result = self.transaction.accept_distributed_trace_payload(payload)
-            assert result
-            assert self.transaction.parent_id == parent_id
-            assert self.transaction.grandparent_id == grandparent_id
-
     def test_accept_distributed_trace_payload_trace_id(self):
         with self.transaction:
             trace_id = 'qwerty'
@@ -426,7 +415,6 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             assert self.transaction.priority is None
             assert self.transaction.parent_type is None
             assert self.transaction.parent_id is None
-            assert self.transaction.grandparent_id is None
             assert self.transaction.parent_app is None
             assert self.transaction.parent_account is None
             assert self.transaction.parent_transport_type is None

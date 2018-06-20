@@ -64,12 +64,10 @@ def test_span_events(span_events_enabled, spans_feature_flag, txn_sampled):
     exact_intrinsics_function = exact_intrinsics_common.copy()
     exact_intrinsics_function['name'] = 'Function/function'
     exact_intrinsics_function['parentId'] = sentinel_guid
-    exact_intrinsics_function['grandparentId'] = guid
 
     exact_intrinsics_child = exact_intrinsics_common.copy()
     exact_intrinsics_child['name'] = 'Function/child'
     exact_intrinsics_child['parentId'] = function_guid
-    exact_intrinsics_child['grandparentId'] = sentinel_guid
 
     @validate_span_events(count=count,
             exact_intrinsics=exact_intrinsics_root,

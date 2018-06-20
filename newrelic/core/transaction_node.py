@@ -602,13 +602,11 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
         }
 
         yield self.span_event(base_attrs,
-                parent_guid=self.guid,
-                grandparent_guid=self.parent_id)
+                parent_guid=self.guid)
 
         for child in self.children:
             for event in child.span_events(
                     stats,
                     base_attrs,
-                    parent_guid=self.root_span_guid,
-                    grandparent_guid=self.guid):
+                    parent_guid=self.root_span_guid):
                 yield event

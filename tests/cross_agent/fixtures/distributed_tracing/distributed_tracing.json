@@ -23,7 +23,6 @@
             "parent.app": "2827902",
             "parent.account": "1",
             "parent.transportType": "HTTP",
-            "grandparentId": "5e5733a911cfbc73",
             "parentId": "7d3efb1b173fecfa",
             "nr.tripId": "d6b4ba0c3a712ca",
             "traceId": "d6b4ba0c3a712ca",
@@ -31,7 +30,7 @@
             "sampled": true
         },
         "expected_intrinsics": ["parent.transportDuration", "guid"],
-        "unexpected_intrinsics": [],
+        "unexpected_intrinsics": ["grandparentId"],
         "expected_metrics": [
             ["DurationByCaller/App/1/2827902/HTTP/all", 1],
             ["DurationByCaller/App/1/2827902/HTTP/allWeb", 1],
@@ -66,7 +65,6 @@
             "parent.app": "2827902",
             "parent.account": "1",
             "parent.transportType": "HTTP",
-            "grandparentId": "5e5733a911cfbc73",
             "parentId": "7d3efb1b173fecfa",
             "nr.tripId": "d6b4ba0c3a712ca",
             "traceId": "d6b4ba0c3a712ca",
@@ -74,7 +72,7 @@
             "sampled": true
         },
         "expected_intrinsics": ["parent.transportDuration", "guid"],
-        "unexpected_intrinsics": [],
+        "unexpected_intrinsics": ["grandparentId"],
         "expected_metrics": [
             ["DurationByCaller/App/1/2827902/HTTP/all", 1],
             ["DurationByCaller/App/1/2827902/HTTP/allWeb", 1],
@@ -178,7 +176,6 @@
             "parent.app": "2827902",
             "parent.account": "1",
             "parent.transportType": "HTTP",
-            "grandparentId": "5e5733a911cfbc73",
             "parentId": "7d3efb1b173fecfa",
             "nr.tripId": "d6b4ba0c3a712ca",
             "traceId": "d6b4ba0c3a712ca",
@@ -186,7 +183,7 @@
             "sampled": true
         },
         "expected_intrinsics": ["parent.transportDuration", "guid"],
-        "unexpected_intrinsics": [],
+        "unexpected_intrinsics": ["grandparentId"],
         "expected_metrics": [
             ["DurationByCaller/App/1/2827902/HTTP/all", 1],
             ["DurationByCaller/App/1/2827902/HTTP/allWeb", null],
@@ -235,7 +232,6 @@
             "parent.app": "2827902",
             "parent.account": "1",
             "parent.transportType": "HTTP",
-            "grandparentId": "5e5733a911cfbc73",
             "parentId": "7d3efb1b173fecfa",
             "nr.tripId": "d6b4ba0c3a712ca",
             "traceId": "d6b4ba0c3a712ca",
@@ -243,7 +239,7 @@
             "sampled": true
         },
         "expected_intrinsics": ["parent.transportDuration", "guid"],
-        "unexpected_intrinsics": [],
+        "unexpected_intrinsics": ["grandparentId"],
         "expected_metrics": [
             ["DurationByCaller/App/1/2827902/HTTP/all", 1],
             ["DurationByCaller/App/1/2827902/HTTP/allWeb", 1],
@@ -293,7 +289,6 @@
             "parent.app": "2827902",
             "parent.account": "1",
             "parent.transportType": "HTTP",
-            "grandparentId": "5e5733a911cfbc73",
             "parentId": "7d3efb1b173fecfa",
             "nr.tripId": "d6b4ba0c3a712ca",
             "traceId": "d6b4ba0c3a712ca",
@@ -301,7 +296,7 @@
             "sampled": true
         },
         "expected_intrinsics": ["parent.transportDuration", "guid"],
-        "unexpected_intrinsics": [],
+        "unexpected_intrinsics": ["grandparentId"],
         "expected_metrics": [
             ["DurationByCaller/App/1/2827902/HTTP/all", 1],
             ["DurationByCaller/App/1/2827902/HTTP/allWeb", null],
@@ -502,7 +497,6 @@
             "parent.app": "2827902",
             "parent.account": "1",
             "parent.transportType": "HTTP",
-            "grandparentId": "5e5733a911cfbc73",
             "parentId": "7d3efb1b173fecfa",
             "nr.tripId": "d6b4ba0c3a712ca",
             "traceId": "d6b4ba0c3a712ca",
@@ -510,7 +504,7 @@
             "sampled": true
         },
         "expected_intrinsics": ["parent.transportDuration", "guid"],
-        "unexpected_intrinsics": [],
+        "unexpected_intrinsics": ["grandparentId"],
         "expected_metrics": [
             ["DurationByCaller/App/1/2827902/HTTP/all", 1],
             ["DurationByCaller/App/1/2827902/HTTP/allWeb", 1],
@@ -646,7 +640,6 @@
             "parent.app": "2827902",
             "parent.account": "1",
             "parent.transportType": "HTTP",
-            "grandparentId": "5e5733a911cfbc73",
             "parentId": "7d3efb1b173fecfa",
             "nr.tripId": "d6b4ba0c3a712ca",
             "traceId": "d6b4ba0c3a712ca",
@@ -654,7 +647,7 @@
             "sampled": true
         },
         "expected_intrinsics": ["parent.transportDuration", "guid"],
-        "unexpected_intrinsics": [],
+        "unexpected_intrinsics": ["grandparentId"],
         "expected_metrics": [
             ["DurationByCaller/App/1/2827902/HTTP/all", 1],
             ["DurationByCaller/App/1/2827902/HTTP/allWeb", 1],
@@ -711,7 +704,6 @@
             "parent.app": "2827902",
             "parent.account": "1",
             "parent.transportType": "HTTP",
-            "grandparentId": "5e5733a911cfbc73",
             "parentId": "7d3efb1b173fecfa",
             "nr.tripId": "d6b4ba0c3a712ca",
             "traceId": "d6b4ba0c3a712ca",
@@ -719,7 +711,7 @@
             "sampled": true
         },
         "expected_intrinsics": ["parent.transportDuration", "guid"],
-        "unexpected_intrinsics": [],
+        "unexpected_intrinsics": ["grandparentId"],
         "expected_metrics": [
             ["DurationByCaller/App/1/2827902/HTTP/all", 1],
             ["DurationByCaller/App/1/2827902/HTTP/allWeb", 1],
@@ -783,7 +775,6 @@
             "parent.app": "2827902",
             "parent.account": "1",
             "parent.transportType": "HTTP",
-            "grandparentId": "5e5733a911cfbc73",
             "parentId": "7d3efb1b173fecfa",
             "nr.tripId": "d6b4ba0c3a712ca",
             "traceId": "d6b4ba0c3a712ca",
@@ -791,7 +782,7 @@
             "sampled": true
         },
         "expected_intrinsics": ["parent.transportDuration", "guid"],
-        "unexpected_intrinsics": [],
+        "unexpected_intrinsics": ["grandparentId"],
         "expected_metrics": [
             ["DurationByCaller/App/1/2827902/HTTP/all", 1],
             ["DurationByCaller/App/1/2827902/HTTP/allWeb", 1],

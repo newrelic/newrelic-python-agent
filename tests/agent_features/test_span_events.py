@@ -59,7 +59,6 @@ def test_span_events(span_events_enabled, spans_feature_flag, txn_sampled):
 
     exact_intrinsics_root = exact_intrinsics_common.copy()
     exact_intrinsics_root['name'] = 'Function/transaction'
-    exact_intrinsics_root['parentId'] = guid
 
     exact_intrinsics_function = exact_intrinsics_common.copy()
     exact_intrinsics_function['name'] = 'Function/function'

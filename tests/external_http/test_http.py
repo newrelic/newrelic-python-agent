@@ -64,8 +64,12 @@ def test_http_https_request():
     connection.close()
 
 
-@pytest.mark.parametrize('distributed_tracing', (True, False))
-def test_http_cross_process_request(distributed_tracing):
+@pytest.mark.parametrize('distributed_tracing,span_events', (
+    (True, True),
+    (True, False),
+    (False, False),
+))
+def test_http_cross_process_request(distributed_tracing, span_events):
 
     @background_task(name='test_http:test_http_cross_process_request')
     @cache_outgoing_headers
@@ -77,9 +81,16 @@ def test_http_cross_process_request(distributed_tracing):
         response.read()
         connection.close()
 
+    flags = set()
+
     if distributed_tracing:
-        _test = override_application_settings(
-                {'feature_flag': set(('distributed_tracing',))})(_test)
+        flags.add('distributed_tracing')
+
+    if span_events:
+        flags.add('span_events')
+
+    _test = override_application_settings(
+            {'feature_flag': flags})(_test)
 
     _test()
 

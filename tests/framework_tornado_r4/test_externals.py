@@ -106,9 +106,13 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True,
 ])
 @pytest.mark.parametrize('request_type', ['uri', 'class'])
 @pytest.mark.parametrize('num_requests', [1, 2])
-@pytest.mark.parametrize('distributed_tracing', [True, False])
+@pytest.mark.parametrize('distributed_tracing,span_events', (
+    (True, True),
+    (True, False),
+    (False, False),
+))
 def test_httpclient(cat_enabled, request_type, client_class,
-        user_header, num_requests, distributed_tracing, external):
+        user_header, num_requests, distributed_tracing, span_events, external):
 
     port = external.port
 
@@ -119,6 +123,9 @@ def test_httpclient(cat_enabled, request_type, client_class,
     feature_flag = set()
     if distributed_tracing:
         feature_flag.add('distributed_tracing')
+
+    if span_events:
+        feature_flag.add('span_events')
 
     @override_application_settings(
             {'cross_application_tracer.enabled': cat_enabled,

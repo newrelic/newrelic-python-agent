@@ -135,8 +135,12 @@ def test_HTTPConnection_port_included():
         conn.request('GET', '/')
 
 
-@pytest.mark.parametrize('distributed_tracing', (True, False))
-def test_urlopen_cross_process_request(distributed_tracing):
+@pytest.mark.parametrize('distributed_tracing,span_events', (
+    (True, True),
+    (True, False),
+    (False, False),
+))
+def test_urlopen_cross_process_request(distributed_tracing, span_events):
 
     @validate_transaction_errors(errors=[])
     @background_task(name='test_urllib3:test_urlopen_cross_process_request')
@@ -146,9 +150,16 @@ def test_urlopen_cross_process_request(distributed_tracing):
         pool = urllib3.HTTPConnectionPool('www.example.com')
         pool.urlopen('GET', '/index.html')
 
+    flags = set()
+
     if distributed_tracing:
-        _test = override_application_settings(
-                {'feature_flag': set(('distributed_tracing',))})(_test)
+        flags.add('distributed_tracing')
+
+    if span_events:
+        flags.add('span_events')
+
+    _test = override_application_settings(
+            {'feature_flag': flags})(_test)
 
     _test()
 

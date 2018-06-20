@@ -60,13 +60,20 @@ def mock_header_server():
 
 
 @pytest.mark.parametrize('cat_enabled', (True, False))
-@pytest.mark.parametrize('distributed_tracing', (True, False))
+@pytest.mark.parametrize('distributed_tracing,span_events', (
+    (True, True),
+    (True, False),
+    (False, False),
+))
 def test_outbound_cross_process_headers(cat_enabled, distributed_tracing,
-        mock_header_server):
+        span_events, mock_header_server):
 
     feature_flag = set()
     if distributed_tracing:
         feature_flag.add('distributed_tracing')
+
+    if span_events:
+        feature_flag.add('span_events')
 
     def task_test():
         loop = asyncio.get_event_loop()

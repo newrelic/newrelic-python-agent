@@ -204,8 +204,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             assert data['ty'] == 'App'
 
             # IDs should be the transaction GUID
-            # FIXME: re-enable this check after PYTHON-2800
-            # assert data['tx'] == self.transaction.guid
+            assert data['tx'] == self.transaction.guid
             assert data['tr'] == self.transaction.guid
 
             # Parent should be excluded
@@ -213,7 +212,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
     ##############################################
 
-    def _standard_trace_test(self, expected_id):
+    def _standard_trace_test(self, expected_tx, expected_id=None):
         self.transaction._trace_id = 'qwerty'
         self.transaction._priority = 1.0
 
@@ -230,9 +229,12 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
         assert data['tr'] == 'qwerty'
         assert data['pr'] == self.transaction._priority
+        assert data['tx'] == expected_tx
 
-        # FIXME: Add this assertion back after PYTHON-2800
-        # assert data['tx'] == expected_id
+        if expected_id is None:
+            assert 'id' not in data
+        else:
+            assert data['id'] == expected_id
 
     def test_distributed_trace_no_spans(self):
         with self.transaction:
@@ -248,7 +250,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             self.transaction.guid = 'this is guid'
 
             # ID and parent should be from the span
-            self._standard_trace_test('abcde')
+            self._standard_trace_test('this is guid', 'abcde')
 
     def test_distributed_trace_with_spans_not_enabled(self):
         self.transaction._settings.feature_flag.add('span_events')

@@ -1032,6 +1032,7 @@ class Transaction(object):
                 tr=self.trace_id,
                 sa=self.sampled,
                 pr=self.priority,
+                tx=self.guid,
                 ti=int(time.time() * 1000.0),
             )
 

@@ -113,8 +113,15 @@ def validate_distributed_tracing_header(header='X-NewRelic-Trace'):
     assert data['ap'] == application_id
 
     # Verify data belonging to this transaction
-    # FIXME: re-enable this after PYTHON-2800
-    # assert data['tx'] == transaction.guid
+    assert data['tx'] == transaction.guid
+
+    # If span events are enabled, id should be sent
+    # otherwise, id should be omitted
+    if ('span_events' in transaction.settings.feature_flag and
+            transaction.settings.span_events.enabled):
+        assert 'id' in data
+    else:
+        assert 'id' not in data
 
     # Verify referring transaction information
     if transaction.referring_transaction_guid is not None:

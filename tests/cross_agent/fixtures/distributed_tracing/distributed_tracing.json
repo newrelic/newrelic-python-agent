@@ -330,7 +330,7 @@
                     "ac": "1",
                     "ap": "2827902",
                     "id": "7d3efb1b173fecfa",
-                    "pa": "5e5733a911cfbc73",
+                    "expected_payload_dpa": "5e5733a911cfbc73",
                     "pr": 10.001,
                     "sa": true,
                     "ti": 1518469636035,
@@ -691,7 +691,6 @@
         ],
         "outbound_payloads_d": [
             {
-                "pa": "7d3efb1b173fecfa",
                 "pr": 10.001,
                 "sa": true,
                 "tr": "d6b4ba0c3a712ca",
@@ -755,14 +754,12 @@
         ],
         "outbound_payloads_d": [
             {
-                "pa": "7d3efb1b173fecfa",
                 "pr": 10.001,
                 "sa": true,
                 "tr": "d6b4ba0c3a712ca",
                 "ty": "App"
             },
             {
-                "pa": "7d3efb1b173fecfa",
                 "pr": 10.001,
                 "sa": true,
                 "tr": "d6b4ba0c3a712ca",

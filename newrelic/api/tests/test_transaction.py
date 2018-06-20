@@ -9,6 +9,7 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.core.config import finalize_application_settings
+from newrelic.core.adaptive_sampler import AdaptiveSampler
 
 import newrelic.tests.test_cases
 
@@ -142,8 +143,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         self.transaction._settings.cross_application_tracer.enabled = True
         self.transaction._settings.feature_flag = set(['distributed_tracing'])
 
-        self.application._transaction_sampled_count = 0
-        self.application._min_sampling_priority = 0.0
+        self.application.adaptive_sampler = AdaptiveSampler(10)
 
     def tearDown(self):
         if current_transaction():
@@ -211,7 +211,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
     ##############################################
 
-    def _standard_trace_test(self, expected_id, expected_parent_id):
+    def _standard_trace_test(self, expected_id):
         self.transaction._trace_id = 'qwerty'
         self.transaction._priority = 1.0
 
@@ -230,7 +230,6 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         assert data['pr'] == self.transaction._priority
 
         assert data['id'] == expected_id
-        assert data['pa'] == expected_parent_id
 
     def test_distributed_trace_referring_transaction(self):
         with self.transaction:
@@ -238,7 +237,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
             # ID should be the transaction GUID, Parent data should be
             # forwarded
-            self._standard_trace_test(self.transaction.guid, 'abcde')
+            self._standard_trace_test(self.transaction.guid)
 
     def test_distributed_trace_with_spans_no_parent(self):
         self.transaction._settings.feature_flag.add('span_events')
@@ -249,19 +248,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             self.transaction.guid = 'this is guid'
 
             # ID and parent should be from the span
-            self._standard_trace_test('abcde', 'this is guid')
-
-    def test_distributed_trace_with_spans_with_parent(self):
-        self.transaction._settings.feature_flag.add('span_events')
-        self.transaction._settings.span_events.enabled = True
-
-        with self.transaction:
-            with FunctionTrace(self.transaction, 'trace_1') as trace:
-                trace.guid = 'abcde'
-                trace.parent.guid = 'this is guid'
-
-                # ID and parent should be from the span
-                self._standard_trace_test('abcde', 'this is guid')
+            self._standard_trace_test('abcde')
 
     def test_distributed_trace_with_spans_not_enabled(self):
         self.transaction._settings.feature_flag.add('span_events')
@@ -272,7 +259,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
             # ID should be the transaction GUID, Parent data should be
             # forwarded
-            self._standard_trace_test(self.transaction.guid, 'abcde')
+            self._standard_trace_test(self.transaction.guid)
 
     ##############################################
 
@@ -493,7 +480,6 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
                     self.transaction.create_distributed_tracing_payload()
             data = outbound_payload['d']
             assert data['ty'] == 'App'
-            assert data['pa'] == '7d3efb1b173fecfa'
             assert data['tr'] == 'd6b4ba0c3a712ca'
 
     def test_sampled_repeated_call(self):

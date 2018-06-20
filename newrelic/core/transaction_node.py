@@ -29,7 +29,7 @@ _TransactionNode = namedtuple('_TransactionNode',
         'is_part_of_cat', 'trip_id', 'path_hash', 'referring_path_hash',
         'alternate_path_hashes', 'trace_intrinsics', 'agent_attributes',
         'distributed_trace_intrinsics', 'user_attributes', 'priority',
-        'sampled', 'parent_transport_duration', 'parent_id', 'parent_type',
+        'sampled', 'parent_transport_duration', 'parent_span', 'parent_type',
         'parent_account', 'parent_app', 'parent_transport_type',
         'root_span_guid', 'trace_id'])
 
@@ -59,7 +59,7 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
 
     @property
     def distributed_trace_received(self):
-        return self.parent_id is not None
+        return self.trace_id != self.guid
 
     def time_metrics(self, stats):
         """Return a generator yielding the timed metrics for the
@@ -602,7 +602,7 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
         }
 
         yield self.span_event(base_attrs,
-                parent_guid=self.guid)
+                parent_guid=self.parent_span)
 
         for child in self.children:
             for event in child.span_events(

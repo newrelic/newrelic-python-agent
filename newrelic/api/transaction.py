@@ -38,7 +38,7 @@ from newrelic.api.time_trace import TimeTrace
 _logger = logging.getLogger(__name__)
 
 DISTRIBUTED_TRACE_KEYS_REQUIRED = (
-        'ty', 'ac', 'ap', 'id', 'tr', 'ti')
+        'ty', 'ac', 'ap', 'tr', 'ti')
 
 
 class Sentinel(TimeTrace):
@@ -157,7 +157,7 @@ class Transaction(object):
 
         # This may be overridden by processing an inbound CAT header
         self.parent_type = None
-        self.parent_id = None
+        self.parent_span = None
         self.parent_app = None
         self.parent_account = None
         self.parent_transport_type = None
@@ -519,7 +519,7 @@ class Transaction(object):
                 user_attributes=self.user_attributes,
                 priority=self.priority,
                 sampled=self.sampled,
-                parent_id=self.parent_id,
+                parent_span=self.parent_span,
                 parent_transport_duration=self.parent_transport_duration,
                 parent_type=self.parent_type,
                 parent_account=self.parent_account,
@@ -785,8 +785,6 @@ class Transaction(object):
         if self.parent_transport_duration:
             i_attrs['parent.transportDuration'] = \
                     self.parent_transport_duration
-        if self.parent_id:
-            i_attrs['parentId'] = self.parent_id
 
         i_attrs['nr.tripId'] = self.trace_id
 
@@ -1039,8 +1037,6 @@ class Transaction(object):
             if ('span_events' in settings.feature_flag and
                     settings.span_events.enabled and self.current_node):
                 data['id'] = self.current_node.guid
-            else:
-                data['id'] = self.guid
 
             self.is_distributed_trace = True
 
@@ -1072,7 +1068,7 @@ class Transaction(object):
             return False
 
         if self.is_distributed_trace:
-            if self.parent_id:
+            if self._trace_id:
                 self._record_supportability('Supportability/DistributedTrace/'
                         'AcceptPayload/Ignored/Multiple')
             else:
@@ -1115,7 +1111,7 @@ class Transaction(object):
             transport_start = data.get('ti') / 1000.0
 
             self.parent_type = data.get('ty')
-            self.parent_id = data.get('id')
+            self.parent_span = data.get('id')
             self.parent_app = data.get('ap')
             self.parent_account = account_id
             self.parent_transport_type = transport_type

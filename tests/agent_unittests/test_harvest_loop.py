@@ -60,7 +60,7 @@ def transaction_node():
             user_attributes=[],
             priority=1.0,
             parent_transport_duration=None,
-            parent_id=None,
+            parent_span=None,
             parent_type=None,
             parent_account=None,
             parent_app=None,

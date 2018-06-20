@@ -61,7 +61,6 @@ def target_wsgi_application(environ, start_response):
     assert txn._trace_id == 'd6b4ba0c3a712ca'
     assert txn.priority == 10.001
     assert txn.sampled
-    assert txn.parent_id == '7d3efb1b173fecfa'
 
     start_response(status, response_headers)
     return [output]

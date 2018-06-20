@@ -14,8 +14,9 @@ from testing_support.fixtures import (override_application_settings,
 
 distributed_trace_intrinsics = ['guid', 'nr.tripId', 'traceId', 'priority',
         'sampled']
+# FIXME: restore parentId in PYTHON-2800
 inbound_payload_intrinsics = ['parent.type', 'parent.app', 'parent.account',
-        'parent.transportType', 'parent.transportDuration', 'parentId']
+        'parent.transportType', 'parent.transportDuration']
 
 
 payload = {
@@ -93,7 +94,8 @@ def test_distributed_trace_attributes(accept_payload):
             'parent.app': '2827902',
             'parent.account': '332029',
             'parent.transportType': 'HTTP',
-            'parentId': '7d3efb1b173fecfa',
+            # FIXME: restore value in PYTHON-2800
+            # 'parentId': '7d3efb1b173fecfa',
             'traceId': 'd6b4ba0c3a712ca',
         }}
         _forgone_intrinsics.append('grandparentId')

@@ -158,6 +158,7 @@ class Transaction(object):
         # This may be overridden by processing an inbound CAT header
         self.parent_type = None
         self.parent_span = None
+        self.parent_tx = None
         self.parent_app = None
         self.parent_account = None
         self.parent_transport_type = None
@@ -1100,6 +1101,12 @@ class Transaction(object):
                         'AcceptPayload/ParseException')
                 return False
 
+            # Must have either id or tx
+            if not any(k in data for k in ('id', 'tx')):
+                self._record_supportability('Supportability/DistributedTrace/'
+                                            'AcceptPayload/ParseException')
+                return False
+
             account_id = data.get('ac')
 
             if account_id not in (
@@ -1112,6 +1119,7 @@ class Transaction(object):
 
             self.parent_type = data.get('ty')
             self.parent_span = data.get('id')
+            self.parent_tx = data.get('tx')
             self.parent_app = data.get('ap')
             self.parent_account = account_id
             self.parent_transport_type = transport_type

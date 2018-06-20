@@ -159,6 +159,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             'id': '7d3efb1b173fecfa',
             'tr': 'd6b4ba0c3a712ca',
             'ti': 1518469636035,
+            'tx': '8703ff3d88eefe9d',
         }
     }
 
@@ -333,7 +334,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             assert self.transaction.priority != original_priority
             assert self.transaction.priority == priority
 
-    def test_accept_distributed_trace_payload_id_and_tx_missing(self):
+    def test_accept_distributed_trace_payload_id_missing(self):
         with self.transaction:
             payload = self._make_test_payload()
             del payload['d']['id']
@@ -341,12 +342,32 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             payload = json.dumps(payload)
             assert isinstance(payload, str)
             result = self.transaction.accept_distributed_trace_payload(payload)
+            assert result
 
-            # FIXME: this test should be re-enabled after PYTHON-2800
-            # assert not result
-            # assert ('Supportability/DistributedTrace/'
-            #         'AcceptPayload/ParseException'
-            #         in self.transaction._transaction_metrics)
+    def test_accept_distributed_trace_payload_tx_missing(self):
+        with self.transaction:
+            payload = self._make_test_payload()
+            del payload['d']['tx']
+
+            payload = json.dumps(payload)
+            assert isinstance(payload, str)
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert result
+
+    def test_accept_distributed_trace_payload_id_and_tx_missing(self):
+        with self.transaction:
+            payload = self._make_test_payload()
+            del payload['d']['id']
+            del payload['d']['tx']
+
+            payload = json.dumps(payload)
+            assert isinstance(payload, str)
+            result = self.transaction.accept_distributed_trace_payload(payload)
+
+            assert not result
+            assert ('Supportability/DistributedTrace/'
+                    'AcceptPayload/ParseException'
+                    in self.transaction._transaction_metrics)
 
     def test_accept_distributed_trace_payload_priority_not_found(self):
         with self.transaction:

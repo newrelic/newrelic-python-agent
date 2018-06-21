@@ -137,7 +137,7 @@ def test_distributed_tracing(test_name, inbound_payloads, trusted_account_ids,
 
     override_settings = {
         'trusted_account_ids': trusted_account_ids,
-        'trusted_account_key': trusted_account_ids[0]
+        'trusted_account_key': trusted_account_key
     }
     if feature_flag is not False:
         override_settings['feature_flag'] = set(['distributed_tracing'])

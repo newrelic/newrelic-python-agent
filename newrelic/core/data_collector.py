@@ -1264,7 +1264,7 @@ _developer_mode_responses = {
         u'trusted_account_key': 12345,
         u'url_rules': [],
         u'collect_errors': True,
-        u'account_id': u'12345#67890',
+        u'account_id': 12345,
         u'cross_process_id': u'12345#67890',
         u'messages': [{u'message': u'Reporting to fake collector',
             u'level': u'INFO'}],

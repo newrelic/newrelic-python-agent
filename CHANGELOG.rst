@@ -7,6 +7,14 @@ unreleased
   an application to crash shortly after startup with a KeyError exception. The
   cause of the crash has been addressed.
 
+- Agent raises an AttributeError on Python 3 when using WSGI overrides with
+  multiple app names
+
+  When using WSGI environ overrides to specify multiple app names as described
+  in the docs
+  https://docs.newrelic.com/docs/agents/manage-apm-agents/app-naming/use-multiple-names-app
+  the agent will raise an AttributeError. This error has been corrected.
+
 3.2.2 (2018-06-11)
 ------------------
 

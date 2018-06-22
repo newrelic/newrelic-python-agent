@@ -34,7 +34,8 @@ class MessageTransaction(BackgroundTask):
             dt_transaction = self.headers.pop(
                 MessageTrace.cat_distributed_trace_key, None)
 
-        if 'distributed_tracing' in self.settings.feature_flag:
+        if (self.settings is not None) and (
+                'distributed_tracing' in self.settings.feature_flag):
             if dt_transaction:
                 self.accept_distributed_trace_payload(dt_transaction)
         else:

@@ -35,6 +35,8 @@ def _add_consume_rabbitmq_trace(transaction, method, properties,
                 MessageTrace.cat_id_key, None)
         headers.pop(
                 MessageTrace.cat_transaction_key, None)
+        headers.pop(
+                MessageTrace.cat_distributed_trace_key, None)
 
     # The transaction may have started after the message was received. In this
     # case, the start time is reset to the true transaction start time.
@@ -87,6 +89,7 @@ def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
     properties.headers = properties.headers or {}
     user_headers = properties.headers.copy()
     cat_headers = MessageTrace.generate_request_headers(transaction)
+
     for name, value in cat_headers:
         properties.headers[name] = value
 
@@ -95,6 +98,8 @@ def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
         del user_headers[MessageTrace.cat_id_key]
     if MessageTrace.cat_transaction_key in user_headers:
         del user_headers[MessageTrace.cat_transaction_key]
+    if MessageTrace.cat_distributed_trace_key in user_headers:
+        del user_headers[MessageTrace.cat_distributed_trace_key]
 
     args = (exchange, routing_key, body, properties, mandatory, immediate)
 

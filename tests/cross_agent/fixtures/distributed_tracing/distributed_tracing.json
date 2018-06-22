@@ -17,7 +17,6 @@
                 }
             }
         ],
-        "trusted_account_ids": [1],
         "trusted_account_key": 1,
         "exact_intrinsics": {
             "parent.type": "App",
@@ -60,7 +59,6 @@
         "inbound_payloads": [
             "eyJkIjogeyJwciI6IDEwLjAwMSwgImFjIjogIjEiLCAidHgiOiAiN2QzZWZiMWIxNzNmZWNmYSIsICJ0eSI6ICJBcHAiLCAidHIiOiAiZDZiNGJhMGMzYTcxMmNhIiwgImFwIjogIjI4Mjc5MDIiLCAicGEiOiAiNWU1NzMzYTkxMWNmYmM3MyIsICJ0aSI6IDE1MTg0Njk2MzYwMzUsICJzYSI6IHRydWV9LCAidiI6IFswLCAxXX0="
         ],
-        "trusted_account_ids": [1],
         "trusted_account_key": 1,
         "exact_intrinsics": {
             "parent.type": "App",
@@ -115,7 +113,6 @@
                 }
             }
         ],
-        "trusted_account_ids": [1],
         "trusted_account_key": 1,
         "exact_intrinsics": {
             "parent.type": "App",
@@ -173,7 +170,6 @@
             }
         ],
         "background_task": true,
-        "trusted_account_ids": [1],
         "trusted_account_key": 1,
         "exact_intrinsics": {
             "parent.type": "App",
@@ -230,7 +226,6 @@
             }
         ],
         "raises_exception": true,
-        "trusted_account_ids": [1],
         "trusted_account_key": 1,
         "exact_intrinsics": {
             "parent.type": "App",
@@ -288,7 +283,6 @@
         ],
         "raises_exception": true,
         "background_task": true,
-        "trusted_account_ids": [1],
         "trusted_account_key": 1,
         "exact_intrinsics": {
             "parent.type": "App",
@@ -349,7 +343,6 @@
             "this test should send one outbound request"
         ],
         "feature_flag": false,
-        "trusted_account_ids": [1],
         "trusted_account_key": 1,
         "exact_intrinsics": {},
         "expected_intrinsics": [],
@@ -399,7 +392,6 @@
                 }
             }
         ],
-        "trusted_account_ids": [1],
         "trusted_account_key": 1,
         "exact_intrinsics": {},
         "expected_intrinsics": [],
@@ -449,7 +441,6 @@
                 }
             }
         ],
-        "trusted_account_ids": [1],
         "trusted_account_key": 1,
         "exact_intrinsics": {},
         "expected_intrinsics": [],
@@ -500,7 +491,6 @@
                 }
             }
         ],
-        "trusted_account_ids": [1],
         "trusted_account_key": 1,
         "exact_intrinsics": {
             "parent.type": "App",
@@ -541,7 +531,6 @@
     {
         "test_name": "null_payload",
         "inbound_payloads": [],
-        "trusted_account_ids": [1],
         "trusted_account_key": 1,
         "exact_intrinsics": {},
         "expected_intrinsics": [],
@@ -581,7 +570,6 @@
                 "d": {}
             }
         ],
-        "trusted_account_ids": [1],
         "trusted_account_key": 1,
         "exact_intrinsics": {},
         "expected_intrinsics": [],
@@ -646,7 +634,6 @@
                 }
             }
         ],
-        "trusted_account_ids": [1],
         "trusted_account_key": 1,
         "exact_intrinsics": {
             "parent.type": "App",
@@ -710,7 +697,6 @@
                 "ty": "App"
             }
         ],
-        "trusted_account_ids": [1],
         "trusted_account_key": 1,
         "exact_intrinsics": {
             "parent.type": "App",
@@ -780,7 +766,6 @@
                 "ty": "App"
             }
         ],
-        "trusted_account_ids": [1],
         "trusted_account_key": 1,
         "exact_intrinsics": {
             "parent.type": "App",

@@ -19,7 +19,7 @@ CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures',
     'distributed_tracing'))
 
-_parameters_list = ['test_name', 'inbound_payloads', 'trusted_account_ids',
+_parameters_list = ['test_name', 'inbound_payloads'
         'trusted_account_key', 'exact_intrinsics', 'expected_intrinsics',
         'unexpected_intrinsics', 'expected_metrics', 'background_task',
         'raises_exception', 'feature_flag', 'outbound_payloads_d']
@@ -120,7 +120,7 @@ test_application = webtest.TestApp(target_wsgi_application)
 
 
 @pytest.mark.parametrize(_parameters, load_tests())
-def test_distributed_tracing(test_name, inbound_payloads, trusted_account_ids,
+def test_distributed_tracing(test_name, inbound_payloads,
         trusted_account_key, exact_intrinsics, expected_intrinsics,
         unexpected_intrinsics, expected_metrics, background_task,
         raises_exception, feature_flag, outbound_payloads_d):
@@ -136,7 +136,6 @@ def test_distributed_tracing(test_name, inbound_payloads, trusted_account_ids,
     }
 
     override_settings = {
-        'trusted_account_ids': trusted_account_ids,
         'trusted_account_key': trusted_account_key
     }
     if feature_flag is not False:

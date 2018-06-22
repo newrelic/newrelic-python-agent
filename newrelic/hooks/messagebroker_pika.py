@@ -228,13 +228,6 @@ def _ConsumeGeneratorWrapper(wrapped):
                     correlation_id = getattr(
                             properties, 'correlation_id', None)
 
-                cat_id, cat_transaction = None, None
-                if headers:
-                    cat_id = headers.pop(
-                            MessageTrace.cat_id_key, None)
-                    cat_transaction = headers.pop(
-                            MessageTrace.cat_transaction_key, None)
-
                 # Create a messagebroker task for each iteration through the
                 # generator. This is important because it is foreseeable that
                 # the generator process lasts a long time and consumes many
@@ -251,7 +244,6 @@ def _ConsumeGeneratorWrapper(wrapped):
                         correlation_id=correlation_id)
                 bt.__enter__()
 
-                bt._process_incoming_cat_headers(cat_id, cat_transaction)
                 return bt
 
         def _generator(generator):
@@ -345,14 +337,6 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
                 else:
                     unknown_kwargs = True
 
-                # If headers are available, attempt to process CAT
-                cat_id, cat_transaction = None, None
-                if headers:
-                    cat_id = headers.pop(
-                            MessageTrace.cat_id_key, None)
-                    cat_transaction = headers.pop(
-                            MessageTrace.cat_transaction_key, None)
-
                 with MessageTransaction(
                         application=application_instance(),
                         library='RabbitMQ',
@@ -373,9 +357,6 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
                     if unknown_kwargs:
                         m = mt._transaction_metrics.get(KWARGS_ERROR, 0)
                         mt._transaction_metrics[KWARGS_ERROR] = m + 1
-
-                    # Process CAT headers
-                    mt._process_incoming_cat_headers(cat_id, cat_transaction)
 
                     return _wrapped(*_args, **_kwargs)
 

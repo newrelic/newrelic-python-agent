@@ -6,7 +6,8 @@ import newrelic.api.settings
 
 from newrelic.api.application import application_instance
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.transaction import current_transaction
+from newrelic.api.transaction import (current_transaction,
+                                      DISTRIBUTED_TRACE_KEYS_REQUIRED)
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.core.config import finalize_application_settings
 from newrelic.core.adaptive_sampler import AdaptiveSampler
@@ -15,10 +16,6 @@ import newrelic.tests.test_cases
 
 settings = newrelic.api.settings.settings()
 application = application_instance()
-
-
-DISTRIBUTED_TRACE_KEYS_REQUIRED = (
-        'ty', 'ac', 'ap', 'tr', 'pr', 'sa', 'ti')
 
 
 class MockApplication(object):

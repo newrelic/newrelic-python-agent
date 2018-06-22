@@ -4,14 +4,12 @@ except ImportError:
     import httplib
 
 from newrelic.api.external_trace import ExternalTrace
-from newrelic.api.transaction import current_transaction
+from newrelic.api.transaction import (current_transaction,
+                                      DISTRIBUTED_TRACE_KEYS_REQUIRED)
 from newrelic.common.encoding_utils import (json_encode, json_decode,
     obfuscate, deobfuscate, DistributedTracePayload)
 from newrelic.common.object_wrapper import (transient_function_wrapper,
         function_wrapper)
-
-DISTRIBUTED_TRACE_KEYS_REQUIRED = (
-        'ty', 'ac', 'ap', 'tr', 'pr', 'sa', 'ti')
 
 
 @transient_function_wrapper(httplib.__name__, 'HTTPConnection.putheader')

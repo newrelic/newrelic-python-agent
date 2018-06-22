@@ -1,7 +1,6 @@
 import sys
 import cgi
 import time
-import string
 import logging
 import functools
 
@@ -1190,7 +1189,7 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
 
         if app_name:
             if app_name.find(';') != -1:
-                app_names = [string.strip(n) for n in app_name.split(';')]
+                app_names = [n.strip() for n in app_name.split(';')]
                 app_name = app_names[0]
                 target_application = application_instance(app_name)
                 for altname in app_names[1:]:

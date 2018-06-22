@@ -19,7 +19,7 @@ CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures',
     'distributed_tracing'))
 
-_parameters_list = ['test_name', 'inbound_payloads'
+_parameters_list = ['test_name', 'inbound_payloads',
         'trusted_account_key', 'exact_intrinsics', 'expected_intrinsics',
         'unexpected_intrinsics', 'expected_metrics', 'background_task',
         'raises_exception', 'feature_flag', 'outbound_payloads_d']

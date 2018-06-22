@@ -1014,8 +1014,8 @@ class Transaction(object):
             return
 
         settings = self._settings
-        account_id = str(settings.account_id)
-        trusted_account_key = str(settings.trusted_account_key)
+        account_id = settings.account_id
+        trusted_account_key = settings.trusted_account_key
         application_id = settings.application_id
         distributed_tracing_enabled = \
             'distributed_tracing' in settings.feature_flag
@@ -1117,8 +1117,8 @@ class Transaction(object):
             account_id = data.get('ac')
 
             # If trust key doesn't exist in the payload, use account_id
-            received_trust_key = str(data.get('tk', account_id))
-            if str(settings.trusted_account_key) != received_trust_key:
+            received_trust_key = data.get('tk', account_id)
+            if settings.trusted_account_key != received_trust_key:
                 self._record_supportability('Supportability/DistributedTrace/'
                         'AcceptPayload/Ignored/UntrustedAccount')
                 return False

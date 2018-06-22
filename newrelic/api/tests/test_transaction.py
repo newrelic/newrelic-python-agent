@@ -6,8 +6,7 @@ import newrelic.api.settings
 
 from newrelic.api.application import application_instance
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.transaction import (current_transaction,
-                                      DISTRIBUTED_TRACE_KEYS_REQUIRED)
+from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.core.config import finalize_application_settings
 from newrelic.core.adaptive_sampler import AdaptiveSampler
@@ -16,6 +15,9 @@ import newrelic.tests.test_cases
 
 settings = newrelic.api.settings.settings()
 application = application_instance()
+
+OUTBOUND_TRACE_KEYS_REQUIRED = (
+        'ty', 'ac', 'ap', 'tr', 'pr', 'sa', 'ti')
 
 
 class MockApplication(object):
@@ -196,7 +198,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             data = payload['d']
 
             # Check required keys
-            assert all(k in data for k in DISTRIBUTED_TRACE_KEYS_REQUIRED)
+            assert all(k in data for k in OUTBOUND_TRACE_KEYS_REQUIRED)
 
             # Type is always App
             assert data['ty'] == 'App'
@@ -223,7 +225,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         assert data['ty'] == 'App'
 
         # Check required keys
-        assert all(k in data for k in DISTRIBUTED_TRACE_KEYS_REQUIRED)
+        assert all(k in data for k in OUTBOUND_TRACE_KEYS_REQUIRED)
 
         assert data['tr'] == 'qwerty'
         assert data['pr'] == self.transaction._priority

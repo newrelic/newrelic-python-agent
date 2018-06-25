@@ -93,11 +93,11 @@ def target_wsgi_application(environ, start_response):
             if feature_flag:
                 assert b'X-NewRelic-ID' not in resp.content
                 assert b'X-NewRelic-Transaction' not in resp.content
-                assert b'X-NewRelic-Trace' in resp.content
+                assert b'newrelic' in resp.content
             else:
                 assert b'X-NewRelic-ID' in resp.content
                 assert b'X-NewRelic-Transaction' in resp.content
-                assert b'X-NewRelic-Trace' not in resp.content
+                assert b'newrelic' not in resp.content
 
         with MockExternalHTTPHResponseHeadersServer() as external:
             for expected_payload_d in outbound_payloads_d:
@@ -148,7 +148,7 @@ def test_distributed_tracing(test_name, inbound_payloads,
     exact_attrs = {'agent': {}, 'user': {}, 'intrinsic': exact_intrinsics}
 
     payload = json.dumps(inbound_payloads[0]) if inbound_payloads else ''
-    headers = {'X-NewRelic-Trace': payload}
+    headers = {'newrelic': payload}
 
     @validate_transaction_metrics(test_name,
             rollup_metrics=expected_metrics,

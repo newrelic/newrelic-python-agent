@@ -8,7 +8,7 @@ class CatHeaderMixin(object):
     cat_appdata_key = 'X-NewRelic-App-Data'
     cat_synthetics_key = 'X-NewRelic-Synthetics'
     cat_metadata_key = 'x-newrelic-trace'
-    cat_distributed_trace_key = 'X-NewRelic-Trace'
+    cat_distributed_trace_key = 'newrelic'
 
     def process_response_headers(self, response_headers):
         """

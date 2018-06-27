@@ -15,6 +15,13 @@ unreleased
   https://docs.newrelic.com/docs/agents/manage-apm-agents/app-naming/use-multiple-names-app
   the agent will raise an AttributeError. This error has been corrected.
 
+- Agent raises an AttributeError exception under rare conditions when halting
+  a trace.
+
+  Under certain rare conditions, the agent might raise an exception when trying
+  to trace an external call in a transaction that has been forcibly halted.
+  The cause of the exception has been addressed.
+
 3.2.2 (2018-06-11)
 ------------------
 

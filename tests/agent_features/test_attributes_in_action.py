@@ -25,7 +25,8 @@ REQ_PARAMS = ['request.parameters.' + URL_PARAM,
         'request.parameters.' + URL_PARAM2]
 DISTRIBUTED_TRACE_ATTRS = ['traceId', 'priority', 'parent.type',
         'parent.app', 'parent.account', 'parent.transportType',
-        'parent.transportDuration', 'parentId', 'guid', 'sampled']
+        'parent.transportDuration', 'parentId', 'guid', 'sampled',
+        'parentSpanId']
 
 USER_ATTRS = ['puppies', 'sunshine']
 

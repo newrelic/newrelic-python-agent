@@ -791,6 +791,12 @@ class Transaction(object):
         if self.parent_tx:
             i_attrs['parentId'] = self.parent_tx
 
+        if ('span_events' in self._settings.feature_flag and
+                self.settings.span_events.enabled and self.parent_span):
+            i_attrs['parentSpanId'] = self.parent_span
+
+        i_attrs['nr.tripId'] = self.trace_id
+
         return i_attrs
 
     @property

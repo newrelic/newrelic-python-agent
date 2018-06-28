@@ -13,6 +13,7 @@ DB_SETTINGS = rabbitmq_settings()
 _override_settings = {
     'account_id': '332029',
     'trusted_account_ids': ['1', '332029'],
+    'trusted_account_key': '1',
     'cross_application_tracer.enabled': True,
     'feature_flag': set(['distributed_tracing']),
 }

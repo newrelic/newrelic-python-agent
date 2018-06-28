@@ -789,8 +789,6 @@ class Transaction(object):
         if self.parent_tx:
             i_attrs['parentId'] = self.parent_tx
 
-        i_attrs['nr.tripId'] = self.trace_id
-
         return i_attrs
 
     @property

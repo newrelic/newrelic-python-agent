@@ -24,7 +24,6 @@
             "parent.account": "1",
             "parent.transportType": "HTTP",
             "parentId": "7d3efb1b173fecfa",
-            "nr.tripId": "d6b4ba0c3a712ca",
             "traceId": "d6b4ba0c3a712ca",
             "priority": 10.001,
             "sampled": true
@@ -66,7 +65,6 @@
             "parent.account": "1",
             "parent.transportType": "HTTP",
             "parentId": "7d3efb1b173fecfa",
-            "nr.tripId": "d6b4ba0c3a712ca",
             "traceId": "d6b4ba0c3a712ca",
             "priority": 10.001,
             "sampled": true
@@ -120,7 +118,6 @@
             "parent.account": "1",
             "parent.transportType": "HTTP",
             "parentId": "7d3efb1b173fecfa",
-            "nr.tripId": "d6b4ba0c3a712ca",
             "traceId": "d6b4ba0c3a712ca",
             "priority": 10.001,
             "sampled": true
@@ -177,7 +174,6 @@
             "parent.account": "1",
             "parent.transportType": "HTTP",
             "parentId": "7d3efb1b173fecfa",
-            "nr.tripId": "d6b4ba0c3a712ca",
             "traceId": "d6b4ba0c3a712ca",
             "priority": 10.001,
             "sampled": true
@@ -233,7 +229,6 @@
             "parent.account": "1",
             "parent.transportType": "HTTP",
             "parentId": "7d3efb1b173fecfa",
-            "nr.tripId": "d6b4ba0c3a712ca",
             "traceId": "d6b4ba0c3a712ca",
             "priority": 10.001,
             "sampled": true
@@ -290,7 +285,6 @@
             "parent.account": "1",
             "parent.transportType": "HTTP",
             "parentId": "7d3efb1b173fecfa",
-            "nr.tripId": "d6b4ba0c3a712ca",
             "traceId": "d6b4ba0c3a712ca",
             "priority": 10.001,
             "sampled": true
@@ -348,7 +342,7 @@
         "expected_intrinsics": [],
         "unexpected_intrinsics": [
             "parent.type", "parent.app", "parent.account",
-            "parent.transportType", "grandparentId", "parentId", "nr.tripId",
+            "parent.transportType", "grandparentId", "parentId",
             "parent.transportDuration"
         ],
         "expected_metrics": [
@@ -398,7 +392,7 @@
         "unexpected_intrinsics": [
             "parent.transportDuration", "parent.type", "parent.app",
             "parent.account", "parent.transportType", "grandparentId",
-            "parentId", "nr.tripId"
+            "parentId"
         ],
         "expected_metrics": [
             ["DurationByCaller/App/99999999999/2827902/HTTP/all", null],
@@ -447,7 +441,7 @@
         "unexpected_intrinsics": [
             "parent.transportDuration", "parent.type", "parent.app",
             "parent.account", "parent.transportType", "grandparentId",
-            "parentId", "nr.tripId"
+            "parentId"
         ],
         "expected_metrics": [
             ["DurationByCaller/App/1/2827902/HTTP/all", null],
@@ -498,7 +492,6 @@
             "parent.account": "1",
             "parent.transportType": "HTTP",
             "parentId": "7d3efb1b173fecfa",
-            "nr.tripId": "d6b4ba0c3a712ca",
             "traceId": "d6b4ba0c3a712ca",
             "priority": 10.001,
             "sampled": true
@@ -537,7 +530,7 @@
         "unexpected_intrinsics": [
             "parent.transportDuration", "parent.type", "parent.app",
             "parent.account", "parent.transportType", "grandparentId",
-            "parentId", "nr.tripId"
+            "parentId"
         ],
         "expected_metrics": [
             ["DurationByCaller/App/1/2827902/HTTP/all", null],
@@ -576,7 +569,7 @@
         "unexpected_intrinsics": [
             "parent.transportDuration", "parent.type", "parent.app",
             "parent.account", "parent.transportType", "grandparentId",
-            "parentId", "nr.tripId"
+            "parentId"
         ],
         "expected_metrics": [
             ["DurationByCaller/App/1/2827902/HTTP/all", null],
@@ -641,7 +634,6 @@
             "parent.account": "1",
             "parent.transportType": "HTTP",
             "parentId": "7d3efb1b173fecfa",
-            "nr.tripId": "d6b4ba0c3a712ca",
             "traceId": "d6b4ba0c3a712ca",
             "priority": 10.001,
             "sampled": true
@@ -704,7 +696,6 @@
             "parent.account": "1",
             "parent.transportType": "HTTP",
             "parentId": "7d3efb1b173fecfa",
-            "nr.tripId": "d6b4ba0c3a712ca",
             "traceId": "d6b4ba0c3a712ca",
             "priority": 10.001,
             "sampled": true
@@ -773,7 +764,6 @@
             "parent.account": "1",
             "parent.transportType": "HTTP",
             "parentId": "7d3efb1b173fecfa",
-            "nr.tripId": "d6b4ba0c3a712ca",
             "traceId": "d6b4ba0c3a712ca",
             "priority": 10.001,
             "sampled": true

@@ -293,7 +293,10 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
             params["request_uri"] = self.request_uri
             params["stack_trace"] = error.stack_trace
 
-            params['intrinsics'] = self.trace_intrinsics
+            params['intrinsics'] = self.trace_intrinsics.copy()
+
+            if 'parentId' in params['intrinsics']:
+                del params['intrinsics']['parentId']
 
             params['agentAttributes'] = {}
             for attr in self.agent_attributes:
@@ -358,7 +361,10 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
 
         attributes = {}
 
-        attributes['intrinsics'] = self.trace_intrinsics
+        attributes['intrinsics'] = self.trace_intrinsics.copy()
+
+        if 'parentId' in attributes['intrinsics']:
+            del attributes['intrinsics']['parentId']
 
         attributes['agentAttributes'] = {}
         for attr in self.agent_attributes:
@@ -504,6 +510,9 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
     def error_event_intrinsics(self, error, stats_table):
 
         intrinsics = self._event_intrinsics(stats_table)
+
+        if 'parentId' in intrinsics:
+            del intrinsics['parentId']
 
         intrinsics['type'] = "TransactionError"
         intrinsics['error.class'] = error.type

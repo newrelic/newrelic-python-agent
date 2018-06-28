@@ -955,7 +955,8 @@ class Transaction(object):
 
     def _compute_sampled_and_priority(self):
         if self._priority is None:
-            self._priority = random.random()
+            # truncate priority field to 5 digits past the decimal
+            self._priority = float('%.5f' % random.random())
 
         if self._sampled is None:
             self._sampled = self._application.compute_sampled(self.priority)

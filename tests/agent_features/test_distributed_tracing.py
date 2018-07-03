@@ -69,7 +69,7 @@ def target_wsgi_application(environ, start_response):
 test_application = webtest.TestApp(target_wsgi_application)
 
 _override_settings = {
-    'trusted_account_ids': [1, 332029],
+    'trusted_account_key': '1',
     'feature_flag': set(['distributed_tracing']),
 }
 
@@ -91,7 +91,7 @@ def test_distributed_trace_attributes(accept_payload):
         _exact_attributes = {'agent': {}, 'user': {}, 'intrinsic': {
             'parent.type': 'Mobile',
             'parent.app': '2827902',
-            'parent.account': '332029',
+            'parent.account': '1',
             'parent.transportType': 'HTTP',
             'parentId': '7d3efb1b173fecfa',
             'traceId': 'd6b4ba0c3a712ca',
@@ -126,7 +126,7 @@ def test_distributed_trace_attributes(accept_payload):
             "v": [0, 1],
             "d": {
                 "ty": "Mobile",
-                "ac": "332029",
+                "ac": "1",
                 "ap": "2827902",
                 "id": "c86df80de2e6f51c",
                 "tr": "d6b4ba0c3a712ca",

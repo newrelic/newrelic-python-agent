@@ -16,8 +16,7 @@ import newrelic.tests.test_cases
 settings = newrelic.api.settings.settings()
 application = application_instance()
 
-
-DISTRIBUTED_TRACE_KEYS_REQUIRED = (
+OUTBOUND_TRACE_KEYS_REQUIRED = (
         'ty', 'ac', 'ap', 'tr', 'pr', 'sa', 'ti')
 
 
@@ -154,6 +153,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         'd': {
             'ty': 'Mobile',
             'ac': '1',
+            'tk': '1',
             'ap': '2827902',
             'pa': '5e5733a911cfbc73',
             'id': '7d3efb1b173fecfa',
@@ -198,7 +198,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             data = payload['d']
 
             # Check required keys
-            assert all(k in data for k in DISTRIBUTED_TRACE_KEYS_REQUIRED)
+            assert all(k in data for k in OUTBOUND_TRACE_KEYS_REQUIRED)
 
             # Type is always App
             assert data['ty'] == 'App'
@@ -225,11 +225,17 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         assert data['ty'] == 'App'
 
         # Check required keys
-        assert all(k in data for k in DISTRIBUTED_TRACE_KEYS_REQUIRED)
+        assert all(k in data for k in OUTBOUND_TRACE_KEYS_REQUIRED)
 
         assert data['tr'] == 'qwerty'
         assert data['pr'] == self.transaction._priority
         assert data['tx'] == expected_tx
+
+        trusted_key = str(self.transaction.settings.trusted_account_key)
+        if 'tk' in data:
+            assert data['tk'] == trusted_key
+        else:
+            assert data['ac'] == trusted_key
 
         if expected_id is None:
             assert 'id' not in data
@@ -264,10 +270,15 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
     def test_accept_distributed_trace_payload_encoded(self):
         with self.transaction:
-            payload = ('eyJ2IjpbMCwxXSwiZCI6eyJ0eSI6IkFwcCIsImFjIjoiMjAyNjQiLC'
-                'JhcCI6IjEwMTk1IiwiaWQiOiIyNjFhY2E5YmM4YWVjMzc0IiwidHIiOiIyNjF'
-                'hY2E5YmM4YWVjMzc0IiwicHIiOjAuMjczMTM1OTc2NTQ0MjQ1NCwic2EiOmZh'
-                'bHNlLCJ0aSI6MTUyNDAxMDIyNjYxMH19')
+            # the tk is hardcoded in this encoded payload, so lets hardcode it
+            # here, too
+            self.transaction.settings.trusted_account_key = '1'
+
+            payload = ('eyJkIjogeyJwciI6IDAuMjczMTM1OTc2NTQ0MjQ1NCwgImFjIjogIj'
+                'IwMjY0IiwgInR4IjogIjI2MWFjYTliYzhhZWMzNzQiLCAidHkiOiAiQXBwIiw'
+                'gInRyIjogIjI2MWFjYTliYzhhZWMzNzQiLCAiYXAiOiAiMTAxOTUiLCAidGsi'
+                'OiAiMSIsICJ0aSI6IDE1MjQwMTAyMjY2MTAsICJzYSI6IGZhbHNlfSwgInYiO'
+                'iBbMCwgMV19')
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
 
@@ -319,11 +330,21 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
     def test_accept_distributed_trace_payload_discard_accounts(self):
         with self.transaction:
             payload = self._make_test_payload(ac='9999999999999')
+            del payload['d']['tk']
+
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
             assert ('Supportability/DistributedTrace/'
                     'AcceptPayload/Ignored/UntrustedAccount'
                     in self.transaction._transaction_metrics)
+
+    def test_accept_distributed_trace_payload_tk_defaults_to_ac(self):
+        with self.transaction:
+            payload = self._make_test_payload()
+            del payload['d']['tk']
+
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert result
 
     def test_accept_distributed_trace_payload_priority_found(self):
         with self.transaction:
@@ -496,6 +517,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             inbound_payload = self._make_test_payload()
             result = self.transaction.accept_distributed_trace_payload(
                     inbound_payload)
+
             assert result
             outbound_payload = \
                     self.transaction.create_distributed_tracing_payload()

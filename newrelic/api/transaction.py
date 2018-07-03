@@ -1015,6 +1015,7 @@ class Transaction(object):
 
         settings = self._settings
         account_id = settings.account_id
+        trusted_account_key = settings.trusted_account_key
         application_id = settings.application_id
         distributed_tracing_enabled = \
             'distributed_tracing' in settings.feature_flag
@@ -1037,6 +1038,9 @@ class Transaction(object):
                 tx=self.guid,
                 ti=int(time.time() * 1000.0),
             )
+
+            if account_id != trusted_account_key:
+                data['tk'] = trusted_account_key
 
             if ('span_events' in settings.feature_flag and
                     settings.span_events.enabled and self.current_node):
@@ -1068,7 +1072,7 @@ class Transaction(object):
             'distributed_tracing' in settings.feature_flag
         if not (settings.cross_application_tracer.enabled and
                 distributed_tracing_enabled and
-                settings.trusted_account_ids):
+                settings.trusted_account_key):
             return False
 
         if self.is_distributed_trace:
@@ -1112,8 +1116,9 @@ class Transaction(object):
 
             account_id = data.get('ac')
 
-            if account_id not in (
-                    str(i) for i in settings.trusted_account_ids):
+            # If trust key doesn't exist in the payload, use account_id
+            received_trust_key = data.get('tk', account_id)
+            if settings.trusted_account_key != received_trust_key:
                 self._record_supportability('Supportability/DistributedTrace/'
                         'AcceptPayload/Ignored/UntrustedAccount')
                 return False

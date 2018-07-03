@@ -10,7 +10,7 @@ from newrelic.common.encoding_utils import (json_encode, json_decode,
 from newrelic.common.object_wrapper import (transient_function_wrapper,
         function_wrapper)
 
-DISTRIBUTED_TRACE_KEYS_REQUIRED = (
+OUTBOUND_TRACE_KEYS_REQUIRED = (
         'ty', 'ac', 'ap', 'tr', 'pr', 'sa', 'ti')
 
 
@@ -103,7 +103,7 @@ def validate_distributed_tracing_header(header='X-NewRelic-Trace'):
     data = payload['d']
 
     # Verify all required keys are present
-    assert all(k in data for k in DISTRIBUTED_TRACE_KEYS_REQUIRED)
+    assert all(k in data for k in OUTBOUND_TRACE_KEYS_REQUIRED)
 
     # Type will always be App (not mobile / browser)
     assert data['ty'] == 'App'

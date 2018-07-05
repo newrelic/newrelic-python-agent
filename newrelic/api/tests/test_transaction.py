@@ -649,6 +649,20 @@ class TestTransactionDeterministic(newrelic.tests.test_cases.TestCase):
             assert self.transaction.sampled is False
             assert self.transaction.priority == 1.0
 
+    def test_priority_length(self):
+        with self.transaction:
+            # ensure that pre-set priorities don't get truncated
+            self.transaction._sampled = False
+            self.transaction._priority = 0.5324235423523523
+            self.transaction._compute_sampled_and_priority()
+            assert self.transaction.priority == 0.5324235423523523
+
+            # newly generated priorities should be truncated to
+            # at most 5 digits behind the decimal
+            self.transaction._priority = None
+            self.transaction._compute_sampled_and_priority()
+            assert len(str(self.transaction.priority)) <= 7
+
 
 class TestTransactionComputation(newrelic.tests.test_cases.TestCase):
 

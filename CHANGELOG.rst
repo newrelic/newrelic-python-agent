@@ -30,6 +30,10 @@ unreleased
   the maximum recursion limit can occur. The cause of this exception has
   been patched.
 
+- Support Python 3.7
+
+  The New Relic Python Agent now supports Python 3.7.
+
 3.2.2 (2018-06-11)
 ------------------
 

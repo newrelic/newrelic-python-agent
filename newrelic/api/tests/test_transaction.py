@@ -439,6 +439,22 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             # Transport duration is at least 1 second
             assert self.transaction.parent_transport_duration > 1
 
+    def test_accept_distributed_trace_payload_transport_type(self):
+        with self.transaction:
+            payload = self._make_test_payload()
+            result = self.transaction.accept_distributed_trace_payload(payload,
+                        transport_type='HTTPS')
+            assert result
+            assert self.transaction.parent_transport_type == 'HTTPS'
+
+    def test_accept_distributed_trace_payload_unknown_transport_type(self):
+        with self.transaction:
+            payload = self._make_test_payload()
+            result = self.transaction.accept_distributed_trace_payload(payload,
+                        transport_type='Kefka')
+            assert result
+            assert self.transaction.parent_transport_type == 'Unknown'
+
     def test_distributed_trace_attributes_default(self):
         with self.transaction:
             assert self.transaction.priority is None

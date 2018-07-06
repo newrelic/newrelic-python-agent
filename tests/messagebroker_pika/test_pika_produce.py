@@ -1,13 +1,15 @@
 import pika
+import pytest
 
 from newrelic.api.background_task import background_task
+from newrelic.api.transaction import current_transaction
+from newrelic.common.object_wrapper import transient_function_wrapper
+from newrelic.core.config import global_settings
 
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_tt_collector_json)
 from testing_support.external_fixtures import validate_messagebroker_headers
 from testing_support.settings import rabbitmq_settings
-from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import transient_function_wrapper
 
 
 @transient_function_wrapper(pika.frame, 'Header.__init__')
@@ -33,7 +35,8 @@ _message_broker_tt_included_params = {
     'routing_key': QUEUE,
 }
 
-_message_broker_tt_forgone_params = ['queue_name', 'correlation_id', 'reply_to']
+_message_broker_tt_forgone_params = [
+    'queue_name', 'correlation_id', 'reply_to']
 
 _test_blocking_connection_metrics = [
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/Default', 2),
@@ -101,14 +104,16 @@ def test_blocking_connection_correlation_id(producer):
             exchange='',
             routing_key=QUEUE,
             body='test',
-            properties=pika.spec.BasicProperties(correlation_id=CORRELATION_ID),
+            properties=pika.spec.BasicProperties(
+                correlation_id=CORRELATION_ID),
         )
 
         channel.publish(
             exchange='',
             routing_key=QUEUE,
             body='test',
-            properties=pika.spec.BasicProperties(correlation_id=CORRELATION_ID),
+            properties=pika.spec.BasicProperties(
+                correlation_id=CORRELATION_ID),
         )
 
 
@@ -159,8 +164,8 @@ _message_broker_tt_included_test_headers.update({
     'headers': HEADERS.copy(),
 })
 
-_message_broker_tt_forgone_test_headers = ['queue_name', 'correlation_id',
-        'reply_to']
+_message_broker_tt_forgone_test_headers = [
+    'queue_name', 'correlation_id', 'reply_to']
 
 
 @validate_transaction_metrics(
@@ -174,24 +179,39 @@ _message_broker_tt_forgone_test_headers = ['queue_name', 'correlation_id',
 @background_task()
 @validate_messagebroker_headers
 @cache_pika_headers
-def test_blocking_connection_headers(producer):
-    with pika.BlockingConnection(
-            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
-        channel = connection.channel()
+@pytest.mark.parametrize('enable_distributed_tracing', [True, False])
+def test_blocking_connection_headers(enable_distributed_tracing):
+    settings = global_settings()
+    original_feature_flag = set(settings.feature_flag)
 
-        channel.basic_publish(
-            exchange='',
-            routing_key=QUEUE,
-            body='test',
-            properties=pika.spec.BasicProperties(headers=HEADERS),
-        )
+    if enable_distributed_tracing:
+        settings.feature_flag = settings.feature_flag.add(
+            'distributed_tracing')
+    else:
+        if 'distributed_tracing' in settings.feature_flag:
+            settings.feature_flag.remove('distributed_tracing')
 
-        channel.publish(
-            exchange='',
-            routing_key=QUEUE,
-            body='test',
-            properties=pika.spec.BasicProperties(headers=HEADERS),
-        )
+    try:
+        with pika.BlockingConnection(
+                pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+            channel = connection.channel()
+
+            channel.basic_publish(
+                exchange='',
+                routing_key=QUEUE,
+                body='test',
+                properties=pika.spec.BasicProperties(headers=HEADERS),
+            )
+
+            channel.publish(
+                exchange='',
+                routing_key=QUEUE,
+                body='test',
+                properties=pika.spec.BasicProperties(headers=HEADERS),
+            )
+
+    finally:
+        settings.feature_flag = original_feature_flag
 
 
 @validate_transaction_metrics(

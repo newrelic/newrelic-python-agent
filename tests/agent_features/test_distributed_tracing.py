@@ -55,6 +55,7 @@ def target_wsgi_application(environ, start_response):
     assert txn.parent_type == 'App'
     assert txn.parent_app == '2827902'
     assert txn.parent_account == '1'
+    assert txn.parent_span == '7d3efb1b173fecfa'
     assert txn.parent_transport_type == 'HTTP'
     assert isinstance(txn.parent_transport_duration, float)
     assert txn._trace_id == 'd6b4ba0c3a712ca'

@@ -12,13 +12,15 @@ DB_SETTINGS = rabbitmq_settings()
 
 _override_settings = {
     'account_id': '332029',
-    'trusted_account_ids': ['1', '332029'],
     'trusted_account_key': '1',
     'cross_application_tracer.enabled': True,
     'feature_flag': set(['distributed_tracing']),
 }
 
 _test_distributed_tracing_basic_publish_metrics = [
+    ('Supportability/DistributedTrace/CreatePayload/Success', 1),
+    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/Default', 1),
+    ('DurationByCaller/Unknown/Unknown/Unknown/Unknown/all', 1),
     ('DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther', 1),
 ]
 
@@ -40,6 +42,12 @@ def do_basic_publish(channel, QUEUE, properties=None):
 _test_distributed_tracing_basic_consume_rollup_metrics = [
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/Default', None),
     ('MessageBroker/RabbitMQ/Exchange/Consume/Named/Default', None),
+    ('Supportability/DistributedTrace/AcceptPayload/Success', 1),
+    ('DurationByCaller/App/332029/3896659/AMQP/all', 1),
+    ('TransportDuration/App/332029/3896659/AMQP/all', 1),
+    ('DurationByCaller/App/332029/3896659/AMQP/allOther', 1),
+    ('TransportDuration/App/332029/3896659/AMQP/allOther', 1)
+
 ]
 
 if six.PY3:
@@ -76,7 +84,7 @@ def test_basic_consume_distributed_tracing_headers():
         assert txn.parent_tx == txn._trace_id
         assert txn.parent_span is None
         assert txn.parent_account == txn.settings.account_id
-        assert txn.parent_transport_type == 'HTTP'
+        assert txn.parent_transport_type == 'AMQP'
         assert txn._priority is not None
         assert txn._sampled is not None
 
@@ -104,7 +112,8 @@ def test_basic_consume_distributed_tracing_headers():
 _test_distributed_tracing_basic_get_metrics = [
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/Default', None),
     ('MessageBroker/RabbitMQ/Exchange/Consume/Named/Default', 1),
-    ('DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther', 1),
+    ('DurationByCaller/Unknown/Unknown/Unknown/Unknown/all', 1),
+    ('DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther', 1)
 ]
 
 

@@ -11,6 +11,7 @@ from testing_support.fixtures import (override_application_settings,
 DB_SETTINGS = rabbitmq_settings()
 
 _override_settings = {
+    'primary_application_id': '3896659',
     'account_id': '332029',
     'trusted_account_key': '1',
     'cross_application_tracer.enabled': True,

@@ -37,8 +37,10 @@ from newrelic.api.time_trace import TimeTrace
 
 _logger = logging.getLogger(__name__)
 
-DISTRIBUTED_TRACE_KEYS_REQUIRED = (
-        'ty', 'ac', 'ap', 'tr', 'ti')
+DISTRIBUTED_TRACE_KEYS_REQUIRED = ('ty', 'ac', 'ap', 'tr', 'ti')
+DISTRIBUTED_TRACE_TRANSPORT_TYPES = (
+    "Unknown", "HTTP", "HTTPS", "Kafka", "JMS",
+    "IronMQ", "AMQP", "Queue", "Other")
 
 
 class Sentinel(TimeTrace):
@@ -1129,6 +1131,10 @@ class Transaction(object):
             self.parent_tx = data.get('tx')
             self.parent_app = data.get('ap')
             self.parent_account = account_id
+
+            if transport_type not in DISTRIBUTED_TRACE_TRANSPORT_TYPES:
+                transport_type = 'Unknown'
+
             self.parent_transport_type = transport_type
             self.parent_transport_duration = time.time() - transport_start
             self._trace_id = data.get('tr')

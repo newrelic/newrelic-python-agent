@@ -335,7 +335,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
             assert ('Supportability/DistributedTrace/'
-                    'AcceptPayload/Ignored/UntrustedAccount'
+                    'AcceptPayload/Ignored/UntrustedAccount/9999999999999'
                     in self.transaction._transaction_metrics)
 
     def test_accept_distributed_trace_payload_tk_defaults_to_ac(self):

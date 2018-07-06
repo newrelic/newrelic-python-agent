@@ -295,8 +295,12 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
 
             params['intrinsics'] = self.trace_intrinsics.copy()
 
-            if 'parentId' in params['intrinsics']:
-                del params['intrinsics']['parentId']
+            for attr in ['parentId', 'parentSpanId']:
+                if attr in params['intrinsics']:
+                    del params['intrinsics'][attr]
+
+            if 'parentSpanId' in params['intrinsics']:
+                del params['intrinsics']['parentSpanId']
 
             params['agentAttributes'] = {}
             for attr in self.agent_attributes:
@@ -363,8 +367,9 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
 
         attributes['intrinsics'] = self.trace_intrinsics.copy()
 
-        if 'parentId' in attributes['intrinsics']:
-            del attributes['intrinsics']['parentId']
+        for attr in ['parentId', 'parentSpanId']:
+            if attr in attributes['intrinsics']:
+                del attributes['intrinsics'][attr]
 
         attributes['agentAttributes'] = {}
         for attr in self.agent_attributes:
@@ -511,8 +516,9 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
 
         intrinsics = self._event_intrinsics(stats_table)
 
-        if 'parentId' in intrinsics:
-            del intrinsics['parentId']
+        for attr in ['parentId', 'parentSpanId']:
+            if attr in intrinsics:
+                del intrinsics[attr]
 
         intrinsics['type'] = "TransactionError"
         intrinsics['error.class'] = error.type

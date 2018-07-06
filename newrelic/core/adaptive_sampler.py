@@ -6,7 +6,7 @@ class AdaptiveSampler(object):
         # "sampled" transactions.
         self.sampling_target = sampling_target
         self.max_sampled = sampling_target
-        self.max_ratio = self.sampling_target / self.max_sampled
+        self.max_ratio = 0.5
 
         self.transaction_count = 0
         self.sampled_count = 0

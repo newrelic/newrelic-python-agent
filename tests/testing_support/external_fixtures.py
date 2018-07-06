@@ -82,7 +82,7 @@ def validate_distributed_tracing_header(header='X-NewRelic-Trace'):
     transaction = current_transaction()
     headers = transaction._test_request_headers
     account_id = transaction.settings.account_id
-    application_id = transaction.settings.application_id
+    application_id = transaction.settings.primary_application_id
 
     assert header in headers, headers
 

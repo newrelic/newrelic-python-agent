@@ -1017,7 +1017,7 @@ class Transaction(object):
         settings = self._settings
         account_id = settings.account_id
         trusted_account_key = settings.trusted_account_key
-        application_id = settings.application_id
+        application_id = settings.primary_application_id
         distributed_tracing_enabled = \
             'distributed_tracing' in settings.feature_flag
 

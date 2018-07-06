@@ -18,7 +18,7 @@ inbound_payload_intrinsics = ['parent.type', 'parent.app', 'parent.account',
 
 
 payload = {
-    'v': [0, 1],
+    'v': [0, 2],
     'd': {
         'ac': '1',
         'ap': '2827902',
@@ -122,7 +122,7 @@ def test_distributed_trace_attributes(accept_payload):
         txn = current_transaction()
 
         payload = {
-            "v": [0, 1],
+            "v": [0, 2],
             "d": {
                 "ty": "Mobile",
                 "ac": "1",

@@ -97,8 +97,8 @@ def validate_distributed_tracing_header(header='X-NewRelic-Trace'):
     # Parse payload
     payload = DistributedTracePayload.from_http_safe(value)
 
-    # Distributed Tracing v0.1 is currently implemented
-    assert payload['v'] == [0, 1], payload['v']
+    # Distributed Tracing v0.2 is currently implemented
+    assert payload['v'] == [0, 2], payload['v']
 
     data = payload['d']
 

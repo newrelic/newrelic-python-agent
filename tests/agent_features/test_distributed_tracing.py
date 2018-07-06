@@ -12,8 +12,7 @@ from testing_support.fixtures import (override_application_settings,
         validate_attributes, validate_transaction_event_attributes,
         validate_error_event_attributes, validate_transaction_metrics)
 
-distributed_trace_intrinsics = ['guid', 'nr.tripId', 'traceId', 'priority',
-        'sampled']
+distributed_trace_intrinsics = ['guid', 'traceId', 'priority', 'sampled']
 inbound_payload_intrinsics = ['parent.type', 'parent.app', 'parent.account',
         'parent.transportType', 'parent.transportDuration', 'parentId']
 

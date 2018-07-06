@@ -149,7 +149,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             self.transaction.drop_transaction()
 
     standard_test_payload = {
-        'v': [0, 1],
+        'v': [0, 2],
         'd': {
             'ty': 'Mobile',
             'ac': '1',
@@ -193,7 +193,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
     def test_distributed_trace_no_referring_transaction(self):
         with self.transaction:
             payload = self.transaction.create_distributed_tracing_payload()
-            assert payload['v'] == (0, 1)
+            assert payload['v'] == (0, 2)
 
             data = payload['d']
 
@@ -217,7 +217,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         self.transaction._priority = 1.0
 
         payload = self.transaction.create_distributed_tracing_payload()
-        assert payload['v'] == (0, 1)
+        assert payload['v'] == (0, 2)
 
         data = payload['d']
 
@@ -275,10 +275,10 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             self.transaction.settings.trusted_account_key = '1'
 
             payload = ('eyJkIjogeyJwciI6IDAuMjczMTM1OTc2NTQ0MjQ1NCwgImFjIjogIj'
-                'IwMjY0IiwgInR4IjogIjI2MWFjYTliYzhhZWMzNzQiLCAidHkiOiAiQXBwIiw'
-                'gInRyIjogIjI2MWFjYTliYzhhZWMzNzQiLCAiYXAiOiAiMTAxOTUiLCAidGsi'
-                'OiAiMSIsICJ0aSI6IDE1MjQwMTAyMjY2MTAsICJzYSI6IGZhbHNlfSwgInYiO'
-                'iBbMCwgMV19')
+                       'IwMjY0IiwgInR4IjogIjI2MWFjYTliYzhhZWMzNzQiLCAidHkiOiAi'
+                       'QXBwIiwgInRyIjogIjI2MWFjYTliYzhhZWMzNzQiLCAiYXAiOiAiMT'
+                       'AxOTUiLCAidGsiOiAiMSIsICJ0aSI6IDE1MjQwMTAyMjY2MTAsICJz'
+                       'YSI6IGZhbHNlfSwgInYiOiBbMCwgMl19')
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
 

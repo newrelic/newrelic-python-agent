@@ -82,8 +82,12 @@ def test_distributed_tracing_web_transaction():
     assert 'X-NewRelic-App-Data' not in response.headers
 
 
-@pytest.mark.parametrize('accept_payload', (True, False))
-def test_distributed_trace_attributes(accept_payload):
+@pytest.mark.parametrize('span_events,accept_payload', (
+        (True, True),
+        (True, False),
+        (False, False),
+        (False, True)))
+def test_distributed_trace_attributes(span_events, accept_payload):
     if accept_payload:
         _required_intrinsics = (
                 distributed_trace_intrinsics + inbound_payload_intrinsics)
@@ -96,6 +100,10 @@ def test_distributed_trace_attributes(accept_payload):
             'parentId': '7d3efb1b173fecfa',
             'traceId': 'd6b4ba0c3a712ca',
         }}
+
+        if span_events:
+            _exact_attributes['intrinsic']['parentSpanId'] = 'c86df80de2e6f51c'
+
         _forgone_intrinsics.append('grandparentId')
 
         _required_attributes = {
@@ -111,7 +119,13 @@ def test_distributed_trace_attributes(accept_payload):
                 'intrinsic': _forgone_intrinsics, 'agent': [], 'user': []}
         _exact_attributes = None
 
-    @override_application_settings(_override_settings)
+    test_settings = _override_settings.copy()
+
+    if span_events:
+        test_settings['span_events.enabled'] = True
+        test_settings['feature_flag'].add('span_events')
+
+    @override_application_settings(test_settings)
     @validate_transaction_event_attributes(
             _required_attributes, _forgone_attributes, _exact_attributes)
     @validate_error_event_attributes(

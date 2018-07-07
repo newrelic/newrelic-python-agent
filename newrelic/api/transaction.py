@@ -1134,6 +1134,7 @@ class Transaction(object):
             transport_start = data.get('ti') / 1000.0
 
             self.parent_type = data.get('ty')
+
             self.parent_span = data.get('id')
             self.parent_tx = data.get('tx')
             self.parent_app = data.get('ap')

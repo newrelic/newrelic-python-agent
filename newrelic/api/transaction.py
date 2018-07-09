@@ -527,6 +527,7 @@ class Transaction(object):
                 parent_type=self.parent_type,
                 parent_account=self.parent_account,
                 parent_app=self.parent_app,
+                parent_tx=self.parent_tx,
                 parent_transport_type=self.parent_transport_type,
                 root_span_guid=root.guid,
                 trace_id=self.trace_id,
@@ -788,12 +789,6 @@ class Transaction(object):
         if self.parent_transport_duration:
             i_attrs['parent.transportDuration'] = \
                     self.parent_transport_duration
-        if self.parent_tx:
-            i_attrs['parentId'] = self.parent_tx
-
-        if ('span_events' in self._settings.feature_flag and
-                self.settings.span_events.enabled and self.parent_span):
-            i_attrs['parentSpanId'] = self.parent_span
 
         return i_attrs
 

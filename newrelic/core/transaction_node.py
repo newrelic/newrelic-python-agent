@@ -30,7 +30,7 @@ _TransactionNode = namedtuple('_TransactionNode',
         'alternate_path_hashes', 'trace_intrinsics', 'agent_attributes',
         'distributed_trace_intrinsics', 'user_attributes', 'priority',
         'sampled', 'parent_transport_duration', 'parent_span', 'parent_type',
-        'parent_account', 'parent_app', 'parent_transport_type',
+        'parent_account', 'parent_app', 'parent_tx', 'parent_transport_type',
         'root_span_guid', 'trace_id'])
 
 
@@ -293,14 +293,7 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
             params["request_uri"] = self.request_uri
             params["stack_trace"] = error.stack_trace
 
-            params['intrinsics'] = self.trace_intrinsics.copy()
-
-            for attr in ['parentId', 'parentSpanId']:
-                if attr in params['intrinsics']:
-                    del params['intrinsics'][attr]
-
-            if 'parentSpanId' in params['intrinsics']:
-                del params['intrinsics']['parentSpanId']
+            params['intrinsics'] = self.trace_intrinsics
 
             params['agentAttributes'] = {}
             for attr in self.agent_attributes:
@@ -365,11 +358,7 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
 
         attributes = {}
 
-        attributes['intrinsics'] = self.trace_intrinsics.copy()
-
-        for attr in ['parentId', 'parentSpanId']:
-            if attr in attributes['intrinsics']:
-                del attributes['intrinsics'][attr]
+        attributes['intrinsics'] = self.trace_intrinsics
 
         attributes['agentAttributes'] = {}
         for attr in self.agent_attributes:
@@ -478,6 +467,13 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
         if self.synthetics_resource_id:
             intrinsics['nr.guid'] = self.guid
 
+        if self.parent_tx:
+            intrinsics['parentId'] = self.parent_tx
+
+        if ('span_events' in self.settings.feature_flag and
+                self.settings.span_events.enabled and self.parent_span):
+            intrinsics['parentSpanId'] = self.parent_span
+
         return intrinsics
 
     def error_events(self, stats_table):
@@ -515,10 +511,6 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
     def error_event_intrinsics(self, error, stats_table):
 
         intrinsics = self._event_intrinsics(stats_table)
-
-        for attr in ['parentId', 'parentSpanId']:
-            if attr in intrinsics:
-                del intrinsics[attr]
 
         intrinsics['type'] = "TransactionError"
         intrinsics['error.class'] = error.type

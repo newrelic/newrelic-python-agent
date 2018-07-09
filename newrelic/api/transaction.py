@@ -791,6 +791,10 @@ class Transaction(object):
         if self.parent_tx:
             i_attrs['parentId'] = self.parent_tx
 
+        if ('span_events' in self._settings.feature_flag and
+                self.settings.span_events.enabled and self.parent_span):
+            i_attrs['parentSpanId'] = self.parent_span
+
         return i_attrs
 
     @property
@@ -1128,6 +1132,7 @@ class Transaction(object):
             transport_start = data.get('ti') / 1000.0
 
             self.parent_type = data.get('ty')
+
             self.parent_span = data.get('id')
             self.parent_tx = data.get('tx')
             self.parent_app = data.get('ap')

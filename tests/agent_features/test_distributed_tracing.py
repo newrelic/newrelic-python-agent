@@ -103,6 +103,8 @@ def test_distributed_trace_attributes(span_events, accept_payload):
 
         if span_events:
             _exact_attributes['intrinsic']['parentSpanId'] = 'c86df80de2e6f51c'
+        else:
+            _forgone_intrinsics.append('parentSpanId')
 
         _forgone_intrinsics.append('grandparentId')
 

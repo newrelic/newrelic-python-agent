@@ -39,7 +39,7 @@ from _test_async_application import (HelloRequestHandler,
         FutureDoubleWrapRequestHandler, RunnerRefCountRequestHandler,
         RunnerRefCountSyncGetRequestHandler, NativeFuturesCoroutine,
         TransactionAwareFunctionAferFinalize, IgnoreAddHandlerRequestHandler,
-        DelayedWrappedCallbackHandler)
+        DelayedWrappedCallbackHandler, YieldInfiniteRecursionHandler)
 
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 
@@ -1315,6 +1315,16 @@ class AllTests(object):
 
         finally:
             app.global_settings.enabled = old_enabled
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+        '_test_async_application:YieldInfiniteRecursionHandler.get')
+    @tornado_validate_tt_parenting(_test_sleep_response_parenting)
+    def test_yield_infinite_recursion_response(self):
+        response = self.fetch_response('/yield-infinite-recursion')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, YieldInfiniteRecursionHandler.RESPONSE)
 
 
 class TornadoProxyTest(TornadoBaseTest):

@@ -16,11 +16,19 @@ unreleased
   the agent will raise an AttributeError. This error has been corrected.
 
 - Agent raises an AttributeError exception under rare conditions when halting
-  a trace.
+  a trace
 
   Under certain rare conditions, the agent might raise an exception when trying
   to trace an external call in a transaction that has been forcibly halted.
   The cause of the exception has been addressed.
+
+- Agent raises a RuntimeError exception under particular conditions
+  when using the Tornado r3 instrumentation
+
+  When attempting to yield many times from a wrapped tornado.gen.coroutine
+  when using Tornado's r3 instrumentation, a RuntimeError due to hitting
+  the maximum recursion limit can occur. The cause of this exception has
+  been patched.
 
 3.2.2 (2018-06-11)
 ------------------

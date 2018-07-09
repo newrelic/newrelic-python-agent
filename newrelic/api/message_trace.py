@@ -32,9 +32,9 @@ class MessageTrace(TimeTrace, CatHeaderMixin):
 
         # Only record parameters when not high security mode and only
         # when enabled in settings.
-        if (self.should_record_segment_params and
-                transaction.settings.
-                message_tracer.segment_parameters_enabled):
+
+        if (self.should_record_segment_params and self.settings and
+                self.settings.message_tracer.segment_parameters_enabled):
             self.params = params
         else:
             self.params = None

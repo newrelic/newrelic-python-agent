@@ -126,6 +126,10 @@ def test_distributed_trace_attributes(span_events, accept_payload):
     if span_events:
         test_settings['span_events.enabled'] = True
         test_settings['feature_flag'].add('span_events')
+    else:
+        test_settings['span_events.enabled'] = False
+        if 'span_events' in test_settings['feature_flag']:
+            test_settings['feature_flag'].remove('span_events')
 
     @override_application_settings(test_settings)
     @validate_transaction_event_attributes(

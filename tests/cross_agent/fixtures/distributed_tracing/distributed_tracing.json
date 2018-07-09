@@ -3,7 +3,7 @@
         "test_name": "sanity_check",
         "inbound_payloads": [
             {
-                "v": [0, 2],
+                "v": [0, 1],
                 "d": {
                     "ac": "1",
                     "ap": "2827902",
@@ -98,7 +98,7 @@
         "test_name": "no_parent_id_in_payload",
         "inbound_payloads": [
             {
-                "v": [0, 2],
+                "v": [0, 1],
                 "d": {
                     "ac": "1",
                     "ap": "2827902",
@@ -152,7 +152,7 @@
         "test_name": "background_task_metrics",
         "inbound_payloads": [
             {
-                "v": [0, 2],
+                "v": [0, 1],
                 "d": {
                     "ac": "1",
                     "ap": "2827902",
@@ -207,7 +207,7 @@
         "test_name": "web_transaction_raises_exception",
         "inbound_payloads": [
             {
-                "v": [0, 2],
+                "v": [0, 1],
                 "d": {
                     "ac": "1",
                     "ap": "2827902",
@@ -262,7 +262,7 @@
         "test_name": "background_task_raises_exception",
         "inbound_payloads": [
             {
-                "v": [0, 2],
+                "v": [0, 1],
                 "d": {
                     "ac": "1",
                     "ap": "2827902",
@@ -319,7 +319,7 @@
         "comment": "Note that this test will send one outbound request, but since the feature flag is disabled, it should be asserted that no outbound distributed tracing payload is created.",
         "inbound_payloads": [
             {
-                "v": [0, 2],
+                "v": [0, 1],
                 "d": {
                     "ac": "1",
                     "ap": "2827902",
@@ -372,7 +372,7 @@
         "test_name": "non_trusted_account",
         "inbound_payloads": [
             {
-                "v": [0, 2],
+                "v": [0, 1],
                 "d": {
                     "ac": "99999999999",
                     "ap": "2827902",
@@ -559,7 +559,7 @@
         "test_name": "parsing_exception",
         "inbound_payloads": [
             {
-                "v": [0, 2],
+                "v": [0, 1],
                 "d": {}
             }
         ],
@@ -599,7 +599,7 @@
         "comment": "For this test, the agent should call AcceptPayload twice. DurationByCaller and TransportDuration metrics should be created for the first payload and a Supportability metric for multiple accepted payloads should be created for the second.",
         "inbound_payloads": [
             {
-                "v": [0, 2],
+                "v": [0, 1],
                 "d": {
                     "ac": "1",
                     "ap": "2827902",
@@ -613,7 +613,7 @@
                 }
             },
             {
-                "v": [0, 2],
+                "v": [0, 1],
                 "d": {
                     "ac": "1",
                     "ap": "2827903",
@@ -667,7 +667,7 @@
         "test_name": "outbound_payload_after_inbound_payload",
         "inbound_payloads": [
             {
-                "v": [0, 2],
+                "v": [0, 1],
                 "d": {
                     "ac": "1",
                     "ap": "2827902",
@@ -729,7 +729,7 @@
         "test_name": "two_outbound_payloads",
         "inbound_payloads": [
             {
-                "v": [0, 2],
+                "v": [0, 1],
                 "d": {
                     "ac": "1",
                     "ap": "2827902",

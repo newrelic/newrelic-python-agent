@@ -35,7 +35,6 @@ class TimeTrace(object):
             # it has been explicitly stopped.
             if transaction.stopped or not transaction.enabled:
                 self.transaction = None
-                self.settings = None
                 return
 
             self.parent = transaction.active_node()
@@ -49,7 +48,6 @@ class TimeTrace(object):
                 if self.parent.exited:
                     self.parent = None
                     self.transaction = None
-                    self.settings = None
                     return
 
                 elif not self.parent.terminal_node():
@@ -57,8 +55,6 @@ class TimeTrace(object):
 
             self.should_record_segment_params = (
                     transaction.should_record_segment_params)
-
-        self.settings = self.transaction and self.transaction.settings or None
 
     def __enter__(self):
         if not self.transaction:

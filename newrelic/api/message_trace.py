@@ -22,9 +22,11 @@ class MessageTrace(TimeTrace, CatHeaderMixin):
 
         super(MessageTrace, self).__init__(transaction)
 
-        if transaction:
-            self.library = transaction._intern_string(library)
-            self.operation = transaction._intern_string(operation)
+        self.settings = self.transaction and self.transaction.settings or None
+
+        if self.transaction:
+            self.library = self.transaction._intern_string(library)
+            self.operation = self.transaction._intern_string(operation)
 
         else:
             self.library = library

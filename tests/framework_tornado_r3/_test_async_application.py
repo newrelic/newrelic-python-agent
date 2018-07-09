@@ -1331,15 +1331,12 @@ class CatMapHandler(RequestHandler):
         self.finish(self.RESPONSE)
 
 
-class YieldInfiniteRecursionHandler(RequestHandler):
-    """Verify that we don't generate an infinite recursion exception when
-       yielding many times from a single generator.
+class YieldLotsaRecursionHandler(RequestHandler):
+    """Verify that we don't generate a runtime error due to hitting the maximum
+       recursion limit when yielding many times from a single generator.
     """
 
     RESPONSE = b'innnnnnnfinite fails?'
-
-    def handle_message(self, fd, events):
-        self.message = b'add handler'
 
     @tornado.gen.coroutine
     def get(self):
@@ -1347,9 +1344,6 @@ class YieldInfiniteRecursionHandler(RequestHandler):
             yield
 
         self.finish(self.RESPONSE)
-
-    def on_finish(self):
-        pass
 
 
 def get_tornado_app():
@@ -1415,6 +1409,6 @@ def get_tornado_app():
         ('/wait-for-finish', WaitForFinishHandler),
         ('/exception-instead-of-finish', ExceptionInsteadOfFinishHandler),
         ('/cat-map/(\w+)', CatMapHandler),
-        ('/yield-infinite-recursion', YieldInfiniteRecursionHandler),
+        ('/yield-lotsa-recursion', YieldLotsaRecursionHandler),
         (r'/async-client/(\d+)/(\d+)', AsyncExternalCountHandler),
     ])

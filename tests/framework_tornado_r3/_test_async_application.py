@@ -1341,7 +1341,7 @@ class YieldLotsaRecursionHandler(RequestHandler):
     @tornado.gen.coroutine
     def get(self):
         for _ in range(1000):
-            yield
+            yield tornado.gen.sleep(0.0)
 
         self.finish(self.RESPONSE)
 

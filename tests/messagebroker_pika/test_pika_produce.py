@@ -181,15 +181,13 @@ _message_broker_tt_forgone_test_headers = [
 @cache_pika_headers
 @pytest.mark.parametrize('enable_distributed_tracing', [True, False])
 def test_blocking_connection_headers(enable_distributed_tracing):
+
     settings = global_settings()
     original_feature_flag = set(settings.feature_flag)
-
     if enable_distributed_tracing:
-        settings.feature_flag = settings.feature_flag.add(
-            'distributed_tracing')
-    else:
-        if 'distributed_tracing' in settings.feature_flag:
-            settings.feature_flag.remove('distributed_tracing')
+        settings.feature_flag.add('distributed_tracing')
+    elif 'distributed_tracing' in settings.feature_flag:
+        settings.feature_flag.remove('distributed_tracing')
 
     try:
         with pika.BlockingConnection(

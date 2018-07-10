@@ -26,6 +26,7 @@ class MessageTransaction(BackgroundTask):
         cat_id, cat_transaction, dt_transaction = None, None, None
 
         self.headers = headers
+
         if self.headers:
             cat_id = self.headers.pop(
                 MessageTrace.cat_id_key, None)

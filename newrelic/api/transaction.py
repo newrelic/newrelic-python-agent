@@ -38,9 +38,9 @@ from newrelic.api.time_trace import TimeTrace
 _logger = logging.getLogger(__name__)
 
 DISTRIBUTED_TRACE_KEYS_REQUIRED = ('ty', 'ac', 'ap', 'tr', 'ti')
-DISTRIBUTED_TRACE_TRANSPORT_TYPES = (
-    "Unknown", "HTTP", "HTTPS", "Kafka", "JMS",
-    "IronMQ", "AMQP", "Queue", "Other")
+DISTRIBUTED_TRACE_TRANSPORT_TYPES = set((
+    'HTTP', 'HTTPS', 'Kafka', 'JMS',
+    'IronMQ', 'AMQP', 'Queue', 'Other'))
 
 
 class Sentinel(TimeTrace):

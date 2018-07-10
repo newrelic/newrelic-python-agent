@@ -116,10 +116,13 @@ def _nr_wrapper_Runner__init__(wrapped, instance, args, kwargs):
 def _nr_wrapper_Runner_handle_yield_(wrapped, instance, args, kwargs):
     if (hasattr(instance, 'io_loop') and
             hasattr(instance, '_nr_coroutine_name')):
+
         _io_loop = instance.io_loop
-        proxy = IOLoopProxy(_io_loop)
-        proxy._nr_coroutine_name = instance._nr_coroutine_name
-        instance.io_loop = proxy
+        if not isinstance(_io_loop, IOLoopProxy):
+            proxy = IOLoopProxy(_io_loop)
+            proxy._nr_coroutine_name = instance._nr_coroutine_name
+            instance.io_loop = proxy
+
     return wrapped(*args, **kwargs)
 
 

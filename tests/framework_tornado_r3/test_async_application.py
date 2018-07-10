@@ -39,7 +39,7 @@ from _test_async_application import (HelloRequestHandler,
         FutureDoubleWrapRequestHandler, RunnerRefCountRequestHandler,
         RunnerRefCountSyncGetRequestHandler, NativeFuturesCoroutine,
         TransactionAwareFunctionAferFinalize, IgnoreAddHandlerRequestHandler,
-        DelayedWrappedCallbackHandler)
+        DelayedWrappedCallbackHandler, YieldLotsaRecursionHandler)
 
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 
@@ -1315,6 +1315,15 @@ class AllTests(object):
 
         finally:
             app.global_settings.enabled = old_enabled
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+        '_test_async_application:YieldLotsaRecursionHandler.get')
+    def test_yield_lotsa_recursion_response(self):
+        response = self.fetch_response('/yield-lotsa-recursion')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, YieldLotsaRecursionHandler.RESPONSE)
 
 
 class TornadoProxyTest(TornadoBaseTest):

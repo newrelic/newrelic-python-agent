@@ -162,6 +162,8 @@ def test_distributed_tracing(test_name, inbound_payloads,
         assert 'X-NewRelic-App-Data' not in response.headers
 
     if raises_exception:
+        forgone_params['intrinsic'].append('parentId')
+        exact_attrs['intrinsic'].pop('parentId')
         _test = validate_error_event_attributes(
                 required_params, forgone_params, exact_attrs)(_test)
 

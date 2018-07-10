@@ -168,7 +168,7 @@ def test_httpclient(cat_enabled, request_type, client_class,
             t._test_request_headers = headers
 
             if distributed_tracing:
-                validate_distributed_tracing_header()
+                validate_distributed_tracing_header(header='Newrelic')
             else:
                 validate_outbound_headers()
         else:

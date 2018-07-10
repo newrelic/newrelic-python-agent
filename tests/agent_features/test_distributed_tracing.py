@@ -16,7 +16,6 @@ distributed_trace_intrinsics = ['guid', 'traceId', 'priority', 'sampled']
 inbound_payload_intrinsics = ['parent.type', 'parent.app', 'parent.account',
         'parent.transportType', 'parent.transportDuration', 'parentId']
 
-
 payload = {
     'v': [0, 1],
     'd': {
@@ -76,8 +75,7 @@ _override_settings = {
 
 @override_application_settings(_override_settings)
 def test_distributed_tracing_web_transaction():
-    headers = {'X-NewRelic-Trace': json.dumps(payload)}
-
+    headers = {'newrelic': json.dumps(payload)}
     response = test_application.get('/', headers=headers)
     assert 'X-NewRelic-App-Data' not in response.headers
 

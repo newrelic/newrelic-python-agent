@@ -838,20 +838,6 @@ def check_event_attributes(event_data, required_params, forgone_params,
     intrinsics, user_attributes, agent_attributes = next(iter(
             event_data.samples))
 
-    for attr in ['parentId', 'parentSpanId']:
-        if (intrinsics and ('type' in intrinsics) and
-                (intrinsics['type'] == 'TransactionError')):
-            if (exact_attrs and ('intrinsic' in exact_attrs) and
-                    (attr in exact_attrs['intrinsic'])):
-                del exact_attrs['intrinsic'][attr]
-
-            if (required_params and ('intrinsic' in required_params) and
-                    (attr in required_params['intrinsic'])):
-                index = required_params['intrinsic'].index(attr)
-                required_params['intrinsic'].pop(index)
-
-            assert attr not in intrinsics
-
     if required_params:
         for param in required_params['agent']:
             assert param in agent_attributes
@@ -2093,10 +2079,6 @@ def validate_error_event_sample_data(required_attrs={},
                 assert intrinsics['error.message'].startswith(
                         required_attrs['error.message'])
                 assert intrinsics['nr.transactionGuid'] is not None
-
-                if 'distributed_tracing' in transaction.settings.feature_flag:
-                    assert 'parentId' not in intrinsics
-                    assert 'parentSpanId' not in intrinsics
 
                 # check that transaction event intrinsics haven't bled in
 

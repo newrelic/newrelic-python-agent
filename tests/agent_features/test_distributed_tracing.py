@@ -14,7 +14,7 @@ from testing_support.fixtures import (override_application_settings,
 
 distributed_trace_intrinsics = ['guid', 'traceId', 'priority', 'sampled']
 inbound_payload_intrinsics = ['parent.type', 'parent.app', 'parent.account',
-        'parent.transportType', 'parent.transportDuration', 'parentId']
+        'parent.transportType', 'parent.transportDuration']
 
 payload = {
     'v': [0, 1],
@@ -80,44 +80,61 @@ def test_distributed_tracing_web_transaction():
     assert 'X-NewRelic-App-Data' not in response.headers
 
 
-@pytest.mark.parametrize('span_events,accept_payload', (
-        (True, True),
-        (True, False),
-        (False, False),
-        (False, True)))
+@pytest.mark.parametrize('span_events', (True, False))
+@pytest.mark.parametrize('accept_payload', (True, False))
 def test_distributed_trace_attributes(span_events, accept_payload):
     if accept_payload:
         _required_intrinsics = (
                 distributed_trace_intrinsics + inbound_payload_intrinsics)
-        _forgone_intrinsics = []
-        _exact_attributes = {'agent': {}, 'user': {}, 'intrinsic': {
+        _forgone_txn_intrinsics = []
+        _forgone_error_intrinsics = []
+        _exact_intrinsics = {
             'parent.type': 'Mobile',
             'parent.app': '2827902',
             'parent.account': '1',
             'parent.transportType': 'HTTP',
-            'parentId': '7d3efb1b173fecfa',
             'traceId': 'd6b4ba0c3a712ca',
-        }}
+        }
+        _exact_txn_attributes = {'agent': {}, 'user': {},
+                'intrinsic': _exact_intrinsics.copy()}
+        _exact_error_attributes = {'agent': {}, 'user': {},
+                'intrinsic': _exact_intrinsics.copy()}
 
         if span_events:
-            _exact_attributes['intrinsic']['parentSpanId'] = 'c86df80de2e6f51c'
+            _exact_txn_attributes['intrinsic']['parentId'] = \
+                    '7d3efb1b173fecfa'
+            _exact_txn_attributes['intrinsic']['parentSpanId'] = \
+                    'c86df80de2e6f51c'
         else:
-            _forgone_intrinsics.append('parentSpanId')
+            _forgone_txn_intrinsics.append('parentId')
+            _forgone_txn_intrinsics.append('parentSpanId')
 
-        _forgone_intrinsics.append('grandparentId')
+        _forgone_error_intrinsics.append('parentId')
+        _forgone_error_intrinsics.append('parentSpanId')
+        _forgone_txn_intrinsics.append('grandparentId')
+        _forgone_error_intrinsics.append('grandparentId')
 
         _required_attributes = {
                 'intrinsic': _required_intrinsics, 'agent': [], 'user': []}
-        _forgone_attributes = {'intrinsic': [], 'agent': [], 'user': []}
+        _forgone_txn_attributes = {'intrinsic': _forgone_txn_intrinsics,
+                'agent': [], 'user': []}
+        _forgone_error_attributes = {'intrinsic': _forgone_error_intrinsics,
+                'agent': [], 'user': []}
     else:
         _required_intrinsics = distributed_trace_intrinsics
-        _forgone_intrinsics = inbound_payload_intrinsics + ['grandparentId']
+        _forgone_txn_intrinsics = _forgone_error_intrinsics = \
+                inbound_payload_intrinsics + ['grandparentId', 'parentId',
+                'parentSpanId']
 
         _required_attributes = {
                 'intrinsic': _required_intrinsics, 'agent': [], 'user': []}
-        _forgone_attributes = {
-                'intrinsic': _forgone_intrinsics, 'agent': [], 'user': []}
-        _exact_attributes = None
+        _forgone_txn_attributes = {'intrinsic': _forgone_txn_intrinsics,
+                'agent': [], 'user': []}
+        _forgone_error_attributes = {'intrinsic': _forgone_error_intrinsics,
+                'agent': [], 'user': []}
+        _exact_txn_attributes = _exact_error_attributes = None
+
+    _forgone_trace_intrinsics = _forgone_error_intrinsics
 
     test_settings = _override_settings.copy()
 
@@ -131,11 +148,13 @@ def test_distributed_trace_attributes(span_events, accept_payload):
 
     @override_application_settings(test_settings)
     @validate_transaction_event_attributes(
-            _required_attributes, _forgone_attributes, _exact_attributes)
+            _required_attributes, _forgone_txn_attributes,
+            _exact_txn_attributes)
     @validate_error_event_attributes(
-            _required_attributes, _forgone_attributes, _exact_attributes)
+            _required_attributes, _forgone_error_attributes,
+            _exact_error_attributes)
     @validate_attributes('intrinsic',
-            _required_intrinsics, _forgone_intrinsics)
+            _required_intrinsics, _forgone_trace_intrinsics)
     @background_task(name='test_distributed_trace_attributes')
     def _test():
         txn = current_transaction()

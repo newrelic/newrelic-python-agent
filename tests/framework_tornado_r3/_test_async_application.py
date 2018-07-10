@@ -1340,8 +1340,14 @@ class YieldLotsaRecursionHandler(RequestHandler):
 
     @tornado.gen.coroutine
     def get(self):
-        for _ in range(1000):
-            yield tornado.gen.sleep(0.0)
+        recursion_limit = sys.getrecursionlimit()
+        sys.setrecursionlimit(500)
+
+        try:
+            for _ in range(500):
+                yield tornado.gen.sleep(0.0)
+        finally:
+            sys.setrecursionlimit(recursion_limit)
 
         self.finish(self.RESPONSE)
 

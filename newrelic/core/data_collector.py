@@ -339,7 +339,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     try:
         data = json_encode(payload)
-
+        data = six.b(data)
     except Exception:
         _logger.exception('Error encoding data for JSON payload for '
                 'method %r with payload of %r. Please report this problem '
@@ -371,7 +371,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
         level = settings.agent_limits.data_compression_level
         level = level or zlib.Z_DEFAULT_COMPRESSION
-        data = zlib.compress(six.b(data), level)
+        data = zlib.compress(data, level)
 
     # If there is no requests session object provided for making
     # requests create one now. We want to close this as soon as we

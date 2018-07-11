@@ -66,7 +66,7 @@ class TornadoBaseTest(tornado.testing.AsyncHTTPTestCase):
         if self.waits_counter == self.waits_expected:
             self.stop()
 
-    def fetch_response(self, path, is_http_error=False, **kwargs):
+    def fetch_response(self, path, is_http_error=False, timeout=5.0, **kwargs):
         # For each request we need to wait for 2 events: the response and a
         # call to record transaction.
         self.waits_expected += 2
@@ -75,7 +75,7 @@ class TornadoBaseTest(tornado.testing.AsyncHTTPTestCase):
         future = self.http_client.fetch(self.get_url(path),
                 self.fetch_finished, **kwargs)
         try:
-            self.wait(timeout=5.0)
+            self.wait(timeout=timeout)
         except Exception as e:
             self.assertTrue(False, "Error occurred waiting for response: "
                     "%s, %s" % (type(e), e))

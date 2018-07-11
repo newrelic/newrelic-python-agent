@@ -1321,7 +1321,7 @@ class AllTests(object):
     @tornado_validate_count_transaction_metrics(
         '_test_async_application:YieldLotsaRecursionHandler.get')
     def test_yield_lotsa_recursion_response(self):
-        response = self.fetch_response('/yield-lotsa-recursion')
+        response = self.fetch_response('/yield-lotsa-recursion', timeout=10.0)
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, YieldLotsaRecursionHandler.RESPONSE)
 

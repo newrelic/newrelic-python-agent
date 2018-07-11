@@ -1,6 +1,10 @@
 unreleased
 ----------
 
+
+3.4.0 (2018-07-12)
+------------------
+
 - Agent raises a KeyError: 'NEW_RELIC_ADMIN_COMMAND' exception causing a crash
 
   Under certain conditions, using the newrelic-admin wrapper script could cause
@@ -33,6 +37,7 @@ unreleased
 - Support Python 3.7
 
   The New Relic Python Agent now supports Python 3.7.
+
 
 3.2.2 (2018-06-11)
 ------------------

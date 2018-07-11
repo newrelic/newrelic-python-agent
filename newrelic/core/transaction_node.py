@@ -166,7 +166,7 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
             else:
                 dt_tag = "Unknown/Unknown/Unknown/Unknown/all"
 
-            for bonus_tag in ['', metric_suffix]:
+            for bonus_tag in ('', metric_suffix):
                 yield TimeMetric(
                     name="DurationByCaller/%s%s" % (dt_tag, bonus_tag),
                     scope='',

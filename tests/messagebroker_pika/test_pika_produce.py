@@ -4,10 +4,9 @@ import pytest
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import transient_function_wrapper
-from newrelic.core.config import global_settings
 
 from testing_support.fixtures import (validate_transaction_metrics,
-        validate_tt_collector_json)
+        validate_tt_collector_json, override_application_settings)
 from testing_support.external_fixtures import validate_messagebroker_headers
 from testing_support.settings import rabbitmq_settings
 
@@ -168,28 +167,32 @@ _message_broker_tt_forgone_test_headers = [
     'queue_name', 'correlation_id', 'reply_to']
 
 
-@validate_transaction_metrics(
-        'test_pika_produce:test_blocking_connection_headers',
-        scoped_metrics=_test_blocking_connection_metrics,
-        rollup_metrics=_test_blocking_connection_metrics,
-        background_task=True)
-@validate_tt_collector_json(
-        message_broker_params=_message_broker_tt_included_test_headers,
-        message_broker_forgone_params=_message_broker_tt_forgone_test_headers)
-@background_task()
-@validate_messagebroker_headers
-@cache_pika_headers
 @pytest.mark.parametrize('enable_distributed_tracing', [True, False])
 def test_blocking_connection_headers(enable_distributed_tracing):
 
-    settings = global_settings()
-    original_feature_flag = set(settings.feature_flag)
+    override_settings = {}
+    rollup_metrics = _test_blocking_connection_metrics.copy()
     if enable_distributed_tracing:
-        settings.feature_flag.add('distributed_tracing')
-    elif 'distributed_tracing' in settings.feature_flag:
-        settings.feature_flag.remove('distributed_tracing')
+        override_settings['feature_flag'] = {
+            'distributed_tracing', 'span_events'}
 
-    try:
+        rollup_metrics += [
+            ('DurationByCaller/Unknown/Unknown/Unknown/Unknown/all', 1),
+            ('DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther', 1)]
+
+    @override_application_settings(override_settings)
+    @validate_transaction_metrics(
+        'test_pika_produce:test_blocking_connection_headers.<locals>._test',
+        scoped_metrics=_test_blocking_connection_metrics,
+        rollup_metrics=rollup_metrics,
+        background_task=True)
+    @validate_tt_collector_json(
+        message_broker_params=_message_broker_tt_included_test_headers,
+        message_broker_forgone_params=_message_broker_tt_forgone_test_headers)
+    @background_task()
+    @validate_messagebroker_headers
+    @cache_pika_headers
+    def _test():
         with pika.BlockingConnection(
                 pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
             channel = connection.channel()
@@ -208,8 +211,7 @@ def test_blocking_connection_headers(enable_distributed_tracing):
                 properties=pika.spec.BasicProperties(headers=HEADERS),
             )
 
-    finally:
-        settings.feature_flag = original_feature_flag
+    _test()
 
 
 @validate_transaction_metrics(

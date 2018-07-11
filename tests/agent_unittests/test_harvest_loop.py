@@ -2,12 +2,14 @@ import pytest
 
 from newrelic.common.object_wrapper import transient_function_wrapper
 from newrelic.core.config import global_settings, finalize_application_settings
+from testing_support.fixtures import override_generic_settings
 
 from newrelic.core.application import Application
 from newrelic.core.stats_engine import CustomMetrics
 from newrelic.core.transaction_node import TransactionNode
 
 from newrelic.network.exceptions import RetryDataForRequest
+settings = global_settings()
 
 
 @pytest.fixture(scope='module')
@@ -75,7 +77,7 @@ def validate_metric_payload(metrics=[], endpoints_called=[]):
             'DeveloperModeSession.send_request')
     def send_request_wrapper(wrapped, instance, args, kwargs):
         def _bind_params(session, url, method, license_key,
-                agent_run_id=None, payload=()):
+                agent_run_id=None, payload=(), *args, **kwargs):
             return method, payload
 
         method, payload = _bind_params(*args, **kwargs)
@@ -106,7 +108,7 @@ def failing_endpoint(endpoint, raises=RetryDataForRequest):
             'DeveloperModeSession.send_request')
     def send_request_wrapper(wrapped, instance, args, kwargs):
         def _bind_params(session, url, method, license_key,
-                agent_run_id=None, payload=()):
+                agent_run_id=None, payload=(), *args, **kwargs):
             return method
 
         method = _bind_params(*args, **kwargs)
@@ -134,12 +136,12 @@ endpoints_called = []
 
 @validate_metric_payload(metrics=required_metrics,
         endpoints_called=endpoints_called)
+@override_generic_settings(settings, {
+    'developer_mode': True,
+    'license_key': '**NOT A LICENSE KEY**',
+    'feature_flag': set(),
+})
 def test_application_harvest():
-    settings = global_settings()
-    settings.developer_mode = True
-    settings.license_key = '**NOT A LICENSE KEY**'
-    settings.feature_flag = {}
-
     app = Application('Python Agent Test (Harvest Loop)')
     app.connect_to_data_collector()
     app.harvest()
@@ -172,23 +174,27 @@ def test_application_harvest_with_spans(span_events_enabled,
         discarded = None
 
     spans_required_metrics = list(required_metrics)
+
     spans_required_metrics.extend([
         ('Supportability/SpanEvent/TotalEventsSeen', seen),
         ('Supportability/SpanEvent/TotalEventsSent', sent),
         ('Supportability/SpanEvent/Discarded', discarded),
     ])
 
+    feature_flag = set()
+    if span_events_feature_flag:
+        feature_flag.add('span_events')
+
     @validate_metric_payload(metrics=spans_required_metrics,
             endpoints_called=span_endpoints_called)
+    @override_generic_settings(settings, {
+        'developer_mode': True,
+        'license_key': '**NOT A LICENSE KEY**',
+        'feature_flag': feature_flag,
+        'span_events.enabled': span_events_enabled,
+        'span_events.max_samples_stored': max_samples_stored,
+    })
     def _test():
-        settings = global_settings()
-        settings.developer_mode = True
-        settings.license_key = '**NOT A LICENSE KEY**'
-        settings.feature_flag = (
-                set(['span_events']) if span_events_feature_flag else set())
-        settings.span_events.enabled = span_events_enabled
-        settings.span_events.max_samples_stored = max_samples_stored
-
         app = Application('Python Agent Test (Harvest Loop)')
         app.connect_to_data_collector()
 
@@ -213,16 +219,15 @@ def test_application_harvest_with_spans(span_events_enabled,
 
 
 @failing_endpoint('metric_data')
+@override_generic_settings(settings, {
+    'developer_mode': True,
+    'license_key': '**NOT A LICENSE KEY**',
+    'feature_flag': set(['span_events']),
+})
 def test_failed_spans_harvest():
 
     # Test that if an endpoint call that occurs after we successfully send span
     # data fails, we do not try to send span data again with the next harvest.
-
-    settings = global_settings()
-    settings.developer_mode = True
-    settings.license_key = '**NOT A LICENSE KEY**'
-    settings.feature_flag = set(['span_events'])
-    settings.span_events.enabled = True
 
     app = Application('Python Agent Test (Harvest Loop)')
     app.connect_to_data_collector()
@@ -233,13 +238,13 @@ def test_failed_spans_harvest():
     assert app._stats_engine.span_events.num_samples == 0
 
 
+@override_generic_settings(settings, {
+    'developer_mode': True,
+    'license_key': '**NOT A LICENSE KEY**',
+    'feature_flag': set(),
+    'collect_custom_events': False,
+})
 def test_transaction_count(transaction_node):
-    settings = global_settings()
-    settings.developer_mode = True
-    settings.collect_custom_events = False
-    settings.license_key = '**NOT A LICENSE KEY**'
-    settings.feature_flag = {}
-
     app = Application('Python Agent Test (Harvest Loop)')
     app.connect_to_data_collector()
 
@@ -263,12 +268,12 @@ def test_transaction_count(transaction_node):
     assert app._transaction_count == 0
 
 
+@override_generic_settings(settings, {
+    'developer_mode': True,
+    'license_key': '**NOT A LICENSE KEY**',
+    'feature_flag': set(),
+})
 def test_adaptive_sampling(transaction_node):
-    settings = global_settings()
-    settings.developer_mode = True
-    settings.collect_custom_events = False
-    settings.license_key = '**NOT A LICENSE KEY**'
-
     app = Application('Python Agent Test (Harvest Loop)')
 
     # Should always return false for sampling prior to connect

@@ -22,7 +22,8 @@ from newrelic.common import certs, system_info
 from newrelic import version
 from newrelic.core.config import (global_settings, global_settings_dump,
         finalize_application_settings)
-from newrelic.core.internal_metrics import internal_metric
+from newrelic.core.internal_metrics import (internal_metric,
+        internal_count_metric)
 
 from newrelic.network.exceptions import (NetworkInterfaceException,
         ForceAgentRestart, ForceAgentDisconnect, DiscardDataForRequest,
@@ -294,7 +295,7 @@ _deflate_exclude_list = set(['transaction_sample_data', 'sql_trace_data',
 
 
 def send_request(session, url, method, license_key, agent_run_id=None,
-            payload=()):
+            payload=(), max_payload_size_in_bytes=None):
     """Constructs and sends a request to the data collector."""
 
     params = {}
@@ -315,7 +316,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     params['method'] = method
     params['license_key'] = license_key
-    params['protocol_version'] = '15'
+    params['protocol_version'] = '16'
     params['marshal_format'] = 'json'
 
     if agent_run_id:
@@ -338,7 +339,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     try:
         data = json_encode(payload)
-
+        data = six.b(data)
     except Exception:
         _logger.exception('Error encoding data for JSON payload for '
                 'method %r with payload of %r. Please report this problem '
@@ -370,7 +371,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
         level = settings.agent_limits.data_compression_level
         level = level or zlib.Z_DEFAULT_COMPRESSION
-        data = zlib.compress(six.b(data), level)
+        data = zlib.compress(data, level)
 
     # If there is no requests session object provided for making
     # requests create one now. We want to close this as soon as we
@@ -418,6 +419,17 @@ def send_request(session, url, method, license_key, agent_run_id=None,
     # If audit logging is enabled, log the requests details.
 
     log_id = _log_request(url, params, headers, data)
+
+    max_payload_size_in_bytes = (max_payload_size_in_bytes or
+            settings.max_payload_size_in_bytes)
+    if len(data) > max_payload_size_in_bytes:
+        _logger.warning('The payload being sent to method %r was over the '
+                'maximum allowed size limit. The length of the request '
+                'content was %d.', method, len(data))
+        internal_count_metric(
+                'Supportability/Python/Collector/MaxPayloadSizeLimit/'
+                '%s' % method, 1)
+        raise DiscardDataForRequest()
 
     connection = connection_type(proxies)
 
@@ -805,11 +817,15 @@ class ApplicationSession(object):
             self._requests_session.close()
         self._requests_session = None
 
+    @property
+    def max_payload_size_in_bytes(self):
+        return self.configuration.max_payload_size_in_bytes
+
     @classmethod
     def send_request(cls, session, url, method, license_key,
-            agent_run_id=None, payload=()):
+            agent_run_id=None, payload=(), max_payload_size_in_bytes=None):
         return send_request(session, url, method, license_key,
-            agent_run_id, payload)
+            agent_run_id, payload, max_payload_size_in_bytes)
 
     def agent_settings(self, settings):
         """Called to report up agent settings after registration.
@@ -820,7 +836,7 @@ class ApplicationSession(object):
 
         return self.send_request(self.requests_session, self.collector_url,
                 'agent_settings', self.license_key, self.agent_run_id,
-                payload)
+                payload, self.max_payload_size_in_bytes)
 
     def shutdown_session(self):
         """Called to perform orderly deregistration of agent run against
@@ -854,7 +870,8 @@ class ApplicationSession(object):
         payload = (self.agent_run_id, start_time, end_time, metric_data)
 
         return self.send_request(self.requests_session, self.collector_url,
-                'metric_data', self.license_key, self.agent_run_id, payload)
+                'metric_data', self.license_key, self.agent_run_id, payload,
+                self.max_payload_size_in_bytes)
 
     def send_errors(self, errors):
         """Called to submit errors. The errors should be an iterable
@@ -872,7 +889,8 @@ class ApplicationSession(object):
         payload = (self.agent_run_id, errors)
 
         return self.send_request(self.requests_session, self.collector_url,
-                'error_data', self.license_key, self.agent_run_id, payload)
+                'error_data', self.license_key, self.agent_run_id, payload,
+                self.max_payload_size_in_bytes)
 
     def send_transaction_traces(self, transaction_traces):
         """Called to submit transaction traces. The transaction traces
@@ -891,7 +909,7 @@ class ApplicationSession(object):
 
         return self.send_request(self.requests_session, self.collector_url,
                 'transaction_sample_data', self.license_key,
-                self.agent_run_id, payload)
+                self.agent_run_id, payload, self.max_payload_size_in_bytes)
 
     def send_profile_data(self, profile_data):
         """Called to submit Profile Data.
@@ -904,7 +922,7 @@ class ApplicationSession(object):
 
         return self.send_request(self.requests_session, self.collector_url,
                 'profile_data', self.license_key,
-                self.agent_run_id, payload)
+                self.agent_run_id, payload, self.max_payload_size_in_bytes)
 
     def send_sql_traces(self, sql_traces):
         """Called to sub SQL traces. The SQL traces should be an
@@ -922,7 +940,7 @@ class ApplicationSession(object):
 
         return self.send_request(self.requests_session, self.collector_url,
                 'sql_trace_data', self.license_key, self.agent_run_id,
-                payload)
+                payload, self.max_payload_size_in_bytes)
 
     def get_agent_commands(self):
         """Receive agent commands from the data collector.
@@ -933,7 +951,7 @@ class ApplicationSession(object):
 
         return self.send_request(self.requests_session, self.collector_url,
                 'get_agent_commands', self.license_key, self.agent_run_id,
-                payload)
+                payload, self.max_payload_size_in_bytes)
 
     def send_agent_command_results(self, cmd_results):
         """Acknowledge the receipt of an agent command.
@@ -944,7 +962,7 @@ class ApplicationSession(object):
 
         return self.send_request(self.requests_session, self.collector_url,
                 'agent_command_results', self.license_key, self.agent_run_id,
-                payload)
+                payload, self.max_payload_size_in_bytes)
 
     def get_xray_metadata(self, xray_id):
         """Receive xray metadata from the data collector.
@@ -955,7 +973,7 @@ class ApplicationSession(object):
 
         return self.send_request(self.requests_session, self.collector_url,
                 'get_xray_metadata', self.license_key, self.agent_run_id,
-                payload)
+                payload, self.max_payload_size_in_bytes)
 
     def send_transaction_events(self, sample_set):
         """Called to submit sample set for analytics.
@@ -966,7 +984,7 @@ class ApplicationSession(object):
 
         return self.send_request(self.requests_session, self.collector_url,
                 'analytic_event_data', self.license_key, self.agent_run_id,
-                payload)
+                payload, self.max_payload_size_in_bytes)
 
     def send_error_events(self, sampling_info, error_data):
         """Called to submit sample set for error events.
@@ -977,7 +995,7 @@ class ApplicationSession(object):
 
         return self.send_request(self.requests_session, self.collector_url,
                 'error_event_data', self.license_key, self.agent_run_id,
-                payload)
+                payload, self.max_payload_size_in_bytes)
 
     def send_custom_events(self, sampling_info, custom_event_data):
         """Called to submit sample set for custom events.
@@ -988,7 +1006,7 @@ class ApplicationSession(object):
 
         return self.send_request(self.requests_session, self.collector_url,
                 'custom_event_data', self.license_key, self.agent_run_id,
-                payload)
+                payload, self.max_payload_size_in_bytes)
 
     def send_span_events(self, sampling_info, span_event_data):
         """Called to submit sample set for span events.
@@ -999,7 +1017,7 @@ class ApplicationSession(object):
 
         return self.send_request(self.requests_session, self.collector_url,
                 'span_event_data', self.license_key, self.agent_run_id,
-                payload)
+                payload, self.max_payload_size_in_bytes)
 
     @classmethod
     def create_session(cls, license_key, app_name, linked_applications,
@@ -1038,8 +1056,9 @@ class ApplicationSession(object):
 
             url = collector_url()
 
-            redirect_host = cls.send_request(None, url,
+            result = cls.send_request(None, url,
                     'preconnect', license_key)
+            redirect_host = result['redirect_host']
 
             # Then we perform a connect to the actual data collector host
             # we need to use. All communications after this point should go
@@ -1226,7 +1245,7 @@ class ApplicationSession(object):
 
 
 _developer_mode_responses = {
-    'preconnect': u'fake-collector.newrelic.com',
+    'preconnect': {u'redirect_host': u'fake-collector.newrelic.com'},
 
     'agent_settings': [],
 
@@ -1278,7 +1297,7 @@ class DeveloperModeSession(ApplicationSession):
 
     @classmethod
     def send_request(cls, session, url, method, license_key,
-            agent_run_id=None, payload=()):
+            agent_run_id=None, payload=(), max_payload_size_in_bytes=None):
 
         assert method in _developer_mode_responses
 
@@ -1293,7 +1312,7 @@ class DeveloperModeSession(ApplicationSession):
 
         params['method'] = method
         params['license_key'] = license_key
-        params['protocol_version'] = '15'
+        params['protocol_version'] = '16'
         params['marshal_format'] = 'json'
 
         if agent_run_id:

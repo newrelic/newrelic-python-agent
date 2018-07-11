@@ -22,9 +22,11 @@ class MessageTrace(TimeTrace, CatHeaderMixin):
 
         super(MessageTrace, self).__init__(transaction)
 
-        if transaction:
-            self.library = transaction._intern_string(library)
-            self.operation = transaction._intern_string(operation)
+        settings = self.transaction and self.transaction.settings or None
+
+        if self.transaction:
+            self.library = self.transaction._intern_string(library)
+            self.operation = self.transaction._intern_string(operation)
 
         else:
             self.library = library
@@ -32,9 +34,9 @@ class MessageTrace(TimeTrace, CatHeaderMixin):
 
         # Only record parameters when not high security mode and only
         # when enabled in settings.
-        if (self.should_record_segment_params and
-                transaction.settings.
-                message_tracer.segment_parameters_enabled):
+
+        if (self.should_record_segment_params and settings and
+                settings.message_tracer.segment_parameters_enabled):
             self.params = params
         else:
             self.params = None

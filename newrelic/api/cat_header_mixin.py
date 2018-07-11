@@ -2,6 +2,7 @@ from newrelic.common.encoding_utils import (obfuscate, deobfuscate,
         json_encode, json_decode, base64_encode, base64_decode)
 
 
+# CatHeaderMixin assumes the mixin class also inherits from TimeTrace
 class CatHeaderMixin(object):
     cat_id_key = 'X-NewRelic-ID'
     cat_transaction_key = 'X-NewRelic-Transaction'
@@ -17,6 +18,10 @@ class CatHeaderMixin(object):
         [(HEADER_NAME0, HEADER_VALUE0), (HEADER_NAME1, HEADER_VALUE1)]
 
         """
+
+        if not self.settings:
+            return
+
         if not self.settings.cross_application_tracer.enabled:
             return
 

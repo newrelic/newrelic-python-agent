@@ -166,7 +166,7 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
             else:
                 dt_tag = "Unknown/Unknown/Unknown/Unknown/all"
 
-            for bonus_tag in ['', metric_suffix]:
+            for bonus_tag in ('', metric_suffix):
                 yield TimeMetric(
                     name="DurationByCaller/%s%s" % (dt_tag, bonus_tag),
                     scope='',
@@ -446,6 +446,9 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
         def _add_if_not_empty(key, value):
             if value:
                 intrinsics[key] = value
+
+        if self.errors:
+            intrinsics['error'] = True
 
         if self.path_hash:
             intrinsics['nr.guid'] = self.guid

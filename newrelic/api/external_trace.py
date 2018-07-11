@@ -19,7 +19,8 @@ class ExternalTrace(TimeTrace, CatHeaderMixin):
         self.url = url
         self.method = method
         self.params = {}
-        self.settings = transaction and self.transaction.settings or None
+
+        self.settings = self.transaction and self.transaction.settings or None
 
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, dict(

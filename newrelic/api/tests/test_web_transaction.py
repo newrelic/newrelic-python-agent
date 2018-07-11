@@ -348,6 +348,28 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
         finally:
             func_wrapper.close()
 
+    def test_app_names_in_environ(self):
+        def wrapped(environ, start_response):
+            start_response('200 OK', [])
+            return [b'HAI']
+
+        def start_response(status, headers):
+            return 'write'
+
+        environ = {'REQUEST_URI': '/app_names_in_environ',
+                'newrelic.app_name': 'webapp_test_a;webapp_test_b'}
+
+        wrapped_wsgi_app = newrelic.api.web_transaction.WSGIApplicationWrapper(
+                wrapped, application=application)
+
+        it = wrapped_wsgi_app(environ, start_response)
+        tx = newrelic.api.transaction.current_transaction()
+        try:
+            assert tx.application.name == 'webapp_test_a'
+            assert tx.application.linked_applications[0] == 'webapp_test_b'
+        finally:
+            it.close()
+
     def test_queue_start(self):
         now = time.time()
         ts = now - 0.2

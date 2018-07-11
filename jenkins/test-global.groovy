@@ -17,7 +17,8 @@ use(extensions) {
             '(_INTEGRATION-TESTS-mmf_)|' +
             '(_UNIT-TESTS-develop_)|' +
             '(_UNIT-TESTS-master_)|' +
-            '(_UNIT-TESTS-mmf_)'
+            '(_UNIT-TESTS-mmf_)|' +
+            '(_BENCHMARKS-develop_)'
     )
 
     baseJob("reseed-pr-tests") {

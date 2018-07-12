@@ -182,14 +182,14 @@ def test_blocking_connection_headers(enable_distributed_tracing):
 
     @override_application_settings(override_settings)
     @validate_transaction_metrics(
-        'test_pika_produce:test_blocking_connection_headers.<locals>._test',
+        'test_blocking_connection_headers',
         scoped_metrics=_test_blocking_connection_metrics,
         rollup_metrics=rollup_metrics,
         background_task=True)
     @validate_tt_collector_json(
         message_broker_params=_message_broker_tt_included_test_headers,
         message_broker_forgone_params=_message_broker_tt_forgone_test_headers)
-    @background_task()
+    @background_task(name='test_blocking_connection_headers')
     @validate_messagebroker_headers
     @cache_pika_headers
     def _test():

@@ -171,10 +171,10 @@ _message_broker_tt_forgone_test_headers = [
 def test_blocking_connection_headers(enable_distributed_tracing):
 
     override_settings = {}
-    rollup_metrics = _test_blocking_connection_metrics.copy()
+    rollup_metrics = list(_test_blocking_connection_metrics)
     if enable_distributed_tracing:
-        override_settings['feature_flag'] = {
-            'distributed_tracing', 'span_events'}
+        override_settings['feature_flag'] = \
+                set(('distributed_tracing', 'span_events'))
 
         rollup_metrics += [
             ('DurationByCaller/Unknown/Unknown/Unknown/Unknown/all', 1),

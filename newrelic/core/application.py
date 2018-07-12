@@ -1442,7 +1442,7 @@ class Application(object):
                         internal_count_metric('Supportability/SpanEvent/'
                                 'Discarded', spans_seen - spans_sampled)
 
-                        stats.reset_span_events()
+                    stats.reset_span_events()
 
                     # Send error events
 

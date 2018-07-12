@@ -214,24 +214,29 @@ def test_application_harvest_with_spans(span_events_enabled, spans_created):
 
 
 @failing_endpoint('metric_data')
-@override_generic_settings(settings, {
-    'developer_mode': True,
-    'license_key': '**NOT A LICENSE KEY**',
-    'distributed_tracing.enabled': True,
-    'span_events.enabled': True
-})
-def test_failed_spans_harvest():
+@pytest.mark.parametrize('span_events_enabled', (True, False))
+def test_failed_spans_harvest(span_events_enabled):
 
-    # Test that if an endpoint call that occurs after we successfully send span
-    # data fails, we do not try to send span data again with the next harvest.
+    @override_generic_settings(settings, {
+        'developer_mode': True,
+        'license_key': '**NOT A LICENSE KEY**',
+        'distributed_tracing.enabled': True,
+        'span_events.enabled': span_events_enabled,
+    })
+    def _test():
+        # Test that if an endpoint call that occurs after we successfully send
+        # span data fails, we do not try to send span data again with the next
+        # harvest.
 
-    app = Application('Python Agent Test (Harvest Loop)')
-    app.connect_to_data_collector()
+        app = Application('Python Agent Test (Harvest Loop)')
+        app.connect_to_data_collector()
 
-    app._stats_engine.span_events.add('event')
-    assert app._stats_engine.span_events.num_samples == 1
-    app.harvest()
-    assert app._stats_engine.span_events.num_samples == 0
+        app._stats_engine.span_events.add('event')
+        assert app._stats_engine.span_events.num_samples == 1
+        app.harvest()
+        assert app._stats_engine.span_events.num_samples == 0
+
+    _test()
 
 
 @override_generic_settings(settings, {

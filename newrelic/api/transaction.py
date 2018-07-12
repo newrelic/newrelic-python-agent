@@ -1120,8 +1120,11 @@ class Transaction(object):
             received_trust_key = data.get('tk', account_id)
             if settings.trusted_account_key != received_trust_key:
                 self._record_supportability('Supportability/DistributedTrace/'
-                        'AcceptPayload/Ignored/UntrustedAccount/%s' % (
-                            received_trust_key))
+                        'AcceptPayload/Ignored/UntrustedAccount')
+                if settings.debug.log_untrusted_distributed_trace_keys:
+                    _logger.debug('Received untrusted key in distributed '
+                            'trace payload. received_trust_key=%r',
+                            received_trust_key)
                 return False
 
             transport_start = data.get('ti') / 1000.0

@@ -470,8 +470,9 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
         if self.parent_tx:
             intrinsics['parentId'] = self.parent_tx
 
-        if ('span_events' in self.settings.feature_flag and
-                self.settings.span_events.enabled and self.parent_span):
+        if (self.settings.distributed_tracing and
+                self.settings.span_events.enabled and
+                self.parent_span):
             intrinsics['parentSpanId'] = self.parent_span
 
         return intrinsics

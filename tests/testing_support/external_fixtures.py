@@ -159,7 +159,7 @@ def validate_messagebroker_headers(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     settings = transaction.settings
 
-    if 'distributed_tracing' in settings.feature_flag:
+    if settings.distributed_tracing.enabled:
         validate_distributed_tracing_header()
     else:
         validate_outbound_headers(header_id='NewRelicID',

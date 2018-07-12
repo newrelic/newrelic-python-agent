@@ -15,7 +15,7 @@ _override_settings = {
     'account_id': '332029',
     'trusted_account_key': '1',
     'cross_application_tracer.enabled': True,
-    'feature_flag': set(['distributed_tracing']),
+    'distributed_tracing.enabled': True,
 }
 
 _test_distributed_tracing_basic_publish_metrics = [
@@ -83,7 +83,7 @@ def test_basic_consume_distributed_tracing_headers():
         assert txn.is_distributed_trace
         assert txn.parent_type == 'App'
         assert txn.parent_tx == txn._trace_id
-        assert txn.parent_span is None
+        assert txn.parent_span is not None
         assert txn.parent_account == txn.settings.account_id
         assert txn.parent_transport_type == 'AMQP'
         assert txn._priority is not None

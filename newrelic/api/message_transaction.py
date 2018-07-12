@@ -35,15 +35,13 @@ class MessageTransaction(BackgroundTask):
             dt_transaction = self.headers.pop(
                 MessageTrace.cat_distributed_trace_key, None)
 
-        if (self.settings is not None) and (
-                'distributed_tracing' in self.settings.feature_flag):
-            if dt_transaction:
+        if self.settings is not None:
+            if ('distributed_tracing' in self.settings.feature_flag and
+                    dt_transaction):
                 self.accept_distributed_trace_payload(dt_transaction,
                     transport_type='AMQP')
-
-        elif ((self.settings is not None) and (
-                self.settings.cross_application_tracer.enabled)):
-            self._process_incoming_cat_headers(cat_id, cat_transaction)
+            elif self.settings.cross_application_tracer.enabled:
+                self._process_incoming_cat_headers(cat_id, cat_transaction)
 
         self.routing_key = routing_key
         self.exchange_type = exchange_type

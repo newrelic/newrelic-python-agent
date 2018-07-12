@@ -10,6 +10,8 @@ from newrelic.common.encoding_utils import (json_encode, json_decode,
 from newrelic.common.object_wrapper import (transient_function_wrapper,
         function_wrapper)
 
+from testing_support.fixtures import override_application_settings
+
 OUTBOUND_TRACE_KEYS_REQUIRED = (
         'ty', 'ac', 'ap', 'tr', 'pr', 'sa', 'ti')
 
@@ -117,8 +119,7 @@ def validate_distributed_tracing_header(header='newrelic'):
 
     # If span events are enabled, id should be sent
     # otherwise, id should be omitted
-    if ('span_events' in transaction.settings.feature_flag and
-            transaction.settings.span_events.enabled):
+    if transaction.settings.span_events.enabled:
         assert 'id' in data
     else:
         assert 'id' not in data
@@ -145,7 +146,7 @@ def validate_cross_process_headers(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     settings = transaction.settings
 
-    if 'distributed_tracing' in settings.feature_flag:
+    if settings.distributed_tracing.enabled:
         validate_distributed_tracing_header()
     else:
         validate_outbound_headers()
@@ -280,11 +281,19 @@ def validate_synthetics_external_trace_header(required_header=(),
                     def __getattr__(self, name):
                         return getattr(self.__wrapped__, name)
 
-                external_headers = ExternalTrace.generate_request_headers(
-                        _Transaction(transaction))
-                assert required_header in external_headers, (
-                        'required_header=%r, ''external_headers=%r' % (
-                        required_header, external_headers))
+                # temporarily disable cross_application_tracer, due to the
+                # issue described in the above comment
+                @override_application_settings({
+                    'cross_application_tracer.enabled': False
+                })
+                def _generate_synthetics_headers():
+                    external_headers = ExternalTrace.generate_request_headers(
+                            _Transaction(transaction))
+                    assert required_header in external_headers, (
+                            'required_header=%r, ''external_headers=%r' % (
+                            required_header, external_headers))
+
+                _generate_synthetics_headers()
 
         return result
 

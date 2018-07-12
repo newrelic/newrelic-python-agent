@@ -81,7 +81,6 @@ def target_wsgi_application(environ, start_response):
         assert not result
 
     outbound_payloads_d = test_settings['outbound_payloads_d']
-    feature_flag = test_settings['feature_flag'] is not False
     if outbound_payloads_d:
         payloads = []
 
@@ -90,7 +89,7 @@ def target_wsgi_application(environ, start_response):
             resp = requests.get('http://localhost:%d' % external.port)
             assert resp.status_code == 200
 
-            if feature_flag:
+            if test_settings['feature_flag']:
                 assert b'X-NewRelic-ID' not in resp.content
                 assert b'X-NewRelic-Transaction' not in resp.content
                 assert b'newrelic' in resp.content
@@ -103,7 +102,7 @@ def target_wsgi_application(environ, start_response):
             for expected_payload_d in outbound_payloads_d:
                 make_outbound_request()
 
-                if feature_flag:
+                if test_settings['feature_flag']:
                     assert payloads
                     actual_payload = payloads.pop()
                     data = actual_payload['d']
@@ -132,14 +131,13 @@ def test_distributed_tracing(test_name, inbound_payloads,
         'raises_exception': raises_exception,
         'inbound_payloads': inbound_payloads,
         'outbound_payloads_d': outbound_payloads_d,
-        'feature_flag': feature_flag,
+        'feature_flag': feature_flag is not False
     }
 
     override_settings = {
+        'distributed_tracing.enabled': feature_flag is not False,
         'trusted_account_key': trusted_account_key
     }
-    if feature_flag is not False:
-        override_settings['feature_flag'] = set(['distributed_tracing'])
 
     required_params = {'agent': [], 'user': [],
             'intrinsic': expected_intrinsics}

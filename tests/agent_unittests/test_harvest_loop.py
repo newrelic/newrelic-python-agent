@@ -153,19 +153,17 @@ def test_application_harvest():
 
 
 @pytest.mark.parametrize(
-    'span_events_enabled,span_events_feature_flag,spans_created', [
-        (True, True, 1),
-        (True, True, 15),
-        (True, False, 1),
-        (False, True, 1),
+    'span_events_enabled,spans_created', [
+        (True, 1),
+        (True, 15),
+        (False, 1),
 ])
-def test_application_harvest_with_spans(span_events_enabled,
-        span_events_feature_flag, spans_created):
+def test_application_harvest_with_spans(span_events_enabled, spans_created):
 
     span_endpoints_called = []
     max_samples_stored = 10
 
-    if span_events_enabled and span_events_feature_flag:
+    if span_events_enabled:
         seen = spans_created
         sent = min(spans_created, max_samples_stored)
         discarded = seen - sent
@@ -182,16 +180,12 @@ def test_application_harvest_with_spans(span_events_enabled,
         ('Supportability/SpanEvent/Discarded', discarded),
     ])
 
-    feature_flag = set()
-    if span_events_feature_flag:
-        feature_flag.add('span_events')
-
     @validate_metric_payload(metrics=spans_required_metrics,
             endpoints_called=span_endpoints_called)
     @override_generic_settings(settings, {
         'developer_mode': True,
         'license_key': '**NOT A LICENSE KEY**',
-        'feature_flag': feature_flag,
+        'distributed_tracing.enabled': True,
         'span_events.enabled': span_events_enabled,
         'span_events.max_samples_stored': max_samples_stored,
     })
@@ -211,7 +205,7 @@ def test_application_harvest_with_spans(span_events_enabled,
         # span_event_data is the 3rd to last endpoint called
         assert span_endpoints_called[-2] == 'metric_data'
 
-        if span_events_enabled and span_events_feature_flag:
+        if span_events_enabled:
             assert span_endpoints_called[-3] == 'span_event_data'
         else:
             assert span_endpoints_called[-3] != 'span_event_data'
@@ -223,7 +217,8 @@ def test_application_harvest_with_spans(span_events_enabled,
 @override_generic_settings(settings, {
     'developer_mode': True,
     'license_key': '**NOT A LICENSE KEY**',
-    'feature_flag': set(['span_events']),
+    'distributed_tracing.enabled': True,
+    'span_events.enabled': True
 })
 def test_failed_spans_harvest():
 

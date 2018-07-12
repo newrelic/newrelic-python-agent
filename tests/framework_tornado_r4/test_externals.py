@@ -120,16 +120,10 @@ def test_httpclient(cat_enabled, request_type, client_class,
         ('External/localhost:%s/tornado.httpclient/GET' % port, num_requests)
     ]
 
-    feature_flag = set()
-    if distributed_tracing:
-        feature_flag.add('distributed_tracing')
-
-    if span_events:
-        feature_flag.add('span_events')
-
-    @override_application_settings(
-            {'cross_application_tracer.enabled': cat_enabled,
-             'feature_flag': feature_flag})
+    @override_application_settings({
+        'distributed_tracing.enabled': distributed_tracing,
+        'span_events.enabled': span_events,
+    })
     @validate_transaction_metrics(
         'test_externals:test_httpclient',
         background_task=True,
@@ -196,6 +190,7 @@ def test_client_cat_response_processing(cat_enabled, request_type,
         'encoding_key': ENCODING_KEY,
         'trusted_account_ids': [1],
         'cross_application_tracer.enabled': cat_enabled,
+        'distributed_tracing.enabled': False,
         'transaction_tracer.transaction_threshold': 0.0,
     }
 

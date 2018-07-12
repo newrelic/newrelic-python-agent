@@ -127,13 +127,9 @@ def test_cat_map(name, appName, transactionName, transactionGuid,
             'encoding_key': ENCODING_KEY,
             'trusted_account_ids': [1],
             'cross_application_tracer.enabled': True,
+            'distributed_tracing.enabled': not old_cat,
             'transaction_tracer.transaction_threshold': 0.0,
     }
-
-    if not old_cat:
-        _custom_settings.update({
-            'feature_flag': set(('distributed_tracing',)),
-        })
 
     if expectedIntrinsicFields and old_cat:
         _external_node_params = {

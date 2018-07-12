@@ -150,16 +150,10 @@ def test_urlopen_cross_process_request(distributed_tracing, span_events):
         pool = urllib3.HTTPConnectionPool('www.example.com')
         pool.urlopen('GET', '/index.html')
 
-    flags = set()
-
-    if distributed_tracing:
-        flags.add('distributed_tracing')
-
-    if span_events:
-        flags.add('span_events')
-
-    _test = override_application_settings(
-            {'feature_flag': flags})(_test)
+    _test = override_application_settings({
+        'distributed_tracing.enabled': distributed_tracing,
+        'span_events.enabled': span_events,
+    })(_test)
 
     _test()
 

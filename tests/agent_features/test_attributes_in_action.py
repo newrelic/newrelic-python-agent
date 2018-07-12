@@ -96,7 +96,6 @@ _expected_absent_attributes = {'agent': REQ_PARAMS, 'user': [],
         _expected_absent_attributes)
 @validate_transaction_error_trace_attributes(_expected_attributes,
         _expected_absent_attributes)
-@override_application_settings({'feature_flag': set()})
 def test_error_in_transaction_default_settings():
     normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 

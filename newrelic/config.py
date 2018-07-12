@@ -497,6 +497,8 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'debug.log_autorum_middleware',
                      'getboolean', None)
+    _process_setting(section, 'debug.log_untrusted_distributed_trace_keys',
+                     'getboolean', None)
     _process_setting(section, 'debug.enable_coroutine_profiling',
                      'getboolean', None)
     _process_setting(section, 'debug.record_transaction_failure',

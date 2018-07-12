@@ -411,7 +411,7 @@
             ["Supportability/DistributedTrace/AcceptPayload/Ignored/Multiple", null],
             ["Supportability/DistributedTrace/AcceptPayload/Ignored/MajorVersion", null],
             ["Supportability/DistributedTrace/AcceptPayload/Ignored/Null", null],
-            ["Supportability/DistributedTrace/AcceptPayload/Ignored/UntrustedAccount/99999999999", 1],
+            ["Supportability/DistributedTrace/AcceptPayload/Ignored/UntrustedAccount", 1],
             ["Supportability/DistributedTrace/CreatePayload/Success", null],
             ["Supportability/DistributedTrace/CreatePayload/Exception", null]
         ]

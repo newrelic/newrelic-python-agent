@@ -10,8 +10,6 @@ from newrelic.common.encoding_utils import (json_encode, json_decode,
 from newrelic.common.object_wrapper import (transient_function_wrapper,
         function_wrapper)
 
-from testing_support.fixtures import override_application_settings
-
 OUTBOUND_TRACE_KEYS_REQUIRED = (
         'ty', 'ac', 'ap', 'tr', 'pr', 'sa', 'ti')
 
@@ -281,19 +279,11 @@ def validate_synthetics_external_trace_header(required_header=(),
                     def __getattr__(self, name):
                         return getattr(self.__wrapped__, name)
 
-                # temporarily disable cross_application_tracer, due to the
-                # issue described in the above comment
-                @override_application_settings({
-                    'cross_application_tracer.enabled': False
-                })
-                def _generate_synthetics_headers():
-                    external_headers = ExternalTrace.generate_request_headers(
-                            _Transaction(transaction))
-                    assert required_header in external_headers, (
-                            'required_header=%r, ''external_headers=%r' % (
-                            required_header, external_headers))
-
-                _generate_synthetics_headers()
+                external_headers = ExternalTrace.generate_request_headers(
+                        _Transaction(transaction))
+                assert required_header in external_headers, (
+                        'required_header=%r, ''external_headers=%r' % (
+                        required_header, external_headers))
 
         return result
 

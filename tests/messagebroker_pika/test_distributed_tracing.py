@@ -137,6 +137,7 @@ def do_basic_get(channel, QUEUE):
     assert txn.client_cross_process_id is None
     assert txn.client_account_id is None
     assert txn.client_application_id is None
+    assert txn._trace_id is None
 
 
 @override_application_settings(_override_settings)

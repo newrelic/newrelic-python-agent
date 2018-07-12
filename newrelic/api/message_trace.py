@@ -13,7 +13,6 @@ class MessageTrace(TimeTrace, CatHeaderMixin):
     node = MessageNode
     cat_id_key = 'NewRelicID'
     cat_transaction_key = 'NewRelicTransaction'
-    cat_distributed_trace_key = 'X-NewRelic-Trace'
     cat_appdata_key = 'NewRelicAppData'
     cat_synthetics_key = 'NewRelicSynthetics'
 

@@ -158,7 +158,7 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
 
         # Generate Distributed Tracing metrics
 
-        if 'distributed_tracing' in self.settings.feature_flag:
+        if self.settings.distributed_tracing.enabled:
             if self.distributed_trace_received:
                 dt_tag = "%s/%s/%s/%s/all" % (
                     self.parent_type, self.parent_account,
@@ -166,7 +166,7 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
             else:
                 dt_tag = "Unknown/Unknown/Unknown/Unknown/all"
 
-            for bonus_tag in ['', metric_suffix]:
+            for bonus_tag in ('', metric_suffix):
                 yield TimeMetric(
                     name="DurationByCaller/%s%s" % (dt_tag, bonus_tag),
                     scope='',
@@ -537,8 +537,7 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
 
         intrinsics = self.distributed_trace_intrinsics.copy()
 
-        if ('distributed_tracing' in self.settings.feature_flag or
-                'span_events' in self.settings.feature_flag):
+        if self.settings.distributed_tracing.enabled:
             intrinsics['guid'] = self.guid
             intrinsics['sampled'] = self.sampled
             intrinsics['priority'] = self.priority

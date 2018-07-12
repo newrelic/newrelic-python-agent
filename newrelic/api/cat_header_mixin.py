@@ -56,28 +56,27 @@ class CatHeaderMixin(object):
 
         nr_headers = []
 
-        if settings.cross_application_tracer.enabled:
-            if 'distributed_tracing' in settings.feature_flag:
-                payload = transaction.create_distributed_tracing_payload()
-                if not payload:
-                    return []
+        if settings.distributed_tracing.enabled:
+            payload = transaction.create_distributed_tracing_payload()
+            if not payload:
+                return []
 
-                encoded_header = payload.http_safe()
-                nr_headers.append(
-                        (cls.cat_distributed_trace_key, encoded_header))
+            encoded_header = payload.http_safe()
+            nr_headers.append(
+                    (cls.cat_distributed_trace_key, encoded_header))
 
-            else:
-                transaction.is_part_of_cat = True
-                encoded_cross_process_id = obfuscate(settings.cross_process_id,
-                        settings.encoding_key)
-                nr_headers.append((cls.cat_id_key, encoded_cross_process_id))
+        elif settings.cross_application_tracer.enabled:
+            transaction.is_part_of_cat = True
+            encoded_cross_process_id = obfuscate(settings.cross_process_id,
+                    settings.encoding_key)
+            nr_headers.append((cls.cat_id_key, encoded_cross_process_id))
 
-                transaction_data = [transaction.guid, transaction.record_tt,
-                        transaction.trip_id, transaction.path_hash]
-                encoded_transaction = obfuscate(json_encode(transaction_data),
-                        settings.encoding_key)
-                nr_headers.append(
-                        (cls.cat_transaction_key, encoded_transaction))
+            transaction_data = [transaction.guid, transaction.record_tt,
+                    transaction.trip_id, transaction.path_hash]
+            encoded_transaction = obfuscate(json_encode(transaction_data),
+                    settings.encoding_key)
+            nr_headers.append(
+                    (cls.cat_transaction_key, encoded_transaction))
 
         if transaction.synthetics_header:
             nr_headers.append(

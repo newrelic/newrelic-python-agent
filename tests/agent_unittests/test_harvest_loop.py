@@ -64,6 +64,7 @@ def transaction_node():
             parent_type=None,
             parent_account=None,
             parent_app=None,
+            parent_tx=None,
             parent_transport_type=None,
             sampled=True,
             root_span_guid=None,

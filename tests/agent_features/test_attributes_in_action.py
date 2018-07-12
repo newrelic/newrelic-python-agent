@@ -96,7 +96,7 @@ _expected_absent_attributes = {'agent': REQ_PARAMS, 'user': [],
         _expected_absent_attributes)
 @validate_transaction_error_trace_attributes(_expected_attributes,
         _expected_absent_attributes)
-@override_application_settings({})
+@override_application_settings({'feature_flag': set()})
 def test_error_in_transaction_default_settings():
     normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
@@ -116,7 +116,7 @@ _expected_attributes = {'agent': TRANS_EVENT_AGENT_KEYS, 'user': USER_ATTRS,
         'intrinsic': TRANS_EVENT_INTRINSICS}
 
 _expected_absent_attributes = {'agent': ['wsgi.output.seconds'] + REQ_PARAMS,
-        'user': []}
+        'user': [], 'intrinsic': []}
 
 
 @validate_transaction_event_attributes(_expected_attributes,
@@ -153,7 +153,8 @@ _expected_attributes = {'agent': TRACE_ERROR_AGENT_KEYS,
 _expected_attributes_event = {'agent': TRACE_ERROR_AGENT_KEYS,
         'user': ERROR_USER_ATTRS, 'intrinsic': ERROR_EVENT_INTRINSICS}
 
-_expected_absent_attributes = {'agent': REQ_PARAMS, 'user': []}
+_expected_absent_attributes = {'agent': REQ_PARAMS, 'user': [],
+        'intrinsic': []}
 
 
 @validate_error_event_attributes(_expected_attributes_event,
@@ -185,7 +186,8 @@ _override_settings = {'capture_params': True,
 _expected_attributes = {'agent': TRACE_ERROR_AGENT_KEYS, 'user': USER_ATTRS,
         'intrinsic': ['trip_id']}
 
-_expected_absent_attributes = {'agent': REQ_PARAMS, 'user': []}
+_expected_absent_attributes = {'agent': REQ_PARAMS, 'user': [],
+        'intrinsic': []}
 
 
 @validate_transaction_error_trace_attributes(_expected_attributes,
@@ -245,7 +247,8 @@ _override_settings = {
 _expected_attributes = {'agent': TRANS_EVENT_AGENT_KEYS + REQ_PARAMS,
         'user': USER_ATTRS, 'intrinsic': TRANS_EVENT_INTRINSICS}
 
-_expected_absent_attributes = {'agent': ['wsgi.output.seconds'], 'user': []}
+_expected_absent_attributes = {'agent': ['wsgi.output.seconds'], 'user': [],
+        'intrinsic': []}
 
 
 @validate_transaction_event_attributes(_expected_attributes,
@@ -286,7 +289,7 @@ _expected_attributes_event = {
         'user': ERROR_USER_ATTRS, 'intrinsic': ERROR_EVENT_INTRINSICS}
 
 _expected_absent_attributes = {'agent': ['request.parameters.' + URL_PARAM2],
-        'user': []}
+        'user': [], 'intrinsic': []}
 
 
 @validate_error_event_attributes(_expected_attributes_event,
@@ -326,7 +329,7 @@ _expected_attributes = {
         'user': USER_ATTRS, 'intrinsic': TRANS_EVENT_INTRINSICS}
 
 _expected_absent_attributes = {'agent': ['request.parameters.' + URL_PARAM2],
-        'user': []}
+        'user': [], 'intrinsic': []}
 
 
 @validate_transaction_event_attributes(_expected_attributes,
@@ -364,7 +367,8 @@ _expected_attributes = {'agent': TRACE_ERROR_AGENT_KEYS,
 _expected_attributes_event = {'agent': TRACE_ERROR_AGENT_KEYS,
         'user': ['sunshine', 'ohnoes'], 'intrinsic': ERROR_EVENT_INTRINSICS}
 
-_expected_absent_attributes = {'agent': REQ_PARAMS, 'user': ['puppies']}
+_expected_absent_attributes = {'agent': REQ_PARAMS, 'user': ['puppies'],
+        'intrinsic': []}
 
 
 @validate_error_event_attributes(_expected_attributes_event,
@@ -395,7 +399,7 @@ _expected_attributes = {'agent': TRANS_EVENT_AGENT_KEYS, 'user': ['sunshine'],
         'intrinsic': TRANS_EVENT_INTRINSICS}
 
 _expected_absent_attributes = {'agent': REQ_PARAMS,
-        'user': ['puppies']}
+        'user': ['puppies'], 'intrinsic': []}
 
 
 @validate_transaction_event_attributes(_expected_attributes,
@@ -437,7 +441,7 @@ _expected_attributes_event = {'agent': ['wsgi.output.seconds',
 
 _expected_absent_attributes = {
         'agent': ['request.method', 'request.uri'] + REQ_PARAMS,
-        'user': []}
+        'user': [], 'intrinsic': []}
 
 
 @validate_error_event_attributes(_expected_attributes_event,
@@ -466,7 +470,8 @@ _expected_attributes = {'agent': ['response.status',
         'user': USER_ATTRS, 'intrinsic': TRANS_EVENT_INTRINSICS}
 
 _expected_absent_attributes = {'agent': ['request.method',
-        'wsgi.output.seconds', 'request.uri'] + REQ_PARAMS, 'user': []}
+        'wsgi.output.seconds', 'request.uri'] + REQ_PARAMS, 'user': [],
+        'intrinsic': []}
 
 
 @validate_transaction_event_attributes(_expected_attributes,
@@ -513,7 +518,7 @@ _expected_attributes = {'agent': TRANS_EVENT_AGENT_KEYS, 'user': USER_ATTRS,
         'intrinsic': TRANS_EVENT_INTRINSICS}
 
 _expected_absent_attributes = {'agent': ['wsgi.output.seconds'] + REQ_PARAMS,
-        'user': []}
+        'user': [], 'intrinsic': []}
 
 
 @validate_transaction_event_attributes(_expected_attributes,
@@ -549,7 +554,8 @@ _expected_attributes = {'agent': TRACE_ERROR_AGENT_KEYS,
 _expected_attributes_event = {'agent': TRACE_ERROR_AGENT_KEYS,
         'user': ERROR_USER_ATTRS, 'intrinsic': ERROR_EVENT_INTRINSICS}
 
-_expected_absent_attributes = {'agent': REQ_PARAMS, 'user': []}
+_expected_absent_attributes = {'agent': REQ_PARAMS, 'user': [],
+        'intrinsic': []}
 
 
 @validate_error_event_attributes(_expected_attributes_event,
@@ -578,7 +584,7 @@ _expected_attributes = {'agent': TRANS_EVENT_AGENT_KEYS,
         'user': USER_ATTRS, 'intrinsic': TRANS_EVENT_INTRINSICS}
 
 _expected_absent_attributes = {'agent': ['wsgi.output.seconds'] + REQ_PARAMS,
-        'user': []}
+        'user': [], 'intrinsic': []}
 
 
 @validate_transaction_event_attributes(_expected_attributes,
@@ -614,7 +620,8 @@ _expected_attributes = {'agent': TRACE_ERROR_AGENT_KEYS,
 _expected_attributes_event = {'agent': TRACE_ERROR_AGENT_KEYS,
         'user': ERROR_USER_ATTRS, 'intrinsic': ERROR_EVENT_INTRINSICS}
 
-_expected_absent_attributes = {'agent': REQ_PARAMS, 'user': []}
+_expected_absent_attributes = {'agent': REQ_PARAMS, 'user': [],
+        'intrinsic': []}
 
 
 @validate_error_event_attributes(_expected_attributes_event,
@@ -646,7 +653,7 @@ _expected_attributes = {'agent': TRANS_EVENT_AGENT_KEYS, 'user': USER_ATTRS,
         'intrinsic': TRANS_EVENT_INTRINSICS}
 
 _expected_absent_attributes = {'agent': ['wsgi.output.seconds'] + REQ_PARAMS,
-        'user': []}
+        'user': [], 'intrinsic': []}
 
 
 @validate_transaction_event_attributes(_expected_attributes,
@@ -682,7 +689,7 @@ _expected_attributes_event = {'user': [], 'agent': [],
         'intrinsic': ERROR_EVENT_INTRINSICS}
 
 _expected_absent_attributes = {'agent': AGENT_KEYS_ALL,
-        'user': ERROR_USER_ATTRS}
+        'user': ERROR_USER_ATTRS, 'intrinsic': []}
 
 
 @validate_error_event_attributes(_expected_attributes_event,
@@ -710,7 +717,7 @@ _expected_attributes = {'user': [], 'agent': [],
         'intrinsic': TRANS_EVENT_INTRINSICS}
 
 _expected_absent_attributes = {'agent': AGENT_KEYS_ALL,
-        'user': USER_ATTRS}
+        'user': USER_ATTRS, 'intrinsic': []}
 
 
 @validate_transaction_event_attributes(_expected_attributes,
@@ -745,7 +752,8 @@ _expected_attributes = {'agent': TRACE_ERROR_AGENT_KEYS, 'user': USER_ATTRS,
 _expected_attributes_event = {'agent': TRACE_ERROR_AGENT_KEYS,
         'user': USER_ATTRS, 'intrinsic': ERROR_EVENT_INTRINSICS}
 
-_expected_absent_attributes = {'agent': REQ_PARAMS, 'user': ERROR_PARAMS}
+_expected_absent_attributes = {'agent': REQ_PARAMS, 'user': ERROR_PARAMS,
+        'intrinsic': []}
 
 
 @validate_error_event_attributes(_expected_attributes_event,

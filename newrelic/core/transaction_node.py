@@ -30,7 +30,7 @@ _TransactionNode = namedtuple('_TransactionNode',
         'alternate_path_hashes', 'trace_intrinsics', 'agent_attributes',
         'distributed_trace_intrinsics', 'user_attributes', 'priority',
         'sampled', 'parent_transport_duration', 'parent_span', 'parent_type',
-        'parent_account', 'parent_app', 'parent_transport_type',
+        'parent_account', 'parent_app', 'parent_tx', 'parent_transport_type',
         'root_span_guid', 'trace_id'])
 
 
@@ -466,6 +466,13 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
 
         if self.synthetics_resource_id:
             intrinsics['nr.guid'] = self.guid
+
+        if self.parent_tx:
+            intrinsics['parentId'] = self.parent_tx
+
+        if ('span_events' in self.settings.feature_flag and
+                self.settings.span_events.enabled and self.parent_span):
+            intrinsics['parentSpanId'] = self.parent_span
 
         return intrinsics
 

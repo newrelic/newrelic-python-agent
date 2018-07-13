@@ -55,6 +55,7 @@ def test_span_events(dt_enabled, span_events_enabled, txn_sampled):
 
     exact_intrinsics_root = exact_intrinsics_common.copy()
     exact_intrinsics_root['name'] = 'Function/transaction'
+    exact_intrinsics_root['nr.entryPoint'] = True
 
     exact_intrinsics_function = exact_intrinsics_common.copy()
     exact_intrinsics_function['name'] = 'Function/function'

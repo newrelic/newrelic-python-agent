@@ -606,6 +606,7 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
             'traceId': self.trace_id,
             'sampled': self.sampled,
             'priority': self.priority,
+            'nr.entryPoint': True,
         }
 
         yield self.span_event(base_attrs,

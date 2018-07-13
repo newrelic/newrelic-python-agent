@@ -60,7 +60,7 @@ def test_span_events(instance_enabled):
 
     common = {
         'type': 'Span',
-        'appLocalRootId': guid,
+        'transactionId': guid,
         'priority': priority,
         'sampled': True,
         'category': 'datastore',

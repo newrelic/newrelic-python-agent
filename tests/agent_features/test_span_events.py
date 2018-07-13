@@ -46,7 +46,7 @@ def test_span_events(dt_enabled, span_events_enabled, txn_sampled):
 
     exact_intrinsics_common = {
         'type': 'Span',
-        'appLocalRootId': guid,
+        'transactionId': guid,
         'sampled': txn_sampled,
         'priority': priority,
         'category': 'generic',

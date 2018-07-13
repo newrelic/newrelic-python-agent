@@ -1423,8 +1423,7 @@ class Application(object):
 
                     # Send span events
 
-                    if ('span_events' in stats.settings.feature_flag and
-                            stats.settings.span_events.enabled):
+                    if stats.settings.span_events.enabled:
                         spans = stats.span_events
                         if spans.num_samples > 0:
                             _logger.debug('Sending span event data '
@@ -1443,7 +1442,7 @@ class Application(object):
                         internal_count_metric('Supportability/SpanEvent/'
                                 'Discarded', spans_seen - spans_sampled)
 
-                        stats.reset_span_events()
+                    stats.reset_span_events()
 
                     # Send error events
 

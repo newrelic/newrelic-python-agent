@@ -185,6 +185,10 @@ class SpanEventSettings(Settings):
     pass
 
 
+class DistributedTracingSettings(Settings):
+    pass
+
+
 _settings = Settings()
 _settings.attributes = AttributesSettings()
 _settings.thread_profiler = ThreadProfilerSettings()
@@ -218,6 +222,7 @@ _settings.datastore_tracer.database_name_reporting = \
         DatastoreTracerDatabaseNameReportingSettings()
 _settings.heroku = HerokuSettings()
 _settings.span_events = SpanEventSettings()
+_settings.distributed_tracing = DistributedTracingSettings()
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 _settings.audit_log_file = os.environ.get('NEW_RELIC_AUDIT_LOG', None)
@@ -457,6 +462,7 @@ _settings.transaction_events.attributes.include = []
 _settings.custom_insights_events.enabled = True
 _settings.custom_insights_events.max_samples_stored = DEFAULT_RESERVOIR_SIZE
 
+_settings.distributed_tracing.enabled = False
 _settings.span_events.enabled = True
 _settings.span_events.max_samples_stored = SPAN_EVENT_RESERVOIR_SIZE
 

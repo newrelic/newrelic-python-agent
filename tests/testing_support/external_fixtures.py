@@ -117,8 +117,7 @@ def validate_distributed_tracing_header(header='newrelic'):
 
     # If span events are enabled, id should be sent
     # otherwise, id should be omitted
-    if ('span_events' in transaction.settings.feature_flag and
-            transaction.settings.span_events.enabled):
+    if transaction.settings.span_events.enabled:
         assert 'id' in data
     else:
         assert 'id' not in data
@@ -145,7 +144,7 @@ def validate_cross_process_headers(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     settings = transaction.settings
 
-    if 'distributed_tracing' in settings.feature_flag:
+    if settings.distributed_tracing.enabled:
         validate_distributed_tracing_header()
     else:
         validate_outbound_headers()
@@ -160,7 +159,7 @@ def validate_messagebroker_headers(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     settings = transaction.settings
 
-    if 'distributed_tracing' in settings.feature_flag:
+    if settings.distributed_tracing.enabled:
         validate_distributed_tracing_header()
     else:
         validate_outbound_headers(header_id='NewRelicID',

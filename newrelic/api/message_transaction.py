@@ -36,8 +36,7 @@ class MessageTransaction(BackgroundTask):
                 MessageTrace.cat_distributed_trace_key, None)
 
         if self.settings is not None:
-            if ('distributed_tracing' in self.settings.feature_flag and
-                    dt_transaction):
+            if self.settings.distributed_tracing.enabled and dt_transaction:
                 self.accept_distributed_trace_payload(dt_transaction,
                     transport_type='AMQP')
             elif self.settings.cross_application_tracer.enabled:

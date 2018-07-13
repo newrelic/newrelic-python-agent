@@ -170,12 +170,11 @@ _message_broker_tt_forgone_test_headers = [
 @pytest.mark.parametrize('enable_distributed_tracing', [True, False])
 def test_blocking_connection_headers(enable_distributed_tracing):
 
-    override_settings = {}
+    override_settings = {
+        'distributed_tracing.enabled': enable_distributed_tracing,
+    }
     rollup_metrics = list(_test_blocking_connection_metrics)
     if enable_distributed_tracing:
-        override_settings['feature_flag'] = \
-                set(('distributed_tracing', 'span_events'))
-
         rollup_metrics += [
             ('DurationByCaller/Unknown/Unknown/Unknown/Unknown/all', 1),
             ('DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther', 1)]

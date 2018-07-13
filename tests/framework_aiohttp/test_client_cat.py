@@ -60,20 +60,10 @@ def mock_header_server():
 
 
 @pytest.mark.parametrize('cat_enabled', (True, False))
-@pytest.mark.parametrize('distributed_tracing,span_events', (
-    (True, True),
-    (True, False),
-    (False, False),
-))
+@pytest.mark.parametrize('distributed_tracing', (True, False))
+@pytest.mark.parametrize('span_events', (True, False))
 def test_outbound_cross_process_headers(cat_enabled, distributed_tracing,
         span_events, mock_header_server):
-
-    feature_flag = set()
-    if distributed_tracing:
-        feature_flag.add('distributed_tracing')
-
-    if span_events:
-        feature_flag.add('span_events')
 
     def task_test():
         loop = asyncio.get_event_loop()
@@ -82,20 +72,27 @@ def test_outbound_cross_process_headers(cat_enabled, distributed_tracing,
         transaction = current_transaction()
         transaction._test_request_headers = headers
 
-        if not cat_enabled:
-            assert not headers.get(ExternalTrace.cat_id_key)
-            assert not headers.get(ExternalTrace.cat_transaction_key)
-            assert not headers.get(ExternalTrace.cat_distributed_trace_key)
+        if distributed_tracing:
+            assert ExternalTrace.cat_distributed_trace_key in headers
+        elif cat_enabled:
+            assert ExternalTrace.cat_id_key in headers
+            assert ExternalTrace.cat_transaction_key in headers
+        else:
+            assert ExternalTrace.cat_distributed_trace_key not in headers
+            assert ExternalTrace.cat_id_key not in headers
+            assert ExternalTrace.cat_transaction_key not in headers
 
-    if cat_enabled:
+    if cat_enabled or distributed_tracing:
         task_test = validate_cross_process_headers(task_test)
 
     task_test = background_task(
             name='test_client_cat:'
                  'test_outbound_cross_process_headers')(task_test)
     task_test = override_application_settings({
-                        'cross_application_tracer.enabled': cat_enabled,
-                        'feature_flag': feature_flag})(task_test)
+                    'cross_application_tracer.enabled': cat_enabled,
+                    'distributed_tracing.enabled': distributed_tracing,
+                    'span_events.enabled': span_events,
+                })(task_test)
 
     task_test()
 
@@ -198,8 +195,10 @@ def test_process_incoming_headers(cat_enabled, response_code,
 
     connector = connector_class() if connector_class else None
 
-    @override_application_settings(
-            {'cross_application_tracer.enabled': cat_enabled})
+    @override_application_settings({
+        'cross_application_tracer.enabled': cat_enabled,
+        'distributed_tracing.enabled': False
+    })
     @validate_transaction_metrics(
             'test_client_cat:test_process_incoming_headers.<locals>.task_test',
             scoped_metrics=_test_cross_process_response_scoped_metrics,

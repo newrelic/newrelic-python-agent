@@ -69,7 +69,7 @@ test_application = webtest.TestApp(target_wsgi_application)
 
 _override_settings = {
     'trusted_account_key': '1',
-    'feature_flag': set(['distributed_tracing']),
+    'distributed_tracing.enabled': True,
 }
 
 
@@ -135,14 +135,7 @@ def test_distributed_trace_attributes(span_events, accept_payload):
     _forgone_trace_intrinsics = _forgone_error_intrinsics
 
     test_settings = _override_settings.copy()
-
-    if span_events:
-        test_settings['span_events.enabled'] = True
-        test_settings['feature_flag'].add('span_events')
-    else:
-        test_settings['span_events.enabled'] = False
-        if 'span_events' in test_settings['feature_flag']:
-            test_settings['feature_flag'].remove('span_events')
+    test_settings['span_events.enabled'] = span_events
 
     @override_application_settings(test_settings)
     @validate_transaction_event_attributes(

@@ -470,8 +470,7 @@ class Transaction(object):
                 self.record_custom_metric('Python/Framework/%s/%s' %
                     (framework, version), 1)
 
-        if ('distributed_tracing' in self._settings.feature_flag or
-                'span_events' in self._settings.feature_flag):
+        if self._settings.distributed_tracing.enabled:
             # Sampled and priority need to be computed at the end of the
             # transaction when distributed tracing or span events are enabled.
             self._compute_sampled_and_priority()
@@ -747,8 +746,7 @@ class Transaction(object):
         if self.total_time:
             i_attrs['totalTime'] = self.total_time
 
-        if ('distributed_tracing' in self._settings.feature_flag or
-                'span_events' in self._settings.feature_flag):
+        if self._settings.distributed_tracing.enabled:
             i_attrs['guid'] = self.guid
             i_attrs['sampled'] = self.sampled
             i_attrs['priority'] = self.priority
@@ -772,7 +770,7 @@ class Transaction(object):
     def distributed_trace_intrinsics(self):
         i_attrs = {}
 
-        if 'distributed_tracing' not in self._settings.feature_flag:
+        if not self._settings.distributed_tracing.enabled:
             return i_attrs
 
         if not self.is_distributed_trace:
@@ -1017,13 +1015,10 @@ class Transaction(object):
         account_id = settings.account_id
         trusted_account_key = settings.trusted_account_key
         application_id = settings.primary_application_id
-        distributed_tracing_enabled = \
-            'distributed_tracing' in settings.feature_flag
 
         if not (account_id and
                 application_id and
-                distributed_tracing_enabled and
-                settings.cross_application_tracer.enabled):
+                settings.distributed_tracing.enabled):
             return
 
         try:
@@ -1042,8 +1037,7 @@ class Transaction(object):
             if account_id != trusted_account_key:
                 data['tk'] = trusted_account_key
 
-            if ('span_events' in settings.feature_flag and
-                    settings.span_events.enabled and self.current_node):
+            if (settings.span_events.enabled and self.current_node):
                 data['id'] = self.current_node.guid
 
             self.is_distributed_trace = True
@@ -1068,10 +1062,7 @@ class Transaction(object):
             return False
 
         settings = self._settings
-        distributed_tracing_enabled = \
-            'distributed_tracing' in settings.feature_flag
-        if not (settings.cross_application_tracer.enabled and
-                distributed_tracing_enabled and
+        if not (settings.distributed_tracing.enabled and
                 settings.trusted_account_key):
             return False
 

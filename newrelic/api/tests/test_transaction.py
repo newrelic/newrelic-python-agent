@@ -139,8 +139,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         super(TestTransactionApis, self).setUp()
         environ = {'REQUEST_URI': '/transaction_apis'}
         self.transaction = WebTransaction(application, environ)
-        self.transaction._settings.cross_application_tracer.enabled = True
-        self.transaction._settings.feature_flag = set(['distributed_tracing'])
+        self.transaction._settings.distributed_tracing.enabled = True
 
         self.application.adaptive_sampler = AdaptiveSampler(10)
 
@@ -243,12 +242,13 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             assert data['id'] == expected_id
 
     def test_distributed_trace_no_spans(self):
+        self.transaction._settings.span_events.enabled = False
+
         with self.transaction:
             # ID should be the transaction GUID
             self._standard_trace_test(self.transaction.guid)
 
     def test_distributed_trace_with_spans_no_parent(self):
-        self.transaction._settings.feature_flag.add('span_events')
         self.transaction._settings.span_events.enabled = True
 
         with self.transaction:
@@ -259,7 +259,6 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             self._standard_trace_test('this is guid', 'abcde')
 
     def test_distributed_trace_with_spans_not_enabled(self):
-        self.transaction._settings.feature_flag.add('span_events')
         self.transaction._settings.span_events.enabled = False
 
         with self.transaction:
@@ -476,6 +475,11 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
     def test_create_payload_cat_disabled(self):
         self.transaction._settings.cross_application_tracer.enabled = False
         with self.transaction:
+            assert self.transaction.create_distributed_tracing_payload()
+
+    def test_create_payload_dt_disabled(self):
+        self.transaction._settings.distributed_tracing.enabled = False
+        with self.transaction:
             assert not self.transaction.create_distributed_tracing_payload()
 
     def test_accept_payload_prior_to_connect(self):
@@ -490,10 +494,10 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         with self.transaction:
             payload = self._make_test_payload()
             result = self.transaction.accept_distributed_trace_payload(payload)
-            assert not result
+            assert result
 
-    def test_accept_payload_feature_flag_off(self):
-        self.transaction._settings.feature_flag = set()
+    def test_accept_payload_feature_off(self):
+        self.transaction._settings.distributed_tracing.enabled = False
         with self.transaction:
             payload = self._make_test_payload()
             result = self.transaction.accept_distributed_trace_payload(payload)
@@ -652,7 +656,7 @@ class TestTransactionDeterministic(newrelic.tests.test_cases.TestCase):
 
         self.transaction = WebTransaction(mock_app, environ)
         self.transaction._settings.cross_application_tracer.enabled = True
-        self.transaction._settings.feature_flag = set(['distributed_tracing'])
+        self.transaction._settings.distributed_tracing.enabled = True
 
     def tearDown(self):
         if current_transaction():
@@ -689,7 +693,7 @@ class TestTransactionComputation(newrelic.tests.test_cases.TestCase):
 
         environ = {'REQUEST_URI': '/transaction_computation'}
         self.transaction = WebTransaction(application, environ)
-        self.transaction._settings.feature_flag = set(['distributed_tracing'])
+        self.transaction._settings.distributed_tracing.enabled = True
 
     def test_sampled_is_always_computed(self):
         with self.transaction:

@@ -49,6 +49,7 @@ class TimeTrace(object):
                     self.parent = None
                     self.transaction = None
                     return
+
                 elif not self.parent.terminal_node():
                     self.parent.increment_child_count()
 

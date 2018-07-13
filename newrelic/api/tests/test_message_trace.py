@@ -93,6 +93,19 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                     params=params) as mt:
                 assert not mt.params
 
+    # regression, see PYTHON-2844
+    def test_message_trace_stopped(self):
+        environ = {"REQUEST_URI": "/external_trace"}
+        transaction = newrelic.api.web_transaction.WebTransaction(
+            application, environ)
+        transaction.stop_recording()
+
+        with transaction:
+            with newrelic.api.message_trace.MessageTrace(
+                    transaction, library='RabbitMQ', operation='Consume',
+                    destination_type='Exchange', destination_name='x'):
+                pass
+
 
 if __name__ == '__main__':
     unittest.main()

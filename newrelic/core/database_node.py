@@ -6,6 +6,7 @@ from newrelic.common import system_info
 from newrelic.core.database_utils import sql_statement, explain_plan
 from newrelic.core.node_mixin import DatastoreNodeMixin
 from newrelic.core.metric import TimeMetric
+from newrelic.core.attribute import truncate
 
 
 _SlowSqlNode = namedtuple('_SlowSqlNode',
@@ -227,3 +228,20 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,
                 label=None)
+
+    def span_event(self, *args, **kwargs):
+        attrs = super(DatabaseNode, self).span_event(*args, **kwargs)
+        i_attrs = attrs[0]
+
+        sql = self.formatted
+
+        # Truncate to 2000 bytes and append ...
+        new_sql = truncate(sql, maxsize=2000)
+        if len(new_sql) != len(sql):
+            sql_chars = list(new_sql)
+            sql_chars[-3:] = '...'
+            sql = ''.join(sql_chars)
+
+        i_attrs['db.statement'] = sql
+
+        return attrs

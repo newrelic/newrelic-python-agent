@@ -58,9 +58,6 @@ class DatastoreNodeMixin(GenericNodeMixin):
         i_attrs['peer.hostname'] = self.instance_hostname or 'Unknown'
         i_attrs['span.kind'] = 'client'
 
-        if hasattr(self, 'formatted') and self.formatted:
-            i_attrs['db.statement'] = self.formatted
-
         return attrs
 
 

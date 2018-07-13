@@ -18,8 +18,8 @@ def server():
 @pytest.mark.parametrize('path', ('', '/foo'))
 def test_span_events(path):
     _settings = {
+        'distributed_tracing.enabled': True,
         'span_events.enabled': True,
-        'feature_flag': set(['span_events']),
     }
 
     uri = 'http://localhost:8989'

@@ -47,8 +47,9 @@ class TestCase(unittest.TestCase):
         application.global_settings.enabled = True
 
         settings = {}
-
         settings['cross_application_tracer.enabled'] = enabled
+        settings['distributed_tracing.enabled'] = False
+        settings['span_events.enabled'] = None
 
         settings['cross_process_id'] = cross_process_id
         settings['encoding_key'] = encoding_key

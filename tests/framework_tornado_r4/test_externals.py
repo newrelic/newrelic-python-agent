@@ -106,9 +106,13 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True,
 ])
 @pytest.mark.parametrize('request_type', ['uri', 'class'])
 @pytest.mark.parametrize('num_requests', [1, 2])
-@pytest.mark.parametrize('distributed_tracing', [True, False])
+@pytest.mark.parametrize('distributed_tracing,span_events', (
+    (True, True),
+    (True, False),
+    (False, False),
+))
 def test_httpclient(cat_enabled, request_type, client_class,
-        user_header, num_requests, distributed_tracing, external):
+        user_header, num_requests, distributed_tracing, span_events, external):
 
     port = external.port
 
@@ -116,13 +120,10 @@ def test_httpclient(cat_enabled, request_type, client_class,
         ('External/localhost:%s/tornado.httpclient/GET' % port, num_requests)
     ]
 
-    feature_flag = set()
-    if distributed_tracing:
-        feature_flag.add('distributed_tracing')
-
-    @override_application_settings(
-            {'cross_application_tracer.enabled': cat_enabled,
-             'feature_flag': feature_flag})
+    @override_application_settings({
+        'distributed_tracing.enabled': distributed_tracing,
+        'span_events.enabled': span_events,
+    })
     @validate_transaction_metrics(
         'test_externals:test_httpclient',
         background_task=True,
@@ -161,7 +162,7 @@ def test_httpclient(cat_enabled, request_type, client_class,
             t._test_request_headers = headers
 
             if distributed_tracing:
-                validate_distributed_tracing_header()
+                validate_distributed_tracing_header(header='Newrelic')
             else:
                 validate_outbound_headers()
         else:
@@ -189,6 +190,7 @@ def test_client_cat_response_processing(cat_enabled, request_type,
         'encoding_key': ENCODING_KEY,
         'trusted_account_ids': [1],
         'cross_application_tracer.enabled': cat_enabled,
+        'distributed_tracing.enabled': False,
         'transaction_tracer.transaction_threshold': 0.0,
     }
 

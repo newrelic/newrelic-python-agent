@@ -112,8 +112,6 @@ def initialize_agent(app_name=None, default_settings={}):
     for name, value in default_settings.items():
         apply_config_setting(settings, name, value)
 
-    settings.feature_flag.add('span_events')
-
     env_directory = os.environ.get('TOX_ENVDIR', None)
 
     if env_directory is not None:
@@ -851,6 +849,8 @@ def check_event_attributes(event_data, required_params, forgone_params,
             assert param not in agent_attributes
         for param in forgone_params['user']:
             assert param not in user_attributes
+        for param in forgone_params['intrinsic']:
+            assert param not in intrinsics
 
     if exact_attrs:
         for param, value in exact_attrs['agent'].items():

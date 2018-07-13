@@ -16,12 +16,14 @@ from newrelic.api.background_task import background_task
 _enable_instance_settings = {
     'datastore_tracer.instance_reporting.enabled': True,
     'datastore_tracer.database_name_reporting.enabled': True,
-    'feature_flag': set(['span_events']),
+    'distributed_tracing.enabled': True,
+    'span_events.enabled': True,
 }
 _disable_instance_settings = {
     'datastore_tracer.instance_reporting.enabled': False,
     'datastore_tracer.database_name_reporting.enabled': False,
-    'feature_flag': set(['span_events']),
+    'distributed_tracing.enabled': True,
+    'span_events.enabled': True,
 }
 
 # Expected parameters

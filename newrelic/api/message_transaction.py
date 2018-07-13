@@ -4,6 +4,7 @@ import sys
 from newrelic.api.application import Application, application_instance
 from newrelic.core.attribute import create_agent_attributes
 from newrelic.api.background_task import BackgroundTask
+from newrelic.api.message_trace import MessageTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
@@ -22,9 +23,27 @@ class MessageTransaction(BackgroundTask):
         super(MessageTransaction, self).__init__(application, name,
                 group=group)
 
+        cat_id, cat_transaction, dt_transaction = None, None, None
+
+        self.headers = headers
+
+        if self.headers:
+            cat_id = self.headers.pop(
+                MessageTrace.cat_id_key, None)
+            cat_transaction = self.headers.pop(
+                MessageTrace.cat_transaction_key, None)
+            dt_transaction = self.headers.pop(
+                MessageTrace.cat_distributed_trace_key, None)
+
+        if self.settings is not None:
+            if self.settings.distributed_tracing.enabled and dt_transaction:
+                self.accept_distributed_trace_payload(dt_transaction,
+                    transport_type='AMQP')
+            elif self.settings.cross_application_tracer.enabled:
+                self._process_incoming_cat_headers(cat_id, cat_transaction)
+
         self.routing_key = routing_key
         self.exchange_type = exchange_type
-        self.headers = headers
         self.queue_name = queue_name
         self.reply_to = reply_to
         self.correlation_id = correlation_id

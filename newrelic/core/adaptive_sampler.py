@@ -6,6 +6,7 @@ class AdaptiveSampler(object):
         # "sampled" transactions.
         self.sampling_target = sampling_target
         self.max_sampled = sampling_target
+        self.max_ratio = 0.5
 
         self.transaction_count = 0
         self.sampled_count = 0
@@ -13,6 +14,7 @@ class AdaptiveSampler(object):
     def compute_sampled(self, priority):
         if self.sampled_count >= self.max_sampled:
             return False
+
         elif priority >= self.min_sampling_priority:
             self.sampled_count += 1
 
@@ -20,7 +22,7 @@ class AdaptiveSampler(object):
             target = self.sampling_target
             if self.sampled_count > target:
                 ratio = target / float(self.sampled_count)
-                target = target ** ratio - target ** 0.51
+                target = target ** ratio - target ** self.max_ratio
                 target = max(0.0, target)
 
                 self._update_min_priority(target)

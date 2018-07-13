@@ -17,11 +17,13 @@ MEMCACHED_ADDR = '%s:%s' % (DB_SETTINGS['host'], DB_SETTINGS['port'])
 
 _enable_instance_settings = {
     'datastore_tracer.instance_reporting.enabled': True,
-    'feature_flag': set(['span_events'])
+    'distributed_tracing.enabled': True,
+    'span_events.enabled': True,
 }
 _disable_instance_settings = {
     'datastore_tracer.instance_reporting.enabled': False,
-    'feature_flag': set(['span_events'])
+    'distributed_tracing.enabled': True,
+    'span_events.enabled': True,
 }
 
 _host = instance_hostname(DB_SETTINGS['host'])

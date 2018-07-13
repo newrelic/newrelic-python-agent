@@ -967,7 +967,7 @@ class StatsEngine(object):
 
         # Merge in span events
 
-        if (transaction.sampled and 'span_events' in settings.feature_flag and
+        if (settings.distributed_tracing.enabled and transaction.sampled and
                 settings.span_events.enabled):
             for event in transaction.span_events(self.__stats_table):
                 self.__span_events.add(event, priority=transaction.priority)

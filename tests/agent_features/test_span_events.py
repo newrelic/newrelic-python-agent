@@ -16,14 +16,10 @@ from testing_support.validators.validate_span_events import (
         validate_span_events)
 
 
-@pytest.mark.parametrize(
-    'span_events_enabled,spans_feature_flag,txn_sampled', [
-        (True, True, True),
-        (True, False, True),
-        (False, True, True),
-        (True, True, False),
-])
-def test_span_events(span_events_enabled, spans_feature_flag, txn_sampled):
+@pytest.mark.parametrize('dt_enabled', (True, False))
+@pytest.mark.parametrize('span_events_enabled', (True, False))
+@pytest.mark.parametrize('txn_sampled', (True, False))
+def test_span_events(dt_enabled, span_events_enabled, txn_sampled):
     guid = 'dbb536c53b749e0b'
     sentinel_guid = '0687e0c371ea2c4e'
     function_guid = '482439c52de807ee'
@@ -40,12 +36,12 @@ def test_span_events(span_events_enabled, spans_feature_flag, txn_sampled):
         child()
 
     _settings = {
-        'span_events.enabled': span_events_enabled,
-        'feature_flag': set(['span_events']) if spans_feature_flag else set(),
+        'distributed_tracing.enabled': dt_enabled,
+        'span_events.enabled': span_events_enabled
     }
 
     count = 0
-    if span_events_enabled and spans_feature_flag and txn_sampled:
+    if dt_enabled and span_events_enabled and txn_sampled:
         count = 1
 
     exact_intrinsics_common = {
@@ -59,17 +55,14 @@ def test_span_events(span_events_enabled, spans_feature_flag, txn_sampled):
 
     exact_intrinsics_root = exact_intrinsics_common.copy()
     exact_intrinsics_root['name'] = 'Function/transaction'
-    exact_intrinsics_root['parentId'] = guid
 
     exact_intrinsics_function = exact_intrinsics_common.copy()
     exact_intrinsics_function['name'] = 'Function/function'
     exact_intrinsics_function['parentId'] = sentinel_guid
-    exact_intrinsics_function['grandparentId'] = guid
 
     exact_intrinsics_child = exact_intrinsics_common.copy()
     exact_intrinsics_child['name'] = 'Function/child'
     exact_intrinsics_child['parentId'] = function_guid
-    exact_intrinsics_child['grandparentId'] = sentinel_guid
 
     @validate_span_events(count=count,
             exact_intrinsics=exact_intrinsics_root,
@@ -105,11 +98,14 @@ def test_span_events(span_events_enabled, spans_feature_flag, txn_sampled):
     (SolrTrace, ('lib', 'command')),
 ))
 def test_each_span_type(trace_type, args):
-
     @validate_span_events(count=2)
-    @override_application_settings({'feature_flag': set(['span_events'])})
+    @override_application_settings({
+        'distributed_tracing.enabled': True,
+        'span_events.enabled': True,
+    })
     @background_task(name='test_each_span_type')
     def _test():
+
         transaction = current_transaction()
         transaction._sampled = True
 

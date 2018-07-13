@@ -9,15 +9,15 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.core.config import finalize_application_settings
+from newrelic.core.adaptive_sampler import AdaptiveSampler
 
 import newrelic.tests.test_cases
 
 settings = newrelic.api.settings.settings()
 application = application_instance()
 
-
-DISTRIBUTED_TRACE_KEYS_REQUIRED = (
-        'ty', 'ac', 'ap', 'id', 'tr', 'pr', 'sa', 'ti')
+OUTBOUND_TRACE_KEYS_REQUIRED = (
+        'ty', 'ac', 'ap', 'tr', 'pr', 'sa', 'ti')
 
 
 class MockApplication(object):
@@ -139,11 +139,9 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         super(TestTransactionApis, self).setUp()
         environ = {'REQUEST_URI': '/transaction_apis'}
         self.transaction = WebTransaction(application, environ)
-        self.transaction._settings.cross_application_tracer.enabled = True
-        self.transaction._settings.feature_flag = set(['distributed_tracing'])
+        self.transaction._settings.distributed_tracing.enabled = True
 
-        self.application._transaction_sampled_count = 0
-        self.application._min_sampling_priority = 0.0
+        self.application.adaptive_sampler = AdaptiveSampler(10)
 
     def tearDown(self):
         if current_transaction():
@@ -154,11 +152,13 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         'd': {
             'ty': 'Mobile',
             'ac': '1',
+            'tk': '1',
             'ap': '2827902',
             'pa': '5e5733a911cfbc73',
             'id': '7d3efb1b173fecfa',
             'tr': 'd6b4ba0c3a712ca',
             'ti': 1518469636035,
+            'tx': '8703ff3d88eefe9d',
         }
     }
 
@@ -197,13 +197,13 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             data = payload['d']
 
             # Check required keys
-            assert all(k in data for k in DISTRIBUTED_TRACE_KEYS_REQUIRED)
+            assert all(k in data for k in OUTBOUND_TRACE_KEYS_REQUIRED)
 
             # Type is always App
             assert data['ty'] == 'App'
 
             # IDs should be the transaction GUID
-            assert data['id'] == self.transaction.guid
+            assert data['tx'] == self.transaction.guid
             assert data['tr'] == self.transaction.guid
 
             # Parent should be excluded
@@ -211,7 +211,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
     ##############################################
 
-    def _standard_trace_test(self, expected_id, expected_parent_id):
+    def _standard_trace_test(self, expected_tx, expected_id=None):
         self.transaction._trace_id = 'qwerty'
         self.transaction._priority = 1.0
 
@@ -224,24 +224,31 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         assert data['ty'] == 'App'
 
         # Check required keys
-        assert all(k in data for k in DISTRIBUTED_TRACE_KEYS_REQUIRED)
+        assert all(k in data for k in OUTBOUND_TRACE_KEYS_REQUIRED)
 
         assert data['tr'] == 'qwerty'
         assert data['pr'] == self.transaction._priority
+        assert data['tx'] == expected_tx
 
-        assert data['id'] == expected_id
-        assert data['pa'] == expected_parent_id
+        trusted_key = str(self.transaction.settings.trusted_account_key)
+        if 'tk' in data:
+            assert data['tk'] == trusted_key
+        else:
+            assert data['ac'] == trusted_key
 
-    def test_distributed_trace_referring_transaction(self):
+        if expected_id is None:
+            assert 'id' not in data
+        else:
+            assert data['id'] == expected_id
+
+    def test_distributed_trace_no_spans(self):
+        self.transaction._settings.span_events.enabled = False
+
         with self.transaction:
-            self.transaction.parent_id = 'abcde'
-
-            # ID should be the transaction GUID, Parent data should be
-            # forwarded
-            self._standard_trace_test(self.transaction.guid, 'abcde')
+            # ID should be the transaction GUID
+            self._standard_trace_test(self.transaction.guid)
 
     def test_distributed_trace_with_spans_no_parent(self):
-        self.transaction._settings.feature_flag.add('span_events')
         self.transaction._settings.span_events.enabled = True
 
         with self.transaction:
@@ -249,39 +256,28 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             self.transaction.guid = 'this is guid'
 
             # ID and parent should be from the span
-            self._standard_trace_test('abcde', 'this is guid')
-
-    def test_distributed_trace_with_spans_with_parent(self):
-        self.transaction._settings.feature_flag.add('span_events')
-        self.transaction._settings.span_events.enabled = True
-
-        with self.transaction:
-            with FunctionTrace(self.transaction, 'trace_1') as trace:
-                trace.guid = 'abcde'
-                trace.parent.guid = 'this is guid'
-
-                # ID and parent should be from the span
-                self._standard_trace_test('abcde', 'this is guid')
+            self._standard_trace_test('this is guid', 'abcde')
 
     def test_distributed_trace_with_spans_not_enabled(self):
-        self.transaction._settings.feature_flag.add('span_events')
         self.transaction._settings.span_events.enabled = False
 
         with self.transaction:
-            self.transaction.parent_id = 'abcde'
-
-            # ID should be the transaction GUID, Parent data should be
-            # forwarded
-            self._standard_trace_test(self.transaction.guid, 'abcde')
+            # ID should be the transaction GUID
+            self._standard_trace_test(self.transaction.guid)
 
     ##############################################
 
     def test_accept_distributed_trace_payload_encoded(self):
         with self.transaction:
-            payload = ('eyJ2IjpbMCwxXSwiZCI6eyJ0eSI6IkFwcCIsImFjIjoiMjAyNjQiLC'
-                'JhcCI6IjEwMTk1IiwiaWQiOiIyNjFhY2E5YmM4YWVjMzc0IiwidHIiOiIyNjF'
-                'hY2E5YmM4YWVjMzc0IiwicHIiOjAuMjczMTM1OTc2NTQ0MjQ1NCwic2EiOmZh'
-                'bHNlLCJ0aSI6MTUyNDAxMDIyNjYxMH19')
+            # the tk is hardcoded in this encoded payload, so lets hardcode it
+            # here, too
+            self.transaction.settings.trusted_account_key = '1'
+
+            payload = ('eyJkIjogeyJwciI6IDAuMjczMTM1OTc2NTQ0MjQ1NCwgImFjIjogIj'
+                'IwMjY0IiwgInR4IjogIjI2MWFjYTliYzhhZWMzNzQiLCAidHkiOiAiQXBwIiw'
+                'gInRyIjogIjI2MWFjYTliYzhhZWMzNzQiLCAiYXAiOiAiMTAxOTUiLCAidGsi'
+                'OiAiMSIsICJ0aSI6IDE1MjQwMTAyMjY2MTAsICJzYSI6IGZhbHNlfSwgInYiO'
+                'iBbMCwgMV19')
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
 
@@ -333,11 +329,21 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
     def test_accept_distributed_trace_payload_discard_accounts(self):
         with self.transaction:
             payload = self._make_test_payload(ac='9999999999999')
+            del payload['d']['tk']
+
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
             assert ('Supportability/DistributedTrace/'
                     'AcceptPayload/Ignored/UntrustedAccount'
                     in self.transaction._transaction_metrics)
+
+    def test_accept_distributed_trace_payload_tk_defaults_to_ac(self):
+        with self.transaction:
+            payload = self._make_test_payload()
+            del payload['d']['tk']
+
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert result
 
     def test_accept_distributed_trace_payload_priority_found(self):
         with self.transaction:
@@ -358,6 +364,28 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             payload = json.dumps(payload)
             assert isinstance(payload, str)
             result = self.transaction.accept_distributed_trace_payload(payload)
+            assert result
+
+    def test_accept_distributed_trace_payload_tx_missing(self):
+        with self.transaction:
+            payload = self._make_test_payload()
+            del payload['d']['tx']
+
+            payload = json.dumps(payload)
+            assert isinstance(payload, str)
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert result
+
+    def test_accept_distributed_trace_payload_id_and_tx_missing(self):
+        with self.transaction:
+            payload = self._make_test_payload()
+            del payload['d']['id']
+            del payload['d']['tx']
+
+            payload = json.dumps(payload)
+            assert isinstance(payload, str)
+            result = self.transaction.accept_distributed_trace_payload(payload)
+
             assert not result
             assert ('Supportability/DistributedTrace/'
                     'AcceptPayload/ParseException'
@@ -378,17 +406,6 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
             assert self.transaction.sampled == original_sampled
-
-    def test_accept_distributed_trace_payload_parent_grandparent_ids(self):
-        with self.transaction:
-            parent_id = 'parent id'
-            grandparent_id = 'grandparent id'
-            payload = self._make_test_payload(id=parent_id, pa=grandparent_id)
-
-            result = self.transaction.accept_distributed_trace_payload(payload)
-            assert result
-            assert self.transaction.parent_id == parent_id
-            assert self.transaction.grandparent_id == grandparent_id
 
     def test_accept_distributed_trace_payload_trace_id(self):
         with self.transaction:
@@ -421,12 +438,27 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             # Transport duration is at least 1 second
             assert self.transaction.parent_transport_duration > 1
 
+    def test_accept_distributed_trace_payload_transport_type(self):
+        with self.transaction:
+            payload = self._make_test_payload()
+            result = self.transaction.accept_distributed_trace_payload(payload,
+                        transport_type='HTTPS')
+            assert result
+            assert self.transaction.parent_transport_type == 'HTTPS'
+
+    def test_accept_distributed_trace_payload_unknown_transport_type(self):
+        with self.transaction:
+            payload = self._make_test_payload()
+            result = self.transaction.accept_distributed_trace_payload(payload,
+                        transport_type='Kefka')
+            assert result
+            assert self.transaction.parent_transport_type == 'Unknown'
+
     def test_distributed_trace_attributes_default(self):
         with self.transaction:
             assert self.transaction.priority is None
             assert self.transaction.parent_type is None
-            assert self.transaction.parent_id is None
-            assert self.transaction.grandparent_id is None
+            assert self.transaction.parent_span is None
             assert self.transaction.parent_app is None
             assert self.transaction.parent_account is None
             assert self.transaction.parent_transport_type is None
@@ -443,6 +475,11 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
     def test_create_payload_cat_disabled(self):
         self.transaction._settings.cross_application_tracer.enabled = False
         with self.transaction:
+            assert self.transaction.create_distributed_tracing_payload()
+
+    def test_create_payload_dt_disabled(self):
+        self.transaction._settings.distributed_tracing.enabled = False
+        with self.transaction:
             assert not self.transaction.create_distributed_tracing_payload()
 
     def test_accept_payload_prior_to_connect(self):
@@ -457,10 +494,10 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         with self.transaction:
             payload = self._make_test_payload()
             result = self.transaction.accept_distributed_trace_payload(payload)
-            assert not result
+            assert result
 
-    def test_accept_payload_feature_flag_off(self):
-        self.transaction._settings.feature_flag = set()
+    def test_accept_payload_feature_off(self):
+        self.transaction._settings.distributed_tracing.enabled = False
         with self.transaction:
             payload = self._make_test_payload()
             result = self.transaction.accept_distributed_trace_payload(payload)
@@ -500,12 +537,12 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             inbound_payload = self._make_test_payload()
             result = self.transaction.accept_distributed_trace_payload(
                     inbound_payload)
+
             assert result
             outbound_payload = \
                     self.transaction.create_distributed_tracing_payload()
             data = outbound_payload['d']
             assert data['ty'] == 'App'
-            assert data['pa'] == '7d3efb1b173fecfa'
             assert data['tr'] == 'd6b4ba0c3a712ca'
 
     def test_sampled_repeated_call(self):
@@ -619,7 +656,7 @@ class TestTransactionDeterministic(newrelic.tests.test_cases.TestCase):
 
         self.transaction = WebTransaction(mock_app, environ)
         self.transaction._settings.cross_application_tracer.enabled = True
-        self.transaction._settings.feature_flag = set(['distributed_tracing'])
+        self.transaction._settings.distributed_tracing.enabled = True
 
     def tearDown(self):
         if current_transaction():
@@ -632,6 +669,20 @@ class TestTransactionDeterministic(newrelic.tests.test_cases.TestCase):
             assert self.transaction.sampled is False
             assert self.transaction.priority == 1.0
 
+    def test_priority_length(self):
+        with self.transaction:
+            # ensure that pre-set priorities don't get truncated
+            self.transaction._sampled = False
+            self.transaction._priority = 0.5324235423523523
+            self.transaction._compute_sampled_and_priority()
+            assert self.transaction.priority == 0.5324235423523523
+
+            # newly generated priorities should be truncated to
+            # at most 5 digits behind the decimal
+            self.transaction._priority = None
+            self.transaction._compute_sampled_and_priority()
+            assert len(str(self.transaction.priority)) <= 7
+
 
 class TestTransactionComputation(newrelic.tests.test_cases.TestCase):
 
@@ -642,7 +693,7 @@ class TestTransactionComputation(newrelic.tests.test_cases.TestCase):
 
         environ = {'REQUEST_URI': '/transaction_computation'}
         self.transaction = WebTransaction(application, environ)
-        self.transaction._settings.feature_flag = set(['distributed_tracing'])
+        self.transaction._settings.distributed_tracing.enabled = True
 
     def test_sampled_is_always_computed(self):
         with self.transaction:

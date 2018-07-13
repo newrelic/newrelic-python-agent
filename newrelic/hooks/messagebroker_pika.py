@@ -35,6 +35,8 @@ def _add_consume_rabbitmq_trace(transaction, method, properties,
                 MessageTrace.cat_id_key, None)
         headers.pop(
                 MessageTrace.cat_transaction_key, None)
+        headers.pop(
+                MessageTrace.cat_distributed_trace_key, None)
 
     # The transaction may have started after the message was received. In this
     # case, the start time is reset to the true transaction start time.
@@ -87,6 +89,7 @@ def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
     properties.headers = properties.headers or {}
     user_headers = properties.headers.copy()
     cat_headers = MessageTrace.generate_request_headers(transaction)
+
     for name, value in cat_headers:
         properties.headers[name] = value
 
@@ -95,6 +98,8 @@ def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
         del user_headers[MessageTrace.cat_id_key]
     if MessageTrace.cat_transaction_key in user_headers:
         del user_headers[MessageTrace.cat_transaction_key]
+    if MessageTrace.cat_distributed_trace_key in user_headers:
+        del user_headers[MessageTrace.cat_distributed_trace_key]
 
     args = (exchange, routing_key, body, properties, mandatory, immediate)
 
@@ -228,13 +233,6 @@ def _ConsumeGeneratorWrapper(wrapped):
                     correlation_id = getattr(
                             properties, 'correlation_id', None)
 
-                cat_id, cat_transaction = None, None
-                if headers:
-                    cat_id = headers.pop(
-                            MessageTrace.cat_id_key, None)
-                    cat_transaction = headers.pop(
-                            MessageTrace.cat_transaction_key, None)
-
                 # Create a messagebroker task for each iteration through the
                 # generator. This is important because it is foreseeable that
                 # the generator process lasts a long time and consumes many
@@ -251,7 +249,6 @@ def _ConsumeGeneratorWrapper(wrapped):
                         correlation_id=correlation_id)
                 bt.__enter__()
 
-                bt._process_incoming_cat_headers(cat_id, cat_transaction)
                 return bt
 
         def _generator(generator):
@@ -345,14 +342,6 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
                 else:
                     unknown_kwargs = True
 
-                # If headers are available, attempt to process CAT
-                cat_id, cat_transaction = None, None
-                if headers:
-                    cat_id = headers.pop(
-                            MessageTrace.cat_id_key, None)
-                    cat_transaction = headers.pop(
-                            MessageTrace.cat_transaction_key, None)
-
                 with MessageTransaction(
                         application=application_instance(),
                         library='RabbitMQ',
@@ -373,9 +362,6 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
                     if unknown_kwargs:
                         m = mt._transaction_metrics.get(KWARGS_ERROR, 0)
                         mt._transaction_metrics[KWARGS_ERROR] = m + 1
-
-                    # Process CAT headers
-                    mt._process_incoming_cat_headers(cat_id, cat_transaction)
 
                     return _wrapped(*_args, **_kwargs)
 

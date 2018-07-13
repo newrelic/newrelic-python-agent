@@ -58,8 +58,6 @@ _FEATURE_FLAGS = set([
     'tornado.instrumentation.r3',
     'tornado.instrumentation.r4',
     'django.instrumentation.inclusion-tags.r1',
-    'distributed_tracing',
-    'span_events',
 ])
 
 # Names of configuration file and deployment environment. This
@@ -422,6 +420,8 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'custom_insights_events.max_samples_stored',
                      'getint', None)
+    _process_setting(section, 'distributed_tracing.enabled',
+                     'getboolean', None)
     _process_setting(section, 'span_events.enabled',
                      'getboolean', None)
     _process_setting(section, 'span_events.max_samples_stored',
@@ -470,8 +470,6 @@ def _process_configuration(section):
                      'getint', None)
     _process_setting(section, 'agent_limits.max_outstanding_traces',
                     'getint', None)
-    _process_setting(section, 'agent_limits.sampling_target',
-                    'getint', None)
     _process_setting(section, 'console.listener_socket',
                      'get', _map_console_listener_socket)
     _process_setting(section, 'console.allow_interpreter_cmd',
@@ -499,6 +497,8 @@ def _process_configuration(section):
     _process_setting(section, 'debug.log_explain_plan_queries',
                      'getboolean', None)
     _process_setting(section, 'debug.log_autorum_middleware',
+                     'getboolean', None)
+    _process_setting(section, 'debug.log_untrusted_distributed_trace_keys',
                      'getboolean', None)
     _process_setting(section, 'debug.enable_coroutine_profiling',
                      'getboolean', None)

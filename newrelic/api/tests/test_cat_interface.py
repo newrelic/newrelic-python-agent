@@ -88,6 +88,7 @@ class TestCatInterface(newrelic.tests.test_cases.TestCase):
         txn._settings.cross_process_id = "1#1"
         txn._settings.encoding_key = "shhh"
         txn._settings.cross_application_tracer.enabled = True
+        txn._settings.distributed_tracing.enabled = False
         txn._settings.trusted_account_ids = [1]
 
     def test_generate_response_without_headers(self):

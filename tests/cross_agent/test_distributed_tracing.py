@@ -19,10 +19,10 @@ CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures',
     'distributed_tracing'))
 
-_parameters_list = ['test_name', 'inbound_payloads', 'trusted_account_ids',
-        'exact_intrinsics', 'expected_intrinsics', 'unexpected_intrinsics',
-        'expected_metrics', 'background_task', 'raises_exception',
-        'feature_flag', 'outbound_payloads_d']
+_parameters_list = ['test_name', 'inbound_payloads',
+        'trusted_account_key', 'exact_intrinsics', 'expected_intrinsics',
+        'unexpected_intrinsics', 'expected_metrics', 'background_task',
+        'raises_exception', 'feature_flag', 'outbound_payloads_d']
 _parameters = ','.join(_parameters_list)
 
 
@@ -81,7 +81,6 @@ def target_wsgi_application(environ, start_response):
         assert not result
 
     outbound_payloads_d = test_settings['outbound_payloads_d']
-    feature_flag = test_settings['feature_flag'] is not False
     if outbound_payloads_d:
         payloads = []
 
@@ -90,20 +89,20 @@ def target_wsgi_application(environ, start_response):
             resp = requests.get('http://localhost:%d' % external.port)
             assert resp.status_code == 200
 
-            if feature_flag:
+            if test_settings['feature_flag']:
                 assert b'X-NewRelic-ID' not in resp.content
                 assert b'X-NewRelic-Transaction' not in resp.content
-                assert b'X-NewRelic-Trace' in resp.content
+                assert b'newrelic' in resp.content
             else:
                 assert b'X-NewRelic-ID' in resp.content
                 assert b'X-NewRelic-Transaction' in resp.content
-                assert b'X-NewRelic-Trace' not in resp.content
+                assert b'newrelic' not in resp.content
 
         with MockExternalHTTPHResponseHeadersServer() as external:
             for expected_payload_d in outbound_payloads_d:
                 make_outbound_request()
 
-                if feature_flag:
+                if test_settings['feature_flag']:
                     assert payloads
                     actual_payload = payloads.pop()
                     data = actual_payload['d']
@@ -120,10 +119,10 @@ test_application = webtest.TestApp(target_wsgi_application)
 
 
 @pytest.mark.parametrize(_parameters, load_tests())
-def test_distributed_tracing(test_name, inbound_payloads, trusted_account_ids,
-        exact_intrinsics, expected_intrinsics, unexpected_intrinsics,
-        expected_metrics, background_task, raises_exception, feature_flag,
-        outbound_payloads_d):
+def test_distributed_tracing(test_name, inbound_payloads,
+        trusted_account_key, exact_intrinsics, expected_intrinsics,
+        unexpected_intrinsics, expected_metrics, background_task,
+        raises_exception, feature_flag, outbound_payloads_d):
 
     global test_settings
     test_settings = {
@@ -132,14 +131,13 @@ def test_distributed_tracing(test_name, inbound_payloads, trusted_account_ids,
         'raises_exception': raises_exception,
         'inbound_payloads': inbound_payloads,
         'outbound_payloads_d': outbound_payloads_d,
-        'feature_flag': feature_flag,
+        'feature_flag': feature_flag is not False
     }
 
     override_settings = {
-        'trusted_account_ids': trusted_account_ids,
+        'distributed_tracing.enabled': feature_flag is not False,
+        'trusted_account_key': trusted_account_key
     }
-    if feature_flag is not False:
-        override_settings['feature_flag'] = set(['distributed_tracing'])
 
     required_params = {'agent': [], 'user': [],
             'intrinsic': expected_intrinsics}
@@ -148,7 +146,7 @@ def test_distributed_tracing(test_name, inbound_payloads, trusted_account_ids,
     exact_attrs = {'agent': {}, 'user': {}, 'intrinsic': exact_intrinsics}
 
     payload = json.dumps(inbound_payloads[0]) if inbound_payloads else ''
-    headers = {'X-NewRelic-Trace': payload}
+    headers = {'newrelic': payload}
 
     @validate_transaction_metrics(test_name,
             rollup_metrics=expected_metrics,
@@ -162,6 +160,7 @@ def test_distributed_tracing(test_name, inbound_payloads, trusted_account_ids,
         assert 'X-NewRelic-App-Data' not in response.headers
 
     if raises_exception:
+        exact_attrs['intrinsic'].pop('parentId')
         _test = validate_error_event_attributes(
                 required_params, forgone_params, exact_attrs)(_test)
 

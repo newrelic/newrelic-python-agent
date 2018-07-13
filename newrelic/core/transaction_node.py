@@ -29,8 +29,8 @@ _TransactionNode = namedtuple('_TransactionNode',
         'is_part_of_cat', 'trip_id', 'path_hash', 'referring_path_hash',
         'alternate_path_hashes', 'trace_intrinsics', 'agent_attributes',
         'distributed_trace_intrinsics', 'user_attributes', 'priority',
-        'sampled', 'parent_transport_duration', 'parent_id', 'parent_type',
-        'parent_account', 'parent_app', 'parent_transport_type',
+        'sampled', 'parent_transport_duration', 'parent_span', 'parent_type',
+        'parent_account', 'parent_app', 'parent_tx', 'parent_transport_type',
         'root_span_guid', 'trace_id'])
 
 
@@ -59,7 +59,7 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
 
     @property
     def distributed_trace_received(self):
-        return self.parent_id is not None
+        return self.trace_id != self.guid
 
     def time_metrics(self, stats):
         """Return a generator yielding the timed metrics for the
@@ -158,7 +158,7 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
 
         # Generate Distributed Tracing metrics
 
-        if 'distributed_tracing' in self.settings.feature_flag:
+        if self.settings.distributed_tracing.enabled:
             if self.distributed_trace_received:
                 dt_tag = "%s/%s/%s/%s/all" % (
                     self.parent_type, self.parent_account,
@@ -467,6 +467,14 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
         if self.synthetics_resource_id:
             intrinsics['nr.guid'] = self.guid
 
+        if self.parent_tx:
+            intrinsics['parentId'] = self.parent_tx
+
+        if (self.settings.distributed_tracing and
+                self.settings.span_events.enabled and
+                self.parent_span):
+            intrinsics['parentSpanId'] = self.parent_span
+
         return intrinsics
 
     def error_events(self, stats_table):
@@ -530,8 +538,7 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
 
         intrinsics = self.distributed_trace_intrinsics.copy()
 
-        if ('distributed_tracing' in self.settings.feature_flag or
-                'span_events' in self.settings.feature_flag):
+        if self.settings.distributed_tracing.enabled:
             intrinsics['guid'] = self.guid
             intrinsics['sampled'] = self.sampled
             intrinsics['priority'] = self.priority
@@ -602,13 +609,11 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
         }
 
         yield self.span_event(base_attrs,
-                parent_guid=self.guid,
-                grandparent_guid=self.parent_id)
+                parent_guid=self.parent_span)
 
         for child in self.children:
             for event in child.span_events(
                     stats,
                     base_attrs,
-                    parent_guid=self.root_span_guid,
-                    grandparent_guid=self.guid):
+                    parent_guid=self.root_span_guid):
                 yield event

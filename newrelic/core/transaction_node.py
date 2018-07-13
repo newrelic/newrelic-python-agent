@@ -602,7 +602,7 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
 
     def span_events(self, stats):
         base_attrs = {
-            'appLocalRootId': self.guid,
+            'transactionId': self.guid,
             'traceId': self.trace_id,
             'sampled': self.sampled,
             'priority': self.priority,

@@ -51,20 +51,15 @@ class DatastoreNodeMixin(GenericNodeMixin):
         i_attrs = attrs[0]
 
         i_attrs['category'] = 'datastore'
-        i_attrs['datastoreProduct'] = self.product
-        i_attrs['datastoreOperation'] = self.operation
+        i_attrs['component'] = self.product
+        i_attrs['db.instance'] = self.database_name or 'Unknown'
+        i_attrs['peer.address'] = '%s:%s' % (
+                self.host or 'Unknown', self.port_path_or_id or 'Unknown')
+        i_attrs['peer.hostname'] = self.instance_hostname or 'Unknown'
+        i_attrs['span.kind'] = 'client'
 
-        if self.database_name:
-            i_attrs['datastoreName'] = self.database_name
-
-        if self.target:
-            i_attrs['datastoreCollection'] = self.target
-
-        if self.host:
-            i_attrs['datastoreHost'] = self.instance_hostname
-
-        if self.port_path_or_id:
-            i_attrs['datastorePortPathOrId'] = self.port_path_or_id
+        if hasattr(self, 'formatted') and self.formatted:
+            i_attrs['db.statement'] = self.formatted
 
         return attrs
 

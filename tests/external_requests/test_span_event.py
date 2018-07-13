@@ -32,7 +32,7 @@ def test_span_events(path):
         'sampled': True,
         'priority': 0.5,
 
-        'category': 'external',
+        'category': 'http',
         'externalUri': uri,
         'externalLibrary': 'requests',
     }

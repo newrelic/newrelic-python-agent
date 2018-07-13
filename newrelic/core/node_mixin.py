@@ -80,7 +80,7 @@ class ExternalNodeMixin(GenericNodeMixin):
         attrs = super(ExternalNodeMixin, self).span_event(*args, **kwargs)
         i_attrs = attrs[0]
 
-        i_attrs['category'] = 'external'
+        i_attrs['category'] = 'http'
         i_attrs['externalUri'] = self.url_with_path
         i_attrs['externalLibrary'] = self.library
 

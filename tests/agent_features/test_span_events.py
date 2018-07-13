@@ -66,6 +66,8 @@ def test_span_events(dt_enabled, span_events_enabled, txn_sampled):
     exact_intrinsics_child['parentId'] = function_guid
 
     @validate_span_events(count=count,
+            expected_intrinsics=['nr.entryPoint'])
+    @validate_span_events(count=count,
             exact_intrinsics=exact_intrinsics_root,
             expected_intrinsics=expected_intrinsics)
     @validate_span_events(count=count,

@@ -597,6 +597,7 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
         # GUID needs to come from Sentinel for the root span event since that
         # is what's forwarded in the distributed trace payload.
         i_attrs['guid'] = self.root_span_guid
+        i_attrs['nr.entryPoint'] = True
 
         return attrs
 
@@ -606,7 +607,6 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
             'traceId': self.trace_id,
             'sampled': self.sampled,
             'priority': self.priority,
-            'nr.entryPoint': True,
         }
 
         yield self.span_event(base_attrs,

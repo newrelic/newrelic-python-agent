@@ -235,7 +235,7 @@ test_app = webtest.TestApp(TargetWSGIApplication())
 
 @pytest.mark.parametrize('test_name', load_dt_tests())
 def test_distributed_tracing(test_name):
-    if test_name in ('spans_disabled_in_child', 'null_payload'):
+    if test_name == 'spans_disabled_in_child':
         pytest.xfail('Waiting on other PR to merge.')
 
     test = tests[test_name]

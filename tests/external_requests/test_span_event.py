@@ -33,8 +33,9 @@ def test_span_events(path):
         'priority': 0.5,
 
         'category': 'http',
-        'externalUri': uri,
-        'externalLibrary': 'requests',
+        'span.kind': 'client',
+        'http.url': uri,
+        'component': 'requests',
     }
     expected_intrinsics = ('timestamp', 'duration', 'transactionId')
 

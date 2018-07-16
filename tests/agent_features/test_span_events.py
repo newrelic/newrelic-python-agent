@@ -157,3 +157,35 @@ def test_database_db_statement_format(sql, sql_format, expected):
             pass
 
     _test()
+
+
+@validate_span_events(
+    count=1,
+    exact_intrinsics={
+        'name': 'External/example.com/library/get',
+        'type': 'Span',
+        'sampled': True,
+
+        'category': 'http',
+        'span.kind': 'client',
+        'http.url': 'http://example.com/foo',
+        'component': 'library',
+        'http.method': 'get',
+    },
+    expected_intrinsics=('priority',),
+)
+@override_application_settings({
+    'distributed_tracing.enabled': True,
+    'span_events.enabled': True,
+})
+@background_task(name='test_external_spans')
+def test_external_spans():
+    transaction = current_transaction()
+    transaction._sampled = True
+
+    with ExternalTrace(
+            transaction,
+            library='library',
+            url='http://example.com/foo?secret=123',
+            method='get'):
+        pass

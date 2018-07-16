@@ -73,10 +73,11 @@ class ExternalNodeMixin(GenericNodeMixin):
         i_attrs = attrs[0]
 
         i_attrs['category'] = 'http'
-        i_attrs['externalUri'] = self.url_with_path
-        i_attrs['externalLibrary'] = self.library
+        i_attrs['span.kind'] = 'client'
+        i_attrs['http.url'] = self.url_with_path
+        i_attrs['component'] = self.library
 
         if self.method:
-            i_attrs['externalProcedure'] = self.method
+            i_attrs['http.method'] = self.method
 
         return attrs

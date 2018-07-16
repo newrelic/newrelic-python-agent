@@ -116,3 +116,44 @@ def test_each_span_type(trace_type, args):
             pass
 
     _test()
+
+
+@pytest.mark.parametrize('sql,sql_format,expected', (
+    pytest.param(
+            'a' * 2001,
+            'raw',
+            ''.join(['a'] * 1997 + ['...']),
+            id='truncate'),
+    pytest.param(
+            'a' * 2000,
+            'raw',
+            ''.join(['a'] * 2000),
+            id='no_truncate'),
+    pytest.param(
+            'select * from %s' % ''.join(['?'] * 2000),
+            'obfuscated',
+            'select * from %s...' % (
+                    ''.join(['?'] * (2000 - len('select * from ') - 3))),
+            id='truncate_obfuscated'),
+    pytest.param('select 1', 'off', ''),
+    pytest.param('select 1', 'raw', 'select 1'),
+    pytest.param('select 1', 'obfuscated', 'select ?'),
+))
+def test_database_db_statement_format(sql, sql_format, expected):
+    @validate_span_events(count=1, exact_intrinsics={
+        'db.statement': expected,
+    })
+    @override_application_settings({
+        'distributed_tracing.enabled': True,
+        'span_events.enabled': True,
+        'transaction_tracer.record_sql': sql_format,
+    })
+    @background_task(name='test_database_db_statement_format')
+    def _test():
+        transaction = current_transaction()
+        transaction._sampled = True
+
+        with DatabaseTrace(transaction, sql):
+            pass
+
+    _test()

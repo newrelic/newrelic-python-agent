@@ -153,31 +153,32 @@ def test_application_harvest():
 
 
 @pytest.mark.parametrize(
-    'span_events_enabled,spans_created', [
-        (True, 1),
-        (True, 15),
-        (False, 1),
+    'distributed_tracing_enabled,span_events_enabled,spans_created', [
+        (True, True, 1),
+        (True, True, 15),
+        (True, False, 1),
+        (True, True, 0),
+        (True, False, 0),
+        (False, True, 0),
 ])
-def test_application_harvest_with_spans(span_events_enabled, spans_created):
+def test_application_harvest_with_spans(distributed_tracing_enabled,
+        span_events_enabled, spans_created):
 
     span_endpoints_called = []
     max_samples_stored = 10
 
-    if span_events_enabled:
+    if distributed_tracing_enabled and span_events_enabled:
         seen = spans_created
         sent = min(spans_created, max_samples_stored)
-        discarded = seen - sent
     else:
         seen = None
         sent = None
-        discarded = None
 
     spans_required_metrics = list(required_metrics)
 
     spans_required_metrics.extend([
         ('Supportability/SpanEvent/TotalEventsSeen', seen),
         ('Supportability/SpanEvent/TotalEventsSent', sent),
-        ('Supportability/SpanEvent/Discarded', discarded),
     ])
 
     @validate_metric_payload(metrics=spans_required_metrics,
@@ -185,7 +186,7 @@ def test_application_harvest_with_spans(span_events_enabled, spans_created):
     @override_generic_settings(settings, {
         'developer_mode': True,
         'license_key': '**NOT A LICENSE KEY**',
-        'distributed_tracing.enabled': True,
+        'distributed_tracing.enabled': distributed_tracing_enabled,
         'span_events.enabled': span_events_enabled,
         'span_events.max_samples_stored': max_samples_stored,
     })
@@ -205,7 +206,7 @@ def test_application_harvest_with_spans(span_events_enabled, spans_created):
         # span_event_data is the 3rd to last endpoint called
         assert span_endpoints_called[-2] == 'metric_data'
 
-        if span_events_enabled:
+        if span_events_enabled and spans_created > 0:
             assert span_endpoints_called[-3] == 'span_event_data'
         else:
             assert span_endpoints_called[-3] != 'span_event_data'

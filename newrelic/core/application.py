@@ -1423,7 +1423,8 @@ class Application(object):
 
                     # Send span events
 
-                    if stats.settings.span_events.enabled:
+                    if (configuration.span_events.enabled and
+                            configuration.distributed_tracing.enabled):
                         spans = stats.span_events
                         if spans.num_samples > 0:
                             _logger.debug('Sending span event data '
@@ -1439,8 +1440,6 @@ class Application(object):
                                 'TotalEventsSeen', spans_seen)
                         internal_count_metric('Supportability/SpanEvent/'
                                 'TotalEventsSent', spans_sampled)
-                        internal_count_metric('Supportability/SpanEvent/'
-                                'Discarded', spans_seen - spans_sampled)
 
                     stats.reset_span_events()
 

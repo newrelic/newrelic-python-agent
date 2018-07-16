@@ -26,24 +26,9 @@ _disable_instance_settings = {
     'span_events.enabled': True,
 }
 
-_host = instance_hostname(DB_SETTINGS['host'])
-_port = DB_SETTINGS['port']
-
-_enabled_required = {
-    'datastoreHost': _host,
-    'datastorePortPathOrId': str(_port),
-}
-_enabled_forgone = ['datastoreName']
-
-_disabled_required = {}
-_disabled_forgone = [
-    'datastoreHost',
-    'datastorePortPathOrId',
-    'datastoreName',
-]
-
 
 # Query
+
 def _exercise_db(client):
     key = DB_SETTINGS['namespace'] + 'key'
     client.set(key, 'value')
@@ -53,6 +38,7 @@ def _exercise_db(client):
 
 
 # Tests
+
 @pytest.mark.parametrize('instance_enabled', (True, False))
 def test_span_events(instance_enabled):
     guid = 'dbb533c53b749e0b'
@@ -64,33 +50,38 @@ def test_span_events(instance_enabled):
         'priority': priority,
         'sampled': True,
         'category': 'datastore',
-        'datastoreProduct': 'Memcached',
+        'component': 'Memcached',
+        'span.kind': 'client',
+        'db.instance': 'Unknown',
     }
 
     if instance_enabled:
         settings = _enable_instance_settings
-        forgone = _enabled_forgone
-        common.update(_enabled_required)
+        hostname = instance_hostname(DB_SETTINGS['host'])
+        common.update({
+            'peer.address': '%s:%s' % (hostname, DB_SETTINGS['port']),
+            'peer.hostname': hostname,
+        })
     else:
         settings = _disable_instance_settings
-        forgone = _disabled_forgone
-        common.update(_disabled_required)
+        common.update({
+            'peer.address': 'Unknown:Unknown',
+            'peer.hostname': 'Unknown',
+        })
 
     query_1 = common.copy()
-    query_1['datastoreOperation'] = 'set'
     query_1['name'] = 'Datastore/operation/Memcached/set'
 
     query_2 = common.copy()
-    query_2['datastoreOperation'] = 'get'
     query_2['name'] = 'Datastore/operation/Memcached/get'
 
     query_3 = common.copy()
-    query_3['datastoreOperation'] = 'delete'
     query_3['name'] = 'Datastore/operation/Memcached/delete'
 
     @validate_span_events(count=1, exact_intrinsics=query_1)
     @validate_span_events(count=1, exact_intrinsics=query_2)
     @validate_span_events(count=1, exact_intrinsics=query_3)
+    @validate_span_events(count=0, expected_intrinsics=('db.statement',))
     @override_application_settings(settings)
     @background_task(name='span_events')
     def _test():
@@ -101,9 +92,5 @@ def test_span_events(instance_enabled):
 
         client = memcache.Client([MEMCACHED_ADDR])
         _exercise_db(client)
-
-    for attr in forgone:
-        _test = validate_span_events(
-                count=0, expected_intrinsics=(attr,))(_test)
 
     _test()

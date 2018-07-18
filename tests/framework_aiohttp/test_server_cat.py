@@ -68,6 +68,15 @@ def test_cat_headers(method, uri, metric_name, inbound_payload,
             'distributed_tracing.enabled': False,
     }
 
+    # NOTE: the logic-flow of this test can be a bit confusing.
+    #       the override settings and attribute validation occur
+    #       not when the request is made (above) since it does not
+    #       occur inside a transaction. instead, the settings and
+    #       validation are for the new transaction that is made
+    #       asynchronously on the *server side* when the request
+    #       is received and subsequently processed. that code is
+    #       a fixture from conftest.py/_target_application.py
+
     @validate_analytics_catmap_data('WebTransaction/Function/%s' % metric_name,
             expected_attributes=expected_intrinsics,
             non_expected_attributes=forgone_intrinsics)
@@ -128,6 +137,15 @@ def test_distributed_tracing_headers(uri, metric_name, aiohttp_app):
         headers = {'newrelic': json.dumps(inbound_payload)}
         yield from aiohttp_app.client.request('GET', uri,
                 headers=headers)
+
+    # NOTE: the logic-flow of this test can be a bit confusing.
+    #       the override settings and attribute validation occur
+    #       not when the request is made (above) since it does not
+    #       occur inside a transaction. instead, the settings and
+    #       validation are for the new transaction that is made
+    #       asynchronously on the *server side* when the request
+    #       is received and subsequently processed. that code is
+    #       a fixture from conftest.py/_target_application.py
 
     @validate_transaction_event_attributes(
         expected_attributes, unexpected_attributes)

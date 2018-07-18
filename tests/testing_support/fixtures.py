@@ -1236,7 +1236,16 @@ def validate_slow_sql_collector_json(required_params=set(),
             'backtrace',
             'host',
             'port_path_or_id',
-            'database_name'
+            'database_name',
+            'parent.type',
+            'parent.app',
+            'parent.account',
+            'parent.transportType',
+            'parent.transportDuration',
+            'guid',
+            'traceId',
+            'priority',
+            'sampled',
         ])
         try:
             result = wrapped(*args, **kwargs)

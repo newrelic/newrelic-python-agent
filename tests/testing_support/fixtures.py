@@ -1225,7 +1225,7 @@ def validate_transaction_error_trace_attributes(required_params={},
 
 
 def validate_slow_sql_collector_json(required_params=set(),
-        forgone_params=set()):
+        forgone_params=set(), exact_params=None):
     """Check that slow_sql json output is in accordance with agent specs.
     """
     @transient_function_wrapper('newrelic.core.stats_engine',
@@ -1284,6 +1284,11 @@ def validate_slow_sql_collector_json(required_params=set(),
                 if forgone_params:
                     for param in forgone_params:
                         assert param not in data
+
+                if exact_params:
+                    for param, value in exact_params.items():
+                        assert param in data
+                        assert data[param] == value
 
         return result
 

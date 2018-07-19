@@ -34,6 +34,9 @@ _distributed_tracing_payload_received_params = set(['parent.type',
     'parent.app', 'parent.account', 'parent.transportType',
     'parent.transportDuration'])
 
+_transaction_guid = '1234567890'
+_distributed_tracing_exact_params = {'guid': _transaction_guid}
+
 
 # Query
 
@@ -62,6 +65,8 @@ def _exercise_db():
 def test_slow_sql_json(instance_enabled, distributed_tracing_enabled,
         payload_received):
 
+    exact_params = None
+
     if instance_enabled:
         settings = _enable_instance_settings.copy()
         required_params = set(_enabled_required)
@@ -73,6 +78,7 @@ def test_slow_sql_json(instance_enabled, distributed_tracing_enabled,
 
     if distributed_tracing_enabled:
         required_params.update(_distributed_tracing_always_params)
+        exact_params = _distributed_tracing_exact_params
         settings['distributed_tracing.enabled'] = True
         if payload_received:
             required_params.update(
@@ -88,9 +94,13 @@ def test_slow_sql_json(instance_enabled, distributed_tracing_enabled,
     @override_application_settings(settings)
     @validate_slow_sql_collector_json(
             required_params=required_params,
-            forgone_params=forgone_params)
+            forgone_params=forgone_params,
+            exact_params=exact_params)
     @background_task()
     def _test():
+        transaction = current_transaction()
+        transaction.guid = _transaction_guid
+
         _exercise_db()
 
         if payload_received:
@@ -110,7 +120,6 @@ def test_slow_sql_json(instance_enabled, distributed_tracing_enabled,
                 }
             }
 
-            transaction = current_transaction()
             transaction.accept_distributed_trace_payload(payload)
 
     _test()

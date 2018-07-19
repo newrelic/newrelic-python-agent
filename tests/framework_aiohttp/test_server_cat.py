@@ -135,8 +135,19 @@ def test_distributed_tracing_headers(uri, metric_name, aiohttp_app):
     @asyncio.coroutine
     def fetch():
         headers = {'newrelic': json.dumps(inbound_payload)}
-        yield from aiohttp_app.client.request('GET', uri,
+        resp = yield from aiohttp_app.client.request('GET', uri,
                 headers=headers)
+
+        try:
+            resp_headers = dict(resp._nr_cat_header)
+        except TypeError:
+            resp_headers = dict(resp.headers)
+
+        # better cat does not send a response in the headers
+        assert 'newrelic' not in resp_headers
+
+        # old-cat headers should not be in the response
+        assert 'X-NewRelic-App-Data' not in resp_headers
 
     # NOTE: the logic-flow of this test can be a bit confusing.
     #       the override settings and attribute validation occur
@@ -150,7 +161,9 @@ def test_distributed_tracing_headers(uri, metric_name, aiohttp_app):
     @validate_transaction_event_attributes(
         expected_attributes, unexpected_attributes)
     @override_application_settings({
+        'account_id': '33',
         'trusted_account_key': '33',
+        'primary_application_id': primary_application_id,
         'distributed_tracing.enabled': True
     })
     def _test():

@@ -1067,9 +1067,9 @@ class StatsEngine(object):
 
         for stats_node in slow_sql_nodes:
 
-            params = {}
-
             slow_sql_node = stats_node.slow_sql_node
+
+            params = slow_sql_node.params or {}
 
             if slow_sql_node.stack_trace:
                 params['backtrace'] = slow_sql_node.stack_trace

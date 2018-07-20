@@ -1086,6 +1086,8 @@ class Transaction(object):
             major_version = version and int(version[0])
 
             if major_version is None:
+                self._record_supportability('Supportability/DistributedTrace/'
+                        'AcceptPayload/ParseException')
                 return False
 
             if major_version > DistributedTracePayload.version[0]:

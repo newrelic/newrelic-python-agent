@@ -58,6 +58,9 @@ class TargetWSGIApplication(object):
         txn = current_transaction()
         txn.set_transaction_name(test.test_name)
 
+        if test.force_sampled_true:
+            txn._sampled = True
+
         # we only ever process/accept the first inbound payload per
         # transaction for distributed tracing; the others should be ignored
         for i in range(1, len(test.inbound_payloads)):
@@ -151,6 +154,9 @@ class CATCAT(object):
 
     def do_background_test(self):
         with BackgroundTask(application(), name=self.test_name) as txn:
+            if self.force_sampled_true:
+                txn._sampled = True
+
             if self.web_transaction:
                 txn.background_task = False
 

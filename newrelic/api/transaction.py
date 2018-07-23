@@ -1036,7 +1036,8 @@ class Transaction(object):
             if account_id != trusted_account_key:
                 data['tk'] = trusted_account_key
 
-            if (settings.span_events.enabled and self.current_node):
+            if (settings.span_events.enabled and
+                    self.current_node and self.sampled):
                 data['id'] = self.current_node.guid
 
             self.is_distributed_trace = True

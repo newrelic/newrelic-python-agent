@@ -5,7 +5,7 @@ except ImportError:
 
 import sqlite3 as db
 
-from newrelic.api.transaction import (add_user_attribute, add_custom_parameter,
+from newrelic.api.transaction import (add_custom_parameter,
         record_exception, get_browser_timing_header, get_browser_timing_footer,
         record_custom_event)
 from newrelic.api.web_transaction import wsgi_application
@@ -53,15 +53,8 @@ def fully_featured_app(environ, start_response):
 
     if use_user_attrs:
 
-        # The add_user_attribute() call is now just an alias for
-        # calling add_custom_parameter() but for backward compatibility
-        # still need to check it works.
-
         for attr, val in _custom_parameters.items():
-            if attr in ['user', 'product', 'account']:
-                add_user_attribute(attr, val)
-            else:
-                add_custom_parameter(attr, val)
+            add_custom_parameter(attr, val)
 
     if 'db' in environ and int(environ['db']) > 0:
         connection = db.connect(":memory:")

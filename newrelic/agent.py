@@ -40,11 +40,6 @@ from newrelic.api.transaction import (
 from newrelic.api.transaction_context import (
         TransactionContext as __TransactionContext)
 
-# DEPRECATED - The add_user_attribute call is deprecated and the
-# add_custom_parameter function should be used instead.
-
-from newrelic.api.transaction import add_user_attribute as __add_user_attribute
-
 from newrelic.api.web_transaction import (
         wsgi_application as __wsgi_application,
         WebTransaction as __WebTransaction,
@@ -210,8 +205,6 @@ record_custom_event = __wrap_api_call(__record_custom_event,
         'record_custom_event')
 TransactionContext = __wrap_api_call(__TransactionContext,
         'TransactionContext')
-add_user_attribute = __wrap_api_call(__add_user_attribute,
-        'add_user_attribute')
 wsgi_application = __wsgi_application
 WebTransaction = __wrap_api_call(__WebTransaction,
         'WebTransaction')

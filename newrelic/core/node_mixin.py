@@ -54,7 +54,8 @@ class DatastoreNodeMixin(GenericNodeMixin):
         i_attrs['component'] = self.product
         i_attrs['db.instance'] = self.database_name or 'Unknown'
         i_attrs['peer.address'] = '%s:%s' % (
-                self.host or 'Unknown', self.port_path_or_id or 'Unknown')
+                self.instance_hostname or 'Unknown',
+                self.port_path_or_id or 'Unknown')
         i_attrs['peer.hostname'] = self.instance_hostname or 'Unknown'
         i_attrs['span.kind'] = 'client'
 

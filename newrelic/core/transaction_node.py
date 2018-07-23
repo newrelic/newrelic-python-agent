@@ -536,12 +536,6 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
 
         intrinsics = self.distributed_trace_intrinsics.copy()
 
-        if self.settings.distributed_tracing.enabled:
-            intrinsics['guid'] = self.guid
-            intrinsics['sampled'] = self.sampled
-            intrinsics['priority'] = self.priority
-            intrinsics['traceId'] = self.trace_id
-
         intrinsics['timestamp'] = self.start_time
         intrinsics['duration'] = self.response_time
 

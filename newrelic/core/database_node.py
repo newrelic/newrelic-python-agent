@@ -13,7 +13,7 @@ _SlowSqlNode = namedtuple('_SlowSqlNode',
         ['duration', 'path', 'request_uri', 'sql', 'sql_format',
         'metric', 'dbapi2_module', 'stack_trace', 'connect_params',
         'cursor_params', 'sql_parameters', 'execute_params',
-        'host', 'port_path_or_id', 'database_name'])
+        'host', 'port_path_or_id', 'database_name', 'params'])
 
 
 class SlowSqlNode(_SlowSqlNode):
@@ -159,6 +159,10 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
         if root.type == 'WebTransaction':
             request_uri = root.request_uri
 
+        params = None
+        if root.distributed_trace_intrinsics:
+            params = root.distributed_trace_intrinsics.copy()
+
         # Note that we do not limit the length of the SQL at this
         # point as we will need the whole SQL query when doing an
         # explain plan. Only limit the length when sending the
@@ -175,7 +179,8 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
                 execute_params=self.execute_params,
                 host=self.instance_hostname,
                 port_path_or_id=self.port_path_or_id,
-                database_name=self.database_name)
+                database_name=self.database_name,
+                params=params)
 
     def trace_node(self, stats, root, connections):
         name = root.string_table.cache(self.name)

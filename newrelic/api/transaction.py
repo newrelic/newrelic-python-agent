@@ -745,12 +745,6 @@ class Transaction(object):
         if self.total_time:
             i_attrs['totalTime'] = self.total_time
 
-        if self._settings.distributed_tracing.enabled:
-            i_attrs['guid'] = self.guid
-            i_attrs['sampled'] = self.sampled
-            i_attrs['priority'] = self.priority
-            i_attrs['traceId'] = self.trace_id
-
         # Add in special CPU time value for UI to display CPU burn.
 
         # XXX Disable cpu time value for CPU burn as was
@@ -771,6 +765,11 @@ class Transaction(object):
 
         if not self._settings.distributed_tracing.enabled:
             return i_attrs
+
+        i_attrs['guid'] = self.guid
+        i_attrs['sampled'] = self.sampled
+        i_attrs['priority'] = self.priority
+        i_attrs['traceId'] = self.trace_id
 
         if not self.is_distributed_trace:
             return i_attrs

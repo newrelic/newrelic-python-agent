@@ -59,3 +59,16 @@ def test_formatted():
 
 def test_instance_hostname():
     assert _db_node.instance_hostname == HOST
+
+
+def test_span_event():
+    span_event = _db_node.span_event()
+    i_attrs = span_event[0]
+
+    # Verify that all hostnames have been converted to instance_hostname
+
+    host, port = i_attrs['peer.address'].split(':')
+    assert host == HOST
+    assert port == '1234'
+
+    assert i_attrs['peer.hostname'] == HOST

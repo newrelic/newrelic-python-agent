@@ -100,12 +100,7 @@ def test_distributed_trace_attributes(span_events, accept_payload):
         _exact_error_attributes = {'agent': {}, 'user': {},
                 'intrinsic': _exact_intrinsics.copy()}
         _exact_txn_attributes['intrinsic']['parentId'] = '7d3efb1b173fecfa'
-
-        if span_events:
-            _exact_txn_attributes['intrinsic']['parentSpanId'] = \
-                    'c86df80de2e6f51c'
-        else:
-            _forgone_txn_intrinsics.append('parentSpanId')
+        _exact_txn_attributes['intrinsic']['parentSpanId'] = 'c86df80de2e6f51c'
 
         _forgone_error_intrinsics.append('parentId')
         _forgone_error_intrinsics.append('parentSpanId')

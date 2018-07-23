@@ -26,22 +26,6 @@ _disable_instance_settings = {
     'span_events.enabled': True,
 }
 
-# Expected parameters
-
-_enabled_required = {
-    'datastoreHost': instance_hostname(DB_SETTINGS['host']),
-    'datastorePortPathOrId': str(DB_SETTINGS['port']),
-    'datastoreName': DB_SETTINGS['name'],
-}
-_enabled_forgone = []
-
-_disabled_required = {}
-_disabled_forgone = [
-    'datastoreHost',
-    'datastorePortPathOrId',
-    'datastoreName',
-]
-
 
 def _exercise_db():
     connection = psycopg2.connect(
@@ -69,29 +53,37 @@ def test_span_events(instance_enabled):
 
     common = {
         'type': 'Span',
-        'appLocalRootId': guid,
+        'transactionId': guid,
         'priority': priority,
         'sampled': True,
         'category': 'datastore',
-        'datastoreProduct': 'Postgres',
-        'datastoreOperation': 'select',
+        'component': 'Postgres',
+        'span.kind': 'client',
     }
 
     if instance_enabled:
         settings = _enable_instance_settings
-        forgone = _enabled_forgone
-        common.update(_enabled_required)
+        hostname = instance_hostname(DB_SETTINGS['host'])
+        common.update({
+            'db.instance': DB_SETTINGS['name'],
+            'peer.address': '%s:%s' % (hostname, DB_SETTINGS['port']),
+            'peer.hostname': hostname,
+        })
     else:
-        forgone = _disabled_forgone
         settings = _disable_instance_settings
-        common.update(_disabled_required)
+        common.update({
+            'db.instance': 'Unknown',
+            'peer.address': 'Unknown:Unknown',
+            'peer.hostname': 'Unknown',
+        })
 
     query_1 = common.copy()
-    query_1['datastoreCollection'] = 'pg_settings'
     query_1['name'] = 'Datastore/statement/Postgres/pg_settings/select'
+    query_1['db.statement'] = 'SELECT setting from pg_settings where name=%s'
 
     query_2 = common.copy()
     query_2['name'] = 'Datastore/operation/Postgres/select'
+    query_2['db.statement'] = 'SELECT ?'
 
     @validate_span_events(count=1, exact_intrinsics=query_1)
     @validate_span_events(count=1, exact_intrinsics=query_2)
@@ -103,9 +95,5 @@ def test_span_events(instance_enabled):
         txn._priority = priority
         txn._sampled = True
         _exercise_db()
-
-    for attr in forgone:
-        _test = validate_span_events(
-                count=0, expected_intrinsics=(attr,))(_test)
 
     _test()

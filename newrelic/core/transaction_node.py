@@ -470,9 +470,7 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
         if self.parent_tx:
             intrinsics['parentId'] = self.parent_tx
 
-        if (self.settings.distributed_tracing and
-                self.settings.span_events.enabled and
-                self.parent_span):
+        if self.parent_span:
             intrinsics['parentSpanId'] = self.parent_span
 
         return intrinsics
@@ -538,12 +536,6 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
 
         intrinsics = self.distributed_trace_intrinsics.copy()
 
-        if self.settings.distributed_tracing.enabled:
-            intrinsics['guid'] = self.guid
-            intrinsics['sampled'] = self.sampled
-            intrinsics['priority'] = self.priority
-            intrinsics['traceId'] = self.trace_id
-
         intrinsics['timestamp'] = self.start_time
         intrinsics['duration'] = self.response_time
 
@@ -597,12 +589,13 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
         # GUID needs to come from Sentinel for the root span event since that
         # is what's forwarded in the distributed trace payload.
         i_attrs['guid'] = self.root_span_guid
+        i_attrs['nr.entryPoint'] = True
 
         return attrs
 
     def span_events(self, stats):
         base_attrs = {
-            'appLocalRootId': self.guid,
+            'transactionId': self.guid,
             'traceId': self.trace_id,
             'sampled': self.sampled,
             'priority': self.priority,

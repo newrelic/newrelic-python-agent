@@ -6,13 +6,14 @@ from newrelic.common import system_info
 from newrelic.core.database_utils import sql_statement, explain_plan
 from newrelic.core.node_mixin import DatastoreNodeMixin
 from newrelic.core.metric import TimeMetric
+from newrelic.core.attribute import truncate
 
 
 _SlowSqlNode = namedtuple('_SlowSqlNode',
         ['duration', 'path', 'request_uri', 'sql', 'sql_format',
         'metric', 'dbapi2_module', 'stack_trace', 'connect_params',
         'cursor_params', 'sql_parameters', 'execute_params',
-        'host', 'port_path_or_id', 'database_name'])
+        'host', 'port_path_or_id', 'database_name', 'params'])
 
 
 class SlowSqlNode(_SlowSqlNode):
@@ -158,6 +159,10 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
         if root.type == 'WebTransaction':
             request_uri = root.request_uri
 
+        params = None
+        if root.distributed_trace_intrinsics:
+            params = root.distributed_trace_intrinsics.copy()
+
         # Note that we do not limit the length of the SQL at this
         # point as we will need the whole SQL query when doing an
         # explain plan. Only limit the length when sending the
@@ -174,7 +179,8 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
                 execute_params=self.execute_params,
                 host=self.instance_hostname,
                 port_path_or_id=self.port_path_or_id,
-                database_name=self.database_name)
+                database_name=self.database_name,
+                params=params)
 
     def trace_node(self, stats, root, connections):
         name = root.string_table.cache(self.name)
@@ -227,3 +233,20 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,
                 label=None)
+
+    def span_event(self, *args, **kwargs):
+        attrs = super(DatabaseNode, self).span_event(*args, **kwargs)
+        i_attrs = attrs[0]
+
+        sql = self.formatted
+
+        # Truncate to 2000 bytes and append ...
+        new_sql = truncate(sql, maxsize=2000)
+        if len(new_sql) != len(sql):
+            sql_chars = list(new_sql)
+            sql_chars[-3:] = '...'
+            sql = ''.join(sql_chars)
+
+        i_attrs['db.statement'] = sql
+
+        return attrs

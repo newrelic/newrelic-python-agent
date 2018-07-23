@@ -32,11 +32,12 @@ def test_span_events(path):
         'sampled': True,
         'priority': 0.5,
 
-        'category': 'external',
-        'externalUri': uri,
-        'externalLibrary': 'requests',
+        'category': 'http',
+        'span.kind': 'client',
+        'http.url': uri,
+        'component': 'requests',
     }
-    expected_intrinsics = ('timestamp', 'duration', 'appLocalRootId')
+    expected_intrinsics = ('timestamp', 'duration', 'transactionId')
 
     @override_application_settings(_settings)
     @validate_span_events(

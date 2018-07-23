@@ -1,6 +1,10 @@
 unreleased
 ----------
 
+- Remove support for Python 2.6 / Python 3.3
+
+  Python 2.6 and Python 3.3 are no longer supported by the Python Agent.
+
 - Remove add_user_attribute APIs from the agent.
 
   The add_user_attribute and add_user_attributes APIs have been removed from

@@ -5,8 +5,7 @@ import sys
 # weren't using them directly.
 
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import (ObjectWrapper, wrap_object,
-        wrap_callable)
+from newrelic.common.object_wrapper import ObjectWrapper, wrap_object
 
 # From Python 3.X. In older Python versions it fails if attributes do
 # not exist and don't maintain a __wrapped__ attribute.

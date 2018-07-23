@@ -13,9 +13,7 @@
 set -e
 
 function create_venvs {
-    virtualenv /venvs/py26 -p /usr/bin/python2.6
     virtualenv /venvs/py27 -p /usr/bin/python2.7
-    virtualenv /venvs/py33 -p /usr/bin/python3.3
     virtualenv /venvs/py34 -p /usr/bin/python3.4
     virtualenv /venvs/py35 -p /usr/bin/python3.5
     virtualenv /venvs/py36 -p /usr/bin/python3.6

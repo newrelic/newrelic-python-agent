@@ -7,6 +7,11 @@ unreleased
   the agent.  These APIs have been replaced with
   newrelic.agent.add_custom_parameter and newrelic.agent.add_custom_parameters.
 
+- Remove wrap_callable API from the agent.
+
+  The wrap_callable API has been removed from the agent. This API has been
+  replaced with newrelic.agent.FunctionWrapper.
+
 
 3.4.0 (2018-07-12)
 ------------------

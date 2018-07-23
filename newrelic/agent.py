@@ -129,7 +129,6 @@ from newrelic.common.object_wrapper import (
         wrap_function_wrapper as __wrap_function_wrapper,
         patch_function_wrapper as __patch_function_wrapper,
         ObjectWrapper as __ObjectWrapper,
-        wrap_callable as __wrap_callable,
         pre_function as __pre_function,
         PreFunctionWrapper as __PreFunctionWrapper,
         wrap_pre_function as __wrap_pre_function,
@@ -316,8 +315,6 @@ patch_function_wrapper = __wrap_api_call(__patch_function_wrapper,
         'patch_function_wrapper')
 ObjectWrapper = __wrap_api_call(__ObjectWrapper,
         'ObjectWrapper')
-wrap_callable = __wrap_api_call(__wrap_callable,
-        'wrap_callable')
 pre_function = __wrap_api_call(__pre_function,
         'pre_function')
 PreFunctionWrapper = __wrap_api_call(__PreFunctionWrapper,

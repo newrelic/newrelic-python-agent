@@ -1,6 +1,10 @@
 unreleased
 ----------
 
+
+4.0.0 (2018-07-23)
+------------------
+
 - Remove support for Python 2.6 / Python 3.3
 
   Python 2.6 and Python 3.3 are no longer supported by the Python Agent.

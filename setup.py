@@ -5,8 +5,8 @@ import os
 
 python_version = sys.version_info[:2]
 
-assert python_version in ((2, 6), (2, 7)) or python_version >= (3, 3), \
-        'The New Relic Python agent only supports Python 2.6, 2.7 and 3.3+.'
+assert python_version in ((2, 7),) or python_version >= (3, 4), \
+        'The New Relic Python agent only supports Python 2.7 and 3.4+.'
 
 with_setuptools = False
 
@@ -98,9 +98,7 @@ packages = [
 classifiers = [
         "Development Status :: 5 - Production/Stable",
         "License :: Other/Proprietary License",
-        "Programming Language :: Python :: 2.6",
         "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.3",
         "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
@@ -124,6 +122,7 @@ kwargs = dict(
         zip_safe = False,
         classifiers = classifiers,
         packages = packages,
+        python_requires = '>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*',
         package_data = { 'newrelic': ['newrelic.ini', 'LICENSE',
               'common/cacert.pem',
               'packages/requests/LICENSE', 'packages/requests/NOTICE',

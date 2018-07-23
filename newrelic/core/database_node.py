@@ -161,7 +161,7 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
 
         params = None
         if root.distributed_trace_intrinsics:
-            params = root.distributed_trace_intrinsics
+            params = root.distributed_trace_intrinsics.copy()
 
         # Note that we do not limit the length of the SQL at this
         # point as we will need the whole SQL query when doing an

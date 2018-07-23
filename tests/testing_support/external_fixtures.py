@@ -117,7 +117,7 @@ def validate_distributed_tracing_header(header='newrelic'):
 
     # If span events are enabled, id should be sent
     # otherwise, id should be omitted
-    if transaction.settings.span_events.enabled:
+    if transaction.settings.span_events.enabled and transaction.sampled:
         assert 'id' in data
     else:
         assert 'id' not in data

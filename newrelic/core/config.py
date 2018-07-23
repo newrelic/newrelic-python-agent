@@ -464,8 +464,10 @@ _settings.transaction_events.attributes.include = []
 _settings.custom_insights_events.enabled = True
 _settings.custom_insights_events.max_samples_stored = DEFAULT_RESERVOIR_SIZE
 
-_settings.distributed_tracing.enabled = False
-_settings.span_events.enabled = True
+_settings.distributed_tracing.enabled = _environ_as_bool(
+        'NEW_RELIC_DISTRIBUTED_TRACING_ENABLED', default=False)
+_settings.span_events.enabled = _environ_as_bool(
+        'NEW_RELIC_SPAN_EVENTS_ENABLED', default=True)
 _settings.span_events.max_samples_stored = SPAN_EVENT_RESERVOIR_SIZE
 
 _settings.transaction_tracer.enabled = True

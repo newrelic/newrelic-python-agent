@@ -9,9 +9,7 @@
 # environment, we use the default test environments and run tests twice.
 # The first time as pure Python and the second with extensions enabled.
 
-py26=$(which python2.6)
 py27=$(which python2.7)
-py33=$(which python3.3)
 py34=$(which python3.4)
 py35=$(which python3.5)
 py36=$(which python3.6)
@@ -22,7 +20,7 @@ ENVIRONMENTS=
 
 if test x"$1" = x""
 then
-    for e in py26 py27 py33 py34 py35 py36 pypy pypy3
+    for e in py27 py34 py35 py36 pypy pypy3
     do
         eval py_exe="\$$e"
         if test x"$py_exe" != x""

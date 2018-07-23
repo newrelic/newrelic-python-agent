@@ -12,11 +12,9 @@ from testing_support.fixtures import (override_application_settings,
         validate_attributes, validate_transaction_event_attributes,
         validate_error_event_attributes, validate_transaction_metrics)
 
-distributed_trace_intrinsics = ['guid', 'nr.tripId', 'traceId', 'priority',
-        'sampled']
+distributed_trace_intrinsics = ['guid', 'traceId', 'priority', 'sampled']
 inbound_payload_intrinsics = ['parent.type', 'parent.app', 'parent.account',
-        'parent.transportType', 'parent.transportDuration', 'parentId']
-
+        'parent.transportType', 'parent.transportDuration']
 
 payload = {
     'v': [0, 1],
@@ -56,13 +54,12 @@ def target_wsgi_application(environ, start_response):
     assert txn.parent_type == 'App'
     assert txn.parent_app == '2827902'
     assert txn.parent_account == '1'
+    assert txn.parent_span == '7d3efb1b173fecfa'
     assert txn.parent_transport_type == 'HTTP'
     assert isinstance(txn.parent_transport_duration, float)
     assert txn._trace_id == 'd6b4ba0c3a712ca'
     assert txn.priority == 10.001
     assert txn.sampled
-    assert txn.grandparent_id == '5e5733a911cfbc73'
-    assert txn.parent_id == '7d3efb1b173fecfa'
 
     start_response(status, response_headers)
     return [output]
@@ -71,63 +68,79 @@ def target_wsgi_application(environ, start_response):
 test_application = webtest.TestApp(target_wsgi_application)
 
 _override_settings = {
-    'trusted_account_ids': [1, 332029],
-    'feature_flag': set(['distributed_tracing']),
+    'trusted_account_key': '1',
+    'distributed_tracing.enabled': True,
 }
 
 
 @override_application_settings(_override_settings)
 def test_distributed_tracing_web_transaction():
-    headers = {'X-NewRelic-Trace': json.dumps(payload)}
-
+    headers = {'newrelic': json.dumps(payload)}
     response = test_application.get('/', headers=headers)
     assert 'X-NewRelic-App-Data' not in response.headers
 
 
-@pytest.mark.parametrize('accept_payload,has_grandparent', [
-    (True, True),
-    (True, False),
-    (False, False),
-])
-def test_distributed_trace_attributes(accept_payload, has_grandparent):
+@pytest.mark.parametrize('span_events', (True, False))
+@pytest.mark.parametrize('accept_payload', (True, False))
+def test_distributed_trace_attributes(span_events, accept_payload):
     if accept_payload:
         _required_intrinsics = (
                 distributed_trace_intrinsics + inbound_payload_intrinsics)
-        _forgone_intrinsics = []
-        _exact_attributes = {'agent': {}, 'user': {}, 'intrinsic': {
+        _forgone_txn_intrinsics = []
+        _forgone_error_intrinsics = []
+        _exact_intrinsics = {
             'parent.type': 'Mobile',
             'parent.app': '2827902',
-            'parent.account': '332029',
+            'parent.account': '1',
             'parent.transportType': 'HTTP',
-            'parentId': '7d3efb1b173fecfa',
             'traceId': 'd6b4ba0c3a712ca',
-        }}
-        if has_grandparent:
-            _required_intrinsics.append('grandparentId')
-            _exact_attributes['grandparentId'] = '5e5733a911cfbc73'
-        else:
-            _forgone_intrinsics.append('grandparentId')
+        }
+        _exact_txn_attributes = {'agent': {}, 'user': {},
+                'intrinsic': _exact_intrinsics.copy()}
+        _exact_error_attributes = {'agent': {}, 'user': {},
+                'intrinsic': _exact_intrinsics.copy()}
+        _exact_txn_attributes['intrinsic']['parentId'] = '7d3efb1b173fecfa'
+        _exact_txn_attributes['intrinsic']['parentSpanId'] = 'c86df80de2e6f51c'
+
+        _forgone_error_intrinsics.append('parentId')
+        _forgone_error_intrinsics.append('parentSpanId')
+        _forgone_txn_intrinsics.append('grandparentId')
+        _forgone_error_intrinsics.append('grandparentId')
 
         _required_attributes = {
                 'intrinsic': _required_intrinsics, 'agent': [], 'user': []}
-        _forgone_attributes = {'intrinsic': [], 'agent': [], 'user': []}
+        _forgone_txn_attributes = {'intrinsic': _forgone_txn_intrinsics,
+                'agent': [], 'user': []}
+        _forgone_error_attributes = {'intrinsic': _forgone_error_intrinsics,
+                'agent': [], 'user': []}
     else:
         _required_intrinsics = distributed_trace_intrinsics
-        _forgone_intrinsics = inbound_payload_intrinsics + ['grandparentId']
+        _forgone_txn_intrinsics = _forgone_error_intrinsics = \
+                inbound_payload_intrinsics + ['grandparentId', 'parentId',
+                'parentSpanId']
 
         _required_attributes = {
                 'intrinsic': _required_intrinsics, 'agent': [], 'user': []}
-        _forgone_attributes = {
-                'intrinsic': _forgone_intrinsics, 'agent': [], 'user': []}
-        _exact_attributes = None
+        _forgone_txn_attributes = {'intrinsic': _forgone_txn_intrinsics,
+                'agent': [], 'user': []}
+        _forgone_error_attributes = {'intrinsic': _forgone_error_intrinsics,
+                'agent': [], 'user': []}
+        _exact_txn_attributes = _exact_error_attributes = None
 
-    @override_application_settings(_override_settings)
+    _forgone_trace_intrinsics = _forgone_error_intrinsics
+
+    test_settings = _override_settings.copy()
+    test_settings['span_events.enabled'] = span_events
+
+    @override_application_settings(test_settings)
     @validate_transaction_event_attributes(
-            _required_attributes, _forgone_attributes, _exact_attributes)
+            _required_attributes, _forgone_txn_attributes,
+            _exact_txn_attributes)
     @validate_error_event_attributes(
-            _required_attributes, _forgone_attributes, _exact_attributes)
+            _required_attributes, _forgone_error_attributes,
+            _exact_error_attributes)
     @validate_attributes('intrinsic',
-            _required_intrinsics, _forgone_intrinsics)
+            _required_intrinsics, _forgone_trace_intrinsics)
     @background_task(name='test_distributed_trace_attributes')
     def _test():
         txn = current_transaction()
@@ -136,15 +149,15 @@ def test_distributed_trace_attributes(accept_payload, has_grandparent):
             "v": [0, 1],
             "d": {
                 "ty": "Mobile",
-                "ac": "332029",
+                "ac": "1",
                 "ap": "2827902",
-                "id": "7d3efb1b173fecfa",
+                "id": "c86df80de2e6f51c",
                 "tr": "d6b4ba0c3a712ca",
-                "ti": 1518469636035
+                "ti": 1518469636035,
+                "tx": "7d3efb1b173fecfa"
             }
         }
-        if has_grandparent:
-            payload['d']['pa'] = "5e5733a911cfbc73"
+        payload['d']['pa'] = "5e5733a911cfbc73"
 
         if accept_payload:
             result = txn.accept_distributed_trace_payload(payload)
@@ -210,7 +223,7 @@ def test_distributed_tracing_metrics(web_transaction, gen_error, has_parent):
         tag = _make_dt_tag(parent_info)
     else:
         tag = _make_dt_tag(dict((x, 'Unknown') for x in parent_info.keys()))
-        del dt_payload['d']['id']
+        del dt_payload['d']['tr']
 
     # now run the test
     transaction_name = "test_dt_metrics_%s" % '_'.join(metrics)

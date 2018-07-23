@@ -40,11 +40,6 @@ from newrelic.api.transaction import (
 from newrelic.api.transaction_context import (
         TransactionContext as __TransactionContext)
 
-# DEPRECATED - The add_user_attribute call is deprecated and the
-# add_custom_parameter function should be used instead.
-
-from newrelic.api.transaction import add_user_attribute as __add_user_attribute
-
 from newrelic.api.web_transaction import (
         wsgi_application as __wsgi_application,
         WebTransaction as __WebTransaction,
@@ -134,7 +129,6 @@ from newrelic.common.object_wrapper import (
         wrap_function_wrapper as __wrap_function_wrapper,
         patch_function_wrapper as __patch_function_wrapper,
         ObjectWrapper as __ObjectWrapper,
-        wrap_callable as __wrap_callable,
         pre_function as __pre_function,
         PreFunctionWrapper as __PreFunctionWrapper,
         wrap_pre_function as __wrap_pre_function,
@@ -210,8 +204,6 @@ record_custom_event = __wrap_api_call(__record_custom_event,
         'record_custom_event')
 TransactionContext = __wrap_api_call(__TransactionContext,
         'TransactionContext')
-add_user_attribute = __wrap_api_call(__add_user_attribute,
-        'add_user_attribute')
 wsgi_application = __wsgi_application
 WebTransaction = __wrap_api_call(__WebTransaction,
         'WebTransaction')
@@ -323,8 +315,6 @@ patch_function_wrapper = __wrap_api_call(__patch_function_wrapper,
         'patch_function_wrapper')
 ObjectWrapper = __wrap_api_call(__ObjectWrapper,
         'ObjectWrapper')
-wrap_callable = __wrap_api_call(__wrap_callable,
-        'wrap_callable')
 pre_function = __wrap_api_call(__pre_function,
         'pre_function')
 PreFunctionWrapper = __wrap_api_call(__PreFunctionWrapper,

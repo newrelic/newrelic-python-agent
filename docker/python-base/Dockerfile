@@ -35,9 +35,7 @@ RUN echo "deb-src http://archive.ubuntu.com/ubuntu/ xenial main restricted" >> /
 RUN add-apt-repository -y ppa:deadsnakes/ppa && \
     apt-get update && \
     apt-get install -y \
-    python2.6-dev \
     python2.7-dev \
-    python3.3-dev \
     python3.4-dev \
     python3.6-dev \
     python3.7-dev

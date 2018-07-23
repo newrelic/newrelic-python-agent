@@ -6,7 +6,6 @@ import traceback
 import logging
 import itertools
 import random
-import warnings
 
 from collections import deque
 
@@ -37,8 +36,10 @@ from newrelic.api.time_trace import TimeTrace
 
 _logger = logging.getLogger(__name__)
 
-DISTRIBUTED_TRACE_KEYS_REQUIRED = (
-        'ty', 'ac', 'ap', 'id', 'tr', 'ti')
+DISTRIBUTED_TRACE_KEYS_REQUIRED = ('ty', 'ac', 'ap', 'tr', 'ti')
+DISTRIBUTED_TRACE_TRANSPORT_TYPES = set((
+    'HTTP', 'HTTPS', 'Kafka', 'JMS',
+    'IronMQ', 'AMQP', 'Queue', 'Other'))
 
 
 class Sentinel(TimeTrace):
@@ -157,8 +158,8 @@ class Transaction(object):
 
         # This may be overridden by processing an inbound CAT header
         self.parent_type = None
-        self.parent_id = None
-        self.grandparent_id = None
+        self.parent_span = None
+        self.parent_tx = None
         self.parent_app = None
         self.parent_account = None
         self.parent_transport_type = None
@@ -468,8 +469,7 @@ class Transaction(object):
                 self.record_custom_metric('Python/Framework/%s/%s' %
                     (framework, version), 1)
 
-        if ('distributed_tracing' in self._settings.feature_flag or
-                'span_events' in self._settings.feature_flag):
+        if self._settings.distributed_tracing.enabled:
             # Sampled and priority need to be computed at the end of the
             # transaction when distributed tracing or span events are enabled.
             self._compute_sampled_and_priority()
@@ -520,11 +520,12 @@ class Transaction(object):
                 user_attributes=self.user_attributes,
                 priority=self.priority,
                 sampled=self.sampled,
-                parent_id=self.parent_id,
+                parent_span=self.parent_span,
                 parent_transport_duration=self.parent_transport_duration,
                 parent_type=self.parent_type,
                 parent_account=self.parent_account,
                 parent_app=self.parent_app,
+                parent_tx=self.parent_tx,
                 parent_transport_type=self.parent_transport_type,
                 root_span_guid=root.guid,
                 trace_id=self.trace_id,
@@ -744,13 +745,6 @@ class Transaction(object):
         if self.total_time:
             i_attrs['totalTime'] = self.total_time
 
-        if ('distributed_tracing' in self._settings.feature_flag or
-                'span_events' in self._settings.feature_flag):
-            i_attrs['guid'] = self.guid
-            i_attrs['sampled'] = self.sampled
-            i_attrs['priority'] = self.priority
-            i_attrs['traceId'] = self.trace_id
-
         # Add in special CPU time value for UI to display CPU burn.
 
         # XXX Disable cpu time value for CPU burn as was
@@ -769,8 +763,13 @@ class Transaction(object):
     def distributed_trace_intrinsics(self):
         i_attrs = {}
 
-        if 'distributed_tracing' not in self._settings.feature_flag:
+        if not self._settings.distributed_tracing.enabled:
             return i_attrs
+
+        i_attrs['guid'] = self.guid
+        i_attrs['sampled'] = self.sampled
+        i_attrs['priority'] = self.priority
+        i_attrs['traceId'] = self.trace_id
 
         if not self.is_distributed_trace:
             return i_attrs
@@ -786,12 +785,6 @@ class Transaction(object):
         if self.parent_transport_duration:
             i_attrs['parent.transportDuration'] = \
                     self.parent_transport_duration
-        if self.grandparent_id:
-            i_attrs['grandparentId'] = self.grandparent_id
-        if self.parent_id:
-            i_attrs['parentId'] = self.parent_id
-
-        i_attrs['nr.tripId'] = self.trace_id
 
         return i_attrs
 
@@ -957,7 +950,8 @@ class Transaction(object):
 
     def _compute_sampled_and_priority(self):
         if self._priority is None:
-            self._priority = random.random()
+            # truncate priority field to 5 digits past the decimal
+            self._priority = float('%.5f' % random.random())
 
         if self._sampled is None:
             self._sampled = self._application.compute_sampled(self.priority)
@@ -1017,14 +1011,12 @@ class Transaction(object):
 
         settings = self._settings
         account_id = settings.account_id
-        application_id = settings.application_id
-        distributed_tracing_enabled = \
-            'distributed_tracing' in settings.feature_flag
+        trusted_account_key = settings.trusted_account_key
+        application_id = settings.primary_application_id
 
         if not (account_id and
                 application_id and
-                distributed_tracing_enabled and
-                settings.cross_application_tracer.enabled):
+                settings.distributed_tracing.enabled):
             return
 
         try:
@@ -1036,18 +1028,16 @@ class Transaction(object):
                 tr=self.trace_id,
                 sa=self.sampled,
                 pr=self.priority,
+                tx=self.guid,
                 ti=int(time.time() * 1000.0),
             )
 
-            if ('span_events' in settings.feature_flag and
-                    settings.span_events.enabled and self.current_node):
+            if account_id != trusted_account_key:
+                data['tk'] = trusted_account_key
+
+            if (settings.span_events.enabled and
+                    self.current_node and self.sampled):
                 data['id'] = self.current_node.guid
-                data['pa'] = getattr(self.current_node.parent, 'guid',
-                        self.guid)
-            else:
-                data['id'] = self.guid
-                if self.parent_id:
-                    data['pa'] = self.parent_id
 
             self.is_distributed_trace = True
 
@@ -1071,15 +1061,12 @@ class Transaction(object):
             return False
 
         settings = self._settings
-        distributed_tracing_enabled = \
-            'distributed_tracing' in settings.feature_flag
-        if not (settings.cross_application_tracer.enabled and
-                distributed_tracing_enabled and
-                settings.trusted_account_ids):
+        if not (settings.distributed_tracing.enabled and
+                settings.trusted_account_key):
             return False
 
         if self.is_distributed_trace:
-            if self.parent_id:
+            if self._trace_id:
                 self._record_supportability('Supportability/DistributedTrace/'
                         'AcceptPayload/Ignored/Multiple')
             else:
@@ -1098,6 +1085,8 @@ class Transaction(object):
             major_version = version and int(version[0])
 
             if major_version is None:
+                self._record_supportability('Supportability/DistributedTrace/'
+                        'AcceptPayload/ParseException')
                 return False
 
             if major_version > DistributedTracePayload.version[0]:
@@ -1111,21 +1100,37 @@ class Transaction(object):
                         'AcceptPayload/ParseException')
                 return False
 
-            account_id = data.get('ac')
-
-            if account_id not in (
-                    str(i) for i in settings.trusted_account_ids):
+            # Must have either id or tx
+            if not any(k in data for k in ('id', 'tx')):
                 self._record_supportability('Supportability/DistributedTrace/'
-                        'AcceptPayload/Ignored/UntrustedAccount')
+                                            'AcceptPayload/ParseException')
                 return False
 
-            grandparent_id = data.get('pa')
+            account_id = data.get('ac')
+
+            # If trust key doesn't exist in the payload, use account_id
+            received_trust_key = data.get('tk', account_id)
+            if settings.trusted_account_key != received_trust_key:
+                self._record_supportability('Supportability/DistributedTrace/'
+                        'AcceptPayload/Ignored/UntrustedAccount')
+                if settings.debug.log_untrusted_distributed_trace_keys:
+                    _logger.debug('Received untrusted key in distributed '
+                            'trace payload. received_trust_key=%r',
+                            received_trust_key)
+                return False
+
             transport_start = data.get('ti') / 1000.0
 
             self.parent_type = data.get('ty')
-            self.parent_id = data.get('id')
+
+            self.parent_span = data.get('id')
+            self.parent_tx = data.get('tx')
             self.parent_app = data.get('ap')
             self.parent_account = account_id
+
+            if transport_type not in DISTRIBUTED_TRACE_TRANSPORT_TYPES:
+                transport_type = 'Unknown'
+
             self.parent_transport_type = transport_type
             self.parent_transport_duration = time.time() - transport_start
             self._trace_id = data.get('tr')
@@ -1133,9 +1138,6 @@ class Transaction(object):
             if 'pr' in data:
                 self._priority = data.get('pr')
                 self._sampled = data.get('sa', self._sampled)
-
-            if grandparent_id:
-                self.grandparent_id = grandparent_id
 
             self.is_distributed_trace = True
 
@@ -1580,18 +1582,6 @@ class Transaction(object):
         for name, value in items:
             self.add_custom_parameter(name, value)
 
-    def add_user_attribute(self, name, value):
-        warnings.warn('API change. Use add_custom_parameter() '
-                'instead of add_user_attribute().', DeprecationWarning,
-                stacklevel=2)
-        self.add_custom_parameter(name, value)
-
-    def add_user_attributes(self, items):
-        warnings.warn('API change. Use add_custom_parameters() '
-                'instead of add_user_attributes().', DeprecationWarning,
-                stacklevel=2)
-        self.add_custom_parameters(items)
-
     def add_framework_info(self, name, version=None):
         if name:
             self._frameworks.add((name, version))
@@ -1688,13 +1678,6 @@ def add_custom_parameter(key, value):
         return transaction.add_custom_parameter(key, value)
     else:
         return False
-
-
-def add_user_attribute(key, value):
-    warnings.warn('API change. Use add_custom_parameter() '
-            'instead of add_user_attribute().', DeprecationWarning,
-            stacklevel=2)
-    return add_custom_parameter(key, value)
 
 
 def add_framework_info(name, version=None):

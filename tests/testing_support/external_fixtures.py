@@ -10,8 +10,8 @@ from newrelic.common.encoding_utils import (json_encode, json_decode,
 from newrelic.common.object_wrapper import (transient_function_wrapper,
         function_wrapper)
 
-DISTRIBUTED_TRACE_KEYS_REQUIRED = (
-        'ty', 'ac', 'ap', 'id', 'tr', 'pr', 'sa', 'ti')
+OUTBOUND_TRACE_KEYS_REQUIRED = (
+        'ty', 'ac', 'ap', 'tr', 'pr', 'sa', 'ti')
 
 
 @transient_function_wrapper(httplib.__name__, 'HTTPConnection.putheader')
@@ -78,11 +78,11 @@ def validate_outbound_headers(header_id='X-NewRelic-ID',
     assert path_hash == transaction.path_hash
 
 
-def validate_distributed_tracing_header(header='X-NewRelic-Trace'):
+def validate_distributed_tracing_header(header='newrelic'):
     transaction = current_transaction()
     headers = transaction._test_request_headers
     account_id = transaction.settings.account_id
-    application_id = transaction.settings.application_id
+    application_id = transaction.settings.primary_application_id
 
     assert header in headers, headers
 
@@ -103,7 +103,7 @@ def validate_distributed_tracing_header(header='X-NewRelic-Trace'):
     data = payload['d']
 
     # Verify all required keys are present
-    assert all(k in data for k in DISTRIBUTED_TRACE_KEYS_REQUIRED)
+    assert all(k in data for k in OUTBOUND_TRACE_KEYS_REQUIRED)
 
     # Type will always be App (not mobile / browser)
     assert data['ty'] == 'App'
@@ -113,15 +113,22 @@ def validate_distributed_tracing_header(header='X-NewRelic-Trace'):
     assert data['ap'] == application_id
 
     # Verify data belonging to this transaction
-    assert data['id'] == transaction.guid
+    assert data['tx'] == transaction.guid
+
+    # If span events are enabled, id should be sent
+    # otherwise, id should be omitted
+    if transaction.settings.span_events.enabled and transaction.sampled:
+        assert 'id' in data
+    else:
+        assert 'id' not in data
 
     # Verify referring transaction information
     if transaction.referring_transaction_guid is not None:
-        assert data['pa'] == transaction.referring_transaction_guid
         assert data['tr'] == transaction._trace_id
     else:
-        assert 'pa' not in data
         assert data['tr'] == transaction.guid
+
+    assert 'pa' not in data
 
     # Verify timestamp is an integer
     assert isinstance(data['ti'], int)
@@ -137,7 +144,7 @@ def validate_cross_process_headers(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     settings = transaction.settings
 
-    if 'distributed_tracing' in settings.feature_flag:
+    if settings.distributed_tracing.enabled:
         validate_distributed_tracing_header()
     else:
         validate_outbound_headers()
@@ -148,8 +155,15 @@ def validate_cross_process_headers(wrapped, instance, args, kwargs):
 @function_wrapper
 def validate_messagebroker_headers(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
-    validate_outbound_headers(header_id='NewRelicID',
-            header_transaction='NewRelicTransaction')
+
+    transaction = current_transaction()
+    settings = transaction.settings
+
+    if settings.distributed_tracing.enabled:
+        validate_distributed_tracing_header()
+    else:
+        validate_outbound_headers(header_id='NewRelicID',
+                header_transaction='NewRelicTransaction')
 
     return result
 

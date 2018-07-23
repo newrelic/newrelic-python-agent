@@ -60,10 +60,11 @@ def transaction_node():
             user_attributes=[],
             priority=1.0,
             parent_transport_duration=None,
-            parent_id=None,
+            parent_span=None,
             parent_type=None,
             parent_account=None,
             parent_app=None,
+            parent_tx=None,
             parent_transport_type=None,
             sampled=True,
             root_span_guid=None,
@@ -152,45 +153,40 @@ def test_application_harvest():
 
 
 @pytest.mark.parametrize(
-    'span_events_enabled,span_events_feature_flag,spans_created', [
+    'distributed_tracing_enabled,span_events_enabled,spans_created', [
         (True, True, 1),
         (True, True, 15),
         (True, False, 1),
-        (False, True, 1),
+        (True, True, 0),
+        (True, False, 0),
+        (False, True, 0),
 ])
-def test_application_harvest_with_spans(span_events_enabled,
-        span_events_feature_flag, spans_created):
+def test_application_harvest_with_spans(distributed_tracing_enabled,
+        span_events_enabled, spans_created):
 
     span_endpoints_called = []
     max_samples_stored = 10
 
-    if span_events_enabled and span_events_feature_flag:
+    if distributed_tracing_enabled and span_events_enabled:
         seen = spans_created
         sent = min(spans_created, max_samples_stored)
-        discarded = seen - sent
     else:
         seen = None
         sent = None
-        discarded = None
 
     spans_required_metrics = list(required_metrics)
 
     spans_required_metrics.extend([
         ('Supportability/SpanEvent/TotalEventsSeen', seen),
         ('Supportability/SpanEvent/TotalEventsSent', sent),
-        ('Supportability/SpanEvent/Discarded', discarded),
     ])
-
-    feature_flag = set()
-    if span_events_feature_flag:
-        feature_flag.add('span_events')
 
     @validate_metric_payload(metrics=spans_required_metrics,
             endpoints_called=span_endpoints_called)
     @override_generic_settings(settings, {
         'developer_mode': True,
         'license_key': '**NOT A LICENSE KEY**',
-        'feature_flag': feature_flag,
+        'distributed_tracing.enabled': distributed_tracing_enabled,
         'span_events.enabled': span_events_enabled,
         'span_events.max_samples_stored': max_samples_stored,
     })
@@ -210,7 +206,7 @@ def test_application_harvest_with_spans(span_events_enabled,
         # span_event_data is the 3rd to last endpoint called
         assert span_endpoints_called[-2] == 'metric_data'
 
-        if span_events_enabled and span_events_feature_flag:
+        if span_events_enabled and spans_created > 0:
             assert span_endpoints_called[-3] == 'span_event_data'
         else:
             assert span_endpoints_called[-3] != 'span_event_data'
@@ -219,23 +215,29 @@ def test_application_harvest_with_spans(span_events_enabled,
 
 
 @failing_endpoint('metric_data')
-@override_generic_settings(settings, {
-    'developer_mode': True,
-    'license_key': '**NOT A LICENSE KEY**',
-    'feature_flag': set(['span_events']),
-})
-def test_failed_spans_harvest():
+@pytest.mark.parametrize('span_events_enabled', (True, False))
+def test_failed_spans_harvest(span_events_enabled):
 
-    # Test that if an endpoint call that occurs after we successfully send span
-    # data fails, we do not try to send span data again with the next harvest.
+    @override_generic_settings(settings, {
+        'developer_mode': True,
+        'license_key': '**NOT A LICENSE KEY**',
+        'distributed_tracing.enabled': True,
+        'span_events.enabled': span_events_enabled,
+    })
+    def _test():
+        # Test that if an endpoint call that occurs after we successfully send
+        # span data fails, we do not try to send span data again with the next
+        # harvest.
 
-    app = Application('Python Agent Test (Harvest Loop)')
-    app.connect_to_data_collector()
+        app = Application('Python Agent Test (Harvest Loop)')
+        app.connect_to_data_collector()
 
-    app._stats_engine.span_events.add('event')
-    assert app._stats_engine.span_events.num_samples == 1
-    app.harvest()
-    assert app._stats_engine.span_events.num_samples == 0
+        app._stats_engine.span_events.add('event')
+        assert app._stats_engine.span_events.num_samples == 1
+        app.harvest()
+        assert app._stats_engine.span_events.num_samples == 0
+
+    _test()
 
 
 @override_generic_settings(settings, {
@@ -282,7 +284,7 @@ def test_adaptive_sampling(transaction_node):
     app.connect_to_data_collector()
 
     # First harvest, first N should be sampled
-    for _ in range(settings.agent_limits.sampling_target):
+    for _ in range(settings.sampling_target):
         assert app.compute_sampled(1.0) is True
 
     assert app.compute_sampled(1.0) is False
@@ -292,7 +294,7 @@ def test_adaptive_sampling(transaction_node):
         app.harvest()
 
         # Subsequent harvests should allow sampling of 2X the target
-        for _ in range(2 * settings.agent_limits.sampling_target):
+        for _ in range(2 * settings.sampling_target):
             assert app.compute_sampled(1.0) is True
 
         # No further samples should be saved

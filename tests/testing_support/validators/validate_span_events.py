@@ -2,7 +2,8 @@ from newrelic.common.object_wrapper import (transient_function_wrapper,
         function_wrapper)
 
 
-def validate_span_events(exact_intrinsics={}, expected_intrinsics=[], count=1):
+def validate_span_events(exact_intrinsics={}, expected_intrinsics=[],
+                         unexpected_intrinsics=[], count=1):
 
     # Used for validating a single span event.
     #
@@ -50,13 +51,17 @@ def validate_span_events(exact_intrinsics={}, expected_intrinsics=[], count=1):
                 if expected_intrinsic not in intrinsics:
                     break
             else:
-                for key, value in exact_intrinsics.items():
-                    if intrinsics.get(key) != value:
-                        mismatches.append('key: %s, value:<%s><%s>' % (
-                            key, value, intrinsics.get(key)))
+                for unexpected_intrinsic in unexpected_intrinsics:
+                    if unexpected_intrinsic in intrinsics:
                         break
                 else:
-                    matching_span_events += 1
+                    for key, value in exact_intrinsics.items():
+                        if intrinsics.get(key) != value:
+                            mismatches.append('key: %s, value:<%s><%s>' % (
+                                key, value, intrinsics.get(key)))
+                            break
+                    else:
+                        matching_span_events += 1
 
         def _span_details():
             details = [

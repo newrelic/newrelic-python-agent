@@ -105,8 +105,12 @@ def test_httplib2_http_request():
     response, content = connection.request('http://www.example.com', 'GET')
 
 
-@pytest.mark.parametrize('distributed_tracing', (True, False))
-def test_httplib2_cross_process_request(distributed_tracing):
+@pytest.mark.parametrize('distributed_tracing,span_events', (
+    (True, True),
+    (True, False),
+    (False, False),
+))
+def test_httplib2_cross_process_request(distributed_tracing, span_events):
 
     @background_task(name='test_httplib2:test_httplib2_cross_process_response')
     @cache_outgoing_headers
@@ -118,9 +122,10 @@ def test_httplib2_cross_process_request(distributed_tracing):
         response.read()
         connection.close()
 
-    if distributed_tracing:
-        _test = override_application_settings(
-                {'feature_flag': set(('distributed_tracing',))})(_test)
+    _test = override_application_settings({
+        'distributed_tracing.enabled': distributed_tracing,
+        'span_events.enabled': span_events,
+    })(_test)
 
     _test()
 

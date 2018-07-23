@@ -102,6 +102,7 @@ def test_synthetics_headers_sent_on_external_requests(app, cat_enabled,
 
     @override_application_settings({
         'cross_application_tracer.enabled': cat_enabled,
+        'distributed_tracing.enabled': False,
         'synthetics.enabled': synthetics_enabled})
     @validate_transaction_metrics(
         '_target_application:AsyncExternalHandler.get',

@@ -568,6 +568,22 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
                 pass
             self.assertEqual(transaction.queue_start, 0.0)
 
+    def test_accept_payload_no_newrelic_header(self):
+        try:
+            original_setting = application.settings.distributed_tracing.enabled
+            application.settings.distributed_tracing.enabled = True
+
+            environ = {"REQUEST_URI": "/web_transaction"}
+            transaction = newrelic.api.web_transaction.WebTransaction(
+                    application, environ)
+
+            with transaction:
+                assert ('Supportability/DistributedTrace/'
+                        'AcceptPayload/Ignored/Null'
+                        not in transaction._transaction_metrics)
+        finally:
+            application.settings.distributed_tracing.enabled = original_setting
+
 
 class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
 

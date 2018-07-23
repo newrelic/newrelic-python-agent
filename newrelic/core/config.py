@@ -185,6 +185,10 @@ class SpanEventSettings(Settings):
     pass
 
 
+class DistributedTracingSettings(Settings):
+    pass
+
+
 _settings = Settings()
 _settings.attributes = AttributesSettings()
 _settings.thread_profiler = ThreadProfilerSettings()
@@ -218,6 +222,7 @@ _settings.datastore_tracer.database_name_reporting = \
         DatastoreTracerDatabaseNameReportingSettings()
 _settings.heroku = HerokuSettings()
 _settings.span_events = SpanEventSettings()
+_settings.distributed_tracing = DistributedTracingSettings()
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 _settings.audit_log_file = os.environ.get('NEW_RELIC_AUDIT_LOG', None)
@@ -431,8 +436,14 @@ _settings.transaction_segment_terms = []
 
 _settings.account_id = None
 _settings.cross_process_id = None
+_settings.primary_application_id = None
 _settings.trusted_account_ids = []
+_settings.trusted_account_key = None
 _settings.encoding_key = None
+_settings.sampling_target = 10
+_settings.sampling_target_period_in_seconds = 60
+
+_settings.max_payload_size_in_bytes = 1000000
 
 _settings.max_payload_size_in_bytes = 1000000
 
@@ -453,7 +464,10 @@ _settings.transaction_events.attributes.include = []
 _settings.custom_insights_events.enabled = True
 _settings.custom_insights_events.max_samples_stored = DEFAULT_RESERVOIR_SIZE
 
-_settings.span_events.enabled = True
+_settings.distributed_tracing.enabled = _environ_as_bool(
+        'NEW_RELIC_DISTRIBUTED_TRACING_ENABLED', default=False)
+_settings.span_events.enabled = _environ_as_bool(
+        'NEW_RELIC_SPAN_EVENTS_ENABLED', default=True)
 _settings.span_events.max_samples_stored = SPAN_EVENT_RESERVOIR_SIZE
 
 _settings.transaction_tracer.enabled = True
@@ -520,7 +534,6 @@ _settings.agent_limits.synthetics_transactions = 20
 _settings.agent_limits.data_compression_threshold = 64 * 1024
 _settings.agent_limits.data_compression_level = None
 _settings.agent_limits.max_outstanding_traces = 100
-_settings.agent_limits.sampling_target = 10
 
 _settings.console.listener_socket = None
 _settings.console.allow_interpreter_cmd = False
@@ -544,6 +557,7 @@ _settings.debug.record_transaction_failure = False
 _settings.debug.enable_coroutine_profiling = False
 _settings.debug.explain_plan_obfuscation = 'simple'
 _settings.debug.disable_certificate_validation = False
+_settings.debug.log_untrusted_distributed_trace_keys = False
 
 _settings.message_tracer.segment_parameters_enabled = True
 

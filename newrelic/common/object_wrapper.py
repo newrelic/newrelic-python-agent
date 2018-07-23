@@ -7,7 +7,6 @@ make use of when doing monkey patching.
 
 import sys
 import inspect
-import warnings
 
 from newrelic.packages import six
 
@@ -152,12 +151,6 @@ class ObjectWrapper(_ObjectWrapperBase, _FunctionWrapperBase):
         super(ObjectWrapper, self).__init__(wrapped, instance, wrapper,
                 binding=binding)
 
-
-def wrap_callable(*args, **kwargs):
-    warnings.warn('Internal API change. Use FunctionWrapper '
-            'instead of wrap_callable.', DeprecationWarning,
-            stacklevel=2)
-    return FunctionWrapper(*args, **kwargs)
 
 # Helper functions for performing monkey patching.
 

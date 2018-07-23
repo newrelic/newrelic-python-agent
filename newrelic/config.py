@@ -2,7 +2,6 @@ import os
 import sys
 import logging
 import traceback
-import warnings
 
 try:
     import ConfigParser
@@ -58,8 +57,6 @@ _FEATURE_FLAGS = set([
     'tornado.instrumentation.r3',
     'tornado.instrumentation.r4',
     'django.instrumentation.inclusion-tags.r1',
-    'distributed_tracing',
-    'span_events',
 ])
 
 # Names of configuration file and deployment environment. This
@@ -422,6 +419,8 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'custom_insights_events.max_samples_stored',
                      'getint', None)
+    _process_setting(section, 'distributed_tracing.enabled',
+                     'getboolean', None)
     _process_setting(section, 'span_events.enabled',
                      'getboolean', None)
     _process_setting(section, 'span_events.max_samples_stored',
@@ -470,8 +469,6 @@ def _process_configuration(section):
                      'getint', None)
     _process_setting(section, 'agent_limits.max_outstanding_traces',
                     'getint', None)
-    _process_setting(section, 'agent_limits.sampling_target',
-                    'getint', None)
     _process_setting(section, 'console.listener_socket',
                      'get', _map_console_listener_socket)
     _process_setting(section, 'console.allow_interpreter_cmd',
@@ -499,6 +496,8 @@ def _process_configuration(section):
     _process_setting(section, 'debug.log_explain_plan_queries',
                      'getboolean', None)
     _process_setting(section, 'debug.log_autorum_middleware',
+                     'getboolean', None)
+    _process_setting(section, 'debug.log_untrusted_distributed_trace_keys',
                      'getboolean', None)
     _process_setting(section, 'debug.enable_coroutine_profiling',
                      'getboolean', None)
@@ -2727,20 +2726,6 @@ def _setup_agent_console():
 
 def initialize(config_file=None, environment=None, ignore_errors=None,
             log_file=None, log_level=None):
-
-    version_info = sys.version_info[:2]
-    if version_info == (2, 6):
-        warnings.warn('A future version of the newrelic package will drop '
-                'support for Python 2.6. Please upgrade your version of '
-                'Python.',
-                DeprecationWarning,
-                stacklevel=2)
-    elif version_info == (3, 3):
-        warnings.warn('A future version of the newrelic package will drop '
-                'support for Python 3.3. Please upgrade your version of '
-                'Python.',
-                DeprecationWarning,
-                stacklevel=2)
 
     if config_file is None:
         config_file = os.environ.get('NEW_RELIC_CONFIG_FILE', None)

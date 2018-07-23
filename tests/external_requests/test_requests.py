@@ -148,8 +148,12 @@ def test_wrong_datatype_url_get():
         pass
 
 
-@pytest.mark.parametrize('distributed_tracing', (True, False))
-def test_requests_cross_process_request(distributed_tracing):
+@pytest.mark.parametrize('distributed_tracing,span_events', (
+    (True, True),
+    (True, False),
+    (False, False),
+))
+def test_requests_cross_process_request(distributed_tracing, span_events):
 
     @validate_transaction_errors(errors=[])
     @background_task(name='test_requests:test_requests_cross_process_request')
@@ -158,9 +162,10 @@ def test_requests_cross_process_request(distributed_tracing):
     def _test():
         requests.get('http://www.example.com/')
 
-    if distributed_tracing:
-        _test = override_application_settings(
-                {'feature_flag': set(('distributed_tracing',))})(_test)
+    _test = override_application_settings({
+        'distributed_tracing.enabled': distributed_tracing,
+        'span_events.enabled': span_events,
+    })(_test)
 
     _test()
 

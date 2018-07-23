@@ -443,7 +443,7 @@ class Application(object):
                 self._stats_engine.reset_stats(configuration)
 
                 self.adaptive_sampler = AdaptiveSampler(
-                        configuration.agent_limits.sampling_target)
+                        configuration.sampling_target)
 
             with self._stats_custom_lock:
                 self._stats_custom_engine.reset_stats(configuration)
@@ -1423,8 +1423,8 @@ class Application(object):
 
                     # Send span events
 
-                    if ('span_events' in stats.settings.feature_flag and
-                            stats.settings.span_events.enabled):
+                    if (configuration.span_events.enabled and
+                            configuration.distributed_tracing.enabled):
                         spans = stats.span_events
                         if spans.num_samples > 0:
                             _logger.debug('Sending span event data '
@@ -1440,10 +1440,8 @@ class Application(object):
                                 'TotalEventsSeen', spans_seen)
                         internal_count_metric('Supportability/SpanEvent/'
                                 'TotalEventsSent', spans_sampled)
-                        internal_count_metric('Supportability/SpanEvent/'
-                                'Discarded', spans_seen - spans_sampled)
 
-                        stats.reset_span_events()
+                    stats.reset_span_events()
 
                     # Send error events
 

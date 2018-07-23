@@ -128,8 +128,7 @@ class Application(object):
         return name, False
 
     def compute_sampled(self, priority):
-        if (not self.active or
-                'distributed_tracing' not in self.settings.feature_flag):
+        if not self.active or not self.settings.distributed_tracing.enabled:
             return False
 
         return self._agent.compute_sampled(self._name, priority)

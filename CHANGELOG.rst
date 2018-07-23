@@ -1,6 +1,21 @@
 unreleased
 ----------
 
+- Remove support for Python 2.6 / Python 3.3
+
+  Python 2.6 and Python 3.3 are no longer supported by the Python Agent.
+
+- Remove add_user_attribute APIs from the agent.
+
+  The add_user_attribute and add_user_attributes APIs have been removed from
+  the agent.  These APIs have been replaced with
+  newrelic.agent.add_custom_parameter and newrelic.agent.add_custom_parameters.
+
+- Remove wrap_callable API from the agent.
+
+  The wrap_callable API has been removed from the agent. This API has been
+  replaced with newrelic.agent.FunctionWrapper.
+
 
 3.4.0 (2018-07-12)
 ------------------

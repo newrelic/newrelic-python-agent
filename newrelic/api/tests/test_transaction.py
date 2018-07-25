@@ -450,6 +450,17 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             # Transport duration is at least 1 second
             assert self.transaction.parent_transport_duration > 1
 
+    def test_accept_distributed_trace_payload_negative_duration(self):
+        # Mark a payload as sent 10 seconds into the future
+        ti = int(time.time() * 1000.0) + 10000
+        with self.transaction:
+            payload = self._make_test_payload(ti=ti)
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert result
+
+            # Transport duration is 0!
+            assert self.transaction.parent_transport_duration == 0
+
     def test_accept_distributed_trace_payload_transport_type(self):
         with self.transaction:
             payload = self._make_test_payload()

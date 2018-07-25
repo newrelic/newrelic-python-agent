@@ -138,6 +138,12 @@ class TestSampledDataSet(unittest.TestCase):
         # priority 2 should override min priority 1
         self.assertTrue(instance.should_sample(2))
 
+    def test_size_0(self):
+        instance = SampledDataSet(0)
+
+        instance.add('x')
+        self.assertEqual(list(instance.samples), [])
+
 
 if __name__ == '__main__':
     unittest.main()

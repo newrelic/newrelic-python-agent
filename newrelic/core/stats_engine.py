@@ -256,6 +256,11 @@ class SampledDataSet(object):
         self.capacity = capacity
         self.num_seen = 0
 
+        if capacity <= 0:
+            def add(*args, **kwargs):
+                self.num_seen += 1
+            self.add = add
+
     @property
     def samples(self):
         return (x[-1] for x in self.pq)

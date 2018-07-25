@@ -438,7 +438,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         # the initial connection and doesn't apply to how long
         # it takes to get back a response.
 
-        cert_loc = certs.where()
+        cert_loc = settings.ca_bundle_path
+        if cert_loc is None:
+            cert_loc = certs.where()
 
         if settings.debug.disable_certificate_validation:
             cert_loc = False

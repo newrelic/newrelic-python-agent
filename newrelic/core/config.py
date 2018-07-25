@@ -379,6 +379,8 @@ _settings.proxy_port = int(os.environ.get('NEW_RELIC_PROXY_PORT', '0'))
 _settings.proxy_user = os.environ.get('NEW_RELIC_PROXY_USER', None)
 _settings.proxy_pass = os.environ.get('NEW_RELIC_PROXY_PASS', None)
 
+_settings.ca_bundle_path = os.environ.get('NEW_RELIC_CA_BUNDLE_PATH', None)
+
 _settings.app_name = os.environ.get('NEW_RELIC_APP_NAME', 'Python Application')
 _settings.linked_applications = []
 

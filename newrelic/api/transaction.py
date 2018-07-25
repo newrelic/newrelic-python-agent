@@ -1132,7 +1132,14 @@ class Transaction(object):
                 transport_type = 'Unknown'
 
             self.parent_transport_type = transport_type
-            self.parent_transport_duration = time.time() - transport_start
+
+            # If starting in the future, transport duration should be set to 0
+            now = time.time()
+            if transport_start > now:
+                self.parent_transport_duration = 0.0
+            else:
+                self.parent_transport_duration = now - transport_start
+
             self._trace_id = data.get('tr')
 
             if 'pr' in data:

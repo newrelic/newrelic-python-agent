@@ -1445,7 +1445,7 @@ class StatsEngine(object):
 
         """
 
-        stats = StatsEngine()
+        stats = copy.copy(self)
         stats.reset_stats(self.__settings)
 
         stats.xray_sessions = self.xray_sessions

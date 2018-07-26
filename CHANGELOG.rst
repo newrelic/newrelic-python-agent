@@ -1,6 +1,13 @@
 unreleased
 ----------
 
+- Provide configuration option for custom CA bundle.
+
+  Customers can now use the `ca_bundle_path` configuration option or set the
+  `NEW_RELIC_CA_BUNDLE_PATH` environment variable to set the path to a local CA
+  bundle. This CA bundle will be used to validate the SSL certificate presented
+  by New Relic's data collection service.
+
 
 4.0.0 (2018-07-23)
 ------------------

@@ -5,10 +5,12 @@ from newrelic.core.config import global_settings, finalize_application_settings
 from testing_support.fixtures import override_generic_settings
 
 from newrelic.core.application import Application
+from newrelic.core.data_collector import send_request, collector_url
 from newrelic.core.stats_engine import CustomMetrics
 from newrelic.core.transaction_node import TransactionNode
 
 from newrelic.network.exceptions import RetryDataForRequest
+
 settings = global_settings()
 
 
@@ -299,3 +301,32 @@ def test_adaptive_sampling(transaction_node):
 
         # No further samples should be saved
         assert app.compute_sampled(1.0) is False
+
+
+@pytest.mark.parametrize('ca_bundle_path,disable_certificate_validation', [
+    (None, True),
+    ('this/is/not/a/path/to/a/file.pem', True),
+    ('this/is/not/a/path/to/a/file.pem', False),
+])
+def test_ca_bundle(collector_agent_registration, ca_bundle_path,
+        disable_certificate_validation):
+
+    def preconnect():
+        url = collector_url()
+        license_key = global_settings().license_key
+        result = send_request(None, url, 'preconnect', license_key)
+        assert result
+
+    @override_generic_settings(settings, {
+        'ca_bundle_path': ca_bundle_path,
+        'debug.disable_certificate_validation': disable_certificate_validation,
+    })
+    def _test():
+        if ca_bundle_path and not disable_certificate_validation:
+            with pytest.raises(RetryDataForRequest,
+                    message='No such file or directory'):
+                preconnect()
+        else:
+            preconnect()
+
+    _test()

@@ -83,7 +83,9 @@ def local_config(args):
 
     headers['X-API-Key'] = api_key
 
-    cert_loc = certs.where()
+    cert_loc = settings.ca_bundle_path
+    if cert_loc is None:
+        cert_loc = certs.where()
 
     r = requests.post(url, proxies=proxies, headers=headers,
             timeout=timeout, data=data, verify=cert_loc)

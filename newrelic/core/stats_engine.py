@@ -690,7 +690,7 @@ class StatsEngine(object):
                 'type': 'TransactionError',
                 'error.class': error.type,
                 'error.message': error.message,
-                'timestamp': error.start_time,
+                'timestamp': int(1000.0 * error.start_time),
                 'transactionName': None,
         }
 

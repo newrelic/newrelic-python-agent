@@ -6,7 +6,8 @@ import newrelic.api.settings
 
 from newrelic.api.application import application_instance
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.transaction import current_transaction
+from newrelic.api.transaction import (current_transaction,
+        accept_distributed_trace_payload, create_distributed_tracing_payload)
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.core.config import finalize_application_settings
 from newrelic.core.adaptive_sampler import AdaptiveSampler
@@ -669,6 +670,26 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
             assert self.transaction.sampled is False
             assert self.transaction.priority == -1.0
+
+    def test_top_level_accept_api_no_transaction(self):
+        payload = self._make_test_payload()
+        result = accept_distributed_trace_payload(payload)
+        assert result is False
+
+    def test_top_level_accept_api_with_transaction(self):
+        with self.transaction:
+            payload = self._make_test_payload()
+            result = accept_distributed_trace_payload(payload)
+            assert result is not None
+
+    def test_top_level_create_api_no_transaction(self):
+        result = create_distributed_tracing_payload()
+        assert result is None
+
+    def test_top_level_create_api_with_transaction(self):
+        with self.transaction:
+            result = create_distributed_tracing_payload()
+            assert result is not None
 
 
 class TestTransactionDeterministic(newrelic.tests.test_cases.TestCase):

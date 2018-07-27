@@ -1769,3 +1769,17 @@ def record_custom_event(event_type, params, application=None):
     else:
         if application.enabled:
             application.record_custom_event(event_type, params)
+
+
+def accept_distributed_trace_payload(payload, transport_type='HTTP'):
+    transaction = current_transaction()
+    if transaction:
+        return transaction.accept_distributed_trace_payload(payload,
+                transport_type)
+    return False
+
+
+def create_distributed_tracing_payload():
+    transaction = current_transaction()
+    if transaction:
+        return transaction.create_distributed_tracing_payload()

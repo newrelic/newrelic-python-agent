@@ -898,7 +898,8 @@ def validate_non_transaction_error_event(required_intrinsics={}, num_errors=1,
                 assert intrinsics['error.message'].startswith(
                         required_intrinsics['error.message'])
                 now = time.time()
-                assert intrinsics['timestamp'] <= now
+                assert isinstance(intrinsics['timestamp'], int)
+                assert intrinsics['timestamp'] <= 1000.0 * now
 
                 user_params = event[1]
                 for name, value in required_user.items():
@@ -2116,7 +2117,8 @@ def _validate_event_attributes(intrinsics, user_attributes,
             required_intrinsics, required_user):
 
     now = time.time()
-    assert intrinsics['timestamp'] <= now
+    assert isinstance(intrinsics['timestamp'], int)
+    assert intrinsics['timestamp'] <= 1000.0 * now
     assert intrinsics['duration'] >= 0.0
 
     assert 'memcacheDuration' not in intrinsics
@@ -2250,8 +2252,9 @@ def _validate_custom_event(recorded_event, required_event):
     assert intrinsics['type'] == required_event[0]['type']
 
     now = time.time()
-    assert intrinsics['timestamp'] <= now
-    assert intrinsics['timestamp'] >= required_event[0]['timestamp']
+    assert isinstance(intrinsics['timestamp'], int)
+    assert intrinsics['timestamp'] <= 1000.0 * now
+    assert intrinsics['timestamp'] >= 1000.0 * required_event[0]['timestamp']
 
     assert recorded_event[1].items() == required_event[1].items()
 

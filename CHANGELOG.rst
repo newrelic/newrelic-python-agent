@@ -1,6 +1,12 @@
 unreleased
 ----------
 
+- Custom Insights event data attached to transactions in excess of 100 events were omitted
+
+  The agent may have failed to send custom event data (record_custom_event) to
+  insights when recorded as part of a Transaction containing over 100 custom
+  events. This issue has now been corrected.
+
 - Provide configuration option for custom CA bundle.
 
   Customers can now use the `ca_bundle_path` configuration option or set the

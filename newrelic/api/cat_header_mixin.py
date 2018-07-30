@@ -62,7 +62,7 @@ class CatHeaderMixin(object):
         nr_headers = []
 
         if settings.distributed_tracing.enabled:
-            payload = transaction.create_distributed_tracing_payload()
+            payload = transaction.create_distributed_trace_payload()
             if not payload:
                 return []
 

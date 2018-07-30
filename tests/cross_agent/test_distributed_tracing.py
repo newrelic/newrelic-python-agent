@@ -93,7 +93,7 @@ class TargetWSGIApplication(object):
 
         def capture_outbound_payloads():
             @transient_function_wrapper('newrelic.api.transaction',
-                'Transaction.create_distributed_tracing_payload')
+                'Transaction.create_distributed_trace_payload')
             def _capture_payloads(wrapped, instance, args, kwargs):
                 result = wrapped(*args, **kwargs)
                 sent_payloads.append(result)

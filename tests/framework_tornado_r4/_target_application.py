@@ -7,6 +7,11 @@ import tornado.curl_httpclient
 import time
 
 
+_has_web_asynchronous = hasattr(tornado.web, 'asynchronous')
+_has_native_support = (sys.version_info >= (3, 5) and
+        tornado.version_info >= (4, 3))
+
+
 def dummy(*args, **kwargs):
     pass
 
@@ -161,17 +166,18 @@ class FakeCoroHandler(tornado.web.RequestHandler):
         self.write("Hello, world")
 
 
-class WebAsyncHandler(tornado.web.RequestHandler):
-    @tornado.web.asynchronous
-    def get(self, fast=False):
-        io_loop = tornado.ioloop.IOLoop.current()
-        io_loop.add_callback(self.done, fast=fast)
+if _has_web_asynchronous:
+    class WebAsyncHandler(tornado.web.RequestHandler):
+        @tornado.web.asynchronous
+        def get(self, fast=False):
+            io_loop = tornado.ioloop.IOLoop.current()
+            io_loop.add_callback(self.done, fast=fast)
 
-    def done(self, fast):
-        if not fast:
-            time.sleep(0.1)
-        self.write("Hello, world")
-        self.finish()
+        def done(self, fast):
+            if not fast:
+                time.sleep(0.1)
+            self.write("Hello, world")
+            self.finish()
 
 
 class InitializeHandler(tornado.web.RequestHandler):
@@ -204,7 +210,6 @@ def make_app():
         (r'/coro(/.*)?', CoroHandler),
         (r'/coro-throw(/.*)?', CoroThrowHandler),
         (r'/fake-coro(/.*)?', FakeCoroHandler),
-        (r'/web-async(/.*)?', WebAsyncHandler),
         (r'/init(/.*)?', InitializeHandler),
         (r'/html-insertion', HTMLInsertionHandler),
         (r'/on-finish(/.*)?', OnFinishHandler),
@@ -220,13 +225,15 @@ def make_app():
                 {'terminal_trace': True}),
         (r'/echo-headers', EchoHeaderHandler),
     ]
-    if sys.version_info >= (3, 5) and tornado.version_info >= (4, 3):
-        from _target_application_native import (NativeSimpleHandler,
-                NativeWebAsyncHandler)
-        handlers.extend([
-            (r'/native-simple(/.*)?', NativeSimpleHandler),
-            (r'/native-web-async(/.*)?', NativeWebAsyncHandler),
-        ])
+    if _has_native_support:
+        from _target_application_native import NativeSimpleHandler
+        handlers.append((r'/native-simple(/.*)?', NativeSimpleHandler))
+    if _has_web_asynchronous:
+        handlers.append((r'/web-async(/.*)?', WebAsyncHandler))
+        if _has_native_support:
+            from _target_application_native import NativeWebAsyncHandler
+            handlers.append(
+                    (r'/native-web-async(/.*)?', NativeWebAsyncHandler))
     return tornado.web.Application(handlers, log_function=dummy)
 
 

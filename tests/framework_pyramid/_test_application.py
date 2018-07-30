@@ -5,35 +5,43 @@ from pyramid.view import view_config
 from pyramid.config import Configurator
 import pyramid.httpexceptions as exc
 
+
 @view_config(route_name='home')
 def home_view(request):
     return Response('<p>INDEX RESPONSE</p>')
+
 
 @view_config(route_name='error')
 def error(request):
     raise RuntimeError('error')
 
+
 @view_config(route_name='not_found_exception_response')
 def not_found_exception_response(request):
     raise exc.exception_response(404)
+
 
 @view_config(route_name='raise_not_found')
 def raise_not_found(request):
     raise exc.HTTPNotFound()
 
+
 @view_config(route_name='return_not_found')
 def return_not_found(request):
     return exc.HTTPNotFound()
+
 
 @view_config(route_name='redirect')
 def redirect(request):
     raise exc.HTTPFound(request.route_url('home'))
 
+
 @view_config(route_name='html_insertion')
 def html_insertion(request):
     return Response('<!DOCTYPE html><html><head>Some header</head>'
-            '<body><h1>My First Heading</h1><p>My first paragraph.</p>'
-            '</body></html>')
+                    '<body><h1>My First Heading</h1><p>My first paragraph.</p>'
+                    '</body></html>')
+
 
 class RestView:
     def __init__(self, request):

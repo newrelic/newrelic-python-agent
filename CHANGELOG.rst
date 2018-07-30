@@ -19,6 +19,13 @@ unreleased
   your newrelic.ini file or use the environment variable
   `NEW_RELIC_DISTRIBUTED_TRACING_ENABLED=true`.
 
+- Add support for tracing Pyramid tweens
+
+  [Pyramid tweens](https://docs.pylonsproject.org/projects/pyramid/en/latest/glossary.html#term-tween)
+  are now automatically timed and added to the transaction detail view. The
+  time spent in a Pyramid tween will be displayed in the transaction breakdown
+  table and in the trace details of a transaction trace.
+
 - Custom Insights event data attached to transactions in excess of 100 events were omitted
 
   The agent may have failed to send custom event data (record_custom_event) to

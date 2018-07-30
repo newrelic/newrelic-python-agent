@@ -1005,7 +1005,7 @@ class Transaction(object):
         m = self._transaction_metrics.get(metric_name, 0)
         self._transaction_metrics[metric_name] = m + 1
 
-    def create_distributed_tracing_payload(self):
+    def create_distributed_trace_payload(self):
         if not self.enabled:
             return
 
@@ -1779,7 +1779,7 @@ def accept_distributed_trace_payload(payload, transport_type='HTTP'):
     return False
 
 
-def create_distributed_tracing_payload():
+def create_distributed_trace_payload():
     transaction = current_transaction()
     if transaction:
-        return transaction.create_distributed_tracing_payload()
+        return transaction.create_distributed_trace_payload()

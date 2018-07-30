@@ -163,7 +163,7 @@ def test_distributed_trace_attributes(span_events, accept_payload):
             result = txn.accept_distributed_trace_payload(payload)
             assert result
         else:
-            txn.create_distributed_tracing_payload()
+            txn.create_distributed_trace_payload()
 
         try:
             raise ValueError('cookies')

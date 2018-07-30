@@ -30,12 +30,14 @@
 #   but since likely that error_collector.ignore_status_codes would not
 #   be overridden, so tolerate it for now.
 
-from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
 from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import wrap_wsgi_application
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import FunctionWrapper, wrap_out_function
+from newrelic.common.object_wrapper import (FunctionWrapper, wrap_out_function,
+        wrap_function_wrapper)
 from newrelic.core.config import ignore_status_code
+
 
 def instrument_pyramid_router(module):
     pyramid_version = None
@@ -46,8 +48,9 @@ def instrument_pyramid_router(module):
     except Exception:
         pass
 
-    wrap_wsgi_application(module, 'Router.__call__',
-            framework=('Pyramid', pyramid_version))
+    wrap_wsgi_application(
+        module, 'Router.__call__', framework=('Pyramid', pyramid_version))
+
 
 def should_ignore(exc, value, tb):
     from pyramid.httpexceptions import HTTPException
@@ -67,6 +70,7 @@ def should_ignore(exc, value, tb):
 
     if isinstance(value, PredicateMismatch):
         return True
+
 
 def view_handler_wrapper(wrapped, instance, args, kwargs):
     transaction = current_transaction()
@@ -91,6 +95,7 @@ def view_handler_wrapper(wrapped, instance, args, kwargs):
             transaction.record_exception(ignore_errors=should_ignore)
             raise
 
+
 def wrap_view_handler(mapped_view):
     if hasattr(mapped_view, '_nr_wrapped'):
         return mapped_view
@@ -98,6 +103,21 @@ def wrap_view_handler(mapped_view):
         wrapped = FunctionWrapper(mapped_view, view_handler_wrapper)
         wrapped._nr_wrapped = True
         return wrapped
+
+
+def wrap_tween_factory(wrapped, instance, args, kwargs):
+    handler = wrapped(*args, **kwargs)
+    return FunctionTraceWrapper(handler)
+
+
+def wrap_add_tween(wrapped, instance, args, kwargs):
+    def _bind_params(name, factory, *_args, **_kwargs):
+        return name, factory, _args, _kwargs
+
+    name, factory, args, kwargs = _bind_params(*args, **kwargs)
+    factory = FunctionWrapper(factory, wrap_tween_factory)
+    return wrapped(name, factory, *args, **kwargs)
+
 
 def default_view_mapper_wrapper(wrapped, instance, args, kwargs):
     wrapper = wrapped(*args, **kwargs)
@@ -137,13 +157,13 @@ def default_view_mapper_wrapper(wrapped, instance, args, kwargs):
 
     return _wrapper
 
+
 def instrument_pyramid_config_views(module):
     # Location of the ViewDeriver class changed from pyramid.config to
     # pyramid.config.views so check if present before trying to update.
 
     if hasattr(module, 'ViewDeriver'):
-        wrap_out_function(module, 'ViewDeriver.__call__',
-                wrap_view_handler)
+        wrap_out_function(module, 'ViewDeriver.__call__', wrap_view_handler)
     elif hasattr(module, 'Configurator'):
         wrap_out_function(module, 'Configurator._derive_view',
                 wrap_view_handler)
@@ -155,3 +175,9 @@ def instrument_pyramid_config_views(module):
         module.DefaultViewMapper.map_class_native = FunctionWrapper(
                 module.DefaultViewMapper.map_class_native,
                 default_view_mapper_wrapper)
+
+
+def instrument_pyramid_config_tweens(module):
+    wrap_function_wrapper(module, 'Tweens.add_explicit', wrap_add_tween)
+
+    wrap_function_wrapper(module, 'Tweens.add_implicit', wrap_add_tween)

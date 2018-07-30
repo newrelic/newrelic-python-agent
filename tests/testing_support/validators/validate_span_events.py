@@ -1,3 +1,6 @@
+import six
+import time
+
 from newrelic.common.object_wrapper import (transient_function_wrapper,
         function_wrapper)
 
@@ -43,6 +46,8 @@ def validate_span_events(exact_intrinsics={}, expected_intrinsics=[],
         for captured_event in captured_events:
             intrinsics, agent_attrs, user_attrs = captured_event
 
+            _check_span_intrinsics(intrinsics)
+
             # for now we do not add any of these attr types to span events
             assert not agent_attrs
             assert not user_attrs
@@ -78,3 +83,21 @@ def validate_span_events(exact_intrinsics={}, expected_intrinsics=[],
         return val
 
     return _validate_wrapper
+
+
+def _check_span_intrinsics(intrinsics):
+    assert intrinsics['type'] == 'Span'
+    assert isinstance(intrinsics['traceId'], six.string_types)
+    assert isinstance(intrinsics['guid'], six.string_types)
+    if 'parentId' in intrinsics:
+        assert isinstance(intrinsics['parentId'], six.string_types)
+    assert isinstance(intrinsics['transactionId'], six.string_types)
+    assert intrinsics['sampled'] is True
+    assert isinstance(intrinsics['priority'], float)
+    assert isinstance(intrinsics['timestamp'], int)
+    assert intrinsics['timestamp'] <= int(time.time() * 1000)
+    assert isinstance(intrinsics['duration'], float)
+    assert isinstance(intrinsics['name'], six.string_types)
+    assert isinstance(intrinsics['category'], six.string_types)
+    if 'nr.entryPoint' in intrinsics:
+        assert intrinsics['nr.entryPoint'] is True

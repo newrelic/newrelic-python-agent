@@ -307,6 +307,8 @@ def _process_configuration(section):
                      'get', None)
     _process_setting(section, 'proxy_pass',
                      'get', None)
+    _process_setting(section, 'ca_bundle_path',
+                     'get', None)
     _process_setting(section, 'audit_log_file',
                      'get', None)
     _process_setting(section, 'monitor_mode',
@@ -2586,6 +2588,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('pyramid.config.views',
             'newrelic.hooks.framework_pyramid',
             'instrument_pyramid_config_views')
+    _process_module_definition('pyramid.config.tweens',
+            'newrelic.hooks.framework_pyramid',
+            'instrument_pyramid_config_tweens')
 
     _process_module_definition('cornice.service',
             'newrelic.hooks.component_cornice',

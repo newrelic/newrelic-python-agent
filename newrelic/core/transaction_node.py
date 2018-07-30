@@ -536,7 +536,7 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
 
         intrinsics = self.distributed_trace_intrinsics.copy()
 
-        intrinsics['timestamp'] = self.start_time
+        intrinsics['timestamp'] = int(1000.0 * self.start_time)
         intrinsics['duration'] = self.response_time
 
         if self.port:

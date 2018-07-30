@@ -6,7 +6,7 @@ class GenericNodeMixin(object):
         i_attrs['type'] = 'Span'
         i_attrs['name'] = self.name
         i_attrs['guid'] = self.guid
-        i_attrs['timestamp'] = self.start_time
+        i_attrs['timestamp'] = int(self.start_time * 1000)
         i_attrs['duration'] = self.duration
         i_attrs['category'] = 'generic'
 

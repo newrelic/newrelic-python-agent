@@ -1005,7 +1005,7 @@ class Transaction(object):
         m = self._transaction_metrics.get(metric_name, 0)
         self._transaction_metrics[metric_name] = m + 1
 
-    def create_distributed_tracing_payload(self):
+    def create_distributed_trace_payload(self):
         if not self.enabled:
             return
 
@@ -1132,7 +1132,14 @@ class Transaction(object):
                 transport_type = 'Unknown'
 
             self.parent_transport_type = transport_type
-            self.parent_transport_duration = time.time() - transport_start
+
+            # If starting in the future, transport duration should be set to 0
+            now = time.time()
+            if transport_start > now:
+                self.parent_transport_duration = 0.0
+            else:
+                self.parent_transport_duration = now - transport_start
+
             self._trace_id = data.get('tr')
 
             if 'pr' in data:
@@ -1762,3 +1769,17 @@ def record_custom_event(event_type, params, application=None):
     else:
         if application.enabled:
             application.record_custom_event(event_type, params)
+
+
+def accept_distributed_trace_payload(payload, transport_type='HTTP'):
+    transaction = current_transaction()
+    if transaction:
+        return transaction.accept_distributed_trace_payload(payload,
+                transport_type)
+    return False
+
+
+def create_distributed_trace_payload():
+    transaction = current_transaction()
+    if transaction:
+        return transaction.create_distributed_trace_payload()

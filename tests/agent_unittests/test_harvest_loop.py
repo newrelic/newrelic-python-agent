@@ -5,15 +5,56 @@ from newrelic.core.config import global_settings, finalize_application_settings
 from testing_support.fixtures import override_generic_settings
 
 from newrelic.core.application import Application
-from newrelic.core.stats_engine import CustomMetrics
+from newrelic.core.data_collector import send_request, collector_url
+from newrelic.core.stats_engine import CustomMetrics, SampledDataSet
 from newrelic.core.transaction_node import TransactionNode
+from newrelic.core.custom_event import create_custom_event
+from newrelic.core.error_node import ErrorNode
+from newrelic.core.function_node import FunctionNode
 
 from newrelic.network.exceptions import RetryDataForRequest
+
 settings = global_settings()
 
 
 @pytest.fixture(scope='module')
-def transaction_node():
+def transaction_node(request):
+    default_capacity = SampledDataSet().capacity
+    num_events = default_capacity + 1
+
+    custom_events = SampledDataSet(capacity=num_events)
+    for _ in range(num_events):
+        event = create_custom_event('Custom', {})
+        custom_events.add(event)
+
+    error = ErrorNode(
+            timestamp=0,
+            type='foo:bar',
+            message='oh no! your foo had a bar',
+            stack_trace='',
+            custom_params={},
+            file_name=None,
+            line_number=None,
+            source=None)
+
+    errors = tuple(error for _ in range(num_events))
+
+    function = FunctionNode(
+            group='Function',
+            name='foo',
+            children=(),
+            start_time=0,
+            end_time=1,
+            duration=1,
+            exclusive=1,
+            label=None,
+            params=None,
+            rollup=None,
+            is_async=True,
+            guid='GUID')
+
+    children = tuple(function for _ in range(num_events))
+
     node = TransactionNode(
             settings=finalize_application_settings({'agent_run_id': 1234567}),
             path='OtherTransaction/Function/main',
@@ -32,10 +73,10 @@ def transaction_node():
             response_time=0.1,
             duration=0.1,
             exclusive=0.1,
-            children=(),
-            errors=(),
+            children=children,
+            errors=errors,
             slow_sql=(),
-            custom_events=None,
+            custom_events=custom_events,
             apdex_t=0.5,
             suppress_apdex=False,
             custom_metrics=CustomMetrics(),
@@ -299,3 +340,56 @@ def test_adaptive_sampling(transaction_node):
 
         # No further samples should be saved
         assert app.compute_sampled(1.0) is False
+
+
+@pytest.mark.parametrize('ca_bundle_path,disable_certificate_validation', [
+    (None, True),
+    ('this/is/not/a/path/to/a/file.pem', True),
+    ('this/is/not/a/path/to/a/file.pem', False),
+])
+def test_ca_bundle(collector_agent_registration, ca_bundle_path,
+        disable_certificate_validation):
+
+    def preconnect():
+        url = collector_url()
+        license_key = global_settings().license_key
+        result = send_request(None, url, 'preconnect', license_key)
+        assert result
+
+    @override_generic_settings(settings, {
+        'ca_bundle_path': ca_bundle_path,
+        'debug.disable_certificate_validation': disable_certificate_validation,
+    })
+    def _test():
+        if ca_bundle_path and not disable_certificate_validation:
+            with pytest.raises(RetryDataForRequest,
+                    message='No such file or directory'):
+                preconnect()
+        else:
+            preconnect()
+
+    _test()
+
+
+@override_generic_settings(settings, {
+    'developer_mode': True,
+    'license_key': '**NOT A LICENSE KEY**',
+    'feature_flag': set(),
+    'distributed_tracing.enabled': True,
+    'error_collector.max_event_samples_stored': 1000,
+    'span_events.max_samples_stored': 1000,
+    'custom_insights_events.max_samples_stored': 1000,
+})
+def test_reservoir_sizes(transaction_node):
+    app = Application('Python Agent Test (Harvest Loop)')
+    app.connect_to_data_collector()
+
+    # Record a transaction with events
+    app.record_transaction(transaction_node)
+
+    # Test that the samples have been recorded
+    assert app._stats_engine.custom_events.num_samples == 101
+    assert app._stats_engine.error_events.num_samples == 101
+
+    # Add 1 for the root span
+    assert app._stats_engine.span_events.num_samples == 102

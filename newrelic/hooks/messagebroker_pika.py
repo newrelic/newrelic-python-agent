@@ -88,10 +88,6 @@ def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
     properties = properties or BasicProperties()
     properties.headers = properties.headers or {}
     user_headers = properties.headers.copy()
-    cat_headers = MessageTrace.generate_request_headers(transaction)
-
-    for name, value in cat_headers:
-        properties.headers[name] = value
 
     # Do not record cat headers in the segment parameters
     if MessageTrace.cat_id_key in user_headers:
@@ -118,6 +114,10 @@ def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
             destination_type='Exchange',
             destination_name=exchange or 'Default',
             params=params):
+        cat_headers = MessageTrace.generate_request_headers(transaction)
+
+        for name, value in cat_headers:
+            properties.headers[name] = value
         return wrapped(*args)
 
 

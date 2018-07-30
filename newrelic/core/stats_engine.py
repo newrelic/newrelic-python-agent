@@ -17,7 +17,6 @@ from heapq import heapreplace, heapify
 
 import newrelic.packages.six as six
 
-from newrelic.core import config
 from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR
 from newrelic.core.attribute import create_user_attributes
 
@@ -256,6 +255,11 @@ class SampledDataSet(object):
         self.capacity = capacity
         self.num_seen = 0
 
+        if capacity <= 0:
+            def add(*args, **kwargs):
+                self.num_seen += 1
+            self.add = add
+
     @property
     def samples(self):
         return (x[-1] for x in self.pq)
@@ -350,7 +354,7 @@ class StatsEngine(object):
         self.__transaction_events = SampledDataSet()
         self.__error_events = SampledDataSet()
         self.__custom_events = SampledDataSet()
-        self.__span_events = SampledDataSet(self.maximum_allowed_span_events)
+        self.__span_events = SampledDataSet()
         self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__slow_transaction_map = {}
@@ -406,14 +410,6 @@ class StatsEngine(object):
     @property
     def error_events(self):
         return self.__error_events
-
-    @property
-    def maximum_allowed_span_events(self):
-        if self.__settings is not None:
-            return min(self.__settings.span_events.max_samples_stored,
-                config.SPAN_EVENT_RESERVOIR_SIZE)
-        else:
-            return config.SPAN_EVENT_RESERVOIR_SIZE
 
     def error_events_sampling_info(self):
         sampling_info = {
@@ -694,7 +690,7 @@ class StatsEngine(object):
                 'type': 'TransactionError',
                 'error.class': error.type,
                 'error.message': error.message,
-                'timestamp': error.start_time,
+                'timestamp': int(1000.0 * error.start_time),
                 'transactionName': None,
         }
 
@@ -1360,7 +1356,11 @@ class StatsEngine(object):
             self.__custom_events = SampledDataSet()
 
     def reset_span_events(self):
-        self.__span_events = SampledDataSet(self.maximum_allowed_span_events)
+        if self.__settings is not None:
+            self.__span_events = SampledDataSet(
+                    self.__settings.span_events.max_samples_stored)
+        else:
+            self.__span_events = SampledDataSet()
 
     def reset_synthetics_events(self):
         """Resets the accumulated statistics back to initial state for
@@ -1445,9 +1445,9 @@ class StatsEngine(object):
 
         """
 
-        stats = StatsEngine()
+        stats = copy.copy(self)
+        stats.reset_stats(self.__settings)
 
-        stats.__settings = self.__settings
         stats.xray_sessions = self.xray_sessions
 
         return stats

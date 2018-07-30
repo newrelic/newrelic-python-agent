@@ -6,7 +6,8 @@ import newrelic.api.settings
 
 from newrelic.api.application import application_instance
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.transaction import current_transaction
+from newrelic.api.transaction import (current_transaction,
+        accept_distributed_trace_payload, create_distributed_trace_payload)
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.core.config import finalize_application_settings
 from newrelic.core.adaptive_sampler import AdaptiveSampler
@@ -176,22 +177,22 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
     ################################
 
-    def test_create_distributed_tracing_payload_text(self):
+    def test_create_distributed_trace_payload_text(self):
         with self.transaction:
-            payload = self.transaction.create_distributed_tracing_payload()
+            payload = self.transaction.create_distributed_trace_payload()
             assert type(payload.text()) is str
             assert ('Supportability/DistributedTrace/'
                     'CreatePayload/Success'
                     in self.transaction._transaction_metrics)
 
-    def test_create_distributed_tracing_payload_http_safe(self):
+    def test_create_distributed_trace_payload_http_safe(self):
         with self.transaction:
-            payload = self.transaction.create_distributed_tracing_payload()
+            payload = self.transaction.create_distributed_trace_payload()
             assert type(payload.http_safe()) is str
 
     def test_distributed_trace_no_referring_transaction(self):
         with self.transaction:
-            payload = self.transaction.create_distributed_tracing_payload()
+            payload = self.transaction.create_distributed_trace_payload()
             assert payload['v'] == (0, 1)
 
             data = payload['d']
@@ -215,7 +216,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         self.transaction._trace_id = 'qwerty'
         self.transaction._priority = 1.0
 
-        payload = self.transaction.create_distributed_tracing_payload()
+        payload = self.transaction.create_distributed_trace_payload()
         assert payload['v'] == (0, 1)
 
         data = payload['d']
@@ -272,7 +273,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             self.transaction._priority = 0.0
             self.transaction._sampled = False
 
-            payload = self.transaction.create_distributed_tracing_payload()
+            payload = self.transaction.create_distributed_trace_payload()
 
             data = payload['d']
             assert 'id' not in data
@@ -432,7 +433,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
     def test_accept_distributed_trace_payload_after_create_payload(self):
         with self.transaction:
             payload = self._make_test_payload()
-            self.transaction.create_distributed_tracing_payload()
+            self.transaction.create_distributed_trace_payload()
             result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
             assert ('Supportability/DistributedTrace/'
@@ -449,6 +450,17 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
             # Transport duration is at least 1 second
             assert self.transaction.parent_transport_duration > 1
+
+    def test_accept_distributed_trace_payload_negative_duration(self):
+        # Mark a payload as sent 10 seconds into the future
+        ti = int(time.time() * 1000.0) + 10000
+        with self.transaction:
+            payload = self._make_test_payload(ti=ti)
+            result = self.transaction.accept_distributed_trace_payload(payload)
+            assert result
+
+            # Transport duration is 0!
+            assert self.transaction.parent_transport_duration == 0
 
     def test_accept_distributed_trace_payload_transport_type(self):
         with self.transaction:
@@ -482,17 +494,17 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
     def test_create_payload_prior_to_connect(self):
         self.transaction.enabled = False
         with self.transaction:
-            assert not self.transaction.create_distributed_tracing_payload()
+            assert not self.transaction.create_distributed_trace_payload()
 
     def test_create_payload_cat_disabled(self):
         self.transaction._settings.cross_application_tracer.enabled = False
         with self.transaction:
-            assert self.transaction.create_distributed_tracing_payload()
+            assert self.transaction.create_distributed_trace_payload()
 
     def test_create_payload_dt_disabled(self):
         self.transaction._settings.distributed_tracing.enabled = False
         with self.transaction:
-            assert not self.transaction.create_distributed_tracing_payload()
+            assert not self.transaction.create_distributed_trace_payload()
 
     def test_accept_payload_prior_to_connect(self):
         self.transaction.enabled = False
@@ -552,7 +564,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
             assert result
             outbound_payload = \
-                    self.transaction.create_distributed_tracing_payload()
+                    self.transaction.create_distributed_trace_payload()
             data = outbound_payload['d']
             assert data['ty'] == 'App'
             assert data['tr'] == 'd6b4ba0c3a712ca'
@@ -568,7 +580,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
     def test_sampled_create_payload(self):
         with self.transaction:
             self.transaction._priority = 1.0
-            payload = self.transaction.create_distributed_tracing_payload()
+            payload = self.transaction.create_distributed_trace_payload()
 
             assert payload['d']['sa'] is True
             assert self.transaction.sampled is True
@@ -658,6 +670,26 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
             assert self.transaction.sampled is False
             assert self.transaction.priority == -1.0
+
+    def test_top_level_accept_api_no_transaction(self):
+        payload = self._make_test_payload()
+        result = accept_distributed_trace_payload(payload)
+        assert result is False
+
+    def test_top_level_accept_api_with_transaction(self):
+        with self.transaction:
+            payload = self._make_test_payload()
+            result = accept_distributed_trace_payload(payload)
+            assert result is not None
+
+    def test_top_level_create_api_no_transaction(self):
+        result = create_distributed_trace_payload()
+        assert result is None
+
+    def test_top_level_create_api_with_transaction(self):
+        with self.transaction:
+            result = create_distributed_trace_payload()
+            assert result is not None
 
 
 class TestTransactionDeterministic(newrelic.tests.test_cases.TestCase):

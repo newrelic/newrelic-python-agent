@@ -5,7 +5,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
 
 from newrelic.packages import six
 
-def target_application():
+def target_application(with_tweens=False, tweens_explicit=False):
     # We need to delay Pyramid application creation because of ordering
     # issues whereby the agent needs to be initialised before Pyramid is
     # imported and the routes configured. Normally pytest only runs the
@@ -14,8 +14,14 @@ def target_application():
     # creation within a function as Pyramid relies on view handlers being
     # at global scope, so import it from a separate module.
 
-    from _test_application import _test_application
-    return _test_application
+    from _test_application import target_application as _app
+    return _app(with_tweens, tweens_explicit)
+
+if six.PY3:
+    tween_name = ('Function/_test_application:'
+                  'simple_tween_factory.<locals>.simple_tween')
+else:
+    tween_name = 'Function/_test_application:simple_tween'
 
 _test_application_index_scoped_metrics = [
         ('Python/WSGI/Application', 1),
@@ -24,13 +30,26 @@ _test_application_index_scoped_metrics = [
         ('Function/pyramid.router:Router.__call__', 1),
         ('Function/_test_application:home_view', 1)]
 
-@validate_transaction_errors(errors=[])
-@validate_transaction_metrics('_test_application:home_view',
-        scoped_metrics=_test_application_index_scoped_metrics)
-def test_application_index():
-    application = target_application()
-    response = application.get('')
-    response.mustcontain('INDEX RESPONSE')
+@pytest.mark.parametrize('with_tweens,tweens_explicit', (
+    (False, False),
+    (True, False),
+    (True, True),
+))
+def test_application_index(with_tweens, tweens_explicit):
+    application = target_application(with_tweens, tweens_explicit)
+
+    metrics = list(_test_application_index_scoped_metrics)
+    if with_tweens:
+        metrics.append((tween_name, 1))
+
+    @validate_transaction_errors(errors=[])
+    @validate_transaction_metrics('_test_application:home_view',
+            scoped_metrics=metrics)
+    def _test():
+        response = application.get('')
+        response.mustcontain('INDEX RESPONSE')
+
+    _test()
 
 _test_not_found_as_exception_response_scoped_metrics = [
         ('Python/WSGI/Application', 1),

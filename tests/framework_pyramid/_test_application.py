@@ -47,17 +47,36 @@ class RestView:
     def post(self):
         return Response('Called POST')
 
-config = Configurator()
-config.add_route('home', '/')
-config.add_route('html_insertion', '/html_insertion')
-config.add_route('error', '/error')
-config.add_route('not_found_exception_response', '/nf1')
-config.add_route('raise_not_found', '/nf2')
-config.add_route('return_not_found', '/nf3')
-config.add_route('redirect', '/redirect')
-config.add_route('rest', '/rest')
-config.scan()
 
-application = config.make_wsgi_app()
+def simple_tween_factory(handler, registry):
+    def simple_tween(request):
+        return handler(request)
 
-_test_application = webtest.TestApp(application)
+    return simple_tween
+
+
+def target_application(with_tweens=False, tweens_explicit=False):
+    settings = {}
+    if with_tweens and tweens_explicit:
+        settings['pyramid.tweens'] = [
+            '_test_application:simple_tween_factory',
+        ]
+
+    config = Configurator(settings=settings)
+    config.add_route('home', '/')
+    config.add_route('html_insertion', '/html_insertion')
+    config.add_route('error', '/error')
+    config.add_route('not_found_exception_response', '/nf1')
+    config.add_route('raise_not_found', '/nf2')
+    config.add_route('return_not_found', '/nf3')
+    config.add_route('redirect', '/redirect')
+    config.add_route('rest', '/rest')
+    if with_tweens:
+        config.add_tween('_test_application:simple_tween_factory')
+    config.scan()
+
+    application = config.make_wsgi_app()
+
+    _test_application = webtest.TestApp(application)
+
+    return _test_application

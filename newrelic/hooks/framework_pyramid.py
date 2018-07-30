@@ -38,6 +38,7 @@ from newrelic.common.object_wrapper import (FunctionWrapper, wrap_out_function,
         wrap_function_wrapper)
 from newrelic.core.config import ignore_status_code
 
+
 def instrument_pyramid_router(module):
     pyramid_version = None
 
@@ -47,8 +48,9 @@ def instrument_pyramid_router(module):
     except Exception:
         pass
 
-    wrap_wsgi_application(module, 'Router.__call__',
-            framework=('Pyramid', pyramid_version))
+    wrap_wsgi_application(
+        module, 'Router.__call__', framework=('Pyramid', pyramid_version))
+
 
 def should_ignore(exc, value, tb):
     from pyramid.httpexceptions import HTTPException
@@ -68,6 +70,7 @@ def should_ignore(exc, value, tb):
 
     if isinstance(value, PredicateMismatch):
         return True
+
 
 def view_handler_wrapper(wrapped, instance, args, kwargs):
     transaction = current_transaction()
@@ -92,6 +95,7 @@ def view_handler_wrapper(wrapped, instance, args, kwargs):
             transaction.record_exception(ignore_errors=should_ignore)
             raise
 
+
 def wrap_view_handler(mapped_view):
     if hasattr(mapped_view, '_nr_wrapped'):
         return mapped_view
@@ -113,6 +117,7 @@ def wrap_add_tween(wrapped, instance, args, kwargs):
     name, factory, args, kwargs = _bind_params(*args, **kwargs)
     factory = FunctionWrapper(factory, wrap_tween_factory)
     return wrapped(name, factory, *args, **kwargs)
+
 
 def default_view_mapper_wrapper(wrapped, instance, args, kwargs):
     wrapper = wrapped(*args, **kwargs)
@@ -152,13 +157,13 @@ def default_view_mapper_wrapper(wrapped, instance, args, kwargs):
 
     return _wrapper
 
+
 def instrument_pyramid_config_views(module):
     # Location of the ViewDeriver class changed from pyramid.config to
     # pyramid.config.views so check if present before trying to update.
 
     if hasattr(module, 'ViewDeriver'):
-        wrap_out_function(module, 'ViewDeriver.__call__',
-                wrap_view_handler)
+        wrap_out_function(module, 'ViewDeriver.__call__', wrap_view_handler)
     elif hasattr(module, 'Configurator'):
         wrap_out_function(module, 'Configurator._derive_view',
                 wrap_view_handler)
@@ -173,8 +178,6 @@ def instrument_pyramid_config_views(module):
 
 
 def instrument_pyramid_config_tweens(module):
-    wrap_function_wrapper(module, 'Tweens.add_explicit',
-            wrap_add_tween)
+    wrap_function_wrapper(module, 'Tweens.add_explicit', wrap_add_tween)
 
-    wrap_function_wrapper(module, 'Tweens.add_implicit',
-            wrap_add_tween)
+    wrap_function_wrapper(module, 'Tweens.add_implicit', wrap_add_tween)

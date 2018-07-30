@@ -30,11 +30,12 @@
 #   but since likely that error_collector.ignore_status_codes would not
 #   be overridden, so tolerate it for now.
 
-from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
 from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import wrap_wsgi_application
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import FunctionWrapper, wrap_out_function
+from newrelic.common.object_wrapper import (FunctionWrapper, wrap_out_function,
+        wrap_function_wrapper)
 from newrelic.core.config import ignore_status_code
 
 def instrument_pyramid_router(module):
@@ -99,6 +100,20 @@ def wrap_view_handler(mapped_view):
         wrapped._nr_wrapped = True
         return wrapped
 
+
+def wrap_tween_factory(wrapped, instance, args, kwargs):
+    handler = wrapped(*args, **kwargs)
+    return FunctionTraceWrapper(handler)
+
+
+def wrap_add_tween(wrapped, instance, args, kwargs):
+    def _bind_params(name, factory, *_args, **_kwargs):
+        return name, factory, _args, _kwargs
+
+    name, factory, args, kwargs = _bind_params(*args, **kwargs)
+    factory = FunctionWrapper(factory, wrap_tween_factory)
+    return wrapped(name, factory, *args, **kwargs)
+
 def default_view_mapper_wrapper(wrapped, instance, args, kwargs):
     wrapper = wrapped(*args, **kwargs)
 
@@ -155,3 +170,11 @@ def instrument_pyramid_config_views(module):
         module.DefaultViewMapper.map_class_native = FunctionWrapper(
                 module.DefaultViewMapper.map_class_native,
                 default_view_mapper_wrapper)
+
+
+def instrument_pyramid_config_tweens(module):
+    wrap_function_wrapper(module, 'Tweens.add_explicit',
+            wrap_add_tween)
+
+    wrap_function_wrapper(module, 'Tweens.add_implicit',
+            wrap_add_tween)

@@ -2588,6 +2588,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('pyramid.config.views',
             'newrelic.hooks.framework_pyramid',
             'instrument_pyramid_config_views')
+    _process_module_definition('pyramid.config.tweens',
+            'newrelic.hooks.framework_pyramid',
+            'instrument_pyramid_config_tweens')
 
     _process_module_definition('cornice.service',
             'newrelic.hooks.component_cornice',

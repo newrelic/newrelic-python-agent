@@ -20,7 +20,11 @@ def _prepare_request(*args, **kwargs):
         url = request
         request = HTTPRequest(url, **_kwargs)
 
-    return request, callback, raise_error
+    callback_kwargs = {}
+    if callback:
+        callback_kwargs['callback'] = callback
+
+    return request, raise_error, callback_kwargs
 
 
 def wrap_handle_response(raise_error, trace):
@@ -67,7 +71,7 @@ def _nr_wrapper_httpclient_AsyncHTTPClient_fetch_(
         return wrapped(*args, **kwargs)
 
     try:
-        req, _cb, _raise_error = _prepare_request(*args, **kwargs)
+        req, _raise_error, _kwargs = _prepare_request(*args, **kwargs)
     except:
         return wrapped(*args, **kwargs)
 
@@ -94,7 +98,7 @@ def _nr_wrapper_httpclient_AsyncHTTPClient_fetch_(
         trace.transaction._pop_current(trace)
 
     try:
-        future = wrapped(req, _cb, _raise_error)
+        future = wrapped(req, raise_error=_raise_error, **_kwargs)
     except Exception:
         trace.__exit__(*sys.exc_info())
         raise

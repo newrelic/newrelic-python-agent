@@ -1,6 +1,9 @@
 unreleased
 ----------
 
+4.2.0 (2018-07-31)
+------------------
+
 - Distributed Tracing support
 
   Distributed tracing lets you see the path that a request takes as it travels

@@ -39,6 +39,7 @@ def _get_open_port():
 @background_task(name='make_request')
 def make_request(port, req_type, client_cls, count=1, raise_error=True,
         **kwargs):
+    import tornado.curl_httpclient
     import tornado.gen
     import tornado.httpclient
     import tornado.ioloop
@@ -57,7 +58,7 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True,
     if client_cls == 'AsyncHTTPClient':
         cls.configure(None)
     elif client_cls == 'CurlAsyncHTTPClient':
-        cls.configure('tornado.curl_httpclient.CurlAsyncHTTPClient')
+        cls.configure(tornado.curl_httpclient.CurlAsyncHTTPClient)
     elif client_cls == 'HTTPClient':
         cls = tornado.httpclient.HTTPClient
     elif client_cls == 'CustomAsyncHTTPClient':

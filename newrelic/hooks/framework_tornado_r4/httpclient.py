@@ -6,11 +6,25 @@ from newrelic.common.object_wrapper import (wrap_function_wrapper,
         function_wrapper)
 
 
+_extract_request = None
+
+
+def _prepare_extract_request():
+    import tornado
+
+    global _extract_request
+
+    if tornado.version_info < (6, 0):
+        def _extract_request(request, callback=None, raise_error=True,
+                **_kwargs):
+            return request, callback, raise_error, _kwargs
+    else:
+        def _extract_request(request, raise_error=True, **_kwargs):
+            return request, None, raise_error, _kwargs
+
+
 def _prepare_request(*args, **kwargs):
     from tornado.httpclient import HTTPRequest
-
-    def _extract_request(request, callback=None, raise_error=True, **_kwargs):
-        return request, callback, raise_error, _kwargs
 
     request, callback, raise_error, _kwargs = _extract_request(*args,
             **kwargs)
@@ -106,5 +120,6 @@ def _nr_wrapper_httpclient_AsyncHTTPClient_fetch_(
 
 
 def instrument_tornado_httpclient(module):
+    _prepare_extract_request()
     wrap_function_wrapper(module, 'AsyncHTTPClient.fetch',
             _nr_wrapper_httpclient_AsyncHTTPClient_fetch_)

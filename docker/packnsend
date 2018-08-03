@@ -227,6 +227,14 @@ set_link_arguments()
     done
 }
 
+set_git_mount()
+{
+    if test -n "$WITH_GIT"
+    then
+        DOCKER_EXTRA_ARGS="$DOCKER_EXTRA_ARGS -v $ROOT_DIRECTORY/.git:/data/.git:ro"
+    fi
+}
+
 launch_remote_command()
 {
     # Launch the remote command, wait for it to complete and display
@@ -234,6 +242,7 @@ launch_remote_command()
 
     echo "Setting extra arguments to pass to docker run command."
     set_docker_extra_args
+    set_git_mount
 
     echo "DOCKER_EXTRA_ARGS:$DOCKER_EXTRA_ARGS"
     echo
@@ -299,6 +308,12 @@ launch_remote_shell()
 {
     INTERACTIVE=1
     launch_remote_command true
+}
+
+launch_remote_with_git()
+{
+    WITH_GIT=1
+    launch_remote_command "$@"
 }
 
 create_docker_base_images()
@@ -674,6 +689,17 @@ case "$COMMAND" in
         create_docker_file
         create_docker_test_image
         launch_remote_command "$@"
+        cleanup_containers
+        exit `expr $STATUS`
+        ;;
+
+    gitrun)
+        create_work_directory
+        export_git_repository
+        create_remote_launchers
+        create_docker_file
+        create_docker_test_image
+        launch_remote_with_git "$@"
         cleanup_containers
         exit `expr $STATUS`
         ;;

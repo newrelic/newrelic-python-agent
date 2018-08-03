@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Install asv
-/venvs/py36/bin/pip install asv
+/venvs/py36/bin/pip install asv virtualenv
 
 cat <<EOF > ~/.asv-machine.json
 {
@@ -16,11 +16,4 @@ cat <<EOF > ~/.asv-machine.json
 }
 EOF
 
-
-for venv in $(find /venvs -maxdepth 1 -type d | grep -v "/venvs$"); do
-    # Install the agent
-    $venv/bin/pip install -e .
-
-    # Run asv
-    /venvs/py36/bin/asv run -E existing:$venv/bin/python
-done
+/venvs/py36/bin/asv run HEAD~..HEAD

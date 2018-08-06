@@ -110,6 +110,21 @@ class TestRulesEngine(unittest.TestCase):
         result = rules_engine.normalize(self.test_url)
         self.assertEqual(("/X/X/X/X/X/X/X", False), result)
 
+    def test_rule_is_case_insensitive(self):
+        rule = dict(match_expression=u"ArTiClEDeTaIlS",
+                    replacement=u"Deets",
+                    ignore=False,
+                    eval_order=0,
+                    terminate_chain=False,
+                    each_segment=True,
+                    replace_all=True)
+
+        rules_engine = RulesEngine([rule])
+        result = rules_engine.normalize(self.test_url)
+        self.assertEqual(
+            ("/wallabies/Deets/tabid/1515/ArticleID/3773/Default.aspx", False),
+            result)
+
     def test_rule_with_back_substition(self):
         rule = dict(match_expression=u"([0-9].*)",
                     replacement=u"\\1X",

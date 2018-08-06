@@ -140,7 +140,7 @@ class SegmentCollapseEngine(object):
         choices = u'|'.join([re.escape(x) for x in prefixes])
         pattern = u'^(%s)/(.+)$' % choices
 
-        self.prefixes = re.compile(pattern)
+        self.prefixes = re.compile(pattern, re.IGNORECASE)
 
     def normalize(self, txn_name):
         """Takes a transaction name and collapses the segments into a

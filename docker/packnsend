@@ -27,6 +27,11 @@ APP_SERVICE_IMAGES="
 ALL_IMAGES="python-base $TEST_IMAGE_NAME $APP_SERVICE_IMAGES"
 DATE=`date '+%Y%m%d%H%M%S'`
 
+copy_asv_files_to_host()
+{
+    docker cp $CONTAINER_ID:/data/.asv/results .asv
+}
+
 cleanup_containers()
 {
     # Remove any docker containers/images and the working directory
@@ -700,6 +705,7 @@ case "$COMMAND" in
         create_docker_file
         create_docker_test_image
         launch_remote_with_git "$@"
+        copy_asv_files_to_host
         cleanup_containers
         exit `expr $STATUS`
         ;;

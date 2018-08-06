@@ -27,6 +27,11 @@ APP_SERVICE_IMAGES="
 ALL_IMAGES="python-base $TEST_IMAGE_NAME $APP_SERVICE_IMAGES"
 DATE=`date '+%Y%m%d%H%M%S'`
 
+copy_asv_files_to_host()
+{
+    docker cp $CONTAINER_ID:/data/.asv/results .asv
+}
+
 cleanup_containers()
 {
     # Remove any docker containers/images and the working directory
@@ -148,6 +153,9 @@ set_docker_env_vars()
     #       NEW_RELIC_DEVELOPER_MODE
 
     DOCKER_ENV_VARS=""
+
+    KEY_VAL="HOST_MACHINE=$(hostname)"
+    DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
 
     if test -n "$NEW_RELIC_STARTUP_TIMEOUT"
     then
@@ -693,13 +701,14 @@ case "$COMMAND" in
         exit `expr $STATUS`
         ;;
 
-    gitrun)
+    asvrun)
         create_work_directory
         export_git_repository
         create_remote_launchers
         create_docker_file
         create_docker_test_image
         launch_remote_with_git "$@"
+        copy_asv_files_to_host
         cleanup_containers
         exit `expr $STATUS`
         ;;

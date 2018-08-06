@@ -5,10 +5,10 @@
 
 cat <<EOF > ~/.asv-machine.json
 {
-    "jenkins": {
+    "$HOST_MACHINE": {
         "arch": "x86_64",
         "cpu": "",
-        "machine": "jenkins",
+        "machine": "$HOST_MACHINE",
         "os": "Linux",
         "ram": ""
     },

@@ -22,7 +22,7 @@ use(extensions) {
 
             steps {
                 shell('./jenkins/scripts/prep_node_for_test.sh')
-                shell('./docker/packnsend gitrun ./jenkins/scripts/run_benchmark.sh')
+                shell('./docker/packnsend asvrun ./jenkins/scripts/run_benchmark.sh')
             }
 
             slackQuiet(slackChannel)

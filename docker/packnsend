@@ -693,7 +693,7 @@ case "$COMMAND" in
         exit `expr $STATUS`
         ;;
 
-    gitrun)
+    asvrun)
         create_work_directory
         export_git_repository
         create_remote_launchers

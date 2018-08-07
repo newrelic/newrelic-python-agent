@@ -29,7 +29,7 @@ DATE=`date '+%Y%m%d%H%M%S'`
 
 copy_asv_files_to_host()
 {
-    docker cp $CONTAINER_ID:/data/.asv/results .asv
+    docker cp $CONTAINER_ID:/data/.asv .
 }
 
 cleanup_containers()

@@ -12,6 +12,13 @@ try:
 except ImportError:
     asyncio = None
 
+skipif_no_asynchronous = pytest.mark.skipif(
+        not hasattr(tornado.web, 'asynchronous'),
+        reason='Tornado version does not have asynchronous decorator')
+skipif_no_engine = pytest.mark.skipif(
+        not hasattr(tornado.gen, 'engine'),
+        reason='Tornado version does not have engine decorator')
+
 
 @pytest.fixture(scope='function')
 def utils():
@@ -79,6 +86,7 @@ def test_tornado_gen_coroutine_generator(utils):
     assert utils._iscoroutinefunction_tornado(method)
 
 
+@skipif_no_engine
 def test_tornado_gen_engine_function(utils):
 
     class Handler(object):
@@ -91,6 +99,7 @@ def test_tornado_gen_engine_function(utils):
     assert utils._iscoroutinefunction_tornado(method)
 
 
+@skipif_no_engine
 def test_tornado_gen_engine_generator(utils):
 
     class Handler(object):
@@ -103,6 +112,8 @@ def test_tornado_gen_engine_generator(utils):
     assert utils._iscoroutinefunction_tornado(method)
 
 
+@skipif_no_asynchronous
+@skipif_no_engine
 def test_tornado_async_engine_function(utils):
 
     class Handler(object):
@@ -116,6 +127,8 @@ def test_tornado_async_engine_function(utils):
     assert utils._iscoroutinefunction_tornado(method)
 
 
+@skipif_no_asynchronous
+@skipif_no_engine
 def test_tornado_async_engine_generator(utils):
 
     class Handler(object):
@@ -129,6 +142,7 @@ def test_tornado_async_engine_generator(utils):
     assert utils._iscoroutinefunction_tornado(method)
 
 
+@skipif_no_asynchronous
 def test_tornado_web_async(utils):
 
     class Handler(object):
@@ -158,6 +172,7 @@ def test_just_plain_method(utils):
 # in this case." Since we do not know what they mean by "first", we test both
 # orderings.
 
+@skipif_no_asynchronous
 def test_tornado_async_coro_function(utils):
 
     class Handler(object):
@@ -171,6 +186,7 @@ def test_tornado_async_coro_function(utils):
     assert utils._iscoroutinefunction_tornado(method)
 
 
+@skipif_no_asynchronous
 def test_tornado_async_coro_generator(utils):
 
     class Handler(object):
@@ -184,6 +200,7 @@ def test_tornado_async_coro_generator(utils):
     assert utils._iscoroutinefunction_tornado(method)
 
 
+@skipif_no_asynchronous
 def test_tornado_coro_async_function(utils):
 
     class Handler(object):
@@ -197,6 +214,7 @@ def test_tornado_coro_async_function(utils):
     assert utils._iscoroutinefunction_tornado(method)
 
 
+@skipif_no_asynchronous
 def test_tornado_coro_async_generator(utils):
 
     class Handler(object):

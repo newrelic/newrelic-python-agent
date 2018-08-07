@@ -3,6 +3,7 @@ import pytest
 import socket
 import sys
 import tornado
+import tornado.web
 
 from testing_support.fixtures import (validate_transaction_metrics,
         capture_transaction_metrics, override_generic_settings,
@@ -33,7 +34,6 @@ _tests = [
     ('/coro', '_target_application:CoroHandler.get'),
     ('/fake-coro', '_target_application:FakeCoroHandler.get'),
     ('/coro-throw', '_target_application:CoroThrowHandler.get'),
-    ('/web-async', '_target_application:WebAsyncHandler.get'),
     ('/init', '_target_application:InitializeHandler.get'),
     ('/on-finish', '_target_application:OnFinishHandler.get'),
 ]
@@ -41,9 +41,16 @@ if sys.version_info >= (3, 5) and tornado.version_info >= (4, 3):
     _tests.extend([
         ('/native-simple',
                 '_target_application_native:NativeSimpleHandler.get'),
-        ('/native-web-async',
-                '_target_application_native:NativeWebAsyncHandler.get'),
     ])
+if hasattr(tornado.web, 'asynchronous'):
+    _tests.extend([
+            ('/web-async', '_target_application:WebAsyncHandler.get'),
+    ])
+    if sys.version_info >= (3, 5) and tornado.version_info >= (4, 3):
+        _tests.extend([
+            ('/native-web-async',
+                    '_target_application_native:NativeWebAsyncHandler.get'),
+        ])
 
 
 @pytest.mark.parametrize('uri,name', _tests)

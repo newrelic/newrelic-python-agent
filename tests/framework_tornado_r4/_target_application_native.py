@@ -3,6 +3,8 @@ import tornado.web
 import tornado.gen
 import time
 
+_has_web_asynchronous = hasattr(tornado.web, 'asynchronous')
+
 
 class NativeSimpleHandler(tornado.web.RequestHandler):
     async def get(self, fast=False):
@@ -11,17 +13,18 @@ class NativeSimpleHandler(tornado.web.RequestHandler):
         self.write("Hello, world")
 
 
-class NativeWebAsyncHandler(tornado.web.RequestHandler):
-    @tornado.web.asynchronous
-    async def get(self, fast=False):
-        io_loop = tornado.ioloop.IOLoop.current()
-        io_loop.add_callback(self.done, fast=fast)
+if _has_web_asynchronous:
+    class NativeWebAsyncHandler(tornado.web.RequestHandler):
+        @tornado.web.asynchronous
+        async def get(self, fast=False):
+            io_loop = tornado.ioloop.IOLoop.current()
+            io_loop.add_callback(self.done, fast=fast)
 
-    async def done(self, fast):
-        if not fast:
-            time.sleep(0.1)
-        self.write("Hello, world")
-        self.finish()
+        async def done(self, fast):
+            if not fast:
+                time.sleep(0.1)
+            self.write("Hello, world")
+            self.finish()
 
 
 if __name__ == "__main__":

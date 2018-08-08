@@ -796,6 +796,15 @@ class SQLDatabase(object):
 class SQLStatement(object):
 
     def __init__(self, sql, database=None):
+        if hasattr(sql, 'decode'):
+            try:
+                sql = sql.decode('utf-8')
+            except UnicodeDecodeError as e:
+                settings = global_settings()
+                if settings.debug.log_explain_plan_queries:
+                    _logger.debug('An error occurred while decoding sql '
+                            'statement: %s' % e.reason)
+
         self.sql = sql
         self.database = database
 

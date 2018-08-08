@@ -24,17 +24,6 @@ function create_venvs {
 
 create_venvs
 
-for venv in $(find /venvs -maxdepth 1 -type d | grep -v "/venvs$"); do
-    $venv/bin/pip install -U "pip<=9.0.1"
-
-    # This downgrade of wheel is unfortunately only required for py26 since the
-    # wheel package abruptly dropped support for py26 (in a way that breaks
-    # py26 builds)
-    #
-    # If py26 is ever deprecated, we should remove this downgrade.
-    $venv/bin/pip install -U "wheel<0.30.0"
-done
-
 for PY_FULL in $(ls -1 /venvs | grep -v "^pypy")
 do
     echo "PY_FULL: $PY_FULL"

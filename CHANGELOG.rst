@@ -1,6 +1,13 @@
 unreleased
 ----------
 
+- Convert bytes-like SQL statements to strings before obfuscating
+
+  If a bytes-like object is used instead of a string when making a SQL call, a
+  traceback was seen in the logs with `TypeError: cannot use a string pattern
+  on a bytes-like object`. This issue has now been fixed.
+
+
 4.2.0 (2018-07-31)
 ------------------
 

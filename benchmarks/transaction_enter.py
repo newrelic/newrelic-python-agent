@@ -1,7 +1,7 @@
 from benchmarks.util import MockApplication
 
-import newrelic.core.transaction_cache
-from newrelic.api.background_task import BackgroundTask
+import newrelic.core.transaction_cache as transaction_cache
+from newrelic.api.transaction import Transaction
 
 
 # a black hole... anything that enters will never again emerge...
@@ -13,18 +13,18 @@ class VoidDict(dict):
         pass
 
 
-class Suite:
+STATE_PENDING = Transaction.STATE_PENDING
+
+
+class Suite(object):
     def setup(self):
         app = MockApplication()
-        newrelic.core.transaction_cache._transaction_cache._cache = VoidDict()
-        self.transaction = BackgroundTask(app, 'foo')
+        transaction_cache._transaction_cache._cache = VoidDict()
+        self.transaction = Transaction(app)
 
     def teardown(self):
-        newrelic.core.transaction_cache._transaction_cache._cache = {}
+        transaction_cache._transaction_cache._cache = {}
 
     def time_enter(self):
         self.transaction.__enter__()
-        self.transaction._state = self.transaction.STATE_PENDING
-
-    def time_state_reassignment(self):
-        self.transaction._state = self.transaction.STATE_PENDING
+        self.transaction._state = STATE_PENDING

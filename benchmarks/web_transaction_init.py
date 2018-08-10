@@ -3,9 +3,6 @@ from benchmarks.util import (MockApplication, make_synthetics_header,
         make_cross_agent_headers)
 
 ENCODING_KEY = '1234567890123456789012345678901234567890'
-SYNTHETICS_RESOURCE_ID = '09845779-16ef-4fa7-b7f2-44da8e62931c'
-SYNTHETICS_JOB_ID = '8c7dd3ba-4933-4cbb-b1ed-b62f511782f4'
-SYNTHETICS_MONITOR_ID = 'dc452ae9-1a93-4ab5-8a33-600521e9cd00'
 
 
 class Lite(object):
@@ -58,9 +55,9 @@ class AllEnvironPlusSynthetics(AllEnviron):
         super(AllEnvironPlusSynthetics, self).setup()
         header = make_synthetics_header(
                 account_id=1,
-                resource_id=SYNTHETICS_RESOURCE_ID,
-                job_id=SYNTHETICS_JOB_ID,
-                monitor_id=SYNTHETICS_MONITOR_ID,
+                resource_id='',
+                job_id='',
+                monitor_id='',
                 encoding_key=ENCODING_KEY)
 
         self.environ['HTTP_X_NEWRELIC_SYNTHETICS'] = list(header.values())[0]

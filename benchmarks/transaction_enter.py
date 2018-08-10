@@ -49,3 +49,6 @@ class TransactionEnterSuite:
     def time_enter(self):
         self.transaction.__enter__()
         self.transaction._state = self.transaction.STATE_PENDING
+
+    def time_state_reassignment(self):
+        self.transaction._state = self.transaction.STATE_PENDING

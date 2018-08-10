@@ -1,4 +1,5 @@
 from newrelic.api.web_transaction import WebTransaction
+from newrelic.common.encoding_utils import DistributedTracePayload
 from benchmarks.util import (MockApplication, make_synthetics_header,
         make_cross_agent_headers)
 
@@ -84,10 +85,20 @@ class AllEnvironPlusDT(AllEnviron):
         'distributed_tracing.enabled': True,
     }):
         super(AllEnvironPlusDT, self).setup(settings=settings)
-        payload = ('eyJkIjogeyJwciI6IDAuMjczMTM1OTc2NTQ0MjQ1NCwgImFjIjogIj'
-            'IwMjY0IiwgInR4IjogIjI2MWFjYTliYzhhZWMzNzQiLCAidHkiOiAiQXBwIiw'
-            'gInRyIjogIjI2MWFjYTliYzhhZWMzNzQiLCAiYXAiOiAiMTAxOTUiLCAidGsi'
-            'OiAiMSIsICJ0aSI6IDE1MjQwMTAyMjY2MTAsICJzYSI6IGZhbHNlfSwgInYiO'
-            'iBbMCwgMV19')
+        data = dict(
+            ty='App',
+            ac='1',
+            ap='1',
+            tr='foo',
+            sa=True,
+            pr=0.0,
+            tx='bar',
+            ti=0,
+            id='span',
+        )
+        payload = DistributedTracePayload(
+            v=DistributedTracePayload.version,
+            d=data,
+        )
 
-        self.environ['HTTP_NEWRELIC'] = payload
+        self.environ['HTTP_NEWRELIC'] = payload.http_safe()

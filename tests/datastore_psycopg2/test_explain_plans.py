@@ -86,6 +86,19 @@ def explain_plan_is_not_none(node):
     assert explain_plan is not None
 
 
+# psycopg2 2.5 introduced the scrollable argument
+if PSYCOPG2_VERSION < (2, 5):
+    SCROLLABLE = (False, )
+else:
+    SCROLLABLE = (True, False)
+
+# psycopg2 2.4.3 introduced the withold argument
+if PSYCOPG2_VERSION < (2, 4, 3):
+    WITHHOLD = (False, )
+else:
+    WITHHOLD = (True, False)
+
+
 @override_application_settings({
     'transaction_tracer.explain_threshold': 0.0,
     'transaction_tracer.record_sql': 'raw',
@@ -93,14 +106,20 @@ def explain_plan_is_not_none(node):
 @validate_database_node(explain_plan_is_not_none)
 @validate_transaction_slow_sql_count(1)
 @background_task(name='test_explain_plan_named_cursors')
-@pytest.mark.parametrize('withhold', (True, False))
-@pytest.mark.parametrize('scrollable', (True, False))
+@pytest.mark.parametrize('withhold', WITHHOLD)
+@pytest.mark.parametrize('scrollable', SCROLLABLE)
 def test_explain_plan_named_cursors(withhold, scrollable):
-    _exercise_db(cursor_kwargs={
-            'name': 'test_explain_plan_named_cursors',
-            'withhold': withhold,
-            'scrollable': scrollable,
-    })
+    cursor_kwargs = {
+        'name': 'test_explain_plan_named_cursors',
+    }
+
+    if withhold:
+        cursor_kwargs['withhold'] = withhold
+
+    if scrollable:
+        cursor_kwargs['scrollable'] = scrollable
+
+    _exercise_db(cursor_kwargs=cursor_kwargs)
 
 
 # The following tests will verify that arguments are preserved for an explain

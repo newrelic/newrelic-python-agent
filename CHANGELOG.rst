@@ -1,6 +1,14 @@
 unreleased
 ----------
 
+- Explain plans were not generated when use psycopg2 named cursors
+
+  When using named cursors in psycopg2, the agent attempted to generate an
+  explain plan using the same named cursor. This resulted in a syntax error
+  when the query was issued to the database. When using the default connection
+  and cursor factories, the agent will now execute the explain query using only
+  unnamed cursors.
+
 - Convert bytes-like SQL statements to strings before obfuscating
 
   If a bytes-like object is used instead of a string when making a SQL call, a

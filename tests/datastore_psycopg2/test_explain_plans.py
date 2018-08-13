@@ -5,11 +5,11 @@ import pytest
 
 from testing_support.fixtures import (
     validate_transaction_slow_sql_count,
-    validate_stats_engine_explain_plan_output_is_none,
     override_application_settings)
-from testing_support.validators.validate_explain_plan import (
-    validate_stats_engine_explain_plan_output_is_not_none,
+from testing_support.validators.validate_database_node import (
+    validate_database_node,
 )
+from newrelic.core.database_utils import SQLConnections
 from testing_support.util import instance_hostname
 from utils import DB_SETTINGS, PSYCOPG2_VERSION
 
@@ -71,11 +71,26 @@ def _exercise_db(connection_factory=None, cursor_factory=None,
 
 # Tests
 
+
+def explain_plan_is_none(node):
+    with SQLConnections() as connections:
+        explain_plan = node.explain_plan(connections)
+
+    assert explain_plan is None
+
+
+def explain_plan_is_not_none(node):
+    with SQLConnections() as connections:
+        explain_plan = node.explain_plan(connections)
+
+    assert explain_plan is not None
+
+
 @override_application_settings({
     'transaction_tracer.explain_threshold': 0.0,
     'transaction_tracer.record_sql': 'raw',
 })
-@validate_stats_engine_explain_plan_output_is_not_none()
+@validate_database_node(explain_plan_is_not_none)
 @validate_transaction_slow_sql_count(1)
 @background_task(name='test_explain_plan_named_cursors')
 @pytest.mark.parametrize('withhold', (True, False))
@@ -95,7 +110,7 @@ def test_explain_plan_named_cursors(withhold, scrollable):
     'transaction_tracer.explain_threshold': 0.0,
     'transaction_tracer.record_sql': 'raw',
 })
-@validate_stats_engine_explain_plan_output_is_none()
+@validate_database_node(explain_plan_is_none)
 @validate_transaction_slow_sql_count(1)
 @background_task(name='test_explain_plan_on_custom_connect_class')
 def test_explain_plan_on_custom_connect_class():
@@ -106,7 +121,7 @@ def test_explain_plan_on_custom_connect_class():
     'transaction_tracer.explain_threshold': 0.0,
     'transaction_tracer.record_sql': 'raw',
 })
-@validate_stats_engine_explain_plan_output_is_none()
+@validate_database_node(explain_plan_is_none)
 @validate_transaction_slow_sql_count(1)
 @background_task(name='test_explain_plan_on_custom_connect_class')
 @pytest.mark.skipif(PSYCOPG2_VERSION < (2, 5),
@@ -119,7 +134,7 @@ def test_explain_plan_on_custom_cursor_class_1():
     'transaction_tracer.explain_threshold': 0.0,
     'transaction_tracer.record_sql': 'raw',
 })
-@validate_stats_engine_explain_plan_output_is_none()
+@validate_database_node(explain_plan_is_none)
 @validate_transaction_slow_sql_count(1)
 @background_task(name='test_explain_plan_on_custom_connect_class')
 def test_explain_plan_on_custom_cursor_class_2():

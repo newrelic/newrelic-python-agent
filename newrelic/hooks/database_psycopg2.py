@@ -25,6 +25,10 @@ except ImportError:
 from newrelic.packages.requests.packages.urllib3 import util as ul3_util
 
 
+# These functions return True if a non-default connection or cursor class is
+# used. If the default connection and cursor are used without any unknown
+# arguments, we can safely drop all cursor parameters to generate explain
+# plans. Explain plans do not work with named cursors.
 def _bind_connect(
         dsn=None, connection_factory=None, cursor_factory=None,
         *args, **kwargs):

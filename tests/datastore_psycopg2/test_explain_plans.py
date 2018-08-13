@@ -78,8 +78,14 @@ def _exercise_db(connection_factory=None, cursor_factory=None,
 @validate_stats_engine_explain_plan_output_is_not_none()
 @validate_transaction_slow_sql_count(1)
 @background_task(name='test_explain_plan_named_cursors')
-def test_explain_plan_named_cursors():
-    _exercise_db(cursor_kwargs={'name': 'test_explain_plan_named_cursors'})
+@pytest.mark.parametrize('withhold', (True, False))
+@pytest.mark.parametrize('scrollable', (True, False))
+def test_explain_plan_named_cursors(withhold, scrollable):
+    _exercise_db(cursor_kwargs={
+            'name': 'test_explain_plan_named_cursors',
+            'withhold': withhold,
+            'scrollable': scrollable,
+    })
 
 
 # The following tests will verify that arguments are preserved for an explain

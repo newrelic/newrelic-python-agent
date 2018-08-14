@@ -3,7 +3,7 @@ import newrelic.jenkins.extensions
 String organization = 'python-agent'
 String repoGHE = 'python_agent'
 String repoFull = "${organization}/${repoGHE}"
-String slackChannel = '#python-agent'
+String slackChannel = '#python-agent-dev'
 String gitBranch
 
 

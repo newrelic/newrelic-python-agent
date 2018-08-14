@@ -5,7 +5,7 @@ String organization = 'python-agent'
 String repoGHE = 'python_agent'
 String repoFull = "${organization}/${repoGHE}"
 String testSuffix = "__integration-test"
-String slackChannel = '#python-agent'
+String slackChannel = '#python-agent-dev'
 
 def getPacknsendTests (String workspace, String testSuffix, String mostRecentOnly) {
         Integer maxEnvsPerContainer = 14

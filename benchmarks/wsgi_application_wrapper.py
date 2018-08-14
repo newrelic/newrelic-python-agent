@@ -1,6 +1,7 @@
 import newrelic.api.web_transaction as web_transaction
 from functools import partial
-from benchmarks.util import MockApplication
+from benchmarks.util import (MockApplication, FakeTrace, FakeTransaction,
+        FakeTransactionCAT)
 WebTransaction = web_transaction.WebTransaction
 FunctionTrace = web_transaction.FunctionTrace
 
@@ -21,48 +22,6 @@ def start_response(*args):
 def wsgi_application(environ, start_response):
     start_response(ok, headers)
     return iterable
-
-
-class FakeTrace(object):
-    def __init__(*args, **kwargs):
-        pass
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc, value, tb):
-        pass
-
-
-class FakeTransaction(WebTransaction):
-    def __init__(self, application, *args, **kwargs):
-        self._state = WebTransaction.STATE_STOPPED
-        self.stopped = False
-        self.enabled = True
-        self.current_node = None
-        self.client_cross_process_id = None
-        self._frameworks = set()
-        self._name_priority = 0
-        self._settings = application.settings
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc, value, tb):
-        pass
-
-
-class FakeTransactionCAT(FakeTransaction):
-    def __init__(self, *args, **kwargs):
-        super(FakeTransactionCAT, self).__init__(*args, **kwargs)
-        self.client_cross_process_id = '1#1'
-        self.queue_start = 0.0
-        self.start_time = 0.0
-        self.end_time = 0.0
-        self._frozen_path = 'foobar'
-        self._read_length = None
-        self.guid = 'GUID'
-        self.record_tt = False
 
 
 class Lite(object):

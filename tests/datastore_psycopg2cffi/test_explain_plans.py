@@ -26,8 +26,6 @@ def _exercise_db(cursor_kwargs=None):
 
     try:
         cursor = connection.cursor(**cursor_kwargs)
-        if hasattr(cursor, 'ready'):
-            cursor.ready = True
 
         cursor.execute("""SELECT setting from pg_settings where name=%s""",
                 ('server_version',))

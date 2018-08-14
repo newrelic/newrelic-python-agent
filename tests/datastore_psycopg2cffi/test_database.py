@@ -165,10 +165,17 @@ def test_async_mode():
 
     wait = psycopg2cffi.extras.wait_select
 
+    kwargs = {}
+    version = tuple(int(_) for _ in psycopg2cffi.__version__.split('.'))
+    if version >= (2, 8):
+        kwargs['async_'] = 1
+    else:
+        kwargs['async'] = 1
+
     async_conn = psycopg2cffi.connect(
             database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
             password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port'], async=1
+            port=DB_SETTINGS['port'], **kwargs
     )
     wait(async_conn)
     async_cur = async_conn.cursor()

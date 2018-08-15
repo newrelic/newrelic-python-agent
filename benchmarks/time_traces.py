@@ -1,3 +1,4 @@
+import weakref
 import sys
 
 from newrelic.api.external_trace import ExternalTrace
@@ -5,7 +6,7 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import Transaction
 
-from benchmarks.util import MockApplication
+from benchmarks.util import MockApplication, FakeTransaction
 
 _function_trace_kwargs = {
         'name': 'benchmark-function-trace',
@@ -54,24 +55,16 @@ class TimeTraceEnter(object):
 
 class TimeTraceExit(object):
 
-    # For these benchmarks we must make sure the setup and teardown are run
-    # each time. If not, then __exit__ will return immediately starting with
-    # the second run.
-    number = 1
-    repeat = 1000
-
     def setup(self):
         app = MockApplication()
-        self.transaction = Transaction(app)
-        self.transaction.__enter__()
-        self.time_trace = TimeTrace(self.transaction)
+        self.transaction = FakeTransaction(app)
+        self.transaction.activated = True
+        self._transaction = weakref.ref(self.transaction)
+
         self.function_trace = FunctionTrace(self.transaction,
                 **_function_trace_kwargs)
-        self.external_trace = ExternalTrace(self.transaction,
-                **_external_trace_kwargs)
-        self.time_trace.__enter__()
-        self.function_trace.__enter__()
-        self.external_trace.__enter__()
+
+        self.function_trace.activated = True
 
         try:
             raise ValueError('oops!')
@@ -79,23 +72,14 @@ class TimeTraceExit(object):
             self.exc_info = sys.exc_info()
 
     def teardown(self):
-        self.transaction.__exit__(None, None, None)
         self.exc_info = None
 
-    def time_time_trace_exit_no_error(self):
-        self.time_trace.__exit__(None, None, None)
-
-    def time_time_trace_exit_with_error(self):
-        self.time_trace.__exit__(*self.exc_info)
-
     def time_function_trace_exit_no_error(self):
+        self.function_trace.parent = self.transaction.current_node
+        self.function_trace._transaction = self._transaction
         self.function_trace.__exit__(None, None, None)
 
     def time_function_trace_exit_with_error(self):
+        self.function_trace.parent = self.transaction.current_node
+        self.function_trace._transaction = self._transaction
         self.function_trace.__exit__(*self.exc_info)
-
-    def time_external_trace_exit_no_error(self):
-        self.external_trace.__exit__(None, None, None)
-
-    def time_external_trace_exit_with_error(self):
-        self.external_trace.__exit__(*self.exc_info)

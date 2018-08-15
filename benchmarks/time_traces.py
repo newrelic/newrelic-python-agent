@@ -54,6 +54,12 @@ class TimeTraceEnter(object):
 
 class TimeTraceExit(object):
 
+    # For these benchmarks we must make sure the setup and teardown are run
+    # each time. If not, then __exit__ will return immediately starting with
+    # the second run.
+    number = 1
+    repeat = 1000
+
     def setup(self):
         app = MockApplication()
         self.transaction = Transaction(app)

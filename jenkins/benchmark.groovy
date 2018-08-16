@@ -8,7 +8,7 @@ String slackChannel = '#python-agent-dev'
 
 use(extensions) {
     baseJob("_BENCHMARKS-develop_") {
-        label('py-ec2-linux')
+        label('py-benchmarking')
         repo(repoFull)
         branch('develop')
 

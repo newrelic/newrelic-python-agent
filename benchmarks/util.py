@@ -68,6 +68,9 @@ class MockTransaction(WebTransaction):
         self._settings = application.settings
         self._trace_node_count = 0
         self.current_node = Sentinel()
+        self._string_cache = {}
+        self._stack_trace_count = 0
+        self._explain_plan_count = 0
 
     def __enter__(self):
         return self

@@ -1,7 +1,7 @@
 import newrelic.api.web_transaction as web_transaction
 from functools import partial
-from benchmarks.util import (MockApplication, FakeTrace, FakeTransaction,
-        FakeTransactionCAT)
+from benchmarks.util import (MockApplication, MockTrace, MockTransaction,
+        MockTransactionCAT)
 WebTransaction = web_transaction.WebTransaction
 FunctionTrace = web_transaction.FunctionTrace
 
@@ -28,8 +28,8 @@ class Lite(object):
     def setup(self, settings={
         'browser_monitoring.enabled': False,
     }):
-        web_transaction.FunctionTrace = FakeTrace
-        web_transaction.WebTransaction = FakeTransaction
+        web_transaction.FunctionTrace = MockTrace
+        web_transaction.WebTransaction = MockTransaction
         self.app = MockApplication(settings=settings)
         self.wrapped_app = partial(web_transaction.WSGIApplicationWrapper(
                 wsgi_application,
@@ -60,4 +60,4 @@ class CATResponse(Lite):
         'encoding_key': 'abcde',
     }):
         super(CATResponse, self).setup(settings=settings)
-        web_transaction.WebTransaction = FakeTransactionCAT
+        web_transaction.WebTransaction = MockTransactionCAT

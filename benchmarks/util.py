@@ -1,3 +1,5 @@
+from newrelic.api.transaction import Sentinel
+from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.encoding_utils import json_encode, obfuscate
 from newrelic.core.config import finalize_application_settings
 
@@ -41,3 +43,53 @@ class MockApplication(object):
 
     def compute_sampled(self, priority):
         return True
+
+
+class MockTrace(object):
+    def __init__(*args, **kwargs):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc, value, tb):
+        pass
+
+
+class MockTransaction(WebTransaction):
+    def __init__(self, application, *args, **kwargs):
+        self._state = WebTransaction.STATE_STOPPED
+        self.stopped = False
+        self.enabled = True
+        self.current_node = None
+        self.client_cross_process_id = None
+        self._frameworks = set()
+        self._name_priority = 0
+        self._settings = application.settings
+        self._trace_node_count = 0
+        self.current_node = Sentinel()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc, value, tb):
+        pass
+
+    def _push_current(self, *args, **kwargs):
+        pass
+
+    def _pop_current(self, *args, **kwargs):
+        pass
+
+
+class MockTransactionCAT(MockTransaction):
+    def __init__(self, *args, **kwargs):
+        super(MockTransactionCAT, self).__init__(*args, **kwargs)
+        self.client_cross_process_id = '1#1'
+        self.queue_start = 0.0
+        self.start_time = 0.0
+        self.end_time = 0.0
+        self._frozen_path = 'foobar'
+        self._read_length = None
+        self.guid = 'GUID'
+        self.record_tt = False

@@ -45,7 +45,7 @@ class MockApplication(object):
         return True
 
 
-class FakeTrace(object):
+class MockTrace(object):
     def __init__(*args, **kwargs):
         pass
 
@@ -56,7 +56,7 @@ class FakeTrace(object):
         pass
 
 
-class FakeTransaction(WebTransaction):
+class MockTransaction(WebTransaction):
     def __init__(self, application, *args, **kwargs):
         self._state = WebTransaction.STATE_STOPPED
         self.stopped = False
@@ -82,9 +82,9 @@ class FakeTransaction(WebTransaction):
         pass
 
 
-class FakeTransactionCAT(FakeTransaction):
+class MockTransactionCAT(MockTransaction):
     def __init__(self, *args, **kwargs):
-        super(FakeTransactionCAT, self).__init__(*args, **kwargs)
+        super(MockTransactionCAT, self).__init__(*args, **kwargs)
         self.client_cross_process_id = '1#1'
         self.queue_start = 0.0
         self.start_time = 0.0

@@ -6,7 +6,7 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import Transaction
 
-from benchmarks.util import MockApplication, FakeTransaction
+from benchmarks.util import MockApplication, MockTransaction
 
 _function_trace_kwargs = {
         'name': 'benchmark-function-trace',
@@ -57,7 +57,7 @@ class TimeTraceExit(object):
 
     def setup(self):
         app = MockApplication()
-        self.transaction = FakeTransaction(app)
+        self.transaction = MockTransaction(app)
         self.transaction.activated = True
         self._transaction = weakref.ref(self.transaction)
 

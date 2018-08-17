@@ -158,6 +158,37 @@ class TimeTraceExit(object):
         self.function_trace.__exit__(*self.exc_info)
 
 
+class TimeTraceProcessChild(object):
+
+    def setup(self):
+        app = MockApplication()
+        self.transaction = MockTransaction(app)
+        self.transaction.activated = True
+        self._transaction = weakref.ref(self.transaction)
+
+        self.async_trace = FunctionTrace(self.transaction,
+                **_function_trace_kwargs)
+        self.async_trace.activated = True
+        self.async_trace.is_async = True
+        self.async_trace.child_count = 1
+        self.async_node = self.async_trace.create_node()
+
+        self.sync_trace = FunctionTrace(self.transaction,
+                **_function_trace_kwargs)
+        self.sync_trace.activated = True
+        self.sync_trace.is_async = False
+        self.sync_trace.child_count = 1
+        self.sync_node = self.sync_trace.create_node()
+
+    def time_async_process_child(self):
+        self.async_trace.children = []
+        self.async_trace.process_child(self.async_node)
+
+    def time_sync_process_child(self):
+        self.sync_trace.children = []
+        self.sync_trace.process_child(self.sync_node)
+
+
 class TimeTraceFinalizeData(object):
 
     def setup(self):

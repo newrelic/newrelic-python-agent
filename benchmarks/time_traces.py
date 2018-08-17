@@ -6,6 +6,7 @@ from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.memcache_trace import MemcacheTrace
+from newrelic.api.message_trace import MessageTrace
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import Transaction
 
@@ -54,6 +55,13 @@ _datastore_trace_kwargs = {
 _memcache_trace_kwargs = {
         'command': 'do foo and bar please',
 }
+_message_trace_kwargs = {
+        'library': 'mylibraryissocool',
+        'operation': 'include',
+        'destination_type': 'Queue',
+        'destination_name': 'queuetee',
+        'params': {'param1': 1, 'param2': 2},
+}
 _settings = {
         'transaction_tracer.stack_trace_threshold': 0.0,
         'transaction_tracer.explain_threshold': 0.0,
@@ -89,6 +97,10 @@ class TimeTraceInit(object):
 
     def time_memcache_trace_init(self):
         MemcacheTrace(self.transaction, **_memcache_trace_kwargs)
+
+    def time_message_trace_init(self):
+        self.transaction._string_cache = {}
+        MessageTrace(self.transaction, **_message_trace_kwargs)
 
 
 class TimeTraceEnter(object):

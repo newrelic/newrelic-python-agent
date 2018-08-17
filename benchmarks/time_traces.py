@@ -2,6 +2,7 @@ import weakref
 import sys
 
 from newrelic.api.database_trace import DatabaseTrace
+from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import TimeTrace
@@ -41,6 +42,14 @@ _database_trace_kwargs = {
         'port_path_or_id': 1234,
         'database_name': 'mydb',
 }
+_datastore_trace_kwargs = {
+        'product': 'my-product',
+        'target': 'my-target',
+        'operation': 'my-operation',
+        'host': 'localhost',
+        'port_path_or_id': 1234,
+        'database_name': 'mydb',
+}
 _settings = {
         'transaction_tracer.stack_trace_threshold': 0.0,
         'transaction_tracer.explain_threshold': 0.0,
@@ -69,6 +78,10 @@ class TimeTraceInit(object):
     def time_database_trace_init(self):
         self.transaction._string_cache = {}
         DatabaseTrace(self.transaction, **_database_trace_kwargs)
+
+    def time_datastore_trace_init(self):
+        self.transaction._string_cache = {}
+        DatastoreTrace(self.transaction, **_datastore_trace_kwargs)
 
 
 class TimeTraceEnter(object):

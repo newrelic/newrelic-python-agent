@@ -7,6 +7,7 @@ from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.memcache_trace import MemcacheTrace
 from newrelic.api.message_trace import MessageTrace
+from newrelic.api.solr_trace import SolrTrace
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import Transaction
 
@@ -62,6 +63,10 @@ _message_trace_kwargs = {
         'destination_name': 'queuetee',
         'params': {'param1': 1, 'param2': 2},
 }
+_solr_trace_kwargs = {
+        'library': 'Solr Storm',
+        'command': 'commanding',
+}
 _settings = {
         'transaction_tracer.stack_trace_threshold': 0.0,
         'transaction_tracer.explain_threshold': 0.0,
@@ -101,6 +106,9 @@ class TimeTraceInit(object):
     def time_message_trace_init(self):
         self.transaction._string_cache = {}
         MessageTrace(self.transaction, **_message_trace_kwargs)
+
+    def time_solr_trace_init(self):
+        SolrTrace(self.transaction, **_solr_trace_kwargs)
 
 
 class TimeTraceEnter(object):

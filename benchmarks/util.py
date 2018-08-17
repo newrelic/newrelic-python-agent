@@ -17,6 +17,33 @@ def make_synthetics_header(account_id, resource_id, job_id, monitor_id,
     return {'X-NewRelic-Synthetics': value}
 
 
+def create_incoming_headers(transaction):
+    settings = transaction.settings
+    encoding_key = settings.encoding_key
+
+    headers = []
+
+    cross_process_id = '1#2'
+    path = 'test'
+    queue_time = 1.0
+    duration = 2.0
+    read_length = 1024
+    guid = '0123456789012345'
+    record_tt = False
+
+    payload = (cross_process_id, path, queue_time, duration, read_length,
+            guid, record_tt)
+    app_data = json_encode(payload)
+
+    value = obfuscate(app_data, encoding_key)
+
+    assert isinstance(value, type(''))
+
+    headers.append(('X-NewRelic-App-Data', value))
+
+    return headers
+
+
 class MockApplication(object):
     def __init__(self, name='Python Application', settings=None):
         settings = settings or {}

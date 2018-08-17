@@ -5,6 +5,7 @@ from newrelic.api.database_trace import DatabaseTrace
 from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.memcache_trace import MemcacheTrace
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import Transaction
 
@@ -50,6 +51,9 @@ _datastore_trace_kwargs = {
         'port_path_or_id': 1234,
         'database_name': 'mydb',
 }
+_memcache_trace_kwargs = {
+        'command': 'do foo and bar please',
+}
 _settings = {
         'transaction_tracer.stack_trace_threshold': 0.0,
         'transaction_tracer.explain_threshold': 0.0,
@@ -82,6 +86,9 @@ class TimeTraceInit(object):
     def time_datastore_trace_init(self):
         self.transaction._string_cache = {}
         DatastoreTrace(self.transaction, **_datastore_trace_kwargs)
+
+    def time_memcache_trace_init(self):
+        MemcacheTrace(self.transaction, **_memcache_trace_kwargs)
 
 
 class TimeTraceEnter(object):

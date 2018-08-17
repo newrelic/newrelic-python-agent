@@ -1,4 +1,5 @@
 import newrelic.api.web_transaction as web_transaction
+from newrelic.core.transaction_cache import transaction_cache
 from functools import partial
 from benchmarks.util import (MockApplication, MockTrace, MockTransaction,
         MockTransactionCAT)
@@ -52,6 +53,20 @@ class Framework(Lite):
                 application=self.app,
                 framework=('cookies', 1),
         ), {}, start_response)
+
+
+class AlreadyRunningTransaction(Framework):
+    def setup(self):
+        super(AlreadyRunningTransaction, self).setup()
+        self.transaction = MockTransaction(self.app)
+
+        self.transaction.thread_id = transaction_cache().current_thread_id()
+        self.transaction.ignore_transaction = False
+        self.transaction.save_transaction()
+
+    def teardown(self):
+        super(AlreadyRunningTransaction, self).setup()
+        self.transaction.drop_transaction()
 
 
 class CATResponse(Lite):

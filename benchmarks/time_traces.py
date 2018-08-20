@@ -166,27 +166,47 @@ class TimeTraceProcessChild(object):
         self.transaction.activated = True
         self._transaction = weakref.ref(self.transaction)
 
+        self.parent_trace_non_exited = FunctionTrace(self.transaction,
+                **_function_trace_kwargs)
+        self.parent_trace_non_exited.child_count = 1
+        self.parent_trace_non_exited.exited = False
+
+        self.parent_trace_exited_with_overlap = FunctionTrace(self.transaction,
+                **_function_trace_kwargs)
+        self.parent_trace_exited_with_overlap.child_count = 1
+        self.parent_trace_exited_with_overlap.exited = True
+
+        self.parent_trace_exited_without_overlap = FunctionTrace(
+                self.transaction, **_function_trace_kwargs)
+        self.parent_trace_exited_without_overlap.child_count = 1
+        self.parent_trace_exited_without_overlap.exited = True
+        self.parent_trace_exited_without_overlap.end_time = -1
+
         self.async_trace = FunctionTrace(self.transaction,
                 **_function_trace_kwargs)
-        self.async_trace.activated = True
         self.async_trace.is_async = True
-        self.async_trace.child_count = 1
         self.async_node = self.async_trace.create_node()
 
         self.sync_trace = FunctionTrace(self.transaction,
                 **_function_trace_kwargs)
-        self.sync_trace.activated = True
         self.sync_trace.is_async = False
-        self.sync_trace.child_count = 1
         self.sync_node = self.sync_trace.create_node()
 
-    def time_async_process_child(self):
-        self.async_trace.children = []
-        self.async_trace.process_child(self.async_node)
+    def time_async_process_child_non_exited(self):
+        self.parent_trace_non_exited.children = []
+        self.parent_trace_non_exited.process_child(self.async_node)
+
+    def time_async_process_child_with_overlap(self):
+        self.parent_trace_exited_with_overlap.children = []
+        self.parent_trace_exited_with_overlap.process_child(self.async_node)
+
+    def time_async_process_child_without_overlap(self):
+        self.parent_trace_exited_without_overlap.children = []
+        self.parent_trace_exited_without_overlap.process_child(self.async_node)
 
     def time_sync_process_child(self):
-        self.sync_trace.children = []
-        self.sync_trace.process_child(self.sync_node)
+        self.parent_trace_non_exited.children = []
+        self.parent_trace_non_exited.process_child(self.sync_node)
 
 
 class TimeTraceFinalizeData(object):

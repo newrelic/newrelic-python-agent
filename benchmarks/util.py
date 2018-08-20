@@ -17,7 +17,7 @@ def make_synthetics_header(account_id, resource_id, job_id, monitor_id,
     return {'X-NewRelic-Synthetics': value}
 
 
-def create_incoming_headers(transaction):
+def make_incoming_headers(transaction):
     settings = transaction.settings
     encoding_key = settings.encoding_key
 
@@ -36,8 +36,6 @@ def create_incoming_headers(transaction):
     app_data = json_encode(payload)
 
     value = obfuscate(app_data, encoding_key)
-
-    assert isinstance(value, type(''))
 
     headers.append(('X-NewRelic-App-Data', value))
 

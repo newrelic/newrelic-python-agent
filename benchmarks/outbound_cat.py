@@ -1,6 +1,6 @@
 from newrelic.api.external_trace import ExternalTrace
 from benchmarks.util import (MockApplication, MockTransaction,
-        create_incoming_headers)
+        make_incoming_headers)
 
 
 class CatClassic(object):
@@ -21,7 +21,7 @@ class CatClassic(object):
         self.transaction._alternate_path_hashes = {}
         self.transaction.synthetics_header = None
 
-        self.response_headers = create_incoming_headers(self.transaction)
+        self.response_headers = make_incoming_headers(self.transaction)
 
     def time_generate_request_headers(self):
         ExternalTrace.generate_request_headers(self.transaction)
@@ -60,5 +60,5 @@ class CatOff(CatClassic):
         })
         self.transaction = MockTransaction(app)
         self.trace = ExternalTrace(self.transaction, 'foo', 'http://localhost')
-        self.response_headers = create_incoming_headers(self.transaction)
+        self.response_headers = make_incoming_headers(self.transaction)
         self.transaction.synthetics_header = None

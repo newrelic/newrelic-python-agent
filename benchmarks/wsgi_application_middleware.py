@@ -49,6 +49,8 @@ class TimeIterable(Base):
         self.middleware.start_response(status, self.response_headers)
 
     def time_iterable(self, content_type):
+        self.middleware.pass_through = False
+        self.middleware.outer_write = None
         for _ in self.middleware:
             pass
 

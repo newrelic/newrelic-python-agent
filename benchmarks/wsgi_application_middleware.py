@@ -1,8 +1,12 @@
 from benchmarks.util import MockApplication, MockTransaction
 from newrelic.api.web_transaction import _WSGIApplicationMiddleware
-value = [b'<html><head></head><body></body></html>']
+
+html = b'<html><head></head><body></body></html>'
+value = [html]
 status = '200 OK'
-response_headers_html = [('Content-Type', 'text/html'), ('Content-Length', len(value))]
+response_headers_html = [
+    ('Content-Type', 'text/html'), ('Content-Length', len(html))
+]
 response_headers_text = [('Content-Type', 'text/plain')]
 
 
@@ -19,36 +23,32 @@ def application_plain(environ, start_response):
 
 
 class Base(object):
-    def setup(self):
+
+    params = ('html', 'text')
+    param_names = ('content_type', )
+
+    def setup(self, content_type):
         transaction = MockTransaction(MockApplication())
         self.middleware = _WSGIApplicationMiddleware(
                 application_plain, None, start_response, transaction)
 
-
-class TimeMethods(Base):
-    def time_start_response_html(self):
-        self.middleware.start_response(status, response_headers_html)
-
-    def time_start_response_plain(self):
-        self.middleware.start_response(status, response_headers_text)
+        if content_type == 'html':
+            self.response_headers = response_headers_html
+        else:
+            self.response_headers = response_headers_text
 
 
-class TimePassThrough(Base):
-    def setup(self):
-        super(TimePassThrough, self).setup()
-        self.middleware.start_response(status, response_headers_text)
-
-    def time_pass_through(self):
-        for _ in self.middleware:
-            pass
+class TimeStartResponse(Base):
+    def time_start_response(self, content_type):
+        self.middleware.start_response(status, self.response_headers)
 
 
-class TimeHtmlInsertion(Base):
-    def setup(self):
-        super(TimeHtmlInsertion, self).setup()
-        self.middleware.start_response(status, response_headers_html)
+class TimeIterable(Base):
+    def setup(self, content_type):
+        super(TimeIterable, self).setup(content_type)
+        self.middleware.start_response(status, self.response_headers)
 
-    def time_html_insertion(self):
+    def time_iterable(self, content_type):
         for _ in self.middleware:
             pass
 

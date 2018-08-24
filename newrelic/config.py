@@ -2366,6 +2366,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('sanic.app',
             'newrelic.hooks.framework_sanic',
             'instrument_sanic_app')
+    _process_module_definition('sanic.router',
+            'newrelic.hooks.framework_sanic',
+            'instrument_sanic_router')
 
     _process_module_definition('aiohttp.wsgi',
             'newrelic.hooks.framework_aiohttp',

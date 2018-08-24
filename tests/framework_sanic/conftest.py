@@ -3,6 +3,9 @@ import pytest
 from testing_support.fixtures import (code_coverage_fixture,
         collector_agent_registration_fixture, collector_available_fixture)
 
+import asyncio
+from sanic.request import Request
+
 _coverage_source = [
     'newrelic.hooks.framework_sanic',
 ]
@@ -30,3 +33,52 @@ def session_initialization(code_coverage, collector_agent_registration):
 @pytest.fixture(scope='function')
 def requires_data_collector(collector_available_fixture):
     pass
+
+
+def create_request_class(method, url, headers=None):
+    _request = Request(
+        method=method.upper(),
+        url_bytes=url.encode('utf-8'),
+        headers=headers,
+        version='1.0',
+        transport=None,
+    )
+    return _request
+
+
+def create_request_coroutine(app, method, url, headers=None, responses=None):
+    if responses is None:
+        responses = []
+
+    def empty_callback(response):
+        responses.append(response)
+
+    headers = headers or {}
+    coro = app.handle_request(
+        create_request_class(method, url, headers),
+        empty_callback,
+        empty_callback,
+    )
+    return coro
+
+
+def request(app, method, url, headers=None):
+    responses = []
+    coro = create_request_coroutine(app, method, url, headers, responses)
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(coro)
+    return responses[0]
+
+
+class TestApplication(object):
+    def __init__(self, app):
+        self.app = app
+
+    def fetch(self, method, url, headers=None):
+        return request(self.app, method, url, headers)
+
+
+@pytest.fixture()
+def app():
+    from _target_application import app
+    return TestApplication(app)

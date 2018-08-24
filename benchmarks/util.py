@@ -1,4 +1,6 @@
-from newrelic.api.transaction import Sentinel
+import functools
+
+from newrelic.api.transaction import Sentinel, Transaction
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.encoding_utils import json_encode, obfuscate
 from newrelic.core.config import finalize_application_settings
@@ -181,5 +183,75 @@ def TimeInstrumentBase(module):
             _TimeInstrumentBase.params.append(attribute)
 
     _TimeInstrumentBase.module = module
-
     return _TimeInstrumentBase
+
+
+def _build_wrap_suites(bench_type, module, *spec_list):
+    class _TimeWrapBase(object):
+        param_names = [bench_type.title() + ' function']
+        params = []
+        spec_index = {}
+
+        def setup(self, name):
+            spec = self.spec_index[name]
+
+            self.to_test = spec['to_test']
+
+            self.dummy_args = [MagicMock()] * spec['wrapped_params']
+            self.dummy_ret = ([MagicMock()] * spec['returned_values']
+                              if spec['returned_values'] > 1 else MagicMock())
+
+            self.wrapped_dummy = (self.wrap_dummy_iterable()
+                                  if spec['returns_iterable']
+                                  else self.wrap_dummy())
+
+            if '__iter__' in dir(self.wrapped_dummy):
+                self.wrapped_dummy = next(self.wrapped_dummy)
+
+            self.transaction = Transaction(MockApplication())
+            self.transaction.__enter__()
+
+        def teardown(self, wrapped_name):
+            self.transaction.__exit__(None, None, None)
+
+        def dummy(self, *args, **kwargs):
+            return self.dummy_ret
+
+        def wrap_dummy(self):
+            return self.to_test(self.dummy)
+
+        def wrap_dummy_iterable(self):
+            return self.to_test([self.dummy])
+
+        def _time_wrap(self, wrapped_name):
+            self.wrap_dummy()
+
+        def _time_wrapped(self, wrapped_name):
+            # call the wrapped function like this, so self won't bind
+            (self.wrapped_dummy)(*self.dummy_args)
+
+    defaults = {
+        'extra_attr': [],
+        'wrapped_params': 1,
+        'returned_values': 1,
+        'returns_iterable': False
+    }
+
+    timer = getattr(_TimeWrapBase, '_time_' + bench_type)
+    for spec in spec_list:
+        name, opts = (spec if isinstance(spec, tuple) else (spec, {}))
+
+        _TimeWrapBase.params.append(name)
+        _TimeWrapBase.spec_index[name] = defaults.copy()
+        _TimeWrapBase.spec_index[name].update(opts)
+        _TimeWrapBase.spec_index[name]['to_test'] = getattr(module, name)
+
+        for extra_attr_name in _TimeWrapBase.spec_index[name]['extra_attr']:
+            setattr(_TimeWrapBase, extra_attr_name, MagicMock())
+
+    setattr(_TimeWrapBase, 'time_' + bench_type, timer)
+    return _TimeWrapBase
+
+
+TimeWrapBase = functools.partial(_build_wrap_suites, 'wrap')
+TimeWrappedBase = functools.partial(_build_wrap_suites, 'wrapped')

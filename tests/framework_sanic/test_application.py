@@ -2,7 +2,8 @@ from newrelic.api.application import application_instance
 from newrelic.api.transaction import Transaction
 from newrelic.api.external_trace import ExternalTrace
 from testing_support.fixtures import (validate_transaction_metrics,
-    override_application_settings)
+    override_application_settings, validate_transaction_errors,
+    override_ignore_status_codes)
 
 
 BASE_METRICS = [
@@ -54,3 +55,36 @@ def test_inbound_distributed_trace(app):
 
     response = app.fetch('get', '/', headers=dict(dt_headers))
     assert response.status == 200
+
+
+ERROR_METRICS = [
+    ('Function/_target_application:error', 1),
+]
+
+
+@validate_transaction_metrics(
+    '_target_application:error',
+    scoped_metrics=ERROR_METRICS,
+    rollup_metrics=ERROR_METRICS,
+)
+@validate_transaction_errors(errors=['builtins:ValueError'])
+def test_recorded_error(app):
+    response = app.fetch('get', '/error')
+    assert response.status == 500
+
+
+NOT_FOUND_METRICS = [
+    ('Function/_target_application:not_found', 1),
+]
+
+
+@validate_transaction_metrics(
+    '_target_application:not_found',
+    scoped_metrics=NOT_FOUND_METRICS,
+    rollup_metrics=NOT_FOUND_METRICS,
+)
+@override_ignore_status_codes([404])
+@validate_transaction_errors(errors=[])
+def test_ignored_by_status_error(app):
+    response = app.fetch('get', '/404')
+    assert response.status == 404

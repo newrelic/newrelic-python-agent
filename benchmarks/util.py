@@ -97,6 +97,9 @@ class MockTransaction(WebTransaction):
         self._stack_trace_count = 0
         self._explain_plan_count = 0
 
+        self.autorum_disabled = False
+        self.rum_header_generated = False
+
     def __enter__(self):
         return self
 

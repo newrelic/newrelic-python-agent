@@ -8,6 +8,7 @@ from newrelic.api.function_trace import function_trace
 from newrelic.common.object_wrapper import (wrap_function_wrapper, ObjectProxy,
     function_wrapper)
 from newrelic.common.object_names import callable_name
+from newrelic.core.config import ignore_status_code
 
 
 class NRTransactionCoroutineWrapper(ObjectProxy):
@@ -167,9 +168,39 @@ def _nr_sanic_router_add(wrapped, instance, args, kwargs):
     return wrapped(uri, methods, wrapped_handler, *args, **kwargs)
 
 
+@function_wrapper
+def error_response(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
+    exc_info = sys.exc_info()
+    response = wrapped(*args, **kwargs)
+    if hasattr(response, 'status'):
+        if not ignore_status_code(response.status):
+            transaction.record_exception(*exc_info)
+    else:
+        transaction.record_exception(*exc_info)
+
+    exc_info = None
+    return response
+
+
+def _sanic_app_init(wrapped, instance, args, kwargs):
+    result = wrapped(*args, **kwargs)
+    error_handler = getattr(instance, 'error_handler')
+    if hasattr(error_handler, 'response'):
+        instance.error_handler.response = error_response(
+                error_handler.response)
+    return result
+
+
 def instrument_sanic_app(module):
     wrap_function_wrapper(module, 'Sanic.handle_request',
         _nr_sanic_transaction_wrapper_)
+
+    wrap_function_wrapper(module, 'Sanic.__init__',
+        _sanic_app_init)
 
 
 def instrument_sanic_router(module):

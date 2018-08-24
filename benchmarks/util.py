@@ -188,6 +188,45 @@ def TimeInstrumentBase(module):
 
 def _build_wrap_suites(bench_type, module, *spec_list):
     class _TimeWrapBase(object):
+        """
+        Base class for benchmark suite for hook points. Takes two arguments.
+        The first is the a module object. The second is a list of "specs".
+        Each spec has the form of: (name, [optional_params])
+        optional_params is a dict with the following keys:
+
+        extra_attr: list. default is []. sometimes the wrapping function
+            will expect the instrance to have some other attributes, so
+            figure out what they are and list them here. (we could
+            finangle something with __getattr__ but that would incur
+            overhead.)
+        wrapped_params: int. default is 1. this is the number of params the
+            wrapped function expects when called.
+        returned_values: int. default is 1. sometimes the wrapper needs to call
+            the wrapped function for some reason; this is the
+            number of values it will return.
+        returns_iterable: bool. default is False. set to True if this function
+            yields a series of wrappers instead of just the wrapped function.
+
+        Example usage:
+            from benchmarks.util import TimeWrapBase, TimeWrappedBase
+            import newrelic.hooks.framework_django as framework_django
+
+            specs = [
+                ('wrap_view_handler'),
+                ('wrap_url_resolver_nnn', {
+                    'extra_attr': ['name'],
+                    'returned_values': 2
+                }),
+                # ...
+            ]
+
+            class TimeDjangoWrap(TimeWrapBase(framework_django, *specs)):
+                pass
+
+            class TimeDjangoWrapped(TimeWrappedBase(framework_django, *specs)):
+                pass
+        """
+
         param_names = [bench_type.title() + ' function']
         params = []
         spec_index = {}

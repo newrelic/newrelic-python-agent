@@ -4,6 +4,12 @@ from newrelic.common.encoding_utils import json_encode, obfuscate
 from newrelic.core.config import finalize_application_settings
 
 
+try:
+    from unittest.mock import MagicMock
+except ImportError:
+    from mock import MagicMock
+
+
 def make_cross_agent_headers(payload, encoding_key, cat_id):
     value = obfuscate(json_encode(payload), encoding_key)
     id_value = obfuscate(cat_id, encoding_key)
@@ -124,3 +130,45 @@ class MockTransactionCAT(MockTransaction):
         self._read_length = None
         self.guid = 'GUID'
         self.record_tt = False
+
+
+class VeryMagicMock(MagicMock):
+    def __setattr__(self, attrname, value):
+        if attrname == '__init__':
+            object.__setattr__(self, attrname, value)
+        else:
+            super(VeryMagicMock, self).__setattr__(attrname, value)
+
+
+def TimeInstrumentBase(module):
+    """
+    Base class for benchmark suite for instrumentaiton points. Takes one
+    argument, a module object, and returns a benchmark suite class. Will
+    auto-discover instrumentation points by searching for methods in the module
+    starting with `instrument_`.
+
+    Example usage:
+        from benchmarks.util import TimeInstrumentBase
+        import newrelic.hooks.framework_django as framework_django
+
+        class TimeDjangoInstrument(TimeInstrumentBase(framework_django)):
+            pass
+    """
+
+    class _TimeInstrumentBase(object):
+        params = []
+        param_names = ['instrumentation point']
+
+        def setup(self, param):
+            self.function = getattr(self.module, param)
+
+        def time_instrument(self, param):
+            self.function(VeryMagicMock())
+
+    for attribute in dir(module):
+        if attribute.startswith('instrument_'):
+            _TimeInstrumentBase.params.append(attribute)
+
+    _TimeInstrumentBase.module = module
+
+    return _TimeInstrumentBase

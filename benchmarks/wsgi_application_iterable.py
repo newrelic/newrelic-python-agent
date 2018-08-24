@@ -11,6 +11,8 @@ class Generator(object):
     def __next__(self):
         return value
 
+    next = __next__
+
     def close(self):
         pass
 

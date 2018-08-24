@@ -119,6 +119,17 @@ class MockTransaction(WebTransaction):
         pass
 
 
+class MockTransactionCache(object):
+    def save_transaction(*args, **kwargs):
+        pass
+
+    def drop_transaction(*args, **kwargs):
+        pass
+
+    def current_thread_id(*args, **kwargs):
+        pass
+
+
 class MockTransactionCAT(MockTransaction):
     def __init__(self, *args, **kwargs):
         super(MockTransactionCAT, self).__init__(*args, **kwargs)

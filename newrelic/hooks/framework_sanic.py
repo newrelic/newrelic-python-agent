@@ -175,14 +175,21 @@ def error_response(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     exc_info = sys.exc_info()
-    response = wrapped(*args, **kwargs)
-    if hasattr(response, 'status'):
-        if not ignore_status_code(response.status):
-            transaction.record_exception(*exc_info)
-    else:
+    try:
+        response = wrapped(*args, **kwargs)
+    except:
         transaction.record_exception(*exc_info)
+        transaction.record_exception()
+        raise
+    else:
+        if hasattr(response, 'status'):
+            if not ignore_status_code(response.status):
+                transaction.record_exception(*exc_info)
+        else:
+            transaction.record_exception(*exc_info)
+    finally:
+        exc_info = None
 
-    exc_info = None
     return response
 
 

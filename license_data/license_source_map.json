@@ -1607,6 +1607,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/framework_sanic.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/framework_tornado/__init__.py": {
         "hash": "n/a",
         "libraries": [

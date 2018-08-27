@@ -57,7 +57,7 @@ class NRTransactionCoroutineWrapper(ObjectProxy):
             r = self.__wrapped__.send(value)
             txn.drop_transaction()
             return r
-        except (GeneratorExit, StopIteration) as e:
+        except (GeneratorExit, StopIteration):
             self._nr_transaction.__exit__(None, None, None)
             self._nr_request = None
             raise
@@ -78,7 +78,7 @@ class NRTransactionCoroutineWrapper(ObjectProxy):
             r = self.__wrapped__.throw(*args, **kwargs)
             txn.drop_transaction()
             return r
-        except (GeneratorExit, StopIteration) as e:
+        except (GeneratorExit, StopIteration):
             self._nr_transaction.__exit__(None, None, None)
             self._nr_request = None
             raise

@@ -20,6 +20,21 @@ def test_simple_request(app):
     assert response.status == 200
 
 
+MISNAMED_BASE_METRICS = [
+        ('Function/_target_application:misnamed', 1),
+]
+
+
+@validate_transaction_metrics(
+    '_target_application:misnamed',
+    scoped_metrics=MISNAMED_BASE_METRICS,
+    rollup_metrics=MISNAMED_BASE_METRICS,
+)
+def test_misnamed_handler(app):
+    response = app.fetch('get', '/misnamed')
+    assert response.status == 200
+
+
 DT_METRICS = [
     ('Supportability/DistributedTrace/AcceptPayload/Success', 1),
 ]

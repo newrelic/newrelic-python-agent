@@ -142,15 +142,29 @@ def _nr_wrapper_handler_(wrapped, instance, args, kwargs):
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    name = callable_name(wrapped)
+    name = None
+    if hasattr(wrapped, '_nr_handler_name'):
+        name = wrapped._nr_handler_name
+
+    if name is None:
+        name = callable_name(wrapped)
+        setattr(wrapped, '_nr_handler_name', name)
+
     transaction.set_transaction_name(name, priority=2)
+
     return function_trace(name=name)(wrapped)(*args, **kwargs)
 
 
 def _nr_sanic_router_add(wrapped, instance, args, kwargs):
     uri, methods, handler, args, kwargs = _bind_add(*args, **kwargs)
-    handler = _nr_wrapper_handler_(handler)
-    return wrapped(uri, methods, handler, *args, **kwargs)
+
+    if not hasattr(handler, '_nr_handler_name'):
+        name = callable_name(handler)
+        setattr(handler, '_nr_handler_name', name)
+
+    wrapped_handler = _nr_wrapper_handler_(handler)
+
+    return wrapped(uri, methods, wrapped_handler, *args, **kwargs)
 
 
 def instrument_sanic_app(module):

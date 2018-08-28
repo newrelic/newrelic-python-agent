@@ -5,9 +5,33 @@ from testing_support.fixtures import (validate_transaction_metrics,
     override_application_settings)
 
 
-@validate_transaction_metrics('', group='Uri')
+BASE_METRICS = [
+    ('Function/_target_application:index', 1),
+]
+
+
+@validate_transaction_metrics(
+    '_target_application:index',
+    scoped_metrics=BASE_METRICS,
+    rollup_metrics=BASE_METRICS,
+)
 def test_simple_request(app):
     response = app.fetch('get', '/')
+    assert response.status == 200
+
+
+MISNAMED_BASE_METRICS = [
+        ('Function/_target_application:misnamed', 1),
+]
+
+
+@validate_transaction_metrics(
+    '_target_application:misnamed',
+    scoped_metrics=MISNAMED_BASE_METRICS,
+    rollup_metrics=MISNAMED_BASE_METRICS,
+)
+def test_misnamed_handler(app):
+    response = app.fetch('get', '/misnamed')
     assert response.status == 200
 
 
@@ -17,9 +41,9 @@ DT_METRICS = [
 
 
 @validate_transaction_metrics(
-    '',
-    group='Uri',
-    rollup_metrics=DT_METRICS,
+    '_target_application:index',
+    scoped_metrics=BASE_METRICS,
+    rollup_metrics=BASE_METRICS + DT_METRICS,
 )
 @override_application_settings({
     'distributed_tracing.enabled': True,

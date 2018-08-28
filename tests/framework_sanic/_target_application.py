@@ -1,5 +1,6 @@
 from sanic import Sanic
 from sanic.response import json
+from sanic.exceptions import NotFound
 
 app = Sanic()
 
@@ -15,6 +16,16 @@ async def misnamed(request):
 
 
 del misnamed._nr_handler_name
+
+
+@app.route('/error')
+async def error(request):
+    raise ValueError('OOPS')
+
+
+@app.route('/404')
+async def not_found(request):
+    raise NotFound("Hey, where'd it go?")
 
 
 if __name__ == '__main__':

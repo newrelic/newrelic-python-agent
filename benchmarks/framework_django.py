@@ -1,8 +1,7 @@
 import sys
 import newrelic.hooks.framework_django as framework_django
-from benchmarks.util import (WrapBase, WrappedBase,
+from benchmarks.util import (TimeWrappingBase, TimeWrappedExecutionBase,
                              TimeInstrumentBase, MagicMock)
-
 
 sys.modules['django'] = MagicMock()
 
@@ -11,7 +10,7 @@ class TimeDjangoInstrument(TimeInstrumentBase(framework_django)):
     pass
 
 
-shared_spec = [
+spec = [
     ('wrap_view_handler'),
     ('wrap_view_dispatch', {
         'extra_attr': ['http_method_names', 'http_method_not_allowed']
@@ -34,14 +33,15 @@ shared_spec = [
     }),
     ('wrap_trailing_middleware', {
         'returns_iterable': True
-    })]
+    })
+]
 
 
-class WrapFrameworkDjangoSuite(WrapBase(framework_django, *shared_spec)):
+class TimeDjangoWrapping(TimeWrappingBase(framework_django, *spec)):
     pass
 
 
-wfw_spec = [
+spec.extend([
     ('_nr_wrapper_GZipMiddleware_process_response_', {
         'via_wrap_function_wrapper': True,
         'wrapped_params': 2,
@@ -69,9 +69,9 @@ wfw_spec = [
     ('_nr_wrapper_django_template_base_Library_tag_', {
         'via_wrap_function_wrapper': True,
         'wrapped_params': 6,
-    })]
+    })
+])
 
 
-class WrappedFrameworkDjangoSuite(WrappedBase(framework_django, *(
-        shared_spec + wfw_spec))):
+class TimeDjangoExecutions(TimeWrappedExecutionBase(framework_django, *spec)):
     pass

@@ -69,5 +69,11 @@ async def streaming(request):
     return stream(streaming_fn)
 
 
+@app.route('/custom-header/<header_key>/<header_value>')
+async def custom_header(request, header_key, header_value):
+    custom_headers = {header_key: header_value}
+    return json({'hello': 'world'}, headers=custom_headers)
+
+
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8000)

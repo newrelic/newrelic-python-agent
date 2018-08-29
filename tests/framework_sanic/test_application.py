@@ -6,7 +6,7 @@ from newrelic.api.external_trace import ExternalTrace
 
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, override_ignore_status_codes,
-    validate_transaction_event_attributes)
+    validate_transaction_event_attributes, override_application_settings)
 
 
 BASE_METRICS = [

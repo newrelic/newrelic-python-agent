@@ -47,6 +47,13 @@ _cat_response_header_urls_to_test = (
         ('/streaming', '_target_application:streaming'),
         ('/error', '_target_application:error'),
 )
+_custom_settings = {
+        'cross_process_id': '1#1',
+        'encoding_key': ENCODING_KEY,
+        'trusted_account_ids': [1],
+        'cross_application_tracer.enabled': True,
+        'distributed_tracing.enabled': False,
+}
 
 
 def _get_cat_response_header(raw_response):
@@ -80,13 +87,6 @@ def test_cat_response_headers(app, inbound_payload, expected_intrinsics,
     _base_metrics = [
         ('Function/%s' % metric_name, 1),
     ]
-    _custom_settings = {
-            'cross_process_id': '1#1',
-            'encoding_key': ENCODING_KEY,
-            'trusted_account_ids': [1],
-            'cross_application_tracer.enabled': True,
-            'distributed_tracing.enabled': False,
-    }
 
     @validate_transaction_metrics(
         metric_name,
@@ -117,3 +117,18 @@ def test_cat_response_headers(app, inbound_payload, expected_intrinsics,
             assert b'X-NewRelic-App-Data' not in raw_response
 
     _test()
+
+
+@override_application_settings(_custom_settings)
+def test_cat_response_custom_header(app):
+    inbound_payload = ['b854df4feb2b1f06', False, '7e249074f277923d',
+            '5d2957be']
+    cat_id = '1#1'
+    custom_header_value = b'my-custom-header-value'
+    cat_headers = make_cross_agent_headers(inbound_payload, ENCODING_KEY,
+            cat_id)
+
+    raw_response = app.fetch('get', '/custom-header/%s/%s' % (
+                'X-NewRelic-App-Data', custom_header_value),
+            headers=dict(cat_headers), raw=True)
+    assert custom_header_value in raw_response, raw_response

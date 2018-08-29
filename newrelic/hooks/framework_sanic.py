@@ -4,6 +4,7 @@ import sys
 from newrelic.api.application import application_instance
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.api.transaction import current_transaction
+from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import function_trace
 from newrelic.common.object_wrapper import (wrap_function_wrapper, ObjectProxy,
     function_wrapper)
@@ -214,7 +215,8 @@ def _nr_sanic_response_parse_headers(wrapped, instance, args, kwargs):
     # instance is the response object
     cat_headers = transaction.process_response(str(instance.status),
             instance.headers.items())
-    instance.headers.update(cat_headers)
+    if cat_headers and ExternalTrace.cat_appdata_key not in instance.headers:
+        instance.headers.update(cat_headers)
 
     return wrapped(*args, **kwargs)
 

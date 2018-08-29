@@ -3,10 +3,42 @@ import pytest
 import re
 
 from newrelic.common.encoding_utils import deobfuscate
+from newrelic.api.application import application_instance
+from newrelic.api.external_trace import ExternalTrace
+from newrelic.api.transaction import Transaction
 
 from testing_support.fixtures import (override_application_settings,
         make_cross_agent_headers, validate_analytics_catmap_data,
-        validate_transaction_metrics)
+        validate_transaction_metrics, validate_transaction_event_attributes)
+
+
+BASE_METRICS = [
+    ('Function/_target_application:index', 1),
+]
+DT_METRICS = [
+    ('Supportability/DistributedTrace/AcceptPayload/Success', 1),
+]
+BASE_ATTRS = ['response.status', 'response.headers.contentType',
+        'response.headers.contentLength']
+
+
+@validate_transaction_metrics(
+    '_target_application:index',
+    scoped_metrics=BASE_METRICS,
+    rollup_metrics=BASE_METRICS + DT_METRICS,
+)
+@override_application_settings({
+    'distributed_tracing.enabled': True,
+})
+@validate_transaction_event_attributes(
+    required_params={'agent': BASE_ATTRS, 'user': [], 'intrinsic': []},
+)
+def test_inbound_distributed_trace(app):
+    transaction = Transaction(application_instance())
+    dt_headers = ExternalTrace.generate_request_headers(transaction)
+
+    response = app.fetch('get', '/', headers=dict(dt_headers))
+    assert response.status == 200
 
 
 ENCODING_KEY = '1234567890123456789012345678901234567890'

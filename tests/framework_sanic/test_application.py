@@ -3,9 +3,10 @@ import sanic
 from newrelic.api.application import application_instance
 from newrelic.api.transaction import Transaction
 from newrelic.api.external_trace import ExternalTrace
+
 from testing_support.fixtures import (validate_transaction_metrics,
-    override_application_settings, validate_transaction_errors,
-    override_ignore_status_codes, validate_transaction_event_attributes)
+    validate_transaction_errors, override_ignore_status_codes,
+    validate_transaction_event_attributes)
 
 
 BASE_METRICS = [

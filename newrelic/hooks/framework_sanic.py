@@ -208,6 +208,19 @@ def _sanic_app_init(wrapped, instance, args, kwargs):
     return result
 
 
+def _nr_sanic_response_parse_headers(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    # instance is the response object
+    transaction.process_response(str(instance.status),
+            instance.headers.items())
+
+    return wrapped(*args, **kwargs)
+
+
 @function_wrapper
 def _nr_wrapper_middleware_(wrapped, instance, args, kwargs):
     transaction = current_transaction()
@@ -254,3 +267,8 @@ def instrument_sanic_app(module):
 def instrument_sanic_router(module):
     wrap_function_wrapper(module, 'Router.add',
         _nr_sanic_router_add)
+
+
+def instrument_sanic_response(module):
+    wrap_function_wrapper(module, 'BaseHTTPResponse._parse_headers',
+        _nr_sanic_response_parse_headers)

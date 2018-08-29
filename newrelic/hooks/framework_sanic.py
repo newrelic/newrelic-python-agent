@@ -212,8 +212,9 @@ def _nr_sanic_response_parse_headers(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     # instance is the response object
-    transaction.process_response(str(instance.status),
+    cat_headers = transaction.process_response(str(instance.status),
             instance.headers.items())
+    instance.headers.update(cat_headers)
 
     return wrapped(*args, **kwargs)
 

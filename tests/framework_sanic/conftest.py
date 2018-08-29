@@ -46,18 +46,29 @@ def create_request_class(method, url, headers=None):
     return _request
 
 
+class TestTransport(object):
+    def write(self, data):
+        pass
+
+
 def create_request_coroutine(app, method, url, headers=None, responses=None):
     if responses is None:
         responses = []
 
-    def empty_callback(response):
+    def write_callback(response):
+        response.output()
+        responses.append(response)
+
+    async def stream_callback(response):
+        response.transport = TestTransport()
+        await response.stream()
         responses.append(response)
 
     headers = headers or {}
     coro = app.handle_request(
         create_request_class(method, url, headers),
-        empty_callback,
-        empty_callback,
+        write_callback,
+        stream_callback,
     )
     return coro
 

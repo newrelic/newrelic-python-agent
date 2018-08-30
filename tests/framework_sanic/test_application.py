@@ -117,3 +117,20 @@ def test_error_raised_in_error_handler(app):
     # transaction errors validator to confirm the application acted as we'd
     # expect it to.
     response = app.fetch('get', '/zero')
+
+
+NO_STATUS_METRICS = [
+    ('Function/_target_application:no_status_error_response', 1),
+]
+
+
+@validate_transaction_metrics(
+    '_target_application:no_status_error_response',
+    scoped_metrics=NO_STATUS_METRICS,
+    rollup_metrics=NO_STATUS_METRICS,
+)
+@override_ignore_status_codes([500])
+@validate_transaction_errors(errors=['builtins:TypeError'])
+def test_no_status_error_response(app):
+    response = app.fetch('get', '/no-status-error-response')
+    assert not hasattr(response, 'status')

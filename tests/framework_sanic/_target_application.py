@@ -1,8 +1,18 @@
 from sanic import Sanic
 from sanic.response import json
 from sanic.exceptions import NotFound
+from sanic.handlers import ErrorHandler
 
-app = Sanic()
+
+class CustomErrorHandler(ErrorHandler):
+    def response(self, request, exception):
+        if isinstance(exception, ZeroDivisionError):
+            raise ValueError('DOUBLE OOPS')
+        else:
+            return super(CustomErrorHandler, self).response(request, exception)
+
+
+app = Sanic(error_handler=CustomErrorHandler())
 
 
 @app.route('/')
@@ -26,6 +36,11 @@ async def error(request):
 @app.route('/404')
 async def not_found(request):
     raise NotFound("Hey, where'd it go?")
+
+
+@app.route('/zero')
+async def zero_division_error(request):
+    1 / 0
 
 
 @app.middleware('request')

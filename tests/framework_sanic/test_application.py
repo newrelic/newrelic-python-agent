@@ -97,3 +97,23 @@ NOT_FOUND_METRICS = [
 def test_ignored_by_status_error(app):
     response = app.fetch('get', '/404')
     assert response.status == 404
+
+
+DOUBLE_ERROR_METRICS = [
+    ('Function/_target_application:zero_division_error', 1),
+]
+
+
+@validate_transaction_metrics(
+    '_target_application:zero_division_error',
+    scoped_metrics=DOUBLE_ERROR_METRICS,
+    rollup_metrics=DOUBLE_ERROR_METRICS,
+)
+@validate_transaction_errors(
+        errors=['builtins:ValueError', 'builtins:ZeroDivisionError'])
+def test_error_raised_in_error_handler(app):
+    # Because of a bug in Sanic versions <0.8.0, the response.status value is
+    # inconsistent. Rather than assert the status value, we rely on the
+    # transaction errors validator to confirm the application acted as we'd
+    # expect it to.
+    response = app.fetch('get', '/zero')

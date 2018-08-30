@@ -1,3 +1,5 @@
+import sanic
+
 from newrelic.api.application import application_instance
 from newrelic.api.transaction import Transaction
 from newrelic.api.external_trace import ExternalTrace
@@ -9,12 +11,15 @@ from testing_support.fixtures import (validate_transaction_metrics,
 BASE_METRICS = [
     ('Function/_target_application:index', 1),
 ]
+FRAMEWORK_METRICS = [
+    ('Python/Framework/Sanic/%s' % sanic.__version__, 1),
+]
 
 
 @validate_transaction_metrics(
     '_target_application:index',
     scoped_metrics=BASE_METRICS,
-    rollup_metrics=BASE_METRICS,
+    rollup_metrics=BASE_METRICS + FRAMEWORK_METRICS,
 )
 def test_simple_request(app):
     response = app.fetch('get', '/')
@@ -44,7 +49,7 @@ DT_METRICS = [
 @validate_transaction_metrics(
     '_target_application:index',
     scoped_metrics=BASE_METRICS,
-    rollup_metrics=BASE_METRICS + DT_METRICS,
+    rollup_metrics=BASE_METRICS + DT_METRICS + FRAMEWORK_METRICS,
 )
 @override_application_settings({
     'distributed_tracing.enabled': True,
@@ -65,7 +70,7 @@ ERROR_METRICS = [
 @validate_transaction_metrics(
     '_target_application:error',
     scoped_metrics=ERROR_METRICS,
-    rollup_metrics=ERROR_METRICS,
+    rollup_metrics=ERROR_METRICS + FRAMEWORK_METRICS,
 )
 @validate_transaction_errors(errors=['builtins:ValueError'])
 def test_recorded_error(app):
@@ -81,7 +86,7 @@ NOT_FOUND_METRICS = [
 @validate_transaction_metrics(
     '_target_application:not_found',
     scoped_metrics=NOT_FOUND_METRICS,
-    rollup_metrics=NOT_FOUND_METRICS,
+    rollup_metrics=NOT_FOUND_METRICS + FRAMEWORK_METRICS,
 )
 @override_ignore_status_codes([404])
 @validate_transaction_errors(errors=[])

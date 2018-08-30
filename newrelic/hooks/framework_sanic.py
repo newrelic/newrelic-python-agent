@@ -44,6 +44,10 @@ class NRTransactionCoroutineWrapper(ObjectProxy):
             app = application_instance()
             txn = WebTransaction(app, self._nr_environ)
 
+            import sanic
+            txn.add_framework_info(
+                    name='Sanic', version=sanic.__version__)
+
             self._nr_transaction = txn
 
             if txn.enabled:

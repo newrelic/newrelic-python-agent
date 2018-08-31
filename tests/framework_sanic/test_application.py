@@ -154,7 +154,8 @@ def test_streaming_response(app):
 
 ERROR_IN_ERROR_TESTS = [
     ('/sync-error', '_target_application:sync_error',
-        ['_target_application:CustomExceptionSync']),
+        ['_target_application:CustomExceptionSync',
+        'sanic.exceptions:SanicException']),
     ('/async-error', '_target_application:async_error',
         ['_target_application:CustomExceptionAsync']),
 ]
@@ -165,6 +166,7 @@ def test_errors_in_error_handlers(app, url, metric_name, errors):
 
     _metrics = [
             ('Function/%s' % metric_name, 1),
+            # TODO: add in function traces for the error handlers
     ]
 
     @validate_transaction_metrics(metric_name,

@@ -154,24 +154,25 @@ def test_streaming_response(app):
 
 ERROR_IN_ERROR_TESTS = [
     ('/sync-error', '_target_application:sync_error',
+        [('Function/_target_application:sync_error', 1),
+            ('Function/_target_application:handle_custom_exception_sync', 1)],
         ['_target_application:CustomExceptionSync',
         'sanic.exceptions:SanicException']),
+
     ('/async-error', '_target_application:async_error',
+        [('Function/_target_application:async_error', 1),
+            ('Function/_target_application:handle_custom_exception_async', 1)],
         ['_target_application:CustomExceptionAsync']),
 ]
 
 
-@pytest.mark.parametrize('url,metric_name,errors', ERROR_IN_ERROR_TESTS)
-def test_errors_in_error_handlers(app, url, metric_name, errors):
-
-    _metrics = [
-            ('Function/%s' % metric_name, 1),
-            # TODO: add in function traces for the error handlers
-    ]
+@pytest.mark.parametrize('url,metric_name,metrics,errors',
+        ERROR_IN_ERROR_TESTS)
+def test_errors_in_error_handlers(app, url, metric_name, metrics, errors):
 
     @validate_transaction_metrics(metric_name,
-            scoped_metrics=_metrics,
-            rollup_metrics=_metrics)
+            scoped_metrics=metrics,
+            rollup_metrics=metrics)
     @validate_transaction_errors(errors=errors)
     def _test():
         # Because of a bug in Sanic versions <0.8.0, the response.status value

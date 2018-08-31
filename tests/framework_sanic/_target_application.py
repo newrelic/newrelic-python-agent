@@ -8,11 +8,6 @@ class CustomErrorHandler(ErrorHandler):
     def response(self, request, exception):
         if isinstance(exception, ZeroDivisionError):
             raise ValueError('DOUBLE OOPS')
-        elif isinstance(exception, TypeError):
-            response = super(CustomErrorHandler, self).response(request,
-                    exception)
-            del response.status
-            return response
         else:
             return super(CustomErrorHandler, self).response(request, exception)
 
@@ -46,11 +41,6 @@ async def not_found(request):
 @app.route('/zero')
 async def zero_division_error(request):
     1 / 0
-
-
-@app.route('/no-status-error-response')
-async def no_status_error_response(request):
-    raise TypeError('OOPS')
 
 
 @app.middleware('request')

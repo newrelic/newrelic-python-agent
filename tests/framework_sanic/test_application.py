@@ -10,6 +10,8 @@ from testing_support.fixtures import (validate_transaction_metrics,
 
 BASE_METRICS = [
     ('Function/_target_application:index', 1),
+    ('Function/_target_application:request_middleware', 2),
+    ('Function/_target_application:misnamed_response_middleware', 1),
 ]
 FRAMEWORK_METRICS = [
     ('Python/Framework/Sanic/%s' % sanic.__version__, 1),
@@ -27,7 +29,9 @@ def test_simple_request(app):
 
 
 MISNAMED_BASE_METRICS = [
-        ('Function/_target_application:misnamed', 1),
+    ('Function/_target_application:misnamed', 1),
+    ('Function/_target_application:request_middleware', 2),
+    ('Function/_target_application:misnamed_response_middleware', 1),
 ]
 
 

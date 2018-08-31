@@ -208,12 +208,47 @@ def _sanic_app_init(wrapped, instance, args, kwargs):
     return result
 
 
+@function_wrapper
+def _nr_wrapper_middleware_(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    name = None
+    if hasattr(wrapped, '_nr_middleware_name'):
+        name = wrapped._nr_middleware_name
+
+    if name is None:
+        name = callable_name(wrapped)
+        setattr(wrapped, '_nr_middleware_name', name)
+
+    return function_trace(name=name)(wrapped)(*args, **kwargs)
+
+
+def _bind_middleware(middleware, *args, **kwargs):
+    return middleware, args, kwargs
+
+
+def _nr_sanic_register_middleware_(wrapped, instance, args, kwargs):
+    middleware, args, kwargs = _bind_middleware(*args, **kwargs)
+
+    if not hasattr(middleware, '_nr_middleware_name'):
+        name = callable_name(middleware)
+        setattr(middleware, '_nr_middleware_name', name)
+
+    wrapped_middleware = _nr_wrapper_middleware_(middleware)
+    wrapped(wrapped_middleware, *args, **kwargs)
+    return middleware
+
+
 def instrument_sanic_app(module):
     wrap_function_wrapper(module, 'Sanic.handle_request',
         _nr_sanic_transaction_wrapper_)
-
     wrap_function_wrapper(module, 'Sanic.__init__',
         _sanic_app_init)
+    wrap_function_wrapper(module, 'Sanic.register_middleware',
+        _nr_sanic_register_middleware_)
 
 
 def instrument_sanic_router(module):

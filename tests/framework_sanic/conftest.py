@@ -47,22 +47,34 @@ def create_request_class(method, url, headers=None):
 
 
 class TestTransport(object):
+    def __init__(self, responses, raw=False):
+        self.raw = raw
+        if self.raw:
+            self.responses = responses
+            self.responses.append(b'')
+
     def write(self, data):
-        pass
+        if self.raw:
+            self.responses[0] += data
 
 
-def create_request_coroutine(app, method, url, headers=None, responses=None):
+def create_request_coroutine(app, method, url, headers=None, responses=None,
+        raw=False):
     if responses is None:
         responses = []
 
     def write_callback(response):
-        response.output()
-        responses.append(response)
+        raw_response = response.output()
+        if raw:
+            responses.append(raw_response)
+        else:
+            responses.append(response)
 
     async def stream_callback(response):
-        response.transport = TestTransport()
+        response.transport = TestTransport(responses, raw=raw)
         await response.stream()
-        responses.append(response)
+        if not raw:
+            responses.append(response)
 
     headers = headers or {}
     coro = app.handle_request(
@@ -73,9 +85,10 @@ def create_request_coroutine(app, method, url, headers=None, responses=None):
     return coro
 
 
-def request(app, method, url, headers=None):
+def request(app, method, url, headers=None, raw=False):
     responses = []
-    coro = create_request_coroutine(app, method, url, headers, responses)
+    coro = create_request_coroutine(app, method, url, headers, responses,
+            raw=raw)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(coro)
     return responses[0]
@@ -85,8 +98,8 @@ class TestApplication(object):
     def __init__(self, app):
         self.app = app
 
-    def fetch(self, method, url, headers=None):
-        return request(self.app, method, url, headers)
+    def fetch(self, method, url, headers=None, raw=False):
+        return request(self.app, method, url, headers, raw=raw)
 
 
 @pytest.fixture()

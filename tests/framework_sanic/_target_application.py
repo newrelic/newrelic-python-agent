@@ -1,7 +1,7 @@
 from sanic import Sanic
-from sanic.response import json, stream
-from sanic.exceptions import NotFound
+from sanic.exceptions import NotFound, SanicException
 from sanic.handlers import ErrorHandler
+from sanic.response import json, stream
 
 
 class CustomErrorHandler(ErrorHandler):
@@ -73,6 +73,34 @@ async def streaming(request):
 async def custom_header(request, header_key, header_value):
     custom_headers = {header_key: header_value}
     return json({'hello': 'world'}, headers=custom_headers)
+
+
+class CustomExceptionSync(SanicException):
+    pass
+
+
+class CustomExceptionAsync(SanicException):
+    pass
+
+
+@app.exception(CustomExceptionSync)
+def handle_custom_exception_sync(request, exception):
+    raise SanicException('something went very very wrong')
+
+
+@app.exception(CustomExceptionAsync)
+async def handle_custom_exception_async(request, exception):
+    raise SanicException('something went very very wrong')
+
+
+@app.route('/sync-error')
+async def sync_error(request):
+    raise CustomExceptionSync('something went wrong')
+
+
+@app.route('/async-error')
+async def async_error(request):
+    raise CustomExceptionAsync('something went wrong')
 
 
 if __name__ == '__main__':

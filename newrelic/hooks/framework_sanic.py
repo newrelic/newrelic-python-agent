@@ -188,10 +188,7 @@ def error_response(wrapped, instance, args, kwargs):
         transaction.record_exception()
         raise
     else:
-        if hasattr(response, 'status'):
-            if not ignore_status_code(response.status):
-                transaction.record_exception(*exc_info)
-        else:
+        if not ignore_status_code(response.status):
             transaction.record_exception(*exc_info)
     finally:
         exc_info = None
@@ -206,6 +203,19 @@ def _sanic_app_init(wrapped, instance, args, kwargs):
         instance.error_handler.response = error_response(
                 error_handler.response)
     return result
+
+
+def _nr_sanic_response_parse_headers(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    # instance is the response object
+    transaction.process_response(str(instance.status),
+            instance.headers.items())
+
+    return wrapped(*args, **kwargs)
 
 
 @function_wrapper
@@ -254,3 +264,8 @@ def instrument_sanic_app(module):
 def instrument_sanic_router(module):
     wrap_function_wrapper(module, 'Router.add',
         _nr_sanic_router_add)
+
+
+def instrument_sanic_response(module):
+    wrap_function_wrapper(module, 'BaseHTTPResponse._parse_headers',
+        _nr_sanic_response_parse_headers)

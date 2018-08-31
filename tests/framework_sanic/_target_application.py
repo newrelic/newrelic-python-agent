@@ -1,5 +1,5 @@
 from sanic import Sanic
-from sanic.response import json
+from sanic.response import json, stream
 from sanic.exceptions import NotFound
 from sanic.handlers import ErrorHandler
 
@@ -8,11 +8,6 @@ class CustomErrorHandler(ErrorHandler):
     def response(self, request, exception):
         if isinstance(exception, ZeroDivisionError):
             raise ValueError('DOUBLE OOPS')
-        elif isinstance(exception, TypeError):
-            response = super(CustomErrorHandler, self).response(request,
-                    exception)
-            del response.status
-            return response
         else:
             return super(CustomErrorHandler, self).response(request, exception)
 
@@ -48,11 +43,6 @@ async def zero_division_error(request):
     1 / 0
 
 
-@app.route('/no-status-error-response')
-async def no_status_error_response(request):
-    raise TypeError('OOPS')
-
-
 @app.middleware('request')
 async def request_middleware(request):
     return None
@@ -69,6 +59,14 @@ async def misnamed_response_middleware(request, response):
 
 
 del misnamed_response_middleware._nr_middleware_name
+
+
+@app.route('/streaming')
+async def streaming(request):
+    async def streaming_fn(response):
+        response.write('foo')
+        response.write('bar')
+    return stream(streaming_fn)
 
 
 if __name__ == '__main__':

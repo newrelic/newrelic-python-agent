@@ -5,7 +5,7 @@ from newrelic.api.transaction import Transaction
 from newrelic.api.external_trace import ExternalTrace
 from testing_support.fixtures import (validate_transaction_metrics,
     override_application_settings, validate_transaction_errors,
-    override_ignore_status_codes)
+    override_ignore_status_codes, validate_transaction_event_attributes)
 
 
 BASE_METRICS = [
@@ -16,6 +16,12 @@ BASE_METRICS = [
 FRAMEWORK_METRICS = [
     ('Python/Framework/Sanic/%s' % sanic.__version__, 1),
 ]
+BASE_ATTRS = ['response.status', 'response.headers.contentType',
+        'response.headers.contentLength']
+
+validate_base_transaction_event_attr = validate_transaction_event_attributes(
+    required_params={'agent': BASE_ATTRS, 'user': [], 'intrinsic': []},
+)
 
 
 @validate_transaction_metrics(
@@ -23,6 +29,7 @@ FRAMEWORK_METRICS = [
     scoped_metrics=BASE_METRICS,
     rollup_metrics=BASE_METRICS + FRAMEWORK_METRICS,
 )
+@validate_base_transaction_event_attr
 def test_simple_request(app):
     response = app.fetch('get', '/')
     assert response.status == 200
@@ -40,6 +47,7 @@ MISNAMED_BASE_METRICS = [
     scoped_metrics=MISNAMED_BASE_METRICS,
     rollup_metrics=MISNAMED_BASE_METRICS,
 )
+@validate_base_transaction_event_attr
 def test_misnamed_handler(app):
     response = app.fetch('get', '/misnamed')
     assert response.status == 200
@@ -55,6 +63,7 @@ DT_METRICS = [
     scoped_metrics=BASE_METRICS,
     rollup_metrics=BASE_METRICS + DT_METRICS + FRAMEWORK_METRICS,
 )
+@validate_base_transaction_event_attr
 @override_application_settings({
     'distributed_tracing.enabled': True,
 })
@@ -77,6 +86,7 @@ ERROR_METRICS = [
     rollup_metrics=ERROR_METRICS + FRAMEWORK_METRICS,
 )
 @validate_transaction_errors(errors=['builtins:ValueError'])
+@validate_base_transaction_event_attr
 def test_recorded_error(app):
     response = app.fetch('get', '/error')
     assert response.status == 500
@@ -92,6 +102,7 @@ NOT_FOUND_METRICS = [
     scoped_metrics=NOT_FOUND_METRICS,
     rollup_metrics=NOT_FOUND_METRICS + FRAMEWORK_METRICS,
 )
+@validate_base_transaction_event_attr
 @override_ignore_status_codes([404])
 @validate_transaction_errors(errors=[])
 def test_ignored_by_status_error(app):
@@ -116,21 +127,24 @@ def test_error_raised_in_error_handler(app):
     # inconsistent. Rather than assert the status value, we rely on the
     # transaction errors validator to confirm the application acted as we'd
     # expect it to.
-    response = app.fetch('get', '/zero')
+    app.fetch('get', '/zero')
 
 
-NO_STATUS_METRICS = [
-    ('Function/_target_application:no_status_error_response', 1),
+STREAMING_ATTRS = ['response.status', 'response.headers.contentType']
+STREAMING_METRICS = [
+    ('Function/_target_application:streaming', 1),
 ]
 
 
 @validate_transaction_metrics(
-    '_target_application:no_status_error_response',
-    scoped_metrics=NO_STATUS_METRICS,
-    rollup_metrics=NO_STATUS_METRICS,
+    '_target_application:streaming',
+    scoped_metrics=STREAMING_METRICS,
+    rollup_metrics=STREAMING_METRICS,
 )
-@override_ignore_status_codes([500])
-@validate_transaction_errors(errors=['builtins:TypeError'])
-def test_no_status_error_response(app):
-    response = app.fetch('get', '/no-status-error-response')
-    assert not hasattr(response, 'status')
+@validate_transaction_event_attributes(
+    required_params={'agent': STREAMING_ATTRS, 'user': [], 'intrinsic': []},
+)
+def test_streaming_response(app):
+    # streaming responses do not have content-length headers
+    response = app.fetch('get', '/streaming')
+    assert response.status == 200

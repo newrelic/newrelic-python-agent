@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import sys
 
 from newrelic.api.application import application_instance
@@ -267,37 +268,76 @@ def _nr_sanic_response_parse_headers(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
-@function_wrapper
-def _nr_wrapper_middleware_(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
+class MiddlewareCoroProxy(ObjectProxy):
 
-    if transaction is None:
-        return wrapped(*args, **kwargs)
+    def __init__(self, wrapped, name):
+        super(MiddlewareCoroProxy, self).__init__(wrapped)
+        self._nr_name = name
 
-    name = None
-    if hasattr(wrapped, '_nr_middleware_name'):
-        name = wrapped._nr_middleware_name
+    def __iter__(self):
+        return self
 
-    if name is None:
-        name = callable_name(wrapped)
-        setattr(wrapped, '_nr_middleware_name', name)
+    def __await__(self):
+        return self
 
-    return function_trace(name=name)(wrapped)(*args, **kwargs)
+    def __next__(self):
+        return self.send(None)
+
+    def send(self, value):
+        try:
+            return self.__wrapped__.send(value)
+        except (GeneratorExit, StopIteration) as e:
+            # e.value is either None or a sanic.response.HTTPResponse object
+            if e.value:
+                transaction = current_transaction()
+                if transaction:
+                    transaction.set_transaction_name(self._nr_name, priority=2)
+            raise
 
 
-def _bind_middleware(middleware, *args, **kwargs):
-    return middleware, args, kwargs
+def _nr_wrapper_middleware_(attach_to):
+    is_request_middleware = attach_to == 'request'
+
+    @function_wrapper
+    def _wrapper(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+
+        if transaction is None:
+            return wrapped(*args, **kwargs)
+
+        name = None
+        if hasattr(wrapped, '_nr_middleware_name'):
+            name = wrapped._nr_middleware_name
+
+        if name is None:
+            name = callable_name(wrapped)
+            setattr(wrapped, '_nr_middleware_name', name)
+
+        response = function_trace(name=name)(wrapped)(*args, **kwargs)
+        if is_request_middleware:
+            if inspect.isawaitable(response):
+                response = MiddlewareCoroProxy(response, name)
+            elif response:
+                transaction.set_transaction_name(name, priority=2)
+
+        return response
+
+    return _wrapper
+
+
+def _bind_middleware(middleware, attach_to='request', *args, **kwargs):
+    return middleware, attach_to
 
 
 def _nr_sanic_register_middleware_(wrapped, instance, args, kwargs):
-    middleware, args, kwargs = _bind_middleware(*args, **kwargs)
+    middleware, attach_to = _bind_middleware(*args, **kwargs)
 
     if not hasattr(middleware, '_nr_middleware_name'):
         name = callable_name(middleware)
         setattr(middleware, '_nr_middleware_name', name)
 
-    wrapped_middleware = _nr_wrapper_middleware_(middleware)
-    wrapped(wrapped_middleware, *args, **kwargs)
+    wrapped_middleware = _nr_wrapper_middleware_(attach_to)(middleware)
+    wrapped(wrapped_middleware, attach_to)
     return middleware
 
 

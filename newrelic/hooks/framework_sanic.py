@@ -1,5 +1,4 @@
 import asyncio
-import inspect
 import sys
 
 from newrelic.api.application import application_instance
@@ -268,33 +267,6 @@ def _nr_sanic_response_parse_headers(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
-class MiddlewareCoroProxy(ObjectProxy):
-
-    def __init__(self, wrapped, name):
-        super(MiddlewareCoroProxy, self).__init__(wrapped)
-        self._nr_name = name
-
-    def __iter__(self):
-        return self
-
-    def __await__(self):
-        return self
-
-    def __next__(self):
-        return self.send(None)
-
-    def send(self, value):
-        try:
-            return self.__wrapped__.send(value)
-        except (GeneratorExit, StopIteration) as e:
-            # e.value is either None or a sanic.response.HTTPResponse object
-            if e.value:
-                transaction = current_transaction()
-                if transaction:
-                    transaction.set_transaction_name(self._nr_name, priority=2)
-            raise
-
-
 def _nr_wrapper_middleware_(attach_to):
     is_request_middleware = attach_to == 'request'
 
@@ -314,11 +286,8 @@ def _nr_wrapper_middleware_(attach_to):
             setattr(wrapped, '_nr_middleware_name', name)
 
         response = function_trace(name=name)(wrapped)(*args, **kwargs)
-        if is_request_middleware:
-            if inspect.isawaitable(response):
-                response = MiddlewareCoroProxy(response, name)
-            elif response:
-                transaction.set_transaction_name(name, priority=2)
+        if is_request_middleware and response:
+            transaction.set_transaction_name(name, priority=1)
 
         return response
 

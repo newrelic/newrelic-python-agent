@@ -174,9 +174,50 @@ def _nr_sanic_router_add(wrapped, instance, args, kwargs):
 
 
 @function_wrapper
+def _nr_wrapper_error_handler_(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
+    name = None
+    if hasattr(wrapped, '_nr_error_handler_name'):
+        name = wrapped._nr_error_handler_name
+
+    if name is None:
+        name = callable_name(wrapped)
+        setattr(wrapped, '_nr_error_handler_name', name)
+
+    try:
+        response = function_trace(name=name)(wrapped)(*args, **kwargs)
+    except:
+        transaction.record_exception()
+        raise
+
+    return response
+
+
+def _bind_error_add(exception, handler, *args, **kwargs):
+    return exception, handler
+
+
+def _nr_sanic_error_handlers(wrapped, instance, args, kwargs):
+    exception, handler = _bind_error_add(*args, **kwargs)
+
+    if not hasattr(handler, '_nr_error_handler_name'):
+        name = callable_name(handler)
+        setattr(handler, '_nr_error_handler_name', name)
+
+    wrapped_handler = _nr_wrapper_error_handler_(handler)
+
+    return wrapped(exception, wrapped_handler)
+
+
+@function_wrapper
 def error_response(wrapped, instance, args, kwargs):
     transaction = current_transaction()
-    if not transaction:
+
+    if transaction is None:
         return wrapped(*args, **kwargs)
 
     exc_info = sys.exc_info()
@@ -189,7 +230,11 @@ def error_response(wrapped, instance, args, kwargs):
         transaction.record_exception()
         raise
     else:
-        if not ignore_status_code(response.status):
+        # response can be a response object or a coroutine
+        if hasattr(response, 'status'):
+            if not ignore_status_code(response.status):
+                transaction.record_exception(*exc_info)
+        else:
             transaction.record_exception(*exc_info)
     finally:
         exc_info = None
@@ -272,3 +317,8 @@ def instrument_sanic_router(module):
 def instrument_sanic_response(module):
     wrap_function_wrapper(module, 'BaseHTTPResponse._parse_headers',
         _nr_sanic_response_parse_headers)
+
+
+def instrument_sanic_handlers(module):
+    wrap_function_wrapper(module, 'ErrorHandler.add',
+        _nr_sanic_error_handlers)

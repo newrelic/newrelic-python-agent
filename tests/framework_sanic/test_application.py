@@ -1,3 +1,4 @@
+import pytest
 import sanic
 
 from newrelic.api.application import application_instance
@@ -149,3 +150,35 @@ def test_streaming_response(app):
     # streaming responses do not have content-length headers
     response = app.fetch('get', '/streaming')
     assert response.status == 200
+
+
+ERROR_IN_ERROR_TESTS = [
+    ('/sync-error', '_target_application:sync_error',
+        [('Function/_target_application:sync_error', 1),
+            ('Function/_target_application:handle_custom_exception_sync', 1)],
+        ['_target_application:CustomExceptionSync',
+        'sanic.exceptions:SanicException']),
+
+    ('/async-error', '_target_application:async_error',
+        [('Function/_target_application:async_error', 1),
+            ('Function/_target_application:handle_custom_exception_async', 1)],
+        ['_target_application:CustomExceptionAsync']),
+]
+
+
+@pytest.mark.parametrize('url,metric_name,metrics,errors',
+        ERROR_IN_ERROR_TESTS)
+def test_errors_in_error_handlers(app, url, metric_name, metrics, errors):
+
+    @validate_transaction_metrics(metric_name,
+            scoped_metrics=metrics,
+            rollup_metrics=metrics)
+    @validate_transaction_errors(errors=errors)
+    def _test():
+        # Because of a bug in Sanic versions <0.8.0, the response.status value
+        # is inconsistent. Rather than assert the status value, we rely on the
+        # transaction errors validator to confirm the application acted as we'd
+        # expect it to.
+        app.fetch('get', url)
+
+    _test()

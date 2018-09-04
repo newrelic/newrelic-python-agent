@@ -230,6 +230,7 @@ def error_response(wrapped, instance, args, kwargs):
         transaction.record_exception()
         raise
     else:
+        # response can be a response object or a coroutine
         if hasattr(response, 'status'):
             if not ignore_status_code(response.status):
                 transaction.record_exception(*exc_info)

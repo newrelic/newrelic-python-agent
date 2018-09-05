@@ -215,3 +215,34 @@ def test_await(nr_enabled):
         _test = override_generic_settings(settings, {'enabled': False})(_test)
 
     _test()
+
+
+@pytest.mark.parametrize('nr_enabled', (True, False))
+def test_iter(nr_enabled):
+    from newrelic.hooks.framework_sanic import NRTransactionCoroutineWrapper
+
+    async def _test_driver():
+        coro = coro_for_test(terminates=True)
+
+        # wrap the coroutine
+        coro = NRTransactionCoroutineWrapper(coro, FakeRequest())
+
+        for _ in coro:
+            pass
+
+        return True
+
+    loop = asyncio.get_event_loop()
+
+    def _test():
+        result = loop.run_until_complete(_test_driver())
+        assert result
+
+    if nr_enabled:
+        _test = validate_transaction_metrics(
+                'coro_for_test', group='Uri')(_test)
+    else:
+        settings = global_settings()
+        _test = override_generic_settings(settings, {'enabled': False})(_test)
+
+    _test()

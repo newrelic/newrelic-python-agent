@@ -18,7 +18,6 @@ from testing_support.fixtures import (validate_transaction_metrics,
 BASE_METRICS = [
     ('Function/_target_application:index', 1),
     ('Function/_target_application:request_middleware', 2),
-    ('Function/_target_application:misnamed_response_middleware', 1),
 ]
 FRAMEWORK_METRICS = [
     ('Python/Framework/Sanic/%s' % sanic.__version__, 1),
@@ -39,24 +38,6 @@ validate_base_transaction_event_attr = validate_transaction_event_attributes(
 @validate_base_transaction_event_attr
 def test_simple_request(app):
     response = app.fetch('get', '/')
-    assert response.status == 200
-
-
-MISNAMED_BASE_METRICS = [
-    ('Function/_target_application:misnamed', 1),
-    ('Function/_target_application:request_middleware', 2),
-    ('Function/_target_application:misnamed_response_middleware', 1),
-]
-
-
-@validate_transaction_metrics(
-    '_target_application:misnamed',
-    scoped_metrics=MISNAMED_BASE_METRICS,
-    rollup_metrics=MISNAMED_BASE_METRICS,
-)
-@validate_base_transaction_event_attr
-def test_misnamed_handler(app):
-    response = app.fetch('get', '/misnamed')
     assert response.status == 200
 
 

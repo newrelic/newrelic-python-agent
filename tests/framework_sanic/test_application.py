@@ -161,18 +161,27 @@ ERROR_IN_ERROR_TESTS = [
 
 @pytest.mark.parametrize('url,metric_name,metrics,errors',
         ERROR_IN_ERROR_TESTS)
-def test_errors_in_error_handlers(app, url, metric_name, metrics, errors):
+@pytest.mark.parametrize('nr_enabled', (True, False))
+def test_errors_in_error_handlers(
+        nr_enabled, app, url, metric_name, metrics, errors):
+    settings = global_settings()
 
-    @validate_transaction_metrics(metric_name,
-            scoped_metrics=metrics,
-            rollup_metrics=metrics)
-    @validate_transaction_errors(errors=errors)
+    @override_generic_settings(settings, {'enabled': nr_enabled})
     def _test():
         # Because of a bug in Sanic versions <0.8.0, the response.status value
         # is inconsistent. Rather than assert the status value, we rely on the
         # transaction errors validator to confirm the application acted as we'd
         # expect it to.
         app.fetch('get', url)
+
+    if nr_enabled:
+        _test = validate_transaction_errors(errors=errors)(_test)
+        _test = validate_transaction_metrics(metric_name,
+                scoped_metrics=metrics,
+                rollup_metrics=metrics)(_test)
+    else:
+        _test = function_not_called('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')(_test)
 
     _test()
 

@@ -148,7 +148,7 @@ def _nr_wrapper_handler_(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     name = callable_name(wrapped)
-    transaction.set_transaction_name(name, priority=2)
+    transaction.set_transaction_name(name, priority=3)
 
     return function_trace(name=name)(wrapped)(*args, **kwargs)
 
@@ -171,6 +171,7 @@ def _nr_wrapper_error_handler_(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     name = callable_name(wrapped)
+    transaction.set_transaction_name(name, priority=1)
     try:
         response = function_trace(name=name)(wrapped)(*args, **kwargs)
     except:
@@ -261,7 +262,7 @@ def _nr_wrapper_middleware_(attach_to):
 
         name = callable_name(wrapped)
         if is_request_middleware:
-            transaction.set_transaction_name(name, priority=1)
+            transaction.set_transaction_name(name, priority=2)
         response = function_trace(name=name)(wrapped)(*args, **kwargs)
 
         return response

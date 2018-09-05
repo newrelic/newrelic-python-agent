@@ -248,3 +248,29 @@ def test_returning_middleware(app, middleware, attach_to, metric_name,
     finally:
         app.app.request_middleware = original_request_middleware
         app.app.response_middleware = original_response_middleware
+
+
+ERROR_HANDLER_METRICS = [
+    ('Function/_target_application:handle_server_error', 1),
+]
+
+
+@validate_transaction_metrics(
+        '_target_application:handle_server_error',
+        scoped_metrics=ERROR_HANDLER_METRICS,
+        rollup_metrics=ERROR_HANDLER_METRICS,
+)
+@validate_base_transaction_event_attr
+@validate_transaction_errors(errors=['sanic.exceptions:ServerError'])
+def test_error_handler_transaction_naming(app):
+    original_request_middleware = deque(app.app.request_middleware)
+    original_response_middleware = deque(app.app.response_middleware)
+    app.app.request_middleware = []
+    app.app.response_middleware = []
+
+    try:
+        response = app.fetch('get', '/server-error')
+        assert response.status == 500
+    finally:
+        app.app.request_middleware = original_request_middleware
+        app.app.response_middleware = original_response_middleware

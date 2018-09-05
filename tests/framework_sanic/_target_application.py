@@ -1,7 +1,8 @@
 from sanic import Sanic
-from sanic.exceptions import NotFound, SanicException
+from sanic.exceptions import NotFound, SanicException, ServerError
 from sanic.handlers import ErrorHandler
 from sanic.response import json, stream
+from sanic.router import Router
 
 
 class CustomErrorHandler(ErrorHandler):
@@ -12,7 +13,15 @@ class CustomErrorHandler(ErrorHandler):
             return super(CustomErrorHandler, self).response(request, exception)
 
 
-app = Sanic(error_handler=CustomErrorHandler())
+class CustomRouter(Router):
+    def get(self, request):
+        handler, args, kwargs, uri = super(CustomRouter, self).get(request)
+        if request.path == '/server-error':
+            handler = None
+        return handler, args, kwargs, uri
+
+
+app = Sanic(error_handler=CustomErrorHandler(), router=CustomRouter())
 
 
 @app.route('/')
@@ -65,11 +74,21 @@ async def custom_header(request, header_key, header_value):
     return json({'hello': 'world'}, headers=custom_headers)
 
 
+@app.route('/server-error')
+async def server_error(request):
+    raise AssertionError('This handler should never be reached!')
+
+
 class CustomExceptionSync(SanicException):
     pass
 
 
 class CustomExceptionAsync(SanicException):
+    pass
+
+
+@app.exception(ServerError)
+def handle_server_error(request, exception):
     pass
 
 

@@ -217,6 +217,9 @@ def sync_failing_middleware(*args, **kwargs):
     (async_returning_middleware, 'response',
         'test_application:async_returning_middleware',
         '_target_application:index'),
+    (sync_returning_middleware, 'response',
+        'test_application:sync_returning_middleware',
+        '_target_application:index'),
 ])
 def test_returning_middleware(app, middleware, attach_to, metric_name,
         transaction_name):

@@ -189,23 +189,18 @@ def test_no_transaction_when_nr_disabled(app):
     _test()
 
 
-async def async_returning_middleware(request):
+async def async_returning_middleware(*args, **kwargs):
     from sanic.response import json
     return json({'oops': 'I returned it again'})
 
 
-def sync_returning_middleware(request):
+def sync_returning_middleware(*args, **kwargs):
     from sanic.response import json
     return json({'oops': 'I returned it again'})
 
 
 def sync_failing_middleware(request):
     1 / 0
-
-
-async def async_returning_response(request, response):
-    from sanic.response import json
-    return json({'oops': 'I returned it again'})
 
 
 @pytest.mark.parametrize('middleware,attach_to,metric_name,transaction_name', [
@@ -218,8 +213,8 @@ async def async_returning_response(request, response):
     (sync_failing_middleware, 'request',
         'test_application:sync_failing_middleware',
         'test_application:sync_failing_middleware'),
-    (async_returning_response, 'response',
-        'test_application:async_returning_response',
+    (async_returning_middleware, 'response',
+        'test_application:async_returning_middleware',
         '_target_application:index'),
 ])
 def test_returning_middleware(app, middleware, attach_to, metric_name,

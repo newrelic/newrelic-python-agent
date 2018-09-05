@@ -65,6 +65,11 @@ def create_request_coroutine(app, method, url, headers=None, responses=None,
 
     def write_callback(response):
         raw_response = response.output()
+
+        # for test_recorded_error[write_response_error]
+        if b'wh-wh-whatever' in raw_response:
+            raise ValueError('whatever.')
+
         if raw:
             responses.append(raw_response)
         else:

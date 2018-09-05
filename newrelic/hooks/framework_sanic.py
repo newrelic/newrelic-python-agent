@@ -260,9 +260,9 @@ def _nr_wrapper_middleware_(attach_to):
             return wrapped(*args, **kwargs)
 
         name = callable_name(wrapped)
-        response = function_trace(name=name)(wrapped)(*args, **kwargs)
-        if is_request_middleware and response:
+        if is_request_middleware:
             transaction.set_transaction_name(name, priority=1)
+        response = function_trace(name=name)(wrapped)(*args, **kwargs)
 
         return response
 

@@ -199,6 +199,10 @@ def sync_returning_middleware(request):
     return json({'oops': 'I returned it again'})
 
 
+def sync_failing_middleware(request):
+    1 / 0
+
+
 async def async_returning_response(request, response):
     from sanic.response import json
     return json({'oops': 'I returned it again'})
@@ -211,6 +215,9 @@ async def async_returning_response(request, response):
     (sync_returning_middleware, 'request',
         'test_application:sync_returning_middleware',
         'test_application:sync_returning_middleware'),
+    (sync_failing_middleware, 'request',
+        'test_application:sync_failing_middleware',
+        'test_application:sync_failing_middleware'),
     (async_returning_response, 'response',
         'test_application:async_returning_response',
         '_target_application:index'),

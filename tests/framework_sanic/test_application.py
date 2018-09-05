@@ -1,13 +1,16 @@
 import pytest
 import sanic
 
+from newrelic.core.config import global_settings
 from newrelic.api.application import application_instance
 from newrelic.api.transaction import Transaction
 from newrelic.api.external_trace import ExternalTrace
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors, override_ignore_status_codes,
-    validate_transaction_event_attributes, override_application_settings)
+    override_application_settings, validate_transaction_errors,
+    validate_transaction_event_attributes,
+    override_ignore_status_codes, override_generic_settings,
+    count_transactions, function_not_called)
 
 
 BASE_METRICS = [
@@ -77,21 +80,28 @@ def test_inbound_distributed_trace(app):
     assert response.status == 200
 
 
-ERROR_METRICS = [
-    ('Function/_target_application:error', 1),
-]
+@pytest.mark.parametrize('endpoint', ('error', 'write_response_error'))
+def test_recorded_error(app, endpoint):
+    ERROR_METRICS = [
+        ('Function/_target_application:%s' % endpoint, 1),
+    ]
 
+    @validate_transaction_errors(errors=['builtins:ValueError'])
+    @validate_base_transaction_event_attr
+    @validate_transaction_metrics(
+        '_target_application:%s' % endpoint,
+        scoped_metrics=ERROR_METRICS,
+        rollup_metrics=ERROR_METRICS + FRAMEWORK_METRICS,
+    )
+    def _test():
+        if endpoint == 'write_response_error':
+            with pytest.raises(ValueError):
+                response = app.fetch('get', '/' + endpoint)
+        else:
+            response = app.fetch('get', '/' + endpoint)
+            assert response.status == 500
 
-@validate_transaction_metrics(
-    '_target_application:error',
-    scoped_metrics=ERROR_METRICS,
-    rollup_metrics=ERROR_METRICS + FRAMEWORK_METRICS,
-)
-@validate_transaction_errors(errors=['builtins:ValueError'])
-@validate_base_transaction_event_attr
-def test_recorded_error(app):
-    response = app.fetch('get', '/error')
-    assert response.status == 500
+    _test()
 
 
 NOT_FOUND_METRICS = [
@@ -182,3 +192,23 @@ def test_errors_in_error_handlers(app, url, metric_name, metrics, errors):
         app.fetch('get', url)
 
     _test()
+
+
+@pytest.mark.parametrize('nr_enabled', (True, False))
+def test_no_transaction_when_nr_disabled(app, nr_enabled):
+    settings = global_settings()
+
+    @override_generic_settings(settings, {'enabled': nr_enabled})
+    def _test():
+        app.fetch('GET', '/404')
+
+    transactions = []
+    if nr_enabled:
+        _test = count_transactions(transactions)(_test)
+    else:
+        _test = function_not_called('newrelic.core.stats_engine',
+                'StatsEngine.record_transaction')(_test)
+
+    _test()
+    if nr_enabled:
+        assert len(transactions) > 0

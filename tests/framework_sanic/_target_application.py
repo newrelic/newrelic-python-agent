@@ -33,6 +33,12 @@ async def error(request):
     raise ValueError('OOPS')
 
 
+# see write_callback in confest.create_request_coroutine
+@app.route('/write_response_error')
+async def write_response_error(request):
+    return json({'hello': 'wh-wh-whatever'})
+
+
 @app.route('/404')
 async def not_found(request):
     raise NotFound("Hey, where'd it go?")

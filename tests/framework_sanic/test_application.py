@@ -199,8 +199,9 @@ def sync_returning_middleware(*args, **kwargs):
     return json({'oops': 'I returned it again'})
 
 
-def sync_failing_middleware(request):
-    1 / 0
+def sync_failing_middleware(*args, **kwargs):
+    from sanic.exceptions import SanicException
+    raise SanicException('Everything is ok', status_code=200)
 
 
 @pytest.mark.parametrize('middleware,attach_to,metric_name,transaction_name', [

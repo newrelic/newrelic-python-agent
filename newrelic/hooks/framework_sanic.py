@@ -129,9 +129,6 @@ def _nr_sanic_transaction_wrapper_(wrapped, instance, args, kwargs):
     coro = wrapped(*args, **kwargs)
     request = _bind_request(*args, **kwargs)
 
-    if hasattr(coro, '__iter__'):
-        coro = iter(coro)
-
     # Wrap the coroutine
     return NRTransactionCoroutineWrapper(coro, request)
 

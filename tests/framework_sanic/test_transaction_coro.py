@@ -52,11 +52,11 @@ async def coro_for_test(close_exception=None, terminates=False):
     return True
 
 
-@pytest.mark.parametrize('nr_enabled', [True, False])
-@pytest.mark.parametrize('injected,raises', [
+@pytest.mark.parametrize('nr_enabled', (True, False))
+@pytest.mark.parametrize('injected,raises', (
     (KnownException, None),
-    (UncaughtException, UncaughtException)
-])
+    (UncaughtException, UncaughtException),
+))
 def test_throw(injected, raises, nr_enabled):
     from newrelic.hooks.framework_sanic import NRTransactionCoroutineWrapper
 
@@ -115,8 +115,8 @@ def test_throw(injected, raises, nr_enabled):
 
 
 @pytest.mark.parametrize('close_exception',
-        [None, StopIteration, UncaughtException])
-@pytest.mark.parametrize('nr_enabled', [True, False])
+        (None, StopIteration, UncaughtException))
+@pytest.mark.parametrize('nr_enabled', (True, False))
 def test_close(nr_enabled, close_exception):
     from newrelic.hooks.framework_sanic import NRTransactionCoroutineWrapper
 
@@ -156,7 +156,7 @@ def test_close(nr_enabled, close_exception):
     _test()
 
 
-@pytest.mark.parametrize('ignored', [True, False])
+@pytest.mark.parametrize('ignored', (True, False))
 def test_canceled(ignored):
     from newrelic.hooks.framework_sanic import NRTransactionCoroutineWrapper
 

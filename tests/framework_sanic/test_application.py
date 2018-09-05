@@ -10,7 +10,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
     override_application_settings, validate_transaction_errors,
     validate_transaction_event_attributes,
     override_ignore_status_codes, override_generic_settings,
-    count_transactions, function_not_called)
+    function_not_called)
 
 
 BASE_METRICS = [
@@ -194,21 +194,13 @@ def test_errors_in_error_handlers(app, url, metric_name, metrics, errors):
     _test()
 
 
-@pytest.mark.parametrize('nr_enabled', (True, False))
-def test_no_transaction_when_nr_disabled(app, nr_enabled):
+def test_no_transaction_when_nr_disabled(app):
     settings = global_settings()
 
-    @override_generic_settings(settings, {'enabled': nr_enabled})
+    @function_not_called('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    @override_generic_settings(settings, {'enabled': False})
     def _test():
-        app.fetch('GET', '/404')
-
-    transactions = []
-    if nr_enabled:
-        _test = count_transactions(transactions)(_test)
-    else:
-        _test = function_not_called('newrelic.core.stats_engine',
-                'StatsEngine.record_transaction')(_test)
+        app.fetch('GET', '/')
 
     _test()
-    if nr_enabled:
-        assert len(transactions) > 0

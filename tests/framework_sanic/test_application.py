@@ -2,6 +2,8 @@ import pytest
 import sanic
 
 from newrelic.core.config import global_settings
+from collections import deque
+
 from newrelic.api.application import application_instance
 from newrelic.api.transaction import Transaction
 from newrelic.api.external_trace import ExternalTrace
@@ -16,7 +18,6 @@ from testing_support.fixtures import (validate_transaction_metrics,
 BASE_METRICS = [
     ('Function/_target_application:index', 1),
     ('Function/_target_application:request_middleware', 2),
-    ('Function/_target_application:misnamed_response_middleware', 1),
 ]
 FRAMEWORK_METRICS = [
     ('Python/Framework/Sanic/%s' % sanic.__version__, 1),
@@ -37,24 +38,6 @@ validate_base_transaction_event_attr = validate_transaction_event_attributes(
 @validate_base_transaction_event_attr
 def test_simple_request(app):
     response = app.fetch('get', '/')
-    assert response.status == 200
-
-
-MISNAMED_BASE_METRICS = [
-    ('Function/_target_application:misnamed', 1),
-    ('Function/_target_application:request_middleware', 2),
-    ('Function/_target_application:misnamed_response_middleware', 1),
-]
-
-
-@validate_transaction_metrics(
-    '_target_application:misnamed',
-    scoped_metrics=MISNAMED_BASE_METRICS,
-    rollup_metrics=MISNAMED_BASE_METRICS,
-)
-@validate_base_transaction_event_attr
-def test_misnamed_handler(app):
-    response = app.fetch('get', '/misnamed')
     assert response.status == 200
 
 
@@ -204,3 +187,89 @@ def test_no_transaction_when_nr_disabled(app):
         app.fetch('GET', '/')
 
     _test()
+
+
+async def async_returning_middleware(*args, **kwargs):
+    from sanic.response import json
+    return json({'oops': 'I returned it again'})
+
+
+def sync_returning_middleware(*args, **kwargs):
+    from sanic.response import json
+    return json({'oops': 'I returned it again'})
+
+
+def sync_failing_middleware(*args, **kwargs):
+    from sanic.exceptions import SanicException
+    raise SanicException('Everything is ok', status_code=200)
+
+
+@pytest.mark.parametrize('middleware,attach_to,metric_name,transaction_name', [
+    (async_returning_middleware, 'request',
+        'test_application:async_returning_middleware',
+        'test_application:async_returning_middleware'),
+    (sync_returning_middleware, 'request',
+        'test_application:sync_returning_middleware',
+        'test_application:sync_returning_middleware'),
+    (sync_failing_middleware, 'request',
+        'test_application:sync_failing_middleware',
+        'test_application:sync_failing_middleware'),
+    (async_returning_middleware, 'response',
+        'test_application:async_returning_middleware',
+        '_target_application:index'),
+    (sync_returning_middleware, 'response',
+        'test_application:sync_returning_middleware',
+        '_target_application:index'),
+])
+def test_returning_middleware(app, middleware, attach_to, metric_name,
+        transaction_name):
+
+    metrics = [
+        ('Function/%s' % metric_name, 1),
+    ]
+
+    @validate_transaction_metrics(
+            transaction_name,
+            scoped_metrics=metrics,
+            rollup_metrics=metrics,
+    )
+    @validate_base_transaction_event_attr
+    def _test():
+        response = app.fetch('get', '/')
+        assert response.status == 200
+
+    original_request_middleware = deque(app.app.request_middleware)
+    original_response_middleware = deque(app.app.response_middleware)
+    app.app.register_middleware(middleware, attach_to)
+
+    try:
+        _test()
+    finally:
+        app.app.request_middleware = original_request_middleware
+        app.app.response_middleware = original_response_middleware
+
+
+ERROR_HANDLER_METRICS = [
+    ('Function/_target_application:handle_server_error', 1),
+]
+
+
+@validate_transaction_metrics(
+        '_target_application:handle_server_error',
+        scoped_metrics=ERROR_HANDLER_METRICS,
+        rollup_metrics=ERROR_HANDLER_METRICS,
+)
+@validate_base_transaction_event_attr
+@validate_transaction_errors(errors=['sanic.exceptions:ServerError'])
+def test_error_handler_transaction_naming(app):
+    original_request_middleware = deque(app.app.request_middleware)
+    original_response_middleware = deque(app.app.response_middleware)
+    app.app.request_middleware = []
+    app.app.response_middleware = []
+
+    try:
+        response = app.fetch('get', '/server-error')
+        assert response.status == 500
+    finally:
+        app.app.request_middleware = original_request_middleware
+        app.app.response_middleware = original_response_middleware

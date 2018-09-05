@@ -147,15 +147,8 @@ def _nr_wrapper_handler_(wrapped, instance, args, kwargs):
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    name = None
-    if hasattr(wrapped, '_nr_handler_name'):
-        name = wrapped._nr_handler_name
-
-    if name is None:
-        name = callable_name(wrapped)
-        setattr(wrapped, '_nr_handler_name', name)
-
-    transaction.set_transaction_name(name, priority=2)
+    name = callable_name(wrapped)
+    transaction.set_transaction_name(name, priority=3)
 
     return function_trace(name=name)(wrapped)(*args, **kwargs)
 
@@ -163,10 +156,8 @@ def _nr_wrapper_handler_(wrapped, instance, args, kwargs):
 def _nr_sanic_router_add(wrapped, instance, args, kwargs):
     uri, methods, handler, args, kwargs = _bind_add(*args, **kwargs)
 
-    if not hasattr(handler, '_nr_handler_name'):
-        name = callable_name(handler)
-        setattr(handler, '_nr_handler_name', name)
-
+    # Cache the callable_name on the handler object
+    callable_name(handler)
     wrapped_handler = _nr_wrapper_handler_(handler)
 
     return wrapped(uri, methods, wrapped_handler, *args, **kwargs)
@@ -179,14 +170,8 @@ def _nr_wrapper_error_handler_(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    name = None
-    if hasattr(wrapped, '_nr_error_handler_name'):
-        name = wrapped._nr_error_handler_name
-
-    if name is None:
-        name = callable_name(wrapped)
-        setattr(wrapped, '_nr_error_handler_name', name)
-
+    name = callable_name(wrapped)
+    transaction.set_transaction_name(name, priority=1)
     try:
         response = function_trace(name=name)(wrapped)(*args, **kwargs)
     except:
@@ -203,10 +188,8 @@ def _bind_error_add(exception, handler, *args, **kwargs):
 def _nr_sanic_error_handlers(wrapped, instance, args, kwargs):
     exception, handler = _bind_error_add(*args, **kwargs)
 
-    if not hasattr(handler, '_nr_error_handler_name'):
-        name = callable_name(handler)
-        setattr(handler, '_nr_error_handler_name', name)
-
+    # Cache the callable_name on the handler object
+    callable_name(handler)
     wrapped_handler = _nr_wrapper_error_handler_(handler)
 
     return wrapped(exception, wrapped_handler)
@@ -267,37 +250,37 @@ def _nr_sanic_response_parse_headers(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
-@function_wrapper
-def _nr_wrapper_middleware_(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
+def _nr_wrapper_middleware_(attach_to):
+    is_request_middleware = attach_to == 'request'
 
-    if transaction is None:
-        return wrapped(*args, **kwargs)
+    @function_wrapper
+    def _wrapper(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
 
-    name = None
-    if hasattr(wrapped, '_nr_middleware_name'):
-        name = wrapped._nr_middleware_name
+        if transaction is None:
+            return wrapped(*args, **kwargs)
 
-    if name is None:
         name = callable_name(wrapped)
-        setattr(wrapped, '_nr_middleware_name', name)
+        if is_request_middleware:
+            transaction.set_transaction_name(name, priority=2)
+        response = function_trace(name=name)(wrapped)(*args, **kwargs)
 
-    return function_trace(name=name)(wrapped)(*args, **kwargs)
+        return response
+
+    return _wrapper
 
 
-def _bind_middleware(middleware, *args, **kwargs):
-    return middleware, args, kwargs
+def _bind_middleware(middleware, attach_to='request', *args, **kwargs):
+    return middleware, attach_to
 
 
 def _nr_sanic_register_middleware_(wrapped, instance, args, kwargs):
-    middleware, args, kwargs = _bind_middleware(*args, **kwargs)
+    middleware, attach_to = _bind_middleware(*args, **kwargs)
 
-    if not hasattr(middleware, '_nr_middleware_name'):
-        name = callable_name(middleware)
-        setattr(middleware, '_nr_middleware_name', name)
-
-    wrapped_middleware = _nr_wrapper_middleware_(middleware)
-    wrapped(wrapped_middleware, *args, **kwargs)
+    # Cache the callable_name on the middleware object
+    callable_name(middleware)
+    wrapped_middleware = _nr_wrapper_middleware_(attach_to)(middleware)
+    wrapped(wrapped_middleware, attach_to)
     return middleware
 
 

@@ -1,7 +1,8 @@
 from sanic import Sanic
-from sanic.exceptions import NotFound, SanicException
+from sanic.exceptions import NotFound, SanicException, ServerError
 from sanic.handlers import ErrorHandler
 from sanic.response import json, stream
+from sanic.router import Router
 
 
 class CustomErrorHandler(ErrorHandler):
@@ -12,20 +13,20 @@ class CustomErrorHandler(ErrorHandler):
             return super(CustomErrorHandler, self).response(request, exception)
 
 
-app = Sanic(error_handler=CustomErrorHandler())
+class CustomRouter(Router):
+    def get(self, request):
+        handler, args, kwargs, uri = super(CustomRouter, self).get(request)
+        if request.path == '/server-error':
+            handler = None
+        return handler, args, kwargs, uri
+
+
+app = Sanic(error_handler=CustomErrorHandler(), router=CustomRouter())
 
 
 @app.route('/')
 async def index(request):
     return json({'hello': 'world'})
-
-
-@app.route('/misnamed')
-async def misnamed(request):
-    return json({'hello': 'world'})
-
-
-del misnamed._nr_handler_name
 
 
 @app.route('/error')
@@ -59,14 +60,6 @@ async def request_middleware(request):
 app.register_middleware(request_middleware)
 
 
-@app.middleware('response')
-async def misnamed_response_middleware(request, response):
-    return None
-
-
-del misnamed_response_middleware._nr_middleware_name
-
-
 @app.route('/streaming')
 async def streaming(request):
     async def streaming_fn(response):
@@ -81,11 +74,21 @@ async def custom_header(request, header_key, header_value):
     return json({'hello': 'world'}, headers=custom_headers)
 
 
+@app.route('/server-error')
+async def server_error(request):
+    raise AssertionError('This handler should never be reached!')
+
+
 class CustomExceptionSync(SanicException):
     pass
 
 
 class CustomExceptionAsync(SanicException):
+    pass
+
+
+@app.exception(ServerError)
+def handle_server_error(request, exception):
     pass
 
 

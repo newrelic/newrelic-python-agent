@@ -163,14 +163,14 @@ def _nr_sanic_router_add(wrapped, instance, args, kwargs):
 
 @function_wrapper
 def _nr_sanic_router_get(wrapped, instance, args, kwargs):
-    # Ignore all transactions that generate an exception in the router get
-    # since the transaction is named after the URI at this point
+    # Rename all transactions that generate an exception in the router get
     try:
         return wrapped(*args, **kwargs)
     except Exception:
         transaction = current_transaction()
         if transaction:
-            transaction.ignore_transaction = True
+            name = callable_name(wrapped)
+            transaction.set_transaction_name(name, priority=2)
         raise
 
 
@@ -251,6 +251,8 @@ def _sanic_app_init(wrapped, instance, args, kwargs):
     if hasattr(router, 'add'):
         router.add = _nr_sanic_router_add(router.add)
     if hasattr(router, 'get'):
+        # Cache the callable_name on the router.get
+        callable_name(router.get)
         router.get = _nr_sanic_router_get(router.get)
 
     return result

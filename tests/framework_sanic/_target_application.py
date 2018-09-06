@@ -10,7 +10,11 @@ class CustomErrorHandler(ErrorHandler):
         if isinstance(exception, ZeroDivisionError):
             raise ValueError('DOUBLE OOPS')
         else:
-            return super(CustomErrorHandler, self).response(request, exception)
+            base_response = ErrorHandler.response
+            if hasattr(base_response, '__wrapped__'):
+                base_response = base_response.__wrapped__
+
+            return base_response(self, request, exception)
 
     def add(self, exception, handler, *args, **kwargs):
         base_add = ErrorHandler.add

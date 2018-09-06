@@ -150,6 +150,7 @@ def _nr_wrapper_handler_(wrapped, instance, args, kwargs):
     return function_trace(name=name)(wrapped)(*args, **kwargs)
 
 
+@function_wrapper
 def _nr_sanic_router_add(wrapped, instance, args, kwargs):
     uri, methods, handler, args, kwargs = _bind_add(*args, **kwargs)
 
@@ -158,6 +159,19 @@ def _nr_sanic_router_add(wrapped, instance, args, kwargs):
     wrapped_handler = _nr_wrapper_handler_(handler)
 
     return wrapped(uri, methods, wrapped_handler, *args, **kwargs)
+
+
+@function_wrapper
+def _nr_sanic_router_get(wrapped, instance, args, kwargs):
+    # Ignore all transactions that generate an exception in the router get
+    # since the transaction is named after the URI at this point
+    try:
+        return wrapped(*args, **kwargs)
+    except Exception:
+        transaction = current_transaction()
+        if transaction:
+            transaction.ignore_transaction = True
+        raise
 
 
 @function_wrapper
@@ -227,6 +241,13 @@ def _sanic_app_init(wrapped, instance, args, kwargs):
     if hasattr(error_handler, 'response'):
         instance.error_handler.response = error_response(
                 error_handler.response)
+
+    router = getattr(instance, 'router')
+    if hasattr(router, 'add'):
+        router.add = _nr_sanic_router_add(router.add)
+    if hasattr(router, 'get'):
+        router.get = _nr_sanic_router_get(router.get)
+
     return result
 
 
@@ -288,11 +309,6 @@ def instrument_sanic_app(module):
         _sanic_app_init)
     wrap_function_wrapper(module, 'Sanic.register_middleware',
         _nr_sanic_register_middleware_)
-
-
-def instrument_sanic_router(module):
-    wrap_function_wrapper(module, 'Router.add',
-        _nr_sanic_router_add)
 
 
 def instrument_sanic_response(module):

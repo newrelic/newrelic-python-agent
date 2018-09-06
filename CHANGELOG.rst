@@ -10,7 +10,7 @@ unreleased
   Sanic applications will now show the calling application in transaction
   traces.
 
-- Explain plans were not generated when use psycopg2 named cursors
+- Explain plans were not generated when using psycopg2 named cursors
 
   When using named cursors in psycopg2, the agent attempted to generate an
   explain plan using the same named cursor. This resulted in a syntax error
@@ -23,6 +23,13 @@ unreleased
   If a bytes-like object is used instead of a string when making a SQL call, a
   traceback was seen in the logs with `TypeError: cannot use a string pattern
   on a bytes-like object`. This issue has now been fixed.
+
+- Save settings to `MessageTrace` objects
+
+  If an external call using an instrumented http external library (for example
+  `requests`) was used within a `MessageTrace`, a traceback was seen in the
+  logs with `AttributeError: 'MessageTrace' object has no attribute
+  'settings'`. This issue has now been fixed.
 
 
 4.2.0 (2018-07-31)
@@ -53,7 +60,8 @@ unreleased
   time spent in a Pyramid tween will be displayed in the transaction breakdown
   table and in the trace details of a transaction trace.
 
-- Custom Insights event data attached to transactions in excess of 100 events were omitted
+- Custom Insights event data attached to transactions in excess of 100 events
+  were omitted
 
   The agent may have failed to send custom event data (record_custom_event) to
   insights when recorded as part of a Transaction containing over 100 custom

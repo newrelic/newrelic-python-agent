@@ -515,6 +515,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/tests/test_cat_header_mixin.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/tests/test_cat_interface.py": {
         "hash": "n/a",
         "libraries": [

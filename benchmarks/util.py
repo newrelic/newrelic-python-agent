@@ -1,4 +1,5 @@
-from newrelic.api.transaction import Sentinel
+from newrelic.common.object_wrapper import FunctionWrapper
+from newrelic.api.transaction import Sentinel, Transaction
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.encoding_utils import json_encode, obfuscate
 from newrelic.core.config import finalize_application_settings
@@ -181,5 +182,145 @@ def TimeInstrumentBase(module):
             _TimeInstrumentBase.params.append(attribute)
 
     _TimeInstrumentBase.module = module
-
     return _TimeInstrumentBase
+
+
+class _TimeWrapsBase(object):
+    """
+    Base class for benchmarking hook points. Takes two arguments. The first is
+    the module object. The second is a list of "specs".
+
+    Each spec has the form of: (name, [optional_params])
+    optional_params is a dict with the following keys:
+
+    extra_attr:
+        list; default is [].
+        sometimes the wrapping function will expect the instrance to have some
+        other attributes, so figure out what they are and list them here.
+
+    wrapped_params:
+        int; default is 1.
+        this is the number of params the wrapped function expects when called.
+
+    returned_values:
+        int; default is 1.
+        sometimes the wrapper needs to call the wrapped function for some
+        reason; this is the number of values it will return.
+
+    returns_iterable:
+        bool; default is False.
+        set to True if this function yields a series of wrappers instead of
+        just the wrapped function.
+
+    via_wrap_function_wrapper:
+        bool; default is False.
+        set to True if this function is directly wrapped via FunctionWrapper
+        or wrap_function_wrapper instead of with a custom wrapper.
+
+    Example usage:
+        from benchmarks.util import TimeWrapBase, TimeWrappedBase
+        import newrelic.hooks.framework_django as framework_django
+
+        specs = [
+            ('wrap_view_handler'),
+            ('wrap_url_resolver_nnn', {
+                'extra_attr': ['name'],
+                'returned_values': 2
+            }),
+            # ...
+        ]
+
+        class TimeDjangoWrap(TimeWrapping(framework_django, *specs)):
+            pass
+
+        class TimeDjangoExec(TimeWrappedExecution(framework_django, *specs)):
+            pass
+    """
+
+    spec_param_defaults = {
+        'extra_attr': [],
+        'wrapped_params': 1,
+        'returned_values': 1,
+        'returns_iterable': False,
+        'via_wrap_function_wrapper': False
+    }
+
+    def setup(self, name):
+        spec = self.spec_index[name]
+        self.setup_wrap(spec)
+
+        self.transaction = Transaction(MockApplication())
+        self.transaction.__enter__()
+
+    def teardown(self, name):
+        self.transaction.__exit__(None, None, None)
+
+    def dummy(self, *args, **kwargs):
+        pass
+
+    def setup_wrap(self, spec):
+        self.to_test = spec['to_test']
+
+    @classmethod
+    def build_suite(cls, module, *spec_list):
+        cls.spec_index = {}
+        cls.params = []
+        cls.param_names = [cls.__name__.replace('_Time', '').lower()]
+
+        for spec in spec_list:
+            name, options = (spec if isinstance(spec, tuple) else (spec, {}))
+
+            spec = cls.spec_param_defaults.copy()
+            spec.update(options)
+            spec['to_test'] = getattr(module, name)
+
+            for extra_attr_name in spec['extra_attr']:
+                setattr(cls, extra_attr_name, VeryMagicMock())
+
+            cls.spec_index[name] = spec
+            cls.params.append(name)
+
+        return cls
+
+
+def TimeWrappingBase(module, *spec):
+    class TimeWrapping(_TimeWrapsBase):
+        def time_wrap(self, name):
+            self.to_test(self.dummy)
+
+    return TimeWrapping.build_suite(module, *spec)
+
+
+def TimeWrappedExecutionBase(module, *spec):
+    class TimeWrappedExecution(_TimeWrapsBase):
+        def setup(self, name):
+            super(TimeWrappedExecution, self).setup(name)
+            spec = self.spec_index[name]
+
+            self.dummy_args = [VeryMagicMock()] * spec['wrapped_params']
+            self.dummy_ret = (
+                [VeryMagicMock()] * spec['returned_values']
+                if spec['returned_values'] > 1 else VeryMagicMock())
+
+        def setup_wrap(self, spec):
+            super(TimeWrappedExecution, self).setup_wrap(spec)
+
+            if spec['via_wrap_function_wrapper']:
+                self.wrapped_dummy = FunctionWrapper(self.dummy, self.to_test)
+
+            elif spec['returns_iterable']:
+                self.wrapped_dummy = self.to_test([self.dummy])
+
+            else:
+                self.wrapped_dummy = self.to_test(self.dummy)
+
+            if '__iter__' in dir(self.wrapped_dummy):
+                self.wrapped_dummy = next(self.wrapped_dummy)
+
+        def time_execute_wrap(self, name):
+            return (self.wrapped_dummy)(*self.dummy_args)
+
+        def dummy(self, *args, **kwargs):
+            return self.dummy_ret
+
+    return TimeWrappedExecution.build_suite(module, *spec)

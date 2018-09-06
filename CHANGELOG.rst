@@ -1,6 +1,15 @@
 unreleased
 ----------
 
+- Add instrumentation for Sanic framework
+
+  Data is now automatically collected for applications using the Sanic
+  framework. Data for Sanic applications will appear in both APM and Insights.
+  Additionally, cross application tracing and distributed tracing is supported
+  for incoming requests for Sanic applications. In addition to service maps,
+  Sanic applications will now show the calling application in transaction
+  traces.
+
 - Explain plans were not generated when using psycopg2 named cursors
 
   When using named cursors in psycopg2, the agent attempted to generate an

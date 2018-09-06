@@ -284,15 +284,19 @@ def test_error_handler_transaction_naming(app):
         app.app.response_middleware = original_response_middleware
 
 
-@function_not_called('newrelic.core.stats_engine',
-        'StatsEngine.record_transaction')
-def test_unknown_route_is_ignored(app):
+@validate_transaction_metrics(
+        '_target_application:CustomRouter.get'
+)
+def test_unknown_route(app):
     response = app.fetch('get', '/what-route')
     assert response.status == 404
 
 
-@function_not_called('newrelic.core.stats_engine',
-        'StatsEngine.record_transaction')
-def test_bad_method_is_ignored(app):
+@validate_transaction_metrics(
+        '_target_application:CustomRouter.get'
+)
+@override_ignore_status_codes([405])
+@validate_transaction_errors(errors=[])
+def test_bad_method(app):
     response = app.fetch('post', '/')
     assert response.status == 405

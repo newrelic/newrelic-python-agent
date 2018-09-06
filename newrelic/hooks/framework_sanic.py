@@ -150,6 +150,7 @@ def _nr_wrapper_handler_(wrapped, instance, args, kwargs):
     return function_trace(name=name)(wrapped)(*args, **kwargs)
 
 
+@function_wrapper
 def _nr_sanic_router_add(wrapped, instance, args, kwargs):
     uri, methods, handler, args, kwargs = _bind_add(*args, **kwargs)
 
@@ -158,6 +159,19 @@ def _nr_sanic_router_add(wrapped, instance, args, kwargs):
     wrapped_handler = _nr_wrapper_handler_(handler)
 
     return wrapped(uri, methods, wrapped_handler, *args, **kwargs)
+
+
+@function_wrapper
+def _nr_sanic_router_get(wrapped, instance, args, kwargs):
+    # Rename all transactions that generate an exception in the router get
+    try:
+        return wrapped(*args, **kwargs)
+    except Exception:
+        transaction = current_transaction()
+        if transaction:
+            name = callable_name(wrapped)
+            transaction.set_transaction_name(name, priority=2)
+        raise
 
 
 @function_wrapper
@@ -182,6 +196,7 @@ def _bind_error_add(exception, handler, *args, **kwargs):
     return exception, handler
 
 
+@function_wrapper
 def _nr_sanic_error_handlers(wrapped, instance, args, kwargs):
     exception, handler = _bind_error_add(*args, **kwargs)
 
@@ -223,10 +238,23 @@ def error_response(wrapped, instance, args, kwargs):
 
 def _sanic_app_init(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
+
     error_handler = getattr(instance, 'error_handler')
     if hasattr(error_handler, 'response'):
         instance.error_handler.response = error_response(
                 error_handler.response)
+    if hasattr(error_handler, 'add'):
+        error_handler.add = _nr_sanic_error_handlers(
+                error_handler.add)
+
+    router = getattr(instance, 'router')
+    if hasattr(router, 'add'):
+        router.add = _nr_sanic_router_add(router.add)
+    if hasattr(router, 'get'):
+        # Cache the callable_name on the router.get
+        callable_name(router.get)
+        router.get = _nr_sanic_router_get(router.get)
+
     return result
 
 
@@ -290,16 +318,6 @@ def instrument_sanic_app(module):
         _nr_sanic_register_middleware_)
 
 
-def instrument_sanic_router(module):
-    wrap_function_wrapper(module, 'Router.add',
-        _nr_sanic_router_add)
-
-
 def instrument_sanic_response(module):
     wrap_function_wrapper(module, 'BaseHTTPResponse._parse_headers',
         _nr_sanic_response_parse_headers)
-
-
-def instrument_sanic_handlers(module):
-    wrap_function_wrapper(module, 'ErrorHandler.add',
-        _nr_sanic_error_handlers)

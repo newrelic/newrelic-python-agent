@@ -10,12 +10,32 @@ class CustomErrorHandler(ErrorHandler):
         if isinstance(exception, ZeroDivisionError):
             raise ValueError('DOUBLE OOPS')
         else:
-            return super(CustomErrorHandler, self).response(request, exception)
+            base_response = ErrorHandler.response
+            if hasattr(base_response, '__wrapped__'):
+                base_response = base_response.__wrapped__
+
+            return base_response(self, request, exception)
+
+    def add(self, exception, handler, *args, **kwargs):
+        base_add = ErrorHandler.add
+        if hasattr(base_add, '__wrapped__'):
+            base_add = base_add.__wrapped__
+        base_add(self, exception, handler)
 
 
 class CustomRouter(Router):
+    def add(self, *args, **kwargs):
+        base_add = Router.add
+        if hasattr(base_add, '__wrapped__'):
+            base_add = base_add.__wrapped__
+        return base_add(self, *args, **kwargs)
+
     def get(self, request):
-        handler, args, kwargs, uri = super(CustomRouter, self).get(request)
+        base_get = Router.get
+        if hasattr(base_get, '__wrapped__'):
+            base_get = base_get.__wrapped__
+
+        handler, args, kwargs, uri = base_get(self, request)
         if request.path == '/server-error':
             handler = None
         return handler, args, kwargs, uri

@@ -2,7 +2,6 @@ import logging
 import random
 import time
 import traceback
-import weakref
 
 _logger = logging.getLogger(__name__)
 
@@ -12,6 +11,7 @@ class TimeTrace(object):
     node = None
 
     def __init__(self, transaction):
+        self.transaction = transaction
         self.parent = None
         self.child_count = 0
         self.children = []
@@ -29,14 +29,12 @@ class TimeTrace(object):
         # 16-digit random hex. Padded with zeros in the front.
         self.guid = '%016x' % random.getrandbits(64)
 
-        self._transaction = None
         if transaction:
-            self._transaction = weakref.ref(transaction)
 
             # Don't do further tracing of transaction if
             # it has been explicitly stopped.
             if transaction.stopped or not transaction.enabled:
-                self._transaction = None
+                self.transaction = None
                 return
 
             self.parent = transaction.active_node()
@@ -49,7 +47,7 @@ class TimeTrace(object):
                 # must not trace.
                 if self.parent.exited:
                     self.parent = None
-                    self._transaction = None
+                    self.transaction = None
                     return
 
                 elif not self.parent.terminal_node():
@@ -57,11 +55,6 @@ class TimeTrace(object):
 
             self.should_record_segment_params = (
                     transaction.should_record_segment_params)
-
-    @property
-    def transaction(self):
-        if self._transaction:
-            return self._transaction()
 
     def __enter__(self):
         if not self.transaction:
@@ -73,7 +66,7 @@ class TimeTrace(object):
         parent = self.parent
 
         if not parent or parent.terminal_node():
-            self._transaction = None
+            self.transaction = None
             self.parent = None
             return parent
 
@@ -177,7 +170,7 @@ class TimeTrace(object):
         # this call though.
 
         transaction = self.transaction
-        self._transaction = None
+        self.transaction = None
 
         # Pop ourselves as current node.
 

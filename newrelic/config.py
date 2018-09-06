@@ -546,6 +546,7 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'heroku.dyno_name_prefixes_to_shorten',
                      'get', _map_split_strings)
+    _process_setting(section, 'serverless_mode', 'getboolean', None)
 
 
 # Loading of configuration from specified file and for specified

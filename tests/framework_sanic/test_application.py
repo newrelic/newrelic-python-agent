@@ -282,3 +282,17 @@ def test_error_handler_transaction_naming(app):
     finally:
         app.app.request_middleware = original_request_middleware
         app.app.response_middleware = original_response_middleware
+
+
+@function_not_called('newrelic.core.stats_engine',
+        'StatsEngine.record_transaction')
+def test_unknown_route_is_ignored(app):
+    response = app.fetch('get', '/what-route')
+    assert response.status == 404
+
+
+@function_not_called('newrelic.core.stats_engine',
+        'StatsEngine.record_transaction')
+def test_bad_method_is_ignored(app):
+    response = app.fetch('post', '/')
+    assert response.status == 405

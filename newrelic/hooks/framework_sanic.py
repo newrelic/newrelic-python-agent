@@ -196,6 +196,7 @@ def _bind_error_add(exception, handler, *args, **kwargs):
     return exception, handler
 
 
+@function_wrapper
 def _nr_sanic_error_handlers(wrapped, instance, args, kwargs):
     exception, handler = _bind_error_add(*args, **kwargs)
 
@@ -237,10 +238,14 @@ def error_response(wrapped, instance, args, kwargs):
 
 def _sanic_app_init(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
+
     error_handler = getattr(instance, 'error_handler')
     if hasattr(error_handler, 'response'):
         instance.error_handler.response = error_response(
                 error_handler.response)
+    if hasattr(error_handler, 'add'):
+        error_handler.add = _nr_sanic_error_handlers(
+                error_handler.add)
 
     router = getattr(instance, 'router')
     if hasattr(router, 'add'):
@@ -314,8 +319,3 @@ def instrument_sanic_app(module):
 def instrument_sanic_response(module):
     wrap_function_wrapper(module, 'BaseHTTPResponse._parse_headers',
         _nr_sanic_response_parse_headers)
-
-
-def instrument_sanic_handlers(module):
-    wrap_function_wrapper(module, 'ErrorHandler.add',
-        _nr_sanic_error_handlers)

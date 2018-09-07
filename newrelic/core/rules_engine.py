@@ -6,10 +6,12 @@ _NormalizationRule = namedtuple('_NormalizationRule',
         ['match_expression', 'replacement', 'ignore', 'eval_order',
         'terminate_chain', 'each_segment', 'replace_all'])
 
+
 class NormalizationRule(_NormalizationRule):
 
     def __init__(self, *args, **kwargs):
-        self.match_expression_re = re.compile(self.match_expression)
+        self.match_expression_re = re.compile(
+            self.match_expression, re.IGNORECASE)
 
     def apply(self, string):
         count = 1
@@ -17,6 +19,7 @@ class NormalizationRule(_NormalizationRule):
             count = 0
 
         return self.match_expression_re.subn(self.replacement, string, count)
+
 
 class RulesEngine(object):
 
@@ -89,6 +92,7 @@ class RulesEngine(object):
                 break
 
         return (final_string, ignore)
+
 
 class SegmentCollapseEngine(object):
     """Segment names in transaction name are collapsed using the rules
@@ -174,7 +178,7 @@ class SegmentCollapseEngine(object):
 
         if whitelist_terms is None:
             return txn_name, False
- 
+
         # Now split the name into segments. The name could be either a
         # byte string or a Unicode string. The separator will be coerced
         # to the correct type as necessary and the segments will always

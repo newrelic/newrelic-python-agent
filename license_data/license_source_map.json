@@ -515,6 +515,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/tests/test_cat_header_mixin.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/tests/test_cat_interface.py": {
         "hash": "n/a",
         "libraries": [
@@ -1602,6 +1608,12 @@
         ]
     },
     "newrelic/hooks/framework_pyramid.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/framework_sanic.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

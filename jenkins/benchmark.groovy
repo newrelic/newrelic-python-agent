@@ -4,11 +4,11 @@ String organization = 'python-agent'
 String repoGHE = 'python_agent'
 String repoFull = "${organization}/${repoGHE}"
 String testSuffix = "__integration-test"
-String slackChannel = '#python-agent'
+String slackChannel = '#python-agent-dev'
 
 use(extensions) {
     baseJob("_BENCHMARKS-develop_") {
-        label('py-ec2-linux')
+        label('py-benchmarking')
         repo(repoFull)
         branch('develop')
 
@@ -22,7 +22,9 @@ use(extensions) {
 
             steps {
                 shell('./jenkins/scripts/prep_node_for_test.sh')
-                shell('./docker/packnsend run ./jenkins/scripts/run_benchmark.sh')
+                shell('./jenkins/scripts/prep_benchmarks.sh')
+                shell('./docker/packnsend asvrun ./jenkins/scripts/run_benchmarks.sh')
+                shell('./jenkins/scripts/commit_benchmarks.sh')
             }
 
             slackQuiet(slackChannel)

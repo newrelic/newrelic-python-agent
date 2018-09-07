@@ -25,6 +25,22 @@ except ImportError:
 from newrelic.packages.requests.packages.urllib3 import util as ul3_util
 
 
+# These functions return True if a non-default connection or cursor class is
+# used. If the default connection and cursor are used without any unknown
+# arguments, we can safely drop all cursor parameters to generate explain
+# plans. Explain plans do not work with named cursors.
+def _bind_connect(
+        dsn=None, connection_factory=None, cursor_factory=None,
+        *args, **kwargs):
+    return bool(connection_factory or cursor_factory)
+
+
+def _bind_cursor(
+        name=None, cursor_factory=None, scrollable=None,
+        withhold=False, *args, **kwargs):
+    return bool(cursor_factory or args or kwargs)
+
+
 class CursorWrapper(DBAPI2CursorWrapper):
 
     def execute(self, sql, parameters=DEFAULT, *args, **kwargs):
@@ -45,7 +61,7 @@ class CursorWrapper(DBAPI2CursorWrapper):
         return super(CursorWrapper, self).executemany(sql, seq_of_parameters)
 
 
-class ConnectionWrapper(DBAPI2ConnectionWrapper):
+class ConnectionSaveParamsWrapper(DBAPI2ConnectionWrapper):
 
     __cursor_wrapper__ = CursorWrapper
 
@@ -77,9 +93,32 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
                     return self.__wrapped__.__exit__(exc, value, tb)
 
 
+# This connection wrapper does not save cursor parameters for explain plans. It
+# is only used for the default connection class.
+class ConnectionWrapper(ConnectionSaveParamsWrapper):
+
+    def cursor(self, *args, **kwargs):
+        # If any unknown cursor params are detected or a cursor factory is
+        # used, store params for explain plans later.
+        if _bind_cursor(*args, **kwargs):
+            cursor_params = (args, kwargs)
+        else:
+            cursor_params = None
+
+        return self.__cursor_wrapper__(self.__wrapped__.cursor(
+                *args, **kwargs), self._nr_dbapi2_module,
+                self._nr_connect_params, cursor_params)
+
+
 class ConnectionFactory(DBAPI2ConnectionFactory):
 
     __connection_wrapper__ = ConnectionWrapper
+
+    def __call__(self, *args, **kwargs):
+        if _bind_connect(*args, **kwargs):
+            self.__connection_wrapper__ = ConnectionSaveParamsWrapper
+
+        return super(ConnectionFactory, self).__call__(*args, **kwargs)
 
 
 def instance_info(args, kwargs):

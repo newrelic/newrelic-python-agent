@@ -27,13 +27,13 @@ code_coverage = code_coverage_fixture(source=_coverage_source)
 @pytest.fixture()
 def app(request):
     from tornado.testing import AsyncHTTPTestCase
-    from tornado.ioloop import IOLoop, PollIOLoop
+    import tornado.ioloop
 
     # Starting with Tornado 5, when available it will use the asyncio event
     # loop. Only the asyncio loop is allowed to be used in this case.
 
-    if IOLoop.configurable_default().__name__ == 'AsyncIOLoop':
-        ioloop = IOLoop.configurable_default()
+    if tornado.ioloop.IOLoop.configurable_default().__name__ == 'AsyncIOLoop':
+        ioloop = tornado.ioloop.IOLoop.configurable_default()
     else:
         ioloop = None
         try:
@@ -42,7 +42,10 @@ def app(request):
             pass
         finally:
             if ioloop is None:
-                ioloop = PollIOLoop.configurable_default()
+                if hasattr(tornado.ioloop, 'PollIOLoop'):
+                    ioloop = tornado.ioloop.PollIOLoop.configurable_default()
+                else:
+                    ioloop = tornado.ioloop.IOLoop.configurable_default()
 
     def _bind_unused_port():
         from tornado import netutil
@@ -81,8 +84,8 @@ def app(request):
             return self._port
 
         def get_new_ioloop(self):
-            IOLoop.configure(ioloop)
-            return IOLoop()
+            tornado.ioloop.IOLoop.configure(ioloop)
+            return tornado.ioloop.IOLoop()
 
         def get_app(self):
             from _target_application import make_app

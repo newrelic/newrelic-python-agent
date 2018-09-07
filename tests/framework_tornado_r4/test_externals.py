@@ -38,7 +38,8 @@ def _get_open_port():
 
 @background_task(name='make_request')
 def make_request(port, req_type, client_cls, count=1, raise_error=True,
-        **kwargs):
+        as_kwargs=True, **kwargs):
+    import tornado.curl_httpclient
     import tornado.gen
     import tornado.httpclient
     import tornado.ioloop
@@ -57,7 +58,7 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True,
     if client_cls == 'AsyncHTTPClient':
         cls.configure(None)
     elif client_cls == 'CurlAsyncHTTPClient':
-        cls.configure('tornado.curl_httpclient.CurlAsyncHTTPClient')
+        cls.configure(tornado.curl_httpclient.CurlAsyncHTTPClient)
     elif client_cls == 'HTTPClient':
         cls = tornado.httpclient.HTTPClient
     elif client_cls == 'CustomAsyncHTTPClient':
@@ -66,6 +67,7 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True,
         raise ValueError("Received unknown client type: %s" % client_cls)
 
     client = cls(force_instance=True)
+    callback = None
 
     uri = 'http://localhost:%s/echo-headers' % port
     if req_type == 'class':
@@ -79,8 +81,15 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True,
     @tornado.gen.coroutine
     def _make_request():
 
-        futures = [client.fetch(req, raise_error=raise_error, **kwargs)
-                for _ in range(count)]
+        if as_kwargs:
+            futures = [client.fetch(req, raise_error=raise_error, **kwargs)
+                    for _ in range(count)]
+        elif tornado.version_info < (6, 0):
+            futures = [client.fetch(req, callback, raise_error, **kwargs)
+                    for _ in range(count)]
+        else:
+            futures = [client.fetch(req, raise_error, **kwargs)
+                    for _ in range(count)]
         responses = yield tornado.gen.multi_future(futures)
         response = responses[0]
 
@@ -95,9 +104,15 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True,
         return response
 
 
-@pytest.mark.parametrize('client_class',
-        ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient',
-            'CustomAsyncHTTPClient'])
+@pytest.mark.parametrize('client_class,as_kwargs', [
+    ('AsyncHTTPClient', True),
+    ('AsyncHTTPClient', False),
+    ('CurlAsyncHTTPClient', True),
+    ('CurlAsyncHTTPClient', False),
+    ('CustomAsyncHTTPClient', True),
+    ('CustomAsyncHTTPClient', False),
+    ('HTTPClient', True),
+])
 @pytest.mark.parametrize('cat_enabled,user_header', [
     (True, None),
     (True, 'X-NewRelic-ID'),
@@ -111,8 +126,8 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True,
     (True, False),
     (False, False),
 ))
-def test_httpclient(cat_enabled, request_type, client_class,
-        user_header, num_requests, distributed_tracing, span_events, external):
+def test_httpclient(cat_enabled, request_type, client_class, user_header,
+        num_requests, distributed_tracing, span_events, external, as_kwargs):
 
     port = external.port
 
@@ -137,7 +152,7 @@ def test_httpclient(cat_enabled, request_type, client_class,
             headers = {user_header: 'USER'}
 
         response = make_request(port, request_type, client_class,
-                headers=headers, count=num_requests)
+                headers=headers, count=num_requests, as_kwargs=as_kwargs)
         assert response.code == 200
 
         body = response.body

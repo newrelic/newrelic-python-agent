@@ -45,6 +45,7 @@ htmlcov
 /license_data/license_errors.txt
 
 .tox*
+.pytest_cache
 
 audit.log
 testing.log
@@ -61,3 +62,6 @@ testing.log
 /tests/framework_web2py/applications/*/databases/
 /tests/framework_web2py/applications/*/private/
 /tests/framework_web2py/applications/*/errors/
+
+# asv benchmarking
+.asv

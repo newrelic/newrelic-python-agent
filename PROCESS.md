@@ -329,7 +329,8 @@ value is the next number in the Build History section of
 [deploy-s3]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Deploy/job/deploy-to-s3/
 
 23. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM
-systems configuration page at: https://rpm-admin.newrelic.com/admin/system_configurations.
+systems configuration pages at: https://rpm-admin.newrelic.com/admin/system_configurations
+and https://rpm-admin.eu.newrelic.com/admin/system_configurations.
 
     If we need to notify existing users to update their older agents, also
 update the ``min_python_agent_version`` to ``A.B.C.D``.
@@ -449,7 +450,7 @@ release as a new version.
 
 1. Notify the #documentation channel hero and ask them to unpublish the [release notes](https://docs.newrelic.com/docs/release-notes/agent-release-notes/python-release-notes)
 
-1. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM [systems configuration page](https://rpm-admin.newrelic.com/admin/system_configurations) to point to the previous agent version.
+1. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM [systems configuration page](https://rpm-admin.newrelic.com/admin/system_configurations) and [eu systems configuration page](https://rpm-admin.eu.newrelic.com/admin/system_configurations) to point to the previous agent version.
 
 1. Run the [undeploy-from-s3](https://python-agent-build.pdx.vm.datanerd.us/view/PY_Deploy/job/undeploy-from-s3/) job on Jenkins using the most recent agent version. Use the full version number (in the form of ``A.B.C.D``).
 

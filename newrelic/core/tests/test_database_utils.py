@@ -3,8 +3,10 @@ from __future__ import print_function
 import pytest
 import unittest
 
+from newrelic.core.config import global_settings
 from newrelic.core.database_utils import (SQLStatement,
     _query_result_dicts_to_tuples)
+import newrelic.packages.six as six
 
 GENERAL_PARSE_TESTS = [
     (
@@ -975,6 +977,35 @@ class TestDatabase(unittest.TestCase):
         statement = SQLStatement(sql, dummy_database)
         actual_result = statement.obfuscated
         self.assertEqual(expected_result, actual_result)
+
+    def test_bytes_type_sql(self):
+        dummy_database = DummySQLDatabase()
+        sql = b'SELECT * FROM foo'
+        expected_result = sql.decode('utf-8')
+        statement = SQLStatement(sql, dummy_database)
+        actual_result = statement.obfuscated
+        self.assertEqual(expected_result, actual_result)
+
+    def test_other_encoding_type_sql(self):
+        settings = global_settings()
+        original_log = settings.debug.log_explain_plan_queries
+        settings.debug.log_explain_plan_queries = True
+
+        try:
+            dummy_database = DummySQLDatabase()
+            sql = 'SELECT * FROM foo'
+            sql = sql.encode('cp424')
+            expected_result = sql
+            statement = SQLStatement(sql, dummy_database)
+
+            if six.PY3:
+                with pytest.raises(TypeError):
+                    statement.obfuscated
+            else:
+                actual_result = statement.obfuscated
+                self.assertEqual(expected_result, actual_result)
+        finally:
+            settings.debug.log_explain_plan_queries = original_log
 
 
 class TestDatabaseHelpers(unittest.TestCase):

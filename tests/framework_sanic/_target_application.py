@@ -57,7 +57,7 @@ async def error(request):
 # see write_callback in confest.create_request_coroutine
 @app.route('/write_response_error')
 async def write_response_error(request):
-    return json({'hello': 'wh-wh-whatever'})
+    return json({'url': 'write_response_error'})
 
 
 @app.route('/404')

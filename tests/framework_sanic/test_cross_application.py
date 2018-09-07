@@ -101,20 +101,20 @@ def test_cat_response_headers(app, inbound_payload, expected_intrinsics,
     def _test():
         cat_headers = make_cross_agent_headers(inbound_payload, ENCODING_KEY,
                 cat_id)
-        raw_response = app.fetch('get', url, headers=dict(cat_headers),
-                raw=True)
+        response = app.fetch('get', url, headers=dict(cat_headers))
 
         if expected_intrinsics:
             # test valid CAT response header
-            assert b'X-NewRelic-App-Data' in raw_response, raw_response
-            cat_response_header = _get_cat_response_header(raw_response)
+            assert b'X-NewRelic-App-Data' in response.raw_headers
+            cat_response_header = _get_cat_response_header(
+                    response.raw_headers)
 
             app_data = json.loads(deobfuscate(cat_response_header,
                     ENCODING_KEY))
             assert app_data[0] == cat_id
             assert app_data[1] == ('WebTransaction/Function/%s' % metric_name)
         else:
-            assert b'X-NewRelic-App-Data' not in raw_response
+            assert b'X-NewRelic-App-Data' not in response.raw_headers
 
     _test()
 
@@ -128,7 +128,7 @@ def test_cat_response_custom_header(app):
     cat_headers = make_cross_agent_headers(inbound_payload, ENCODING_KEY,
             cat_id)
 
-    raw_response = app.fetch('get', '/custom-header/%s/%s' % (
+    response = app.fetch('get', '/custom-header/%s/%s' % (
                 'X-NewRelic-App-Data', custom_header_value),
-            headers=dict(cat_headers), raw=True)
-    assert custom_header_value in raw_response, raw_response
+            headers=dict(cat_headers))
+    assert custom_header_value in response.raw_headers, response.raw_headers

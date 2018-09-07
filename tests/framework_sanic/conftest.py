@@ -46,40 +46,17 @@ def create_request_class(method, url, headers=None):
     return _request
 
 
-class TestTransport(object):
-    def __init__(self, responses, raw=False):
-        self.raw = raw
-        if self.raw:
-            self.responses = responses
-            self.responses.append(b'')
-
-    def write(self, data):
-        if self.raw:
-            self.responses[0] += data
-
-
-def create_request_coroutine(app, method, url, headers=None, responses=None,
-        raw=False):
+def create_request_coroutine(app, method, url, headers=None, responses=None):
     if responses is None:
         responses = []
 
     def write_callback(response):
-        raw_response = response.output()
-
-        # for test_recorded_error[write_response_error]
-        if b'wh-wh-whatever' in raw_response:
-            raise ValueError('whatever.')
-
-        if raw:
-            responses.append(raw_response)
-        else:
-            responses.append(response)
+        response.raw_headers = response.output()
+        responses.append(response)
 
     async def stream_callback(response):
-        response.transport = TestTransport(responses, raw=raw)
-        await response.stream()
-        if not raw:
-            responses.append(response)
+        response.raw_headers = response.get_headers()
+        responses.append(response)
 
     headers = headers or {}
     coro = app.handle_request(
@@ -90,10 +67,9 @@ def create_request_coroutine(app, method, url, headers=None, responses=None,
     return coro
 
 
-def request(app, method, url, headers=None, raw=False):
+def request(app, method, url, headers=None):
     responses = []
-    coro = create_request_coroutine(app, method, url, headers, responses,
-            raw=raw)
+    coro = create_request_coroutine(app, method, url, headers, responses)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(coro)
     return responses[0]
@@ -103,8 +79,8 @@ class TestApplication(object):
     def __init__(self, app):
         self.app = app
 
-    def fetch(self, method, url, headers=None, raw=False):
-        return request(self.app, method, url, headers, raw=raw)
+    def fetch(self, method, url, headers=None):
+        return request(self.app, method, url, headers)
 
 
 @pytest.fixture()

@@ -52,6 +52,9 @@ def create_request_coroutine(app, method, url, headers=None, responses=None):
 
     def write_callback(response):
         response.raw_headers = response.output()
+        if b'write_response_error' in response.raw_headers:
+            raise ValueError()
+
         responses.append(response)
 
     async def stream_callback(response):

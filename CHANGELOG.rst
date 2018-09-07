@@ -1,6 +1,9 @@
 unreleased
 ----------
 
+4.4.0 (2018-09-11)
+------------------
+
 - Add instrumentation for Sanic framework
 
   Data is now automatically collected for applications using the Sanic

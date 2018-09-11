@@ -144,6 +144,15 @@ class TestSampledDataSet(unittest.TestCase):
         instance.add('x')
         self.assertEqual(list(instance.samples), [])
 
+    # regression test for PYTHON-2964
+    def test_incomparable_entries(self):
+        instance = SampledDataSet(100)
+
+        for i in range(102):
+            instance.add({'a': i}, priority=0.5)
+
+        self.assertEqual(100, len(list(instance.samples)))
+
 
 if __name__ == '__main__':
     unittest.main()

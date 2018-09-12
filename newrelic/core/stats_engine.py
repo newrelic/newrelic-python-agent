@@ -298,7 +298,7 @@ class SampledDataSet(object):
         if priority is None:
             priority = random.random()
 
-        entry = (priority, sample)
+        entry = (priority, self.num_seen, sample)
         if self.num_seen == self.capacity:
             self.pq.append(entry)
             self.heap = self.heap or heapify(self.pq) or True
@@ -311,7 +311,7 @@ class SampledDataSet(object):
             heapreplace(self.pq, entry)
 
     def merge(self, other_data_set):
-        for priority, sample in other_data_set.pq:
+        for priority, seen_at, sample in other_data_set.pq:
             self.add(sample, priority)
 
         # Merge the num_seen from the other_data_set, but take care not to

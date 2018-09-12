@@ -31,7 +31,8 @@ def validate_span_events(exact_intrinsics={}, expected_intrinsics=[],
             except:
                 raise
             else:
-                events = [event for priority, event in instance.span_events.pq]
+                events = [event for priority, seen_at, event
+                                 in instance.span_events.pq]
                 recorded_span_events.append(events)
 
             return result

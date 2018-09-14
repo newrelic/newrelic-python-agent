@@ -209,6 +209,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/lambda_handler.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/memcache_trace.py": {
         "hash": "n/a",
         "libraries": [

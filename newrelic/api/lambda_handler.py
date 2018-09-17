@@ -14,7 +14,9 @@ COLD_START_TIME = None
 
 def process_event(event):
     try:
-        if 'headers' in event and 'requestContext' in event:
+        if ('headers' in event and
+                'httpMethod' in event and
+                'path' in event):
             environ = {
                 'REQUEST_METHOD': event['httpMethod'],
                 'REQUEST_URI': event['path'],
@@ -73,7 +75,8 @@ def LambdaHandlerWrapper(wrapped, application=None, name=None,
                 context, 'function_name', None)
         transaction._aws_function_version = getattr(
                 context, 'function_version', None)
-        transaction._memory_limit = getattr(context, 'memory_limit_in_mb', None)
+        transaction._memory_limit = getattr(
+                context, 'memory_limit_in_mb', None)
         transaction._aws_region = os.environ.get('AWS_REGION', None)
 
         global COLD_START_TIME

@@ -587,7 +587,8 @@ _settings.heroku.dyno_name_prefixes_to_shorten = list(_environ_as_set(
         'NEW_RELIC_HEROKU_DYNO_NAME_PREFIXES_TO_SHORTEN', 'scheduler run'))
 
 _settings.serverless_mode = _environ_as_bool(
-        'NEW_RELIC_SERVERLESS_MODE', default=False)
+        'NEW_RELIC_SERVERLESS_MODE',
+        default=bool(os.environ.get('AWS_LAMBDA_FUNCTION_NAME')))
 
 
 def global_settings():

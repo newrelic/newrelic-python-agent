@@ -99,7 +99,23 @@ def LambdaHandlerWrapper(wrapped, application=None, name=None,
             transaction.set_transaction_name(name, group, priority=1)
 
         with transaction:
-            return wrapped(*args, **kwargs)
+            result = wrapped(*args, **kwargs)
+            if not background_task:
+                status_code = result.get('statusCode', None)
+                try:
+                    status_code = str(status_code)
+                except Exception:
+                    status_code = None
+
+                response_headers = result.get('headers', None)
+                try:
+                    response_headers = list(response_headers.items())
+                except Exception:
+                    response_headers = None
+
+                transaction.process_response(status_code, response_headers)
+
+            return result
 
     return FunctionWrapper(wrapped, _nr_lambda_handler_wrapper_)
 

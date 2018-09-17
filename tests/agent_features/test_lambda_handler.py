@@ -17,6 +17,7 @@ def handler(event, context):
         'body': '{}',
         'headers': {
             'Content-Type': 'application/json',
+            'Content-Length': 2,
         },
     }
 
@@ -33,6 +34,9 @@ _expected_attributes = {
         'aws.functionVersion',
         'memoryLimit',
         'coldStartTime',
+        'response.status',
+        'response.headers.contentType',
+        'response.headers.contentLength',
     ],
     'user': [],
     'intrinsic': [],
@@ -52,4 +56,8 @@ class Context(object):
 @override_application_settings(_override_settings)
 def test_lambda_transaction_attributes(monkeypatch):
     monkeypatch.setenv('AWS_REGION', 'earth')
-    handler({}, Context)
+    handler({
+        'httpMethod': 'GET',
+        'path': '/',
+        'headers': {},
+    }, Context)

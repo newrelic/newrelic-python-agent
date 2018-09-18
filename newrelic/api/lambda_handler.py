@@ -100,20 +100,23 @@ def LambdaHandlerWrapper(wrapped, application=None, name=None,
 
         with transaction:
             result = wrapped(*args, **kwargs)
-            if not background_task:
-                status_code = result.get('statusCode', None)
-                try:
-                    status_code = str(status_code)
-                except Exception:
-                    status_code = None
+            try:
+                if not background_task:
+                    status_code = result.get('statusCode', None)
+                    try:
+                        status_code = str(status_code)
+                    except Exception:
+                        status_code = None
 
-                response_headers = result.get('headers', None)
-                try:
-                    response_headers = list(response_headers.items())
-                except Exception:
-                    response_headers = None
+                    response_headers = result.get('headers', None)
+                    try:
+                        response_headers = list(response_headers.items())
+                    except Exception:
+                        response_headers = None
 
-                transaction.process_response(status_code, response_headers)
+                    transaction.process_response(status_code, response_headers)
+            except Exception:
+                pass
 
             return result
 

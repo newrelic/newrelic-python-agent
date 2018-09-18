@@ -75,8 +75,12 @@ def LambdaHandlerWrapper(wrapped, application=None, name=None,
                 context, 'function_name', None)
         transaction._aws_function_version = getattr(
                 context, 'function_version', None)
-        transaction._memory_limit = getattr(
-                context, 'memory_limit_in_mb', None)
+        try:
+            transaction._memory_limit = int(getattr(
+                    context, 'memory_limit_in_mb', None))
+        except Exception:
+            pass
+
         transaction._aws_region = os.environ.get('AWS_REGION', None)
 
         global COLD_START_TIME

@@ -42,6 +42,14 @@ _expected_attributes = {
     'intrinsic': [],
 }
 
+_exact_attrs = {
+    'agent': {
+        'memoryLimit': 128
+    },
+    'user': {},
+    'intrinsic': {}
+}
+
 
 class Context(object):
     aws_request_id = 'cookies'
@@ -52,7 +60,8 @@ class Context(object):
 
 
 @validate_transaction_trace_attributes(_expected_attributes)
-@validate_transaction_event_attributes(_expected_attributes)
+@validate_transaction_event_attributes(
+    _expected_attributes, exact_attrs=_exact_attrs)
 @override_application_settings(_override_settings)
 def test_lambda_transaction_attributes(monkeypatch):
     monkeypatch.setenv('AWS_REGION', 'earth')

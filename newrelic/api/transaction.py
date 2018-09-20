@@ -1038,6 +1038,7 @@ class Transaction(object):
 
         if not (account_id and
                 application_id and
+                trusted_account_key and
                 settings.distributed_tracing.enabled):
             return
 

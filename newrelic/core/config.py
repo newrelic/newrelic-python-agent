@@ -447,8 +447,6 @@ _settings.sampling_target_period_in_seconds = 60
 
 _settings.max_payload_size_in_bytes = 1000000
 
-_settings.max_payload_size_in_bytes = 1000000
-
 _settings.attributes.enabled = True
 _settings.attributes.exclude = []
 _settings.attributes.include = []

@@ -23,7 +23,8 @@ def handler(event, context):
 
 
 _override_settings = {
-    'attributes.include': ['aws.*', 'memoryLimit', 'coldStartTime'],
+    'attributes.include': ['aws.*', 'memoryLimit', 'coldStartTime',
+            'request.parameters.*'],
 }
 _expected_attributes = {
     'agent': [
@@ -44,7 +45,8 @@ _expected_attributes = {
 
 _exact_attrs = {
     'agent': {
-        'memoryLimit': 128
+        'memoryLimit': 128,
+        'request.parameters.foo': 'bar',
     },
     'user': {},
     'intrinsic': {}
@@ -69,4 +71,6 @@ def test_lambda_transaction_attributes(monkeypatch):
         'httpMethod': 'GET',
         'path': '/',
         'headers': {},
+        'queryStringParameters': {'foo': 'bar'},
+        'multiValueQueryStringParameters': {'foo': ['bar']},
     }, Context)

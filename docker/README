@@ -7,120 +7,12 @@ and a test runner/management script called "packnsend".
 Initial setup of docker
 -----------------------
 
-You need to have a docker service running somewhere. If this is not on your
-local host, then you need to at least have the docker client available in
-your PATH and the 'DOCKER_HOST' environment variable set to the name of the
-docker service host.
-
-Running docker on MacOS X
--------------------------
-
-The docker service cannot be run natively on MacOS X. Instead you need
-to run it under VirtualBox. Make sure you have up to date VirtualBox
-installed.
-
-The procedure documented on docker.io for actually now running docker also
-involves using Vagrant, but there is a simpler way using a tool called
-boot2docker.
-
-The boot2docker project can be found at:
-
-* https://github.com/steeve/boot2docker
-
-Skip the initial instructions and follow the instructions for MacOS X in
-that page at, but first read the note below.
-
-* https://github.com/steeve/boot2docker#init-script-osx-and-linux
-
-Note that if you are using a New Relic managed MacBook, then CrashPlan
-runs on the same port as the docker service wants to use. As a result you
-will need to override what port the docker service is exported on from
-the virtual machine.
-
-To do this, before even running boot2docker, you need to create in your
-home directory a subdirectory called '.boot2docker' and create within that
-the file 'profile'. In that file add:
-
-    DOCKER_PORT=14243
-
-    VM_DISK=$HOME/.boot2docker/boot2docker.vmdk
-    BOOT2DOCKER_ISO=$HOME/.boot2docker/boot2docker.iso
-
-Even if not needing to override the docker service port, set the locations
-for the boot2docker VM image and ISO so they are located in this directory
-also.
-
-Now follow the steps to create the boot2docker instance. Copying the
-boot2docker script into your PATH somewhere. A good idea might be to
-actually copy it into $HOME/.boot2docker as well and then add:
-
-    export PATH="$HOME/.boot2docker:$PATH"
-
-into your .bash_profile script.
-
-Once you have boot2docker running you need the MacOS X binary for the docker
-client. You can download it from the docker site, ensuring you make it
-executable.
-
-    wget https://get.docker.io/builds/Darwin/x86_64/docker-latest -O docker
-    chmod +x docker
-
-This also can be placed into $HOME/.boot2docker if you added that directory
-to PATH.
-
-Before using it or the 'packnsend' script, you need to set and export
-DOCKER_HOST environment variable to 'localhost'.
-
-    export DOCKER_HOST="localhost"
-
-If you had to override the docker service port however, include the port
-as part of the DOCKER_HOST environment variable:
-
-    export DOCKER_HOST="localhost:14243"
-
-Set this permanently in your .bash_profile as well.
-
-To test it works run:
-
-    docker version
-
-Setting up a Quay.io Account
-----------------------------
-
-Quay.io is a private docker repository where we store the docker images that
-we use for testing. Only authorized quay.io users have access to the images.
-Since, pulling the images from quay.io is typically faster than building them
-from the Dockerfiles, it's worth setting up an account.
-
-Account setup steps:
-
-1. Create a quay.io account at https://quay.io. Use your newrelic.com email
-address.
-
-2. Have someone with admin rights on the quay.io account add you to the
-python team on quay.io, which is a sub-group of the newrelic organization.
-(Currently, Tom Offermann is the admin for the Python team.) You should get
-permissions to pull from the repo, push to the repo, and create new repos.
-
-3. Login to your quay.io account from the command line:
-
-    docker login quay.io
-
-You will be prompted to enter your quay.io username, password, and email
-address. Once you do that, you will be logged in, and a .dockercfg file
-will be created and installed automatically for you. This file stores your
-login credentials, so you do not have to run `docker login` every time you
-want to access the images hosted on quay.io.
-
-Using Quay.io on Jenkins
-------------------------
-
-There is a special "Robot account" set up for use by Jenkins to pull images
-from quay.io. The account name is 'newrelic+pythonagentbot'.
-
-To get the the login credentials for the Robot account, someone with admin
-rights on the quay.io account needs to download the .dockercfg file from the
-quay.io web site.
+You need to have a docker service running somewhere, if you are on
+a Mac you can install
+[Docker for Mac](https://docs.docker.com/v17.12/docker-for-mac/install/).
+If this is not on your local host, then you need to at least have the docker
+client available in your PATH and the 'DOCKER_HOST' environment variable set
+to the name of the docker service host.
 
 Using Packnsend
 ===============
@@ -176,9 +68,9 @@ the 'init' command:
 
     packnsend init
 
-If you have a quay.io account set up, this command will pull the images from
-the private docker image repository. Otherwise, this command will build the
-images from the Dockerfiles.
+If you are on the PDX VPN, this command will pull the images from the
+private docker image repository hosted in Container Fabric.
+Otherwise, this command will build the images from the Dockerfiles.
 
 In either case, this will take awhile.
 
@@ -195,11 +87,10 @@ subset of images:
 
     packnsend build memcached mysql
 
-Pulling the images from Quay.io
--------------------------------
+Pulling the images from Container Fabric
+----------------------------------------
 
-To pull all of the images from quay.io (assuming you have set up your quay.io
-account), use the `pull` command:
+To pull all of the images from Container Fabric, use the `pull` command:
 
     packnsend pull
 
@@ -209,12 +100,11 @@ Pulling a subset of images is possible:
 
 Pulling the images is typically faster than building them.
 
-Pushing the images to Quay.io
------------------------------
+Pushing the images to Container Fabric
+--------------------------------------
 
-To update the images hosted in the quay.io repository, use the `push` command.
-(Again, this requires that you have set up your quay.io account.) This command
-will push all images to quay.io:
+To update the images hosted in the Container Fabric repository, use the `push` command.
+This command will push all images to Container Fabric:
 
     packnsend push
 
@@ -233,7 +123,7 @@ application services. This is done by running:
 To run a command in the test docker instance you can use the 'run' command
 with 'packnsend'.
 
-    packnsend run tox -c tests/database_sqlite/tox.ini
+    packnsend run tox -c tests/datastore_sqlite/tox.ini
 
 Note that right now the output isn't streamed and will only be shown once
 the command has completed. For some tests this can take up to 5 minutes.
@@ -288,7 +178,7 @@ instance.
 For instance, if a test has been failing, you can launch into a shell
 with the results of running the test using the '-i' option.
 
-    packnsend run -i tox -c tests/database_sqlite/tox.ini
+    packnsend run -i tox -c tests/datastore_sqlite/tox.ini
 
 2. Connect without running any commands.
 

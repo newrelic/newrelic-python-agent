@@ -26,7 +26,7 @@ def process_event(event):
                 http_key = 'HTTP_%s' % normalized_key
                 environ[http_key] = v
 
-            return environ, False, event.get('queryStringParameters')
+            return environ, False, event.get('multiValueQueryStringParameters')
     except Exception:
         pass
 

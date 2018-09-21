@@ -1,6 +1,16 @@
 unreleased
 ----------
 
+4.4.1 (2018-09-21)
+------------------
+
+- Fixed TypeError when comparing dicts in Python3
+
+  In Python3 if you compare two tuples containing dicts it is possible to
+  throw a TypeError if the contents of the tuples are the same except for
+  their dicts. A fix has been applied to ensure the tuples are unique when
+  being compared.
+
 4.4.0 (2018-09-11)
 ------------------
 

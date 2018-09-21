@@ -90,7 +90,10 @@ def LambdaHandlerWrapper(wrapped, application=None, name=None,
 
         settings = global_settings()
         if query_params and not settings.high_security:
-            transaction._request_params.update(query_params)
+            try:
+                transaction._request_params.update(query_params)
+            except:
+                pass
 
         # Override the initial transaction name.
 

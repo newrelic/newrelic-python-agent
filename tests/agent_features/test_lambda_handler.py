@@ -74,3 +74,17 @@ def test_lambda_transaction_attributes(monkeypatch):
         'queryStringParameters': {'foo': 'bar'},
         'multiValueQueryStringParameters': {'foo': ['bar']},
     }, Context)
+
+
+@validate_transaction_trace_attributes(_expected_attributes)
+@validate_transaction_event_attributes(_expected_attributes)
+@override_application_settings(_override_settings)
+def test_lambda_malformed_api_gateway_payload(monkeypatch):
+    monkeypatch.setenv('AWS_REGION', 'earth')
+    handler({
+        'httpMethod': 'GET',
+        'path': '/',
+        'headers': {},
+        'queryStringParameters': 42,
+        'multiValueQueryStringParameters': 42,
+    }, Context)

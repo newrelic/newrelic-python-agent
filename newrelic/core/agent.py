@@ -639,6 +639,9 @@ class Agent(object):
         if not self._config.enabled:
             _logger.warning('The Python Agent is not enabled.')
             return
+        elif self._config.debug.disable_harvest_until_shutdown:
+            _logger.debug('Harvest thread is disabled.')
+            return
 
         # Skip this if background thread already running.
 
@@ -668,6 +671,10 @@ class Agent(object):
         _logger.info('New Relic Python Agent Shutdown')
 
         self._harvest_shutdown.set()
+
+        if self._config.debug.disable_harvest_until_shutdown:
+            self._harvest_thread.start()
+
         self._harvest_thread.join(timeout)
 
 

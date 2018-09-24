@@ -7,7 +7,6 @@ import subprocess
 import sys
 import threading
 import time
-import traceback
 
 try:
     from Queue import Queue
@@ -106,6 +105,10 @@ def initialize_agent(app_name=None, default_settings={}):
     settings.shutdown_timeout = float(os.environ.get(
             'NEW_RELIC_SHUTDOWN_TIMEOUT', 20.0))
 
+    # Disable the harvest thread during testing so that harvest is explicitly
+    # called on test shutdown
+    settings.debug.disable_harvest_until_shutdown = True
+
     if app_name is not None:
         settings.app_name = app_name
 
@@ -156,15 +159,16 @@ def capture_harvest_errors():
     def wrap_harvest_loop(wrapped, instance, args, kwargs):
         try:
             return wrapped(*args, **kwargs)
-        except Exception as e:
-            queue.put(e)
+        except Exception:
+            exc_info = sys.exc_info()
+            queue.put(exc_info)
             raise
 
     def wrap_shutdown_agent(wrapped, instance, args, kwargs):
         result = wrapped(*args, **kwargs)
         if not queue.empty():
-            exception = queue.get()
-            raise exception
+            exc_info = queue.get()
+            raise exc_info[1]
         return result
 
     def wrap_record_custom_metric(wrapped, instance, args, kwargs):
@@ -178,10 +182,8 @@ def capture_harvest_errors():
                 not metric_name.endswith('RetryDataForRequest') and
                 not metric_name.endswith(('newrelic.packages.requests.'
                         'packages.urllib3.exceptions:ClosedPoolError'))):
-            traceback.print_exception(*sys.exc_info())
-            exception = AssertionError(
-                    'Exception metric created %s' % metric_name)
-            queue.put(exception)
+            exc_info = sys.exc_info()
+            queue.put(exc_info)
 
         return wrapped(*args, **kwargs)
 

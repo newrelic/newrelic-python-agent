@@ -509,6 +509,8 @@ def _process_configuration(section):
                      'get', None)
     _process_setting(section, 'debug.disable_certificate_validation',
                      'getboolean', None)
+    _process_setting(section, 'debug.disable_harvest_until_shutdown',
+                     'getboolean', None)
     _process_setting(section, 'cross_application_tracer.enabled',
                      'getboolean', None)
     _process_setting(section, 'message_tracer.segment_parameters_enabled',

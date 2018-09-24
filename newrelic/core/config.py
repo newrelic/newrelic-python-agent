@@ -558,6 +558,7 @@ _settings.debug.enable_coroutine_profiling = False
 _settings.debug.explain_plan_obfuscation = 'simple'
 _settings.debug.disable_certificate_validation = False
 _settings.debug.log_untrusted_distributed_trace_keys = False
+_settings.debug.disable_harvest_until_shutdown = False
 
 _settings.message_tracer.segment_parameters_enabled = True
 

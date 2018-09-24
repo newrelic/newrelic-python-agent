@@ -1,0 +1,137 @@
+[
+  {
+    "name": "cloudfront_modify"
+  },
+  {
+    "name": "cloudfront_ab"
+  },
+  {
+    "name": "cloudfront_redirect"
+  },
+  {
+    "name": "cloudfront_multi_remote"
+  },
+  {
+    "name": "cloudfront_simple_remote"
+  },
+  {
+    "name": "cloudfront_access_request_header"
+  },
+  {
+    "name": "cloudfront_response"
+  },
+  {
+    "name": "config_change_triggered"
+  },
+  {
+    "name": "config_change_oversized"
+  },
+  {
+    "name": "config_periodic"
+  },
+  {
+    "name": "codecommit",
+    "aws.lambda.eventSource.arn": "arn:aws:codecommit:us-west-2:123456789012:my-repo"
+  },
+  {
+    "name": "api_gateway_auth"
+  },
+  {
+    "name": "kinesis",
+    "aws.lambda.eventSource.arn": "arn:aws:kinesis:EXAMPLE"
+  },
+  {
+    "name": "kinesis_analytics",
+    "aws.lambda.eventSource.arn": "arn:aws:kinesis:exampleStream"
+  },
+  {
+    "name": "kinesis_firehose",
+    "aws.lambda.eventSource.arn": "arn:aws:firehose:us-west-2:123456789012:deliverystream/copy-cwl-lambda-invoke-input-151025436553-Firehose-8KILJ01Q5OBN"
+  },
+  {
+    "name": "kinesis_firehose_invoke",
+    "aws.lambda.eventSource.arn": "arn:aws:kinesis:EXAMPLE"
+  },
+  {
+    "name": "firehose_stream_source",
+    "aws.lambda.eventSource.arn": "arn:aws:kinesis:EXAMPLE"
+  },
+  {
+    "name": "firehose_syslog"
+  },
+  {
+    "name": "kinesis_firehose_apache"
+  },
+  {
+    "name": "cloudformation_create"
+  },
+  {
+    "name": "ses"
+  },
+  {
+    "name": "sns",
+    "aws.lambda.eventSource.arn": "arn:aws:sns:EXAMPLE"
+  },
+  {
+    "name": "sqs",
+    "aws.lambda.eventSource.arn": "arn:aws:sqs:us-west-2:123456789012:MyQueue"
+  },
+  {
+    "name": "rekognition_s3",
+    "aws.lambda.eventSource.arn": "arn:aws:s3:::mybucket"
+  },
+  {
+    "name": "s3_put",
+    "aws.lambda.eventSource.arn": "arn:aws:s3:::mybucket"
+  },
+  {
+    "name": "s3_delete",
+    "aws.lambda.eventSource.arn": "arn:aws:s3:::mybucket"
+  },
+  {
+    "name": "api_gateway_proxy"
+  },
+  {
+    "name": "scheduled_event"
+  },
+  {
+    "name": "cloudwatch_logs"
+  },
+  {
+    "name": "batch_get"
+  },
+  {
+    "name": "batch_submit"
+  },
+  {
+    "name": "dynamodb_update",
+    "aws.lambda.eventSource.arn": "arn:aws:dynamodb:us-west-2:account-id:table/ExampleTableWithStream/stream/2015-06-27T00:48:05.899"
+  },
+  {
+    "name": "cognito_sync"
+  },
+  {
+    "name": "codepipeline"
+  },
+  {
+    "name": "smarthome_discovery"
+  },
+  {
+    "name": "smarthome_turn_off"
+  },
+  {
+    "name": "alexa_intent"
+  },
+  {
+    "name": "alexa_start_session"
+  },
+  {
+    "name": "alexa_end_session"
+  },
+  {
+    "name": "alexa_intent_answer"
+  },
+  {
+    "name": "lex_appointment"
+  }
+]

@@ -673,6 +673,7 @@ class Agent(object):
         self._harvest_shutdown.set()
 
         if self._config.debug.disable_harvest_until_shutdown:
+            _logger.debug('Start Python Agent main thread on shutdown.')
             self._harvest_thread.start()
 
         self._harvest_thread.join(timeout)

@@ -73,19 +73,19 @@ then
 fi
 
 case $PYPI_REPOSITORY in
-    pypi-test)
+    testpypi)
         set_pypi_password PYPI_TEST_PASSWORD $PYPI_TEST_PASSWORD
         echo "... PYPI_TEST_PASSWORD is set."
         ;;
 
-    pypi-production)
+    pypi)
         set_pypi_password PYPI_PRODUCTION_PASSWORD $PYPI_PRODUCTION_PASSWORD
         echo "... PYPI_PRODUCTION_PASSWORD is set."
         ;;
 
     *)
         echo "... PYPI_REPOSITORY = $PYPI_REPOSITORY"
-        echo "ERROR: PYPI_REPOSITORY must be 'pypi-test' or 'pypi-production'."
+        echo "ERROR: PYPI_REPOSITORY must be 'testpypi' or 'pypi'."
         exit 1
         ;;
 esac

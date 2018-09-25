@@ -308,7 +308,7 @@ value is the next number in the Build History section of
 
     1. Go back to Jenkins, and select the other project, [deploy-to-pypi][deploy-pypi].
     2. From the menu on the left select "Build with Parameters".
-    3. From the drop down menu `PYPI_REPOSITORY`, select pypi-production. Type in the version number, including the build in the `AGENT_VERSION` box.
+    3. From the drop down menu `PYPI_REPOSITORY`, select pypi. Type in the version number, including the build in the `AGENT_VERSION` box.
     4. Push the build button.
     5. Go to [PyPI][pypi] and check that the version uploaded.
     6. Validate that ``pip install`` of package into a virtual environment works.

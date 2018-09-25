@@ -24,7 +24,7 @@ use(extensions) {
             buildInDockerImage('./deploy')
 
             parameters {
-                choiceParam('PYPI_REPOSITORY', ['pypi-test', 'pypi-production'], '')
+                choiceParam('PYPI_REPOSITORY', ['testpypi', 'pypi'], '')
                 stringParam('AGENT_VERSION', '', 'Version of the agent to release. (Ex. 2.56.0.42)')
             }
 

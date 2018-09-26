@@ -1,12 +1,12 @@
 import sys
 import newrelic.hooks.framework_django as framework_django
-from benchmarks.util import (TimeWrappingBase, TimeWrappedExecutionBase,
-                             TimeInstrumentBase, MagicMock)
+from benchmarks.util import (BenchWrappingBase, BenchWrappedExecutionBase,
+                             BenchInstrumentBase, MagicMock)
 
 sys.modules['django'] = MagicMock()
 
 
-class TimeDjangoInstrument(TimeInstrumentBase(framework_django)):
+class TimeDjangoInstrument(BenchInstrumentBase(framework_django)):
     pass
 
 
@@ -37,7 +37,7 @@ spec = [
 ]
 
 
-class TimeDjangoWrapping(TimeWrappingBase(framework_django, *spec)):
+class TimeDjangoWrapping(BenchWrappingBase(framework_django, *spec)):
     pass
 
 
@@ -73,5 +73,5 @@ spec.extend([
 ])
 
 
-class TimeDjangoExecutions(TimeWrappedExecutionBase(framework_django, *spec)):
+class TimeDjangoExecutions(BenchWrappedExecutionBase(framework_django, *spec)):
     pass

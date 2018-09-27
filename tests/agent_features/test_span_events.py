@@ -189,3 +189,51 @@ def test_external_spans():
             url='http://example.com/foo?secret=123',
             method='get'):
         pass
+
+
+@pytest.mark.parametrize('kwarg_override,intrinsics_override', (
+    ({'url': 'a' * 256}, {'http.url': 'a' * 255}),
+    ({'library': 'a' * 256}, {'component': 'a' * 255}),
+    ({'method': 'a' * 256}, {'http.method': 'a' * 255}),
+))
+@override_application_settings({
+    'distributed_tracing.enabled': True,
+    'span_events.enabled': True,
+})
+def test_external_span_limits(kwarg_override, intrinsics_override):
+
+    exact_intrinsics = {
+        'type': 'Span',
+        'sampled': True,
+
+        'category': 'http',
+        'span.kind': 'client',
+        'http.url': 'http://example.com/foo',
+        'component': 'library',
+        'http.method': 'get',
+    }
+    exact_intrinsics.update(intrinsics_override)
+
+    kwargs = {
+        'library': 'library',
+        'url': 'http://example.com/foo?secret=123',
+        'method': 'get',
+    }
+    kwargs.update(kwarg_override)
+
+    @validate_span_events(
+        count=1,
+        exact_intrinsics=exact_intrinsics,
+        expected_intrinsics=('priority',),
+    )
+    @background_task(name='test_external_spans')
+    def _test():
+        transaction = current_transaction()
+        transaction._sampled = True
+
+        with ExternalTrace(
+                transaction,
+                **kwargs):
+            pass
+
+    _test()

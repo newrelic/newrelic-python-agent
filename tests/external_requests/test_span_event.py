@@ -15,7 +15,7 @@ def server():
         yield
 
 
-@pytest.mark.parametrize('path', ('', '/foo'))
+@pytest.mark.parametrize('path', ('', '/foo', '/' + 'a' * 256))
 def test_span_events(path):
     _settings = {
         'distributed_tracing.enabled': True,
@@ -26,6 +26,8 @@ def test_span_events(path):
     if path:
         uri += path
 
+    expected_uri = uri[:255]
+
     exact_intrinsics = {
         'name': 'External/localhost:8989/requests/',
         'type': 'Span',
@@ -34,7 +36,7 @@ def test_span_events(path):
 
         'category': 'http',
         'span.kind': 'client',
-        'http.url': uri,
+        'http.url': expected_uri,
         'component': 'requests',
     }
     expected_intrinsics = ('timestamp', 'duration', 'transactionId')

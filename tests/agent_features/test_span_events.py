@@ -189,3 +189,105 @@ def test_external_spans():
             url='http://example.com/foo?secret=123',
             method='get'):
         pass
+
+
+@pytest.mark.parametrize('kwarg_override,intrinsics_override', (
+    ({'url': 'a' * 256}, {'http.url': 'a' * 255}),
+    ({'library': 'a' * 256}, {'component': 'a' * 255}),
+    ({'method': 'a' * 256}, {'http.method': 'a' * 255}),
+))
+@override_application_settings({
+    'distributed_tracing.enabled': True,
+    'span_events.enabled': True,
+})
+def test_external_span_limits(kwarg_override, intrinsics_override):
+
+    exact_intrinsics = {
+        'type': 'Span',
+        'sampled': True,
+
+        'category': 'http',
+        'span.kind': 'client',
+        'http.url': 'http://example.com/foo',
+        'component': 'library',
+        'http.method': 'get',
+    }
+    exact_intrinsics.update(intrinsics_override)
+
+    kwargs = {
+        'library': 'library',
+        'url': 'http://example.com/foo?secret=123',
+        'method': 'get',
+    }
+    kwargs.update(kwarg_override)
+
+    @validate_span_events(
+        count=1,
+        exact_intrinsics=exact_intrinsics,
+        expected_intrinsics=('priority',),
+    )
+    @background_task(name='test_external_spans')
+    def _test():
+        transaction = current_transaction()
+        transaction._sampled = True
+
+        with ExternalTrace(
+                transaction,
+                **kwargs):
+            pass
+
+    _test()
+
+
+@pytest.mark.parametrize('kwarg_override,intrinsics_override', (
+    ({'host': 'a' * 256},
+     {'peer.hostname': 'a' * 255, 'peer.address': 'a' * 255}),
+    ({'port_path_or_id': 'a' * 256, 'host': 'a'},
+     {'peer.hostname': 'a', 'peer.address': 'a:' + 'a' * 253}),
+    ({'database_name': 'a' * 256}, {'db.instance': 'a' * 255}),
+))
+@override_application_settings({
+    'distributed_tracing.enabled': True,
+    'span_events.enabled': True,
+})
+def test_datastore_span_limits(kwarg_override, intrinsics_override):
+
+    exact_intrinsics = {
+        'type': 'Span',
+        'sampled': True,
+
+        'category': 'datastore',
+        'span.kind': 'client',
+        'component': 'library',
+        'db.instance': 'db',
+        'peer.hostname': 'foo',
+        'peer.address': 'foo:1234',
+    }
+    exact_intrinsics.update(intrinsics_override)
+
+    kwargs = {
+        'product': 'library',
+        'target': 'table',
+        'operation': 'operation',
+        'host': 'foo',
+        'port_path_or_id': 1234,
+        'database_name': 'db',
+    }
+    kwargs.update(kwarg_override)
+
+    @validate_span_events(
+        count=1,
+        exact_intrinsics=exact_intrinsics,
+        expected_intrinsics=('priority',),
+    )
+    @background_task(name='test_external_spans')
+    def _test():
+        transaction = current_transaction()
+        transaction._sampled = True
+
+        with DatastoreTrace(
+                transaction,
+                **kwargs):
+            pass
+
+    _test()

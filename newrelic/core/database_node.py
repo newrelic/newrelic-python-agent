@@ -6,7 +6,7 @@ from newrelic.common import system_info
 from newrelic.core.database_utils import sql_statement, explain_plan
 from newrelic.core.node_mixin import DatastoreNodeMixin
 from newrelic.core.metric import TimeMetric
-from newrelic.core.attribute import truncate
+from newrelic.core.attribute import process_user_attribute
 
 
 _SlowSqlNode = namedtuple('_SlowSqlNode',
@@ -241,11 +241,8 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
         sql = self.formatted
 
         # Truncate to 2000 bytes and append ...
-        new_sql = truncate(sql, maxsize=2000)
-        if len(new_sql) != len(sql):
-            sql_chars = list(new_sql)
-            sql_chars[-3:] = '...'
-            sql = ''.join(sql_chars)
+        _, sql = process_user_attribute(
+                'db.statement', sql, max_length=2000, ending='...')
 
         i_attrs['db.statement'] = sql
 

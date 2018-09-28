@@ -1,3 +1,6 @@
+from newrelic.core.attribute import process_user_attribute
+
+
 class GenericNodeMixin(object):
 
     def span_event(
@@ -52,12 +55,26 @@ class DatastoreNodeMixin(GenericNodeMixin):
 
         i_attrs['category'] = 'datastore'
         i_attrs['component'] = self.product
-        i_attrs['db.instance'] = self.database_name or 'Unknown'
-        i_attrs['peer.address'] = '%s:%s' % (
+        i_attrs['span.kind'] = 'client'
+
+        if self.database_name:
+            _, i_attrs['db.instance'] = process_user_attribute(
+                    'db.instance', self.database_name)
+        else:
+            i_attrs['db.instance'] = 'Unknown'
+
+        if self.instance_hostname:
+            _, i_attrs['peer.hostname'] = process_user_attribute(
+                    'peer.hostname', self.instance_hostname)
+        else:
+            i_attrs['peer.hostname'] = 'Unknown'
+
+        peer_address = '%s:%s' % (
                 self.instance_hostname or 'Unknown',
                 self.port_path_or_id or 'Unknown')
-        i_attrs['peer.hostname'] = self.instance_hostname or 'Unknown'
-        i_attrs['span.kind'] = 'client'
+
+        _, i_attrs['peer.address'] = process_user_attribute(
+                'peer.address', peer_address)
 
         return attrs
 
@@ -75,10 +92,13 @@ class ExternalNodeMixin(GenericNodeMixin):
 
         i_attrs['category'] = 'http'
         i_attrs['span.kind'] = 'client'
-        i_attrs['http.url'] = self.url_with_path
-        i_attrs['component'] = self.library
+        _, i_attrs['http.url'] = process_user_attribute(
+                'http.url', self.url_with_path)
+        _, i_attrs['component'] = process_user_attribute(
+                'component', self.library)
 
         if self.method:
-            i_attrs['http.method'] = self.method
+            _, i_attrs['http.method'] = process_user_attribute(
+                'http.method', self.method)
 
         return attrs

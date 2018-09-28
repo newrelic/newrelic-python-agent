@@ -145,6 +145,29 @@ def validate_metric_payload(metrics=[], endpoints_called=[]):
     return send_request_wrapper
 
 
+def validate_error_event_sampling(events_seen, reservoir_size,
+        endpoints_called=[]):
+
+    @transient_function_wrapper('newrelic.core.data_collector',
+            'DeveloperModeSession.send_request')
+    def send_request_wrapper(wrapped, instance, args, kwargs):
+        def _bind_params(session, url, method, license_key,
+                agent_run_id=None, payload=(), *args, **kwargs):
+            return method, payload
+
+        method, payload = _bind_params(*args, **kwargs)
+        endpoints_called.append(method)
+
+        if method == 'error_event_data':
+            sampling_info = payload[1]
+            assert sampling_info['events_seen'] == events_seen
+            assert sampling_info['reservoir_size'] == reservoir_size
+
+        return wrapped(*args, **kwargs)
+
+    return send_request_wrapper
+
+
 def failing_endpoint(endpoint, raises=RetryDataForRequest):
     @transient_function_wrapper('newrelic.core.data_collector',
             'DeveloperModeSession.send_request')
@@ -393,3 +416,31 @@ def test_reservoir_sizes(transaction_node):
 
     # Add 1 for the root span
     assert app._stats_engine.span_events.num_samples == 102
+
+
+@pytest.mark.parametrize('events_seen', (1, 5, 10))
+def test_error_event_sampling_info(events_seen):
+
+    reservoir_size = 5
+    endpoints_called = []
+
+    @validate_error_event_sampling(
+            events_seen=events_seen,
+            reservoir_size=reservoir_size,
+            endpoints_called=endpoints_called)
+    @override_generic_settings(settings, {
+            'developer_mode': True,
+            'license_key': '**NOT A LICENSE KEY**',
+            'error_collector.max_event_samples_stored': reservoir_size,
+    })
+    def _test():
+        app = Application('Python Agent Test (Harvest Loop)')
+        app.connect_to_data_collector()
+
+        for _ in range(events_seen):
+            app._stats_engine.error_events.add('error')
+
+        app.harvest()
+
+    _test()
+    assert 'error_event_data' in endpoints_called

@@ -7,6 +7,11 @@ unreleased
   `transaction_tracer.attributes.exclude`, the value will now no longer appear
   in the APM UI for transaction traces.
 
+- Ability to disable sending `request.uri` as part of error traces
+
+  Error traces will now respect excluding `request.uri` when added to the
+  attributes.exclude list in the newrelic.ini configuration file.
+
 
 4.4.1 (2018-09-21)
 ------------------

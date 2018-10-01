@@ -1016,7 +1016,7 @@ def validate_synthetics_transaction_trace(required_params={},
 def validate_tt_collector_json(required_params={},
         forgone_params={}, should_exist=True, datastore_params={},
         datastore_forgone_params={}, message_broker_params={},
-        message_broker_forgone_params=[]):
+        message_broker_forgone_params=[], exclude_request_uri=False):
     '''make assertions based off the cross-agent spec on transaction traces'''
 
     @transient_function_wrapper('newrelic.core.stats_engine',
@@ -1040,7 +1040,10 @@ def validate_tt_collector_json(required_params={},
             assert trace[0] > 0  # absolute time (ms)
             assert isinstance(trace[2], six.string_types)  # transaction name
             if trace[2].startswith('WebTransaction'):
-                assert isinstance(trace[3], six.string_types)  # request url
+                if exclude_request_uri:
+                    assert trace[3] is None  # request url
+                else:
+                    assert isinstance(trace[3], six.string_types)
                 # query parameters should not be captured
                 assert '?' not in trace[3]
 

@@ -295,7 +295,6 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
 
         for error in self.errors:
             params = {}
-            params["request_uri"] = self.request_uri
             params["stack_trace"] = error.stack_trace
 
             params['intrinsics'] = self.trace_intrinsics

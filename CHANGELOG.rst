@@ -1,6 +1,13 @@
 unreleased
 ----------
 
+- Excluding `request.uri` from transaction trace attributes hides it in the UI
+
+  When `request.uri` is added to either `attributes.exclude` or
+  `transaction_tracer.attributes.exclude`, the value will now no longer appear
+  in the APM UI for transaction traces.
+
+
 4.4.1 (2018-09-21)
 ------------------
 

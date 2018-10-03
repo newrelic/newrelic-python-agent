@@ -58,7 +58,7 @@ Usage
 
    .. code:: python
 
-      import newrelic
+      import newrelic.agent
       newrelic.agent.initialize('/path/to/newrelic.ini')
 
 4. Start or restart your Python web application or WSGI server.

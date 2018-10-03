@@ -63,7 +63,7 @@ Usage
 
 4. Start or restart your Python web application or WSGI server.
 
-5. Done! Check your application in the `New Relic RPM UI`_ to see the real time statistics generated from your application.
+5. Done! Check your application in the `New Relic UI`_ to see the real time statistics generated from your application.
 
 .. _Python Agent Quick Start: https://docs.newrelic.com/docs/agents/python-agent/getting-started/python-agent-quick-start
 .. _license key: https://docs.newrelic.com/docs/accounts-partnerships/accounts/account-setup/license-key

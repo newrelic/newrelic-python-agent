@@ -28,7 +28,7 @@ Usage
 
    .. code:: bash
 
-      $ newrelic-admin generate-config <YOUR-LICENSE-KEY> newrelic.ini
+      $ newrelic-admin generate-config $YOUR_LICENSE_KEY newrelic.ini
 
 2. Validate the agent configuration and test the connection to our data collector service.
 
@@ -38,13 +38,13 @@ Usage
 
 3. Integrate the agent with your web application.
 
-   If you control how your web application or WSGI server is started, you can use the ``newrelic-admin`` `wrapper script`_. Modify the existing startup script, prefixing the existing startup command and options with ``newrelic-admin run-program``.
+   If you control how your web application or WSGI server is started, the recommended way to integrate the agent is to use the ``newrelic-admin`` `wrapper script`_. Modify the existing startup script, prefixing the existing startup command and options with ``newrelic-admin run-program``.
 
    Also, set the `NEW_RELIC_CONFIG_FILE` environment variable to the name of the configuration file you created above:
 
    .. code:: bash
 
-      $ NEW_RELIC_CONFIG_FILE=newrelic.ini newrelic-admin run-program <YOUR-EXISTING-STARTUP-COMMAND>
+      $ NEW_RELIC_CONFIG_FILE=newrelic.ini newrelic-admin run-program $YOUR_COMMAND_OPTIONS
 
    Examples:
 

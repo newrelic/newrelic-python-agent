@@ -1449,13 +1449,13 @@ class Application(object):
                             configuration.error_collector.capture_events and
                             configuration.error_collector.enabled):
 
-                        num_error_samples = stats.error_events.num_samples
                         error_events = stats.error_events
+                        num_error_samples = error_events.num_samples
                         if num_error_samples > 0:
                             _logger.debug('Sending error event data '
                                     'for harvest of %r.', self._app_name)
 
-                            samp_info = stats.error_events_sampling_info()
+                            samp_info = error_events.sampling_info
                             self._active_session.send_error_events(samp_info,
                                     error_events.samples)
 

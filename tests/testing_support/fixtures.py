@@ -1389,7 +1389,7 @@ def validate_error_event_collector_json(num_errors=1):
         else:
 
             samples = list(instance.error_events.samples)
-            s_info = instance.error_events_sampling_info()
+            s_info = instance.error_events.sampling_info
             agent_run_id = 666
 
             # emulate the payload used in data_collector.py

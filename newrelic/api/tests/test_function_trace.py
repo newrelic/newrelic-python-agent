@@ -183,6 +183,27 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 child_trace_1.__exit__(None, None, None)
                 child_trace_2.__exit__(None, None, None)
 
+    def test_exited_parent_trace(self):
+        environ = {"REQUEST_URI": "/exited_parent_trace"}
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
+
+        # by the time the child tracing begins, parent has already exited
+
+        @newrelic.api.function_trace.function_trace(name='parent')
+        def parent():
+            return child()
+
+        @newrelic.api.function_trace.function_trace(name='child')
+        def child():
+            yield 1
+
+        with transaction:
+            for _ in parent():
+                pass
+
+        assert not transaction.enabled
+
 
 if __name__ == '__main__':
     unittest.main()

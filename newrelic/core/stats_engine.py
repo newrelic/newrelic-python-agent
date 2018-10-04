@@ -1221,10 +1221,15 @@ class StatsEngine(object):
             else:
                 force_persist = False
 
+            if trace.include_transaction_trace_request_uri:
+                request_uri = trace.request_uri
+            else:
+                request_uri = None
+
             trace_data.append([transaction_trace.start_time,
                     root.end_time - root.start_time,
                     trace.path,
-                    trace.request_uri,
+                    request_uri,
                     pack_data,
                     trace.guid,
                     None,

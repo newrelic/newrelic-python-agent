@@ -1019,22 +1019,27 @@ def validate_tt_collector_json(required_params={},
         message_broker_forgone_params=[], exclude_request_uri=False):
     '''make assertions based off the cross-agent spec on transaction traces'''
 
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
-    def _validate_tt_collector_json(wrapped, instance, args, kwargs):
-        try:
+    @function_wrapper
+    def _validate_wrapper(wrapped, instance, args, kwargs):
+
+        traces_recorded = []
+
+        @transient_function_wrapper('newrelic.core.stats_engine',
+                'StatsEngine.record_transaction')
+        def _validate_tt_collector_json(wrapped, instance, args, kwargs):
+
             result = wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
 
             # Now that transaction has been recorded, generate
             # a transaction trace
 
             connections = SQLConnections()
             trace_data = instance.transaction_trace_data(connections)
+            traces_recorded.append(trace_data)
 
-            trace = trace_data[0]  # 1st trace
+            return result
+
+        def _validate_trace(trace):
             assert isinstance(trace[0], float)  # absolute start time (ms)
             assert isinstance(trace[1], float)  # duration (ms)
             assert trace[0] > 0  # absolute time (ms)
@@ -1044,8 +1049,8 @@ def validate_tt_collector_json(required_params={},
                     assert trace[3] is None  # request url
                 else:
                     assert isinstance(trace[3], six.string_types)
-                # query parameters should not be captured
-                assert '?' not in trace[3]
+                    # query parameters should not be captured
+                    assert '?' not in trace[3]
 
             # trace details -- python agent always uses condensed trace array
 
@@ -1145,9 +1150,14 @@ def validate_tt_collector_json(required_params={},
             for name in string_table:
                 assert isinstance(name, six.string_types)  # metric name
 
-        return result
+        _new_wrapper = _validate_tt_collector_json(wrapped)
+        val = _new_wrapper(*args, **kwargs)
+        trace_data = traces_recorded.pop()
+        trace = trace_data[0]  # 1st trace
+        _validate_trace(trace)
+        return val
 
-    return _validate_tt_collector_json
+    return _validate_wrapper
 
 
 def validate_transaction_trace_attributes(required_params={},

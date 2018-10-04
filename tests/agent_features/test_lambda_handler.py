@@ -29,12 +29,12 @@ _override_settings = {
 _expected_attributes = {
     'agent': [
         'aws.requestId',
-        'aws.arn',
         'aws.region',
-        'aws.functionName',
-        'aws.functionVersion',
-        'memoryLimit',
-        'coldStartTime',
+        'aws.lambda.arn',
+        'aws.lambda.functionName',
+        'aws.lambda.functionVersion',
+        'aws.lambda.memoryLimit',
+        'aws.lambda.coldStartTime',
         'response.status',
         'response.headers.contentType',
         'response.headers.contentLength',
@@ -45,7 +45,7 @@ _expected_attributes = {
 
 _exact_attrs = {
     'agent': {
-        'memoryLimit': 128 * 2**20,
+        'aws.lambda.memoryLimit': 128 * 2**20,
         'request.parameters.foo': 'bar',
     },
     'user': {},

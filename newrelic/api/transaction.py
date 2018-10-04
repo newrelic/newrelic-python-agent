@@ -880,18 +880,18 @@ class Transaction(object):
             a_attrs['request.uri'] = self._request_uri
         if self._aws_request_id:
             a_attrs['aws.requestId'] = self._aws_request_id
-        if self._aws_arn:
-            a_attrs['aws.arn'] = self._aws_arn
         if self._aws_region:
             a_attrs['aws.region'] = self._aws_region
+        if self._aws_arn:
+            a_attrs['aws.lambda.arn'] = self._aws_arn
         if self._aws_function_name:
-            a_attrs['aws.functionName'] = self._aws_function_name
+            a_attrs['aws.lambda.functionName'] = self._aws_function_name
         if self._aws_function_version:
-            a_attrs['aws.functionVersion'] = self._aws_function_version
+            a_attrs['aws.lambda.functionVersion'] = self._aws_function_version
         if self._memory_limit:
-            a_attrs['memoryLimit'] = self._memory_limit
+            a_attrs['aws.lambda.memoryLimit'] = self._memory_limit
         if self._cold_start_time:
-            a_attrs['coldStartTime'] = self._cold_start_time
+            a_attrs['aws.lambda.coldStartTime'] = self._cold_start_time
 
         resp_props = self._response_properties
 

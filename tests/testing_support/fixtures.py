@@ -1317,7 +1317,7 @@ def check_error_attributes(parameters, required_params={}, forgone_params={},
     parameter_fields = ['userAttributes']
     if is_transaction:
         parameter_fields.extend(['stack_trace', 'agentAttributes',
-                'intrinsics', 'request_uri'])
+                'intrinsics'])
 
     for field in parameter_fields:
         assert field in parameters
@@ -1326,6 +1326,7 @@ def check_error_attributes(parameters, required_params={}, forgone_params={},
     assert 'parameter_groups' not in parameters
     assert 'custom_params' not in parameters
     assert 'request_params' not in parameters
+    assert 'request_uri' not in parameters
 
     check_attributes(parameters, required_params, forgone_params)
 
@@ -1378,10 +1379,12 @@ def validate_error_trace_collector_json():
             parameters = err[4]
 
             parameter_fields = ['userAttributes', 'stack_trace',
-                    'agentAttributes', 'intrinsics', 'request_uri']
+                    'agentAttributes', 'intrinsics']
 
             for field in parameter_fields:
                 assert field in parameters
+
+            assert 'request_uri' not in parameters
 
         return result
 

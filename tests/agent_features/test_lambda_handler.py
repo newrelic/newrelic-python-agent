@@ -45,7 +45,7 @@ _expected_attributes = {
 
 _exact_attrs = {
     'agent': {
-        'memoryLimit': 128,
+        'memoryLimit': 128 * 2**20,
         'request.parameters.foo': 'bar',
     },
     'user': {},

@@ -10,6 +10,7 @@ from newrelic.core.config import global_settings
 
 START_TIME = time.time()
 COLD_START_TIME = None
+MEGABYTE_IN_BYTES = 2**20
 
 
 def process_event(event):
@@ -77,7 +78,7 @@ def LambdaHandlerWrapper(wrapped, application=None, name=None,
                 context, 'function_version', None)
         try:
             transaction._memory_limit = int(getattr(
-                    context, 'memory_limit_in_mb', None))
+                    context, 'memory_limit_in_mb', None)) * MEGABYTE_IN_BYTES
         except Exception:
             pass
 

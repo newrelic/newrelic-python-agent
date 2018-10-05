@@ -203,6 +203,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 pass
 
         assert not transaction.enabled
+        assert transaction._trace_node_count == 2
 
 
 if __name__ == '__main__':

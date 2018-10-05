@@ -13,7 +13,8 @@ import newrelic.core.config
 # the specific methods imported here will not be changed when the modules are
 # reloaded
 from newrelic.core.config import (_remove_ignored_configs,
-        finalize_application_settings, _environ_as_int, global_settings)
+        finalize_application_settings, _environ_as_int, _environ_as_float,
+        global_settings)
 
 try:
     # python 2.x
@@ -267,6 +268,52 @@ _tests_environ_as_int = [
 ]
 
 
+_tests_environ_as_float = [
+    {
+        'name': 'test no env var set, no default requested',
+        'envvar_set': False,
+        'envvar_val': None,  # None set
+        'default': None,  # None requested
+        'expected_value': 0.0,
+    },
+    {
+        'name': 'test no env var set, default requested',
+        'envvar_set': False,
+        'envvar_val': None,  # None set
+        'default': 123.0,
+        'expected_value': 123.0,
+    },
+    {
+        'name': 'test env var is not a float, no default requested',
+        'envvar_set': True,
+        'envvar_val': 'testing',
+        'default': None,  # None requested
+        'expected_value': 0.0,
+    },
+    {
+        'name': 'test env var is not a number, default requested',
+        'envvar_set': True,
+        'envvar_val': 'testing-more',
+        'default': 1234.0,
+        'expected_value': 1234.0,
+    },
+    {
+        'name': 'test env var is an int, not float',
+        'envvar_set': True,
+        'envvar_val': '7239',
+        'default': None,  # None requested
+        'expected_value': 7239.0,
+    },
+    {
+        'name': 'test env var is a float',
+        'envvar_set': True,
+        'envvar_val': '7239.23234',
+        'default': None,  # None requested
+        'expected_value': 7239.23234,
+    },
+]
+
+
 def _test_environ(env_type, test):
     env = {'TESTING': test['envvar_val']} if test['envvar_set'] else {}
     default = test['default']
@@ -282,3 +329,7 @@ def _test_environ(env_type, test):
 def test__environ_as_int(test):
     _test_environ(_environ_as_int, test)
 
+
+@pytest.mark.parametrize('test', _tests_environ_as_float)
+def test__environ_as_float(test):
+    _test_environ(_environ_as_float, test)

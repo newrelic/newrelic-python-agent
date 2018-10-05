@@ -9,6 +9,11 @@ INI_FILE_SERVERLESS_MODE = """
 serverless_mode = true
 """.encode('utf-8')
 
+INI_FILE_APDEX_T = """
+[newrelic]
+apdex_t = 0.33
+""".encode('utf-8')
+
 SERVERLESS_MODE_ENV = {
     'NEW_RELIC_SERVERLESS_MODE': 'false',
 }
@@ -47,6 +52,21 @@ def test_serverless_mode_environment(ini, env, serverless_mode,
         global_settings):
     settings = global_settings()
     assert settings.serverless_mode == serverless_mode
+
+
+@pytest.mark.parametrize('ini,env,value', [
+    # 1. apdex_t set in config file (this trumps all)
+    (INI_FILE_APDEX_T, {'NEW_RELIC_APDEX_T': 0.25}, 0.33),
+
+    # 2. lambda environment variable should force serverless mode on
+    (INI_FILE_EMPTY, {'NEW_RELIC_APDEX_T': 0.25}, 0.25),
+
+    # 3. Default is what's in config.py
+    (INI_FILE_EMPTY, {}, 0.5),
+])
+def test_serverless_apdex_t(ini, env, value, global_settings):
+    settings = global_settings()
+    assert settings.apdex_t == value
 
 
 @pytest.mark.parametrize('ini,env', [

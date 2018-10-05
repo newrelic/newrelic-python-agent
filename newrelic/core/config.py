@@ -236,6 +236,15 @@ def _environ_as_int(name, default=0):
         return default
 
 
+def _environ_as_float(name, default=0.0):
+    val = os.environ.get(name, default)
+
+    try:
+        return float(val)
+    except ValueError:
+        return default
+
+
 def _environ_as_bool(name, default=False):
     flag = os.environ.get(name, default)
     if default is None or default:

@@ -267,13 +267,18 @@ _tests_environ_as_int = [
 ]
 
 
-@pytest.mark.parametrize('test', _tests_environ_as_int)
-def test__environ_as_int(test):
+def _test_environ(env_type, test):
     env = {'TESTING': test['envvar_val']} if test['envvar_set'] else {}
     default = test['default']
     with Environ(env):
         if default:
-            val = _environ_as_int('TESTING', default=default)
+            val = env_type('TESTING', default=default)
         else:
-            val = _environ_as_int('TESTING')
+            val = env_type('TESTING')
     assert val == test['expected_value']
+
+
+@pytest.mark.parametrize('test', _tests_environ_as_int)
+def test__environ_as_int(test):
+    _test_environ(_environ_as_int, test)
+

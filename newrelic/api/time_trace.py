@@ -127,6 +127,10 @@ class TimeTrace(object):
 
         self.exited = True
 
+        # Since we're exited we can't possibly schedule more children but we
+        # may have children still running if we're async
+        self.transaction._pop_current(self)
+
         self.exc_data = (exc, value, tb)
 
         # in all cases except async, the children will have exited

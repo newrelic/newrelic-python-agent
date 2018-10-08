@@ -12,6 +12,12 @@ unreleased
   Error traces will now respect excluding `request.uri` when added to the
   attributes.exclude list in the newrelic.ini configuration file.
 
+- Fix tracing of functions returning generators
+
+  When tracing generators whose parent traces have ended an error was seen
+  in the logs "Transaction ended but current_node is not Sentinel." This has
+  now been fixed.
+
 
 4.4.1 (2018-09-21)
 ------------------

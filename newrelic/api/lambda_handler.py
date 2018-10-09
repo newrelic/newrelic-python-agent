@@ -9,7 +9,7 @@ from newrelic.core.config import global_settings
 
 
 START_TIME = time.time()
-COLD_START_TIME = None
+COLD_START_RECORDED = False
 MEGABYTE_IN_BYTES = 2**20
 
 
@@ -84,10 +84,18 @@ def LambdaHandlerWrapper(wrapped, application=None, name=None,
 
         transaction._aws_region = os.environ.get('AWS_REGION', None)
 
-        global COLD_START_TIME
-        if COLD_START_TIME is None:
-            COLD_START_TIME = time.time() - START_TIME
-            transaction._cold_start_time = COLD_START_TIME
+        # COLD_START_RECORDED is initialized to "False" when the container
+        # first starts up, and will remain that way until the below lines
+        # of code are encountered during the first transaction after the cold
+        # start. We record this occurence on the transaction so that an
+        # attribute is created, and then set COLD_START_RECORDED to False so
+        # that the attribute is not created again during future invocations of
+        # this container.
+
+        global COLD_START_RECORDED
+        if COLD_START_RECORDED is False:
+            transaction._is_cold_start = True
+            COLD_START_RECORDED = True
 
         settings = global_settings()
         if query_params and not settings.high_security:

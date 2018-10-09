@@ -198,7 +198,7 @@ class Transaction(object):
         self._aws_function_name = None
         self._aws_function_version = None
         self._memory_limit = None
-        self._cold_start_time = None
+        self._is_cold_start = False
 
         global_settings = application.global_settings
 
@@ -890,8 +890,8 @@ class Transaction(object):
             a_attrs['aws.lambda.functionVersion'] = self._aws_function_version
         if self._memory_limit:
             a_attrs['aws.lambda.memoryLimit'] = self._memory_limit
-        if self._cold_start_time:
-            a_attrs['aws.lambda.coldStartTime'] = self._cold_start_time
+        if self._is_cold_start:
+            a_attrs['aws.lambda.coldStart'] = self._is_cold_start
 
         resp_props = self._response_properties
 

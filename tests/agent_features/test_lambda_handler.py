@@ -41,7 +41,6 @@ _expected_attributes = {
         'aws.lambda.functionName',
         'aws.lambda.functionVersion',
         'aws.lambda.memoryLimit',
-        'aws.lambda.coldStartTime',
         'response.status',
         'response.headers.contentType',
         'response.headers.contentLength',

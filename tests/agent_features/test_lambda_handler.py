@@ -1,4 +1,5 @@
 import pytest
+from copy import deepcopy
 from testing_support.fixtures import (override_application_settings,
         validate_transaction_trace_attributes,
         validate_transaction_event_attributes)
@@ -67,20 +68,45 @@ class Context(object):
     memory_limit_in_mb = 128
 
 
-@validate_transaction_trace_attributes(_expected_attributes)
-@validate_transaction_event_attributes(
-    _expected_attributes, exact_attrs=_exact_attrs)
-@override_application_settings(_override_settings)
-def test_lambda_transaction_attributes(monkeypatch):
-    monkeypatch.setenv('AWS_REGION', 'earth')
-    handler({
-        'httpMethod': 'GET',
-        'path': '/',
-        'headers': {},
-        'queryStringParameters': {'foo': 'bar'},
-        'multiValueQueryStringParameters': {'foo': ['bar']},
-    }, Context)
+@pytest.mark.parametrize('is_cold', (False, True))
+def test_lambda_transaction_attributes(is_cold, monkeypatch):
+    # setup copies of the attribute lists for this test only
+    _forgone_params = {}
+    _exact = deepcopy(_exact_attrs)
+    _expected = deepcopy(_expected_attributes)
 
+    # if we have a cold start, then we should see aws.lambda.coldStart=True
+    if is_cold:
+        _exact['agent']['aws.lambda.coldStart'] = True
+        _expected['agent'].append('aws.lambda.coldStart')
+
+    # otherwise, then we need to make sure that we don't see it at all
+    else:
+        _forgone_params = {
+            'agent': ['aws.lambda.coldStart'],
+            'user': [],
+            'intrinsic': []
+        }
+
+    @validate_transaction_trace_attributes(
+        required_params=_expected,
+        forgone_params=_forgone_params)
+    @validate_transaction_event_attributes(
+        required_params=_expected,
+        forgone_params=_forgone_params,
+        exact_attrs=_exact)
+    @override_application_settings(_override_settings)
+    def _test():
+        monkeypatch.setenv('AWS_REGION', 'earth')
+        handler({
+            'httpMethod': 'GET',
+            'path': '/',
+            'headers': {},
+            'queryStringParameters': {'foo': 'bar'},
+            'multiValueQueryStringParameters': {'foo': ['bar']},
+        }, Context)
+
+    _test()
 
 
 @validate_transaction_trace_attributes(_expected_attributes)

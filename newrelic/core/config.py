@@ -450,7 +450,7 @@ _settings.transaction_segment_terms = []
 _settings.account_id = os.environ.get('NEW_RELIC_ACCOUNT_ID')
 _settings.cross_process_id = None
 _settings.primary_application_id = \
-        os.environ.get('NEW_RELIC_PRIMARY_APPLICATION_ID')
+        os.environ.get('NEW_RELIC_PRIMARY_APPLICATION_ID', 'Unknown')
 _settings.trusted_account_ids = []
 _settings.trusted_account_key = os.environ.get('NEW_RELIC_TRUSTED_ACCOUNT_KEY')
 _settings.encoding_key = None

@@ -5,9 +5,16 @@ from testing_support.fixtures import (override_application_settings,
 import newrelic.api.lambda_handler as lambda_handler
 
 
+# NOTE: this fixture will force all tests in this file to assume that a cold
+#       start has occurred, *except* when a test has a parameter named
+#       "is_cold" and its value is True
 @pytest.fixture(autouse=True)
-def force_cold_start():
-    lambda_handler.COLD_START_TIME = None
+def force_cold_start_status(request):
+    try:
+        is_cold_start = request.getfixturevalue('is_cold')
+        lambda_handler.COLD_START_RECORDED = not is_cold_start
+    except Exception:
+        lambda_handler.COLD_START_RECORDED = True
 
 
 @lambda_handler.lambda_handler()
@@ -74,6 +81,7 @@ def test_lambda_transaction_attributes(monkeypatch):
         'queryStringParameters': {'foo': 'bar'},
         'multiValueQueryStringParameters': {'foo': ['bar']},
     }, Context)
+
 
 
 @validate_transaction_trace_attributes(_expected_attributes)

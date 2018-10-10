@@ -382,6 +382,8 @@ _settings.host = os.environ.get('NEW_RELIC_HOST',
         default_host(_settings.license_key))
 _settings.port = int(os.environ.get('NEW_RELIC_PORT', '0'))
 
+_settings.agent_run_id = None
+
 _settings.proxy_scheme = os.environ.get('NEW_RELIC_PROXY_SCHEME', None)
 _settings.proxy_host = os.environ.get('NEW_RELIC_PROXY_HOST', None)
 _settings.proxy_port = int(os.environ.get('NEW_RELIC_PROXY_PORT', '0'))

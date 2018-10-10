@@ -11,6 +11,7 @@ from newrelic.core.config import (global_settings_dump, flatten_settings,
     apply_config_setting, apply_server_side_settings, Settings,
     fetch_config_setting, global_settings)
 
+
 def parameterize_local_config(settings_list):
     settings_object_list = []
 
@@ -21,6 +22,7 @@ def parameterize_local_config(settings_list):
         settings_object_list.append(settings_object)
 
     return pytest.mark.parametrize('settings', settings_object_list)
+
 
 _test_strip_proxy_details_local_configs = [
     {
@@ -205,6 +207,7 @@ _test_strip_proxy_details_local_configs = [
     },
 ]
 
+
 @parameterize_local_config(_test_strip_proxy_details_local_configs)
 def test_strip_proxy_details(settings):
     assert 'license_key' in settings
@@ -253,6 +256,7 @@ def test_strip_proxy_details(settings):
 
     assert proxy_host == expected_proxy_host
 
+
 def test_delete_setting():
     d = {'transaction_tracer.capture_attributes': True}
     settings = apply_server_side_settings(d)
@@ -261,12 +265,14 @@ def test_delete_setting():
     delete_setting(settings, 'transaction_tracer.capture_attributes')
     assert 'capture_attributes' not in settings.transaction_tracer
 
+
 def test_delete_setting_absent():
     settings = apply_server_side_settings()
     assert 'capture_attributes' not in settings.transaction_tracer
 
     delete_setting(settings, 'transaction_tracer.capture_attributes')
     assert 'capture_attributes' not in settings.transaction_tracer
+
 
 def test_delete_setting_parent():
     settings = apply_server_side_settings()
@@ -276,6 +282,7 @@ def test_delete_setting_parent():
     delete_setting(settings, 'transaction_tracer')
     assert 'transaction_tracer' not in settings
 
+
 # Build a series of tests for `translate_deprecated_setting`.
 #
 # Each test will consist of an old setting and new setting.
@@ -283,7 +290,6 @@ def test_delete_setting_parent():
 #
 #       'value' == 'default'
 #       'value' != 'default'
-
 TSetting = collections.namedtuple('TSetting', ['name', 'value', 'default'])
 
 translate_settings_tests = [
@@ -337,6 +343,7 @@ translate_settings_tests = [
     ),
 ]
 
+
 @pytest.mark.parametrize('old,new', translate_settings_tests)
 def test_translate_deprecated_setting_without_new_setting(old, new):
     # Before: deprecated setting will be in settings object.
@@ -357,6 +364,7 @@ def test_translate_deprecated_setting_without_new_setting(old, new):
     assert result is settings
     assert old.name not in flatten_settings(result)
     assert fetch_config_setting(result, new.name) == old.value
+
 
 @pytest.mark.parametrize('old,new', translate_settings_tests)
 def test_translate_deprecated_setting_with_new_setting(old, new):
@@ -380,6 +388,7 @@ def test_translate_deprecated_setting_with_new_setting(old, new):
     assert old.name not in flatten_settings(result)
     assert fetch_config_setting(result, new.name) == new.value
 
+
 @pytest.mark.parametrize('old,new', translate_settings_tests)
 def test_translate_deprecated_setting_without_old_setting(old, new):
     # Before: deprecated setting will *NOT* be in settings object.
@@ -401,6 +410,7 @@ def test_translate_deprecated_setting_without_old_setting(old, new):
     assert old.name not in flatten_settings(result)
     assert fetch_config_setting(result, new.name) == new.value
 
+
 def test_translate_deprecated_ignored_params_without_new_setting():
     ignored_params = ['foo', 'bar']
     settings = apply_server_side_settings()
@@ -417,6 +427,7 @@ def test_translate_deprecated_ignored_params_without_new_setting():
     assert 'request.parameters.foo' in result.attributes.exclude
     assert 'request.parameters.bar' in result.attributes.exclude
     assert 'ignored_params' not in result
+
 
 def test_translate_deprecated_ignored_params_with_new_setting():
     ignored_params = ['foo', 'bar']

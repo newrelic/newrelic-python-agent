@@ -14,7 +14,7 @@ INI_FILE_APDEX_T = """
 apdex_t = 0.33
 """.encode('utf-8')
 
-SERVERLESS_MODE_ENV = {
+NON_SERVERLESS_MODE_ENV = {
     'NEW_RELIC_SERVERLESS_MODE': 'false',
 }
 
@@ -36,7 +36,7 @@ DT_ENV = {
 
 @pytest.mark.parametrize('ini,env,serverless_mode', [
     # 1. serverless mode in config file (this trumps all)
-    (INI_FILE_SERVERLESS_MODE, SERVERLESS_MODE_ENV, True),
+    (INI_FILE_SERVERLESS_MODE, NON_SERVERLESS_MODE_ENV, True),
 
     # 2. serverless mode in the env variable should override any other env
     # variables

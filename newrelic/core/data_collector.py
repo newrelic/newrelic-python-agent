@@ -236,7 +236,10 @@ def _log_request(url, params, headers, data):
         if isinstance(data, bytes):
             data = data.decode('Latin-1')
 
-    object_from_json = json_decode(data)
+    try:
+        object_from_json = json_decode(data)
+    except Exception:
+        object_from_json = data
 
     pprint(object_from_json, stream=_audit_log_fp)
 
@@ -1021,6 +1024,9 @@ class ApplicationSession(object):
                 'span_event_data', self.license_key, self.agent_run_id,
                 payload, self.max_payload_size_in_bytes)
 
+    def finalize(self):
+        pass
+
     @classmethod
     def create_session(cls, license_key, app_name, linked_applications,
             environment, settings):
@@ -1347,12 +1353,76 @@ class DeveloperModeSession(ApplicationSession):
         return result
 
 
+class ServerlessModeSession(ApplicationSession):
+    def __init__(self, *args, **kwargs):
+        super(ServerlessModeSession, self).__init__(*args, **kwargs)
+        self._metadata = {}
+        self._data = {}
+
+    @classmethod
+    def create_session(cls, license_key, app_name, linked_applications,
+            environment, settings):
+        url = None
+        application_config = finalize_application_settings({
+            'cross_application_tracer.enabled': False,
+        })
+        return cls(url, license_key, application_config)
+
+    @property
+    def requests_session(self):
+        return None
+
+    def send_request(self, session, url, method, license_key,
+            agent_run_id=None, payload=(), max_payload_size_in_bytes=None):
+
+        # Create fake details for the request being made so that we
+        # can use the same audit logging functionality.
+
+        params = {}
+        headers = {}
+
+        params['method'] = method
+
+        log_id = _log_request(url, params, headers, payload)
+
+        self._data[method] = payload
+
+        # Now create the fake responses so the agent still runs okay.
+
+        result = _developer_mode_responses[method]
+
+        # Even though they are always fake responses, still log them.
+
+        if log_id is not None:
+            _log_response(log_id, dict(return_value=result))
+
+        return result
+
+    def agent_settings(self, *args, **kwargs):
+        pass
+
+    def shutdown_session(self, *args, **kwargs):
+        pass
+
+    def get_agent_commands(self, *args, **kwargs):
+        return ()
+
+    def finalize(self):
+        data = json_encode(self._data)
+        print(data)
+        self._data.clear()
+        return data
+
+
 def create_session(license_key, app_name, linked_applications,
         environment, settings):
 
     _global_settings = global_settings()
 
-    if _global_settings.developer_mode:
+    if _global_settings.serverless_mode:
+        session = ServerlessModeSession.create_session(license_key, app_name,
+                linked_applications, environment, settings)
+    elif _global_settings.developer_mode:
         session = DeveloperModeSession.create_session(license_key, app_name,
                 linked_applications, environment, settings)
     else:

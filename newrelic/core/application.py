@@ -1601,6 +1601,9 @@ class Application(object):
 
                     self.report_profile_data()
 
+                    _logger.debug('Finalizing data.')
+                    self._active_session.finalize()
+
                     # If this is a final forced harvest for the process
                     # then attempt to shutdown the session.
 

@@ -192,6 +192,14 @@ class Transaction(object):
         self._profile_skip = 1
         self._profile_count = 0
 
+        self._aws_request_id = None
+        self._aws_arn = None
+        self._aws_region = None
+        self._aws_function_name = None
+        self._aws_function_version = None
+        self._memory_limit = None
+        self._is_cold_start = False
+
         global_settings = application.global_settings
 
         if global_settings.enabled:
@@ -870,6 +878,20 @@ class Transaction(object):
             a_attrs['request.method'] = req_env['REQUEST_METHOD']
         if self._request_uri:
             a_attrs['request.uri'] = self._request_uri
+        if self._aws_request_id:
+            a_attrs['aws.requestId'] = self._aws_request_id
+        if self._aws_region:
+            a_attrs['aws.region'] = self._aws_region
+        if self._aws_arn:
+            a_attrs['aws.lambda.arn'] = self._aws_arn
+        if self._aws_function_name:
+            a_attrs['aws.lambda.functionName'] = self._aws_function_name
+        if self._aws_function_version:
+            a_attrs['aws.lambda.functionVersion'] = self._aws_function_version
+        if self._memory_limit:
+            a_attrs['aws.lambda.memoryLimit'] = self._memory_limit
+        if self._is_cold_start:
+            a_attrs['aws.lambda.coldStart'] = self._is_cold_start
 
         resp_props = self._response_properties
 
@@ -1016,6 +1038,7 @@ class Transaction(object):
 
         if not (account_id and
                 application_id and
+                trusted_account_key and
                 settings.distributed_tracing.enabled):
             return
 

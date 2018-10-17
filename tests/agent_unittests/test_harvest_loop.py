@@ -1,3 +1,4 @@
+import six
 import pytest
 
 from newrelic.common.object_wrapper import transient_function_wrapper
@@ -114,6 +115,16 @@ def transaction_node(request):
     return node
 
 
+@pytest.fixture
+def audit_log_file():
+    import newrelic.core.data_collector as data_collector
+    fp = six.StringIO()
+    orig = data_collector._audit_log_fp
+    data_collector._audit_log_fp = fp
+    yield fp
+    data_collector._audit_log_fp = orig
+
+
 def validate_metric_payload(metrics=[], endpoints_called=[]):
     @transient_function_wrapper('newrelic.core.data_collector',
             'DeveloperModeSession.send_request')
@@ -205,8 +216,9 @@ endpoints_called = []
     'developer_mode': True,
     'license_key': '**NOT A LICENSE KEY**',
     'feature_flag': set(),
+    'audit_log_file': True,  # This value doesn't matter
 })
-def test_application_harvest():
+def test_application_harvest(audit_log_file):
     app = Application('Python Agent Test (Harvest Loop)')
     app.connect_to_data_collector()
     app.harvest()
@@ -214,6 +226,24 @@ def test_application_harvest():
     # Verify that the metric_data endpoint is the 2nd to last endpoint called
     # Last endpoint called is get_agent_commands
     assert endpoints_called[-2] == 'metric_data'
+
+    # verify audit log is not empty
+    assert audit_log_file.tell()
+
+
+@override_generic_settings(settings, {
+    'serverless_mode': True,
+    'license_key': '**NOT A LICENSE KEY**',
+    'feature_flag': set(),
+    'audit_log_file': True,  # This value doesn't matter
+})
+def test_serverless_application_harvest(audit_log_file):
+    app = Application('Python Agent Test (Serverless Harvest Loop)')
+    app.connect_to_data_collector()
+    app.harvest()
+
+    # verify audit log is not empty
+    assert audit_log_file.tell()
 
 
 @pytest.mark.parametrize(

@@ -306,8 +306,12 @@ def gzip_compress(text):
     return compressed_data.getvalue()
 
 
-def gzip_decompress(text):
-    data_bytes = io.BytesIO(text)
+def gzip_decompress(payload):
+    """GZip decompresses input bytes. This function takes in a string
+    or UTF-8 input and returns the decompressed string.
+
+    """
+    data_bytes = io.BytesIO(payload)
     decoded_data = gzip.GzipFile(fileobj=data_bytes).read()
     return decoded_data.decode('utf-8')
 

@@ -4,7 +4,7 @@ from newrelic.common.object_wrapper import (
 
 
 def validate_serverless_data(
-        should_exist=True, expected_methods=(), forgone_methods=()):
+        expected_methods=(), forgone_methods=()):
 
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
@@ -19,10 +19,6 @@ def validate_serverless_data(
             return result
 
         def _validate():
-            if not should_exist:
-                assert not payloads
-                return
-
             assert payloads
 
             for payload in payloads:

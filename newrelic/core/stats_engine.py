@@ -275,6 +275,9 @@ class SampledDataSet(object):
             'events_seen': self.num_seen
         }
 
+    def __iter__(self):
+        return self.samples
+
     def reset(self):
         self.pq = []
         self.heap = False

@@ -33,7 +33,7 @@ from newrelic.network.addresses import proxy_details
 from newrelic.common.object_wrapper import patch_function_wrapper
 from newrelic.common.object_names import callable_name
 from newrelic.common.encoding_utils import (json_encode, json_decode,
-        unpack_field)
+        unpack_field, serverless_payload_encode)
 from newrelic.common.system_info import (logical_processor_count,
         total_physical_memory, BootIdUtilization)
 from newrelic.common.utilization import (AWSUtilization, AzureUtilization,
@@ -1359,6 +1359,11 @@ class ServerlessModeSession(ApplicationSession):
         self._metadata = {}
         self._data = {}
 
+        self._payload = {
+            'metadata': self._metadata,
+            'data': self._data,
+        }
+
     @classmethod
     def create_session(cls, license_key, app_name, linked_applications,
             environment, settings):
@@ -1408,10 +1413,14 @@ class ServerlessModeSession(ApplicationSession):
         return ()
 
     def finalize(self):
-        data = json_encode(self._data)
-        print(data)
+        encoded = serverless_payload_encode(self._payload)
+        payload = json_encode((1, 'NR_LAMBDA_MONITORING', encoded))
+
+        print(payload)
+
+        # Clear data after sending
         self._data.clear()
-        return data
+        return payload
 
 
 def create_session(license_key, app_name, linked_applications,

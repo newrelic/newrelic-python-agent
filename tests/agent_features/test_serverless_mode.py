@@ -30,7 +30,8 @@ def test_serverless_payload(capsys, serverless_application):
         'distributed_tracing.enabled': True,
     })
     @validate_serverless_data(
-            expected_methods=('metric_data', 'analytic_event_data'))
+            expected_methods=('metric_data', 'analytic_event_data'),
+            forgone_methods=('preconnect', 'connect', 'get_agent_commands'))
     @background_task(
             application=serverless_application,
             name='test_serverless_payload')

@@ -7,6 +7,8 @@ from testing_support.fixtures import override_generic_settings
 
 from testing_support.validators.validate_serverless_data import (
         validate_serverless_data)
+from testing_support.validators.validate_serverless_payload import (
+        validate_serverless_payload)
 
 
 @pytest.fixture(scope='module')
@@ -32,6 +34,7 @@ def test_serverless_payload(capsys, serverless_application):
     @validate_serverless_data(
             expected_methods=('metric_data', 'analytic_event_data'),
             forgone_methods=('preconnect', 'connect', 'get_agent_commands'))
+    @validate_serverless_payload()
     @background_task(
             application=serverless_application,
             name='test_serverless_payload')

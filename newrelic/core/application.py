@@ -1392,7 +1392,7 @@ class Application(object):
                     if (configuration.collect_analytics_events and
                             configuration.transaction_events.enabled):
 
-                        samples = stats.transaction_events.samples
+                        samples = stats.transaction_events
                         all_analytic_events.extend(samples)
 
                     if len(all_analytic_events):
@@ -1401,6 +1401,7 @@ class Application(object):
 
                         self._active_session.send_transaction_events(
                                 all_analytic_events)
+                        all_analytic_events = None
 
                     # Report internal metrics about sample data set
                     # for analytics.
@@ -1427,11 +1428,14 @@ class Application(object):
                             configuration.distributed_tracing.enabled):
                         spans = stats.span_events
                         if spans.num_samples > 0:
+                            span_samples = list(spans)
+
                             _logger.debug('Sending span event data '
                                     'for harvest of %r.', self._app_name)
 
                             self._active_session.send_span_events(
-                                spans.sampling_info, spans.samples)
+                                spans.sampling_info, span_samples)
+                            span_samples = None
 
                         # As per spec
                         spans_seen = spans.num_seen
@@ -1452,12 +1456,15 @@ class Application(object):
                         error_events = stats.error_events
                         num_error_samples = error_events.num_samples
                         if num_error_samples > 0:
+                            error_event_samples = list(error_events)
+
                             _logger.debug('Sending error event data '
                                     'for harvest of %r.', self._app_name)
 
                             samp_info = error_events.sampling_info
                             self._active_session.send_error_events(samp_info,
-                                    error_events.samples)
+                                    error_event_samples)
+                            error_event_samples = None
 
                         # As per spec
                         internal_count_metric('Supportability/Events/'
@@ -1475,11 +1482,14 @@ class Application(object):
                         customs = stats.custom_events
 
                         if customs.num_samples > 0:
+                            custom_samples = list(customs)
+
                             _logger.debug('Sending custom event data '
                                     'for harvest of %r.', self._app_name)
 
                             self._active_session.send_custom_events(
-                                    customs.sampling_info, customs.samples)
+                                    customs.sampling_info, custom_samples)
+                            custom_samples = None
 
                         # As per spec
                         internal_count_metric('Supportability/Events/'

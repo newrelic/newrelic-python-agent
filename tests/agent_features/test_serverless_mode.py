@@ -2,6 +2,7 @@ import pytest
 
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import background_task
+from newrelic.api.transaction import current_transaction
 from newrelic.core.config import global_settings
 from testing_support.fixtures import override_generic_settings
 
@@ -39,7 +40,8 @@ def test_serverless_payload(capsys, serverless_application):
             application=serverless_application,
             name='test_serverless_payload')
     def _test():
-        pass
+        transaction = current_transaction()
+        assert transaction.settings.serverless_mode
 
     _test()
 

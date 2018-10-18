@@ -71,3 +71,21 @@ def test_no_cat_headers(serverless_application):
 
     _test_cat_headers()
 
+
+def test_dt_outbound(serverless_application):
+    @override_generic_settings(serverless_application.settings, {
+        'distributed_tracing.enabled': True,
+        'account_id': '1',
+        'trusted_account_key': '1',
+        'primary_application_id': '1',
+    })
+    @background_task(
+            application=serverless_application,
+            name='test_dt_outbound')
+    def _test_dt_outbound():
+        transaction = current_transaction()
+        payload = ExternalTrace.generate_request_headers(transaction)
+        assert payload
+
+    _test_dt_outbound()
+

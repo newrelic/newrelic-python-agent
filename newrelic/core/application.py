@@ -62,6 +62,7 @@ class Application(object):
         self._last_transaction = 0.0
 
         self.adaptive_sampler = None
+        self._next_adaptive_sampler_reset = 0.0
 
         self._global_events_account = 0
 
@@ -141,6 +142,18 @@ class Application(object):
             return False
 
         with self._stats_lock:
+
+            if self.configuration.serverless_mode:
+                now = time.time()
+                reset_count = None
+                while now >= self._next_adaptive_sampler_reset:
+                    reset_count = self._transaction_count
+                    self._transaction_count = 0
+                    self._next_adaptive_sampler_reset += 60.0
+
+                if reset_count is not None:
+                    self.adaptive_sampler.reset(reset_count)
+
             return self.adaptive_sampler.compute_sampled(priority)
 
     def dump(self, file):
@@ -455,6 +468,7 @@ class Application(object):
 
             self._transaction_count = 0
             self._last_transaction = 0.0
+            self._next_adaptive_sampler_reset = self._period_start + 60.0
 
             self._global_events_account = 0
 
@@ -1276,11 +1290,14 @@ class Application(object):
                 _logger.debug('Snapshotting metrics for harvest of %r.',
                         self._app_name)
 
-                with self._stats_lock:
-                    transaction_count = self._transaction_count
-                    self.adaptive_sampler.reset(transaction_count)
+                configuration = self._active_session.configuration
+                transaction_count = self._transaction_count
 
-                    self._transaction_count = 0
+                with self._stats_lock:
+                    if not configuration.serverless_mode:
+                        self.adaptive_sampler.reset(transaction_count)
+                        self._transaction_count = 0
+
                     self._last_transaction = 0.0
 
                     stats = self._stats_engine.harvest_snapshot()
@@ -1377,8 +1394,6 @@ class Application(object):
 
                 try:
                     # Send the transaction and custom metric data.
-
-                    configuration = self._active_session.configuration
 
                     # Send data set for analytics, which is a combination
                     # of Synthetic analytic events, and the sampled data

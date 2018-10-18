@@ -3,6 +3,7 @@ import pytest
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction
+from newrelic.api.external_trace import ExternalTrace
 from newrelic.core.config import global_settings
 from testing_support.fixtures import override_generic_settings
 
@@ -49,3 +50,24 @@ def test_serverless_payload(capsys, serverless_application):
 
     # Validate that something is printed to stdout
     assert out
+
+
+def test_no_cat_headers(serverless_application):
+    @background_task(
+            application=serverless_application,
+            name='test_cat_headers')
+    def _test_cat_headers():
+        transaction = current_transaction()
+
+        payload = ExternalTrace.generate_request_headers(transaction)
+        assert not payload
+
+        trace = ExternalTrace(transaction, 'testlib', 'http://example.com')
+        response_headers = [('X-NewRelic-App-Data', 'Cookies')]
+        with trace:
+            trace.process_response_headers(response_headers)
+
+        assert transaction.settings.cross_application_tracer.enabled is False
+
+    _test_cat_headers()
+

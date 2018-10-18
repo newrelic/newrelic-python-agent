@@ -1377,6 +1377,19 @@ class ServerlessModeSession(ApplicationSession):
     def requests_session(self):
         return None
 
+    @property
+    def payload(self):
+        if not self._metadata:
+            self._update_payload_metadata()
+        return self._payload
+
+    def _update_payload_metadata(self):
+        self._metadata.update({
+            'protocol_version': 16,
+            'execution_environment': os.environ.get('AWS_EXECUTION_ENV', None),
+            'agent_version': version,
+        })
+
     def send_request(self, session, url, method, license_key,
             agent_run_id=None, payload=(), max_payload_size_in_bytes=None):
 
@@ -1413,7 +1426,7 @@ class ServerlessModeSession(ApplicationSession):
         return ()
 
     def finalize(self):
-        encoded = serverless_payload_encode(self._payload)
+        encoded = serverless_payload_encode(self.payload)
         payload = json_encode((1, 'NR_LAMBDA_MONITORING', encoded))
 
         print(payload)

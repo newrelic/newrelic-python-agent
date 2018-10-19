@@ -1356,7 +1356,11 @@ class DeveloperModeSession(ApplicationSession):
 class ServerlessModeSession(ApplicationSession):
     def __init__(self, *args, **kwargs):
         super(ServerlessModeSession, self).__init__(*args, **kwargs)
-        self._metadata = {}
+        self._metadata = {
+            'protocol_version': 16,
+            'execution_environment': os.environ.get('AWS_EXECUTION_ENV', None),
+            'agent_version': version,
+        }
         self._data = {}
 
         self._payload = {
@@ -1379,15 +1383,14 @@ class ServerlessModeSession(ApplicationSession):
 
     @property
     def payload(self):
-        if not self._metadata:
+        if not self._metadata.get('arn'):
             self._update_payload_metadata()
         return self._payload
 
     def _update_payload_metadata(self):
+        settings = global_settings()
         self._metadata.update({
-            'protocol_version': 16,
-            'execution_environment': os.environ.get('AWS_EXECUTION_ENV', None),
-            'agent_version': version,
+            'arn': settings.aws_arn,
         })
 
     def send_request(self, session, url, method, license_key,

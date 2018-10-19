@@ -204,9 +204,15 @@ def test_create_connect_payload_no_vendors():
             with_azure=False, with_docker=False)
 
 
-@pytest.mark.parametrize('execution_environment_set', (True, False))
-def test_serverless_session_metadata(execution_environment_set, monkeypatch):
+@pytest.mark.parametrize('execution_environment_set,arn_set', (
+        (True, False),
+        (False, True),
+))
+def test_serverless_session_metadata(execution_environment_set, arn_set,
+        monkeypatch):
 
+    settings = global_settings()
+    original_arn = settings.aws_arn
     expected_metadata = {
             'protocol_version': 16,
             'agent_version': AGENT_VERSION,
@@ -219,13 +225,49 @@ def test_serverless_session_metadata(execution_environment_set, monkeypatch):
     else:
         expected_metadata['execution_environment'] = None
 
-    settings = global_settings()
+    if arn_set:
+        aws_arn = 'aaaaaaaaaaaaarn'
+        settings.aws_arn = aws_arn
+        expected_metadata['arn'] = aws_arn
+    else:
+        expected_metadata['arn'] = None
+
     session = ServerlessModeSession(None, None, settings)
     captured_metadata = session.payload['metadata']
 
-    for key in captured_metadata:
-        assert key in expected_metadata
+    try:
+        for key in captured_metadata:
+            assert key in expected_metadata
 
-    for key, value in expected_metadata.items():
-        assert key in captured_metadata
-        assert captured_metadata[key] == value
+        for key, value in expected_metadata.items():
+            assert key in captured_metadata
+            assert captured_metadata[key] == value
+    finally:
+        settings.aws_arn = original_arn
+
+
+def test_serverless_session_retries_for_arn_but_not_for_other_keys(
+        monkeypatch):
+
+    settings = global_settings()
+    original_arn = settings.aws_arn
+    session = ServerlessModeSession(None, None, settings)
+
+    captured_metadata = session.payload['metadata']
+    assert captured_metadata['execution_environment'] is None
+    assert captured_metadata['arn'] is None
+
+    monkeypatch.setenv('AWS_EXECUTION_ENV',
+            'this should not set the execution environment')
+    captured_metadata = session.payload['metadata']
+    assert captured_metadata['execution_environment'] is None
+    assert captured_metadata['arn'] is None
+
+    aws_arn = 'aaaaaaaaaaaaarn'
+    settings.aws_arn = aws_arn
+    captured_metadata = session.payload['metadata']
+    try:
+        assert captured_metadata['execution_environment'] is None
+        assert captured_metadata['arn'] == aws_arn
+    finally:
+        settings.aws_arn = original_arn

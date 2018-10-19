@@ -102,6 +102,9 @@ def LambdaHandlerWrapper(wrapped, application=None, name=None,
             except:
                 pass
 
+        if not settings.aws_arn and transaction._aws_arn:
+            settings.aws_arn = transaction._aws_arn
+
         # Override the initial transaction name.
 
         if name is None:

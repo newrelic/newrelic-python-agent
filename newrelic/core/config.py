@@ -601,6 +601,7 @@ _settings.heroku.dyno_name_prefixes_to_shorten = list(_environ_as_set(
 _settings.serverless_mode = _environ_as_bool(
         'NEW_RELIC_SERVERLESS_MODE',
         default=bool(os.environ.get('AWS_LAMBDA_FUNCTION_NAME')))
+_settings.aws_arn = None
 
 
 def global_settings():

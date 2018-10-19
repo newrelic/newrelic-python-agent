@@ -5,7 +5,7 @@ from newrelic.common.object_wrapper import (
         function_wrapper)
 
 
-def validate_serverless_payload():
+def validate_serverless_payload(count=1):
 
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
@@ -19,7 +19,7 @@ def validate_serverless_payload():
             return payload
 
         def _validate():
-            assert payloads
+            assert len(payloads) == count
 
             for payload in payloads:
                 assert isinstance(payload, str)

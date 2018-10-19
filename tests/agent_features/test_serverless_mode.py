@@ -2,24 +2,28 @@ import pytest
 
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import background_task
-from newrelic.api.transaction import current_transaction
 from newrelic.api.external_trace import ExternalTrace
+from newrelic.api.lambda_handler import lambda_handler
+from newrelic.api.transaction import current_transaction
 from newrelic.core.config import global_settings
-from testing_support.fixtures import override_generic_settings
 
+from testing_support.fixtures import override_generic_settings
 from testing_support.validators.validate_serverless_data import (
         validate_serverless_data)
 from testing_support.validators.validate_serverless_payload import (
         validate_serverless_payload)
+from testing_support.validators.validate_serverless_metadata import (
+        validate_serverless_metadata)
 
 
-@pytest.fixture(scope='module')
-def serverless_application():
+@pytest.fixture(scope='function')
+def serverless_application(request):
     settings = global_settings()
     orig = settings.serverless_mode
     settings.serverless_mode = True
 
-    application_name = 'Python Agent Test (test_serverless_mode)'
+    application_name = 'Python Agent Test (test_serverless_mode:%s)' % (
+            request.node.name)
     application = application_instance(application_name)
     application.activate()
 
@@ -122,3 +126,32 @@ def test_dt_inbound(serverless_application):
         assert result
 
     _test_dt_inbound()
+
+
+@pytest.mark.parametrize('arn_set', (True, False))
+def test_payload_metadata_arn(serverless_application, arn_set):
+
+    # If the session object gathers the arn from the settings object before the
+    # lambda handler records it there, then this test will fail.
+
+    settings = global_settings()
+    original_arn = settings.aws_arn
+    settings.aws_arn = None
+
+    arn = None
+    if arn_set:
+        arn = 'arrrrrrrrrrRrrrrrrrn'
+
+    class Context(object):
+        invoked_function_arn = arn
+
+    @validate_serverless_metadata(exact_metadata={'arn': arn})
+    @lambda_handler(application=serverless_application)
+    def handler(event, context):
+        assert settings.aws_arn == arn
+        return {}
+
+    try:
+        handler({}, Context)
+    finally:
+        settings.aws_arn = original_arn

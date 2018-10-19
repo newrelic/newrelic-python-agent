@@ -1,5 +1,10 @@
 import pytest
 
+from newrelic.api.application import register_application
+from newrelic.api.background_task import background_task
+from testing_support.validators.validate_serverless_payload import (
+        validate_serverless_payload)
+
 INI_FILE_EMPTY = """
 [newrelic]
 """.encode('utf-8')
@@ -12,6 +17,12 @@ serverless_mode = true
 INI_FILE_APDEX_T = """
 [newrelic]
 apdex_t = 0.33
+""".encode('utf-8')
+
+INI_FILE_APP_NAME = """
+[newrelic]
+serverless_mode = True
+app_name = a;b
 """.encode('utf-8')
 
 NON_SERVERLESS_MODE_ENV = {
@@ -35,6 +46,10 @@ DT_ENV = {
     'NEW_RELIC_ACCOUNT_ID': 'account_id',
     'NEW_RELIC_PRIMARY_APPLICATION_ID': 'application_id',
     'NEW_RELIC_TRUSTED_ACCOUNT_KEY': 'trusted_key',
+}
+
+APP_NAME_ENV = {
+    'NEW_RELIC_APP_NAME': 'c;d'
 }
 
 
@@ -93,3 +108,32 @@ def test_serverless_dt_environment(ini, env, values, global_settings):
     assert settings.trusted_account_key == values[2]
 
     assert settings.serverless_mode == values[3]
+
+
+# The purpose of test_serverless_app_names is to ensure that if the customer
+# ever tries to specify multiple application names when serverless_mode = True,
+# the agent will never output more than one payload.
+
+@pytest.mark.parametrize('ini,env,register_name,handler_name', (
+    # multiple app names specified via the newrelic.ini config file
+    (INI_FILE_APP_NAME, {}, None, None),
+
+    # multiple app names specified via the NEW_RELIC_APP_NAME env variable
+    (INI_FILE_SERVERLESS_MODE, APP_NAME_ENV, None, None),
+
+    # multiple app names specified via a string passed to register_application
+    (INI_FILE_SERVERLESS_MODE, {}, 'e;f', None),
+
+    # multiple app names specified via a string passed to transaction decorator
+    (INI_FILE_SERVERLESS_MODE, {}, None, 'h;i'),
+))
+def test_serverless_mutli_app_names(ini, env, register_name, handler_name,
+                                    global_settings):
+    application = handler_name or register_application(register_name or None)
+
+    @validate_serverless_payload()
+    @background_task(application=application)
+    def _test_serverless_app_names():
+        pass
+
+    _test_serverless_app_names()

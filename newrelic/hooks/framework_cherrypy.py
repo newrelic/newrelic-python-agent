@@ -30,6 +30,7 @@ from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (ObjectProxy, function_wrapper,
         wrap_function_wrapper)
 from newrelic.core.config import ignore_status_code
+from newrelic.api.error_trace import wrap_error_trace
 
 
 def framework_details():
@@ -78,12 +79,7 @@ def handler_wrapper(wrapped, instance, args, kwargs):
     # application.
 
     with FunctionTrace(transaction, name=name):
-        try:
-            return wrapped(*args, **kwargs)
-
-        except:  # Catch all
-            transaction.record_exception(ignore_errors=should_ignore)
-            raise
+        return wrapped(*args, **kwargs)
 
 
 class ResourceProxy(ObjectProxy):
@@ -196,6 +192,8 @@ def instrument_cherrypy__cpdispatch(module):
             wrapper_Dispatcher_find_handler)
     wrap_function_wrapper(module, 'RoutesDispatcher.find_handler',
             wrapper_RoutesDispatcher_find_handler)
+    wrap_error_trace(module, 'PageHandler.__call__',
+            ignore_errors=should_ignore)
 
 
 def instrument_cherrypy__cpwsgi(module):

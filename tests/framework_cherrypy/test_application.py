@@ -167,3 +167,9 @@ def test_ignore_status_code(endpoint, ignore_overrides, expected_errors):
         test_application.get(endpoint, status=[404, 500])
 
     _test()
+
+
+@validate_transaction_errors(errors=[])
+def test_ignore_status_unexpected_param():
+    response = test_application.get('/?arg=1', status=404)
+    response.mustcontain(no=['INDEX RESPONSE'])

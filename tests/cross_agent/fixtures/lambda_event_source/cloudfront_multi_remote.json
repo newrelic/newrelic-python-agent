@@ -1,0 +1,30 @@
+{
+  "Records": [
+    {
+      "cf": {
+        "request": {
+          "headers": {
+            "host": [
+              {
+                "value": "d123.cf.net",
+                "key": "Host"
+              }
+            ],
+            "user-agent": [
+              {
+                "value": "Test Agent",
+                "key": "User-Agent"
+              }
+            ]
+          },
+          "clientIp": "2001:cdba::3257:9652",
+          "uri": "/forecast/Seattle:NewYork:Chicago:SanFrancisco",
+          "method": "GET"
+        },
+        "config": {
+          "distributionId": "EXAMPLE"
+        }
+      }
+    }
+  ]
+}

@@ -54,6 +54,9 @@ def test_lambda_event_source(test_name):
     expected_arn = tests[test_name].get('aws.lambda.eventSource.arn', None)
     if expected_arn:
         _exact['agent']['aws.lambda.eventSource.arn'] = expected_arn
+    else:
+        pytest.skip("Nothing to test!")
+        return
 
     @override_application_settings({'attributes.include': ['aws.*']})
     @validate_transaction_event_attributes({}, exact_attrs=_exact)

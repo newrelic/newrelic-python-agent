@@ -1,6 +1,14 @@
 unreleased
 ----------
 
+- Fix ignored error reporting in CherryPy instrumention
+
+  When missing query parameters, unexpected query parameters, unexpected positional
+  arguments, or duplicate arguments were present in the CherryPy framework, a
+  TypeError exception was recorded even when an ignored response status code
+  (such as a 404) was generated. An error is no longer recorded when it results in
+  the generation of an ignored status code.
+
 - Excluding `request.uri` from transaction trace attributes hides it in the UI
 
   When `request.uri` is added to either `attributes.exclude` or

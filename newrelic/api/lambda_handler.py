@@ -4,7 +4,9 @@ from newrelic.common.object_wrapper import FunctionWrapper
 from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.api.application import application_instance
+from newrelic.core.attribute import truncate
 from newrelic.core.config import global_settings
+import newrelic.packages.six as six
 
 
 COLD_START_RECORDED = False
@@ -30,6 +32,22 @@ def process_event(event):
         pass
 
     return {}, True, None
+
+
+def extract_event_source_arn(event):
+    try:
+        arn = event.get('streamArn') or \
+              event.get('deliveryStreamArn')
+
+        if not arn:
+            record = event['Records'][0]
+            arn = record.get('eventSourceARN') or \
+                  record.get('EventSubscriptionArn') or \
+                  record['s3']['bucket']['arn']
+
+        return truncate(str(arn))
+    except Exception:
+        pass
 
 
 def LambdaHandlerWrapper(wrapped, application=None, name=None,
@@ -81,6 +99,7 @@ def LambdaHandlerWrapper(wrapped, application=None, name=None,
             pass
 
         transaction._aws_region = os.environ.get('AWS_REGION', None)
+        transaction._aws_event_source_arn = extract_event_source_arn(event)
 
         # COLD_START_RECORDED is initialized to "False" when the container
         # first starts up, and will remain that way until the below lines

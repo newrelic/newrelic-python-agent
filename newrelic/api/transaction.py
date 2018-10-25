@@ -197,6 +197,7 @@ class Transaction(object):
         self._aws_region = None
         self._aws_function_name = None
         self._aws_function_version = None
+        self._aws_event_source_arn = None
         self._memory_limit = None
         self._is_cold_start = False
 
@@ -892,6 +893,8 @@ class Transaction(object):
             a_attrs['aws.lambda.memoryLimit'] = self._memory_limit
         if self._is_cold_start:
             a_attrs['aws.lambda.coldStart'] = self._is_cold_start
+        if self._aws_event_source_arn:
+            a_attrs['aws.lambda.eventSource.arn'] = self._aws_event_source_arn
 
         resp_props = self._response_properties
 

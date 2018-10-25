@@ -287,6 +287,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/tests/_test_lambda_event_sources.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/tests/html_insertion/attachment_mentioned_in_inline.html": {
         "hash": "n/a",
         "libraries": [

@@ -7,6 +7,7 @@ _coverage_source = [
     'newrelic.api.transaction',
     'newrelic.api.web_transaction',
     'newrelic.api.coroutine_trace',
+    'newrelic.api.lambda_handler'
 ]
 
 code_coverage = code_coverage_fixture(source=_coverage_source)

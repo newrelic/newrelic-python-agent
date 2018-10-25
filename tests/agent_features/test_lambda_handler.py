@@ -33,7 +33,8 @@ def handler(event, context):
 _override_settings = {
     'attributes.include': ['aws.lambda.functionName',
             'aws.lambda.functionVersion', 'aws.lambda.memoryLimit',
-            'aws.lambda.coldStart', 'request.parameters.*'],
+            'aws.lambda.coldStart', 'request.parameters.*',
+            'aws.lambda.eventSource.arn'],
 }
 _expected_attributes = {
     'agent': [
@@ -58,6 +59,18 @@ _exact_attrs = {
     },
     'user': {},
     'intrinsic': {}
+}
+
+empty_event = {}
+firehose_event = {
+    "records": [{
+        "recordId": "495469866831355442",
+        "data": "SGVsbG8sIHRoaXMgaXMgYSB0ZXN0IDEyMy4=",
+        "approximateArrivalTimestamp": 1495072949453
+    }],
+    "region": "us-west-2",
+    "deliveryStreamArn": "arn:aws:kinesis:EXAMPLE",
+    "invocationId": "invocationIdExample"
 }
 
 
@@ -122,3 +135,39 @@ def test_lambda_malformed_api_gateway_payload(monkeypatch):
         'queryStringParameters': 42,
         'multiValueQueryStringParameters': 42,
     }, Context)
+
+
+@pytest.mark.parametrize('event,arn', (
+        (empty_event, None),
+        (firehose_event, 'arn:aws:kinesis:EXAMPLE')))
+def test_lambda_event_source_arn_attribute(event, arn):
+    if arn is None:
+        _exact = None
+        _expected = None
+        _forgone = {
+            'user': [], 'intrinsic': [],
+            'agent': ['aws.lambda.eventSource.arn'],
+        }
+    else:
+        _exact = {
+            'user': {}, 'intrinsic': {},
+            'agent': {'aws.lambda.eventSource.arn': arn},
+        }
+        _expected = {
+            'user': [], 'intrinsic': [],
+            'agent': ['aws.lambda.eventSource.arn'],
+        }
+        _forgone = None
+
+    @validate_transaction_trace_attributes(
+        required_params=_expected,
+        forgone_params=_forgone)
+    @validate_transaction_event_attributes(
+        required_params=_expected,
+        forgone_params=_forgone,
+        exact_attrs=_exact)
+    @override_application_settings(_override_settings)
+    def _test():
+        handler(event, Context)
+
+    _test()

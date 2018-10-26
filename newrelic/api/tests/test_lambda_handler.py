@@ -63,6 +63,18 @@ class TestCase(newrelic.tests.test_cases.TestCase):
     def test_already_running_transaction(self):
         nested_handler({}, Context)
 
+    def test_none_type_event(self):
+        handler(None, Context)
+
+    def test_str_type_event(self):
+        handler('this is a string', Context)
+
+    def test_float_type_event(self):
+        handler(123.4, Context)
+
+    def test_list_type_event(self):
+        handler(['this', 'is', 'a', 'list'], Context)
+
 
 class TestLambdaEventSource(newrelic.tests.test_cases.TestCase):
     def test_s3_lookup(self):

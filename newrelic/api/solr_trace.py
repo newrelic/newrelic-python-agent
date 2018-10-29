@@ -7,8 +7,6 @@ import newrelic.api.object_wrapper
 
 class SolrTrace(newrelic.api.time_trace.TimeTrace):
 
-    node = newrelic.core.solr_node.SolrNode
-
     def __init__(self, transaction, library, command):
         super(SolrTrace, self).__init__(transaction)
 
@@ -21,6 +19,18 @@ class SolrTrace(newrelic.api.time_trace.TimeTrace):
 
     def terminal_node(self):
         return True
+
+    def create_node(self):
+        return newrelic.core.solr_node.SolrNode(
+                library=self.library,
+                command=self.command,
+                children=self.children,
+                start_time=self.start_time,
+                end_time=self.end_time,
+                duration=self.duration,
+                exclusive=self.exclusive,
+                guid=self.guid,
+                is_async=self.is_async)
 
 
 class SolrTraceWrapper(object):

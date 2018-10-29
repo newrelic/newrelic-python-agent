@@ -10,8 +10,6 @@ from newrelic.core.function_node import FunctionNode
 
 class FunctionTrace(TimeTrace):
 
-    node = FunctionNode
-
     def __init__(self, transaction, name, group=None, label=None,
             params=None, terminal=False, rollup=None):
         super(FunctionTrace, self).__init__(transaction)
@@ -46,6 +44,21 @@ class FunctionTrace(TimeTrace):
 
     def terminal_node(self):
         return self.terminal
+
+    def create_node(self):
+        return FunctionNode(
+                group=self.group,
+                name=self.name,
+                children=self.children,
+                start_time=self.start_time,
+                end_time=self.end_time,
+                duration=self.duration,
+                exclusive=self.exclusive,
+                label=self.label,
+                params=self.params,
+                rollup=self.rollup,
+                is_async=self.is_async,
+                guid=self.guid)
 
 
 def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,

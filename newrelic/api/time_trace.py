@@ -8,8 +8,6 @@ _logger = logging.getLogger(__name__)
 
 class TimeTrace(object):
 
-    node = None
-
     def __init__(self, transaction):
         self.transaction = transaction
         self.parent = None
@@ -224,9 +222,6 @@ class TimeTrace(object):
         pass
 
     def create_node(self):
-        if self.node:
-            return self.node(**dict((k, self.__dict__[k])
-                    for k in self.node._fields))
         return self
 
     def terminal_node(self):

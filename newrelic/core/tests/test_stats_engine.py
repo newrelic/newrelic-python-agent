@@ -3,7 +3,7 @@ import unittest
 
 from newrelic.core.config import (global_settings, SPAN_EVENT_RESERVOIR_SIZE,
     DEFAULT_RESERVOIR_SIZE, apply_server_side_settings)
-from newrelic.core.stats_engine import StatsEngine
+from newrelic.core.stats_engine import StatsEngine, LimitedDataSet
 
 
 class TestStatsEngineCustomEvents(unittest.TestCase):
@@ -173,6 +173,130 @@ class TestStatsEngineSpanEvents(unittest.TestCase):
         stats.reset_stats(apply_server_side_settings(under_capacity_settings))
         self.assertEqual(stats.span_events.capacity,
                 SPAN_EVENT_RESERVOIR_SIZE / 2)
+
+
+class TestLimitedDataSet(unittest.TestCase):
+
+    def test_empty_set(self):
+        instance = LimitedDataSet()
+
+        self.assertEqual(list(instance.samples), [])
+        self.assertEqual(instance.capacity, 200)
+        self.assertEqual(instance.num_seen, 0)
+
+        self.assertEqual(instance.sampling_info['reservoir_size'], 200)
+        self.assertEqual(instance.sampling_info['events_seen'], 0)
+
+    def test_single_item(self):
+        instance = LimitedDataSet()
+
+        instance.add(1)
+
+        self.assertEqual(list(instance.samples), [1])
+        self.assertEqual(instance.num_seen, 1)
+
+        self.assertEqual(instance.sampling_info['reservoir_size'], 200)
+        self.assertEqual(instance.sampling_info['events_seen'], 1)
+
+    def test_at_capacity(self):
+        instance = LimitedDataSet(10)
+
+        for i in range(10):
+            instance.add(i)
+
+        self.assertEqual(instance.num_samples, 10)
+        self.assertEqual(list(instance.samples), list(range(10)))
+        self.assertEqual(instance.num_seen, 10)
+
+        self.assertEqual(instance.sampling_info['reservoir_size'], 10)
+        self.assertEqual(instance.sampling_info['events_seen'], 10)
+
+    def test_over_capacity(self):
+        instance = LimitedDataSet(10)
+
+        for i in range(20):
+            instance.add(i)
+
+        self.assertEqual(instance.num_samples, 10)
+        self.assertEqual(list(instance.samples), list(range(10)))
+        self.assertEqual(instance.num_seen, 20)
+
+        self.assertEqual(instance.sampling_info['reservoir_size'], 10)
+        self.assertEqual(instance.sampling_info['events_seen'], 20)
+
+    def test_should_sample(self):
+        instance = LimitedDataSet(10)
+
+        for i in range(10):
+            self.assertTrue(instance.should_sample())
+            instance.add(i)
+
+        self.assertFalse(instance.should_sample())
+
+    def test_merge_sampled_data_set_under_capacity(self):
+        a = LimitedDataSet(capacity=100)
+        b = LimitedDataSet(capacity=100)
+
+        count_a = 8
+        count_b = 9
+        data_a = ['data_a %d' % i for i in range(count_a)]
+        data_b = ['data_b %d' % i for i in range(count_b)]
+
+        for i in data_a:
+            a.add(i)
+
+        for i in data_b:
+            b.add(i)
+
+        a.merge(b)
+
+        self.assertEqual(a.num_seen, count_a + count_b)
+        self.assertEqual(a.num_seen, a.num_samples)
+
+        samples = list(a.samples)
+        self.assertEqual(len(samples), a.num_seen)
+        self.assertEqual(len(samples), count_a + count_b)
+        self.assertEqual(samples, data_a + data_b)
+
+        self.assertEqual(a.sampling_info['reservoir_size'], 100)
+        self.assertEqual(a.sampling_info['events_seen'], count_a + count_b)
+
+    def test_merge_sampled_data_set_over_capacity(self):
+        capacity = 10
+        a = LimitedDataSet(capacity=capacity)
+        b = LimitedDataSet(capacity=capacity)
+
+        count_a = 11
+        count_b = 20
+        data_a = ['data_a %d' % i for i in range(count_a)]
+        data_b = ['data_b %d' % i for i in range(count_b)]
+
+        for i in data_a:
+            a.add(i)
+
+        for i in data_b:
+            b.add(i)
+
+        a.merge(b)
+
+        self.assertEqual(a.num_seen, count_a + count_b)
+        self.assertEqual(a.num_samples, capacity)
+
+        samples = list(a.samples)
+        self.assertEqual(len(samples), capacity)
+        self.assertEqual(samples, data_a[:capacity])
+
+        self.assertEqual(a.sampling_info['reservoir_size'], capacity)
+        self.assertEqual(a.sampling_info['events_seen'], count_a + count_b)
+
+    def test_size_0(self):
+        instance = LimitedDataSet(0)
+
+        instance.add('x')
+        self.assertEqual(list(instance.samples), [])
+
+        self.assertEqual(instance.sampling_info['reservoir_size'], 0)
+        self.assertEqual(instance.sampling_info['events_seen'], 1)
 
 
 if __name__ == '__main__':

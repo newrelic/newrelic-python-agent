@@ -320,6 +320,56 @@ class SampledDataSet(object):
         self.num_seen += other_data_set.num_seen - other_data_set.num_samples
 
 
+class LimitedDataSet(list):
+
+    def __init__(self, capacity=200):
+        super(LimitedDataSet, self).__init__()
+
+        self.capacity = capacity
+        self.num_seen = 0
+
+        if capacity <= 0:
+            def add(*args, **kwargs):
+                self.num_seen += 1
+            self.add = add
+
+    @property
+    def samples(self):
+        return self
+
+    @property
+    def num_samples(self):
+        return len(self)
+
+    @property
+    def sampling_info(self):
+        return {
+            'reservoir_size': self.capacity,
+            'events_seen': self.num_seen
+        }
+
+    def should_sample(self):
+        return self.num_seen < self.capacity
+
+    def reset(self):
+        self.clear()
+        self.num_seen = 0
+
+    def add(self, sample):
+        if self.should_sample():
+            self.append(sample)
+        self.num_seen += 1
+
+    def merge(self, other_data_set):
+        for sample in other_data_set:
+            self.add(sample)
+
+        # Merge the num_seen from the other_data_set, but take care not to
+        # double-count the actual samples of other_data_set since the .add
+        # call above will add one to self.num_seen each time
+        self.num_seen += other_data_set.num_seen - other_data_set.num_samples
+
+
 class StatsEngine(object):
 
     """The stats engine object holds the accumulated transactions metrics,

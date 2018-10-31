@@ -327,6 +327,27 @@ class Agent(object):
         with self._lock:
             application = self._applications.get(app_name, None)
             if not application:
+
+                process_id = os.getpid()
+
+                if process_id != self._process_id:
+                    _logger.warning(
+                            'Attempt to activate application in a process '
+                            'different to where the agent harvest thread was '
+                            'started. No data will be reported for this '
+                            'process with pid of %d. Creation of the harvest '
+                            'thread this application occurred in process with '
+                            'pid %d. If no data at all is being reported for '
+                            'your application, see '
+                            'https://docs.newrelic.com/docs/agents/'
+                            'python-agent/troubleshooting/'
+                            'activate-application-warning-python '
+                            'for troubleshooting steps. If the issue '
+                            'persists, please send debug logs to New Relic '
+                            'support for assistance.',
+                            process_id,
+                            self._process_id)
+
                 if settings.debug.log_agent_initialization:
                     _logger.info('Creating application instance for %r '
                             'in process %d.', app_name, os.getpid())
@@ -651,6 +672,8 @@ class Agent(object):
         _logger.debug('Start Python Agent main thread.')
 
         self._harvest_thread.start()
+
+        self._process_id = os.getpid()
 
     def _atexit_shutdown(self):
         """Triggers agent shutdown but flags first that this is being

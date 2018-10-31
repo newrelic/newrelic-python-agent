@@ -26,8 +26,7 @@ from newrelic.core.internal_metrics import (internal_metric,
         internal_count_metric)
 
 from newrelic.network.exceptions import (NetworkInterfaceException,
-        ForceAgentRestart, ForceAgentDisconnect, DiscardDataForRequest,
-        RetryDataForRequest, ServerIsUnavailable)
+        DiscardDataForRequest, RetryDataForRequest, ServerIsUnavailable)
 
 from newrelic.network.addresses import proxy_details
 from newrelic.common.object_wrapper import patch_function_wrapper
@@ -633,106 +632,10 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
         raise DiscardDataForRequest(str(sys.exc_info()[1]))
 
-    # The decoded JSON can be either for a successful response or an
-    # error. A successful response has a 'return_value' element and on
-    # error an 'exception' element.
-
     if log_id is not None:
         _log_response(log_id, result)
 
-    if 'return_value' in result:
-        return result['return_value']
-
-    error_type = result['exception']['error_type']
-    message = result['exception']['message']
-
-    # Now need to check for server side exceptions. The following
-    # exceptions can occur for abnormal events.
-
-    _logger.warning('Received an exception from the data collector where '
-            'url=%r, method=%r, license_key=%r, agent_run_id=%r, params=%r, '
-            'headers=%r, error_type=%r and message=%r', url, method,
-            license_key, agent_run_id, params, headers, error_type,
-            message)
-
-    # Technically most server side errors will result in the active
-    # agent run being abandoned and so there is no point trying to
-    # create a metric for when they occur. Leave this here though to at
-    # least log a metric for the case where a completely unexpected
-    # server error response is received and the agent run does manage to
-    # continue and further requests don't just keep failing. Since we do
-    # not even expect the metric to be retained, use the original error
-    # type as sent.
-
-    internal_metric('Supportability/Python/Collector/ServerError/'
-            '%s' % error_type, 1)
-
-    if error_type == 'NewRelic::Agent::LicenseException':
-        _logger.error('Data collector is indicating that an incorrect '
-                'license key has been supplied by the agent. The value '
-                'which was used by the agent is %r. Please correct any '
-                'problem with the license key or report this problem to '
-                'New Relic support.', license_key)
-
-        raise DiscardDataForRequest(message)
-
-    elif error_type == 'NewRelic::Agent::PostTooBigException':
-        # As far as we know we should never see this type of server side
-        # error as the JSON API should always send back an HTTP 413
-        # error response instead.
-
-        internal_metric('Supportability/Python/Collector/Failures', 1)
-        internal_metric('Supportability/Python/Collector/Failures/'
-                '%s' % connection, 1)
-
-        _logger.warning('Core application is indicating that a request for '
-                'method %r was received where the request content size '
-                'was over the maximum allowed size limit. The length of '
-                'the request content was %d. If this keeps occurring on a '
-                'regular basis, please report this problem to New Relic '
-                'support for further investigation.', method, len(data))
-
-        raise DiscardDataForRequest(message)
-
-    # Server side exceptions are also used to inform the agent to
-    # perform certain actions such as restart when server side
-    # configuration has changed for this application or when agent is
-    # being disabled remotely for some reason.
-
-    if error_type == 'NewRelic::Agent::ForceRestartException':
-        _logger.info('An automatic internal agent restart has been '
-                'requested by the data collector for the application '
-                'where the agent run was %r. The reason given for the '
-                'forced restart is %r.', agent_run_id, message)
-
-        raise ForceAgentRestart(message)
-
-    elif error_type == 'NewRelic::Agent::ForceDisconnectException':
-        _logger.critical('Disconnection of the agent has been requested by '
-                'the data collector for the application where the '
-                'agent run was %r. The reason given for the forced '
-                'disconnection is %r. Please contact New Relic support '
-                'for further information.', agent_run_id, message)
-
-        raise ForceAgentDisconnect(message)
-
-    # We received an unexpected server side error and we don't know what
-    # to do with it. Ignoring PostTooBigException which we expect that we
-    # should never receive, unexpected server side errors are the only
-    # ones we record a failure metric for as other server side errors
-    # are really commands to have the agent do something.
-
-    internal_metric('Supportability/Python/Collector/Failures', 1)
-    internal_metric('Supportability/Python/Collector/Failures/'
-            '%s' % connection, 1)
-
-    _logger.warning('An unexpected server error was received from the '
-            'data collector for method %r with payload of %r. The error '
-            'was of type %r with message %r. If this issue persists '
-            'then please report this problem to New Relic support for '
-            'further investigation.', method, payload, error_type, message)
-
-    raise DiscardDataForRequest(message)
+    return result['return_value']
 
 
 def apply_high_security_mode_fixups(local_settings, server_settings):

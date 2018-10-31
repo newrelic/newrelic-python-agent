@@ -1386,29 +1386,15 @@ class Application(object):
 
                     all_analytic_events = []
 
-                    if len(stats.synthetics_events):
-                        all_analytic_events.extend(stats.synthetics_events)
-
-                    if (configuration.collect_analytics_events and
-                            configuration.transaction_events.enabled):
-
-                        samples = stats.transaction_events.samples
-                        all_analytic_events.extend(samples)
-
-                    if len(all_analytic_events):
-                        _logger.debug('Sending analytics event data '
-                                'for harvest of %r.', self._app_name)
-
-                        self._active_session.send_transaction_events(
-                                all_analytic_events)
-
-                    # Report internal metrics about sample data set
-                    # for analytics.
+                    synthetics_events = stats.synthetics_events
+                    if synthetics_events.num_samples:
+                        all_analytic_events.extend(synthetics_events)
 
                     if (configuration.collect_analytics_events and
                             configuration.transaction_events.enabled):
 
                         transaction_events = stats.transaction_events
+                        all_analytic_events.extend(transaction_events)
 
                         # As per spec
                         internal_metric('Supportability/Python/'
@@ -1417,6 +1403,13 @@ class Application(object):
                         internal_metric('Supportability/Python/'
                                 'RequestSampler/samples',
                                 transaction_events.num_samples)
+
+                    if len(all_analytic_events):
+                        _logger.debug('Sending analytics event data '
+                                'for harvest of %r.', self._app_name)
+
+                        self._active_session.send_transaction_events(
+                                all_analytic_events)
 
                     stats.reset_transaction_events()
                     stats.reset_synthetics_events()

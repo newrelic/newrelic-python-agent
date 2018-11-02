@@ -755,7 +755,7 @@ def validate_database_duration():
 
             assert transaction_events.num_seen == 1
 
-            event = next(iter(transaction_events.samples))
+            event = next(iter(transaction_events))
             intrinsics = event[0]
 
             # As long as we are sending 'Database' metrics, then
@@ -836,7 +836,7 @@ def check_event_attributes(event_data, required_params, forgone_params,
     """
 
     intrinsics, user_attributes, agent_attributes = next(iter(
-            event_data.samples))
+            event_data))
 
     if required_params:
         for param in required_params['agent']:
@@ -883,7 +883,7 @@ def validate_non_transaction_error_event(required_intrinsics={}, num_errors=1,
             stats = core_application_stats_engine(None)
 
             assert stats.error_events.num_seen == num_errors
-            for event in stats.error_events.samples:
+            for event in stats.error_events:
 
                 assert len(event) == 3  # [intrinsic, user, agent attributes]
 
@@ -955,7 +955,7 @@ def validate_application_error_event_count(num_errors):
         else:
 
             stats = core_application_stats_engine(None)
-            assert len(list(stats.error_events.samples)) == num_errors
+            assert len(list(stats.error_events)) == num_errors
 
         return result
 
@@ -1404,7 +1404,7 @@ def validate_error_event_collector_json(num_errors=1):
             raise
         else:
 
-            samples = list(instance.error_events.samples)
+            samples = list(instance.error_events)
             s_info = instance.error_events.sampling_info
             agent_run_id = 666
 
@@ -1452,7 +1452,7 @@ def validate_transaction_event_collector_json():
         except:
             raise
         else:
-            samples = list(instance.transaction_events.samples)
+            samples = list(instance.transaction_events)
 
             # recreate what happens right before data is sent to the collector
             # in data_collector.py during the harvest via analytic_event_data
@@ -1498,7 +1498,7 @@ def validate_custom_event_collector_json(num_events=1):
 
             agent_run_id = 666
             sampling_info = stats.custom_events.sampling_info
-            samples = list(stats.custom_events.samples)
+            samples = list(stats.custom_events)
 
             # Emulate the payload used in data_collector.py
 
@@ -1696,7 +1696,7 @@ def validate_error_event_attributes(required_params={}, forgone_params={},
             else:
 
                 event_data = instance.error_events
-                for sample in event_data.samples:
+                for sample in event_data:
                     error_data_samples.append(sample)
 
                 check_event_attributes(event_data, required_params,
@@ -2007,7 +2007,7 @@ def validate_transaction_error_event_count(num_errors=1):
             raise
         else:
 
-            error_events = list(instance.error_events.samples)
+            error_events = list(instance.error_events)
             assert len(error_events) == num_errors
 
         return result
@@ -2289,7 +2289,7 @@ def validate_custom_event_in_application_stats_engine(required_event):
             stats = core_application_stats_engine(None)
             assert stats.custom_events.num_samples == 1
 
-            custom_event = next(iter(stats.custom_events.samples))
+            custom_event = next(iter(stats.custom_events))
             _validate_custom_event(custom_event, required_event)
 
         return result

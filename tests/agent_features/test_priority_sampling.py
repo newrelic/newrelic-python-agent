@@ -24,7 +24,7 @@ def test_priority_used_in_transaction_events(first_transaction_saved):
         with BackgroundTask(application(), name='T2') as txn:
             txn._priority = second_priority
 
-        transaction_events = list(stats_engine.transaction_events.samples)
+        transaction_events = list(stats_engine.transaction_events)
         assert len(transaction_events) == 1
 
         # highest priority should win
@@ -64,7 +64,7 @@ def test_priority_used_in_transaction_error_events(first_transaction_saved):
         # Stats engine
         stats_engine = core_application_stats_engine()
 
-        error_events = list(stats_engine.error_events.samples)
+        error_events = list(stats_engine.error_events)
         assert len(error_events) == 1
 
         # highest priority should win
@@ -98,7 +98,7 @@ def test_priority_used_in_transaction_custom_events(first_transaction_saved):
         # Stats engine
         stats_engine = core_application_stats_engine()
 
-        custom_events = list(stats_engine.custom_events.samples)
+        custom_events = list(stats_engine.custom_events)
         assert len(custom_events) == 1
 
         # highest priority should win

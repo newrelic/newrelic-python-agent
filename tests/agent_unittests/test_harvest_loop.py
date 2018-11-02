@@ -2,7 +2,8 @@ import pytest
 import six
 import time
 
-from newrelic.common.object_wrapper import transient_function_wrapper
+from newrelic.common.object_wrapper import (transient_function_wrapper,
+        function_wrapper)
 from newrelic.core.config import global_settings, finalize_application_settings
 from testing_support.fixtures import (override_generic_settings,
         function_not_called)
@@ -156,6 +157,40 @@ def validate_metric_payload(metrics=[], endpoints_called=[]):
         return wrapped(*args, **kwargs)
 
     return send_request_wrapper
+
+
+def validate_transaction_event_payloads(payload_validators):
+
+    @function_wrapper
+    def _wrapper(wrapped, instance, args, kwargs):
+
+        payloads = []
+
+        @transient_function_wrapper('newrelic.core.data_collector',
+                'DeveloperModeSession.send_request')
+        def send_request_wrapper(wrapped, instance, args, kwargs):
+            def _bind_params(session, url, method, license_key,
+                    agent_run_id=None, payload=(), *args, **kwargs):
+                return method, payload
+
+            method, payload = _bind_params(*args, **kwargs)
+
+            if method == 'analytic_event_data':
+                payloads.append(payload)
+
+            return wrapped(*args, **kwargs)
+
+        _new_wrapper = send_request_wrapper(wrapped)
+        val = _new_wrapper(*args, **kwargs)
+
+        assert len(payloads) == len(payload_validators)
+
+        for payload, validator in zip(payloads, payload_validators):
+            validator(payload)
+
+        return val
+
+    return _wrapper
 
 
 def validate_error_event_sampling(events_seen, reservoir_size,
@@ -540,3 +575,40 @@ def test_compute_sampled_no_reset():
     app.connect_to_data_collector()
     app._next_adaptive_sampler_reset = time.time() - 1
     assert app.compute_sampled(1.0) is True
+
+
+@pytest.mark.parametrize('has_synthetic_events', (True, False))
+@pytest.mark.parametrize('has_transaction_events', (True, False))
+@override_generic_settings(settings, {
+        'developer_mode': True,
+})
+def test_analytic_event_payloads(has_synthetic_events, has_transaction_events):
+
+    def synthetics_validator(payload):
+        events = payload[-1]
+        assert list(events) == ['synthetic event']
+
+    def transactions_validator(payload):
+        events = payload[-1]
+        assert list(events) == ['transaction event']
+
+    validators = []
+    if has_synthetic_events:
+        validators.append(synthetics_validator)
+    if has_transaction_events:
+        validators.append(transactions_validator)
+
+    @validate_transaction_event_payloads(validators)
+    def _test():
+        app = Application('Python Agent Test (Harvest Loop)')
+        app.connect_to_data_collector()
+
+        if has_transaction_events:
+            app._stats_engine.transaction_events.add('transaction event')
+
+        if has_synthetic_events:
+            app._stats_engine.synthetics_events.add('synthetic event')
+
+        app.harvest()
+
+    _test()

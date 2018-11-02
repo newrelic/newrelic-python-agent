@@ -227,7 +227,10 @@ def validate_error_event_sampling(events_seen, reservoir_size,
     return send_request_wrapper
 
 
-def failing_endpoint(endpoint, raises=RetryDataForRequest):
+def failing_endpoint(endpoint, raises=RetryDataForRequest, call_number=1):
+
+    called_list = []
+
     @transient_function_wrapper('newrelic.core.data_collector',
             'DeveloperModeSession.send_request')
     def send_request_wrapper(wrapped, instance, args, kwargs):
@@ -238,7 +241,9 @@ def failing_endpoint(endpoint, raises=RetryDataForRequest):
         method = _bind_params(*args, **kwargs)
 
         if method == endpoint:
-            raise raises()
+            called_list.append(True)
+            if len(called_list) == call_number:
+                raise raises()
 
         return wrapped(*args, **kwargs)
 
@@ -646,3 +651,24 @@ def test_transaction_events_disabled():
 
     _test()
     assert 'metric_data' in endpoints_called
+
+
+@failing_endpoint('analytic_event_data', call_number=2)
+@override_generic_settings(settings, {
+        'developer_mode': True,
+        'license_key': '**NOT A LICENSE KEY**',
+})
+def test_reset_synthetics_events():
+    app = Application('Python Agent Test (Harvest Loop)')
+    app.connect_to_data_collector()
+
+    app._stats_engine.synthetics_events.add('synthetics event')
+    app._stats_engine.transaction_events.add('transaction event')
+
+    assert app._stats_engine.synthetics_events.num_seen == 1
+    assert app._stats_engine.transaction_events.num_seen == 1
+
+    app.harvest()
+
+    assert app._stats_engine.synthetics_events.num_seen == 0
+    assert app._stats_engine.transaction_events.num_seen == 1

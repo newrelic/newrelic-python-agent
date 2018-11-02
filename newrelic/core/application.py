@@ -1405,6 +1405,7 @@ class Application(object):
                                 'harvest of %r.', self._app_name)
 
                         self._active_session.send_transaction_events(
+                                synthetics_events.sampling_info,
                                 synthetics_events)
 
                     stats.reset_synthetics_events()
@@ -1427,6 +1428,7 @@ class Application(object):
                                     'for harvest of %r.', self._app_name)
 
                             self._active_session.send_transaction_events(
+                                    transaction_events.sampling_info,
                                     transaction_events)
 
                     stats.reset_transaction_events()

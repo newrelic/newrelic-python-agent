@@ -980,12 +980,12 @@ class ApplicationSession(object):
                 'get_xray_metadata', self.license_key, self.agent_run_id,
                 payload, self.max_payload_size_in_bytes)
 
-    def send_transaction_events(self, sample_set):
+    def send_transaction_events(self, sampling_info, sample_set):
         """Called to submit sample set for analytics.
 
         """
 
-        payload = (self.agent_run_id, sample_set)
+        payload = (self.agent_run_id, sampling_info, sample_set)
 
         return self.send_request(self.requests_session, self.collector_url,
                 'analytic_event_data', self.license_key, self.agent_run_id,

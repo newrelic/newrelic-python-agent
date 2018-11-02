@@ -623,3 +623,26 @@ def test_analytic_event_payloads(has_synthetic_events, has_transaction_events):
         app.harvest()
 
     _test()
+
+
+@override_generic_settings(settings, {
+        'developer_mode': True,
+        'collect_analytics_events': False,
+        'transaction_events.enabled': False,
+})
+def test_transaction_events_disabled():
+
+    endpoints_called = []
+    expected_metrics = (
+            ('Supportability/Python/RequestSampler/requests', None),
+            ('Supportability/Python/RequestSampler/samples', None),
+    )
+
+    @validate_metric_payload(expected_metrics, endpoints_called)
+    def _test():
+        app = Application('Python Agent Test (Harvest Loop)')
+        app.connect_to_data_collector()
+        app.harvest()
+
+    _test()
+    assert 'metric_data' in endpoints_called

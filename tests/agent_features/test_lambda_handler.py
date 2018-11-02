@@ -33,8 +33,7 @@ def handler(event, context):
 _override_settings = {
     'attributes.include': ['aws.lambda.functionName',
             'aws.lambda.functionVersion', 'aws.lambda.memoryLimit',
-            'aws.lambda.coldStart', 'request.parameters.*',
-            'aws.lambda.eventSource.arn'],
+            'request.parameters.*', 'aws.lambda.eventSource.arn'],
 }
 _expected_attributes = {
     'agent': [

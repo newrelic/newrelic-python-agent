@@ -1,7 +1,6 @@
 import json
 import os
 import pytest
-import json
 
 from newrelic.common import system_info
 from newrelic.core import data_collector as dc
@@ -29,6 +28,8 @@ DOCKER = {'id': 'foobar'}
 ENVIRONMENT = []
 HIGH_SECURITY = True
 HOST = "test_host"
+HOST_LONG = "www.test_host"
+IP_ADDRESS = ["127.0.0.1"]
 LABELS = 'labels'
 LINKED_APPS = ['linked_app_1', 'linked_app_2']
 MEMORY = 12000.0
@@ -48,6 +49,16 @@ def setup_module(module):
         return HOST
     _backup_methods['gethostname'] = system_info.gethostname
     system_info.gethostname = gethostname
+
+    def getfqdn(*args, **kwargs):
+        return HOST_LONG
+    _backup_methods['getfqdn'] = system_info.getfqdn
+    system_info.getfqdn = getfqdn
+
+    def getips(*args, **kwargs):
+        return IP_ADDRESS
+    _backup_methods['getips'] = system_info.getips
+    system_info.getips = getips
 
     def getpid():
         return PID
@@ -140,12 +151,28 @@ def payload_asserts(payload, with_aws=True, with_gcp=True, with_pcf=True,
             BROWSER_MONITORING_LOADER)
     assert payload_data['settings']['browser_monitoring.debug'] == (
             BROWSER_MONITORING_DEBUG)
-    utilization_len = 5 + any([with_aws, with_pcf, with_gcp, with_azure,
-            with_docker])
+
+    utilization_len = 5
+
+    if HOST_LONG:
+        assert payload_data['utilization']['full_hostname'] == HOST_LONG
+        utilization_len += 1
+    else:
+        assert 'full_hostname' not in payload_data['utilization']
+
+    if IP_ADDRESS:
+        assert payload_data['utilization']['ip_address'] == IP_ADDRESS
+        utilization_len += 1
+    else:
+        assert 'ip_address' not in payload_data['utilization']
+
+    utilization_len = utilization_len + any([with_aws, with_pcf, with_gcp,
+            with_azure, with_docker])
     assert len(payload_data['utilization']) == utilization_len
     assert payload_data['utilization']['hostname'] == HOST
+
     assert payload_data['utilization']['logical_processors'] == PROCESSOR_COUNT
-    assert payload_data['utilization']['metadata_version'] == 3
+    assert payload_data['utilization']['metadata_version'] == 4
     assert payload_data['utilization']['total_ram_mib'] == MEMORY
     assert payload_data['utilization']['boot_id'] == BOOT_ID
     vendors_len = any([with_aws, with_pcf, with_gcp, with_azure]) + with_docker
@@ -207,6 +234,28 @@ def test_create_connect_payload_no_vendors():
     payload_asserts(
             payload, with_aws=False, with_pcf=False, with_gcp=False,
             with_azure=False, with_docker=False)
+
+
+def test_create_connect_payload_no_fqdn_no_ip():
+    settings = default_settings()
+
+    global HOST_LONG
+    global IP_ADDRESS
+
+    ORIGINAL_HOST_LONG = HOST_LONG
+    ORIGINAL_IP_ADDRESS = IP_ADDRESS
+
+    HOST_LONG = None
+    IP_ADDRESS = None
+
+    try:
+        payload = ApplicationSession._create_connect_payload(
+                APP_NAME, LINKED_APPS, ENVIRONMENT, settings)
+
+        payload_asserts(payload)
+    finally:
+        HOST_LONG = ORIGINAL_HOST_LONG
+        IP_ADDRESS = ORIGINAL_IP_ADDRESS
 
 
 @pytest.mark.parametrize('execution_environment_set,arn_set', (

@@ -344,8 +344,13 @@ def _resolve_hostname(use_dyno_names, dyno_shorten_prefixes):
     return dyno_name
 
 
-_nr_cached_hostname = None
 _nr_cached_hostname_lock = threading.Lock()
+_nr_cached_fqdn_lock = threading.Lock()
+_nr_cached_ipaddress_lock = threading.Lock()
+
+_nr_cached_hostname = None
+_nr_cached_fqdn = None
+_nr_cached_ip_address = None
 
 
 def gethostname(use_dyno_names=False, dyno_shorten_prefixes=()):
@@ -369,6 +374,65 @@ def gethostname(use_dyno_names=False, dyno_shorten_prefixes=()):
                     dyno_shorten_prefixes)
 
     return _nr_cached_hostname
+
+
+def getfqdn():
+    """Cache the output of socket.getfqdn().
+
+    Keeps the reported fqdn consistent throughout an agent run.
+
+    """
+
+    global _nr_cached_fqdn
+    global _nr_cached_fqdn_lock
+
+    if _nr_cached_fqdn is not None:
+        return _nr_cached_fqdn
+
+    # Only lock for the one-time write.
+
+    with _nr_cached_fqdn_lock:
+        if _nr_cached_fqdn is None:
+            _nr_cached_fqdn = socket.getfqdn()
+
+    return _nr_cached_fqdn
+
+
+def getips():
+    """Cache the output of socket.getsockname().
+
+    Keeps the reported ips consistent throughout an agent run.
+
+    """
+
+    global _nr_cached_ip_address
+    global _nr_cached_ipaddress_lock
+
+    if _nr_cached_ip_address is not None:
+        return _nr_cached_ip_address
+
+    # Only lock for the one-time write.
+
+    with _nr_cached_ipaddress_lock:
+        if _nr_cached_ip_address is None:
+            _nr_cached_ip_address = []
+
+            try:
+                # connect with UDP doesn't send packets (i.e. there's no
+                # handshake like with TCP)
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            except Exception:
+                return _nr_cached_ip_address
+
+            try:
+                s.connect(('1.1.1.1', 1))
+                _nr_cached_ip_address.append(s.getsockname()[0])
+            except Exception:
+                pass
+            finally:
+                s.close()
+
+    return _nr_cached_ip_address
 
 
 class BootIdUtilization(CommonUtilization):

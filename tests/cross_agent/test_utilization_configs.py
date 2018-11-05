@@ -196,6 +196,7 @@ def patch_system_info(test):
     return _patch_system_info
 
 
+@pytest.mark.xfail(reason='To be updated by PYTHON-3042', strict=True)
 @pytest.mark.parametrize('test', _load_tests())
 def test_utilization_settings(test, monkeypatch):
 

@@ -17,8 +17,7 @@ class FullURIAdapter(HTTPAdapter):
 class FullURIApplicationSession(ApplicationSession):
 
     @classmethod
-    def send_request(cls, session, url, method, license_key,
-            agent_run_id=None, payload=()):
+    def send_request(cls, session, *args, **kwargs):
         session = Session()
 
         # Mount an adapter that will force the full URI to be sent
@@ -26,7 +25,7 @@ class FullURIApplicationSession(ApplicationSession):
         session.mount('http://', FullURIAdapter())
 
         return ApplicationSession.send_request(
-                session, url, method, license_key, agent_run_id, payload
+                session, *args, **kwargs
         )
 
 

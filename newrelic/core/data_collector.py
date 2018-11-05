@@ -297,11 +297,14 @@ _deflate_exclude_list = set(['transaction_sample_data', 'sql_trace_data',
 
 
 def send_request(session, url, method, license_key, agent_run_id=None,
-            payload=(), max_payload_size_in_bytes=None):
+        request_headers_map=None, payload=(), max_payload_size_in_bytes=None):
     """Constructs and sends a request to the data collector."""
 
     params = {}
     headers = {}
+
+    if request_headers_map:
+        headers.update(request_headers_map)
 
     settings = global_settings()
 
@@ -711,6 +714,7 @@ class ApplicationSession(object):
         self.license_key = license_key
         self.configuration = configuration
         self.agent_run_id = configuration.agent_run_id
+        self.request_headers_map = configuration.request_headers_map
 
         self._requests_session = None
 
@@ -731,9 +735,11 @@ class ApplicationSession(object):
 
     @classmethod
     def send_request(cls, session, url, method, license_key,
-            agent_run_id=None, payload=(), max_payload_size_in_bytes=None):
+            agent_run_id=None, request_headers_map=None, payload=(),
+            max_payload_size_in_bytes=None):
         return send_request(session, url, method, license_key,
-            agent_run_id, payload, max_payload_size_in_bytes)
+            agent_run_id, request_headers_map, payload,
+            max_payload_size_in_bytes)
 
     def agent_settings(self, settings):
         """Called to report up agent settings after registration.
@@ -744,7 +750,8 @@ class ApplicationSession(object):
 
         return self.send_request(self.requests_session, self.collector_url,
                 'agent_settings', self.license_key, self.agent_run_id,
-                payload, self.max_payload_size_in_bytes)
+                self.request_headers_map, payload,
+                self.max_payload_size_in_bytes)
 
     def shutdown_session(self):
         """Called to perform orderly deregistration of agent run against
@@ -758,7 +765,8 @@ class ApplicationSession(object):
                 'for agent run %r.', self.agent_run_id)
 
         result = self.send_request(self.requests_session, self.collector_url,
-                'shutdown', self.license_key, self.agent_run_id)
+                'shutdown', self.license_key, self.agent_run_id,
+                self.request_headers_map)
 
         _logger.info('Successfully shutdown New Relic Python agent '
                 'where app_name=%r, pid=%r, and agent_run_id=%r',
@@ -778,7 +786,8 @@ class ApplicationSession(object):
         payload = (self.agent_run_id, start_time, end_time, metric_data)
 
         return self.send_request(self.requests_session, self.collector_url,
-                'metric_data', self.license_key, self.agent_run_id, payload,
+                'metric_data', self.license_key, self.agent_run_id,
+                self.request_headers_map, payload,
                 self.max_payload_size_in_bytes)
 
     def send_errors(self, errors):
@@ -797,7 +806,8 @@ class ApplicationSession(object):
         payload = (self.agent_run_id, errors)
 
         return self.send_request(self.requests_session, self.collector_url,
-                'error_data', self.license_key, self.agent_run_id, payload,
+                'error_data', self.license_key, self.agent_run_id,
+                self.request_headers_map, payload,
                 self.max_payload_size_in_bytes)
 
     def send_transaction_traces(self, transaction_traces):
@@ -817,7 +827,8 @@ class ApplicationSession(object):
 
         return self.send_request(self.requests_session, self.collector_url,
                 'transaction_sample_data', self.license_key,
-                self.agent_run_id, payload, self.max_payload_size_in_bytes)
+                self.agent_run_id, self.request_headers_map, payload,
+                self.max_payload_size_in_bytes)
 
     def send_profile_data(self, profile_data):
         """Called to submit Profile Data.
@@ -830,7 +841,8 @@ class ApplicationSession(object):
 
         return self.send_request(self.requests_session, self.collector_url,
                 'profile_data', self.license_key,
-                self.agent_run_id, payload, self.max_payload_size_in_bytes)
+                self.agent_run_id, self.request_headers_map, payload,
+                self.max_payload_size_in_bytes)
 
     def send_sql_traces(self, sql_traces):
         """Called to sub SQL traces. The SQL traces should be an
@@ -848,7 +860,8 @@ class ApplicationSession(object):
 
         return self.send_request(self.requests_session, self.collector_url,
                 'sql_trace_data', self.license_key, self.agent_run_id,
-                payload, self.max_payload_size_in_bytes)
+                self.request_headers_map, payload,
+                self.max_payload_size_in_bytes)
 
     def get_agent_commands(self):
         """Receive agent commands from the data collector.
@@ -859,7 +872,8 @@ class ApplicationSession(object):
 
         return self.send_request(self.requests_session, self.collector_url,
                 'get_agent_commands', self.license_key, self.agent_run_id,
-                payload, self.max_payload_size_in_bytes)
+                self.request_headers_map, payload,
+                self.max_payload_size_in_bytes)
 
     def send_agent_command_results(self, cmd_results):
         """Acknowledge the receipt of an agent command.
@@ -870,7 +884,8 @@ class ApplicationSession(object):
 
         return self.send_request(self.requests_session, self.collector_url,
                 'agent_command_results', self.license_key, self.agent_run_id,
-                payload, self.max_payload_size_in_bytes)
+                self.request_headers_map, payload,
+                self.max_payload_size_in_bytes)
 
     def get_xray_metadata(self, xray_id):
         """Receive xray metadata from the data collector.
@@ -881,7 +896,8 @@ class ApplicationSession(object):
 
         return self.send_request(self.requests_session, self.collector_url,
                 'get_xray_metadata', self.license_key, self.agent_run_id,
-                payload, self.max_payload_size_in_bytes)
+                self.request_headers_map, payload,
+                self.max_payload_size_in_bytes)
 
     def send_transaction_events(self, sample_set):
         """Called to submit sample set for analytics.
@@ -892,7 +908,8 @@ class ApplicationSession(object):
 
         return self.send_request(self.requests_session, self.collector_url,
                 'analytic_event_data', self.license_key, self.agent_run_id,
-                payload, self.max_payload_size_in_bytes)
+                self.request_headers_map, payload,
+                self.max_payload_size_in_bytes)
 
     def send_error_events(self, sampling_info, error_data):
         """Called to submit sample set for error events.
@@ -903,7 +920,8 @@ class ApplicationSession(object):
 
         return self.send_request(self.requests_session, self.collector_url,
                 'error_event_data', self.license_key, self.agent_run_id,
-                payload, self.max_payload_size_in_bytes)
+                self.request_headers_map, payload,
+                self.max_payload_size_in_bytes)
 
     def send_custom_events(self, sampling_info, custom_event_data):
         """Called to submit sample set for custom events.
@@ -914,7 +932,8 @@ class ApplicationSession(object):
 
         return self.send_request(self.requests_session, self.collector_url,
                 'custom_event_data', self.license_key, self.agent_run_id,
-                payload, self.max_payload_size_in_bytes)
+                self.request_headers_map, payload,
+                self.max_payload_size_in_bytes)
 
     def send_span_events(self, sampling_info, span_event_data):
         """Called to submit sample set for span events.
@@ -925,7 +944,8 @@ class ApplicationSession(object):
 
         return self.send_request(self.requests_session, self.collector_url,
                 'span_event_data', self.license_key, self.agent_run_id,
-                payload, self.max_payload_size_in_bytes)
+                self.request_headers_map, payload,
+                self.max_payload_size_in_bytes)
 
     def finalize(self):
         pass
@@ -987,7 +1007,7 @@ class ApplicationSession(object):
             url = collector_url(redirect_host)
 
             server_config = cls.send_request(None, url, 'connect',
-                    license_key, None, payload)
+                    license_key, None, None, payload)
 
             # Apply High Security Mode to server_config, so the local
             # security settings won't get overwritten when we overlay
@@ -1210,7 +1230,8 @@ class DeveloperModeSession(ApplicationSession):
 
     @classmethod
     def send_request(cls, session, url, method, license_key,
-            agent_run_id=None, payload=(), max_payload_size_in_bytes=None):
+            agent_run_id=None, request_headers_map=None, payload=(),
+            max_payload_size_in_bytes=None):
 
         assert method in _developer_mode_responses
 
@@ -1219,6 +1240,9 @@ class DeveloperModeSession(ApplicationSession):
 
         params = {}
         headers = {}
+
+        if request_headers_map:
+            headers.update(request_headers_map)
 
         if not license_key:
             license_key = 'NO LICENSE KEY WAS SET IN AGENT CONFIGURATION'
@@ -1297,13 +1321,17 @@ class ServerlessModeSession(ApplicationSession):
         })
 
     def send_request(self, session, url, method, license_key,
-            agent_run_id=None, payload=(), max_payload_size_in_bytes=None):
+            agent_run_id=None, request_headers_map=None, payload=(),
+            max_payload_size_in_bytes=None):
 
         # Create fake details for the request being made so that we
         # can use the same audit logging functionality.
 
         params = {}
         headers = {}
+
+        if request_headers_map:
+            headers.update(request_headers_map)
 
         params['method'] = method
 

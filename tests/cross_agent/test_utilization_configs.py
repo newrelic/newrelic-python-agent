@@ -52,6 +52,12 @@ def _mock_gethostname(name):
     return gethostname
 
 
+def _mock_getips(ip_addresses):
+    def getips(*args, **kwargs):
+        return ip_addresses
+    return getips
+
+
 class UpdatedSettings(object):
     def __init__(self, test):
         self.test = test
@@ -178,6 +184,8 @@ def patch_system_info(test):
         initial_logical_processor_count = dc.logical_processor_count
         initial_total_physical_memory = dc.total_physical_memory
         initial_system_info_gethostname = dc.system_info.gethostname
+        initial_system_info_getfqdn = dc.system_info.getfqdn
+        initial_system_info_getips = dc.system_info.getips
 
         dc.logical_processor_count = _mock_logical_processor_count(
                 test.get('input_logical_processors'))
@@ -185,6 +193,9 @@ def patch_system_info(test):
                 test.get('input_total_ram_mib'))
         dc.system_info.gethostname = _mock_gethostname(
                 test.get('input_hostname'))
+        dc.system_info.getfqdn = _mock_gethostname(
+                test.get('input_full_hostname'))
+        dc.system_info.getips = _mock_getips(test.get('input_ip_address'))
 
         try:
             return wrapped(*args, **kwargs)
@@ -192,11 +203,12 @@ def patch_system_info(test):
             dc.logical_processor_count = initial_logical_processor_count
             dc.total_physical_memory = initial_total_physical_memory
             dc.system_info.gethostname = initial_system_info_gethostname
+            dc.system_info.getfqdn = initial_system_info_getfqdn
+            dc.system_info.getips = initial_system_info_getips
 
     return _patch_system_info
 
 
-@pytest.mark.xfail(reason='To be updated by PYTHON-3042', strict=True)
 @pytest.mark.parametrize('test', _load_tests())
 def test_utilization_settings(test, monkeypatch):
 

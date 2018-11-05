@@ -26,7 +26,8 @@ from newrelic.core.internal_metrics import (internal_metric,
         internal_count_metric)
 
 from newrelic.network.exceptions import (NetworkInterfaceException,
-        DiscardDataForRequest, RetryDataForRequest, ServerIsUnavailable)
+        DiscardDataForRequest, RetryDataForRequest, ForceAgentDisconnect,
+        ForceAgentRestart)
 
 from newrelic.network.addresses import proxy_details
 from newrelic.common.object_wrapper import patch_function_wrapper
@@ -46,6 +47,27 @@ _logger = logging.getLogger(__name__)
 
 USER_AGENT = 'NewRelic-PythonAgent/%s (Python %s %s)' % (
          version, sys.version.split()[0], sys.platform)
+
+STATUS_CODES_RESPONSE = {
+        400: DiscardDataForRequest,
+        401: ForceAgentRestart,
+        403: DiscardDataForRequest,
+        404: DiscardDataForRequest,
+        405: DiscardDataForRequest,
+        407: DiscardDataForRequest,
+        408: RetryDataForRequest,
+        409: ForceAgentRestart,
+        410: ForceAgentDisconnect,
+        411: DiscardDataForRequest,
+        413: DiscardDataForRequest,
+        414: DiscardDataForRequest,
+        415: DiscardDataForRequest,
+        417: DiscardDataForRequest,
+        429: RetryDataForRequest,
+        431: DiscardDataForRequest,
+        500: RetryDataForRequest,
+        503: RetryDataForRequest,
+}
 
 # Data collector URL and proxy settings.
 
@@ -393,30 +415,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
     # to the data collector.
     #
     # The data collector can then generate a number of different types of
-    # HTTP errors for requests. These are:
-    #
-    # 400 Bad Request - For incorrect method type or incorrectly
-    # constructed parameters. We should not get this and if we do it would
-    # likely indicate a problem with the implementation of the agent.
-    #
-    # 413 Request Entity Too Large - Where the request content was too
-    # large. The limits on number of nodes in slow transaction traces
-    # should in general prevent this, but not everything has size limits
-    # and so rogue data could still blow things out. The same data are not
-    # going to work later on in a subsequent request, even if aggregated
-    # with other data, so we need to log the details and then flag that
-    # data should be thrown away.
-    #
-    # 415 Unsupported Media Type - This occurs when the JSON which was
-    # sent can't be decoded by the data collector. If this is a true
-    # problem with the JSON formatting, then sending again, even if
-    # aggregated with other data, may not work, so we need to log the
-    # details and then flag that data should be thrown away.
-    #
-    # 503 Service Unavailable - This occurs when the data collector, or core
-    # application is being restarted and not in state to be able to
-    # accept requests. It should be a transient issue so should be able
-    # to retain data and try again.
+    # HTTP errors for requests.
 
     internal_metric('Supportability/Python/Collector/Output/Bytes/'
             '%s' % method, len(data))
@@ -517,9 +516,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
             session.close()
             session = None
 
-    if r.status_code != 200:
-        _logger.warning('Received a non 200 HTTP response from the data '
-                'collector where url=%r, method=%r, license_key=%r, '
+    if r.status_code != 200 and r.status_code != 202:
+        _logger.warning('Received a non 200 or 202 HTTP response from '
+                'the data collector where url=%r, method=%r, license_key=%r, '
                 'agent_run_id=%r, params=%r, headers=%r, status_code=%r '
                 'and content=%r.', url, method, license_key, agent_run_id,
                 params, headers, r.status_code, content)
@@ -531,80 +530,64 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         internal_metric('Supportability/Python/Collector/HTTPError/%d'
                 % r.status_code, 1)
 
-    if r.status_code == 400:
-        _logger.error('Data collector is indicating that a bad '
-                'request has been submitted for url %r, headers of %r, '
-                'params of %r and payload of %r. Please report this '
-                'problem to New Relic support.', url, headers, params,
-                payload)
+        exception = STATUS_CODES_RESPONSE.get(r.status_code,
+                DiscardDataForRequest)
 
-        raise DiscardDataForRequest()
+        if r.status_code == 401:
+            _logger.error('Data collector is indicating that an incorrect '
+                    'license key has been supplied by the agent. The value '
+                    'which was used by the agent is %r. Please correct any '
+                    'problem with the license key or report this problem to '
+                    'New Relic support.', license_key)
+        elif r.status_code == 407:
+            _logger.warning('Received a proxy authentication required '
+                    'response from the data collector. This occurs when '
+                    'the agent has a misconfigured proxy. Please check '
+                    'your proxy configuration. Proxy user: %r, proxy host: '
+                    '%r proxy port: %r.', settings.proxy_user,
+                    settings.proxy_host, settings.proxy_port)
+        elif r.status_code == 408:
+            _logger.warning('Data collector is indicating that a timeout has '
+                    'occurred. Check your network settings. If this keeps '
+                    'occurring on a regular basis, please report this '
+                    'problem to New Relic support.')
+        elif r.status_code == 409:
+            _logger.info('An automatic internal agent restart has been '
+                    'requested by the data collector for the application '
+                    'where the agent run was %r.', agent_run_id)
+        elif r.status_code == 410:
+            _logger.critical('Disconnection of the agent has been requested '
+                    'by the data collector for the application where the '
+                    'agent run was %r. Please contact New Relic support '
+                    'for further information.', agent_run_id)
+        elif r.status_code == 429:
+            pass
+        else:
+            if r.status_code == 415 and settings.debug.log_malformed_json_data:
+                if headers['Content-Encoding'] == 'deflate':
+                    data = zlib.decompress(data)
 
-    elif r.status_code == 408:
-        _logger.warning('Data collector is indicating that a timeout '
-                'has occurred for url %r, headers of %r, '
-                'params of %r and payload of %r. If this keeps occurring on a '
-                'regular basis, Please report this problem to New Relic '
-                'support.', url, headers, params,
-                payload)
-
-        raise RetryDataForRequest()
-
-    elif r.status_code == 413:
-        _logger.warning('Data collector is indicating that a request for '
-                'method %r was received where the request content size '
-                'was over the maximum allowed size limit. The length of '
-                'the request content was %d. If this keeps occurring on a '
-                'regular basis, please report this problem to New Relic '
-                'support for further investigation.', method, len(data))
-
-        raise DiscardDataForRequest()
-
-    elif r.status_code == 415:
-        _logger.warning('Data collector is indicating that it was sent '
-                'malformed JSON data for method %r. If this keeps occurring '
-                'on a regular basis, please report this problem to New '
-                'Relic support for further investigation.', method)
-
-        if settings.debug.log_malformed_json_data:
-            if headers['Content-Encoding'] == 'deflate':
-                data = zlib.decompress(data)
-
-            _logger.info('JSON data which was rejected by the data '
+                _logger.info('JSON data which was rejected by the data '
                     'collector was %r.', data)
 
-        raise DiscardDataForRequest(content)
+            if not settings.proxy_host or not settings.proxy_port:
+                _logger.warning('An unexpected HTTP response was received '
+                        'from the data collector of %r for method %r. The '
+                        'payload for the request was %r. If this issue '
+                        'persists then please report this problem to New '
+                        'Relic support for further investigation.',
+                        r.status_code, method, payload)
+            else:
+                _logger.warning('An unexpected HTTP response was received '
+                        'from the data collector of %r for method %r while '
+                        'connecting via proxy host %r on port %r with proxy '
+                        'user of %r. The payload for the request was %r. If '
+                        'this issue persists then please report this problem '
+                        'to New Relic support for further investigation.',
+                        r.status_code, method, settings.proxy_host,
+                        settings.proxy_port, settings.proxy_user, payload)
 
-    elif r.status_code == 503:
-        _logger.warning('Data collector is unavailable. This can be a '
-                'transient issue because of the data collector or our '
-                'core application being restarted. If the issue persists '
-                'it can also be indicative of a problem with our servers. '
-                'In the event that availability of our servers is not '
-                'restored after a period of time then please report this '
-                'problem to New Relic support for further investigation.')
-
-        raise ServerIsUnavailable()
-
-    elif r.status_code != 200:
-        if not settings.proxy_host or not settings.proxy_port:
-            _logger.warning('An unexpected HTTP response was received from '
-                    'the data collector of %r for method %r. The payload for '
-                    'the request was %r. If this issue persists then please '
-                    'report this problem to New Relic support for further '
-                    'investigation.', r.status_code, method, payload)
-
-        else:
-            _logger.warning('An unexpected HTTP response was received from '
-                    'the data collector of %r for method %r while connecting '
-                    'via proxy host %r on port %r with proxy user of %r. '
-                    'The payload for the request was %r. If this issue '
-                    'persists then please report this problem to New Relic '
-                    'support for further investigation.', r.status_code,
-                    method, settings.proxy_host, settings.proxy_port,
-                    settings.proxy_user, payload)
-
-        raise DiscardDataForRequest()
+        raise exception
 
     # Log details of response payload for debugging. Use the JSON
     # encoded value so we know what was the original encoded value.

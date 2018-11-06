@@ -55,6 +55,10 @@ from newrelic.api.background_task import (
         BackgroundTaskWrapper as __BackgroundTaskWrapper,
         wrap_background_task as __wrap_background_task)
 
+from newrelic.api.lambda_handler import (
+        LambdaHandlerWrapper as __LambdaHandlerWrapper,
+        lambda_handler as __lambda_handler)
+
 from newrelic.api.transaction_name import (
         transaction_name as __transaction_name,
         TransactionNameWrapper as __TransactionNameWrapper,
@@ -225,6 +229,10 @@ BackgroundTaskWrapper = __wrap_api_call(__BackgroundTaskWrapper,
         'BackgroundTaskWrapper')
 wrap_background_task = __wrap_api_call(__wrap_background_task,
         'wrap_background_task')
+LambdaHandlerWrapper = __wrap_api_call(__LambdaHandlerWrapper,
+        'LambdaHandlerWrapper')
+lambda_handler = __wrap_api_call(__lambda_handler,
+        'lambda_handler')
 transaction_name = __wrap_api_call(__transaction_name,
         'transaction_name')
 TransactionNameWrapper = __wrap_api_call(__TransactionNameWrapper,

@@ -7,6 +7,8 @@ import types
 import base64
 import json
 import zlib
+import io
+import gzip
 from hashlib import md5
 
 from newrelic.packages import six
@@ -286,6 +288,60 @@ def base64_decode(text):
 
     """
     return base64.b64decode(text).decode('utf-8')
+
+
+def gzip_compress(text):
+    """GZip compresses input text. This function takes in a string
+    or UTF-8 input and returns compressed bytes.
+
+    """
+    compressed_data = io.BytesIO()
+
+    if six.PY3 and isinstance(text, str):
+        text = text.encode('utf-8')
+
+    with gzip.GzipFile(fileobj=compressed_data, mode='wb') as f:
+        f.write(text)
+
+    return compressed_data.getvalue()
+
+
+def gzip_decompress(payload):
+    """GZip decompresses input bytes. This function takes in a string
+    or UTF-8 input and returns the decompressed string.
+
+    """
+    data_bytes = io.BytesIO(payload)
+    decoded_data = gzip.GzipFile(fileobj=data_bytes).read()
+    return decoded_data.decode('utf-8')
+
+
+def serverless_payload_encode(payload):
+    """This method assumes valid JSON input. The input will be json encoded,
+    gzip compressed, and base64 encoded.
+
+    """
+    json_encode_data = json_encode(payload)
+    compressed_data = gzip_compress(json_encode_data)
+    encoded_data = base64.b64encode(compressed_data)
+
+    return encoded_data
+
+
+def serverless_payload_decode(text):
+    """This method takes in a string or UTF-8 input. The input will be
+    base64 decoded, gzip decompressed, and json decoded. Returns a
+    Python object.
+
+    """
+    if hasattr(text, 'decode'):
+        text = text.decode('utf-8')
+
+    decoded_bytes = base64.b64decode(text)
+    uncompressed_data = gzip_decompress(decoded_bytes)
+
+    data = json_decode(uncompressed_data)
+    return data
 
 
 def convert_to_cat_metadata_value(nr_headers):

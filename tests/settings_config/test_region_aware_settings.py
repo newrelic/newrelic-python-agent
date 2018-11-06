@@ -1,5 +1,4 @@
 import pytest
-import tempfile
 
 INI_FILE_WITHOUT_LICENSE_KEY = b"""
 [newrelic]
@@ -25,40 +24,6 @@ host = staging-collector.newrelic.com
 license_key = %s
 """ % EU01_KEY
 INI_FILE_HOST_OVERRIDE = INI_FILE_HOST_OVERRIDE.encode('utf-8')
-
-try:
-    # python 2.x
-    reload
-except NameError:
-    # python 3.x
-    from imp import reload
-
-
-@pytest.fixture(scope='function')
-def global_settings(request, monkeypatch):
-    ini_contents = request.getfixturevalue('ini')
-
-    monkeypatch.delenv('NEW_RELIC_HOST', raising=False)
-    monkeypatch.delenv('NEW_RELIC_LICENSE_KEY', raising=False)
-
-    if 'env' in request.funcargnames:
-        env = request.getfixturevalue('env')
-        for k, v in env.items():
-            monkeypatch.setenv(k, v)
-
-    import newrelic.config as config
-    import newrelic.core.config as core_config
-    reload(core_config)
-    reload(config)
-
-    ini_file = tempfile.NamedTemporaryFile()
-    ini_file.write(ini_contents)
-    ini_file.seek(0)
-
-    config.initialize(ini_file.name)
-
-    yield core_config.global_settings
-
 
 STAGING_HOST = 'staging-collector.newrelic.com'
 STAGING_HOST_ENV = {'NEW_RELIC_HOST': STAGING_HOST}

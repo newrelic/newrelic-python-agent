@@ -35,6 +35,10 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set((
         'response.headers.contentType',
         'message.queueName',
         'message.routingKey',
+        'aws.requestId',
+        'aws.region',
+        'aws.lambda.arn',
+        'aws.lambda.coldStart',
 ))
 
 MAX_NUM_USER_ATTRIBUTES = 64

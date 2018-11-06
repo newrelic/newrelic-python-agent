@@ -320,7 +320,13 @@ class Agent(object):
         settings = newrelic.core.config.global_settings()
 
         if timeout is None:
-            timeout = settings.startup_timeout
+            # In serverless mode, we should always wait for startup since it
+            # should take almost no time to create the session (no network
+            # activity).
+            if settings.serverless_mode:
+                timeout = 10.0
+            else:
+                timeout = settings.startup_timeout
 
         activate_session = False
 
@@ -535,6 +541,9 @@ class Agent(object):
 
         application.record_transaction(data, profile_samples)
 
+        if self._config.serverless_mode:
+            application.harvest()
+
     def normalize_name(self, app_name, name, rule_type='url'):
         application = self._applications.get(app_name, None)
         if application is None:
@@ -660,6 +669,9 @@ class Agent(object):
         if not self._config.enabled:
             _logger.warning('The Python Agent is not enabled.')
             return
+        elif self._config.serverless_mode:
+            _logger.debug('Harvest thread is disabled due to serverless mode.')
+            return
         elif self._config.debug.disable_harvest_until_shutdown:
             _logger.debug('Harvest thread is disabled.')
             return
@@ -699,7 +711,8 @@ class Agent(object):
             _logger.debug('Start Python Agent main thread on shutdown.')
             self._harvest_thread.start()
 
-        self._harvest_thread.join(timeout)
+        if self._harvest_thread.is_alive():
+            self._harvest_thread.join(timeout)
 
 
 def agent_instance():

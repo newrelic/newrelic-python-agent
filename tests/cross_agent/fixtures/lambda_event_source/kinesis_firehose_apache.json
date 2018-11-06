@@ -1,0 +1,11 @@
+{
+  "records": [
+    {
+      "recordId": "49546986683135544286507457936321625675700192471156785154",
+      "data": "NjQuMjQyLjg4LjEwIC0gLSBbMDcvTWFyLzIwMDQ6MTY6MTA6MDIgLTA4MDBdICJHRVQgL21haWxtYW4vbGlzdGluZm8vaHNkaXZpc2lvbiBIVFRQLzEuMSIgMjAwIDYyOTE=",
+      "approximateArrivalTimestamp": 1495072949453
+    }
+  ],
+  "region": "us-west-2",
+  "invocationId": "invocationIdExample"
+}

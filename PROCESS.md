@@ -166,26 +166,29 @@ Once work has finished on a development version and all testing has been
 performed and the code approved for release, the following steps should be
 carried out to do the actual release.
 
-1. Create a new google spreadsheet and share it with the team. Add items from this document as checklist items. This command will gather the first two lines of each numbered item and prints it to a single line.
+1. Create a new google spreadsheet and share it with the team. Add items from this document as checklist items. This command will gather the first two lines of each numbered item and copy to the clipboard.
 
-  ```
-  cat PROCESS.md | grep -A1 '^\d' | awk '/--/{if (NR!=1)print "";next}{printf $0}END{print "";}' | sed 's/$/.../'
-  ```
+    ```
+    cat PROCESS.md | grep -A1 '^\d' |
+    awk '/--/{if (NR!=1)print "";next}{printf $0}END{print "";}' |
+    sed 's/$/.../' | pbcopy
+    ```
 
 2. Check out the ``develop`` branch of the Python agent repository and
 update the version number in ``newrelic/__init__.py`` for the release.
 
-    With our odd/even numbering scheme, this means you should be incrementing
-the ``B`` component of the ``A.B.C`` version number from the odd number used
-during development to the even number used for the release.
+    * Note: With our odd/even numbering scheme, this means you should be
+    incrementing the ``B`` component of the ``A.B.C`` version number from
+    the odd number used during development to the even number used for the
+    release.
 
 3. Update ``CHANGELOG.rst`` to change ``unreleased`` to the to be released
 version including today's date.
 
-  ```
-  2.94.0 (2017-09-19)
-  -------------------
-  ```
+    ```
+    2.94.0 (2017-09-19)
+    -------------------
+    ```
 
 4. Perform any other final adhoc local tests deemed necessary for the release.
 
@@ -194,37 +197,52 @@ version including today's date.
 6. Commit change made to ``newrelic/__init__.py`` and ``CHANGELOG.rst``
 into the release branch you just created. Format the commit message like this:
 
-        Increment version to A.B.C for release.
+    ```
+    Increment version to A.B.C for release.
+    ```
 
-7. Push that branch up, and create a pull request from the release branch to
-``develop``.  The body of the pull request should contain the text
-`[skip-ci]` so that jenkins doesn't run the PR. Get someone to add the
-"sidekick:approved" label and merge. This is necessary because no changes can
-be added to the code without being side-kick approved. Security will keep
-sending you emails if you don't do this.
+7. Push the release/vA.B.C branch up and create a pull request. The pull
+request will contain the following:
 
-![example-pr](https://source.datanerd.us/storage/user/985/files/f9c98530-f499-11e7-8563-e893db331423)
+    1. The PR will be merged against the ``develop`` branch
+    2. The body of the PR should contain the text `[skip-ci]` so that
+    jenkins doesn't trigger a job against this PR to verify its contents
+    3. Get someone to add the `sidekick:approved` label and merge
+        * Note: The `sidekick:approved` label is necessary because no changes
+        can be added to the code without being side-kick approved. Security
+        will keep sending you emails if you don't do this.
 
-8. Create a PR from ``develop`` to ``master``. The body of the pull request
-should contain the text `[skip-ci]` so that jenkins doesn't run the PR. The PR
-should be titled:
+8. Create a PR from ``develop`` to ``master``. The pull request will contain
+the following:
 
+    1. The body of the PR should contain the text `[skip-ci]` so that
+    jenkins doesn't trigger a job against this PR to verify its contents
+    2. The PR should be titled:
+        ```
         Merge develop into master for release A.B.C
+        ```
 
-![example-pr](https://source.datanerd.us/storage/user/985/files/166ebfe8-f49a-11e7-9f2d-ae9da4fb3359)
+9. Get a buddy to sidekick and merge the PR from ``develop`` to ``master``.
 
-9. Get a buddy to sidekick and merge this PR.
+    * Note: Merging the PR will trigger the following Jenkins jobs. Confirm they
+    have triggered. If not, run them manually. In a later step these will be
+    checked and confirmed to have passed successfully.
+
+        1. [`_INTEGRATION-TESTS-master_`](https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_INTEGRATION-TESTS-master_/)
+        2. [`_UNIT-TESTS-master_`](https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_UNIT-TESTS-master_/)
 
 10. Switch back to the ``develop`` branch and perform a merge from
 ``master`` back into the ``develop`` branch.
 
-    Confirm that you are on the `develop` branch, then run:
+    * Note: This is to synchronize the two branches so git doesn't keep tracking them
+    as completely parallel paths of development with consequent strange results
+    when trying to compare branches.
+    <br>
 
-        git merge master
-
-    This is to synchronize the two branches so git doesn't keep tracking them
-as completely parallel paths of development with consequent strange results
-when trying to compare branches.
+    1. Confirm that you are on the `develop` branch
+    2. Run: `git fetch && git merge origin/master`
+        * Confirm this command results in a fast-forward operation, as noted on stdout.
+        Stop and debug if it does not.
 
 11. Push the ``develop`` branch back to the GIT repo.
 
@@ -232,35 +250,7 @@ when trying to compare branches.
 
         git push origin develop
 
-12. Pushing these branches will trigger the following Jenkins jobs. Check that
-they are triggered and complete successfully [here][py-tests]. If the automatic
-trigger does not work, then run the tests manually.
-
-    1. [`_INTEGRATION-TESTS-master_`](https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_INTEGRATION-TESTS-master_/)
-    1. [`_UNIT-TESTS-master_`](https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_UNIT-TESTS-master_/)
-
-[py-tests]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/
-
-13. Create a branch off ``develop`` to increment the version number for
-development by running `git checkout -b increment-development-version-A.B.C`
-
-    Increment ``B`` to the next minor version. With our odd/even numbering
-    scheme, ``B`` should always be odd after this change.
-
-14. Update the version number in``newrelic/__init__.py`` by incrementing ``B``
-as described in the previous step.
-
-    Format the commit message like this:
-
-        Increment version to A.B.C for development.
-
-15. Create a PR for merging in the increment branch into ``develop``. The body
-of the pull request should contain the text `[skip-ci]` so that jenkins doesn't
-run the PR.
-
-16. Get a buddy to sidekick and merge this PR.
-
-17. Tag the release in the ``master`` branch on the GIT repo with tag of
+12. Tag the release in the ``develop`` branch on the GIT repo with tag of
 the form ``vA.B.C`` and ``vA.B.C.D``, where ``D`` is the build number. This
 value is the next number in the Build History section of
 [build-and-archive-package][build]. Push the tags to Github master.
@@ -276,6 +266,32 @@ value is the next number in the Build History section of
         git push origin vA.B.C.D
 
 [build]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Deploy/job/build-and-archive-package/
+
+
+13. Create a branch off ``develop`` to increment the version number for
+development by running `git checkout -b increment-development-version-A.B.C`
+
+    Increment ``B`` to the next minor version. With our odd/even numbering
+    scheme, ``B`` should always be odd after this change.
+
+14. Update the version number in``newrelic/__init__.py`` by incrementing ``B``
+as described in the previous step.
+
+    Format the commit message like this:
+
+        Increment version to A.B.C for development.
+
+15. Push the `increment-development-version-A.B.C` branch from steps #13/#14.
+
+    From the command line:
+
+        git push origin increment-development-version-A.B.C
+
+16. Create a PR for merging in the `increment-development-version-A.B.C` branch into ``develop``. The body
+of the pull request should contain the text `[skip-ci]` so that jenkins doesn't
+trigger a job against this PR to verify its contents.
+
+17. Get a buddy to sidekick and merge the `increment-development-version-A.B.C` PR.
 
 18. In Jenkins, build and upload the release to Artifactory.
 
@@ -302,7 +318,11 @@ value is the next number in the Build History section of
 20. Pause here, regroup before continuing
 
     1. Wait for release notes to be completed
-    2. Check in with the rest of the team (mention @team in slack)
+    2. Wait for [`_INTEGRATION-TESTS-master_`][integration-master] and [`_UNIT-TESTS-master_`][unit-master] tests to be completed successfully
+    3. Check in with the rest of the team (mention @team in slack)
+
+[integration-master]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_INTEGRATION-TESTS-master_/
+[unit-master]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_UNIT-TESTS-master_/
 
 21. Upload from Artifactory to PyPI
 

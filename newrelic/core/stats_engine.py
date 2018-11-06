@@ -323,6 +323,56 @@ class SampledDataSet(object):
         self.num_seen += other_data_set.num_seen - other_data_set.num_samples
 
 
+class LimitedDataSet(list):
+
+    def __init__(self, capacity=200):
+        super(LimitedDataSet, self).__init__()
+
+        self.capacity = capacity
+        self.num_seen = 0
+
+        if capacity <= 0:
+            def add(*args, **kwargs):
+                self.num_seen += 1
+            self.add = add
+
+    @property
+    def samples(self):
+        return self
+
+    @property
+    def num_samples(self):
+        return len(self)
+
+    @property
+    def sampling_info(self):
+        return {
+            'reservoir_size': self.capacity,
+            'events_seen': self.num_seen
+        }
+
+    def should_sample(self):
+        return self.num_seen < self.capacity
+
+    def reset(self):
+        self.clear()
+        self.num_seen = 0
+
+    def add(self, sample):
+        if self.should_sample():
+            self.append(sample)
+        self.num_seen += 1
+
+    def merge(self, other_data_set):
+        for sample in other_data_set:
+            self.add(sample)
+
+        # Merge the num_seen from the other_data_set, but take care not to
+        # double-count the actual samples of other_data_set since the .add
+        # call above will add one to self.num_seen each time
+        self.num_seen += other_data_set.num_seen - other_data_set.num_samples
+
+
 class StatsEngine(object):
 
     """The stats engine object holds the accumulated transactions metrics,
@@ -365,7 +415,7 @@ class StatsEngine(object):
         self.__slow_transaction_dry_harvests = 0
         self.__transaction_errors = []
         self.__metric_ids = {}
-        self.__synthetics_events = []
+        self.__synthetics_events = LimitedDataSet()
         self.__synthetics_transactions = []
         self.__xray_transactions = []
         self.xray_sessions = {}
@@ -939,11 +989,8 @@ class StatsEngine(object):
         # while transactions from regular requests are saved in another.
 
         if transaction.synthetics_resource_id:
-            if (len(self.__synthetics_events) <
-                    settings.agent_limits.synthetics_events):
-
-                event = transaction.transaction_event(self.__stats_table)
-                self.__synthetics_events.append(event)
+            event = transaction.transaction_event(self.__stats_table)
+            self.__synthetics_events.add(event)
 
         elif (settings.collect_analytics_events and
                 settings.transaction_events.enabled):
@@ -1312,7 +1359,6 @@ class StatsEngine(object):
         self.__slow_transaction_old_duration = None
         self.__transaction_errors = []
         self.__metric_ids = {}
-        self.__synthetics_events = []
         self.__synthetics_transactions = []
         self.__xray_transactions = []
         self.xray_sessions = {}
@@ -1321,6 +1367,7 @@ class StatsEngine(object):
         self.reset_error_events()
         self.reset_custom_events()
         self.reset_span_events()
+        self.reset_synthetics_events()
 
     def reset_metric_stats(self):
         """Resets the accumulated statistics back to initial state for
@@ -1368,7 +1415,11 @@ class StatsEngine(object):
         Synthetics events data.
 
         """
-        self.__synthetics_events = []
+        if self.__settings is not None:
+            self.__synthetics_events = LimitedDataSet(
+                    self.__settings.agent_limits.synthetics_events)
+        else:
+            self.__synthetics_events = LimitedDataSet()
 
     def harvest_snapshot(self):
         """Creates a snapshot of the accumulated statistics, error
@@ -1429,13 +1480,13 @@ class StatsEngine(object):
         self.__slow_transaction = None
         self.__transaction_errors = []
         self.__xray_transactions = []
-        self.__synthetics_events = []
         self.__synthetics_transactions = []
 
         self.reset_transaction_events()
         self.reset_error_events()
         self.reset_custom_events()
         self.reset_span_events()
+        self.reset_synthetics_events()
 
         return stats
 
@@ -1538,15 +1589,7 @@ class StatsEngine(object):
         # Thus, the events already existing in this object will be newer than
         # those in snapshot, and we favor the newer events.
 
-        if rollback:
-            self.__synthetics_events.extend(snapshot.__synthetics_events)
-        else:
-            if len(snapshot.__synthetics_events) == 1:
-                self.__synthetics_events.append(
-                    snapshot.__synthetics_events[0])
-
-        maximum = self.__settings.agent_limits.synthetics_events
-        self.__synthetics_events = self.__synthetics_events[:maximum]
+        self.__synthetics_events.merge(snapshot.__synthetics_events)
 
     def _merge_error_events(self, snapshot):
 

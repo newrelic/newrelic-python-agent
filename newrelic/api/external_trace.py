@@ -10,8 +10,6 @@ from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
 class ExternalTrace(TimeTrace, CatHeaderMixin):
 
-    node = ExternalNode
-
     def __init__(self, transaction, library, url, method=None):
         super(ExternalTrace, self).__init__(transaction)
 
@@ -28,6 +26,20 @@ class ExternalTrace(TimeTrace, CatHeaderMixin):
 
     def terminal_node(self):
         return True
+
+    def create_node(self):
+        return ExternalNode(
+                library=self.library,
+                url=self.url,
+                method=self.method,
+                children=self.children,
+                start_time=self.start_time,
+                end_time=self.end_time,
+                duration=self.duration,
+                exclusive=self.exclusive,
+                params=self.params,
+                is_async=self.is_async,
+                guid=self.guid)
 
 
 def ExternalTraceWrapper(wrapped, library, url, method=None):

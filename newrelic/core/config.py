@@ -236,6 +236,15 @@ def _environ_as_int(name, default=0):
         return default
 
 
+def _environ_as_float(name, default=0.0):
+    val = os.environ.get(name, default)
+
+    try:
+        return float(val)
+    except ValueError:
+        return default
+
+
 def _environ_as_bool(name, default=False):
     flag = os.environ.get(name, default)
     if default is None or default:
@@ -373,6 +382,8 @@ _settings.host = os.environ.get('NEW_RELIC_HOST',
         default_host(_settings.license_key))
 _settings.port = int(os.environ.get('NEW_RELIC_PORT', '0'))
 
+_settings.agent_run_id = None
+
 _settings.proxy_scheme = os.environ.get('NEW_RELIC_PROXY_SCHEME', None)
 _settings.proxy_host = os.environ.get('NEW_RELIC_PROXY_HOST', None)
 _settings.proxy_port = int(os.environ.get('NEW_RELIC_PROXY_PORT', '0'))
@@ -403,7 +414,7 @@ _settings.collect_traces = True
 _settings.collect_analytics_events = True
 _settings.collect_custom_events = True
 
-_settings.apdex_t = 0.5
+_settings.apdex_t = _environ_as_float('NEW_RELIC_APDEX_T', 0.5)
 _settings.web_transactions_apdex = {}
 
 _settings.capture_params = None
@@ -436,11 +447,12 @@ _settings.metric_name_rules = []
 _settings.transaction_name_rules = []
 _settings.transaction_segment_terms = []
 
-_settings.account_id = None
+_settings.account_id = os.environ.get('NEW_RELIC_ACCOUNT_ID')
 _settings.cross_process_id = None
-_settings.primary_application_id = None
+_settings.primary_application_id = \
+        os.environ.get('NEW_RELIC_PRIMARY_APPLICATION_ID', 'Unknown')
 _settings.trusted_account_ids = []
-_settings.trusted_account_key = None
+_settings.trusted_account_key = os.environ.get('NEW_RELIC_TRUSTED_ACCOUNT_KEY')
 _settings.encoding_key = None
 _settings.sampling_target = 10
 _settings.sampling_target_period_in_seconds = 60
@@ -585,6 +597,11 @@ _settings.heroku.use_dyno_names = _environ_as_bool(
         'NEW_RELIC_HEROKU_USE_DYNO_NAMES', default=True)
 _settings.heroku.dyno_name_prefixes_to_shorten = list(_environ_as_set(
         'NEW_RELIC_HEROKU_DYNO_NAME_PREFIXES_TO_SHORTEN', 'scheduler run'))
+
+_settings.serverless_mode = _environ_as_bool(
+        'NEW_RELIC_SERVERLESS_MODE',
+        default=bool(os.environ.get('AWS_LAMBDA_FUNCTION_NAME')))
+_settings.aws_arn = None
 
 
 def global_settings():

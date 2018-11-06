@@ -1,8 +1,11 @@
 import pytest
+import six
+import time
 
 from newrelic.common.object_wrapper import transient_function_wrapper
 from newrelic.core.config import global_settings, finalize_application_settings
-from testing_support.fixtures import override_generic_settings
+from testing_support.fixtures import (override_generic_settings,
+        function_not_called)
 
 from newrelic.core.application import Application
 from newrelic.core.data_collector import send_request, collector_url
@@ -114,6 +117,16 @@ def transaction_node(request):
     return node
 
 
+@pytest.fixture
+def audit_log_file():
+    import newrelic.core.data_collector as data_collector
+    fp = six.StringIO()
+    orig = data_collector._audit_log_fp
+    data_collector._audit_log_fp = fp
+    yield fp
+    data_collector._audit_log_fp = orig
+
+
 def validate_metric_payload(metrics=[], endpoints_called=[]):
     @transient_function_wrapper('newrelic.core.data_collector',
             'DeveloperModeSession.send_request')
@@ -205,8 +218,9 @@ endpoints_called = []
     'developer_mode': True,
     'license_key': '**NOT A LICENSE KEY**',
     'feature_flag': set(),
+    'audit_log_file': True,  # This value doesn't matter
 })
-def test_application_harvest():
+def test_application_harvest(audit_log_file):
     app = Application('Python Agent Test (Harvest Loop)')
     app.connect_to_data_collector()
     app.harvest()
@@ -214,6 +228,24 @@ def test_application_harvest():
     # Verify that the metric_data endpoint is the 2nd to last endpoint called
     # Last endpoint called is get_agent_commands
     assert endpoints_called[-2] == 'metric_data'
+
+    # verify audit log is not empty
+    assert audit_log_file.tell()
+
+
+@override_generic_settings(settings, {
+    'serverless_mode': True,
+    'license_key': '**NOT A LICENSE KEY**',
+    'feature_flag': set(),
+    'audit_log_file': True,  # This value doesn't matter
+})
+def test_serverless_application_harvest(audit_log_file):
+    app = Application('Python Agent Test (Serverless Harvest Loop)')
+    app.connect_to_data_collector()
+    app.harvest()
+
+    # verify audit log is not empty
+    assert audit_log_file.tell()
 
 
 @pytest.mark.parametrize(
@@ -444,3 +476,67 @@ def test_error_event_sampling_info(events_seen):
 
     _test()
     assert 'error_event_data' in endpoints_called
+
+
+@pytest.mark.parametrize('serverless_mode', (True, False))
+def test_harvest_reset_adaptive_sampling(transaction_node, serverless_mode):
+
+    @override_generic_settings(settings, {
+        'serverless_mode': serverless_mode,
+        'agent_run_id': 1234567,  # must match agent run from transaction_node
+        'developer_mode': True,
+    })
+    def _test():
+        app = Application('Python Agent Test (Harvest Loop)')
+        app.connect_to_data_collector()
+
+        app.record_transaction(transaction_node)
+
+        if not serverless_mode:
+            # record_transaction calls harvest in serverless mode
+            app.harvest()
+
+        # When reset, app._transaction_count will be 0. When initialized,
+        # adaptive_sampler.transaction_count is 0, when reset it is the number
+        # of transactions in the last harvest.
+
+        if serverless_mode:
+            assert app._transaction_count == 1
+            assert app.adaptive_sampler.transaction_count == 0
+        else:
+            assert app._transaction_count == 0
+            assert app.adaptive_sampler.transaction_count == 1
+
+    _test()
+
+
+@pytest.mark.parametrize('time_to_next_reset,expected_reset_count', (
+    (20, 123),  # no reset
+    (-8, 1),    # reset to last transaction count
+    (-68, 0),   # reset to 0
+))
+@override_generic_settings(settings, {
+        'serverless_mode': True,
+})
+def test_serverless_mode_adaptive_sampling(time_to_next_reset,
+        expected_reset_count):
+    app = Application('Python Agent Test (Harvest Loop)')
+
+    app.connect_to_data_collector()
+    app.adaptive_sampler.transaction_count = 123
+    app._transaction_count = 1
+    app._next_adaptive_sampler_reset = time.time() + time_to_next_reset
+
+    assert app.compute_sampled(0.0) is True
+    assert app.adaptive_sampler.transaction_count == expected_reset_count
+
+
+@function_not_called('newrelic.core.adaptive_sampler', 'AdaptiveSampler.reset')
+@override_generic_settings(settings, {
+        'developer_mode': True,
+})
+def test_compute_sampled_no_reset():
+    app = Application('Python Agent Test (Harvest Loop)')
+    app.connect_to_data_collector()
+    app._next_adaptive_sampler_reset = time.time() - 1
+    assert app.compute_sampled(1.0) is True

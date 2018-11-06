@@ -1208,6 +1208,12 @@ _developer_mode_responses = {
 
     'get_agent_commands': [],
 
+    'get_xray_metadata': [],
+
+    'profile_data': [],
+
+    'agent_command_results': [],
+
     'error_data': None,
 
     'transaction_sample_data': None,

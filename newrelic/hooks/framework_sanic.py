@@ -145,6 +145,13 @@ def _nr_wrapper_handler_(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     name = callable_name(wrapped)
+    view_class = getattr(wrapped, 'view_class', None)
+    if view_class:
+        try:
+            method = args[0].method.lower()
+            name = callable_name(view_class) + '.' + method
+        except:
+            pass
     transaction.set_transaction_name(name, priority=3)
 
     return function_trace(name=name)(wrapped)(*args, **kwargs)
@@ -156,6 +163,8 @@ def _nr_sanic_router_add(wrapped, instance, args, kwargs):
 
     # Cache the callable_name on the handler object
     callable_name(handler)
+    if hasattr(wrapped, 'view_class'):
+        callable_name(wrapped.view_class)
     wrapped_handler = _nr_wrapper_handler_(handler)
 
     return wrapped(uri, methods, wrapped_handler, *args, **kwargs)

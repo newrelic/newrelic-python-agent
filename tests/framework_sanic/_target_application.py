@@ -3,6 +3,17 @@ from sanic.exceptions import NotFound, SanicException, ServerError
 from sanic.handlers import ErrorHandler
 from sanic.response import json, stream
 from sanic.router import Router
+from sanic.views import HTTPMethodView
+
+
+class MethodView(HTTPMethodView):
+    async def get(self, request):
+        return json({'hello': 'world'})
+
+    post = get
+    put = get
+    patch = get
+    delete = get
 
 
 class CustomErrorHandler(ErrorHandler):
@@ -132,5 +143,6 @@ async def async_error(request):
     raise CustomExceptionAsync('something went wrong')
 
 
+app.add_route(MethodView.as_view(), '/method_view')
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8000)

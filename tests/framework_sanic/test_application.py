@@ -41,6 +41,29 @@ def test_simple_request(app):
     assert response.status == 200
 
 
+@pytest.mark.parametrize('method', (
+    'get',
+    'post',
+    'put',
+    'patch',
+    'delete',
+))
+def test_method_view(app, method):
+    metric_name = 'Function/_target_application:MethodView.' + method
+
+    @validate_transaction_metrics(
+        '_target_application:MethodView.' + method,
+        scoped_metrics=[(metric_name, 1)],
+        rollup_metrics=[(metric_name, 1)],
+    )
+    @validate_base_transaction_event_attr
+    def _test():
+        response = app.fetch(method, '/method_view')
+        assert response.status == 200
+
+    _test()
+
+
 DT_METRICS = [
     ('Supportability/DistributedTrace/AcceptPayload/Success', 1),
 ]

@@ -593,6 +593,41 @@ def test_compute_sampled_no_reset():
     assert app.compute_sampled(1.0) is True
 
 
+def test_analytic_event_sampling_info():
+
+    synthetics_limit = 10
+    transactions_limit = 20
+
+    def synthetics_validator(payload):
+        _, sampling_info, _ = payload
+        assert sampling_info['reservoir_size'] == synthetics_limit
+        assert sampling_info['events_seen'] == 1
+
+    def transactions_validator(payload):
+        _, sampling_info, _ = payload
+        assert sampling_info['reservoir_size'] == transactions_limit
+        assert sampling_info['events_seen'] == 1
+
+    validators = [synthetics_validator, transactions_validator]
+
+    @validate_transaction_event_payloads(validators)
+    @override_generic_settings(settings, {
+            'developer_mode': True,
+            'transaction_events.max_samples_stored': transactions_limit,
+            'agent_limits.synthetics_events': synthetics_limit,
+    })
+    def _test():
+        app = Application('Python Agent Test (Harvest Loop)')
+        app.connect_to_data_collector()
+
+        app._stats_engine.transaction_events.add('transaction event')
+        app._stats_engine.synthetics_events.add('synthetic event')
+
+        app.harvest()
+
+    _test()
+
+
 @pytest.mark.parametrize('has_synthetic_events', (True, False))
 @pytest.mark.parametrize('has_transaction_events', (True, False))
 @override_generic_settings(settings, {

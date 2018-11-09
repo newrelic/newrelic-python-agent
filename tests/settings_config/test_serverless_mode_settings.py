@@ -93,12 +93,10 @@ def test_serverless_apdex_t(ini, env, value, global_settings):
 
 
 @pytest.mark.parametrize('ini,env,values', [
-    (INI_FILE_SERVERLESS_MODE, LAMBDA_ENV, (
-            None, 'Unknown', None, True)),
     (INI_FILE_EMPTY, NON_SERVERLESS_MODE_ENV, (
-            None, 'Unknown', None, False)),
+            None, 'Unknown', None)),
     (INI_FILE_SERVERLESS_MODE, DT_ENV, (
-            'account_id', 'application_id', 'trusted_key', True)),
+            'account_id', 'application_id', 'trusted_key')),
 ])
 def test_serverless_dt_environment(ini, env, values, global_settings):
     settings = global_settings()
@@ -106,8 +104,6 @@ def test_serverless_dt_environment(ini, env, values, global_settings):
     assert settings.account_id == values[0]
     assert settings.primary_application_id == values[1]
     assert settings.trusted_account_key == values[2]
-
-    assert settings.serverless_mode == values[3]
 
 
 # The purpose of test_serverless_app_names is to ensure that if the customer

@@ -68,7 +68,6 @@ class Application(object):
 
         self._harvest_count = 0
 
-        self._merge_count = 0
         self._discard_count = 0
 
         self._agent_restart = 0
@@ -197,8 +196,6 @@ class Application(object):
                     self._global_events_account)
             print >> file, 'Harvest Metrics Count: %d' % (
                     self._stats_engine.metrics_count())
-            print >> file, 'Harvest Merge Count: %d' % (
-                    self._merge_count)
             print >> file, 'Harvest Discard Count: %d' % (
                     self._discard_count)
 
@@ -471,10 +468,6 @@ class Application(object):
             self._next_adaptive_sampler_reset = self._period_start + 60.0
 
             self._global_events_account = 0
-
-            # Clear any prior count of harvest merges due to failures.
-
-            self._merge_count = 0
 
             # Record metrics for how long it took us to connect and how
             # many attempts we made. Also record metrics for the final
@@ -1598,7 +1591,6 @@ class Application(object):
                     # only really want to count errors in being able to
                     # report the main transaction metrics.
 
-                    self._merge_count = 0
                     self._period_start = period_end
                     self._stats_engine.update_metric_ids(metric_ids)
 
@@ -1676,34 +1668,7 @@ class Application(object):
                             'Exception/%s' % callable_name(exc_type), 1)
 
                     if self._period_start != period_end:
-
-                        self._merge_count += 1
-
-                        agent_limits = configuration.agent_limits
-                        maximum = agent_limits.merge_stats_maximum
-
-                        if self._merge_count <= maximum:
-
-                            self._stats_engine.rollback(stats)
-
-                        else:
-                            _logger.error('Unable to report main transaction '
-                                    'metrics after %r successive attempts. '
-                                    'Check the log messages and if necessary '
-                                    'please report this problem to New Relic '
-                                    'support for further investigation.',
-                                    maximum)
-
-                            self._discard_count += self._merge_count
-
-                            self._merge_count = 0
-
-                            # Force an agent restart ourselves.
-
-                            _logger.debug('Abandoning agent run and forcing '
-                                    'a reconnect of the agent.')
-
-                            self.internal_agent_shutdown(restart=True)
+                        self._stats_engine.rollback(stats)
 
                 except DiscardDataForRequest:
                     # An issue must have occurred in reporting the data

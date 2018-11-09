@@ -27,7 +27,7 @@ def restore_developer_mode():
 
 _all_endpoints = (
     ('send_metric_data', (NOW, NOW + 1, ())),
-    ('send_transaction_events', ((),)),
+    ('send_transaction_events', (EMPTY_SAMPLES, ())),
     ('send_custom_events', (EMPTY_SAMPLES, ())),
     ('send_error_events', (EMPTY_SAMPLES, ())),
     ('send_transaction_traces', ([[]],)),

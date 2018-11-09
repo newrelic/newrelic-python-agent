@@ -182,7 +182,8 @@ def validate_transaction_event_payloads(payload_validators):
                 'DeveloperModeSession.send_request')
         def send_request_wrapper(wrapped, instance, args, kwargs):
             def _bind_params(session, url, method, license_key,
-                    agent_run_id=None, payload=(), *args, **kwargs):
+                    agent_run_id=None, request_headers_map=None, payload=(),
+                    *args, **kwargs):
                 return method, payload
 
             method, payload = _bind_params(*args, **kwargs)
@@ -236,8 +237,7 @@ def failing_endpoint(endpoint, raises=RetryDataForRequest, call_number=1):
     @transient_function_wrapper('newrelic.core.data_collector',
             'DeveloperModeSession.send_request')
     def send_request_wrapper(wrapped, instance, args, kwargs):
-        def _bind_params(session, url, method, license_key,
-                agent_run_id=None, payload=(), *args, **kwargs):
+        def _bind_params(session, url, method, *args, **kwargs):
             return method
 
         method = _bind_params(*args, **kwargs)

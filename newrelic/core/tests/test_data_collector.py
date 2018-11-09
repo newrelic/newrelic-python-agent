@@ -1,11 +1,14 @@
 import json
 import os
 import pytest
+import json
 
 from newrelic.common import system_info
 from newrelic.core import data_collector as dc
 
 from newrelic.core.config import global_settings
+from newrelic.network.exceptions import (DiscardDataForRequest,
+        RetryDataForRequest, ForceAgentRestart, ForceAgentDisconnect)
 from newrelic.core.data_collector import (ApplicationSession, send_request,
         ServerlessModeSession)
 import newrelic.packages.requests as requests
@@ -307,3 +310,38 @@ def test_request_headers_map():
 
     assert 'FOO' in headers_sent
     assert headers_sent['FOO'] == 'bar'
+
+
+@pytest.mark.parametrize('status_code,exception', [
+    (400, DiscardDataForRequest),
+    (401, ForceAgentRestart),
+    (403, DiscardDataForRequest),
+    (404, DiscardDataForRequest),
+    (405, DiscardDataForRequest),
+    (407, DiscardDataForRequest),
+    (408, RetryDataForRequest),
+    (409, ForceAgentRestart),
+    (410, ForceAgentDisconnect),
+    (411, DiscardDataForRequest),
+    (413, DiscardDataForRequest),
+    (414, DiscardDataForRequest),
+    (415, DiscardDataForRequest),
+    (417, DiscardDataForRequest),
+    (429, RetryDataForRequest),
+    (431, DiscardDataForRequest),
+    (500, RetryDataForRequest),
+    (503, RetryDataForRequest),
+    (201, DiscardDataForRequest),  # != (200 || 202) catch-all case
+])
+def test_status_code_exceptions_raised(status_code, exception):
+    session = FakeRequestsSession(status_code,
+            json.dumps({'return_value': ''}))
+    with pytest.raises(exception):
+        send_request(session, url="", method="", license_key="")
+
+
+@pytest.mark.parametrize('status_code', (200, 202))
+def test_status_code_no_exceptions_raised(status_code):
+    session = FakeRequestsSession(status_code,
+            json.dumps({'return_value': ''}))
+    send_request(session, url="", method="", license_key="")

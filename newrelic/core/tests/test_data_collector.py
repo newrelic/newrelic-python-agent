@@ -1,3 +1,4 @@
+import json
 import os
 import pytest
 
@@ -5,8 +6,9 @@ from newrelic.common import system_info
 from newrelic.core import data_collector as dc
 
 from newrelic.core.config import global_settings
-from newrelic.core.data_collector import (ApplicationSession,
+from newrelic.core.data_collector import (ApplicationSession, send_request,
         ServerlessModeSession)
+import newrelic.packages.requests as requests
 
 # Global constants used in tests
 AGENT_VERSION = '2.0.0.0'
@@ -271,3 +273,37 @@ def test_serverless_session_retries_for_arn_but_not_for_other_keys(
         assert captured_metadata['arn'] == aws_arn
     finally:
         settings.aws_arn = original_arn
+
+
+class FakeRequestsSession(requests.Session):
+    def __init__(self, status, text, headers_sent={}):
+        self.status = status
+        self.text = text
+        self.headers_sent = headers_sent
+
+    def request(self, *args, **kwargs):
+
+        headers = kwargs.get('headers')
+        if headers:
+            self.headers_sent.update(headers)
+
+        response = requests.Response()
+        response.status_code = self.status
+        response._content_consumed = True
+        response._content = self.text.encode('utf-8')
+
+        return response
+
+
+def test_request_headers_map():
+
+    headers_sent = {}
+    extra_headers = {'FOO': 'bar'}
+
+    session = FakeRequestsSession(200, json.dumps({'return_value': ''}),
+            headers_sent=headers_sent)
+    send_request(session, url='', method='', license_key='',
+            request_headers_map=extra_headers)
+
+    assert 'FOO' in headers_sent
+    assert headers_sent['FOO'] == 'bar'

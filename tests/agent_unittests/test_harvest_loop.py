@@ -129,6 +129,9 @@ def audit_log_file():
 
 
 def validate_metric_payload(metrics=[], endpoints_called=[]):
+
+    sent_metrics = {}
+
     @transient_function_wrapper('newrelic.core.data_collector',
             'DeveloperModeSession.send_request')
     def send_request_wrapper(wrapped, instance, args, kwargs):
@@ -140,11 +143,16 @@ def validate_metric_payload(metrics=[], endpoints_called=[]):
         endpoints_called.append(method)
 
         if method == 'metric_data' and payload:
-            sent_metrics = {}
             for metric_info, metric_values in payload[3]:
                 metric_key = (metric_info['name'], metric_info['scope'])
                 sent_metrics[metric_key] = metric_values
 
+        return wrapped(*args, **kwargs)
+
+    @function_wrapper
+    def _wrapper(wrapped, instance, args, kwargs):
+
+        def validate():
             for metric_name, count in metrics:
                 metric_key = (metric_name, '')  # only search unscoped
 
@@ -154,9 +162,12 @@ def validate_metric_payload(metrics=[], endpoints_called=[]):
                 else:
                     assert metric_key not in sent_metrics, metric_key
 
-        return wrapped(*args, **kwargs)
+        _new_wrapper = send_request_wrapper(wrapped)
+        val = _new_wrapper(*args, **kwargs)
+        validate()
+        return val
 
-    return send_request_wrapper
+    return _wrapper
 
 
 def validate_transaction_event_payloads(payload_validators):

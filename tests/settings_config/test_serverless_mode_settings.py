@@ -33,15 +33,6 @@ SERVERLESS_MODE_ENV = {
     'NEW_RELIC_SERVERLESS_MODE': 'true',
 }
 
-LAMBDA_ENV = {
-    'AWS_LAMBDA_FUNCTION_NAME': 'cookies',
-}
-
-ALL_ENV = {
-    'NEW_RELIC_SERVERLESS_MODE': 'false',
-    'AWS_LAMBDA_FUNCTION_NAME': 'cookies',
-}
-
 DT_ENV = {
     'NEW_RELIC_ACCOUNT_ID': 'account_id',
     'NEW_RELIC_PRIMARY_APPLICATION_ID': 'application_id',
@@ -57,18 +48,10 @@ APP_NAME_ENV = {
     # 1. serverless mode in config file (this trumps all)
     (INI_FILE_SERVERLESS_MODE, NON_SERVERLESS_MODE_ENV, True),
 
-    # 2. serverless mode in the env variable should override any other env
-    # variables
-    (INI_FILE_EMPTY, ALL_ENV, False),
-
-    # 3. if all else fails, NEW_RELIC_SERVERLESS_MODE should work
+    # 2. if all else fails, NEW_RELIC_SERVERLESS_MODE should work
     (INI_FILE_EMPTY, SERVERLESS_MODE_ENV, True),
 
-    # 4. lambda environment variable should force serverless mode on even if
-    # NEW_RELIC_SERVERLESS_MODE is False
-    (INI_FILE_EMPTY, LAMBDA_ENV, True),
-
-    # 5. Default is false
+    # 3. Default is false
     (INI_FILE_EMPTY, {}, False),
 ])
 def test_serverless_mode_environment(ini, env, serverless_mode,

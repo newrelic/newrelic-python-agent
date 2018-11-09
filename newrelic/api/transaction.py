@@ -1763,9 +1763,14 @@ def record_custom_metric(name, value, application=None):
         transaction = current_transaction()
         if transaction:
             transaction.record_custom_metric(name, value)
-    else:
-        if application.enabled:
-            application.record_custom_metric(name, value)
+        else:
+            _logger.debug('record_custom_metric has been called but no '
+                'transaction was running. As a result, the following metric '
+                'has not been recorded. Name: %r Value: %r. To correct this '
+                'problem, supply an application object as a parameter to this '
+                'record_custom_metrics call.', name, value)
+    elif application.enabled:
+        application.record_custom_metric(name, value)
 
 
 def record_custom_metrics(metrics, application=None):
@@ -1773,9 +1778,14 @@ def record_custom_metrics(metrics, application=None):
         transaction = current_transaction()
         if transaction:
             transaction.record_custom_metrics(metrics)
-    else:
-        if application.enabled:
-            application.record_custom_metrics(metrics)
+        else:
+            _logger.debug('record_custom_metrics has been called but no '
+                'transaction was running. As a result, the following metrics '
+                'have not been recorded: %r. To correct this problem, '
+                'supply an application object as a parameter to this '
+                'record_custom_metric call.', list(metrics))
+    elif application.enabled:
+        application.record_custom_metrics(metrics)
 
 
 def record_custom_event(event_type, params, application=None):
@@ -1792,9 +1802,14 @@ def record_custom_event(event_type, params, application=None):
         transaction = current_transaction()
         if transaction:
             transaction.record_custom_event(event_type, params)
-    else:
-        if application.enabled:
-            application.record_custom_event(event_type, params)
+        else:
+            _logger.debug('record_custom_event has been called but no '
+                'transaction was running. As a result, the following event '
+                'has not been recorded. event_type: %r params: %r. To correct '
+                'this problem, supply an application object as a parameter to '
+                'this record_custom_event call.', event_type, params)
+    elif application.enabled:
+        application.record_custom_event(event_type, params)
 
 
 def accept_distributed_trace_payload(payload, transport_type='HTTP'):

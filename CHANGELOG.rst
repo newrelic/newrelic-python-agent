@@ -1,6 +1,13 @@
 unreleased
 ----------
 
+- Improve naming of Sanic HTTPMethodView view handlers
+
+  Sanic views that were defined using the HTTPMethodView class were previously
+  all named HTTPMethodView.as_view.<locals>.view regardless of the actual class
+  in use. The agent will now name transactions after the actual view handler
+  class.
+
 - Fix ignored error reporting in CherryPy instrumention
 
   When missing query parameters, unexpected query parameters, unexpected positional

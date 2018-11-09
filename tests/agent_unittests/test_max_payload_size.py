@@ -48,7 +48,7 @@ def session():
 
 @pytest.mark.parametrize('method,args', [
     ('send_metric_data', (NOW, NOW + 1, GARBAGE)),
-    ('send_transaction_events', (GARBAGE,)),
+    ('send_transaction_events', (EMPTY_SAMPLES, GARBAGE)),
     ('send_custom_events', (EMPTY_SAMPLES, GARBAGE)),
     ('send_error_events', (EMPTY_SAMPLES, GARBAGE)),
     ('send_transaction_traces', (GARBAGE,)),

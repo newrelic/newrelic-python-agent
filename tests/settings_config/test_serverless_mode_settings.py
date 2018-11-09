@@ -11,7 +11,7 @@ INI_FILE_EMPTY = """
 
 INI_FILE_SERVERLESS_MODE = """
 [newrelic]
-serverless_mode = true
+serverless_mode.enabled = true
 """.encode('utf-8')
 
 INI_FILE_APDEX_T = """
@@ -21,16 +21,16 @@ apdex_t = 0.33
 
 INI_FILE_APP_NAME = """
 [newrelic]
-serverless_mode = True
+serverless_mode.enabled = True
 app_name = a;b
 """.encode('utf-8')
 
 NON_SERVERLESS_MODE_ENV = {
-    'NEW_RELIC_SERVERLESS_MODE': 'false',
+    'NEW_RELIC_SERVERLESS_MODE_ENABLED': 'false',
 }
 
 SERVERLESS_MODE_ENV = {
-    'NEW_RELIC_SERVERLESS_MODE': 'true',
+    'NEW_RELIC_SERVERLESS_MODE_ENABLED': 'true',
 }
 
 DT_ENV = {
@@ -48,7 +48,7 @@ APP_NAME_ENV = {
     # 1. serverless mode in config file (this trumps all)
     (INI_FILE_SERVERLESS_MODE, NON_SERVERLESS_MODE_ENV, True),
 
-    # 2. if all else fails, NEW_RELIC_SERVERLESS_MODE should work
+    # 2. if all else fails, NEW_RELIC_SERVERLESS_MODE_ENABLED should work
     (INI_FILE_EMPTY, SERVERLESS_MODE_ENV, True),
 
     # 3. Default is false
@@ -57,7 +57,7 @@ APP_NAME_ENV = {
 def test_serverless_mode_environment(ini, env, serverless_mode,
         global_settings):
     settings = global_settings()
-    assert settings.serverless_mode == serverless_mode
+    assert settings.serverless_mode.enabled == serverless_mode
 
 
 @pytest.mark.parametrize('ini,env,value', [

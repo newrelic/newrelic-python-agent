@@ -323,7 +323,7 @@ class Agent(object):
             # In serverless mode, we should always wait for startup since it
             # should take almost no time to create the session (no network
             # activity).
-            if settings.serverless_mode:
+            if settings.serverless_mode.enabled:
                 timeout = 10.0
             else:
                 timeout = settings.startup_timeout
@@ -541,7 +541,7 @@ class Agent(object):
 
         application.record_transaction(data, profile_samples)
 
-        if self._config.serverless_mode:
+        if self._config.serverless_mode.enabled:
             application.harvest()
 
     def normalize_name(self, app_name, name, rule_type='url'):
@@ -669,7 +669,7 @@ class Agent(object):
         if not self._config.enabled:
             _logger.warning('The Python Agent is not enabled.')
             return
-        elif self._config.serverless_mode:
+        elif self._config.serverless_mode.enabled:
             _logger.debug('Harvest thread is disabled due to serverless mode.')
             return
         elif self._config.debug.disable_harvest_until_shutdown:

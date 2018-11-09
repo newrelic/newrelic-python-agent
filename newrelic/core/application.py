@@ -1395,21 +1395,25 @@ class Application(object):
                 try:
                     # Send the transaction and custom metric data.
 
-                    # Send data set for analytics, which is a combination
-                    # of Synthetic analytic events, and the sampled data
-                    # set of regular requests.
-
-                    all_analytic_events = []
+                    # Send data set for analytics, which is Synthetic analytic
+                    # events, and the sampled data set of regular requests sent
+                    # as separate requests.
 
                     synthetics_events = stats.synthetics_events
                     if synthetics_events.num_samples:
-                        all_analytic_events.extend(synthetics_events)
+                        _logger.debug('Sending synthetics event data for '
+                                'harvest of %r.', self._app_name)
+
+                        self._active_session.send_transaction_events(
+                                synthetics_events.sampling_info,
+                                synthetics_events)
+
+                    stats.reset_synthetics_events()
 
                     if (configuration.collect_analytics_events and
                             configuration.transaction_events.enabled):
 
                         transaction_events = stats.transaction_events
-                        all_analytic_events.extend(transaction_events)
 
                         # As per spec
                         internal_metric('Supportability/Python/'
@@ -1419,15 +1423,15 @@ class Application(object):
                                 'RequestSampler/samples',
                                 transaction_events.num_samples)
 
-                    if len(all_analytic_events):
-                        _logger.debug('Sending analytics event data '
-                                'for harvest of %r.', self._app_name)
+                        if transaction_events.num_samples:
+                            _logger.debug('Sending analytics event data '
+                                    'for harvest of %r.', self._app_name)
 
-                        self._active_session.send_transaction_events(
-                                all_analytic_events)
+                            self._active_session.send_transaction_events(
+                                    transaction_events.sampling_info,
+                                    transaction_events)
 
                     stats.reset_transaction_events()
-                    stats.reset_synthetics_events()
 
                     # Send span events
 

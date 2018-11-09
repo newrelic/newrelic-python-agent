@@ -88,17 +88,6 @@ def LambdaHandlerWrapper(wrapped, application=None, name=None,
 
         transaction._aws_request_id = getattr(context, 'aws_request_id', None)
         transaction._aws_arn = getattr(context, 'invoked_function_arn', None)
-        transaction._aws_function_name = getattr(
-                context, 'function_name', None)
-        transaction._aws_function_version = getattr(
-                context, 'function_version', None)
-        try:
-            transaction._memory_limit = int(getattr(
-                    context, 'memory_limit_in_mb', None)) * MEGABYTE_IN_BYTES
-        except Exception:
-            pass
-
-        transaction._aws_region = os.environ.get('AWS_REGION', None)
         transaction._aws_event_source_arn = extract_event_source_arn(event)
 
         # COLD_START_RECORDED is initialized to "False" when the container
@@ -126,13 +115,9 @@ def LambdaHandlerWrapper(wrapped, application=None, name=None,
 
         # Override the initial transaction name.
 
-        if name is None:
-            if transaction._aws_function_name:
-                transaction.set_transaction_name(
-                        transaction._aws_function_name, group, priority=1)
-
-        elif name:
-            transaction.set_transaction_name(name, group, priority=1)
+        transaction_name = name or getattr(context, 'function_name', None)
+        if transaction_name:
+            transaction.set_transaction_name(transaction_name, group, priority=1)
 
         with transaction:
             result = wrapped(*args, **kwargs)

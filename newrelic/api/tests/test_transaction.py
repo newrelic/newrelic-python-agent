@@ -91,6 +91,10 @@ class TestTraceEndsAfterTransaction(newrelic.tests.test_cases.TestCase):
                         self.transaction, 'I am going to be a little later')
                 trace_2.__enter__()
 
+            # Resume trace 2. This is typically done through a coroutine trace
+            # context.
+            self.transaction._push_current(trace_2)
+
         assert not self.transaction.enabled
         assert trace_1.exited
         assert trace_2.exited

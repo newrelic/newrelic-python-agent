@@ -8,7 +8,7 @@ class TestSampledDataSet(unittest.TestCase):
     def test_empty_set(self):
         instance = SampledDataSet()
 
-        self.assertEqual(list(instance.samples), [])
+        self.assertEqual(list(instance), [])
         self.assertEqual(instance.capacity, 100)
         self.assertEqual(instance.num_seen, 0)
 
@@ -17,7 +17,7 @@ class TestSampledDataSet(unittest.TestCase):
 
         instance.add(1)
 
-        self.assertEqual(list(instance.samples), [1])
+        self.assertEqual(list(instance), [1])
         self.assertEqual(instance.num_seen, 1)
 
     def test_at_capacity(self):
@@ -27,7 +27,7 @@ class TestSampledDataSet(unittest.TestCase):
             instance.add(i)
 
         self.assertEqual(instance.num_samples, 100)
-        self.assertEqual(sorted(instance.samples), list(range(100)))
+        self.assertEqual(sorted(instance), list(range(100)))
         self.assertEqual(instance.num_seen, 100)
 
     def test_over_capacity(self):
@@ -56,7 +56,7 @@ class TestSampledDataSet(unittest.TestCase):
         self.assertEqual(a.num_seen, count_a + count_b)
         self.assertEqual(a.num_seen, a.num_samples)
 
-        samples = list(a.samples)
+        samples = list(a)
         self.assertEqual(len(samples), a.num_seen)
 
     def test_merge_sampled_data_set_over_capacity(self):
@@ -77,7 +77,7 @@ class TestSampledDataSet(unittest.TestCase):
         self.assertEqual(a.num_seen, count_a + count_b)
         self.assertEqual(a.num_samples, capacity)
 
-        samples = list(a.samples)
+        samples = list(a)
         self.assertEqual(len(samples), capacity)
 
     def test_priority_over_capacity_dropped(self):
@@ -97,7 +97,7 @@ class TestSampledDataSet(unittest.TestCase):
         instance.add('y', priority=y_priority)
         self.assertEqual(False, instance.should_sample(y_priority))
 
-        samples = list(instance.samples)
+        samples = list(instance)
 
         self.assertEqual(instance.num_samples, 100)
         self.assertEqual(instance.num_seen, 101)
@@ -121,7 +121,7 @@ class TestSampledDataSet(unittest.TestCase):
         instance.add('y', priority=y_priority)
         self.assertEqual(True, instance.should_sample(y_priority))
 
-        samples = list(instance.samples)
+        samples = list(instance)
 
         self.assertEqual(instance.num_samples, 100)
         self.assertEqual(instance.num_seen, 101)
@@ -142,7 +142,7 @@ class TestSampledDataSet(unittest.TestCase):
         instance = SampledDataSet(0)
 
         instance.add('x')
-        self.assertEqual(list(instance.samples), [])
+        self.assertEqual(list(instance), [])
 
     # regression test for PYTHON-2964
     def test_incomparable_entries(self):
@@ -151,7 +151,7 @@ class TestSampledDataSet(unittest.TestCase):
         for i in range(102):
             instance.add({'a': i}, priority=0.5)
 
-        self.assertEqual(100, len(list(instance.samples)))
+        self.assertEqual(100, len(list(instance)))
 
 
 if __name__ == '__main__':

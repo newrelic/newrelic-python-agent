@@ -42,6 +42,11 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
 
     """
 
+    def __new__(cls, *args, **kwargs):
+        node = _TransactionNode.__new__(cls, *args, **kwargs)
+        node.include_transaction_trace_request_uri = False
+        return node
+
     def __hash__(self):
         return id(self)
 
@@ -290,7 +295,6 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
 
         for error in self.errors:
             params = {}
-            params["request_uri"] = self.request_uri
             params["stack_trace"] = error.stack_trace
 
             params['intrinsics'] = self.trace_intrinsics
@@ -364,6 +368,8 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
         for attr in self.agent_attributes:
             if attr.destinations & DST_TRANSACTION_TRACER:
                 attributes['agentAttributes'][attr.name] = attr.value
+                if attr.name == 'request.uri':
+                    self.include_transaction_trace_request_uri = True
 
         attributes['userAttributes'] = {}
         for attr in self.user_attributes:

@@ -35,8 +35,6 @@ def enable_datastore_instance_feature(dbapi2_module):
 
 class DatabaseTrace(TimeTrace):
 
-    node = DatabaseNode
-
     __async_explain_plan_logged = False
 
     def __init__(self, transaction, sql, dbapi2_module=None,
@@ -171,6 +169,27 @@ class DatabaseTrace(TimeTrace):
 
     def terminal_node(self):
         return True
+
+    def create_node(self):
+        return DatabaseNode(
+                dbapi2_module=self.dbapi2_module,
+                sql=self.sql,
+                children=self.children,
+                start_time=self.start_time,
+                end_time=self.end_time,
+                duration=self.duration,
+                exclusive=self.exclusive,
+                stack_trace=self.stack_trace,
+                sql_format=self.sql_format,
+                connect_params=self.connect_params,
+                cursor_params=self.cursor_params,
+                sql_parameters=self.sql_parameters,
+                execute_params=self.execute_params,
+                host=self.host,
+                port_path_or_id=self.port_path_or_id,
+                database_name=self.database_name,
+                is_async=self.is_async,
+                guid=self.guid)
 
 
 def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None):

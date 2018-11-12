@@ -1,15 +1,59 @@
 unreleased
 ----------
 
+
+4.6.0 (2018-11-12)
+------------------
+
+- Monitoring of Lambda functions
+
+  This release includes changes to the agent to enable monitoring of Lambda
+  functions. If you are interested in learning more or previewing New Relic
+  Lambda monitoring please email lambda_preview@newrelic.com.
+
+- Improve naming of Sanic HTTPMethodView view handlers
+
+  Sanic views that were defined using the HTTPMethodView class were previously
+  all named HTTPMethodView.as_view.<locals>.view regardless of the actual class
+  in use. The agent will now name transactions after the actual view handler
+  class.
+
+- Fix ignored error reporting in CherryPy instrumention
+
+  When missing query parameters, unexpected query parameters, unexpected positional
+  arguments, or duplicate arguments were present in the CherryPy framework, a
+  TypeError exception was recorded even when an ignored response status code
+  (such as a 404) was generated. An error is no longer recorded when it results in
+  the generation of an ignored status code.
+
+- Excluding `request.uri` from transaction trace attributes hides it in the UI
+
+  When `request.uri` is added to either `attributes.exclude` or
+  `transaction_tracer.attributes.exclude`, the value will now no longer appear
+  in the APM UI for transaction traces.
+
+- Ability to disable sending `request.uri` as part of error traces
+
+  Error traces will now respect excluding `request.uri` when added to the
+  attributes.exclude list in the newrelic.ini configuration file.
+
+- Fix tracing of functions returning generators
+
+  When tracing generators whose parent traces have ended an error was seen
+  in the logs "Transaction ended but current_node is not Sentinel." This has
+  now been fixed.
+
+
 4.4.1 (2018-09-21)
 ------------------
 
-- Fixed TypeError when comparing dicts in Python3
+- The creation of sampled events sometimes raised an exception in Python 3
 
-  In Python3 if you compare two tuples containing dicts it is possible to
-  throw a TypeError if the contents of the tuples are the same except for
-  their dicts. A fix has been applied to ensure the tuples are unique when
-  being compared.
+  When more events (Transaction, Transaction Error, Custom, or Span) were
+  created than allowed per harvest period in Python 3, sometimes a `TypeError:
+  '<' not supported between instances of 'dict' and 'dict'` was raised. This
+  issue has now been fixed.
+
 
 4.4.0 (2018-09-11)
 ------------------

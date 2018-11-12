@@ -320,13 +320,40 @@ class Agent(object):
         settings = newrelic.core.config.global_settings()
 
         if timeout is None:
-            timeout = settings.startup_timeout
+            # In serverless mode, we should always wait for startup since it
+            # should take almost no time to create the session (no network
+            # activity).
+            if settings.serverless_mode.enabled:
+                timeout = 10.0
+            else:
+                timeout = settings.startup_timeout
 
         activate_session = False
 
         with self._lock:
             application = self._applications.get(app_name, None)
             if not application:
+
+                process_id = os.getpid()
+
+                if process_id != self._process_id:
+                    _logger.warning(
+                            'Attempt to activate application in a process '
+                            'different to where the agent harvest thread was '
+                            'started. No data will be reported for this '
+                            'process with pid of %d. Creation of the harvest '
+                            'thread this application occurred in process with '
+                            'pid %d. If no data at all is being reported for '
+                            'your application, see '
+                            'https://docs.newrelic.com/docs/agents/'
+                            'python-agent/troubleshooting/'
+                            'activate-application-warning-python '
+                            'for troubleshooting steps. If the issue '
+                            'persists, please send debug logs to New Relic '
+                            'support for assistance.',
+                            process_id,
+                            self._process_id)
+
                 if settings.debug.log_agent_initialization:
                     _logger.info('Creating application instance for %r '
                             'in process %d.', app_name, os.getpid())
@@ -514,6 +541,9 @@ class Agent(object):
 
         application.record_transaction(data, profile_samples)
 
+        if self._config.serverless_mode.enabled:
+            application.harvest()
+
     def normalize_name(self, app_name, name, rule_type='url'):
         application = self._applications.get(app_name, None)
         if application is None:
@@ -639,6 +669,12 @@ class Agent(object):
         if not self._config.enabled:
             _logger.warning('The Python Agent is not enabled.')
             return
+        elif self._config.serverless_mode.enabled:
+            _logger.debug('Harvest thread is disabled due to serverless mode.')
+            return
+        elif self._config.debug.disable_harvest_until_shutdown:
+            _logger.debug('Harvest thread is disabled.')
+            return
 
         # Skip this if background thread already running.
 
@@ -648,6 +684,8 @@ class Agent(object):
         _logger.debug('Start Python Agent main thread.')
 
         self._harvest_thread.start()
+
+        self._process_id = os.getpid()
 
     def _atexit_shutdown(self):
         """Triggers agent shutdown but flags first that this is being
@@ -668,7 +706,13 @@ class Agent(object):
         _logger.info('New Relic Python Agent Shutdown')
 
         self._harvest_shutdown.set()
-        self._harvest_thread.join(timeout)
+
+        if self._config.debug.disable_harvest_until_shutdown:
+            _logger.debug('Start Python Agent main thread on shutdown.')
+            self._harvest_thread.start()
+
+        if self._harvest_thread.is_alive():
+            self._harvest_thread.join(timeout)
 
 
 def agent_instance():

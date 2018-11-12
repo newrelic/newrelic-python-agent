@@ -24,7 +24,7 @@ use(extensions) {
             buildInDockerImage('./deploy')
 
             parameters {
-                choiceParam('PYPI_REPOSITORY', ['pypi-test', 'pypi-production'], '')
+                choiceParam('PYPI_REPOSITORY', ['testpypi', 'pypi'], '')
                 stringParam('AGENT_VERSION', '', 'Version of the agent to release. (Ex. 2.56.0.42)')
             }
 
@@ -42,6 +42,7 @@ use(extensions) {
                     env('PATH', '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin')
                 }
                 shell('./deploy/deploy-to-pypi.sh')
+                shell('./deploy/cleanup-root-files.sh')
             }
 
             slackQuiet(slackChannel){
@@ -80,6 +81,7 @@ use(extensions) {
                     env('PATH', '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin')
                 }
                 shell('./deploy/deploy-to-s3.sh')
+                shell('./deploy/cleanup-root-files.sh')
             }
 
             slackQuiet(slackChannel){
@@ -118,6 +120,7 @@ use(extensions) {
                     env('PATH', '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin')
                 }
                 shell('./deploy/undeploy-from-s3.sh')
+                shell('./deploy/cleanup-root-files.sh')
             }
 
             slackQuiet(slackChannel){
@@ -152,6 +155,7 @@ use(extensions) {
                 }
                 shell('./build.sh')
                 shell('./deploy/upload-to-artifactory.sh')
+                shell('./deploy/cleanup-root-files.sh')
             }
 
             publishers {

@@ -33,7 +33,7 @@ from newrelic.network.addresses import proxy_details
 from newrelic.common.object_wrapper import patch_function_wrapper
 from newrelic.common.object_names import callable_name
 from newrelic.common.encoding_utils import (json_encode, json_decode,
-        unpack_field)
+        unpack_field, serverless_payload_encode)
 from newrelic.common.system_info import (logical_processor_count,
         total_physical_memory, BootIdUtilization)
 from newrelic.common.utilization import (AWSUtilization, AzureUtilization,
@@ -236,7 +236,10 @@ def _log_request(url, params, headers, data):
         if isinstance(data, bytes):
             data = data.decode('Latin-1')
 
-    object_from_json = json_decode(data)
+    try:
+        object_from_json = json_decode(data)
+    except Exception:
+        object_from_json = data
 
     pprint(object_from_json, stream=_audit_log_fp)
 
@@ -977,12 +980,12 @@ class ApplicationSession(object):
                 'get_xray_metadata', self.license_key, self.agent_run_id,
                 payload, self.max_payload_size_in_bytes)
 
-    def send_transaction_events(self, sample_set):
+    def send_transaction_events(self, sampling_info, sample_set):
         """Called to submit sample set for analytics.
 
         """
 
-        payload = (self.agent_run_id, sample_set)
+        payload = (self.agent_run_id, sampling_info, sample_set)
 
         return self.send_request(self.requests_session, self.collector_url,
                 'analytic_event_data', self.license_key, self.agent_run_id,
@@ -1020,6 +1023,9 @@ class ApplicationSession(object):
         return self.send_request(self.requests_session, self.collector_url,
                 'span_event_data', self.license_key, self.agent_run_id,
                 payload, self.max_payload_size_in_bytes)
+
+    def finalize(self):
+        pass
 
     @classmethod
     def create_session(cls, license_key, app_name, linked_applications,
@@ -1347,12 +1353,101 @@ class DeveloperModeSession(ApplicationSession):
         return result
 
 
+class ServerlessModeSession(ApplicationSession):
+    def __init__(self, *args, **kwargs):
+        super(ServerlessModeSession, self).__init__(*args, **kwargs)
+        self._metadata = {
+            'protocol_version': 16,
+            'execution_environment': os.environ.get('AWS_EXECUTION_ENV', None),
+            'agent_version': version,
+        }
+        self._data = {}
+
+        self._payload = {
+            'metadata': self._metadata,
+            'data': self._data,
+        }
+
+    @classmethod
+    def create_session(cls, license_key, app_name, linked_applications,
+            environment, settings):
+        url = None
+        application_config = finalize_application_settings({
+            'cross_application_tracer.enabled': False,
+        })
+        return cls(url, license_key, application_config)
+
+    @property
+    def requests_session(self):
+        return None
+
+    @property
+    def payload(self):
+        if not self._metadata.get('arn'):
+            self._update_payload_metadata()
+        return self._payload
+
+    def _update_payload_metadata(self):
+        settings = global_settings()
+        self._metadata.update({
+            'arn': settings.aws_arn,
+        })
+
+    def send_request(self, session, url, method, license_key,
+            agent_run_id=None, payload=(), max_payload_size_in_bytes=None):
+
+        # Create fake details for the request being made so that we
+        # can use the same audit logging functionality.
+
+        params = {}
+        headers = {}
+
+        params['method'] = method
+
+        log_id = _log_request(url, params, headers, payload)
+
+        self._data[method] = payload
+
+        # Now create the fake responses so the agent still runs okay.
+
+        result = _developer_mode_responses[method]
+
+        # Even though they are always fake responses, still log them.
+
+        if log_id is not None:
+            _log_response(log_id, dict(return_value=result))
+
+        return result
+
+    def agent_settings(self, *args, **kwargs):
+        pass
+
+    def shutdown_session(self, *args, **kwargs):
+        pass
+
+    def get_agent_commands(self, *args, **kwargs):
+        return ()
+
+    def finalize(self):
+        encoded = serverless_payload_encode(self.payload)
+        payload = json_encode((1, 'NR_LAMBDA_MONITORING', encoded))
+
+        print(payload)
+
+        # Clear data after sending
+        self._data.clear()
+        return payload
+
+
 def create_session(license_key, app_name, linked_applications,
         environment, settings):
 
     _global_settings = global_settings()
 
-    if _global_settings.developer_mode:
+    if _global_settings.serverless_mode.enabled:
+        session = ServerlessModeSession.create_session(license_key, app_name,
+                linked_applications, environment, settings)
+    elif _global_settings.developer_mode:
         session = DeveloperModeSession.create_session(license_key, app_name,
                 linked_applications, environment, settings)
     else:

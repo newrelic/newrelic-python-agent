@@ -7,7 +7,6 @@ import subprocess
 import sys
 import threading
 import time
-import traceback
 
 try:
     from Queue import Queue
@@ -106,6 +105,10 @@ def initialize_agent(app_name=None, default_settings={}):
     settings.shutdown_timeout = float(os.environ.get(
             'NEW_RELIC_SHUTDOWN_TIMEOUT', 20.0))
 
+    # Disable the harvest thread during testing so that harvest is explicitly
+    # called on test shutdown
+    settings.debug.disable_harvest_until_shutdown = True
+
     if app_name is not None:
         settings.app_name = app_name
 
@@ -156,15 +159,16 @@ def capture_harvest_errors():
     def wrap_harvest_loop(wrapped, instance, args, kwargs):
         try:
             return wrapped(*args, **kwargs)
-        except Exception as e:
-            queue.put(e)
+        except Exception:
+            exc_info = sys.exc_info()
+            queue.put(exc_info)
             raise
 
     def wrap_shutdown_agent(wrapped, instance, args, kwargs):
         result = wrapped(*args, **kwargs)
         if not queue.empty():
-            exception = queue.get()
-            raise exception
+            exc_info = queue.get()
+            raise exc_info[1]
         return result
 
     def wrap_record_custom_metric(wrapped, instance, args, kwargs):
@@ -178,10 +182,8 @@ def capture_harvest_errors():
                 not metric_name.endswith('RetryDataForRequest') and
                 not metric_name.endswith(('newrelic.packages.requests.'
                         'packages.urllib3.exceptions:ClosedPoolError'))):
-            traceback.print_exception(*sys.exc_info())
-            exception = AssertionError(
-                    'Exception metric created %s' % metric_name)
-            queue.put(exception)
+            exc_info = sys.exc_info()
+            queue.put(exc_info)
 
         return wrapped(*args, **kwargs)
 
@@ -753,7 +755,7 @@ def validate_database_duration():
 
             assert transaction_events.num_seen == 1
 
-            event = next(iter(transaction_events.samples))
+            event = next(iter(transaction_events))
             intrinsics = event[0]
 
             # As long as we are sending 'Database' metrics, then
@@ -834,7 +836,7 @@ def check_event_attributes(event_data, required_params, forgone_params,
     """
 
     intrinsics, user_attributes, agent_attributes = next(iter(
-            event_data.samples))
+            event_data))
 
     if required_params:
         for param in required_params['agent']:
@@ -881,7 +883,7 @@ def validate_non_transaction_error_event(required_intrinsics={}, num_errors=1,
             stats = core_application_stats_engine(None)
 
             assert stats.error_events.num_seen == num_errors
-            for event in stats.error_events.samples:
+            for event in stats.error_events:
 
                 assert len(event) == 3  # [intrinsic, user, agent attributes]
 
@@ -953,7 +955,7 @@ def validate_application_error_event_count(num_errors):
         else:
 
             stats = core_application_stats_engine(None)
-            assert len(list(stats.error_events.samples)) == num_errors
+            assert len(list(stats.error_events)) == num_errors
 
         return result
 
@@ -1014,33 +1016,41 @@ def validate_synthetics_transaction_trace(required_params={},
 def validate_tt_collector_json(required_params={},
         forgone_params={}, should_exist=True, datastore_params={},
         datastore_forgone_params={}, message_broker_params={},
-        message_broker_forgone_params=[]):
+        message_broker_forgone_params=[], exclude_request_uri=False):
     '''make assertions based off the cross-agent spec on transaction traces'''
 
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
-    def _validate_tt_collector_json(wrapped, instance, args, kwargs):
-        try:
+    @function_wrapper
+    def _validate_wrapper(wrapped, instance, args, kwargs):
+
+        traces_recorded = []
+
+        @transient_function_wrapper('newrelic.core.stats_engine',
+                'StatsEngine.record_transaction')
+        def _validate_tt_collector_json(wrapped, instance, args, kwargs):
+
             result = wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
 
             # Now that transaction has been recorded, generate
             # a transaction trace
 
             connections = SQLConnections()
             trace_data = instance.transaction_trace_data(connections)
+            traces_recorded.append(trace_data)
 
-            trace = trace_data[0]  # 1st trace
+            return result
+
+        def _validate_trace(trace):
             assert isinstance(trace[0], float)  # absolute start time (ms)
             assert isinstance(trace[1], float)  # duration (ms)
             assert trace[0] > 0  # absolute time (ms)
             assert isinstance(trace[2], six.string_types)  # transaction name
             if trace[2].startswith('WebTransaction'):
-                assert isinstance(trace[3], six.string_types)  # request url
-                # query parameters should not be captured
-                assert '?' not in trace[3]
+                if exclude_request_uri:
+                    assert trace[3] is None  # request url
+                else:
+                    assert isinstance(trace[3], six.string_types)
+                    # query parameters should not be captured
+                    assert '?' not in trace[3]
 
             # trace details -- python agent always uses condensed trace array
 
@@ -1140,9 +1150,14 @@ def validate_tt_collector_json(required_params={},
             for name in string_table:
                 assert isinstance(name, six.string_types)  # metric name
 
-        return result
+        _new_wrapper = _validate_tt_collector_json(wrapped)
+        val = _new_wrapper(*args, **kwargs)
+        trace_data = traces_recorded.pop()
+        trace = trace_data[0]  # 1st trace
+        _validate_trace(trace)
+        return val
 
-    return _validate_tt_collector_json
+    return _validate_wrapper
 
 
 def validate_transaction_trace_attributes(required_params={},
@@ -1302,7 +1317,7 @@ def check_error_attributes(parameters, required_params={}, forgone_params={},
     parameter_fields = ['userAttributes']
     if is_transaction:
         parameter_fields.extend(['stack_trace', 'agentAttributes',
-                'intrinsics', 'request_uri'])
+                'intrinsics'])
 
     for field in parameter_fields:
         assert field in parameters
@@ -1311,6 +1326,7 @@ def check_error_attributes(parameters, required_params={}, forgone_params={},
     assert 'parameter_groups' not in parameters
     assert 'custom_params' not in parameters
     assert 'request_params' not in parameters
+    assert 'request_uri' not in parameters
 
     check_attributes(parameters, required_params, forgone_params)
 
@@ -1363,10 +1379,12 @@ def validate_error_trace_collector_json():
             parameters = err[4]
 
             parameter_fields = ['userAttributes', 'stack_trace',
-                    'agentAttributes', 'intrinsics', 'request_uri']
+                    'agentAttributes', 'intrinsics']
 
             for field in parameter_fields:
                 assert field in parameters
+
+            assert 'request_uri' not in parameters
 
         return result
 
@@ -1386,8 +1404,8 @@ def validate_error_event_collector_json(num_errors=1):
             raise
         else:
 
-            samples = list(instance.error_events.samples)
-            s_info = instance.error_events_sampling_info()
+            samples = list(instance.error_events)
+            s_info = instance.error_events.sampling_info
             agent_run_id = 666
 
             # emulate the payload used in data_collector.py
@@ -1434,7 +1452,7 @@ def validate_transaction_event_collector_json():
         except:
             raise
         else:
-            samples = list(instance.transaction_events.samples)
+            samples = list(instance.transaction_events)
 
             # recreate what happens right before data is sent to the collector
             # in data_collector.py during the harvest via analytic_event_data
@@ -1480,7 +1498,7 @@ def validate_custom_event_collector_json(num_events=1):
 
             agent_run_id = 666
             sampling_info = stats.custom_events.sampling_info
-            samples = list(stats.custom_events.samples)
+            samples = list(stats.custom_events)
 
             # Emulate the payload used in data_collector.py
 
@@ -1678,7 +1696,7 @@ def validate_error_event_attributes(required_params={}, forgone_params={},
             else:
 
                 event_data = instance.error_events
-                for sample in event_data.samples:
+                for sample in event_data:
                     error_data_samples.append(sample)
 
                 check_event_attributes(event_data, required_params,
@@ -1989,7 +2007,7 @@ def validate_transaction_error_event_count(num_errors=1):
             raise
         else:
 
-            error_events = list(instance.error_events.samples)
+            error_events = list(instance.error_events)
             assert len(error_events) == num_errors
 
         return result
@@ -2271,7 +2289,7 @@ def validate_custom_event_in_application_stats_engine(required_event):
             stats = core_application_stats_engine(None)
             assert stats.custom_events.num_samples == 1
 
-            custom_event = next(iter(stats.custom_events.samples))
+            custom_event = next(iter(stats.custom_events))
             _validate_custom_event(custom_event, required_event)
 
         return result

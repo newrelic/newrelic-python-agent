@@ -189,6 +189,10 @@ class DistributedTracingSettings(Settings):
     pass
 
 
+class ServerlessModeSettings(Settings):
+    pass
+
+
 _settings = Settings()
 _settings.attributes = AttributesSettings()
 _settings.thread_profiler = ThreadProfilerSettings()
@@ -223,6 +227,7 @@ _settings.datastore_tracer.database_name_reporting = \
 _settings.heroku = HerokuSettings()
 _settings.span_events = SpanEventSettings()
 _settings.distributed_tracing = DistributedTracingSettings()
+_settings.serverless_mode = ServerlessModeSettings()
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 _settings.audit_log_file = os.environ.get('NEW_RELIC_AUDIT_LOG', None)
@@ -232,6 +237,15 @@ def _environ_as_int(name, default=0):
     val = os.environ.get(name, default)
     try:
         return int(val)
+    except ValueError:
+        return default
+
+
+def _environ_as_float(name, default=0.0):
+    val = os.environ.get(name, default)
+
+    try:
+        return float(val)
     except ValueError:
         return default
 
@@ -373,6 +387,8 @@ _settings.host = os.environ.get('NEW_RELIC_HOST',
         default_host(_settings.license_key))
 _settings.port = int(os.environ.get('NEW_RELIC_PORT', '0'))
 
+_settings.agent_run_id = None
+
 _settings.proxy_scheme = os.environ.get('NEW_RELIC_PROXY_SCHEME', None)
 _settings.proxy_host = os.environ.get('NEW_RELIC_PROXY_HOST', None)
 _settings.proxy_port = int(os.environ.get('NEW_RELIC_PROXY_PORT', '0'))
@@ -403,7 +419,7 @@ _settings.collect_traces = True
 _settings.collect_analytics_events = True
 _settings.collect_custom_events = True
 
-_settings.apdex_t = 0.5
+_settings.apdex_t = _environ_as_float('NEW_RELIC_APDEX_T', 0.5)
 _settings.web_transactions_apdex = {}
 
 _settings.capture_params = None
@@ -436,11 +452,12 @@ _settings.metric_name_rules = []
 _settings.transaction_name_rules = []
 _settings.transaction_segment_terms = []
 
-_settings.account_id = None
+_settings.account_id = os.environ.get('NEW_RELIC_ACCOUNT_ID')
 _settings.cross_process_id = None
-_settings.primary_application_id = None
+_settings.primary_application_id = \
+        os.environ.get('NEW_RELIC_PRIMARY_APPLICATION_ID', 'Unknown')
 _settings.trusted_account_ids = []
-_settings.trusted_account_key = None
+_settings.trusted_account_key = os.environ.get('NEW_RELIC_TRUSTED_ACCOUNT_KEY')
 _settings.encoding_key = None
 _settings.sampling_target = 10
 _settings.sampling_target_period_in_seconds = 60
@@ -558,6 +575,7 @@ _settings.debug.enable_coroutine_profiling = False
 _settings.debug.explain_plan_obfuscation = 'simple'
 _settings.debug.disable_certificate_validation = False
 _settings.debug.log_untrusted_distributed_trace_keys = False
+_settings.debug.disable_harvest_until_shutdown = False
 
 _settings.message_tracer.segment_parameters_enabled = True
 
@@ -584,6 +602,11 @@ _settings.heroku.use_dyno_names = _environ_as_bool(
         'NEW_RELIC_HEROKU_USE_DYNO_NAMES', default=True)
 _settings.heroku.dyno_name_prefixes_to_shorten = list(_environ_as_set(
         'NEW_RELIC_HEROKU_DYNO_NAME_PREFIXES_TO_SHORTEN', 'scheduler run'))
+
+_settings.serverless_mode.enabled = _environ_as_bool(
+        'NEW_RELIC_SERVERLESS_MODE_ENABLED',
+        default=False)
+_settings.aws_arn = None
 
 
 def global_settings():

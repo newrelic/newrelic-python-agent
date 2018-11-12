@@ -152,7 +152,7 @@ class VeryMagicMock(MagicMock):
             super(VeryMagicMock, self).__setattr__(attrname, value)
 
 
-def TimeInstrumentBase(module):
+def BenchInstrumentBase(module):
     """
     Base class for benchmark suite for instrumentaiton points. Takes one
     argument, a module object, and returns a benchmark suite class. Will
@@ -185,7 +185,7 @@ def TimeInstrumentBase(module):
     return _TimeInstrumentBase
 
 
-class _TimeWrapsBase(object):
+class _BenchWrapsBase(object):
     """
     Base class for benchmarking hook points. Takes two arguments. The first is
     the module object. The second is a list of "specs".
@@ -218,7 +218,7 @@ class _TimeWrapsBase(object):
         or wrap_function_wrapper instead of with a custom wrapper.
 
     Example usage:
-        from benchmarks.util import TimeWrapBase, TimeWrappedBase
+        from benchmarks.util import BenchWrapBase, BenchWrappedBase
         import newrelic.hooks.framework_django as framework_django
 
         specs = [
@@ -230,10 +230,10 @@ class _TimeWrapsBase(object):
             # ...
         ]
 
-        class TimeDjangoWrap(TimeWrapping(framework_django, *specs)):
+        class BenchDjangoWrap(BenchWrapping(framework_django, *specs)):
             pass
 
-        class TimeDjangoExec(TimeWrappedExecution(framework_django, *specs)):
+        class BenchDjangoExec(BenchWrappedExecution(framework_django, *specs)):
             pass
     """
 
@@ -265,7 +265,7 @@ class _TimeWrapsBase(object):
     def build_suite(cls, module, *spec_list):
         cls.spec_index = {}
         cls.params = []
-        cls.param_names = [cls.__name__.replace('_Time', '').lower()]
+        cls.param_names = [cls.__name__.replace('_Bench', '').lower()]
 
         for spec in spec_list:
             name, options = (spec if isinstance(spec, tuple) else (spec, {}))
@@ -283,18 +283,18 @@ class _TimeWrapsBase(object):
         return cls
 
 
-def TimeWrappingBase(module, *spec):
-    class TimeWrapping(_TimeWrapsBase):
+def BenchWrappingBase(module, *spec):
+    class BenchWrapping(_BenchWrapsBase):
         def time_wrap(self, name):
             self.to_test(self.dummy)
 
-    return TimeWrapping.build_suite(module, *spec)
+    return BenchWrapping.build_suite(module, *spec)
 
 
-def TimeWrappedExecutionBase(module, *spec):
-    class TimeWrappedExecution(_TimeWrapsBase):
+def BenchWrappedExecutionBase(module, *spec):
+    class BenchWrappedExecution(_BenchWrapsBase):
         def setup(self, name):
-            super(TimeWrappedExecution, self).setup(name)
+            super(BenchWrappedExecution, self).setup(name)
             spec = self.spec_index[name]
 
             self.dummy_args = [VeryMagicMock()] * spec['wrapped_params']
@@ -303,7 +303,7 @@ def TimeWrappedExecutionBase(module, *spec):
                 if spec['returned_values'] > 1 else VeryMagicMock())
 
         def setup_wrap(self, spec):
-            super(TimeWrappedExecution, self).setup_wrap(spec)
+            super(BenchWrappedExecution, self).setup_wrap(spec)
 
             if spec['via_wrap_function_wrapper']:
                 self.wrapped_dummy = FunctionWrapper(self.dummy, self.to_test)
@@ -323,4 +323,4 @@ def TimeWrappedExecutionBase(module, *spec):
         def dummy(self, *args, **kwargs):
             return self.dummy_ret
 
-    return TimeWrappedExecution.build_suite(module, *spec)
+    return BenchWrappedExecution.build_suite(module, *spec)

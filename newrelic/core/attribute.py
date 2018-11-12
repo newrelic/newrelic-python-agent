@@ -35,6 +35,10 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set((
         'response.headers.contentType',
         'message.queueName',
         'message.routingKey',
+        'aws.requestId',
+        'aws.lambda.arn',
+        'aws.lambda.coldStart',
+        'aws.lambda.eventSource.arn',
 ))
 
 MAX_NUM_USER_ATTRIBUTES = 64
@@ -94,7 +98,8 @@ def create_user_attributes(attr_dict, attribute_filter):
     return create_attributes(attr_dict, destinations, attribute_filter)
 
 
-def truncate(text, maxsize=MAX_ATTRIBUTE_LENGTH, encoding='utf-8'):
+def truncate(
+        text, maxsize=MAX_ATTRIBUTE_LENGTH, encoding='utf-8', ending=None):
 
     # Truncate text so that it's byte representation
     # is no longer than maxsize bytes.
@@ -103,9 +108,15 @@ def truncate(text, maxsize=MAX_ATTRIBUTE_LENGTH, encoding='utf-8'):
     # If text is a Python 2 string, return str.
 
     if isinstance(text, six.text_type):
-        return _truncate_unicode(text, maxsize, encoding)
+        truncated = _truncate_unicode(text, maxsize, encoding)
     else:
-        return _truncate_bytes(text, maxsize)
+        truncated = _truncate_bytes(text, maxsize)
+        ending = ending and ending.encode(encoding)
+
+    if ending and truncated != text:
+        truncated = truncated[:-len(ending)] + ending
+
+    return truncated
 
 
 def _truncate_unicode(u, maxsize, encoding='utf-8'):
@@ -133,7 +144,8 @@ def check_max_int(value, max_int=MAX_64_BIT_INT):
         raise IntTooLargeException()
 
 
-def process_user_attribute(name, value):
+def process_user_attribute(
+        name, value, max_length=MAX_ATTRIBUTE_LENGTH, ending=None):
 
     # Perform all necessary checks on a potential attribute.
     #
@@ -180,11 +192,11 @@ def process_user_attribute(name, value):
         valid_types_text = (six.text_type, six.binary_type)
 
         if isinstance(value, valid_types_text):
-            trunc_value = truncate(value)
+            trunc_value = truncate(value, maxsize=max_length, ending=ending)
             if value != trunc_value:
                 _logger.debug('Attribute value exceeds maximum length '
                         '(%r bytes). Truncating value: %r=%r.',
-                        MAX_ATTRIBUTE_LENGTH, name, trunc_value)
+                        max_length, name, trunc_value)
 
             value = trunc_value
 

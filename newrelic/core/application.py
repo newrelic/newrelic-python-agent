@@ -62,6 +62,7 @@ class Application(object):
         self._last_transaction = 0.0
 
         self.adaptive_sampler = None
+        self._next_adaptive_sampler_reset = 0.0
 
         self._global_events_account = 0
 
@@ -141,6 +142,18 @@ class Application(object):
             return False
 
         with self._stats_lock:
+
+            if self.configuration.serverless_mode.enabled:
+                now = time.time()
+                reset_count = None
+                while now >= self._next_adaptive_sampler_reset:
+                    reset_count = self._transaction_count
+                    self._transaction_count = 0
+                    self._next_adaptive_sampler_reset += 60.0
+
+                if reset_count is not None:
+                    self.adaptive_sampler.reset(reset_count)
+
             return self.adaptive_sampler.compute_sampled(priority)
 
     def dump(self, file):
@@ -455,6 +468,7 @@ class Application(object):
 
             self._transaction_count = 0
             self._last_transaction = 0.0
+            self._next_adaptive_sampler_reset = self._period_start + 60.0
 
             self._global_events_account = 0
 
@@ -1276,11 +1290,14 @@ class Application(object):
                 _logger.debug('Snapshotting metrics for harvest of %r.',
                         self._app_name)
 
-                with self._stats_lock:
-                    transaction_count = self._transaction_count
-                    self.adaptive_sampler.reset(transaction_count)
+                configuration = self._active_session.configuration
+                transaction_count = self._transaction_count
 
-                    self._transaction_count = 0
+                with self._stats_lock:
+                    if not configuration.serverless_mode.enabled:
+                        self.adaptive_sampler.reset(transaction_count)
+                        self._transaction_count = 0
+
                     self._last_transaction = 0.0
 
                     stats = self._stats_engine.harvest_snapshot()
@@ -1378,32 +1395,20 @@ class Application(object):
                 try:
                     # Send the transaction and custom metric data.
 
-                    configuration = self._active_session.configuration
+                    # Send data set for analytics, which is Synthetic analytic
+                    # events, and the sampled data set of regular requests sent
+                    # as separate requests.
 
-                    # Send data set for analytics, which is a combination
-                    # of Synthetic analytic events, and the sampled data
-                    # set of regular requests.
-
-                    all_analytic_events = []
-
-                    if len(stats.synthetics_events):
-                        all_analytic_events.extend(stats.synthetics_events)
-
-                    if (configuration.collect_analytics_events and
-                            configuration.transaction_events.enabled):
-
-                        samples = stats.transaction_events.samples
-                        all_analytic_events.extend(samples)
-
-                    if len(all_analytic_events):
-                        _logger.debug('Sending analytics event data '
-                                'for harvest of %r.', self._app_name)
+                    synthetics_events = stats.synthetics_events
+                    if synthetics_events.num_samples:
+                        _logger.debug('Sending synthetics event data for '
+                                'harvest of %r.', self._app_name)
 
                         self._active_session.send_transaction_events(
-                                all_analytic_events)
+                                synthetics_events.sampling_info,
+                                synthetics_events)
 
-                    # Report internal metrics about sample data set
-                    # for analytics.
+                    stats.reset_synthetics_events()
 
                     if (configuration.collect_analytics_events and
                             configuration.transaction_events.enabled):
@@ -1418,8 +1423,15 @@ class Application(object):
                                 'RequestSampler/samples',
                                 transaction_events.num_samples)
 
+                        if transaction_events.num_samples:
+                            _logger.debug('Sending analytics event data '
+                                    'for harvest of %r.', self._app_name)
+
+                            self._active_session.send_transaction_events(
+                                    transaction_events.sampling_info,
+                                    transaction_events)
+
                     stats.reset_transaction_events()
-                    stats.reset_synthetics_events()
 
                     # Send span events
 
@@ -1427,11 +1439,14 @@ class Application(object):
                             configuration.distributed_tracing.enabled):
                         spans = stats.span_events
                         if spans.num_samples > 0:
+                            span_samples = list(spans)
+
                             _logger.debug('Sending span event data '
                                     'for harvest of %r.', self._app_name)
 
                             self._active_session.send_span_events(
-                                spans.sampling_info, spans.samples)
+                                spans.sampling_info, span_samples)
+                            span_samples = None
 
                         # As per spec
                         spans_seen = spans.num_seen
@@ -1449,15 +1464,18 @@ class Application(object):
                             configuration.error_collector.capture_events and
                             configuration.error_collector.enabled):
 
-                        num_error_samples = stats.error_events.num_samples
                         error_events = stats.error_events
+                        num_error_samples = error_events.num_samples
                         if num_error_samples > 0:
+                            error_event_samples = list(error_events)
+
                             _logger.debug('Sending error event data '
                                     'for harvest of %r.', self._app_name)
 
-                            samp_info = stats.error_events_sampling_info()
+                            samp_info = error_events.sampling_info
                             self._active_session.send_error_events(samp_info,
-                                    error_events.samples)
+                                    error_event_samples)
+                            error_event_samples = None
 
                         # As per spec
                         internal_count_metric('Supportability/Events/'
@@ -1475,11 +1493,14 @@ class Application(object):
                         customs = stats.custom_events
 
                         if customs.num_samples > 0:
+                            custom_samples = list(customs)
+
                             _logger.debug('Sending custom event data '
                                     'for harvest of %r.', self._app_name)
 
                             self._active_session.send_custom_events(
-                                    customs.sampling_info, customs.samples)
+                                    customs.sampling_info, custom_samples)
+                            custom_samples = None
 
                         # As per spec
                         internal_count_metric('Supportability/Events/'
@@ -1600,6 +1621,9 @@ class Application(object):
                             '%r.', self._app_name)
 
                     self.report_profile_data()
+
+                    _logger.debug('Finalizing data.')
+                    self._active_session.finalize()
 
                     # If this is a final forced harvest for the process
                     # then attempt to shutdown the session.

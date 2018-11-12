@@ -1,8 +1,12 @@
 import pytest
+import six
+import time
 
-from newrelic.common.object_wrapper import transient_function_wrapper
+from newrelic.common.object_wrapper import (transient_function_wrapper,
+        function_wrapper)
 from newrelic.core.config import global_settings, finalize_application_settings
-from testing_support.fixtures import override_generic_settings
+from testing_support.fixtures import (override_generic_settings,
+        function_not_called)
 
 from newrelic.core.application import Application
 from newrelic.core.data_collector import send_request, collector_url
@@ -114,7 +118,20 @@ def transaction_node(request):
     return node
 
 
+@pytest.fixture
+def audit_log_file():
+    import newrelic.core.data_collector as data_collector
+    fp = six.StringIO()
+    orig = data_collector._audit_log_fp
+    data_collector._audit_log_fp = fp
+    yield fp
+    data_collector._audit_log_fp = orig
+
+
 def validate_metric_payload(metrics=[], endpoints_called=[]):
+
+    sent_metrics = {}
+
     @transient_function_wrapper('newrelic.core.data_collector',
             'DeveloperModeSession.send_request')
     def send_request_wrapper(wrapped, instance, args, kwargs):
@@ -126,11 +143,16 @@ def validate_metric_payload(metrics=[], endpoints_called=[]):
         endpoints_called.append(method)
 
         if method == 'metric_data' and payload:
-            sent_metrics = {}
             for metric_info, metric_values in payload[3]:
                 metric_key = (metric_info['name'], metric_info['scope'])
                 sent_metrics[metric_key] = metric_values
 
+        return wrapped(*args, **kwargs)
+
+    @function_wrapper
+    def _wrapper(wrapped, instance, args, kwargs):
+
+        def validate():
             for metric_name, count in metrics:
                 metric_key = (metric_name, '')  # only search unscoped
 
@@ -140,12 +162,75 @@ def validate_metric_payload(metrics=[], endpoints_called=[]):
                 else:
                     assert metric_key not in sent_metrics, metric_key
 
+        _new_wrapper = send_request_wrapper(wrapped)
+        val = _new_wrapper(*args, **kwargs)
+        validate()
+        return val
+
+    return _wrapper
+
+
+def validate_transaction_event_payloads(payload_validators):
+
+    @function_wrapper
+    def _wrapper(wrapped, instance, args, kwargs):
+
+        payloads = []
+
+        @transient_function_wrapper('newrelic.core.data_collector',
+                'DeveloperModeSession.send_request')
+        def send_request_wrapper(wrapped, instance, args, kwargs):
+            def _bind_params(session, url, method, license_key,
+                    agent_run_id=None, payload=(), *args, **kwargs):
+                return method, payload
+
+            method, payload = _bind_params(*args, **kwargs)
+
+            if method == 'analytic_event_data':
+                payloads.append(payload)
+
+            return wrapped(*args, **kwargs)
+
+        _new_wrapper = send_request_wrapper(wrapped)
+        val = _new_wrapper(*args, **kwargs)
+
+        assert len(payloads) == len(payload_validators)
+
+        for payload, validator in zip(payloads, payload_validators):
+            validator(payload)
+
+        return val
+
+    return _wrapper
+
+
+def validate_error_event_sampling(events_seen, reservoir_size,
+        endpoints_called=[]):
+
+    @transient_function_wrapper('newrelic.core.data_collector',
+            'DeveloperModeSession.send_request')
+    def send_request_wrapper(wrapped, instance, args, kwargs):
+        def _bind_params(session, url, method, license_key,
+                agent_run_id=None, payload=(), *args, **kwargs):
+            return method, payload
+
+        method, payload = _bind_params(*args, **kwargs)
+        endpoints_called.append(method)
+
+        if method == 'error_event_data':
+            sampling_info = payload[1]
+            assert sampling_info['events_seen'] == events_seen
+            assert sampling_info['reservoir_size'] == reservoir_size
+
         return wrapped(*args, **kwargs)
 
     return send_request_wrapper
 
 
-def failing_endpoint(endpoint, raises=RetryDataForRequest):
+def failing_endpoint(endpoint, raises=RetryDataForRequest, call_number=1):
+
+    called_list = []
+
     @transient_function_wrapper('newrelic.core.data_collector',
             'DeveloperModeSession.send_request')
     def send_request_wrapper(wrapped, instance, args, kwargs):
@@ -156,7 +241,9 @@ def failing_endpoint(endpoint, raises=RetryDataForRequest):
         method = _bind_params(*args, **kwargs)
 
         if method == endpoint:
-            raise raises()
+            called_list.append(True)
+            if len(called_list) == call_number:
+                raise raises()
 
         return wrapped(*args, **kwargs)
 
@@ -182,8 +269,9 @@ endpoints_called = []
     'developer_mode': True,
     'license_key': '**NOT A LICENSE KEY**',
     'feature_flag': set(),
+    'audit_log_file': True,  # This value doesn't matter
 })
-def test_application_harvest():
+def test_application_harvest(audit_log_file):
     app = Application('Python Agent Test (Harvest Loop)')
     app.connect_to_data_collector()
     app.harvest()
@@ -191,6 +279,24 @@ def test_application_harvest():
     # Verify that the metric_data endpoint is the 2nd to last endpoint called
     # Last endpoint called is get_agent_commands
     assert endpoints_called[-2] == 'metric_data'
+
+    # verify audit log is not empty
+    assert audit_log_file.tell()
+
+
+@override_generic_settings(settings, {
+    'serverless_mode.enabled': True,
+    'license_key': '**NOT A LICENSE KEY**',
+    'feature_flag': set(),
+    'audit_log_file': True,  # This value doesn't matter
+})
+def test_serverless_application_harvest(audit_log_file):
+    app = Application('Python Agent Test (Serverless Harvest Loop)')
+    app.connect_to_data_collector()
+    app.harvest()
+
+    # verify audit log is not empty
+    assert audit_log_file.tell()
 
 
 @pytest.mark.parametrize(
@@ -393,3 +499,211 @@ def test_reservoir_sizes(transaction_node):
 
     # Add 1 for the root span
     assert app._stats_engine.span_events.num_samples == 102
+
+
+@pytest.mark.parametrize('events_seen', (1, 5, 10))
+def test_error_event_sampling_info(events_seen):
+
+    reservoir_size = 5
+    endpoints_called = []
+
+    @validate_error_event_sampling(
+            events_seen=events_seen,
+            reservoir_size=reservoir_size,
+            endpoints_called=endpoints_called)
+    @override_generic_settings(settings, {
+            'developer_mode': True,
+            'license_key': '**NOT A LICENSE KEY**',
+            'error_collector.max_event_samples_stored': reservoir_size,
+    })
+    def _test():
+        app = Application('Python Agent Test (Harvest Loop)')
+        app.connect_to_data_collector()
+
+        for _ in range(events_seen):
+            app._stats_engine.error_events.add('error')
+
+        app.harvest()
+
+    _test()
+    assert 'error_event_data' in endpoints_called
+
+
+@pytest.mark.parametrize('serverless_mode', (True, False))
+def test_harvest_reset_adaptive_sampling(transaction_node, serverless_mode):
+
+    @override_generic_settings(settings, {
+        'serverless_mode.enabled': serverless_mode,
+        'agent_run_id': 1234567,  # must match agent run from transaction_node
+        'developer_mode': True,
+    })
+    def _test():
+        app = Application('Python Agent Test (Harvest Loop)')
+        app.connect_to_data_collector()
+
+        app.record_transaction(transaction_node)
+
+        if not serverless_mode:
+            # record_transaction calls harvest in serverless mode
+            app.harvest()
+
+        # When reset, app._transaction_count will be 0. When initialized,
+        # adaptive_sampler.transaction_count is 0, when reset it is the number
+        # of transactions in the last harvest.
+
+        if serverless_mode:
+            assert app._transaction_count == 1
+            assert app.adaptive_sampler.transaction_count == 0
+        else:
+            assert app._transaction_count == 0
+            assert app.adaptive_sampler.transaction_count == 1
+
+    _test()
+
+
+@pytest.mark.parametrize('time_to_next_reset,expected_reset_count', (
+    (20, 123),  # no reset
+    (-8, 1),    # reset to last transaction count
+    (-68, 0),   # reset to 0
+))
+@override_generic_settings(settings, {
+        'serverless_mode.enabled': True,
+})
+def test_serverless_mode_adaptive_sampling(time_to_next_reset,
+        expected_reset_count):
+    app = Application('Python Agent Test (Harvest Loop)')
+
+    app.connect_to_data_collector()
+    app.adaptive_sampler.transaction_count = 123
+    app._transaction_count = 1
+    app._next_adaptive_sampler_reset = time.time() + time_to_next_reset
+
+    assert app.compute_sampled(0.0) is True
+    assert app.adaptive_sampler.transaction_count == expected_reset_count
+
+
+@function_not_called('newrelic.core.adaptive_sampler', 'AdaptiveSampler.reset')
+@override_generic_settings(settings, {
+        'developer_mode': True,
+})
+def test_compute_sampled_no_reset():
+    app = Application('Python Agent Test (Harvest Loop)')
+    app.connect_to_data_collector()
+    app._next_adaptive_sampler_reset = time.time() - 1
+    assert app.compute_sampled(1.0) is True
+
+
+def test_analytic_event_sampling_info():
+
+    synthetics_limit = 10
+    transactions_limit = 20
+
+    def synthetics_validator(payload):
+        _, sampling_info, _ = payload
+        assert sampling_info['reservoir_size'] == synthetics_limit
+        assert sampling_info['events_seen'] == 1
+
+    def transactions_validator(payload):
+        _, sampling_info, _ = payload
+        assert sampling_info['reservoir_size'] == transactions_limit
+        assert sampling_info['events_seen'] == 1
+
+    validators = [synthetics_validator, transactions_validator]
+
+    @validate_transaction_event_payloads(validators)
+    @override_generic_settings(settings, {
+            'developer_mode': True,
+            'transaction_events.max_samples_stored': transactions_limit,
+            'agent_limits.synthetics_events': synthetics_limit,
+    })
+    def _test():
+        app = Application('Python Agent Test (Harvest Loop)')
+        app.connect_to_data_collector()
+
+        app._stats_engine.transaction_events.add('transaction event')
+        app._stats_engine.synthetics_events.add('synthetic event')
+
+        app.harvest()
+
+    _test()
+
+
+@pytest.mark.parametrize('has_synthetic_events', (True, False))
+@pytest.mark.parametrize('has_transaction_events', (True, False))
+@override_generic_settings(settings, {
+        'developer_mode': True,
+})
+def test_analytic_event_payloads(has_synthetic_events, has_transaction_events):
+
+    def synthetics_validator(payload):
+        events = payload[-1]
+        assert list(events) == ['synthetic event']
+
+    def transactions_validator(payload):
+        events = payload[-1]
+        assert list(events) == ['transaction event']
+
+    validators = []
+    if has_synthetic_events:
+        validators.append(synthetics_validator)
+    if has_transaction_events:
+        validators.append(transactions_validator)
+
+    @validate_transaction_event_payloads(validators)
+    def _test():
+        app = Application('Python Agent Test (Harvest Loop)')
+        app.connect_to_data_collector()
+
+        if has_transaction_events:
+            app._stats_engine.transaction_events.add('transaction event')
+
+        if has_synthetic_events:
+            app._stats_engine.synthetics_events.add('synthetic event')
+
+        app.harvest()
+
+    _test()
+
+
+@override_generic_settings(settings, {
+        'developer_mode': True,
+        'collect_analytics_events': False,
+        'transaction_events.enabled': False,
+})
+def test_transaction_events_disabled():
+
+    endpoints_called = []
+    expected_metrics = (
+            ('Supportability/Python/RequestSampler/requests', None),
+            ('Supportability/Python/RequestSampler/samples', None),
+    )
+
+    @validate_metric_payload(expected_metrics, endpoints_called)
+    def _test():
+        app = Application('Python Agent Test (Harvest Loop)')
+        app.connect_to_data_collector()
+        app.harvest()
+
+    _test()
+    assert 'metric_data' in endpoints_called
+
+
+@failing_endpoint('analytic_event_data', call_number=2)
+@override_generic_settings(settings, {
+        'developer_mode': True,
+        'license_key': '**NOT A LICENSE KEY**',
+})
+def test_reset_synthetics_events():
+    app = Application('Python Agent Test (Harvest Loop)')
+    app.connect_to_data_collector()
+
+    app._stats_engine.synthetics_events.add('synthetics event')
+    app._stats_engine.transaction_events.add('transaction event')
+
+    assert app._stats_engine.synthetics_events.num_seen == 1
+    assert app._stats_engine.transaction_events.num_seen == 1
+
+    app.harvest()
+
+    assert app._stats_engine.synthetics_events.num_seen == 0
+    assert app._stats_engine.transaction_events.num_seen == 1

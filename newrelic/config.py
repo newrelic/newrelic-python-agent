@@ -509,6 +509,8 @@ def _process_configuration(section):
                      'get', None)
     _process_setting(section, 'debug.disable_certificate_validation',
                      'getboolean', None)
+    _process_setting(section, 'debug.disable_harvest_until_shutdown',
+                     'getboolean', None)
     _process_setting(section, 'cross_application_tracer.enabled',
                      'getboolean', None)
     _process_setting(section, 'message_tracer.segment_parameters_enabled',
@@ -544,6 +546,8 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'heroku.dyno_name_prefixes_to_shorten',
                      'get', _map_split_strings)
+    _process_setting(section, 'serverless_mode.enabled', 'getboolean', None)
+    _process_setting(section, 'apdex_t', 'getfloat', None)
 
 
 # Loading of configuration from specified file and for specified

@@ -11,10 +11,21 @@ except ImportError:
 
 _import_hooks = {}
 
-# These modules are imported by the newrelic package and/or do not do nested
-# imports, so they're ok to import before newrelic.
-_ok_modules = ['urllib', 'urllib2', 'httplib', 'http.client', 'urllib.request',
-        'newrelic.agent']
+_ok_modules = (
+        # These modules are imported by the newrelic package and/or do not do
+        # nested imports, so they're ok to import before newrelic.
+        'urllib', 'urllib2', 'httplib', 'http.client', 'urllib.request',
+        'newrelic.agent',
+
+        # These modules should not be added to the _uninstrumented_modules set
+        # because they have been deemed okay to import before initialization by
+        # the customer.
+        'gunicorn.app.base', 'wsgiref.simple_server', 'gevent.wsgi',
+        'gevent.pywsgi', 'cheroot.wsgi', 'cherrypy.wsgiserver',
+        'flup.server.cgi', 'flup.server.ajp_base', 'flup.server.fcgi_base',
+        'flup.server.scgi_base', 'meinheld.server', 'paste.httpserver',
+        'waitress.server', 'gevent.monkey', 'asyncio.tasks',
+)
 
 _uninstrumented_modules = set()
 

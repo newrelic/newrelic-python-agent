@@ -10,7 +10,6 @@ from newrelic.core.message_node import MessageNode
 
 class MessageTrace(TimeTrace, CatHeaderMixin):
 
-    node = MessageNode
     cat_id_key = 'NewRelicID'
     cat_transaction_key = 'NewRelicTransaction'
     cat_appdata_key = 'NewRelicAppData'
@@ -50,6 +49,21 @@ class MessageTrace(TimeTrace, CatHeaderMixin):
 
     def terminal_node(self):
         return True
+
+    def create_node(self):
+        return MessageNode(
+                library=self.library,
+                operation=self.operation,
+                children=self.children,
+                start_time=self.start_time,
+                end_time=self.end_time,
+                duration=self.duration,
+                exclusive=self.exclusive,
+                destination_name=self.destination_name,
+                destination_type=self.destination_type,
+                params=self.params,
+                is_async=self.is_async,
+                guid=self.guid)
 
 
 def MessageTraceWrapper(wrapped, library, operation, destination_type,

@@ -1,6 +1,10 @@
 unreleased
 ----------
 
+
+4.6.0 (2018-11-12)
+------------------
+
 - Monitoring of Lambda functions
 
   This release includes changes to the agent to enable monitoring of Lambda

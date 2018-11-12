@@ -709,3 +709,22 @@ def test_reset_synthetics_events():
 
     assert app._stats_engine.synthetics_events.num_seen == 0
     assert app._stats_engine.transaction_events.num_seen == 1
+
+
+@failing_endpoint('analytic_event_data')
+@override_generic_settings(settings, {
+        'developer_mode': True,
+        'agent_limits.merge_stats_maximum': 0,
+})
+def test_infinite_merges():
+    app = Application('Python Agent Test (Harvest Loop)')
+    app.connect_to_data_collector()
+
+    app._stats_engine.transaction_events.add('transaction event')
+
+    assert app._stats_engine.transaction_events.num_seen == 1
+
+    app.harvest()
+
+    # the agent_limits.merge_stats_maximum is not respected
+    assert app._stats_engine.transaction_events.num_seen == 1

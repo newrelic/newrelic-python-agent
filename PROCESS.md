@@ -295,10 +295,11 @@ trigger a job against this PR to verify its contents.
 
 18. In Jenkins, build and upload the release to Artifactory.
 
-    1. Log in and go to [build-and-archive-package][build].
-    2. From the menu on the left select "Build with Parameters".
-    3. Type in the version number INCLUDING the next build that will be created when you push the build button.
-    4. Push the build button.
+    1. Wait for [`_INTEGRATION-TESTS-master_`][integration-master] and [`_UNIT-TESTS-master_`][unit-master] tests to be completed successfully
+    2. Log in and go to [build-and-archive-package][build].
+    3. From the menu on the left select "Build with Parameters".
+    4. Type in the version number INCLUDING the next build that will be created when you push the build button.
+    5. Push the build button.
 
     This will build and upload the package to artifactory.
     If the build fails, you must add a new tag for `vA.B.C.D` (see the previous step).
@@ -318,8 +319,7 @@ trigger a job against this PR to verify its contents.
 20. Pause here, regroup before continuing
 
     1. Wait for release notes to be completed
-    2. Wait for [`_INTEGRATION-TESTS-master_`][integration-master] and [`_UNIT-TESTS-master_`][unit-master] tests to be completed successfully
-    3. Check in with the rest of the team (mention @team in slack)
+    2. Check in with the rest of the team (mention @team in slack)
 
 [integration-master]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_INTEGRATION-TESTS-master_/
 [unit-master]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_UNIT-TESTS-master_/

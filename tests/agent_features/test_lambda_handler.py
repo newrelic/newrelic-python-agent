@@ -31,7 +31,7 @@ def handler(event, context):
 
 
 _override_settings = {
-    'attributes.include': ['request.parameters.*'],
+    'attributes.include': ['request.parameters.*', 'request.headers.*'],
 }
 _expected_attributes = {
     'agent': [
@@ -48,6 +48,7 @@ _expected_attributes = {
 _exact_attrs = {
     'agent': {
         'request.parameters.foo': 'bar',
+        'request.headers.host': 'myhost',
     },
     'user': {},
     'intrinsic': {}
@@ -107,7 +108,9 @@ def test_lambda_transaction_attributes(is_cold, monkeypatch):
         handler({
             'httpMethod': 'GET',
             'path': '/',
-            'headers': {},
+            'headers': {
+                'HOST': 'myhost',
+            },
             'queryStringParameters': {'foo': 'bar'},
             'multiValueQueryStringParameters': {'foo': ['bar']},
         }, Context)

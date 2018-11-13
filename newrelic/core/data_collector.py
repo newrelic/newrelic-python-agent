@@ -338,12 +338,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
     if not license_key:
         license_key = 'NO LICENSE KEY WAS SET IN AGENT CONFIGURATION'
 
-    # The agent formats requests and is able to handle responses for
-    # protocol version 14.
-
     params['method'] = method
     params['license_key'] = license_key
-    params['protocol_version'] = '16'
+    params['protocol_version'] = '17'
     params['marshal_format'] = 'json'
 
     if agent_run_id:
@@ -1244,7 +1241,7 @@ class DeveloperModeSession(ApplicationSession):
 
         params['method'] = method
         params['license_key'] = license_key
-        params['protocol_version'] = '16'
+        params['protocol_version'] = '17'
         params['marshal_format'] = 'json'
 
         if agent_run_id:
@@ -1279,7 +1276,7 @@ class ServerlessModeSession(ApplicationSession):
     def __init__(self, *args, **kwargs):
         super(ServerlessModeSession, self).__init__(*args, **kwargs)
         self._metadata = {
-            'protocol_version': 16,
+            'protocol_version': 17,
             'execution_environment': os.environ.get('AWS_EXECUTION_ENV', None),
             'agent_version': version,
         }

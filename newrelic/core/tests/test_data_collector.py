@@ -219,7 +219,7 @@ def test_serverless_session_metadata(execution_environment_set, arn_set,
     settings = global_settings()
     original_arn = settings.aws_arn
     expected_metadata = {
-            'protocol_version': 16,
+            'protocol_version': 17,
             'agent_version': AGENT_VERSION,
     }
 

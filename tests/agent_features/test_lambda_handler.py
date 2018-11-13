@@ -37,6 +37,8 @@ _expected_attributes = {
     'agent': [
         'aws.requestId',
         'aws.lambda.arn',
+        'request.method',
+        'request.uri',
         'response.status',
         'response.headers.contentType',
         'response.headers.contentLength',

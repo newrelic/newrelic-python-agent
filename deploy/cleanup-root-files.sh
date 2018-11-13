@@ -2,5 +2,5 @@
 
 set -e
 
-find . -user root -type f | xargs rm -f
-find . -user root -type d | xargs rm -rf
+find . -user root -type f | xargs chown -f jenkins:jenkins
+find . -user root -type d | xargs chown -f -R jenkins:jenkins

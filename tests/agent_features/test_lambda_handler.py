@@ -132,6 +132,27 @@ def test_lambda_malformed_api_gateway_payload(monkeypatch):
     }, Context)
 
 
+_malformed_request_attributes = {
+    'agent': [
+        'aws.requestId',
+        'aws.lambda.arn',
+    ],
+    'user': [],
+    'intrinsic': [],
+}
+
+
+@validate_transaction_trace_attributes(_malformed_request_attributes)
+@validate_transaction_event_attributes(_malformed_request_attributes)
+@override_application_settings(_override_settings)
+def test_lambda_malformed_request_headers():
+    handler({
+        'httpMethod': 'GET',
+        'path': '/',
+        'headers': None,
+    }, Context)
+
+
 @pytest.mark.parametrize('event,arn', (
         (empty_event, None),
         (firehose_event, 'arn:aws:kinesis:EXAMPLE')))

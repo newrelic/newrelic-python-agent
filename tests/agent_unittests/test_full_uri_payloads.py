@@ -17,14 +17,14 @@ class FullURIAdapter(HTTPAdapter):
 class FullURIApplicationSession(ApplicationSession):
 
     @classmethod
-    def send_request(cls, session, *args, **kwargs):
+    def http_request(cls, session, *args, **kwargs):
         session = Session()
 
         # Mount an adapter that will force the full URI to be sent
         session.mount('https://', FullURIAdapter())
         session.mount('http://', FullURIAdapter())
 
-        return ApplicationSession.send_request(
+        return ApplicationSession.http_request(
                 session, *args, **kwargs
         )
 

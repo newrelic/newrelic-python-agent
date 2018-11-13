@@ -1,7 +1,7 @@
 import json
 import os
 import pytest
-import json
+import time
 
 from newrelic.common import system_info
 from newrelic.core import data_collector as dc
@@ -279,10 +279,11 @@ def test_serverless_session_retries_for_arn_but_not_for_other_keys(
 
 
 class FakeRequestsSession(requests.Session):
-    def __init__(self, status, text, headers_sent={}):
+    def __init__(self, status, text, headers_sent={}, headers_received=None):
         self.status = status
         self.text = text
         self.headers_sent = headers_sent
+        self.headers_received = headers_received
 
     def request(self, *args, **kwargs):
 
@@ -294,6 +295,7 @@ class FakeRequestsSession(requests.Session):
         response.status_code = self.status
         response._content_consumed = True
         response._content = self.text.encode('utf-8')
+        response.headers = self.headers_received
 
         return response
 
@@ -345,3 +347,72 @@ def test_status_code_no_exceptions_raised(status_code):
     session = FakeRequestsSession(status_code,
             json.dumps({'return_value': ''}))
     send_request(session, url="", method="", license_key="")
+
+
+def test_429_response_sets_timeout_despite_garbage():
+    session = ApplicationSession('', '', global_settings())
+    session._requests_session = FakeRequestsSession(429, '{}',
+            headers_received={'Retry-After': 'asdfasdg'})
+
+    with pytest.raises(RetryDataForRequest) as exc:
+        session.send_transaction_traces(['TRACY'])
+
+    assert exc.value.retry_after is None
+    assert 'transaction_sample_data' not in session.timed_out_endpoints
+
+
+def test_429_response_sets_timeout():
+    session = ApplicationSession('', '', global_settings())
+    session._requests_session = FakeRequestsSession(429, '{}',
+            headers_received={'Retry-After': '10'})
+
+    current_time = time.time()
+    with pytest.raises(RetryDataForRequest) as exc:
+        session.send_transaction_traces(['TRACY'])
+
+    assert 'transaction_sample_data' in session.timed_out_endpoints
+    assert exc.value.retry_after == 10.0
+
+    timeout = session.timed_out_endpoints['transaction_sample_data']
+    assert (timeout - current_time) >= 10.0
+
+
+def test_429_response_respects_timeout():
+    session = ApplicationSession('', '', global_settings())
+    session._requests_session = FakeRequestsSession(429, '{}',
+            headers_received={'Retry-After': float('-inf')})
+
+    session.timed_out_endpoints['transaction_sample_data'] = float('inf')
+
+    with pytest.raises(RetryDataForRequest) as exc:
+        session.send_transaction_traces(['TRACY'])
+
+    assert 'transaction_sample_data' in session.timed_out_endpoints
+    assert exc.value.retry_after is None
+
+    assert (session.timed_out_endpoints['transaction_sample_data'] ==
+                float('inf'))
+
+
+def test_429_timeout_clears_on_410():
+    session = ApplicationSession('', '', global_settings())
+    session.timed_out_endpoints['transaction_sample_data'] = 0.0
+    session._requests_session = FakeRequestsSession(410,
+            json.dumps({'return_value': ''}))
+
+    with pytest.raises(ForceAgentDisconnect):
+        session.send_transaction_traces(['TRACY'])
+
+    assert 'transaction_sample_data' not in session.timed_out_endpoints
+
+
+def test_429_timeout_clears_naturally():
+    session = ApplicationSession('', '', global_settings())
+    session.timed_out_endpoints['transaction_sample_data'] = 0.0
+    session._requests_session = FakeRequestsSession(200,
+            json.dumps({'return_value': 'success'}))
+
+    ret = session.send_transaction_traces(['TRACY'])
+    assert ret == "success"
+
+    assert 'transaction_sample_data' not in session.timed_out_endpoints

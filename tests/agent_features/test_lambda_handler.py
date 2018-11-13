@@ -153,6 +153,39 @@ def test_lambda_malformed_request_headers():
     }, Context)
 
 
+_malformed_response_attributes = {
+    'agent': [
+        'aws.requestId',
+        'aws.lambda.arn',
+        'request.method',
+        'request.uri',
+        'response.status',
+    ],
+    'user': [],
+    'intrinsic': [],
+}
+
+
+@validate_transaction_trace_attributes(_malformed_response_attributes)
+@validate_transaction_event_attributes(_malformed_response_attributes)
+@override_application_settings(_override_settings)
+def test_lambda_malformed_response_headers():
+
+    @lambda_handler.lambda_handler()
+    def handler(event, context):
+        return {
+            'statusCode': 200,
+            'body': '{}',
+            'headers': None,
+        }
+
+    handler({
+        'httpMethod': 'GET',
+        'path': '/',
+        'headers': {},
+    }, Context)
+
+
 @pytest.mark.parametrize('event,arn', (
         (empty_event, None),
         (firehose_event, 'arn:aws:kinesis:EXAMPLE')))

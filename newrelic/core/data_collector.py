@@ -561,18 +561,10 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                     'agent run was %r. Please contact New Relic support '
                     'for further information.', agent_run_id)
         elif r.status_code == 429:
-            try:
-                retry_after = float(r.headers.get('Retry-After'))
-            except Exception:
-                retry_after = None
-
             _logger.warning('The agent received a 429 response from the data '
                     'collector, indicating that it is currently experiencing '
                     'issues at url %r for endpoint %r. The agent will retry '
-                    'again after at least %s seconds.',
-                    url, method, retry_after or 60)
-
-            raise exception(retry_after=retry_after)
+                    'again on the next scheduled harvest.', url, method)
         else:
             if r.status_code == 415 and settings.debug.log_malformed_json_data:
                 if headers['Content-Encoding'] == 'deflate':

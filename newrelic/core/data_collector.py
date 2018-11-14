@@ -605,7 +605,12 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'seconds.', duration)
 
     # If we got this far we should have a legitimate response from the
-    # data collector. The response is JSON so need to decode it.
+    # data collector. A status code of 200 means there is JSON to decode.
+
+    if r.status_code != 200:
+        if log_id is not None:
+            _log_response(log_id, None)
+        return []
 
     try:
         if six.PY3:
@@ -613,7 +618,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
         result = json_decode(content)
 
-    except Exception:
+    except Exception as e:
         _logger.exception('Error decoding data for JSON payload for '
                 'method %r with payload of %r. Please report this problem '
                 'to New Relic support.', method, content)
@@ -622,7 +627,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
             _logger.info('JSON data received from data collector which '
                     'could not be decoded was %r.', content)
 
-        raise DiscardDataForRequest(str(sys.exc_info()[1]))
+        raise DiscardDataForRequest(str(e))
 
     if log_id is not None:
         _log_response(log_id, result)

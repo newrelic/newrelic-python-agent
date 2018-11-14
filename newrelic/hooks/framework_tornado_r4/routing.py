@@ -15,7 +15,11 @@ _instrumented = set()
 
 
 def _wrap_if_not_wrapped(obj, attr, wrapper):
-    wrapped = getattr(obj, attr)
+    wrapped = getattr(obj, attr, None)
+
+    if not callable(wrapped):
+        return
+
     if not (hasattr(wrapped, '__wrapped__') and
             wrapped.__wrapped__ in _instrumented):
         setattr(obj, attr, wrapper(wrapped))
@@ -78,10 +82,6 @@ def _wrap_handlers(rule):
     # Wrap all supported view methods with our FunctionTrace
     # instrumentation
     for request_method in handler.SUPPORTED_METHODS:
-        method = getattr(handler, request_method.lower(), None)
-        if not method:
-            continue
-
         _wrap_if_not_wrapped(handler, request_method.lower(), _nr_method)
 
 

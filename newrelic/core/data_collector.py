@@ -711,7 +711,6 @@ class ApplicationSession(object):
         self.request_headers_map = configuration.request_headers_map
 
         self._requests_session = None
-        self.timed_out_endpoints = {}
 
     @property
     def requests_session(self):
@@ -728,30 +727,8 @@ class ApplicationSession(object):
     def max_payload_size_in_bytes(self):
         return self.configuration.max_payload_size_in_bytes
 
-    def send_request(self, session, url, method, license_key,
-            agent_run_id=None, request_headers_map=None, payload=(),
-            max_payload_size_in_bytes=None):
-
-        if method in self.timed_out_endpoints:
-            current_time = time.time()
-            if current_time > self.timed_out_endpoints[method]:
-                self.timed_out_endpoints.pop(method)
-            else:
-                raise RetryDataForRequest
-
-        try:
-            return self.http_request(session, url, method, license_key,
-                agent_run_id, request_headers_map, payload,
-                max_payload_size_in_bytes)
-
-        except RetryDataForRequest as e:
-            if e.retry_after:
-                self.timed_out_endpoints[method] = (time.time() +
-                        e.retry_after)
-            raise
-
     @classmethod
-    def http_request(cls, session, url, method, license_key,
+    def send_request(cls, session, url, method, license_key,
             agent_run_id=None, request_headers_map=None, payload=(),
             max_payload_size_in_bytes=None):
         return send_request(session, url, method, license_key,
@@ -1004,7 +981,7 @@ class ApplicationSession(object):
 
             url = collector_url()
 
-            result = cls.http_request(None, url,
+            result = cls.send_request(None, url,
                     'preconnect', license_key)
             redirect_host = result['redirect_host']
 
@@ -1023,7 +1000,7 @@ class ApplicationSession(object):
 
             url = collector_url(redirect_host)
 
-            server_config = cls.http_request(None, url, 'connect',
+            server_config = cls.send_request(None, url, 'connect',
                     license_key, None, None, payload)
 
             # Apply High Security Mode to server_config, so the local
@@ -1250,8 +1227,9 @@ _developer_mode_responses = {
 
 
 class DeveloperModeSession(ApplicationSession):
+
     @classmethod
-    def http_request(cls, session, url, method, license_key,
+    def send_request(cls, session, url, method, license_key,
             agent_run_id=None, request_headers_map=None, payload=(),
             max_payload_size_in_bytes=None):
 
@@ -1342,7 +1320,7 @@ class ServerlessModeSession(ApplicationSession):
             'arn': settings.aws_arn,
         })
 
-    def http_request(self, session, url, method, license_key,
+    def send_request(self, session, url, method, license_key,
             agent_run_id=None, request_headers_map=None, payload=(),
             max_payload_size_in_bytes=None):
 

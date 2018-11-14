@@ -86,7 +86,7 @@ def test_full_uri_payload(session, method, args):
     sender(*args)
 
 
-def test_full_uri_protocol_16():
+def test_full_uri_protocol_lifecycle():
     """Exercises the following endpoints:
 
     * preconnect

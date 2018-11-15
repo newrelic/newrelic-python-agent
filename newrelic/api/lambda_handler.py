@@ -123,10 +123,7 @@ def LambdaHandlerWrapper(wrapped, application=None, name=None,
             try:
                 if not background_task:
                     status_code = result.get('statusCode', None)
-                    try:
-                        status_code = str(status_code)
-                    except Exception:
-                        status_code = None
+                    status_code = str(status_code)
 
                     response_headers = result.get('headers', None)
                     try:

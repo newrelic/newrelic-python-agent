@@ -188,6 +188,42 @@ def test_lambda_malformed_response_headers():
     }, Context)
 
 
+_no_status_code_response = {
+    'agent': [
+        'aws.requestId',
+        'aws.lambda.arn',
+        'request.method',
+        'request.uri',
+        'response.headers.contentType',
+        'response.headers.contentLength',
+    ],
+    'user': [],
+    'intrinsic': [],
+}
+
+
+@validate_transaction_trace_attributes(_no_status_code_response)
+@validate_transaction_event_attributes(_no_status_code_response)
+@override_application_settings(_override_settings)
+def test_lambda_no_status_code_response():
+
+    @lambda_handler.lambda_handler()
+    def handler(event, context):
+        return {
+            'body': '{}',
+            'headers': {
+                'Content-Type': 'application/json',
+                'Content-Length': 2,
+            },
+        }
+
+    handler({
+        'httpMethod': 'GET',
+        'path': '/',
+        'headers': {},
+    }, Context)
+
+
 @pytest.mark.parametrize('event,arn', (
         (empty_event, None),
         (firehose_event, 'arn:aws:kinesis:EXAMPLE')))

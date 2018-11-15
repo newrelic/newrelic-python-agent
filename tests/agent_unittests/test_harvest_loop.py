@@ -235,7 +235,7 @@ def failing_endpoint(endpoint, raises=RetryDataForRequest, call_number=1):
     called_list = []
 
     @transient_function_wrapper('newrelic.core.data_collector',
-            'DeveloperModeSession.http_request')
+            'DeveloperModeSession.send_request')
     def send_request_wrapper(wrapped, instance, args, kwargs):
         def _bind_params(session, url, method, *args, **kwargs):
             return method
@@ -709,61 +709,6 @@ def test_reset_synthetics_events():
 
     assert app._stats_engine.synthetics_events.num_seen == 0
     assert app._stats_engine.transaction_events.num_seen == 1
-
-
-# this test verifies that the agent will abort the harvest and remerge when
-# encountering a 429 response, and that this behaivor is tracked independently
-# per endpoint
-@pytest.mark.parametrize('transaction_events_sent,custom_events_sent,'
-                         'rate_limited_endpoints,timed_out_endpoints', (
-    # mark the 'custom_event_data' endpoint as down.
-    # the transaction will get sent successfully, but not the custom events.
-    (True, False, {'custom_event_data'}, {}),
-
-    # both 'analytic_event_data' and 'custom_event_data' endpoints are down.
-    # nothing will be sent on harvest.
-    (False, False, {'analytic_event_data', 'custom_event_data'}, {
-        'custom_event_data': float('inf')}),
-
-    # no endpoints are down, but the endpoints are blocked on timeout.
-    # thus, harvest won't send anything.
-    (False, False, {}, {'analytic_event_data': float('inf'),
-        'custom_event_data': float('inf')}),
-
-    # the 'analytic_event_data' endpoint has cleared its timeout.
-    # the transaction events will send but not the custom events.
-    (True, False, {}, {'analytic_event_data': 0,
-        'custom_event_data': float('inf')}),
-
-    # the 'custom_event_data' endpoint timeout has cleared too.
-    # everything should be sent successfully.
-    (True, True, {}, {'custom_event_data': 0})
-))
-@override_generic_settings(settings, {
-    'developer_mode': True
-})
-def test_remerge_on_429(transaction_events_sent, custom_events_sent,
-        rate_limited_endpoints, timed_out_endpoints, transaction_node):
-
-    def _test_remerge_on_429():
-        app = Application('Python Agent Test (remerge on 429)')
-        app.connect_to_data_collector()
-        app._active_session.timed_out_endpoints = timed_out_endpoints
-
-        app.record_transaction(transaction_node)
-        app.harvest()
-
-        stats = app._stats_engine
-        transaction_events_sent = stats.transaction_events.num_samples == 0
-        custom_events_sent = stats.custom_events.num_samples == 0
-
-        assert transaction_events_sent == transaction_events_sent
-        assert custom_events_sent == custom_events_sent
-
-    for endpoint in rate_limited_endpoints:
-        _test_remerge_on_429 = failing_endpoint(endpoint)(_test_remerge_on_429)
-
-    _test_remerge_on_429()
 
 
 @failing_endpoint('analytic_event_data')

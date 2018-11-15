@@ -1,4 +1,3 @@
-import os
 import functools
 from newrelic.common.object_wrapper import FunctionWrapper
 from newrelic.api.transaction import current_transaction
@@ -6,7 +5,6 @@ from newrelic.api.web_transaction import WebTransaction
 from newrelic.api.application import application_instance
 from newrelic.core.attribute import truncate
 from newrelic.core.config import global_settings
-import newrelic.packages.six as six
 
 
 COLD_START_RECORDED = False
@@ -117,7 +115,8 @@ def LambdaHandlerWrapper(wrapped, application=None, name=None,
 
         transaction_name = name or getattr(context, 'function_name', None)
         if transaction_name:
-            transaction.set_transaction_name(transaction_name, group, priority=1)
+            transaction.set_transaction_name(
+                    transaction_name, group, priority=1)
 
         with transaction:
             result = wrapped(*args, **kwargs)

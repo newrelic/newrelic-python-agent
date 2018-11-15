@@ -31,18 +31,12 @@ def handler(event, context):
 
 
 _override_settings = {
-    'attributes.include': ['aws.lambda.functionName',
-            'aws.lambda.functionVersion', 'aws.lambda.memoryLimit',
-            'request.parameters.*', 'aws.lambda.eventSource.arn'],
+    'attributes.include': ['request.parameters.*'],
 }
 _expected_attributes = {
     'agent': [
         'aws.requestId',
-        'aws.region',
         'aws.lambda.arn',
-        'aws.lambda.functionName',
-        'aws.lambda.functionVersion',
-        'aws.lambda.memoryLimit',
         'response.status',
         'response.headers.contentType',
         'response.headers.contentLength',
@@ -53,7 +47,6 @@ _expected_attributes = {
 
 _exact_attrs = {
     'agent': {
-        'aws.lambda.memoryLimit': 128 * 2**20,
         'request.parameters.foo': 'bar',
     },
     'user': {},

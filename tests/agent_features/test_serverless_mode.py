@@ -19,8 +19,8 @@ from testing_support.validators.validate_serverless_metadata import (
 @pytest.fixture(scope='function')
 def serverless_application(request):
     settings = global_settings()
-    orig = settings.serverless_mode
-    settings.serverless_mode = True
+    orig = settings.serverless_mode.enabled
+    settings.serverless_mode.enabled = True
 
     application_name = 'Python Agent Test (test_serverless_mode:%s)' % (
             request.node.name)
@@ -29,7 +29,7 @@ def serverless_application(request):
 
     yield application
 
-    settings.serverless_mode = orig
+    settings.serverless_mode.enabled = orig
 
 
 def test_serverless_payload(capsys, serverless_application):
@@ -46,7 +46,7 @@ def test_serverless_payload(capsys, serverless_application):
             name='test_serverless_payload')
     def _test():
         transaction = current_transaction()
-        assert transaction.settings.serverless_mode
+        assert transaction.settings.serverless_mode.enabled
 
     _test()
 

@@ -11,7 +11,7 @@ INI_FILE_EMPTY = """
 
 INI_FILE_SERVERLESS_MODE = """
 [newrelic]
-serverless_mode = true
+serverless_mode.enabled = true
 """.encode('utf-8')
 
 INI_FILE_APDEX_T = """
@@ -21,25 +21,16 @@ apdex_t = 0.33
 
 INI_FILE_APP_NAME = """
 [newrelic]
-serverless_mode = True
+serverless_mode.enabled = True
 app_name = a;b
 """.encode('utf-8')
 
 NON_SERVERLESS_MODE_ENV = {
-    'NEW_RELIC_SERVERLESS_MODE': 'false',
+    'NEW_RELIC_SERVERLESS_MODE_ENABLED': 'false',
 }
 
 SERVERLESS_MODE_ENV = {
-    'NEW_RELIC_SERVERLESS_MODE': 'true',
-}
-
-LAMBDA_ENV = {
-    'AWS_LAMBDA_FUNCTION_NAME': 'cookies',
-}
-
-ALL_ENV = {
-    'NEW_RELIC_SERVERLESS_MODE': 'false',
-    'AWS_LAMBDA_FUNCTION_NAME': 'cookies',
+    'NEW_RELIC_SERVERLESS_MODE_ENABLED': 'true',
 }
 
 DT_ENV = {
@@ -57,24 +48,16 @@ APP_NAME_ENV = {
     # 1. serverless mode in config file (this trumps all)
     (INI_FILE_SERVERLESS_MODE, NON_SERVERLESS_MODE_ENV, True),
 
-    # 2. serverless mode in the env variable should override any other env
-    # variables
-    (INI_FILE_EMPTY, ALL_ENV, False),
-
-    # 3. if all else fails, NEW_RELIC_SERVERLESS_MODE should work
+    # 2. if all else fails, NEW_RELIC_SERVERLESS_MODE_ENABLED should work
     (INI_FILE_EMPTY, SERVERLESS_MODE_ENV, True),
 
-    # 4. lambda environment variable should force serverless mode on even if
-    # NEW_RELIC_SERVERLESS_MODE is False
-    (INI_FILE_EMPTY, LAMBDA_ENV, True),
-
-    # 5. Default is false
+    # 3. Default is false
     (INI_FILE_EMPTY, {}, False),
 ])
 def test_serverless_mode_environment(ini, env, serverless_mode,
         global_settings):
     settings = global_settings()
-    assert settings.serverless_mode == serverless_mode
+    assert settings.serverless_mode.enabled == serverless_mode
 
 
 @pytest.mark.parametrize('ini,env,value', [
@@ -93,12 +76,10 @@ def test_serverless_apdex_t(ini, env, value, global_settings):
 
 
 @pytest.mark.parametrize('ini,env,values', [
-    (INI_FILE_SERVERLESS_MODE, LAMBDA_ENV, (
-            None, 'Unknown', None, True)),
     (INI_FILE_EMPTY, NON_SERVERLESS_MODE_ENV, (
-            None, 'Unknown', None, False)),
+            None, 'Unknown', None)),
     (INI_FILE_SERVERLESS_MODE, DT_ENV, (
-            'account_id', 'application_id', 'trusted_key', True)),
+            'account_id', 'application_id', 'trusted_key')),
 ])
 def test_serverless_dt_environment(ini, env, values, global_settings):
     settings = global_settings()
@@ -106,8 +87,6 @@ def test_serverless_dt_environment(ini, env, values, global_settings):
     assert settings.account_id == values[0]
     assert settings.primary_application_id == values[1]
     assert settings.trusted_account_key == values[2]
-
-    assert settings.serverless_mode == values[3]
 
 
 # The purpose of test_serverless_app_names is to ensure that if the customer

@@ -142,7 +142,7 @@ class Application(object):
 
         with self._stats_lock:
 
-            if self.configuration.serverless_mode:
+            if self.configuration.serverless_mode.enabled:
                 now = time.time()
                 reset_count = None
                 while now >= self._next_adaptive_sampler_reset:
@@ -1287,7 +1287,7 @@ class Application(object):
                 transaction_count = self._transaction_count
 
                 with self._stats_lock:
-                    if not configuration.serverless_mode:
+                    if not configuration.serverless_mode.enabled:
                         self.adaptive_sampler.reset(transaction_count)
                         self._transaction_count = 0
 

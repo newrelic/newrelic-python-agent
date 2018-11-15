@@ -189,6 +189,10 @@ class DistributedTracingSettings(Settings):
     pass
 
 
+class ServerlessModeSettings(Settings):
+    pass
+
+
 _settings = Settings()
 _settings.attributes = AttributesSettings()
 _settings.thread_profiler = ThreadProfilerSettings()
@@ -223,6 +227,7 @@ _settings.datastore_tracer.database_name_reporting = \
 _settings.heroku = HerokuSettings()
 _settings.span_events = SpanEventSettings()
 _settings.distributed_tracing = DistributedTracingSettings()
+_settings.serverless_mode = ServerlessModeSettings()
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 _settings.audit_log_file = os.environ.get('NEW_RELIC_AUDIT_LOG', None)
@@ -599,9 +604,9 @@ _settings.heroku.use_dyno_names = _environ_as_bool(
 _settings.heroku.dyno_name_prefixes_to_shorten = list(_environ_as_set(
         'NEW_RELIC_HEROKU_DYNO_NAME_PREFIXES_TO_SHORTEN', 'scheduler run'))
 
-_settings.serverless_mode = _environ_as_bool(
-        'NEW_RELIC_SERVERLESS_MODE',
-        default=bool(os.environ.get('AWS_LAMBDA_FUNCTION_NAME')))
+_settings.serverless_mode.enabled = _environ_as_bool(
+        'NEW_RELIC_SERVERLESS_MODE_ENABLED',
+        default=False)
 _settings.aws_arn = None
 
 

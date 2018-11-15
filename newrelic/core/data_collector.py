@@ -1397,7 +1397,7 @@ def create_session(license_key, app_name, linked_applications,
 
     _global_settings = global_settings()
 
-    if _global_settings.serverless_mode:
+    if _global_settings.serverless_mode.enabled:
         session = ServerlessModeSession.create_session(license_key, app_name,
                 linked_applications, environment, settings)
     elif _global_settings.developer_mode:

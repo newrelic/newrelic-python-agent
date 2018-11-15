@@ -287,7 +287,7 @@ def test_application_harvest(audit_log_file):
 
 
 @override_generic_settings(settings, {
-    'serverless_mode': True,
+    'serverless_mode.enabled': True,
     'license_key': '**NOT A LICENSE KEY**',
     'feature_flag': set(),
     'audit_log_file': True,  # This value doesn't matter
@@ -535,7 +535,7 @@ def test_error_event_sampling_info(events_seen):
 def test_harvest_reset_adaptive_sampling(transaction_node, serverless_mode):
 
     @override_generic_settings(settings, {
-        'serverless_mode': serverless_mode,
+        'serverless_mode.enabled': serverless_mode,
         'agent_run_id': 1234567,  # must match agent run from transaction_node
         'developer_mode': True,
     })
@@ -569,7 +569,7 @@ def test_harvest_reset_adaptive_sampling(transaction_node, serverless_mode):
     (-68, 0),   # reset to 0
 ))
 @override_generic_settings(settings, {
-        'serverless_mode': True,
+        'serverless_mode.enabled': True,
 })
 def test_serverless_mode_adaptive_sampling(time_to_next_reset,
         expected_reset_count):

@@ -1,6 +1,16 @@
 unreleased
 ----------
 
+
+4.6.0 (2018-11-12)
+------------------
+
+- Monitoring of Lambda functions
+
+  This release includes changes to the agent to enable monitoring of Lambda
+  functions. If you are interested in learning more or previewing New Relic
+  Lambda monitoring please email lambda_preview@newrelic.com.
+
 - Improve naming of Sanic HTTPMethodView view handlers
 
   Sanic views that were defined using the HTTPMethodView class were previously

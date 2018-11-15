@@ -1,6 +1,13 @@
 unreleased
 ----------
 
+- Cross Application Tracing HTTP response headers were inserted on a 304 response
+
+  When cross application tracing is enabled and the agent received a HTTP
+  request from an application utilizing cross application tracing, the agent
+  may have inserted additional response headers on a 304 HTTP response. The
+  agent will no longer insert headers on a 304 response.
+
 
 4.6.0 (2018-11-12)
 ------------------

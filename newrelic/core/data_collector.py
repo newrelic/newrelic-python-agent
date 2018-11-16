@@ -513,7 +513,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
             session.close()
             session = None
 
-    return_value = []
+    return_value = None
     result = None
 
     if r.status_code == 202:
@@ -1198,7 +1198,7 @@ _developer_mode_responses = {
         u'data_report_period': 60
     },
 
-    'metric_data': [],
+    'metric_data': None,
 
     'get_agent_commands': [],
 
@@ -1208,19 +1208,19 @@ _developer_mode_responses = {
 
     'agent_command_results': [],
 
-    'error_data': [],
+    'error_data': None,
 
-    'transaction_sample_data': [],
+    'transaction_sample_data': None,
 
-    'sql_trace_data': [],
+    'sql_trace_data': None,
 
-    'analytic_event_data': [],
+    'analytic_event_data': None,
 
-    'error_event_data': [],
+    'error_event_data': None,
 
-    'span_event_data': [],
+    'span_event_data': None,
 
-    'custom_event_data': [],
+    'custom_event_data': None,
 
     'shutdown': [],
 }

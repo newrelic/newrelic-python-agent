@@ -1574,7 +1574,7 @@ class Application(object):
                             self._app_name)
 
                     # Send metrics
-                    metric_ids = self._active_session.send_metric_data(
+                    self._active_session.send_metric_data(
                             self._period_start, period_end, metric_data)
 
                     _logger.debug('Done sending data for harvest of '
@@ -1582,9 +1582,8 @@ class Application(object):
 
                     stats.reset_metric_stats()
 
-                    # Successful, so we update the stats engine with the
-                    # new metric IDs and reset the reporting period
-                    # start time. If an error occurs after this point,
+                    # Successful, we reset the reporting period start time.
+                    # If an error occurs after this point,
                     # any remaining data for the period being reported
                     # on will be thrown away. We reset the count of
                     # number of merges we have done due to failures as
@@ -1592,7 +1591,6 @@ class Application(object):
                     # report the main transaction metrics.
 
                     self._period_start = period_end
-                    self._stats_engine.update_metric_ids(metric_ids)
 
                     # Fetch agent commands sent from the data collector
                     # and process them.
@@ -1803,6 +1801,9 @@ class Application(object):
             try:
                 agent_commands = self._active_session.get_agent_commands()
             except:
+                return
+
+            if agent_commands is None:
                 return
 
             # Extract the command names from the agent_commands. This is

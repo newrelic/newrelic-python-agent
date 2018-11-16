@@ -9,7 +9,8 @@ from testing_support.fixtures import (override_generic_settings,
         function_not_called)
 
 from newrelic.core.application import Application
-from newrelic.core.data_collector import send_request, collector_url
+from newrelic.core.data_collector import (send_request, collector_url,
+        _developer_mode_responses)
 from newrelic.core.stats_engine import CustomMetrics, SampledDataSet
 from newrelic.core.transaction_node import TransactionNode
 from newrelic.core.custom_event import create_custom_event
@@ -728,3 +729,18 @@ def test_infinite_merges():
 
     # the agent_limits.merge_stats_maximum is not respected
     assert app._stats_engine.transaction_events.num_seen == 1
+
+
+@override_generic_settings(settings, {
+        'developer_mode': True,
+})
+def test_get_agent_commands_returns_none():
+    original_return_value = _developer_mode_responses.get('get_agent_commands')
+    _developer_mode_responses['get_agent_commands'] = None
+
+    try:
+        app = Application('Python Agent Test (Harvest Loop)')
+        app.connect_to_data_collector()
+        app.process_agent_commands()
+    finally:
+        _developer_mode_responses['get_agent_commands'] = original_return_value

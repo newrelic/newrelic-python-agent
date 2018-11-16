@@ -516,7 +516,30 @@ def send_request(session, url, method, license_key, agent_run_id=None,
             session.close()
             session = None
 
-    if r.status_code != 200 and r.status_code != 202:
+    return_value = []
+    result = None
+
+    if r.status_code == 202:
+        pass
+    elif r.status_code == 200:
+        try:
+            if six.PY3:
+                content = content.decode('UTF-8')
+
+            result = json_decode(content)
+
+            return_value = result['return_value']
+        except Exception as e:
+            _logger.exception('Error decoding data for JSON payload for '
+                    'method %r with payload of %r. Please report this problem '
+                    'to New Relic support.', method, content)
+
+            if settings.debug.log_malformed_json_data:
+                _logger.info('JSON data received from data collector which '
+                        'could not be decoded was %r.', content)
+
+            raise DiscardDataForRequest(str(e))
+    else:
         _logger.warning('Received a non 200 or 202 HTTP response from '
                 'the data collector where url=%r, method=%r, license_key=%r, '
                 'agent_run_id=%r, params=%r, headers=%r, status_code=%r '
@@ -604,30 +627,10 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         _logger.debug('Valid response from data collector after %.2f '
                 'seconds.', duration)
 
-    # If we got this far we should have a legitimate response from the
-    # data collector. The response is JSON so need to decode it.
-
-    try:
-        if six.PY3:
-            content = content.decode('UTF-8')
-
-        result = json_decode(content)
-
-    except Exception:
-        _logger.exception('Error decoding data for JSON payload for '
-                'method %r with payload of %r. Please report this problem '
-                'to New Relic support.', method, content)
-
-        if settings.debug.log_malformed_json_data:
-            _logger.info('JSON data received from data collector which '
-                    'could not be decoded was %r.', content)
-
-        raise DiscardDataForRequest(str(sys.exc_info()[1]))
-
     if log_id is not None:
         _log_response(log_id, result)
 
-    return result['return_value']
+    return return_value
 
 
 def apply_high_security_mode_fixups(local_settings, server_settings):
@@ -1200,21 +1203,21 @@ _developer_mode_responses = {
 
     'agent_command_results': [],
 
-    'error_data': None,
+    'error_data': [],
 
-    'transaction_sample_data': None,
+    'transaction_sample_data': [],
 
-    'sql_trace_data': None,
+    'sql_trace_data': [],
 
-    'analytic_event_data': None,
+    'analytic_event_data': [],
 
-    'error_event_data': None,
+    'error_event_data': [],
 
-    'span_event_data': None,
+    'span_event_data': [],
 
-    'custom_event_data': None,
+    'custom_event_data': [],
 
-    'shutdown': None,
+    'shutdown': [],
 }
 
 

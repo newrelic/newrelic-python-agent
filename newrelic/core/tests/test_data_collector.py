@@ -340,8 +340,13 @@ def test_status_code_exceptions_raised(status_code, exception):
         send_request(session, url="", method="", license_key="")
 
 
-@pytest.mark.parametrize('status_code', (200, 202))
-def test_status_code_no_exceptions_raised(status_code):
+@pytest.mark.parametrize('status_code, expected_return_value', [
+    (200, '{}'),
+    (202, []),
+])
+def test_status_code_no_exceptions_raised(status_code, expected_return_value):
     session = FakeRequestsSession(status_code,
-            json.dumps({'return_value': ''}))
-    send_request(session, url="", method="", license_key="")
+            json.dumps({'return_value': '{}'}))
+
+    return_value = send_request(session, url="", method="", license_key="")
+    assert expected_return_value == return_value

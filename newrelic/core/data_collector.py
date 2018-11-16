@@ -1203,21 +1203,21 @@ _developer_mode_responses = {
 
     'agent_command_results': [],
 
-    'error_data': None,
+    'error_data': [],
 
-    'transaction_sample_data': None,
+    'transaction_sample_data': [],
 
-    'sql_trace_data': None,
+    'sql_trace_data': [],
 
-    'analytic_event_data': None,
+    'analytic_event_data': [],
 
-    'error_event_data': None,
+    'error_event_data': [],
 
-    'span_event_data': None,
+    'span_event_data': [],
 
-    'custom_event_data': None,
+    'custom_event_data': [],
 
-    'shutdown': None,
+    'shutdown': [],
 }
 
 

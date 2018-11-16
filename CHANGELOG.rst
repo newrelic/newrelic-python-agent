@@ -1,6 +1,13 @@
 unreleased
 ----------
 
+- Add support for Falcon web framework
+
+  This release adds support for the Falcon web framework. Data will now
+  be automatically collected for applications using Falcon framework. The data
+  will appear in both APM and Insights and will include performance details as
+  well as information on application errors.
+
 - Cross Application Tracing HTTP response headers were inserted on a 304 response
 
   When cross application tracing is enabled and the agent received a HTTP

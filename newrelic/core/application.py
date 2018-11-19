@@ -508,44 +508,18 @@ class Application(object):
 
             self._connected_event.set()
 
-            # Immediately fetch any agent commands now even before start
-            # recording any transactions so running of any X-Ray
-            # sessions is not delayed. This could fail due to issues
-            # talking to the data collector or if we get back bad data.
-            # We need to make sure we ignore such errors and still allow
-            # the registration to be finalised so that agent still
-            # start up and collect metrics. Any X-Ray sessions will be
-            # picked up in subsequent harvest.
-
-            try:
-                self.process_agent_commands()
-
-            except RetryDataForRequest:
-                # Ignore any error connecting to the data collector at
-                # this point as trying to get agent commands at this
-                # point is an optimisation and not a big issue if it fails.
-                # Transient issues with the data collector for this will
-                # just cause noise in the agent logs and worry users. An
-                # ongoing connection issue will be picked properly with
-                # the subsequent data harvest.
-
-                pass
-
-            except Exception:
-                if not self._agent_shutdown and not self._pending_shutdown:
-                    _logger.exception('Unexpected exception when processing '
-                            'agent commands when registering agent with the '
-                            'data collector. If this problem persists, please '
-                            'report this problem to New Relic support for '
-                            'further investigation.')
-                else:
-                    raise
-
             # Start any data samplers so they are aware of the start of
             # the harvest period.
 
             self.start_data_samplers()
 
+        except ForceAgentDisconnect:
+            # Any disconnect exception means we should stop trying to connect
+            _logger.error('The New Relic service has requested that the agent '
+                    'stop attempting to connect. The agent will no longer '
+                    'attempt a connection with New Relic. Your application '
+                    'must be manually restarted in order to connect to New '
+                    'Relic.')
         except Exception:
             # If an exception occurs after agent has been flagged to be
             # shutdown then we ignore the error. This is because all

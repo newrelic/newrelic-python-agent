@@ -391,7 +391,7 @@ def test_status_code_exceptions_raised(status_code, exception):
 
 @pytest.mark.parametrize('status_code, expected_return_value', [
     (200, '{}'),
-    (202, []),
+    (202, None),
 ])
 def test_status_code_no_exceptions_raised(status_code, expected_return_value):
     session = FakeRequestsSession(status_code,

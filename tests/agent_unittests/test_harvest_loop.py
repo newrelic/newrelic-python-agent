@@ -6,7 +6,7 @@ from newrelic.common.object_wrapper import (transient_function_wrapper,
         function_wrapper)
 from newrelic.core.config import global_settings, finalize_application_settings
 from testing_support.fixtures import (override_generic_settings,
-        function_not_called)
+        function_not_called, failing_endpoint)
 
 from newrelic.core.application import Application
 from newrelic.core.data_collector import (send_request, collector_url,
@@ -225,28 +225,6 @@ def validate_error_event_sampling(events_seen, reservoir_size,
             sampling_info = payload[1]
             assert sampling_info['events_seen'] == events_seen
             assert sampling_info['reservoir_size'] == reservoir_size
-
-        return wrapped(*args, **kwargs)
-
-    return send_request_wrapper
-
-
-def failing_endpoint(endpoint, raises=RetryDataForRequest, call_number=1):
-
-    called_list = []
-
-    @transient_function_wrapper('newrelic.core.data_collector',
-            'DeveloperModeSession.send_request')
-    def send_request_wrapper(wrapped, instance, args, kwargs):
-        def _bind_params(session, url, method, *args, **kwargs):
-            return method
-
-        method = _bind_params(*args, **kwargs)
-
-        if method == endpoint:
-            called_list.append(True)
-            if len(called_list) == call_number:
-                raise raises()
 
         return wrapped(*args, **kwargs)
 

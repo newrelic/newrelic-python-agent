@@ -25,7 +25,7 @@ New fields for Google Cloud Platform (gcp), Pivotal Cloud Foundry (pcf), and Azu
   - `input_azure_name`: The azure `name` determined by the agent.
   - `input_azure_id`: The azure `vmId` determined by the agent.
   - `input_azure_size`: The azure `vmSize` determined by the agent.
-
+ 
 Test cases for `boot_id.json` added as of [Utilization spec version 8](https://source.datanerd.us/agents/agent-specs/blob/master/Utilization.md):
   - `testname`: The name of the test.
   - `input_total_ram_mib`: The total ram number calculated by the agent.

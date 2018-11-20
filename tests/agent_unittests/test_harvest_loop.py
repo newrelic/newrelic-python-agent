@@ -722,3 +722,14 @@ def test_get_agent_commands_returns_none():
         app.process_agent_commands()
     finally:
         _developer_mode_responses['get_agent_commands'] = original_return_value
+
+
+@failing_endpoint('get_agent_commands')
+@override_generic_settings(settings, {
+        'developer_mode': True,
+})
+def test_get_agent_commands_raises():
+    app = Application('Python Agent Test (Harvest Loop)')
+    app.connect_to_data_collector()
+    with pytest.raises(RetryDataForRequest):
+        app.process_agent_commands()

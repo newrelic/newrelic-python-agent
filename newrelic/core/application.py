@@ -1770,12 +1770,7 @@ class Application(object):
 
             _logger.debug('Process agent commands for %r.', self._app_name)
 
-            # Any exception on get agent commands shouldn't interrupt the
-            # harvest cycle
-            try:
-                agent_commands = self._active_session.get_agent_commands()
-            except:
-                return
+            agent_commands = self._active_session.get_agent_commands()
 
             if agent_commands is None:
                 return

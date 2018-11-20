@@ -1613,6 +1613,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/framework_falcon.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/framework_flask.py": {
         "hash": "n/a",
         "libraries": [

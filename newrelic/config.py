@@ -2004,6 +2004,13 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.framework_django',
             'instrument_django_core_handlers_exception')
 
+    _process_module_definition('falcon.api',
+            'newrelic.hooks.framework_falcon',
+            'instrument_falcon_api')
+    _process_module_definition('falcon.routing.util',
+            'newrelic.hooks.framework_falcon',
+            'instrument_falcon_routing_util')
+
     _process_module_definition('flask.app',
             'newrelic.hooks.framework_flask',
             'instrument_flask_app')

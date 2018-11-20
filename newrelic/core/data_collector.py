@@ -1009,6 +1009,12 @@ class ApplicationSession(object):
 
             application_config = finalize_application_settings(server_config)
 
+        except ForceAgentDisconnect:
+            # ForceAgentDisconnect during a connect cycle should result in the
+            # agent permanently disconnecting.
+
+            raise
+
         except NetworkInterfaceException:
             # The reason for errors of this type have already been logged.
             # No matter what the error we just pass back None. The upper

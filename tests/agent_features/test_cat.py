@@ -16,16 +16,23 @@ from testing_support.fixtures import (make_cross_agent_headers,
 
 ENCODING_KEY = '1234567890123456789012345678901234567890'
 
+
 @wsgi_application()
 def target_wsgi_application(environ, start_response):
-    status = '200 OK'
+    status_code = int(environ['PATH_INFO'].strip('/'))
+    status = '%d STATUS' % status_code
 
-    output = b'hello world'
-    response_headers = [('Content-type', 'text/html; charset=utf-8'),
-                        ('Content-Length', str(len(output)))]
+    if status_code == 304:
+        output = b''
+        response_headers = []
+    else:
+        output = b'hello world'
+        response_headers = [('Content-type', 'text/html; charset=utf-8'),
+                            ('Content-Length', str(len(output)))]
     start_response(status, response_headers)
 
     return [output]
+
 
 test_application = webtest.TestApp(target_wsgi_application)
 
@@ -38,8 +45,16 @@ _override_settings = {
 
 payload = ['b854df4feb2b1f06', False, '7e249074f277923d', '5d2957be']
 
+
 @override_application_settings(_override_settings)
 def test_cat_disabled_browser_monitoring():
     headers = make_cross_agent_headers(payload, ENCODING_KEY, '1#1')
-    response = test_application.get('/', headers=headers)
+    response = test_application.get('/200', headers=headers)
     assert 'X-NewRelic-App-Data' in response.headers
+
+
+@override_application_settings(_override_settings)
+def test_cat_insertion_disabled_on_304():
+    headers = make_cross_agent_headers(payload, ENCODING_KEY, '1#1')
+    response = test_application.get('/304', headers=headers)
+    assert 'X-NewRelic-App-Data' not in response.headers

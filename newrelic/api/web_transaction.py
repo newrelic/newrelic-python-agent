@@ -419,6 +419,11 @@ class WebTransaction(Transaction):
         except Exception:
             pass
 
+        # If response code is 304 do not insert CAT headers.
+        # See https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.3.5
+        if self.response_code == 304:
+            return []
+
         # Generate CAT response headers
         return self._generate_response_headers()
 

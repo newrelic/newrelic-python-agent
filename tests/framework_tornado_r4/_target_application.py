@@ -115,6 +115,8 @@ class CrashClientHandler(tornado.web.RequestHandler):
 
 
 class SimpleHandler(tornado.web.RequestHandler):
+    options = {'your_command': 'options'}
+
     def get(self, fast=False):
         if not fast:
             time.sleep(0.1)

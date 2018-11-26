@@ -15,7 +15,8 @@ def validate_metric_payload(metrics=[]):
                 'ApplicationSession.send_request')
         def send_request_wrapper(wrapped, instance, args, kwargs):
             def _bind_params(session, url, method, license_key,
-                    agent_run_id=None, payload=(), *args, **kwargs):
+                    agent_run_id=None, request_headers_map=None, payload=(),
+                    *args, **kwargs):
                 return method, payload
 
             method, payload = _bind_params(*args, **kwargs)

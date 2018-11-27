@@ -3,6 +3,14 @@ import falcon
 import webtest
 
 
+def _bind_response(*args, **kwargs):
+    args = list(args)
+    args.extend(kwargs.values())
+    for arg in args:
+        if hasattr(arg, 'status'):
+            return arg
+
+
 class Oops(ValueError):
     pass
 
@@ -30,8 +38,7 @@ application = falcon.API()
 
 
 def bad_error_handler(*args, **kwargs):
-    bound = inspect.getcallargs(application._handle_exception, *args, **kwargs)
-    resp = bound['resp']
+    resp = _bind_response(*args, **kwargs)
 
     # This endpoint is explicitly not doing the correct thing. Status is
     # expected to be a type str with a status code + explanation. The intent

@@ -3,13 +3,23 @@ from __future__ import print_function
 import pwd
 import os
 
+import newrelic.packages.requests.adapters as adapters
+unpatched_request_url = adapters.HTTPAdapter.request_url
+
 from newrelic.admin import command, usage
 
-from newrelic.agent import initialize, global_settings
 from newrelic.common import certs
+from newrelic.config import initialize
+from newrelic.core.config import global_settings
 from newrelic.network.addresses import proxy_details
 
 from newrelic.packages import requests
+
+# Remove a patch to the request_url forcing the full URL to be sent in the
+# request line. See _requests_request_url_workaround in data_collector.py
+# This is currently unsupported by the API endpoint. The common
+# case is to send only the relative URL.
+adapters.HTTPAdapter.request_url = unpatched_request_url
 
 
 @command('record-deploy', 'config_file description [revision changelog user]',
@@ -53,14 +63,18 @@ def local_config(args):
 
     url = url % (scheme, server)
 
+    proxy_scheme = settings.proxy_scheme
     proxy_host = settings.proxy_host
     proxy_port = settings.proxy_port
     proxy_user = settings.proxy_user
     proxy_pass = settings.proxy_pass
 
+    if proxy_scheme is None:
+        proxy_scheme = 'https'
+
     timeout = settings.agent_limits.data_collector_timeout
 
-    proxies = proxy_details(None, proxy_host, proxy_port, proxy_user,
+    proxies = proxy_details(proxy_scheme, proxy_host, proxy_port, proxy_user,
             proxy_pass)
 
     if user is None:
@@ -82,10 +96,14 @@ def local_config(args):
     headers = {}
 
     headers['X-API-Key'] = api_key
+    headers['Host'] = host
 
     cert_loc = settings.ca_bundle_path
     if cert_loc is None:
         cert_loc = certs.where()
+
+    if settings.debug.disable_certificate_validation:
+        cert_loc = False
 
     r = requests.post(url, proxies=proxies, headers=headers,
             timeout=timeout, data=data, verify=cert_loc)

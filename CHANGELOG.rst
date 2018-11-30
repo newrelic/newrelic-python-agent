@@ -1,6 +1,12 @@
 unreleased
 ----------
 
+- "newrelic-admin record_deploy" now functions with proxies.
+
+  The "newrelic-admin record_deploy" command previously did not function when
+  a proxy was defined by the newrelic.ini configuration file or the
+  NEW_RELIC_PROXY_* environment variables. This bug has now been fixed.
+
 - Add support for Falcon web framework
 
   This release adds support for the Falcon web framework. Data will now

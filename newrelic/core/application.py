@@ -1403,6 +1403,7 @@ class Application(object):
                     # Send span events
 
                     if (configuration.span_events.enabled and
+                            configuration.collect_span_events and
                             configuration.distributed_tracing.enabled):
                         spans = stats.span_events
                         if spans.num_samples > 0:

@@ -1050,6 +1050,7 @@ class Transaction(object):
                 data['tk'] = trusted_account_key
 
             if (settings.span_events.enabled and
+                    settings.collect_span_events and
                     self.current_node and self.sampled):
                 data['id'] = self.current_node.guid
 

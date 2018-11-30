@@ -112,3 +112,21 @@ def test_blob(method, args):
     sender(*args)
 
     assert check_request_called
+
+
+@override_generic_settings(global_settings(), {
+    'developer_mode': True,
+})
+def test_server_side_config_precedence():
+    connect_response = data_collector._developer_mode_responses['connect']
+    connect_response[u'agent_config'] = {u'span_events.enabled': True}
+    connect_response[u'span_events.enabled'] = False
+
+    session = data_collector.create_session(
+            'license_key',
+            'app_name',
+            LINKED_APPLICATIONS,
+            ENVIRONMENT,
+            global_settings_dump())
+
+    assert session.configuration.span_events.enabled is False

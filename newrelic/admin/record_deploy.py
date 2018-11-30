@@ -63,14 +63,18 @@ def local_config(args):
 
     url = url % (scheme, server)
 
+    proxy_scheme = settings.proxy_scheme
     proxy_host = settings.proxy_host
     proxy_port = settings.proxy_port
     proxy_user = settings.proxy_user
     proxy_pass = settings.proxy_pass
 
+    if proxy_scheme is None:
+        proxy_scheme = 'https'
+
     timeout = settings.agent_limits.data_collector_timeout
 
-    proxies = proxy_details(None, proxy_host, proxy_port, proxy_user,
+    proxies = proxy_details(proxy_scheme, proxy_host, proxy_port, proxy_user,
             proxy_pass)
 
     if user is None:
@@ -92,10 +96,14 @@ def local_config(args):
     headers = {}
 
     headers['X-API-Key'] = api_key
+    headers['Host'] = host
 
     cert_loc = settings.ca_bundle_path
     if cert_loc is None:
         cert_loc = certs.where()
+
+    if settings.debug.disable_certificate_validation:
+        cert_loc = False
 
     r = requests.post(url, proxies=proxies, headers=headers,
             timeout=timeout, data=data, verify=cert_loc)

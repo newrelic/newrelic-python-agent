@@ -784,11 +784,6 @@ def translate_deprecated_settings(settings, cached_settings):
         _logger.info('Ignoring deprecated setting: ssl. Enabling ssl is now '
                 'mandatory. Setting ssl=true.')
 
-    if settings.agent_limits.merge_stats_maximum is not None:
-        _logger.info('Ignoring deprecated setting: '
-                'agent_limits.merge_stats_maximum. The agent will now respect '
-                'server-side commands.')
-
     return settings
 
 

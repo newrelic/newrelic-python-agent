@@ -26,6 +26,7 @@ class TimeTrace(object):
         self.should_record_segment_params = False
         # 16-digit random hex. Padded with zeros in the front.
         self.guid = '%016x' % random.getrandbits(64)
+        self.agent_attributes = {}
 
         if transaction:
 

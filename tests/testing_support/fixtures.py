@@ -41,7 +41,6 @@ from newrelic.core.internal_metrics import InternalTraceContext
 from newrelic.core.stats_engine import CustomMetrics
 
 from newrelic.network.addresses import proxy_details
-from newrelic.network.exceptions import RetryDataForRequest
 from newrelic.packages import requests
 
 from testing_support.sample_applications import (user_attributes_added,
@@ -2704,28 +2703,6 @@ def count_transactions(count_list):
         return wrapped(*args, **kwargs)
 
     return _increment_count
-
-
-def failing_endpoint(endpoint, raises=RetryDataForRequest, call_number=1):
-
-    called_list = []
-
-    @transient_function_wrapper('newrelic.core.data_collector',
-            'DeveloperModeSession.send_request')
-    def send_request_wrapper(wrapped, instance, args, kwargs):
-        def _bind_params(session, url, method, *args, **kwargs):
-            return method
-
-        method = _bind_params(*args, **kwargs)
-
-        if method == endpoint:
-            called_list.append(True)
-            if len(called_list) == call_number:
-                raise raises()
-
-        return wrapped(*args, **kwargs)
-
-    return send_request_wrapper
 
 
 class Environ(object):

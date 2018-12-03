@@ -193,11 +193,6 @@
         },
         "timeout": false
       }
-    },
-    "expected_metrics": {
-      "Supportability/utilization/azure/error": {
-        "call_count": 1
-      }
     }
   },
   {

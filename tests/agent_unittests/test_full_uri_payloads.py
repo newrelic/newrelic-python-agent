@@ -17,7 +17,8 @@ class FullURIAdapter(HTTPAdapter):
 class FullURIApplicationSession(ApplicationSession):
 
     @classmethod
-    def send_request(cls, session, *args, **kwargs):
+    def send_request(cls, session, url, method, license_key,
+            agent_run_id=None, payload=()):
         session = Session()
 
         # Mount an adapter that will force the full URI to be sent
@@ -25,7 +26,7 @@ class FullURIApplicationSession(ApplicationSession):
         session.mount('http://', FullURIAdapter())
 
         return ApplicationSession.send_request(
-                session, *args, **kwargs
+                session, url, method, license_key, agent_run_id, payload
         )
 
 
@@ -45,28 +46,13 @@ def session(application):
     assert session is not None
 
     # Mount an adapter that will force the full URI to be sent
-    for _ in range(3):
-        # connect_to_data_collector will close the session once a connection
-        # has been established. Force a context switch and wait for this to
-        # happen.
-        time.sleep(0.1)
-        if session._requests_session is None:
-            break
-    else:
-        assert False, "Session was never closed during connect."
-
-    # Force a new request session to be created and store the id
-    before_id = id(session.requests_session)
-
+    assert session._requests_session is session.requests_session
     original_adapters = session.requests_session.adapters.copy()
 
     session.requests_session.mount('https://', FullURIAdapter())
     session.requests_session.mount('http://', FullURIAdapter())
 
     yield session
-
-    # Check that the requests session hasn't been modified
-    assert before_id == id(session.requests_session)
 
     # Restore the original HTTP adapters
     session.requests_session.adapters = original_adapters
@@ -101,7 +87,7 @@ def test_full_uri_payload(session, method, args):
     sender(*args)
 
 
-def test_full_uri_protocol_lifecycle():
+def test_full_uri_protocol_16():
     """Exercises the following endpoints:
 
     * preconnect

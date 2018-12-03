@@ -417,6 +417,7 @@ _settings.attribute_filter = None
 _settings.collect_errors = True
 _settings.collect_error_events = True
 _settings.collect_traces = True
+_settings.collect_span_events = True
 _settings.collect_analytics_events = True
 _settings.collect_custom_events = True
 

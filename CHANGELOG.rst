@@ -1,6 +1,9 @@
 unreleased
 ----------
 
+4.8.0 (2018-12-03)
+------------------
+
 - "newrelic-admin record_deploy" now functions with proxies.
 
   The "newrelic-admin record_deploy" command previously did not function when

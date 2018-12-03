@@ -1,6 +1,29 @@
 unreleased
 ----------
 
+4.8.0 (2018-12-03)
+------------------
+
+- "newrelic-admin record_deploy" now functions with proxies.
+
+  The "newrelic-admin record_deploy" command previously did not function when
+  a proxy was defined by the newrelic.ini configuration file or the
+  NEW_RELIC_PROXY_* environment variables. This bug has now been fixed.
+
+- Add support for Falcon web framework
+
+  This release adds support for the Falcon web framework. Data will now
+  be automatically collected for applications using Falcon framework. The data
+  will appear in both APM and Insights and will include performance details as
+  well as information on application errors.
+
+- Cross Application Tracing HTTP response headers were inserted on a 304 response
+
+  When cross application tracing is enabled and the agent received a HTTP
+  request from an application utilizing cross application tracing, the agent
+  may have inserted additional response headers on a 304 HTTP response. The
+  agent will no longer insert headers on a 304 response.
+
 
 4.6.0 (2018-11-12)
 ------------------

@@ -145,6 +145,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         environ = {'REQUEST_URI': '/transaction_apis'}
         self.transaction = WebTransaction(application, environ)
         self.transaction._settings.distributed_tracing.enabled = True
+        self.transaction._settings.span_events.enabled = True
+        self.transaction._settings.collect_span_events = True
 
         self.application.adaptive_sampler = AdaptiveSampler(10)
 
@@ -250,12 +252,15 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         self.transaction._settings.span_events.enabled = False
 
         with self.transaction:
-            # ID should be the transaction GUID
+            self._standard_trace_test(self.transaction.guid)
+
+    def test_distributed_trace_no_id_when_span_override_set(self):
+        self.transaction._settings.collect_span_events = False
+
+        with self.transaction:
             self._standard_trace_test(self.transaction.guid)
 
     def test_distributed_trace_with_spans_no_parent(self):
-        self.transaction._settings.span_events.enabled = True
-
         with self.transaction:
             self.transaction.current_node.guid = 'abcde'
             self.transaction.guid = 'this is guid'
@@ -267,12 +272,9 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         self.transaction._settings.span_events.enabled = False
 
         with self.transaction:
-            # ID should be the transaction GUID
             self._standard_trace_test(self.transaction.guid)
 
     def test_distributed_trace_id_omitted_when_not_sampled(self):
-        self.transaction._settings.span_events.enabled = True
-
         with self.transaction:
             self.transaction._priority = 0.0
             self.transaction._sampled = False

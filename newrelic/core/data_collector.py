@@ -1278,6 +1278,7 @@ _developer_mode_responses = {
             u'level': u'INFO'}],
         u'sampling_rate': 0,
         u'collect_traces': True,
+        u'collect_span_events': True,
         u'data_report_period': 60
     },
 

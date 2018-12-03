@@ -291,3 +291,26 @@ def test_datastore_span_limits(kwarg_override, intrinsics_override):
             pass
 
     _test()
+
+
+@pytest.mark.parametrize('collect_span_events', (False, True))
+@pytest.mark.parametrize('span_events_enabled', (False, True))
+def test_collect_span_events_override(collect_span_events,
+        span_events_enabled):
+    span_count = 2 if collect_span_events and span_events_enabled else 0
+
+    @validate_span_events(count=span_count)
+    @override_application_settings({
+        'distributed_tracing.enabled': True,
+        'span_events.enabled': span_events_enabled,
+        'collect_span_events': collect_span_events
+    })
+    @background_task(name='test_collect_span_events_override')
+    def _test():
+        transaction = current_transaction()
+        transaction._sampled = True
+
+        with FunctionTrace(transaction, 'span_generator'):
+            pass
+
+    _test()

@@ -154,8 +154,8 @@ use(extensions) {
                     env('PATH', '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin')
                 }
                 shell('./build.sh')
-                shell('./deploy/upload-to-artifactory.sh')
                 shell('./deploy/cleanup-root-files.sh')
+                shell('./deploy/upload-to-artifactory.sh')
             }
 
             publishers {

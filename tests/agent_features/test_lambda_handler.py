@@ -31,12 +31,14 @@ def handler(event, context):
 
 
 _override_settings = {
-    'attributes.include': ['request.parameters.*'],
+    'attributes.include': ['request.parameters.*', 'request.headers.*'],
 }
 _expected_attributes = {
     'agent': [
         'aws.requestId',
         'aws.lambda.arn',
+        'request.method',
+        'request.uri',
         'response.status',
         'response.headers.contentType',
         'response.headers.contentLength',
@@ -48,6 +50,7 @@ _expected_attributes = {
 _exact_attrs = {
     'agent': {
         'request.parameters.foo': 'bar',
+        'request.headers.host': 'myhost',
     },
     'user': {},
     'intrinsic': {}
@@ -107,7 +110,9 @@ def test_lambda_transaction_attributes(is_cold, monkeypatch):
         handler({
             'httpMethod': 'GET',
             'path': '/',
-            'headers': {},
+            'headers': {
+                'HOST': 'myhost',
+            },
             'queryStringParameters': {'foo': 'bar'},
             'multiValueQueryStringParameters': {'foo': ['bar']},
         }, Context)
@@ -126,6 +131,96 @@ def test_lambda_malformed_api_gateway_payload(monkeypatch):
         'headers': {},
         'queryStringParameters': 42,
         'multiValueQueryStringParameters': 42,
+    }, Context)
+
+
+_malformed_request_attributes = {
+    'agent': [
+        'aws.requestId',
+        'aws.lambda.arn',
+    ],
+    'user': [],
+    'intrinsic': [],
+}
+
+
+@validate_transaction_trace_attributes(_malformed_request_attributes)
+@validate_transaction_event_attributes(_malformed_request_attributes)
+@override_application_settings(_override_settings)
+def test_lambda_malformed_request_headers():
+    handler({
+        'httpMethod': 'GET',
+        'path': '/',
+        'headers': None,
+    }, Context)
+
+
+_malformed_response_attributes = {
+    'agent': [
+        'aws.requestId',
+        'aws.lambda.arn',
+        'request.method',
+        'request.uri',
+        'response.status',
+    ],
+    'user': [],
+    'intrinsic': [],
+}
+
+
+@validate_transaction_trace_attributes(_malformed_response_attributes)
+@validate_transaction_event_attributes(_malformed_response_attributes)
+@override_application_settings(_override_settings)
+def test_lambda_malformed_response_headers():
+
+    @lambda_handler.lambda_handler()
+    def handler(event, context):
+        return {
+            'statusCode': 200,
+            'body': '{}',
+            'headers': None,
+        }
+
+    handler({
+        'httpMethod': 'GET',
+        'path': '/',
+        'headers': {},
+    }, Context)
+
+
+_no_status_code_response = {
+    'agent': [
+        'aws.requestId',
+        'aws.lambda.arn',
+        'request.method',
+        'request.uri',
+        'response.headers.contentType',
+        'response.headers.contentLength',
+    ],
+    'user': [],
+    'intrinsic': [],
+}
+
+
+@validate_transaction_trace_attributes(_no_status_code_response)
+@validate_transaction_event_attributes(_no_status_code_response)
+@override_application_settings(_override_settings)
+def test_lambda_no_status_code_response():
+
+    @lambda_handler.lambda_handler()
+    def handler(event, context):
+        return {
+            'body': '{}',
+            'headers': {
+                'Content-Type': 'application/json',
+                'Content-Length': 2,
+            },
+        }
+
+    handler({
+        'httpMethod': 'GET',
+        'path': '/',
+        'headers': {},
     }, Context)
 
 

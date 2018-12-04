@@ -31,6 +31,7 @@ class TestAttributeFilter(newrelic.tests.test_cases.TestCase):
 
     def test_destination_browser_monitoring_disabled(self):
         settings = finalize_application_settings({
+            'browser_monitoring.attributes.enabled': False,
         })
         destinations = settings.attribute_filter.apply('foo', DST_ALL)
         assert destinations == (DST_ALL & ~DST_BROWSER_MONITORING)
@@ -58,3 +59,12 @@ class TestAttributeFilter(newrelic.tests.test_cases.TestCase):
         })
         destinations = settings.attribute_filter.apply('foo', DST_ALL)
         assert destinations == (DST_ALL & ~DST_TRANSACTION_EVENTS)
+
+    def test_multiple_events_disabled(self):
+        settings = finalize_application_settings({
+            'browser_monitoring.attributes.enabled': True,
+            'transaction_events.attributes.enabled': False,
+            'transaction_tracer.attributes.enabled': False,
+        })
+        destinations = settings.attribute_filter.apply('foo', DST_ALL)
+        assert destinations == (DST_ALL & ~DST_TRANSACTION_EVENTS & ~DST_TRANSACTION_TRACER)

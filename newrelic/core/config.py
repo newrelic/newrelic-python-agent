@@ -197,6 +197,14 @@ class ServerlessModeSettings(Settings):
     pass
 
 
+class TransactionSegmentSettings(Settings):
+    pass
+
+
+class TransactionSegmentAttributesSettings(Settings):
+    pass
+
+
 _settings = Settings()
 _settings.attributes = AttributesSettings()
 _settings.thread_profiler = ThreadProfilerSettings()
@@ -231,6 +239,9 @@ _settings.datastore_tracer.database_name_reporting = \
 _settings.heroku = HerokuSettings()
 _settings.span_events = SpanEventSettings()
 _settings.span_events.attributes = SpanEventAttributesSettings()
+_settings.transaction_segments = TransactionSegmentSettings()
+_settings.transaction_segments.attributes = \
+        TransactionSegmentAttributesSettings()
 _settings.distributed_tracing = DistributedTracingSettings()
 _settings.serverless_mode = ServerlessModeSettings()
 
@@ -495,6 +506,10 @@ _settings.span_events.max_samples_stored = SPAN_EVENT_RESERVOIR_SIZE
 _settings.span_events.attributes.enabled = True
 _settings.span_events.attributes.exclude = []
 _settings.span_events.attributes.include = []
+
+_settings.transaction_segments.attributes.enabled = True
+_settings.transaction_segments.attributes.exclude = []
+_settings.transaction_segments.attributes.include = []
 
 _settings.transaction_tracer.enabled = True
 _settings.transaction_tracer.transaction_threshold = None

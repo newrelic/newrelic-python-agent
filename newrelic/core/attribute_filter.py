@@ -1,11 +1,13 @@
 # Attribute "destinations" represented as bitfields.
 
 DST_NONE = 0x0
-DST_ALL  = 0xF
-DST_TRANSACTION_EVENTS = 1 << 0
-DST_TRANSACTION_TRACER = 1 << 1
-DST_ERROR_COLLECTOR    = 1 << 2
-DST_BROWSER_MONITORING = 1 << 3
+DST_ALL  = 0x3F
+DST_TRANSACTION_EVENTS   = 1 << 0
+DST_TRANSACTION_TRACER   = 1 << 1
+DST_ERROR_COLLECTOR      = 1 << 2
+DST_BROWSER_MONITORING   = 1 << 3
+DST_SPAN_EVENTS          = 1 << 4
+DST_TRANSACTION_SEGMENTS = 1 << 5
 
 class AttributeFilter(object):
 
@@ -57,6 +59,12 @@ class AttributeFilter(object):
 
         enabled_destinations = DST_NONE
 
+        if settings.get('transaction_segments.attributes.enabled', None):
+            enabled_destinations |= DST_TRANSACTION_SEGMENTS
+
+        if settings.get('span_events.attributes.enabled', None):
+            enabled_destinations |= DST_SPAN_EVENTS
+
         if settings.get('transaction_tracer.attributes.enabled', None):
             enabled_destinations |= DST_TRANSACTION_TRACER
 
@@ -94,6 +102,10 @@ class AttributeFilter(object):
             ('error_collector.attributes.exclude', DST_ERROR_COLLECTOR, False),
             ('browser_monitoring.attributes.include', DST_BROWSER_MONITORING, True),
             ('browser_monitoring.attributes.exclude', DST_BROWSER_MONITORING, False),
+            ('span_events.attributes.include', DST_SPAN_EVENTS, True),
+            ('span_events.attributes.exclude', DST_SPAN_EVENTS, False),
+            ('transaction_segments.attributes.include', DST_TRANSACTION_SEGMENTS, True),
+            ('transaction_segments.attributes.exclude', DST_TRANSACTION_SEGMENTS, False),
         )
 
         rules = []

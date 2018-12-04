@@ -185,11 +185,23 @@ class SpanEventSettings(Settings):
     pass
 
 
+class SpanEventAttributesSettings(Settings):
+    pass
+
+
 class DistributedTracingSettings(Settings):
     pass
 
 
 class ServerlessModeSettings(Settings):
+    pass
+
+
+class TransactionSegmentSettings(Settings):
+    pass
+
+
+class TransactionSegmentAttributesSettings(Settings):
     pass
 
 
@@ -226,6 +238,10 @@ _settings.datastore_tracer.database_name_reporting = \
         DatastoreTracerDatabaseNameReportingSettings()
 _settings.heroku = HerokuSettings()
 _settings.span_events = SpanEventSettings()
+_settings.span_events.attributes = SpanEventAttributesSettings()
+_settings.transaction_segments = TransactionSegmentSettings()
+_settings.transaction_segments.attributes = \
+        TransactionSegmentAttributesSettings()
 _settings.distributed_tracing = DistributedTracingSettings()
 _settings.serverless_mode = ServerlessModeSettings()
 
@@ -487,6 +503,13 @@ _settings.distributed_tracing.enabled = _environ_as_bool(
 _settings.span_events.enabled = _environ_as_bool(
         'NEW_RELIC_SPAN_EVENTS_ENABLED', default=True)
 _settings.span_events.max_samples_stored = SPAN_EVENT_RESERVOIR_SIZE
+_settings.span_events.attributes.enabled = True
+_settings.span_events.attributes.exclude = []
+_settings.span_events.attributes.include = []
+
+_settings.transaction_segments.attributes.enabled = True
+_settings.transaction_segments.attributes.exclude = []
+_settings.transaction_segments.attributes.include = []
 
 _settings.transaction_tracer.enabled = True
 _settings.transaction_tracer.transaction_threshold = None

@@ -5,7 +5,8 @@ from collections import namedtuple
 from newrelic.packages import six
 
 from newrelic.core.attribute_filter import (DST_ALL, DST_ERROR_COLLECTOR,
-        DST_TRANSACTION_TRACER, DST_TRANSACTION_EVENTS)
+        DST_TRANSACTION_TRACER, DST_TRANSACTION_EVENTS, DST_SPAN_EVENTS,
+        DST_TRANSACTION_SEGMENTS)
 
 
 _logger = logging.getLogger(__name__)
@@ -19,8 +20,12 @@ _Attribute = namedtuple('_Attribute',
 
 # All agent attributes go to transaction traces and error traces by default.
 
-_DESTINATIONS = DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER
-_DESTINATIONS_WITH_EVENTS = _DESTINATIONS | DST_TRANSACTION_EVENTS
+_DESTINATIONS = (DST_ERROR_COLLECTOR |
+                 DST_TRANSACTION_TRACER |
+                 DST_TRANSACTION_SEGMENTS)
+_DESTINATIONS_WITH_EVENTS = (_DESTINATIONS |
+                             DST_TRANSACTION_EVENTS |
+                             DST_SPAN_EVENTS)
 
 # The following subset goes to transaction events by default.
 

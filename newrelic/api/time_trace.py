@@ -146,6 +146,9 @@ class TimeTrace(object):
         # ----------------------------------------------------------------------
         self.complete_trace()
 
+    def _add_agent_attribute(self, key, value):
+        self.agent_attributes[key] = value
+
     def _force_exit(self, exc, value, tb):
         self.child_count = len(self.children)
         return self.__exit__(exc, value, tb)

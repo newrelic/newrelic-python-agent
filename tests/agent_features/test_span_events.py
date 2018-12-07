@@ -333,10 +333,10 @@ def test_span_event_agent_attributes(include_attribues):
             count=0, expected_agents=['webfrontend.queue.seconds'])
     @validate_span_events(
             count=count,
-            exact_agent={'trace1': 'foobar'}, unexpected_agents=['trace2'])
+            exact_agents={'trace1': 'foobar'}, unexpected_agents=['trace2'])
     @validate_span_events(
             count=count,
-            exact_agent={'trace2': 'foobar'}, unexpected_agents=['trace1'])
+            exact_agents={'trace2': 'foobar'}, unexpected_agents=['trace1'])
     @background_task(name='test_span_event_agent_attributes')
     def _test():
         transaction = current_transaction()

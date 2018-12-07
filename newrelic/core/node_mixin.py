@@ -1,7 +1,16 @@
-from newrelic.core.attribute import process_user_attribute
+from newrelic.core.attribute import (process_user_attribute,
+        create_agent_attributes)
 
 
 class GenericNodeMixin(object):
+
+    def resolve_agent_attributes(self, attribute_filter):
+        if hasattr(self, '_agent_attributes_resolved'):
+            return self._agent_attributes_resolved
+
+        self._agent_attributes_resolved = create_agent_attributes(
+                self.agent_attributes, attribute_filter)
+        return self._agent_attributes_resolved
 
     def span_event(
             self, base_attrs=None, parent_guid=None):

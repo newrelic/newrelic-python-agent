@@ -13,6 +13,7 @@ _ms_node = newrelic.core.message_node.MessageNode(
         params={'hello': True},
         is_async=False,
         guid=None,
+        agent_attributes=None,
 )
 
 

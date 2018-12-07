@@ -47,10 +47,24 @@ class DatastoreTrace(TimeTrace):
 
         super(DatastoreTrace, self).__init__(transaction)
 
+        self.instance_reporting_enabled = False
+        self.database_name_enabled = False
+
+        self._host = None
+        self._port_path_or_id = None
+        self._database_name = None
+
         if transaction:
             self.product = transaction._intern_string(product)
             self.target = transaction._intern_string(target)
             self.operation = transaction._intern_string(operation)
+
+            datastore_tracer_settings = transaction.settings.datastore_tracer
+            self.instance_reporting_enabled = \
+                    datastore_tracer_settings.instance_reporting.enabled
+            self.database_name_enabled = \
+                    datastore_tracer_settings.database_name_reporting.enabled
+
         else:
             self.product = product
             self.target = target
@@ -64,6 +78,33 @@ class DatastoreTrace(TimeTrace):
         return '<%s %s>' % (self.__class__.__name__, dict(
                 product=self.product, target=self.target,
                 operation=self.operation))
+
+    @property
+    def host(self):
+        return self._host
+
+    @host.setter
+    def host(self, value):
+        if self.instance_reporting_enabled:
+            self._host = value
+
+    @property
+    def port_path_or_id(self):
+        return self._port_path_or_id
+
+    @port_path_or_id.setter
+    def port_path_or_id(self, value):
+        if self.instance_reporting_enabled:
+            self._port_path_or_id = value
+
+    @property
+    def database_name(self):
+        return self._database_name
+
+    @database_name.setter
+    def database_name(self, value):
+        if self.database_name_enabled:
+            self._database_name = value
 
     def terminal_node(self):
         return True

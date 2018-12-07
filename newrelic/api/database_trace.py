@@ -189,7 +189,8 @@ class DatabaseTrace(TimeTrace):
                 port_path_or_id=self.port_path_or_id,
                 database_name=self.database_name,
                 is_async=self.is_async,
-                guid=self.guid)
+                guid=self.guid,
+                agent_attributes=self.agent_attributes)
 
 
 def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None):

@@ -38,6 +38,7 @@ _db_node = newrelic.core.database_node.DatabaseNode(
         database_name='bar',
         is_async=True,
         guid=None,
+        agent_attributes=None,
 )
 
 

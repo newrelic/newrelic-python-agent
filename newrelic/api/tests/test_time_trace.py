@@ -25,6 +25,10 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         # model the existence of a sentinel
         self.time_trace.parent = TimeTrace(None)
 
+    def test_add_agent_attribute(self):
+        self.time_trace._add_agent_attribute('foo', 'bar')
+        self.assertEqual(self.time_trace.agent_attributes['foo'], 'bar')
+
     def test_sync_exclusive_calc(self):
         node_child_1 = SimpleNode(is_async=False, start_time=1.0, end_time=2.0)
         node_child_2 = SimpleNode(is_async=False, start_time=2.0, end_time=2.5)

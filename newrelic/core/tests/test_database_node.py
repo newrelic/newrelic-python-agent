@@ -15,6 +15,10 @@ def setup_module(module):
     system_info.gethostname = gethostname
 
 
+class Settings(object):
+    attribute_filter = None
+
+
 def teardown_module(module):
     system_info.gethostname = _backup_methods['gethostname']
 
@@ -63,7 +67,8 @@ def test_instance_hostname():
 
 
 def test_span_event():
-    span_event = _db_node.span_event()
+    _db_node._agent_attributes_resolved = []
+    span_event = _db_node.span_event(Settings())
     i_attrs = span_event[0]
 
     # Verify that all hostnames have been converted to instance_hostname

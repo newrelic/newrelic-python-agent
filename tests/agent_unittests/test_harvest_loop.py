@@ -56,7 +56,7 @@ def transaction_node(request):
             rollup=None,
             is_async=True,
             guid='GUID',
-            agent_attributes=None)
+            agent_attributes={})
 
     children = tuple(function for _ in range(num_events))
 

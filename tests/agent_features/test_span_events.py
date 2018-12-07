@@ -314,3 +314,36 @@ def test_collect_span_events_override(collect_span_events,
             pass
 
     _test()
+
+
+@pytest.mark.parametrize('include_attribues', (True, False))
+def test_span_event_agent_attributes(include_attribues):
+    override_settings = {
+        'distributed_tracing.enabled': True,
+        'span_events.enabled': True,
+    }
+    if include_attribues:
+        count = 1
+        override_settings['attributes.include'] = ['*']
+    else:
+        count = 0
+
+    @override_application_settings(override_settings)
+    @validate_span_events(
+            count=0, expected_agents=['webfrontend.queue.seconds'])
+    @validate_span_events(
+            count=count,
+            exact_agent={'trace1': 'foobar'}, unexpected_agents=['trace2'])
+    @validate_span_events(
+            count=count,
+            exact_agent={'trace2': 'foobar'}, unexpected_agents=['trace1'])
+    @background_task(name='test_span_event_agent_attributes')
+    def _test():
+        transaction = current_transaction()
+        transaction.queue_start = 1.0
+        with FunctionTrace(transaction, 'trace1') as trace_1:
+            trace_1._add_agent_attribute('trace1', 'foobar')
+            with FunctionTrace(transaction, 'trace2') as trace_2:
+                trace_2._add_agent_attribute('trace2', 'foobar')
+
+    _test()

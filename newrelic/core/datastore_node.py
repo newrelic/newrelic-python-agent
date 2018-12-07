@@ -5,6 +5,7 @@ import newrelic.core.trace_node
 from newrelic.common import system_info
 from newrelic.core.node_mixin import DatastoreNodeMixin
 from newrelic.core.metric import TimeMetric
+from newrelic.core.attribute_filter import DST_TRANSACTION_SEGMENTS
 
 _DatastoreNode = namedtuple('_DatastoreNode',
         ['product', 'target', 'operation', 'children', 'start_time',
@@ -105,6 +106,14 @@ class DatastoreNode(_DatastoreNode, DatastoreNodeMixin):
         root.trace_node_count += 1
 
         params = {}
+
+        # Agent attributes
+        attribute_filter = root.settings.attribute_filter
+        for attr in self.resolve_agent_attributes(attribute_filter):
+            if attr.destinations & DST_TRANSACTION_SEGMENTS:
+                params[attr.name] = attr.value
+
+        # Intrinsic attributes override everything
         params['exclusive_duration_millis'] = 1000.0 * self.exclusive
 
         ds_tracer_settings = stats.settings.datastore_tracer

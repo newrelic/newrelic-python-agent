@@ -88,6 +88,9 @@ def create_agent_attributes(attr_dict, attribute_filter):
     attributes = []
 
     for k, v in attr_dict.items():
+        if v is None:
+            continue
+
         if k in _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES:
             dest = attribute_filter.apply(k, _DESTINATIONS_WITH_EVENTS)
         else:

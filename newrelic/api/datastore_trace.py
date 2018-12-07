@@ -105,7 +105,7 @@ class DatastoreTrace(TimeTrace):
     def database_name(self, value):
         if self.database_name_enabled:
             self._database_name = value
-            self.agent_attributes['database_name'] = value
+            self.agent_attributes['db.instance'] = value
 
     def terminal_node(self):
         return True

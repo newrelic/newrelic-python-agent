@@ -1563,7 +1563,8 @@ def validate_tt_parameters(required_params={}, forgone_params={}):
     return _validate_tt_parameters
 
 
-def validate_tt_segment_params(forgone_params=(), present_params=()):
+def validate_tt_segment_params(forgone_params=(), present_params=(),
+        exact_params={}):
     recorded_traces = []
 
     @transient_function_wrapper('newrelic.core.stats_engine',
@@ -1596,10 +1597,10 @@ def validate_tt_segment_params(forgone_params=(), present_params=()):
         # Extract the root segment from the root node
         root_segment = pack_data[0][3]
 
-        recorded_params = set()
+        recorded_params = {}
 
         def _validate_segment_params(segment):
-            segment_params = set(segment[3].keys())
+            segment_params = segment[3]
 
             recorded_params.update(segment_params)
 
@@ -1608,13 +1609,19 @@ def validate_tt_segment_params(forgone_params=(), present_params=()):
 
         _validate_segment_params(root_segment)
 
+        recorded_params_set = set(recorded_params.keys())
+
         # Verify that the params in present params have been recorded
         present_params_set = set(present_params)
-        assert recorded_params.issuperset(present_params_set)
+        assert recorded_params_set.issuperset(present_params_set)
 
         # Verify that all forgone params are omitted
-        recorded_forgone_params = (recorded_params & set(forgone_params))
+        recorded_forgone_params = (recorded_params_set & set(forgone_params))
         assert not recorded_forgone_params
+
+        # Verify that all exact params are correct
+        for key, value in exact_params.items():
+            assert recorded_params[key] == value
 
         return result
 

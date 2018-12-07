@@ -159,39 +159,54 @@ def test_database_db_statement_format(sql, sql_format, expected):
     _test()
 
 
-@validate_span_events(
-    count=1,
-    exact_intrinsics={
-        'name': 'External/example.com/library/get',
-        'type': 'Span',
-        'sampled': True,
+@pytest.mark.parametrize('exclude_url', (True, False))
+def test_external_spans(exclude_url):
+    override_settings = {
+        'distributed_tracing.enabled': True,
+        'span_events.enabled': True,
+    }
 
-        'category': 'http',
-        'span.kind': 'client',
-        'http.url': 'http://example.com/foo',
-        'component': 'library',
-        'http.method': 'get',
-    },
-    expected_intrinsics=('priority',),
-)
-@override_application_settings({
-    'distributed_tracing.enabled': True,
-    'span_events.enabled': True,
-})
-@background_task(name='test_external_spans')
-def test_external_spans():
-    transaction = current_transaction()
-    transaction._sampled = True
+    if exclude_url:
+        override_settings['span_events.attributes.exclude'] = ['http.url']
+        exact_agents = {}
+        unexpected_agents = ['http.url']
+    else:
+        exact_agents = {'http.url': 'http://example.com/foo'}
+        unexpected_agents = []
 
-    with ExternalTrace(
-            transaction,
-            library='library',
-            url='http://example.com/foo?secret=123',
-            method='get'):
-        pass
+    @validate_span_events(
+        count=1,
+        exact_intrinsics={
+            'name': 'External/example.com/library/get',
+            'type': 'Span',
+            'sampled': True,
+
+            'category': 'http',
+            'span.kind': 'client',
+            'component': 'library',
+            'http.method': 'get',
+        },
+        exact_agents=exact_agents,
+        unexpected_agents=unexpected_agents,
+        expected_intrinsics=('priority',),
+    )
+    @override_application_settings(override_settings)
+    @background_task(name='test_external_spans')
+    def _test():
+        transaction = current_transaction()
+        transaction._sampled = True
+
+        with ExternalTrace(
+                transaction,
+                library='library',
+                url='http://example.com/foo?secret=123',
+                method='get'):
+            pass
+
+    _test()
 
 
-@pytest.mark.parametrize('kwarg_override,intrinsics_override', (
+@pytest.mark.parametrize('kwarg_override,attr_override', (
     ({'url': 'a' * 256}, {'http.url': 'a' * 255}),
     ({'library': 'a' * 256}, {'component': 'a' * 255}),
     ({'method': 'a' * 256}, {'http.method': 'a' * 255}),
@@ -200,7 +215,7 @@ def test_external_spans():
     'distributed_tracing.enabled': True,
     'span_events.enabled': True,
 })
-def test_external_span_limits(kwarg_override, intrinsics_override):
+def test_external_span_limits(kwarg_override, attr_override):
 
     exact_intrinsics = {
         'type': 'Span',
@@ -208,11 +223,17 @@ def test_external_span_limits(kwarg_override, intrinsics_override):
 
         'category': 'http',
         'span.kind': 'client',
-        'http.url': 'http://example.com/foo',
         'component': 'library',
         'http.method': 'get',
     }
-    exact_intrinsics.update(intrinsics_override)
+    exact_agents = {
+        'http.url': 'http://example.com/foo',
+    }
+    for attr_name, attr_value in attr_override.items():
+        if attr_name in exact_agents:
+            exact_agents[attr_name] = attr_value
+        else:
+            exact_intrinsics[attr_name] = attr_value
 
     kwargs = {
         'library': 'library',
@@ -224,6 +245,7 @@ def test_external_span_limits(kwarg_override, intrinsics_override):
     @validate_span_events(
         count=1,
         exact_intrinsics=exact_intrinsics,
+        exact_agents=exact_agents,
         expected_intrinsics=('priority',),
     )
     @background_task(name='test_external_spans')
@@ -333,10 +355,10 @@ def test_span_event_agent_attributes(include_attribues):
             count=0, expected_agents=['webfrontend.queue.seconds'])
     @validate_span_events(
             count=count,
-            exact_agent={'trace1': 'foobar'}, unexpected_agents=['trace2'])
+            exact_agents={'trace1': 'foobar'}, unexpected_agents=['trace2'])
     @validate_span_events(
             count=count,
-            exact_agent={'trace2': 'foobar'}, unexpected_agents=['trace1'])
+            exact_agents={'trace2': 'foobar'}, unexpected_agents=['trace1'])
     @background_task(name='test_span_event_agent_attributes')
     def _test():
         transaction = current_transaction()

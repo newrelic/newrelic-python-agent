@@ -105,14 +105,18 @@ class ExternalNodeMixin(GenericNodeMixin):
         return 'External/%s/%s/%s' % (
                 self.netloc, self.library, self.method or '')
 
+    def resolve_agent_attributes(self, *args, **kwargs):
+        _, self.agent_attributes['http.url'] = process_user_attribute(
+                'http.url', self.url_with_path)
+        return super(ExternalNodeMixin, self).resolve_agent_attributes(
+                *args, **kwargs)
+
     def span_event(self, *args, **kwargs):
         attrs = super(ExternalNodeMixin, self).span_event(*args, **kwargs)
         i_attrs = attrs[0]
 
         i_attrs['category'] = 'http'
         i_attrs['span.kind'] = 'client'
-        _, i_attrs['http.url'] = process_user_attribute(
-                'http.url', self.url_with_path)
         _, i_attrs['component'] = process_user_attribute(
                 'component', self.library)
 

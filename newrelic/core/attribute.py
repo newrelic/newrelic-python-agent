@@ -40,6 +40,7 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set((
         'response.headers.contentType',
         'message.queueName',
         'message.routingKey',
+        'http.url',
         'aws.requestId',
         'aws.lambda.arn',
         'aws.lambda.coldStart',

@@ -7,7 +7,7 @@ from newrelic.common.object_wrapper import (transient_function_wrapper,
 
 def validate_span_events(count=1,
         exact_intrinsics={}, expected_intrinsics=[], unexpected_intrinsics=[],
-        exact_agent={}, expected_agents=[],
+        exact_agents={}, expected_agents=[],
         unexpected_agents=[]):
 
     # Used for validating a single span event.
@@ -58,7 +58,7 @@ def validate_span_events(count=1,
                     exact_intrinsics, expected_intrinsics,
                     unexpected_intrinsics, mismatches)
             agent_attr_ok = _check_span_attributes(agent_attrs,
-                    exact_agent, expected_agents,
+                    exact_agents, expected_agents,
                     unexpected_agents, mismatches)
 
             if intrinsics_ok and agent_attr_ok:

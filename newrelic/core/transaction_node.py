@@ -589,6 +589,9 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
         return intrinsics
 
     def span_event(self, *args, **kwargs):
+        # Agent attributes are not sent for this node type
+        self._agent_attributes_resolved = ()
+
         attrs = super(TransactionNode, self).span_event(*args, **kwargs)
         i_attrs = attrs[0]
 
@@ -599,7 +602,7 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
 
         return attrs
 
-    def span_events(self, stats):
+    def span_events(self, settings):
         base_attrs = {
             'transactionId': self.guid,
             'traceId': self.trace_id,
@@ -607,12 +610,12 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
             'priority': self.priority,
         }
 
-        yield self.span_event(base_attrs,
+        yield self.span_event(settings, base_attrs,
                 parent_guid=self.parent_span)
 
         for child in self.children:
             for event in child.span_events(
-                    stats,
+                    settings,
                     base_attrs,
                     parent_guid=self.root_span_guid):
                 yield event

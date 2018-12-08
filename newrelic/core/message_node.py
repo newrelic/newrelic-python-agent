@@ -4,6 +4,7 @@ import newrelic.core.trace_node
 
 from newrelic.core.node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
+from newrelic.core.attribute_filter import DST_TRANSACTION_SEGMENTS
 
 _MessageNode = namedtuple('_MessageNode',
         ['library', 'operation', 'children', 'start_time',
@@ -46,7 +47,19 @@ class MessageNode(_MessageNode, GenericNodeMixin):
 
         root.trace_node_count += 1
 
-        params = self.params or {}
+        params = {}
+
+        # Agent attributes
+        attribute_filter = root.settings.attribute_filter
+        for attr in self.resolve_agent_attributes(attribute_filter):
+            if attr.destinations & DST_TRANSACTION_SEGMENTS:
+                params[attr.name] = attr.value
+
+        # User attributes override agent attributes
+        if self.params:
+            params.update(self.params)
+
+        # Intrinsic attributes override everything
         params['exclusive_duration_millis'] = 1000.0 * self.exclusive
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,

@@ -125,6 +125,14 @@ class DatabaseTrace(TimeTrace):
                 if db_name_enabled:
                     _, _, database_name = instance_info
 
+            else:
+                if instance_enabled:
+                    host = self.host
+                    port_path_or_id = self.port_path_or_id
+
+                if db_name_enabled:
+                    database_name = self.database_name
+
         if (tt.enabled and settings.collect_traces and
                 tt.record_sql != 'off'):
             if self.duration >= tt.stack_trace_threshold:

@@ -1103,6 +1103,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/tests/test_attribute.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/tests/test_attribute_filter.py": {
         "hash": "n/a",
         "libraries": [

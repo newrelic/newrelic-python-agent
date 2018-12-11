@@ -35,7 +35,7 @@ _database_only_settings = {
 _enabled_required = {
     'host': instance_hostname(DB_SETTINGS['host']),
     'port_path_or_id': str(DB_SETTINGS['port']),
-    'database_name': str(DATABASE_NUMBER),
+    'db.instance': str(DATABASE_NUMBER),
 }
 _enabled_forgone = {}
 
@@ -43,7 +43,7 @@ _disabled_required = {}
 _disabled_forgone = {
     'host': 'VALUE NOT USED',
     'port_path_or_id': 'VALUE NOT USED',
-    'database_name': 'VALUE NOT USED',
+    'db.instance': 'VALUE NOT USED',
 }
 
 _instance_only_required = {
@@ -51,16 +51,17 @@ _instance_only_required = {
     'port_path_or_id': str(DB_SETTINGS['port']),
 }
 _instance_only_forgone = {
-    'database_name': str(DATABASE_NUMBER),
+    'db.instance': str(DATABASE_NUMBER),
 }
 
 _database_only_required = {
-    'database_name': str(DATABASE_NUMBER),
+    'db.instance': str(DATABASE_NUMBER),
 }
 _database_only_forgone = {
     'host': 'VALUE NOT USED',
     'port_path_or_id': 'VALUE NOT USED',
 }
+
 
 # Query
 
@@ -72,6 +73,7 @@ def _exercise_db():
     client.get('key')
 
     client.execute_command('CLIENT', 'LIST', parse='LIST')
+
 
 # Tests
 
@@ -92,6 +94,7 @@ def test_trace_node_datastore_params_enable_instance():
 def test_trace_node_datastore_params_disable_instance():
     _exercise_db()
 
+
 @override_application_settings(_instance_only_settings)
 @validate_tt_collector_json(
         datastore_params=_instance_only_required,
@@ -99,6 +102,7 @@ def test_trace_node_datastore_params_disable_instance():
 @background_task()
 def test_trace_node_datastore_params_instance_only():
     _exercise_db()
+
 
 @override_application_settings(_database_only_settings)
 @validate_tt_collector_json(

@@ -67,7 +67,7 @@ def test_instance_hostname():
 
 
 def test_span_event():
-    _db_node._agent_attributes_resolved = []
+    _db_node._agent_attributes_destinations = {}
     span_event = _db_node.span_event(Settings())
     i_attrs = span_event[0]
 

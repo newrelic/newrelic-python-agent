@@ -212,9 +212,6 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
         if self.port_path_or_id:
             params['port_path_or_id'] = self.port_path_or_id
 
-        if self.database_name:
-            params['database_name'] = self.database_name
-
         sql = self.formatted
 
         if sql:

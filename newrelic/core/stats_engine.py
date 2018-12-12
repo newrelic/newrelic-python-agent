@@ -1133,7 +1133,7 @@ class StatsEngine(object):
                 params['port_path_or_id'] = slow_sql_node.port_path_or_id
 
             if slow_sql_node.database_name:
-                params['database_name'] = slow_sql_node.database_name
+                params['db.instance'] = slow_sql_node.database_name
 
             json_data = json_encode(params)
 

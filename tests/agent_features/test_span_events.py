@@ -363,6 +363,8 @@ def test_span_event_agent_attributes(include_attribues):
     def _test():
         transaction = current_transaction()
         transaction.queue_start = 1.0
+        transaction._sampled = True
+
         with FunctionTrace(transaction, 'trace1') as trace_1:
             trace_1._add_agent_attribute('trace1', 'foobar')
             with FunctionTrace(transaction, 'trace2') as trace_2:

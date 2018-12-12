@@ -102,6 +102,20 @@ def create_agent_attributes(attr_dict, attribute_filter):
     return attributes
 
 
+def get_agent_attribute_destinations(attr_dict, attribute_filter):
+    dests = {}
+
+    for k in attr_dict:
+        if k in _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES:
+            dest = attribute_filter.apply(k, _DESTINATIONS_WITH_EVENTS)
+        else:
+            dest = attribute_filter.apply(k, _DESTINATIONS)
+
+        dests[k] = dest
+
+    return dests
+
+
 def create_user_attributes(attr_dict, attribute_filter):
     destinations = DST_ALL
     return create_attributes(attr_dict, destinations, attribute_filter)

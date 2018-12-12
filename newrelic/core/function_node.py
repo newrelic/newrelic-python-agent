@@ -92,13 +92,9 @@ class FunctionNode(_FunctionNode, GenericNodeMixin):
                 break
             children.append(child.trace_node(stats, root, connections))
 
-        params = {}
-
         # Agent attributes
-        attribute_filter = root.settings.attribute_filter
-        for attr in self.resolve_agent_attributes(attribute_filter):
-            if attr.destinations & DST_TRANSACTION_SEGMENTS:
-                params[attr.name] = attr.value
+        params = self.resolve_agent_attributes(root.settings.attribute_filter,
+                DST_TRANSACTION_SEGMENTS)
 
         # User attributes override agent attributes
         if self.params:

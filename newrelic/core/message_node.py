@@ -47,13 +47,9 @@ class MessageNode(_MessageNode, GenericNodeMixin):
 
         root.trace_node_count += 1
 
-        params = {}
-
         # Agent attributes
-        attribute_filter = root.settings.attribute_filter
-        for attr in self.resolve_agent_attributes(attribute_filter):
-            if attr.destinations & DST_TRANSACTION_SEGMENTS:
-                params[attr.name] = attr.value
+        params = self.resolve_agent_attributes(root.settings.attribute_filter,
+                DST_TRANSACTION_SEGMENTS)
 
         # User attributes override agent attributes
         if self.params:

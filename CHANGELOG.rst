@@ -1,6 +1,20 @@
 unreleased
 ----------
 
+- Add ability to exclude attributes from span events and transaction segments
+
+  This release adds support to exclude attributes from span events (via the
+  span_events.include/exclude options) and from transaction segments (via the
+  transaction_segments.include/exclude option).
+
+  As with other attribute destinations, these new options will inherit values
+  from the top-level attributes.include/exclude settings. See the documentation
+  for more information.
+
+  This feature also includes filtering of url parameters from span events and
+  transaction segments.
+
+
 4.8.0 (2018-12-03)
 ------------------
 

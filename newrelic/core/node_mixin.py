@@ -1,17 +1,25 @@
 from newrelic.core.attribute import (process_user_attribute,
-        create_agent_attributes)
+        get_agent_attribute_destinations as get_agent_attribute_dest)
 from newrelic.core.attribute_filter import DST_SPAN_EVENTS
 
 
 class GenericNodeMixin(object):
+    def resolve_agent_attributes(self, attribute_filter, target_destination):
+        target = {}
 
-    def resolve_agent_attributes(self, attribute_filter):
-        if hasattr(self, '_agent_attributes_resolved'):
-            return self._agent_attributes_resolved
-
-        self._agent_attributes_resolved = create_agent_attributes(
+        if not hasattr(self, '_agent_attributes_destinations'):
+            self._agent_attributes_destinations = get_agent_attribute_dest(
                 self.agent_attributes, attribute_filter)
-        return self._agent_attributes_resolved
+
+        if self._agent_attributes_destinations:
+            destinations = self._agent_attributes_destinations
+
+            for attr_name, destination in destinations.items():
+                if (self.agent_attributes[attr_name] is not None) and (
+                        destination & target_destination):
+                    target[attr_name] = self.agent_attributes[attr_name]
+
+        return target
 
     def span_event(
             self, settings, base_attrs=None, parent_guid=None):
@@ -26,13 +34,8 @@ class GenericNodeMixin(object):
         if parent_guid:
             i_attrs['parentId'] = parent_guid
 
-        agent_attributes = self.resolve_agent_attributes(
-                settings.attribute_filter)
-
-        a_attrs = {}
-        for attr in agent_attributes:
-            if attr.destinations & DST_SPAN_EVENTS:
-                a_attrs[attr.name] = attr.value
+        a_attrs = self.resolve_agent_attributes(settings.attribute_filter,
+                DST_SPAN_EVENTS)
 
         return [i_attrs, {}, a_attrs]  # intrinsics, user attrs, agent attrs
 

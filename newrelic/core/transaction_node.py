@@ -66,6 +66,13 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
     def distributed_trace_received(self):
         return self.trace_id != self.guid
 
+    # NOTE: This stub is here because TransactionNode shares an API with the
+    #       segment nodes for span_events, which calls this. However, the
+    #       TransactionNode handles agent attributes differently.
+
+    def resolve_agent_attributes(self, attribute_filter, target_destination):
+        return {}
+
     def time_metrics(self, stats):
         """Return a generator yielding the timed metrics for the
         top level web transaction as well as all the child nodes.
@@ -590,7 +597,7 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
 
     def span_event(self, *args, **kwargs):
         # Agent attributes are not sent for this node type
-        self._agent_attributes_resolved = ()
+        self._agent_attributes_destinations = ()
 
         attrs = super(TransactionNode, self).span_event(*args, **kwargs)
         i_attrs = attrs[0]

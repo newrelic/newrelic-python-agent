@@ -22,11 +22,11 @@ _disable_instance_settings = {
 
 # Expected parameters
 
-_enabled_required = set(['host', 'port_path_or_id', 'db.instance'])
+_enabled_required = set(['host', 'port_path_or_id', 'database_name'])
 _enabled_forgone = set()
 
 _disabled_required = set()
-_disabled_forgone = set(['host', 'port_path_or_id', 'db.instance'])
+_disabled_forgone = set(['host', 'port_path_or_id', 'database_name'])
 
 
 # Query

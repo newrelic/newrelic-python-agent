@@ -32,14 +32,14 @@ _enabled_required = {
     'port_path_or_id': str(ES_SETTINGS['port']),
 }
 _enabled_forgone = {
-    'db.instance': 'VALUE NOT USED',
+    'database_name': 'VALUE NOT USED',
 }
 
 _disabled_required = {}
 _disabled_forgone = {
     'host': 'VALUE NOT USED',
     'port_path_or_id': 'VALUE NOT USED',
-    'db.instance': 'VALUE NOT USED',
+    'database_name': 'VALUE NOT USED',
 }
 
 _instance_only_required = {
@@ -47,7 +47,7 @@ _instance_only_required = {
     'port_path_or_id': str(ES_SETTINGS['port']),
 }
 _instance_only_forgone = {
-    'db.instance': 'VALUE NOT USED',
+    'database_name': 'VALUE NOT USED',
 }
 
 _tt_parenting = (

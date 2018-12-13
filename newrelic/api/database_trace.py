@@ -70,7 +70,7 @@ class DatabaseTrace(TimeTrace):
     @database_name.setter
     def database_name(self, value):
         self._database_name = value
-        self.agent_attributes['db.instance'] = value
+        self.agent_attributes['database_name'] = value
 
     @property
     def is_async_mode(self):

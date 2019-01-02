@@ -70,7 +70,7 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
     #       segment nodes for span_events, which calls this. However, the
     #       TransactionNode handles agent attributes differently.
 
-    def resolve_agent_attributes(self, attribute_filter, target_destination):
+    def resolve_agent_attributes(self, *args, **kwargs):
         return {}
 
     def time_metrics(self, stats):
@@ -596,9 +596,6 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
         return intrinsics
 
     def span_event(self, *args, **kwargs):
-        # Agent attributes are not sent for this node type
-        self._agent_attributes_destinations = ()
-
         attrs = super(TransactionNode, self).span_event(*args, **kwargs)
         i_attrs = attrs[0]
 

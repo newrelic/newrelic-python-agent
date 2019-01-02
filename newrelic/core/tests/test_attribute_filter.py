@@ -67,7 +67,9 @@ class TestAttributeFilter(newrelic.tests.test_cases.TestCase):
             'transaction_tracer.attributes.enabled': False,
         })
         destinations = settings.attribute_filter.apply('foo', DST_ALL)
-        assert destinations == (DST_ALL & ~DST_TRANSACTION_EVENTS & ~DST_TRANSACTION_TRACER)
+        expected_destinations = (
+                DST_ALL & ~DST_TRANSACTION_EVENTS & ~DST_TRANSACTION_TRACER)
+        assert destinations == expected_destinations
 
     def test_cached_destination(self):
         settings = finalize_application_settings({

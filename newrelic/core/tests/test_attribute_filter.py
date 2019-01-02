@@ -1,7 +1,7 @@
 import newrelic.tests.test_cases
 from newrelic.core.attribute_filter import (DST_ALL, DST_SPAN_EVENTS,
         DST_BROWSER_MONITORING, DST_TRANSACTION_SEGMENTS, DST_ERROR_COLLECTOR,
-        DST_TRANSACTION_TRACER, DST_TRANSACTION_EVENTS)
+        DST_TRANSACTION_TRACER, DST_TRANSACTION_EVENTS, DST_NONE)
 from newrelic.core.config import finalize_application_settings
 
 
@@ -68,3 +68,11 @@ class TestAttributeFilter(newrelic.tests.test_cases.TestCase):
         })
         destinations = settings.attribute_filter.apply('foo', DST_ALL)
         assert destinations == (DST_ALL & ~DST_TRANSACTION_EVENTS & ~DST_TRANSACTION_TRACER)
+
+    def test_cached_destination(self):
+        settings = finalize_application_settings({
+            'browser_monitoring.attributes.enabled': True,
+        })
+        settings.attribute_filter.cache['foo'] = DST_NONE
+        destinations = settings.attribute_filter.apply('foo', DST_ALL)
+        assert destinations == DST_NONE

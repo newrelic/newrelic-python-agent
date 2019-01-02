@@ -1169,12 +1169,6 @@
             "New Relic"
         ]
     },
-    "newrelic/core/tests/test_node_mixin.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/core/tests/test_profile_sessions.py": {
         "hash": "n/a",
         "libraries": [

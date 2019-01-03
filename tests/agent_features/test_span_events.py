@@ -11,7 +11,8 @@ from newrelic.api.memcache_trace import MemcacheTrace
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.solr_trace import SolrTrace
 
-from testing_support.fixtures import override_application_settings
+from testing_support.fixtures import (override_application_settings,
+        function_not_called)
 from testing_support.validators.validate_span_events import (
         validate_span_events)
 
@@ -319,10 +320,17 @@ def test_datastore_span_limits(kwarg_override, intrinsics_override):
 @pytest.mark.parametrize('span_events_enabled', (False, True))
 def test_collect_span_events_override(collect_span_events,
         span_events_enabled):
-    span_count = 2 if collect_span_events and span_events_enabled else 0
+
+    if collect_span_events and span_events_enabled:
+        spans_expected = True
+    else:
+        spans_expected = False
+
+    span_count = 2 if spans_expected else 0
 
     @validate_span_events(count=span_count)
     @override_application_settings({
+        'transaction_tracer.enabled': False,
         'distributed_tracing.enabled': True,
         'span_events.enabled': span_events_enabled,
         'collect_span_events': collect_span_events
@@ -334,6 +342,11 @@ def test_collect_span_events_override(collect_span_events,
 
         with FunctionTrace(transaction, 'span_generator'):
             pass
+
+    if not spans_expected:
+        _test = function_not_called(
+                'newrelic.core.node_mixin',
+                'GenericNodeMixin.resolve_agent_attributes')(_test)
 
     _test()
 
@@ -355,10 +368,12 @@ def test_span_event_agent_attributes(include_attribues):
             count=0, expected_agents=['webfrontend.queue.seconds'])
     @validate_span_events(
             count=count,
-            exact_agents={'trace1': 'foobar'}, unexpected_agents=['trace2'])
+            exact_agents={'trace1_a': 'foobar', 'trace1_b': 'barbaz'},
+            unexpected_agents=['trace2_a', 'trace2_b'])
     @validate_span_events(
             count=count,
-            exact_agents={'trace2': 'foobar'}, unexpected_agents=['trace1'])
+            exact_agents={'trace2_a': 'foobar', 'trace2_b': 'barbaz'},
+            unexpected_agents=['trace1_a', 'trace1_b'])
     @background_task(name='test_span_event_agent_attributes')
     def _test():
         transaction = current_transaction()
@@ -366,8 +381,10 @@ def test_span_event_agent_attributes(include_attribues):
         transaction._sampled = True
 
         with FunctionTrace(transaction, 'trace1') as trace_1:
-            trace_1._add_agent_attribute('trace1', 'foobar')
+            trace_1._add_agent_attribute('trace1_a', 'foobar')
+            trace_1._add_agent_attribute('trace1_b', 'barbaz')
             with FunctionTrace(transaction, 'trace2') as trace_2:
-                trace_2._add_agent_attribute('trace2', 'foobar')
+                trace_2._add_agent_attribute('trace2_a', 'foobar')
+                trace_2._add_agent_attribute('trace2_b', 'barbaz')
 
     _test()

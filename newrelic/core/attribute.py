@@ -106,6 +106,9 @@ def resolve_agent_attributes(attr_dict, attribute_filter, target_destination):
     a_attrs = {}
 
     for attr_name, attr_value in attr_dict.items():
+        if attr_value is None:
+            continue
+
         if attr_name in _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES:
             dest = attribute_filter.apply(attr_name, _DESTINATIONS_WITH_EVENTS)
         else:

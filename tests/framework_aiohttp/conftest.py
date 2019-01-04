@@ -1,12 +1,6 @@
 import asyncio
 from aiohttp.test_utils import (AioHTTPTestCase,
         TestClient as _TestClient)
-from aiohttp import ClientResponse
-
-try:
-    from aiohttp import HttpResponseParser
-except ImportError:
-    from aiohttp.http_parser import HttpResponseParser
 
 from _target_application import make_app
 import pytest
@@ -43,40 +37,6 @@ def requires_data_collector(collector_available_fixture):
     pass
 
 
-cat_headers = []
-
-
-class HeaderResponseParser(HttpResponseParser):
-
-    def parse_headers(self, lines):
-        for line in lines:
-            if line.startswith(b'X-NewRelic-App-Data:'):
-                decoded = line.decode('utf-8')
-                cat_header = tuple(decoded.split(': '))
-                cat_headers.append([cat_header])
-
-        return super(HeaderResponseParser, self).parse_headers(lines)
-
-
-class RealHeadersResponse(ClientResponse):
-    try:
-        _response_parser = HeaderResponseParser()
-    except TypeError:
-        pass
-
-    @asyncio.coroutine
-    def start(self, *args, **kwargs):
-        response = yield from super(RealHeadersResponse, self).start(*args,
-                **kwargs)
-
-        _nr_cat_header = None
-        if cat_headers:
-            _nr_cat_header = cat_headers.pop()
-        response._nr_cat_header = _nr_cat_header
-
-        return response
-
-
 class SimpleAiohttpApp(AioHTTPTestCase):
 
     def __init__(self, server_cls, middleware, *args, **kwargs):
@@ -104,11 +64,9 @@ class SimpleAiohttpApp(AioHTTPTestCase):
 
         try:
             return _TestClient(client_constructor_arg,
-                    loop=self.loop,
-                    response_class=RealHeadersResponse)
+                    loop=self.loop)
         except TypeError:
-            return _TestClient(client_constructor_arg,
-                    response_class=RealHeadersResponse)
+            return _TestClient(client_constructor_arg)
 
     get_client = _get_client
 

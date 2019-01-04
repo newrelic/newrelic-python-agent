@@ -307,6 +307,13 @@ def _nr_aiohttp_wrap_system_route_(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
+# aiohttp uses a CIMultiDict to store headers. unfortunately, older versions
+# of CIMultiDict store their keys (i.e. the header names) using .title(),
+# which changes the capitalization of the CAT headers. we require our
+# CAT headers to have a very specific capitalization for proper functionality,
+# and thus we need to override the behaivor of CIMultiDict for mutlidict
+# versions under 3.0.
+
 class HeaderProxy(ObjectProxy):
     def __init__(self, wrapped, nr_headers):
         super(HeaderProxy, self).__init__(wrapped)
@@ -324,6 +331,8 @@ class HeaderProxy(ObjectProxy):
                 self.__wrapped__.items(), nr_headers.items())
 
 
+# for versions of aiohttp < 2.3, mutlidict does not have a version requirement
+# above 3.0.
 def _nr_aiohttp_add_cat_headers_(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if transaction is None:
@@ -352,6 +361,25 @@ def _nr_aiohttp_add_cat_headers_(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
         finally:
             instance.headers = tmp
+
+
+# for versions of aiohttp >= 2.3, mutlidict >= 3.0 is required.
+def _nr_aiohttp_add_cat_headers_simple_(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    try:
+        cat_headers = ExternalTrace.generate_request_headers(transaction)
+    except:
+        return wrapped(*args, **kwargs)
+
+    for k, _ in cat_headers:
+        if k in instance.headers:
+            return wrapped(*args, **kwargs)
+
+    instance.headers.update(dict(cat_headers))
+    return wrapped(*args, **kwargs)
 
 
 def _bind_request(method, url, *args, **kwargs):
@@ -397,13 +425,21 @@ def instrument_aiohttp_client_reqrep(module):
     version_info = aiohttp_version_info()
 
     if version_info >= (2, 0):
-        wrap_function_wrapper(module, 'ClientRequest.send',
-                _nr_aiohttp_add_cat_headers_)
+        if version_info >= (2, 3):
+            cat_wrapper = _nr_aiohttp_add_cat_headers_simple_
+        else:
+            cat_wrapper = _nr_aiohttp_add_cat_headers_
+
+        wrap_function_wrapper(module, 'ClientRequest.send', cat_wrapper)
 
 
 def instrument_aiohttp_protocol(module):
-    wrap_function_wrapper(module, 'Request.send_headers',
-            _nr_aiohttp_add_cat_headers_)
+    if aiohttp_version_info() >= (2, 3):
+        cat_wrapper = _nr_aiohttp_add_cat_headers_simple_
+    else:
+        cat_wrapper = _nr_aiohttp_add_cat_headers_
+
+    wrap_function_wrapper(module, 'Request.send_headers', cat_wrapper)
 
 
 def instrument_aiohttp_web_urldispatcher(module):

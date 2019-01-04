@@ -1157,6 +1157,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/tests/test_external_node.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/tests/test_internal_metrics.py": {
         "hash": "n/a",
         "libraries": [

@@ -40,8 +40,7 @@ def _nr_process_response(response, transaction):
     nr_headers = transaction.process_response(status_str,
             headers.items())
 
-    for k, v in nr_headers:
-        response.headers.add(k, v)
+    response._headers = HeaderProxy(response.headers, nr_headers)
 
 
 class NRTransactionCoroutineWrapper(ObjectProxy):

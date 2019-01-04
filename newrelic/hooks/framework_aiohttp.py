@@ -14,6 +14,11 @@ from newrelic.common.object_wrapper import (wrap_function_wrapper,
 from newrelic.core.config import ignore_status_code
 
 
+def aiohttp_version_info():
+    import aiohttp
+    return tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
+
+
 def should_ignore(exc, value, tb):
     from aiohttp import web
 
@@ -389,8 +394,7 @@ def instrument_aiohttp_client(module):
 
 
 def instrument_aiohttp_client_reqrep(module):
-    import aiohttp
-    version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
+    version_info = aiohttp_version_info()
 
     if version_info >= (2, 0):
         wrap_function_wrapper(module, 'ClientRequest.send',
@@ -403,9 +407,14 @@ def instrument_aiohttp_protocol(module):
 
 
 def instrument_aiohttp_web_urldispatcher(module):
+    if aiohttp_version_info() < (3, 5):
+        system_route_handler = 'SystemRoute._handler'
+    else:
+        system_route_handler = 'SystemRoute._handle'
+
     wrap_function_wrapper(module, 'ResourceRoute.__init__',
             _nr_aiohttp_wrap_view_)
-    wrap_function_wrapper(module, 'SystemRoute._handler',
+    wrap_function_wrapper(module, system_route_handler,
             _nr_aiohttp_wrap_system_route_)
 
 

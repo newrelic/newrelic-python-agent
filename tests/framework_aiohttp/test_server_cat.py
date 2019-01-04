@@ -44,21 +44,19 @@ def test_cat_headers(method, uri, metric_name, inbound_payload,
         resp = yield from aiohttp_app.client.request(method, uri,
                 headers=headers)
 
-        try:
-            resp_headers = dict(resp._nr_cat_header)
-        except TypeError:
-            resp_headers = dict(resp.headers)
+        raw_headers = {k.decode('utf-8'): v.decode('utf-8')
+                for k, v in resp.raw_headers}
 
         if expected_intrinsics:
             # test valid CAT response header
-            assert 'X-NewRelic-App-Data' in resp_headers
+            assert 'X-NewRelic-App-Data' in raw_headers
 
             app_data = json.loads(deobfuscate(
-                    resp_headers['X-NewRelic-App-Data'], ENCODING_KEY))
+                    raw_headers['X-NewRelic-App-Data'], ENCODING_KEY))
             assert app_data[0] == cat_id
             assert app_data[1] == ('WebTransaction/Function/%s' % metric_name)
         else:
-            assert 'X-NewRelic-App-Data' not in resp_headers
+            assert 'X-NewRelic-App-Data' not in resp.headers
 
     _custom_settings = {
             'cross_process_id': '1#1',
@@ -138,16 +136,11 @@ def test_distributed_tracing_headers(uri, metric_name, aiohttp_app):
         resp = yield from aiohttp_app.client.request('GET', uri,
                 headers=headers)
 
-        try:
-            resp_headers = dict(resp._nr_cat_header)
-        except TypeError:
-            resp_headers = dict(resp.headers)
-
         # better cat does not send a response in the headers
-        assert 'newrelic' not in resp_headers
+        assert 'newrelic' not in resp.headers
 
         # old-cat headers should not be in the response
-        assert 'X-NewRelic-App-Data' not in resp_headers
+        assert 'X-NewRelic-App-Data' not in resp.headers
 
     # NOTE: the logic-flow of this test can be a bit confusing.
     #       the override settings and attribute validation occur

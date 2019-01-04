@@ -345,8 +345,8 @@ def test_collect_span_events_override(collect_span_events,
 
     if not spans_expected:
         _test = function_not_called(
-                'newrelic.core.node_mixin',
-                'GenericNodeMixin.resolve_agent_attributes')(_test)
+                'newrelic.core.attribute',
+                'resolve_agent_attributes')(_test)
 
     _test()
 

@@ -5,6 +5,7 @@ except ImportError:
 
 from collections import namedtuple
 
+import newrelic.core.attribute as attribute
 import newrelic.core.trace_node
 
 from newrelic.core.attribute_filter import DST_TRANSACTION_SEGMENTS
@@ -138,7 +139,12 @@ class ExternalNode(_ExternalNode, ExternalNodeMixin):
         root.trace_node_count += 1
 
         # Agent attributes
-        params = self.resolve_agent_attributes(root.settings.attribute_filter,
+        _, url_attr = attribute.process_user_attribute(
+                'http.url', self.url_with_path)
+        self.agent_attributes['http.url'] = url_attr
+        params = attribute.resolve_agent_attributes(
+                self.agent_attributes,
+                root.settings.attribute_filter,
                 DST_TRANSACTION_SEGMENTS)
 
         # User attributes override agent attributes

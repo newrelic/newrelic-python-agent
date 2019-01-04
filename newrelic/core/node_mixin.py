@@ -1,13 +1,8 @@
-from newrelic.core.attribute import (process_user_attribute,
-        resolve_agent_attributes)
+import newrelic.core.attribute as attribute
 from newrelic.core.attribute_filter import DST_SPAN_EVENTS
 
 
 class GenericNodeMixin(object):
-    def resolve_agent_attributes(self, attribute_filter, destination):
-        return resolve_agent_attributes(
-                self.agent_attributes, attribute_filter, destination)
-
     def span_event(
             self, settings, base_attrs=None, parent_guid=None):
         i_attrs = base_attrs and base_attrs.copy() or {}
@@ -21,8 +16,10 @@ class GenericNodeMixin(object):
         if parent_guid:
             i_attrs['parentId'] = parent_guid
 
-        a_attrs = self.resolve_agent_attributes(
-                settings.attribute_filter, DST_SPAN_EVENTS)
+        a_attrs = attribute.resolve_agent_attributes(
+                self.agent_attributes,
+                settings.attribute_filter,
+                DST_SPAN_EVENTS)
 
         return [i_attrs, {}, a_attrs]  # intrinsics, user attrs, agent attrs
 
@@ -67,13 +64,13 @@ class DatastoreNodeMixin(GenericNodeMixin):
         i_attrs['span.kind'] = 'client'
 
         if self.database_name:
-            _, i_attrs['db.instance'] = process_user_attribute(
+            _, i_attrs['db.instance'] = attribute.process_user_attribute(
                     'db.instance', self.database_name)
         else:
             i_attrs['db.instance'] = 'Unknown'
 
         if self.instance_hostname:
-            _, i_attrs['peer.hostname'] = process_user_attribute(
+            _, i_attrs['peer.hostname'] = attribute.process_user_attribute(
                     'peer.hostname', self.instance_hostname)
         else:
             i_attrs['peer.hostname'] = 'Unknown'
@@ -82,7 +79,7 @@ class DatastoreNodeMixin(GenericNodeMixin):
                 self.instance_hostname or 'Unknown',
                 self.port_path_or_id or 'Unknown')
 
-        _, i_attrs['peer.address'] = process_user_attribute(
+        _, i_attrs['peer.address'] = attribute.process_user_attribute(
                 'peer.address', peer_address)
 
         return attrs
@@ -95,23 +92,21 @@ class ExternalNodeMixin(GenericNodeMixin):
         return 'External/%s/%s/%s' % (
                 self.netloc, self.library, self.method or '')
 
-    def resolve_agent_attributes(self, *args, **kwargs):
-        _, self.agent_attributes['http.url'] = process_user_attribute(
-                'http.url', self.url_with_path)
-        return super(ExternalNodeMixin, self).resolve_agent_attributes(
-                *args, **kwargs)
-
     def span_event(self, *args, **kwargs):
+        _, url_attr = attribute.process_user_attribute(
+                'http.url', self.url_with_path)
+        self.agent_attributes['http.url'] = url_attr
+
         attrs = super(ExternalNodeMixin, self).span_event(*args, **kwargs)
         i_attrs = attrs[0]
 
         i_attrs['category'] = 'http'
         i_attrs['span.kind'] = 'client'
-        _, i_attrs['component'] = process_user_attribute(
+        _, i_attrs['component'] = attribute.process_user_attribute(
                 'component', self.library)
 
         if self.method:
-            _, i_attrs['http.method'] = process_user_attribute(
+            _, i_attrs['http.method'] = attribute.process_user_attribute(
                 'http.method', self.method)
 
         return attrs

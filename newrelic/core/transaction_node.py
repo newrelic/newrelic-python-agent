@@ -14,7 +14,6 @@ from newrelic.core.string_table import StringTable
 from newrelic.core.attribute import create_user_attributes
 from newrelic.core.attribute_filter import (DST_ERROR_COLLECTOR,
         DST_TRANSACTION_TRACER, DST_TRANSACTION_EVENTS)
-from newrelic.core.node_mixin import GenericNodeMixin
 
 
 _TransactionNode = namedtuple('_TransactionNode',
@@ -34,7 +33,7 @@ _TransactionNode = namedtuple('_TransactionNode',
         'root_span_guid', 'trace_id'])
 
 
-class TransactionNode(_TransactionNode, GenericNodeMixin):
+class TransactionNode(_TransactionNode):
 
     """Class holding data corresponding to the root of the transaction. All
     the nodes of interest recorded for the transaction are held as a tree
@@ -65,13 +64,6 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
     @property
     def distributed_trace_received(self):
         return self.trace_id != self.guid
-
-    # NOTE: This stub is here because TransactionNode shares an API with the
-    #       segment nodes for span_events, which calls this. However, the
-    #       TransactionNode handles agent attributes differently.
-
-    def resolve_agent_attributes(self, *args, **kwargs):
-        return {}
 
     def time_metrics(self, stats):
         """Return a generator yielding the timed metrics for the
@@ -595,16 +587,20 @@ class TransactionNode(_TransactionNode, GenericNodeMixin):
 
         return intrinsics
 
-    def span_event(self, *args, **kwargs):
-        attrs = super(TransactionNode, self).span_event(*args, **kwargs)
-        i_attrs = attrs[0]
-
-        # GUID needs to come from Sentinel for the root span event since that
-        # is what's forwarded in the distributed trace payload.
+    def span_event(self, settings, base_attrs=None, parent_guid=None):
+        i_attrs = base_attrs and base_attrs.copy() or {}
+        i_attrs['type'] = 'Span'
+        i_attrs['name'] = self.name
         i_attrs['guid'] = self.root_span_guid
+        i_attrs['timestamp'] = int(self.start_time * 1000)
+        i_attrs['duration'] = self.duration
+        i_attrs['category'] = 'generic'
         i_attrs['nr.entryPoint'] = True
 
-        return attrs
+        if parent_guid:
+            i_attrs['parentId'] = parent_guid
+
+        return [i_attrs, {}, {}]
 
     def span_events(self, settings):
         base_attrs = {

@@ -83,30 +83,3 @@ class DatastoreNodeMixin(GenericNodeMixin):
                 'peer.address', peer_address)
 
         return attrs
-
-
-class ExternalNodeMixin(GenericNodeMixin):
-
-    @property
-    def name(self):
-        return 'External/%s/%s/%s' % (
-                self.netloc, self.library, self.method or '')
-
-    def span_event(self, *args, **kwargs):
-        _, url_attr = attribute.process_user_attribute(
-                'http.url', self.url_with_path)
-        self.agent_attributes['http.url'] = url_attr
-
-        attrs = super(ExternalNodeMixin, self).span_event(*args, **kwargs)
-        i_attrs = attrs[0]
-
-        i_attrs['category'] = 'http'
-        i_attrs['span.kind'] = 'client'
-        _, i_attrs['component'] = attribute.process_user_attribute(
-                'component', self.library)
-
-        if self.method:
-            _, i_attrs['http.method'] = attribute.process_user_attribute(
-                'http.method', self.method)
-
-        return attrs

@@ -1,5 +1,6 @@
 from collections import namedtuple
 
+import newrelic.core.attribute as attribute
 import newrelic.core.trace_node
 
 from newrelic.common import system_info
@@ -106,7 +107,9 @@ class DatastoreNode(_DatastoreNode, DatastoreNodeMixin):
         root.trace_node_count += 1
 
         # Agent attributes
-        params = self.resolve_agent_attributes(root.settings.attribute_filter,
+        params = attribute.resolve_agent_attributes(
+                self.agent_attributes,
+                root.settings.attribute_filter,
                 DST_TRANSACTION_SEGMENTS)
 
         # Intrinsic attributes override everything

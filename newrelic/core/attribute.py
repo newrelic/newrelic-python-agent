@@ -102,18 +102,22 @@ def create_agent_attributes(attr_dict, attribute_filter):
     return attributes
 
 
-def get_agent_attribute_destinations(attr_dict, attribute_filter):
-    dests = {}
+def resolve_agent_attributes(attr_dict, attribute_filter, target_destination):
+    a_attrs = {}
 
-    for k in attr_dict:
-        if k in _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES:
-            dest = attribute_filter.apply(k, _DESTINATIONS_WITH_EVENTS)
+    for attr_name, attr_value in attr_dict.items():
+        if attr_value is None:
+            continue
+
+        if attr_name in _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES:
+            dest = attribute_filter.apply(attr_name, _DESTINATIONS_WITH_EVENTS)
         else:
-            dest = attribute_filter.apply(k, _DESTINATIONS)
+            dest = attribute_filter.apply(attr_name, _DESTINATIONS)
 
-        dests[k] = dest
+        if dest & target_destination:
+            a_attrs[attr_name] = attr_value
 
-    return dests
+    return a_attrs
 
 
 def create_user_attributes(attr_dict, attribute_filter):

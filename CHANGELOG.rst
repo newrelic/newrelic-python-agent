@@ -8,6 +8,14 @@ unreleased
   counts may have been artificially low. aiohttp system route traffic will now
   be reported.
 
+- aiohttp cross application tracing linking to non-Python applications may have been
+  omitted if using multidict<3.0
+
+  For aiohttp users using multidict versions less than 3.0, cross application
+  tracing HTTP headers may have been generated in a way that was incompatible
+  with non-Python applications. Headers are now generated in a format
+  compatible with all New Relic agents.
+
 4.8.0 (2018-12-03)
 ------------------
 

@@ -388,6 +388,7 @@ _settings.host = os.environ.get('NEW_RELIC_HOST',
 _settings.port = int(os.environ.get('NEW_RELIC_PORT', '0'))
 
 _settings.agent_run_id = None
+_settings.request_headers_map = {}
 
 _settings.proxy_scheme = os.environ.get('NEW_RELIC_PROXY_SCHEME', None)
 _settings.proxy_host = os.environ.get('NEW_RELIC_PROXY_HOST', None)
@@ -539,7 +540,7 @@ _settings.agent_limits.max_sql_connections = 4
 _settings.agent_limits.sql_explain_plans = 30
 _settings.agent_limits.sql_explain_plans_per_harvest = 60
 _settings.agent_limits.slow_sql_data = 10
-_settings.agent_limits.merge_stats_maximum = 5
+_settings.agent_limits.merge_stats_maximum = None
 _settings.agent_limits.errors_per_transaction = 5
 _settings.agent_limits.errors_per_harvest = 20
 _settings.agent_limits.slow_transaction_dry_harvests = 5

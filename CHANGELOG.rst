@@ -1,6 +1,13 @@
 unreleased
 ----------
 
+- Transaction counts were not reported for aiohttp's built-in error pages
+
+  When a built-in error route was reached in aiohttp (such as a 404 due to a
+  missing route), transactions were not recorded. As a result, the transaction
+  counts may have been artificially low. aiohttp system route traffic will now
+  be reported.
+
 4.8.0 (2018-12-03)
 ------------------
 

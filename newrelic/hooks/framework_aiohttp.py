@@ -290,8 +290,7 @@ def _nr_aiohttp_response_prepare_(wrapped, instance, args, kwargs):
 
     nr_headers = getattr(request, '_nr_headers', None)
     if nr_headers:
-        headers = dict(instance.headers)
-        nr_headers.update(headers)
+        nr_headers.update(instance.headers)
         instance._headers = nr_headers
 
     return wrapped(*args, **kwargs)
@@ -388,7 +387,7 @@ def _nr_aiohttp_add_cat_headers_simple_(wrapped, instance, args, kwargs):
         if k in instance.headers:
             return wrapped(*args, **kwargs)
 
-    instance.headers.update(dict(cat_headers))
+    instance.headers.update(cat_headers)
     return wrapped(*args, **kwargs)
 
 

@@ -16,6 +16,12 @@ unreleased
   with non-Python applications. Headers are now generated in a format
   compatible with all New Relic agents.
 
+- aiohttp 3.5.x versions generated agent instrumentation errors
+
+  The agent previously failed to instrument aiohttp applications running
+  versions 3.5.0 and greater. The agent now supports aiohttp versions up to
+  3.5.1.
+
 4.8.0 (2018-12-03)
 ------------------
 

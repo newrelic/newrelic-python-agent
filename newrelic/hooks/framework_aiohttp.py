@@ -19,10 +19,15 @@ def aiohttp_version_info():
     return tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
 
 
-def headers_preserves_casing(module):
-    req = module.ClientRequest('', module.URL('http://www.example.com'))
-    req.headers.update({'X-NewRelic-ID': 'value'})
-    return 'X-NewRelic-ID' in dict(req.headers.items())
+def headers_preserve_casing():
+    try:
+        from multidict import CIMultiDict
+    except:
+        return True
+
+    d = CIMultiDict()
+    d.update({'X-NewRelic-ID': 'value'})
+    return 'X-NewRelic-ID' in dict(d.items())
 
 
 def should_ignore(exc, value, tb):
@@ -33,7 +38,7 @@ def should_ignore(exc, value, tb):
         return ignore_status_code(status_code)
 
 
-def _nr_process_response(response, transaction):
+def _nr_process_response_proxy(response, transaction):
     headers = dict(response.headers)
     status_str = str(response.status)
 
@@ -41,6 +46,16 @@ def _nr_process_response(response, transaction):
             headers.items())
 
     response._headers = HeaderProxy(response.headers, nr_headers)
+
+
+def _nr_process_response(response, transaction):
+    headers = dict(response.headers)
+    status_str = str(response.status)
+
+    nr_headers = transaction.process_response(status_str,
+            headers.items())
+
+    response._headers.update(nr_headers)
 
 
 class NRTransactionCoroutineWrapper(ObjectProxy):
@@ -420,7 +435,7 @@ def instrument_aiohttp_client_reqrep(module):
     version_info = aiohttp_version_info()
 
     if version_info >= (2, 0):
-        if headers_preserves_casing(module):
+        if headers_preserve_casing():
             cat_wrapper = _nr_aiohttp_add_cat_headers_simple_
         else:
             cat_wrapper = _nr_aiohttp_add_cat_headers_
@@ -446,6 +461,10 @@ def instrument_aiohttp_web_urldispatcher(module):
 
 
 def instrument_aiohttp_web(module):
+    global _nr_process_response
+    if not headers_preserve_casing():
+        _nr_process_response = _nr_process_response_proxy
+
     wrap_function_wrapper(module, 'Application._handle',
             _nr_aiohttp_transaction_wrapper_)
     wrap_function_wrapper(module, 'Application.__init__',

@@ -35,7 +35,7 @@ _database_only_settings = {
 _enabled_required = {
     'host': instance_hostname(DB_SETTINGS['host']),
     'port_path_or_id': str(DB_SETTINGS['port']),
-    'database_name': str(DATABASE_NUMBER),
+    'db.instance': str(DATABASE_NUMBER),
 }
 _enabled_forgone = {}
 
@@ -43,7 +43,7 @@ _disabled_required = {}
 _disabled_forgone = {
     'host': 'VALUE NOT USED',
     'port_path_or_id': 'VALUE NOT USED',
-    'database_name': 'VALUE NOT USED',
+    'db.instance': 'VALUE NOT USED',
 }
 
 _instance_only_required = {
@@ -51,11 +51,11 @@ _instance_only_required = {
     'port_path_or_id': str(DB_SETTINGS['port']),
 }
 _instance_only_forgone = {
-    'database_name': str(DATABASE_NUMBER),
+    'db.instance': str(DATABASE_NUMBER),
 }
 
 _database_only_required = {
-    'database_name': str(DATABASE_NUMBER),
+    'db.instance': str(DATABASE_NUMBER),
 }
 _database_only_forgone = {
     'host': 'VALUE NOT USED',

@@ -50,9 +50,9 @@ class DatastoreTrace(TimeTrace):
         self.instance_reporting_enabled = False
         self.database_name_enabled = False
 
-        self._host = None
-        self._port_path_or_id = None
-        self._database_name = None
+        self.host = None
+        self.port_path_or_id = None
+        self.database_name = None
 
         if transaction:
             self.product = transaction._intern_string(product)
@@ -79,33 +79,15 @@ class DatastoreTrace(TimeTrace):
                 product=self.product, target=self.target,
                 operation=self.operation))
 
-    @property
-    def host(self):
-        return self._host
+    def finalize_data(self, transaction, exc=None, value=None, tb=None):
+        if not self.instance_reporting_enabled:
+            self.host = None
+            self.port_path_or_id = None
 
-    @host.setter
-    def host(self, value):
-        if self.instance_reporting_enabled:
-            self._host = value
-
-    @property
-    def port_path_or_id(self):
-        return self._port_path_or_id
-
-    @port_path_or_id.setter
-    def port_path_or_id(self, value):
-        if self.instance_reporting_enabled:
-            self._port_path_or_id = value
-
-    @property
-    def database_name(self):
-        return self._database_name
-
-    @database_name.setter
-    def database_name(self, value):
-        if self.database_name_enabled:
-            self._database_name = value
-            self.agent_attributes['database_name'] = value
+        if not self.database_name_enabled:
+            self.database_name = None
+        else:
+            self.agent_attributes['db.instance'] = self.database_name
 
     def terminal_node(self):
         return True

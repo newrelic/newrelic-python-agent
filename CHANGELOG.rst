@@ -36,6 +36,11 @@ unreleased
   versions 3.5.0 and greater. The agent now supports aiohttp versions up to
   3.5.1.
 
+- Add public add_custom_parameters API
+
+  The method add_custom_parameters on Transaction is now exposed through
+  newrelic.agent.add_custom_parameters
+
 4.8.0 (2018-12-03)
 ------------------
 

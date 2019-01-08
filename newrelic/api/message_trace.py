@@ -63,7 +63,8 @@ class MessageTrace(TimeTrace, CatHeaderMixin):
                 destination_type=self.destination_type,
                 params=self.params,
                 is_async=self.is_async,
-                guid=self.guid)
+                guid=self.guid,
+                agent_attributes=self.agent_attributes)
 
 
 def MessageTraceWrapper(wrapped, library, operation, destination_type,

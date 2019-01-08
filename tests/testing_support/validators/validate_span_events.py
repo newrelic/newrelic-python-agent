@@ -5,8 +5,10 @@ from newrelic.common.object_wrapper import (transient_function_wrapper,
         function_wrapper)
 
 
-def validate_span_events(exact_intrinsics={}, expected_intrinsics=[],
-                         unexpected_intrinsics=[], count=1):
+def validate_span_events(count=1,
+        exact_intrinsics={}, expected_intrinsics=[], unexpected_intrinsics=[],
+        exact_agents={}, expected_agents=[],
+        unexpected_agents=[]):
 
     # Used for validating a single span event.
     #
@@ -45,29 +47,22 @@ def validate_span_events(exact_intrinsics={}, expected_intrinsics=[],
         mismatches = []
         matching_span_events = 0
         for captured_event in captured_events:
-            intrinsics, agent_attrs, user_attrs = captured_event
+            intrinsics, user_attrs, agent_attrs = captured_event
 
             _check_span_intrinsics(intrinsics)
 
             # for now we do not add any of these attr types to span events
-            assert not agent_attrs
             assert not user_attrs
 
-            for expected_intrinsic in expected_intrinsics:
-                if expected_intrinsic not in intrinsics:
-                    break
-            else:
-                for unexpected_intrinsic in unexpected_intrinsics:
-                    if unexpected_intrinsic in intrinsics:
-                        break
-                else:
-                    for key, value in exact_intrinsics.items():
-                        if intrinsics.get(key) != value:
-                            mismatches.append('key: %s, value:<%s><%s>' % (
-                                key, value, intrinsics.get(key)))
-                            break
-                    else:
-                        matching_span_events += 1
+            intrinsics_ok = _check_span_attributes(intrinsics,
+                    exact_intrinsics, expected_intrinsics,
+                    unexpected_intrinsics, mismatches)
+            agent_attr_ok = _check_span_attributes(agent_attrs,
+                    exact_agents, expected_agents,
+                    unexpected_agents, mismatches)
+
+            if intrinsics_ok and agent_attr_ok:
+                matching_span_events += 1
 
         def _span_details():
             details = [
@@ -84,6 +79,26 @@ def validate_span_events(exact_intrinsics={}, expected_intrinsics=[],
         return val
 
     return _validate_wrapper
+
+
+def _check_span_attributes(attrs, exact, expected, unexpected, mismatches):
+    for expected_attribute in expected:
+        if expected_attribute not in attrs:
+            break
+    else:
+        for unexpected_attribute in unexpected:
+            if unexpected_attribute in attrs:
+                break
+        else:
+            for key, value in exact.items():
+                if attrs.get(key) != value:
+                    mismatches.append('key: %s, value:<%s><%s>' % (
+                        key, value, attrs.get(key)))
+                    break
+            else:
+                return True
+
+    return False
 
 
 def _check_span_intrinsics(intrinsics):

@@ -28,6 +28,7 @@ _enabled_forgone = set()
 _disabled_required = set()
 _disabled_forgone = set(['host', 'port_path_or_id', 'database_name'])
 
+
 # Query
 
 def _exercise_db():
@@ -37,6 +38,7 @@ def _exercise_db():
     with connection as cursor:
         cursor.execute('SELECT version();')
     connection.commit()
+
 
 # Tests
 

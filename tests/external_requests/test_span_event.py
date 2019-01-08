@@ -36,8 +36,10 @@ def test_span_events(path):
 
         'category': 'http',
         'span.kind': 'client',
-        'http.url': expected_uri,
         'component': 'requests',
+    }
+    exact_agents = {
+        'http.url': expected_uri,
     }
     expected_intrinsics = ('timestamp', 'duration', 'transactionId')
 
@@ -45,6 +47,7 @@ def test_span_events(path):
     @validate_span_events(
             count=1,
             exact_intrinsics=exact_intrinsics,
+            exact_agents=exact_agents,
             expected_intrinsics=expected_intrinsics)
     @background_task(name='test_span_events')
     def _test():

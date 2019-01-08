@@ -38,6 +38,7 @@ _disabled_forgone = {
     'database_name': 'VALUE NOT USED',
 }
 
+
 # Query
 
 def _exercise_db():
@@ -47,6 +48,7 @@ def _exercise_db():
     with connection as cursor:
         cursor.execute('SELECT version();')
     connection.commit()
+
 
 # Tests
 

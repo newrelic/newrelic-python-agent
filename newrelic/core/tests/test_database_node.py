@@ -15,6 +15,10 @@ def setup_module(module):
     system_info.gethostname = gethostname
 
 
+class Settings(object):
+    attribute_filter = None
+
+
 def teardown_module(module):
     system_info.gethostname = _backup_methods['gethostname']
 
@@ -38,6 +42,7 @@ _db_node = newrelic.core.database_node.DatabaseNode(
         database_name='bar',
         is_async=True,
         guid=None,
+        agent_attributes={},
 )
 
 
@@ -62,7 +67,7 @@ def test_instance_hostname():
 
 
 def test_span_event():
-    span_event = _db_node.span_event()
+    span_event = _db_node.span_event(Settings())
     i_attrs = span_event[0]
 
     # Verify that all hostnames have been converted to instance_hostname

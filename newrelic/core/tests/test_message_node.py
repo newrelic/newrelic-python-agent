@@ -1,4 +1,11 @@
 import newrelic.core.message_node
+from newrelic.core.config import global_settings_dump
+from newrelic.core.attribute_filter import AttributeFilter
+
+
+class DummySettings(object):
+    attribute_filter = AttributeFilter(global_settings_dump())
+
 
 _ms_node = newrelic.core.message_node.MessageNode(
         library='RabbitMQ',
@@ -13,6 +20,7 @@ _ms_node = newrelic.core.message_node.MessageNode(
         params={'hello': True},
         is_async=False,
         guid=None,
+        agent_attributes={},
 )
 
 
@@ -47,6 +55,7 @@ def test_trace_node_uses_params():
         string_table = DummyCache
         start_time = 0.0
         end_time = 0.0
+        settings = DummySettings
 
     trace_node = _ms_node.trace_node(None, DummyRoot, None)
     assert trace_node.params['hello'] is True, trace_node.params

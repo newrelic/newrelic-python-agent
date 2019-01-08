@@ -30,7 +30,8 @@ class SolrTrace(newrelic.api.time_trace.TimeTrace):
                 duration=self.duration,
                 exclusive=self.exclusive,
                 guid=self.guid,
-                is_async=self.is_async)
+                is_async=self.is_async,
+                agent_attributes=self.agent_attributes)
 
 
 class SolrTraceWrapper(object):

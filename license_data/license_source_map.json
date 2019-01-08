@@ -1103,6 +1103,18 @@
             "New Relic"
         ]
     },
+    "newrelic/core/tests/test_attribute.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/core/tests/test_attribute_filter.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/tests/test_config.py": {
         "hash": "n/a",
         "libraries": [
@@ -1140,6 +1152,12 @@
         ]
     },
     "newrelic/core/tests/test_explain_plans.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/core/tests/test_external_node.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

@@ -5,17 +5,20 @@ except ImportError:
 
 from collections import namedtuple
 
+import newrelic.core.attribute as attribute
 import newrelic.core.trace_node
 
-from newrelic.core.node_mixin import ExternalNodeMixin
+from newrelic.core.attribute_filter import DST_TRANSACTION_SEGMENTS
+from newrelic.core.node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
 
 _ExternalNode = namedtuple('_ExternalNode',
         ['library', 'url', 'method', 'children', 'start_time', 'end_time',
-        'duration', 'exclusive', 'params', 'is_async', 'guid'])
+        'duration', 'exclusive', 'params', 'is_async', 'guid',
+        'agent_attributes'])
 
 
-class ExternalNode(_ExternalNode, ExternalNodeMixin):
+class ExternalNode(_ExternalNode, GenericNodeMixin):
 
     @property
     def details(self):
@@ -30,11 +33,27 @@ class ExternalNode(_ExternalNode, ExternalNodeMixin):
         return self._details
 
     @property
+    def name(self):
+        return 'External/%s/%s/%s' % (
+                self.netloc, self.library, self.method or '')
+
+    @property
     def url_with_path(self):
         details = self.details
         url = urlparse.urlunsplit((details.scheme, details.netloc,
                 details.path, '', ''))
         return url
+
+    @property
+    def http_url(self):
+        if hasattr(self, '_http_url'):
+            return self._http_url
+
+        _, url_attr = attribute.process_user_attribute(
+                'http.url', self.url_with_path)
+
+        self._http_url = url_attr
+        return url_attr
 
     @property
     def netloc(self):
@@ -135,11 +154,35 @@ class ExternalNode(_ExternalNode, ExternalNodeMixin):
 
         root.trace_node_count += 1
 
-        params = self.params
+        # Agent attributes
+        self.agent_attributes['http.url'] = self.http_url
+        params = attribute.resolve_agent_attributes(
+                self.agent_attributes,
+                root.settings.attribute_filter,
+                DST_TRANSACTION_SEGMENTS)
 
-        params['url'] = self.url_with_path
+        # User attributes override agent attributes
+        params.update(self.params)
+
+        # Intrinsic attributes override everything
         params['exclusive_duration_millis'] = 1000.0 * self.exclusive
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,
                 label=None)
+
+    def span_event(self, *args, **kwargs):
+        self.agent_attributes['http.url'] = self.http_url
+        attrs = super(ExternalNode, self).span_event(*args, **kwargs)
+        i_attrs = attrs[0]
+
+        i_attrs['category'] = 'http'
+        i_attrs['span.kind'] = 'client'
+        _, i_attrs['component'] = attribute.process_user_attribute(
+                'component', self.library)
+
+        if self.method:
+            _, i_attrs['http.method'] = attribute.process_user_attribute(
+                'http.method', self.method)
+
+        return attrs

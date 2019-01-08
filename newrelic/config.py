@@ -427,6 +427,18 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'span_events.max_samples_stored',
                      'getint', None)
+    _process_setting(section, 'span_events.attributes.enabled',
+                     'getboolean', None)
+    _process_setting(section, 'span_events.attributes.exclude',
+                     'get', _map_inc_excl_attributes)
+    _process_setting(section, 'span_events.attributes.include',
+                     'get', _map_inc_excl_attributes)
+    _process_setting(section, 'transaction_segments.attributes.enabled',
+                     'getboolean', None)
+    _process_setting(section, 'transaction_segments.attributes.exclude',
+                     'get', _map_inc_excl_attributes)
+    _process_setting(section, 'transaction_segments.attributes.include',
+                     'get', _map_inc_excl_attributes)
     _process_setting(section, 'local_daemon.socket_path',
                      'get', None)
     _process_setting(section, 'local_daemon.synchronous_startup',

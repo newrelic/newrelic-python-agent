@@ -1,6 +1,20 @@
 unreleased
 ----------
 
+- Add ability to exclude attributes from span events and transaction segments
+
+  This release adds support to exclude attributes from span events (via the
+  span_events.include/exclude options) and from transaction segments (via the
+  transaction_segments.include/exclude option).
+
+  As with other attribute destinations, these new options will inherit values
+  from the top-level attributes.include/exclude settings. See the documentation
+  for more information.
+
+  This feature also includes filtering of url parameters from span events and
+  transaction segments.
+
+
 - Transaction counts were not reported for aiohttp's built-in error pages
 
   When a built-in error route was reached in aiohttp (such as a 404 due to a

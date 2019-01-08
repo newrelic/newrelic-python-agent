@@ -62,6 +62,7 @@ _database_only_forgone = {
     'port_path_or_id': 'VALUE NOT USED',
 }
 
+
 # Query
 
 def _exercise_db():
@@ -72,6 +73,7 @@ def _exercise_db():
     client.get('key')
 
     client.execute_command('CLIENT', 'LIST', parse='LIST')
+
 
 # Tests
 
@@ -92,6 +94,7 @@ def test_trace_node_datastore_params_enable_instance():
 def test_trace_node_datastore_params_disable_instance():
     _exercise_db()
 
+
 @override_application_settings(_instance_only_settings)
 @validate_tt_collector_json(
         datastore_params=_instance_only_required,
@@ -99,6 +102,7 @@ def test_trace_node_datastore_params_disable_instance():
 @background_task()
 def test_trace_node_datastore_params_instance_only():
     _exercise_db()
+
 
 @override_application_settings(_database_only_settings)
 @validate_tt_collector_json(

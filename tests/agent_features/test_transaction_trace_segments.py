@@ -44,6 +44,24 @@ def test_external_user_params_override_url():
         t.params['http.url'] = 'http://example.org'
 
 
+@validate_tt_segment_params(exact_params={'db.instance': 'a' * 255})
+@background_task(name='test_datastore_db_instance_truncation')
+def test_datastore_db_instance_truncation():
+    transaction = current_transaction()
+    with DatastoreTrace(transaction, 'db_product', 'db_target', 'db_operation',
+            database_name='a' * 256):
+        pass
+
+
+@validate_tt_segment_params(exact_params={'db.instance': 'a' * 255})
+@background_task(name='test_database_db_instance_truncation')
+def test_database_db_instance_truncation():
+    transaction = current_transaction()
+    with DatabaseTrace(transaction, 'select * from foo',
+            database_name='a' * 256):
+        pass
+
+
 @pytest.mark.parametrize('trace_type,args', (
     (DatabaseTrace, ('select * from foo', )),
     (DatastoreTrace, ('db_product', 'db_target', 'db_operation')),

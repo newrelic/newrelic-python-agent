@@ -194,6 +194,7 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
         root.trace_node_count += 1
 
         # Agent attributes
+        self.agent_attributes['db.instance'] = self.db_instance
         params = attribute.resolve_agent_attributes(
                 self.agent_attributes,
                 root.settings.attribute_filter,

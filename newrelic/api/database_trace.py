@@ -174,8 +174,6 @@ class DatabaseTrace(TimeTrace):
         self.host = host
         self.port_path_or_id = port_path_or_id
         self.database_name = database_name
-        if database_name is not None:
-            self.agent_attributes['db.instance'] = database_name
 
     def terminal_node(self):
         return True

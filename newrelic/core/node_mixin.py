@@ -55,19 +55,27 @@ class DatastoreNodeMixin(GenericNodeMixin):
 
         return name
 
+    @property
+    def db_instance(self):
+        if hasattr(self, '_db_instance'):
+            return self._db_instance
+
+        db_instance_attr = None
+        if self.database_name:
+            _, db_instance_attr = attribute.process_user_attribute(
+                    'db.instance', self.database_name)
+
+        self._db_instance = db_instance_attr
+        return db_instance_attr
+
     def span_event(self, *args, **kwargs):
+        self.agent_attributes['db.instance'] = self.db_instance
         attrs = super(DatastoreNodeMixin, self).span_event(*args, **kwargs)
         i_attrs = attrs[0]
 
         i_attrs['category'] = 'datastore'
         i_attrs['component'] = self.product
         i_attrs['span.kind'] = 'client'
-
-        if self.database_name:
-            _, i_attrs['db.instance'] = attribute.process_user_attribute(
-                    'db.instance', self.database_name)
-        else:
-            i_attrs['db.instance'] = 'Unknown'
 
         if self.instance_hostname:
             _, i_attrs['peer.hostname'] = attribute.process_user_attribute(

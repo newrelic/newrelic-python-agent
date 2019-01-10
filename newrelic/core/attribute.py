@@ -5,7 +5,8 @@ from collections import namedtuple
 from newrelic.packages import six
 
 from newrelic.core.attribute_filter import (DST_ALL, DST_ERROR_COLLECTOR,
-        DST_TRANSACTION_TRACER, DST_TRANSACTION_EVENTS)
+        DST_TRANSACTION_TRACER, DST_TRANSACTION_EVENTS, DST_SPAN_EVENTS,
+        DST_TRANSACTION_SEGMENTS)
 
 
 _logger = logging.getLogger(__name__)
@@ -19,8 +20,12 @@ _Attribute = namedtuple('_Attribute',
 
 # All agent attributes go to transaction traces and error traces by default.
 
-_DESTINATIONS = DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER
-_DESTINATIONS_WITH_EVENTS = _DESTINATIONS | DST_TRANSACTION_EVENTS
+_DESTINATIONS = (DST_ERROR_COLLECTOR |
+                 DST_TRANSACTION_TRACER |
+                 DST_TRANSACTION_SEGMENTS)
+_DESTINATIONS_WITH_EVENTS = (_DESTINATIONS |
+                             DST_TRANSACTION_EVENTS |
+                             DST_SPAN_EVENTS)
 
 # The following subset goes to transaction events by default.
 
@@ -35,10 +40,12 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set((
         'response.headers.contentType',
         'message.queueName',
         'message.routingKey',
+        'http.url',
         'aws.requestId',
         'aws.lambda.arn',
         'aws.lambda.coldStart',
         'aws.lambda.eventSource.arn',
+        'db.instance',
 ))
 
 MAX_NUM_USER_ATTRIBUTES = 64
@@ -83,6 +90,9 @@ def create_agent_attributes(attr_dict, attribute_filter):
     attributes = []
 
     for k, v in attr_dict.items():
+        if v is None:
+            continue
+
         if k in _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES:
             dest = attribute_filter.apply(k, _DESTINATIONS_WITH_EVENTS)
         else:
@@ -91,6 +101,24 @@ def create_agent_attributes(attr_dict, attribute_filter):
         attributes.append(Attribute(k, v, dest))
 
     return attributes
+
+
+def resolve_agent_attributes(attr_dict, attribute_filter, target_destination):
+    a_attrs = {}
+
+    for attr_name, attr_value in attr_dict.items():
+        if attr_value is None:
+            continue
+
+        if attr_name in _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES:
+            dest = attribute_filter.apply(attr_name, _DESTINATIONS_WITH_EVENTS)
+        else:
+            dest = attribute_filter.apply(attr_name, _DESTINATIONS)
+
+        if dest & target_destination:
+            a_attrs[attr_name] = attr_value
+
+    return a_attrs
 
 
 def create_user_attributes(attr_dict, attribute_filter):

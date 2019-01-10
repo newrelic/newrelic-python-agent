@@ -427,6 +427,18 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'span_events.max_samples_stored',
                      'getint', None)
+    _process_setting(section, 'span_events.attributes.enabled',
+                     'getboolean', None)
+    _process_setting(section, 'span_events.attributes.exclude',
+                     'get', _map_inc_excl_attributes)
+    _process_setting(section, 'span_events.attributes.include',
+                     'get', _map_inc_excl_attributes)
+    _process_setting(section, 'transaction_segments.attributes.enabled',
+                     'getboolean', None)
+    _process_setting(section, 'transaction_segments.attributes.exclude',
+                     'get', _map_inc_excl_attributes)
+    _process_setting(section, 'transaction_segments.attributes.include',
+                     'get', _map_inc_excl_attributes)
     _process_setting(section, 'local_daemon.socket_path',
                      'get', None)
     _process_setting(section, 'local_daemon.synchronous_startup',
@@ -783,6 +795,11 @@ def translate_deprecated_settings(settings, cached_settings):
         settings.ssl = True
         _logger.info('Ignoring deprecated setting: ssl. Enabling ssl is now '
                 'mandatory. Setting ssl=true.')
+
+    if settings.agent_limits.merge_stats_maximum is not None:
+        _logger.info('Ignoring deprecated setting: '
+                'agent_limits.merge_stats_maximum. The agent will now respect '
+                'server-side commands.')
 
     return settings
 

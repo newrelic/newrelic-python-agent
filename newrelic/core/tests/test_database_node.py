@@ -1,5 +1,7 @@
+import pytest
 import newrelic.core.database_node
 from newrelic.common import system_info
+from newrelic.core.config import finalize_application_settings
 
 HOST = 'cookiemonster'
 
@@ -38,7 +40,15 @@ _db_node = newrelic.core.database_node.DatabaseNode(
         database_name='bar',
         is_async=True,
         guid=None,
+        agent_attributes={},
 )
+
+
+@pytest.fixture(autouse=True)
+def cleanup_caches():
+    for attr in ('_db_instance',):
+        if hasattr(_db_node, attr):
+            delattr(_db_node, attr)
 
 
 def test_product_property():
@@ -62,7 +72,7 @@ def test_instance_hostname():
 
 
 def test_span_event():
-    span_event = _db_node.span_event()
+    span_event = _db_node.span_event(finalize_application_settings())
     i_attrs = span_event[0]
 
     # Verify that all hostnames have been converted to instance_hostname
@@ -72,3 +82,12 @@ def test_span_event():
     assert port == '1234'
 
     assert i_attrs['peer.hostname'] == HOST
+
+
+def test_db_instance_cache():
+    _db_node._db_instance = 'FOO'
+    assert _db_node.db_instance == 'FOO'
+
+
+def test_db_instance():
+    assert _db_node.db_instance == 'bar'

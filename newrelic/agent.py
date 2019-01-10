@@ -27,6 +27,7 @@ from newrelic.api.transaction import (
         suppress_apdex_metric as __suppress_apdex_metric,
         capture_request_params as __capture_request_params,
         add_custom_parameter as __add_custom_parameter,
+        add_custom_parameters as __add_custom_parameters,
         add_framework_info as __add_framework_info,
         record_exception as __record_exception,
         get_browser_timing_header as __get_browser_timing_header,
@@ -191,6 +192,8 @@ capture_request_params = __wrap_api_call(__capture_request_params,
         'capture_request_params')
 add_custom_parameter = __wrap_api_call(__add_custom_parameter,
         'add_custom_parameter')
+add_custom_parameters = __wrap_api_call(__add_custom_parameters,
+        'add_custom_parameters')
 add_framework_info = __wrap_api_call(__add_framework_info,
         'add_framework_info')
 record_exception = __wrap_api_call(__record_exception,

@@ -1,14 +1,19 @@
 import pytest
-import psycopg2
+import redis
 
 from newrelic.api.transaction import current_transaction
+from newrelic.api.background_task import background_task
+
+from testing_support.settings import redis_multiple_settings
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_span_events import (
         validate_span_events)
 from testing_support.util import instance_hostname
-from utils import DB_SETTINGS
 
-from newrelic.api.background_task import background_task
+
+DB_MULTIPLE_SETTINGS = redis_multiple_settings()
+DB_SETTINGS = DB_MULTIPLE_SETTINGS[0]
+DATABASE_NUMBER = 0
 
 
 # Settings
@@ -28,20 +33,13 @@ _disable_instance_settings = {
 
 
 def _exercise_db():
-    connection = psycopg2.connect(
-            database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
-            password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port'])
+    client = redis.StrictRedis(host=DB_SETTINGS['host'],
+            port=DB_SETTINGS['port'], db=DATABASE_NUMBER)
 
-    try:
-        cursor = connection.cursor()
-        cursor.execute("""SELECT setting from pg_settings where name=%s""",
-                ('server_version',))
+    client.set('key', 'value')
+    client.get('key')
 
-        # No target
-        cursor.execute('SELECT 1')
-    finally:
-        connection.close()
+    client.execute_command('CLIENT', 'LIST', parse='LIST')
 
 
 # Tests
@@ -58,7 +56,7 @@ def test_span_events(instance_enabled, db_instance_enabled):
         'priority': priority,
         'sampled': True,
         'category': 'datastore',
-        'component': 'Postgres',
+        'component': 'Redis',
         'span.kind': 'client',
     }
 
@@ -78,7 +76,7 @@ def test_span_events(instance_enabled, db_instance_enabled):
 
     if db_instance_enabled and instance_enabled:
         exact_agents = {
-            'db.instance': DB_SETTINGS['name'],
+            'db.instance': str(DATABASE_NUMBER),
         }
         unexpected_agents = ()
     else:
@@ -87,12 +85,13 @@ def test_span_events(instance_enabled, db_instance_enabled):
         unexpected_agents = ('db.instance',)
 
     query_1 = common.copy()
-    query_1['name'] = 'Datastore/statement/Postgres/pg_settings/select'
-    query_1['db.statement'] = 'SELECT setting from pg_settings where name=%s'
+    query_1['name'] = 'Datastore/operation/Redis/set'
 
     query_2 = common.copy()
-    query_2['name'] = 'Datastore/operation/Postgres/select'
-    query_2['db.statement'] = 'SELECT ?'
+    query_2['name'] = 'Datastore/operation/Redis/get'
+
+    query_3 = common.copy()
+    query_3['name'] = 'Datastore/operation/Redis/client_list'
 
     @validate_span_events(
             count=1,
@@ -103,6 +102,12 @@ def test_span_events(instance_enabled, db_instance_enabled):
     @validate_span_events(
             count=1,
             exact_intrinsics=query_2,
+            unexpected_intrinsics=('db.instance'),
+            exact_agents=exact_agents,
+            unexpected_agents=unexpected_agents)
+    @validate_span_events(
+            count=1,
+            exact_intrinsics=query_3,
             unexpected_intrinsics=('db.instance'),
             exact_agents=exact_agents,
             unexpected_agents=unexpected_agents)

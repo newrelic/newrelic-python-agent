@@ -6,10 +6,11 @@ from newrelic.common.object_wrapper import (transient_function_wrapper,
         function_wrapper)
 from newrelic.core.config import global_settings, finalize_application_settings
 from testing_support.fixtures import (override_generic_settings,
-        function_not_called)
+        function_not_called, failing_endpoint)
 
 from newrelic.core.application import Application
-from newrelic.core.data_collector import send_request, collector_url
+from newrelic.core.data_collector import (send_request, collector_url,
+        _developer_mode_responses)
 from newrelic.core.stats_engine import CustomMetrics, SampledDataSet
 from newrelic.core.transaction_node import TransactionNode
 from newrelic.core.custom_event import create_custom_event
@@ -55,7 +56,8 @@ def transaction_node(request):
             params=None,
             rollup=None,
             is_async=True,
-            guid='GUID')
+            guid='GUID',
+            agent_attributes={})
 
     children = tuple(function for _ in range(num_events))
 
@@ -136,7 +138,8 @@ def validate_metric_payload(metrics=[], endpoints_called=[]):
             'DeveloperModeSession.send_request')
     def send_request_wrapper(wrapped, instance, args, kwargs):
         def _bind_params(session, url, method, license_key,
-                agent_run_id=None, payload=(), *args, **kwargs):
+                agent_run_id=None, request_headers_map=None, payload=(), *args,
+                **kwargs):
             return method, payload
 
         method, payload = _bind_params(*args, **kwargs)
@@ -181,7 +184,8 @@ def validate_transaction_event_payloads(payload_validators):
                 'DeveloperModeSession.send_request')
         def send_request_wrapper(wrapped, instance, args, kwargs):
             def _bind_params(session, url, method, license_key,
-                    agent_run_id=None, payload=(), *args, **kwargs):
+                    agent_run_id=None, request_headers_map=None, payload=(),
+                    *args, **kwargs):
                 return method, payload
 
             method, payload = _bind_params(*args, **kwargs)
@@ -211,7 +215,8 @@ def validate_error_event_sampling(events_seen, reservoir_size,
             'DeveloperModeSession.send_request')
     def send_request_wrapper(wrapped, instance, args, kwargs):
         def _bind_params(session, url, method, license_key,
-                agent_run_id=None, payload=(), *args, **kwargs):
+                agent_run_id=None, request_headers_map=None, payload=(), *args,
+                **kwargs):
             return method, payload
 
         method, payload = _bind_params(*args, **kwargs)
@@ -221,29 +226,6 @@ def validate_error_event_sampling(events_seen, reservoir_size,
             sampling_info = payload[1]
             assert sampling_info['events_seen'] == events_seen
             assert sampling_info['reservoir_size'] == reservoir_size
-
-        return wrapped(*args, **kwargs)
-
-    return send_request_wrapper
-
-
-def failing_endpoint(endpoint, raises=RetryDataForRequest, call_number=1):
-
-    called_list = []
-
-    @transient_function_wrapper('newrelic.core.data_collector',
-            'DeveloperModeSession.send_request')
-    def send_request_wrapper(wrapped, instance, args, kwargs):
-        def _bind_params(session, url, method, license_key,
-                agent_run_id=None, payload=(), *args, **kwargs):
-            return method
-
-        method = _bind_params(*args, **kwargs)
-
-        if method == endpoint:
-            called_list.append(True)
-            if len(called_list) == call_number:
-                raise raises()
 
         return wrapped(*args, **kwargs)
 
@@ -707,3 +689,48 @@ def test_reset_synthetics_events():
 
     assert app._stats_engine.synthetics_events.num_seen == 0
     assert app._stats_engine.transaction_events.num_seen == 1
+
+
+@failing_endpoint('analytic_event_data')
+@override_generic_settings(settings, {
+        'developer_mode': True,
+        'agent_limits.merge_stats_maximum': 0,
+})
+def test_infinite_merges():
+    app = Application('Python Agent Test (Harvest Loop)')
+    app.connect_to_data_collector()
+
+    app._stats_engine.transaction_events.add('transaction event')
+
+    assert app._stats_engine.transaction_events.num_seen == 1
+
+    app.harvest()
+
+    # the agent_limits.merge_stats_maximum is not respected
+    assert app._stats_engine.transaction_events.num_seen == 1
+
+
+@override_generic_settings(settings, {
+        'developer_mode': True,
+})
+def test_get_agent_commands_returns_none():
+    original_return_value = _developer_mode_responses.get('get_agent_commands')
+    _developer_mode_responses['get_agent_commands'] = None
+
+    try:
+        app = Application('Python Agent Test (Harvest Loop)')
+        app.connect_to_data_collector()
+        app.process_agent_commands()
+    finally:
+        _developer_mode_responses['get_agent_commands'] = original_return_value
+
+
+@failing_endpoint('get_agent_commands')
+@override_generic_settings(settings, {
+        'developer_mode': True,
+})
+def test_get_agent_commands_raises():
+    app = Application('Python Agent Test (Harvest Loop)')
+    app.connect_to_data_collector()
+    with pytest.raises(RetryDataForRequest):
+        app.process_agent_commands()

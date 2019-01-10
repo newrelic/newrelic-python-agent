@@ -1,28 +1,29 @@
 import unittest
 import time
-import sys
-import logging
 
 import newrelic.tests.test_cases
 
 import newrelic.api.settings
 import newrelic.api.application
 import newrelic.api.web_transaction
-import newrelic.api.database_trace
+
+from newrelic.api.database_trace import database_trace, DatabaseTrace
 
 settings = newrelic.api.settings.settings()
 application = newrelic.api.application.application_instance(settings.app_name)
 
-@newrelic.api.database_trace.database_trace(lambda sql: sql)
+
+@database_trace(lambda sql: sql)
 def _test_function_1(sql):
     time.sleep(1.0)
+
 
 class TestCase(newrelic.tests.test_cases.TestCase):
 
     requires_collector = True
 
     def test_database_trace(self):
-        environ = { "REQUEST_URI": "/database_trace" }
+        environ = {"REQUEST_URI": "/database_trace"}
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
@@ -33,7 +34,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             time.sleep(0.1)
 
     def test_transaction_not_running(self):
-        environ = { "REQUEST_URI": "/transaction_not_running" }
+        environ = {"REQUEST_URI": "/transaction_not_running"}
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         try:
@@ -44,7 +45,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             pass
 
     def test_database_trace_decorator(self):
-        environ = { "REQUEST_URI": "/database_trace_decorator" }
+        environ = {"REQUEST_URI": "/database_trace_decorator"}
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
@@ -53,7 +54,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             time.sleep(0.1)
 
     def test_database_trace_decorator_error(self):
-        environ = { "REQUEST_URI": "/database_trace_decorator_error" }
+        environ = {"REQUEST_URI": "/database_trace_decorator_error"}
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
@@ -62,15 +63,66 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             except TypeError:
                 pass
 
-    def test_database_stack_trace_limit(self):
-        environ = { "REQUEST_URI": "/database_stack_trace_limit" }
+    def test_database_trace_saves_host_wo_database_name_reporting(self):
+        environ = {"REQUEST_URI": "/database_stack_trace_limit"}
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
-        with transaction:
-            for i in range(settings.agent_limits.slow_sql_stack_trace+10):
-                time.sleep(0.1)
-                _test_function_1("select * from cat")
-                time.sleep(0.1)
+
+        ds_settings = transaction.settings.datastore_tracer
+        original_instance_reporting = ds_settings.instance_reporting.enabled
+        original_database_name_reporting = \
+                ds_settings.database_name_reporting.enabled
+
+        ds_settings.instance_reporting.enabled = True
+        ds_settings.database_name_reporting.enabled = False
+
+        try:
+            with transaction:
+                with DatabaseTrace(transaction, "select * from cat", host='a',
+                        port_path_or_id='b', database_name='c',
+                        connect_params=None) as trace:
+
+                    trace.finalize_data(transaction)
+                    assert trace.host == 'a'
+                    assert trace.port_path_or_id == 'b'
+                    assert trace.database_name is None
+
+        finally:
+            ds_settings.instance_reporting.enabled = \
+                original_instance_reporting
+            ds_settings.database_name_reporting.enabled = \
+                    original_database_name_reporting
+
+    def test_database_trace_saves_database_name_wo_instance_reporting(self):
+        environ = {"REQUEST_URI": "/database_stack_trace_limit"}
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
+
+        ds_settings = transaction.settings.datastore_tracer
+        original_instance_reporting = ds_settings.instance_reporting.enabled
+        original_database_name_reporting = \
+                ds_settings.database_name_reporting.enabled
+
+        ds_settings.instance_reporting.enabled = False
+        ds_settings.database_name_reporting.enabled = True
+
+        try:
+            with transaction:
+                with DatabaseTrace(transaction, "select * from cat", host='a',
+                        port_path_or_id='b', database_name='c',
+                        connect_params=None) as trace:
+
+                    trace.finalize_data(transaction)
+                    assert trace.host is None
+                    assert trace.port_path_or_id is None
+                    assert trace.database_name == 'c'
+
+        finally:
+            ds_settings.instance_reporting.enabled = \
+                original_instance_reporting
+            ds_settings.database_name_reporting.enabled = \
+                    original_database_name_reporting
+
 
 if __name__ == '__main__':
     unittest.main()

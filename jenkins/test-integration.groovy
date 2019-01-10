@@ -199,9 +199,9 @@ use(extensions) {
                     shell('./jenkins/scripts/prep_node_for_test.sh')
 
                     if (composePath) {
-                        shell("./docker/packnsend run -c ${composePath} tox -c ${toxPath} -e ${testEnvs}")
+                        shell("./docker/packnsend run -c ${composePath} tox -vvv -c ${toxPath} -e ${testEnvs}")
                     } else {
-                        shell("./docker/packnsend run tox -c ${toxPath} -e ${testEnvs}")
+                        shell("./docker/packnsend run tox -vvv -c ${toxPath} -e ${testEnvs}")
                     }
                 }
             }

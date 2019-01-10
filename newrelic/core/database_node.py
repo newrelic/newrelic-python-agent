@@ -1,12 +1,13 @@
 from collections import namedtuple
 
+import newrelic.core.attribute as attribute
 import newrelic.core.trace_node
 
 from newrelic.common import system_info
 from newrelic.core.database_utils import sql_statement, explain_plan
 from newrelic.core.node_mixin import DatastoreNodeMixin
 from newrelic.core.metric import TimeMetric
-from newrelic.core.attribute import process_user_attribute
+from newrelic.core.attribute_filter import DST_TRANSACTION_SEGMENTS
 
 
 _SlowSqlNode = namedtuple('_SlowSqlNode',
@@ -37,7 +38,7 @@ _DatabaseNode = namedtuple('_DatabaseNode',
         'duration', 'exclusive', 'stack_trace', 'sql_format',
         'connect_params', 'cursor_params', 'sql_parameters',
         'execute_params', 'host', 'port_path_or_id', 'database_name',
-        'is_async', 'guid'])
+        'is_async', 'guid', 'agent_attributes'])
 
 
 class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
@@ -192,7 +193,14 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
 
         root.trace_node_count += 1
 
-        params = {}
+        # Agent attributes
+        self.agent_attributes['db.instance'] = self.db_instance
+        params = attribute.resolve_agent_attributes(
+                self.agent_attributes,
+                root.settings.attribute_filter,
+                DST_TRANSACTION_SEGMENTS)
+
+        # Intrinsic attributes override everything
         params['exclusive_duration_millis'] = 1000.0 * self.exclusive
 
         # Only send datastore instance params if not empty.
@@ -202,9 +210,6 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
 
         if self.port_path_or_id:
             params['port_path_or_id'] = self.port_path_or_id
-
-        if self.database_name:
-            params['database_name'] = self.database_name
 
         sql = self.formatted
 
@@ -241,7 +246,7 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
         sql = self.formatted
 
         # Truncate to 2000 bytes and append ...
-        _, sql = process_user_attribute(
+        _, sql = attribute.process_user_attribute(
                 'db.statement', sql, max_length=2000, ending='...')
 
         i_attrs['db.statement'] = sql

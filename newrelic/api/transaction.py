@@ -1600,9 +1600,13 @@ class Transaction(object):
             return True
 
     def add_custom_parameters(self, items):
+        result = True
+
         # items is a list of (name, value) tuples.
         for name, value in items:
-            self.add_custom_parameter(name, value)
+            result &= self.add_custom_parameter(name, value)
+
+        return result
 
     def add_framework_info(self, name, version=None):
         if name:
@@ -1698,6 +1702,14 @@ def add_custom_parameter(key, value):
     transaction = current_transaction()
     if transaction:
         return transaction.add_custom_parameter(key, value)
+    else:
+        return False
+
+
+def add_custom_parameters(items):
+    transaction = current_transaction()
+    if transaction:
+        return transaction.add_custom_parameters(items)
     else:
         return False
 

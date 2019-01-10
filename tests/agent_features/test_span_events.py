@@ -11,7 +11,8 @@ from newrelic.api.memcache_trace import MemcacheTrace
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.solr_trace import SolrTrace
 
-from testing_support.fixtures import override_application_settings
+from testing_support.fixtures import (override_application_settings,
+        function_not_called)
 from testing_support.validators.validate_span_events import (
         validate_span_events)
 
@@ -159,39 +160,54 @@ def test_database_db_statement_format(sql, sql_format, expected):
     _test()
 
 
-@validate_span_events(
-    count=1,
-    exact_intrinsics={
-        'name': 'External/example.com/library/get',
-        'type': 'Span',
-        'sampled': True,
+@pytest.mark.parametrize('exclude_url', (True, False))
+def test_external_spans(exclude_url):
+    override_settings = {
+        'distributed_tracing.enabled': True,
+        'span_events.enabled': True,
+    }
 
-        'category': 'http',
-        'span.kind': 'client',
-        'http.url': 'http://example.com/foo',
-        'component': 'library',
-        'http.method': 'get',
-    },
-    expected_intrinsics=('priority',),
-)
-@override_application_settings({
-    'distributed_tracing.enabled': True,
-    'span_events.enabled': True,
-})
-@background_task(name='test_external_spans')
-def test_external_spans():
-    transaction = current_transaction()
-    transaction._sampled = True
+    if exclude_url:
+        override_settings['span_events.attributes.exclude'] = ['http.url']
+        exact_agents = {}
+        unexpected_agents = ['http.url']
+    else:
+        exact_agents = {'http.url': 'http://example.com/foo'}
+        unexpected_agents = []
 
-    with ExternalTrace(
-            transaction,
-            library='library',
-            url='http://example.com/foo?secret=123',
-            method='get'):
-        pass
+    @validate_span_events(
+        count=1,
+        exact_intrinsics={
+            'name': 'External/example.com/library/get',
+            'type': 'Span',
+            'sampled': True,
+
+            'category': 'http',
+            'span.kind': 'client',
+            'component': 'library',
+            'http.method': 'get',
+        },
+        exact_agents=exact_agents,
+        unexpected_agents=unexpected_agents,
+        expected_intrinsics=('priority',),
+    )
+    @override_application_settings(override_settings)
+    @background_task(name='test_external_spans')
+    def _test():
+        transaction = current_transaction()
+        transaction._sampled = True
+
+        with ExternalTrace(
+                transaction,
+                library='library',
+                url='http://example.com/foo?secret=123',
+                method='get'):
+            pass
+
+    _test()
 
 
-@pytest.mark.parametrize('kwarg_override,intrinsics_override', (
+@pytest.mark.parametrize('kwarg_override,attr_override', (
     ({'url': 'a' * 256}, {'http.url': 'a' * 255}),
     ({'library': 'a' * 256}, {'component': 'a' * 255}),
     ({'method': 'a' * 256}, {'http.method': 'a' * 255}),
@@ -200,7 +216,7 @@ def test_external_spans():
     'distributed_tracing.enabled': True,
     'span_events.enabled': True,
 })
-def test_external_span_limits(kwarg_override, intrinsics_override):
+def test_external_span_limits(kwarg_override, attr_override):
 
     exact_intrinsics = {
         'type': 'Span',
@@ -208,11 +224,17 @@ def test_external_span_limits(kwarg_override, intrinsics_override):
 
         'category': 'http',
         'span.kind': 'client',
-        'http.url': 'http://example.com/foo',
         'component': 'library',
         'http.method': 'get',
     }
-    exact_intrinsics.update(intrinsics_override)
+    exact_agents = {
+        'http.url': 'http://example.com/foo',
+    }
+    for attr_name, attr_value in attr_override.items():
+        if attr_name in exact_agents:
+            exact_agents[attr_name] = attr_value
+        else:
+            exact_intrinsics[attr_name] = attr_value
 
     kwargs = {
         'library': 'library',
@@ -224,6 +246,7 @@ def test_external_span_limits(kwarg_override, intrinsics_override):
     @validate_span_events(
         count=1,
         exact_intrinsics=exact_intrinsics,
+        exact_agents=exact_agents,
         expected_intrinsics=('priority',),
     )
     @background_task(name='test_external_spans')
@@ -239,7 +262,7 @@ def test_external_span_limits(kwarg_override, intrinsics_override):
     _test()
 
 
-@pytest.mark.parametrize('kwarg_override,intrinsics_override', (
+@pytest.mark.parametrize('kwarg_override,attribute_override', (
     ({'host': 'a' * 256},
      {'peer.hostname': 'a' * 255, 'peer.address': 'a' * 255}),
     ({'port_path_or_id': 'a' * 256, 'host': 'a'},
@@ -250,7 +273,7 @@ def test_external_span_limits(kwarg_override, intrinsics_override):
     'distributed_tracing.enabled': True,
     'span_events.enabled': True,
 })
-def test_datastore_span_limits(kwarg_override, intrinsics_override):
+def test_datastore_span_limits(kwarg_override, attribute_override):
 
     exact_intrinsics = {
         'type': 'Span',
@@ -259,11 +282,21 @@ def test_datastore_span_limits(kwarg_override, intrinsics_override):
         'category': 'datastore',
         'span.kind': 'client',
         'component': 'library',
-        'db.instance': 'db',
         'peer.hostname': 'foo',
         'peer.address': 'foo:1234',
     }
-    exact_intrinsics.update(intrinsics_override)
+
+    db_instance_override = attribute_override.pop('db.instance', None)
+    if db_instance_override:
+        exact_agents = {
+            'db.instance': db_instance_override
+        }
+    else:
+        exact_agents = {
+            'db.instance': 'db',
+        }
+
+    exact_intrinsics.update(attribute_override)
 
     kwargs = {
         'product': 'library',
@@ -279,6 +312,7 @@ def test_datastore_span_limits(kwarg_override, intrinsics_override):
         count=1,
         exact_intrinsics=exact_intrinsics,
         expected_intrinsics=('priority',),
+        exact_agents=exact_agents,
     )
     @background_task(name='test_external_spans')
     def _test():
@@ -297,10 +331,17 @@ def test_datastore_span_limits(kwarg_override, intrinsics_override):
 @pytest.mark.parametrize('span_events_enabled', (False, True))
 def test_collect_span_events_override(collect_span_events,
         span_events_enabled):
-    span_count = 2 if collect_span_events and span_events_enabled else 0
+
+    if collect_span_events and span_events_enabled:
+        spans_expected = True
+    else:
+        spans_expected = False
+
+    span_count = 2 if spans_expected else 0
 
     @validate_span_events(count=span_count)
     @override_application_settings({
+        'transaction_tracer.enabled': False,
         'distributed_tracing.enabled': True,
         'span_events.enabled': span_events_enabled,
         'collect_span_events': collect_span_events
@@ -312,5 +353,49 @@ def test_collect_span_events_override(collect_span_events,
 
         with FunctionTrace(transaction, 'span_generator'):
             pass
+
+    if not spans_expected:
+        _test = function_not_called(
+                'newrelic.core.attribute',
+                'resolve_agent_attributes')(_test)
+
+    _test()
+
+
+@pytest.mark.parametrize('include_attribues', (True, False))
+def test_span_event_agent_attributes(include_attribues):
+    override_settings = {
+        'distributed_tracing.enabled': True,
+        'span_events.enabled': True,
+    }
+    if include_attribues:
+        count = 1
+        override_settings['attributes.include'] = ['*']
+    else:
+        count = 0
+
+    @override_application_settings(override_settings)
+    @validate_span_events(
+            count=0, expected_agents=['webfrontend.queue.seconds'])
+    @validate_span_events(
+            count=count,
+            exact_agents={'trace1_a': 'foobar', 'trace1_b': 'barbaz'},
+            unexpected_agents=['trace2_a', 'trace2_b'])
+    @validate_span_events(
+            count=count,
+            exact_agents={'trace2_a': 'foobar', 'trace2_b': 'barbaz'},
+            unexpected_agents=['trace1_a', 'trace1_b'])
+    @background_task(name='test_span_event_agent_attributes')
+    def _test():
+        transaction = current_transaction()
+        transaction.queue_start = 1.0
+        transaction._sampled = True
+
+        with FunctionTrace(transaction, 'trace1') as trace_1:
+            trace_1._add_agent_attribute('trace1_a', 'foobar')
+            trace_1._add_agent_attribute('trace1_b', 'barbaz')
+            with FunctionTrace(transaction, 'trace2') as trace_2:
+                trace_2._add_agent_attribute('trace2_a', 'foobar')
+                trace_2._add_agent_attribute('trace2_b', 'barbaz')
 
     _test()

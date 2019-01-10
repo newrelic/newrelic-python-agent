@@ -414,7 +414,6 @@ class StatsEngine(object):
         self.__slow_transaction_old_duration = None
         self.__slow_transaction_dry_harvests = 0
         self.__transaction_errors = []
-        self.__metric_ids = {}
         self.__synthetics_events = LimitedDataSet()
         self.__synthetics_transactions = []
         self.__xray_transactions = []
@@ -427,18 +426,6 @@ class StatsEngine(object):
     @property
     def stats_table(self):
         return self.__stats_table
-
-    @property
-    def metric_ids(self):
-        """Returns a reference to the dictionary containing the mappings
-        from metric (name, scope) to the integer identifier supplied
-        back from the core application. These integer identifiers are
-        used when sending data to the core application to cut down on
-        the size of data being sent.
-
-        """
-
-        return self.__metric_ids
 
     @property
     def transaction_events(self):
@@ -463,22 +450,6 @@ class StatsEngine(object):
     @property
     def error_events(self):
         return self.__error_events
-
-    def update_metric_ids(self, metric_ids):
-        """Updates the dictionary containing the mappings from metric
-        (name, scope) to the integer identifier supplied back from the
-        core application. The input should be an iterable returning a
-        list of pairs where first is a dictionary with name and scope
-        keys with corresponding values. The second should be the integer
-        identifier. The dictionary is converted to a (name, scope) tuple
-        for use as key into the internal dictionary containing the
-        mappings.
-
-        """
-
-        for key, value in metric_ids:
-            key = (key['name'], key['scope'])
-            self.__metric_ids[key] = value
 
     def metrics_count(self):
         """Returns a count of the number of unique metrics currently
@@ -1008,7 +979,7 @@ class StatsEngine(object):
 
         if (settings.distributed_tracing.enabled and transaction.sampled and
                 settings.span_events.enabled and settings.collect_span_events):
-            for event in transaction.span_events(self.__stats_table):
+            for event in transaction.span_events(self.__settings):
                 self.__span_events.add(event, priority=transaction.priority)
 
     def metric_data(self, normalizer=None):
@@ -1055,10 +1026,7 @@ class StatsEngine(object):
                     list(six.iteritems(normalized_stats)))
 
         for key, value in six.iteritems(normalized_stats):
-            if key not in self.__metric_ids:
-                key = dict(name=key[0], scope=key[1])
-            else:
-                key = self.__metric_ids[key]
+            key = dict(name=key[0], scope=key[1])
             result.append((key, value))
 
         return result
@@ -1358,7 +1326,6 @@ class StatsEngine(object):
         self.__slow_transaction_map = {}
         self.__slow_transaction_old_duration = None
         self.__transaction_errors = []
-        self.__metric_ids = {}
         self.__synthetics_transactions = []
         self.__xray_transactions = []
         self.xray_sessions = {}

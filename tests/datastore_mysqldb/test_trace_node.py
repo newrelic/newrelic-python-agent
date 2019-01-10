@@ -27,7 +27,7 @@ _disable_instance_settings = {
 _enabled_required = {
     'host': instance_hostname(DB_SETTINGS['host']),
     'port_path_or_id': str(DB_SETTINGS['port']),
-    'database_name': DB_SETTINGS['name'],
+    'db.instance': DB_SETTINGS['name'],
 }
 _enabled_forgone = {}
 
@@ -35,8 +35,9 @@ _disabled_required = {}
 _disabled_forgone = {
     'host': 'VALUE NOT USED',
     'port_path_or_id': 'VALUE NOT USED',
-    'database_name': 'VALUE NOT USED',
+    'db.instance': 'VALUE NOT USED',
 }
+
 
 # Query
 
@@ -47,6 +48,7 @@ def _exercise_db():
     with connection as cursor:
         cursor.execute('SELECT version();')
     connection.commit()
+
 
 # Tests
 

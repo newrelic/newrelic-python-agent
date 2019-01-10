@@ -185,11 +185,23 @@ class SpanEventSettings(Settings):
     pass
 
 
+class SpanEventAttributesSettings(Settings):
+    pass
+
+
 class DistributedTracingSettings(Settings):
     pass
 
 
 class ServerlessModeSettings(Settings):
+    pass
+
+
+class TransactionSegmentSettings(Settings):
+    pass
+
+
+class TransactionSegmentAttributesSettings(Settings):
     pass
 
 
@@ -226,6 +238,10 @@ _settings.datastore_tracer.database_name_reporting = \
         DatastoreTracerDatabaseNameReportingSettings()
 _settings.heroku = HerokuSettings()
 _settings.span_events = SpanEventSettings()
+_settings.span_events.attributes = SpanEventAttributesSettings()
+_settings.transaction_segments = TransactionSegmentSettings()
+_settings.transaction_segments.attributes = \
+        TransactionSegmentAttributesSettings()
 _settings.distributed_tracing = DistributedTracingSettings()
 _settings.serverless_mode = ServerlessModeSettings()
 
@@ -388,6 +404,7 @@ _settings.host = os.environ.get('NEW_RELIC_HOST',
 _settings.port = int(os.environ.get('NEW_RELIC_PORT', '0'))
 
 _settings.agent_run_id = None
+_settings.request_headers_map = {}
 
 _settings.proxy_scheme = os.environ.get('NEW_RELIC_PROXY_SCHEME', None)
 _settings.proxy_host = os.environ.get('NEW_RELIC_PROXY_HOST', None)
@@ -487,6 +504,13 @@ _settings.distributed_tracing.enabled = _environ_as_bool(
 _settings.span_events.enabled = _environ_as_bool(
         'NEW_RELIC_SPAN_EVENTS_ENABLED', default=True)
 _settings.span_events.max_samples_stored = SPAN_EVENT_RESERVOIR_SIZE
+_settings.span_events.attributes.enabled = True
+_settings.span_events.attributes.exclude = []
+_settings.span_events.attributes.include = []
+
+_settings.transaction_segments.attributes.enabled = True
+_settings.transaction_segments.attributes.exclude = []
+_settings.transaction_segments.attributes.include = []
 
 _settings.transaction_tracer.enabled = True
 _settings.transaction_tracer.transaction_threshold = None
@@ -539,7 +563,7 @@ _settings.agent_limits.max_sql_connections = 4
 _settings.agent_limits.sql_explain_plans = 30
 _settings.agent_limits.sql_explain_plans_per_harvest = 60
 _settings.agent_limits.slow_sql_data = 10
-_settings.agent_limits.merge_stats_maximum = 5
+_settings.agent_limits.merge_stats_maximum = None
 _settings.agent_limits.errors_per_transaction = 5
 _settings.agent_limits.errors_per_harvest = 20
 _settings.agent_limits.slow_transaction_dry_harvests = 5

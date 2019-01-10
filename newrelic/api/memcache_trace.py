@@ -30,7 +30,8 @@ class MemcacheTrace(TimeTrace):
                 duration=self.duration,
                 exclusive=self.exclusive,
                 is_async=self.is_async,
-                guid=self.guid)
+                guid=self.guid,
+                agent_attributes=self.agent_attributes)
 
 
 def MemcacheTraceWrapper(wrapped, command):

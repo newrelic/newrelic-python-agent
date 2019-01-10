@@ -68,6 +68,7 @@ def test_datastore_instance(name, system_hostname, db_hostname,
             database_name=database_path,
             is_async=False,
             guid=None,
+            agent_attributes={},
     )
 
     empty_stats = StatsEngine()

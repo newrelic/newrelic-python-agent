@@ -39,7 +39,8 @@ class ExternalTrace(TimeTrace, CatHeaderMixin):
                 exclusive=self.exclusive,
                 params=self.params,
                 is_async=self.is_async,
-                guid=self.guid)
+                guid=self.guid,
+                agent_attributes=self.agent_attributes)
 
 
 def ExternalTraceWrapper(wrapped, library, url, method=None):

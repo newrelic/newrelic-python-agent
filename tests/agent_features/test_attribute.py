@@ -3,7 +3,8 @@ import pytest
 import webtest
 
 from newrelic.api.background_task import background_task
-from newrelic.api.transaction import add_custom_parameter
+from newrelic.api.transaction import (add_custom_parameter,
+        add_custom_parameters)
 from newrelic.api.web_transaction import wsgi_application
 from newrelic.core.attribute import (truncate, sanitize, Attribute,
     CastingFailureException, MAX_64_BIT_INT, _DESTINATIONS_WITH_EVENTS)
@@ -219,14 +220,22 @@ def test_truncate_empty_unicode():
 TOO_LONG = '*' * 256
 TRUNCATED = '*' * 255
 
+
 _required_custom_params = [('key', 'value')]
 _forgone_custom_params = []
 
 
 @validate_custom_parameters(_required_custom_params, _forgone_custom_params)
 @background_task()
-def test_custom_params_ok():
+def test_custom_param_ok():
     result = add_custom_parameter('key', 'value')
+    assert result
+
+
+@validate_custom_parameters(_required_custom_params, _forgone_custom_params)
+@background_task()
+def test_custom_params_ok():
+    result = add_custom_parameters([('key', 'value')])
     assert result
 
 
@@ -237,8 +246,16 @@ _forgone_custom_params_long_key = [(TOO_LONG, 'value')]
 @validate_custom_parameters(_required_custom_params_long_key,
         _forgone_custom_params_long_key)
 @background_task()
-def test_custom_params_key_too_long():
+def test_custom_param_key_too_long():
     result = add_custom_parameter(TOO_LONG, 'value')
+    assert not result
+
+
+@validate_custom_parameters(_required_custom_params_long_key,
+        _forgone_custom_params_long_key)
+@background_task()
+def test_custom_params_key_too_long():
+    result = add_custom_parameters([(TOO_LONG, 'value')])
     assert not result
 
 
@@ -249,8 +266,16 @@ _forgone_custom_params_long_value = []
 @validate_custom_parameters(_required_custom_params_long_value,
         _forgone_custom_params_long_value)
 @background_task()
-def test_custom_params_value_too_long():
+def test_custom_param_value_too_long():
     result = add_custom_parameter('key', TOO_LONG)
+    assert result
+
+
+@validate_custom_parameters(_required_custom_params_long_value,
+        _forgone_custom_params_long_value)
+@background_task()
+def test_custom_params_value_too_long():
+    result = add_custom_parameters([('key', TOO_LONG)])
     assert result
 
 
@@ -261,13 +286,22 @@ _forgone_custom_params_too_many = [('key-64', 'value')]
 @validate_custom_parameters(_required_custom_params_too_many,
         _forgone_custom_params_too_many)
 @background_task()
-def test_custom_params_too_many():
+def test_custom_param_too_many():
     for i in range(65):
         result = add_custom_parameter('key-%02d' % i, 'value')
         if i < 64:
             assert result
         else:
             assert not result   # Last one fails
+
+
+@validate_custom_parameters(_required_custom_params_too_many,
+        _forgone_custom_params_too_many)
+@background_task()
+def test_custom_params_too_many():
+    item_list = [('key-%02d' % i, 'value') for i in range(65)]
+    result = add_custom_parameters(item_list)
+    assert not result
 
 
 _required_custom_params_name_not_string = []
@@ -277,8 +311,16 @@ _forgone_custom_params_name_not_string = [(1, 'value')]
 @validate_custom_parameters(_required_custom_params_name_not_string,
         _forgone_custom_params_name_not_string)
 @background_task()
-def test_custom_params_name_not_string():
+def test_custom_param_name_not_string():
     result = add_custom_parameter(1, 'value')
+    assert not result
+
+
+@validate_custom_parameters(_required_custom_params_name_not_string,
+        _forgone_custom_params_name_not_string)
+@background_task()
+def test_custom_params_name_not_string():
+    result = add_custom_parameters([(1, 'value')])
     assert not result
 
 
@@ -291,8 +333,16 @@ _forgone_custom_params_int_too_big = [('key', TOO_BIG)]
 @validate_custom_parameters(_required_custom_params_int_too_big,
         _forgone_custom_params_int_too_big)
 @background_task()
-def test_custom_params_int_too_big():
+def test_custom_param_int_too_big():
     result = add_custom_parameter('key', TOO_BIG)
+    assert not result
+
+
+@validate_custom_parameters(_required_custom_params_int_too_big,
+        _forgone_custom_params_int_too_big)
+@background_task()
+def test_custom_params_int_too_big():
+    result = add_custom_parameters([('key', TOO_BIG)])
     assert not result
 
 

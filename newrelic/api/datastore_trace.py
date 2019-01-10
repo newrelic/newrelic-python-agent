@@ -47,10 +47,24 @@ class DatastoreTrace(TimeTrace):
 
         super(DatastoreTrace, self).__init__(transaction)
 
+        self.instance_reporting_enabled = False
+        self.database_name_enabled = False
+
+        self.host = None
+        self.port_path_or_id = None
+        self.database_name = None
+
         if transaction:
             self.product = transaction._intern_string(product)
             self.target = transaction._intern_string(target)
             self.operation = transaction._intern_string(operation)
+
+            datastore_tracer_settings = transaction.settings.datastore_tracer
+            self.instance_reporting_enabled = \
+                    datastore_tracer_settings.instance_reporting.enabled
+            self.database_name_enabled = \
+                    datastore_tracer_settings.database_name_reporting.enabled
+
         else:
             self.product = product
             self.target = target
@@ -64,6 +78,14 @@ class DatastoreTrace(TimeTrace):
         return '<%s %s>' % (self.__class__.__name__, dict(
                 product=self.product, target=self.target,
                 operation=self.operation))
+
+    def finalize_data(self, transaction, exc=None, value=None, tb=None):
+        if not self.instance_reporting_enabled:
+            self.host = None
+            self.port_path_or_id = None
+
+        if not self.database_name_enabled:
+            self.database_name = None
 
     def terminal_node(self):
         return True
@@ -82,7 +104,8 @@ class DatastoreTrace(TimeTrace):
                 port_path_or_id=self.port_path_or_id,
                 database_name=self.database_name,
                 is_async=self.is_async,
-                guid=self.guid)
+                guid=self.guid,
+                agent_attributes=self.agent_attributes)
 
 
 def DatastoreTraceWrapper(wrapped, product, target, operation):

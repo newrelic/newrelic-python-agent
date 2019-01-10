@@ -86,8 +86,6 @@ class DatastoreTrace(TimeTrace):
 
         if not self.database_name_enabled:
             self.database_name = None
-        else:
-            self.agent_attributes['db.instance'] = self.database_name
 
     def terminal_node(self):
         return True

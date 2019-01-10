@@ -262,7 +262,7 @@ def test_external_span_limits(kwarg_override, attr_override):
     _test()
 
 
-@pytest.mark.parametrize('kwarg_override,intrinsics_override', (
+@pytest.mark.parametrize('kwarg_override,attribute_override', (
     ({'host': 'a' * 256},
      {'peer.hostname': 'a' * 255, 'peer.address': 'a' * 255}),
     ({'port_path_or_id': 'a' * 256, 'host': 'a'},
@@ -273,7 +273,7 @@ def test_external_span_limits(kwarg_override, attr_override):
     'distributed_tracing.enabled': True,
     'span_events.enabled': True,
 })
-def test_datastore_span_limits(kwarg_override, intrinsics_override):
+def test_datastore_span_limits(kwarg_override, attribute_override):
 
     exact_intrinsics = {
         'type': 'Span',
@@ -282,11 +282,21 @@ def test_datastore_span_limits(kwarg_override, intrinsics_override):
         'category': 'datastore',
         'span.kind': 'client',
         'component': 'library',
-        'db.instance': 'db',
         'peer.hostname': 'foo',
         'peer.address': 'foo:1234',
     }
-    exact_intrinsics.update(intrinsics_override)
+
+    db_instance_override = attribute_override.pop('db.instance', None)
+    if db_instance_override:
+        exact_agents = {
+            'db.instance': db_instance_override
+        }
+    else:
+        exact_agents = {
+            'db.instance': 'db',
+        }
+
+    exact_intrinsics.update(attribute_override)
 
     kwargs = {
         'product': 'library',
@@ -302,6 +312,7 @@ def test_datastore_span_limits(kwarg_override, intrinsics_override):
         count=1,
         exact_intrinsics=exact_intrinsics,
         expected_intrinsics=('priority',),
+        exact_agents=exact_agents,
     )
     @background_task(name='test_external_spans')
     def _test():

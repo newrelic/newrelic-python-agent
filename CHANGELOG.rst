@@ -1,6 +1,9 @@
 unreleased
 ----------
 
+4.10.0 (2019-01-10)
+------------------
+
 - Add ability to exclude attributes from span events and transaction segments
 
   This release adds support to exclude attributes from span events (via the

@@ -52,7 +52,6 @@ def test_span_events(instance_enabled):
         'category': 'datastore',
         'component': 'Memcached',
         'span.kind': 'client',
-        'db.instance': 'Unknown',
     }
 
     if instance_enabled:
@@ -78,9 +77,12 @@ def test_span_events(instance_enabled):
     query_3 = common.copy()
     query_3['name'] = 'Datastore/operation/Memcached/delete'
 
-    @validate_span_events(count=1, exact_intrinsics=query_1)
-    @validate_span_events(count=1, exact_intrinsics=query_2)
-    @validate_span_events(count=1, exact_intrinsics=query_3)
+    @validate_span_events(count=1, exact_intrinsics=query_1,
+            unexpected_agents=('db.instance',))
+    @validate_span_events(count=1, exact_intrinsics=query_2,
+            unexpected_agents=('db.instance',))
+    @validate_span_events(count=1, exact_intrinsics=query_3,
+            unexpected_agents=('db.instance',))
     @validate_span_events(count=0, expected_intrinsics=('db.statement',))
     @override_application_settings(settings)
     @background_task(name='span_events')

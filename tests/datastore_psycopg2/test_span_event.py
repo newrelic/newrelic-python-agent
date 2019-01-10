@@ -46,8 +46,9 @@ def _exercise_db():
 
 # Tests
 
+@pytest.mark.parametrize('db_instance_enabled', (True, False))
 @pytest.mark.parametrize('instance_enabled', (True, False))
-def test_span_events(instance_enabled):
+def test_span_events(instance_enabled, db_instance_enabled):
     guid = 'dbb533c53b749e0b'
     priority = 0.5
 
@@ -62,20 +63,28 @@ def test_span_events(instance_enabled):
     }
 
     if instance_enabled:
-        settings = _enable_instance_settings
+        settings = _enable_instance_settings.copy()
         hostname = instance_hostname(DB_SETTINGS['host'])
         common.update({
-            'db.instance': DB_SETTINGS['name'],
             'peer.address': '%s:%s' % (hostname, DB_SETTINGS['port']),
             'peer.hostname': hostname,
         })
     else:
-        settings = _disable_instance_settings
+        settings = _disable_instance_settings.copy()
         common.update({
-            'db.instance': 'Unknown',
             'peer.address': 'Unknown:Unknown',
             'peer.hostname': 'Unknown',
         })
+
+    if db_instance_enabled and instance_enabled:
+        exact_agents = {
+            'db.instance': DB_SETTINGS['name'],
+        }
+        unexpected_agents = ()
+    else:
+        settings['attributes.exclude'] = ['db.instance']
+        exact_agents = {}
+        unexpected_agents = ('db.instance',)
 
     query_1 = common.copy()
     query_1['name'] = 'Datastore/statement/Postgres/pg_settings/select'
@@ -85,8 +94,18 @@ def test_span_events(instance_enabled):
     query_2['name'] = 'Datastore/operation/Postgres/select'
     query_2['db.statement'] = 'SELECT ?'
 
-    @validate_span_events(count=1, exact_intrinsics=query_1)
-    @validate_span_events(count=1, exact_intrinsics=query_2)
+    @validate_span_events(
+            count=1,
+            exact_intrinsics=query_1,
+            unexpected_intrinsics=('db.instance'),
+            exact_agents=exact_agents,
+            unexpected_agents=unexpected_agents)
+    @validate_span_events(
+            count=1,
+            exact_intrinsics=query_2,
+            unexpected_intrinsics=('db.instance'),
+            exact_agents=exact_agents,
+            unexpected_agents=unexpected_agents)
     @override_application_settings(settings)
     @background_task(name='span_events')
     def _test():

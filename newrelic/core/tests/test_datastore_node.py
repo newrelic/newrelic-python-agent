@@ -1,3 +1,4 @@
+import pytest
 import newrelic.core.datastore_node
 
 from newrelic.common import system_info
@@ -38,5 +39,21 @@ _ds_node = newrelic.core.datastore_node.DatastoreNode(
 )
 
 
+@pytest.fixture(autouse=True)
+def cleanup_caches():
+    for attr in ('_db_instance',):
+        if hasattr(_ds_node, attr):
+            delattr(_ds_node, attr)
+
+
 def test_instance_hostname():
     assert _ds_node.instance_hostname == HOST
+
+
+def test_ds_instance_cache():
+    _ds_node._db_instance = 'FOO'
+    assert _ds_node.db_instance == 'FOO'
+
+
+def test_ds_instance():
+    assert _ds_node.db_instance == 'bar'

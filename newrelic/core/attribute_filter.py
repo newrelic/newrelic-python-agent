@@ -48,6 +48,7 @@ class AttributeFilter(object):
 
         self.enabled_destinations = self._set_enabled_destinations(flattened_settings)
         self.rules = self._build_rules(flattened_settings)
+        self.cache = {}
 
     def __repr__(self):
         return "<AttributeFilter: destinations: %s, rules: %s>" % (
@@ -124,6 +125,9 @@ class AttributeFilter(object):
         if self.enabled_destinations == DST_NONE:
             return DST_NONE
 
+        if name in self.cache:
+            return self.cache[name]
+
         destinations = self.enabled_destinations & default_destinations
 
         for rule in self.rules:
@@ -134,6 +138,7 @@ class AttributeFilter(object):
                 else:
                     destinations &= ~rule.destinations
 
+        self.cache[name] = destinations
         return destinations
 
 class AttributeFilterRule(object):

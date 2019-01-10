@@ -14,12 +14,38 @@ from newrelic.common.object_wrapper import (wrap_function_wrapper,
 from newrelic.core.config import ignore_status_code
 
 
+def aiohttp_version_info():
+    import aiohttp
+    return tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
+
+
+def headers_preserve_casing():
+    try:
+        from multidict import CIMultiDict
+    except:
+        return True
+
+    d = CIMultiDict()
+    d.update({'X-NewRelic-ID': 'value'})
+    return 'X-NewRelic-ID' in dict(d.items())
+
+
 def should_ignore(exc, value, tb):
     from aiohttp import web
 
     if isinstance(value, web.HTTPException):
         status_code = value.status_code
         return ignore_status_code(status_code)
+
+
+def _nr_process_response_proxy(response, transaction):
+    headers = dict(response.headers)
+    status_str = str(response.status)
+
+    nr_headers = transaction.process_response(status_str,
+            headers.items())
+
+    response._headers = HeaderProxy(response.headers, nr_headers)
 
 
 def _nr_process_response(response, transaction):
@@ -29,8 +55,7 @@ def _nr_process_response(response, transaction):
     nr_headers = transaction.process_response(status_str,
             headers.items())
 
-    for k, v in nr_headers:
-        response.headers.add(k, v)
+    response._headers.update(nr_headers)
 
 
 class NRTransactionCoroutineWrapper(ObjectProxy):
@@ -265,8 +290,7 @@ def _nr_aiohttp_response_prepare_(wrapped, instance, args, kwargs):
 
     nr_headers = getattr(request, '_nr_headers', None)
     if nr_headers:
-        headers = dict(instance.headers)
-        nr_headers.update(headers)
+        nr_headers.update(instance.headers)
         instance._headers = nr_headers
 
     return wrapped(*args, **kwargs)
@@ -349,6 +373,24 @@ def _nr_aiohttp_add_cat_headers_(wrapped, instance, args, kwargs):
             instance.headers = tmp
 
 
+def _nr_aiohttp_add_cat_headers_simple_(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    try:
+        cat_headers = ExternalTrace.generate_request_headers(transaction)
+    except:
+        return wrapped(*args, **kwargs)
+
+    for k, _ in cat_headers:
+        if k in instance.headers:
+            return wrapped(*args, **kwargs)
+
+    instance.headers.update(cat_headers)
+    return wrapped(*args, **kwargs)
+
+
 def _bind_request(method, url, *args, **kwargs):
     return method, url
 
@@ -389,12 +431,15 @@ def instrument_aiohttp_client(module):
 
 
 def instrument_aiohttp_client_reqrep(module):
-    import aiohttp
-    version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
+    version_info = aiohttp_version_info()
 
     if version_info >= (2, 0):
-        wrap_function_wrapper(module, 'ClientRequest.send',
-                _nr_aiohttp_add_cat_headers_)
+        if headers_preserve_casing():
+            cat_wrapper = _nr_aiohttp_add_cat_headers_simple_
+        else:
+            cat_wrapper = _nr_aiohttp_add_cat_headers_
+
+        wrap_function_wrapper(module, 'ClientRequest.send', cat_wrapper)
 
 
 def instrument_aiohttp_protocol(module):
@@ -403,13 +448,22 @@ def instrument_aiohttp_protocol(module):
 
 
 def instrument_aiohttp_web_urldispatcher(module):
+    if aiohttp_version_info() < (3, 5):
+        system_route_handler = 'SystemRoute._handler'
+    else:
+        system_route_handler = 'SystemRoute._handle'
+
     wrap_function_wrapper(module, 'ResourceRoute.__init__',
             _nr_aiohttp_wrap_view_)
-    wrap_function_wrapper(module, 'SystemRoute._handler',
+    wrap_function_wrapper(module, system_route_handler,
             _nr_aiohttp_wrap_system_route_)
 
 
 def instrument_aiohttp_web(module):
+    global _nr_process_response
+    if not headers_preserve_casing():
+        _nr_process_response = _nr_process_response_proxy
+
     wrap_function_wrapper(module, 'Application._handle',
             _nr_aiohttp_transaction_wrapper_)
     wrap_function_wrapper(module, 'Application.__init__',

@@ -1,6 +1,9 @@
 unreleased
 ----------
 
+4.10.0 (2019-01-10)
+------------------
+
 - Add ability to exclude attributes from span events and transaction segments
 
   This release adds support to exclude attributes from span events (via the
@@ -14,6 +17,32 @@ unreleased
   This feature also includes filtering of url parameters from span events and
   transaction segments.
 
+
+- Transaction counts were not reported for aiohttp's built-in error pages
+
+  When a built-in error route was reached in aiohttp (such as a 404 due to a
+  missing route), transactions were not recorded. As a result, the transaction
+  counts may have been artificially low. aiohttp system route traffic will now
+  be reported.
+
+- aiohttp cross application tracing linking to non-Python applications may have been
+  omitted if using multidict<3.0
+
+  For aiohttp users using multidict versions less than 3.0, cross application
+  tracing HTTP headers may have been generated in a way that was incompatible
+  with non-Python applications. Headers are now generated in a format
+  compatible with all New Relic agents.
+
+- aiohttp 3.5.x versions generated agent instrumentation errors
+
+  The agent previously failed to instrument aiohttp applications running
+  versions 3.5.0 and greater. The agent now supports aiohttp versions up to
+  3.5.1.
+
+- Add public add_custom_parameters API
+
+  The method add_custom_parameters on Transaction is now exposed through
+  newrelic.agent.add_custom_parameters
 
 4.8.0 (2018-12-03)
 ------------------

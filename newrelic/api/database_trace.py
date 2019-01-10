@@ -64,15 +64,6 @@ class DatabaseTrace(TimeTrace):
                 sql=self.sql, dbapi2_module=self.dbapi2_module))
 
     @property
-    def database_name(self):
-        return self._database_name
-
-    @database_name.setter
-    def database_name(self, value):
-        self._database_name = value
-        self.agent_attributes['database_name'] = value
-
-    @property
     def is_async_mode(self):
         # Check for `async=1` keyword argument in connect_params, which
         # indicates that psycopg2 driver is being used in async mode.

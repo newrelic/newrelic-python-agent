@@ -68,7 +68,6 @@ class Application(object):
 
         self._harvest_count = 0
 
-        self._merge_count = 0
         self._discard_count = 0
 
         self._agent_restart = 0
@@ -197,8 +196,6 @@ class Application(object):
                     self._global_events_account)
             print >> file, 'Harvest Metrics Count: %d' % (
                     self._stats_engine.metrics_count())
-            print >> file, 'Harvest Merge Count: %d' % (
-                    self._merge_count)
             print >> file, 'Harvest Discard Count: %d' % (
                     self._discard_count)
 
@@ -472,10 +469,6 @@ class Application(object):
 
             self._global_events_account = 0
 
-            # Clear any prior count of harvest merges due to failures.
-
-            self._merge_count = 0
-
             # Record metrics for how long it took us to connect and how
             # many attempts we made. Also record metrics for the final
             # successful attempt. If we went through multiple attempts,
@@ -515,44 +508,18 @@ class Application(object):
 
             self._connected_event.set()
 
-            # Immediately fetch any agent commands now even before start
-            # recording any transactions so running of any X-Ray
-            # sessions is not delayed. This could fail due to issues
-            # talking to the data collector or if we get back bad data.
-            # We need to make sure we ignore such errors and still allow
-            # the registration to be finalised so that agent still
-            # start up and collect metrics. Any X-Ray sessions will be
-            # picked up in subsequent harvest.
-
-            try:
-                self.process_agent_commands()
-
-            except RetryDataForRequest:
-                # Ignore any error connecting to the data collector at
-                # this point as trying to get agent commands at this
-                # point is an optimisation and not a big issue if it fails.
-                # Transient issues with the data collector for this will
-                # just cause noise in the agent logs and worry users. An
-                # ongoing connection issue will be picked properly with
-                # the subsequent data harvest.
-
-                pass
-
-            except Exception:
-                if not self._agent_shutdown and not self._pending_shutdown:
-                    _logger.exception('Unexpected exception when processing '
-                            'agent commands when registering agent with the '
-                            'data collector. If this problem persists, please '
-                            'report this problem to New Relic support for '
-                            'further investigation.')
-                else:
-                    raise
-
             # Start any data samplers so they are aware of the start of
             # the harvest period.
 
             self.start_data_samplers()
 
+        except ForceAgentDisconnect:
+            # Any disconnect exception means we should stop trying to connect
+            _logger.error('The New Relic service has requested that the agent '
+                    'stop attempting to connect. The agent will no longer '
+                    'attempt a connection with New Relic. Your application '
+                    'must be manually restarted in order to connect to New '
+                    'Relic.')
         except Exception:
             # If an exception occurs after agent has been flagged to be
             # shutdown then we ignore the error. This is because all
@@ -1582,7 +1549,7 @@ class Application(object):
                             self._app_name)
 
                     # Send metrics
-                    metric_ids = self._active_session.send_metric_data(
+                    self._active_session.send_metric_data(
                             self._period_start, period_end, metric_data)
 
                     _logger.debug('Done sending data for harvest of '
@@ -1590,18 +1557,15 @@ class Application(object):
 
                     stats.reset_metric_stats()
 
-                    # Successful, so we update the stats engine with the
-                    # new metric IDs and reset the reporting period
-                    # start time. If an error occurs after this point,
+                    # Successful, we reset the reporting period start time.
+                    # If an error occurs after this point,
                     # any remaining data for the period being reported
                     # on will be thrown away. We reset the count of
                     # number of merges we have done due to failures as
                     # only really want to count errors in being able to
                     # report the main transaction metrics.
 
-                    self._merge_count = 0
                     self._period_start = period_end
-                    self._stats_engine.update_metric_ids(metric_ids)
 
                     # Fetch agent commands sent from the data collector
                     # and process them.
@@ -1677,34 +1641,7 @@ class Application(object):
                             'Exception/%s' % callable_name(exc_type), 1)
 
                     if self._period_start != period_end:
-
-                        self._merge_count += 1
-
-                        agent_limits = configuration.agent_limits
-                        maximum = agent_limits.merge_stats_maximum
-
-                        if self._merge_count <= maximum:
-
-                            self._stats_engine.rollback(stats)
-
-                        else:
-                            _logger.error('Unable to report main transaction '
-                                    'metrics after %r successive attempts. '
-                                    'Check the log messages and if necessary '
-                                    'please report this problem to New Relic '
-                                    'support for further investigation.',
-                                    maximum)
-
-                            self._discard_count += self._merge_count
-
-                            self._merge_count = 0
-
-                            # Force an agent restart ourselves.
-
-                            _logger.debug('Abandoning agent run and forcing '
-                                    'a reconnect of the agent.')
-
-                            self.internal_agent_shutdown(restart=True)
+                        self._stats_engine.rollback(stats)
 
                 except DiscardDataForRequest:
                     # An issue must have occurred in reporting the data
@@ -1834,11 +1771,9 @@ class Application(object):
 
             _logger.debug('Process agent commands for %r.', self._app_name)
 
-            # Any exception on get agent commands shouldn't interrupt the
-            # harvest cycle
-            try:
-                agent_commands = self._active_session.get_agent_commands()
-            except:
+            agent_commands = self._active_session.get_agent_commands()
+
+            if agent_commands is None:
                 return
 
             # Extract the command names from the agent_commands. This is

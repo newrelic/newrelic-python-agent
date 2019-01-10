@@ -2,6 +2,7 @@ import asyncio
 import json
 import pytest
 
+from newrelic.common.object_wrapper import transient_function_wrapper
 from newrelic.common.encoding_utils import deobfuscate
 from testing_support.fixtures import (override_application_settings,
     make_cross_agent_headers, validate_analytics_catmap_data,
@@ -13,6 +14,36 @@ test_uris = [
     ('/coro?hello=world', '_target_application:index'),
     ('/class?hello=world', '_target_application:HelloWorldView'),
 ]
+
+
+def record_aiohttp1_raw_headers(raw_headers):
+    try:
+        import aiohttp.protocol
+    except ImportError:
+        def pass_through(function):
+            return function
+        return pass_through
+
+    @transient_function_wrapper('aiohttp.protocol', 'HttpParser.parse_headers')
+    def recorder(wrapped, instance, args, kwargs):
+        def _bind_params(lines):
+            return lines
+
+        lines = _bind_params(*args, **kwargs)
+        for line in lines:
+            line = line.decode('utf-8')
+
+            # This is the request, not the response
+            if line.startswith('GET'):
+                break
+
+            if ':' in line:
+                key, value = line.split(':', maxsplit=1)
+                raw_headers[key.strip()] = value.strip()
+
+        return wrapped(*args, **kwargs)
+
+    return recorder
 
 
 @pytest.mark.parametrize(
@@ -37,6 +68,8 @@ test_uris = [
 def test_cat_headers(method, uri, metric_name, inbound_payload,
         expected_intrinsics, forgone_intrinsics, cat_id, aiohttp_app):
 
+    _raw_headers = {}
+
     @asyncio.coroutine
     def fetch():
         headers = make_cross_agent_headers(inbound_payload, ENCODING_KEY,
@@ -44,21 +77,22 @@ def test_cat_headers(method, uri, metric_name, inbound_payload,
         resp = yield from aiohttp_app.client.request(method, uri,
                 headers=headers)
 
-        try:
-            resp_headers = dict(resp._nr_cat_header)
-        except TypeError:
-            resp_headers = dict(resp.headers)
+        if _raw_headers:
+            raw_headers = _raw_headers
+        else:
+            raw_headers = {k.decode('utf-8'): v.decode('utf-8')
+                    for k, v in resp.raw_headers}
 
         if expected_intrinsics:
             # test valid CAT response header
-            assert 'X-NewRelic-App-Data' in resp_headers
+            assert 'X-NewRelic-App-Data' in raw_headers
 
             app_data = json.loads(deobfuscate(
-                    resp_headers['X-NewRelic-App-Data'], ENCODING_KEY))
+                    raw_headers['X-NewRelic-App-Data'], ENCODING_KEY))
             assert app_data[0] == cat_id
             assert app_data[1] == ('WebTransaction/Function/%s' % metric_name)
         else:
-            assert 'X-NewRelic-App-Data' not in resp_headers
+            assert 'X-NewRelic-App-Data' not in resp.headers
 
     _custom_settings = {
             'cross_process_id': '1#1',
@@ -81,6 +115,7 @@ def test_cat_headers(method, uri, metric_name, inbound_payload,
             expected_attributes=expected_intrinsics,
             non_expected_attributes=forgone_intrinsics)
     @override_application_settings(_custom_settings)
+    @record_aiohttp1_raw_headers(_raw_headers)
     def _test():
         aiohttp_app.loop.run_until_complete(fetch())
 
@@ -138,16 +173,11 @@ def test_distributed_tracing_headers(uri, metric_name, aiohttp_app):
         resp = yield from aiohttp_app.client.request('GET', uri,
                 headers=headers)
 
-        try:
-            resp_headers = dict(resp._nr_cat_header)
-        except TypeError:
-            resp_headers = dict(resp.headers)
-
         # better cat does not send a response in the headers
-        assert 'newrelic' not in resp_headers
+        assert 'newrelic' not in resp.headers
 
         # old-cat headers should not be in the response
-        assert 'X-NewRelic-App-Data' not in resp_headers
+        assert 'X-NewRelic-App-Data' not in resp.headers
 
     # NOTE: the logic-flow of this test can be a bit confusing.
     #       the override settings and attribute validation occur

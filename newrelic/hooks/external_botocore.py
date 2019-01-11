@@ -1,4 +1,5 @@
 from newrelic.api.coroutine_trace import return_value_fn
+from newrelic.api.message_trace import MessageTrace
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
@@ -10,7 +11,32 @@ except ImportError:
     import urllib.parse as urlparse
 
 
+# AWS SNS
+
+class BotoSNSHooks(object):
+    @staticmethod
+    def publish(transaction, operation_name, instance, kwargs):
+        """
+        sns publish kwargs
+            TopicArn (string) -- (there will be either TopicArn or TargetArn)
+            TargetArn (string) -- (there will be either TopicArn or TargetArn)
+            PhoneNumber (string)
+            Message (string) -- [REQUIRED]
+            Subject (string)
+            MessageStructure (string)
+            MessageAttributes (dict)
+        """
+
+        dest_name = kwargs.get('TopicArn', kwargs.get('TargetArn', None))
+        return MessageTrace(transaction,
+                library='boto3',
+                operation=operation_name,
+                destination_type='SNSTopic',
+                destination_name=dest_name)
+
+
 CUSTOM_TRACE_POINTS = {
+    'sns': BotoSNSHooks,
 }
 
 

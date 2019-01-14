@@ -90,8 +90,14 @@ def _nr_endpoint_make_request_(wrapped, instance, args, kwargs):
     method = request_dict.get('method', None)
 
     with ExternalTrace(transaction, library='botocore', url=url,
-            method=method):
-        return wrapped(*args, **kwargs)
+            method=method) as trace:
+        result = wrapped(*args, **kwargs)
+        try:
+            request_id = result[1]['ResponseMetadata']['RequestId']
+            trace._add_agent_attribute('aws.requestId', request_id)
+        except:
+            pass
+        return result
 
 
 def instrument_botocore_endpoint(module):

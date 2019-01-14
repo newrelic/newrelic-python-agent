@@ -1,6 +1,7 @@
 import sys
 import boto3
 import moto
+import pytest
 
 from newrelic.api.background_task import background_task
 from testing_support.fixtures import validate_transaction_metrics
@@ -16,24 +17,45 @@ AWS_ACCESS_KEY_ID = 'AAAAAAAAAAAACCESSKEY'
 AWS_SECRET_ACCESS_KEY = 'AAAAAASECRETKEY'
 AWS_REGION_NAME = 'us-east-1'
 SNS_URL = 'sns-us-east-1.amazonaws.com'
-EXCHANGE = 'arn:aws:sns:us-east-1:123456789012:some-topic'
-sns_metrics = [('MessageBroker/boto3/Topic/Produce/Named/%s' % EXCHANGE, 1)]
+TOPIC = 'arn:aws:sns:us-east-1:123456789012:some-topic'
+sns_metrics = [('MessageBroker/boto3/Topic/Produce/Named/%s' % TOPIC, 1)]
+sns_metrics_phone = [
+        ('MessageBroker/boto3/Topic/Produce/Named/PhoneNumber', 1)]
 
 
-@validate_transaction_metrics('test_boto3_sns:test_publish_to_sns',
+@pytest.mark.parametrize('topic_argument', ('TopicArn', 'TargetArn'))
+@validate_transaction_metrics('test_boto3_sns:test_publish_to_sns_topic',
         scoped_metrics=sns_metrics, rollup_metrics=sns_metrics,
         background_task=True)
 @background_task()
 @moto.mock_sns
-def test_publish_to_sns():
+def test_publish_to_sns_topic(topic_argument):
     conn = boto3.client('sns',
             aws_access_key_id=AWS_ACCESS_KEY_ID,
             aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
             region_name=AWS_REGION_NAME)
 
-    conn.create_topic(Name='some-topic')
-    response = conn.list_topics()
-    topic_arn = response["Topics"][0]['TopicArn']
+    topic_arn = conn.create_topic(Name='some-topic')['TopicArn']
 
-    published_message = conn.publish(TopicArn=topic_arn, Message='my msg')
+    kwargs = {topic_argument: topic_arn}
+    published_message = conn.publish(Message='my msg', **kwargs)
+    assert 'MessageId' in published_message
+
+
+@validate_transaction_metrics('test_boto3_sns:test_publish_to_sns_phone',
+        scoped_metrics=sns_metrics_phone, rollup_metrics=sns_metrics_phone,
+        background_task=True)
+@background_task()
+@moto.mock_sns
+def test_publish_to_sns_phone():
+    conn = boto3.client('sns',
+            aws_access_key_id=AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+            region_name=AWS_REGION_NAME)
+
+    topic_arn = conn.create_topic(Name='some-topic')['TopicArn']
+    conn.subscribe(TopicArn=topic_arn, Protocol='sms', Endpoint='5555555555')
+
+    published_message = conn.publish(
+            PhoneNumber='5555555555', Message='my msg')
     assert 'MessageId' in published_message

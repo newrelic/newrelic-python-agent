@@ -1,9 +1,7 @@
-from newrelic.api.coroutine_trace import return_value_fn
-from newrelic.api.message_trace import MessageTrace
+from newrelic.api.message_trace import message_trace
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import (wrap_function_wrapper,
-        FunctionWrapper)
+from newrelic.common.object_wrapper import wrap_function_wrapper
 
 try:
     import urlparse
@@ -11,61 +9,42 @@ except ImportError:
     import urllib.parse as urlparse
 
 
-# AWS SNS
+def extract(argument_names, default=None):
+    def extractor(*args, **kwargs):
+        for argument_name in argument_names:
+            argument_value = kwargs.get(argument_name)
+            if argument_value:
+                return argument_value
 
-class BotoSNSHooks(object):
-    @staticmethod
-    def publish(transaction, operation_name, instance, kwargs):
-        """
-        sns publish kwargs
-            TopicArn (string) -- (there will be either TopicArn or TargetArn)
-            TargetArn (string) -- (there will be either TopicArn or TargetArn)
-            PhoneNumber (string)
-            Message (string) -- [REQUIRED]
-            Subject (string)
-            MessageStructure (string)
-            MessageAttributes (dict)
-        """
+        return default
 
-        dest_name = kwargs.get('TopicArn', kwargs.get('TargetArn', None))
-        return MessageTrace(transaction,
-                library='boto3',
-                operation=operation_name,
-                destination_type='SNSTopic',
-                destination_name=dest_name)
+    return extractor
 
 
 CUSTOM_TRACE_POINTS = {
-    'sns': BotoSNSHooks,
+    ('sns', 'publish'): message_trace('boto3', 'Produce', 'Topic',
+            extract(('TopicArn', 'TargetArn'), 'PhoneNumber')),
 }
 
 
-def bind__create_api_method(py_operation_name, operation_name, service_model):
-    return (py_operation_name, operation_name, service_model)
+def bind__create_api_method(py_operation_name, operation_name, service_model,
+        *args, **kwargs):
+    return (py_operation_name, service_model)
 
 
 def _nr_clientcreator__create_api_method_(wrapped, instance, args, kwargs):
-    (py_operation_name, operation_name, service_model) = \
-            bind__create_api_method(*args)
+    (py_operation_name, service_model) = \
+            bind__create_api_method(*args, **kwargs)
 
-    api_method = wrapped(*args, **kwargs)
     service_name = service_model._service_name.lower()
+    tracer = CUSTOM_TRACE_POINTS.get((service_name, py_operation_name))
 
-    if hasattr(CUSTOM_TRACE_POINTS.get(service_name), py_operation_name):
-        tracer = getattr(CUSTOM_TRACE_POINTS[service_name], py_operation_name)
-        return_value = return_value_fn(wrapped)
+    wrapped = wrapped(*args, **kwargs)
 
-        def wrap_service_method(_wrapped, _instance, _args, _kwargs):
-            transaction = current_transaction()
-            if transaction is None:
-                return _wrapped(*_args, **_kwargs)
+    if not tracer:
+        return wrapped
 
-            trace = tracer(transaction, operation_name, _instance, _kwargs)
-            return return_value(trace, lambda: _wrapped(*_args, **_kwargs))
-
-        return FunctionWrapper(api_method, wrap_service_method)
-
-    return api_method
+    return tracer(wrapped)
 
 
 def _nr_endpoint_make_request_(wrapped, instance, args, kwargs):

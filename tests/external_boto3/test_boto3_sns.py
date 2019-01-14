@@ -17,7 +17,7 @@ AWS_SECRET_ACCESS_KEY = 'AAAAAASECRETKEY'
 AWS_REGION_NAME = 'us-east-1'
 SNS_URL = 'sns-us-east-1.amazonaws.com'
 EXCHANGE = 'arn:aws:sns:us-east-1:123456789012:some-topic'
-sns_metrics = [('MessageBroker/boto3/SNSTopic/Publish/Named/%s' % EXCHANGE, 1)]
+sns_metrics = [('MessageBroker/boto3/Topic/Produce/Named/%s' % EXCHANGE, 1)]
 
 
 @validate_transaction_metrics('test_boto3_sns:test_publish_to_sns',

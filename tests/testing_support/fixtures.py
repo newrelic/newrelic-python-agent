@@ -124,7 +124,10 @@ def initialize_agent(app_name=None, default_settings={}):
         log_directory = '.'
 
     log_file = os.path.join(log_directory, 'python-agent-test.log')
-    log_level = logging.DEBUG
+    if 'JENKINS_HOME' in os.environ:
+        log_level = logging.DEBUG
+    else:
+        log_level = logging.INFO
 
     try:
         os.unlink(log_file)

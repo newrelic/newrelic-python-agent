@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
 # Install cython only when the CYTHON env variable is set
-[[ $CYTHON ]] && pip install cython
-
-pip install --no-binary :all: $*
+if [ -n "$CYTHON" ]; then
+    echo "CYTHON"
+    pip install cython
+    pip install --no-binary :all: $*
+else
+    echo "PYTHON"
+    pip install $*
+fi

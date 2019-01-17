@@ -18,9 +18,12 @@ AWS_SECRET_ACCESS_KEY = 'AAAAAASECRETKEY'
 AWS_REGION_NAME = 'us-east-1'
 SNS_URL = 'sns-us-east-1.amazonaws.com'
 TOPIC = 'arn:aws:sns:us-east-1:123456789012:some-topic'
-sns_metrics = [('MessageBroker/boto3/Topic/Produce/Named/%s' % TOPIC, 1)]
+sns_metrics = [
+        ('MessageBroker/SimpleNotificationService/Topic'
+        '/Produce/Named/%s' % TOPIC, 1)]
 sns_metrics_phone = [
-        ('MessageBroker/boto3/Topic/Produce/Named/PhoneNumber', 1)]
+        ('MessageBroker/SimpleNotificationService/Topic'
+        '/Produce/Named/PhoneNumber', 1)]
 
 
 @pytest.mark.parametrize('topic_argument', ('TopicArn', 'TargetArn'))

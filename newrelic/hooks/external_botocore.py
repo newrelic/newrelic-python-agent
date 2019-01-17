@@ -1,4 +1,5 @@
 from newrelic.api.message_trace import message_trace
+from newrelic.api.datastore_trace import datastore_trace
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
@@ -10,21 +11,42 @@ except ImportError:
 
 
 def extract(argument_names, default=None):
-    def extractor(*args, **kwargs):
+    def extractor_list(*args, **kwargs):
         for argument_name in argument_names:
             argument_value = kwargs.get(argument_name)
             if argument_value:
                 return argument_value
-
         return default
 
-    return extractor
+    def extractor_string(*args, **kwargs):
+        return kwargs.get(argument_names, default)
+
+    if isinstance(argument_names, str):
+        return extractor_string
+
+    return extractor_list
 
 
 CUSTOM_TRACE_POINTS = {
     ('sns', 'publish'): message_trace(
             'SimpleNotificationService', 'Produce', 'Topic',
             extract(('TopicArn', 'TargetArn'), 'PhoneNumber')),
+    ('dynamodb', 'put_item'): datastore_trace(
+            'dynamodb', extract('TableName'), 'put_item'),
+    ('dynamodb', 'get_item'): datastore_trace(
+            'dynamodb', extract('TableName'), 'get_item'),
+    ('dynamodb', 'update_item'): datastore_trace(
+            'dynamodb', extract('TableName'), 'update_item'),
+    ('dynamodb', 'delete_item'): datastore_trace(
+            'dynamodb', extract('TableName'), 'delete_item'),
+    ('dynamodb', 'create_table'): datastore_trace(
+            'dynamodb', extract('TableName'), 'create_table'),
+    ('dynamodb', 'delete_table'): datastore_trace(
+            'dynamodb', extract('TableName'), 'delete_table'),
+    ('dynamodb', 'query'): datastore_trace(
+            'dynamodb', extract('TableName'), 'query'),
+    ('dynamodb', 'scan'): datastore_trace(
+            'dynamodb', extract('TableName'), 'scan'),
 }
 
 

@@ -451,7 +451,11 @@ def validate_transaction_metrics(name, group='Function',
             metric = metrics.get(key)
 
             def _metrics_table():
-                return 'metric=%r, metrics=%r' % (key, metrics)
+                out = ['']
+                out.append('Expected: {0}: {1}'.format(key, count))
+                for metric_key, metric_value in metrics.items():
+                    out.append('{0}: {1}'.format(metric_key, metric_value[0]))
+                return '\n'.join(out)
 
             def _metric_details():
                 return 'metric=%r, count=%r' % (key, metric.call_count)

@@ -23,14 +23,21 @@ TEST_TABLE = 'python-agent-test-%s' % uuid.uuid4()
 
 
 _dynamodb_scoped_metrics = [
-    ('External/dynamodb.us-east-1.amazonaws.com/botocore/POST', 5),
+    ('Datastore/statement/dynamodb/%s/create_table' % TEST_TABLE, 1),
+    ('Datastore/statement/dynamodb/%s/put_item' % TEST_TABLE, 1),
+    ('Datastore/statement/dynamodb/%s/get_item' % TEST_TABLE, 1),
+    ('Datastore/statement/dynamodb/%s/update_item' % TEST_TABLE, 1),
+    ('Datastore/statement/dynamodb/%s/query' % TEST_TABLE, 1),
+    ('Datastore/statement/dynamodb/%s/scan' % TEST_TABLE, 1),
+    ('Datastore/statement/dynamodb/%s/delete_item' % TEST_TABLE, 1),
+    ('Datastore/statement/dynamodb/%s/delete_table' % TEST_TABLE, 1),
 ]
 
 _dynamodb_rollup_metrics = [
-    ('External/all', 5),
-    ('External/allOther', 5),
-    ('External/dynamodb.us-east-1.amazonaws.com/all', 5),
-    ('External/dynamodb.us-east-1.amazonaws.com/botocore/POST', 5),
+    ('Datastore/all', 8),
+    ('Datastore/allOther', 8),
+    ('Datastore/dynamodb/all', 8),
+    ('Datastore/dynamodb/allOther', 8),
 ]
 
 
@@ -86,6 +93,35 @@ def test_dynamodb():
     # No checking response, due to inconsistent return values.
     # moto returns resp['Attributes']. AWS returns resp['ResponseMetadata']
 
+    # Get item
+    resp = client.get_item(
+            TableName=TEST_TABLE,
+            Key={
+                    'Id': {'N': '101'},
+                    'Foo': {'S': 'hello_world'},
+                    'SomeValue': {'S': 'some_random_attribute'},
+            }
+    )
+    assert resp['Item']['SomeValue']['S'] == 'some_random_attribute'
+
+    # Update item
+    resp = client.update_item(
+            TableName=TEST_TABLE,
+            Key={
+                    'Id': {'N': '101'},
+                    'Foo': {'S': 'hello_world'},
+                    'SomeValue': {'S': 'some_random_attribute'},
+            },
+            AttributeUpdates={
+                    'Foo2': {
+                            'Value': {'S': 'hello_world2'},
+                            'Action': 'PUT'
+                    },
+            },
+            ReturnValues='ALL_NEW',
+    )
+    assert resp['Attributes']['Foo2']
+
     # Query for item
     resp = client.query(
             TableName=TEST_TABLE,
@@ -96,6 +132,10 @@ def test_dynamodb():
     )
     assert len(resp['Items']) == 1
     assert resp['Items'][0]['SomeValue']['S'] == 'some_random_attribute'
+
+    # Scan
+    resp = client.scan(TableName=TEST_TABLE)
+    assert len(resp['Items']) == 1
 
     # Delete item
     resp = client.delete_item(

@@ -1,5 +1,6 @@
 import sys
 import uuid
+import pytest
 
 import botocore.session
 import moto
@@ -23,14 +24,28 @@ TEST_QUEUE = 'python-agent-test-%s' % uuid.uuid4()
 
 
 _sqs_scoped_metrics = [
-    ('External/queue.amazonaws.com/botocore/POST', 6),
+    ('MessageBroker/SimpleQueueService/Queue/Produce/Named/%s'
+        % TEST_QUEUE, 2),
+    ('External/queue.amazonaws.com/botocore/POST', 3),
 ]
 
 _sqs_rollup_metrics = [
-    ('External/all', 6),
-    ('External/allOther', 6),
-    ('External/queue.amazonaws.com/all', 6),
-    ('External/queue.amazonaws.com/botocore/POST', 6),
+    ('MessageBroker/SimpleQueueService/Queue/Produce/Named/%s'
+        % TEST_QUEUE, 2),
+    ('MessageBroker/SimpleQueueService/Queue/Consume/Named/%s'
+        % TEST_QUEUE, 1),
+    ('External/all', 3),
+    ('External/allOther', 3),
+    ('External/queue.amazonaws.com/all', 3),
+    ('External/queue.amazonaws.com/botocore/POST', 3),
+]
+
+_sqs_scoped_metrics_malformed = [
+    ('MessageBroker/SimpleQueueService/Queue/Produce/Named/Unknown', 1),
+]
+
+_sqs_rollup_metrics_malformed = [
+    ('MessageBroker/SimpleQueueService/Queue/Produce/Named/Unknown', 1),
 ]
 
 
@@ -82,3 +97,25 @@ def test_sqs():
     # Delete queue
     resp = client.delete_queue(QueueUrl=QUEUE_URL)
     assert resp['ResponseMetadata']['HTTPStatusCode'] == 200
+
+
+@override_application_settings({'distributed_tracing.enabled': True})
+@validate_transaction_metrics(
+        'test_botocore_sqs:test_sqs_malformed',
+        scoped_metrics=_sqs_scoped_metrics_malformed,
+        rollup_metrics=_sqs_rollup_metrics_malformed,
+        background_task=True)
+@background_task()
+@moto.mock_sqs
+def test_sqs_malformed():
+    session = botocore.session.get_session()
+    client = session.create_client(
+            'sqs',
+            region_name=AWS_REGION,
+            aws_access_key_id=AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY
+    )
+
+    # Malformed send message, uses arg instead of kwarg
+    with pytest.raises(TypeError):
+        client.send_message('https://fake-url/', MessageBody='hello_world')

@@ -22,7 +22,8 @@ def extract(argument_names, default=None):
 
 
 CUSTOM_TRACE_POINTS = {
-    ('sns', 'publish'): message_trace('boto3', 'Produce', 'Topic',
+    ('sns', 'publish'): message_trace(
+            'SimpleNotificationService', 'Produce', 'Topic',
             extract(('TopicArn', 'TargetArn'), 'PhoneNumber')),
 }
 

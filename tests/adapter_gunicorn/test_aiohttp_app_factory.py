@@ -42,6 +42,7 @@ def test_aiohttp_app_factory(nr_enabled):
         else:
             env = {}
 
+        # Wait for gunicorn to start up
         with TerminatingPopen(cmd, env=env):
             for _ in range(50):
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

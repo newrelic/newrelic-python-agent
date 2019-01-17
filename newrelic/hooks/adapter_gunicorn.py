@@ -20,10 +20,11 @@ def _nr_wrapper_Application_wsgi_(application):
         pass
 
     if not is_coroutine_function(application):
-        return WSGIApplicationWrapper(application) 
+        return WSGIApplicationWrapper(application)
 
     return application
 
-def instrument_gunicorn_app_base(module): 
+
+def instrument_gunicorn_app_base(module):
     wrap_out_function(module, 'Application.wsgi',
-            _nr_wrapper_Application_wsgi_) 
+            _nr_wrapper_Application_wsgi_)

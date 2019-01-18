@@ -31,6 +31,8 @@ sns_metrics_phone = [
 
 @override_application_settings({'distributed_tracing.enabled': True})
 @validate_span_events(expected_agents=('aws.requestId',), count=2)
+@validate_span_events(exact_agents={'aws.operation': 'CreateTopic'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'Publish'}, count=1)
 @validate_tt_segment_params(present_params=('aws.requestId',))
 @pytest.mark.parametrize('topic_argument', ('TopicArn', 'TargetArn'))
 @validate_transaction_metrics('test_boto3_sns:test_publish_to_sns_topic',
@@ -53,6 +55,9 @@ def test_publish_to_sns_topic(topic_argument):
 
 @override_application_settings({'distributed_tracing.enabled': True})
 @validate_span_events(expected_agents=('aws.requestId',), count=3)
+@validate_span_events(exact_agents={'aws.operation': 'CreateTopic'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'Subscribe'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'Publish'}, count=1)
 @validate_tt_segment_params(present_params=('aws.requestId',))
 @validate_transaction_metrics('test_boto3_sns:test_publish_to_sns_phone',
         scoped_metrics=sns_metrics_phone, rollup_metrics=sns_metrics_phone,

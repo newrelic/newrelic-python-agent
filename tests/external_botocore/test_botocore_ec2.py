@@ -38,6 +38,11 @@ _ec2_rollup_metrics = [
 
 @override_application_settings({'distributed_tracing.enabled': True})
 @validate_span_events(expected_agents=('aws.requestId',), count=3)
+@validate_span_events(exact_agents={'aws.operation': 'RunInstances'}, count=1)
+@validate_span_events(
+        exact_agents={'aws.operation': 'DescribeInstances'}, count=1)
+@validate_span_events(
+        exact_agents={'aws.operation': 'TerminateInstances'}, count=1)
 @validate_tt_segment_params(present_params=('aws.requestId',))
 @validate_transaction_metrics(
         'test_botocore_ec2:test_ec2',

@@ -8,6 +8,8 @@ import moto
 from newrelic.api.background_task import background_task
 from testing_support.fixtures import (validate_transaction_metrics,
         override_application_settings)
+from testing_support.validators.validate_span_events import (
+        validate_span_events)
 
 MOTO_VERSION = tuple(int(v) for v in moto.__version__.split('.'))
 
@@ -50,6 +52,14 @@ _sqs_rollup_metrics_malformed = [
 
 
 @override_application_settings({'distributed_tracing.enabled': True})
+@validate_span_events(exact_agents={'aws.operation': 'CreateQueue'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'SendMessage'}, count=1)
+@validate_span_events(
+        exact_agents={'aws.operation': 'ReceiveMessage'}, count=1)
+@validate_span_events(
+        exact_agents={'aws.operation': 'SendMessageBatch'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'PurgeQueue'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'DeleteQueue'}, count=1)
 @validate_transaction_metrics(
         'test_botocore_sqs:test_sqs',
         scoped_metrics=_sqs_scoped_metrics,

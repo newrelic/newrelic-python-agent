@@ -88,11 +88,11 @@ def _nr_endpoint_make_request_(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     def _bind_params(operation_model, request_dict, *args, **kwargs):
-        return request_dict
+        return operation_model, request_dict
 
     # Get url and strip everything but scheme, hostname, and port.
 
-    request_dict = _bind_params(*args, **kwargs)
+    operation_model, request_dict = _bind_params(*args, **kwargs)
     full_url = request_dict.get('url', '')
     parsed = urlparse.urlparse(full_url)
     url = '%s://%s' % (parsed.scheme, parsed.netloc)
@@ -102,6 +102,12 @@ def _nr_endpoint_make_request_(wrapped, instance, args, kwargs):
 
     with ExternalTrace(transaction, library='botocore', url=url,
             method=method) as trace:
+
+        try:
+            trace._add_agent_attribute('aws.operation', operation_model.name)
+        except:
+            pass
+
         result = wrapped(*args, **kwargs)
         try:
             request_id = result[1]['ResponseMetadata']['RequestId']

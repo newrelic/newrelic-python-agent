@@ -10,6 +10,11 @@ except ImportError:
     import urllib.parse as urlparse
 
 
+def extract_sqs(*args, **kwargs):
+    queue_value = kwargs.get('QueueUrl', 'Unknown')
+    return queue_value.rsplit('/', 1)[-1]
+
+
 def extract(argument_names, default=None):
     def extractor_list(*args, **kwargs):
         for argument_name in argument_names:
@@ -47,6 +52,12 @@ CUSTOM_TRACE_POINTS = {
             'dynamodb', extract('TableName'), 'query'),
     ('dynamodb', 'scan'): datastore_trace(
             'dynamodb', extract('TableName'), 'scan'),
+    ('sqs', 'send_message'): message_trace(
+            'SimpleQueueService', 'Produce', 'Queue', extract_sqs),
+    ('sqs', 'send_message_batch'): message_trace(
+            'SimpleQueueService', 'Produce', 'Queue', extract_sqs),
+    ('sqs', 'receive_message'): message_trace(
+            'SimpleQueueService', 'Consume', 'Queue', extract_sqs),
 }
 
 

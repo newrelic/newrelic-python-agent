@@ -5,7 +5,9 @@ import pytest
 
 from newrelic.api.background_task import background_task
 from testing_support.fixtures import (validate_transaction_metrics,
-        override_application_settings)
+        validate_tt_segment_params, override_application_settings)
+from testing_support.validators.validate_span_events import (
+        validate_span_events)
 
 MOTO_VERSION = tuple(int(v) for v in moto.__version__.split('.'))
 
@@ -28,6 +30,8 @@ sns_metrics_phone = [
 
 
 @override_application_settings({'distributed_tracing.enabled': True})
+@validate_span_events(expected_agents=('aws.requestId',), count=2)
+@validate_tt_segment_params(present_params=('aws.requestId',))
 @pytest.mark.parametrize('topic_argument', ('TopicArn', 'TargetArn'))
 @validate_transaction_metrics('test_boto3_sns:test_publish_to_sns_topic',
         scoped_metrics=sns_metrics, rollup_metrics=sns_metrics,
@@ -48,6 +52,8 @@ def test_publish_to_sns_topic(topic_argument):
 
 
 @override_application_settings({'distributed_tracing.enabled': True})
+@validate_span_events(expected_agents=('aws.requestId',), count=3)
+@validate_tt_segment_params(present_params=('aws.requestId',))
 @validate_transaction_metrics('test_boto3_sns:test_publish_to_sns_phone',
         scoped_metrics=sns_metrics_phone, rollup_metrics=sns_metrics_phone,
         background_task=True)

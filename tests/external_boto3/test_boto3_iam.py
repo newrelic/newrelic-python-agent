@@ -36,6 +36,9 @@ _iam_rollup_metrics = [
 
 @override_application_settings({'distributed_tracing.enabled': True})
 @validate_span_events(expected_agents=('aws.requestId',), count=3)
+@validate_span_events(exact_agents={'aws.operation': 'CreateUser'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'GetUser'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'DeleteUser'}, count=1)
 @validate_tt_segment_params(present_params=('aws.requestId',))
 @validate_transaction_metrics(
         'test_boto3_iam:test_iam',

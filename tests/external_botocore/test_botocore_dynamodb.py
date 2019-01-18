@@ -46,6 +46,13 @@ _dynamodb_rollup_metrics = [
 
 @override_application_settings({'distributed_tracing.enabled': True})
 @validate_span_events(expected_agents=('aws.requestId',), count=8)
+@validate_span_events(exact_agents={'aws.operation': 'PutItem'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'GetItem'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'DeleteItem'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'CreateTable'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'DeleteTable'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'Query'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'Scan'}, count=1)
 @validate_tt_segment_params(present_params=('aws.requestId',))
 @validate_transaction_metrics(
         'test_botocore_dynamodb:test_dynamodb',

@@ -7,6 +7,8 @@ import moto
 from newrelic.api.background_task import background_task
 from testing_support.fixtures import (validate_transaction_metrics,
         override_application_settings)
+from testing_support.validators.validate_span_events import (
+        validate_span_events)
 
 MOTO_VERSION = tuple(int(v) for v in moto.__version__.split('.'))
 
@@ -39,6 +41,12 @@ _s3_rollup_metrics = [
 
 
 @override_application_settings({'distributed_tracing.enabled': True})
+@validate_span_events(exact_agents={'aws.operation': 'CreateBucket'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'PutObject'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'ListObjects'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'GetObject'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'DeleteObject'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'DeleteBucket'}, count=1)
 @validate_transaction_metrics(
         'test_botocore_s3:test_s3',
         scoped_metrics=_s3_scoped_metrics,

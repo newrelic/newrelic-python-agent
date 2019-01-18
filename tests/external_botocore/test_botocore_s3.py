@@ -5,7 +5,8 @@ import botocore.session
 import moto
 
 from newrelic.api.background_task import background_task
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.fixtures import (validate_transaction_metrics,
+        override_application_settings)
 
 MOTO_VERSION = tuple(int(v) for v in moto.__version__.split('.'))
 
@@ -37,6 +38,7 @@ _s3_rollup_metrics = [
 ]
 
 
+@override_application_settings({'distributed_tracing.enabled': True})
 @validate_transaction_metrics(
         'test_botocore_s3:test_s3',
         scoped_metrics=_s3_scoped_metrics,

@@ -5,7 +5,10 @@ import boto3
 import moto
 
 from newrelic.api.background_task import background_task
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.fixtures import (validate_transaction_metrics,
+        validate_tt_segment_params, override_application_settings)
+from testing_support.validators.validate_span_events import (
+        validate_span_events)
 
 MOTO_VERSION = tuple(int(v) for v in moto.__version__.split('.'))
 
@@ -31,6 +34,9 @@ _iam_rollup_metrics = [
 ]
 
 
+@override_application_settings({'distributed_tracing.enabled': True})
+@validate_span_events(expected_agents=('aws.requestId',), count=3)
+@validate_tt_segment_params(present_params=('aws.requestId',))
 @validate_transaction_metrics(
         'test_boto3_iam:test_iam',
         scoped_metrics=_iam_scoped_metrics,

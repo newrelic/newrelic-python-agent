@@ -21,7 +21,8 @@ unreleased
     * query
     * scan
 
-- Certain SQS calls will now report additional data for spans and transaction traces
+- Certain SQS calls will now report additional data for spans and transaction
+  traces
 
   The agent will now record the queue name in spans and transaction traces for
   the following SQS calls:
@@ -34,6 +35,13 @@ unreleased
 
   The SNS topic, target, or the string literal PhoneNumber will be reported to
   New Relic inside of spans and transaction traces.
+
+- The full URL path will now be recorded on span events and transaction traces
+  when using boto3 or botocore
+
+  The agent will now record the full URL path for API calls made to AWS through
+  the boto3 / botocore libraries. The path will be available through span
+  events and transaction traces.
 
 - Using newrelic-admin to start a GunicornWebWorker with an application factory
   resulted in an application crash

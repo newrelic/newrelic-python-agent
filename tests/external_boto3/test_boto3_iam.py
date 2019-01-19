@@ -35,6 +35,8 @@ _iam_rollup_metrics = [
 
 
 @override_application_settings({'distributed_tracing.enabled': True})
+@validate_span_events(
+        exact_agents={'http.url': 'https://iam.amazonaws.com/'}, count=3)
 @validate_span_events(expected_agents=('aws.requestId',), count=3)
 @validate_span_events(exact_agents={'aws.operation': 'CreateUser'}, count=1)
 @validate_span_events(exact_agents={'aws.operation': 'GetUser'}, count=1)

@@ -30,6 +30,8 @@ if BOTOCORE_VERSION < (1, 7, 41):
 else:
     S3_URL = 's3.us-west-2.amazonaws.com'
 
+expected_http_url = 'https://%s/%s' % (S3_URL, TEST_BUCKET)
+
 _s3_scoped_metrics = [
     ('External/%s/botocore/GET' % S3_URL, 2),
     ('External/%s/botocore/PUT' % S3_URL, 2),
@@ -53,6 +55,10 @@ _s3_rollup_metrics = [
 @validate_span_events(exact_agents={'aws.operation': 'GetObject'}, count=1)
 @validate_span_events(exact_agents={'aws.operation': 'DeleteObject'}, count=1)
 @validate_span_events(exact_agents={'aws.operation': 'DeleteBucket'}, count=1)
+@validate_span_events(
+        exact_agents={'http.url': expected_http_url}, count=3)
+@validate_span_events(
+        exact_agents={'http.url': expected_http_url + '/hello_world'}, count=3)
 @validate_transaction_metrics(
         'test_boto3_s3:test_s3',
         scoped_metrics=_s3_scoped_metrics,

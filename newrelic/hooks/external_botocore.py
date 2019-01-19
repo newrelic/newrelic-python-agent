@@ -4,11 +4,6 @@ from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
-try:
-    import urlparse
-except ImportError:
-    import urllib.parse as urlparse
-
 
 def extract_sqs(*args, **kwargs):
     queue_value = kwargs.get('QueueUrl', 'Unknown')
@@ -81,23 +76,18 @@ def _nr_clientcreator__create_api_method_(wrapped, instance, args, kwargs):
     return tracer(wrapped)
 
 
+def _bind_make_request_params(operation_model, request_dict, *args, **kwargs):
+    return operation_model, request_dict
+
+
 def _nr_endpoint_make_request_(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    def _bind_params(operation_model, request_dict, *args, **kwargs):
-        return operation_model, request_dict
-
-    # Get url and strip everything but scheme, hostname, and port.
-
-    operation_model, request_dict = _bind_params(*args, **kwargs)
-    full_url = request_dict.get('url', '')
-    parsed = urlparse.urlparse(full_url)
-    url = '%s://%s' % (parsed.scheme, parsed.netloc)
-
-    # Get HTTP verb as method
+    operation_model, request_dict = _bind_make_request_params(*args, **kwargs)
+    url = request_dict.get('url', '')
     method = request_dict.get('method', None)
 
     with ExternalTrace(transaction, library='botocore', url=url,

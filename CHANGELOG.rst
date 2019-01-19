@@ -35,6 +35,14 @@ unreleased
   The SNS topic, target, or the string literal PhoneNumber will be reported to
   New Relic inside of spans and transaction traces.
 
+- Using newrelic-admin to start a GunicornWebWorker with an application factory
+  resulted in an application crash
+
+  The agent would fail to start if using the newrelic-admin command to start an
+  aiohttp application factory with GunicornWebWorker. This issue has now been
+  fixed.
+
+
 4.10.0 (2019-01-10)
 ------------------
 

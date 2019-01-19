@@ -1,34 +1,30 @@
 import sys
 
+from newrelic.api.coroutine_trace import is_coroutine_function
 from newrelic.api.web_transaction import WSGIApplicationWrapper
 from newrelic.common.object_wrapper import wrap_out_function
 
 
 def _nr_wrapper_Application_wsgi_(application):
     # Normally Application.wsgi() returns a WSGI application, but in
-    # the case of the Tornado worker it can return an Tornado ASYNC
-    # application object. Not being a WSGI application object we can
-    # not wrap it with a WSGI application wrapper as the prototype
-    # mismatch will cause it to fail when called.
-    #
-    # Having to have this check in this way is a bit annoying, but
-    # the only other alternative was to instrument separately all the
-    # different worker types which would have been more work. Thus
-    # tolerate having the check here.
-
-    if not 'tornado.web' in sys.modules:
-        return WSGIApplicationWrapper(application) 
+    # some async frameworks a special class or coroutine is returned. We must
+    # check for those cases and avoid insturmenting the coroutine or
+    # specialized class.
 
     try:
-        import tornado.web
+        if 'tornado.web' in sys.modules:
+            import tornado.web
+            if isinstance(application, tornado.web.Application):
+                return application
     except ImportError:
-        return WSGIApplicationWrapper(application) 
+        pass
 
-    if not isinstance(application, tornado.web.Application):
-        return WSGIApplicationWrapper(application) 
+    if not is_coroutine_function(application):
+        return WSGIApplicationWrapper(application)
 
     return application
 
-def instrument_gunicorn_app_base(module): 
+
+def instrument_gunicorn_app_base(module):
     wrap_out_function(module, 'Application.wsgi',
-            _nr_wrapper_Application_wsgi_) 
+            _nr_wrapper_Application_wsgi_)

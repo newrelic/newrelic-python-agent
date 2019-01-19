@@ -1,17 +1,19 @@
 import os
-import random
 import pytest
-import time
+import random
 import socket
+import time
 from newrelic.packages import requests
 from testing_support.fixtures import TerminatingPopen
 
-pytest.importorskip('aiohttp.wsgi')
+aiohttp = pytest.importorskip('aiohttp')
+version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
 
 
-@pytest.mark.parametrize('nr_enabled', [True, False])
-def test_gunicorn_gaiohttp_worker(nr_enabled):
-
+@pytest.mark.skipif(version_info < (3, 1),
+        reason='aiohttp app factories were implement in 3.1')
+@pytest.mark.parametrize('nr_enabled', (True, False))
+def test_aiohttp_app_factory(nr_enabled):
     nr_admin = os.path.join(os.environ['TOX_ENVDIR'], 'bin', 'newrelic-admin')
     gunicorn = os.path.join(os.environ['TOX_ENVDIR'], 'bin', 'gunicorn')
 
@@ -19,8 +21,8 @@ def test_gunicorn_gaiohttp_worker(nr_enabled):
     # In those cases, we should just restart the server.
     for _ in range(5):
         PORT = random.randint(8000, 9000)
-        cmd = [gunicorn, '-b', '127.0.0.1:%d' % PORT, '-k', 'gaiohttp',
-                'app:application']
+        cmd = [gunicorn, '-b', '127.0.0.1:%d' % PORT, '--worker-class',
+                'aiohttp.GunicornWebWorker', 'async_app:app_factory']
 
         if nr_enabled:
             env = {
@@ -40,6 +42,7 @@ def test_gunicorn_gaiohttp_worker(nr_enabled):
         else:
             env = {}
 
+        # Wait for gunicorn to start up
         with TerminatingPopen(cmd, env=env):
             for _ in range(50):
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

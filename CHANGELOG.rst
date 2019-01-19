@@ -1,6 +1,40 @@
 unreleased
 ----------
 
+- AWS operation and request ID will now be reported in transaction traces and
+  spans when using boto3 and botocore
+
+  The agent will now report `aws.requestId` and `aws.operation` for all calls
+  to AWS made using botocore and boto3.
+
+- DynamoDB calls are now reported under the Databases tab.
+
+  The agent will now record DynamoDB query performance in the Databases tab in
+  APM in addition to table name for the following calls:
+
+    * put_item
+    * get_item
+    * update_item
+    * delete_item
+    * create_table
+    * delete_table
+    * query
+    * scan
+
+- Certain SQS calls will now report additional data for spans and transaction traces
+
+  The agent will now record the queue name in spans and transaction traces for
+  the following SQS calls:
+
+    * send_message
+    * send_message_batch
+    * receive_message
+
+- SNS publish will now report additional data for spans and transaction traces
+
+  The SNS topic, target, or the string literal PhoneNumber will be reported to
+  New Relic inside of spans and transaction traces.
+
 4.10.0 (2019-01-10)
 ------------------
 

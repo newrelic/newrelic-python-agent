@@ -26,21 +26,21 @@ TEST_TABLE = 'python-agent-test-%s' % uuid.uuid4()
 
 
 _dynamodb_scoped_metrics = [
-    ('Datastore/statement/dynamodb/%s/create_table' % TEST_TABLE, 1),
-    ('Datastore/statement/dynamodb/%s/put_item' % TEST_TABLE, 1),
-    ('Datastore/statement/dynamodb/%s/get_item' % TEST_TABLE, 1),
-    ('Datastore/statement/dynamodb/%s/update_item' % TEST_TABLE, 1),
-    ('Datastore/statement/dynamodb/%s/query' % TEST_TABLE, 1),
-    ('Datastore/statement/dynamodb/%s/scan' % TEST_TABLE, 1),
-    ('Datastore/statement/dynamodb/%s/delete_item' % TEST_TABLE, 1),
-    ('Datastore/statement/dynamodb/%s/delete_table' % TEST_TABLE, 1),
+    ('Datastore/statement/DynamoDB/%s/create_table' % TEST_TABLE, 1),
+    ('Datastore/statement/DynamoDB/%s/put_item' % TEST_TABLE, 1),
+    ('Datastore/statement/DynamoDB/%s/get_item' % TEST_TABLE, 1),
+    ('Datastore/statement/DynamoDB/%s/update_item' % TEST_TABLE, 1),
+    ('Datastore/statement/DynamoDB/%s/query' % TEST_TABLE, 1),
+    ('Datastore/statement/DynamoDB/%s/scan' % TEST_TABLE, 1),
+    ('Datastore/statement/DynamoDB/%s/delete_item' % TEST_TABLE, 1),
+    ('Datastore/statement/DynamoDB/%s/delete_table' % TEST_TABLE, 1),
 ]
 
 _dynamodb_rollup_metrics = [
     ('Datastore/all', 8),
     ('Datastore/allOther', 8),
-    ('Datastore/dynamodb/all', 8),
-    ('Datastore/dynamodb/allOther', 8),
+    ('Datastore/DynamoDB/all', 8),
+    ('Datastore/DynamoDB/allOther', 8),
 ]
 
 

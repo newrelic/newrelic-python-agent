@@ -32,21 +32,21 @@ CUSTOM_TRACE_POINTS = {
             'SimpleNotificationService', 'Produce', 'Topic',
             extract(('TopicArn', 'TargetArn'), 'PhoneNumber')),
     ('dynamodb', 'put_item'): datastore_trace(
-            'dynamodb', extract('TableName'), 'put_item'),
+            'DynamoDB', extract('TableName'), 'put_item'),
     ('dynamodb', 'get_item'): datastore_trace(
-            'dynamodb', extract('TableName'), 'get_item'),
+            'DynamoDB', extract('TableName'), 'get_item'),
     ('dynamodb', 'update_item'): datastore_trace(
-            'dynamodb', extract('TableName'), 'update_item'),
+            'DynamoDB', extract('TableName'), 'update_item'),
     ('dynamodb', 'delete_item'): datastore_trace(
-            'dynamodb', extract('TableName'), 'delete_item'),
+            'DynamoDB', extract('TableName'), 'delete_item'),
     ('dynamodb', 'create_table'): datastore_trace(
-            'dynamodb', extract('TableName'), 'create_table'),
+            'DynamoDB', extract('TableName'), 'create_table'),
     ('dynamodb', 'delete_table'): datastore_trace(
-            'dynamodb', extract('TableName'), 'delete_table'),
+            'DynamoDB', extract('TableName'), 'delete_table'),
     ('dynamodb', 'query'): datastore_trace(
-            'dynamodb', extract('TableName'), 'query'),
+            'DynamoDB', extract('TableName'), 'query'),
     ('dynamodb', 'scan'): datastore_trace(
-            'dynamodb', extract('TableName'), 'scan'),
+            'DynamoDB', extract('TableName'), 'scan'),
     ('sqs', 'send_message'): message_trace(
             'SimpleQueueService', 'Produce', 'Queue', extract_sqs),
     ('sqs', 'send_message_batch'): message_trace(

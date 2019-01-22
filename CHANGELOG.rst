@@ -1,6 +1,9 @@
 unreleased
 ----------
 
+4.12.0 (2019-01-22)
+-------------------
+
 - AWS operation and request ID will now be reported in transaction traces and
   spans when using boto3 and botocore
 

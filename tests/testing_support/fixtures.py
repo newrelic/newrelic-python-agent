@@ -124,7 +124,10 @@ def initialize_agent(app_name=None, default_settings={}):
         log_directory = '.'
 
     log_file = os.path.join(log_directory, 'python-agent-test.log')
-    log_level = logging.DEBUG
+    if 'JENKINS_HOME' in os.environ:
+        log_level = logging.DEBUG
+    else:
+        log_level = logging.INFO
 
     try:
         os.unlink(log_file)
@@ -451,7 +454,11 @@ def validate_transaction_metrics(name, group='Function',
             metric = metrics.get(key)
 
             def _metrics_table():
-                return 'metric=%r, metrics=%r' % (key, metrics)
+                out = ['']
+                out.append('Expected: {0}: {1}'.format(key, count))
+                for metric_key, metric_value in metrics.items():
+                    out.append('{0}: {1}'.format(metric_key, metric_value[0]))
+                return '\n'.join(out)
 
             def _metric_details():
                 return 'metric=%r, count=%r' % (key, metric.call_count)

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Install asv
-/venvs/py36/bin/pip install asv virtualenv
+/venvs/py36/bin/pip install asv==0.3.0 virtualenv
 
 cat <<EOF > ~/.asv-machine.json
 {
@@ -55,7 +55,7 @@ cat <<EOF > ~/asv.patch
                      for branch in [
                          branch for branch, commits in branches.items()
 -                        if results.commit_hash in commits
-+                        if no_commit_filtering or results.commit_hash in commits
++                        if (no_commit_filtering or results.commit_hash in commits) and (results.commit_hash in revisions)
                      ]:
                          cur_params = dict(results.params)
                          cur_params['branch'] = repo.get_branch_name(branch)

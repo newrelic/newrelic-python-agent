@@ -5,19 +5,25 @@ import botocore.session
 import moto
 
 from newrelic.api.background_task import background_task
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.fixtures import (validate_transaction_metrics,
+        override_application_settings)
+from testing_support.validators.validate_span_events import (
+        validate_span_events)
 
-# patch moto to support py37
-if sys.version_info >= (3, 7):
+MOTO_VERSION = tuple(int(v) for v in moto.__version__.split('.'))
+
+# patch earlier versions of moto to support py37
+if sys.version_info >= (3, 7) and MOTO_VERSION <= (1, 3, 1):
     import re
     moto.packages.responses.responses.re._pattern_type = re.Pattern
-
 
 AWS_ACCESS_KEY_ID = 'AAAAAAAAAAAACCESSKEY'
 AWS_SECRET_ACCESS_KEY = 'AAAAAASECRETKEY'
 AWS_REGION = 'us-east-1'
 
 TEST_BUCKET = 'python-agent-test-%s' % uuid.uuid4()
+S3_URL = 's3.amazonaws.com'
+expected_http_url = 'https://%s/%s' % (S3_URL, TEST_BUCKET)
 
 
 _s3_scoped_metrics = [
@@ -36,6 +42,17 @@ _s3_rollup_metrics = [
 ]
 
 
+@override_application_settings({'distributed_tracing.enabled': True})
+@validate_span_events(exact_agents={'aws.operation': 'CreateBucket'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'PutObject'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'ListObjects'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'GetObject'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'DeleteObject'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'DeleteBucket'}, count=1)
+@validate_span_events(
+        exact_agents={'http.url': expected_http_url}, count=3)
+@validate_span_events(
+        exact_agents={'http.url': expected_http_url + '/hello_world'}, count=3)
 @validate_transaction_metrics(
         'test_botocore_s3:test_s3',
         scoped_metrics=_s3_scoped_metrics,

@@ -2671,6 +2671,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('botocore.endpoint',
             'newrelic.hooks.external_botocore',
             'instrument_botocore_endpoint')
+    _process_module_definition('botocore.client',
+            'newrelic.hooks.external_botocore',
+            'instrument_botocore_client')
 
 
 def _process_module_entry_points():

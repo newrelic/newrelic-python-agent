@@ -5,10 +5,15 @@ import boto3
 import moto
 
 from newrelic.api.background_task import background_task
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.fixtures import (validate_transaction_metrics,
+        validate_tt_segment_params, override_application_settings)
+from testing_support.validators.validate_span_events import (
+        validate_span_events)
 
-# patch moto to support py37
-if sys.version_info >= (3, 7):
+MOTO_VERSION = tuple(int(v) for v in moto.__version__.split('.'))
+
+# patch earlier versions of moto to support py37
+if sys.version_info >= (3, 7) and MOTO_VERSION <= (1, 3, 1):
     import re
     moto.packages.responses.responses.re._pattern_type = re.Pattern
 
@@ -29,6 +34,14 @@ _iam_rollup_metrics = [
 ]
 
 
+@override_application_settings({'distributed_tracing.enabled': True})
+@validate_span_events(
+        exact_agents={'http.url': 'https://iam.amazonaws.com/'}, count=3)
+@validate_span_events(expected_agents=('aws.requestId',), count=3)
+@validate_span_events(exact_agents={'aws.operation': 'CreateUser'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'GetUser'}, count=1)
+@validate_span_events(exact_agents={'aws.operation': 'DeleteUser'}, count=1)
+@validate_tt_segment_params(present_params=('aws.requestId',))
 @validate_transaction_metrics(
         'test_boto3_iam:test_iam',
         scoped_metrics=_iam_scoped_metrics,

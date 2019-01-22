@@ -29,7 +29,7 @@ def extract(argument_names, default=None):
 
 CUSTOM_TRACE_POINTS = {
     ('sns', 'publish'): message_trace(
-            'SimpleNotificationService', 'Produce', 'Topic',
+            'SNS', 'Produce', 'Topic',
             extract(('TopicArn', 'TargetArn'), 'PhoneNumber')),
     ('dynamodb', 'put_item'): datastore_trace(
             'DynamoDB', extract('TableName'), 'put_item'),
@@ -48,11 +48,11 @@ CUSTOM_TRACE_POINTS = {
     ('dynamodb', 'scan'): datastore_trace(
             'DynamoDB', extract('TableName'), 'scan'),
     ('sqs', 'send_message'): message_trace(
-            'SimpleQueueService', 'Produce', 'Queue', extract_sqs),
+            'SQS', 'Produce', 'Queue', extract_sqs),
     ('sqs', 'send_message_batch'): message_trace(
-            'SimpleQueueService', 'Produce', 'Queue', extract_sqs),
+            'SQS', 'Produce', 'Queue', extract_sqs),
     ('sqs', 'receive_message'): message_trace(
-            'SimpleQueueService', 'Consume', 'Queue', extract_sqs),
+            'SQS', 'Consume', 'Queue', extract_sqs),
 }
 
 

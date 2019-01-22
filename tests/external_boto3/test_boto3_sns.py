@@ -22,10 +22,10 @@ AWS_REGION_NAME = 'us-east-1'
 SNS_URL = 'sns-us-east-1.amazonaws.com'
 TOPIC = 'arn:aws:sns:us-east-1:123456789012:some-topic'
 sns_metrics = [
-        ('MessageBroker/SimpleNotificationService/Topic'
+        ('MessageBroker/SNS/Topic'
         '/Produce/Named/%s' % TOPIC, 1)]
 sns_metrics_phone = [
-        ('MessageBroker/SimpleNotificationService/Topic'
+        ('MessageBroker/SNS/Topic'
         '/Produce/Named/PhoneNumber', 1)]
 
 

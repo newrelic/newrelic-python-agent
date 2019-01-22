@@ -26,15 +26,15 @@ TEST_QUEUE = 'python-agent-test-%s' % uuid.uuid4()
 
 
 _sqs_scoped_metrics = [
-    ('MessageBroker/SimpleQueueService/Queue/Produce/Named/%s'
+    ('MessageBroker/SQS/Queue/Produce/Named/%s'
         % TEST_QUEUE, 2),
     ('External/queue.amazonaws.com/botocore/POST', 3),
 ]
 
 _sqs_rollup_metrics = [
-    ('MessageBroker/SimpleQueueService/Queue/Produce/Named/%s'
+    ('MessageBroker/SQS/Queue/Produce/Named/%s'
         % TEST_QUEUE, 2),
-    ('MessageBroker/SimpleQueueService/Queue/Consume/Named/%s'
+    ('MessageBroker/SQS/Queue/Consume/Named/%s'
         % TEST_QUEUE, 1),
     ('External/all', 3),
     ('External/allOther', 3),
@@ -43,11 +43,11 @@ _sqs_rollup_metrics = [
 ]
 
 _sqs_scoped_metrics_malformed = [
-    ('MessageBroker/SimpleQueueService/Queue/Produce/Named/Unknown', 1),
+    ('MessageBroker/SQS/Queue/Produce/Named/Unknown', 1),
 ]
 
 _sqs_rollup_metrics_malformed = [
-    ('MessageBroker/SimpleQueueService/Queue/Produce/Named/Unknown', 1),
+    ('MessageBroker/SQS/Queue/Produce/Named/Unknown', 1),
 ]
 
 

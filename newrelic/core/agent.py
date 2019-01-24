@@ -52,7 +52,8 @@ def check_environment():
                     'https://newrelic.com/docs/python/python-agent-and-uwsgi.',
                     '.'.join(map(str, uwsgi.version_info[:3])))
 
-        if not uwsgi.opt.get('enable-threads'):
+        if (hasattr(uwsgi, 'opt') and hasattr(uwsgi.opt, 'get') and
+                not uwsgi.opt.get('enable-threads')):
             _logger.warning('The New Relic Python Agent requires that when '
                     'using uWSGI that the enable-threads option be given '
                     'to uwsgi when it is run. If the option is not supplied '

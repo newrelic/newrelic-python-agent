@@ -1,6 +1,7 @@
 import functools
 
-from newrelic.common.coroutine import is_coroutine_function, coroutine_trace
+from newrelic.common.coroutine import (is_coroutine_function, coroutine_trace,
+        is_generator_function, generator_trace)
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.core.memcache_node import MemcacheNode
@@ -52,7 +53,9 @@ def MemcacheTraceWrapper(wrapped, command):
 
         trace = MemcacheTrace(transaction, _command)
 
-        if is_coroutine_function(wrapped):
+        if is_generator_function(wrapped):
+            return generator_trace(wrapped(*args, **kwargs), trace)
+        elif is_coroutine_function(wrapped):
             return coroutine_trace(wrapped(*args, **kwargs), trace)
 
         with trace:

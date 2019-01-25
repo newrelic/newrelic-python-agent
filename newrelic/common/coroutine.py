@@ -8,11 +8,14 @@ _logger = logging.getLogger(__name__)
 
 if hasattr(inspect, 'iscoroutinefunction'):
     def is_coroutine_function(wrapped):
-        return (inspect.iscoroutinefunction(wrapped) or
-                inspect.isgeneratorfunction(wrapped))
+        return inspect.iscoroutinefunction(wrapped)
 else:
     def is_coroutine_function(wrapped):
-        return inspect.isgeneratorfunction(wrapped)
+        return False
+
+
+def is_generator_function(wrapped):
+    return inspect.isgeneratorfunction(wrapped)
 
 
 def _iscoroutinefunction_tornado(fn):
@@ -38,6 +41,9 @@ class TraceContext(object):
         if self.trace:
             self.trace.__exit__(None, None, None)
             self.trace = None
+
+    def __iter__(self):
+        return self
 
     def __enter__(self):
         if not self.trace:
@@ -109,31 +115,45 @@ class TraceContext(object):
                     txn.current_node = current_trace
 
 
-class CoroutineProxy(ObjectProxy):
+class Coroutine(ObjectProxy):
     def __init__(self, wrapped, context):
-        super(CoroutineProxy, self).__init__(wrapped)
+        super(Coroutine, self).__init__(wrapped)
         self._nr_context = context
 
-    def __await__(self):
-        return self
-
     def send(self, value):
-        with self._nr_trace_context:
+        with self._nr_context:
             return self.__wrapped__.send(value)
 
     def throw(self, *args, **kwargs):
-        with self._nr_trace_context:
+        with self._nr_context:
             return self.__wrapped__.throw(*args, **kwargs)
 
     def close(self):
         try:
-            with self._nr_trace_context:
+            with self._nr_context:
                 result = self.__wrapped__.close()
         except:
             raise
 
         self._nr_context.close()
         return result
+
+
+class GeneratorProxy(Coroutine):
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return self.send(None)
+
+
+class CoroutineProxy(Coroutine):
+    def __await__(self):
+        return GeneratorProxy(self.__wrapped__, self._nr_context)
+
+
+def generator_trace(generator, trace):
+    return GeneratorProxy(generator, TraceContext(trace))
 
 
 def coroutine_trace(coroutine, trace):

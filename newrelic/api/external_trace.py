@@ -1,6 +1,7 @@
 import functools
 
-from newrelic.common.coroutine import is_coroutine_function, coroutine_trace
+from newrelic.common.coroutine import (is_coroutine_function, coroutine_trace,
+        is_generator_function, generator_trace)
 from newrelic.api.cat_header_mixin import CatHeaderMixin
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import current_transaction
@@ -71,7 +72,9 @@ def ExternalTraceWrapper(wrapped, library, url, method=None):
 
         trace = ExternalTrace(transaction, library, _url, _method)
 
-        if is_coroutine_function(wrapped):
+        if is_generator_function(wrapped):
+            return generator_trace(wrapped(*args, **kwargs), trace)
+        elif is_coroutine_function(wrapped):
             return coroutine_trace(wrapped(*args, **kwargs), trace)
 
         with trace:
@@ -85,7 +88,9 @@ def ExternalTraceWrapper(wrapped, library, url, method=None):
 
         trace = ExternalTrace(transaction, library, url, method)
 
-        if is_coroutine_function(wrapped):
+        if is_generator_function(wrapped):
+            return generator_trace(wrapped(*args, **kwargs), trace)
+        elif is_coroutine_function(wrapped):
             return coroutine_trace(wrapped(*args, **kwargs), trace)
 
         with trace:

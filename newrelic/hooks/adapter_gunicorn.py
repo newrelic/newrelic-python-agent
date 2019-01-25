@@ -1,8 +1,8 @@
 import sys
 
-from newrelic.api.coroutine_trace import is_coroutine_function
 from newrelic.api.web_transaction import WSGIApplicationWrapper
 from newrelic.common.object_wrapper import wrap_out_function
+from newrelic.common.coroutine import is_coroutine_function
 
 
 def _nr_wrapper_Application_wsgi_(application):

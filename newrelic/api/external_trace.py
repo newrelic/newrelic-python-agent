@@ -1,6 +1,6 @@
 import functools
 
-from newrelic.api.coroutine_trace import return_value_fn
+from newrelic.common.coroutine import is_coroutine_function, coroutine_trace
 from newrelic.api.cat_header_mixin import CatHeaderMixin
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import current_transaction
@@ -45,8 +45,6 @@ class ExternalTrace(TimeTrace, CatHeaderMixin):
 
 def ExternalTraceWrapper(wrapped, library, url, method=None):
 
-    return_value = return_value_fn(wrapped)
-
     def dynamic_wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction()
 
@@ -72,7 +70,12 @@ def ExternalTraceWrapper(wrapped, library, url, method=None):
             _method = method
 
         trace = ExternalTrace(transaction, library, _url, _method)
-        return return_value(trace, lambda: wrapped(*args, **kwargs))
+
+        if is_coroutine_function(wrapped):
+            return coroutine_trace(wrapped(*args, **kwargs), trace)
+
+        with trace:
+            return wrapped(*args, **kwargs)
 
     def literal_wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction()
@@ -81,7 +84,12 @@ def ExternalTraceWrapper(wrapped, library, url, method=None):
             return wrapped(*args, **kwargs)
 
         trace = ExternalTrace(transaction, library, url, method)
-        return return_value(trace, lambda: wrapped(*args, **kwargs))
+
+        if is_coroutine_function(wrapped):
+            return coroutine_trace(wrapped(*args, **kwargs), trace)
+
+        with trace:
+            return wrapped(*args, **kwargs)
 
     if callable(url) or callable(method):
         return FunctionWrapper(wrapped, dynamic_wrapper)

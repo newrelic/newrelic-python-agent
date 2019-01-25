@@ -2,7 +2,6 @@ import inspect
 import logging
 
 from newrelic.common.object_wrapper import ObjectProxy
-from newrelic.common.object_names import callable_name
 
 _logger = logging.getLogger(__name__)
 
@@ -34,6 +33,11 @@ class TraceContext(object):
             self.trace = trace
 
         self.current_trace = None
+
+    def close(self):
+        if self.trace:
+            self.trace.__exit__(None, None, None)
+            self.trace = None
 
     def __enter__(self):
         if not self.trace:
@@ -105,27 +109,13 @@ class TraceContext(object):
                     txn.current_node = current_trace
 
 
-class CoroutineTrace(ObjectProxy):
-    def __init__(self, wrapped, trace):
-
-        self._nr_trace_context = TraceContext(trace)
-
-        # get the coroutine
-        coro = wrapped()
-
-        # Wrap the coroutine
-        super(CoroutineTrace, self).__init__(coro)
-
-    def __iter__(self):
-        return self
+class CoroutineProxy(ObjectProxy):
+    def __init__(self, wrapped, context):
+        super(CoroutineProxy, self).__init__(wrapped)
+        self._nr_context = context
 
     def __await__(self):
         return self
-
-    def __next__(self):
-        return self.send(None)
-
-    next = __next__
 
     def send(self, value):
         with self._nr_trace_context:
@@ -141,33 +131,10 @@ class CoroutineTrace(ObjectProxy):
                 result = self.__wrapped__.close()
         except:
             raise
-        else:
-            # If the trace hasn't been exited, then exit the trace
-            if self._nr_trace_context.trace:
-                self._nr_trace_context.trace.__exit__(None, None, None)
-                self._nr_trace_context.trace = None
-            return result
+
+        self._nr_context.close()
+        return result
 
 
-def return_value_fn(wrapped):
-    if _iscoroutinefunction_tornado(wrapped):
-        if hasattr(wrapped, '__wrapped__'):
-            coro_name = callable_name(wrapped.__wrapped__)
-        else:
-            coro_name = callable_name(wrapped)
-        _logger.warning('The tornado coroutine function %r '
-                '(tornado.gen.coroutine) has been incorrectly wrapped. To '
-                'trace a tornado coroutine, the New Relic trace decorator '
-                'must be the innermost decorator. For more information see '
-                'https://docs.newrelic.com/docs/agents/python-agent/'
-                'trace-decorators-tornado-coroutines', coro_name)
-
-    if is_coroutine_function(wrapped):
-        def return_value(trace, fn):
-            return CoroutineTrace(fn, trace)
-    else:
-        def return_value(trace, fn):
-            with trace:
-                return fn()
-
-    return return_value
+def coroutine_trace(coroutine, trace):
+    return CoroutineProxy(coroutine, TraceContext(trace))

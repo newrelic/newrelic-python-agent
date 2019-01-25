@@ -1,6 +1,6 @@
 import functools
 
-from newrelic.api.coroutine_trace import return_value_fn
+from newrelic.common.coroutine import is_coroutine_function, coroutine_trace
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.core.memcache_node import MemcacheNode
@@ -36,8 +36,6 @@ class MemcacheTrace(TimeTrace):
 
 def MemcacheTraceWrapper(wrapped, command):
 
-    return_value = return_value_fn(wrapped)
-
     def _nr_wrapper_memcache_trace_(wrapped, instance, args, kwargs):
         transaction = current_transaction()
 
@@ -53,7 +51,12 @@ def MemcacheTraceWrapper(wrapped, command):
             _command = command
 
         trace = MemcacheTrace(transaction, _command)
-        return return_value(trace, lambda: wrapped(*args, **kwargs))
+
+        if is_coroutine_function(wrapped):
+            return coroutine_trace(wrapped(*args, **kwargs), trace)
+
+        with trace:
+            return wrapped(*args, **kwargs)
 
     return FunctionWrapper(wrapped, _nr_wrapper_memcache_trace_)
 

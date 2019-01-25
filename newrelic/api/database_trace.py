@@ -1,8 +1,7 @@
 import functools
 import logging
 
-from newrelic.common.coroutine import (is_coroutine_function, coroutine_trace,
-        is_generator_function, generator_trace)
+from newrelic.common.coroutine import async_proxy, TraceContext
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
@@ -220,10 +219,9 @@ def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None):
 
         trace = DatabaseTrace(transaction, _sql, dbapi2_module)
 
-        if is_generator_function(wrapped):
-            return generator_trace(wrapped(*args, **kwargs), trace)
-        elif is_coroutine_function(wrapped):
-            return coroutine_trace(wrapped(*args, **kwargs), trace)
+        proxy = async_proxy(wrapped)
+        if proxy:
+            return proxy(wrapped(*args, **kwargs), TraceContext(trace))
 
         with trace:
             return wrapped(*args, **kwargs)

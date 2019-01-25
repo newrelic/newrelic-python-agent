@@ -1,7 +1,6 @@
 import functools
 
-from newrelic.common.coroutine import (is_coroutine_function, coroutine_trace,
-        is_generator_function, generator_trace)
+from newrelic.common.coroutine import async_proxy, TraceContext
 from newrelic.api.cat_header_mixin import CatHeaderMixin
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import current_transaction
@@ -112,10 +111,9 @@ def MessageTraceWrapper(wrapped, library, operation, destination_type,
         trace = MessageTrace(transaction, _library, _operation,
                 _destination_type, _destination_name, params={})
 
-        if is_generator_function(wrapped):
-            return generator_trace(wrapped(*args, **kwargs), trace)
-        elif is_coroutine_function(wrapped):
-            return coroutine_trace(wrapped(*args, **kwargs), trace)
+        proxy = async_proxy(wrapped)
+        if proxy:
+            return proxy(wrapped(*args, **kwargs), TraceContext(trace))
 
         with trace:
             return wrapped(*args, **kwargs)

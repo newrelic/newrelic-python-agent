@@ -1,5 +1,6 @@
 import inspect
 import logging
+import newrelic.packages.six as six
 
 from newrelic.common.object_wrapper import ObjectProxy
 
@@ -9,8 +10,15 @@ _logger = logging.getLogger(__name__)
 if hasattr(inspect, 'iscoroutinefunction'):
     def is_coroutine_function(wrapped):
         return inspect.iscoroutinefunction(wrapped)
+
+    def is_asyncio_coroutine(wrapped):
+        """Return True if func is a decorated coroutine function."""
+        return getattr(wrapped, '_is_coroutine', None) is not None
 else:
     def is_coroutine_function(wrapped):
+        return False
+
+    def is_asyncio_coroutine(wrapped):
         return False
 
 
@@ -41,9 +49,6 @@ class TraceContext(object):
         if self.trace:
             self.trace.__exit__(None, None, None)
             self.trace = None
-
-    def __iter__(self):
-        return self
 
     def __enter__(self):
         if not self.trace:
@@ -143,8 +148,17 @@ class GeneratorProxy(Coroutine):
     def __iter__(self):
         return self
 
-    def __next__(self):
-        return self.send(None)
+    if six.PY2:
+        def next(self):
+            return self.send(None)
+    else:
+        def __next__(self):
+            return self.send(None)
+
+
+class AwaitableGeneratorProxy(GeneratorProxy):
+    def __await__(self):
+        return self
 
 
 class CoroutineProxy(Coroutine):
@@ -152,9 +166,11 @@ class CoroutineProxy(Coroutine):
         return GeneratorProxy(self.__wrapped__, self._nr_context)
 
 
-def generator_trace(generator, trace):
-    return GeneratorProxy(generator, TraceContext(trace))
-
-
-def coroutine_trace(coroutine, trace):
-    return CoroutineProxy(coroutine, TraceContext(trace))
+def async_proxy(wrapped):
+    if is_coroutine_function(wrapped):
+        return CoroutineProxy
+    elif is_generator_function(wrapped):
+        if is_asyncio_coroutine(wrapped):
+            return AwaitableGeneratorProxy
+        else:
+            return GeneratorProxy

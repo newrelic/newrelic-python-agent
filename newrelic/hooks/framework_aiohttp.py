@@ -7,7 +7,8 @@ from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import function_trace
 from newrelic.api.transaction import current_transaction, ignore_transaction
 from newrelic.api.web_transaction import WebTransaction
-from newrelic.common.coroutine import is_coroutine_function, coroutine_trace
+from newrelic.common.coroutine import (is_coroutine_function, async_proxy,
+        TraceContext)
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
         function_wrapper, ObjectProxy)
@@ -422,7 +423,7 @@ def _nr_aiohttp_request_wrapper_(wrapped, instance, args, kwargs):
 
             raise
 
-    return coroutine_trace(_coro, trace)
+    return async_proxy(_coro)(_coro(), TraceContext(trace))
 
 
 def instrument_aiohttp_client(module):

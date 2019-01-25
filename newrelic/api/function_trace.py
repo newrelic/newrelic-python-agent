@@ -1,7 +1,6 @@
 import functools
 
-from newrelic.common.coroutine import (is_generator_function,
-        is_coroutine_function, coroutine_trace, generator_trace)
+from newrelic.common.coroutine import async_proxy, TraceContext
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
@@ -114,10 +113,9 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
         trace = FunctionTrace(transaction, _name, _group, _label, _params,
                 terminal, rollup)
 
-        if is_generator_function(wrapped):
-            return generator_trace(wrapped(*args, **kwargs), trace)
-        elif is_coroutine_function(wrapped):
-            return coroutine_trace(wrapped(*args, **kwargs), trace)
+        proxy = async_proxy(wrapped)
+        if proxy:
+            return proxy(wrapped(*args, **kwargs), TraceContext(trace))
 
         with trace:
             return wrapped(*args, **kwargs)
@@ -133,10 +131,9 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
         trace = FunctionTrace(transaction, _name, group, label, params,
                 terminal, rollup)
 
-        if is_generator_function(wrapped):
-            return generator_trace(wrapped(*args, **kwargs), trace)
-        elif is_coroutine_function(wrapped):
-            return coroutine_trace(wrapped(*args, **kwargs), trace)
+        proxy = async_proxy(wrapped)
+        if proxy:
+            return proxy(wrapped(*args, **kwargs), TraceContext(trace))
 
         with trace:
             return wrapped(*args, **kwargs)

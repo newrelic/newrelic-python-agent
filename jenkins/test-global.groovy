@@ -14,10 +14,8 @@ use(extensions) {
             '(_COMBINED-TESTS-pullrequest_)|' +
             '(_INTEGRATION-TESTS-develop_)|' +
             '(_INTEGRATION-TESTS-master_)|' +
-            '(_INTEGRATION-TESTS-mmf_)|' +
             '(_UNIT-TESTS-develop_)|' +
             '(_UNIT-TESTS-master_)|' +
-            '(_UNIT-TESTS-mmf_)|' +
             '(_BENCHMARKS-develop_)'
     )
 

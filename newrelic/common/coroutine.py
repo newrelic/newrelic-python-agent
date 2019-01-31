@@ -7,6 +7,11 @@ from newrelic.common.object_wrapper import ObjectProxy
 _logger = logging.getLogger(__name__)
 
 
+try:
+    from concurrent.futures import CancelledError
+except:
+    CancelledError = GeneratorExit
+
 if hasattr(inspect, 'iscoroutinefunction'):
     def is_coroutine_function(wrapped):
         return inspect.iscoroutinefunction(wrapped)
@@ -44,6 +49,9 @@ class TraceContext(object):
             self.trace = trace
 
         self.current_trace = None
+
+    def pre_close(self):
+        pass
 
     def close(self):
         if self.trace:
@@ -120,6 +128,56 @@ class TraceContext(object):
                     txn.current_node = current_trace
 
 
+class TransactionContext(object):
+    def __init__(self, transaction):
+        self.transaction = transaction
+        if not self.transaction.enabled:
+            self.transaction = None
+
+    def pre_close(self):
+        if self.transaction and not self.transaction._state:
+            self.transaction = None
+
+    def close(self):
+        if not self.transaction:
+            return
+
+        if self.transaction._state:
+            try:
+                with self:
+                    raise GeneratorExit
+            except GeneratorExit:
+                pass
+
+    def __enter__(self):
+        if not self.transaction:
+            return self
+
+        if not self.transaction._state:
+            self.transaction.__enter__()
+        elif self.transaction.enabled:
+            self.transaction.save_transaction()
+
+        return self
+
+    def __exit__(self, exc, value, tb):
+        if not self.transaction:
+            return
+
+        # case: coroutine completed or cancelled
+        if (exc is StopIteration or exc is GeneratorExit or
+                exc is CancelledError):
+            self.transaction.__exit__(None, None, None)
+
+        # case: coroutine completed because of error
+        elif exc:
+            self.transaction.__exit__(exc, value, tb)
+
+        # case: coroutine suspended but not completed
+        elif self.transaction.enabled:
+            self.transaction.drop_transaction()
+
+
 class Coroutine(ObjectProxy):
     def __init__(self, wrapped, context):
         super(Coroutine, self).__init__(wrapped)
@@ -134,6 +192,8 @@ class Coroutine(ObjectProxy):
             return self.__wrapped__.throw(*args, **kwargs)
 
     def close(self):
+        self._nr_context.pre_close()
+
         try:
             with self._nr_context:
                 result = self.__wrapped__.close()

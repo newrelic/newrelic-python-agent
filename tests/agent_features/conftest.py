@@ -6,7 +6,7 @@ from testing_support.fixtures import (code_coverage_fixture,
 _coverage_source = [
     'newrelic.api.transaction',
     'newrelic.api.web_transaction',
-    'newrelic.api.coroutine_trace',
+    'newrelic.common.coroutine',
     'newrelic.api.lambda_handler'
 ]
 

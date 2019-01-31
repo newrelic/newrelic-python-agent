@@ -1,7 +1,7 @@
 import functools
 import logging
 
-from newrelic.api.coroutine_trace import return_value_fn
+from newrelic.common.coroutine import async_proxy, TraceContext
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
@@ -203,8 +203,6 @@ class DatabaseTrace(TimeTrace):
 
 def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None):
 
-    return_value = return_value_fn(wrapped)
-
     def _nr_database_trace_wrapper_(wrapped, instance, args, kwargs):
         transaction = current_transaction()
 
@@ -220,7 +218,13 @@ def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None):
             _sql = sql
 
         trace = DatabaseTrace(transaction, _sql, dbapi2_module)
-        return return_value(trace, lambda: wrapped(*args, **kwargs))
+
+        proxy = async_proxy(wrapped)
+        if proxy:
+            return proxy(wrapped(*args, **kwargs), TraceContext(trace))
+
+        with trace:
+            return wrapped(*args, **kwargs)
 
     return FunctionWrapper(wrapped, _nr_database_trace_wrapper_)
 

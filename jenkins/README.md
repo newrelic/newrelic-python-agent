@@ -26,8 +26,6 @@ Multijob to run all tests as defined by `tox.ini` files in the `tests/` director
 
 `pullrequest` tests automatically determine which tests need to be run by inspecting the imports of each test file and seeing if those files changed.
 
-`mmf` tests run on cron every weeknight. They will run against the most recently committed branch that contains the string `/mmf-`.
-
 **reseed-integration-tests:** The first step of this job is to parse the tox files and create the list of tests to run. If the job is related to a pull request then only the most recent package version is tested (see Test Configuration below). Tox environments are grouped so as to cut down on testing time. Because of this, depending on if the job is running only the most recent package version or not, a given tox environment could move between Jenkins jobs.
 
 **\*__integration-test:** These tests are are the subjobs to the **INTEGRATION-TESTS** multijob. They will pull packnsend images from the New Relic docker repository (cf-registry.nr-ops.net) then start all containers. If a container is already running, the action is a noop. The consequence of this is if an image changes in the docker repository, the jobs will not pick up this change automatically (see the Reset Nodes job).
@@ -40,8 +38,6 @@ Multijob to run `./build.sh` then `./tests.sh`.
 `master` test run on any push to master.
 
 `pullrequest` tests automatically determine which tests need to be run by inspecting the imports of each test file and seeing if those files changed.
-
-`mmf` tests run on cron every weeknight. They will run against the most recently committed branch that contains the string `/mmf-`.
 
 #### \_COMBINED-TESTS-[branch]\_
 Multijob to run both the unit and integration tests on the given branch.

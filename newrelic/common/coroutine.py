@@ -6,11 +6,7 @@ from newrelic.common.object_wrapper import ObjectProxy
 
 _logger = logging.getLogger(__name__)
 
-
-try:
-    from concurrent.futures import CancelledError
-except:
-    CancelledError = GeneratorExit
+CancelledError = None
 
 if hasattr(inspect, 'iscoroutinefunction'):
     def is_coroutine_function(wrapped):
@@ -163,6 +159,14 @@ class TransactionContext(object):
     def __exit__(self, exc, value, tb):
         if not self.transaction:
             return
+
+        global CancelledError
+
+        if CancelledError is None:
+            try:
+                from concurrent.futures import CancelledError
+            except:
+                CancelledError = GeneratorExit
 
         # case: coroutine completed or cancelled
         if (exc is StopIteration or exc is GeneratorExit or

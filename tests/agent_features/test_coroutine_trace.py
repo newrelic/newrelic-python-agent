@@ -8,12 +8,13 @@ from testing_support.fixtures import (validate_transaction_metrics,
         validate_tt_parenting)
 from newrelic.api.transaction import current_transaction
 from newrelic.api.background_task import background_task
-from newrelic.api.database_trace import database_trace
-from newrelic.api.datastore_trace import datastore_trace
-from newrelic.api.function_trace import function_trace
-from newrelic.api.external_trace import external_trace
-from newrelic.api.memcache_trace import memcache_trace
-from newrelic.api.message_trace import message_trace
+from newrelic.api.database_trace import database_trace, DatabaseTrace
+from newrelic.api.datastore_trace import datastore_trace, DatastoreTrace
+from newrelic.api.function_trace import function_trace, FunctionTrace
+from newrelic.api.external_trace import external_trace, ExternalTrace
+from newrelic.api.memcache_trace import memcache_trace, MemcacheTrace
+from newrelic.api.message_trace import message_trace, MessageTrace
+from newrelic.common.coroutine import TraceContext
 
 is_pypy = hasattr(sys, 'pypy_version_info')
 
@@ -463,6 +464,29 @@ def test_incomplete_coroutine(nr_transaction):
         )(background_task(name='test_incomplete_coroutine')(_test))
 
     _test()
+
+
+@pytest.mark.parametrize('trace', [
+    functools.partial(FunctionTrace, name='simple_gen'),
+    functools.partial(ExternalTrace, library='lib', url='http://foo.com'),
+    functools.partial(DatabaseTrace, sql='select * from foo'),
+    functools.partial(
+            DatastoreTrace, product='lib', target='foo', operation='bar'),
+    functools.partial(MessageTrace, library='lib', operation='op',
+            destination_type='typ', destination_name='name'),
+    functools.partial(MemcacheTrace, command='cmd'),
+])
+def test_context_no_transaction(trace):
+    # Pass it no transaction
+    trace = trace(None)
+
+    context = TraceContext(trace)
+
+    # Check to see that context does not crash
+    with context:
+        pass
+
+    context.close()
 
 
 if sys.version_info >= (3, 5):

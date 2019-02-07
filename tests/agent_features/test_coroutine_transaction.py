@@ -1,3 +1,4 @@
+import asyncio
 import pytest
 import sys
 
@@ -13,7 +14,6 @@ if sys.version_info >= (3, 5):
 else:
     native_coroutine_test = None
 
-asyncio = pytest.importorskip('asyncio')
 settings = global_settings()
 loop = asyncio.get_event_loop()
 

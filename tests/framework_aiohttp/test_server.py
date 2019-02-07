@@ -147,9 +147,6 @@ def test_simultaneous_requests(method, uri, metric_name,
     required_attrs.extend(['response.status',
             'response.headers.contentType'])
 
-    required_attrs.extend(['response.status',
-            'response.headers.contentType'])
-
     if nr_enabled:
         transactions = []
 

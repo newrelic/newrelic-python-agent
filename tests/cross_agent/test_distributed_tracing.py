@@ -27,7 +27,6 @@ _parameters_list = ['account_id', 'comment', 'expected_metrics',
 _parameters = ','.join(_parameters_list)
 _expected_test_name_failures = set((
         'spans_disabled_in_child',
-        'lowercase_known_transport_is_unknown',
         'create_payload',
         'multiple_create_calls',
         'payload_from_trusted_partnership_account',
@@ -96,8 +95,12 @@ def target_wsgi_application(environ, start_response):
 
     inbound_payloads = test_settings['inbound_payloads']
     if len(inbound_payloads) == 2:
-        result = txn.accept_distributed_trace_payload(inbound_payloads[1])
-        assert not result
+        result = txn.accept_distributed_trace_payload(inbound_payloads[1],
+                test_settings['transport_type'])
+        # If the first of the two payloads was falsey,
+        # accept_distributed_trace_payload was never called and therefore this
+        # one should succeed
+        assert not inbound_payloads[0] is result
     elif not inbound_payloads:
         # WebTransaction will not call accept_distributed_trace_payload when
         # the payload is falsey. Therefore, we must call it directly here.
@@ -148,6 +151,7 @@ def test_distributed_tracing(account_id, comment, expected_metrics,
         'raises_exception': raises_exception,
         'inbound_payloads': inbound_payloads,
         'outbound_payloads': outbound_payloads,
+        'transport_type': transport_type,
     }
 
     override_settings = {
@@ -168,6 +172,12 @@ def test_distributed_tracing(account_id, comment, expected_metrics,
     txn_event_exact = {'agent': {}, 'user': {},
             'intrinsic': intrinsics['Transaction'].get('exact', {})}
     txn_event_exact['intrinsic'].update(common_exact)
+
+    if transport_type != 'HTTP':
+        # Since wsgi_application calls accept_distributed_trace_payload
+        # automatically with transport_type='HTTP', we must defer this call til
+        # we can specify the transport type.
+        inbound_payloads.insert(0, [])
 
     payload = json.dumps(inbound_payloads[0]) if inbound_payloads else ''
     headers = {'newrelic': payload}

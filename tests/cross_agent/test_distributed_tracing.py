@@ -121,27 +121,19 @@ def target_wsgi_application(environ, start_response):
             resp = requests.get('http://localhost:%d' % external.port)
             assert resp.status_code == 200
 
-            if test_settings['feature_flag']:
-                assert b'X-NewRelic-ID' not in resp.content
-                assert b'X-NewRelic-Transaction' not in resp.content
-                assert b'newrelic' in resp.content
-            else:
-                assert b'X-NewRelic-ID' in resp.content
-                assert b'X-NewRelic-Transaction' in resp.content
-                assert b'newrelic' not in resp.content
+            assert b'X-NewRelic-ID' not in resp.content
+            assert b'X-NewRelic-Transaction' not in resp.content
+            assert b'newrelic' in resp.content
 
         with MockExternalHTTPHResponseHeadersServer() as external:
             for expected_payload_d in outbound_payloads:
                 make_outbound_request()
 
-                if test_settings['feature_flag']:
-                    assert payloads
-                    actual_payload = payloads.pop()
-                    data = actual_payload['d']
-                    for key, value in six.iteritems(expected_payload_d):
-                        assert data.get(key) == value
-                else:
-                    assert not payloads
+                assert payloads
+                actual_payload = payloads.pop()
+                data = actual_payload['d']
+                for key, value in six.iteritems(expected_payload_d):
+                    assert data.get(key) == value
 
     start_response(status, response_headers)
     return [output]
@@ -164,11 +156,10 @@ def test_distributed_tracing(account_id, comment, expected_metrics,
         'raises_exception': raises_exception,
         'inbound_payloads': inbound_payloads,
         'outbound_payloads': outbound_payloads,
-        'feature_flag': feature_flag is not False
     }
 
     override_settings = {
-        'distributed_tracing.enabled': feature_flag is not False,
+        'distributed_tracing.enabled': True,
         'trusted_account_key': trusted_account_key
     }
 

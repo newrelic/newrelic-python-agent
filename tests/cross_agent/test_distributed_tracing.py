@@ -112,8 +112,8 @@ def target_wsgi_application(environ, start_response):
         result = txn.accept_distributed_trace_payload(inbound_payloads)
         assert not result
 
-    outbound_payloads_d = test_settings['outbound_payloads_d']
-    if outbound_payloads_d:
+    outbound_payloads = test_settings['outbound_payloads']
+    if outbound_payloads:
         payloads = []
 
         @capture_outbound_payloads(payloads)
@@ -131,7 +131,7 @@ def target_wsgi_application(environ, start_response):
                 assert b'newrelic' not in resp.content
 
         with MockExternalHTTPHResponseHeadersServer() as external:
-            for expected_payload_d in outbound_payloads_d:
+            for expected_payload_d in outbound_payloads:
                 make_outbound_request()
 
                 if test_settings['feature_flag']:
@@ -163,7 +163,7 @@ def test_distributed_tracing(account_id, comment, expected_metrics,
         'web_transaction': web_transaction,
         'raises_exception': raises_exception,
         'inbound_payloads': inbound_payloads,
-        'outbound_payloads_d': outbound_payloads_d,
+        'outbound_payloads': outbound_payloads,
         'feature_flag': feature_flag is not False
     }
 

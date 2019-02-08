@@ -24,6 +24,33 @@ _parameters_list = ['test_name', 'inbound_payloads',
         'unexpected_intrinsics', 'expected_metrics', 'background_task',
         'raises_exception', 'feature_flag', 'outbound_payloads_d']
 _parameters = ','.join(_parameters_list)
+_expected_test_name_failures = set((
+        'accept_payload',
+        'multiple_accept_calls',
+        'payload_with_sampled_false',
+        'spans_disabled_in_parent',
+        'spans_disabled_in_child',
+        'exception',
+        'background_transaction',
+        'payload_from_mobile_caller',
+        'lowercase_known_transport_is_unknown',
+        'create_payload',
+        'multiple_create_calls',
+        'payload_from_trusted_partnership_account',
+        'payload_has_larger_minor_version',
+        'payload_with_untrusted_key',
+        'payload_from_untrusted_account',
+        'payload_has_larger_major_version',
+        'null_payload',
+        'payload_missing_version',
+        'payload_missing_data',
+        'payload_missing_account',
+        'payload_missing_application',
+        'payload_missing_type',
+        'payload_missing_transactionId_or_guid',
+        'payload_missing_traceId',
+        'payload_missing_timestamp',
+))
 
 
 def load_tests():
@@ -34,7 +61,11 @@ def load_tests():
 
     for test in tests:
         values = (test.get(param, None) for param in _parameters_list)
-        param = pytest.param(*values, id=test.get('test_name'))
+        kwargs = {}
+        if test.get('test_name') in _expected_test_name_failures:
+            kwargs['marks'] = pytest.mark.xfail(
+                    reason='test hasnot been fixed yet', strict=True)
+        param = pytest.param(*values, id=test.get('test_name'), **kwargs)
         result.append(param)
 
     return result

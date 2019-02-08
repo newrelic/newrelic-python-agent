@@ -19,10 +19,11 @@ CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures',
     'distributed_tracing'))
 
-_parameters_list = ['test_name', 'inbound_payloads',
-        'trusted_account_key', 'exact_intrinsics', 'expected_intrinsics',
-        'unexpected_intrinsics', 'expected_metrics', 'background_task',
-        'raises_exception', 'feature_flag', 'outbound_payloads_d']
+_parameters_list = ['account_id', 'comment', 'expected_metrics',
+        'force_sampled_true', 'inbound_payloads', 'intrinsics',
+        'major_version', 'minor_version', 'outbound_payloads',
+        'raises_exception', 'span_events_enabled', 'test_name',
+        'transport_type', 'trusted_account_key', 'web_transaction']
 _parameters = ','.join(_parameters_list)
 _expected_test_name_failures = set((
         'accept_payload',
@@ -150,10 +151,11 @@ test_application = webtest.TestApp(target_wsgi_application)
 
 
 @pytest.mark.parametrize(_parameters, load_tests())
-def test_distributed_tracing(test_name, inbound_payloads,
-        trusted_account_key, exact_intrinsics, expected_intrinsics,
-        unexpected_intrinsics, expected_metrics, background_task,
-        raises_exception, feature_flag, outbound_payloads_d):
+def test_distributed_tracing(account_id, comment, expected_metrics,
+        force_sampled_true, inbound_payloads, intrinsics, major_version,
+        minor_version, outbound_payloads, raises_exception,
+        span_events_enabled, test_name, transport_type, trusted_account_key,
+        web_transaction):
 
     global test_settings
     test_settings = {

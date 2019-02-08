@@ -30,18 +30,7 @@ _expected_test_name_failures = set((
         'create_payload',
         'multiple_create_calls',
         'payload_from_trusted_partnership_account',
-        'payload_with_untrusted_key',
-        'payload_from_untrusted_account',
-        'payload_has_larger_major_version',
         'null_payload',
-        'payload_missing_version',
-        'payload_missing_data',
-        'payload_missing_account',
-        'payload_missing_application',
-        'payload_missing_type',
-        'payload_missing_transactionId_or_guid',
-        'payload_missing_traceId',
-        'payload_missing_timestamp',
 ))
 
 
@@ -163,14 +152,15 @@ def test_distributed_tracing(account_id, comment, expected_metrics,
     common_forgone = intrinsics['common']['unexpected']
     common_exact = intrinsics['common'].get('exact', {})
 
+    txn_intrinsics = intrinsics.get('Transaction', {})
     txn_event_required = {'agent': [], 'user': [],
-            'intrinsic': intrinsics['Transaction'].get('expected', [])}
+            'intrinsic': txn_intrinsics.get('expected', [])}
     txn_event_required['intrinsic'].extend(common_required)
     txn_event_forgone = {'agent': [], 'user': [],
-            'intrinsic': intrinsics['Transaction'].get('unexpected', [])}
+            'intrinsic': txn_intrinsics.get('unexpected', [])}
     txn_event_forgone['intrinsic'].extend(common_forgone)
     txn_event_exact = {'agent': {}, 'user': {},
-            'intrinsic': intrinsics['Transaction'].get('exact', {})}
+            'intrinsic': txn_intrinsics.get('exact', {})}
     txn_event_exact['intrinsic'].update(common_exact)
 
     if transport_type != 'HTTP':

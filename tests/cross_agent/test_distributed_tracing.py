@@ -163,11 +163,19 @@ def test_distributed_tracing(account_id, comment, expected_metrics,
         'trusted_account_key': trusted_account_key
     }
 
-    required_params = {'agent': [], 'user': [],
-            'intrinsic': expected_intrinsics}
-    forgone_params = {'agent': [], 'user': [],
-            'intrinsic': unexpected_intrinsics}
-    exact_attrs = {'agent': {}, 'user': {}, 'intrinsic': exact_intrinsics}
+    common_required = intrinsics['common']['expected']
+    common_forgone = intrinsics['common']['unexpected']
+    common_exact = intrinsics['common'].get('exact', {})
+
+    txn_event_required = {'agent': [], 'user': [],
+            'intrinsic': intrinsics['Transaction'].get('expected', [])}
+    txn_event_required['intrinsic'].extend(common_required)
+    txn_event_forgone = {'agent': [], 'user': [],
+            'intrinsic': intrinsics['Transaction'].get('unexpected', [])}
+    txn_event_forgone['intrinsic'].extend(common_forgone)
+    txn_event_exact = {'agent': {}, 'user': {},
+            'intrinsic': intrinsics['Transaction'].get('exact', {})}
+    txn_event_exact['intrinsic'].update(common_exact)
 
     payload = json.dumps(inbound_payloads[0]) if inbound_payloads else ''
     headers = {'newrelic': payload}
@@ -176,9 +184,8 @@ def test_distributed_tracing(account_id, comment, expected_metrics,
             rollup_metrics=expected_metrics,
             background_task=not web_transaction)
     @validate_transaction_event_attributes(
-            required_params, forgone_params, exact_attrs)
-    @validate_attributes('intrinsic',
-            expected_intrinsics, unexpected_intrinsics)
+            txn_event_required, txn_event_forgone, txn_event_exact)
+    @validate_attributes('intrinsic', common_required, common_forgone)
     def _test():
         response = test_application.get('/', headers=headers)
         assert 'X-NewRelic-App-Data' not in response.headers

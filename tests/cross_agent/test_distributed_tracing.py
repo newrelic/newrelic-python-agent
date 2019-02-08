@@ -93,7 +93,7 @@ def target_wsgi_application(environ, start_response):
     txn = current_transaction()
     txn.set_transaction_name(test_settings['test_name'])
 
-    if test_settings['background_task']:
+    if not test_settings['web_transaction']:
         txn.background_task = True
 
     if test_settings['raises_exception']:
@@ -160,7 +160,7 @@ def test_distributed_tracing(account_id, comment, expected_metrics,
     global test_settings
     test_settings = {
         'test_name': test_name,
-        'background_task': background_task,
+        'web_transaction': web_transaction,
         'raises_exception': raises_exception,
         'inbound_payloads': inbound_payloads,
         'outbound_payloads_d': outbound_payloads_d,
@@ -183,7 +183,7 @@ def test_distributed_tracing(account_id, comment, expected_metrics,
 
     @validate_transaction_metrics(test_name,
             rollup_metrics=expected_metrics,
-            background_task=background_task)
+            background_task=not web_transaction)
     @validate_transaction_event_attributes(
             required_params, forgone_params, exact_attrs)
     @validate_attributes('intrinsic',

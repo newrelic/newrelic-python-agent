@@ -27,7 +27,6 @@ _parameters_list = ['account_id', 'comment', 'expected_metrics',
 _parameters = ','.join(_parameters_list)
 _expected_test_name_failures = set((
         'spans_disabled_in_child',
-        'exception',
         'lowercase_known_transport_is_unknown',
         'create_payload',
         'multiple_create_calls',
@@ -184,9 +183,14 @@ def test_distributed_tracing(account_id, comment, expected_metrics,
         assert 'X-NewRelic-App-Data' not in response.headers
 
     if raises_exception:
-        exact_attrs['intrinsic'].pop('parentId')
-        _test = validate_error_event_attributes(
-                required_params, forgone_params, exact_attrs)(_test)
+        error_event_required = {'agent': [], 'user': [],
+                'intrinsic': common_required}
+        error_event_forgone = {'agent': [], 'user': [],
+                'intrinsic': common_forgone}
+        error_event_exact = {'agent': {}, 'user': {},
+                'intrinsic': common_exact}
+        _test = validate_error_event_attributes(error_event_required,
+                error_event_forgone, error_event_exact)(_test)
 
     _test = override_application_settings(override_settings)(_test)
 

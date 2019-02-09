@@ -22,7 +22,6 @@ _parameters_list = ['account_id', 'comment', 'expected_metrics',
         'transport_type', 'trusted_account_key', 'web_transaction']
 _parameters = ','.join(_parameters_list)
 _expected_test_name_failures = set((
-        'spans_disabled_in_child',
         'null_payload',
 ))
 
@@ -132,6 +131,7 @@ def test_distributed_tracing(account_id, comment, expected_metrics,
 
     override_settings = {
         'distributed_tracing.enabled': True,
+        'span_events.enabled': span_events_enabled,
         'account_id': account_id,
         'trusted_account_key': trusted_account_key
     }

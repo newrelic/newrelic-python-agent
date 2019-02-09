@@ -1,8 +1,6 @@
 import json
 import os
 import pytest
-import requests
-import six
 import webtest
 
 from newrelic.api.transaction import current_transaction
@@ -12,8 +10,6 @@ from newrelic.common.object_wrapper import transient_function_wrapper
 from testing_support.fixtures import (override_application_settings,
         validate_transaction_metrics, validate_transaction_event_attributes,
         validate_error_event_attributes, validate_attributes)
-from testing_support.mock_external_http_server import (
-        MockExternalHTTPHResponseHeadersServer)
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures',
@@ -27,9 +23,6 @@ _parameters_list = ['account_id', 'comment', 'expected_metrics',
 _parameters = ','.join(_parameters_list)
 _expected_test_name_failures = set((
         'spans_disabled_in_child',
-        'create_payload',
-        'multiple_create_calls',
-        'payload_from_trusted_partnership_account',
         'null_payload',
 ))
 
@@ -52,15 +45,26 @@ def load_tests():
     return result
 
 
-def capture_outbound_payloads(payloads):
-    @transient_function_wrapper('newrelic.api.transaction',
-            'Transaction.create_distributed_tracing_payload')
-    def _capture_payloads(wrapped, instance, args, kwargs):
-        result = wrapped(*args, **kwargs)
-        payloads.append(result)
-        return result
+def assert_payload(payload, payload_assertions):
+    assert payload
 
-    return _capture_payloads
+    # flatten payload so it matches the test:
+    #   payload['d']['ac'] -> payload['d.ac']
+    d = payload.pop('d')
+    for key, value in d.items():
+        payload['d.%s' % key] = value
+
+    for expected in payload_assertions.get('expected', []):
+        assert expected in payload
+
+    for unexpected in payload_assertions.get('unexpected', []):
+        assert unexpected not in payload
+
+    for key, value in payload_assertions.get('exact', {}).items():
+        assert key in payload
+        if isinstance(value, list):
+            value = tuple(value)
+        assert payload[key] == value
 
 
 @wsgi_application()
@@ -98,26 +102,9 @@ def target_wsgi_application(environ, start_response):
 
     outbound_payloads = test_settings['outbound_payloads']
     if outbound_payloads:
-        payloads = []
-
-        @capture_outbound_payloads(payloads)
-        def make_outbound_request():
-            resp = requests.get('http://localhost:%d' % external.port)
-            assert resp.status_code == 200
-
-            assert b'X-NewRelic-ID' not in resp.content
-            assert b'X-NewRelic-Transaction' not in resp.content
-            assert b'newrelic' in resp.content
-
-        with MockExternalHTTPHResponseHeadersServer() as external:
-            for expected_payload_d in outbound_payloads:
-                make_outbound_request()
-
-                assert payloads
-                actual_payload = payloads.pop()
-                data = actual_payload['d']
-                for key, value in six.iteritems(expected_payload_d):
-                    assert data.get(key) == value
+        for payload_assertions in outbound_payloads:
+            payload = txn.create_distributed_trace_payload()
+            assert_payload(payload, payload_assertions)
 
     start_response(status, response_headers)
     return [output]
@@ -145,6 +132,7 @@ def test_distributed_tracing(account_id, comment, expected_metrics,
 
     override_settings = {
         'distributed_tracing.enabled': True,
+        'account_id': account_id,
         'trusted_account_key': trusted_account_key
     }
 

@@ -1103,7 +1103,7 @@ class ApplicationSession(object):
 
         utilization_settings = {}
         # metadata_version corresponds to the utilization spec being used.
-        utilization_settings['metadata_version'] = 4
+        utilization_settings['metadata_version'] = 5
         utilization_settings['logical_processors'] = logical_processor_count()
         utilization_settings['total_ram_mib'] = total_physical_memory()
         utilization_settings['hostname'] = hostname

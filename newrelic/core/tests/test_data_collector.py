@@ -25,6 +25,7 @@ CAPTURE_PARAMS = 'capture_params'
 DISPLAY_NAME = 'display_name'
 BOOT_ID = 'cca356a7d72737f645a10c122ebbe906'
 DOCKER = {'id': 'foobar'}
+METADATA = {}
 ENVIRONMENT = []
 HIGH_SECURITY = True
 HOST = "test_host"
@@ -135,6 +136,7 @@ def payload_asserts(payload, with_aws=True, with_gcp=True, with_pcf=True,
     assert payload_data['app_name'] == PAYLOAD_APP_NAME
     assert payload_data['display_host'] == DISPLAY_NAME
     assert payload_data['environment'] == ENVIRONMENT
+    assert payload_data['metadata'] == METADATA
     assert payload_data['high_security'] == HIGH_SECURITY
     assert payload_data['host'] == HOST
     assert payload_data['identifier'] == PAYLOAD_ID
@@ -234,6 +236,16 @@ def test_create_connect_payload_no_vendors():
     payload_asserts(
             payload, with_aws=False, with_pcf=False, with_gcp=False,
             with_azure=False, with_docker=False)
+
+
+def test_create_connect_payload_metadata(monkeypatch):
+    monkeypatch.setenv('NEW_RELIC_METADATA_FOOBAR', 'foobar')
+    monkeypatch.setenv('_NEW_RELIC_METADATA_WRONG', 'wrong')
+    settings = default_settings()
+    payload = ApplicationSession._create_connect_payload(
+            APP_NAME, LINKED_APPS, ENVIRONMENT, settings)
+    payload_data = payload[0]
+    assert payload_data['metadata'] == {'NEW_RELIC_METADATA_FOOBAR': 'foobar'}
 
 
 def test_create_connect_payload_no_fqdn_no_ip():

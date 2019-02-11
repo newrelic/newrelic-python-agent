@@ -37,7 +37,8 @@ from newrelic.common.encoding_utils import (json_encode, json_decode,
 from newrelic.common.system_info import (logical_processor_count,
         total_physical_memory, BootIdUtilization)
 from newrelic.common.utilization import (AWSUtilization, AzureUtilization,
-        DockerUtilization, GCPUtilization, PCFUtilization)
+        DockerUtilization, GCPUtilization, PCFUtilization,
+        KubernetesUtilization)
 
 _logger = logging.getLogger(__name__)
 
@@ -1149,6 +1150,11 @@ class ApplicationSession(object):
             docker = DockerUtilization.detect()
             if docker:
                 utilization_vendor_settings['docker'] = docker
+
+        if settings['utilization.detect_kubernetes']:
+            kubernetes = KubernetesUtilization.detect()
+            if kubernetes:
+                utilization_vendor_settings['kubernetes'] = kubernetes
 
         if utilization_vendor_settings:
             utilization_settings['vendors'] = utilization_vendor_settings

@@ -1157,6 +1157,11 @@ class ApplicationSession(object):
         if display_host is None:
             display_host = hostname
 
+        metadata = {}
+        for env_var in os.environ:
+            if env_var.startswith('NEW_RELIC_METADATA_'):
+                metadata[env_var] = os.environ[env_var]
+
         local_config = {
                 'host': hostname,
                 'pid': os.getpid(),
@@ -1165,6 +1170,7 @@ class ApplicationSession(object):
                 'identifier': ','.join(app_names),
                 'agent_version': version,
                 'environment': environment,
+                'metadata': metadata,
                 'settings': connect_settings,
                 'security_settings': security_settings,
                 'utilization': utilization_settings,

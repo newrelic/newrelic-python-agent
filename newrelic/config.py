@@ -535,6 +535,8 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'utilization.detect_docker',
                      'getboolean', None)
+    _process_setting(section, 'utilization.detect_kubernetes',
+                     'getboolean', None)
     _process_setting(section, 'utilization.detect_gcp',
                      'getboolean', None)
     _process_setting(section, 'utilization.detect_pcf',

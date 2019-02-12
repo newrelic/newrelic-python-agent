@@ -607,6 +607,7 @@ _settings.message_tracer.segment_parameters_enabled = True
 _settings.utilization.detect_aws = True
 _settings.utilization.detect_azure = True
 _settings.utilization.detect_docker = True
+_settings.utilization.detect_kubernetes = True
 _settings.utilization.detect_gcp = True
 _settings.utilization.detect_pcf = True
 

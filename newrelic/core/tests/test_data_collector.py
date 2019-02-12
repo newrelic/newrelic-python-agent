@@ -25,6 +25,8 @@ CAPTURE_PARAMS = 'capture_params'
 DISPLAY_NAME = 'display_name'
 BOOT_ID = 'cca356a7d72737f645a10c122ebbe906'
 DOCKER = {'id': 'foobar'}
+KUBERNETES = {'kubernetes_service_host': '10.96.0.1'}
+METADATA = {}
 ENVIRONMENT = []
 HIGH_SECURITY = True
 HOST = "test_host"
@@ -92,6 +94,8 @@ def setup_module(module):
     dc.GCPUtilization = _create_detect(dc.GCPUtilization, GCP)
     dc.PCFUtilization = _create_detect(dc.PCFUtilization, PCF)
     dc.DockerUtilization = _create_detect(dc.DockerUtilization, DOCKER)
+    dc.KubernetesUtilization = _create_detect(
+            dc.KubernetesUtilization, KUBERNETES)
 
     _backup_methods['version'] = dc.version
     dc.version = AGENT_VERSION
@@ -124,17 +128,19 @@ def default_settings():
             'utilization.detect_docker': True,
             'utilization.detect_gcp': True,
             'utilization.detect_pcf': True,
+            'utilization.detect_kubernetes': True,
             'heroku.use_dyno_names': False,
             'heroku.dyno_name_prefixes_to_shorten': []}
 
 
 def payload_asserts(payload, with_aws=True, with_gcp=True, with_pcf=True,
-        with_azure=True, with_docker=True):
+        with_azure=True, with_docker=True, with_kubernetes=True):
     payload_data = payload[0]
     assert payload_data['agent_version'] == AGENT_VERSION
     assert payload_data['app_name'] == PAYLOAD_APP_NAME
     assert payload_data['display_host'] == DISPLAY_NAME
     assert payload_data['environment'] == ENVIRONMENT
+    assert payload_data['metadata'] == METADATA
     assert payload_data['high_security'] == HIGH_SECURITY
     assert payload_data['host'] == HOST
     assert payload_data['identifier'] == PAYLOAD_ID
@@ -167,15 +173,26 @@ def payload_asserts(payload, with_aws=True, with_gcp=True, with_pcf=True,
         assert 'ip_address' not in payload_data['utilization']
 
     utilization_len = utilization_len + any([with_aws, with_pcf, with_gcp,
-            with_azure, with_docker])
+            with_azure, with_docker, with_kubernetes])
     assert len(payload_data['utilization']) == utilization_len
     assert payload_data['utilization']['hostname'] == HOST
 
     assert payload_data['utilization']['logical_processors'] == PROCESSOR_COUNT
-    assert payload_data['utilization']['metadata_version'] == 4
+    assert payload_data['utilization']['metadata_version'] == 5
     assert payload_data['utilization']['total_ram_mib'] == MEMORY
     assert payload_data['utilization']['boot_id'] == BOOT_ID
-    vendors_len = any([with_aws, with_pcf, with_gcp, with_azure]) + with_docker
+
+    vendors_len = 0
+
+    if any([with_aws, with_pcf, with_gcp, with_azure]):
+        vendors_len += 1
+
+    if with_docker:
+        vendors_len += 1
+
+    if with_kubernetes:
+        vendors_len += 1
+
     if vendors_len:
         assert len(payload_data['utilization']['vendors']) == vendors_len
 
@@ -192,34 +209,43 @@ def payload_asserts(payload, with_aws=True, with_gcp=True, with_pcf=True,
         if with_docker:
             assert (payload_data['utilization']['vendors']['docker'] ==
                     DOCKER)
+
+        if with_kubernetes:
+            assert (payload_data['utilization']['vendors']['kubernetes'] ==
+                    KUBERNETES)
     else:
         assert 'vendors' not in payload_data['utilization']
 
 
-@pytest.mark.parametrize('with_aws,with_pcf,with_gcp,with_azure,with_docker', [
-    (True, False, False, False, True),
-    (False, True, False, False, True),
-    (False, False, True, False, True),
-    (False, False, False, True, True),
-    (True, False, False, False, False),
-    (False, True, False, False, False),
-    (False, False, True, False, False),
-    (False, False, False, True, False),
-    (True, True, True, True, True),
+@pytest.mark.parametrize(
+    'with_aws,with_pcf,with_gcp,with_azure,with_docker,with_kubernetes', [
+    (True, False, False, False, True, True),
+    (False, True, False, False, True, True),
+    (False, False, True, False, True, True),
+    (False, False, False, True, True, True),
+    (True, False, False, False, False, False),
+    (False, True, False, False, False, False),
+    (False, False, True, False, False, False),
+    (False, False, False, True, False, False),
+    (True, True, True, True, True, True),
+    (True, True, True, True, True, False),
+    (True, True, True, True, False, True),
 ])
 def test_create_connect_payload(with_aws, with_pcf, with_gcp, with_azure,
-        with_docker):
+        with_docker, with_kubernetes):
     settings = default_settings()
     settings['utilization.detect_aws'] = with_aws
     settings['utilization.detect_pcf'] = with_pcf
     settings['utilization.detect_gcp'] = with_gcp
     settings['utilization.detect_azure'] = with_azure
     settings['utilization.detect_docker'] = with_docker
+    settings['utilization.detect_kubernetes'] = with_kubernetes
     payload = ApplicationSession._create_connect_payload(
             APP_NAME, LINKED_APPS, ENVIRONMENT, settings)
     payload_asserts(
             payload, with_aws=with_aws, with_pcf=with_pcf, with_gcp=with_gcp,
-            with_azure=with_azure, with_docker=with_docker)
+            with_azure=with_azure, with_docker=with_docker,
+            with_kubernetes=with_kubernetes)
 
 
 def test_create_connect_payload_no_vendors():
@@ -229,11 +255,22 @@ def test_create_connect_payload_no_vendors():
     settings['utilization.detect_gcp'] = False
     settings['utilization.detect_azure'] = False
     settings['utilization.detect_docker'] = False
+    settings['utilization.detect_kubernetes'] = False
     payload = ApplicationSession._create_connect_payload(
             APP_NAME, LINKED_APPS, ENVIRONMENT, settings)
     payload_asserts(
             payload, with_aws=False, with_pcf=False, with_gcp=False,
-            with_azure=False, with_docker=False)
+            with_azure=False, with_docker=False, with_kubernetes=False)
+
+
+def test_create_connect_payload_metadata(monkeypatch):
+    monkeypatch.setenv('NEW_RELIC_METADATA_FOOBAR', 'foobar')
+    monkeypatch.setenv('_NEW_RELIC_METADATA_WRONG', 'wrong')
+    settings = default_settings()
+    payload = ApplicationSession._create_connect_payload(
+            APP_NAME, LINKED_APPS, ENVIRONMENT, settings)
+    payload_data = payload[0]
+    assert payload_data['metadata'] == {'NEW_RELIC_METADATA_FOOBAR': 'foobar'}
 
 
 def test_create_connect_payload_no_fqdn_no_ip():

@@ -75,9 +75,10 @@ def test_awaitable_timing(trace, metric):
             'Memcache/cmd'),
 ])
 @pytest.mark.parametrize('yield_from', [True, False])
+@pytest.mark.parametrize('use_await', [True, False])
 @pytest.mark.parametrize('coro_decorator_first', [True, False])
 def test_asyncio_decorator_timing(trace, metric, yield_from,
-        coro_decorator_first):
+        use_await, coro_decorator_first):
 
     if yield_from:
         def coro():
@@ -91,10 +92,15 @@ def test_asyncio_decorator_timing(trace, metric, yield_from,
     else:
         coro = asyncio.coroutine(trace()(coro))
 
-    @function_trace(name='parent')
-    @asyncio.coroutine
-    def parent():
-        yield from coro()
+    if use_await:
+        @function_trace(name='parent')
+        async def parent():
+            await coro()
+    else:
+        @function_trace(name='parent')
+        @asyncio.coroutine
+        def parent():
+            yield from coro()
 
     metrics = []
     full_metrics = {}

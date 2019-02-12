@@ -8,6 +8,7 @@ from newrelic.api.message_trace import MessageTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
+from newrelic.common.coroutine import async_proxy, TransactionContext
 
 
 class MessageTransaction(BackgroundTask):
@@ -199,19 +200,26 @@ def MessageTransactionWrapper(wrapped, library, destination_type,
         else:
             _application = application
 
+        manager = MessageTransaction(
+                library=_library,
+                destination_type=_destination_type,
+                destination_name=_destination_name,
+                application=_application,
+                routing_key=_routing_key,
+                exchange_type=_exchange_type,
+                headers=_headers,
+                queue_name=_queue_name,
+                reply_to=_reply_to,
+                correlation_id=_correlation_id)
+
+        proxy = async_proxy(wrapped)
+        if proxy:
+            context_manager = TransactionContext(manager)
+            return proxy(wrapped(*args, **kwargs), context_manager)
+
+        success = True
+
         try:
-            success = True
-            manager = MessageTransaction(
-                    library=_library,
-                    destination_type=_destination_type,
-                    destination_name=_destination_name,
-                    application=_application,
-                    routing_key=_routing_key,
-                    exchange_type=_exchange_type,
-                    headers=_headers,
-                    queue_name=_queue_name,
-                    reply_to=_reply_to,
-                    correlation_id=_correlation_id)
             manager.__enter__()
             try:
                 return wrapped(*args, **kwargs)

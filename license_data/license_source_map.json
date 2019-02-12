@@ -137,12 +137,6 @@
             "New Relic"
         ]
     },
-    "newrelic/api/coroutine_trace.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/api/database_trace.py": {
         "hash": "n/a",
         "libraries": [
@@ -732,6 +726,12 @@
         ]
     },
     "newrelic/common/certs.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/coroutine.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

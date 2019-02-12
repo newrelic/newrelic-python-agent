@@ -246,3 +246,24 @@ class DockerUtilization(CommonUtilization):
             return True
 
         return False
+
+
+class KubernetesUtilization(CommonUtilization):
+    EXPECTED_KEYS = ('kubernetes_service_host', )
+    VENDOR_NAME = 'kubernetes'
+
+    @staticmethod
+    def fetch():
+        kubernetes_service_host = os.environ.get('KUBERNETES_SERVICE_HOST')
+        if kubernetes_service_host:
+            return kubernetes_service_host
+
+    @classmethod
+    def get_values(cls, v):
+        if v is None:
+            return
+
+        if hasattr(v, 'decode'):
+            v = v.decode('utf-8')
+
+        return {'kubernetes_service_host': v}

@@ -37,7 +37,8 @@ from newrelic.common.encoding_utils import (json_encode, json_decode,
 from newrelic.common.system_info import (logical_processor_count,
         total_physical_memory, BootIdUtilization)
 from newrelic.common.utilization import (AWSUtilization, AzureUtilization,
-        DockerUtilization, GCPUtilization, PCFUtilization)
+        DockerUtilization, GCPUtilization, PCFUtilization,
+        KubernetesUtilization)
 
 _logger = logging.getLogger(__name__)
 
@@ -1102,7 +1103,7 @@ class ApplicationSession(object):
 
         utilization_settings = {}
         # metadata_version corresponds to the utilization spec being used.
-        utilization_settings['metadata_version'] = 4
+        utilization_settings['metadata_version'] = 5
         utilization_settings['logical_processors'] = logical_processor_count()
         utilization_settings['total_ram_mib'] = total_physical_memory()
         utilization_settings['hostname'] = hostname
@@ -1150,12 +1151,22 @@ class ApplicationSession(object):
             if docker:
                 utilization_vendor_settings['docker'] = docker
 
+        if settings['utilization.detect_kubernetes']:
+            kubernetes = KubernetesUtilization.detect()
+            if kubernetes:
+                utilization_vendor_settings['kubernetes'] = kubernetes
+
         if utilization_vendor_settings:
             utilization_settings['vendors'] = utilization_vendor_settings
 
         display_host = settings['process_host.display_name']
         if display_host is None:
             display_host = hostname
+
+        metadata = {}
+        for env_var in os.environ:
+            if env_var.startswith('NEW_RELIC_METADATA_'):
+                metadata[env_var] = os.environ[env_var]
 
         local_config = {
                 'host': hostname,
@@ -1165,6 +1176,7 @@ class ApplicationSession(object):
                 'identifier': ','.join(app_names),
                 'agent_version': version,
                 'environment': environment,
+                'metadata': metadata,
                 'settings': connect_settings,
                 'security_settings': security_settings,
                 'utilization': utilization_settings,

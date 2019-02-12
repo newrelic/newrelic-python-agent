@@ -1,3 +1,4 @@
+import newrelic.packages.six as six
 import pytest
 
 from testing_support.fixtures import (code_coverage_fixture,
@@ -6,7 +7,7 @@ from testing_support.fixtures import (code_coverage_fixture,
 _coverage_source = [
     'newrelic.api.transaction',
     'newrelic.api.web_transaction',
-    'newrelic.api.coroutine_trace',
+    'newrelic.common.coroutine',
     'newrelic.api.lambda_handler'
 ]
 
@@ -33,3 +34,7 @@ def session_initialization(code_coverage, collector_agent_registration):
 @pytest.fixture(scope='function')
 def requires_data_collector(collector_available_fixture):
     pass
+
+
+if six.PY2:
+    collect_ignore = ['test_coroutine_transaction.py']

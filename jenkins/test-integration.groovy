@@ -57,7 +57,7 @@ def getPacknsendTests (String workspace, String testSuffix, String mostRecentOnl
 use(extensions) {
     def packnsendTests = getPacknsendTests("${WORKSPACE}", testSuffix, "false")
 
-    ['develop', 'master', 'mmf'].each { jobType ->
+    ['develop', 'master'].each { jobType ->
         multiJob("_INTEGRATION-TESTS-${jobType}_") {
             concurrentBuild true
             description("Perform full suite of tests on Python Agent on the ${jobType} branch")
@@ -79,27 +79,11 @@ use(extensions) {
                     githubPush()
                 }
                 gitBranch = jobType
-            } else if (jobType == 'mmf') {
-                // branch will be correctly set later with the
-                // get_mmf_branch.sh script
-                repository(repoFull, 'develop')
-                triggers {
-                    // run daily on cron
-                    cron('H 4 * * 1-5')
-                }
             }
 
             parameters {
-                if (jobType == 'mmf') {
-                    choiceParam('GIT_REPOSITORY_BRANCH', [''],
-                        'Branch in git repository to run test against. ' +
-                        'Will be set dynamically by the job.\n' +
-                        'If you wish to run a test on a specific branch, ' +
-                        'use the <b>_COMBINED-TESTS-manual_</b> job.')
-                } else {
-                    stringParam('GIT_REPOSITORY_BRANCH', gitBranch,
-                        'Branch in git repository to run test against.')
-                }
+                stringParam('GIT_REPOSITORY_BRANCH', gitBranch,
+                            'Branch in git repository to run test against.')
                 stringParam('AGENT_FAKE_COLLECTOR', 'false',
                             'Whether fake collector is used or not.')
                 stringParam('AGENT_PROXY_HOST', '',
@@ -107,27 +91,9 @@ use(extensions) {
             }
 
             steps {
-                if (jobType == 'mmf') {
-                    // get the mmf branch
-                    shell('./jenkins/scripts/get_mmf_branch.sh')
-                    // set it as an env var
-                    environmentVariables {
-                        propertiesFile('jenkins/environ')
-                    }
-                    // promote it to a first rate parameter so it can be passed
-                    // to child jobs
-                    systemGroovyScriptFile('jenkins/scripts/set_mmf_branch.groovy')
-                }
-
                 conditionalSteps {
                     condition {
-                        if (jobType == 'mmf') {
-                            not {
-                                stringsMatch('${GIT_REPOSITORY_BRANCH}', '', false)
-                            }
-                        } else {
-                            alwaysRun()
-                        }
+                        alwaysRun()
                     }
 
                     // do not run the following jobs if the above condition
@@ -146,7 +112,7 @@ use(extensions) {
                 }
             }
 
-            if (jobType == 'master' || jobType == 'mmf') {
+            if (jobType == 'master') {
                 slackQuiet(slackChannel) {
                     notifyNotBuilt true
                     notifyAborted true

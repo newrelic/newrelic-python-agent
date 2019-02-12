@@ -1,6 +1,6 @@
 import functools
 
-from newrelic.api.coroutine_trace import return_value_fn
+from newrelic.common.coroutine import async_proxy, TraceContext
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
@@ -65,8 +65,6 @@ class FunctionTrace(TimeTrace):
 def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
             params=None, terminal=False, rollup=None):
 
-    return_value = return_value_fn(wrapped)
-
     def dynamic_wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction()
 
@@ -114,7 +112,13 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
 
         trace = FunctionTrace(transaction, _name, _group, _label, _params,
                 terminal, rollup)
-        return return_value(trace, lambda: wrapped(*args, **kwargs))
+
+        proxy = async_proxy(wrapped)
+        if proxy:
+            return proxy(wrapped(*args, **kwargs), TraceContext(trace))
+
+        with trace:
+            return wrapped(*args, **kwargs)
 
     def literal_wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction()
@@ -126,7 +130,13 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
 
         trace = FunctionTrace(transaction, _name, group, label, params,
                 terminal, rollup)
-        return return_value(trace, lambda: wrapped(*args, **kwargs))
+
+        proxy = async_proxy(wrapped)
+        if proxy:
+            return proxy(wrapped(*args, **kwargs), TraceContext(trace))
+
+        with trace:
+            return wrapped(*args, **kwargs)
 
     if (callable(name) or callable(group) or callable(label) or
             callable(params)):

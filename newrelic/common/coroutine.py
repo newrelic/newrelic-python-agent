@@ -1,19 +1,30 @@
 import inspect
 import logging
+import newrelic.packages.six as six
 
 from newrelic.common.object_wrapper import ObjectProxy
-from newrelic.common.object_names import callable_name
 
 _logger = logging.getLogger(__name__)
 
+CancelledError = None
 
 if hasattr(inspect, 'iscoroutinefunction'):
     def is_coroutine_function(wrapped):
-        return (inspect.iscoroutinefunction(wrapped) or
-                inspect.isgeneratorfunction(wrapped))
+        return inspect.iscoroutinefunction(wrapped)
+
+    def is_asyncio_coroutine(wrapped):
+        """Return True if func is a decorated coroutine function."""
+        return getattr(wrapped, '_is_coroutine', None) is not None
 else:
     def is_coroutine_function(wrapped):
-        return inspect.isgeneratorfunction(wrapped)
+        return False
+
+    def is_asyncio_coroutine(wrapped):
+        return False
+
+
+def is_generator_function(wrapped):
+    return inspect.isgeneratorfunction(wrapped)
 
 
 def _iscoroutinefunction_tornado(fn):
@@ -34,6 +45,14 @@ class TraceContext(object):
             self.trace = trace
 
         self.current_trace = None
+
+    def pre_close(self):
+        pass
+
+    def close(self):
+        if self.trace:
+            self.trace.__exit__(None, None, None)
+            self.trace = None
 
     def __enter__(self):
         if not self.trace:
@@ -105,69 +124,117 @@ class TraceContext(object):
                     txn.current_node = current_trace
 
 
-class CoroutineTrace(ObjectProxy):
-    def __init__(self, wrapped, trace):
+class TransactionContext(object):
+    def __init__(self, transaction):
+        self.transaction = transaction
+        if not self.transaction.enabled:
+            self.transaction = None
 
-        self._nr_trace_context = TraceContext(trace)
+    def pre_close(self):
+        if self.transaction and not self.transaction._state:
+            self.transaction = None
 
-        # get the coroutine
-        coro = wrapped()
+    def close(self):
+        if not self.transaction:
+            return
 
-        # Wrap the coroutine
-        super(CoroutineTrace, self).__init__(coro)
+        if self.transaction._state:
+            try:
+                with self:
+                    raise GeneratorExit
+            except GeneratorExit:
+                pass
 
-    def __iter__(self):
+    def __enter__(self):
+        if not self.transaction:
+            return self
+
+        if not self.transaction._state:
+            self.transaction.__enter__()
+        elif self.transaction.enabled:
+            self.transaction.save_transaction()
+
         return self
 
-    def __await__(self):
-        return self
+    def __exit__(self, exc, value, tb):
+        if not self.transaction:
+            return
 
-    def __next__(self):
-        return self.send(None)
+        global CancelledError
 
-    next = __next__
+        if CancelledError is None:
+            try:
+                from concurrent.futures import CancelledError
+            except:
+                CancelledError = GeneratorExit
+
+        # case: coroutine completed or cancelled
+        if (exc is StopIteration or exc is GeneratorExit or
+                exc is CancelledError):
+            self.transaction.__exit__(None, None, None)
+
+        # case: coroutine completed because of error
+        elif exc:
+            self.transaction.__exit__(exc, value, tb)
+
+        # case: coroutine suspended but not completed
+        elif self.transaction.enabled:
+            self.transaction.drop_transaction()
+
+
+class Coroutine(ObjectProxy):
+    def __init__(self, wrapped, context):
+        super(Coroutine, self).__init__(wrapped)
+        self._nr_context = context
 
     def send(self, value):
-        with self._nr_trace_context:
+        with self._nr_context:
             return self.__wrapped__.send(value)
 
     def throw(self, *args, **kwargs):
-        with self._nr_trace_context:
+        with self._nr_context:
             return self.__wrapped__.throw(*args, **kwargs)
 
     def close(self):
+        self._nr_context.pre_close()
+
         try:
-            with self._nr_trace_context:
+            with self._nr_context:
                 result = self.__wrapped__.close()
         except:
             raise
-        else:
-            # If the trace hasn't been exited, then exit the trace
-            if self._nr_trace_context.trace:
-                self._nr_trace_context.trace.__exit__(None, None, None)
-                self._nr_trace_context.trace = None
-            return result
+
+        self._nr_context.close()
+        return result
 
 
-def return_value_fn(wrapped):
-    if _iscoroutinefunction_tornado(wrapped):
-        if hasattr(wrapped, '__wrapped__'):
-            coro_name = callable_name(wrapped.__wrapped__)
-        else:
-            coro_name = callable_name(wrapped)
-        _logger.warning('The tornado coroutine function %r '
-                '(tornado.gen.coroutine) has been incorrectly wrapped. To '
-                'trace a tornado coroutine, the New Relic trace decorator '
-                'must be the innermost decorator. For more information see '
-                'https://docs.newrelic.com/docs/agents/python-agent/'
-                'trace-decorators-tornado-coroutines', coro_name)
+class GeneratorProxy(Coroutine):
+    def __iter__(self):
+        return self
 
-    if is_coroutine_function(wrapped):
-        def return_value(trace, fn):
-            return CoroutineTrace(fn, trace)
+    if six.PY2:
+        def next(self):
+            return self.send(None)
     else:
-        def return_value(trace, fn):
-            with trace:
-                return fn()
+        def __next__(self):
+            return self.send(None)
 
-    return return_value
+
+class AwaitableGeneratorProxy(GeneratorProxy):
+    def __await__(self):
+        return self
+
+
+class CoroutineProxy(Coroutine):
+    def __await__(self):
+        return GeneratorProxy(self.__wrapped__, self._nr_context)
+
+
+def async_proxy(wrapped):
+    if is_coroutine_function(wrapped):
+        return CoroutineProxy
+    elif is_generator_function(wrapped):
+        if is_asyncio_coroutine(wrapped):
+            return AwaitableGeneratorProxy
+        else:
+            return GeneratorProxy

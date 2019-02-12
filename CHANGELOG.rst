@@ -1,6 +1,33 @@
 unreleased
 ----------
 
+4.14.0 (2019-02-12)
+-------------------
+
+- @background_task can now be used with coroutines
+
+  The background_task decorator API can now be used with native coroutines and generators.
+
+.. code-block:: python
+
+  @background_task(name='my_coroutine')
+  async def my_coroutine():
+    await asyncio.sleep(0.1)
+
+
+- Add support for collection of Kubernetes metadata
+
+  The agent will now collect environment variables prefixed by
+  ``NEW_RELIC_METADATA_`` as additional metadata. Some of this metadata may be
+  added to Transaction events to provide context between your Kubernetes
+  cluster and your services. For details on the benefits (currently in beta)
+  see `this blog post <https://blog.newrelic.com/engineering/monitoring-application-performance-in-kubernetes/>`_.
+
+  The agent now also collects the ``KUBERNETES_SERVICE_HOST`` environment
+  variable to detect when the application is running on Kubernetes. The data is
+  used to link the application to the host machine when using the New Relic
+  infrastructure product.
+
 4.12.0 (2019-01-22)
 -------------------
 
@@ -104,7 +131,7 @@ unreleased
 
   The "newrelic-admin record_deploy" command previously did not function when
   a proxy was defined by the newrelic.ini configuration file or the
-  NEW_RELIC_PROXY_* environment variables. This bug has now been fixed.
+  ``NEW_RELIC_PROXY_*`` environment variables. This bug has now been fixed.
 
 - Add support for Falcon web framework
 
@@ -335,9 +362,9 @@ unreleased
 3.2.1 (2018-05-16)
 ------------------
 
-- Do not run explain plans for psycopg2 connections using the `async_` kwarg
+- Do not run explain plans for psycopg2 connections using the ``async_`` kwarg
 
-  As "async" is now a keyword in Python 3.7, psycopg2 now allows "async_" as an
+  As "async" is now a keyword in Python 3.7, psycopg2 now allows ``async_`` as an
   alias for its "async" kwarg for psycopg2.connect as of psycopg2 v2.7.4.
   Previously, explain plans were attempted for these connections and a
   traceback would be seen in the logs. This has now been fixed.

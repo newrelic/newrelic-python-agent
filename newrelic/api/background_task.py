@@ -4,8 +4,10 @@ import sys
 from newrelic.api.application import Application, application_instance
 from newrelic.api.transaction import Transaction, current_transaction
 from newrelic.api.web_transaction import WebTransaction
+from newrelic.common.coroutine import async_proxy, TransactionContext
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
+
 
 class BackgroundTask(Transaction):
 
@@ -35,6 +37,7 @@ class BackgroundTask(Transaction):
         # Name the web transaction from supplied values.
 
         self.set_transaction_name(name, group, priority=1)
+
 
 def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
 
@@ -95,13 +98,20 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
         else:
             _application = application
 
+        manager = BackgroundTask(_application, _name, _group)
+
+        proxy = async_proxy(wrapped)
+        if proxy:
+            context_manager = TransactionContext(manager)
+            return proxy(wrapped(*args, **kwargs), context_manager)
+
+        success = True
+
         try:
-            success = True
-            manager = BackgroundTask(_application, _name, _group)
             manager.__enter__()
             try:
                 return wrapped(*args, **kwargs)
-            except: #  Catch all
+            except:
                 success = False
                 if not manager.__exit__(*sys.exc_info()):
                     raise
@@ -119,9 +129,11 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
 
     return FunctionWrapper(wrapped, wrapper)
 
+
 def background_task(application=None, name=None, group=None):
     return functools.partial(BackgroundTaskWrapper,
             application=application, name=name, group=group)
+
 
 def wrap_background_task(module, object_path, application=None,
         name=None, group=None):

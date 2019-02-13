@@ -11,7 +11,7 @@ except ImportError:
 
 import pytest
 
-from tornado.httputil import HTTPHeaders, HTTPServerRequest
+from tornado.httputil import HTTPServerRequest
 from tornado.ioloop import IOLoop
 import tornado.stack_context
 import tornado.testing
@@ -20,7 +20,7 @@ from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import background_task
 from newrelic.core.stats_engine import StatsEngine
 from newrelic.hooks.framework_tornado_r3.httputil import (
-        initiate_request_monitoring, request_environment)
+        initiate_request_monitoring)
 from newrelic.hooks.framework_tornado_r3.util import (
         retrieve_current_transaction)
 from newrelic.packages import six
@@ -1275,27 +1275,6 @@ class AllTests(object):
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body,
                 NativeFuturesCoroutine.THREAD_RESPONSE)
-
-    @tornado_validate_transaction_cache_empty()
-    @tornado_validate_errors()
-    def test_request_environment(self):
-        synthetics_value = 'encoded_synthetics_val'
-        port_value = 8888
-        headers = HTTPHeaders({'X-NewRelic-Synthetics': synthetics_value})
-        request = HTTPServerRequest(uri="pupper.com", headers=headers,
-                host='localhost:' + str(port_value))
-
-        # HTTPServerRequest will cause a transaction to be created
-        transaction = request._nr_transaction
-        transaction.save_transaction()
-        transaction.__exit__(None, None, None)
-
-        environ = request_environment(request)
-
-        assert 'HTTP_X_NEWRELIC_SYNTHETICS' in environ
-        assert environ['HTTP_X_NEWRELIC_SYNTHETICS'] == synthetics_value
-        assert 'SERVER_PORT' in environ
-        assert environ['SERVER_PORT'] == port_value
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(expect_transaction=False)

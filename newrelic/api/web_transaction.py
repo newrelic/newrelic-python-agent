@@ -642,6 +642,37 @@ class WebTransaction(Transaction):
         return intrinsics
 
 
+SPECIAL_WSGI_HEADERS = set(('content-type', 'content-length'))
+
+
+class GenericWebTransaction(WebTransaction):
+
+    def __init__(self, application, name, group=None,
+            scheme=None, host=None, port=None, request_method=None,
+            request_path=None, query_parameters=None, headers=None):
+
+        environ = {
+            'PATH_INFO': request_path,
+            'REQUEST_METHOD': request_method,
+            'QUERY_STRING': query_parameters,
+            'wsgi.url_scheme': scheme,
+            'SERVER_NAME': host,
+            'SERVER_PORT': port,
+        }
+
+        for k, v in headers.items():
+            normalized_key = k.replace('-', '_').upper()
+            if k.lower() in SPECIAL_WSGI_HEADERS:
+                key = normalized_key
+            else:
+                key = 'HTTP_%s' % normalized_key
+            environ[key] = v
+
+        super(GenericWebTransaction, self).__init__(application, environ)
+        if name is not None:
+            self.set_transaction_name(name, group, priority=1)
+
+
 class _WSGIApplicationIterable(object):
 
     def __init__(self, transaction, generator):

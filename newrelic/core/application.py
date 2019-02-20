@@ -136,7 +136,7 @@ class Application(object):
     def active(self):
         return self.configuration is not None
 
-    def compute_sampled(self, priority):
+    def compute_sampled(self):
         if self.adaptive_sampler is None:
             return False
 
@@ -153,7 +153,7 @@ class Application(object):
                 if reset_count is not None:
                     self.adaptive_sampler.reset(reset_count)
 
-            return self.adaptive_sampler.compute_sampled(priority)
+            return self.adaptive_sampler.compute_sampled()
 
     def dump(self, file):
         """Dumps details about the application to the file object."""

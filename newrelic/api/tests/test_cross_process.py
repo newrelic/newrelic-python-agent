@@ -38,7 +38,7 @@ class TestCase(unittest.TestCase):
             def record_transaction(self, *args, **kwargs):
                 pass
 
-            def compute_sampled(self, priority):
+            def compute_sampled(self):
                 return False
 
         application = Application()

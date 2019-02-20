@@ -26,7 +26,7 @@ class MockApplication(object):
     def record_transaction(self, data, *args):
         return None
 
-    def compute_sampled(self, priority):
+    def compute_sampled(self):
         return False
 
 

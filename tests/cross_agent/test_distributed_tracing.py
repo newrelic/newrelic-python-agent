@@ -6,7 +6,8 @@ import webtest
 from newrelic.api.transaction import current_transaction
 from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.encoding_utils import DistributedTracePayload
-from newrelic.common.object_wrapper import function_wrapper
+from newrelic.common.object_wrapper import (function_wrapper,
+        transient_function_wrapper)
 
 from testing_support.fixtures import (override_application_settings,
         validate_transaction_metrics, validate_transaction_event_attributes,
@@ -49,6 +50,12 @@ def override_distributed_trace_payload_version(major_version, minor_version):
             DistributedTracePayload.version = original_version
 
     return _override
+
+
+@transient_function_wrapper('newrelic.core.adaptive_sampler',
+        'AdaptiveSampler.compute_sampled')
+def override_compute_sampled_always_true(wrapped, instance, args, kwargs):
+    return True
 
 
 def assert_payload(payload, payload_assertions):
@@ -145,7 +152,7 @@ def test_distributed_tracing(account_id, comment, expected_metrics,
         'distributed_tracing.enabled': True,
         'span_events.enabled': span_events_enabled,
         'account_id': account_id,
-        'trusted_account_key': trusted_account_key
+        'trusted_account_key': trusted_account_key,
     }
 
     common_required = intrinsics['common']['expected']
@@ -187,6 +194,9 @@ def test_distributed_tracing(account_id, comment, expected_metrics,
                 'intrinsic': common_exact}
         _test = validate_error_event_attributes(error_event_required,
                 error_event_forgone, error_event_exact)(_test)
+
+    if force_sampled_true:
+        _test = override_compute_sampled_always_true(_test)
 
     _test = override_application_settings(override_settings)(_test)
     _test = override_distributed_trace_payload_version(

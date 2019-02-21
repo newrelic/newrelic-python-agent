@@ -183,7 +183,7 @@ def _normalize_sql(sql):
 # now for cases below which never get invoked, so is okay for now.
 
 
-_identifier_re = re.compile('[\',"`\[\]\(\)]*')
+_identifier_re = re.compile(r'[\',"`\[\]\(\)]*')
 
 
 def _extract_identifier(token):
@@ -270,7 +270,7 @@ _parse_identifier_p = ''.join(('(', _parse_identifier_1_p, '|',
         _parse_identifier_4_p, '|', _parse_identifier_5_p, '|',
         _parse_identifier_6_p, '|', _parse_identifier_7_p, ')'))
 
-_parse_from_p = '\s+FROM\s+' + _parse_identifier_p
+_parse_from_p = r'\s+FROM\s+' + _parse_identifier_p
 _parse_from_re = re.compile(_parse_from_p, re.IGNORECASE)
 
 
@@ -286,7 +286,7 @@ def _parse_delete(sql):
     return _join_identifier(_parse_from_re.search(sql))
 
 
-_parse_into_p = '\s+INTO\s+' + _parse_identifier_p
+_parse_into_p = r'\s+INTO\s+' + _parse_identifier_p
 _parse_into_re = re.compile(_parse_into_p, re.IGNORECASE)
 
 
@@ -294,7 +294,7 @@ def _parse_insert(sql):
     return _join_identifier(_parse_into_re.search(sql))
 
 
-_parse_update_p = '\s*UPDATE\s+' + _parse_identifier_p
+_parse_update_p = r'\s*UPDATE\s+' + _parse_identifier_p
 _parse_update_re = re.compile(_parse_update_p, re.IGNORECASE)
 
 
@@ -302,7 +302,7 @@ def _parse_update(sql):
     return _join_identifier(_parse_update_re.search(sql))
 
 
-_parse_table_p = '\s+TABLE\s+' + _parse_identifier_p
+_parse_table_p = r'\s+TABLE\s+' + _parse_identifier_p
 _parse_table_re = re.compile(_parse_table_p, re.IGNORECASE)
 
 
@@ -484,7 +484,7 @@ def _obfuscate_explain_plan_postgresql(columns, rows, mask=None):
     # obfuscation and simply mask out any line preceded by a label.
 
     if mask:
-        text = _explain_plan_postgresql_re_2.sub('\g<label>?', text)
+        text = _explain_plan_postgresql_re_2.sub(r'\g<label>?', text)
 
     # Now regenerate the list of rows by splitting again on newline.
 

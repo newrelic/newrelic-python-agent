@@ -7,6 +7,8 @@ import logging
 import re
 import weakref
 
+import newrelic.packages.six as six
+
 from newrelic.core.internal_metrics import internal_metric
 from newrelic.core.config import global_settings
 
@@ -796,24 +798,30 @@ class SQLDatabase(object):
 class SQLStatement(object):
 
     def __init__(self, sql, database=None):
-        if hasattr(sql, 'decode'):
-            try:
-                sql = sql.decode('utf-8')
-            except UnicodeDecodeError as e:
-                settings = global_settings()
-                if settings.debug.log_explain_plan_queries:
-                    _logger.debug('An error occurred while decoding sql '
-                            'statement: %s' % e.reason)
-
-        self.sql = sql
-        self.database = database
-
         self._operation = None
         self._target = None
         self._uncommented = None
         self._obfuscated = None
         self._normalized = None
         self._identifier = None
+
+        if isinstance(sql, six.binary_type):
+            try:
+                sql = sql.decode('utf-8')
+            except UnicodeError as e:
+                settings = global_settings()
+                if settings.debug.log_explain_plan_queries:
+                    _logger.debug('An error occurred while decoding sql '
+                            'statement: %s' % e.reason)
+
+                self._operation = ''
+                self._target = ''
+                self._uncommented = ''
+                self._obfuscated = ''
+                self._normalized = ''
+
+        self.sql = sql
+        self.database = database
 
     @property
     def operation(self):

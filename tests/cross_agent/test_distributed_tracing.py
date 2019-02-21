@@ -23,7 +23,6 @@ _parameters_list = ['account_id', 'comment', 'expected_metrics',
         'transport_type', 'trusted_account_key', 'web_transaction']
 _parameters = ','.join(_parameters_list)
 _expected_test_name_failures = set((
-        'null_payload',
 ))
 
 
@@ -99,19 +98,11 @@ def target_wsgi_application(environ, start_response):
         except ZeroDivisionError:
             txn.record_exception()
 
-    inbound_payloads = test_settings['inbound_payloads']
-    if len(inbound_payloads) == 2:
-        result = txn.accept_distributed_trace_payload(inbound_payloads[1],
+    extra_inbound_payloads = test_settings['extra_inbound_payloads']
+    for payload, expected_result in extra_inbound_payloads:
+        result = txn.accept_distributed_trace_payload(payload,
                 test_settings['transport_type'])
-        # If the first of the two payloads was falsey,
-        # accept_distributed_trace_payload was never called and therefore this
-        # one should succeed
-        assert not inbound_payloads[0] is result
-    elif not inbound_payloads:
-        # WebTransaction will not call accept_distributed_trace_payload when
-        # the payload is falsey. Therefore, we must call it directly here.
-        result = txn.accept_distributed_trace_payload(inbound_payloads)
-        assert not result
+        assert result is expected_result
 
     outbound_payloads = test_settings['outbound_payloads']
     if outbound_payloads:
@@ -133,12 +124,25 @@ def test_distributed_tracing(account_id, comment, expected_metrics,
         span_events_enabled, test_name, transport_type, trusted_account_key,
         web_transaction):
 
+    extra_inbound_payloads = []
+    if transport_type != 'HTTP':
+        # Since wsgi_application calls accept_distributed_trace_payload
+        # automatically with transport_type='HTTP', we must defer this call
+        # until we can specify the transport type.
+        extra_inbound_payloads.append((inbound_payloads.pop(), True))
+    elif not inbound_payloads:
+        # In order to assert that accept_distributed_trace_payload returns
+        # False in this instance, we defer.
+        extra_inbound_payloads.append((inbound_payloads, False))
+    elif len(inbound_payloads) > 1:
+        extra_inbound_payloads.append((inbound_payloads[1], False))
+
     global test_settings
     test_settings = {
         'test_name': test_name,
         'web_transaction': web_transaction,
         'raises_exception': raises_exception,
-        'inbound_payloads': inbound_payloads,
+        'extra_inbound_payloads': extra_inbound_payloads,
         'outbound_payloads': outbound_payloads,
         'transport_type': transport_type,
     }
@@ -165,14 +169,10 @@ def test_distributed_tracing(account_id, comment, expected_metrics,
             'intrinsic': txn_intrinsics.get('exact', {})}
     txn_event_exact['intrinsic'].update(common_exact)
 
-    if transport_type != 'HTTP':
-        # Since wsgi_application calls accept_distributed_trace_payload
-        # automatically with transport_type='HTTP', we must defer this call til
-        # we can specify the transport type.
-        inbound_payloads.insert(0, [])
-
-    payload = json.dumps(inbound_payloads[0]) if inbound_payloads else ''
-    headers = {'newrelic': payload}
+    headers = {}
+    if inbound_payloads:
+        payload = json.dumps(inbound_payloads[0])
+        headers['newrelic'] = payload
 
     @validate_transaction_metrics(test_name,
             rollup_metrics=expected_metrics,

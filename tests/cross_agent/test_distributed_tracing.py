@@ -22,8 +22,6 @@ _parameters_list = ['account_id', 'comment', 'expected_metrics',
         'raises_exception', 'span_events_enabled', 'test_name',
         'transport_type', 'trusted_account_key', 'web_transaction']
 _parameters = ','.join(_parameters_list)
-_expected_test_name_failures = set((
-))
 
 
 def load_tests():
@@ -34,11 +32,7 @@ def load_tests():
 
     for test in tests:
         values = (test.get(param, None) for param in _parameters_list)
-        kwargs = {}
-        if test.get('test_name') in _expected_test_name_failures:
-            kwargs['marks'] = pytest.mark.xfail(
-                    reason='test hasnot been fixed yet', strict=True)
-        param = pytest.param(*values, id=test.get('test_name'), **kwargs)
+        param = pytest.param(*values, id=test.get('test_name'))
         result.append(param)
 
     return result

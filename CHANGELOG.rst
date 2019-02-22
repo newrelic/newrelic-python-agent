@@ -1,6 +1,13 @@
 unreleased
 ----------
 
+- The presence of unicode values in a SQL query on Python 2 may cause an application crash
+
+  The agent was not properly handling unicode values when recording SQL queries
+  in Python 2. As a result, the presence of unicode values in SQL queries in
+  Python 2 applications may have resulted in an application crash. Unicode
+  values in Python 2 SQL queries are now properly handled.
+
 4.14.0 (2019-02-12)
 -------------------
 

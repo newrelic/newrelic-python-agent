@@ -1,11 +1,11 @@
-import newrelic.api.web_transaction
+import newrelic.api.wsgi_application
 import newrelic.api.in_function
 
 def instrument_wsgiref_simple_server(module):
 
     def wrap_wsgi_application_entry_point(server, application,
                                           *args, **kwargs):
-        application = newrelic.api.web_transaction.WSGIApplicationWrapper(
+        application = newrelic.api.wsgi_application.WSGIApplicationWrapper(
                 application)
         args = [server, application] + list(args)
         return (args, kwargs)

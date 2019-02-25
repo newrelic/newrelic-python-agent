@@ -5,7 +5,7 @@ import webtest
 
 from newrelic.api.transaction import (set_transaction_name,
         add_custom_parameter, get_browser_timing_footer)
-from newrelic.api.web_transaction import wsgi_application
+from newrelic.api.wsgi_application import wsgi_application
 
 from testing_support.fixtures import override_application_settings
 

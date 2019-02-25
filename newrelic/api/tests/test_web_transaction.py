@@ -6,6 +6,7 @@ import unittest
 import newrelic.api.settings
 import newrelic.api.application
 import newrelic.api.transaction
+import newrelic.api.wsgi_application as wsgi_application
 import newrelic.api.web_transaction
 import newrelic.tests.test_cases
 
@@ -276,7 +277,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
         environ = {'REQUEST_URI': '/web_transaction',
                 'newrelic.disable_browser_autorum': True}
 
-        wrapped_wsgi_app = newrelic.api.web_transaction.WSGIApplicationWrapper(
+        wrapped_wsgi_app = wsgi_application.WSGIApplicationWrapper(
                 wrapped, application=application)
 
         # Call the now wrapped application. It will return a
@@ -335,7 +336,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
         environ = {'REQUEST_URI': '/web_transaction',
                 'newrelic.disable_browser_autorum': False}
 
-        wrapped_wsgi_app = newrelic.api.web_transaction.WSGIApplicationWrapper(
+        wrapped_wsgi_app = wsgi_application.WSGIApplicationWrapper(
                 wrapped, application=application)
 
         # Call the now wrapped application. It will return a
@@ -359,7 +360,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
         environ = {'REQUEST_URI': '/app_names_in_environ',
                 'newrelic.app_name': 'webapp_test_a;webapp_test_b'}
 
-        wrapped_wsgi_app = newrelic.api.web_transaction.WSGIApplicationWrapper(
+        wrapped_wsgi_app = wsgi_application.WSGIApplicationWrapper(
                 wrapped, application=application)
 
         it = wrapped_wsgi_app(environ, start_response)
@@ -630,7 +631,7 @@ class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
         environ = {'HTTP_UPGRADE': 'websocket',
                 'REQUEST_URI': '/web_transaction'}
 
-        wrapped_wsgi_app = newrelic.api.web_transaction.WSGIApplicationWrapper(
+        wrapped_wsgi_app = wsgi_application.WSGIApplicationWrapper(
                 wrapped, application=application)
 
         # Call the now wrapped application. It will return a
@@ -654,7 +655,7 @@ class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
 
         environ = {'REQUEST_URI': '/web_transaction'}
 
-        wrapped_wsgi_app = newrelic.api.web_transaction.WSGIApplicationWrapper(
+        wrapped_wsgi_app = wsgi_application.WSGIApplicationWrapper(
                 wrapped, application=application)
 
         # Call the now wrapped application. It will return a
@@ -680,7 +681,7 @@ class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
         environ = {'REQUEST_URI': '/web_transaction',
                 'newrelic.disable_browser_autorum': True}
 
-        wrapped_wsgi_app = newrelic.api.web_transaction.WSGIApplicationWrapper(
+        wrapped_wsgi_app = wsgi_application.WSGIApplicationWrapper(
                 wrapped, application=application)
 
         # Call the now wrapped application. It will return a
@@ -706,7 +707,7 @@ class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
                 'REQUEST_URI': '/web_transaction',
                 'newrelic.disable_browser_autorum': True}
 
-        wrapped_wsgi_app = newrelic.api.web_transaction.WSGIApplicationWrapper(
+        wrapped_wsgi_app = wsgi_application.WSGIApplicationWrapper(
                 wrapped, application=application)
 
         # Call the now wrapped application. It will return a

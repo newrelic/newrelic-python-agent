@@ -1,6 +1,6 @@
-import newrelic.api.web_transaction as web_transaction
+import newrelic.api.wsgi_application as wsgi_application
 from benchmarks.util import MockApplication, MockTrace, MockTransaction
-FunctionTrace = web_transaction.FunctionTrace
+FunctionTrace = wsgi_application.FunctionTrace
 value = b'Hello World'
 
 
@@ -19,14 +19,14 @@ class Generator(object):
 
 class Suite(object):
     def setup(self):
-        web_transaction.FunctionTrace = MockTrace
+        wsgi_application.FunctionTrace = MockTrace
         app = MockApplication()
         self.transaction = MockTransaction(app)
-        self.iterable = web_transaction._WSGIApplicationIterable(
+        self.iterable = wsgi_application._WSGIApplicationIterable(
                 self.transaction, Generator())
 
     def teardown(self):
-        web_transaction.FunctionTrace = FunctionTrace
+        wsgi_application.FunctionTrace = FunctionTrace
 
     def time_iterator(self):
         self.iterable.closed = False

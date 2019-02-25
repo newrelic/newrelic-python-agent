@@ -1,7 +1,8 @@
 import pytest
 
 import newrelic.api.application
-from newrelic.api.web_transaction import _WSGIApplicationMiddleware
+import newrelic.api.web_transaction
+from newrelic.api.wsgi_application import _WSGIApplicationMiddleware
 
 application = newrelic.api.application.application_instance()
 html_response = ('<!DOCTYPE html><html><head>Some header</head>'

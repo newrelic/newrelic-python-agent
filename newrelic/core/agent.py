@@ -552,9 +552,9 @@ class Agent(object):
 
         return application.normalize_name(name, rule_type)
 
-    def compute_sampled(self, app_name, priority):
+    def compute_sampled(self, app_name):
         application = self._applications.get(app_name, None)
-        return application.compute_sampled(priority)
+        return application.compute_sampled()
 
     def _harvest_loop(self):
         _logger.debug('Entering harvest loop.')

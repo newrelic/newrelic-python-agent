@@ -1,3 +1,4 @@
+import random
 import pytest
 import six
 import time
@@ -7,6 +8,8 @@ from newrelic.common.object_wrapper import (transient_function_wrapper,
 from newrelic.core.config import global_settings, finalize_application_settings
 from testing_support.fixtures import (override_generic_settings,
         function_not_called, failing_endpoint)
+from testing_support.validators.validate_function_called import (
+        validate_function_called)
 
 from newrelic.core.application import Application
 from newrelic.core.data_collector import (send_request, collector_url,
@@ -404,19 +407,22 @@ def test_transaction_count(transaction_node):
     'license_key': '**NOT A LICENSE KEY**',
     'feature_flag': set(),
 })
-def test_adaptive_sampling(transaction_node):
+def test_adaptive_sampling(transaction_node, monkeypatch):
     app = Application('Python Agent Test (Harvest Loop)')
 
     # Should always return false for sampling prior to connect
-    assert app.compute_sampled(1.0) is False
+    assert app.compute_sampled() is False
 
     app.connect_to_data_collector()
 
     # First harvest, first N should be sampled
     for _ in range(settings.sampling_target):
-        assert app.compute_sampled(1.0) is True
+        assert app.compute_sampled() is True
 
-    assert app.compute_sampled(1.0) is False
+    assert app.compute_sampled() is False
+
+    # fix random.randrange to return 0
+    monkeypatch.setattr(random, 'randrange', lambda *args, **kwargs: 0)
 
     # Multiple harvests should behave the same
     for _ in range(2):
@@ -424,10 +430,10 @@ def test_adaptive_sampling(transaction_node):
 
         # Subsequent harvests should allow sampling of 2X the target
         for _ in range(2 * settings.sampling_target):
-            assert app.compute_sampled(1.0) is True
+            assert app.compute_sampled() is True
 
         # No further samples should be saved
-        assert app.compute_sampled(1.0) is False
+        assert app.compute_sampled() is False
 
 
 @pytest.mark.parametrize('ca_bundle_path,disable_certificate_validation', [
@@ -526,7 +532,8 @@ def test_harvest_reset_adaptive_sampling(transaction_node, serverless_mode):
         app.record_transaction(transaction_node)
 
         if not serverless_mode:
-            # record_transaction calls harvest in serverless mode
+            # record_transaction calls harvest in serverless mode only when 60
+            # seconds has passed since the last recorded transaction
             app.harvest()
 
         # When reset, app._transaction_count will be 0. When initialized,
@@ -535,33 +542,43 @@ def test_harvest_reset_adaptive_sampling(transaction_node, serverless_mode):
 
         if serverless_mode:
             assert app._transaction_count == 1
-            assert app.adaptive_sampler.transaction_count == 0
         else:
             assert app._transaction_count == 0
-            assert app.adaptive_sampler.transaction_count == 1
 
+    if serverless_mode:
+        _test = function_not_called(
+                'newrelic.core.adaptive_sampler',
+                'AdaptiveSampler.reset')(_test)
+    else:
+        _test = validate_function_called(
+                'newrelic.core.adaptive_sampler',
+                'AdaptiveSampler.reset')(_test)
     _test()
 
 
-@pytest.mark.parametrize('time_to_next_reset,expected_reset_count', (
-    (20, 123),  # no reset
-    (-8, 1),    # reset to last transaction count
-    (-68, 0),   # reset to 0
+@pytest.mark.parametrize(
+'time_to_next_reset,computed_count,computed_count_last', (
+    (20, 124, 10),  # no reset
+    (-8, 1, 123),   # reset to last transaction count
+    (-68, 1, 10),   # more than 1 minute passed, reset fully
 ))
 @override_generic_settings(settings, {
         'serverless_mode.enabled': True,
 })
 def test_serverless_mode_adaptive_sampling(time_to_next_reset,
-        expected_reset_count):
+        computed_count, computed_count_last, monkeypatch):
+    # fix random.randrange to return 0
+    monkeypatch.setattr(random, 'randrange', lambda *args, **kwargs: 0)
+
     app = Application('Python Agent Test (Harvest Loop)')
 
     app.connect_to_data_collector()
-    app.adaptive_sampler.transaction_count = 123
-    app._transaction_count = 1
+    app.adaptive_sampler.computed_count = 123
     app._next_adaptive_sampler_reset = time.time() + time_to_next_reset
 
-    assert app.compute_sampled(0.0) is True
-    assert app.adaptive_sampler.transaction_count == expected_reset_count
+    assert app.compute_sampled() is True
+    assert app.adaptive_sampler.computed_count == computed_count
+    assert app.adaptive_sampler.computed_count_last == computed_count_last
 
 
 @function_not_called('newrelic.core.adaptive_sampler', 'AdaptiveSampler.reset')
@@ -572,7 +589,7 @@ def test_compute_sampled_no_reset():
     app = Application('Python Agent Test (Harvest Loop)')
     app.connect_to_data_collector()
     app._next_adaptive_sampler_reset = time.time() - 1
-    assert app.compute_sampled(1.0) is True
+    assert app.compute_sampled() is True
 
 
 def test_analytic_event_sampling_info():

@@ -136,7 +136,7 @@ class Application(object):
     def active(self):
         return self.configuration is not None
 
-    def compute_sampled(self, priority):
+    def compute_sampled(self):
         if self.adaptive_sampler is None:
             return False
 
@@ -144,16 +144,24 @@ class Application(object):
 
             if self.configuration.serverless_mode.enabled:
                 now = time.time()
-                reset_count = None
+
+                harvest_cycles = 0
+
                 while now >= self._next_adaptive_sampler_reset:
-                    reset_count = self._transaction_count
                     self._transaction_count = 0
+                    harvest_cycles += 1
                     self._next_adaptive_sampler_reset += 60.0
 
-                if reset_count is not None:
-                    self.adaptive_sampler.reset(reset_count)
+                if harvest_cycles:
+                    self.adaptive_sampler.reset()
 
-            return self.adaptive_sampler.compute_sampled(priority)
+                    # If more than 1 harvest cycle has passed without a
+                    # transaction, we need to reset the adaptive_sampler twice.
+                    # This resets with computed_count = 0
+                    if harvest_cycles > 1:
+                        self.adaptive_sampler.reset()
+
+            return self.adaptive_sampler.compute_sampled()
 
     def dump(self, file):
         """Dumps details about the application to the file object."""
@@ -1262,7 +1270,7 @@ class Application(object):
 
                 with self._stats_lock:
                     if not configuration.serverless_mode.enabled:
-                        self.adaptive_sampler.reset(transaction_count)
+                        self.adaptive_sampler.reset()
                         self._transaction_count = 0
 
                     self._last_transaction = 0.0

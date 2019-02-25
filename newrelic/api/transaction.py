@@ -967,7 +967,7 @@ class Transaction(object):
             self._priority = float('%.5f' % random.random())
 
         if self._sampled is None:
-            self._sampled = self._application.compute_sampled(self.priority)
+            self._sampled = self._application.compute_sampled()
             if self._sampled:
                 self._priority += 1
 

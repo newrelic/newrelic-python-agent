@@ -73,7 +73,7 @@ class MockApplication(object):
         self.nodes.append(data)
         return None
 
-    def compute_sampled(self, priority):
+    def compute_sampled(self):
         return True
 
 

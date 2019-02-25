@@ -8,6 +8,13 @@ unreleased
   Python 2 applications may have resulted in an application crash. Unicode
   values in Python 2 SQL queries are now properly handled.
 
+- The Python Agent may have improperly biased the random sampling of distributed traces
+
+  Distributed traces are randomly sampled across services. The agent is
+  responsible for propagating the state of its sampling decision to other
+  services. In propagating that decision, an improper sampling bias may have
+  been introduced in downstream services.
+
 4.14.0 (2019-02-12)
 -------------------
 

@@ -26,7 +26,7 @@ class TestApplicationLocking(newrelic.tests.test_cases.TestCase):
     def test_compute_sampled_waits_for_lock(self):
         # Create a thread which calls compute_sampled
         thread = threading.Thread(name='compute_sampled',
-                target=self.application.compute_sampled, args=(1.0,))
+                target=self.application.compute_sampled)
         thread.start()
 
         try:
@@ -54,4 +54,4 @@ class TestUnactivatedApplication(newrelic.tests.test_cases.TestCase):
         self.application = newrelic.core.application.Application('foobar')
 
     def test_compute_sampled_returns_false(self):
-        assert self.application.compute_sampled(1.0) is False
+        assert self.application.compute_sampled() is False

@@ -695,6 +695,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/wsgi_application.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/bootstrap/__init__.py": {
         "hash": "n/a",
         "libraries": [

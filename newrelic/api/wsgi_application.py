@@ -5,7 +5,7 @@ import functools
 
 from newrelic.api.application import application_instance
 from newrelic.api.transaction import current_transaction
-from newrelic.api.web_transaction import WebTransaction
+from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.html_insertion import insert_html_snippet, verify_body_exists
 
@@ -587,7 +587,7 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
                 target_application = application_instance(application)
 
         # Now start recording the actual web transaction.
-        transaction = WebTransaction(target_application, environ)
+        transaction = WSGIWebTransaction(target_application, environ)
         transaction.__enter__()
 
         # Record details of framework against the transaction for later

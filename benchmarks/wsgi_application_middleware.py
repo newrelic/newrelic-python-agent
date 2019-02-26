@@ -1,5 +1,5 @@
 from benchmarks.util import MockApplication, MockTransaction
-from newrelic.api.web_transaction import _WSGIApplicationMiddleware
+from newrelic.api.wsgi_application import _WSGIApplicationMiddleware
 
 html = b'<html><head></head><body></body></html>'
 value = [html]

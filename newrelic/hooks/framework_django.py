@@ -13,7 +13,7 @@ from newrelic.api.function_trace import (FunctionTrace, wrap_function_trace,
 from newrelic.api.html_insertion import insert_html_snippet
 from newrelic.api.transaction import current_transaction
 from newrelic.api.transaction_name import wrap_transaction_name
-from newrelic.api.web_transaction import WSGIApplicationWrapper
+from newrelic.api.wsgi_application import WSGIApplicationWrapper
 
 from newrelic.common.object_wrapper import (FunctionWrapper, wrap_in_function,
         wrap_post_function, wrap_function_wrapper, function_wrapper)

@@ -8,7 +8,7 @@ import newrelic.api.in_function
 import newrelic.api.out_function
 import newrelic.api.pre_function
 from newrelic.api.object_wrapper import callable_name
-from newrelic.api.web_transaction import WSGIApplicationWrapper
+from newrelic.api.wsgi_application import WSGIApplicationWrapper
 
 def transaction_name_delegate(*args, **kwargs):
     transaction = newrelic.api.transaction.current_transaction()

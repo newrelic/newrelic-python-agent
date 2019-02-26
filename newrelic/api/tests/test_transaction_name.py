@@ -3,7 +3,7 @@ import time
 
 import newrelic.tests.test_cases
 
-import newrelic.api.web_transaction
+import newrelic.api.wsgi_application
 import newrelic.api.transaction_name
 
 @newrelic.api.transaction_name.transaction_name()
@@ -37,7 +37,7 @@ def function_7():
 
 newrelic.api.transaction_name.wrap_transaction_name(__name__, 'function_7')
 
-@newrelic.api.web_transaction.wsgi_application()
+@newrelic.api.wsgi_application.wsgi_application()
 def handler(environ, start_response):
     status = '200 OK'
     output = 'Hello World!'

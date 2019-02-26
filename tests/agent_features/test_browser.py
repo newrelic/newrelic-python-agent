@@ -11,7 +11,7 @@ from newrelic.api.application import application_settings
 from newrelic.api.transaction import (get_browser_timing_header,
         get_browser_timing_footer, add_custom_parameter,
         disable_browser_autorum)
-from newrelic.api.web_transaction import wsgi_application
+from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.encoding_utils import deobfuscate
 
 _runtime_error_name = (RuntimeError.__module__ + ':' + RuntimeError.__name__)

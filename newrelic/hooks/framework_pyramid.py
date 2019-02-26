@@ -32,7 +32,7 @@
 
 from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
 from newrelic.api.transaction import current_transaction
-from newrelic.api.web_transaction import wrap_wsgi_application
+from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (FunctionWrapper, wrap_out_function,
         wrap_function_wrapper)

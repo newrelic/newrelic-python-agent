@@ -2,7 +2,7 @@ import sys
 import logging
 
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.web_transaction import wrap_wsgi_application
+from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 

@@ -44,11 +44,13 @@ from newrelic.api.transaction import (
 from newrelic.api.transaction_context import (
         TransactionContext as __TransactionContext)
 
-from newrelic.api.web_transaction import (
+from newrelic.api.wsgi_application import (
         wsgi_application as __wsgi_application,
-        WebTransaction as __WebTransaction,
         WSGIApplicationWrapper as __WSGIApplicationWrapper,
         wrap_wsgi_application as __wrap_wsgi_application)
+
+from newrelic.api.web_transaction import (
+        WebTransaction as __WebTransaction)
 
 from newrelic.api.background_task import (
         background_task as __background_task,

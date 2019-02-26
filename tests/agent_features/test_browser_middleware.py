@@ -2,7 +2,7 @@ import pytest
 import six
 import webtest
 
-from newrelic.api.web_transaction import wsgi_application
+from newrelic.api.wsgi_application import wsgi_application
 
 from testing_support.fixtures import (override_application_settings,
     capture_transaction_metrics)

@@ -5,7 +5,7 @@ import webtest
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import (add_custom_parameter,
         add_custom_parameters)
-from newrelic.api.web_transaction import wsgi_application
+from newrelic.api.wsgi_application import wsgi_application
 from newrelic.core.attribute import (truncate, sanitize, Attribute,
     CastingFailureException, MAX_64_BIT_INT, _DESTINATIONS_WITH_EVENTS)
 

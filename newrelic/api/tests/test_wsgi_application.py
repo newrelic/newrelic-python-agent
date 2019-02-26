@@ -8,7 +8,7 @@ import newrelic.packages.six as six
 import newrelic.api.settings
 import newrelic.api.application
 import newrelic.api.transaction
-import newrelic.api.web_transaction
+import newrelic.api.wsgi_application
 import newrelic.api.background_task
 
 settings = newrelic.api.settings.settings()
@@ -34,12 +34,12 @@ def _wsgiapp_function(environ, start_response):
             input.readlines()
     except Exception:
         pass
-_wsgiapp_function = newrelic.api.web_transaction.WSGIApplicationWrapper(
+_wsgiapp_function = newrelic.api.wsgi_application.WSGIApplicationWrapper(
         _wsgiapp_function, _application)
 
 def _wsgiapp_function_error(environ, start_response):
     raise RuntimeError("_wsgiapp_function_error")
-_wsgiapp_function_error = newrelic.api.web_transaction.WSGIApplicationWrapper(
+_wsgiapp_function_error = newrelic.api.wsgi_application.WSGIApplicationWrapper(
         _wsgiapp_function_error, _application)
 
 class _wsgiapp_class:
@@ -48,45 +48,45 @@ class _wsgiapp_class:
     def __call__(self):
         transaction = newrelic.api.transaction.current_transaction()
         assert transaction != None
-_wsgiapp_class = newrelic.api.web_transaction.WSGIApplicationWrapper(
+_wsgiapp_class = newrelic.api.wsgi_application.WSGIApplicationWrapper(
         _wsgiapp_class, _application)
 
-@newrelic.api.web_transaction.wsgi_application(_application.name)
+@newrelic.api.wsgi_application.wsgi_application(_application.name)
 def _wsgiapp_function_decorator(environ, start_response):
     transaction = newrelic.api.transaction.current_transaction()
     assert transaction != None
 
-@newrelic.api.web_transaction.wsgi_application()
+@newrelic.api.wsgi_application.wsgi_application()
 def _wsgiapp_function_decorator_default(environ, start_response):
     transaction = newrelic.api.transaction.current_transaction()
     assert transaction != None
 
-@newrelic.api.web_transaction.wsgi_application(
+@newrelic.api.wsgi_application.wsgi_application(
         name='wsgiapp_named_wsgi_application', group='Group')
 def _wsgiapp_named_wsgi_application(environ, start_response):
     transaction = newrelic.api.transaction.current_transaction()
     assert transaction != None
 
-@newrelic.api.web_transaction.wsgi_application(
+@newrelic.api.wsgi_application.wsgi_application(
         name='wsgiapp_named_wsgi_application_inner', group='Group')
 def _wsgiapp_named_wsgi_application_inner(environ, start_response):
     transaction = newrelic.api.transaction.current_transaction()
     assert transaction != None
 
-@newrelic.api.web_transaction.wsgi_application(
+@newrelic.api.wsgi_application.wsgi_application(
         name='wsgiapp_named_wsgi_application_outer', group='Group')
 def _wsgiapp_named_wsgi_application_outer(environ, start_response):
     return _wsgiapp_named_wsgi_application_inner(
             environ, start_response)
 
-@newrelic.api.web_transaction.wsgi_application(
+@newrelic.api.wsgi_application.wsgi_application(
         name='wsgiapp_named_wsgi_application_inner_ignore', group='Group')
 def _wsgiapp_named_wsgi_application_inner_ignore(environ, start_response):
     transaction = newrelic.api.transaction.current_transaction()
     assert transaction is None
     return []
 
-@newrelic.api.web_transaction.wsgi_application(
+@newrelic.api.wsgi_application.wsgi_application(
         name='wsgiapp_named_wsgi_application_outer_ignore', group='Group')
 def _wsgiapp_named_wsgi_application_outer_ignore(environ, start_response):
     transaction = newrelic.api.transaction.current_transaction()
@@ -102,14 +102,14 @@ def _wsgiapp_named_wsgi_application_outer_ignore(environ, start_response):
     finally:
         assert transaction.ignore_transaction
 
-@newrelic.api.web_transaction.wsgi_application(
+@newrelic.api.wsgi_application.wsgi_application(
         name='wsgiapp_named_wsgi_application_inner_stopped', group='Group')
 def _wsgiapp_named_wsgi_application_inner_stopped(environ, start_response):
     transaction = newrelic.api.transaction.current_transaction()
     assert transaction is None
     return []
 
-@newrelic.api.web_transaction.wsgi_application(
+@newrelic.api.wsgi_application.wsgi_application(
         name='wsgiapp_named_wsgi_application_outer_stopped', group='Group')
 def _wsgiapp_named_wsgi_application_outer_stopped(environ, start_response):
     transaction = newrelic.api.transaction.current_transaction()
@@ -130,7 +130,7 @@ def _wsgiapp_named_wsgi_application_inner_bg_ignore():
     transaction = newrelic.api.transaction.current_transaction()
     assert transaction is None
 
-@newrelic.api.web_transaction.wsgi_application(
+@newrelic.api.wsgi_application.wsgi_application(
         name='wsgiapp_named_wsgi_application_outer_bg_ignore', group='Group')
 def _wsgiapp_named_wsgi_application_outer_bg_ignore(environ, start_response):
     transaction = newrelic.api.transaction.current_transaction()
@@ -150,7 +150,7 @@ def _wsgiapp_named_wsgi_application_inner_bg_stopped():
     transaction = newrelic.api.transaction.current_transaction()
     assert transaction is None
 
-@newrelic.api.web_transaction.wsgi_application(
+@newrelic.api.wsgi_application.wsgi_application(
         name='wsgiapp_named_wsgi_application_outer_bg_stopped', group='Group')
 def _wsgiapp_named_wsgi_application_outer_bg_stopped(environ, start_response):
     transaction = newrelic.api.transaction.current_transaction()
@@ -165,35 +165,35 @@ def _wsgiapp_named_wsgi_application_outer_bg_stopped(environ, start_response):
     finally:
         assert transaction.stopped
 
-@newrelic.api.web_transaction.wsgi_application(framework='Framework')
+@newrelic.api.wsgi_application.wsgi_application(framework='Framework')
 def _wsgiapp_named_framework_wsgi_application(environ, start_response):
     transaction = newrelic.api.transaction.current_transaction()
     assert transaction != None
 
-@newrelic.api.web_transaction.wsgi_application(framework=('Framework', '1'))
+@newrelic.api.wsgi_application.wsgi_application(framework=('Framework', '1'))
 def _wsgiapp_named_framework_wsgi_application_version(environ, start_response):
     transaction = newrelic.api.transaction.current_transaction()
     assert transaction != None
 
-@newrelic.api.web_transaction.wsgi_application(framework=('Framework', '1'))
+@newrelic.api.wsgi_application.wsgi_application(framework=('Framework', '1'))
 def _wsgiapp_named_framework_wsgi_application_inner(environ, start_response):
     transaction = newrelic.api.transaction.current_transaction()
     assert transaction != None
 
-@newrelic.api.web_transaction.wsgi_application(framework=('Framework', '2'))
+@newrelic.api.wsgi_application.wsgi_application(framework=('Framework', '2'))
 def _wsgiapp_named_framework_wsgi_application_outer(environ, start_response):
     return _wsgiapp_named_framework_wsgi_application_inner(
             environ, start_response)
 
 # Python 2.5 doesn't have class decorators.
-#@newrelic.api.web_transaction.wsgi_application(_application.name)
+#@newrelic.api.wsgi_application.wsgi_application(_application.name)
 class _wsgiapp_class_decorator:
     def __init__(self, environ, start_response):
         pass
     def __call__(self):
-        transaction = newrelic.api.web_transaction.current_transaction()
+        transaction = newrelic.api.wsgi_application.current_transaction()
         assert transaction != None
-_wsgiapp_class_decorator = newrelic.api.web_transaction.wsgi_application(_application.name)(_wsgiapp_class_decorator)
+_wsgiapp_class_decorator = newrelic.api.wsgi_application.wsgi_application(_application.name)(_wsgiapp_class_decorator)
 
 class Generator2:
     def __init__(self, iterable, callback, environ):
@@ -222,7 +222,7 @@ class ExecuteOnCompletion2:
             raise
         return Generator2(result, self.__callback, environ)
 
-@newrelic.api.web_transaction.wsgi_application()
+@newrelic.api.wsgi_application.wsgi_application()
 def _wsgi_app_yield_exception(environ, start_response):
     def application(environ, start_response):
         start_response('200 OK', [])
@@ -257,7 +257,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
     def _wsgiapp_method(self, *args):
         transaction = newrelic.api.transaction.current_transaction()
         self.assertNotEqual(transaction, None)
-    _wsgiapp_method = newrelic.api.web_transaction.WSGIApplicationWrapper(
+    _wsgiapp_method = newrelic.api.wsgi_application.WSGIApplicationWrapper(
             _wsgiapp_method, _application)
 
     def test_wsgiapp_method(self):
@@ -323,7 +323,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 "/wsgiapp_named_framework_wsgi_application_outer" }
         _wsgiapp_named_framework_wsgi_application_outer(environ, None).close()
 
-    @newrelic.api.web_transaction.wsgi_application(_application.name)
+    @newrelic.api.wsgi_application.wsgi_application(_application.name)
     def _wsgiapp_method_decorator(self, *args):
         transaction = newrelic.api.transaction.current_transaction()
         self.assertNotEqual(transaction, None)

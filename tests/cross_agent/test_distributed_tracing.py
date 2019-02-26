@@ -10,7 +10,7 @@ from newrelic.api.background_task import BackgroundTask
 from newrelic.api.cat_header_mixin import CatHeaderMixin
 
 from newrelic.api.transaction import current_transaction
-from newrelic.api.web_transaction import wsgi_application
+from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.object_wrapper import transient_function_wrapper
 from testing_support.validators.validate_span_events import (
     validate_span_events)

@@ -21,7 +21,7 @@ import newrelic.core.config
 import newrelic.api.settings
 import newrelic.api.import_hook
 import newrelic.api.exceptions
-import newrelic.api.web_transaction
+import newrelic.api.wsgi_application
 import newrelic.api.background_task
 import newrelic.api.database_trace
 import newrelic.api.external_trace
@@ -1173,7 +1173,7 @@ def _wsgi_application_import_hook(object_path, application):
                 ((target, object_path, application),))
 
         try:
-            newrelic.api.web_transaction.wrap_wsgi_application(
+            newrelic.api.wsgi_application.wrap_wsgi_application(
                     target, object_path, application)
         except Exception:
             _raise_instrumentation_error('wsgi-application', locals())
@@ -2797,4 +2797,4 @@ def initialize(config_file=None, environment=None, ignore_errors=None,
 
 def filter_app_factory(app, global_conf, config_file, environment=None):
     initialize(config_file, environment)
-    return newrelic.api.web_transaction.WSGIApplicationWrapper(app)
+    return newrelic.api.wsgi_application.WSGIApplicationWrapper(app)

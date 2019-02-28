@@ -1,6 +1,7 @@
 import cgi
 import time
 import logging
+import warnings
 
 try:
     import urlparse
@@ -70,7 +71,7 @@ def _is_websocket(environ):
     return environ.get('HTTP_UPGRADE', '').lower() == 'websocket'
 
 
-class WebTransaction(Transaction):
+class WSGIWebTransaction(Transaction):
 
     report_unicode_error = True
 
@@ -90,7 +91,7 @@ class WebTransaction(Transaction):
 
         # Initialise the common transaction base class.
 
-        super(WebTransaction, self).__init__(application, enabled)
+        super(WSGIWebTransaction, self).__init__(application, enabled)
 
         # Disable transactions for websocket connections.
         # Also disable autorum if this is a websocket. This is a good idea for
@@ -635,10 +636,18 @@ class WebTransaction(Transaction):
         return intrinsics
 
 
+class WebTransaction(WSGIWebTransaction):
+    def __init__(self, application, environ):
+        super(WebTransaction, self).__init__(application, environ)
+        warnings.warn((
+            'The WebTransaction API call has been deprecated.'
+        ), DeprecationWarning)
+
+
 SPECIAL_WSGI_HEADERS = set(('content-type', 'content-length'))
 
 
-class GenericWebTransaction(WebTransaction):
+class GenericWebTransaction(WSGIWebTransaction):
 
     def __init__(self, application, name, group=None,
             scheme=None, host=None, port=None, request_method=None,

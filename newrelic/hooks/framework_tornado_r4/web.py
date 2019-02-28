@@ -66,7 +66,7 @@ def _nr_request_handler_init(wrapped, instance, args, kwargs):
             port=port,
             request_method=request.method,
             request_path=request.path,
-            query_parameters=request.query,
+            query_string=request.query,
             headers=request.headers)
 
     txn.__enter__()

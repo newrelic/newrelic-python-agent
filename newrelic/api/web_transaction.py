@@ -651,12 +651,12 @@ class GenericWebTransaction(WSGIWebTransaction):
 
     def __init__(self, application, name, group=None,
             scheme=None, host=None, port=None, request_method=None,
-            request_path=None, query_parameters=None, headers=None):
+            request_path=None, query_string=None, headers=None):
 
         environ = {
             'PATH_INFO': request_path,
             'REQUEST_METHOD': request_method,
-            'QUERY_STRING': query_parameters,
+            'QUERY_STRING': query_string,
             'wsgi.url_scheme': scheme,
             'SERVER_NAME': host,
             'SERVER_PORT': port,

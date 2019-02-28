@@ -85,7 +85,7 @@ def initiate_request_monitoring(request):
             port=port,
             request_method=request.method,
             request_path=request.uri,
-            query_parameters=request.query,
+            query_string=request.query,
             headers=request.headers)
 
     if not transaction.enabled:

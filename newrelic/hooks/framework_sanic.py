@@ -34,7 +34,7 @@ class NRTransactionCoroutineWrapper(ObjectProxy):
                     None,
                     request_method=self._nr_request.method,
                     request_path=self._nr_request.path,
-                    query_parameters=self._nr_request.query_string,
+                    query_string=self._nr_request.query_string,
                     headers=self._nr_request.headers)
 
             import sanic

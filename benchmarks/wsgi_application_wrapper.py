@@ -1,9 +1,10 @@
 import newrelic.api.wsgi_application as wsgi_application
+import newrelic.api.web_transaction as web_transaction
 from newrelic.core.transaction_cache import transaction_cache
 from functools import partial
 from benchmarks.util import (MockApplication, MockTrace, MockTransaction,
         MockTransactionCAT)
-WebTransaction = wsgi_application.WebTransaction
+WebTransaction = web_transaction.WebTransaction
 FunctionTrace = wsgi_application.FunctionTrace
 
 
@@ -30,7 +31,7 @@ class Lite(object):
         'browser_monitoring.enabled': False,
     }):
         wsgi_application.FunctionTrace = MockTrace
-        wsgi_application.WebTransaction = MockTransaction
+        web_transaction.WebTransaction = MockTransaction
         self.app = MockApplication(settings=settings)
         self.wrapped_app = partial(wsgi_application.WSGIApplicationWrapper(
                 wsgi_application,
@@ -38,7 +39,7 @@ class Lite(object):
         ), {}, start_response)
 
     def teardown(self):
-        wsgi_application.WebTransaction = WebTransaction
+        web_transaction.WebTransaction = WebTransaction
         wsgi_application.FunctionTrace = FunctionTrace
 
     def time_wsgi_application_wrapper(self):
@@ -75,4 +76,4 @@ class CATResponse(Lite):
         'encoding_key': 'abcde',
     }):
         super(CATResponse, self).setup(settings=settings)
-        wsgi_application.WebTransaction = MockTransactionCAT
+        web_transaction.WebTransaction = MockTransactionCAT

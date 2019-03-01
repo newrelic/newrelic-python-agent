@@ -15,6 +15,13 @@ unreleased
   services. In propagating that decision, an improper sampling bias may have
   been introduced in downstream services.
 
+- The agent will no longer report the command arguments used to start newrelic-admin
+
+  The agent previously reported the startup command and arguments when using
+  ``newrelic-admin run-program`` and ``newrelic-admin run-python``. The command
+  and arguments are no longer sent to New Relic. This data may continue to be
+  logged to the agent log files when debug level logs are enabled.
+
 4.14.0 (2019-02-12)
 -------------------
 

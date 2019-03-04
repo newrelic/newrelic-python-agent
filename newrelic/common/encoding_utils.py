@@ -328,6 +328,15 @@ def serverless_payload_encode(payload):
     return encoded_data
 
 
+def ensure_utf8(s):
+    if isinstance(s, six.binary_type):
+        try:
+            s = s.decode('utf-8')
+        except Exception:
+            return
+    return s
+
+
 def serverless_payload_decode(text):
     """This method takes in a string or UTF-8 input. The input will be
     base64 decoded, gzip decompressed, and json decoded. Returns a

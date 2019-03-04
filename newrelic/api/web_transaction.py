@@ -49,15 +49,18 @@ def _parse_synthetics_header(header):
     synthetics = {}
     version = None
 
-    if len(header) > 0:
-        version = int(header[0])
+    try:
+        if len(header) > 0:
+            version = int(header[0])
 
-    if version == 1:
-        synthetics['version'] = version
-        synthetics['account_id'] = int(header[1])
-        synthetics['resource_id'] = header[2]
-        synthetics['job_id'] = header[3]
-        synthetics['monitor_id'] = header[4]
+        if version == 1:
+            synthetics['version'] = version
+            synthetics['account_id'] = int(header[1])
+            synthetics['resource_id'] = header[2]
+            synthetics['job_id'] = header[3]
+            synthetics['monitor_id'] = header[4]
+    except Exception:
+        return
 
     return synthetics
 

@@ -797,6 +797,12 @@
             "New Relic"
         ]
     },
+    "newrelic/common/tests/test_encoding_utils.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/tests/test_in_function.py": {
         "hash": "n/a",
         "libraries": [

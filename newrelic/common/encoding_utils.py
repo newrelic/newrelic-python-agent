@@ -344,6 +344,18 @@ def serverless_payload_decode(text):
     return data
 
 
+def decode_newrelic_header(encoded_header, encoding_key):
+    decoded_header = None
+    if encoded_header:
+        try:
+            decoded_header = json_decode(deobfuscate(
+                    encoded_header, encoding_key))
+        except Exception:
+            pass
+
+    return decoded_header
+
+
 def convert_to_cat_metadata_value(nr_headers):
     if not nr_headers:
         return None

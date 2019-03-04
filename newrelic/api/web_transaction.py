@@ -701,6 +701,7 @@ class GenericWebTransaction(Transaction):
 
         self._process_queue_time()
         self._process_synthetics_header()
+        self._process_context_headers()
 
         if name is not None:
             self.set_transaction_name(name, group, priority=1)
@@ -747,3 +748,17 @@ class GenericWebTransaction(Transaction):
                 self.synthetics_resource_id = synthetics['resource_id']
                 self.synthetics_job_id = synthetics['job_id']
                 self.synthetics_monitor_id = synthetics['monitor_id']
+
+    def _process_context_headers(self):
+        # Process the New Relic cross process ID header and extract
+        # the relevant details.
+        if self._settings.distributed_tracing.enabled:
+            distributed_header = self._request_headers.get('newrelic')
+            if distributed_header is not None:
+                self.accept_distributed_trace_payload(distributed_header)
+        else:
+            client_cross_process_id = \
+                    self._request_headers.get('x-newrelic-id')
+            txn_header = self._request_headers.get('x-newrelic-transaction')
+            self._process_incoming_cat_headers(client_cross_process_id,
+                    txn_header)

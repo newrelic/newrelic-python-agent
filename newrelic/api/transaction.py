@@ -1234,7 +1234,7 @@ class Transaction(object):
         except Exception:
             pass
 
-    def _generate_response_headers(self):
+    def _generate_response_headers(self, read_length=None):
         nr_headers = []
 
         # Generate metrics and response headers for inbound cross
@@ -1265,8 +1265,11 @@ class Transaction(object):
 
             self._freeze_path()
 
+            if read_length is None:
+                read_length = self._read_length
+
             payload = (self._settings.cross_process_id, self.path, queue_time,
-                    duration, self._read_length, self.guid, self.record_tt)
+                    duration, read_length, self.guid, self.record_tt)
             app_data = json_encode(payload)
 
             nr_headers.append(('X-NewRelic-App-Data', obfuscate(

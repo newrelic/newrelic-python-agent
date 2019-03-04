@@ -27,6 +27,34 @@ _js_agent_footer_fragment = '<script type="text/javascript">'\
 JAN_1_2000 = time.mktime((2000, 1, 1, 0, 0, 0, 0, 0, 0))
 
 
+def _parse_time_stamp(time_stamp):
+    """
+    Converts time_stamp to seconds. Input can be microseconds,
+    milliseconds or seconds
+
+    Divide the timestamp by the highest resolution divisor. If
+    the result is older than Jan 1 2000, then pick a lower
+    resolution divisor and repeat.  It is safe to assume no
+    requests were queued for more than 10 years.
+
+    """
+
+    now = time.time()
+
+    for divisor in (1000000.0, 1000.0, 1.0):
+        converted_time = time_stamp / divisor
+
+        # If queue_start is in the future, return 0.0.
+
+        if converted_time > now:
+            return 0.0
+
+        if converted_time > JAN_1_2000:
+            return converted_time
+
+    return 0.0
+
+
 def _lookup_environ_setting(environ, name, default=False):
     flag = environ.get(name, default)
     if default is None or default:
@@ -239,32 +267,6 @@ class WSGIWebTransaction(Transaction):
         # Which ever header is used, we accommodate the value
         # being in seconds, milliseconds or microseconds. Also
         # handle it being prefixed with 't='.
-
-        now = time.time()
-
-        def _parse_time_stamp(time_stamp):
-            """
-            Converts time_stamp to seconds. Input can be microseconds,
-            milliseconds or seconds
-
-            Divide the timestamp by the highest resolution divisor. If
-            the result is older than Jan 1 2000, then pick a lower
-            resolution divisor and repeat.  It is safe to assume no
-            requests were queued for more than 10 years.
-
-            """
-            for divisor in (1000000.0, 1000.0, 1.0):
-                converted_time = time_stamp / divisor
-
-                # If queue_start is in the future, return 0.0.
-
-                if converted_time > now:
-                    return 0.0
-
-                if converted_time > JAN_1_2000:
-                    return converted_time
-
-            return 0.0
 
         queue_time_headers = ('HTTP_X_REQUEST_START', 'HTTP_X_QUEUE_START',
                 'mod_wsgi.request_start', 'mod_wsgi.queue_start')

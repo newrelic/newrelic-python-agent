@@ -376,7 +376,15 @@ def tornado_validate_transaction_status(status_code):
     def _validator(wrapped, instance, args, kwargs):
         wrapped(*args, **kwargs)
         transaction_node, _, _ = _RECORDED_TRANSACTIONS[0]
-        assert transaction_node.response_code == status_code
+
+        response_value = None
+
+        for item in transaction_node.agent_attributes:
+            if item.name == 'response.status':
+                response_value = item.value
+                break
+
+        assert response_value == str(status_code)
 
     return _validator
 

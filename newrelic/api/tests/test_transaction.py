@@ -703,6 +703,18 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             result = create_distributed_trace_payload()
             assert result is not None
 
+    def test_add_agent_attributes(self):
+        with self.transaction as transaction:
+            transaction._add_agent_attribute('mykey', 'value')
+            attributes = transaction.agent_attributes
+
+            value = None
+            for attribute in attributes:
+                if attribute.name == 'mykey':
+                    value = attribute.value
+                    break
+            assert value == 'value'
+
 
 class TestTransactionDeterministic(newrelic.tests.test_cases.TestCase):
 

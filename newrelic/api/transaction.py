@@ -136,6 +136,8 @@ class Transaction(object):
         self._response_properties = {}
         self._transaction_metrics = {}
 
+        self._agent_attributes = {}
+
         self.background_task = False
 
         self.enabled = False
@@ -852,9 +854,12 @@ class Transaction(object):
 
         return attributes_request
 
+    def _add_agent_attribute(self, key, value):
+        self._agent_attributes[key] = value
+
     @property
     def agent_attributes(self):
-        a_attrs = {}
+        a_attrs = self._agent_attributes
         settings = self._settings
         req_env = self._request_environment
 

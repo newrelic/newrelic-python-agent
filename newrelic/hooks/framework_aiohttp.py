@@ -6,7 +6,7 @@ from newrelic.api.application import application_instance
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import function_trace
 from newrelic.api.transaction import current_transaction, ignore_transaction
-from newrelic.api.web_transaction import WebTransaction
+from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.common.coroutine import (is_coroutine_function, async_proxy,
         TraceContext)
 from newrelic.common.object_names import callable_name
@@ -90,7 +90,7 @@ class NRTransactionCoroutineWrapper(ObjectProxy):
         if not self._nr_transaction:
             # create and start the transaction
             app = application_instance()
-            txn = WebTransaction(app, self._nr_environ)
+            txn = WSGIWebTransaction(app, self._nr_environ)
 
             import aiohttp
             txn.add_framework_info(

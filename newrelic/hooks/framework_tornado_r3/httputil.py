@@ -3,7 +3,7 @@ import weakref
 
 from newrelic.hooks.framework_tornado_r3.util import purge_current_transaction
 from newrelic.api.application import application_instance
-from newrelic.api.web_transaction import WebTransaction
+from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
@@ -43,7 +43,7 @@ def _nr_wrapper_HTTPServerRequest__init__(wrapped, instance, args, kwargs):
         transaction = initiate_request_monitoring(request)
 
     # Transaction can still be None at this point, if it wasn't enabled during
-    # WebTransaction.__init__().
+    # WSGIWebTransaction.__init__().
 
     if transaction:
 
@@ -83,7 +83,7 @@ def initiate_request_monitoring(request):
 
     purge_current_transaction()
 
-    transaction = WebTransaction(application, environ)
+    transaction = WSGIWebTransaction(application, environ)
 
     if not transaction.enabled:
         return None

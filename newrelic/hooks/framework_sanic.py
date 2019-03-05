@@ -2,7 +2,7 @@ import asyncio
 import sys
 
 from newrelic.api.application import application_instance
-from newrelic.api.web_transaction import WebTransaction
+from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.api.transaction import current_transaction
 from newrelic.api.function_trace import function_trace
 from newrelic.common.object_wrapper import (wrap_function_wrapper, ObjectProxy,
@@ -42,7 +42,7 @@ class NRTransactionCoroutineWrapper(ObjectProxy):
         if not self._nr_transaction:
             # create and start the transaction
             app = application_instance()
-            txn = WebTransaction(app, self._nr_environ)
+            txn = WSGIWebTransaction(app, self._nr_environ)
 
             import sanic
             txn.add_framework_info(

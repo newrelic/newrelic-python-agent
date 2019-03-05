@@ -6,7 +6,7 @@ import contextlib
 from newrelic.api.application import application_instance
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.transaction import current_transaction
-from newrelic.api.web_transaction import GenericWebTransaction
+from newrelic.api.web_transaction import WebTransaction
 from newrelic.config import extra_settings
 from newrelic.core.config import ignore_status_code
 
@@ -54,6 +54,64 @@ def record_exception(transaction, exc_info):
             return
 
     transaction.record_exception(*exc_info)
+
+def request_environment(application, request):
+    # This creates a WSGI environ dictionary from a Tornado request.
+
+    result = getattr(request, '_nr_request_environ', None)
+
+    if result is not None:
+        return result
+
+    # We don't bother if the agent hasn't as yet been registered.
+
+    settings = application.settings
+
+    if not settings:
+        return {}
+
+    request._nr_request_environ = result = {}
+
+    result['REQUEST_URI'] = request.uri
+    result['QUERY_STRING'] = request.query
+
+    value = request.headers.get('X-NewRelic-ID')
+    if value:
+        result['HTTP_X_NEWRELIC_ID'] = value
+
+    value = request.headers.get('X-NewRelic-Transaction')
+    if value:
+        result['HTTP_X_NEWRELIC_TRANSACTION'] = value
+
+    value = request.headers.get('X-Request-Start')
+    if value:
+        result['HTTP_X_REQUEST_START'] = value
+
+    value = request.headers.get('X-Queue-Start')
+    if value:
+        result['HTTP_X_QUEUE_START'] = value
+
+    for key in settings.include_environ:
+        if key == 'REQUEST_METHOD':
+            result[key] = request.method
+        elif key == 'HTTP_USER_AGENT':
+            value = request.headers.get('User-Agent')
+            if value:
+                result[key] = value
+        elif key == 'HTTP_REFERER':
+            value = request.headers.get('Referer')
+            if value:
+                result[key] = value
+        elif key == 'CONTENT_TYPE':
+            value = request.headers.get('Content-Type')
+            if value:
+                result[key] = value
+        elif key == 'CONTENT_LENGTH':
+            value = request.headers.get('Content-Length')
+            if value:
+                result[key] = value
+
+    return result
 
 def retrieve_current_transaction():
     # Retrieves the current transaction regardless of whether it has
@@ -110,16 +168,17 @@ def initiate_request_monitoring(request):
     # We always use the default application specified in the agent
     # configuration.
 
+    application = application_instance()
+
+    # We need to fake up a WSGI like environ dictionary with the key
+    # bits of information we need.
+
+    environ = request_environment(application, request)
+
     # We now start recording the actual web transaction. Bail out though
     # if it turns out that recording of transactions is not enabled.
 
-    transaction = GenericWebTransaction(
-            application_instance(),
-            None,
-            request_method=request.method,
-            request_path=request.uri,
-            query_string=request.query,
-            headers=request.headers)
+    transaction = WebTransaction(application, environ)
 
     if not transaction.enabled:
         return

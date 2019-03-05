@@ -6,7 +6,7 @@ from newrelic.api.application import application_instance
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import function_trace
 from newrelic.api.transaction import current_transaction, ignore_transaction
-from newrelic.api.web_transaction import GenericWebTransaction
+from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.coroutine import (is_coroutine_function, async_proxy,
         TraceContext)
 from newrelic.common.object_names import callable_name
@@ -65,6 +65,18 @@ class NRTransactionCoroutineWrapper(ObjectProxy):
         self._nr_transaction = None
         self._nr_request = request
 
+        environ = {
+            'PATH_INFO': request.path,
+            'REQUEST_METHOD': request.method,
+            'CONTENT_TYPE': request.content_type,
+            'QUERY_STRING': request.query_string,
+        }
+        for k, v in request.headers.items():
+            normalized_key = k.replace('-', '_').upper()
+            http_key = 'HTTP_%s' % normalized_key
+            environ[http_key] = v
+        self._nr_environ = environ
+
     def __iter__(self):
         return self
 
@@ -77,19 +89,8 @@ class NRTransactionCoroutineWrapper(ObjectProxy):
     def send(self, value):
         if not self._nr_transaction:
             # create and start the transaction
-            if 'content-type' not in self._nr_request.headers:
-                headers = self._nr_request.headers.copy()
-                headers['content-type'] = self._nr_request.content_type
-            else:
-                headers = self._nr_request.headers
-
-            txn = GenericWebTransaction(
-                    application_instance(),
-                    None,
-                    request_method=self._nr_request.method,
-                    request_path=self._nr_request.path,
-                    query_string=self._nr_request.query_string,
-                    headers=headers)
+            app = application_instance()
+            txn = WebTransaction(app, self._nr_environ)
 
             import aiohttp
             txn.add_framework_info(

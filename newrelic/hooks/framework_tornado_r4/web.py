@@ -3,7 +3,7 @@ import traceback
 
 from newrelic.api.application import application_instance
 from newrelic.api.transaction import current_transaction
-from newrelic.api.web_transaction import GenericWebTransaction
+from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.core.agent import remove_thread_utilization
@@ -26,6 +26,34 @@ def _store_version_info():
     return tornado.version_info
 
 
+def _get_environ(request):
+    # This creates a WSGI environ dictionary from a Tornado request.
+    environ = {
+        'REQUEST_URI': request.path,
+        'QUERY_STRING': request.query,
+        'REQUEST_METHOD': request.method,
+    }
+
+    try:
+        # We only want to record port for ipv4 and ipv6 socket families.
+        # Unix socket will just return a string instead of a tuple, so
+        # skip this.
+        sockname = request.connection.stream.socket.getsockname()
+        if isinstance(sockname, tuple):
+            environ['SERVER_PORT'] = sockname[1]
+    except:
+        pass
+
+    for header, value in request.headers.items():
+        if header in ('Content-Type', 'Content-Length'):
+            wsgi_name = header.replace('-', '_').upper()
+        else:
+            wsgi_name = 'HTTP_' + header.replace('-', '_').upper()
+        environ[wsgi_name] = value
+
+    return environ
+
+
 def _nr_request_handler_init(wrapped, instance, args, kwargs):
     if current_transaction() is not None:
         _logger.error('Attempting to make a request (new transaction) when a '
@@ -38,6 +66,7 @@ def _nr_request_handler_init(wrapped, instance, args, kwargs):
         return request
 
     request = _bind_params(*args, **kwargs)
+    environ = _get_environ(request)
 
     if request.method not in instance.SUPPORTED_METHODS:
         # If the method isn't one of the supported ones, then we expect the
@@ -50,25 +79,10 @@ def _nr_request_handler_init(wrapped, instance, args, kwargs):
         method = getattr(instance, request.method.lower())
         name = callable_name(method)
 
-    try:
-        # We only want to record port for ipv4 and ipv6 socket families.
-        # Unix socket will just return a string instead of a tuple, so
-        # skip this.
-        sockname = request.connection.stream.socket.getsockname()
-        if isinstance(sockname, tuple):
-            port = sockname[1]
-    except:
-        port = None
+    environ = _get_environ(request)
 
-    txn = GenericWebTransaction(
-            application_instance(),
-            None,
-            port=port,
-            request_method=request.method,
-            request_path=request.path,
-            query_string=request.query,
-            headers=request.headers)
-
+    app = application_instance()
+    txn = WebTransaction(app, environ)
     txn.__enter__()
 
     if txn.enabled:

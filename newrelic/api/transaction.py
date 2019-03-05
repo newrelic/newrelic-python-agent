@@ -1268,6 +1268,8 @@ class Transaction(object):
             if read_length is None:
                 read_length = self._read_length
 
+            read_length = read_length if read_length is not None else -1
+
             payload = (self._settings.cross_process_id, self.path, queue_time,
                     duration, read_length, self.guid, self.record_tt)
             app_data = json_encode(payload)

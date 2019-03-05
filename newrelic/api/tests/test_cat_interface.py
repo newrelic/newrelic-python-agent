@@ -9,6 +9,7 @@ from collections import namedtuple
 
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import Transaction
+from newrelic.common.encoding_utils import deobfuscate, json_decode
 
 
 TransactionData = namedtuple('TransactionData', ['obfuscated_request_headers',
@@ -102,6 +103,26 @@ class TestCatInterface(newrelic.tests.test_cases.TestCase):
             self.assertEqual(
                     txn._generate_response_headers(),
                     txn_cat_info.obfuscated_response_headers)
+
+    def test_generate_response_using_read_length_argument(self):
+        application = newrelic.api.application.application_instance()
+        with Transaction(application) as txn:
+            self.prepare_transaction(txn)
+            response_headers = txn._generate_response_headers(1024)
+            header_value = response_headers[0][1]
+            encoding_key = txn._settings.encoding_key
+            assert json_decode(
+                    deobfuscate(header_value, encoding_key))[4] == 1024
+
+    def test_generate_response_using_read_length_argument_0(self):
+        application = newrelic.api.application.application_instance()
+        with Transaction(application) as txn:
+            self.prepare_transaction(txn)
+            response_headers = txn._generate_response_headers(0)
+            header_value = response_headers[0][1]
+            encoding_key = txn._settings.encoding_key
+            assert json_decode(
+                    deobfuscate(header_value, encoding_key))[4] == 0
 
     def test_get_response_metadata_without_headers(self):
         with Transaction(self.app_api) as txn:

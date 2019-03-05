@@ -743,5 +743,24 @@ def test_http_referer_header_stripped_transaction(capture_params):
     assert transaction.capture_params == capture_params
 
 
+@pytest.mark.parametrize('multiplier', (
+    0.0, 1.0, 1000.0, 1000000.0, 2.0
+))
+def test_parse_time_stamp(monkeypatch, multiplier):
+    # Set the time to be Jan 2 2000 since times earlier than Jan 1 2000 are
+    # rejected.
+    JAN_2_2000 = time.mktime((2000, 1, 2, 0, 0, 0, 0, 0, 0))
+    monkeypatch.setattr(time, 'time', lambda: JAN_2_2000)
+
+    timestamp_s = JAN_2_2000 - 60
+
+    expected = timestamp_s
+    if multiplier < 1 or multiplier == 2.0:
+        expected = 0.0
+
+    _parse_time_stamp = newrelic.api.web_transaction._parse_time_stamp
+    assert _parse_time_stamp(timestamp_s * multiplier) == expected
+
+
 if __name__ == '__main__':
     unittest.main()

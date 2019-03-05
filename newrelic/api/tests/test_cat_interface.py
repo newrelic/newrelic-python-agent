@@ -25,8 +25,8 @@ txn_cat_info = TransactionData(
 
         # obfuscated_response_headers
         # Value is JSON encoded list describing event, that is then obfuscated.
-        [('X-NewRelic-App-Data', ('KEpZS0JKREokDQo8AQkGGxILHAEcBkc9AQFHVAYGDA'
-        '0VAQYNF1ZKRENEWVhDRAYdHwRESkNaC11EXA0KEVtQXEBZWwxRRA4JHxsNNQ=='))],
+        [('X-NewRelic-App-Data', 'KEpZS0JKREokDQo8AQkGGxILHAEcBkc9AQFHVAYGDA0V'
+        'AQYNF1ZKRENEWVhDREVZX0pYWhBdX1wWCgpbS1xbWUAMSkQVCQQbFjU=')],
 
         # outgoing_encoded_data
         # Data is a list of tuples (header, value) that inclues
@@ -60,8 +60,8 @@ txn_cat_info = TransactionData(
         # 'X-NewRelic-App-Data'. Values are obfuscated. The full payload is
         # cast to a dictionary, JSON encoded, and finally base64 encoded.
         ('eyJYLU5ld1JlbGljLUFwcC1EYXRhIjoiS0VwWlMwSktSRW9rRFFvOEFRa0dHeElMSEFF'
-        'Y0JrYzlBUUZIVkFZR0RBMFZBUVlORjFaS1JFTkVXVmhEUkFZZEh3UkVTa05hQzExRVhBM'
-        'EtFVnRRWEVCWld3eFJSQTRKSHhzTk5RPT0ifQ=='))
+         'Y0JrYzlBUUZIVkFZR0RBMFZBUVlORjFaS1JFTkVXVmhEUkVWWlgwcFlXaEJkWDF3V0Nn'
+         'cGJTMXhiV1VBTVNrUVZDUVFiRmpVPSJ9'))
 
 
 class TestCatInterface(newrelic.tests.test_cases.TestCase):

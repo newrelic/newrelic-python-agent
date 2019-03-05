@@ -3,7 +3,7 @@ import weakref
 
 from newrelic.hooks.framework_tornado_r3.util import purge_current_transaction
 from newrelic.api.application import application_instance
-from newrelic.api.web_transaction import GenericWebTransaction
+from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
@@ -43,7 +43,7 @@ def _nr_wrapper_HTTPServerRequest__init__(wrapped, instance, args, kwargs):
         transaction = initiate_request_monitoring(request)
 
     # Transaction can still be None at this point, if it wasn't enabled during
-    # WebTransaction.__init__().
+    # WSGIWebTransaction.__init__().
 
     if transaction:
 
@@ -72,21 +72,18 @@ def initiate_request_monitoring(request):
     # We always use the default application specified in the agent
     # configuration.
 
+    application = application_instance()
+
+    # We need to fake up a WSGI like environ dictionary with the key
+    # bits of information we need.
+
+    environ = request_environment(request)
+
     # We now start recording the actual web transaction.
 
     purge_current_transaction()
 
-    from tornado.httputil import split_host_and_port
-    port = split_host_and_port(request.host.lower())[1]
-
-    transaction = GenericWebTransaction(
-            application_instance(),
-            None,
-            port=port,
-            request_method=request.method,
-            request_path=request.uri,
-            query_string=request.query,
-            headers=request.headers)
+    transaction = WSGIWebTransaction(application, environ)
 
     if not transaction.enabled:
         return None
@@ -130,6 +127,28 @@ def initiate_request_monitoring(request):
 
     return transaction
 
+def request_environment(request):
+    # This creates a WSGI environ dictionary from a Tornado request.
+
+    environ = {}
+
+    environ['REQUEST_URI'] = request.uri
+    environ['QUERY_STRING'] = request.query
+    environ['REQUEST_METHOD'] = request.method
+
+    for header, value in request.headers.items():
+        if header in ['Content-Type', 'Content-Length']:
+            wsgi_name = header.replace('-', '_').upper()
+        else:
+            wsgi_name = 'HTTP_' + header.replace('-', '_').upper()
+        environ[wsgi_name] = value
+
+    from tornado.httputil import split_host_and_port
+    port = split_host_and_port(request.host.lower())[1]
+    if port:
+        environ['SERVER_PORT'] = port
+
+    return environ
 
 def is_websocket(request):
     return request.headers.get('Upgrade', '').lower() == 'websocket'

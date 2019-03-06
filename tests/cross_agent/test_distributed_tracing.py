@@ -138,7 +138,8 @@ def test_distributed_tracing(account_id, comment, expected_metrics,
         # False in this instance, we defer.
         extra_inbound_payloads.append((inbound_payloads, False))
     elif len(inbound_payloads) > 1:
-        extra_inbound_payloads.append((inbound_payloads[1], False))
+        for payload in inbound_payloads[1:]:
+            extra_inbound_payloads.append((payload, False))
 
     global test_settings
     test_settings = {

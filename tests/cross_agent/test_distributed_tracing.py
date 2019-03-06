@@ -12,6 +12,8 @@ from newrelic.common.object_wrapper import (function_wrapper,
 from testing_support.fixtures import (override_application_settings,
         validate_transaction_metrics, validate_transaction_event_attributes,
         validate_error_event_attributes, validate_attributes)
+from testing_support.validators.validate_span_events import (
+        validate_span_events)
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures',
@@ -184,6 +186,19 @@ def test_distributed_tracing(account_id, comment, expected_metrics,
     def _test():
         response = test_application.get('/', headers=headers)
         assert 'X-NewRelic-App-Data' not in response.headers
+
+    if 'Span' in intrinsics:
+        span_intrinsics = intrinsics.get('Span')
+        span_expected = span_intrinsics.get('expected', [])
+        span_expected.extend(common_required)
+        span_unexpected = span_intrinsics.get('unexpected', [])
+        span_unexpected.extend(common_forgone)
+        span_exact = span_intrinsics.get('exact', {})
+        span_exact.update(common_exact)
+
+        _test = validate_span_events(exact_intrinsics=span_exact,
+            expected_intrinsics=span_expected,
+            unexpected_intrinsics=span_unexpected)(_test)
 
     if raises_exception:
         error_event_required = {'agent': [], 'user': [],

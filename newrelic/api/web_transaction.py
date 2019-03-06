@@ -679,16 +679,14 @@ class GenericWebTransaction(Transaction):
         if self._settings.high_security:
             self.capture_params = False
         elif query_string:
+            query_string = ensure_utf8(query_string)
             try:
                 params = urlparse.parse_qs(
                         query_string,
                         keep_blank_values=True)
+                self._request_params.update(params)
             except Exception:
-                params = cgi.parse_qs(
-                        query_string,
-                        keep_blank_values=True)
-
-            self._request_params.update(params)
+                pass
 
         if name is not None:
             self.set_transaction_name(name, group, priority=1)

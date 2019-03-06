@@ -177,6 +177,7 @@ def test_distributed_tracing(account_id, comment, expected_metrics,
     @validate_transaction_event_attributes(
             txn_event_required, txn_event_forgone, txn_event_exact)
     @validate_attributes('intrinsic', common_required, common_forgone)
+    @override_application_settings(override_settings)
     def _test():
         response = test_application.get('/', headers=headers)
         assert 'X-NewRelic-App-Data' not in response.headers
@@ -206,7 +207,5 @@ def test_distributed_tracing(account_id, comment, expected_metrics,
 
     if force_sampled_true:
         _test = override_compute_sampled_always_true(_test)
-
-    _test = override_application_settings(override_settings)(_test)
 
     _test()

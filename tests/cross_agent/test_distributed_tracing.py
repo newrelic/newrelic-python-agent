@@ -174,8 +174,8 @@ def test_distributed_tracing(account_id, comment, expected_metrics,
 
     headers = {}
     if inbound_payloads:
-        payload = json.dumps(inbound_payloads[0])
-        headers['newrelic'] = payload
+        payload = DistributedTracePayload(inbound_payloads[0])
+        headers['newrelic'] = payload.http_safe()
 
     @validate_transaction_metrics(test_name,
             rollup_metrics=expected_metrics,

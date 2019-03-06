@@ -199,6 +199,8 @@ def test_distributed_tracing(account_id, comment, expected_metrics,
         _test = validate_span_events(exact_intrinsics=span_exact,
             expected_intrinsics=span_expected,
             unexpected_intrinsics=span_unexpected)(_test)
+    elif not span_events_enabled:
+        _test = validate_span_events(count=0)(_test)
 
     if raises_exception:
         error_event_required = {'agent': [], 'user': [],

@@ -738,6 +738,7 @@ def test_http_referer_header_stripped_transaction(capture_params, connect):
     if capture_params is not None:
         environ["newrelic.capture_request_params"] = capture_params
 
+    assert application.settings
     transaction = newrelic.api.web_transaction.WebTransaction(
             application, environ)
     assert transaction._request_environment["HTTP_REFERER"] == url

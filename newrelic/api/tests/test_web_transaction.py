@@ -9,6 +9,7 @@ import newrelic.api.transaction
 import newrelic.api.wsgi_application as wsgi_application
 import newrelic.api.web_transaction
 import newrelic.tests.test_cases
+from newrelic.tests.test_cases import connect # noqa
 
 
 is_pypy = '__pypy__' in sys.builtin_module_names
@@ -721,12 +722,12 @@ class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
             func_wrapper.close()
 
 
-@pytest.mark.parametrize('capture_params', [
+@pytest.mark.parametrize('capture_params', [  # NOQA
         None,
         False,
         True,
 ])
-def test_http_referer_header_stripped_transaction(capture_params):
+def test_http_referer_header_stripped_transaction(capture_params, connect):
     # Make sure that 'HTTP_REFERER' header params are stripped, regardless of
     # 'capture_params' config.
     url = "http://www.wruff.org"
@@ -737,6 +738,7 @@ def test_http_referer_header_stripped_transaction(capture_params):
     if capture_params is not None:
         environ["newrelic.capture_request_params"] = capture_params
 
+    assert application.settings
     transaction = newrelic.api.web_transaction.WebTransaction(
             application, environ)
     assert transaction._request_environment["HTTP_REFERER"] == url

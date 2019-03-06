@@ -1,8 +1,10 @@
+import pytest
 import time
 import unittest
 
 from newrelic.core.agent import agent_instance
 from newrelic.core.config import global_settings
+
 
 class TestCase(unittest.TestCase):
 
@@ -39,4 +41,19 @@ class TestCase(unittest.TestCase):
                 cycle_duration = current_time - period_start
 
                 if cycle_duration < 1.1:
-                    time.sleep(1.1-cycle_duration)
+                    time.sleep(1.1 - cycle_duration)
+
+
+@pytest.fixture(scope='module')
+def connect():
+    agent = agent_instance()
+    app_name = global_settings().app_name
+    agent.activate_application(app_name, timeout=10.0)
+    application = agent.application(app_name)
+    yield
+    current_time = time.time()
+    period_start = application._period_start
+    cycle_duration = current_time - period_start
+
+    if cycle_duration < 1.1:
+        time.sleep(1.1 - cycle_duration)

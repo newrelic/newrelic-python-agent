@@ -40,10 +40,14 @@ def load_tests():
     return result
 
 
-@transient_function_wrapper('newrelic.core.adaptive_sampler',
-        'AdaptiveSampler.compute_sampled')
-def override_compute_sampled_always_true(wrapped, instance, args, kwargs):
-    return True
+def override_compute_sampled(override):
+    @transient_function_wrapper('newrelic.core.adaptive_sampler',
+            'AdaptiveSampler.compute_sampled')
+    def _override_compute_sampled(wrapped, instance, args, kwargs):
+        if override:
+            return True
+        return wrapped(*args, **kwargs)
+    return _override_compute_sampled
 
 
 def assert_payload(payload, payload_assertions, major_version, minor_version):
@@ -177,6 +181,7 @@ def test_distributed_tracing(account_id, comment, expected_metrics,
     @validate_transaction_event_attributes(
             txn_event_required, txn_event_forgone, txn_event_exact)
     @validate_attributes('intrinsic', common_required, common_forgone)
+    @override_compute_sampled(force_sampled_true)
     @override_application_settings(override_settings)
     def _test():
         response = test_application.get('/', headers=headers)
@@ -204,8 +209,5 @@ def test_distributed_tracing(account_id, comment, expected_metrics,
                 'intrinsic': common_exact}
         _test = validate_error_event_attributes(error_event_required,
                 error_event_forgone, error_event_exact)(_test)
-
-    if force_sampled_true:
-        _test = override_compute_sampled_always_true(_test)
 
     _test()

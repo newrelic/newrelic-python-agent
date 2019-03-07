@@ -587,6 +587,118 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
             application.settings.distributed_tracing.enabled = original_setting
 
 
+class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
+
+    requires_collector = True
+
+    def test_inactive(self):
+        self.assertEqual(newrelic.api.transaction.current_transaction(), None)
+
+    def test_web_transaction(self):
+        request_path = '/web_transaction'
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None,
+                request_path=request_path)
+        with transaction:
+            self.assertTrue(transaction.enabled)
+            self.assertEqual(transaction.path,
+                    'WebTransaction/Uri' + request_path)
+            self.assertEqual(newrelic.api.transaction.current_transaction(),
+                    transaction)
+            self.assertFalse(transaction.background_task)
+
+    def test_web_transaction_named(self):
+        transaction_name = 'sample'
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                transaction_name)
+
+        with transaction:
+            self.assertEqual(transaction.name, transaction_name)
+
+    def test_web_transaction_headers(self):
+        headers = {'DUMMY': 'value'}
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None,
+                headers=headers.items())
+
+        with transaction:
+            self.assertEqual(transaction._request_headers['dummy'], 'value')
+
+    def test_web_transaction_headers_bytes(self):
+        headers = {b'DUMMY': b'value'}
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None,
+                headers=headers.items())
+
+        with transaction:
+            self.assertEqual(transaction._request_headers['dummy'], b'value')
+
+    def test_no_path_web_transaction(self):
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None)
+        with transaction:
+            self.assertEqual(transaction.path,
+                "WebTransaction/Uri/<undefined>")
+
+    def test_named_web_transaction(self):
+        request_path = 'DUMMY'
+        name = 'named_web_transaction'
+        group = 'Function'
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                name,
+                group=group,
+                request_path=request_path)
+        with transaction:
+            self.assertTrue(transaction.enabled)
+            self.assertEqual(newrelic.api.transaction.current_transaction(),
+                    transaction)
+            self.assertEqual(transaction.path,
+                             'WebTransaction/' + group + '/' + name)
+
+    def test_exit_on_delete(self):
+        if is_pypy:
+            return
+
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None)
+        transaction.__enter__()
+        del transaction
+        self.assertEqual(newrelic.api.transaction.current_transaction(), None)
+
+    def test_implicit_runtime_error(self):
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None)
+        try:
+            with transaction:
+                raise RuntimeError("runtime_error")
+        except RuntimeError:
+            pass
+
+    def test_application_disabled(self):
+        original = application.enabled
+        application.enabled = False
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None)
+
+        try:
+            with transaction:
+                self.assertFalse(transaction.enabled)
+                self.assertEqual(
+                        newrelic.api.transaction.current_transaction(),
+                        None)
+        finally:
+            application.enabled = original
+
+
 class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test__is_websocket_websocket_in_environ(self):

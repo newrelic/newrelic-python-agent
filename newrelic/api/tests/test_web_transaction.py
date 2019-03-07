@@ -672,6 +672,35 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
         del transaction
         self.assertEqual(newrelic.api.transaction.current_transaction(), None)
 
+    def test_query_string(self):
+        query_string = "a=1&a=2&b=3"
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None,
+                query_string=query_string)
+        with transaction:
+            self.assertEqual(transaction._request_params['a'], ['1', '2'])
+            self.assertEqual(transaction._request_params['b'], ['3'])
+
+    def test_query_string_bytes(self):
+        query_string = b'a=1&a=2&b=3'
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None,
+                query_string=query_string)
+        with transaction:
+            self.assertEqual(transaction._request_params['a'], ['1', '2'])
+            self.assertEqual(transaction._request_params['b'], ['3'])
+
+    def test_query_string_cp424(self):
+        query_string = 'a=1&a=2&b=3'.encode('cp424')
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None,
+                query_string=query_string)
+        with transaction:
+            assert not transaction._request_params
+
     def test_implicit_runtime_error(self):
         transaction = newrelic.api.web_transaction.GenericWebTransaction(
                 application,

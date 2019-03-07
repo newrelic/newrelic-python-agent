@@ -701,6 +701,20 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
         with transaction:
             assert not transaction._request_params
 
+    def test_capture_params_high_security(self):
+        original = application.settings.high_security
+        application.settings.high_security = True
+
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None)
+
+        try:
+            with transaction:
+                assert not transaction.capture_params
+        finally:
+            application.settings.high_security = original
+
     def test_implicit_runtime_error(self):
         transaction = newrelic.api.web_transaction.GenericWebTransaction(
                 application,

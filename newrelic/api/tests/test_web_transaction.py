@@ -617,6 +617,46 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
         with transaction:
             self.assertEqual(transaction.name, transaction_name)
 
+    def test_web_transaction_scheme(self):
+        scheme = 'dummy_scheme'
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None,
+                scheme=scheme)
+
+        with transaction:
+            self.assertEqual(transaction._request_scheme, scheme)
+
+    def test_web_transaction_host(self):
+        host = 'dummy_host'
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None,
+                host=host)
+
+        with transaction:
+            self.assertEqual(transaction._request_host, host)
+
+    def test_web_transaction_port(self):
+        port = 8080
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None,
+                port=port)
+
+        with transaction:
+            self.assertEqual(transaction._port, port)
+
+    def test_web_transaction_request_method(self):
+        request_method = 'GET'
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None,
+                request_method=request_method)
+
+        with transaction:
+            self.assertEqual(transaction._request_method, request_method)
+
     def test_web_transaction_headers(self):
         headers = {'DUMMY': 'value'}
         transaction = newrelic.api.web_transaction.GenericWebTransaction(

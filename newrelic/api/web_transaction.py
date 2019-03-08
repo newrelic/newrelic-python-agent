@@ -11,7 +11,7 @@ except ImportError:
 from newrelic.api.transaction import Transaction
 
 from newrelic.common.encoding_utils import (obfuscate, deobfuscate,
-        json_encode, json_decode)
+        json_encode, json_decode, ensure_utf8)
 
 from newrelic.core.attribute_filter import DST_BROWSER_MONITORING
 
@@ -649,32 +649,46 @@ class WebTransaction(WSGIWebTransaction):
         ), DeprecationWarning)
 
 
-SPECIAL_WSGI_HEADERS = set(('content-type', 'content-length'))
-
-
-class GenericWebTransaction(WSGIWebTransaction):
-
+class GenericWebTransaction(Transaction):
     def __init__(self, application, name, group=None,
             scheme=None, host=None, port=None, request_method=None,
             request_path=None, query_string=None, headers=None):
 
-        environ = {
-            'PATH_INFO': request_path,
-            'REQUEST_METHOD': request_method,
-            'QUERY_STRING': query_string,
-            'wsgi.url_scheme': scheme,
-            'SERVER_NAME': host,
-            'SERVER_PORT': port,
-        }
+        super(GenericWebTransaction, self).__init__(application)
 
-        for k, v in headers.items():
-            normalized_key = k.replace('-', '_').upper()
-            if k.lower() in SPECIAL_WSGI_HEADERS:
-                key = normalized_key
-            else:
-                key = 'HTTP_%s' % normalized_key
-            environ[key] = v
+        if not self.enabled:
+            return
 
-        super(GenericWebTransaction, self).__init__(application, environ)
+        # Inputs
+        self._request_uri = request_path
+        self._request_method = request_method
+        self._request_scheme = scheme
+        self._request_host = host
+        self._request_params = {}
+        self._port = port
+        self._request_headers = {}
+
+        if headers:
+            for k, v in headers:
+                k = ensure_utf8(k)
+                if k is not None:
+                    self._request_headers[k.lower()] = v
+
+        # Capture query request string parameters, unless we're in
+        # High Security Mode.
+        if self._settings.high_security:
+            self.capture_params = False
+        elif query_string:
+            query_string = ensure_utf8(query_string)
+            try:
+                params = urlparse.parse_qs(
+                        query_string,
+                        keep_blank_values=True)
+                self._request_params.update(params)
+            except Exception:
+                pass
+
         if name is not None:
             self.set_transaction_name(name, group, priority=1)
+        elif request_path is not None:
+            self.set_transaction_name(request_path, 'Uri', priority=1)

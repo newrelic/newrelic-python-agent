@@ -1061,6 +1061,74 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
                 pass
             self.assertEqual(transaction.queue_start, 0.0)
 
+    def test_distributed_trace_header(self):
+        original = application.settings.distributed_tracing.enabled
+        application.settings.distributed_tracing.enabled = True
+
+        # Create a test distributed trace payload. This is done because it's
+        # guaranteed to have the correct trust key.
+        with newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                'test_distributed_trace_header_origin') as origin:
+            payload = origin.create_distributed_trace_payload()
+
+        try:
+            headers = {
+                'NewRelic': payload.http_safe(),
+            }
+            transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                    application,
+                    'test_distributed_trace_header',
+                    headers=headers.items())
+
+            with transaction:
+                assert transaction.trace_id == payload['d']['tr']
+        finally:
+            application.settings.distributed_tracing.enabled = original
+
+    def test_distributed_trace_header_bytes(self):
+        original = application.settings.distributed_tracing.enabled
+        application.settings.distributed_tracing.enabled = True
+
+        # Create a test distributed trace payload. This is done because it's
+        # guaranteed to have the correct trust key.
+        with newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                'test_distributed_trace_header_origin') as origin:
+            payload = origin.create_distributed_trace_payload()
+
+        try:
+            headers = {
+                b'NewRelic': payload.http_safe().encode('utf-8'),
+            }
+            transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                    application,
+                    'test_distributed_trace_header',
+                    headers=headers.items())
+
+            with transaction:
+                assert transaction.trace_id == payload['d']['tr']
+        finally:
+            application.settings.distributed_tracing.enabled = original
+
+    def test_distributed_trace_header_invalid(self):
+        original = application.settings.distributed_tracing.enabled
+        application.settings.distributed_tracing.enabled = True
+
+        try:
+            headers = {
+                'NewRelic': 'cookies',
+            }
+            transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                    application,
+                    'test_distributed_trace_header',
+                    headers=headers.items())
+
+            with transaction:
+                assert transaction.trace_id == transaction.guid
+        finally:
+            application.settings.distributed_tracing.enabled = original
+
 
 class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
 

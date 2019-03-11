@@ -880,9 +880,8 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
                 application,
                 None)
 
-        status = 200
-        assert not transaction.process_response(status, ())
-        assert transaction._response_code == status
+        assert not transaction.process_response(200, ())
+        assert transaction._response_code == 200
 
     def test_process_response_status_304(self):
         headers = {'Content-Length': 5}
@@ -894,6 +893,22 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
         transaction.client_cross_process_id = 1
 
         assert not transaction.process_response(304, ())
+
+    def test_process_response_status_string(self):
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None)
+
+        assert not transaction.process_response('200', ())
+        assert transaction._response_code == 200
+
+    def test_process_response_status_invalid(self):
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None)
+
+        assert not transaction.process_response('200 OK', ())
+        assert not transaction._response_code
 
     def test_process_string_header(self):
         transaction = newrelic.api.web_transaction.GenericWebTransaction(

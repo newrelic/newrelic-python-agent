@@ -795,6 +795,9 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
             # X-Queue-Start seconds (with t=)
             ({"X-Queue-Start": "t=%d" % ts}, ts),
 
+            # X-Queue-Start seconds (with t=) bytes
+            ({b"X-Queue-Start": ("t=%d" % ts).encode('utf-8')}, ts),
+
             # X-Queue-Start seconds
             ({"X-Queue-Start": "%d" % ts}, ts),
 
@@ -822,11 +825,17 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
             # X-Request-Start seconds (with t=)
             ({"X-Request-Start": "t=%f" % ts}, ts),
 
+            # X-Request-Start seconds (with t=) bytes
+            ({b"X-Request-Start": ("t=%f" % ts).encode('utf-8')}, ts),
+
             # X-Request-Start seconds
             ({"X-Request-Start": "%f" % ts}, ts),
 
             # X-Queue-Start seconds (with t=)
             ({"X-Queue-Start": "t=%f" % ts}, ts),
+
+            # X-Queue-Start seconds (with t=) bytes
+            ({b"X-Queue-Start": ("t=%f" % ts).encode('utf-8')}, ts),
 
             # X-Queue-Start seconds
             ({"X-Queue-Start": "%f" % ts}, ts),

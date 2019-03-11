@@ -13,6 +13,7 @@ from newrelic.api.transaction import Transaction
 from newrelic.common.encoding_utils import (obfuscate, deobfuscate,
         json_encode, json_decode, decode_newrelic_header, ensure_utf8)
 
+from newrelic.core.attribute import create_agent_attributes
 from newrelic.core.attribute_filter import DST_BROWSER_MONITORING
 
 from newrelic.packages import six
@@ -799,3 +800,55 @@ class GenericWebTransaction(Transaction):
             read_length = -1
 
         return self._generate_response_headers(read_length)
+
+    @property
+    def agent_attributes(self):
+        a_attrs = self._agent_attributes
+        settings = self._settings
+
+        if 'accept' in self._request_headers:
+            a_attrs['request.headers.accept'] = self._request_headers['accept']
+        if 'content-length' in self._request_headers:
+            a_attrs['request.headers.contentLength'] = \
+                    self._request_headers['content-length']
+        if 'content-type' in self._request_headers:
+            a_attrs['request.headers.contentType'] = \
+                    self._request_headers['content-type']
+        if 'host' in self._request_headers:
+            a_attrs['request.headers.host'] = self._request_headers['host']
+        if 'referer' in self._request_headers:
+            a_attrs['request.headers.referer'] = _remove_query_string(
+                    self._request_headers['referer'])
+        if 'user-agent' in self._request_headers:
+            a_attrs['request.headers.userAgent'] = \
+                    self._request_headers['user-agent']
+        if self._request_method:
+            a_attrs['request.method'] = self._request_method
+        if self._request_uri:
+            a_attrs['request.uri'] = self._request_uri
+
+        if 'content-length' in self._response_headers:
+            a_attrs['response.headers.contentLength'] = \
+                    self._response_headers['content-length']
+        if 'content-type' in self._response_headers:
+            a_attrs['response.headers.contentType'] = \
+                    self._response_headers['content-type']
+        if self._response_code:
+            a_attrs['response.status'] = self._response_code
+
+        if self.queue_wait != 0:
+            a_attrs['webfrontend.queue.seconds'] = self.queue_wait
+
+        # TODO: move these to the Transaction base class
+        if settings.process_host.display_name:
+            a_attrs['host.displayName'] = settings.process_host.display_name
+        if self._thread_utilization_value:
+            a_attrs['thread.concurrency'] = self._thread_utilization_value
+
+        agent_attributes = create_agent_attributes(a_attrs,
+                settings.attribute_filter)
+
+        # Include request parameters in agent attributes
+        agent_attributes.extend(self.request_parameters_attributes)
+
+        return agent_attributes

@@ -895,7 +895,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
         assert not transaction.process_response(304, {})
 
-    def test_process_valid_header(self):
+    def test_process_string_header(self):
         transaction = newrelic.api.web_transaction.GenericWebTransaction(
                 application,
                 None)
@@ -903,6 +903,15 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
         response_headers = {'HEADER': 'cookie'}
         assert not transaction.process_response(200, response_headers.items())
         self.assertEqual(transaction._response_headers['header'], 'cookie')
+
+    def test_process_utf8_header(self):
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None)
+
+        response_headers = {b'HEADER': b'cookie'}
+        assert not transaction.process_response(200, response_headers.items())
+        self.assertEqual(transaction._response_headers['header'], b'cookie')
 
     def test_process_invalid_header(self):
         transaction = newrelic.api.web_transaction.GenericWebTransaction(

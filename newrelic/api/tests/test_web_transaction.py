@@ -932,12 +932,16 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
         transaction.client_cross_process_id = 1
 
-        ret = transaction.process_response(200, ())
-        decoded_header = decode_newrelic_header(
-                ret[0][1],
-                application.settings.encoding_key)
+        cat_response_headers = transaction.process_response(200, ())
 
-        assert decoded_header[4] == content_length
+        decoded_value = None
+        for header_name, header_value in cat_response_headers:
+            if header_name == 'X-NewRelic-App-Data':
+                decoded_value = decode_newrelic_header(header_value,
+                        application.settings.encoding_key)
+                break
+
+        assert decoded_value[4] == content_length
 
     def test_process_response_utf8_content_length(self):
         content_length = 5
@@ -949,12 +953,16 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
         transaction.client_cross_process_id = 1
 
-        ret = transaction.process_response(200, ())
-        decoded_header = decode_newrelic_header(
-                ret[0][1],
-                application.settings.encoding_key)
+        cat_response_headers = transaction.process_response(200, ())
 
-        assert decoded_header[4] == content_length
+        decoded_value = None
+        for header_name, header_value in cat_response_headers:
+            if header_name == 'X-NewRelic-App-Data':
+                decoded_value = decode_newrelic_header(header_value,
+                        application.settings.encoding_key)
+                break
+
+        assert decoded_value[4] == content_length
 
     def test_process_response_malformed_content_length(self):
         headers = {'Content-Length': 'cookie'}
@@ -965,12 +973,16 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
         transaction.client_cross_process_id = 1
 
-        ret = transaction.process_response(200, ())
-        decoded_header = decode_newrelic_header(
-                ret[0][1],
-                application.settings.encoding_key)
+        cat_response_headers = transaction.process_response(200, ())
 
-        assert decoded_header[4] == -1
+        decoded_value = None
+        for header_name, header_value in cat_response_headers:
+            if header_name == 'X-NewRelic-App-Data':
+                decoded_value = decode_newrelic_header(header_value,
+                        application.settings.encoding_key)
+                break
+
+        assert decoded_value[4] == -1
 
     def test_implicit_runtime_error(self):
         transaction = newrelic.api.web_transaction.GenericWebTransaction(

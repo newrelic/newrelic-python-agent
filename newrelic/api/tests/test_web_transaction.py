@@ -785,6 +785,23 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
             self.assertEqual(transaction.synthetics_job_id, 'job')
             self.assertEqual(transaction.synthetics_monitor_id, 'monitor')
 
+    def test_process_synthetics_bytes_header(self):
+        payload = [1, 1, b'resource', b'job', b'monitor']
+        synthetics_header = obfuscate(json_encode(payload),
+                application.settings.encoding_key).encode('utf-8')
+        headers = {b'X-NewRelic-Synthetics': synthetics_header}
+
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None,
+                headers=headers.items())
+
+        with transaction:
+            self.assertEqual(transaction.synthetics_header, synthetics_header)
+            self.assertEqual(transaction.synthetics_resource_id, 'resource')
+            self.assertEqual(transaction.synthetics_job_id, 'job')
+            self.assertEqual(transaction.synthetics_monitor_id, 'monitor')
+
     def test_process_synthetics_version2_header(self):
         payload = [2, 1, 'resource', 'job', 'monitor']
         synthetics_header = obfuscate(json_encode(payload),

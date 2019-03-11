@@ -1249,7 +1249,8 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
                 assert transaction.is_part_of_cat
         finally:
             application.settings.distributed_tracing.enabled = original_dt
-            application.settings.cross_application_tracer.enabled = original_cat
+            application.settings.cross_application_tracer.enabled = \
+                    original_cat
 
     def test_cross_application_tracing_headers_bytes(self):
         cross_process_id = application.settings.cross_process_id
@@ -1283,8 +1284,10 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
             with transaction:
                 assert transaction.is_part_of_cat
         finally:
-            application.settings.distributed_tracing.enabled = original_dt
-            application.settings.cross_application_tracer.enabled = original_cat
+            application.settings.distributed_tracing.enabled = \
+                    original_dt
+            application.settings.cross_application_tracer.enabled = \
+                    original_cat
 
     def test_cross_application_tracing_headers_invalid(self):
         headers = {
@@ -1306,7 +1309,8 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
                 assert not transaction.is_part_of_cat
         finally:
             application.settings.distributed_tracing.enabled = original_dt
-            application.settings.cross_application_tracer.enabled = original_cat
+            application.settings.cross_application_tracer.enabled = \
+                    original_cat
 
 
 class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):

@@ -9,6 +9,7 @@ import newrelic.api.transaction
 import newrelic.api.wsgi_application as wsgi_application
 import newrelic.api.web_transaction
 import newrelic.tests.test_cases
+from newrelic.common.encoding_utils import json_encode, obfuscate
 from newrelic.tests.test_cases import connect # noqa
 
 
@@ -754,6 +755,124 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
                 assert not transaction.capture_params
         finally:
             application.settings.high_security = original
+
+    def test_process_synthetics_empty_header(self):
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None)
+
+        with transaction:
+            assert transaction.synthetics_header is None
+            assert transaction.synthetics_resource_id is None
+            assert transaction.synthetics_job_id is None
+            assert transaction.synthetics_monitor_id is None
+
+    def test_process_synthetics_valid_header(self):
+        payload = [1, 1, 'resource', 'job', 'monitor']
+        synthetics_header = obfuscate(json_encode(payload),
+                application.settings.encoding_key)
+
+        headers = {'X-NewRelic-Synthetics': synthetics_header}
+
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None,
+                headers=headers.items())
+
+        with transaction:
+            self.assertEqual(transaction.synthetics_header, synthetics_header)
+            self.assertEqual(transaction.synthetics_resource_id, 'resource')
+            self.assertEqual(transaction.synthetics_job_id, 'job')
+            self.assertEqual(transaction.synthetics_monitor_id, 'monitor')
+
+    def test_process_synthetics_bytes_header(self):
+        payload = [1, 1, b'resource', b'job', b'monitor']
+        synthetics_header = obfuscate(json_encode(payload),
+                application.settings.encoding_key).encode('utf-8')
+        headers = {b'X-NewRelic-Synthetics': synthetics_header}
+
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None,
+                headers=headers.items())
+
+        with transaction:
+            self.assertEqual(transaction.synthetics_header, synthetics_header)
+            self.assertEqual(transaction.synthetics_resource_id, 'resource')
+            self.assertEqual(transaction.synthetics_job_id, 'job')
+            self.assertEqual(transaction.synthetics_monitor_id, 'monitor')
+
+    def test_process_synthetics_version2_header(self):
+        payload = [2, 1, 'resource', 'job', 'monitor']
+        synthetics_header = obfuscate(json_encode(payload),
+                application.settings.encoding_key)
+
+        headers = {'X-NewRelic-Synthetics': synthetics_header}
+
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None,
+                headers=headers.items())
+
+        with transaction:
+            assert transaction.synthetics_header is None
+            assert transaction.synthetics_resource_id is None
+            assert transaction.synthetics_job_id is None
+            assert transaction.synthetics_monitor_id is None
+
+    def test_process_synthetics_untrusted_accountid_header(self):
+        payload = [1, 9999, 'resource', 'job', 'monitor']
+        synthetics_header = obfuscate(json_encode(payload),
+                application.settings.encoding_key)
+
+        headers = {'X-NewRelic-Synthetics': synthetics_header}
+
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None,
+                headers=headers.items())
+
+        with transaction:
+            assert transaction.synthetics_header is None
+            assert transaction.synthetics_resource_id is None
+            assert transaction.synthetics_job_id is None
+            assert transaction.synthetics_monitor_id is None
+
+    def test_process_synthetics_malformed_header(self):
+        payload = ['version', 1, 'resource', 'job', 'monitor']
+        synthetics_header = obfuscate(json_encode(payload),
+                application.settings.encoding_key)
+
+        headers = {'X-NewRelic-Synthetics': synthetics_header}
+
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None,
+                headers=headers.items())
+
+        with transaction:
+            assert transaction.synthetics_header is None
+            assert transaction.synthetics_resource_id is None
+            assert transaction.synthetics_job_id is None
+            assert transaction.synthetics_monitor_id is None
+
+    def test_process_synthetics_cp424_header(self):
+        payload = [1, 1, 'resource', 'job', 'monitor']
+        synthetics_header = obfuscate(json_encode(payload),
+                application.settings.encoding_key)
+
+        headers = {'X-NewRelic-Synthetics': synthetics_header.encode('cp424')}
+
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None,
+                headers=headers.items())
+
+        with transaction:
+            assert transaction.synthetics_header is None
+            assert transaction.synthetics_resource_id is None
+            assert transaction.synthetics_job_id is None
+            assert transaction.synthetics_monitor_id is None
 
     def test_implicit_runtime_error(self):
         transaction = newrelic.api.web_transaction.GenericWebTransaction(

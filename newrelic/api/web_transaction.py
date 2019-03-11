@@ -11,7 +11,7 @@ except ImportError:
 from newrelic.api.transaction import Transaction
 
 from newrelic.common.encoding_utils import (obfuscate, deobfuscate,
-        json_encode, json_decode, ensure_utf8)
+        json_encode, json_decode, decode_newrelic_header, ensure_utf8)
 
 from newrelic.core.attribute_filter import DST_BROWSER_MONITORING
 
@@ -673,6 +673,12 @@ class GenericWebTransaction(Transaction):
         # Queue Time
         self.queue_start = 0.0
 
+        # Synthetics
+        self.synthetics_header = None
+        self.synthetics_resource_id = None
+        self.synthetics_job_id = None
+        self.synthetics_monitor_id = None
+
         if headers:
             for k, v in headers:
                 k = ensure_utf8(k)
@@ -694,6 +700,7 @@ class GenericWebTransaction(Transaction):
                 pass
 
         self._process_queue_time()
+        self._process_synthetics_header()
 
         if name is not None:
             self.set_transaction_name(name, group, priority=1)
@@ -715,3 +722,28 @@ class GenericWebTransaction(Transaction):
 
             if self.queue_start > 0.0:
                 break
+
+    def _process_synthetics_header(self):
+        # Check for Synthetics header
+
+        if self._settings.synthetics.enabled and \
+                self._settings.trusted_account_ids and \
+                self._settings.encoding_key:
+
+            encoded_header = self._request_headers.get('x-newrelic-synthetics')
+            decoded_header = decode_newrelic_header(
+                    encoded_header,
+                    self._settings.encoding_key)
+            synthetics = _parse_synthetics_header(decoded_header)
+
+            if synthetics and \
+                    synthetics['account_id'] in \
+                    self._settings.trusted_account_ids:
+
+                # Save obfuscated header, because we will pass it along
+                # unchanged in all external requests.
+
+                self.synthetics_header = encoded_header
+                self.synthetics_resource_id = synthetics['resource_id']
+                self.synthetics_job_id = synthetics['job_id']
+                self.synthetics_monitor_id = synthetics['monitor_id']

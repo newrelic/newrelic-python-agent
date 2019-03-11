@@ -881,7 +881,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
                 None)
 
         status = 200
-        assert not transaction.process_response(status, {})
+        assert not transaction.process_response(status, ())
         assert transaction._response_code == status
 
     def test_process_response_status_304(self):
@@ -893,7 +893,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
         transaction.client_cross_process_id = 1
 
-        assert not transaction.process_response(304, {})
+        assert not transaction.process_response(304, ())
 
     def test_process_string_header(self):
         transaction = newrelic.api.web_transaction.GenericWebTransaction(
@@ -932,7 +932,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
         transaction.client_cross_process_id = 1
 
-        ret = transaction.process_response(200, {})
+        ret = transaction.process_response(200, ())
         decoded_header = decode_newrelic_header(
                 ret[0][1],
                 application.settings.encoding_key)
@@ -949,7 +949,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
         transaction.client_cross_process_id = 1
 
-        ret = transaction.process_response(200, {})
+        ret = transaction.process_response(200, ())
         decoded_header = decode_newrelic_header(
                 ret[0][1],
                 application.settings.encoding_key)
@@ -965,7 +965,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
         transaction.client_cross_process_id = 1
 
-        ret = transaction.process_response(200, {})
+        ret = transaction.process_response(200, ())
         decoded_header = decode_newrelic_header(
                 ret[0][1],
                 application.settings.encoding_key)

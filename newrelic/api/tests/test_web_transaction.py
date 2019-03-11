@@ -856,6 +856,24 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
             assert transaction.synthetics_job_id is None
             assert transaction.synthetics_monitor_id is None
 
+    def test_process_synthetics_cp424_header(self):
+        payload = [1, 1, 'resource', 'job', 'monitor']
+        synthetics_header = obfuscate(json_encode(payload),
+                application.settings.encoding_key)
+
+        headers = {'X-NewRelic-Synthetics': synthetics_header.encode('cp424')}
+
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None,
+                headers=headers.items())
+
+        with transaction:
+            assert transaction.synthetics_header is None
+            assert transaction.synthetics_resource_id is None
+            assert transaction.synthetics_job_id is None
+            assert transaction.synthetics_monitor_id is None
+
     def test_implicit_runtime_error(self):
         transaction = newrelic.api.web_transaction.GenericWebTransaction(
                 application,

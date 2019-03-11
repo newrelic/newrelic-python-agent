@@ -650,6 +650,8 @@ class WebTransaction(WSGIWebTransaction):
 
 
 class GenericWebTransaction(Transaction):
+    QUEUE_TIME_HEADERS = ('x-request-start', 'x-queue-start')
+
     def __init__(self, application, name, group=None,
             scheme=None, host=None, port=None, request_method=None,
             request_path=None, query_string=None, headers=None):
@@ -667,6 +669,9 @@ class GenericWebTransaction(Transaction):
         self._request_params = {}
         self._port = port
         self._request_headers = {}
+
+        # Queue Time
+        self.queue_start = 0.0
 
         if headers:
             for k, v in headers:
@@ -688,7 +693,25 @@ class GenericWebTransaction(Transaction):
             except Exception:
                 pass
 
+        self._process_queue_time()
+
         if name is not None:
             self.set_transaction_name(name, group, priority=1)
         elif request_path is not None:
             self.set_transaction_name(request_path, 'Uri', priority=1)
+
+    def _process_queue_time(self):
+        for queue_time_header in self.QUEUE_TIME_HEADERS:
+            value = self._request_headers.get(queue_time_header)
+            value = ensure_utf8(value)
+
+            try:
+                if value.startswith('t='):
+                    self.queue_start = _parse_time_stamp(float(value[2:]))
+                else:
+                    self.queue_start = _parse_time_stamp(float(value))
+            except Exception:
+                pass
+
+            if self.queue_start > 0.0:
+                break

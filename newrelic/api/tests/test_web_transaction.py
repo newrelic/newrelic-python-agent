@@ -781,6 +781,167 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
         finally:
             application.enabled = original
 
+    def test_queue_headers_integer(self):
+        now = time.time()
+        ts = int(now - 5)
+
+        integer_seconds_tests = [
+            # X-Request-Start seconds (with t=)
+            ({"X-Request-Start": "t=%d" % ts}, ts),
+
+            # X-Request-Start seconds
+            ({"X-Request-Start": "%d" % ts}, ts),
+
+            # X-Queue-Start seconds (with t=)
+            ({"X-Queue-Start": "t=%d" % ts}, ts),
+
+            # X-Queue-Start seconds (with t=) bytes
+            ({b"X-Queue-Start": ("t=%d" % ts).encode('utf-8')}, ts),
+
+            # X-Queue-Start seconds
+            ({"X-Queue-Start": "%d" % ts}, ts),
+
+            # Both headers (with t=)
+            ({"X-Request-Start": "t=%d" % ts,
+              "X-Queue-Start": "t=%d" % (ts + 100)}, ts),
+
+            # Both headers
+            ({"X-Request-Start": "%d" % ts,
+              "X-Queue-Start": "%d" % (ts + 100)}, ts)
+        ]
+
+        for headers, queue_start in integer_seconds_tests:
+            transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                    application,
+                    'queue_start',
+                    headers=headers.items())
+            with transaction:
+                self.assertEqual(transaction.queue_start, queue_start)
+
+    def test_queue_headers_seconds(self):
+        ts = time.time() - 0.2
+
+        float_seconds_tests = [
+            # X-Request-Start seconds (with t=)
+            ({"X-Request-Start": "t=%f" % ts}, ts),
+
+            # X-Request-Start seconds (with t=) bytes
+            ({b"X-Request-Start": ("t=%f" % ts).encode('utf-8')}, ts),
+
+            # X-Request-Start seconds
+            ({"X-Request-Start": "%f" % ts}, ts),
+
+            # X-Queue-Start seconds (with t=)
+            ({"X-Queue-Start": "t=%f" % ts}, ts),
+
+            # X-Queue-Start seconds (with t=) bytes
+            ({b"X-Queue-Start": ("t=%f" % ts).encode('utf-8')}, ts),
+
+            # X-Queue-Start seconds
+            ({"X-Queue-Start": "%f" % ts}, ts),
+
+            # Both headers (with t=)
+            ({"X-Request-Start": "t=%f" % ts,
+              "X-Queue-Start": "t=%f" % (ts + 100)}, ts),
+
+            # Both headers
+            ({"X-Request-Start": "%f" % ts,
+              "X-Queue-Start": "%f" % (ts + 100)}, ts)
+        ]
+
+        for headers, queue_start in float_seconds_tests:
+            transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                    application,
+                    'queue_start',
+                    headers=headers.items())
+            with transaction:
+                self.assertAlmostEqual(transaction.queue_start, queue_start, 5)
+
+    def test_queue_headers_milli(self):
+        ts = time.time() - 0.2
+
+        integer_milli_seconds_tests = [
+            # X-Request-Start milli-seconds (with t=)
+            ({"X-Request-Start": "t=%.0f" % (ts * 1000)}, ts),
+
+            # X-Request-Start milli-seconds
+            ({"X-Request-Start": "%.0f" % (ts * 1000)}, ts),
+
+            # X-Queue-Start milli-seconds (with t=)
+            ({"X-Queue-Start": "t=%.0f" % (ts * 1000)}, ts),
+
+            # X-Queue-Start milli-seconds
+            ({"X-Queue-Start": "%.0f" % (ts * 1000)}, ts),
+        ]
+
+        # Check for at least 2 significant digits
+        for headers, queue_start in integer_milli_seconds_tests:
+            transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                    application,
+                    'queue_start',
+                    headers=headers.items())
+            with transaction:
+                self.assertAlmostEqual(transaction.queue_start, queue_start, 2)
+
+    def test_queue_headers_micro(self):
+        ts = time.time() - 0.2
+
+        integer_micro_seconds_tests = [
+            # X-Request-Start micro-seconds (with t=)
+            ({"X-Request-Start": "t=%.0f" % (ts * 1000000)}, ts),
+
+            # X-Request-Start micro-seconds
+            ({"X-Request-Start": "%.0f" % (ts * 1000000)}, ts),
+
+            # X-Queue-Start micro-seconds (with t=)
+            ({"X-Queue-Start": "t=%.0f" % (ts * 1000000)}, ts),
+
+            # X-Queue-Start micro-seconds
+            ({"X-Queue-Start": "%.0f" % (ts * 1000000)}, ts),
+        ]
+
+        # Check for at least 6 significant digits
+        for headers, queue_start in integer_micro_seconds_tests:
+            transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                    application,
+                    'queue_start',
+                    headers=headers.items())
+            with transaction:
+                self.assertAlmostEqual(transaction.queue_start, queue_start, 5)
+
+    def test_queue_headers_bad(self):
+        bad_data_tests = [
+            # Empty header.
+            {"X-Request-Start": ""},
+
+            # Has t= prefix but no time.
+            {"X-Request-Start": "t="},
+
+            # Has non integer for value.
+            {"X-Request-Start": "t=X"},
+
+            # Has integer which never satisfies time threshold.
+            {"X-Request-Start": "t=1"},
+
+            # Has negative integer.
+            {"X-Request-Start": "t=-1"},
+
+            # Time in the future.
+            {"X-Request-Start": "t=%.0f" % (time.time() + 1000)},
+        ]
+
+        # Check that queue start always defaults to 0.0. Do this check after
+        # transaction complete so that the test will fail if is queue start is
+        # None and some arithmetic check is dependent on it always being float.
+        for headers in bad_data_tests:
+            transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                    application,
+                    'queue_start',
+                    headers=headers.items())
+            with transaction:
+                pass
+            self.assertEqual(transaction.queue_start, 0.0)
+
 
 class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
 

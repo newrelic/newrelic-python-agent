@@ -1129,6 +1129,96 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
         finally:
             application.settings.distributed_tracing.enabled = original
 
+    def test_cross_application_tracing_headers(self):
+        cross_process_id = application.settings.cross_process_id
+        encoding_key = application.settings.encoding_key
+        payload = (
+            cross_process_id,
+            u'WebTransaction/Function/app:beep',
+            0, 1.23, -1,
+            'dd4a810b7cb7f937', False
+        )
+        headers = {
+            'X-NewRelic-ID': obfuscate(cross_process_id, encoding_key),
+            'X-NewRelic-Transaction': obfuscate(
+                    json_encode(payload),
+                    encoding_key),
+        }
+
+        original_dt = application.settings.distributed_tracing.enabled
+        original_cat = application.settings.cross_application_tracer.enabled
+        application.settings.distributed_tracing.enabled = False
+        application.settings.cross_application_tracer.enabled = True
+
+        try:
+            transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                    application,
+                    'test_cat_headers',
+                    headers=headers.items())
+
+            with transaction:
+                assert transaction.is_part_of_cat
+        finally:
+            application.settings.distributed_tracing.enabled = original_dt
+            application.settings.cross_application_tracer.enabled = original_cat
+
+    def test_cross_application_tracing_headers_bytes(self):
+        cross_process_id = application.settings.cross_process_id
+        encoding_key = application.settings.encoding_key
+        payload = (
+            cross_process_id,
+            u'WebTransaction/Function/app:beep',
+            0, 1.23, -1,
+            'dd4a810b7cb7f937', False
+        )
+        headers = {
+            b'X-NewRelic-ID': obfuscate(
+                    cross_process_id,
+                    encoding_key).encode('utf-8'),
+            b'X-NewRelic-Transaction': obfuscate(
+                    json_encode(payload),
+                    encoding_key).encode('utf-8'),
+        }
+
+        original_dt = application.settings.distributed_tracing.enabled
+        original_cat = application.settings.cross_application_tracer.enabled
+        application.settings.distributed_tracing.enabled = False
+        application.settings.cross_application_tracer.enabled = True
+
+        try:
+            transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                    application,
+                    'test_cat_headers',
+                    headers=headers.items())
+
+            with transaction:
+                assert transaction.is_part_of_cat
+        finally:
+            application.settings.distributed_tracing.enabled = original_dt
+            application.settings.cross_application_tracer.enabled = original_cat
+
+    def test_cross_application_tracing_headers_invalid(self):
+        headers = {
+            'X-NewRelic-ID': 'invalid',
+            'X-NewRelic-Transaction': 'cookies',
+        }
+
+        original_dt = application.settings.distributed_tracing.enabled
+        original_cat = application.settings.cross_application_tracer.enabled
+        application.settings.distributed_tracing.enabled = False
+        application.settings.cross_application_tracer.enabled = True
+
+        try:
+            transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                    application,
+                    'test_cat_headers',
+                    headers=headers.items())
+            with transaction:
+                assert not transaction.is_part_of_cat
+        finally:
+            application.settings.distributed_tracing.enabled = original_dt
+            application.settings.cross_application_tracer.enabled = original_cat
+
 
 class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
 

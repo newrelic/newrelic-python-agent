@@ -13,8 +13,9 @@ from newrelic.api.transaction import Transaction
 from newrelic.common.encoding_utils import (obfuscate, deobfuscate,
         json_encode, json_decode, decode_newrelic_header, ensure_utf8)
 
-from newrelic.core.attribute import create_agent_attributes
-from newrelic.core.attribute_filter import DST_BROWSER_MONITORING
+from newrelic.core.attribute import (create_agent_attributes,
+        create_attributes, process_user_attribute)
+from newrelic.core.attribute_filter import DST_BROWSER_MONITORING, DST_NONE
 
 from newrelic.packages import six
 
@@ -692,9 +693,7 @@ class GenericWebTransaction(Transaction):
 
         # Capture query request string parameters, unless we're in
         # High Security Mode.
-        if self._settings.high_security:
-            self.capture_params = False
-        elif query_string:
+        if query_string and not self._settings.high_security:
             query_string = ensure_utf8(query_string)
             try:
                 params = urlparse.parse_qs(
@@ -852,3 +851,35 @@ class GenericWebTransaction(Transaction):
         agent_attributes.extend(self.request_parameters_attributes)
 
         return agent_attributes
+
+    @property
+    def request_parameters_attributes(self):
+        # Request parameters are a special case of agent attributes, so they
+        # must be added on to agent_attributes separately
+        #
+        # Filter request parameters through the AttributeFilter, but set the
+        # destinations to NONE.
+        #
+        # That means by default, request parameters won't get included in any
+        # destination. But, it will allow user added include/exclude attribute
+        # filtering rules to be applied to the request parameters.
+
+        attributes_request = []
+
+        if self._request_params:
+
+            r_attrs = {}
+
+            for k, v in self._request_params.items():
+                new_key = 'request.parameters.%s' % k
+                new_val = ",".join(v)
+
+                final_key, final_val = process_user_attribute(new_key, new_val)
+
+                if final_key:
+                    r_attrs[final_key] = final_val
+
+            attributes_request = create_attributes(r_attrs, DST_NONE,
+                    self._settings.attribute_filter)
+
+        return attributes_request

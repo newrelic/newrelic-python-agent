@@ -679,6 +679,10 @@ class GenericWebTransaction(Transaction):
         self.synthetics_job_id = None
         self.synthetics_monitor_id = None
 
+        # Response
+        self._response_headers = {}
+        self._response_code = None
+
         if headers:
             for k, v in headers:
                 k = ensure_utf8(k)
@@ -762,3 +766,36 @@ class GenericWebTransaction(Transaction):
             txn_header = self._request_headers.get('x-newrelic-transaction')
             self._process_incoming_cat_headers(client_cross_process_id,
                     txn_header)
+
+    def process_response(self, status_code, response_headers):
+        """Processes response status and headers, extracting any
+        details required and returning a set of additional headers
+        to merge into that being returned for the web transaction.
+
+        """
+
+        # Extract response headers
+        if response_headers:
+            for header, value in response_headers:
+                header = ensure_utf8(header)
+                if header is not None:
+                    self._response_headers[header.lower()] = value
+
+        try:
+            status_code = int(status_code)
+            self._response_code = status_code
+        except Exception:
+            status_code = None
+
+        # If response code is 304 do not insert CAT headers.
+        # See https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.3.5
+        if status_code == 304:
+            return []
+
+        # Generate CAT response headers
+        try:
+            read_length = int(self._request_headers.get('content-length'))
+        except Exception:
+            read_length = -1
+
+        return self._generate_response_headers(read_length)

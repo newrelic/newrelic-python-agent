@@ -9,7 +9,8 @@ import newrelic.api.transaction
 import newrelic.api.wsgi_application as wsgi_application
 import newrelic.api.web_transaction
 import newrelic.tests.test_cases
-from newrelic.common.encoding_utils import json_encode, obfuscate
+from newrelic.common.encoding_utils import (json_encode,
+        obfuscate, decode_newrelic_header)
 from newrelic.tests.test_cases import connect # noqa
 
 
@@ -874,6 +875,130 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
             assert transaction.synthetics_job_id is None
             assert transaction.synthetics_monitor_id is None
 
+    def test_process_response_status_200(self):
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None)
+
+        assert not transaction.process_response(200, ())
+        assert transaction._response_code == 200
+
+    def test_process_response_status_304(self):
+        headers = {'Content-Length': 5}
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None,
+                headers=headers.items())
+
+        transaction.client_cross_process_id = 1
+
+        assert not transaction.process_response(304, ())
+
+    def test_process_response_status_string(self):
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None)
+
+        assert not transaction.process_response('200', ())
+        assert transaction._response_code == 200
+
+    def test_process_response_status_invalid(self):
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None)
+
+        assert not transaction.process_response('200 OK', ())
+        assert not transaction._response_code
+
+    def test_process_string_header(self):
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None)
+
+        response_headers = {'HEADER': 'cookie'}
+        assert not transaction.process_response(200, response_headers.items())
+        self.assertEqual(transaction._response_headers['header'], 'cookie')
+
+    def test_process_utf8_header(self):
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None)
+
+        response_headers = {b'HEADER': b'cookie'}
+        assert not transaction.process_response(200, response_headers.items())
+        self.assertEqual(transaction._response_headers['header'], b'cookie')
+
+    def test_process_invalid_header(self):
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None)
+
+        response_headers = {'header'.encode('cp424'): 'cookie'}
+        assert not transaction.process_response(200, response_headers.items())
+        assert not transaction._response_headers
+
+    def test_process_response_content_length(self):
+        content_length = 5
+        headers = {'Content-Length': content_length}
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None,
+                headers=headers.items())
+
+        transaction.client_cross_process_id = 1
+
+        cat_response_headers = transaction.process_response(200, ())
+
+        decoded_value = None
+        for header_name, header_value in cat_response_headers:
+            if header_name == 'X-NewRelic-App-Data':
+                decoded_value = decode_newrelic_header(header_value,
+                        application.settings.encoding_key)
+                break
+
+        assert decoded_value[4] == content_length
+
+    def test_process_response_utf8_content_length(self):
+        content_length = 5
+        headers = {b'Content-Length': str(content_length).encode('utf-8')}
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None,
+                headers=headers.items())
+
+        transaction.client_cross_process_id = 1
+
+        cat_response_headers = transaction.process_response(200, ())
+
+        decoded_value = None
+        for header_name, header_value in cat_response_headers:
+            if header_name == 'X-NewRelic-App-Data':
+                decoded_value = decode_newrelic_header(header_value,
+                        application.settings.encoding_key)
+                break
+
+        assert decoded_value[4] == content_length
+
+    def test_process_response_malformed_content_length(self):
+        headers = {'Content-Length': 'cookie'}
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None,
+                headers=headers.items())
+
+        transaction.client_cross_process_id = 1
+
+        cat_response_headers = transaction.process_response(200, ())
+
+        decoded_value = None
+        for header_name, header_value in cat_response_headers:
+            if header_name == 'X-NewRelic-App-Data':
+                decoded_value = decode_newrelic_header(header_value,
+                        application.settings.encoding_key)
+                break
+
+        assert decoded_value[4] == -1
+
     def test_implicit_runtime_error(self):
         transaction = newrelic.api.web_transaction.GenericWebTransaction(
                 application,
@@ -1160,7 +1285,8 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
                 assert transaction.is_part_of_cat
         finally:
             application.settings.distributed_tracing.enabled = original_dt
-            application.settings.cross_application_tracer.enabled = original_cat
+            application.settings.cross_application_tracer.enabled = \
+                    original_cat
 
     def test_cross_application_tracing_headers_bytes(self):
         cross_process_id = application.settings.cross_process_id
@@ -1194,8 +1320,10 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
             with transaction:
                 assert transaction.is_part_of_cat
         finally:
-            application.settings.distributed_tracing.enabled = original_dt
-            application.settings.cross_application_tracer.enabled = original_cat
+            application.settings.distributed_tracing.enabled = \
+                    original_dt
+            application.settings.cross_application_tracer.enabled = \
+                    original_cat
 
     def test_cross_application_tracing_headers_invalid(self):
         headers = {
@@ -1217,7 +1345,8 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
                 assert not transaction.is_part_of_cat
         finally:
             application.settings.distributed_tracing.enabled = original_dt
-            application.settings.cross_application_tracer.enabled = original_cat
+            application.settings.cross_application_tracer.enabled = \
+                    original_cat
 
 
 class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):

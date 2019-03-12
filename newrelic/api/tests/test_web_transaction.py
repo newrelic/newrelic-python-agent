@@ -1507,6 +1507,29 @@ def test_http_referer_header_stripped_transaction(capture_params, connect):
     assert transaction.capture_params == capture_params
 
 
+@pytest.mark.parametrize('high_security_mode', (False, True))  # NOQA
+def test_http_referer_header_stripped_generic_transaction(high_security_mode,
+        connect):
+    url = "http://www.wruff.org"
+    params = "?token=meow"
+
+    assert application.settings
+
+    original = application.settings.high_security
+    application.settings.high_security = high_security_mode
+
+    try:
+        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+                application,
+                None,
+                request_path='DUMMY',
+                headers={'referer': url + params}.items())
+        assert transaction.agent_attributes
+        assert transaction._agent_attributes['request.headers.referer'] == url
+    finally:
+        application.settings.high_security = original
+
+
 @pytest.mark.parametrize('multiplier', (
     0.0, 1.0, 1000.0, 1000000.0, 2.0
 ))

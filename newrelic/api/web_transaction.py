@@ -13,7 +13,9 @@ from newrelic.api.transaction import Transaction
 from newrelic.common.encoding_utils import (obfuscate, deobfuscate,
         json_encode, json_decode, decode_newrelic_header, ensure_utf8)
 
-from newrelic.core.attribute_filter import DST_BROWSER_MONITORING
+from newrelic.core.attribute import (create_agent_attributes,
+        create_attributes, process_user_attribute)
+from newrelic.core.attribute_filter import DST_BROWSER_MONITORING, DST_NONE
 
 from newrelic.packages import six
 
@@ -691,9 +693,7 @@ class GenericWebTransaction(Transaction):
 
         # Capture query request string parameters, unless we're in
         # High Security Mode.
-        if self._settings.high_security:
-            self.capture_params = False
-        elif query_string:
+        if query_string and not self._settings.high_security:
             query_string = ensure_utf8(query_string)
             try:
                 params = urlparse.parse_qs(
@@ -799,3 +799,87 @@ class GenericWebTransaction(Transaction):
             read_length = -1
 
         return self._generate_response_headers(read_length)
+
+    @property
+    def agent_attributes(self):
+        a_attrs = self._agent_attributes
+        settings = self._settings
+
+        if 'accept' in self._request_headers:
+            a_attrs['request.headers.accept'] = self._request_headers['accept']
+        if 'content-length' in self._request_headers:
+            a_attrs['request.headers.contentLength'] = \
+                    self._request_headers['content-length']
+        if 'content-type' in self._request_headers:
+            a_attrs['request.headers.contentType'] = \
+                    self._request_headers['content-type']
+        if 'host' in self._request_headers:
+            a_attrs['request.headers.host'] = self._request_headers['host']
+        if 'referer' in self._request_headers:
+            a_attrs['request.headers.referer'] = _remove_query_string(
+                    self._request_headers['referer'])
+        if 'user-agent' in self._request_headers:
+            a_attrs['request.headers.userAgent'] = \
+                    self._request_headers['user-agent']
+        if self._request_method:
+            a_attrs['request.method'] = self._request_method
+        if self._request_uri:
+            a_attrs['request.uri'] = self._request_uri
+
+        if 'content-length' in self._response_headers:
+            a_attrs['response.headers.contentLength'] = \
+                    self._response_headers['content-length']
+        if 'content-type' in self._response_headers:
+            a_attrs['response.headers.contentType'] = \
+                    self._response_headers['content-type']
+        if self._response_code:
+            a_attrs['response.status'] = self._response_code
+
+        if self.queue_wait != 0:
+            a_attrs['webfrontend.queue.seconds'] = self.queue_wait
+
+        # TODO: move these to the Transaction base class
+        if settings.process_host.display_name:
+            a_attrs['host.displayName'] = settings.process_host.display_name
+        if self._thread_utilization_value:
+            a_attrs['thread.concurrency'] = self._thread_utilization_value
+
+        agent_attributes = create_agent_attributes(a_attrs,
+                settings.attribute_filter)
+
+        # Include request parameters in agent attributes
+        agent_attributes.extend(self.request_parameters_attributes)
+
+        return agent_attributes
+
+    @property
+    def request_parameters_attributes(self):
+        # Request parameters are a special case of agent attributes, so they
+        # must be added on to agent_attributes separately
+        #
+        # Filter request parameters through the AttributeFilter, but set the
+        # destinations to NONE.
+        #
+        # That means by default, request parameters won't get included in any
+        # destination. But, it will allow user added include/exclude attribute
+        # filtering rules to be applied to the request parameters.
+
+        attributes_request = []
+
+        if self._request_params:
+
+            r_attrs = {}
+
+            for k, v in self._request_params.items():
+                new_key = 'request.parameters.%s' % k
+                new_val = ",".join(v)
+
+                final_key, final_val = process_user_attribute(new_key, new_val)
+
+                if final_key:
+                    r_attrs[final_key] = final_val
+
+            attributes_request = create_attributes(r_attrs, DST_NONE,
+                    self._settings.attribute_filter)
+
+        return attributes_request

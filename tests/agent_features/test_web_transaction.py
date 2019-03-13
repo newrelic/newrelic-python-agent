@@ -22,7 +22,7 @@ METRICS = (
 
 # TODO: Add rollup_metrics=METRICS
 @validate_transaction_metrics(
-        'test_generic_web_transaction',
+        'test_base_web_transaction',
         group='Test')
 @validate_attributes('agent',
 [
@@ -34,7 +34,7 @@ METRICS = (
     'request.parameters.boo', 'webfrontend.queue.seconds',
 ])
 @pytest.mark.parametrize('use_bytes', (True, False))
-def test_generic_web_transaction(use_bytes):
+def test_base_web_transaction(use_bytes):
     application = application_instance()
 
     request_headers = {
@@ -60,7 +60,7 @@ def test_generic_web_transaction(use_bytes):
 
     transaction = BaseWebTransaction(
             application,
-            'test_generic_web_transaction',
+            'test_base_web_transaction',
             group='Test',
             scheme='http',
             host='localhost',

@@ -1508,7 +1508,7 @@ def test_http_referer_header_stripped_transaction(capture_params, connect):
 
 
 @pytest.mark.parametrize('high_security_mode', (False, True))  # NOQA
-def test_http_referer_header_stripped_generic_transaction(high_security_mode,
+def test_http_referer_header_stripped_base_transaction(high_security_mode,
         connect):
     url = "http://www.wruff.org"
     params = "?token=meow"

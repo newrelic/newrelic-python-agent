@@ -589,7 +589,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
             application.settings.distributed_tracing.enabled = original_setting
 
 
-class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
+class TestBaseWebTransaction(newrelic.tests.test_cases.TestCase):
 
     requires_collector = True
 
@@ -598,7 +598,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_web_transaction(self):
         request_path = '/web_transaction'
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None,
                 request_path=request_path)
@@ -612,7 +612,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_web_transaction_named(self):
         transaction_name = 'sample'
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 transaction_name)
 
@@ -621,7 +621,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_web_transaction_scheme(self):
         scheme = 'dummy_scheme'
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None,
                 scheme=scheme)
@@ -631,7 +631,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_web_transaction_host(self):
         host = 'dummy_host'
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None,
                 host=host)
@@ -641,7 +641,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_web_transaction_port(self):
         port = 8080
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None,
                 port=port)
@@ -651,7 +651,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_web_transaction_request_method(self):
         request_method = 'GET'
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None,
                 request_method=request_method)
@@ -661,7 +661,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_web_transaction_headers(self):
         headers = {'DUMMY': 'value'}
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None,
                 headers=headers.items())
@@ -671,7 +671,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_web_transaction_headers_bytes(self):
         headers = {b'DUMMY': b'value'}
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None,
                 headers=headers.items())
@@ -680,7 +680,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
             self.assertEqual(transaction._request_headers['dummy'], b'value')
 
     def test_no_path_web_transaction(self):
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None)
         with transaction:
@@ -691,7 +691,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
         request_path = 'DUMMY'
         name = 'named_web_transaction'
         group = 'Function'
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 name,
                 group=group,
@@ -707,7 +707,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
         if is_pypy:
             return
 
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None)
         transaction.__enter__()
@@ -716,7 +716,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_query_string(self):
         query_string = "a=1&a=2&b=3"
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None,
                 query_string=query_string)
@@ -726,7 +726,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_query_string_bytes(self):
         query_string = b'a=1&a=2&b=3'
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None,
                 query_string=query_string)
@@ -736,7 +736,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_query_string_cp424(self):
         query_string = 'a=1&a=2&b=3'.encode('cp424')
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None,
                 query_string=query_string)
@@ -747,7 +747,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
         original = application.settings.high_security
         application.settings.high_security = True
 
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None)
 
@@ -758,7 +758,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
             application.settings.high_security = original
 
     def test_process_synthetics_empty_header(self):
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None)
 
@@ -775,7 +775,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
         headers = {'X-NewRelic-Synthetics': synthetics_header}
 
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None,
                 headers=headers.items())
@@ -792,7 +792,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
                 application.settings.encoding_key).encode('utf-8')
         headers = {b'X-NewRelic-Synthetics': synthetics_header}
 
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None,
                 headers=headers.items())
@@ -810,7 +810,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
         headers = {'X-NewRelic-Synthetics': synthetics_header}
 
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None,
                 headers=headers.items())
@@ -828,7 +828,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
         headers = {'X-NewRelic-Synthetics': synthetics_header}
 
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None,
                 headers=headers.items())
@@ -846,7 +846,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
         headers = {'X-NewRelic-Synthetics': synthetics_header}
 
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None,
                 headers=headers.items())
@@ -864,7 +864,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
         headers = {'X-NewRelic-Synthetics': synthetics_header.encode('cp424')}
 
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None,
                 headers=headers.items())
@@ -876,7 +876,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
             assert transaction.synthetics_monitor_id is None
 
     def test_process_response_status_200(self):
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None)
 
@@ -885,7 +885,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_process_response_status_304(self):
         headers = {'Content-Length': 5}
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None,
                 headers=headers.items())
@@ -895,7 +895,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
         assert not transaction.process_response(304, ())
 
     def test_process_response_status_string(self):
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None)
 
@@ -903,7 +903,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
         assert transaction._response_code == 200
 
     def test_process_response_status_invalid(self):
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None)
 
@@ -911,7 +911,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
         assert not transaction._response_code
 
     def test_process_string_header(self):
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None)
 
@@ -920,7 +920,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
         self.assertEqual(transaction._response_headers['header'], 'cookie')
 
     def test_process_utf8_header(self):
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None)
 
@@ -929,7 +929,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
         self.assertEqual(transaction._response_headers['header'], b'cookie')
 
     def test_process_invalid_header(self):
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None)
 
@@ -940,7 +940,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
     def test_process_response_content_length(self):
         content_length = 5
         headers = {'Content-Length': content_length}
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None,
                 headers=headers.items())
@@ -961,7 +961,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
     def test_process_response_utf8_content_length(self):
         content_length = 5
         headers = {b'Content-Length': str(content_length).encode('utf-8')}
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None,
                 headers=headers.items())
@@ -981,7 +981,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_process_response_malformed_content_length(self):
         headers = {'Content-Length': 'cookie'}
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None,
                 headers=headers.items())
@@ -1000,7 +1000,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
         assert decoded_value[4] == -1
 
     def test_implicit_runtime_error(self):
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None)
         try:
@@ -1012,7 +1012,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
     def test_application_disabled(self):
         original = application.enabled
         application.enabled = False
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None)
 
@@ -1055,7 +1055,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
         ]
 
         for headers, queue_start in integer_seconds_tests:
-            transaction = newrelic.api.web_transaction.GenericWebTransaction(
+            transaction = newrelic.api.web_transaction.BaseWebTransaction(
                     application,
                     'queue_start',
                     headers=headers.items())
@@ -1094,7 +1094,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
         ]
 
         for headers, queue_start in float_seconds_tests:
-            transaction = newrelic.api.web_transaction.GenericWebTransaction(
+            transaction = newrelic.api.web_transaction.BaseWebTransaction(
                     application,
                     'queue_start',
                     headers=headers.items())
@@ -1120,7 +1120,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
         # Check for at least 2 significant digits
         for headers, queue_start in integer_milli_seconds_tests:
-            transaction = newrelic.api.web_transaction.GenericWebTransaction(
+            transaction = newrelic.api.web_transaction.BaseWebTransaction(
                     application,
                     'queue_start',
                     headers=headers.items())
@@ -1146,7 +1146,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
         # Check for at least 6 significant digits
         for headers, queue_start in integer_micro_seconds_tests:
-            transaction = newrelic.api.web_transaction.GenericWebTransaction(
+            transaction = newrelic.api.web_transaction.BaseWebTransaction(
                     application,
                     'queue_start',
                     headers=headers.items())
@@ -1178,7 +1178,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
         # transaction complete so that the test will fail if is queue start is
         # None and some arithmetic check is dependent on it always being float.
         for headers in bad_data_tests:
-            transaction = newrelic.api.web_transaction.GenericWebTransaction(
+            transaction = newrelic.api.web_transaction.BaseWebTransaction(
                     application,
                     'queue_start',
                     headers=headers.items())
@@ -1192,7 +1192,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
         # Create a test distributed trace payload. This is done because it's
         # guaranteed to have the correct trust key.
-        with newrelic.api.web_transaction.GenericWebTransaction(
+        with newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 'test_distributed_trace_header_origin') as origin:
             payload = origin.create_distributed_trace_payload()
@@ -1201,7 +1201,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
             headers = {
                 'NewRelic': payload.http_safe(),
             }
-            transaction = newrelic.api.web_transaction.GenericWebTransaction(
+            transaction = newrelic.api.web_transaction.BaseWebTransaction(
                     application,
                     'test_distributed_trace_header',
                     headers=headers.items())
@@ -1217,7 +1217,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
 
         # Create a test distributed trace payload. This is done because it's
         # guaranteed to have the correct trust key.
-        with newrelic.api.web_transaction.GenericWebTransaction(
+        with newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 'test_distributed_trace_header_origin') as origin:
             payload = origin.create_distributed_trace_payload()
@@ -1226,7 +1226,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
             headers = {
                 b'NewRelic': payload.http_safe().encode('utf-8'),
             }
-            transaction = newrelic.api.web_transaction.GenericWebTransaction(
+            transaction = newrelic.api.web_transaction.BaseWebTransaction(
                     application,
                     'test_distributed_trace_header',
                     headers=headers.items())
@@ -1244,7 +1244,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
             headers = {
                 'NewRelic': 'cookies',
             }
-            transaction = newrelic.api.web_transaction.GenericWebTransaction(
+            transaction = newrelic.api.web_transaction.BaseWebTransaction(
                     application,
                     'test_distributed_trace_header',
                     headers=headers.items())
@@ -1276,7 +1276,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
         application.settings.cross_application_tracer.enabled = True
 
         try:
-            transaction = newrelic.api.web_transaction.GenericWebTransaction(
+            transaction = newrelic.api.web_transaction.BaseWebTransaction(
                     application,
                     'test_cat_headers',
                     headers=headers.items())
@@ -1312,7 +1312,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
         application.settings.cross_application_tracer.enabled = True
 
         try:
-            transaction = newrelic.api.web_transaction.GenericWebTransaction(
+            transaction = newrelic.api.web_transaction.BaseWebTransaction(
                     application,
                     'test_cat_headers',
                     headers=headers.items())
@@ -1337,7 +1337,7 @@ class TestGenericWebTransaction(newrelic.tests.test_cases.TestCase):
         application.settings.cross_application_tracer.enabled = True
 
         try:
-            transaction = newrelic.api.web_transaction.GenericWebTransaction(
+            transaction = newrelic.api.web_transaction.BaseWebTransaction(
                     application,
                     'test_cat_headers',
                     headers=headers.items())
@@ -1519,7 +1519,7 @@ def test_http_referer_header_stripped_generic_transaction(high_security_mode,
     application.settings.high_security = high_security_mode
 
     try:
-        transaction = newrelic.api.web_transaction.GenericWebTransaction(
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None,
                 request_path='DUMMY',

@@ -651,14 +651,14 @@ class WebTransaction(WSGIWebTransaction):
         ), DeprecationWarning)
 
 
-class GenericWebTransaction(Transaction):
+class BaseWebTransaction(Transaction):
     QUEUE_TIME_HEADERS = ('x-request-start', 'x-queue-start')
 
     def __init__(self, application, name, group=None,
             scheme=None, host=None, port=None, request_method=None,
             request_path=None, query_string=None, headers=None):
 
-        super(GenericWebTransaction, self).__init__(application)
+        super(BaseWebTransaction, self).__init__(application)
 
         if not self.enabled:
             return

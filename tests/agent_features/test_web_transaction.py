@@ -1,12 +1,12 @@
 import pytest
 import time
 from newrelic.api.application import application_instance
-from newrelic.api.web_transaction import GenericWebTransaction
+from newrelic.api.web_transaction import BaseWebTransaction
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_attributes)
 
 
-# TODO: WSGI metrics must not be generated for a GenericWebTransaction
+# TODO: WSGI metrics must not be generated for a BaseWebTransaction
 METRICS = (
     ('Python/WSGI/Input/Bytes', None),
     ('Python/WSGI/Input/Time', None),
@@ -22,7 +22,7 @@ METRICS = (
 
 # TODO: Add rollup_metrics=METRICS
 @validate_transaction_metrics(
-        'test_generic_web_transaction',
+        'test_base_web_transaction',
         group='Test')
 @validate_attributes('agent',
 [
@@ -34,7 +34,7 @@ METRICS = (
     'request.parameters.boo', 'webfrontend.queue.seconds',
 ])
 @pytest.mark.parametrize('use_bytes', (True, False))
-def test_generic_web_transaction(use_bytes):
+def test_base_web_transaction(use_bytes):
     application = application_instance()
 
     request_headers = {
@@ -58,9 +58,9 @@ def test_generic_web_transaction(use_bytes):
 
         request_headers = byte_headers
 
-    transaction = GenericWebTransaction(
+    transaction = BaseWebTransaction(
             application,
-            'test_generic_web_transaction',
+            'test_base_web_transaction',
             group='Test',
             scheme='http',
             host='localhost',

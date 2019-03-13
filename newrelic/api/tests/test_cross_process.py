@@ -6,11 +6,11 @@ import newrelic.packages.six as six
 
 from newrelic.core.config import apply_server_side_settings
 from newrelic.core.attribute_filter import AttributeFilter
-from newrelic.api.web_transaction import GenericWebTransaction, WebTransaction
+from newrelic.api.web_transaction import BaseWebTransaction, WebTransaction
 from newrelic.common.encoding_utils import deobfuscate, obfuscate
 
 
-class TestCase_GenericWebTransaction(unittest.TestCase):
+class TestCase_BaseWebTransaction(unittest.TestCase):
 
     def _run_cross_process_process_response(self, enabled,
             client_cross_process_id, client_cross_process_id_fmt,
@@ -70,7 +70,7 @@ class TestCase_GenericWebTransaction(unittest.TestCase):
         if content_length >= 0:
             headers['Content-Length'] = str(content_length)
 
-        transaction = GenericWebTransaction(
+        transaction = BaseWebTransaction(
                 application,
                 transaction_name,
                 headers=headers.items())

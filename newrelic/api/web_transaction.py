@@ -402,6 +402,7 @@ class WSGIHeaderProxy(Mapping):
 class WSGIWebTransaction(BaseWebTransaction):
 
     report_unicode_error = True
+    MOD_WSGI_HEADERS = ('mod_wsgi.request_start', 'mod_wsgi.queue_start')
 
     def __init__(self, application, environ):
 
@@ -521,6 +522,40 @@ class WSGIWebTransaction(BaseWebTransaction):
         else:
             if self._request_uri is not None:
                 self.set_transaction_name(self._request_uri, 'Uri', priority=1)
+
+        # mod_wsgi sets its own distinct variables for queue time
+        # automatically. Initially it set mod_wsgi.queue_start,
+        # which equated to when Apache first accepted the
+        # request. This got changed to mod_wsgi.request_start
+        # however, and mod_wsgi.queue_start was instead used
+        # just for when requests are to be queued up for the
+        # daemon process and corresponded to the point at which
+        # they are being proxied, after Apache does any
+        # authentication etc. We check for both so older
+        # versions of mod_wsgi will still work, although we
+        # don't try and use the fact that it is possible to
+        # distinguish the two points and just pick up the
+        # earlier of the two.
+        for queue_time_header in self.MOD_WSGI_HEADERS:
+            if self.queue_start > 0.0:
+                break
+
+            value = environ.get(queue_time_header, None)
+
+            try:
+                if value.startswith('t='):
+                    try:
+                        self.queue_start = _parse_time_stamp(float(value[2:]))
+                    except Exception:
+                        pass
+                else:
+                    try:
+                        self.queue_start = _parse_time_stamp(float(value))
+                    except Exception:
+                        pass
+
+            except Exception:
+                pass
 
         # Flags for tracking whether RUM header and footer have been
         # generated.

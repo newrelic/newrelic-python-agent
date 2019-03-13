@@ -47,7 +47,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_external_trace(self):
         environ = {"REQUEST_URI": "/external_trace"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             time.sleep(0.1)
@@ -58,7 +58,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_transaction_not_running(self):
         environ = {"REQUEST_URI": "/transaction_not_running"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                application, environ)
         try:
             with newrelic.api.external_trace.ExternalTrace(transaction,
@@ -70,7 +70,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
     def test_external_trace_decorator(self):
         et_root = "a:b@external_trace_decorator"
         environ = {"REQUEST_URI": "/external_trace_decorator"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
 
         with transaction:
@@ -90,7 +90,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_external_trace_decorator_error(self):
         environ = {"REQUEST_URI": "/external_trace_decorator_error"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
             application, environ)
         with transaction:
             try:
@@ -101,7 +101,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_external_trace_wrap(self):
         environ = {"REQUEST_URI": "/external_trace_wrap"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         newrelic.api.external_trace.wrap_external_trace(
                 __name__, '_test_function_1b', 'unit-tests-1b',
@@ -111,7 +111,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_externa_trace_invalid_urls(self):
         environ = {"REQUEST_URI": "/external_trace_invalid_url"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             _test_function_1a("http://invalid_url:xxx")
@@ -124,7 +124,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
     # regression, see PYTHON-2832
     def test_external_trace_stopped(self):
         environ = {"REQUEST_URI": "/external_trace"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
             application, environ)
         transaction.stop_recording()
 

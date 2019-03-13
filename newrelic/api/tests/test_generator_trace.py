@@ -25,7 +25,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_function_trace_decorator(self):
         environ = {"REQUEST_URI": "/generator_trace_decorator"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             result = _test_function_1()

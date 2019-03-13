@@ -18,7 +18,7 @@ def test_content_length_not_inserted_when_autorum_disabled(autorum_disabled):
         'REQUEST_URI': '/browser_middleware',
         'newrelic.disable_browser_autorum': autorum_disabled,
     }
-    transaction = newrelic.api.web_transaction.WebTransaction(
+    transaction = newrelic.api.web_transaction.WSGIWebTransaction(
             application, environ)
 
     output = []
@@ -63,7 +63,7 @@ def test_content_length_modified_when_autorum_disabled(autorum_disabled):
         'REQUEST_URI': '/browser_middleware',
         'newrelic.disable_browser_autorum': autorum_disabled,
     }
-    transaction = newrelic.api.web_transaction.WebTransaction(
+    transaction = newrelic.api.web_transaction.WSGIWebTransaction(
             application, environ)
 
     output = []

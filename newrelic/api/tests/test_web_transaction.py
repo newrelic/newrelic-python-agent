@@ -1648,7 +1648,8 @@ def test_http_referer_header_stripped_transaction(capture_params, connect):
     assert application.settings
     transaction = newrelic.api.web_transaction.WSGIWebTransaction(
             application, environ)
-    assert transaction._request_environment["HTTP_REFERER"] == url
+    assert transaction.agent_attributes
+    assert transaction._agent_attributes['request.headers.referer'] == url
     assert transaction.capture_params == capture_params
 
 

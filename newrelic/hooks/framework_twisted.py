@@ -61,7 +61,7 @@ class RequestProcessWrapper(object):
 
         # Now start recording the actual web transaction.
 
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
 
         if not transaction.enabled:

@@ -8,6 +8,11 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
+try:
+    from collections.abc import Mapping
+except ImportError:
+    from collections import Mapping
+
 from newrelic.api.transaction import Transaction
 
 from newrelic.common.encoding_utils import (obfuscate, deobfuscate,
@@ -686,6 +691,9 @@ class BaseWebTransaction(Transaction):
         self._response_code = None
 
         if headers:
+            if isinstance(headers, Mapping):
+                headers = headers.items()
+
             for k, v in headers:
                 k = ensure_utf8(k)
                 if k is not None:

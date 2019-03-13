@@ -1,7 +1,7 @@
 import functools
 from newrelic.common.object_wrapper import FunctionWrapper
 from newrelic.api.transaction import current_transaction
-from newrelic.api.web_transaction import WSGIWebTransaction
+from newrelic.api.web_transaction import BaseWebTransaction
 from newrelic.api.application import application_instance
 from newrelic.core.attribute import truncate
 from newrelic.core.config import global_settings
@@ -9,27 +9,6 @@ from newrelic.core.config import global_settings
 
 COLD_START_RECORDED = False
 MEGABYTE_IN_BYTES = 2**20
-
-
-def process_event(event):
-    try:
-        if ('headers' in event and
-                'httpMethod' in event and
-                'path' in event):
-            environ = {
-                'REQUEST_METHOD': event['httpMethod'],
-                'REQUEST_URI': event['path'],
-            }
-            for k, v in event['headers'].items():
-                normalized_key = k.replace('-', '_').upper()
-                http_key = 'HTTP_%s' % normalized_key
-                environ[http_key] = v
-
-            return environ, False, event.get('multiValueQueryStringParameters')
-    except Exception:
-        pass
-
-    return {}, True, None
 
 
 def extract_event_source_arn(event):
@@ -77,11 +56,29 @@ def LambdaHandlerWrapper(wrapped, application=None, name=None,
         if not hasattr(application, 'activate'):
             target_application = application_instance(application)
 
-        # Extract the environment from the event
-        environ, background_task, query_params = process_event(event)
+        try:
+            request_method = event['httpMethod']
+            request_path = event['path']
+            headers = event['headers']
+            query_params = event.get('multiValueQueryStringParameters')
+            background_task = False
+        except Exception:
+            request_method = None
+            request_path = None
+            headers = None
+            query_params = None
+            background_task = True
 
-        # Now start recording the actual web transaction.
-        transaction = WSGIWebTransaction(target_application, environ)
+        transaction_name = name or getattr(context, 'function_name', None)
+
+        transaction = BaseWebTransaction(
+                target_application,
+                transaction_name,
+                group=group,
+                request_method=request_method,
+                request_path=request_path,
+                headers=headers)
+
         transaction.background_task = background_task
 
         transaction._aws_request_id = getattr(context, 'aws_request_id', None)
@@ -111,29 +108,22 @@ def LambdaHandlerWrapper(wrapped, application=None, name=None,
         if not settings.aws_arn and transaction._aws_arn:
             settings.aws_arn = transaction._aws_arn
 
-        # Override the initial transaction name.
-
-        transaction_name = name or getattr(context, 'function_name', None)
-        if transaction_name:
-            transaction.set_transaction_name(
-                    transaction_name, group, priority=1)
-
         with transaction:
             result = wrapped(*args, **kwargs)
-            try:
-                if not background_task:
-                    status_code = result.get('statusCode', None)
-                    status_code = str(status_code)
 
-                    response_headers = result.get('headers', None)
+            if not background_task:
+                try:
+                    status_code = result.get('statusCode')
+                    response_headers = result.get('headers')
+
                     try:
-                        response_headers = list(response_headers.items())
+                        response_headers = response_headers.items()
                     except Exception:
                         response_headers = None
 
                     transaction.process_response(status_code, response_headers)
-            except Exception:
-                pass
+                except Exception:
+                    pass
 
             return result
 

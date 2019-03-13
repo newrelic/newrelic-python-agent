@@ -1,4 +1,3 @@
-import cgi
 import time
 import logging
 import warnings
@@ -400,7 +399,7 @@ class WSGIHeaderProxy(Mapping):
         return self.length
 
 
-class WSGIWebTransaction(Transaction):
+class WSGIWebTransaction(BaseWebTransaction):
 
     report_unicode_error = True
 
@@ -420,7 +419,12 @@ class WSGIWebTransaction(Transaction):
 
         # Initialise the common transaction base class.
 
-        super(WSGIWebTransaction, self).__init__(application, enabled)
+        super(WSGIWebTransaction, self).__init__(
+            application, name=None, port=environ.get('SERVER_PORT'),
+            request_method=environ.get('REQUEST_METHOD'),
+            query_string=environ.get('QUERY_STRING'),
+            headers=WSGIHeaderProxy(environ),
+            enabled=enabled)
 
         # Disable transactions for websocket connections.
         # Also disable autorum if this is a websocket. This is a good idea for
@@ -470,16 +474,6 @@ class WSGIWebTransaction(Transaction):
         if settings.high_security:
             self.capture_params = False
 
-        # WSGI spec says SERVER_PORT "can never be empty string",
-        # but I'm going to set a default value anyway...
-
-        port = environ.get('SERVER_PORT', None)
-        if port:
-            try:
-                self._port = int(port)
-            except Exception:
-                pass
-
         # Extract from the WSGI environ dictionary
         # details of the URL path. This will be set as
         # default path for the web transaction. This can
@@ -527,144 +521,6 @@ class WSGIWebTransaction(Transaction):
         else:
             if self._request_uri is not None:
                 self.set_transaction_name(self._request_uri, 'Uri', priority=1)
-
-        # See if the WSGI environ dictionary includes the
-        # special 'X-Request-Start' or 'X-Queue-Start' HTTP
-        # headers. These header are optional headers that can be
-        # set within the underlying web server or WSGI server to
-        # indicate when the current request was first received
-        # and ready to be processed. The difference between this
-        # time and when application starts processing the
-        # request is the queue time and represents how long
-        # spent in any explicit request queuing system, or how
-        # long waiting in connecting state against listener
-        # sockets where request needs to be proxied between any
-        # processes within the application server.
-        #
-        # Note that mod_wsgi sets its own distinct variables
-        # automatically. Initially it set mod_wsgi.queue_start,
-        # which equated to when Apache first accepted the
-        # request. This got changed to mod_wsgi.request_start
-        # however, and mod_wsgi.queue_start was instead used
-        # just for when requests are to be queued up for the
-        # daemon process and corresponded to the point at which
-        # they are being proxied, after Apache does any
-        # authentication etc. We check for both so older
-        # versions of mod_wsgi will still work, although we
-        # don't try and use the fact that it is possible to
-        # distinguish the two points and just pick up the
-        # earlier of the two.
-        #
-        # Checking for the mod_wsgi values means it is not
-        # necessary to enable and use mod_headers to add X
-        # -Request-Start or X-Queue-Start. But we still check
-        # for the headers and give priority to the explicitly
-        # added header in case that header was added in front
-        # end server to Apache instead.
-        #
-        # Which ever header is used, we accommodate the value
-        # being in seconds, milliseconds or microseconds. Also
-        # handle it being prefixed with 't='.
-
-        queue_time_headers = ('HTTP_X_REQUEST_START', 'HTTP_X_QUEUE_START',
-                'mod_wsgi.request_start', 'mod_wsgi.queue_start')
-
-        for queue_time_header in queue_time_headers:
-            value = environ.get(queue_time_header, None)
-
-            try:
-                if value.startswith('t='):
-                    try:
-                        self.queue_start = _parse_time_stamp(float(value[2:]))
-                    except Exception:
-                        pass
-                else:
-                    try:
-                        self.queue_start = _parse_time_stamp(float(value))
-                    except Exception:
-                        pass
-
-            except Exception:
-                pass
-
-            if self.queue_start > 0.0:
-                break
-
-        # Capture query request string parameters, unless we're in
-        # High Security Mode.
-
-        if not settings.high_security:
-
-            value = environ.get('QUERY_STRING', None)
-
-            if value:
-                try:
-                    params = urlparse.parse_qs(value, keep_blank_values=True)
-                except Exception:
-                    params = cgi.parse_qs(value, keep_blank_values=True)
-
-                self._request_params.update(params)
-
-        # Check for Synthetics header
-
-        if settings.synthetics.enabled and \
-                settings.trusted_account_ids and settings.encoding_key:
-
-            try:
-                header_name = 'HTTP_X_NEWRELIC_SYNTHETICS'
-                header = self.decode_newrelic_header(environ, header_name)
-                synthetics = _parse_synthetics_header(header)
-
-                if synthetics['account_id'] in settings.trusted_account_ids:
-
-                    # Save obfuscated header, because we will pass it along
-                    # unchanged in all external requests.
-
-                    self.synthetics_header = environ.get(header_name)
-
-                    if synthetics['version'] == 1:
-                        self.synthetics_resource_id = synthetics['resource_id']
-                        self.synthetics_job_id = synthetics['job_id']
-                        self.synthetics_monitor_id = synthetics['monitor_id']
-
-            except Exception:
-                pass
-
-        # Process the New Relic cross process ID header and extract
-        # the relevant details.
-
-        if settings.distributed_tracing.enabled:
-            distributed_header = environ.get('HTTP_NEWRELIC', None)
-            if distributed_header is not None:
-                self.accept_distributed_trace_payload(distributed_header)
-        else:
-            client_cross_process_id = environ.get('HTTP_X_NEWRELIC_ID')
-            txn_header = environ.get('HTTP_X_NEWRELIC_TRANSACTION')
-            self._process_incoming_cat_headers(client_cross_process_id,
-                    txn_header)
-
-        # Capture WSGI request environ dictionary values. We capture
-        # content length explicitly as will need it for cross process
-        # metrics.
-
-        self._read_length = int(environ.get('CONTENT_LENGTH') or -1)
-
-        if settings.capture_environ:
-            for name in settings.include_environ:
-                if name in environ:
-                    self._request_environment[name] = environ[name]
-
-        # Strip query params from referer URL.
-        if 'HTTP_REFERER' in self._request_environment:
-            self._request_environment['HTTP_REFERER'] = _remove_query_string(
-                    self._request_environment['HTTP_REFERER'])
-
-        try:
-            if 'CONTENT_LENGTH' in self._request_environment:
-                self._request_environment['CONTENT_LENGTH'] = int(
-                        self._request_environment['CONTENT_LENGTH'])
-        except Exception:
-            del self._request_environment['CONTENT_LENGTH']
 
         # Flags for tracking whether RUM header and footer have been
         # generated.

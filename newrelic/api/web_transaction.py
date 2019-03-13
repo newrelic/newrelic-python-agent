@@ -109,6 +109,257 @@ def _is_websocket(environ):
     return environ.get('HTTP_UPGRADE', '').lower() == 'websocket'
 
 
+class BaseWebTransaction(Transaction):
+    QUEUE_TIME_HEADERS = ('x-request-start', 'x-queue-start')
+
+    def __init__(self, application, name, group=None,
+            scheme=None, host=None, port=None, request_method=None,
+            request_path=None, query_string=None, headers=None,
+            enabled=None):
+
+        super(BaseWebTransaction, self).__init__(application, enabled)
+
+        if not self.enabled:
+            return
+
+        # Inputs
+        self._request_uri = request_path
+        self._request_method = request_method
+        self._request_scheme = scheme
+        self._request_host = host
+        self._request_params = {}
+        self._request_headers = {}
+
+        try:
+            self._port = int(port)
+        except Exception:
+            self._port = None
+
+        # Queue Time
+        self.queue_start = 0.0
+
+        # Synthetics
+        self.synthetics_header = None
+        self.synthetics_resource_id = None
+        self.synthetics_job_id = None
+        self.synthetics_monitor_id = None
+
+        # Response
+        self._response_headers = {}
+        self._response_code = None
+
+        if headers:
+            if isinstance(headers, Mapping):
+                headers = headers.items()
+
+            for k, v in headers:
+                k = ensure_utf8(k)
+                if k is not None:
+                    self._request_headers[k.lower()] = v
+
+        # Capture query request string parameters, unless we're in
+        # High Security Mode.
+        if query_string and not self._settings.high_security:
+            query_string = ensure_utf8(query_string)
+            try:
+                params = urlparse.parse_qs(
+                        query_string,
+                        keep_blank_values=True)
+                self._request_params.update(params)
+            except Exception:
+                pass
+
+        self._process_queue_time()
+        self._process_synthetics_header()
+        self._process_context_headers()
+
+        if name is not None:
+            self.set_transaction_name(name, group, priority=1)
+        elif request_path is not None:
+            self.set_transaction_name(request_path, 'Uri', priority=1)
+
+    def _process_queue_time(self):
+        for queue_time_header in self.QUEUE_TIME_HEADERS:
+            value = self._request_headers.get(queue_time_header)
+            value = ensure_utf8(value)
+
+            try:
+                if value.startswith('t='):
+                    self.queue_start = _parse_time_stamp(float(value[2:]))
+                else:
+                    self.queue_start = _parse_time_stamp(float(value))
+            except Exception:
+                pass
+
+            if self.queue_start > 0.0:
+                break
+
+    def _process_synthetics_header(self):
+        # Check for Synthetics header
+
+        if self._settings.synthetics.enabled and \
+                self._settings.trusted_account_ids and \
+                self._settings.encoding_key:
+
+            encoded_header = self._request_headers.get('x-newrelic-synthetics')
+            decoded_header = decode_newrelic_header(
+                    encoded_header,
+                    self._settings.encoding_key)
+            synthetics = _parse_synthetics_header(decoded_header)
+
+            if synthetics and \
+                    synthetics['account_id'] in \
+                    self._settings.trusted_account_ids:
+
+                # Save obfuscated header, because we will pass it along
+                # unchanged in all external requests.
+
+                self.synthetics_header = encoded_header
+                self.synthetics_resource_id = synthetics['resource_id']
+                self.synthetics_job_id = synthetics['job_id']
+                self.synthetics_monitor_id = synthetics['monitor_id']
+
+    def _process_context_headers(self):
+        # Process the New Relic cross process ID header and extract
+        # the relevant details.
+        if self._settings.distributed_tracing.enabled:
+            distributed_header = self._request_headers.get('newrelic')
+            if distributed_header is not None:
+                self.accept_distributed_trace_payload(distributed_header)
+        else:
+            client_cross_process_id = \
+                    self._request_headers.get('x-newrelic-id')
+            txn_header = self._request_headers.get('x-newrelic-transaction')
+            self._process_incoming_cat_headers(client_cross_process_id,
+                    txn_header)
+
+    def process_response(self, status_code, response_headers):
+        """Processes response status and headers, extracting any
+        details required and returning a set of additional headers
+        to merge into that being returned for the web transaction.
+
+        """
+
+        if not self.enabled:
+            return []
+
+        # Extract response headers
+        if response_headers:
+            if isinstance(response_headers, Mapping):
+                response_headers = response_headers.items()
+
+            for header, value in response_headers:
+                header = ensure_utf8(header)
+                if header is not None:
+                    self._response_headers[header.lower()] = value
+
+        try:
+            status_code = int(status_code)
+            self._response_code = status_code
+        except Exception:
+            status_code = None
+
+        # If response code is 304 do not insert CAT headers.
+        # See https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.3.5
+        if status_code == 304:
+            return []
+
+        # Generate CAT response headers
+        try:
+            read_length = int(self._request_headers.get('content-length'))
+        except Exception:
+            read_length = -1
+
+        return self._generate_response_headers(read_length)
+
+    @property
+    def agent_attributes(self):
+        a_attrs = self._agent_attributes
+        settings = self._settings
+
+        if 'accept' in self._request_headers:
+            a_attrs['request.headers.accept'] = self._request_headers['accept']
+        try:
+            content_length = int(self._request_headers['content-length'])
+            a_attrs['request.headers.contentLength'] = content_length
+        except:
+            pass
+        if 'content-type' in self._request_headers:
+            a_attrs['request.headers.contentType'] = \
+                    self._request_headers['content-type']
+        if 'host' in self._request_headers:
+            a_attrs['request.headers.host'] = self._request_headers['host']
+        if 'referer' in self._request_headers:
+            a_attrs['request.headers.referer'] = _remove_query_string(
+                    self._request_headers['referer'])
+        if 'user-agent' in self._request_headers:
+            a_attrs['request.headers.userAgent'] = \
+                    self._request_headers['user-agent']
+        if self._request_method:
+            a_attrs['request.method'] = self._request_method
+        if self._request_uri:
+            a_attrs['request.uri'] = self._request_uri
+        try:
+            content_length = int(self._response_headers['content-length'])
+            a_attrs['response.headers.contentLength'] = content_length
+        except:
+            pass
+        if 'content-type' in self._response_headers:
+            a_attrs['response.headers.contentType'] = \
+                    self._response_headers['content-type']
+        if self._response_code:
+            a_attrs['response.status'] = str(self._response_code)
+
+        if self.queue_wait != 0:
+            a_attrs['webfrontend.queue.seconds'] = self.queue_wait
+
+        # TODO: move these to the Transaction base class
+        if settings.process_host.display_name:
+            a_attrs['host.displayName'] = settings.process_host.display_name
+        if self._thread_utilization_value:
+            a_attrs['thread.concurrency'] = self._thread_utilization_value
+
+        agent_attributes = create_agent_attributes(a_attrs,
+                settings.attribute_filter)
+
+        # Include request parameters in agent attributes
+        agent_attributes.extend(self.request_parameters_attributes)
+
+        return agent_attributes
+
+    @property
+    def request_parameters_attributes(self):
+        # Request parameters are a special case of agent attributes, so they
+        # must be added on to agent_attributes separately
+        #
+        # Filter request parameters through the AttributeFilter, but set the
+        # destinations to NONE.
+        #
+        # That means by default, request parameters won't get included in any
+        # destination. But, it will allow user added include/exclude attribute
+        # filtering rules to be applied to the request parameters.
+
+        attributes_request = []
+
+        if self._request_params:
+
+            r_attrs = {}
+
+            for k, v in self._request_params.items():
+                new_key = 'request.parameters.%s' % k
+                new_val = ",".join(v)
+
+                final_key, final_val = process_user_attribute(new_key, new_val)
+
+                if final_key:
+                    r_attrs[final_key] = final_val
+
+            attributes_request = create_attributes(r_attrs, DST_NONE,
+                    self._settings.attribute_filter)
+
+        return attributes_request
+
+
 class WSGIHeaderProxy(Mapping):
     def __init__(self, environ):
         self.environ = environ
@@ -694,254 +945,3 @@ class WebTransaction(WSGIWebTransaction):
         warnings.warn((
             'The WebTransaction API call has been deprecated.'
         ), DeprecationWarning)
-
-
-class BaseWebTransaction(Transaction):
-    QUEUE_TIME_HEADERS = ('x-request-start', 'x-queue-start')
-
-    def __init__(self, application, name, group=None,
-            scheme=None, host=None, port=None, request_method=None,
-            request_path=None, query_string=None, headers=None,
-            enabled=None):
-
-        super(BaseWebTransaction, self).__init__(application, enabled)
-
-        if not self.enabled:
-            return
-
-        # Inputs
-        self._request_uri = request_path
-        self._request_method = request_method
-        self._request_scheme = scheme
-        self._request_host = host
-        self._request_params = {}
-        self._request_headers = {}
-
-        try:
-            self._port = int(port)
-        except Exception:
-            self._port = None
-
-        # Queue Time
-        self.queue_start = 0.0
-
-        # Synthetics
-        self.synthetics_header = None
-        self.synthetics_resource_id = None
-        self.synthetics_job_id = None
-        self.synthetics_monitor_id = None
-
-        # Response
-        self._response_headers = {}
-        self._response_code = None
-
-        if headers:
-            if isinstance(headers, Mapping):
-                headers = headers.items()
-
-            for k, v in headers:
-                k = ensure_utf8(k)
-                if k is not None:
-                    self._request_headers[k.lower()] = v
-
-        # Capture query request string parameters, unless we're in
-        # High Security Mode.
-        if query_string and not self._settings.high_security:
-            query_string = ensure_utf8(query_string)
-            try:
-                params = urlparse.parse_qs(
-                        query_string,
-                        keep_blank_values=True)
-                self._request_params.update(params)
-            except Exception:
-                pass
-
-        self._process_queue_time()
-        self._process_synthetics_header()
-        self._process_context_headers()
-
-        if name is not None:
-            self.set_transaction_name(name, group, priority=1)
-        elif request_path is not None:
-            self.set_transaction_name(request_path, 'Uri', priority=1)
-
-    def _process_queue_time(self):
-        for queue_time_header in self.QUEUE_TIME_HEADERS:
-            value = self._request_headers.get(queue_time_header)
-            value = ensure_utf8(value)
-
-            try:
-                if value.startswith('t='):
-                    self.queue_start = _parse_time_stamp(float(value[2:]))
-                else:
-                    self.queue_start = _parse_time_stamp(float(value))
-            except Exception:
-                pass
-
-            if self.queue_start > 0.0:
-                break
-
-    def _process_synthetics_header(self):
-        # Check for Synthetics header
-
-        if self._settings.synthetics.enabled and \
-                self._settings.trusted_account_ids and \
-                self._settings.encoding_key:
-
-            encoded_header = self._request_headers.get('x-newrelic-synthetics')
-            decoded_header = decode_newrelic_header(
-                    encoded_header,
-                    self._settings.encoding_key)
-            synthetics = _parse_synthetics_header(decoded_header)
-
-            if synthetics and \
-                    synthetics['account_id'] in \
-                    self._settings.trusted_account_ids:
-
-                # Save obfuscated header, because we will pass it along
-                # unchanged in all external requests.
-
-                self.synthetics_header = encoded_header
-                self.synthetics_resource_id = synthetics['resource_id']
-                self.synthetics_job_id = synthetics['job_id']
-                self.synthetics_monitor_id = synthetics['monitor_id']
-
-    def _process_context_headers(self):
-        # Process the New Relic cross process ID header and extract
-        # the relevant details.
-        if self._settings.distributed_tracing.enabled:
-            distributed_header = self._request_headers.get('newrelic')
-            if distributed_header is not None:
-                self.accept_distributed_trace_payload(distributed_header)
-        else:
-            client_cross_process_id = \
-                    self._request_headers.get('x-newrelic-id')
-            txn_header = self._request_headers.get('x-newrelic-transaction')
-            self._process_incoming_cat_headers(client_cross_process_id,
-                    txn_header)
-
-    def process_response(self, status_code, response_headers):
-        """Processes response status and headers, extracting any
-        details required and returning a set of additional headers
-        to merge into that being returned for the web transaction.
-
-        """
-
-        if not self.enabled:
-            return []
-
-        # Extract response headers
-        if response_headers:
-            if isinstance(response_headers, Mapping):
-                response_headers = response_headers.items()
-
-            for header, value in response_headers:
-                header = ensure_utf8(header)
-                if header is not None:
-                    self._response_headers[header.lower()] = value
-
-        try:
-            status_code = int(status_code)
-            self._response_code = status_code
-        except Exception:
-            status_code = None
-
-        # If response code is 304 do not insert CAT headers.
-        # See https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.3.5
-        if status_code == 304:
-            return []
-
-        # Generate CAT response headers
-        try:
-            read_length = int(self._request_headers.get('content-length'))
-        except Exception:
-            read_length = -1
-
-        return self._generate_response_headers(read_length)
-
-    @property
-    def agent_attributes(self):
-        a_attrs = self._agent_attributes
-        settings = self._settings
-
-        if 'accept' in self._request_headers:
-            a_attrs['request.headers.accept'] = self._request_headers['accept']
-        try:
-            content_length = int(self._request_headers['content-length'])
-            a_attrs['request.headers.contentLength'] = content_length
-        except:
-            pass
-        if 'content-type' in self._request_headers:
-            a_attrs['request.headers.contentType'] = \
-                    self._request_headers['content-type']
-        if 'host' in self._request_headers:
-            a_attrs['request.headers.host'] = self._request_headers['host']
-        if 'referer' in self._request_headers:
-            a_attrs['request.headers.referer'] = _remove_query_string(
-                    self._request_headers['referer'])
-        if 'user-agent' in self._request_headers:
-            a_attrs['request.headers.userAgent'] = \
-                    self._request_headers['user-agent']
-        if self._request_method:
-            a_attrs['request.method'] = self._request_method
-        if self._request_uri:
-            a_attrs['request.uri'] = self._request_uri
-        try:
-            content_length = int(self._response_headers['content-length'])
-            a_attrs['response.headers.contentLength'] = content_length
-        except:
-            pass
-        if 'content-type' in self._response_headers:
-            a_attrs['response.headers.contentType'] = \
-                    self._response_headers['content-type']
-        if self._response_code:
-            a_attrs['response.status'] = str(self._response_code)
-
-        if self.queue_wait != 0:
-            a_attrs['webfrontend.queue.seconds'] = self.queue_wait
-
-        # TODO: move these to the Transaction base class
-        if settings.process_host.display_name:
-            a_attrs['host.displayName'] = settings.process_host.display_name
-        if self._thread_utilization_value:
-            a_attrs['thread.concurrency'] = self._thread_utilization_value
-
-        agent_attributes = create_agent_attributes(a_attrs,
-                settings.attribute_filter)
-
-        # Include request parameters in agent attributes
-        agent_attributes.extend(self.request_parameters_attributes)
-
-        return agent_attributes
-
-    @property
-    def request_parameters_attributes(self):
-        # Request parameters are a special case of agent attributes, so they
-        # must be added on to agent_attributes separately
-        #
-        # Filter request parameters through the AttributeFilter, but set the
-        # destinations to NONE.
-        #
-        # That means by default, request parameters won't get included in any
-        # destination. But, it will allow user added include/exclude attribute
-        # filtering rules to be applied to the request parameters.
-
-        attributes_request = []
-
-        if self._request_params:
-
-            r_attrs = {}
-
-            for k, v in self._request_params.items():
-                new_key = 'request.parameters.%s' % k
-                new_val = ",".join(v)
-
-                final_key, final_val = process_user_attribute(new_key, new_val)
-
-                if final_key:
-                    r_attrs[final_key] = final_val
-
-            attributes_request = create_attributes(r_attrs, DST_NONE,
-                    self._settings.attribute_filter)
-
-        return attributes_request

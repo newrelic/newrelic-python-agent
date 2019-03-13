@@ -588,32 +588,12 @@ class WSGIWebTransaction(BaseWebTransaction):
         # would raise as a 500 for WSGI applications).
 
         try:
-            self.response_code = int(status.split(' ')[0])
+            status = int(status.split(' ')[0])
         except Exception:
-            pass
+            status = None
 
-        # Extract response content length and type for inclusion in agent
-        # attributes
-
-        try:
-
-            for header, value in response_headers:
-                lower_header = header.lower()
-                if 'content-length' == lower_header:
-                    self._response_properties['CONTENT_LENGTH'] = int(value)
-                elif 'content-type' == lower_header:
-                    self._response_properties['CONTENT_TYPE'] = value
-
-        except Exception:
-            pass
-
-        # If response code is 304 do not insert CAT headers.
-        # See https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.3.5
-        if self.response_code == 304:
-            return []
-
-        # Generate CAT response headers
-        return self._generate_response_headers()
+        return super(WSGIWebTransaction, self).process_response(
+                status, response_headers)
 
     def browser_timing_header(self):
         """Returns the JavaScript header to be included in any HTML

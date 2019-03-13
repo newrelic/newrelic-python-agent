@@ -95,6 +95,30 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             self.assertEqual(transaction.path,
                              'OtherTransaction/'+group+'/'+path)
 
+    def test_background_task_from_wsgi_web_transaction(self):
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
+                application, {})
+
+        with transaction:
+            transaction.set_transaction_name('dummy')
+            _test_function_1()
+
+        assert transaction.background_task
+        self.assertEqual(transaction.path,
+                'OtherTransaction/Function/_test_function_1')
+
+    def test_background_task_from_web_transaction(self):
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, {})
+
+        with transaction:
+            transaction.set_transaction_name('dummy')
+            _test_function_1()
+
+        assert transaction.background_task
+        self.assertEqual(transaction.path,
+                'OtherTransaction/Function/_test_function_1')
+
     def test_exit_on_delete(self):
         if is_pypy:
             return

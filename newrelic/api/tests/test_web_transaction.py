@@ -679,6 +679,16 @@ class TestBaseWebTransaction(newrelic.tests.test_cases.TestCase):
         with transaction:
             self.assertEqual(transaction._request_headers['dummy'], b'value')
 
+    def test_web_transaction_headers_dict(self):
+        headers = {b'DUMMY': b'value'}
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
+                application,
+                None,
+                headers=headers)
+
+        with transaction:
+            self.assertEqual(transaction._request_headers['dummy'], b'value')
+
     def test_no_path_web_transaction(self):
         transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,

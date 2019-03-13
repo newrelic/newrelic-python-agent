@@ -503,10 +503,10 @@ class WSGIWebTransaction(Transaction):
                     header.encode('ascii')
 
             except UnicodeError:
-                if not WebTransaction.unicode_error_reported:
+                if not WSGIWebTransaction.unicode_error_reported:
                     _logger.error('ASCII encoding of js-agent-header failed.',
                             header)
-                    WebTransaction.unicode_error_reported = True
+                    WSGIWebTransaction.unicode_error_reported = True
 
                 header = ''
 
@@ -605,10 +605,10 @@ class WSGIWebTransaction(Transaction):
                 footer.encode('ascii')
 
         except UnicodeError:
-            if not WebTransaction.unicode_error_reported:
+            if not WSGIWebTransaction.unicode_error_reported:
                 _logger.error('ASCII encoding of js-agent-footer failed.',
                         footer)
-                WebTransaction.unicode_error_reported = True
+                WSGIWebTransaction.unicode_error_reported = True
 
             footer = ''
 

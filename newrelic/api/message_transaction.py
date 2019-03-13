@@ -6,7 +6,7 @@ from newrelic.core.attribute import create_agent_attributes
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.transaction import current_transaction
-from newrelic.api.web_transaction import WebTransaction
+from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.common.coroutine import async_proxy, TransactionContext
 
@@ -183,7 +183,7 @@ def MessageTransactionWrapper(wrapped, library, destination_type,
             # already marked as such and name the web transaction as
             # well.
 
-            if type(transaction) == WebTransaction:
+            if type(transaction) == WSGIWebTransaction:
                 if not transaction.background_task:
                     transaction.background_task = True
                     transaction.set_transaction_name(

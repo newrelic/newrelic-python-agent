@@ -3,7 +3,7 @@ import sys
 
 from newrelic.api.application import Application, application_instance
 from newrelic.api.transaction import Transaction, current_transaction
-from newrelic.api.web_transaction import WebTransaction
+from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.common.coroutine import async_proxy, TransactionContext
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
@@ -84,7 +84,7 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
             # already marked as such and name the web transaction as
             # well.
 
-            if type(transaction) == WebTransaction:
+            if type(transaction) == WSGIWebTransaction:
                 if not transaction.background_task:
                     transaction.background_task = True
                     transaction.set_transaction_name(_name, _group)

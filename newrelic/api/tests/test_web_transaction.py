@@ -302,7 +302,7 @@ class TestWSGIWebTransaction(newrelic.tests.test_cases.TestCase):
         response_headers = {}
         transaction.process_response(status, response_headers)
 
-        assert transaction._response_code == 0
+        assert transaction._response_code is None
 
     def test_process_response_status_str(self):
         environ = {'REQUEST_URI': '/environ_process_response_status_str'}

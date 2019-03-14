@@ -24,7 +24,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_database_trace(self):
         environ = {"REQUEST_URI": "/database_trace"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             time.sleep(0.1)
@@ -35,7 +35,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_transaction_not_running(self):
         environ = {"REQUEST_URI": "/transaction_not_running"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         try:
             with newrelic.api.database_trace.DatabaseTrace(
@@ -46,7 +46,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_database_trace_decorator(self):
         environ = {"REQUEST_URI": "/database_trace_decorator"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             time.sleep(0.1)
@@ -55,7 +55,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_database_trace_decorator_error(self):
         environ = {"REQUEST_URI": "/database_trace_decorator_error"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             try:
@@ -65,7 +65,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_database_trace_saves_host_wo_database_name_reporting(self):
         environ = {"REQUEST_URI": "/database_stack_trace_limit"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
 
         ds_settings = transaction.settings.datastore_tracer
@@ -95,7 +95,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_database_trace_saves_database_name_wo_instance_reporting(self):
         environ = {"REQUEST_URI": "/database_stack_trace_limit"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
 
         ds_settings = transaction.settings.datastore_tracer

@@ -6,7 +6,7 @@ import newrelic.packages.six as six
 
 from newrelic.core.config import apply_server_side_settings
 from newrelic.core.attribute_filter import AttributeFilter
-from newrelic.api.web_transaction import BaseWebTransaction, WebTransaction
+from newrelic.api.web_transaction import BaseWebTransaction, WSGIWebTransaction
 from newrelic.common.encoding_utils import deobfuscate, obfuscate
 
 
@@ -317,7 +317,7 @@ class TestCase(unittest.TestCase):
         if content_length >= 0:
             environ['CONTENT_LENGTH'] = str(content_length)
 
-        transaction = WebTransaction(application, environ)
+        transaction = WSGIWebTransaction(application, environ)
 
         self.assertTrue(transaction.enabled)
 

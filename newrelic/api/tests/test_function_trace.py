@@ -76,7 +76,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_function_trace(self):
         environ = {"REQUEST_URI": "/function_trace"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
               application, environ)
         with transaction:
             time.sleep(0.2)
@@ -105,7 +105,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_transaction_not_running(self):
         environ = {"REQUEST_URI": "/transaction_not_running"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         try:
             with newrelic.api.function_trace.FunctionTrace(
@@ -116,7 +116,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_function_trace_decorator(self):
         environ = {"REQUEST_URI": "/function_trace_decorator"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             time.sleep(0.1)
@@ -125,7 +125,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_function_trace_decorator_error(self):
         environ = {"REQUEST_URI": "/function_trace_decorator_error"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             try:
@@ -135,7 +135,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_function_trace_decorator_no_name(self):
         environ = {"REQUEST_URI": "/function_trace_decorator_no_name"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             time.sleep(0.1)
@@ -149,7 +149,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_async_trace_parent_ended(self):
         environ = {"REQUEST_URI": "/async_trace_parent_ended"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
 
         with transaction:
@@ -167,7 +167,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_async_trace_overlapping_children(self):
         environ = {"REQUEST_URI": "/async_trace_overlapping_children"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
 
         with transaction:
@@ -185,7 +185,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_exited_parent_trace(self):
         environ = {"REQUEST_URI": "/exited_parent_trace"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
 
         # by the time the child tracing begins, parent has already exited

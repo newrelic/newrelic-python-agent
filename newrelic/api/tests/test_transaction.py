@@ -8,7 +8,7 @@ from newrelic.api.application import application_instance
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.transaction import (current_transaction,
         accept_distributed_trace_payload, create_distributed_trace_payload)
-from newrelic.api.web_transaction import WebTransaction
+from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.core.config import finalize_application_settings
 from newrelic.core.adaptive_sampler import AdaptiveSampler
 
@@ -51,7 +51,7 @@ class TestTraceEndsAfterTransaction(newrelic.tests.test_cases.TestCase):
 
     def setUp(self):
         environ = {'REQUEST_URI': '/trace_ends_after_txn'}
-        self.transaction = WebTransaction(application, environ)
+        self.transaction = WSGIWebTransaction(application, environ)
 
     def tearDown(self):
         if current_transaction():
@@ -143,7 +143,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
     def setUp(self):
         super(TestTransactionApis, self).setUp()
         environ = {'REQUEST_URI': '/transaction_apis'}
-        self.transaction = WebTransaction(application, environ)
+        self.transaction = WSGIWebTransaction(application, environ)
         self.transaction._settings.distributed_tracing.enabled = True
         self.transaction._settings.span_events.enabled = True
         self.transaction._settings.collect_span_events = True
@@ -722,7 +722,7 @@ class TestTransactionDeterministic(newrelic.tests.test_cases.TestCase):
         environ = {'REQUEST_URI': '/transaction_apis'}
         mock_app = MockApplication()
 
-        self.transaction = WebTransaction(mock_app, environ)
+        self.transaction = WSGIWebTransaction(mock_app, environ)
         self.transaction._settings.cross_application_tracer.enabled = True
         self.transaction._settings.distributed_tracing.enabled = True
 
@@ -760,7 +760,7 @@ class TestTransactionComputation(newrelic.tests.test_cases.TestCase):
         super(TestTransactionComputation, self).setUp()
 
         environ = {'REQUEST_URI': '/transaction_computation'}
-        self.transaction = WebTransaction(application, environ)
+        self.transaction = WSGIWebTransaction(application, environ)
         self.transaction._settings.distributed_tracing.enabled = True
 
     def test_sampled_is_always_computed(self):

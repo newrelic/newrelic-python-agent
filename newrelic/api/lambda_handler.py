@@ -1,7 +1,7 @@
 import functools
 from newrelic.common.object_wrapper import FunctionWrapper
 from newrelic.api.transaction import current_transaction
-from newrelic.api.web_transaction import WebTransaction
+from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.api.application import application_instance
 from newrelic.core.attribute import truncate
 from newrelic.core.config import global_settings
@@ -81,7 +81,7 @@ def LambdaHandlerWrapper(wrapped, application=None, name=None,
         environ, background_task, query_params = process_event(event)
 
         # Now start recording the actual web transaction.
-        transaction = WebTransaction(target_application, environ)
+        transaction = WSGIWebTransaction(target_application, environ)
         transaction.background_task = background_task
 
         transaction._aws_request_id = getattr(context, 'aws_request_id', None)

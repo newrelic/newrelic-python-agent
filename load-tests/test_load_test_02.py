@@ -27,7 +27,7 @@ class LoadTest02(unittest.TestCase):
             ts = int((now-(random.random()*0.04)) * 1000000)
             environ = { "REQUEST_URI": "/load_test_02",
                         "HTTP_X_NEWRELIC_QUEUE_START": "t=%d" % ts }
-            transaction = _newrelic.WebTransaction(application, environ)
+            transaction = _newrelic.WSGIWebTransaction(application, environ)
             with transaction:
                 sys.stderr.write(".")
                 time.sleep(random.random()*0.16)

@@ -1,4 +1,4 @@
-from newrelic.api.web_transaction import WebTransaction
+from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.common.encoding_utils import DistributedTracePayload
 from benchmarks.util import (MockApplication, make_synthetics_header,
         make_cross_agent_headers)
@@ -13,7 +13,7 @@ class Lite(object):
         self.environ = {"REQUEST_URI": "/web_transaction"}
 
     def time_web_application_init(self):
-        WebTransaction(self.app, self.environ)
+        WSGIWebTransaction(self.app, self.environ)
 
 
 class AllEnviron(Lite):

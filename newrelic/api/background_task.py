@@ -3,7 +3,6 @@ import sys
 
 from newrelic.api.application import Application, application_instance
 from newrelic.api.transaction import Transaction, current_transaction
-from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.coroutine import async_proxy, TransactionContext
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
@@ -78,16 +77,9 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
             if transaction.ignore_transaction or transaction.stopped:
                 return wrapped(*args, **kwargs)
 
-            # Check to see if we are being called within the context of
-            # a web transaction. If we are, then we will just flag the
-            # current web transaction as a background task if not
-            # already marked as such and name the web transaction as
-            # well.
-
-            if type(transaction) == WebTransaction:
-                if not transaction.background_task:
-                    transaction.background_task = True
-                    transaction.set_transaction_name(_name, _group)
+            if not transaction.background_task:
+                transaction.background_task = True
+                transaction.set_transaction_name(_name, _group)
 
             return wrapped(*args, **kwargs)
 

@@ -7,7 +7,7 @@ import itertools
 from newrelic.api.application import application_instance
 from newrelic.api.transaction import current_transaction
 from newrelic.api.object_wrapper import ObjectWrapper, callable_name
-from newrelic.api.web_transaction import WebTransaction
+from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.api.function_trace import FunctionTrace, wrap_function_trace
 
 _logger = logging.getLogger(__name__)
@@ -135,7 +135,7 @@ def instrument_tornado_httpserver(module):
         # though if turns out that recording transactions is not
         # enabled.
 
-        transaction = WebTransaction(application, environ)
+        transaction = WSGIWebTransaction(application, environ)
 
         if not transaction.enabled:
             return
@@ -484,7 +484,7 @@ def instrument_tornado_web(module):
             # though if turns out that recording transactions is not
             # enabled.
 
-            transaction = WebTransaction(application, environ)
+            transaction = WSGIWebTransaction(application, environ)
 
             if not transaction.enabled:
                 return wrapped(*args, **kwargs)
@@ -1146,7 +1146,7 @@ def wsgi_container_call_wrapper(wrapped, instance, args, kwargs):
         # though if turns out that recording transactions is not
         # enabled.
 
-        transaction = WebTransaction(application, environ)
+        transaction = WSGIWebTransaction(application, environ)
 
         if not transaction.enabled:
             return wrapped(*args, **kwargs)

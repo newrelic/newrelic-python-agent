@@ -20,16 +20,16 @@ settings = newrelic.api.settings.settings()
 application = newrelic.api.application.application_instance()
 
 
-class TestWebTransaction(newrelic.tests.test_cases.TestCase):
+class TestWSGIWebTransaction(newrelic.tests.test_cases.TestCase):
 
     requires_collector = True
 
     def test_inactive(self):
         self.assertEqual(newrelic.api.transaction.current_transaction(), None)
 
-    def test_web_transaction(self):
+    def test_wsgi_web_transaction(self):
         environ = {"REQUEST_URI": "/web_transaction"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             self.assertTrue(transaction.enabled)
@@ -42,7 +42,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_script_name_web_transaction(self):
         environ = {"SCRIPT_NAME": "/script_name_web_transaction"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             self.assertEqual(transaction.path,
@@ -50,7 +50,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_path_info_web_transaction(self):
         environ = {"PATH_INFO": "/path_info_web_transaction"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             self.assertEqual(transaction.path,
@@ -59,24 +59,24 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
     def test_script_name_path_info_web_transaction(self):
         environ = {"SCRIPT_NAME": "/script_name_",
                 "PATH_INFO": "path_info_web_transaction"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             self.assertEqual(transaction.path,
                    "WebTransaction/Uri" + environ["SCRIPT_NAME"] +
                    environ["PATH_INFO"])
 
-    def test_no_path_web_transaction(self):
+    def test_no_path_wsgi_web_transaction(self):
         environ = {}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             self.assertEqual(transaction.path,
                 "WebTransaction/Uri/<undefined>")
 
-    def test_named_web_transaction(self):
+    def test_named_wsgi_web_transaction(self):
         environ = {"REQUEST_URI": "DUMMY"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             group = "Function"
@@ -88,9 +88,9 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
             self.assertEqual(transaction.path,
                              'WebTransaction/' + group + '/' + path)
 
-    def test_background_web_transaction(self):
+    def test_background_wsgi_web_transaction(self):
         environ = {"REQUEST_URI": "DUMMY"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             path = "background_web_transaction"
@@ -103,23 +103,23 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
             transaction.background_task = True
             self.assertTrue(transaction.background_task)
 
-    def test_environ_background_web_transaction_bool(self):
+    def test_environ_background_wsgi_web_transaction_bool(self):
         environ = {"REQUEST_URI": "DUMMY",
                 "newrelic.set_background_task": True}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             path = "environ_background_web_transaction_bool"
             transaction.set_transaction_name(path)
             self.assertTrue(transaction.background_task)
 
-    def test_environ_background_web_transaction_string(self):
+    def test_environ_background_wsgi_web_transaction_string(self):
         environ = {"REQUEST_URI": "DUMMY",
                 "newrelic.set_background_task": "On"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
-            path = "environ_background_web_transaction_string"
+            path = "environ_background_wsgi_web_transaction_string"
             transaction.set_transaction_name(path)
             self.assertTrue(transaction.background_task)
 
@@ -128,7 +128,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
             return
 
         environ = {"REQUEST_URI": "/exit_on_delete"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         transaction.__enter__()
         del transaction
@@ -137,14 +137,14 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
     def test_request_parameters(self):
         environ = {"REQUEST_URI": "/request_parameters",
                 "QUERY_STRING": "a=1&a=2&b=3&c"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             pass
 
     def test_custom_parameters(self):
         environ = {"REQUEST_URI": "/custom_parameters"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             transaction._custom_params["1"] = "1"
@@ -159,7 +159,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_explicit_runtime_error(self):
         environ = {"REQUEST_URI": "/explicit_runtime_error"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             for i in range(10):
@@ -171,7 +171,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_implicit_runtime_error(self):
         environ = {"REQUEST_URI": "/implicit_runtime_error"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         try:
             with transaction:
@@ -182,7 +182,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
     def test_application_disabled(self):
         application.enabled = False
         environ = {"REQUEST_URI": "/application_disabled"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             self.assertFalse(transaction.enabled)
@@ -194,7 +194,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
         application.enabled = False
         environ = {"REQUEST_URI": "/environ_enabled_bool",
                 "newrelic.enabled": True}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             self.assertTrue(transaction.enabled)
@@ -205,7 +205,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
     def test_environ_disabled_bool(self):
         environ = {"REQUEST_URI": "/environ_disabled_bool",
                 "newrelic.enabled": False}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             self.assertFalse(transaction.enabled)
@@ -216,7 +216,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
         application.enabled = False
         environ = {"REQUEST_URI": "/environ_enabled_string",
                 "newrelic.enabled": "On"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             self.assertTrue(transaction.enabled)
@@ -227,16 +227,16 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
     def test_environ_disabled_string(self):
         environ = {"REQUEST_URI": "/environ_disabled_string",
                 "newrelic.enabled": "Off"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             self.assertFalse(transaction.enabled)
             self.assertEqual(newrelic.api.transaction.current_transaction(),
                     None)
 
-    def test_ignore_web_transaction(self):
+    def test_ignore_wsgi_web_transaction(self):
         environ = {"REQUEST_URI": "/ignore_web_transaction"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             self.assertFalse(transaction.ignore_transaction)
@@ -248,18 +248,19 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
             self.assertTrue(transaction.ignore_transaction)
             self.assertTrue(transaction.enabled)
 
-    def test_environ_ignore_web_transaction_bool(self):
+    def test_environ_ignore_wsgi_web_transaction_bool(self):
         environ = {"REQUEST_URI": "/environ_ignore_web_transaction_bool",
                 "newrelic.ignore_transaction": True}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             self.assertTrue(transaction.ignore_transaction)
 
-    def test_environ_ignore_web_transaction_string(self):
-        environ = {"REQUEST_URI": "/environ_ignore_web_transaction_string",
+    def test_environ_ignore_wsgi_web_transaction_string(self):
+        environ = {
+                "REQUEST_URI": "/environ_ignore_wsgi_web_transaction_string",
                 "newrelic.ignore_transaction": "On"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             self.assertTrue(transaction.ignore_transaction)
@@ -277,7 +278,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
         def start_response(status, headers):
             return 'write'
 
-        environ = {'REQUEST_URI': '/web_transaction',
+        environ = {'REQUEST_URI': '/wsgi_web_transaction',
                 'newrelic.disable_browser_autorum': True}
 
         wrapped_wsgi_app = wsgi_application.WSGIApplicationWrapper(
@@ -295,7 +296,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_process_response_status_int(self):
         environ = {'REQUEST_URI': '/environ_process_response_status'}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         status = 200
         response_headers = {}
@@ -305,7 +306,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_process_response_status_str(self):
         environ = {'REQUEST_URI': '/environ_process_response_status_str'}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         status = '410'
         response_headers = {}
@@ -315,7 +316,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test_process_response_status_str_msg(self):
         environ = {'REQUEST_URI': '/environ_process_response_status_str_msg'}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         status = '200 OK'
         response_headers = {}
@@ -336,7 +337,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
         def start_response(status, headers):
             return 'write'
 
-        environ = {'REQUEST_URI': '/web_transaction',
+        environ = {'REQUEST_URI': '/wsgi_web_transaction',
                 'newrelic.disable_browser_autorum': False}
 
         wrapped_wsgi_app = wsgi_application.WSGIApplicationWrapper(
@@ -537,27 +538,27 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
         ]
 
         for item in integer_seconds_tests:
-            transaction = newrelic.api.web_transaction.WebTransaction(
+            transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                     application, item[0])
             with transaction:
                 self.assertAlmostEqual(transaction.queue_start, int(item[1]))
 
         for item in float_seconds_tests:
-            transaction = newrelic.api.web_transaction.WebTransaction(
+            transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                     application, item[0])
             with transaction:
                 self.assertAlmostEqual(transaction.queue_start, item[1], 5)
 
         # Check for at least 2 significant digits
         for item in integer_milli_seconds_tests:
-            transaction = newrelic.api.web_transaction.WebTransaction(
+            transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                     application, item[0])
             with transaction:
                 self.assertAlmostEqual(transaction.queue_start, item[1], 2)
 
         # Check for at least 6 significant digits
         for item in integer_micro_seconds_tests:
-            transaction = newrelic.api.web_transaction.WebTransaction(
+            transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                     application, item[0])
             with transaction:
                 self.assertAlmostEqual(transaction.queue_start, item[1], 5)
@@ -566,7 +567,7 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
         # transaction complete so that will get failure if is None and
         # some arithmetic check is dependent on it always being float.
         for item in bad_data_tests:
-            transaction = newrelic.api.web_transaction.WebTransaction(
+            transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                     application, item)
             with transaction:
                 pass
@@ -577,8 +578,8 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
             original_setting = application.settings.distributed_tracing.enabled
             application.settings.distributed_tracing.enabled = True
 
-            environ = {"REQUEST_URI": "/web_transaction"}
-            transaction = newrelic.api.web_transaction.WebTransaction(
+            environ = {"REQUEST_URI": "/wsgi_web_transaction"}
+            transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                     application, environ)
 
             with transaction:
@@ -596,8 +597,8 @@ class TestBaseWebTransaction(newrelic.tests.test_cases.TestCase):
     def test_inactive(self):
         self.assertEqual(newrelic.api.transaction.current_transaction(), None)
 
-    def test_web_transaction(self):
-        request_path = '/web_transaction'
+    def test_wsgi_web_transaction(self):
+        request_path = '/wsgi_web_transaction'
         transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None,
@@ -610,7 +611,7 @@ class TestBaseWebTransaction(newrelic.tests.test_cases.TestCase):
                     transaction)
             self.assertFalse(transaction.background_task)
 
-    def test_web_transaction_named(self):
+    def test_wsgi_web_transaction_named(self):
         transaction_name = 'sample'
         transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
@@ -619,7 +620,7 @@ class TestBaseWebTransaction(newrelic.tests.test_cases.TestCase):
         with transaction:
             self.assertEqual(transaction.name, transaction_name)
 
-    def test_web_transaction_scheme(self):
+    def test_wsgi_web_transaction_scheme(self):
         scheme = 'dummy_scheme'
         transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
@@ -629,7 +630,7 @@ class TestBaseWebTransaction(newrelic.tests.test_cases.TestCase):
         with transaction:
             self.assertEqual(transaction._request_scheme, scheme)
 
-    def test_web_transaction_host(self):
+    def test_wsgi_web_transaction_host(self):
         host = 'dummy_host'
         transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
@@ -639,7 +640,7 @@ class TestBaseWebTransaction(newrelic.tests.test_cases.TestCase):
         with transaction:
             self.assertEqual(transaction._request_host, host)
 
-    def test_web_transaction_port(self):
+    def test_wsgi_web_transaction_port(self):
         port = 8080
         transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
@@ -649,7 +650,7 @@ class TestBaseWebTransaction(newrelic.tests.test_cases.TestCase):
         with transaction:
             self.assertEqual(transaction._port, port)
 
-    def test_web_transaction_request_method(self):
+    def test_wsgi_web_transaction_request_method(self):
         request_method = 'GET'
         transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
@@ -659,7 +660,7 @@ class TestBaseWebTransaction(newrelic.tests.test_cases.TestCase):
         with transaction:
             self.assertEqual(transaction._request_method, request_method)
 
-    def test_web_transaction_headers(self):
+    def test_wsgi_web_transaction_headers(self):
         headers = {'DUMMY': 'value'}
         transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
@@ -669,7 +670,7 @@ class TestBaseWebTransaction(newrelic.tests.test_cases.TestCase):
         with transaction:
             self.assertEqual(transaction._request_headers['dummy'], 'value')
 
-    def test_web_transaction_headers_bytes(self):
+    def test_wsgi_web_transaction_headers_bytes(self):
         headers = {b'DUMMY': b'value'}
         transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
@@ -679,7 +680,7 @@ class TestBaseWebTransaction(newrelic.tests.test_cases.TestCase):
         with transaction:
             self.assertEqual(transaction._request_headers['dummy'], b'value')
 
-    def test_web_transaction_headers_dict(self):
+    def test_wsgi_web_transaction_headers_dict(self):
         headers = {b'DUMMY': b'value'}
         transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
@@ -689,7 +690,7 @@ class TestBaseWebTransaction(newrelic.tests.test_cases.TestCase):
         with transaction:
             self.assertEqual(transaction._request_headers['dummy'], b'value')
 
-    def test_no_path_web_transaction(self):
+    def test_no_path_wsgi_web_transaction(self):
         transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
                 None)
@@ -697,9 +698,9 @@ class TestBaseWebTransaction(newrelic.tests.test_cases.TestCase):
             self.assertEqual(transaction.path,
                 "WebTransaction/Uri/<undefined>")
 
-    def test_named_web_transaction(self):
+    def test_named_wsgi_web_transaction(self):
         request_path = 'DUMMY'
-        name = 'named_web_transaction'
+        name = 'named_wsgi_web_transaction'
         group = 'Function'
         transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,
@@ -1359,7 +1360,7 @@ class TestBaseWebTransaction(newrelic.tests.test_cases.TestCase):
                     original_cat
 
 
-class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
+class TestWebsocketWSGIWebTransaction(newrelic.tests.test_cases.TestCase):
 
     def test__is_websocket_websocket_in_environ(self):
         environ = {'HTTP_UPGRADE': 'websocket'}
@@ -1376,7 +1377,7 @@ class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
     def test_web_transaction_disabled(self):
         environ = {'HTTP_UPGRADE': 'websocket',
                 'REQUEST_URI': '/web_transaction'}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             self.assertFalse(transaction.enabled)
@@ -1511,7 +1512,7 @@ def test_http_referer_header_stripped_transaction(capture_params, connect):
         environ["newrelic.capture_request_params"] = capture_params
 
     assert application.settings
-    transaction = newrelic.api.web_transaction.WebTransaction(
+    transaction = newrelic.api.web_transaction.WSGIWebTransaction(
             application, environ)
     assert transaction._request_environment["HTTP_REFERER"] == url
     assert transaction.capture_params == capture_params

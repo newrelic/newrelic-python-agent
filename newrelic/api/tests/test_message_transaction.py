@@ -4,7 +4,6 @@ import newrelic.tests.test_cases
 
 import newrelic.api.settings
 import newrelic.api.application
-import newrelic.api.web_transaction
 import newrelic.api.message_transaction
 
 settings = newrelic.api.settings.settings()

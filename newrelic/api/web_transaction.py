@@ -14,8 +14,8 @@ except ImportError:
 
 from newrelic.api.transaction import Transaction
 
-from newrelic.common.encoding_utils import (obfuscate, deobfuscate,
-        json_encode, json_decode, decode_newrelic_header, ensure_utf8)
+from newrelic.common.encoding_utils import (obfuscate, json_encode,
+        decode_newrelic_header, ensure_utf8)
 
 from newrelic.core.attribute import (create_agent_attributes,
         create_attributes, process_user_attribute)
@@ -562,17 +562,6 @@ class WSGIWebTransaction(BaseWebTransaction):
 
         self.rum_header_generated = False
         self.rum_footer_generated = False
-
-    def decode_newrelic_header(self, environ, header_name):
-        encoded_header = environ.get(header_name)
-        if encoded_header:
-            try:
-                decoded_header = json_decode(deobfuscate(
-                        encoded_header, self._settings.encoding_key))
-            except Exception:
-                decoded_header = None
-
-        return decoded_header
 
     def process_response(self, status, response_headers, *args):
         """Processes response status and headers, extracting any

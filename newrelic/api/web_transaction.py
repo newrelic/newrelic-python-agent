@@ -599,6 +599,36 @@ class WSGIWebTransaction(BaseWebTransaction):
 
             self._request_params.clear()
 
+        # Add WSGI agent attributes
+        if self.read_duration != 0:
+            self._add_agent_attribute('wsgi.input.seconds',
+                    self.read_duration)
+        if self._bytes_read != 0:
+            self._add_agent_attribute('wsgi.input.bytes',
+                    self._bytes_read)
+        if self._calls_read != 0:
+            self._add_agent_attribute('wsgi.input.calls.read',
+                    self._calls_read)
+        if self._calls_readline != 0:
+            self._add_agent_attribute('wsgi.input.calls.readline',
+                    self._calls_readline)
+        if self._calls_readlines != 0:
+            self._add_agent_attribute('wsgi.input.calls.readlines',
+                    self._calls_readlines)
+
+        if self.sent_duration != 0:
+            self._add_agent_attribute('wsgi.output.seconds',
+                    self.sent_duration)
+        if self._bytes_sent != 0:
+            self._add_agent_attribute('wsgi.output.bytes',
+                    self._bytes_sent)
+        if self._calls_write != 0:
+            self._add_agent_attribute('wsgi.output.calls.write',
+                    self._calls_write)
+        if self._calls_yield != 0:
+            self._add_agent_attribute('wsgi.output.calls.yield',
+                    self._calls_yield)
+
         return super(WSGIWebTransaction, self).agent_attributes
 
     def process_response(self, status, response_headers, *args):

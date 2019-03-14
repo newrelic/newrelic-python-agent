@@ -17,8 +17,7 @@ from newrelic.api.transaction import Transaction
 from newrelic.common.encoding_utils import (obfuscate, json_encode,
         decode_newrelic_header, ensure_utf8)
 
-from newrelic.core.attribute import (create_agent_attributes,
-        create_attributes, process_user_attribute)
+from newrelic.core.attribute import create_attributes, process_user_attribute
 from newrelic.core.attribute_filter import DST_BROWSER_MONITORING, DST_NONE
 
 from newrelic.packages import six
@@ -273,58 +272,49 @@ class BaseWebTransaction(Transaction):
 
     @property
     def agent_attributes(self):
-        a_attrs = self._agent_attributes
-        settings = self._settings
-
         if 'accept' in self._request_headers:
-            a_attrs['request.headers.accept'] = self._request_headers['accept']
+            self._add_agent_attribute('request.headers.accept',
+                    self._request_headers['accept'])
         try:
             content_length = int(self._request_headers['content-length'])
-            a_attrs['request.headers.contentLength'] = content_length
+            self._add_agent_attribute('request.headers.contentLength',
+                    content_length)
         except:
             pass
         if 'content-type' in self._request_headers:
-            a_attrs['request.headers.contentType'] = \
-                    self._request_headers['content-type']
+            self._add_agent_attribute('request.headers.contentType',
+                    self._request_headers['content-type'])
         if 'host' in self._request_headers:
-            a_attrs['request.headers.host'] = self._request_headers['host']
+            self._add_agent_attribute('request.headers.host',
+                    self._request_headers['host'])
         if 'referer' in self._request_headers:
-            a_attrs['request.headers.referer'] = _remove_query_string(
-                    self._request_headers['referer'])
+            self._add_agent_attribute('request.headers.referer',
+                    _remove_query_string(self._request_headers['referer']))
         if 'user-agent' in self._request_headers:
-            a_attrs['request.headers.userAgent'] = \
-                    self._request_headers['user-agent']
+            self._add_agent_attribute('request.headers.userAgent',
+                    self._request_headers['user-agent'])
         if self._request_method:
-            a_attrs['request.method'] = self._request_method
+            self._add_agent_attribute('request.method', self._request_method)
         if self._request_uri:
-            a_attrs['request.uri'] = self._request_uri
+            self._add_agent_attribute('request.uri', self._request_uri)
         try:
             content_length = int(self._response_headers['content-length'])
-            a_attrs['response.headers.contentLength'] = content_length
+            self._add_agent_attribute('response.headers.contentLength',
+                    content_length)
         except:
             pass
         if 'content-type' in self._response_headers:
-            a_attrs['response.headers.contentType'] = \
-                    self._response_headers['content-type']
+            self._add_agent_attribute('response.headers.contentType',
+                    self._response_headers['content-type'])
         if self._response_code:
-            a_attrs['response.status'] = str(self._response_code)
+            self._add_agent_attribute('response.status',
+                    str(self._response_code))
 
         if self.queue_wait != 0:
-            a_attrs['webfrontend.queue.seconds'] = self.queue_wait
+            self._add_agent_attribute('webfrontend.queue.seconds',
+                    self.queue_wait)
 
-        # TODO: move these to the Transaction base class
-        if settings.process_host.display_name:
-            a_attrs['host.displayName'] = settings.process_host.display_name
-        if self._thread_utilization_value:
-            a_attrs['thread.concurrency'] = self._thread_utilization_value
-
-        agent_attributes = create_agent_attributes(a_attrs,
-                settings.attribute_filter)
-
-        # Include request parameters in agent attributes
-        agent_attributes.extend(self.request_parameters_attributes)
-
-        return agent_attributes
+        return super(BaseWebTransaction, self).agent_attributes
 
     @property
     def request_parameters_attributes(self):

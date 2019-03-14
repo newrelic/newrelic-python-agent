@@ -81,9 +81,17 @@ def LambdaHandlerWrapper(wrapped, application=None, name=None,
 
         transaction.background_task = background_task
 
-        transaction._aws_request_id = getattr(context, 'aws_request_id', None)
-        transaction._aws_arn = getattr(context, 'invoked_function_arn', None)
-        transaction._aws_event_source_arn = extract_event_source_arn(event)
+        request_id = getattr(context, 'aws_request_id', None)
+        aws_arn = getattr(context, 'invoked_function_arn', None)
+        event_source = extract_event_source_arn(event)
+
+        if request_id:
+            transaction._add_agent_attribute('aws.requestId', request_id)
+        if aws_arn:
+            transaction._add_agent_attribute('aws.lambda.arn', aws_arn)
+        if event_source:
+            transaction._add_agent_attribute(
+                    'aws.lambda.eventSource.arn', event_source)
 
         # COLD_START_RECORDED is initialized to "False" when the container
         # first starts up, and will remain that way until the below lines
@@ -95,7 +103,7 @@ def LambdaHandlerWrapper(wrapped, application=None, name=None,
 
         global COLD_START_RECORDED
         if COLD_START_RECORDED is False:
-            transaction._is_cold_start = True
+            transaction._add_agent_attribute('aws.lambda.coldStart', True)
             COLD_START_RECORDED = True
 
         settings = global_settings()
@@ -105,8 +113,8 @@ def LambdaHandlerWrapper(wrapped, application=None, name=None,
             except:
                 pass
 
-        if not settings.aws_arn and transaction._aws_arn:
-            settings.aws_arn = transaction._aws_arn
+        if not settings.aws_arn and aws_arn:
+            settings.aws_arn = aws_arn
 
         with transaction:
             result = wrapped(*args, **kwargs)

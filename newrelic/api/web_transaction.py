@@ -475,6 +475,19 @@ class WSGIWebTransaction(BaseWebTransaction):
         if settings.high_security:
             self.capture_params = False
 
+        # LEGACY: capture_params = False
+        #
+        #    Don't add request parameters at all, which means they will not
+        #    go through the AttributeFilter.
+        if self.capture_params is False:
+            self._request_params.clear()
+
+        # Convert port to an integer
+        try:
+            self._port = int(self._port)
+        except Exception:
+            pass
+
         # Extract from the WSGI environ dictionary
         # details of the URL path. This will be set as
         # default path for the web transaction. This can
@@ -562,6 +575,31 @@ class WSGIWebTransaction(BaseWebTransaction):
 
         self.rum_header_generated = False
         self.rum_footer_generated = False
+
+    @property
+    def agent_attributes(self):
+        # LEGACY: capture_params = True
+        #
+        #    Filter request parameters as a normal agent attribute.
+        #
+        #    If the user does not add any additional attribute filtering
+        #    rules, this will result in the same outcome as the old
+        #    capture_params = True behavior. They will be added to transaction
+        #    traces and error traces.
+        if self.capture_params is True:
+            for k, v in self._request_params.items():
+                new_key = 'request.parameters.%s' % k
+                new_val = ",".join(v)
+
+                final_key, final_val = process_user_attribute(new_key,
+                        new_val)
+
+                if final_key:
+                    self._add_agent_attribute(final_key, final_val)
+
+            self._request_params.clear()
+
+        return super(WSGIWebTransaction, self).agent_attributes
 
     def process_response(self, status, response_headers, *args):
         """Processes response status and headers, extracting any

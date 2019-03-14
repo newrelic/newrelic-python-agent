@@ -75,6 +75,6 @@ class TestAttributeFilter(newrelic.tests.test_cases.TestCase):
         settings = finalize_application_settings({
             'browser_monitoring.attributes.enabled': True,
         })
-        settings.attribute_filter.cache['foo'] = DST_NONE
+        settings.attribute_filter.cache[('foo', DST_ALL)] = DST_NONE
         destinations = settings.attribute_filter.apply('foo', DST_ALL)
         assert destinations == DST_NONE

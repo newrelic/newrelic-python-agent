@@ -8,6 +8,7 @@ import newrelic.api.settings
 import newrelic.api.application
 import newrelic.api.transaction
 import newrelic.api.background_task
+import newrelic.api.web_transaction
 
 is_pypy = '__pypy__' in sys.builtin_module_names
 

@@ -1504,6 +1504,68 @@ class TestWebsocketWSGIWebTransaction(newrelic.tests.test_cases.TestCase):
             func_wrapper.close()
 
 
+@pytest.mark.parametrize('environ,length', (
+    ({'CONTENT_LENGTH': '0'}, 1),
+    ({'CONTENT_TYPE': '?'}, 1),
+    ({'HTTP_HEADER': '?'}, 1),
+    ({'CONTENT_TYPE': '?', 'HTTP_HEADER': '?'}, 2),
+    ({'HTTP': ''}, 0),
+    ({}, 0),
+))
+def test_wsgi_proxy_length(environ, length):
+    headers = newrelic.api.web_transaction.WSGIHeaderProxy(environ)
+    assert len(headers) == length
+    assert headers.length == length
+
+
+@pytest.mark.parametrize('key,value', (
+    ('coNtent-LeNgth', 'x'),
+    ('coNtent-tyPe', 'x'),
+    ('header', 'x'),
+    ('missing', None),
+))
+def test_wsgi_proxy_getitem(key, value):
+    environ = {
+        'CONTENT_LENGTH': 'x',
+        'CONTENT_TYPE': 'x',
+        'HTTP_HEADER': 'x',
+        'OTHER_STUFF': '?',
+    }
+    headers = newrelic.api.web_transaction.WSGIHeaderProxy(environ)
+    try:
+        assert headers[key] == value
+    except KeyError:
+        assert value is None
+
+
+def test_wsgi_proxy_iter():
+    environ = {
+        'CONTENT_LENGTH': 'x',
+        'CONTENT_TYPE': 'x',
+        'HTTP_HEADER': 'x',
+        'OTHER_STUFF': '?',
+    }
+    headers = newrelic.api.web_transaction.WSGIHeaderProxy(environ)
+    keys = set(iter(headers))
+
+    # NOTE: these keys are not lowercased as an optimization since we don't
+    # generally iterate over the keys. If we were to maintain parity with the
+    # actual intended behavior we would return only lowercased values.
+    expected = {'CONTENT-LENGTH', 'CONTENT-TYPE', 'HEADER'}
+    assert keys == expected
+
+
+def test_wsgi_proxy_malformed_environ():
+    environ = {
+        'HTTP_CONTENT_LENGTH': 'x',
+        'HTTP_CONTENT_TYPE': 'x',
+    }
+    headers = newrelic.api.web_transaction.WSGIHeaderProxy(environ)
+    assert len(headers) == 0
+    assert headers.get('content-length') is None
+    assert headers.get('content-type') is None
+
+
 @pytest.mark.parametrize('capture_params', [  # NOQA
         None,
         False,

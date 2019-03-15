@@ -109,6 +109,46 @@ def _is_websocket(environ):
     return environ.get('HTTP_UPGRADE', '').lower() == 'websocket'
 
 
+class WSGIHeaderProxy(Mapping):
+    def __init__(self, environ):
+        self.environ = environ
+        self.length = None
+
+    @staticmethod
+    def _to_wsgi(key):
+        key = key.upper()
+        if key == 'CONTENT-LENGTH':
+            return 'CONTENT_LENGTH'
+        elif key == 'CONTENT-TYPE':
+            return 'CONTENT_TYPE'
+        return 'HTTP_' + key.replace('-', '_')
+
+    @staticmethod
+    def _from_wsgi(key):
+        return key[5:].replace('_', '-')
+
+    def __getitem__(self, key):
+        wsgi_key = self._to_wsgi(key)
+        return self.environ[wsgi_key]
+
+    def __iter__(self):
+        for key in self.environ:
+            if key == 'CONTENT_LENGTH':
+                yield 'CONTENT-LENGTH'
+            elif key == 'CONTENT_TYPE':
+                yield 'CONTENT-TYPE'
+            elif key == 'HTTP_CONTENT_LENGTH' or key == 'HTTP_CONTENT_TYPE':
+                # These keys are illegal and should be ignored
+                continue
+            elif key.startswith('HTTP_'):
+                yield self._from_wsgi(key)
+
+    def __len__(self):
+        if self.length is None:
+            self.length = sum(1 for _ in iter(self))
+        return self.length
+
+
 class WSGIWebTransaction(Transaction):
 
     report_unicode_error = True

@@ -827,6 +827,9 @@ class BaseWebTransaction(Transaction):
 
         """
 
+        if not self.enabled:
+            return []
+
         # Extract response headers
         if response_headers:
             if isinstance(response_headers, Mapping):

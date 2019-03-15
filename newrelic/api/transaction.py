@@ -194,11 +194,6 @@ class Transaction(object):
         self._profile_skip = 1
         self._profile_count = 0
 
-        self._aws_request_id = None
-        self._aws_arn = None
-        self._aws_event_source_arn = None
-        self._is_cold_start = False
-
         global_settings = application.global_settings
 
         if global_settings.enabled:
@@ -880,14 +875,6 @@ class Transaction(object):
             a_attrs['request.method'] = req_env['REQUEST_METHOD']
         if self._request_uri:
             a_attrs['request.uri'] = self._request_uri
-        if self._aws_request_id:
-            a_attrs['aws.requestId'] = self._aws_request_id
-        if self._aws_arn:
-            a_attrs['aws.lambda.arn'] = self._aws_arn
-        if self._is_cold_start:
-            a_attrs['aws.lambda.coldStart'] = self._is_cold_start
-        if self._aws_event_source_arn:
-            a_attrs['aws.lambda.eventSource.arn'] = self._aws_event_source_arn
 
         resp_props = self._response_properties
 

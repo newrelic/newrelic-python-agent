@@ -650,6 +650,24 @@ class TestBaseWebTransaction(newrelic.tests.test_cases.TestCase):
         with transaction:
             self.assertEqual(transaction._port, port)
 
+    def test_wsgi_web_transaction_port_string(self):
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
+                application,
+                None,
+                port='8080')
+
+        with transaction:
+            self.assertEqual(transaction._port, 8080)
+
+    def test_wsgi_web_transaction_port_invalid(self):
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
+                application,
+                None,
+                port='localhost:8080')
+
+        with transaction:
+            assert not transaction._port
+
     def test_wsgi_web_transaction_request_method(self):
         request_method = 'GET'
         transaction = newrelic.api.web_transaction.BaseWebTransaction(

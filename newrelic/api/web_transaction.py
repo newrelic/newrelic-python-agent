@@ -784,6 +784,9 @@ class BaseWebTransaction(Transaction):
 
         # Extract response headers
         if response_headers:
+            if isinstance(response_headers, Mapping):
+                response_headers = response_headers.items()
+
             for header, value in response_headers:
                 header = ensure_utf8(header)
                 if header is not None:

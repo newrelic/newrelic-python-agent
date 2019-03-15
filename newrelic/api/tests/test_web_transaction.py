@@ -1534,6 +1534,38 @@ class TestWebsocketWSGIWebTransaction(newrelic.tests.test_cases.TestCase):
         finally:
             func_wrapper.close()
 
+    def test_content_length_integer(self):
+        headers = {'Content-Length': '1'}
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
+                application,
+                'test_content_length_integer',
+                headers=headers)
+
+        with transaction:
+            transaction.process_response(200, (('Content-Length', '2'),))
+
+            assert transaction.agent_attributes
+            assert transaction._agent_attributes[
+                    'request.headers.contentLength'] == 1
+            assert transaction._agent_attributes[
+                    'response.headers.contentLength'] == 2
+
+    def test_content_length_invalid(self):
+        headers = {'Content-Length': 'x'}
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
+                application,
+                'test_content_length_invalid',
+                headers=headers)
+
+        with transaction:
+            transaction.process_response(200, (('Content-Length', 'x'),))
+
+            assert transaction.agent_attributes
+            assert 'request.headers.contentLength' \
+                    not in transaction._agent_attributes
+            assert 'response.headers.contentLength' \
+                    not in transaction._agent_attributes
+
 
 @pytest.mark.parametrize('environ,length', (
     ({'CONTENT_LENGTH': '0'}, 1),

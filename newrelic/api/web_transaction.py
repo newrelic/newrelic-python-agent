@@ -866,9 +866,11 @@ class BaseWebTransaction(Transaction):
 
         if 'accept' in self._request_headers:
             a_attrs['request.headers.accept'] = self._request_headers['accept']
-        if 'content-length' in self._request_headers:
-            a_attrs['request.headers.contentLength'] = \
-                    self._request_headers['content-length']
+        try:
+            content_length = int(self._request_headers['content-length'])
+            a_attrs['request.headers.contentLength'] = content_length
+        except:
+            pass
         if 'content-type' in self._request_headers:
             a_attrs['request.headers.contentType'] = \
                     self._request_headers['content-type']
@@ -884,10 +886,11 @@ class BaseWebTransaction(Transaction):
             a_attrs['request.method'] = self._request_method
         if self._request_uri:
             a_attrs['request.uri'] = self._request_uri
-
-        if 'content-length' in self._response_headers:
-            a_attrs['response.headers.contentLength'] = \
-                    self._response_headers['content-length']
+        try:
+            content_length = int(self._response_headers['content-length'])
+            a_attrs['response.headers.contentLength'] = content_length
+        except:
+            pass
         if 'content-type' in self._response_headers:
             a_attrs['response.headers.contentType'] = \
                     self._response_headers['content-type']

@@ -889,7 +889,7 @@ class BaseWebTransaction(Transaction):
             a_attrs['response.headers.contentType'] = \
                     self._response_headers['content-type']
         if self._response_code:
-            a_attrs['response.status'] = self._response_code
+            a_attrs['response.status'] = str(self._response_code)
 
         if self.queue_wait != 0:
             a_attrs['webfrontend.queue.seconds'] = self.queue_wait

@@ -930,6 +930,15 @@ class TestBaseWebTransaction(newrelic.tests.test_cases.TestCase):
         assert not transaction.process_response(200, response_headers.items())
         self.assertEqual(transaction._response_headers['header'], 'cookie')
 
+    def test_process_dict_header(self):
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
+                application,
+                None)
+
+        response_headers = {'HEADER': 'cookie'}
+        assert not transaction.process_response(200, response_headers)
+        self.assertEqual(transaction._response_headers['header'], 'cookie')
+
     def test_process_utf8_header(self):
         transaction = newrelic.api.web_transaction.BaseWebTransaction(
                 application,

@@ -1063,6 +1063,19 @@ class TestBaseWebTransaction(newrelic.tests.test_cases.TestCase):
         finally:
             application.enabled = original
 
+    def test_application_disabled_process_response(self):
+        original = application.enabled
+        application.enabled = False
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
+                application,
+                None)
+
+        try:
+            with transaction:
+                assert not transaction.process_response(200, ())
+        finally:
+            application.enabled = original
+
     def test_queue_headers_integer(self):
         now = time.time()
         ts = int(now - 5)

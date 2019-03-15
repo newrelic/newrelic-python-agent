@@ -715,8 +715,12 @@ class BaseWebTransaction(Transaction):
         self._request_scheme = scheme
         self._request_host = host
         self._request_params = {}
-        self._port = port
         self._request_headers = {}
+
+        try:
+            self._port = int(port)
+        except Exception:
+            self._port = None
 
         # Queue Time
         self.queue_start = 0.0

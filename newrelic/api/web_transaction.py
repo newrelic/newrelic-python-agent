@@ -701,9 +701,10 @@ class BaseWebTransaction(Transaction):
 
     def __init__(self, application, name, group=None,
             scheme=None, host=None, port=None, request_method=None,
-            request_path=None, query_string=None, headers=None):
+            request_path=None, query_string=None, headers=None,
+            enabled=None):
 
-        super(BaseWebTransaction, self).__init__(application)
+        super(BaseWebTransaction, self).__init__(application, enabled)
 
         if not self.enabled:
             return

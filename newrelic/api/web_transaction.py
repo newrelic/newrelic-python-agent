@@ -391,7 +391,6 @@ class WSGIHeaderProxy(Mapping):
 
 class WSGIWebTransaction(BaseWebTransaction):
 
-    report_unicode_error = True
     MOD_WSGI_HEADERS = ('mod_wsgi.request_start', 'mod_wsgi.queue_start')
 
     def __init__(self, application, environ):

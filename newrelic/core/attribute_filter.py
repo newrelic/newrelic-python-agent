@@ -125,8 +125,10 @@ class AttributeFilter(object):
         if self.enabled_destinations == DST_NONE:
             return DST_NONE
 
-        if name in self.cache:
-            return self.cache[name]
+        cache_index = (name, default_destinations)
+
+        if cache_index in self.cache:
+            return self.cache[cache_index]
 
         destinations = self.enabled_destinations & default_destinations
 
@@ -138,7 +140,7 @@ class AttributeFilter(object):
                 else:
                     destinations &= ~rule.destinations
 
-        self.cache[name] = destinations
+        self.cache[cache_index] = destinations
         return destinations
 
 class AttributeFilterRule(object):

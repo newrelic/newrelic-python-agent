@@ -133,15 +133,6 @@ class BaseWebTransaction(Transaction):
         except Exception:
             self._port = None
 
-        # Queue Time
-        self.queue_start = 0.0
-
-        # Synthetics
-        self.synthetics_header = None
-        self.synthetics_resource_id = None
-        self.synthetics_job_id = None
-        self.synthetics_monitor_id = None
-
         # Response
         self._response_headers = {}
         self._response_code = None

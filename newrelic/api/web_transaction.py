@@ -133,15 +133,6 @@ class BaseWebTransaction(Transaction):
         except Exception:
             self._port = None
 
-        # Queue Time
-        self.queue_start = 0.0
-
-        # Synthetics
-        self.synthetics_header = None
-        self.synthetics_resource_id = None
-        self.synthetics_job_id = None
-        self.synthetics_monitor_id = None
-
         # Response
         self._response_headers = {}
         self._response_code = None
@@ -309,10 +300,6 @@ class BaseWebTransaction(Transaction):
         if self._response_code:
             self._add_agent_attribute('response.status',
                     str(self._response_code))
-
-        if self.queue_wait != 0:
-            self._add_agent_attribute('webfrontend.queue.seconds',
-                    self.queue_wait)
 
         return super(BaseWebTransaction, self).agent_attributes
 
@@ -564,6 +551,29 @@ class WSGIWebTransaction(BaseWebTransaction):
 
         self.rum_header_generated = False
         self.rum_footer_generated = False
+
+    def __exit__(self, exc, value, tb):
+        self.record_custom_metric('Python/WSGI/Input/Bytes',
+                            self._bytes_read)
+        self.record_custom_metric('Python/WSGI/Input/Time',
+                            self.read_duration)
+        self.record_custom_metric('Python/WSGI/Input/Calls/read',
+                            self._calls_read)
+        self.record_custom_metric('Python/WSGI/Input/Calls/readline',
+                            self._calls_readline)
+        self.record_custom_metric('Python/WSGI/Input/Calls/readlines',
+                            self._calls_readlines)
+
+        self.record_custom_metric('Python/WSGI/Output/Bytes',
+                            self._bytes_sent)
+        self.record_custom_metric('Python/WSGI/Output/Time',
+                            self.sent_duration)
+        self.record_custom_metric('Python/WSGI/Output/Calls/yield',
+                            self._calls_yield)
+        self.record_custom_metric('Python/WSGI/Output/Calls/write',
+                            self._calls_write)
+
+        return super(WSGIWebTransaction, self).__exit__(exc, value, tb)
 
     @property
     def agent_attributes(self):

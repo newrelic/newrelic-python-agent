@@ -18,7 +18,7 @@ from newrelic.core.attribute_filter import (DST_ERROR_COLLECTOR,
 
 _TransactionNode = namedtuple('_TransactionNode',
         ['settings', 'path', 'type', 'group', 'base_name', 'name_for_metric',
-        'port', 'request_uri', 'response_code', 'queue_start', 'start_time',
+        'port', 'request_uri', 'queue_start', 'start_time',
         'end_time', 'last_byte_time', 'response_time', 'total_time',
         'duration', 'exclusive', 'children', 'errors', 'slow_sql',
         'custom_events', 'apdex_t', 'suppress_apdex', 'custom_metrics', 'guid',

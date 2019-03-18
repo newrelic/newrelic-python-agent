@@ -147,8 +147,6 @@ class Transaction(object):
 
         self.capture_params = None
 
-        self.response_code = 0
-
         self.apdex = 0
 
         self.rum_token = None
@@ -480,7 +478,6 @@ class Transaction(object):
                 name_for_metric=self.name_for_metric,
                 port=self._port,
                 request_uri=self._request_uri,
-                response_code=self.response_code,
                 queue_start=self.queue_start,
                 start_time=self.start_time,
                 end_time=self.end_time,

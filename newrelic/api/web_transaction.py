@@ -108,6 +108,7 @@ def _is_websocket(environ):
 
 
 class BaseWebTransaction(Transaction):
+    unicode_error_reported = False
     QUEUE_TIME_HEADERS = ('x-request-start', 'x-queue-start')
 
     def __init__(self, application, name, group=None,
@@ -166,6 +167,12 @@ class BaseWebTransaction(Transaction):
             self.set_transaction_name(name, group, priority=1)
         elif request_path is not None:
             self.set_transaction_name(request_path, 'Uri', priority=1)
+
+        # Flags for tracking whether RUM header and footer have been
+        # generated.
+
+        self.rum_header_generated = False
+        self.rum_footer_generated = False
 
     def _process_queue_time(self):
         for queue_time_header in self.QUEUE_TIME_HEADERS:
@@ -334,6 +341,218 @@ class BaseWebTransaction(Transaction):
                     self._settings.attribute_filter)
 
         return attributes_request
+
+    def browser_timing_header(self):
+        """Returns the JavaScript header to be included in any HTML
+        response to perform real user monitoring. This function returns
+        the header as a native Python string. In Python 2 native strings
+        are stored as bytes. In Python 3 native strings are stored as
+        unicode.
+
+        """
+
+        if not self.enabled:
+            return ''
+
+        if self._state != self.STATE_RUNNING:
+            return ''
+
+        if self.background_task:
+            return ''
+
+        if self.ignore_transaction:
+            return ''
+
+        if not self._settings:
+            return ''
+
+        if not self._settings.browser_monitoring.enabled:
+            return ''
+
+        if not self._settings.license_key:
+            return ''
+
+        # Don't return the header a second time if it has already
+        # been generated.
+
+        if self.rum_header_generated:
+            return ''
+
+        # Requirement is that the first 13 characters of the account
+        # license key is used as the key when obfuscating values for
+        # the RUM footer. Will not be able to perform the obfuscation
+        # if license key isn't that long for some reason.
+
+        if len(self._settings.license_key) < 13:
+            return ''
+
+        # Return the RUM header only if the agent received a valid value
+        # for js_agent_loader from the data collector. The data
+        # collector is not meant to send a non empty value for the
+        # js_agent_loader value if browser_monitoring.loader is set to
+        # 'none'.
+
+        if self._settings.js_agent_loader:
+            header = _js_agent_header_fragment % self._settings.js_agent_loader
+
+            # To avoid any issues with browser encodings, we will make sure
+            # that the javascript we inject for the browser agent is ASCII
+            # encodable. Since we obfuscate all agent and user attributes, and
+            # the transaction name with base 64 encoding, this will preserve
+            # those strings, if they have values outside of the ASCII character
+            # set. In the case of Python 2, we actually then use the encoded
+            # value as we need a native string, which for Python 2 is a byte
+            # string. If encoding as ASCII fails we will return an empty
+            # string.
+
+            try:
+                if six.PY2:
+                    header = header.encode('ascii')
+                else:
+                    header.encode('ascii')
+
+            except UnicodeError:
+                if not BaseWebTransaction.unicode_error_reported:
+                    _logger.error('ASCII encoding of js-agent-header failed.',
+                            header)
+                    BaseWebTransaction.unicode_error_reported = True
+
+                header = ''
+
+        else:
+            header = ''
+
+        # We remember if we have returned a non empty string value and
+        # if called a second time we will not return it again. The flag
+        # will also be used to check whether the footer should be
+        # generated.
+
+        if header:
+            self.rum_header_generated = True
+
+        return header
+
+    def browser_timing_footer(self):
+        """Returns the JavaScript footer to be included in any HTML
+        response to perform real user monitoring. This function returns
+        the footer as a native Python string. In Python 2 native strings
+        are stored as bytes. In Python 3 native strings are stored as
+        unicode.
+
+        """
+
+        if not self.enabled:
+            return ''
+
+        if self._state != self.STATE_RUNNING:
+            return ''
+
+        if self.ignore_transaction:
+            return ''
+
+        # Only generate a footer if the header had already been
+        # generated and we haven't already generated the footer.
+
+        if not self.rum_header_generated:
+            return ''
+
+        if self.rum_footer_generated:
+            return ''
+
+        # Make sure we freeze the path.
+
+        self._freeze_path()
+
+        # When obfuscating values for the footer, we only use the
+        # first 13 characters of the account license key.
+
+        obfuscation_key = self._settings.license_key[:13]
+
+        attributes = {}
+
+        user_attributes = {}
+        for attr in self.user_attributes:
+            if attr.destinations & DST_BROWSER_MONITORING:
+                user_attributes[attr.name] = attr.value
+
+        if user_attributes:
+            attributes['u'] = user_attributes
+
+        agent_attributes = {}
+        for attr in self.request_parameters_attributes:
+            if attr.destinations & DST_BROWSER_MONITORING:
+                agent_attributes[attr.name] = attr.value
+
+        if agent_attributes:
+            attributes['a'] = agent_attributes
+
+        # create the data structure that pull all our data in
+
+        footer_data = self.browser_monitoring_intrinsics(obfuscation_key)
+
+        if attributes:
+            attributes = obfuscate(json_encode(attributes), obfuscation_key)
+            footer_data['atts'] = attributes
+
+        footer = _js_agent_footer_fragment % json_encode(footer_data)
+
+        # To avoid any issues with browser encodings, we will make sure that
+        # the javascript we inject for the browser agent is ASCII encodable.
+        # Since we obfuscate all agent and user attributes, and the transaction
+        # name with base 64 encoding, this will preserve those strings, if
+        # they have values outside of the ASCII character set.
+        # In the case of Python 2, we actually then use the encoded value
+        # as we need a native string, which for Python 2 is a byte string.
+        # If encoding as ASCII fails we will return an empty string.
+
+        try:
+            if six.PY2:
+                footer = footer.encode('ascii')
+            else:
+                footer.encode('ascii')
+
+        except UnicodeError:
+            if not BaseWebTransaction.unicode_error_reported:
+                _logger.error('ASCII encoding of js-agent-footer failed.',
+                        footer)
+                BaseWebTransaction.unicode_error_reported = True
+
+            footer = ''
+
+        # We remember if we have returned a non empty string value and
+        # if called a second time we will not return it again.
+
+        if footer:
+            self.rum_footer_generated = True
+
+        return footer
+
+    def browser_monitoring_intrinsics(self, obfuscation_key):
+        txn_name = obfuscate(self.path, obfuscation_key)
+
+        queue_start = self.queue_start or self.start_time
+        start_time = self.start_time
+        end_time = time.time()
+
+        queue_duration = int((start_time - queue_start) * 1000)
+        request_duration = int((end_time - start_time) * 1000)
+
+        intrinsics = {
+            "beacon": self._settings.beacon,
+            "errorBeacon": self._settings.error_beacon,
+            "licenseKey": self._settings.browser_key,
+            "applicationID": self._settings.application_id,
+            "transactionName": txn_name,
+            "queueTime": queue_duration,
+            "applicationTime": request_duration,
+            "agent": self._settings.js_agent_file,
+        }
+
+        if self._settings.browser_monitoring.ssl_for_http is not None:
+            ssl_for_http = self._settings.browser_monitoring.ssl_for_http
+            intrinsics['sslForHttp'] = ssl_for_http
+
+        return intrinsics
 
 
 class WSGIHeaderProxy(Mapping):
@@ -650,220 +869,6 @@ class WSGIWebTransaction(BaseWebTransaction):
 
         return super(WSGIWebTransaction, self).process_response(
                 status, response_headers)
-
-    def browser_timing_header(self):
-        """Returns the JavaScript header to be included in any HTML
-        response to perform real user monitoring. This function returns
-        the header as a native Python string. In Python 2 native strings
-        are stored as bytes. In Python 3 native strings are stored as
-        unicode.
-
-        """
-
-        if not self.enabled:
-            return ''
-
-        if self._state != self.STATE_RUNNING:
-            return ''
-
-        if self.background_task:
-            return ''
-
-        if self.ignore_transaction:
-            return ''
-
-        if not self._settings:
-            return ''
-
-        if not self._settings.browser_monitoring.enabled:
-            return ''
-
-        if not self._settings.license_key:
-            return ''
-
-        # Don't return the header a second time if it has already
-        # been generated.
-
-        if self.rum_header_generated:
-            return ''
-
-        # Requirement is that the first 13 characters of the account
-        # license key is used as the key when obfuscating values for
-        # the RUM footer. Will not be able to perform the obfuscation
-        # if license key isn't that long for some reason.
-
-        if len(self._settings.license_key) < 13:
-            return ''
-
-        # Return the RUM header only if the agent received a valid value
-        # for js_agent_loader from the data collector. The data
-        # collector is not meant to send a non empty value for the
-        # js_agent_loader value if browser_monitoring.loader is set to
-        # 'none'.
-
-        if self._settings.js_agent_loader:
-            header = _js_agent_header_fragment % self._settings.js_agent_loader
-
-            # To avoid any issues with browser encodings, we will make sure
-            # that the javascript we inject for the browser agent is ASCII
-            # encodable. Since we obfuscate all agent and user attributes, and
-            # the transaction name with base 64 encoding, this will preserve
-            # those strings, if they have values outside of the ASCII character
-            # set. In the case of Python 2, we actually then use the encoded
-            # value as we need a native string, which for Python 2 is a byte
-            # string. If encoding as ASCII fails we will return an empty
-            # string.
-
-            try:
-                if six.PY2:
-                    header = header.encode('ascii')
-                else:
-                    header.encode('ascii')
-
-            except UnicodeError:
-                if not WSGIWebTransaction.unicode_error_reported:
-                    _logger.error('ASCII encoding of js-agent-header failed.',
-                            header)
-                    WSGIWebTransaction.unicode_error_reported = True
-
-                header = ''
-
-        else:
-            header = ''
-
-        # We remember if we have returned a non empty string value and
-        # if called a second time we will not return it again. The flag
-        # will also be used to check whether the footer should be
-        # generated.
-
-        if header:
-            self.rum_header_generated = True
-
-        return header
-
-    def browser_timing_footer(self):
-        """Returns the JavaScript footer to be included in any HTML
-        response to perform real user monitoring. This function returns
-        the footer as a native Python string. In Python 2 native strings
-        are stored as bytes. In Python 3 native strings are stored as
-        unicode.
-
-        """
-
-        if not self.enabled:
-            return ''
-
-        if self._state != self.STATE_RUNNING:
-            return ''
-
-        if self.ignore_transaction:
-            return ''
-
-        # Only generate a footer if the header had already been
-        # generated and we haven't already generated the footer.
-
-        if not self.rum_header_generated:
-            return ''
-
-        if self.rum_footer_generated:
-            return ''
-
-        # Make sure we freeze the path.
-
-        self._freeze_path()
-
-        # When obfuscating values for the footer, we only use the
-        # first 13 characters of the account license key.
-
-        obfuscation_key = self._settings.license_key[:13]
-
-        intrinsics = self.browser_monitoring_intrinsics(obfuscation_key)
-
-        attributes = {}
-
-        user_attributes = {}
-        for attr in self.user_attributes:
-            if attr.destinations & DST_BROWSER_MONITORING:
-                user_attributes[attr.name] = attr.value
-
-        if user_attributes:
-            attributes['u'] = user_attributes
-
-        agent_attributes = {}
-        for attr in self.request_parameters_attributes:
-            if attr.destinations & DST_BROWSER_MONITORING:
-                agent_attributes[attr.name] = attr.value
-
-        if agent_attributes:
-            attributes['a'] = agent_attributes
-
-        # create the data structure that pull all our data in
-
-        footer_data = intrinsics
-
-        if attributes:
-            attributes = obfuscate(json_encode(attributes), obfuscation_key)
-            footer_data['atts'] = attributes
-
-        footer = _js_agent_footer_fragment % json_encode(footer_data)
-
-        # To avoid any issues with browser encodings, we will make sure that
-        # the javascript we inject for the browser agent is ASCII encodable.
-        # Since we obfuscate all agent and user attributes, and the transaction
-        # name with base 64 encoding, this will preserve those strings, if
-        # they have values outside of the ASCII character set.
-        # In the case of Python 2, we actually then use the encoded value
-        # as we need a native string, which for Python 2 is a byte string.
-        # If encoding as ASCII fails we will return an empty string.
-
-        try:
-            if six.PY2:
-                footer = footer.encode('ascii')
-            else:
-                footer.encode('ascii')
-
-        except UnicodeError:
-            if not WSGIWebTransaction.unicode_error_reported:
-                _logger.error('ASCII encoding of js-agent-footer failed.',
-                        footer)
-                WSGIWebTransaction.unicode_error_reported = True
-
-            footer = ''
-
-        # We remember if we have returned a non empty string value and
-        # if called a second time we will not return it again.
-
-        if footer:
-            self.rum_footer_generated = True
-
-        return footer
-
-    def browser_monitoring_intrinsics(self, obfuscation_key):
-        txn_name = obfuscate(self.path, obfuscation_key)
-
-        queue_start = self.queue_start or self.start_time
-        start_time = self.start_time
-        end_time = time.time()
-
-        queue_duration = int((start_time - queue_start) * 1000)
-        request_duration = int((end_time - start_time) * 1000)
-
-        intrinsics = {
-            "beacon": self._settings.beacon,
-            "errorBeacon": self._settings.error_beacon,
-            "licenseKey": self._settings.browser_key,
-            "applicationID": self._settings.application_id,
-            "transactionName": txn_name,
-            "queueTime": queue_duration,
-            "applicationTime": request_duration,
-            "agent": self._settings.js_agent_file,
-        }
-
-        if self._settings.browser_monitoring.ssl_for_http is not None:
-            ssl_for_http = self._settings.browser_monitoring.ssl_for_http
-            intrinsics['sslForHttp'] = ssl_for_http
-
-        return intrinsics
 
 
 class WebTransaction(WSGIWebTransaction):

@@ -1566,6 +1566,78 @@ class TestWebsocketWSGIWebTransaction(newrelic.tests.test_cases.TestCase):
             assert 'response.headers.contentLength' \
                     not in transaction._agent_attributes
 
+    def test_browser_timing_header_present(self):
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
+                application,
+                None)
+
+        with transaction:
+            assert transaction.browser_timing_header()
+
+    def test_browser_timing_header_unicode_error(self):
+        original_loader = application.settings.js_agent_loader
+        application.settings.js_agent_loader = u'\u26f5'
+
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
+                application,
+                None)
+
+        try:
+            with transaction:
+                assert not transaction.browser_timing_header()
+                assert not transaction.rum_header_generated
+                assert transaction.unicode_error_reported
+
+        finally:
+            application.settings.js_agent_loader = original_loader
+
+    def test_browser_timing_footer_present(self):
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
+                application,
+                None)
+
+        with transaction:
+            transaction.rum_header_generated = True
+            assert transaction.browser_timing_footer()
+
+    def test_browser_timing_footer_unicode_error(self):
+        original_fragment = \
+                newrelic.api.web_transaction._js_agent_footer_fragment
+
+        newrelic.api.web_transaction._js_agent_footer_fragment = u'\u26f5' + \
+                newrelic.api.web_transaction._js_agent_footer_fragment
+
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
+                application,
+                None)
+
+        try:
+            with transaction:
+                transaction.rum_header_generated = True
+                assert not transaction.browser_timing_footer()
+                assert transaction.unicode_error_reported
+
+        finally:
+            newrelic.api.web_transaction._js_agent_footer_fragment = \
+                    original_fragment
+
+    def test_browser_monitoring_intrinsics_present(self):
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
+                application,
+                None)
+
+        with transaction:
+            intrinsics = transaction.browser_monitoring_intrinsics(
+                    'obfuscation_key')
+            assert 'beacon' in intrinsics
+            assert 'errorBeacon' in intrinsics
+            assert 'licenseKey' in intrinsics
+            assert 'applicationID' in intrinsics
+            assert 'transactionName' in intrinsics
+            assert 'queueTime' in intrinsics
+            assert 'applicationTime' in intrinsics
+            assert 'agent' in intrinsics
+
 
 @pytest.mark.parametrize('environ,length', (
     ({'CONTENT_LENGTH': '0'}, 1),

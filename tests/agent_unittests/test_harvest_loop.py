@@ -73,7 +73,6 @@ def transaction_node(request):
             name_for_metric='Function/main',
             port=None,
             request_uri=None,
-            response_code=0,
             queue_start=0.0,
             start_time=1524764430.0,
             end_time=1524764430.1,

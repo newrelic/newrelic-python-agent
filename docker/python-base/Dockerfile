@@ -40,14 +40,14 @@ RUN add-apt-repository -y ppa:deadsnakes/ppa && \
     python3.6-dev \
     python3.7-dev
 
-RUN wget https://bitbucket.org/pypy/pypy/downloads/pypy2-v6.0.0-linux64.tar.bz2 && \
-    tar -C /usr/local -xf pypy2-v6.0.0-linux64.tar.bz2 && \
-    rm pypy2-v6.0.0-linux64.tar.bz2 && \
-    ln -s /usr/local/pypy2-v6.0.0-linux64/bin/pypy /usr/local/bin/pypy && \
-    wget https://bitbucket.org/pypy/pypy/downloads/pypy3-v6.0.0-linux64.tar.bz2 && \
-    tar -C /usr/local -xf pypy3-v6.0.0-linux64.tar.bz2 && \
-    rm pypy3-v6.0.0-linux64.tar.bz2 && \
-    ln -s /usr/local/pypy3-v6.0.0-linux64/bin/pypy3 /usr/local/bin/pypy3
+RUN wget https://bitbucket.org/pypy/pypy/downloads/pypy2.7-v7.0.0-linux64.tar.bz2 && \
+    tar -C /usr/local -xf pypy2.7-v7.0.0-linux64.tar.bz2 && \
+    rm pypy2.7-v7.0.0-linux64.tar.bz2 && \
+    ln -s /usr/local/pypy2.7-v7.0.0-linux64/bin/pypy /usr/local/bin/pypy && \
+    wget https://bitbucket.org/pypy/pypy/downloads/pypy3.5-v7.0.0-linux64.tar.bz2 && \
+    tar -C /usr/local -xf pypy3.5-v7.0.0-linux64.tar.bz2 && \
+    rm pypy3.5-v7.0.0-linux64.tar.bz2 && \
+    ln -s /usr/local/pypy3.5-v7.0.0-linux64/bin/pypy3 /usr/local/bin/pypy3
 
 # Pip.
 RUN wget https://bootstrap.pypa.io/get-pip.py && \

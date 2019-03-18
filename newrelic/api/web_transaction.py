@@ -301,10 +301,6 @@ class BaseWebTransaction(Transaction):
             self._add_agent_attribute('response.status',
                     str(self._response_code))
 
-        if self.queue_wait != 0:
-            self._add_agent_attribute('webfrontend.queue.seconds',
-                    self.queue_wait)
-
         return super(BaseWebTransaction, self).agent_attributes
 
     @property

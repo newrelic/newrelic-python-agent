@@ -302,7 +302,7 @@ class TestWSGIWebTransaction(newrelic.tests.test_cases.TestCase):
         response_headers = {}
         transaction.process_response(status, response_headers)
 
-        assert transaction.response_code == 0
+        assert transaction._response_code is None
 
     def test_process_response_status_str(self):
         environ = {'REQUEST_URI': '/environ_process_response_status_str'}
@@ -312,7 +312,7 @@ class TestWSGIWebTransaction(newrelic.tests.test_cases.TestCase):
         response_headers = {}
         transaction.process_response(status, response_headers)
 
-        assert transaction.response_code == 410
+        assert transaction._response_code == 410
 
     def test_process_response_status_str_msg(self):
         environ = {'REQUEST_URI': '/environ_process_response_status_str_msg'}
@@ -322,7 +322,7 @@ class TestWSGIWebTransaction(newrelic.tests.test_cases.TestCase):
         response_headers = {}
         transaction.process_response(status, response_headers)
 
-        assert transaction.response_code == 200
+        assert transaction._response_code == 200
 
     def test_sync_application_call(self):
         # The application wrapper should always directly call application
@@ -1648,7 +1648,8 @@ def test_http_referer_header_stripped_transaction(capture_params, connect):
     assert application.settings
     transaction = newrelic.api.web_transaction.WSGIWebTransaction(
             application, environ)
-    assert transaction._request_environment["HTTP_REFERER"] == url
+    assert transaction.agent_attributes
+    assert transaction._agent_attributes['request.headers.referer'] == url
     assert transaction.capture_params == capture_params
 
 

@@ -428,27 +428,6 @@ class Transaction(object):
             if not self._sent_end:
                 self._sent_end = time.time()
 
-        if not self.background_task:
-            self.record_custom_metric('Python/WSGI/Input/Bytes',
-                               self._bytes_read)
-            self.record_custom_metric('Python/WSGI/Input/Time',
-                               self.read_duration)
-            self.record_custom_metric('Python/WSGI/Input/Calls/read',
-                               self._calls_read)
-            self.record_custom_metric('Python/WSGI/Input/Calls/readline',
-                               self._calls_readline)
-            self.record_custom_metric('Python/WSGI/Input/Calls/readlines',
-                               self._calls_readlines)
-
-            self.record_custom_metric('Python/WSGI/Output/Bytes',
-                               self._bytes_sent)
-            self.record_custom_metric('Python/WSGI/Output/Time',
-                               self.sent_duration)
-            self.record_custom_metric('Python/WSGI/Output/Calls/yield',
-                               self._calls_yield)
-            self.record_custom_metric('Python/WSGI/Output/Calls/write',
-                               self._calls_write)
-
         if self.client_cross_process_id is not None:
             metric_name = 'ClientApplication/%s/all' % (
                     self.client_cross_process_id)

@@ -408,19 +408,6 @@ class Transaction(object):
 
         self._freeze_path()
 
-        if self.background_task:
-            transaction_type = 'OtherTransaction'
-        else:
-            transaction_type = 'WebTransaction'
-
-        group = self._group
-
-        if group is None:
-            if self.background_task:
-                group = 'Python'
-            else:
-                group = 'Uri'
-
         # _sent_end should already be set by this point, but in case it
         # isn't, set it now before we record the custom metrics.
 
@@ -451,8 +438,8 @@ class Transaction(object):
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
                 path=self.path,
-                type=transaction_type,
-                group=group,
+                type=self.type,
+                group=self.group_for_metric,
                 base_name=self._name,
                 name_for_metric=self.name_for_metric,
                 port=self._port,
@@ -567,14 +554,7 @@ class Transaction(object):
     @property
     def name_for_metric(self):
         """Combine group and name for use as transaction name in metrics."""
-
-        group = self._group
-
-        if group is None:
-            if self.background_task:
-                group = 'Python'
-            else:
-                group = 'Uri'
+        group = self.group_for_metric
 
         transaction_name = self._name
 
@@ -594,6 +574,18 @@ class Transaction(object):
             name = '%s/%s' % (group, transaction_name)
 
         return name
+
+    @property
+    def group_for_metric(self):
+        _group = self._group
+
+        if _group is None:
+            if self.background_task:
+                _group = 'Python'
+            else:
+                _group = 'Uri'
+
+        return _group
 
     @property
     def path(self):

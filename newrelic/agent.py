@@ -50,7 +50,10 @@ from newrelic.api.wsgi_application import (
         wrap_wsgi_application as __wrap_wsgi_application)
 
 from newrelic.api.web_transaction import (
-        WebTransaction as __WebTransaction)
+        WebTransaction as __WebTransaction,
+        web_transaction as __web_transaction,
+        WebTransactionWrapper as __WebTransactionWrapper,
+        wrap_web_transaction as __wrap_web_transaction)
 
 from newrelic.api.background_task import (
         background_task as __background_task,
@@ -224,6 +227,12 @@ TransactionContext = __wrap_api_call(__TransactionContext,
 wsgi_application = __wsgi_application
 WebTransaction = __wrap_api_call(__WebTransaction,
         'WebTransaction')
+web_transaction = __wrap_api_call(__web_transaction,
+        'web_transaction')
+WebTransactionWrapper = __wrap_api_call(__WebTransactionWrapper,
+        'WebTransactionWrapper')
+wrap_web_transaction = __wrap_api_call(__wrap_web_transaction,
+        'wrap_web_transaction')
 WSGIApplicationWrapper = __WSGIApplicationWrapper
 wrap_wsgi_application = __wrap_wsgi_application
 background_task = __wrap_api_call(__background_task,

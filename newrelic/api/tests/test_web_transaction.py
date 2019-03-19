@@ -1639,6 +1639,74 @@ class TestWebsocketWSGIWebTransaction(newrelic.tests.test_cases.TestCase):
             assert 'agent' in intrinsics
 
 
+@newrelic.api.web_transaction.web_transaction(
+    application=application, group='Tests', host='host', port=8000,
+    request_method='GET', request_path='/', query_string='foo=bar',
+    headers={'x': 'y'})
+def _test_function_1(error=False):
+    txn = newrelic.api.transaction.current_transaction()
+    assert txn.name == \
+        'newrelic.api.tests.test_web_transaction:_test_function_1'
+
+    if error:
+        raise ValueError('oops')
+
+
+@newrelic.api.web_transaction.web_transaction(
+    application=application, group='Tests', host='host', port=8000,
+    request_method='GET', request_path='/', query_string='foo=bar',
+    headers={'x': 'y'})
+def _test_function_gen(error=False):
+    txn = newrelic.api.transaction.current_transaction()
+    assert txn.name == \
+        'newrelic.api.tests.test_web_transaction:_test_function_gen'
+    for x in range(5):
+        yield x
+    if error:
+        raise ValueError('oops')
+
+
+class Module(object):
+    @classmethod
+    def function(cls):
+        txn = newrelic.api.transaction.current_transaction()
+        assert txn.name == \
+            'newrelic.api.tests.test_web_transaction:Module.function'
+
+
+class TestWebTransaction(newrelic.tests.test_cases.TestCase):
+    def test_web_transaction_decorator(self):
+
+        @newrelic.api.web_transaction.web_transaction(
+            application=application, name='test_web_transaction_decorator',
+            group='Tests', host='host', port=8000, request_method='GET',
+            request_path='/', query_string='foo=bar', headers={'x': 'y'})
+        def _test():
+            txn = newrelic.api.transaction.current_transaction()
+            assert txn.name == 'test_web_transaction_decorator'
+
+        _test()
+
+    def test_web_transaction_decorator_no_name(self):
+        _test_function_1()
+
+    def test_web_transaction_decorator_no_name_generator(self):
+        _test_function_gen()
+
+    def test_web_transaction_decorator_error(self):
+        try:
+            _test_function_1(error=True)
+        except ValueError:
+            pass
+
+    def test_wrap_web_transaction(self):
+        newrelic.api.web_transaction.wrap_web_transaction(Module, 'function',
+            group='Tests', host='host', port=8000, request_method='GET',
+            request_path='/', query_string='foo=bar', headers={'x': 'y'})
+
+        Module.function()
+
+
 @pytest.mark.parametrize('environ,length', (
     ({'CONTENT_LENGTH': '0'}, 1),
     ({'CONTENT_TYPE': '?'}, 1),

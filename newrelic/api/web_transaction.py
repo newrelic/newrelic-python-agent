@@ -1,3 +1,4 @@
+import functools
 import time
 import logging
 import warnings
@@ -12,8 +13,10 @@ try:
 except ImportError:
     from collections import Mapping
 
+from newrelic.api.application import Application, application_instance
 from newrelic.api.transaction import Transaction
 
+from newrelic.common.coroutine import async_proxy, TransactionContext
 from newrelic.common.encoding_utils import (obfuscate, json_encode,
         decode_newrelic_header, ensure_utf8)
 
@@ -21,6 +24,9 @@ from newrelic.core.attribute import create_attributes, process_user_attribute
 from newrelic.core.attribute_filter import DST_BROWSER_MONITORING, DST_NONE
 
 from newrelic.packages import six
+
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
 _logger = logging.getLogger(__name__)
 
@@ -877,3 +883,124 @@ class WebTransaction(WSGIWebTransaction):
         warnings.warn((
             'The WebTransaction API call has been deprecated.'
         ), DeprecationWarning)
+
+
+def WebTransactionWrapper(wrapped, application=None, name=None, group=None,
+        scheme=None, host=None, port=None, request_method=None,
+        request_path=None, query_string=None, headers=None):
+
+    def wrapper(wrapped, instance, args, kwargs):
+
+        if type(application) != Application:
+            _application = application_instance(application)
+        else:
+            _application = application
+
+        if callable(name):
+            if instance is not None:
+                _name = name(instance, *args, **kwargs)
+            else:
+                _name = name(*args, **kwargs)
+        elif name is None:
+            _name = callable_name(wrapped)
+        else:
+            _name = name
+
+        if callable(group):
+            if instance is not None:
+                _group = group(instance, *args, **kwargs)
+            else:
+                _group = group(*args, **kwargs)
+        else:
+            _group = group
+
+        if callable(scheme):
+            if instance is not None:
+                _scheme = scheme(instance, *args, **kwargs)
+            else:
+                _scheme = scheme(*args, **kwargs)
+        else:
+            _scheme = scheme
+
+        if callable(host):
+            if instance is not None:
+                _host = host(instance, *args, **kwargs)
+            else:
+                _host = host(*args, **kwargs)
+        else:
+            _host = host
+
+        if callable(port):
+            if instance is not None:
+                _port = port(instance, *args, **kwargs)
+            else:
+                _port = port(*args, **kwargs)
+        else:
+            _port = port
+
+        if callable(request_method):
+            if instance is not None:
+                _request_method = request_method(instance, *args, **kwargs)
+            else:
+                _request_method = request_method(*args, **kwargs)
+        else:
+            _request_method = request_method
+
+        if callable(request_path):
+            if instance is not None:
+                _request_path = request_path(instance, *args, **kwargs)
+            else:
+                _request_path = request_path(*args, **kwargs)
+        else:
+            _request_path = request_path
+
+        if callable(query_string):
+            if instance is not None:
+                _query_string = query_string(instance, *args, **kwargs)
+            else:
+                _query_string = query_string(*args, **kwargs)
+        else:
+            _query_string = query_string
+
+        if callable(headers):
+            if instance is not None:
+                _headers = headers(instance, *args, **kwargs)
+            else:
+                _headers = headers(*args, **kwargs)
+        else:
+            _headers = headers
+
+        transaction = BaseWebTransaction(
+                _application, _name, _group, _scheme, _host, _port,
+                _request_method, _request_path, _query_string, _headers)
+
+        proxy = async_proxy(wrapped)
+        if proxy:
+            context_manager = TransactionContext(transaction)
+            return proxy(wrapped(*args, **kwargs), context_manager)
+
+        with transaction:
+            return wrapped(*args, **kwargs)
+
+    return FunctionWrapper(wrapped, wrapper)
+
+
+def web_transaction(application=None, name=None, group=None,
+        scheme=None, host=None, port=None, request_method=None,
+        request_path=None, query_string=None, headers=None):
+
+    return functools.partial(WebTransactionWrapper,
+            application=application, name=name, group=group,
+            scheme=scheme, host=host, port=port, request_method=request_method,
+            request_path=request_path, query_string=query_string,
+            headers=headers)
+
+
+def wrap_web_transaction(module, object_path,
+        application=None, name=None, group=None,
+        scheme=None, host=None, port=None, request_method=None,
+        request_path=None, query_string=None, headers=None):
+
+    return wrap_object(module, object_path, WebTransactionWrapper,
+            (application, name, group, scheme, host, port, request_method,
+            request_path, query_string, headers))

@@ -14,7 +14,7 @@ except ImportError:
     from collections import Mapping
 
 from newrelic.api.application import Application, application_instance
-from newrelic.api.transaction import Transaction
+from newrelic.api.transaction import Transaction, current_transaction
 
 from newrelic.common.coroutine import async_proxy, TransactionContext
 from newrelic.common.encoding_utils import (obfuscate, json_encode,
@@ -890,6 +890,12 @@ def WebTransactionWrapper(wrapped, application=None, name=None, group=None,
         request_path=None, query_string=None, headers=None):
 
     def wrapper(wrapped, instance, args, kwargs):
+
+        # Don't start a transaction if there's already a transaction in
+        # progress
+        transaction = current_transaction(active_only=False)
+        if transaction:
+            return wrapped(*args, **kwargs)
 
         if type(application) != Application:
             _application = application_instance(application)

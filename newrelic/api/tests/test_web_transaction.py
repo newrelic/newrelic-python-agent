@@ -1706,6 +1706,19 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
 
         Module.function()
 
+    def test_nested_transaction(self):
+        transaction = newrelic.api.web_transaction.BaseWebTransaction(
+                application, 'outer')
+
+        @newrelic.api.web_transaction.web_transaction(
+            application, name='inner')
+        def _test():
+            txn = newrelic.api.transaction.current_transaction()
+            assert txn.name == 'outer'
+
+        with transaction:
+            _test()
+
 
 @pytest.mark.parametrize('environ,length', (
     ({'CONTENT_LENGTH': '0'}, 1),

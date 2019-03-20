@@ -212,7 +212,7 @@ def test_system_response_creates_no_transaction(nr_enabled, aiohttp_app):
     _test()
 
 
-def test_aborted_connection_creates_no_transaction(aiohttp_app):
+def test_aborted_connection_creates_transaction(aiohttp_app):
     @asyncio.coroutine
     def fetch():
         try:
@@ -233,7 +233,7 @@ def test_aborted_connection_creates_no_transaction(aiohttp_app):
     @count_transactions(transactions)
     def _test():
         aiohttp_app.loop.run_until_complete(fetch())
-        assert len(transactions) == 0
+        assert len(transactions) == 1
 
     _test()
 

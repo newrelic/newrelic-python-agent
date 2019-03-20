@@ -39,6 +39,13 @@ class EncodingUtilsTests(unittest.TestCase):
         result = ensure_utf8(bytes_input)
         self.assertEqual(result, output)
 
+    def test_ensure_utf8_bytearray(self):
+        bytes_input = bytearray('test_input', 'utf-8')
+        output = bytes_input.decode('utf-8')
+
+        result = ensure_utf8(bytes_input)
+        self.assertEqual(result, output)
+
     def test_ensure_utf8_string(self):
         str_input = 'test_input'
 

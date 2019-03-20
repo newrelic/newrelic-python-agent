@@ -55,7 +55,7 @@ def test_error_exception(method, uri, metric_name, error, status, nr_enabled,
     @asyncio.coroutine
     def fetch():
         resp = yield from aiohttp_app.client.request(method,
-                uri)
+                uri, headers={'content-type': 'text/plain'})
         assert resp.status == status
 
     required_attrs = list(BASE_REQUIRED_ATTRS)
@@ -126,7 +126,8 @@ def test_simultaneous_requests(method, uri, metric_name,
 
     @asyncio.coroutine
     def fetch():
-        resp = yield from aiohttp_app.client.request(method, uri)
+        resp = yield from aiohttp_app.client.request(method, uri,
+                headers={'content-type': 'text/plain'})
         assert resp.status == 200
         text = yield from resp.text()
         assert "Hello Aiohttp!" in text

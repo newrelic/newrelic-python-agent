@@ -1275,7 +1275,7 @@ class TestBaseWebTransaction(newrelic.tests.test_cases.TestCase):
 
         try:
             headers = {
-                b'NewRelic': payload.http_safe().encode('utf-8'),
+                b'NewRelic': payload.text().encode('utf-8'),
             }
             transaction = newrelic.api.web_transaction.BaseWebTransaction(
                     application,

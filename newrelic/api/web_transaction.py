@@ -226,6 +226,7 @@ class BaseWebTransaction(Transaction):
         # the relevant details.
         if self._settings.distributed_tracing.enabled:
             distributed_header = self._request_headers.get('newrelic')
+            distributed_header = ensure_utf8(distributed_header)
             if distributed_header is not None:
                 self.accept_distributed_trace_payload(distributed_header)
         else:

@@ -1,6 +1,6 @@
 import sys
 
-from newrelic.api.web_transaction import wrap_web_transaction
+from newrelic.api.web_transaction import web_transaction
 from newrelic.api.transaction import current_transaction
 from newrelic.api.function_trace import function_trace
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
@@ -195,28 +195,31 @@ def _nr_sanic_register_middleware_(wrapped, instance, args, kwargs):
     return middleware
 
 
-def request_method(instance, request, *args, **kwargs):
-    return request.method
+def is_websocket(request):
+    if 'upgrade' in request.headers:
+        return 'websocket' in request.headers['upgrade']
+
+def _bind_request(request, *args, **kwargs):
+    return request
 
 
-def request_path(instance, request, *args, **kwargs):
-    return request.path
+def _nr_sanic_transaction_wrapper_(wrapped, instance, args, kwargs):
+    request = _bind_request(*args, **kwargs)
+    # If the request is a socket request do not wrap it
+    if request.headers.get('upgrade', '') == 'websocket':
+        return wrapped(*args, **kwargs)
 
-
-def request_query_string(instance, request, *args, **kwargs):
-    return request.query_string
-
-
-def request_headers(instance, request, *args, **kwargs):
-    return request.headers
+    # Wrap the coroutine
+    return web_transaction(
+        request_method=request.method,
+        request_path=request.path,
+        query_string=request.query_string,
+        headers=request.headers)(wrapped)(*args, **kwargs)
 
 
 def instrument_sanic_app(module):
-    wrap_web_transaction(module, 'Sanic.handle_request',
-        request_method=request_method,
-        request_path=request_path,
-        query_string=request_query_string,
-        headers=request_headers)
+    wrap_function_wrapper(module, 'Sanic.handle_request',
+        _nr_sanic_transaction_wrapper_)
     wrap_function_wrapper(module, 'Sanic.__init__',
         _sanic_app_init)
     wrap_function_wrapper(module, 'Sanic.register_middleware',

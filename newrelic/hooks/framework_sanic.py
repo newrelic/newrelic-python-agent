@@ -195,10 +195,6 @@ def _nr_sanic_register_middleware_(wrapped, instance, args, kwargs):
     return middleware
 
 
-def is_websocket(request):
-    if 'upgrade' in request.headers:
-        return 'websocket' in request.headers['upgrade']
-
 def _bind_request(request, *args, **kwargs):
     return request
 

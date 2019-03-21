@@ -4,6 +4,7 @@ from sanic.handlers import ErrorHandler
 from sanic.response import json, stream
 from sanic.router import Router
 from sanic.views import HTTPMethodView
+from sanic.websocket import WebSocketProtocol
 
 
 class MethodView(HTTPMethodView):
@@ -97,6 +98,12 @@ async def streaming(request):
         response.write('foo')
         response.write('bar')
     return stream(streaming_fn)
+
+
+# Fake websocket endpoint to enable sockets on the server
+@app.websocket('/socket')
+async def socket(request, ws):
+    assert False
 
 
 @app.route('/custom-header/<header_key>/<header_value>')

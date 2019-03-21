@@ -41,6 +41,14 @@ def test_simple_request(app):
     assert response.status == 200
 
 
+@function_not_called('newrelic.core.stats_engine',
+        'StatsEngine.record_transaction')
+def test_websocket(app):
+    headers = {'upgrade': 'websocket'}
+    response = app.fetch('get', '/', headers=headers)
+    assert response.status == 200
+
+
 @pytest.mark.parametrize('method', (
     'get',
     'post',

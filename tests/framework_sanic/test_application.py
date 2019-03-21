@@ -44,9 +44,6 @@ def test_simple_request(app):
 @function_not_called('newrelic.core.stats_engine',
         'StatsEngine.record_transaction')
 def test_websocket(app):
-    headers = {'upgrade': 'websocket'}
-    response = app.fetch('get', '/', headers=headers)
-    assert response.status == 200
     headers = {'upgrade': 'WebSocket'}
     response = app.fetch('get', '/', headers=headers)
     assert response.status == 200

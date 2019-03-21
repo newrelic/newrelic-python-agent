@@ -47,6 +47,9 @@ def test_websocket(app):
     headers = {'upgrade': 'websocket'}
     response = app.fetch('get', '/', headers=headers)
     assert response.status == 200
+    headers = {'upgrade': 'WebSocket'}
+    response = app.fetch('get', '/', headers=headers)
+    assert response.status == 200
 
 
 @pytest.mark.parametrize('method', (

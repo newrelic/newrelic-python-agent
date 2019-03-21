@@ -36,6 +36,8 @@ _js_agent_footer_fragment = '<script type="text/javascript">'\
 
 # Seconds since epoch for Jan 1 2000
 JAN_1_2000 = time.mktime((2000, 1, 1, 0, 0, 0, 0, 0, 0))
+MICROSECOND_MIN = JAN_1_2000 * 1000000.0
+MILLISECOND_MIN = JAN_1_2000 * 1000.0
 
 
 def _parse_time_stamp(time_stamp):
@@ -52,32 +54,42 @@ def _parse_time_stamp(time_stamp):
 
     now = time.time()
 
-    for divisor in (1000000.0, 1000.0, 1.0):
-        converted_time = time_stamp / divisor
+    if time_stamp > MICROSECOND_MIN:
+        divisor = 1000000.0
+    elif time_stamp > MILLISECOND_MIN:
+        divisor = 1000.0
+    elif time_stamp > JAN_1_2000:
+        divisor = 1.0
+    else:
+        return 0.0
 
-        # If queue_start is in the future, return 0.0.
+    converted_time = time_stamp / divisor
 
-        if converted_time > now:
-            return 0.0
+    # If queue_start is in the future, return 0.0.
+    if converted_time > now:
+        return 0.0
 
-        if converted_time > JAN_1_2000:
-            return converted_time
+    return converted_time
 
-    return 0.0
+
+TRUE_VALUES = {'on', 'true', '1'}
+FALSE_VALUES = {'off', 'false', '0'}
 
 
 def _lookup_environ_setting(environ, name, default=False):
-    flag = environ.get(name, default)
-    if default is None or default:
-        try:
-            flag = not flag.lower() in ['off', 'false', '0']
-        except AttributeError:
-            pass
-    else:
-        try:
-            flag = flag.lower() in ['on', 'true', '1']
-        except AttributeError:
-            pass
+    if name not in environ:
+        return default
+
+    flag = environ[name]
+
+    if isinstance(flag, six.string_types):
+        flag = flag.lower()
+
+        if flag in TRUE_VALUES:
+            return True
+        elif flag in FALSE_VALUES:
+            return False
+
     return flag
 
 
@@ -144,7 +156,9 @@ class BaseWebTransaction(Transaction):
         self._response_headers = {}
         self._response_code = None
 
-        if headers:
+        if isinstance(headers, WSGIHeaderProxy):
+            self._request_headers = headers
+        elif headers is not None:
             if isinstance(headers, Mapping):
                 headers = headers.items()
 
@@ -183,6 +197,8 @@ class BaseWebTransaction(Transaction):
     def _process_queue_time(self):
         for queue_time_header in self.QUEUE_TIME_HEADERS:
             value = self._request_headers.get(queue_time_header)
+            if not value:
+                continue
             value = ensure_utf8(value)
 
             try:
@@ -199,19 +215,24 @@ class BaseWebTransaction(Transaction):
     def _process_synthetics_header(self):
         # Check for Synthetics header
 
-        if self._settings.synthetics.enabled and \
-                self._settings.trusted_account_ids and \
-                self._settings.encoding_key:
+        settings = self._settings
+
+        if settings.synthetics.enabled and \
+                settings.trusted_account_ids and \
+                settings.encoding_key:
 
             encoded_header = self._request_headers.get('x-newrelic-synthetics')
+            if not encoded_header:
+                return
+
             decoded_header = decode_newrelic_header(
                     encoded_header,
-                    self._settings.encoding_key)
+                    settings.encoding_key)
             synthetics = _parse_synthetics_header(decoded_header)
 
             if synthetics and \
                     synthetics['account_id'] in \
-                    self._settings.trusted_account_ids:
+                    settings.trusted_account_ids:
 
                 # Save obfuscated header, because we will pass it along
                 # unchanged in all external requests.
@@ -684,12 +705,6 @@ class WSGIWebTransaction(BaseWebTransaction):
         if self.capture_params is False:
             self._request_params.clear()
 
-        # Convert port to an integer
-        try:
-            self._port = int(self._port)
-        except Exception:
-            pass
-
         # Extract from the WSGI environ dictionary
         # details of the URL path. This will be set as
         # default path for the web transaction. This can
@@ -755,7 +770,9 @@ class WSGIWebTransaction(BaseWebTransaction):
             if self.queue_start > 0.0:
                 break
 
-            value = environ.get(queue_time_header, None)
+            value = environ.get(queue_time_header)
+            if not value:
+                continue
 
             try:
                 if value.startswith('t='):

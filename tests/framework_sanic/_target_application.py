@@ -100,7 +100,7 @@ async def streaming(request):
     return stream(streaming_fn)
 
 
-# Fake websocket endpoint to enable sockets on the server
+# Fake websocket endpoint to enable websockets on the server
 @app.websocket('/socket')
 async def socket(request, ws):
     assert False

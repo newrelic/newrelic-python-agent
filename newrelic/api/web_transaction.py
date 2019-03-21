@@ -215,9 +215,11 @@ class BaseWebTransaction(Transaction):
     def _process_synthetics_header(self):
         # Check for Synthetics header
 
-        if self._settings.synthetics.enabled and \
-                self._settings.trusted_account_ids and \
-                self._settings.encoding_key:
+        settings = self._settings
+
+        if settings.synthetics.enabled and \
+                settings.trusted_account_ids and \
+                settings.encoding_key:
 
             encoded_header = self._request_headers.get('x-newrelic-synthetics')
             if not encoded_header:
@@ -225,12 +227,12 @@ class BaseWebTransaction(Transaction):
 
             decoded_header = decode_newrelic_header(
                     encoded_header,
-                    self._settings.encoding_key)
+                    settings.encoding_key)
             synthetics = _parse_synthetics_header(decoded_header)
 
             if synthetics and \
                     synthetics['account_id'] in \
-                    self._settings.trusted_account_ids:
+                    settings.trusted_account_ids:
 
                 # Save obfuscated header, because we will pass it along
                 # unchanged in all external requests.

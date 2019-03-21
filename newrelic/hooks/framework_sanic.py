@@ -202,7 +202,7 @@ def _bind_request(request, *args, **kwargs):
 def _nr_sanic_transaction_wrapper_(wrapped, instance, args, kwargs):
     request = _bind_request(*args, **kwargs)
     # If the request is a socket request do not wrap it
-    if request.headers.get('upgrade', '') == 'websocket':
+    if request.headers.get('upgrade', '').lower() == 'websocket':
         return wrapped(*args, **kwargs)
 
     # Wrap the coroutine

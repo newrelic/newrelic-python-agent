@@ -156,7 +156,9 @@ class BaseWebTransaction(Transaction):
         self._response_headers = {}
         self._response_code = None
 
-        if headers:
+        if isinstance(headers, WSGIHeaderProxy):
+            self._request_headers = headers
+        elif headers is not None:
             if isinstance(headers, Mapping):
                 headers = headers.items()
 

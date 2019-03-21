@@ -103,6 +103,7 @@ class MockTransaction(WSGIWebTransaction):
         self._string_cache = {}
         self._stack_trace_count = 0
         self._explain_plan_count = 0
+        self._response_headers = {}
 
         self.autorum_disabled = False
         self.rum_header_generated = False

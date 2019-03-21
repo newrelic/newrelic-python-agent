@@ -36,6 +36,8 @@ _js_agent_footer_fragment = '<script type="text/javascript">'\
 
 # Seconds since epoch for Jan 1 2000
 JAN_1_2000 = time.mktime((2000, 1, 1, 0, 0, 0, 0, 0, 0))
+MICROSECOND_MIN = JAN_1_2000 * 1000000.0
+MILLISECOND_MIN = JAN_1_2000 * 1000.0
 
 
 def _parse_time_stamp(time_stamp):
@@ -52,18 +54,24 @@ def _parse_time_stamp(time_stamp):
 
     now = time.time()
 
-    for divisor in (1000000.0, 1000.0, 1.0):
-        converted_time = time_stamp / divisor
+    if time_stamp > MICROSECOND_MIN:
+        divisor = 1000000.0
+    elif time_stamp > MILLISECOND_MIN:
+        divisor = 1000.0
+    elif time_stamp > JAN_1_2000:
+        divisor = 1.0
+    else:
+        return 0.0
 
-        # If queue_start is in the future, return 0.0.
+    converted_time = time_stamp / divisor
 
-        if converted_time > now:
-            return 0.0
+    # If queue_start is in the future, return 0.0.
+    if converted_time > now:
+        return 0.0
 
-        if converted_time > JAN_1_2000:
-            return converted_time
+    return converted_time
 
-    return 0.0
+
 
 
 def _lookup_environ_setting(environ, name, default=False):

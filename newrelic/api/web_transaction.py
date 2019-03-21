@@ -698,12 +698,6 @@ class WSGIWebTransaction(BaseWebTransaction):
         if self.capture_params is False:
             self._request_params.clear()
 
-        # Convert port to an integer
-        try:
-            self._port = int(self._port)
-        except Exception:
-            pass
-
         # Extract from the WSGI environ dictionary
         # details of the URL path. This will be set as
         # default path for the web transaction. This can

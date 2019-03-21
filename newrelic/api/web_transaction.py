@@ -197,6 +197,8 @@ class BaseWebTransaction(Transaction):
     def _process_queue_time(self):
         for queue_time_header in self.QUEUE_TIME_HEADERS:
             value = self._request_headers.get(queue_time_header)
+            if not value:
+                continue
             value = ensure_utf8(value)
 
             try:
@@ -218,6 +220,9 @@ class BaseWebTransaction(Transaction):
                 self._settings.encoding_key:
 
             encoded_header = self._request_headers.get('x-newrelic-synthetics')
+            if not encoded_header:
+                return
+
             decoded_header = decode_newrelic_header(
                     encoded_header,
                     self._settings.encoding_key)
@@ -763,7 +768,9 @@ class WSGIWebTransaction(BaseWebTransaction):
             if self.queue_start > 0.0:
                 break
 
-            value = environ.get(queue_time_header, None)
+            value = environ.get(queue_time_header)
+            if not value:
+                continue
 
             try:
                 if value.startswith('t='):

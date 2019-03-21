@@ -72,20 +72,24 @@ def _parse_time_stamp(time_stamp):
     return converted_time
 
 
+TRUE_VALUES = {'on', 'true', '1'}
+FALSE_VALUES = {'off', 'false', '0'}
 
 
 def _lookup_environ_setting(environ, name, default=False):
-    flag = environ.get(name, default)
-    if default is None or default:
-        try:
-            flag = not flag.lower() in ['off', 'false', '0']
-        except AttributeError:
-            pass
-    else:
-        try:
-            flag = flag.lower() in ['on', 'true', '1']
-        except AttributeError:
-            pass
+    if name not in environ:
+        return default
+
+    flag = environ[name]
+
+    if isinstance(flag, six.string_types):
+        flag = flag.lower()
+
+        if flag in TRUE_VALUES:
+            return True
+        elif flag in FALSE_VALUES:
+            return False
+
     return flag
 
 

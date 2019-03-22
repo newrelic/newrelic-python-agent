@@ -563,12 +563,12 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
 
         environ, start_response = _args(*args, **kwargs)
 
-        app_name = environ.get('newrelic.app_name')
-
         target_application = application
 
-        if app_name:
-            if app_name.find(';') != -1:
+        if 'newrelic.app_name' in environ:
+            app_name = environ['newrelic.app_name']
+
+            if ';' in app_name:
                 app_names = [n.strip() for n in app_name.split(';')]
                 app_name = app_names[0]
                 target_application = application_instance(app_name)

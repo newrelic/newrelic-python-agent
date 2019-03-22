@@ -279,15 +279,14 @@ class BaseWebTransaction(Transaction):
                     self._response_headers[header.lower()] = value
 
         try:
-            status_code = int(status_code)
-            self._response_code = status_code
-        except Exception:
-            status_code = None
+            self._response_code = int(status_code)
 
-        # If response code is 304 do not insert CAT headers.
-        # See https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.3.5
-        if status_code == 304:
-            return []
+            # If response code is 304 do not insert CAT headers. See:
+            # https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.3.5
+            if self._response_code == 304:
+                return []
+        except Exception:
+            pass
 
         # Generate CAT response headers
         try:

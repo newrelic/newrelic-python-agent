@@ -888,7 +888,7 @@ class WSGIWebTransaction(BaseWebTransaction):
         # would raise as a 500 for WSGI applications).
 
         try:
-            status = int(status.split(' ')[0])
+            status = status.split(' ')[0]
         except Exception:
             status = None
 

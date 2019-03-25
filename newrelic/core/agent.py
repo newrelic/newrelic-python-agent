@@ -392,13 +392,13 @@ class Agent(object):
 
                 application.validate_process()
 
-        # Activate the session if application was just created and wait
-        # for session activation if a timeout was specified. This may
-        # bail out early if is detected that a deadlock may occur for
-        # the period of the timeout.
+            # Activate the session if application was just created and wait
+            # for session activation if a timeout was specified. This may
+            # bail out early if is detected that a deadlock may occur for
+            # the period of the timeout.
 
-        if activate_session:
-            application.activate_session(timeout)
+            if activate_session:
+                application.activate_session(timeout)
 
     @property
     def applications(self):

@@ -14,9 +14,6 @@ from hashlib import md5
 from newrelic.packages import six
 
 
-BYTE_TYPES = (six.binary_type, bytearray)
-
-
 # Functions for encoding/decoding JSON. These wrappers are used in order
 # to hide the differences between Python 2 and Python 3 implementations
 # of the json module functions as well as instigate some better defaults
@@ -331,8 +328,8 @@ def serverless_payload_encode(payload):
     return encoded_data
 
 
-def ensure_utf8(s):
-    if isinstance(s, BYTE_TYPES):
+def ensure_str(s):
+    if not isinstance(s, six.string_types):
         try:
             s = s.decode('utf-8')
         except Exception:

@@ -104,6 +104,7 @@ class MockTransaction(WSGIWebTransaction):
         self._stack_trace_count = 0
         self._explain_plan_count = 0
         self._response_headers = {}
+        self._request_headers = {}
 
         self.autorum_disabled = False
         self.rum_header_generated = False

@@ -3,6 +3,7 @@ import sys
 import time
 import unittest
 
+from newrelic.packages import six
 import newrelic.api.settings
 import newrelic.api.application
 import newrelic.api.transaction
@@ -763,6 +764,8 @@ class TestBaseWebTransaction(newrelic.tests.test_cases.TestCase):
             self.assertEqual(transaction._request_params['a'], ['1', '2'])
             self.assertEqual(transaction._request_params['b'], ['3'])
 
+    @pytest.mark.skipif(six.PY2,
+            reason="In py3 the encoded string is treated as bytes")
     def test_query_string_cp424(self):
         query_string = 'a=1&a=2&b=3'.encode('cp424')
         transaction = newrelic.api.web_transaction.BaseWebTransaction(
@@ -965,15 +968,6 @@ class TestBaseWebTransaction(newrelic.tests.test_cases.TestCase):
         response_headers = {b'HEADER': b'cookie'}
         assert not transaction.process_response(200, response_headers.items())
         self.assertEqual(transaction._response_headers['header'], b'cookie')
-
-    def test_process_invalid_header(self):
-        transaction = newrelic.api.web_transaction.BaseWebTransaction(
-                application,
-                None)
-
-        response_headers = {'header'.encode('cp424'): 'cookie'}
-        assert not transaction.process_response(200, response_headers.items())
-        assert not transaction._response_headers
 
     def test_process_response_content_length(self):
         content_length = 5

@@ -1,6 +1,9 @@
 unreleased
 ----------
 
+4.16.0 (2019-03-25)
+-------------------
+
 - Add new API web_transaction
 
   This method is now exposed both as a public API through newrelic.agent.api.wrap_web_transaction,

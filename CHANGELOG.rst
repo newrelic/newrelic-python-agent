@@ -3,8 +3,9 @@ unreleased
 
 - Add new API web_transaction
 
-  this method is now exposed both as a public API through newrelic.agent.api.web_transaction,
-  and as a decorator. It can be used to instrument web transactions. For usage of this API see
+  This method is now exposed both as a public API through newrelic.agent.api.wrap_web_transaction,
+  and as a decorator with newrelic.agent.api.web_transaction,
+  It can be used to instrument non-WSGI web transactions. For usage of this API see
   https://docs.newrelic.com/docs/agents/python-agent/python-agent-api/webtransaction
 
 - The presence of unicode values in a SQL query on Python 2 may cause an application crash

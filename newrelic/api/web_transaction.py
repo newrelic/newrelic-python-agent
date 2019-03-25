@@ -159,8 +159,10 @@ class BaseWebTransaction(Transaction):
         if isinstance(headers, WSGIHeaderProxy):
             self._request_headers = headers
         elif headers is not None:
-            if isinstance(headers, Mapping):
+            try:
                 headers = headers.items()
+            except Exception:
+                pass
 
             for k, v in headers:
                 k = ensure_utf8(k)
@@ -269,9 +271,10 @@ class BaseWebTransaction(Transaction):
 
         # Extract response headers
         if response_headers:
-            if (hasattr(response_headers, 'items') and
-                    isinstance(response_headers, Mapping)):
+            try:
                 response_headers = response_headers.items()
+            except Exception:
+                pass
 
             for header, value in response_headers:
                 header = ensure_utf8(header)

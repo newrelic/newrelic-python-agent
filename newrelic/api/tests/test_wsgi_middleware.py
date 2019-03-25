@@ -17,8 +17,8 @@ import unittest
 
 import newrelic.tests.test_cases
 
-from newrelic.api.web_transaction import (current_transaction,
-        WSGIApplicationWrapper)
+from newrelic.api.transaction import current_transaction
+from newrelic.api.wsgi_application import WSGIApplicationWrapper
 
 
 class Application(object):

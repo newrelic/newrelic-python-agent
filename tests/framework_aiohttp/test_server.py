@@ -55,7 +55,7 @@ def test_error_exception(method, uri, metric_name, error, status, nr_enabled,
     @asyncio.coroutine
     def fetch():
         resp = yield from aiohttp_app.client.request(method,
-                uri)
+                uri, headers={'content-type': 'text/plain'})
         assert resp.status == status
 
     required_attrs = list(BASE_REQUIRED_ATTRS)
@@ -126,7 +126,8 @@ def test_simultaneous_requests(method, uri, metric_name,
 
     @asyncio.coroutine
     def fetch():
-        resp = yield from aiohttp_app.client.request(method, uri)
+        resp = yield from aiohttp_app.client.request(method, uri,
+                headers={'content-type': 'text/plain'})
         assert resp.status == 200
         text = yield from resp.text()
         assert "Hello Aiohttp!" in text
@@ -143,9 +144,6 @@ def test_simultaneous_requests(method, uri, metric_name,
     extra_required = list(BASE_FORGONE_ATTRS)
 
     required_attrs.extend(extra_required)
-
-    required_attrs.extend(['response.status',
-            'response.headers.contentType'])
 
     required_attrs.extend(['response.status',
             'response.headers.contentType'])
@@ -214,7 +212,7 @@ def test_system_response_creates_no_transaction(nr_enabled, aiohttp_app):
     _test()
 
 
-def test_aborted_connection_creates_no_transaction(aiohttp_app):
+def test_aborted_connection_creates_transaction(aiohttp_app):
     @asyncio.coroutine
     def fetch():
         try:
@@ -235,7 +233,7 @@ def test_aborted_connection_creates_no_transaction(aiohttp_app):
     @count_transactions(transactions)
     def _test():
         aiohttp_app.loop.run_until_complete(fetch())
-        assert len(transactions) == 0
+        assert len(transactions) == 1
 
     _test()
 

@@ -328,6 +328,15 @@ def serverless_payload_encode(payload):
     return encoded_data
 
 
+def ensure_str(s):
+    if not isinstance(s, six.string_types):
+        try:
+            s = s.decode('utf-8')
+        except Exception:
+            return
+    return s
+
+
 def serverless_payload_decode(text):
     """This method takes in a string or UTF-8 input. The input will be
     base64 decoded, gzip decompressed, and json decoded. Returns a
@@ -342,6 +351,18 @@ def serverless_payload_decode(text):
 
     data = json_decode(uncompressed_data)
     return data
+
+
+def decode_newrelic_header(encoded_header, encoding_key):
+    decoded_header = None
+    if encoded_header:
+        try:
+            decoded_header = json_decode(deobfuscate(
+                    encoded_header, encoding_key))
+        except Exception:
+            pass
+
+    return decoded_header
 
 
 def convert_to_cat_metadata_value(nr_headers):

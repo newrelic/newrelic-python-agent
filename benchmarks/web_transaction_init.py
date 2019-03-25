@@ -1,4 +1,4 @@
-from newrelic.api.web_transaction import WebTransaction
+from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.common.encoding_utils import DistributedTracePayload
 from benchmarks.util import (MockApplication, make_synthetics_header,
         make_cross_agent_headers)
@@ -13,7 +13,7 @@ class Lite(object):
         self.environ = {"REQUEST_URI": "/web_transaction"}
 
     def time_web_application_init(self):
-        WebTransaction(self.app, self.environ)
+        WSGIWebTransaction(self.app, self.environ)
 
 
 class AllEnviron(Lite):
@@ -29,17 +29,17 @@ class AllEnviron(Lite):
             'newrelic.set_background_task': False,
             'newrelic.ignore_transaction': False,
             'newrelic.suppress_apdex_metric': False,
-            'newrelic.suppress_transaction_trace': False,
-            'newrelic.capture_request_params': False,
-            'newrelic.disable_browser_autorum': False,
+            'newrelic.suppress_transaction_trace': 'False',
+            'newrelic.capture_request_params': 'False',
+            'newrelic.disable_browser_autorum': 'False',
             'SERVER_PORT': 8000,
             'RAW_URI': '/web_transaction?foo=bar',
             'SCRIPT_NAME': 'foobar',
             'PATH_INFO': '/web_transaction',
-            'HTTP_X_REQUEST_START': 0,
-            'HTTP_X_QUEUE_START': 0,
-            'mod_wsgi.request_start': 0,
-            'mod_wsgi.queue_start': 0,
+            'HTTP_X_REQUEST_START': '10',
+            'HTTP_X_QUEUE_START': '10',
+            'mod_wsgi.request_start': '10',
+            'mod_wsgi.queue_start': '10',
             'QUERY_STRING': 'foo=bar',
             'CONTENT_LENGTH': 80,
             'REQUEST_METHOD': 'GET',

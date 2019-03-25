@@ -1,7 +1,8 @@
 import pytest
 
 import newrelic.api.application
-from newrelic.api.web_transaction import _WSGIApplicationMiddleware
+import newrelic.api.web_transaction
+from newrelic.api.wsgi_application import _WSGIApplicationMiddleware
 
 application = newrelic.api.application.application_instance()
 html_response = ('<!DOCTYPE html><html><head>Some header</head>'
@@ -17,7 +18,7 @@ def test_content_length_not_inserted_when_autorum_disabled(autorum_disabled):
         'REQUEST_URI': '/browser_middleware',
         'newrelic.disable_browser_autorum': autorum_disabled,
     }
-    transaction = newrelic.api.web_transaction.WebTransaction(
+    transaction = newrelic.api.web_transaction.WSGIWebTransaction(
             application, environ)
 
     output = []
@@ -62,7 +63,7 @@ def test_content_length_modified_when_autorum_disabled(autorum_disabled):
         'REQUEST_URI': '/browser_middleware',
         'newrelic.disable_browser_autorum': autorum_disabled,
     }
-    transaction = newrelic.api.web_transaction.WebTransaction(
+    transaction = newrelic.api.web_transaction.WSGIWebTransaction(
             application, environ)
 
     output = []

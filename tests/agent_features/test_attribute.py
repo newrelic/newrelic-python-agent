@@ -5,7 +5,7 @@ import webtest
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import (add_custom_parameter,
         add_custom_parameters)
-from newrelic.api.web_transaction import wsgi_application
+from newrelic.api.wsgi_application import wsgi_application
 from newrelic.core.attribute import (truncate, sanitize, Attribute,
     CastingFailureException, MAX_64_BIT_INT, _DESTINATIONS_WITH_EVENTS)
 
@@ -396,17 +396,17 @@ fully_featured_application = webtest.TestApp(fully_featured_app)
 
 # Types are only defined in the spec for agent attributes, not intrinsics.
 
-agent_attributes = {'request.headers.accept': str,
+agent_attributes = {'request.headers.accept': six.string_types,
         'request.headers.contentLength': int,
-        'request.headers.contentType': str,
-        'request.headers.host': str,
-        'request.headers.referer': str,
-        'request.headers.userAgent': str,
-        'request.method': str,
-        'request.parameters.test': str,
+        'request.headers.contentType': six.string_types,
+        'request.headers.host': six.string_types,
+        'request.headers.referer': six.string_types,
+        'request.headers.userAgent': six.string_types,
+        'request.method': six.string_types,
+        'request.parameters.test': six.string_types,
         'response.headers.contentLength': int,
-        'response.headers.contentType': str,
-        'response.status': str}
+        'response.headers.contentType': six.string_types,
+        'response.status': six.string_types}
 
 
 @validate_agent_attribute_types(agent_attributes)

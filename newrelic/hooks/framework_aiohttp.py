@@ -1,12 +1,11 @@
+import functools
 import itertools
 import asyncio
-import sys
 
-from newrelic.api.application import application_instance
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import function_trace
 from newrelic.api.transaction import current_transaction, ignore_transaction
-from newrelic.api.web_transaction import WebTransaction
+from newrelic.api.web_transaction import web_transaction
 from newrelic.common.coroutine import (is_coroutine_function, async_proxy,
         TraceContext)
 from newrelic.common.object_names import callable_name
@@ -40,188 +39,17 @@ def should_ignore(exc, value, tb):
 
 
 def _nr_process_response_proxy(response, transaction):
-    headers = dict(response.headers)
-    status_str = str(response.status)
-
-    nr_headers = transaction.process_response(status_str,
-            headers.items())
+    nr_headers = transaction.process_response(response.status,
+            response.headers)
 
     response._headers = HeaderProxy(response.headers, nr_headers)
 
 
 def _nr_process_response(response, transaction):
-    headers = dict(response.headers)
-    status_str = str(response.status)
-
-    nr_headers = transaction.process_response(status_str,
-            headers.items())
+    nr_headers = transaction.process_response(response.status,
+            response.headers)
 
     response._headers.update(nr_headers)
-
-
-class NRTransactionCoroutineWrapper(ObjectProxy):
-    def __init__(self, wrapped, request):
-        super(NRTransactionCoroutineWrapper, self).__init__(wrapped)
-        self._nr_transaction = None
-        self._nr_request = request
-
-        environ = {
-            'PATH_INFO': request.path,
-            'REQUEST_METHOD': request.method,
-            'CONTENT_TYPE': request.content_type,
-            'QUERY_STRING': request.query_string,
-        }
-        for k, v in request.headers.items():
-            normalized_key = k.replace('-', '_').upper()
-            http_key = 'HTTP_%s' % normalized_key
-            environ[http_key] = v
-        self._nr_environ = environ
-
-    def __iter__(self):
-        return self
-
-    def __await__(self):
-        return self
-
-    def __next__(self):
-        return self.send(None)
-
-    def send(self, value):
-        if not self._nr_transaction:
-            # create and start the transaction
-            app = application_instance()
-            txn = WebTransaction(app, self._nr_environ)
-
-            import aiohttp
-            txn.add_framework_info(
-                    name='aiohttp', version=aiohttp.__version__)
-
-            self._nr_transaction = txn
-
-            if txn.enabled:
-                txn.__enter__()
-                txn.drop_transaction()
-
-        txn = self._nr_transaction
-
-        # transaction may not be active
-        if not txn.enabled:
-            return self.__wrapped__.send(value)
-
-        import aiohttp.web as _web
-
-        txn.save_transaction()
-
-        try:
-            r = self.__wrapped__.send(value)
-            txn.drop_transaction()
-            return r
-        except (GeneratorExit, StopIteration) as e:
-            try:
-                response = e.value
-                _nr_process_response(response, txn)
-            except:
-                pass
-            self._nr_transaction.__exit__(None, None, None)
-            self._nr_request = None
-            raise
-        except _web.HTTPException as e:
-            exc_info = sys.exc_info()
-            try:
-                _nr_process_response(e, txn)
-            except:
-                pass
-            if should_ignore(*exc_info):
-                self._nr_transaction.__exit__(None, None, None)
-            else:
-                self._nr_transaction.__exit__(*exc_info)
-            self._nr_request = None
-            raise
-        except:
-            exc_info = sys.exc_info()
-            try:
-                nr_headers = txn.process_response('500', ())
-                self._nr_request._nr_headers = dict(nr_headers)
-            except:
-                pass
-            self._nr_transaction.__exit__(*exc_info)
-            self._nr_request = None
-            raise
-
-    def throw(self, *args, **kwargs):
-        txn = self._nr_transaction
-
-        # transaction may not be active
-        if not txn.enabled:
-            return self.__wrapped__.throw(*args, **kwargs)
-
-        import aiohttp.web as _web
-
-        txn.save_transaction()
-        try:
-            r = self.__wrapped__.throw(*args, **kwargs)
-            txn.drop_transaction()
-            return r
-        except (GeneratorExit, StopIteration) as e:
-            try:
-                response = e.value
-                _nr_process_response(response, txn)
-            except:
-                pass
-            self._nr_transaction.__exit__(None, None, None)
-            self._nr_request = None
-            raise
-        except asyncio.CancelledError:
-            self._nr_transaction.ignore_transaction = True
-            self._nr_transaction.__exit__(None, None, None)
-            self._nr_request = None
-            raise
-        except _web.HTTPException as e:
-            exc_info = sys.exc_info()
-            try:
-                _nr_process_response(e, txn)
-            except:
-                pass
-            if should_ignore(*exc_info):
-                self._nr_transaction.__exit__(None, None, None)
-            else:
-                self._nr_transaction.__exit__(*exc_info)
-            self._nr_request = None
-            raise
-        except:
-            exc_info = sys.exc_info()
-            try:
-                nr_headers = txn.process_response('500', ())
-                self._nr_request._nr_headers = dict(nr_headers)
-            except:
-                pass
-            self._nr_transaction.__exit__(*exc_info)
-            self._nr_request = None
-            raise
-
-    def close(self):
-        txn = self._nr_transaction
-
-        # transaction may not be active
-        if not txn.enabled:
-            return self.__wrapped__.close()
-
-        txn.save_transaction()
-        try:
-            r = self.__wrapped__.close()
-            self._nr_transaction.__exit__(None, None, None)
-            self._nr_request = None
-            return r
-        except:
-            exc_info = sys.exc_info()
-            try:
-                nr_headers = txn.process_response('', ())
-                self._nr_request._nr_headers = dict(nr_headers)
-            except:
-                pass
-            self._nr_transaction.__exit__(*exc_info)
-            self._nr_request = None
-            raise
 
 
 @function_wrapper
@@ -235,21 +63,6 @@ def _nr_aiohttp_view_wrapper_(wrapped, instance, args, kwargs):
     transaction.set_transaction_name(name, priority=1)
 
     return function_trace(name=name)(wrapped)(*args, **kwargs)
-
-
-def _nr_aiohttp_transaction_wrapper_(wrapped, instance, args, kwargs):
-    def _bind_params(request, *_args, **_kwargs):
-        return request
-
-    # get the coroutine
-    coro = wrapped(*args, **kwargs)
-    request = _bind_params(*args, **kwargs)
-
-    if hasattr(coro, '__iter__'):
-        coro = iter(coro)
-
-    # Wrap the coroutine
-    return NRTransactionCoroutineWrapper(coro, request)
 
 
 def _nr_aiohttp_wrap_view_(wrapped, instance, args, kwargs):
@@ -460,13 +273,69 @@ def instrument_aiohttp_web_urldispatcher(module):
             _nr_aiohttp_wrap_system_route_)
 
 
+def _bind_handle(request, *args, **kwargs):
+    return request
+
+
+def _nr_request_wrapper(wrapped, instance, args, kwargs):
+    request = _bind_handle(*args, **kwargs)
+
+    # Ignore websockets
+    if request.headers.get('upgrade', '').lower() == 'websocket':
+        return wrapped(*args, **kwargs)
+
+    coro = wrapped(*args, **kwargs)
+
+    if hasattr(coro, '__await__'):
+        coro = coro.__await__()
+
+    @asyncio.coroutine
+    def _coro(*_args, **_kwargs):
+        transaction = current_transaction()
+        if transaction is None:
+            response = yield from coro
+            return response
+
+        # Patch in should_ignore to all record_exception calls
+        transaction.record_exception = functools.partial(
+                transaction.record_exception,
+                ignore_errors=should_ignore)
+
+        import aiohttp
+        transaction.add_framework_info(
+                name='aiohttp', version=aiohttp.__version__)
+
+        import aiohttp.web as _web
+
+        try:
+            response = yield from coro
+        except _web.HTTPException as e:
+            _nr_process_response(e, transaction)
+            raise
+        except Exception:
+            nr_headers = transaction.process_response(500, ())
+            request._nr_headers = dict(nr_headers)
+            raise
+
+        _nr_process_response(response, transaction)
+        return response
+
+    _coro = web_transaction(
+        request_method=request.method,
+        request_path=request.path,
+        query_string=request.query_string,
+        headers=request.raw_headers)(_coro)
+
+    return _coro(*args, **kwargs)
+
+
 def instrument_aiohttp_web(module):
     global _nr_process_response
     if not headers_preserve_casing():
         _nr_process_response = _nr_process_response_proxy
 
     wrap_function_wrapper(module, 'Application._handle',
-            _nr_aiohttp_transaction_wrapper_)
+            _nr_request_wrapper)
     wrap_function_wrapper(module, 'Application.__init__',
             _nr_aiohttp_wrap_application_init_)
 

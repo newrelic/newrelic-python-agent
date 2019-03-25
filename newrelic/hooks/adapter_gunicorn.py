@@ -1,6 +1,6 @@
 import sys
 
-from newrelic.api.web_transaction import WSGIApplicationWrapper
+from newrelic.api.wsgi_application import WSGIApplicationWrapper
 from newrelic.common.object_wrapper import wrap_out_function
 from newrelic.common.coroutine import is_coroutine_function
 

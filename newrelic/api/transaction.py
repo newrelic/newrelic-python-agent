@@ -132,9 +132,9 @@ class Transaction(object):
         self._calls_write = 0
         self._calls_yield = 0
 
-        self._request_environment = {}
-        self._response_properties = {}
         self._transaction_metrics = {}
+
+        self._agent_attributes = {}
 
         self.background_task = False
 
@@ -146,8 +146,6 @@ class Transaction(object):
         self.suppress_transaction_trace = False
 
         self.capture_params = None
-
-        self.response_code = 0
 
         self.apdex = 0
 
@@ -191,11 +189,6 @@ class Transaction(object):
         self._profile_frames = {}
         self._profile_skip = 1
         self._profile_count = 0
-
-        self._aws_request_id = None
-        self._aws_arn = None
-        self._aws_event_source_arn = None
-        self._is_cold_start = False
 
         global_settings = application.global_settings
 
@@ -415,49 +408,12 @@ class Transaction(object):
 
         self._freeze_path()
 
-        if self.background_task:
-            transaction_type = 'OtherTransaction'
-        else:
-            transaction_type = 'WebTransaction'
-
-        group = self._group
-
-        if group is None:
-            if self.background_task:
-                group = 'Python'
-            else:
-                group = 'Uri'
-
-        if self.response_code != 0:
-            self._response_properties['STATUS'] = str(self.response_code)
-
         # _sent_end should already be set by this point, but in case it
         # isn't, set it now before we record the custom metrics.
 
         if self._sent_start:
             if not self._sent_end:
                 self._sent_end = time.time()
-
-        if not self.background_task:
-            self.record_custom_metric('Python/WSGI/Input/Bytes',
-                               self._bytes_read)
-            self.record_custom_metric('Python/WSGI/Input/Time',
-                               self.read_duration)
-            self.record_custom_metric('Python/WSGI/Input/Calls/read',
-                               self._calls_read)
-            self.record_custom_metric('Python/WSGI/Input/Calls/readline',
-                               self._calls_readline)
-            self.record_custom_metric('Python/WSGI/Input/Calls/readlines',
-                               self._calls_readlines)
-
-            self.record_custom_metric('Python/WSGI/Output/Bytes',
-                               self._bytes_sent)
-            self.record_custom_metric('Python/WSGI/Output/Time',
-                               self.sent_duration)
-            self.record_custom_metric('Python/WSGI/Output/Calls/yield',
-                               self._calls_yield)
-            self.record_custom_metric('Python/WSGI/Output/Calls/write',
-                               self._calls_write)
 
         if self.client_cross_process_id is not None:
             metric_name = 'ClientApplication/%s/all' % (
@@ -482,13 +438,12 @@ class Transaction(object):
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
                 path=self.path,
-                type=transaction_type,
-                group=group,
+                type=self.type,
+                group=self.group_for_metric,
                 base_name=self._name,
                 name_for_metric=self.name_for_metric,
                 port=self._port,
                 request_uri=self._request_uri,
-                response_code=self.response_code,
                 queue_start=self.queue_start,
                 start_time=self.start_time,
                 end_time=self.end_time,
@@ -599,14 +554,7 @@ class Transaction(object):
     @property
     def name_for_metric(self):
         """Combine group and name for use as transaction name in metrics."""
-
-        group = self._group
-
-        if group is None:
-            if self.background_task:
-                group = 'Python'
-            else:
-                group = 'Uri'
+        group = self.group_for_metric
 
         transaction_name = self._name
 
@@ -626,6 +574,18 @@ class Transaction(object):
             name = '%s/%s' % (group, transaction_name)
 
         return name
+
+    @property
+    def group_for_metric(self):
+        _group = self._group
+
+        if _group is None:
+            if self.background_task:
+                _group = 'Python'
+            else:
+                _group = 'Uri'
+
+        return _group
 
     @property
     def path(self):
@@ -852,71 +812,16 @@ class Transaction(object):
 
         return attributes_request
 
+    def _add_agent_attribute(self, key, value):
+        self._agent_attributes[key] = value
+
     @property
     def agent_attributes(self):
-        a_attrs = {}
-        settings = self._settings
-        req_env = self._request_environment
-
-        if req_env.get('HTTP_ACCEPT', None):
-            a_attrs['request.headers.accept'] = req_env['HTTP_ACCEPT']
-        if req_env.get('CONTENT_LENGTH', None):
-            a_attrs['request.headers.contentLength'] = \
-                    req_env['CONTENT_LENGTH']
-        if req_env.get('CONTENT_TYPE', None):
-            a_attrs['request.headers.contentType'] = req_env['CONTENT_TYPE']
-        if req_env.get('HTTP_HOST', None):
-            a_attrs['request.headers.host'] = req_env['HTTP_HOST']
-        if req_env.get('HTTP_REFERER', None):
-            a_attrs['request.headers.referer'] = req_env['HTTP_REFERER']
-        if req_env.get('HTTP_USER_AGENT', None):
-            a_attrs['request.headers.userAgent'] = req_env['HTTP_USER_AGENT']
-        if req_env.get('REQUEST_METHOD', None):
-            a_attrs['request.method'] = req_env['REQUEST_METHOD']
-        if self._request_uri:
-            a_attrs['request.uri'] = self._request_uri
-        if self._aws_request_id:
-            a_attrs['aws.requestId'] = self._aws_request_id
-        if self._aws_arn:
-            a_attrs['aws.lambda.arn'] = self._aws_arn
-        if self._is_cold_start:
-            a_attrs['aws.lambda.coldStart'] = self._is_cold_start
-        if self._aws_event_source_arn:
-            a_attrs['aws.lambda.eventSource.arn'] = self._aws_event_source_arn
-
-        resp_props = self._response_properties
-
-        if resp_props.get('CONTENT_LENGTH', None):
-            a_attrs['response.headers.contentLength'] = \
-                    resp_props['CONTENT_LENGTH']
-        if resp_props.get('CONTENT_TYPE', None):
-            a_attrs['response.headers.contentType'] = \
-                    resp_props['CONTENT_TYPE']
-        if resp_props.get('STATUS', None):
-            a_attrs['response.status'] = resp_props['STATUS']
-
-        if self.read_duration != 0:
-            a_attrs['wsgi.input.seconds'] = self.read_duration
-        if self._bytes_read != 0:
-            a_attrs['wsgi.input.bytes'] = self._bytes_read
-        if self._calls_read != 0:
-            a_attrs['wsgi.input.calls.read'] = self._calls_read
-        if self._calls_readline != 0:
-            a_attrs['wsgi.input.calls.readline'] = self._calls_readline
-        if self._calls_readlines != 0:
-            a_attrs['wsgi.input.calls.readlines'] = self._calls_readlines
-
-        if self.sent_duration != 0:
-            a_attrs['wsgi.output.seconds'] = self.sent_duration
-        if self._bytes_sent != 0:
-            a_attrs['wsgi.output.bytes'] = self._bytes_sent
-        if self._calls_write != 0:
-            a_attrs['wsgi.output.calls.write'] = self._calls_write
-        if self._calls_yield != 0:
-            a_attrs['wsgi.output.calls.yield'] = self._calls_yield
+        a_attrs = self._agent_attributes
 
         if self._settings.process_host.display_name:
-            a_attrs['host.displayName'] = settings.process_host.display_name
+            a_attrs['host.displayName'] = \
+                    self._settings.process_host.display_name
         if self._thread_utilization_value:
             a_attrs['thread.concurrency'] = self._thread_utilization_value
         if self.queue_wait != 0:
@@ -967,7 +872,7 @@ class Transaction(object):
             self._priority = float('%.5f' % random.random())
 
         if self._sampled is None:
-            self._sampled = self._application.compute_sampled(self.priority)
+            self._sampled = self._application.compute_sampled()
             if self._sampled:
                 self._priority += 1
 
@@ -1234,7 +1139,7 @@ class Transaction(object):
         except Exception:
             pass
 
-    def _generate_response_headers(self):
+    def _generate_response_headers(self, read_length=None):
         nr_headers = []
 
         # Generate metrics and response headers for inbound cross
@@ -1265,8 +1170,13 @@ class Transaction(object):
 
             self._freeze_path()
 
+            if read_length is None:
+                read_length = self._read_length
+
+            read_length = read_length if read_length is not None else -1
+
             payload = (self._settings.cross_process_id, self.path, queue_time,
-                    duration, self._read_length, self.guid, self.record_tt)
+                    duration, read_length, self.guid, self.record_tt)
             app_data = json_encode(payload)
 
             nr_headers.append(('X-NewRelic-App-Data', obfuscate(

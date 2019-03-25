@@ -6,7 +6,7 @@ import contextlib
 from newrelic.api.application import application_instance
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.transaction import current_transaction
-from newrelic.api.web_transaction import WebTransaction
+from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.config import extra_settings
 from newrelic.core.config import ignore_status_code
 
@@ -178,7 +178,7 @@ def initiate_request_monitoring(request):
     # We now start recording the actual web transaction. Bail out though
     # if it turns out that recording of transactions is not enabled.
 
-    transaction = WebTransaction(application, environ)
+    transaction = WSGIWebTransaction(application, environ)
 
     if not transaction.enabled:
         return

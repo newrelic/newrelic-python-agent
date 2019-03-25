@@ -25,7 +25,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_message_trace(self):
         environ = {'REQUEST_URI': '/message_trace'}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             with newrelic.api.message_trace.MessageTrace(
@@ -35,7 +35,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_transaction_not_running(self):
         environ = {'REQUEST_URI': '/transaction_not_running'}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
 
         with newrelic.api.message_trace.MessageTrace(
@@ -45,7 +45,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_message_trace_decorator(self):
         environ = {'REQUEST_URI': '/message_trace_decorator'}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
 
         with transaction:
@@ -53,7 +53,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_message_trace_decorator_error(self):
         environ = {'REQUEST_URI': '/message_trace_decorator_error'}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
 
         raises = False
@@ -69,7 +69,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_segment_parameters_enabled(self):
         environ = {'REQUEST_URI': '/message_trace'}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         transaction.settings.message_tracer.segment_parameters_enabled = True
         params = {'cats': 'meow', 'dogs': 'wruff'}
@@ -82,7 +82,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_segment_parameters_disabled(self):
         environ = {'REQUEST_URI': '/message_trace'}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         transaction.settings.message_tracer.segment_parameters_enabled = False
         params = {'cats': 'meow', 'dogs': 'wruff'}
@@ -96,7 +96,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
     # regression, see PYTHON-2844
     def test_message_trace_stopped(self):
         environ = {"REQUEST_URI": "/external_trace"}
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
             application, environ)
         transaction.stop_recording()
 

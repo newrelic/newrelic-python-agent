@@ -7,6 +7,8 @@ import logging
 import re
 import weakref
 
+import newrelic.packages.six as six
+
 from newrelic.core.internal_metrics import internal_metric
 from newrelic.core.config import global_settings
 
@@ -181,7 +183,7 @@ def _normalize_sql(sql):
 # now for cases below which never get invoked, so is okay for now.
 
 
-_identifier_re = re.compile('[\',"`\[\]\(\)]*')
+_identifier_re = re.compile(r'[\',"`\[\]\(\)]*')
 
 
 def _extract_identifier(token):
@@ -268,7 +270,7 @@ _parse_identifier_p = ''.join(('(', _parse_identifier_1_p, '|',
         _parse_identifier_4_p, '|', _parse_identifier_5_p, '|',
         _parse_identifier_6_p, '|', _parse_identifier_7_p, ')'))
 
-_parse_from_p = '\s+FROM\s+' + _parse_identifier_p
+_parse_from_p = r'\s+FROM\s+' + _parse_identifier_p
 _parse_from_re = re.compile(_parse_from_p, re.IGNORECASE)
 
 
@@ -284,7 +286,7 @@ def _parse_delete(sql):
     return _join_identifier(_parse_from_re.search(sql))
 
 
-_parse_into_p = '\s+INTO\s+' + _parse_identifier_p
+_parse_into_p = r'\s+INTO\s+' + _parse_identifier_p
 _parse_into_re = re.compile(_parse_into_p, re.IGNORECASE)
 
 
@@ -292,7 +294,7 @@ def _parse_insert(sql):
     return _join_identifier(_parse_into_re.search(sql))
 
 
-_parse_update_p = '\s*UPDATE\s+' + _parse_identifier_p
+_parse_update_p = r'\s*UPDATE\s+' + _parse_identifier_p
 _parse_update_re = re.compile(_parse_update_p, re.IGNORECASE)
 
 
@@ -300,7 +302,7 @@ def _parse_update(sql):
     return _join_identifier(_parse_update_re.search(sql))
 
 
-_parse_table_p = '\s+TABLE\s+' + _parse_identifier_p
+_parse_table_p = r'\s+TABLE\s+' + _parse_identifier_p
 _parse_table_re = re.compile(_parse_table_p, re.IGNORECASE)
 
 
@@ -482,7 +484,7 @@ def _obfuscate_explain_plan_postgresql(columns, rows, mask=None):
     # obfuscation and simply mask out any line preceded by a label.
 
     if mask:
-        text = _explain_plan_postgresql_re_2.sub('\g<label>?', text)
+        text = _explain_plan_postgresql_re_2.sub(r'\g<label>?', text)
 
     # Now regenerate the list of rows by splitting again on newline.
 
@@ -796,24 +798,30 @@ class SQLDatabase(object):
 class SQLStatement(object):
 
     def __init__(self, sql, database=None):
-        if hasattr(sql, 'decode'):
-            try:
-                sql = sql.decode('utf-8')
-            except UnicodeDecodeError as e:
-                settings = global_settings()
-                if settings.debug.log_explain_plan_queries:
-                    _logger.debug('An error occurred while decoding sql '
-                            'statement: %s' % e.reason)
-
-        self.sql = sql
-        self.database = database
-
         self._operation = None
         self._target = None
         self._uncommented = None
         self._obfuscated = None
         self._normalized = None
         self._identifier = None
+
+        if isinstance(sql, six.binary_type):
+            try:
+                sql = sql.decode('utf-8')
+            except UnicodeError as e:
+                settings = global_settings()
+                if settings.debug.log_explain_plan_queries:
+                    _logger.debug('An error occurred while decoding sql '
+                            'statement: %s' % e.reason)
+
+                self._operation = ''
+                self._target = ''
+                self._uncommented = ''
+                self._obfuscated = ''
+                self._normalized = ''
+
+        self.sql = sql
+        self.database = database
 
     @property
     def operation(self):

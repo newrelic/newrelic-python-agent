@@ -9,6 +9,7 @@ from collections import namedtuple
 
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import Transaction
+from newrelic.common.encoding_utils import deobfuscate, json_decode
 
 
 TransactionData = namedtuple('TransactionData', ['obfuscated_request_headers',
@@ -25,8 +26,8 @@ txn_cat_info = TransactionData(
 
         # obfuscated_response_headers
         # Value is JSON encoded list describing event, that is then obfuscated.
-        [('X-NewRelic-App-Data', ('KEpZS0JKREokDQo8AQkGGxILHAEcBkc9AQFHVAYGDA'
-        '0VAQYNF1ZKRENEWVhDRAYdHwRESkNaC11EXA0KEVtQXEBZWwxRRA4JHxsNNQ=='))],
+        [('X-NewRelic-App-Data', 'KEpZS0JKREokDQo8AQkGGxILHAEcBkc9AQFHVAYGDA0V'
+        'AQYNF1ZKRENEWVhDREVZX0pYWhBdX1wWCgpbS1xbWUAMSkQVCQQbFjU=')],
 
         # outgoing_encoded_data
         # Data is a list of tuples (header, value) that inclues
@@ -60,8 +61,8 @@ txn_cat_info = TransactionData(
         # 'X-NewRelic-App-Data'. Values are obfuscated. The full payload is
         # cast to a dictionary, JSON encoded, and finally base64 encoded.
         ('eyJYLU5ld1JlbGljLUFwcC1EYXRhIjoiS0VwWlMwSktSRW9rRFFvOEFRa0dHeElMSEFF'
-        'Y0JrYzlBUUZIVkFZR0RBMFZBUVlORjFaS1JFTkVXVmhEUkFZZEh3UkVTa05hQzExRVhBM'
-        'EtFVnRRWEVCWld3eFJSQTRKSHhzTk5RPT0ifQ=='))
+         'Y0JrYzlBUUZIVkFZR0RBMFZBUVlORjFaS1JFTkVXVmhEUkVWWlgwcFlXaEJkWDF3V0Nn'
+         'cGJTMXhiV1VBTVNrUVZDUVFiRmpVPSJ9'))
 
 
 class TestCatInterface(newrelic.tests.test_cases.TestCase):
@@ -102,6 +103,26 @@ class TestCatInterface(newrelic.tests.test_cases.TestCase):
             self.assertEqual(
                     txn._generate_response_headers(),
                     txn_cat_info.obfuscated_response_headers)
+
+    def test_generate_response_using_read_length_argument(self):
+        application = newrelic.api.application.application_instance()
+        with Transaction(application) as txn:
+            self.prepare_transaction(txn)
+            response_headers = txn._generate_response_headers(1024)
+            header_value = response_headers[0][1]
+            encoding_key = txn._settings.encoding_key
+            assert json_decode(
+                    deobfuscate(header_value, encoding_key))[4] == 1024
+
+    def test_generate_response_using_read_length_argument_0(self):
+        application = newrelic.api.application.application_instance()
+        with Transaction(application) as txn:
+            self.prepare_transaction(txn)
+            response_headers = txn._generate_response_headers(0)
+            header_value = response_headers[0][1]
+            encoding_key = txn._settings.encoding_key
+            assert json_decode(
+                    deobfuscate(header_value, encoding_key))[4] == 0
 
     def test_get_response_metadata_without_headers(self):
         with Transaction(self.app_api) as txn:

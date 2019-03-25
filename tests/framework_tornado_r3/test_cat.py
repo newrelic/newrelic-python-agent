@@ -8,7 +8,7 @@ try:
 except ImportError:
     asyncio = None
 
-from newrelic.api.web_transaction import wsgi_application
+from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.encoding_utils import deobfuscate
 
 from testing_support.fixtures import (make_cross_agent_headers,

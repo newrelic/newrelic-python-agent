@@ -2,7 +2,7 @@
 
 """
 
-from newrelic.api.web_transaction import wrap_wsgi_application
+from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.api.function_trace import (FunctionTrace, wrap_function_trace,
         FunctionTraceWrapper)
 from newrelic.api.transaction import current_transaction

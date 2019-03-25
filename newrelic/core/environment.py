@@ -34,9 +34,6 @@ def environment_settings():
 
     env.append(('Agent Version', '.'.join(map(str, newrelic.version_info))))
 
-    if 'NEW_RELIC_ADMIN_COMMAND' in os.environ:
-        env.append(('Admin Command', os.environ['NEW_RELIC_ADMIN_COMMAND']))
-
     # System information.
 
     env.append(('Arch', platform.machine()))

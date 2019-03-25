@@ -1638,7 +1638,7 @@ def validate_tt_segment_params(forgone_params=(), present_params=(),
 
 def validate_browser_attributes(required_params={}, forgone_params={}):
     @transient_function_wrapper('newrelic.api.web_transaction',
-            'WebTransaction.browser_timing_footer')
+            'WSGIWebTransaction.browser_timing_footer')
     def _validate_browser_attributes(wrapped, instance, args, kwargs):
         try:
             result = wrapped(*args, **kwargs)

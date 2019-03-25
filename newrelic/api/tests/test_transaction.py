@@ -8,7 +8,7 @@ from newrelic.api.application import application_instance
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.transaction import (current_transaction,
         accept_distributed_trace_payload, create_distributed_trace_payload)
-from newrelic.api.web_transaction import WebTransaction
+from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.core.config import finalize_application_settings
 from newrelic.core.adaptive_sampler import AdaptiveSampler
 
@@ -41,7 +41,7 @@ class MockApplication(object):
     def record_transaction(self, data, *args):
         return None
 
-    def compute_sampled(self, priority):
+    def compute_sampled(self):
         return False
 
 
@@ -51,7 +51,7 @@ class TestTraceEndsAfterTransaction(newrelic.tests.test_cases.TestCase):
 
     def setUp(self):
         environ = {'REQUEST_URI': '/trace_ends_after_txn'}
-        self.transaction = WebTransaction(application, environ)
+        self.transaction = WSGIWebTransaction(application, environ)
 
     def tearDown(self):
         if current_transaction():
@@ -143,7 +143,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
     def setUp(self):
         super(TestTransactionApis, self).setUp()
         environ = {'REQUEST_URI': '/transaction_apis'}
-        self.transaction = WebTransaction(application, environ)
+        self.transaction = WSGIWebTransaction(application, environ)
         self.transaction._settings.distributed_tracing.enabled = True
         self.transaction._settings.span_events.enabled = True
         self.transaction._settings.collect_span_events = True
@@ -153,6 +153,17 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
     def tearDown(self):
         if current_transaction():
             self.transaction.drop_transaction()
+
+    def force_sampled(self, sampled):
+        if sampled:
+            # Force the adaptive sampler to reset to 0 computed calls so that
+            # sampled is forced to True
+            self.application.adaptive_sampler.reset()
+            self.application.adaptive_sampler.reset()
+        else:
+            # Force sampled = False
+            adaptive_sampler = self.application.adaptive_sampler
+            adaptive_sampler.sampled_count = adaptive_sampler.max_sampled
 
     standard_test_payload = {
         'v': [0, 1],
@@ -575,14 +586,6 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             assert data['ty'] == 'App'
             assert data['tr'] == 'd6b4ba0c3a712ca'
 
-    def test_sampled_repeated_call(self):
-        with self.transaction:
-            # priority forced to -1.0 to ensure that .sampled becomes False
-            self.transaction._priority = -1.0
-            self.transaction._compute_sampled_and_priority()
-            assert self.transaction.sampled is False
-            assert self.transaction.priority == -1.0
-
     def test_sampled_create_payload(self):
         with self.transaction:
             self.transaction._priority = 1.0
@@ -629,53 +632,56 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
     def test_sampled_becomes_true(self):
         with self.transaction:
-            self.transaction._priority = 1.0
+            self.transaction._priority = 0.0
+            self.force_sampled(True)
+
             self.transaction._compute_sampled_and_priority()
             assert self.transaction.sampled is True
-            assert self.transaction.priority == 2.0
+            assert self.transaction.priority == 1.0
             assert self.transaction.sampled is True
-            assert self.transaction.priority == 2.0
+            assert self.transaction.priority == 1.0
 
     def test_sampled_becomes_false(self):
         with self.transaction:
-            # priority forced to -1.0 to ensure that .sampled becomes False
-            self.transaction._priority = -1.0
+            self.transaction._priority = 1.0
+            self.force_sampled(False)
+
             self.transaction._compute_sampled_and_priority()
 
             assert self.transaction.sampled is False
-            assert self.transaction.priority == -1.0
+            assert self.transaction.priority == 1.0
             assert self.transaction.sampled is False
-            assert self.transaction.priority == -1.0
+            assert self.transaction.priority == 1.0
 
     def test_compute_sampled_true_multiple_calls(self):
         with self.transaction:
-            # Force sampled to become true
-            self.transaction._priority = 1.0
+            self.transaction._priority = 0.0
+            self.force_sampled(True)
 
             self.transaction._compute_sampled_and_priority()
 
             assert self.transaction.sampled is True
-            assert self.transaction.priority == 2.0
+            assert self.transaction.priority == 1.0
 
             self.transaction._compute_sampled_and_priority()
 
             assert self.transaction.sampled is True
-            assert self.transaction.priority == 2.0
+            assert self.transaction.priority == 1.0
 
     def test_compute_sampled_false_multiple_calls(self):
         with self.transaction:
-            # Force sampled to become true
-            self.transaction._priority = -1.0
+            self.transaction._priority = 1.0
+            self.force_sampled(False)
 
             self.transaction._compute_sampled_and_priority()
 
             assert self.transaction.sampled is False
-            assert self.transaction.priority == -1.0
+            assert self.transaction.priority == 1.0
 
             self.transaction._compute_sampled_and_priority()
 
             assert self.transaction.sampled is False
-            assert self.transaction.priority == -1.0
+            assert self.transaction.priority == 1.0
 
     def test_top_level_accept_api_no_transaction(self):
         payload = self._make_test_payload()
@@ -697,6 +703,18 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             result = create_distributed_trace_payload()
             assert result is not None
 
+    def test_add_agent_attributes(self):
+        with self.transaction as transaction:
+            transaction._add_agent_attribute('mykey', 'value')
+            attributes = transaction.agent_attributes
+
+            value = None
+            for attribute in attributes:
+                if attribute.name == 'mykey':
+                    value = attribute.value
+                    break
+            assert value == 'value'
+
 
 class TestTransactionDeterministic(newrelic.tests.test_cases.TestCase):
 
@@ -704,7 +722,7 @@ class TestTransactionDeterministic(newrelic.tests.test_cases.TestCase):
         environ = {'REQUEST_URI': '/transaction_apis'}
         mock_app = MockApplication()
 
-        self.transaction = WebTransaction(mock_app, environ)
+        self.transaction = WSGIWebTransaction(mock_app, environ)
         self.transaction._settings.cross_application_tracer.enabled = True
         self.transaction._settings.distributed_tracing.enabled = True
 
@@ -742,7 +760,7 @@ class TestTransactionComputation(newrelic.tests.test_cases.TestCase):
         super(TestTransactionComputation, self).setUp()
 
         environ = {'REQUEST_URI': '/transaction_computation'}
-        self.transaction = WebTransaction(application, environ)
+        self.transaction = WSGIWebTransaction(application, environ)
         self.transaction._settings.distributed_tracing.enabled = True
 
     def test_sampled_is_always_computed(self):

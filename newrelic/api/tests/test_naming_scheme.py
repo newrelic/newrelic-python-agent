@@ -1,7 +1,7 @@
 import unittest
 
 from newrelic.core.config import finalize_application_settings
-from newrelic.api.web_transaction import wsgi_application
+from newrelic.api.wsgi_application import wsgi_application
 from newrelic.api.transaction import current_transaction
 from newrelic.api.object_wrapper import callable_name
 
@@ -26,7 +26,7 @@ class MockApplication(object):
     def record_transaction(self, data, *args):
         return None
 
-    def compute_sampled(self, priority):
+    def compute_sampled(self):
         return False
 
 

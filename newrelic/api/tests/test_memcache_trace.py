@@ -23,7 +23,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_memcache_trace(self):
         environ = { "REQUEST_URI": "/memcache_trace" }
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             time.sleep(0.1)
@@ -34,7 +34,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_transaction_not_running(self):
         environ = { "REQUEST_URI": "/transaction_not_running" }
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         try:
             with newrelic.api.memcache_trace.MemcacheTrace(
@@ -45,7 +45,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_memcache_trace_decorator(self):
         environ = { "REQUEST_URI": "/memcache_trace_decorator" }
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             time.sleep(0.1)
@@ -54,7 +54,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_memcache_trace_decorator_error(self):
         environ = { "REQUEST_URI": "/memcache_trace_decorator_error" }
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             try:

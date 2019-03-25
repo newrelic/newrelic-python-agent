@@ -63,7 +63,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_implicit_runtime_error(self):
         environ = { "REQUEST_URI": "/error_trace" }
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             time.sleep(0.5)
@@ -75,7 +75,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_implicit_runtime_error_decorator(self):
         environ = { "REQUEST_URI": "/error_trace_decorator" }
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             time.sleep(0.5)
@@ -86,7 +86,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_implicit_runtime_error_wrap(self):
         environ = { "REQUEST_URI": "/error_trace_wrap" }
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         newrelic.api.error_trace.wrap_error_trace(__name__, 'function_2')
         with transaction:
@@ -98,7 +98,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_implicit_runtime_error_ignore_dot(self):
         environ = { "REQUEST_URI": "/error_trace_ignore_dot" }
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
               application, environ)
         with transaction:
             time.sleep(0.5)
@@ -109,7 +109,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_implicit_runtime_error_ignore_colon(self):
         environ = { "REQUEST_URI": "/error_trace_ignore_colon" }
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             time.sleep(0.5)
@@ -120,7 +120,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_implicit_runtime_error_ignore_errors_true(self):
         environ = { "REQUEST_URI": "/error_trace_ignore_errors_true" }
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             time.sleep(0.5)
@@ -131,7 +131,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_implicit_runtime_error_ignore_errors_false(self):
         environ = { "REQUEST_URI": "/error_trace_ignore_errors_false" }
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             time.sleep(0.5)
@@ -142,7 +142,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_implicit_runtime_error_ignore_errors_none(self):
         environ = { "REQUEST_URI": "/error_trace_ignore_errors_none" }
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             time.sleep(0.5)
@@ -153,7 +153,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_implicit_runtime_error_unicode(self):
         environ = { "REQUEST_URI": "/error_trace_unicode" }
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             time.sleep(0.5)
@@ -167,7 +167,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_implicit_runtime_error_invalid_utf8_byte_string(self):
         environ = { "REQUEST_URI": "/error_trace_invalid_utf8" }
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             time.sleep(0.5)
@@ -182,7 +182,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_zzz_error_limit_1(self):
         environ = { "REQUEST_URI": "/per_transaction_limit" }
-        transaction = newrelic.api.web_transaction.WebTransaction(
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         with transaction:
             time.sleep(2.0)
@@ -196,7 +196,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
     def test_zzz_error_limit_2(self):
         environ = { "REQUEST_URI": "/per_harvest_limit" }
         for i in range(5):
-            transaction = newrelic.api.web_transaction.WebTransaction(
+            transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                     application, environ)
             with transaction:
                 time.sleep(2.0)

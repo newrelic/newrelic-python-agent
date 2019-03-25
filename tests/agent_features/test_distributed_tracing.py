@@ -6,7 +6,8 @@ import copy
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import background_task, BackgroundTask
 from newrelic.api.transaction import current_transaction
-from newrelic.api.web_transaction import wsgi_application, WebTransaction
+from newrelic.api.web_transaction import WSGIWebTransaction
+from newrelic.api.wsgi_application import wsgi_application
 
 from testing_support.fixtures import (override_application_settings,
         validate_attributes, validate_transaction_event_attributes,
@@ -49,7 +50,7 @@ def target_wsgi_application(environ, start_response):
 
     txn = current_transaction()
 
-    # Make assertions on the WebTransaction object
+    # Make assertions on the WSGIWebTransaction object
     assert txn.is_distributed_trace
     assert txn.parent_type == 'App'
     assert txn.parent_app == '2827902'
@@ -240,7 +241,7 @@ def test_distributed_tracing_metrics(web_transaction, gen_error, has_parent):
             return BackgroundTask(application, transaction_name)
 
         environ = {'REQUEST_URI': '/trace_ends_after_txn'}
-        tn = WebTransaction(application, environ)
+        tn = WSGIWebTransaction(application, environ)
         tn.set_transaction_name(transaction_name)
         return tn
 

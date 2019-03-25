@@ -12,7 +12,7 @@ def _run_validation_test():
     from newrelic.api.external_trace import external_trace
     from newrelic.api.function_trace import function_trace
     from newrelic.api.transaction import add_custom_parameter, record_exception
-    from newrelic.api.web_transaction import wsgi_application
+    from newrelic.api.wsgi_application import wsgi_application
 
     @external_trace(library='test',
             url='http://localhost/test', method='GET')

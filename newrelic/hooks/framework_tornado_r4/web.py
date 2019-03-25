@@ -3,7 +3,7 @@ import traceback
 
 from newrelic.api.application import application_instance
 from newrelic.api.transaction import current_transaction
-from newrelic.api.web_transaction import WebTransaction
+from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.core.agent import remove_thread_utilization
@@ -82,7 +82,7 @@ def _nr_request_handler_init(wrapped, instance, args, kwargs):
     environ = _get_environ(request)
 
     app = application_instance()
-    txn = WebTransaction(app, environ)
+    txn = WSGIWebTransaction(app, environ)
     txn.__enter__()
 
     if txn.enabled:

@@ -2,6 +2,7 @@ from __future__ import print_function
 
 from newrelic.admin import command, usage
 
+
 @command('run-program', '...',
 """Executes the command line but forces the initialisation of the agent
 automatically at startup.
@@ -50,7 +51,7 @@ def run_program(args):
         if name.startswith('NEW_RELIC_') or name.startswith('PYTHON'):
             log_message('%s = %r', name, os.environ.get(name))
 
-    from newrelic import version, __file__ as root_directory
+    from newrelic import __file__ as root_directory
 
     root_directory = os.path.dirname(root_directory)
     boot_directory = os.path.join(root_directory, 'bootstrap')
@@ -62,7 +63,7 @@ def run_program(args):
 
     if 'PYTHONPATH' in os.environ:
         path = os.environ['PYTHONPATH'].split(os.path.pathsep)
-        if not boot_directory in path:
+        if boot_directory not in path:
             python_path = "%s%s%s" % (boot_directory, os.path.pathsep,
                     os.environ['PYTHONPATH'])
 
@@ -91,6 +92,6 @@ def run_program(args):
                 break
 
     log_message('program_exe_path = %r', program_exe_path)
-    log_message('execl_arguments = %r', [program_exe_path]+args)
+    log_message('execl_arguments = %r', [program_exe_path] + args)
 
     os.execl(program_exe_path, *args)

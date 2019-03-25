@@ -1,6 +1,6 @@
 from newrelic.common.object_wrapper import FunctionWrapper
 from newrelic.api.transaction import Sentinel, Transaction
-from newrelic.api.web_transaction import WebTransaction
+from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.common.encoding_utils import json_encode, obfuscate
 from newrelic.core.config import finalize_application_settings
 
@@ -73,7 +73,7 @@ class MockApplication(object):
         self.nodes.append(data)
         return None
 
-    def compute_sampled(self, priority):
+    def compute_sampled(self):
         return True
 
 
@@ -88,9 +88,9 @@ class MockTrace(object):
         pass
 
 
-class MockTransaction(WebTransaction):
+class MockTransaction(WSGIWebTransaction):
     def __init__(self, application, *args, **kwargs):
-        self._state = WebTransaction.STATE_STOPPED
+        self._state = WSGIWebTransaction.STATE_STOPPED
         self.stopped = False
         self.enabled = True
         self.current_node = None
@@ -103,6 +103,8 @@ class MockTransaction(WebTransaction):
         self._string_cache = {}
         self._stack_trace_count = 0
         self._explain_plan_count = 0
+        self._response_headers = {}
+        self._request_headers = {}
 
         self.autorum_disabled = False
         self.rum_header_generated = False

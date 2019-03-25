@@ -18,7 +18,7 @@ from newrelic.api.transaction import Transaction, current_transaction
 
 from newrelic.common.coroutine import async_proxy, TransactionContext
 from newrelic.common.encoding_utils import (obfuscate, json_encode,
-        decode_newrelic_header, ensure_utf8)
+        decode_newrelic_header, ensure_str)
 
 from newrelic.core.attribute import create_attributes, process_user_attribute
 from newrelic.core.attribute_filter import DST_BROWSER_MONITORING, DST_NONE
@@ -165,14 +165,14 @@ class BaseWebTransaction(Transaction):
                 pass
 
             for k, v in headers:
-                k = ensure_utf8(k)
+                k = ensure_str(k)
                 if k is not None:
                     self._request_headers[k.lower()] = v
 
         # Capture query request string parameters, unless we're in
         # High Security Mode.
         if query_string and not self._settings.high_security:
-            query_string = ensure_utf8(query_string)
+            query_string = ensure_str(query_string)
             try:
                 params = urlparse.parse_qs(
                         query_string,
@@ -201,7 +201,7 @@ class BaseWebTransaction(Transaction):
             value = self._request_headers.get(queue_time_header)
             if not value:
                 continue
-            value = ensure_utf8(value)
+            value = ensure_str(value)
 
             try:
                 if value.startswith('t='):
@@ -249,7 +249,7 @@ class BaseWebTransaction(Transaction):
         # the relevant details.
         if self._settings.distributed_tracing.enabled:
             distributed_header = self._request_headers.get('newrelic')
-            distributed_header = ensure_utf8(distributed_header)
+            distributed_header = ensure_str(distributed_header)
             if distributed_header is not None:
                 self.accept_distributed_trace_payload(distributed_header)
         else:
@@ -277,7 +277,7 @@ class BaseWebTransaction(Transaction):
                 pass
 
             for header, value in response_headers:
-                header = ensure_utf8(header)
+                header = ensure_str(header)
                 if header is not None:
                     self._response_headers[header.lower()] = value
 

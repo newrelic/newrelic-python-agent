@@ -328,7 +328,7 @@ def serverless_payload_encode(payload):
     return encoded_data
 
 
-def ensure_utf8(s):
+def ensure_str(s):
     if not isinstance(s, six.string_types):
         try:
             s = s.decode('utf-8')

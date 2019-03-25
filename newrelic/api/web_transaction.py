@@ -291,6 +291,9 @@ class BaseWebTransaction(Transaction):
         except Exception:
             pass
 
+        if self.client_cross_process_id is None:
+            return []
+
         # Generate CAT response headers
         try:
             read_length = int(self._request_headers.get('content-length'))

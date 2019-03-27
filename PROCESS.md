@@ -383,10 +383,6 @@ drafted in the pre-release steps.
 30. Make sure that all JIRA stories associated with the release version have
 been updated as having been released.
 
-31. Submit a pull request to [docker-state](https://source.datanerd.us/container-fabric/docker-state/blob/master/requirements.txt)
-to upgrade the agent version. Be sure it gets merged and deployed to
-production. This way we can immediately have a production app running this most
-recent agent version.
 
 Performing a Hotfix Release
 ---------------------------

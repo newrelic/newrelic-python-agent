@@ -7,39 +7,8 @@ from newrelic.api.background_task import background_task
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_transaction_errors)
 
+from _test_common import create_stub as _create_stub, create_request as _create_request
 
-@pytest.fixture(scope='module')
-def mock_grpc_server(grpc_app_server):
-    from sample_application.sample_application_pb2_grpc import (
-            add_SampleApplicationServicer_to_server)
-    from sample_application import SampleApplicationServicer
-    server, port = grpc_app_server
-    add_SampleApplicationServicer_to_server(
-            SampleApplicationServicer(), server)
-    return port
-
-
-def _create_stub(port):
-    from sample_application.sample_application_pb2_grpc import (
-            SampleApplicationStub)
-    channel = grpc.insecure_channel('localhost:%s' % port)
-    stub = SampleApplicationStub(channel)
-    return stub
-
-
-def _create_request(streaming_request, count=1, timesout=False):
-    from sample_application.sample_application_pb2 import Message
-
-    def _message_stream():
-        for i in range(count):
-            yield Message(text='Hello World', count=count, timesout=timesout)
-
-    if streaming_request:
-        request = _message_stream()
-    else:
-        request = Message(text='Hello World', count=count, timesout=timesout)
-
-    return request
 
 
 _test_matrix = [

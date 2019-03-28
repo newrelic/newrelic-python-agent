@@ -1,6 +1,7 @@
 import pytest
 from _test_common import create_stub, create_request
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.fixtures import (validate_transaction_metrics,
+        validate_transaction_event_attributes, override_application_settings)
 
 
 _test_matrix = ["method_name,streaming_request", [
@@ -13,13 +14,27 @@ _test_matrix = ["method_name,streaming_request", [
 
 @pytest.mark.parametrize(*_test_matrix)
 def test_simple(method_name, streaming_request, mock_grpc_server):
-    stub = create_stub(mock_grpc_server)
+    port = mock_grpc_server
+    stub = create_stub(port)
     request = create_request(streaming_request)
     _transaction_name = \
         "sample_application:SampleApplicationServicer.{}".format(method_name)
     method = getattr(stub, method_name)
 
     @validate_transaction_metrics(_transaction_name)
+    @override_application_settings({'attributes.include': ['request.*']})
+    @validate_transaction_event_attributes(
+            required_params={
+                'agent': ['request.uri'],
+                'user': [],
+                'intrinsic': ['port'],
+            },
+            exact_attrs= {
+                'agent': {},
+                'user': {},
+                'intrinsic': {'port': port}
+            })
+    @wait_for_transaction_completion
     def _doit():
         response = method(request)
 

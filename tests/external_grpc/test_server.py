@@ -1,44 +1,31 @@
 import pytest
-import grpc
+from _test_common import create_stub, create_request
 from testing_support.fixtures import validate_transaction_metrics
 
-@pytest.fixture(scope='module')
-def mock_grpc_server(grpc_app_server):
-    from sample_application.sample_application_pb2_grpc import (
-            add_SampleApplicationServicer_to_server)
-    from sample_application import SampleApplicationServicer
-    server, port = grpc_app_server
-    add_SampleApplicationServicer_to_server(
-            SampleApplicationServicer(), server)
-    return port
+
+_test_matrix = ["method_name,streaming_request", [
+    ("DoUnaryUnary", False),
+    ("DoUnaryStream", False),
+    ("DoStreamUnary", True),
+    ("DoStreamStream", True)
+]]
 
 
-def _create_stub(port):
-    from sample_application.sample_application_pb2_grpc import (
-            SampleApplicationStub)
-    channel = grpc.insecure_channel('localhost:%s' % port)
-    stub = SampleApplicationStub(channel)
-    return stub
+@pytest.mark.parametrize(*_test_matrix)
+def test_simple(method_name, streaming_request, mock_grpc_server):
+    stub = create_stub(mock_grpc_server)
+    request = create_request(streaming_request)
+    _transaction_name = \
+        "sample_application:SampleApplicationServicer.{}".format(method_name)
+    method = getattr(stub, method_name)
 
+    @validate_transaction_metrics(_transaction_name)
+    def _doit():
+        response = method(request)
 
-def _create_request(streaming_request, count=1, timesout=False):
-    from sample_application.sample_application_pb2 import Message
+        try:
+            list(response)
+        except Exception:
+            pass
 
-    def _message_stream():
-        for i in range(count):
-            yield Message(text='Hello World', count=count, timesout=timesout)
-
-    if streaming_request:
-        request = _message_stream()
-    else:
-        request = Message(text='Hello World', count=count, timesout=timesout)
-
-    return request
-
-
-@validate_transaction_metrics('sample_application:SampleApplicationServicer.DoUnaryUnary')
-def test_simple(mock_grpc_server):
-    stub = _create_stub(mock_grpc_server)
-    request = _create_request(False)
-
-    reply = stub.DoUnaryUnary(request)
+    _doit()

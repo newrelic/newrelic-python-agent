@@ -1,6 +1,9 @@
 unreleased
 ----------
 
+4.16.1 (2019-03-29)
+-------------------
+
 - Fix memory leak on Python 2 WSGI applications
 
   When using the 4.16.0 agent on Python 2 to monitor WSGI applications, the

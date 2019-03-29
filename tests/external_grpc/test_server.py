@@ -1,5 +1,6 @@
 import pytest
-from _test_common import create_stub, create_request
+from _test_common import (create_stub, create_request,
+    wait_for_transaction_completion)
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_transaction_event_attributes, override_application_settings)
 

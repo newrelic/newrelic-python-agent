@@ -8,11 +8,6 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
-try:
-    from collections.abc import Mapping
-except ImportError:
-    from collections import Mapping
-
 from newrelic.api.application import Application, application_instance
 from newrelic.api.transaction import Transaction, current_transaction
 
@@ -156,9 +151,7 @@ class BaseWebTransaction(Transaction):
         self._response_headers = {}
         self._response_code = None
 
-        if isinstance(headers, WSGIHeaderProxy):
-            self._request_headers = headers
-        elif headers is not None:
+        if headers is not None:
             try:
                 headers = headers.items()
             except Exception:
@@ -589,7 +582,7 @@ class BaseWebTransaction(Transaction):
         return intrinsics
 
 
-class WSGIHeaderProxy(Mapping):
+class WSGIHeaderProxy(object):
     def __init__(self, environ):
         self.environ = environ
         self.length = None
@@ -605,6 +598,7 @@ class WSGIHeaderProxy(Mapping):
 
     @staticmethod
     def _from_wsgi(key):
+        key = key.lower()
         return key[5:].replace('_', '-')
 
     def __getitem__(self, key):
@@ -614,14 +608,14 @@ class WSGIHeaderProxy(Mapping):
     def __iter__(self):
         for key in self.environ:
             if key == 'CONTENT_LENGTH':
-                yield 'CONTENT-LENGTH'
+                yield 'content-length', self.environ['CONTENT_LENGTH']
             elif key == 'CONTENT_TYPE':
-                yield 'CONTENT-TYPE'
+                yield 'content-type', self.environ['CONTENT_TYPE']
             elif key == 'HTTP_CONTENT_LENGTH' or key == 'HTTP_CONTENT_TYPE':
                 # These keys are illegal and should be ignored
                 continue
             elif key.startswith('HTTP_'):
-                yield self._from_wsgi(key)
+                yield self._from_wsgi(key), self.environ[key]
 
     def __len__(self):
         if self.length is None:
@@ -653,7 +647,7 @@ class WSGIWebTransaction(BaseWebTransaction):
             application, name=None, port=environ.get('SERVER_PORT'),
             request_method=environ.get('REQUEST_METHOD'),
             query_string=environ.get('QUERY_STRING'),
-            headers=WSGIHeaderProxy(environ),
+            headers=iter(WSGIHeaderProxy(environ)),
             enabled=enabled)
 
         # Disable transactions for websocket connections.

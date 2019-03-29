@@ -1,9 +1,13 @@
+import gc
+import webtest
 import pytest
 import time
 from newrelic.api.application import application_instance
 from newrelic.api.web_transaction import BaseWebTransaction
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_attributes)
+from testing_support.sample_applications import simple_app
+application = webtest.TestApp(simple_app)
 
 
 # TODO: WSGI metrics must not be generated for a BaseWebTransaction
@@ -80,3 +84,22 @@ def test_base_web_transaction(use_bytes):
 
     with transaction:
         transaction.process_response(200, response_headers)
+
+
+@pytest.fixture()
+def validate_no_garbage():
+    yield
+
+    # garbage collect until everything is reachable
+    while gc.collect():
+        pass
+
+    assert not gc.garbage
+
+
+@validate_transaction_metrics(
+    name='',
+    group='Uri',
+)
+def test_wsgi_app_memory(validate_no_garbage):
+    application.get('/')

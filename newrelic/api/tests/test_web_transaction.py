@@ -1756,13 +1756,14 @@ def test_wsgi_proxy_iter():
         'OTHER_STUFF': '?',
     }
     headers = newrelic.api.web_transaction.WSGIHeaderProxy(environ)
-    keys = set(iter(headers))
+    items = sorted(list(iter(headers)))
 
-    # NOTE: these keys are not lowercased as an optimization since we don't
-    # generally iterate over the keys. If we were to maintain parity with the
-    # actual intended behavior we would return only lowercased values.
-    expected = {'CONTENT-LENGTH', 'CONTENT-TYPE', 'HEADER'}
-    assert keys == expected
+    expected = [
+        ('content-length', 'x'),
+        ('content-type', 'x'),
+        ('header', 'x'),
+    ]
+    assert items == expected
 
 
 def test_wsgi_proxy_malformed_environ():
@@ -1772,8 +1773,10 @@ def test_wsgi_proxy_malformed_environ():
     }
     headers = newrelic.api.web_transaction.WSGIHeaderProxy(environ)
     assert len(headers) == 0
-    assert headers.get('content-length') is None
-    assert headers.get('content-type') is None
+    with pytest.raises(KeyError):
+        headers['content-length']
+    with pytest.raises(KeyError):
+        headers['content-type']
 
 
 @pytest.mark.parametrize('capture_params', [  # NOQA

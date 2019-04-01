@@ -26,7 +26,7 @@ def test_simple(method_name, streaming_request, mock_grpc_server):
     @override_application_settings({'attributes.include': ['request.*']})
     @validate_transaction_event_attributes(
             required_params={
-                'agent': ['request.uri'],
+                'agent': ['request.uri', 'request.headers.userAgent'],
                 'user': [],
                 'intrinsic': ['port'],
             },

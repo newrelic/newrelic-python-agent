@@ -1,6 +1,13 @@
 unreleased
 ----------
 
+- The startup_timeout setting may not have been honored in a multithreaded application
+
+  When startup_timeout is set to a number greater than 0, the servicing of
+  transactions is blocked until the agent has fully activated. In multithreaded
+  applications, only the first thread would block due to improper locking. The
+  agent will now block on all threads.
+
 4.16.1 (2019-03-29)
 -------------------
 

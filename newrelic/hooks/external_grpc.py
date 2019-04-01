@@ -108,6 +108,10 @@ def grpc_web_transaction(wrapped, instance, args, kwargs):
             getattr(rpc_event, 'call_details', None) or
             getattr(rpc_event, 'request_call_details', None))
 
+    metadata = (
+            getattr(rpc_event, 'invocation_metadata', None) or
+            getattr(rpc_event, 'request_metadata', None))
+
     host = port = None
     if call_details:
         try:
@@ -122,7 +126,8 @@ def grpc_web_transaction(wrapped, instance, args, kwargs):
             name=behavior_name,
             request_path=request_path,
             host=host,
-            port=port)(*args, **kwargs)
+            port=port,
+            headers=metadata)(*args, **kwargs)
 
 
 def instrument_grpc__channel(module):

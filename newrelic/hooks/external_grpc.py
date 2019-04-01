@@ -1,7 +1,6 @@
 import time
 
 from newrelic.api.external_trace import ExternalTrace, wrap_external_trace
-from newrelic.api.function_trace import FunctionTraceWrapper
 from newrelic.api.web_transaction import WebTransactionWrapper
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
@@ -41,15 +40,6 @@ def wrap_external_future(module, object_path, library, url, method=None):
         return future
 
     wrap_function_wrapper(module, object_path, _wrap_future)
-
-
-def _nr_wrap_GeneratedProtocolMessageType(wrapped, instance, args, kwargs):
-    wrapped(*args, **kwargs)
-
-    instance.SerializeToString = FunctionTraceWrapper(
-            instance.SerializeToString)
-    instance.FromString = staticmethod(FunctionTraceWrapper(
-            instance.FromString))
 
 
 def wrap_next(_wrapped, _instance, _args, _kwargs):
@@ -158,8 +148,3 @@ def instrument_grpc_server(module):
             grpc_web_transaction)
     wrap_function_wrapper(module, '_stream_response_in_pool',
             grpc_web_transaction)
-
-
-def instrument_google_protobuf_reflection(module):
-    wrap_function_wrapper(module, 'GeneratedProtocolMessageType.__init__',
-            _nr_wrap_GeneratedProtocolMessageType)

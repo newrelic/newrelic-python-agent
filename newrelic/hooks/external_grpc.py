@@ -2,8 +2,10 @@ import time
 
 from newrelic.api.external_trace import ExternalTrace, wrap_external_trace
 from newrelic.api.function_trace import FunctionTraceWrapper
+from newrelic.api.web_transaction import WebTransactionWrapper
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.object_names import callable_name
 
 
 def _get_uri(instance, *args, **kwargs):
@@ -94,6 +96,35 @@ def wrap_result(_wrapped, _instance, _args, _kwargs):
             return result
 
 
+def _bind_transaction_args(rpc_event, state, behavior, *args, **kwargs):
+    return rpc_event, behavior
+
+
+def grpc_web_transaction(wrapped, instance, args, kwargs):
+    rpc_event, behavior = _bind_transaction_args(*args, **kwargs)
+    behavior_name = callable_name(behavior)
+
+    call_details = (
+            getattr(rpc_event, 'call_details', None) or
+            getattr(rpc_event, 'request_call_details', None))
+
+    host = port = None
+    if call_details:
+        try:
+            host, port = call_details.host.split(b':', 1)
+        except Exception:
+            pass
+
+        request_path = call_details.method
+
+    return WebTransactionWrapper(
+            wrapped,
+            name=behavior_name,
+            request_path=request_path,
+            host=host,
+            port=port)(*args, **kwargs)
+
+
 def instrument_grpc__channel(module):
     wrap_external_trace(module, '_UnaryUnaryMultiCallable.__call__',
             'gRPC', _get_uri, 'unary_unary')
@@ -115,6 +146,13 @@ def instrument_grpc__channel(module):
             wrap_next)
     wrap_function_wrapper(module, '_Rendezvous.result',
             wrap_result)
+
+
+def instrument_grpc_server(module):
+    wrap_function_wrapper(module, '_unary_response_in_pool',
+            grpc_web_transaction)
+    wrap_function_wrapper(module, '_stream_response_in_pool',
+            grpc_web_transaction)
 
 
 def instrument_google_protobuf_reflection(module):

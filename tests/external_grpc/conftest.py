@@ -32,6 +32,17 @@ def grpc_app_server():
         yield server, port
 
 
+@pytest.fixture(scope='module')
+def mock_grpc_server(grpc_app_server):
+    from sample_application.sample_application_pb2_grpc import (
+            add_SampleApplicationServicer_to_server)
+    from sample_application import SampleApplicationServicer
+    server, port = grpc_app_server
+    add_SampleApplicationServicer_to_server(
+            SampleApplicationServicer(), server)
+    return port
+
+
 @pytest.fixture(scope='session')
 def session_initialization(code_coverage, collector_agent_registration):
     pass

@@ -8,12 +8,14 @@ from sample_application_pb2_grpc import (
 class SampleApplicationServicer(_SampleApplicationServicer):
 
     def DoUnaryUnary(self, request, context):
+        context.set_trailing_metadata([('content-type', 'text/plain')])
         if request.timesout:
             while context.is_active():
                 time.sleep(0.1)
         return Message(text='unary_unary: %s' % request.text)
 
     def DoUnaryStream(self, request, context):
+        context.set_trailing_metadata([('content-type', 'text/plain')])
         if request.timesout:
             while context.is_active():
                 time.sleep(0.1)
@@ -21,6 +23,7 @@ class SampleApplicationServicer(_SampleApplicationServicer):
             yield Message(text='unary_stream: %s' % request.text)
 
     def DoStreamUnary(self, request_iter, context):
+        context.set_trailing_metadata([('content-type', 'text/plain')])
         for request in request_iter:
             if request.timesout:
                 while context.is_active():
@@ -28,6 +31,7 @@ class SampleApplicationServicer(_SampleApplicationServicer):
             return Message(text='stream_unary: %s' % request.text)
 
     def DoStreamStream(self, request_iter, context):
+        context.set_trailing_metadata([('content-type', 'text/plain')])
         for request in request_iter:
             if request.timesout:
                 while context.is_active():

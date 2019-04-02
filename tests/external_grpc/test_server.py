@@ -27,7 +27,7 @@ def test_simple(method_name, streaming_request, mock_grpc_server):
     @validate_transaction_event_attributes(
             required_params={
                 'agent': ['request.uri', 'request.headers.userAgent',
-                    'response.status'],
+                    'response.status', 'response.headers.contentType'],
                 'user': [],
                 'intrinsic': ['port'],
             },

@@ -2089,9 +2089,6 @@ def _process_module_builtin_defaults():
     _process_module_definition('grpc._server',
             'newrelic.hooks.external_grpc',
             'instrument_grpc_server')
-    _process_module_definition('google.protobuf.reflection',
-            'newrelic.hooks.external_grpc',
-            'instrument_google_protobuf_reflection')
 
     _process_module_definition('pylons.wsgiapp',
             'newrelic.hooks.framework_pylons')

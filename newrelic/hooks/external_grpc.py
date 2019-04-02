@@ -120,6 +120,20 @@ def grpc_web_transaction(wrapped, instance, args, kwargs):
             headers=metadata)(*args, **kwargs)
 
 
+def _nr_wrap_status_code(wrapped, instance, args, kwargs):
+    def _trailing_metadata(state, *args, **kwargs):
+        return state.trailing_metadata
+
+    status_code = wrapped(*args, **kwargs)
+    response_headers = _trailing_metadata(*args, **kwargs)
+
+    transaction = current_transaction()
+    if transaction:
+        transaction.process_response(status_code, response_headers)
+
+    return status_code
+
+
 def instrument_grpc__channel(module):
     wrap_external_trace(module, '_UnaryUnaryMultiCallable.__call__',
             'gRPC', _get_uri, 'unary_unary')
@@ -148,3 +162,5 @@ def instrument_grpc_server(module):
             grpc_web_transaction)
     wrap_function_wrapper(module, '_stream_response_in_pool',
             grpc_web_transaction)
+    wrap_function_wrapper(module, '_completion_code',
+            _nr_wrap_status_code)

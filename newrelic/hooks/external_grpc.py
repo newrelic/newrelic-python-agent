@@ -164,3 +164,5 @@ def instrument_grpc_server(module):
             grpc_web_transaction)
     wrap_function_wrapper(module, '_completion_code',
             _nr_wrap_status_code)
+    wrap_function_wrapper(module, '_abortion_code',
+            _nr_wrap_status_code)

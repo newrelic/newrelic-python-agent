@@ -30,7 +30,7 @@ def test_simple(method_name, streaming_request, mock_grpc_server):
                 'user': [],
                 'intrinsic': ['port'],
             },
-            exact_attrs= {
+            exact_attrs={
                 'agent': {},
                 'user': {},
                 'intrinsic': {'port': port}

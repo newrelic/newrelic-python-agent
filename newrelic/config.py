@@ -2084,10 +2084,10 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.memcache_memcache')
 
     _process_module_definition('grpc._channel',
-            'newrelic.hooks.external_grpc',
+            'newrelic.hooks.framework_grpc',
             'instrument_grpc__channel')
     _process_module_definition('grpc._server',
-            'newrelic.hooks.external_grpc',
+            'newrelic.hooks.framework_grpc',
             'instrument_grpc_server')
 
     _process_module_definition('pylons.wsgiapp',

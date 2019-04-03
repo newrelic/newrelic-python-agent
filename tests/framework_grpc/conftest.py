@@ -7,7 +7,7 @@ from testing_support.fixtures import (code_coverage_fixture,
 from testing_support.mock_external_grpc_server import MockExternalgRPCServer
 
 _coverage_source = [
-    'newrelic.hooks.external_grpc',
+    'newrelic.hooks.framework_grpc',
 ]
 
 code_coverage = code_coverage_fixture(source=_coverage_source)
@@ -21,7 +21,7 @@ _default_settings = {
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-        app_name='Python Agent Test (external_grpc)',
+        app_name='Python Agent Test (framework_grpc)',
         default_settings=_default_settings)
 
 

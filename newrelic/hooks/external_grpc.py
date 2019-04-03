@@ -120,10 +120,11 @@ def grpc_web_transaction(wrapped, instance, args, kwargs):
             headers=metadata)(*args, **kwargs)
 
 
-def _nr_wrap_status_code(wrapped, instance, args, kwargs):
-    def _trailing_metadata(state, *args, **kwargs):
-        return state.trailing_metadata
+def _trailing_metadata(state, *args, **kwargs):
+    return state.trailing_metadata
 
+
+def _nr_wrap_status_code(wrapped, instance, args, kwargs):
     status_code = wrapped(*args, **kwargs)
     response_headers = _trailing_metadata(*args, **kwargs)
 

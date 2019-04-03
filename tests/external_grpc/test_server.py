@@ -2,8 +2,10 @@ import grpc
 import pytest
 from _test_common import (create_stub, create_request,
     wait_for_transaction_completion)
+from newrelic.core.config import global_settings
 from testing_support.fixtures import (validate_transaction_metrics,
-        validate_transaction_event_attributes, override_application_settings)
+        validate_transaction_event_attributes, override_application_settings,
+        override_generic_settings, function_not_called)
 
 
 _test_matrix = ["method_name,streaming_request", [
@@ -85,5 +87,22 @@ def test_raises_response_status(method_name, streaming_request,
             list(response)
         except Exception:
             pass
+
+    _doit()
+
+
+def test_newrelic_disabled_no_transaction(mock_grpc_server):
+    port = mock_grpc_server
+    stub = create_stub(port)
+    request = create_request(False)
+
+    method = getattr(stub, 'DoUnaryUnary')
+
+    @override_generic_settings(global_settings(), {'enabled': False})
+    @function_not_called('newrelic.core.stats_engine',
+        'StatsEngine.record_transaction')
+    @wait_for_transaction_completion
+    def _doit():
+        method(request)
 
     _doit()

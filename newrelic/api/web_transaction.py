@@ -331,7 +331,7 @@ class BaseWebTransaction(Transaction):
         if 'content-type' in self._response_headers:
             self._add_agent_attribute('response.headers.contentType',
                     self._response_headers['content-type'])
-        if self._response_code:
+        if self._response_code is not None:
             self._add_agent_attribute('response.status',
                     str(self._response_code))
 

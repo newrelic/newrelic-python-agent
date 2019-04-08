@@ -1565,12 +1565,6 @@
             "New Relic"
         ]
     },
-    "newrelic/hooks/external_grpc.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/hooks/external_httplib.py": {
         "hash": "n/a",
         "libraries": [
@@ -1656,6 +1650,12 @@
         ]
     },
     "newrelic/hooks/framework_flask.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/framework_grpc.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

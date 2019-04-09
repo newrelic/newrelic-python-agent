@@ -15,6 +15,16 @@ service SampleApplication {
     rpc DoUnaryStreamRaises(Message) returns (stream Message) {}
     rpc DoStreamUnaryRaises(stream Message) returns (Message) {}
     rpc DoStreamStreamRaises(stream Message) returns (stream Message) {}
+
+    rpc NoTxnUnaryUnaryRaises(Message) returns (Message) {}
+    rpc NoTxnUnaryStreamRaises(Message) returns (stream Message) {}
+    rpc NoTxnStreamUnaryRaises(stream Message) returns (Message) {}
+    rpc NoTxnStreamStreamRaises(stream Message) returns (stream Message) {}
+
+    rpc NoTxnUnaryUnary(Message) returns (Message) {}
+    rpc NoTxnUnaryStream(Message) returns (stream Message) {}
+    rpc NoTxnStreamUnary(stream Message) returns (Message) {}
+    rpc NoTxnStreamStream(stream Message) returns (stream Message) {}
 }
 
 message Message {

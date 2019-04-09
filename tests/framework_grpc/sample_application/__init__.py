@@ -57,7 +57,7 @@ class CatApplicationServicer(_SampleApplicationServicer):
 
     def extract_cat_value(self, metadata):
         for k, v in metadata:
-            if k != 'x-newrelic-trace':
+            if k != 'newrelic':
                 continue
             return Message(text='%s' % v)
 

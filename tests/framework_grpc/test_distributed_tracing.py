@@ -55,6 +55,8 @@ _test_matrix = ('method_type,method_name', (
         ('unary_unary', 'with_call'),
         ('stream_unary', '__call__'),
         ('stream_unary', 'with_call'),
+        ('unary_stream', '__call__'),
+        ('stream_stream', '__call__'),
 ))
 
 

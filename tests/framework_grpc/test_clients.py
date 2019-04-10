@@ -7,8 +7,8 @@ from newrelic.api.background_task import background_task
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_transaction_errors)
 
-from _test_common import create_stub as _create_stub, create_request as _create_request
-
+from _test_common import (create_stub as _create_stub,
+        create_request as _create_request)
 
 
 _test_matrix = [

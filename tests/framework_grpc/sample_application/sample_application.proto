@@ -6,6 +6,11 @@ service SampleApplication {
     rpc DoStreamUnary(stream Message) returns (Message) {}
     rpc DoStreamStream(stream Message) returns (stream Message) {}
 
+    rpc DtUnaryUnary(Message) returns (Message) {}
+    rpc DtUnaryStream(Message) returns (stream Message) {}
+    rpc DtStreamUnary(stream Message) returns (Message) {}
+    rpc DtStreamStream(stream Message) returns (stream Message) {}
+
     rpc DoUnaryUnaryRaises(Message) returns (Message) {}
     rpc DoUnaryStreamRaises(Message) returns (stream Message) {}
     rpc DoStreamUnaryRaises(stream Message) returns (Message) {}

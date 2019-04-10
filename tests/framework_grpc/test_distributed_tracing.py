@@ -13,17 +13,6 @@ from _test_common import (create_stub, create_request,
         wait_for_transaction_completion)
 
 
-@pytest.fixture(scope='module')
-def grpc_cat_app_server(grpc_app_server):
-    from sample_application import CatApplicationServicer
-    from sample_application.sample_application_pb2_grpc import (
-            add_SampleApplicationServicer_to_server)
-    server, port = grpc_app_server
-    add_SampleApplicationServicer_to_server(
-            CatApplicationServicer(), server)
-    return port
-
-
 _test_matrix = ('method_name,streaming_request', (
     ('DoUnaryUnary', False),
     ('DoUnaryStream', False),
@@ -34,16 +23,16 @@ _test_matrix = ('method_name,streaming_request', (
 
 @override_application_settings({'distributed_tracing.enabled': True})
 @pytest.mark.parametrize(*_test_matrix)
-def test_inbound_distributed_trace(grpc_cat_app_server, method_name,
+def test_inbound_distributed_trace(mock_grpc_server, method_name,
         streaming_request):
-    stub = create_stub(grpc_cat_app_server)
+    stub = create_stub(mock_grpc_server)
     request = create_request(streaming_request)
 
     transaction = Transaction(application_instance())
     dt_headers = ExternalTrace.generate_request_headers(transaction)
 
     @validate_transaction_metrics(
-        'sample_application:CatApplicationServicer.' + method_name,
+        'sample_application:SampleApplicationServicer.' + method_name,
         rollup_metrics=(
             ('Supportability/DistributedTrace/AcceptPayload/Success', 1),
         ),
@@ -76,12 +65,12 @@ _test_matrix = ('method_type,method_name', (
     (False, False),
 ))
 def test_outbound_distributed_trace(
-        grpc_cat_app_server, method_type, method_name, dt_enabled, dt_error):
-    stub = create_stub(grpc_cat_app_server)
+        mock_grpc_server, method_type, method_name, dt_enabled, dt_error):
+    stub = create_stub(mock_grpc_server)
     request_type, response_type = method_type.split('_', 1)
     streaming_request = request_type == 'stream'
     streaming_response = response_type == 'stream'
-    stub_method = 'Do' + method_type.title().replace('_', '')
+    stub_method = 'Dt' + method_type.title().replace('_', '')
 
     request = create_request(streaming_request)
 
@@ -137,12 +126,12 @@ def test_outbound_distributed_trace(
 
 @pytest.mark.parametrize(*_test_matrix)
 def test_outbound_payload_outside_transaction(
-        grpc_cat_app_server, method_type, method_name):
-    stub = create_stub(grpc_cat_app_server)
+        mock_grpc_server, method_type, method_name):
+    stub = create_stub(mock_grpc_server)
     request_type, response_type = method_type.split('_', 1)
     streaming_request = request_type == 'stream'
     streaming_response = response_type == 'stream'
-    stub_method = 'Do' + method_type.title().replace('_', '')
+    stub_method = 'Dt' + method_type.title().replace('_', '')
 
     request = create_request(streaming_request)
 

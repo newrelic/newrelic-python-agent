@@ -58,21 +58,14 @@ def test_client(service_method_type, service_method_method_name,
     streaming_request = service_method_type.split('_')[0] == 'stream'
     streaming_response = service_method_type.split('_')[1] == 'stream'
 
-    if not streaming_response or raises_exception or cancel:
-        expected_metrics_count = 1
-    else:
-        expected_metrics_count = message_count
-
     _test_scoped_metrics = [
-            ('External/localhost:%s/gRPC/%s' % (port, service_method_type),
-                expected_metrics_count),
+            ('External/localhost:%s/gRPC/%s' % (port, service_method_type), 1),
     ]
     _test_rollup_metrics = [
-            ('External/localhost:%s/gRPC/%s' % (port, service_method_type),
-                expected_metrics_count),
-            ('External/localhost:%s/all' % port, expected_metrics_count),
-            ('External/allOther', expected_metrics_count),
-            ('External/all', expected_metrics_count),
+            ('External/localhost:%s/gRPC/%s' % (port, service_method_type), 1),
+            ('External/localhost:%s/all' % port, 1),
+            ('External/allOther', 1),
+            ('External/all', 1),
     ]
 
     if six.PY2:

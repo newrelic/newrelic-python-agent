@@ -52,27 +52,24 @@ class SampleApplicationServicer(_SampleApplicationServicer):
         for request in request_iter:
             raise AssertionError('stream_stream: %s' % request.text)
 
-
-class CatApplicationServicer(_SampleApplicationServicer):
-
-    def extract_cat_value(self, metadata):
+    def extract_dt_value(self, metadata):
         for k, v in metadata:
-            if k != 'x-newrelic-trace':
+            if k != 'newrelic':
                 continue
             return Message(text='%s' % v)
 
         return Message(text='')
 
-    def DoUnaryUnary(self, request, context):
-        return self.extract_cat_value(context.invocation_metadata())
+    def DtUnaryUnary(self, request, context):
+        return self.extract_dt_value(context.invocation_metadata())
 
-    def DoUnaryStream(self, request, context):
-        yield self.extract_cat_value(context.invocation_metadata())
+    def DtUnaryStream(self, request, context):
+        yield self.extract_dt_value(context.invocation_metadata())
 
-    def DoStreamUnary(self, request_iter, context):
+    def DtStreamUnary(self, request_iter, context):
         list(request_iter)  # consume iterator
-        return self.extract_cat_value(context.invocation_metadata())
+        return self.extract_dt_value(context.invocation_metadata())
 
-    def DoStreamStream(self, request_iter, context):
+    def DtStreamStream(self, request_iter, context):
         for request in request_iter:
-            yield self.extract_cat_value(context.invocation_metadata())
+            yield self.extract_dt_value(context.invocation_metadata())

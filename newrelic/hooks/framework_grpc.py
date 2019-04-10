@@ -1,6 +1,6 @@
 import time
 
-from newrelic.api.external_trace import ExternalTrace, wrap_external_trace
+from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.web_transaction import WebTransactionWrapper
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
@@ -11,6 +11,45 @@ def _get_uri(instance, *args, **kwargs):
     target = instance._channel.target().decode('utf-8')
     method = instance._method.decode('utf-8').lstrip('/')
     return 'grpc://%s/%s' % (target, method)
+
+
+def _prepare_request(transaction, request,
+        timeout=None, metadata=None, *args, **kwargs):
+    metadata = metadata and list(metadata) or []
+    if transaction.settings.distributed_tracing.enabled:
+        headers = ExternalTrace.generate_request_headers(transaction)
+        if headers:
+            headers.extend(metadata)
+            metadata = headers
+
+    kwargs['metadata'] = metadata
+    return request, timeout, args, kwargs
+
+
+def _prepare_request_unary(transaction, request, *args, **kwargs):
+    return _prepare_request(transaction, request, *args, **kwargs)
+
+
+def _prepare_request_stream(
+        transaction, request_iterator, *args, **kwargs):
+    return _prepare_request(
+            transaction, request_iterator, *args, **kwargs)
+
+
+def wrap_call(module, object_path, prepare, method):
+
+    def _call_wrapper(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+        if transaction is None:
+            return wrapped(*args, **kwargs)
+
+        uri = _get_uri(instance)
+        with ExternalTrace(transaction, 'gRPC', uri, method):
+            request, timeout, args, kwargs = prepare(
+                    transaction, *args, **kwargs)
+            return wrapped(request, timeout, *args, **kwargs)
+
+    wrap_function_wrapper(module, object_path, _call_wrapper)
 
 
 def wrap_external_future(module, object_path, library, url, method=None):
@@ -136,18 +175,18 @@ def _nr_wrap_status_code(wrapped, instance, args, kwargs):
 
 
 def instrument_grpc__channel(module):
-    wrap_external_trace(module, '_UnaryUnaryMultiCallable.__call__',
-            'gRPC', _get_uri, 'unary_unary')
-    wrap_external_trace(module, '_UnaryUnaryMultiCallable.with_call',
-            'gRPC', _get_uri, 'unary_unary')
+    wrap_call(module, '_UnaryUnaryMultiCallable.__call__',
+            _prepare_request_unary, 'unary_unary')
+    wrap_call(module, '_UnaryUnaryMultiCallable.with_call',
+            _prepare_request_unary, 'unary_unary')
     wrap_external_future(module, '_UnaryUnaryMultiCallable.future',
             'gRPC', _get_uri, 'unary_unary')
     wrap_external_future(module, '_UnaryStreamMultiCallable.__call__',
             'gRPC', _get_uri, 'unary_stream')
-    wrap_external_trace(module, '_StreamUnaryMultiCallable.__call__',
-            'gRPC', _get_uri, 'stream_unary')
-    wrap_external_trace(module, '_StreamUnaryMultiCallable.with_call',
-            'gRPC', _get_uri, 'stream_unary')
+    wrap_call(module, '_StreamUnaryMultiCallable.__call__',
+            _prepare_request_stream, 'stream_unary')
+    wrap_call(module, '_StreamUnaryMultiCallable.with_call',
+            _prepare_request_stream, 'stream_unary')
     wrap_external_future(module, '_StreamUnaryMultiCallable.future',
             'gRPC', _get_uri, 'stream_unary')
     wrap_external_future(module, '_StreamStreamMultiCallable.__call__',

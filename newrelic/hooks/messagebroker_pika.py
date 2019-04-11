@@ -66,9 +66,9 @@ def _add_consume_rabbitmq_trace(transaction, method, properties,
     trace.__exit__(None, None, None)
 
 
-def _bind_basic_publish(exchange, routing_key, body,
-                    properties=None, mandatory=False, immediate=False):
-    return (exchange, routing_key, body, properties, mandatory, immediate)
+def _bind_basic_publish(
+        exchange, routing_key, body, properties=None, *args, **kwargs):
+    return (exchange, routing_key, body, properties, args, kwargs)
 
 
 def _bind_params_basic_get(callback=None, queue='', *args, **kwargs):
@@ -83,21 +83,18 @@ def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
 
     from pika import BasicProperties
 
-    (exchange, routing_key, body, properties, mandatory, immediate) = (
+    (exchange, routing_key, body, properties, args, kwargs) = (
             _bind_basic_publish(*args, **kwargs))
     properties = properties or BasicProperties()
     properties.headers = properties.headers or {}
     user_headers = properties.headers.copy()
 
     # Do not record cat headers in the segment parameters
-    if MessageTrace.cat_id_key in user_headers:
-        del user_headers[MessageTrace.cat_id_key]
-    if MessageTrace.cat_transaction_key in user_headers:
-        del user_headers[MessageTrace.cat_transaction_key]
-    if MessageTrace.cat_distributed_trace_key in user_headers:
-        del user_headers[MessageTrace.cat_distributed_trace_key]
+    user_headers.pop(MessageTrace.cat_id_key, None)
+    user_headers.pop(MessageTrace.cat_transaction_key, None)
+    user_headers.pop(MessageTrace.cat_distributed_trace_key, None)
 
-    args = (exchange, routing_key, body, properties, mandatory, immediate)
+    args = (exchange, routing_key, body, properties) + args
 
     params = {}
     if routing_key is not None:
@@ -115,10 +112,8 @@ def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
             destination_name=exchange or 'Default',
             params=params):
         cat_headers = MessageTrace.generate_request_headers(transaction)
-
-        for name, value in cat_headers:
-            properties.headers[name] = value
-        return wrapped(*args)
+        properties.headers.update(cat_headers)
+        return wrapped(*args, **kwargs)
 
 
 def _nr_wrapper_basic_get(wrapped, instance, args, kwargs):

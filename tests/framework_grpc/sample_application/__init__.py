@@ -95,16 +95,20 @@ class SampleApplicationServicer(_SampleApplicationServicer):
 
         return Message(text='')
 
-    def DtUnaryUnary(self, request, context):
+    def DtNoTxnUnaryUnary(self, request, context):
+        current_transaction().ignore_transaction = True
         return self.extract_dt_value(context.invocation_metadata())
 
-    def DtUnaryStream(self, request, context):
+    def DtNoTxnUnaryStream(self, request, context):
+        current_transaction().ignore_transaction = True
         yield self.extract_dt_value(context.invocation_metadata())
 
-    def DtStreamUnary(self, request_iter, context):
+    def DtNoTxnStreamUnary(self, request_iter, context):
+        current_transaction().ignore_transaction = True
         list(request_iter)  # consume iterator
         return self.extract_dt_value(context.invocation_metadata())
 
-    def DtStreamStream(self, request_iter, context):
+    def DtNoTxnStreamStream(self, request_iter, context):
+        current_transaction().ignore_transaction = True
         for request in request_iter:
             yield self.extract_dt_value(context.invocation_metadata())

@@ -5,7 +5,8 @@ from _test_common import (create_stub, create_request,
 from newrelic.core.config import global_settings
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_transaction_event_attributes, override_application_settings,
-        override_generic_settings, function_not_called)
+        override_generic_settings, function_not_called,
+        validate_transaction_errors)
 
 
 _test_matrix = ["method_name,streaming_request", [
@@ -87,6 +88,46 @@ def test_raises_response_status(method_name, streaming_request,
             list(response)
         except Exception:
             pass
+
+    _doit()
+
+
+@pytest.mark.parametrize(*_test_matrix)
+def test_abort(method_name, streaming_request, mock_grpc_server):
+    port = mock_grpc_server
+    stub = create_stub(port)
+    request = create_request(streaming_request)
+    method = getattr(stub, method_name + 'Abort')
+
+    @validate_transaction_errors(errors=['builtins:Exception'])
+    @wait_for_transaction_completion
+    def _doit():
+        with pytest.raises(grpc.RpcError) as error:
+            response = method(request)
+            list(response)
+
+        assert error.value.details() == 'aborting'
+        assert error.value.code() == grpc.StatusCode.ABORTED
+
+    _doit()
+
+
+@pytest.mark.parametrize(*_test_matrix)
+def test_abort_with_status(method_name, streaming_request, mock_grpc_server):
+    port = mock_grpc_server
+    stub = create_stub(port)
+    request = create_request(streaming_request)
+    method = getattr(stub, method_name + 'AbortWithStatus')
+
+    @validate_transaction_errors(errors=['builtins:Exception'])
+    @wait_for_transaction_completion
+    def _doit():
+        with pytest.raises(grpc.RpcError) as error:
+            response = method(request)
+            list(response)
+
+        assert error.value.details() == 'abort_with_status'
+        assert error.value.code() == grpc.StatusCode.ABORTED
 
     _doit()
 

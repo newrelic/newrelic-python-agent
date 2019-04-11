@@ -46,14 +46,13 @@ _test_matrix = [
 )]
 
 
-@pytest.mark.xfail()
 @pytest.mark.parametrize(*_test_matrix)
 def test_client(service_method_type, service_method_method_name,
         raises_exception, message_count, cancel, mock_grpc_server):
 
     port = mock_grpc_server
 
-    service_method_class_name = 'Do%s%s' % (
+    service_method_class_name = 'NoTxn%s%s' % (
             service_method_type.title().replace('_', ''),
             'Raises' if raises_exception else '')
     streaming_request = service_method_type.split('_')[0] == 'stream'
@@ -169,7 +168,7 @@ def test_future_timeout_error(service_method_type, service_method_method_name,
         
     port = mock_grpc_server
 
-    service_method_class_name = 'Do%s' % (
+    service_method_class_name = 'NoTxn%s' % (
             service_method_type.title().replace('_', ''))
     streaming_request = service_method_type.split('_')[0] == 'stream'
 
@@ -222,7 +221,7 @@ def test_server_down(service_method_type, service_method_method_name,
         pytest.skip('latest version fails this test')
     port = 1234
 
-    service_method_class_name = 'Do%s' % (
+    service_method_class_name = 'NoTxn%s' % (
             service_method_type.title().replace('_', ''))
     streaming_request = service_method_type.split('_')[0] == 'stream'
 
@@ -282,7 +281,7 @@ def test_repeated_result(service_method_type, service_method_method_name,
         mock_grpc_server):
     port = mock_grpc_server
 
-    service_method_class_name = 'Do%s' % (
+    service_method_class_name = 'NoTxn%s' % (
             service_method_type.title().replace('_', ''))
     streaming_request = service_method_type.split('_')[0] == 'stream'
 

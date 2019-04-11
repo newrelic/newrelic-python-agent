@@ -1,6 +1,6 @@
 import grpc
 import pytest
-from _test_common import (create_stub, create_request,
+from _test_common import (create_stub, create_stub_and_channel, create_request,
     wait_for_transaction_completion)
 from newrelic.core.config import global_settings
 from testing_support.fixtures import (validate_transaction_metrics,
@@ -128,6 +128,26 @@ def test_abort_with_status(method_name, streaming_request, mock_grpc_server):
 
         assert error.value.details() == 'abort_with_status'
         assert error.value.code() == grpc.StatusCode.ABORTED
+
+    _doit()
+
+
+def test_no_exception_client_close(mock_grpc_server):
+    port = mock_grpc_server
+    stub, channel = create_stub_and_channel(port)
+    request = create_request(False, timesout=True)
+
+    method = getattr(stub, 'DoUnaryUnary')
+
+    @validate_transaction_errors(errors=[])
+    @wait_for_transaction_completion
+    def _doit():
+        future_response = method.future(request)
+        channel.close()
+        with pytest.raises(grpc.RpcError) as error:
+            future_response.result()
+
+        assert error.value.code() == grpc.StatusCode.CANCELLED
 
     _doit()
 

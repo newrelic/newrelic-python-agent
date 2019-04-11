@@ -60,7 +60,6 @@ _test_matrix = ('method_type,method_name', (
 ))
 
 
-@pytest.mark.xfail()
 @pytest.mark.parametrize(*_test_matrix)
 @pytest.mark.parametrize('dt_enabled,dt_error', (
     (True, False),
@@ -73,7 +72,7 @@ def test_outbound_distributed_trace(
     request_type, response_type = method_type.split('_', 1)
     streaming_request = request_type == 'stream'
     streaming_response = response_type == 'stream'
-    stub_method = 'Dt' + method_type.title().replace('_', '')
+    stub_method = 'DtNoTxn' + method_type.title().replace('_', '')
 
     request = create_request(streaming_request)
 
@@ -134,7 +133,7 @@ def test_outbound_payload_outside_transaction(
     request_type, response_type = method_type.split('_', 1)
     streaming_request = request_type == 'stream'
     streaming_response = response_type == 'stream'
-    stub_method = 'Dt' + method_type.title().replace('_', '')
+    stub_method = 'DtNoTxn' + method_type.title().replace('_', '')
 
     request = create_request(streaming_request)
 

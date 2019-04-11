@@ -25,6 +25,16 @@ service SampleApplication {
     rpc NoTxnUnaryStream(Message) returns (stream Message) {}
     rpc NoTxnStreamUnary(stream Message) returns (Message) {}
     rpc NoTxnStreamStream(stream Message) returns (stream Message) {}
+
+    rpc DoUnaryUnaryAbort(Message) returns (Message) {}
+    rpc DoUnaryStreamAbort(Message) returns (stream Message) {}
+    rpc DoStreamUnaryAbort(stream Message) returns (Message) {}
+    rpc DoStreamStreamAbort(stream Message) returns (stream Message) {}
+
+    rpc DoUnaryUnaryAbortWithStatus(Message) returns (Message) {}
+    rpc DoUnaryStreamAbortWithStatus(Message) returns (stream Message) {}
+    rpc DoStreamUnaryAbortWithStatus(stream Message) returns (Message) {}
+    rpc DoStreamStreamAbortWithStatus(stream Message) returns (stream Message) {}
 }
 
 message Message {

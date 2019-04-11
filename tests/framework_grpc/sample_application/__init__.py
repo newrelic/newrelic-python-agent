@@ -1,9 +1,16 @@
 import time
 from newrelic.api.transaction import current_transaction
+import grpc
 
 from sample_application_pb2 import Message
 from sample_application_pb2_grpc import (
         SampleApplicationServicer as _SampleApplicationServicer)
+
+
+class Status(object):
+    code = grpc.StatusCode.ABORTED
+    details = 'abort_with_status'
+    trailing_metadata = {}
 
 
 class SampleApplicationServicer(_SampleApplicationServicer):
@@ -86,6 +93,30 @@ class SampleApplicationServicer(_SampleApplicationServicer):
     def NoTxnStreamStream(self, request_iter, context):
         current_transaction().ignore_transaction = True
         return self.DoStreamStream(request_iter, context)
+
+    def DoUnaryUnaryAbort(self, request, context):
+        context.abort(grpc.StatusCode.ABORTED, 'aborting')
+
+    def DoUnaryStreamAbort(self, request, context):
+        context.abort(grpc.StatusCode.ABORTED, 'aborting')
+
+    def DoStreamUnaryAbort(self, request_iter, context):
+        context.abort(grpc.StatusCode.ABORTED, 'aborting')
+
+    def DoStreamStreamAbort(self, request_iter, context):
+        context.abort(grpc.StatusCode.ABORTED, 'aborting')
+
+    def DoUnaryUnaryAbortWithStatus(self, request, context):
+        context.abort_with_status(Status)
+
+    def DoUnaryStreamAbortWithStatus(self, request, context):
+        context.abort_with_status(Status)
+
+    def DoStreamUnaryAbortWithStatus(self, request_iter, context):
+        context.abort_with_status(Status)
+
+    def DoStreamStreamAbortWithStatus(self, request_iter, context):
+        context.abort_with_status(Status)
 
     def extract_dt_value(self, metadata):
         for k, v in metadata:

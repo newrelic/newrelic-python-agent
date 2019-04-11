@@ -1,3 +1,4 @@
+import random
 import time
 
 from newrelic.api.external_trace import ExternalTrace
@@ -13,12 +14,16 @@ def _get_uri(instance, *args, **kwargs):
     return 'grpc://%s/%s' % (target, method)
 
 
-def _prepare_request(transaction, request,
+def _prepare_request(
+        transaction, guid, request,
         timeout=None, metadata=None, *args, **kwargs):
     metadata = metadata and list(metadata) or []
     if transaction.settings.distributed_tracing.enabled:
-        headers = ExternalTrace.generate_request_headers(transaction)
-        if headers:
+        payload = transaction._create_distributed_trace_payload_with_guid(guid)
+        if payload:
+            headers = [
+                (ExternalTrace.cat_distributed_trace_key, payload.http_safe()),
+            ]
             headers.extend(metadata)
             metadata = headers
 
@@ -26,14 +31,10 @@ def _prepare_request(transaction, request,
     return request, timeout, args, kwargs
 
 
-def _prepare_request_unary(transaction, request, *args, **kwargs):
-    return _prepare_request(transaction, request, *args, **kwargs)
-
-
 def _prepare_request_stream(
-        transaction, request_iterator, *args, **kwargs):
+        transaction, guid, request_iterator, *args, **kwargs):
     return _prepare_request(
-            transaction, request_iterator, *args, **kwargs)
+            transaction, guid, request_iterator, *args, **kwargs)
 
 
 def wrap_call(module, object_path, prepare, method):
@@ -46,30 +47,27 @@ def wrap_call(module, object_path, prepare, method):
         uri = _get_uri(instance)
         with ExternalTrace(transaction, 'gRPC', uri, method):
             request, timeout, args, kwargs = prepare(
-                    transaction, *args, **kwargs)
+                    transaction, None, *args, **kwargs)
             return wrapped(request, timeout, *args, **kwargs)
 
     wrap_function_wrapper(module, object_path, _call_wrapper)
 
 
-def wrap_external_future(module, object_path, library, url, method=None):
-    def _wrap_future(wrapped, instance, args, kwargs):
-        if callable(url):
-            if instance is not None:
-                _url = url(instance, *args, **kwargs)
-            else:
-                _url = url(*args, **kwargs)
+def wrap_future(module, object_path, prepare, method):
 
-        else:
-            _url = url
-
+    def _future_wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction()
         if transaction is None:
             return wrapped(*args, **kwargs)
 
-        future = wrapped(*args, **kwargs)
-        future._nr_args = (transaction, library, _url, method)
-        future._nr_result_called = False
+        guid = '%016x' % random.getrandbits(64)
+        uri = _get_uri(instance)
+
+        request, timeout, args, kwargs = prepare(
+                transaction, guid, *args, **kwargs)
+        future = wrapped(request, timeout, *args, **kwargs)
+        future._nr_guid = guid
+        future._nr_args = (transaction, 'gRPC', uri, method)
         future._nr_start_time = time.time()
 
         # In non-streaming responses, result is typically called instead of
@@ -78,7 +76,7 @@ def wrap_external_future(module, object_path, library, url, method=None):
 
         return future
 
-    wrap_function_wrapper(module, object_path, _wrap_future)
+    wrap_function_wrapper(module, object_path, _future_wrapper)
 
 
 def wrap_next(_wrapped, _instance, _args, _kwargs):
@@ -86,42 +84,51 @@ def wrap_next(_wrapped, _instance, _args, _kwargs):
     if not _nr_args:
         return _wrapped(*_args, **_kwargs)
 
-    _start = time.time()
     try:
-        result = _wrapped(*_args, **_kwargs)
+        return _wrapped(*_args, **_kwargs)
     except StopIteration:
-        raise
-    except Exception:
+        delattr(_instance, '_nr_args')
+        _nr_start_time = getattr(_instance, '_nr_start_time', 0.0)
+        _nr_guid = getattr(_instance, '_nr_guid', None)
+
         with ExternalTrace(*_nr_args) as t:
-            t.start_time = _start
+            t.start_time = _nr_start_time or t.start_time
+            t.guid = _nr_guid or t.guid
             raise
-    else:
+    except Exception:
+        delattr(_instance, '_nr_args')
+        _nr_start_time = getattr(_instance, '_nr_start_time', 0.0)
+        _nr_guid = getattr(_instance, '_nr_guid', None)
+
         with ExternalTrace(*_nr_args) as t:
-            t.start_time = _start
-            return result
+            t.start_time = _nr_start_time or t.start_time
+            t.guid = _nr_guid or t.guid
+            raise
 
 
 def wrap_result(_wrapped, _instance, _args, _kwargs):
-    _result_called = getattr(_instance, '_nr_result_called', True)
-    if _result_called:
-        return _wrapped(*_args, **_kwargs)
-    _instance._nr_result_called = True
-
     _nr_args = getattr(_instance, '_nr_args', None)
     if not _nr_args:
         return _wrapped(*_args, **_kwargs)
-
-    _nr_start_time = getattr(_instance, '_nr_start_time', 0.0)
+    delattr(_instance, '_nr_args')
 
     try:
         result = _wrapped(*_args, **_kwargs)
     except Exception:
+        _nr_start_time = getattr(_instance, '_nr_start_time', 0.0)
+        _nr_guid = getattr(_instance, '_nr_guid', None)
+
         with ExternalTrace(*_nr_args) as t:
-            t.start_time = _nr_start_time
+            t.start_time = _nr_start_time or t.start_time
+            t.guid = _nr_guid or t.guid
             raise
     else:
+        _nr_start_time = getattr(_instance, '_nr_start_time', 0.0)
+        _nr_guid = getattr(_instance, '_nr_guid', None)
+
         with ExternalTrace(*_nr_args) as t:
-            t.start_time = _nr_start_time
+            t.start_time = _nr_start_time or t.start_time
+            t.guid = _nr_guid or t.guid
             return result
 
 
@@ -176,21 +183,21 @@ def _nr_wrap_status_code(wrapped, instance, args, kwargs):
 
 def instrument_grpc__channel(module):
     wrap_call(module, '_UnaryUnaryMultiCallable.__call__',
-            _prepare_request_unary, 'unary_unary')
+            _prepare_request, 'unary_unary')
     wrap_call(module, '_UnaryUnaryMultiCallable.with_call',
-            _prepare_request_unary, 'unary_unary')
-    wrap_external_future(module, '_UnaryUnaryMultiCallable.future',
-            'gRPC', _get_uri, 'unary_unary')
-    wrap_external_future(module, '_UnaryStreamMultiCallable.__call__',
-            'gRPC', _get_uri, 'unary_stream')
+            _prepare_request, 'unary_unary')
+    wrap_future(module, '_UnaryUnaryMultiCallable.future',
+            _prepare_request, 'unary_unary')
+    wrap_future(module, '_UnaryStreamMultiCallable.__call__',
+            _prepare_request, 'unary_stream')
     wrap_call(module, '_StreamUnaryMultiCallable.__call__',
             _prepare_request_stream, 'stream_unary')
     wrap_call(module, '_StreamUnaryMultiCallable.with_call',
             _prepare_request_stream, 'stream_unary')
-    wrap_external_future(module, '_StreamUnaryMultiCallable.future',
-            'gRPC', _get_uri, 'stream_unary')
-    wrap_external_future(module, '_StreamStreamMultiCallable.__call__',
-            'gRPC', _get_uri, 'stream_stream')
+    wrap_future(module, '_StreamUnaryMultiCallable.future',
+            _prepare_request_stream, 'stream_unary')
+    wrap_future(module, '_StreamStreamMultiCallable.__call__',
+            _prepare_request_stream, 'stream_stream')
     wrap_function_wrapper(module, '_Rendezvous._next',
             wrap_next)
     wrap_function_wrapper(module, '_Rendezvous.result',

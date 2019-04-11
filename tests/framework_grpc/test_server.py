@@ -67,6 +67,7 @@ def test_raises_response_status(method_name, streaming_request,
 
     status_code = str(grpc.StatusCode.UNKNOWN.value[0])
 
+    @validate_transaction_errors(errors=['builtins:AssertionError'])
     @validate_transaction_metrics(_transaction_name)
     @override_application_settings({'attributes.include': ['request.*']})
     @validate_transaction_event_attributes(

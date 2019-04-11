@@ -181,6 +181,14 @@ def _nr_wrap_status_code(wrapped, instance, args, kwargs):
     return status_code
 
 
+def _nr_wrap_abort(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if transaction:
+        transaction.record_exception()
+
+    return wrapped(*args, **kwargs)
+
+
 def instrument_grpc__channel(module):
     wrap_call(module, '_UnaryUnaryMultiCallable.__call__',
             _prepare_request, 'unary_unary')
@@ -213,3 +221,5 @@ def instrument_grpc_server(module):
             _nr_wrap_status_code)
     wrap_function_wrapper(module, '_abortion_code',
             _nr_wrap_status_code)
+    wrap_function_wrapper(module, '_abort',
+            _nr_wrap_abort)

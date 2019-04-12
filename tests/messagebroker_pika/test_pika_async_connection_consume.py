@@ -1,3 +1,4 @@
+from minversion import new_pika_xfail
 import functools
 import pika
 import pytest
@@ -25,15 +26,25 @@ _message_broker_tt_params = {
 }
 
 
-class MyIOLoop(tornado.ioloop.IOLoop.configured_class()):
-    def handle_callback_exception(self, *args, **kwargs):
-        raise
+# Tornado's IO loop is not configurable in versions 5.x and up
+try:
+    class MyIOLoop(tornado.ioloop.IOLoop.configured_class()):
+        def handle_callback_exception(self, *args, **kwargs):
+            raise
 
+    tornado.ioloop.IOLoop.configure(MyIOLoop)
+except AttributeError:
+    pass
 
-tornado.ioloop.IOLoop.configure(MyIOLoop)
+connection_classes = [pika.SelectConnection]
+
+try:
+    connection_classes.append(pika.TornadoConnection)
+except AttributeError:
+    pass
 
 parametrized_connection = pytest.mark.parametrize('ConnectionClass',
-        [pika.SelectConnection, pika.TornadoConnection])
+        connection_classes)
 
 
 _test_select_conn_basic_get_inside_txn_metrics = [
@@ -51,6 +62,7 @@ else:
         ('Function/test_pika_async_connection_consume:on_message', 1))
 
 
+@new_pika_xfail
 @parametrized_connection
 @pytest.mark.parametrize('callback_as_partial', [True, False])
 @validate_transaction_metrics(
@@ -92,6 +104,7 @@ def test_async_connection_basic_get_inside_txn(producer, ConnectionClass,
         raise
 
 
+@new_pika_xfail
 @parametrized_connection
 @pytest.mark.parametrize('callback_as_partial', [True, False])
 def test_select_connection_basic_get_outside_txn(producer, ConnectionClass,
@@ -141,6 +154,7 @@ _test_select_conn_basic_get_inside_txn_no_callback_metrics = [
 ]
 
 
+@new_pika_xfail
 @parametrized_connection
 @validate_transaction_metrics(
     ('test_pika_async_connection_consume:'
@@ -179,6 +193,7 @@ _test_async_connection_basic_get_empty_metrics = [
 ]
 
 
+@new_pika_xfail
 @parametrized_connection
 @pytest.mark.parametrize('callback_as_partial', [True, False])
 @validate_transaction_metrics(
@@ -235,6 +250,7 @@ else:
         ('Function/test_pika_async_connection_consume:on_message', 1))
 
 
+@new_pika_xfail
 @parametrized_connection
 @validate_transaction_metrics(
         ('test_pika_async_connection_consume:'
@@ -294,6 +310,7 @@ else:
         ('Function/test_pika_async_connection_consume:on_message_2', 1))
 
 
+@new_pika_xfail
 @parametrized_connection
 @validate_transaction_metrics(
         ('test_pika_async_connection_consume:'
@@ -353,6 +370,7 @@ def test_async_connection_basic_consume_two_exchanges(producer, producer_2,
 
 
 # This should not create a transaction
+@new_pika_xfail
 @function_not_called('newrelic.core.stats_engine',
                 'StatsEngine.record_transaction')
 @override_application_settings({'debug.record_transaction_failure': True})
@@ -399,6 +417,7 @@ else:
 
 
 # This should create a transaction
+@new_pika_xfail
 @validate_transaction_metrics(
         _txn_name,
         scoped_metrics=_test_select_connection_consume_outside_txn_metrics,

@@ -65,7 +65,11 @@ def test_blocking_connection(producer):
             body='test',
         )
 
-        channel.publish(
+        # publish has been removed and replaced with basic_publish in later
+        # versions of pika
+        publish = getattr(channel, 'publish', channel.basic_publish)
+
+        publish(
             exchange='',
             routing_key=QUEUE,
             body='test',
@@ -107,7 +111,11 @@ def test_blocking_connection_correlation_id(producer):
                 correlation_id=CORRELATION_ID),
         )
 
-        channel.publish(
+        # publish has been removed and replaced with basic_publish in later
+        # versions of pika
+        publish = getattr(channel, 'publish', channel.basic_publish)
+
+        publish(
             exchange='',
             routing_key=QUEUE,
             body='test',
@@ -149,7 +157,11 @@ def test_blocking_connection_reply_to(producer):
             properties=pika.spec.BasicProperties(reply_to=REPLY_TO),
         )
 
-        channel.publish(
+        # publish has been removed and replaced with basic_publish in later
+        # versions of pika
+        publish = getattr(channel, 'publish', channel.basic_publish)
+
+        publish(
             exchange='',
             routing_key=QUEUE,
             body='test',
@@ -203,7 +215,11 @@ def test_blocking_connection_headers(enable_distributed_tracing):
                 properties=pika.spec.BasicProperties(headers=HEADERS),
             )
 
-            channel.publish(
+            # publish has been removed and replaced with basic_publish in later
+            # versions of pika
+            publish = getattr(channel, 'publish', channel.basic_publish)
+
+            publish(
                 exchange='',
                 routing_key=QUEUE,
                 body='test',
@@ -237,7 +253,11 @@ def test_blocking_connection_headers_reuse_properties(producer):
             properties=properties,
         )
 
-        channel.publish(
+        # publish has been removed and replaced with basic_publish in later
+        # versions of pika
+        publish = getattr(channel, 'publish', channel.basic_publish)
+
+        publish(
             exchange='',
             routing_key=QUEUE,
             body='test',
@@ -305,7 +325,7 @@ _test_select_connection_metrics = [
 @cache_pika_headers
 def test_select_connection():
     def on_open(connection):
-        connection.channel(on_channel_open)
+        connection.channel(on_open_callback=on_channel_open)
 
     def on_channel_open(channel):
         channel.basic_publish(
@@ -314,6 +334,7 @@ def test_select_connection():
             body='test',
         )
         connection.close()
+        connection.ioloop.stop()
 
     parameters = pika.ConnectionParameters(DB_SETTINGS['host'])
     connection = pika.SelectConnection(
@@ -348,8 +369,10 @@ _test_tornado_connection_metrics = [
 @validate_messagebroker_headers
 @cache_pika_headers
 def test_tornado_connection():
+    from pika.adapters import tornado_connection
+
     def on_open(connection):
-        connection.channel(on_channel_open)
+        connection.channel(on_open_callback=on_channel_open)
 
     def on_channel_open(channel):
         channel.basic_publish(
@@ -361,7 +384,7 @@ def test_tornado_connection():
         connection.ioloop.stop()
 
     parameters = pika.ConnectionParameters(DB_SETTINGS['host'])
-    connection = pika.TornadoConnection(
+    connection = tornado_connection.TornadoConnection(
             parameters=parameters,
             on_open_callback=on_open)
 

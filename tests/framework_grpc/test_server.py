@@ -1,12 +1,26 @@
+import six
 import grpc
 import pytest
-from _test_common import (create_stub, create_request,
+from _test_common import (create_stub, create_stub_and_channel, create_request,
     wait_for_transaction_completion)
 from newrelic.core.config import global_settings
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_transaction_event_attributes, override_application_settings,
-        override_generic_settings, function_not_called)
+        override_generic_settings, function_not_called,
+        validate_transaction_errors)
 
+
+def select_python_version(py2, py3):
+    return six.PY3 and py3 or py2
+
+
+if hasattr(grpc, '__version__'):
+    GRPC_VERSION = tuple(int(v) for v in grpc.__version__.split('.'))
+else:
+    GRPC_VERSION = None
+
+is_lt_grpc118 = GRPC_VERSION is None or GRPC_VERSION < (1, 18)
+is_lt_grpc18 = GRPC_VERSION is None or GRPC_VERSION < (1, 8)
 
 _test_matrix = ["method_name,streaming_request", [
     ("DoUnaryUnary", False),
@@ -66,6 +80,8 @@ def test_raises_response_status(method_name, streaming_request,
 
     status_code = str(grpc.StatusCode.UNKNOWN.value[0])
 
+    @validate_transaction_errors(errors=[select_python_version(
+        py2='exceptions:AssertionError', py3='builtins:AssertionError')])
     @validate_transaction_metrics(_transaction_name)
     @override_application_settings({'attributes.include': ['request.*']})
     @validate_transaction_event_attributes(
@@ -87,6 +103,71 @@ def test_raises_response_status(method_name, streaming_request,
             list(response)
         except Exception:
             pass
+
+    _doit()
+
+
+@pytest.mark.skipif(is_lt_grpc18, reason='abort added in 1.8.0')
+@pytest.mark.parametrize(*_test_matrix)
+def test_abort(method_name, streaming_request, mock_grpc_server):
+    port = mock_grpc_server
+    stub = create_stub(port)
+    request = create_request(streaming_request)
+    method = getattr(stub, method_name + 'Abort')
+
+    @validate_transaction_errors(errors=[select_python_version(
+        py2='exceptions:Exception', py3='builtins:Exception')])
+    @wait_for_transaction_completion
+    def _doit():
+        with pytest.raises(grpc.RpcError) as error:
+            response = method(request)
+            list(response)
+
+        assert error.value.details() == 'aborting'
+        assert error.value.code() == grpc.StatusCode.ABORTED
+
+    _doit()
+
+
+@pytest.mark.skipif(is_lt_grpc118, reason='abort_with_status added in 1.18.0')
+@pytest.mark.parametrize(*_test_matrix)
+def test_abort_with_status(method_name, streaming_request, mock_grpc_server):
+    port = mock_grpc_server
+    stub = create_stub(port)
+    request = create_request(streaming_request)
+    method = getattr(stub, method_name + 'AbortWithStatus')
+
+    @validate_transaction_errors(errors=[select_python_version(
+        py2='exceptions:Exception', py3='builtins:Exception')])
+    @wait_for_transaction_completion
+    def _doit():
+        with pytest.raises(grpc.RpcError) as error:
+            response = method(request)
+            list(response)
+
+        assert error.value.details() == 'abort_with_status'
+        assert error.value.code() == grpc.StatusCode.ABORTED
+
+    _doit()
+
+
+@pytest.mark.skipif(is_lt_grpc118, reason='channel.close added in 1.18.0')
+def test_no_exception_client_close(mock_grpc_server):
+    port = mock_grpc_server
+    stub, channel = create_stub_and_channel(port)
+    request = create_request(False, timesout=True)
+
+    method = getattr(stub, 'DoUnaryUnary')
+
+    @validate_transaction_errors(errors=[])
+    @wait_for_transaction_completion
+    def _doit():
+        future_response = method.future(request)
+        channel.close()
+        with pytest.raises(grpc.RpcError) as error:
+            future_response.result()
+
+        assert error.value.code() == grpc.StatusCode.CANCELLED
 
     _doit()
 

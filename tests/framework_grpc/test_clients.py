@@ -7,8 +7,7 @@ from newrelic.api.background_task import background_task
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_transaction_errors)
 
-from _test_common import (create_stub as _create_stub,
-        create_request as _create_request)
+from _test_common import create_stub, create_request, get_result
 
 
 _test_matrix = [
@@ -87,7 +86,7 @@ def test_client(service_method_type, service_method_method_name,
             background_task=True)
     @background_task()
     def _test_client():
-        stub = _create_stub(port)
+        stub = create_stub(port)
 
         service_method_class = getattr(stub, service_method_class_name)
         service_method_method = getattr(service_method_class,
@@ -97,7 +96,7 @@ def test_client(service_method_type, service_method_method_name,
         # that the request does not return prior to cancelling. If the request
         # returns prior to cancellation then the response might be valid. In
         # order to force the request to not return, the timesout option is set.
-        request = _create_request(streaming_request, count=message_count,
+        request = create_request(streaming_request, count=message_count,
                 timesout=cancel)
 
         reply = service_method_method(request)
@@ -155,10 +154,6 @@ _test_matrix = [
 @pytest.mark.parametrize(*_test_matrix)
 def test_future_timeout_error(service_method_type, service_method_method_name,
         future_response, mock_grpc_server):
-    import grpc
-    if hasattr(grpc, '__version__'):
-        pytest.skip('latest version fails this test')
-        
     port = mock_grpc_server
 
     service_method_class_name = 'NoTxn%s' % (
@@ -189,19 +184,16 @@ def test_future_timeout_error(service_method_type, service_method_method_name,
             background_task=True)
     @background_task()
     def _test_future_timeout_error():
-        stub = _create_stub(port)
+        stub = create_stub(port)
 
         service_method_class = getattr(stub, service_method_class_name)
         service_method_method = getattr(service_method_class,
                 service_method_method_name)
 
-        request = _create_request(streaming_request, count=1, timesout=True)
+        request = create_request(streaming_request, count=1, timesout=True)
 
-        with pytest.raises(grpc.RpcError) as error:
-            reply = service_method_method(request, timeout=0.01)
-            list(reply)
-
-        assert error.value.code() == grpc.StatusCode.DEADLINE_EXCEEDED
+        reply = get_result(service_method_method, request, timeout=0.01)
+        assert reply and reply.code() == grpc.StatusCode.DEADLINE_EXCEEDED
 
     _test_future_timeout_error()
 
@@ -209,9 +201,6 @@ def test_future_timeout_error(service_method_type, service_method_method_name,
 @pytest.mark.parametrize(*_test_matrix)
 def test_server_down(service_method_type, service_method_method_name,
         future_response):
-    import grpc
-    if hasattr(grpc, '__version__'):
-        pytest.skip('latest version fails this test')
     port = 1234
 
     service_method_class_name = 'NoTxn%s' % (
@@ -241,19 +230,15 @@ def test_server_down(service_method_type, service_method_method_name,
             background_task=True)
     @background_task()
     def _test_server_down():
-        stub = _create_stub(port)
+        stub = create_stub(port)
 
         service_method_class = getattr(stub, service_method_class_name)
         service_method_method = getattr(service_method_class,
                 service_method_method_name)
 
-        request = _create_request(streaming_request, count=1, timesout=False)
-
-        with pytest.raises(grpc.RpcError) as error:
-            reply = service_method_method(request)
-            list(reply)
-
-        assert error.value.code() == grpc.StatusCode.UNAVAILABLE
+        request = create_request(streaming_request, count=1, timesout=False)
+        reply = get_result(service_method_method, request)
+        assert reply and reply.code() == grpc.StatusCode.UNAVAILABLE
 
     _test_server_down()
 
@@ -304,13 +289,13 @@ def test_repeated_result(service_method_type, service_method_method_name,
             background_task=True)
     @background_task()
     def _test_repeated_result():
-        stub = _create_stub(port)
+        stub = create_stub(port)
 
         service_method_class = getattr(stub, service_method_class_name)
         service_method_method = getattr(service_method_class,
                 service_method_method_name)
 
-        request = _create_request(streaming_request, count=1, timesout=False)
+        request = create_request(streaming_request, count=1, timesout=False)
 
         reply = service_method_method(request)
         if isinstance(reply, tuple):

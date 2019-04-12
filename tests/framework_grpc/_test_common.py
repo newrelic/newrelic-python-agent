@@ -3,8 +3,6 @@ import threading
 import functools
 from newrelic.api.application import application_instance
 
-__all__ = ['create_stub', 'create_request']
-
 
 def create_stub(port):
     from sample_application.sample_application_pb2_grpc import (
@@ -27,6 +25,19 @@ def create_request(streaming_request, count=1, timesout=False):
         request = Message(text='Hello World', count=count, timesout=timesout)
 
     return request
+
+
+def get_result(method, request, *args, **kwargs):
+    from grpc._channel import _Rendezvous
+    result = None
+    try:
+        result = method(request, *args, **kwargs)
+        list(result)
+    except _Rendezvous as e:
+        result = e
+    except Exception:
+        pass
+    return result
 
 
 def wait_for_transaction_completion(fn):

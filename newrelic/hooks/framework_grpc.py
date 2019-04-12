@@ -86,15 +86,6 @@ def wrap_next(_wrapped, _instance, _args, _kwargs):
 
     try:
         return _wrapped(*_args, **_kwargs)
-    except StopIteration:
-        delattr(_instance, '_nr_args')
-        _nr_start_time = getattr(_instance, '_nr_start_time', 0.0)
-        _nr_guid = getattr(_instance, '_nr_guid', None)
-
-        with ExternalTrace(*_nr_args) as t:
-            t.start_time = _nr_start_time or t.start_time
-            t.guid = _nr_guid or t.guid
-            raise
     except Exception:
         delattr(_instance, '_nr_args')
         _nr_start_time = getattr(_instance, '_nr_start_time', 0.0)
@@ -111,21 +102,17 @@ def wrap_result(_wrapped, _instance, _args, _kwargs):
     if not _nr_args:
         return _wrapped(*_args, **_kwargs)
     delattr(_instance, '_nr_args')
+    _nr_start_time = getattr(_instance, '_nr_start_time', 0.0)
+    _nr_guid = getattr(_instance, '_nr_guid', None)
 
     try:
         result = _wrapped(*_args, **_kwargs)
     except Exception:
-        _nr_start_time = getattr(_instance, '_nr_start_time', 0.0)
-        _nr_guid = getattr(_instance, '_nr_guid', None)
-
         with ExternalTrace(*_nr_args) as t:
             t.start_time = _nr_start_time or t.start_time
             t.guid = _nr_guid or t.guid
             raise
     else:
-        _nr_start_time = getattr(_instance, '_nr_start_time', 0.0)
-        _nr_guid = getattr(_instance, '_nr_guid', None)
-
         with ExternalTrace(*_nr_args) as t:
             t.start_time = _nr_start_time or t.start_time
             t.guid = _nr_guid or t.guid
@@ -209,6 +196,8 @@ def instrument_grpc__channel(module):
     wrap_function_wrapper(module, '_Rendezvous._next',
             wrap_next)
     wrap_function_wrapper(module, '_Rendezvous.result',
+            wrap_result)
+    wrap_function_wrapper(module, '_Rendezvous.cancel',
             wrap_result)
 
 

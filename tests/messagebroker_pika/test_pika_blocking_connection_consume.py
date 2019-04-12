@@ -1,3 +1,4 @@
+from minversion import new_pika_xfail
 import functools
 import pika
 import pytest
@@ -116,6 +117,7 @@ else:
         ('Function/test_pika_blocking_connection_consume:on_message', None))
 
 
+@new_pika_xfail
 @pytest.mark.parametrize('as_partial', [True, False])
 @validate_transaction_metrics(
         _txn_name,
@@ -160,6 +162,7 @@ else:
         ('Function/test_pika_blocking_connection_consume:on_message', 1))
 
 
+@new_pika_xfail
 @pytest.mark.parametrize('as_partial', [True, False])
 @validate_transaction_metrics(
         ('test_pika_blocking_connection_consume:'
@@ -205,6 +208,7 @@ else:
         ('Function/test_pika_blocking_connection_consume:on_message', None))
 
 
+@new_pika_xfail
 @pytest.mark.parametrize('as_partial', [True, False])
 @validate_transaction_metrics(
         ('test_pika_blocking_connection_consume:'

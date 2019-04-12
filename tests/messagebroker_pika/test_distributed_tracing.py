@@ -1,3 +1,4 @@
+from minversion import new_pika_xfail
 import pika
 import six
 
@@ -71,6 +72,7 @@ def do_basic_consume(channel):
     channel.start_consuming()
 
 
+@new_pika_xfail
 @override_application_settings(_override_settings)
 def test_basic_consume_distributed_tracing_headers():
     def on_receive(ch, method, properties, msg):

@@ -1,3 +1,4 @@
+from minversion import new_pika_xfail
 import pika
 import six
 
@@ -45,6 +46,7 @@ _test_select_connection_supportability_metrics = [
 ]
 
 
+@new_pika_xfail
 @validate_transaction_metrics(
         ('test_pika_supportability:'
                 'test_select_connection_supportability_in_txn'),
@@ -90,6 +92,7 @@ else:
         'test_pika_supportability:on_message')
 
 
+@new_pika_xfail
 @validate_transaction_metrics(
         _txn_name,
         scoped_metrics=(),

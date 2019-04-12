@@ -1,3 +1,4 @@
+from minversion import new_pika_skip, new_pika_xfail
 import pika
 
 from newrelic.api.background_task import background_task
@@ -42,6 +43,7 @@ def test_blocking_connection_consume_break(producer):
             break
 
 
+@new_pika_xfail
 @validate_transaction_metrics(
         ('test_pika_blocking_connection_consume_generator:'
                 'test_blocking_connection_consume_connection_close'),
@@ -67,6 +69,7 @@ def test_blocking_connection_consume_connection_close(producer):
         connection.close()
 
 
+@new_pika_xfail
 @validate_transaction_metrics(
         ('test_pika_blocking_connection_consume_generator:'
                 'test_blocking_connection_consume_timeout'),
@@ -159,6 +162,7 @@ _test_blocking_connection_consume_many_metrics = [
 ]
 
 
+@new_pika_skip
 @validate_transaction_metrics(
         ('test_pika_blocking_connection_consume_generator:'
                 'test_blocking_connection_consume_many'),
@@ -181,6 +185,7 @@ def test_blocking_connection_consume_many(produce_five):
                 break
 
 
+@new_pika_xfail
 @validate_transaction_metrics(
         ('test_pika_blocking_connection_consume_generator:'
                 'test_blocking_connection_consume_using_methods'),
@@ -216,6 +221,7 @@ def test_blocking_connection_consume_using_methods(producer):
         assert result is None
 
 
+@new_pika_skip
 @validate_transaction_metrics(
         'Named/%s' % EXCHANGE,
         scoped_metrics=_test_blocking_connection_consume_metrics,
@@ -273,6 +279,7 @@ def test_blocking_connection_consume_many_outside_txn(produce_five):
                 consumer.close()
 
 
+@new_pika_xfail
 @validate_transaction_metrics(
         'Named/%s' % EXCHANGE,
         scoped_metrics=_test_blocking_connection_consume_metrics,

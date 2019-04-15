@@ -1,6 +1,8 @@
-from minversion import new_pika_xfail
+from minversion import new_pika_skip
+from compat import basic_consume
 import functools
 import pika
+from pika.adapters.tornado_connection import TornadoConnection
 import pytest
 import six
 import tornado
@@ -36,12 +38,7 @@ try:
 except AttributeError:
     pass
 
-connection_classes = [pika.SelectConnection]
-
-try:
-    connection_classes.append(pika.TornadoConnection)
-except AttributeError:
-    pass
+connection_classes = [pika.SelectConnection, TornadoConnection]
 
 parametrized_connection = pytest.mark.parametrize('ConnectionClass',
         connection_classes)
@@ -62,7 +59,7 @@ else:
         ('Function/test_pika_async_connection_consume:on_message', 1))
 
 
-@new_pika_xfail
+@new_pika_skip
 @parametrized_connection
 @pytest.mark.parametrize('callback_as_partial', [True, False])
 @validate_transaction_metrics(
@@ -104,7 +101,7 @@ def test_async_connection_basic_get_inside_txn(producer, ConnectionClass,
         raise
 
 
-@new_pika_xfail
+@new_pika_skip
 @parametrized_connection
 @pytest.mark.parametrize('callback_as_partial', [True, False])
 def test_select_connection_basic_get_outside_txn(producer, ConnectionClass,
@@ -154,7 +151,7 @@ _test_select_conn_basic_get_inside_txn_no_callback_metrics = [
 ]
 
 
-@new_pika_xfail
+@new_pika_skip
 @parametrized_connection
 @validate_transaction_metrics(
     ('test_pika_async_connection_consume:'
@@ -193,7 +190,7 @@ _test_async_connection_basic_get_empty_metrics = [
 ]
 
 
-@new_pika_xfail
+@new_pika_skip
 @parametrized_connection
 @pytest.mark.parametrize('callback_as_partial', [True, False])
 @validate_transaction_metrics(
@@ -250,7 +247,6 @@ else:
         ('Function/test_pika_async_connection_consume:on_message', 1))
 
 
-@new_pika_xfail
 @parametrized_connection
 @validate_transaction_metrics(
         ('test_pika_async_connection_consume:'
@@ -270,10 +266,10 @@ def test_async_connection_basic_consume_inside_txn(producer, ConnectionClass):
         connection.ioloop.stop()
 
     def on_open_channel(channel):
-        channel.basic_consume(on_message, QUEUE)
+        basic_consume(channel, QUEUE, on_message)
 
     def on_open_connection(connection):
-        connection.channel(on_open_channel)
+        connection.channel(on_open_callback=on_open_channel)
 
     connection = ConnectionClass(
             pika.ConnectionParameters(DB_SETTINGS['host']),
@@ -310,7 +306,6 @@ else:
         ('Function/test_pika_async_connection_consume:on_message_2', 1))
 
 
-@new_pika_xfail
 @parametrized_connection
 @validate_transaction_metrics(
         ('test_pika_async_connection_consume:'
@@ -351,11 +346,11 @@ def test_async_connection_basic_consume_two_exchanges(producer, producer_2,
             connection.ioloop.stop()
 
     def on_open_channel(channel):
-        channel.basic_consume(on_message_1, QUEUE)
-        channel.basic_consume(on_message_2, QUEUE_2)
+        basic_consume(channel, QUEUE, on_message_1)
+        basic_consume(channel, QUEUE_2, on_message_2)
 
     def on_open_connection(connection):
-        connection.channel(on_open_channel)
+        connection.channel(on_open_callback=on_open_channel)
 
     connection = ConnectionClass(
             pika.ConnectionParameters(DB_SETTINGS['host']),
@@ -370,7 +365,6 @@ def test_async_connection_basic_consume_two_exchanges(producer, producer_2,
 
 
 # This should not create a transaction
-@new_pika_xfail
 @function_not_called('newrelic.core.stats_engine',
                 'StatsEngine.record_transaction')
 @override_application_settings({'debug.record_transaction_failure': True})
@@ -384,12 +378,12 @@ def test_tornado_connection_basic_consume_outside_transaction(producer):
         connection.ioloop.stop()
 
     def on_open_channel(channel):
-        channel.basic_consume(on_message, QUEUE)
+        basic_consume(channel, QUEUE, on_message)
 
     def on_open_connection(connection):
-        connection.channel(on_open_channel)
+        connection.channel(on_open_callback=on_open_channel)
 
-    connection = pika.TornadoConnection(
+    connection = TornadoConnection(
             pika.ConnectionParameters(DB_SETTINGS['host']),
             on_open_callback=on_open_connection)
 
@@ -417,7 +411,6 @@ else:
 
 
 # This should create a transaction
-@new_pika_xfail
 @validate_transaction_metrics(
         _txn_name,
         scoped_metrics=_test_select_connection_consume_outside_txn_metrics,
@@ -434,10 +427,10 @@ def test_select_connection_basic_consume_outside_transaction(producer):
         connection.ioloop.stop()
 
     def on_open_channel(channel):
-        channel.basic_consume(on_message, QUEUE)
+        basic_consume(channel, QUEUE, on_message)
 
     def on_open_connection(connection):
-        connection.channel(on_open_channel)
+        connection.channel(on_open_callback=on_open_channel)
 
     connection = pika.SelectConnection(
             pika.ConnectionParameters(DB_SETTINGS['host']),

@@ -171,14 +171,21 @@ def _nr_wrap_BlockingChannel___init__(wrapped, instance, args, kwargs):
     return ret
 
 
-def _bind_params_BlockingChannel_basic_consume(consumer_callback, queue, *args,
-        **kwargs):
-    return consumer_callback, queue
+def _wrap_basic_consume_BlockingChannel_old(wrapper,
+        consumer_callback, queue, *args, **kwargs):
+    args = (wrapper(consumer_callback), queue) + args
+    return queue, args, kwargs
 
 
-def _bind_params_Channel_basic_consume(consumer_callback, queue='', *args,
+def _wrap_basic_consume_Channel_old(wrapper, consumer_callback, queue='',
+        *args, **kwargs):
+    return queue, (wrapper(consumer_callback), queue) + args, kwargs
+
+
+def _wrap_basic_consume_Channel(wrapper, queue, on_message_callback, *args,
         **kwargs):
-    return consumer_callback, queue
+    args = (queue, wrapper(on_message_callback)) + args
+    return queue, args, kwargs
 
 
 def _ConsumeGeneratorWrapper(wrapped):
@@ -296,27 +303,27 @@ def _ConsumeGeneratorWrapper(wrapped):
     return FunctionWrapper(wrapped, wrapper)
 
 
-def _wrap_Channel_consume_callback(module, obj, bind_params,
-        callback_referrer):
+def _wrap_Channel_consume_callback(module, obj, wrap_consume):
 
     @function_wrapper
-    def _nr_wrapper_Channel_consume_(wrapped, instance, args, kwargs):
-        callback, queue = bind_params(*args, **kwargs)
-        name = callable_name(callback)
+    def _nr_wrapper_Channel_consume_(wrapped, channel, args, kwargs):
 
         @function_wrapper
-        def callback_wrapper(_wrapped, _instance, _args, _kwargs):
+        def callback_wrapper(wrapped, instance, args, kwargs):
+            name = callable_name(wrapped)
+
             transaction = current_transaction(active_only=False)
 
             if transaction and (transaction.ignore_transaction or
                     transaction.stopped):
-                return callback(*_args, **_kwargs)
+                return wrapped(*args, **kwargs)
             elif transaction:
                 with FunctionTrace(transaction=transaction, name=name):
-                    return callback(*_args, **_kwargs)
+                    return wrapped(*args, **kwargs)
             else:
-                if hasattr(instance, '_nr_disable_txn_tracing'):
-                    return callback(*_args, **_kwargs)
+                if hasattr(channel, '_nr_disable_txn_tracing'):
+                    return wrapped(*args, **kwargs)
+
                 # Keyword arguments are unknown since this is a user
                 # defined callback
                 exchange = 'Unknown'
@@ -325,8 +332,8 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
                 reply_to = None
                 correlation_id = None
                 unknown_kwargs = False
-                if not _kwargs:
-                    method, properties = _args[1:3]
+                if not kwargs:
+                    method, properties = args[1:3]
                     exchange = method.exchange or 'Default'
                     routing_key = getattr(method, 'routing_key', None)
                     if properties is not None:
@@ -358,14 +365,9 @@ def _wrap_Channel_consume_callback(module, obj, bind_params,
                         m = mt._transaction_metrics.get(KWARGS_ERROR, 0)
                         mt._transaction_metrics[KWARGS_ERROR] = m + 1
 
-                    return _wrapped(*_args, **_kwargs)
+                    return wrapped(*args, **kwargs)
 
-        if len(args) > 0:
-            args = list(args)
-            args[0] = callback_wrapper(callback)
-        else:
-            kwargs[callback_referrer] = callback_wrapper(callback)
-
+        queue, args, kwargs = wrap_consume(callback_wrapper, *args, **kwargs)
         return wrapped(*args, **kwargs)
 
     # Normally, wrap_object(module, object, ...) would be used here.
@@ -385,10 +387,18 @@ def _disable_channel_transactions(wrapped, instance, args, kwargs):
 
 
 def instrument_pika_adapters(module):
-    _wrap_Channel_consume_callback(module.blocking_connection,
+    import pika
+    version = tuple(int(num) for num in pika.__version__.split('.', 1)[0])
+
+    if version[0] < 1:
+        wrap_consume = _wrap_basic_consume_BlockingChannel_old
+    else:
+        wrap_consume = _wrap_basic_consume_Channel
+
+    _wrap_Channel_consume_callback(
+            module.blocking_connection,
             'BlockingChannel.basic_consume',
-            _bind_params_BlockingChannel_basic_consume,
-            'consumer_callback')
+            wrap_consume)
     wrap_function_wrapper(module.blocking_connection,
             'BlockingChannel.__init__', _nr_wrap_BlockingChannel___init__)
     wrap_object(module.blocking_connection, 'BlockingChannel.consume',
@@ -405,10 +415,20 @@ def instrument_pika_spec(module):
 
 
 def instrument_pika_channel(module):
+    import pika
+    version = tuple(int(num) for num in pika.__version__.split('.', 1)[0])
+
+    if version[0] < 1:
+        wrap_consume = _wrap_basic_consume_Channel_old
+    else:
+        wrap_consume = _wrap_basic_consume_Channel
+
     wrap_function_wrapper(module, 'Channel.basic_publish',
             _nr_wrapper_basic_publish)
     wrap_function_wrapper(module, 'Channel.basic_get',
             _nr_wrapper_basic_get)
 
-    _wrap_Channel_consume_callback(module, 'Channel.basic_consume',
-            _bind_params_Channel_basic_consume, 'consumer_callback')
+    _wrap_Channel_consume_callback(
+            module,
+            'Channel.basic_consume',
+            wrap_consume)

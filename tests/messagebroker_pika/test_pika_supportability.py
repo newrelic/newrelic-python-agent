@@ -1,4 +1,4 @@
-from minversion import new_pika_xfail
+from compat import basic_consume
 import pika
 import six
 
@@ -46,7 +46,6 @@ _test_select_connection_supportability_metrics = [
 ]
 
 
-@new_pika_xfail
 @validate_transaction_metrics(
         ('test_pika_supportability:'
                 'test_select_connection_supportability_in_txn'),
@@ -67,7 +66,7 @@ def test_select_connection_supportability_in_txn(producer):
         channel.basic_get(callback=on_message, queue=QUEUE)
 
     def on_open_connection(connection):
-        connection.channel(on_open_channel)
+        connection.channel(on_open_callback=on_open_channel)
 
     connection = CustomPikaConnection(
             pika.ConnectionParameters(DB_SETTINGS['host']),
@@ -92,7 +91,6 @@ else:
         'test_pika_supportability:on_message')
 
 
-@new_pika_xfail
 @validate_transaction_metrics(
         _txn_name,
         scoped_metrics=(),
@@ -109,10 +107,10 @@ def test_select_connection_supportability_outside_txn(producer):
         connection.ioloop.stop()
 
     def on_open_channel(channel):
-        channel.basic_consume(on_message, QUEUE)
+        basic_consume(channel, QUEUE, on_message)
 
     def on_open_connection(connection):
-        connection.channel(on_open_channel)
+        connection.channel(on_open_callback=on_open_channel)
 
     connection = CustomPikaConnection(
             pika.ConnectionParameters(DB_SETTINGS['host']),

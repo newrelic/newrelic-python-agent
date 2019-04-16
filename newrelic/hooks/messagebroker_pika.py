@@ -267,7 +267,7 @@ def _ConsumeGeneratorWrapper(wrapped):
                     else:
                         yielded = generator.send(value)
 
-                    if yielded:
+                    if yielded is not None and any(yielded):
                         created_bt = _possibly_create_traces(yielded)
 
                     try:

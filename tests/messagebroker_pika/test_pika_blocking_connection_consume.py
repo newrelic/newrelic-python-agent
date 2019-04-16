@@ -1,4 +1,4 @@
-from minversion import new_pika_xfail
+from compat import basic_consume
 import functools
 import pika
 import pytest
@@ -117,7 +117,6 @@ else:
         ('Function/test_pika_blocking_connection_consume:on_message', None))
 
 
-@new_pika_xfail
 @pytest.mark.parametrize('as_partial', [True, False])
 @validate_transaction_metrics(
         _txn_name,
@@ -139,7 +138,8 @@ def test_blocking_connection_basic_consume_outside_transaction(producer,
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
         channel = connection.channel()
-        channel.basic_consume(on_message, QUEUE)
+
+        basic_consume(channel, QUEUE, on_message)
         try:
             channel.start_consuming()
         except:
@@ -162,7 +162,6 @@ else:
         ('Function/test_pika_blocking_connection_consume:on_message', 1))
 
 
-@new_pika_xfail
 @pytest.mark.parametrize('as_partial', [True, False])
 @validate_transaction_metrics(
         ('test_pika_blocking_connection_consume:'
@@ -184,7 +183,7 @@ def test_blocking_connection_basic_consume_inside_txn(producer, as_partial):
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
         channel = connection.channel()
-        channel.basic_consume(on_message, QUEUE)
+        basic_consume(channel, QUEUE, on_message)
         try:
             channel.start_consuming()
         except:
@@ -208,7 +207,6 @@ else:
         ('Function/test_pika_blocking_connection_consume:on_message', None))
 
 
-@new_pika_xfail
 @pytest.mark.parametrize('as_partial', [True, False])
 @validate_transaction_metrics(
         ('test_pika_blocking_connection_consume:'
@@ -232,7 +230,7 @@ def test_blocking_connection_basic_consume_stopped_txn(producer, as_partial):
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
         channel = connection.channel()
-        channel.basic_consume(on_message, QUEUE)
+        basic_consume(channel, QUEUE, on_message)
         try:
             channel.start_consuming()
         except:

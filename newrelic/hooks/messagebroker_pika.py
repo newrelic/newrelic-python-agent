@@ -71,10 +71,6 @@ def _bind_basic_publish(
     return (exchange, routing_key, body, properties, args, kwargs)
 
 
-def _bind_params_basic_get(callback=None, queue='', *args, **kwargs):
-    return callback, queue
-
-
 def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
@@ -116,44 +112,38 @@ def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
 
-def _nr_wrapper_basic_get(wrapped, instance, args, kwargs):
+def _wrap_Channel_get_callback(module, obj, wrap_get):
+    def _nr_wrapper_basic_get(wrapped, instance, args, kwargs):
 
-    callback, queue = _bind_params_basic_get(*args, **kwargs)
-    if callback is None:
+        @function_wrapper
+        def callback_wrapper(callback, _instance, _args, _kwargs):
+            transaction = current_transaction()
+
+            if transaction is None:
+                return callback(*_args, **_kwargs)
+
+            if not _kwargs:
+                method, properties = _args[1:3]
+                start_time = getattr(callback_wrapper, '_nr_start_time', None)
+
+                _add_consume_rabbitmq_trace(transaction,
+                        method=method,
+                        properties=properties,
+                        nr_start_time=start_time,
+                        queue_name=queue)
+            else:
+                m = transaction._transaction_metrics.get(KWARGS_ERROR, 0)
+                transaction._transaction_metrics[KWARGS_ERROR] = m + 1
+
+            name = callable_name(callback)
+            with FunctionTrace(transaction=transaction, name=name):
+                return callback(*_args, **_kwargs)
+
+        callback_wrapper._nr_start_time = time.time()
+        queue, args, kwargs = wrap_get(callback_wrapper, *args, **kwargs)
         return wrapped(*args, **kwargs)
 
-    @function_wrapper
-    def callback_wrapper(_wrapped, _instance, _args, _kwargs):
-        transaction = current_transaction()
-
-        if transaction is None:
-            return callback(*_args, **_kwargs)
-
-        if not _kwargs:
-            method, properties = _args[1:3]
-            start_time = getattr(callback_wrapper, '_nr_start_time', None)
-
-            _add_consume_rabbitmq_trace(transaction,
-                    method=method,
-                    properties=properties,
-                    nr_start_time=start_time,
-                    queue_name=queue)
-        else:
-            m = transaction._transaction_metrics.get(KWARGS_ERROR, 0)
-            transaction._transaction_metrics[KWARGS_ERROR] = m + 1
-
-        name = callable_name(callback)
-        with FunctionTrace(transaction=transaction, name=name):
-            return callback(*_args, **_kwargs)
-
-    callback_wrapper._nr_start_time = time.time()
-    if len(args) > 0:
-        args = list(args)
-        args[0] = callback_wrapper(callback)
-    else:
-        kwargs['callback'] = callback_wrapper(callback)
-
-    return wrapped(*args, **kwargs)
+    wrap_function_wrapper(module, obj, _nr_wrapper_basic_get)
 
 
 def _nr_wrapper_Basic_Deliver_init_(wrapper, instance, args, kwargs):
@@ -185,6 +175,19 @@ def _wrap_basic_consume_Channel_old(wrapper, consumer_callback, queue='',
 def _wrap_basic_consume_Channel(wrapper, queue, on_message_callback, *args,
         **kwargs):
     args = (queue, wrapper(on_message_callback)) + args
+    return queue, args, kwargs
+
+
+def _wrap_basic_get_Channel(wrapper, queue, callback, *args, **kwargs):
+    args = (queue, wrapper(callback)) + args
+    return queue, args, kwargs
+
+
+def _wrap_basic_get_Channel_old(wrapper, callback=None, queue='',
+        *args, **kwargs):
+    if callback is not None:
+        callback = wrapper(callback)
+    args = (callback, queue) + args
     return queue, args, kwargs
 
 
@@ -421,14 +424,15 @@ def instrument_pika_channel(module):
 
     if version[0] < 1:
         wrap_consume = _wrap_basic_consume_Channel_old
+        wrap_get = _wrap_basic_get_Channel_old
     else:
         wrap_consume = _wrap_basic_consume_Channel
+        wrap_get = _wrap_basic_get_Channel
 
     wrap_function_wrapper(module, 'Channel.basic_publish',
             _nr_wrapper_basic_publish)
-    wrap_function_wrapper(module, 'Channel.basic_get',
-            _nr_wrapper_basic_get)
 
+    _wrap_Channel_get_callback(module, 'Channel.basic_get', wrap_get)
     _wrap_Channel_consume_callback(
             module,
             'Channel.basic_consume',

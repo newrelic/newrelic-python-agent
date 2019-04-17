@@ -1,3 +1,4 @@
+from compat import basic_consume
 import pika
 import six
 
@@ -65,7 +66,7 @@ def test_select_connection_supportability_in_txn(producer):
         channel.basic_get(callback=on_message, queue=QUEUE)
 
     def on_open_connection(connection):
-        connection.channel(on_open_channel)
+        connection.channel(on_open_callback=on_open_channel)
 
     connection = CustomPikaConnection(
             pika.ConnectionParameters(DB_SETTINGS['host']),
@@ -106,10 +107,10 @@ def test_select_connection_supportability_outside_txn(producer):
         connection.ioloop.stop()
 
     def on_open_channel(channel):
-        channel.basic_consume(on_message, QUEUE)
+        basic_consume(channel, QUEUE, on_message)
 
     def on_open_connection(connection):
-        connection.channel(on_open_channel)
+        connection.channel(on_open_callback=on_open_channel)
 
     connection = CustomPikaConnection(
             pika.ConnectionParameters(DB_SETTINGS['host']),

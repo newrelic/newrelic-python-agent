@@ -7,39 +7,7 @@ from newrelic.api.background_task import background_task
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_transaction_errors)
 
-
-@pytest.fixture(scope='module')
-def mock_grpc_server(grpc_app_server):
-    from sample_application.sample_application_pb2_grpc import (
-            add_SampleApplicationServicer_to_server)
-    from sample_application import SampleApplicationServicer
-    server, port = grpc_app_server
-    add_SampleApplicationServicer_to_server(
-            SampleApplicationServicer(), server)
-    return port
-
-
-def _create_stub(port):
-    from sample_application.sample_application_pb2_grpc import (
-            SampleApplicationStub)
-    channel = grpc.insecure_channel('localhost:%s' % port)
-    stub = SampleApplicationStub(channel)
-    return stub
-
-
-def _create_request(streaming_request, count=1, timesout=False):
-    from sample_application.sample_application_pb2 import Message
-
-    def _message_stream():
-        for i in range(count):
-            yield Message(text='Hello World', count=count, timesout=timesout)
-
-    if streaming_request:
-        request = _message_stream()
-    else:
-        request = Message(text='Hello World', count=count, timesout=timesout)
-
-    return request
+from _test_common import create_stub, create_request, get_result
 
 
 _test_matrix = [
@@ -83,27 +51,20 @@ def test_client(service_method_type, service_method_method_name,
 
     port = mock_grpc_server
 
-    service_method_class_name = 'Do%s%s' % (
+    service_method_class_name = 'NoTxn%s%s' % (
             service_method_type.title().replace('_', ''),
             'Raises' if raises_exception else '')
     streaming_request = service_method_type.split('_')[0] == 'stream'
     streaming_response = service_method_type.split('_')[1] == 'stream'
 
-    if not streaming_response or raises_exception or cancel:
-        expected_metrics_count = 1
-    else:
-        expected_metrics_count = message_count
-
     _test_scoped_metrics = [
-            ('External/localhost:%s/gRPC/%s' % (port, service_method_type),
-                expected_metrics_count),
+            ('External/localhost:%s/gRPC/%s' % (port, service_method_type), 1),
     ]
     _test_rollup_metrics = [
-            ('External/localhost:%s/gRPC/%s' % (port, service_method_type),
-                expected_metrics_count),
-            ('External/localhost:%s/all' % port, expected_metrics_count),
-            ('External/allOther', expected_metrics_count),
-            ('External/all', expected_metrics_count),
+            ('External/localhost:%s/gRPC/%s' % (port, service_method_type), 1),
+            ('External/localhost:%s/all' % port, 1),
+            ('External/allOther', 1),
+            ('External/all', 1),
     ]
 
     if six.PY2:
@@ -125,7 +86,7 @@ def test_client(service_method_type, service_method_method_name,
             background_task=True)
     @background_task()
     def _test_client():
-        stub = _create_stub(port)
+        stub = create_stub(port)
 
         service_method_class = getattr(stub, service_method_class_name)
         service_method_method = getattr(service_method_class,
@@ -135,7 +96,7 @@ def test_client(service_method_type, service_method_method_name,
         # that the request does not return prior to cancelling. If the request
         # returns prior to cancellation then the response might be valid. In
         # order to force the request to not return, the timesout option is set.
-        request = _create_request(streaming_request, count=message_count,
+        request = create_request(streaming_request, count=message_count,
                 timesout=cancel)
 
         reply = service_method_method(request)
@@ -191,69 +152,11 @@ _test_matrix = [
 
 
 @pytest.mark.parametrize(*_test_matrix)
-def test_bad_metadata(service_method_type, service_method_method_name,
-        future_response, mock_grpc_server):
-    port = mock_grpc_server
-
-    service_method_class_name = 'Do%s' % (
-            service_method_type.title().replace('_', ''))
-    streaming_request = service_method_type.split('_')[0] == 'stream'
-
-    _test_scoped_metrics = [
-            ('External/localhost:%s/gRPC/%s' % (port, service_method_type),
-                1),
-    ]
-    _test_rollup_metrics = [
-            ('External/localhost:%s/gRPC/%s' % (port, service_method_type),
-                1),
-            ('External/localhost:%s/all' % port, 1),
-            ('External/allOther', 1),
-            ('External/all', 1),
-    ]
-
-    if six.PY2:
-        _test_transaction_name = 'test_clients:_test_bad_metadata'
-    else:
-        _test_transaction_name = (
-                'test_clients:test_bad_metadata.<locals>._test_bad_metadata')
-
-    if future_response:
-        expected_exception = grpc.RpcError
-    else:
-        expected_exception = ValueError
-
-    @validate_transaction_errors(errors=[])
-    @validate_transaction_metrics(_test_transaction_name,
-            scoped_metrics=_test_scoped_metrics,
-            rollup_metrics=_test_rollup_metrics,
-            background_task=True)
-    @background_task()
-    def _test_bad_metadata():
-        stub = _create_stub(port)
-
-        service_method_class = getattr(stub, service_method_class_name)
-        service_method_method = getattr(service_method_class,
-                service_method_method_name)
-
-        request = _create_request(streaming_request, count=1, timesout=False)
-
-        with pytest.raises(expected_exception) as error:
-            # gRPC doesn't like capital letters in metadata keys
-            reply = service_method_method(request, metadata=[('ASDF', 'a')])
-            reply.result()
-
-        if future_response:
-            assert error.value.code() == grpc.StatusCode.INTERNAL
-
-    _test_bad_metadata()
-
-
-@pytest.mark.parametrize(*_test_matrix)
 def test_future_timeout_error(service_method_type, service_method_method_name,
         future_response, mock_grpc_server):
     port = mock_grpc_server
 
-    service_method_class_name = 'Do%s' % (
+    service_method_class_name = 'NoTxn%s' % (
             service_method_type.title().replace('_', ''))
     streaming_request = service_method_type.split('_')[0] == 'stream'
 
@@ -281,19 +184,16 @@ def test_future_timeout_error(service_method_type, service_method_method_name,
             background_task=True)
     @background_task()
     def _test_future_timeout_error():
-        stub = _create_stub(port)
+        stub = create_stub(port)
 
         service_method_class = getattr(stub, service_method_class_name)
         service_method_method = getattr(service_method_class,
                 service_method_method_name)
 
-        request = _create_request(streaming_request, count=1, timesout=True)
+        request = create_request(streaming_request, count=1, timesout=True)
 
-        with pytest.raises(grpc.RpcError) as error:
-            reply = service_method_method(request, timeout=0.01)
-            list(reply)
-
-        assert error.value.code() == grpc.StatusCode.DEADLINE_EXCEEDED
+        reply = get_result(service_method_method, request, timeout=0.01)
+        assert reply and reply.code() == grpc.StatusCode.DEADLINE_EXCEEDED
 
     _test_future_timeout_error()
 
@@ -303,7 +203,7 @@ def test_server_down(service_method_type, service_method_method_name,
         future_response):
     port = 1234
 
-    service_method_class_name = 'Do%s' % (
+    service_method_class_name = 'NoTxn%s' % (
             service_method_type.title().replace('_', ''))
     streaming_request = service_method_type.split('_')[0] == 'stream'
 
@@ -330,19 +230,15 @@ def test_server_down(service_method_type, service_method_method_name,
             background_task=True)
     @background_task()
     def _test_server_down():
-        stub = _create_stub(port)
+        stub = create_stub(port)
 
         service_method_class = getattr(stub, service_method_class_name)
         service_method_method = getattr(service_method_class,
                 service_method_method_name)
 
-        request = _create_request(streaming_request, count=1, timesout=False)
-
-        with pytest.raises(grpc.RpcError) as error:
-            reply = service_method_method(request)
-            list(reply)
-
-        assert error.value.code() == grpc.StatusCode.UNAVAILABLE
+        request = create_request(streaming_request, count=1, timesout=False)
+        reply = get_result(service_method_method, request)
+        assert reply and reply.code() == grpc.StatusCode.UNAVAILABLE
 
     _test_server_down()
 
@@ -363,7 +259,7 @@ def test_repeated_result(service_method_type, service_method_method_name,
         mock_grpc_server):
     port = mock_grpc_server
 
-    service_method_class_name = 'Do%s' % (
+    service_method_class_name = 'NoTxn%s' % (
             service_method_type.title().replace('_', ''))
     streaming_request = service_method_type.split('_')[0] == 'stream'
 
@@ -393,13 +289,13 @@ def test_repeated_result(service_method_type, service_method_method_name,
             background_task=True)
     @background_task()
     def _test_repeated_result():
-        stub = _create_stub(port)
+        stub = create_stub(port)
 
         service_method_class = getattr(stub, service_method_class_name)
         service_method_method = getattr(service_method_class,
                 service_method_method_name)
 
-        request = _create_request(streaming_request, count=1, timesout=False)
+        request = create_request(streaming_request, count=1, timesout=False)
 
         reply = service_method_method(request)
         if isinstance(reply, tuple):
@@ -409,3 +305,60 @@ def test_repeated_result(service_method_type, service_method_method_name,
         reply.result()
 
     _test_repeated_result()
+
+
+_test_matrix = [
+    ('service_method_type,service_method_method_name,future_response'), (
+        ('unary_stream', '__call__', True),
+        ('stream_stream', '__call__', True),
+)]
+
+
+@pytest.mark.parametrize(*_test_matrix)
+def test_future_cancel(service_method_type, service_method_method_name,
+        future_response, mock_grpc_server):
+    port = mock_grpc_server
+
+    service_method_class_name = 'NoTxn%s' % (
+            service_method_type.title().replace('_', ''))
+    streaming_request = service_method_type.split('_')[0] == 'stream'
+
+    _test_scoped_metrics = [
+            ('External/localhost:%s/gRPC/%s' % (port, service_method_type), 1),
+    ]
+    _test_rollup_metrics = [
+            ('External/localhost:%s/gRPC/%s' % (port, service_method_type), 1),
+            ('External/localhost:%s/all' % port, 1),
+            ('External/allOther', 1),
+            ('External/all', 1),
+    ]
+
+    if six.PY2:
+        _test_transaction_name = 'test_clients:_test_future_cancel'
+    else:
+        _test_transaction_name = (
+                'test_clients:test_future_cancel.<locals>.'
+                '_test_future_cancel')
+
+    @validate_transaction_errors(errors=[])
+    @validate_transaction_metrics(_test_transaction_name,
+            scoped_metrics=_test_scoped_metrics,
+            rollup_metrics=_test_rollup_metrics,
+            background_task=True)
+    @background_task()
+    def _test_future_cancel():
+        stub = create_stub(port)
+
+        service_method_class = getattr(stub, service_method_class_name)
+        service_method_method = getattr(service_method_class,
+                service_method_method_name)
+
+        request = create_request(streaming_request, count=3, timesout=False)
+
+        reply = service_method_method(request)
+        for result in reply:
+            reply.cancel()
+            break
+
+
+    _test_future_cancel()

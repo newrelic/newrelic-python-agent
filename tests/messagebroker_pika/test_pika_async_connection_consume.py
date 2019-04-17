@@ -1,5 +1,8 @@
+from minversion import pika_version_info
+from compat import basic_consume
 import functools
 import pika
+from pika.adapters.tornado_connection import TornadoConnection
 import pytest
 import six
 import tornado
@@ -25,15 +28,20 @@ _message_broker_tt_params = {
 }
 
 
-class MyIOLoop(tornado.ioloop.IOLoop.configured_class()):
-    def handle_callback_exception(self, *args, **kwargs):
-        raise
+# Tornado's IO loop is not configurable in versions 5.x and up
+try:
+    class MyIOLoop(tornado.ioloop.IOLoop.configured_class()):
+        def handle_callback_exception(self, *args, **kwargs):
+            raise
 
+    tornado.ioloop.IOLoop.configure(MyIOLoop)
+except AttributeError:
+    pass
 
-tornado.ioloop.IOLoop.configure(MyIOLoop)
+connection_classes = [pika.SelectConnection, TornadoConnection]
 
 parametrized_connection = pytest.mark.parametrize('ConnectionClass',
-        [pika.SelectConnection, pika.TornadoConnection])
+        connection_classes)
 
 
 _test_select_conn_basic_get_inside_txn_metrics = [
@@ -78,7 +86,7 @@ def test_async_connection_basic_get_inside_txn(producer, ConnectionClass,
         channel.basic_get(callback=on_message, queue=QUEUE)
 
     def on_open_connection(connection):
-        connection.channel(on_open_channel)
+        connection.channel(on_open_callback=on_open_channel)
 
     connection = ConnectionClass(
             pika.ConnectionParameters(DB_SETTINGS['host']),
@@ -115,7 +123,7 @@ def test_select_connection_basic_get_outside_txn(producer, ConnectionClass,
             channel.basic_get(callback=on_message, queue=QUEUE)
 
         def on_open_connection(connection):
-            connection.channel(on_open_channel)
+            connection.channel(on_open_callback=on_open_channel)
 
         connection = ConnectionClass(
                 pika.ConnectionParameters(DB_SETTINGS['host']),
@@ -141,6 +149,9 @@ _test_select_conn_basic_get_inside_txn_no_callback_metrics = [
 ]
 
 
+@pytest.mark.skipif(
+    condition=pika_version_info[0] > 0,
+    reason='pika 1.0 removed the ability to use basic_get with callback=None')
 @parametrized_connection
 @validate_transaction_metrics(
     ('test_pika_async_connection_consume:'
@@ -159,7 +170,7 @@ def test_async_connection_basic_get_inside_txn_no_callback(producer,
         connection.ioloop.stop()
 
     def on_open_connection(connection):
-        connection.channel(on_open_channel)
+        connection.channel(on_open_callback=on_open_channel)
 
     connection = ConnectionClass(
             pika.ConnectionParameters(DB_SETTINGS['host']),
@@ -206,7 +217,7 @@ def test_async_connection_basic_get_empty(ConnectionClass,
         connection.ioloop.stop()
 
     def on_open_connection(connection):
-        connection.channel(on_open_channel)
+        connection.channel(on_open_callback=on_open_channel)
 
     connection = ConnectionClass(
             pika.ConnectionParameters(DB_SETTINGS['host']),
@@ -254,10 +265,10 @@ def test_async_connection_basic_consume_inside_txn(producer, ConnectionClass):
         connection.ioloop.stop()
 
     def on_open_channel(channel):
-        channel.basic_consume(on_message, QUEUE)
+        basic_consume(channel, QUEUE, on_message)
 
     def on_open_connection(connection):
-        connection.channel(on_open_channel)
+        connection.channel(on_open_callback=on_open_channel)
 
     connection = ConnectionClass(
             pika.ConnectionParameters(DB_SETTINGS['host']),
@@ -334,11 +345,11 @@ def test_async_connection_basic_consume_two_exchanges(producer, producer_2,
             connection.ioloop.stop()
 
     def on_open_channel(channel):
-        channel.basic_consume(on_message_1, QUEUE)
-        channel.basic_consume(on_message_2, QUEUE_2)
+        basic_consume(channel, QUEUE, on_message_1)
+        basic_consume(channel, QUEUE_2, on_message_2)
 
     def on_open_connection(connection):
-        connection.channel(on_open_channel)
+        connection.channel(on_open_callback=on_open_channel)
 
     connection = ConnectionClass(
             pika.ConnectionParameters(DB_SETTINGS['host']),
@@ -366,12 +377,12 @@ def test_tornado_connection_basic_consume_outside_transaction(producer):
         connection.ioloop.stop()
 
     def on_open_channel(channel):
-        channel.basic_consume(on_message, QUEUE)
+        basic_consume(channel, QUEUE, on_message)
 
     def on_open_connection(connection):
-        connection.channel(on_open_channel)
+        connection.channel(on_open_callback=on_open_channel)
 
-    connection = pika.TornadoConnection(
+    connection = TornadoConnection(
             pika.ConnectionParameters(DB_SETTINGS['host']),
             on_open_callback=on_open_connection)
 
@@ -415,10 +426,10 @@ def test_select_connection_basic_consume_outside_transaction(producer):
         connection.ioloop.stop()
 
     def on_open_channel(channel):
-        channel.basic_consume(on_message, QUEUE)
+        basic_consume(channel, QUEUE, on_message)
 
     def on_open_connection(connection):
-        connection.channel(on_open_channel)
+        connection.channel(on_open_callback=on_open_channel)
 
     connection = pika.SelectConnection(
             pika.ConnectionParameters(DB_SETTINGS['host']),

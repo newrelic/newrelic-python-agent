@@ -1,3 +1,4 @@
+from compat import basic_consume
 import pika
 import six
 
@@ -78,9 +79,7 @@ def test_basic_consume_cat_headers():
         properties.headers = {'Hello': 'World'}
 
         try:
-            channel.basic_consume(on_receive,
-                no_ack=True,
-                queue='TESTCAT')
+            basic_consume(channel, 'TESTCAT', on_receive, auto_ack=False)
             do_basic_publish(channel, 'TESTCAT', properties=properties)
             do_basic_consume(channel)
 

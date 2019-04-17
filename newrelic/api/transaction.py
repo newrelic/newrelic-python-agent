@@ -923,6 +923,12 @@ class Transaction(object):
         m = self._transaction_metrics.get(metric_name, 0)
         self._transaction_metrics[metric_name] = m + 1
 
+    def _create_distributed_trace_payload_with_guid(self, guid):
+        payload = self.create_distributed_trace_payload()
+        if guid and payload and 'id' in payload['d']:
+            payload['d']['id'] = guid
+        return payload
+
     def create_distributed_trace_payload(self):
         if not self.enabled:
             return

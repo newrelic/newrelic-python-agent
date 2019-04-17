@@ -2,7 +2,7 @@ import grpc
 import grpc._channel
 import pytest
 
-from newrelic.hooks.external_grpc import _get_uri
+from newrelic.hooks.framework_grpc import _get_uri
 
 
 _test_get_url_unary_unary = [

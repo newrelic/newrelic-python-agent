@@ -7,7 +7,7 @@ from testing_support.fixtures import (code_coverage_fixture,
 from testing_support.mock_external_grpc_server import MockExternalgRPCServer
 
 _coverage_source = [
-    'newrelic.hooks.external_grpc',
+    'newrelic.hooks.framework_grpc',
 ]
 
 code_coverage = code_coverage_fixture(source=_coverage_source)
@@ -21,7 +21,7 @@ _default_settings = {
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-        app_name='Python Agent Test (external_grpc)',
+        app_name='Python Agent Test (framework_grpc)',
         default_settings=_default_settings)
 
 
@@ -30,6 +30,17 @@ def grpc_app_server():
     port = random.randint(50000, 50100)
     with MockExternalgRPCServer(port=port) as server:
         yield server, port
+
+
+@pytest.fixture(scope='module')
+def mock_grpc_server(grpc_app_server):
+    from sample_application.sample_application_pb2_grpc import (
+            add_SampleApplicationServicer_to_server)
+    from sample_application import SampleApplicationServicer
+    server, port = grpc_app_server
+    add_SampleApplicationServicer_to_server(
+            SampleApplicationServicer(), server)
+    return port
 
 
 @pytest.fixture(scope='session')

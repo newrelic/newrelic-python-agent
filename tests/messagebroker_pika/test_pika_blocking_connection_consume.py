@@ -1,3 +1,4 @@
+from compat import basic_consume
 import functools
 import pika
 import pytest
@@ -137,7 +138,8 @@ def test_blocking_connection_basic_consume_outside_transaction(producer,
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
         channel = connection.channel()
-        channel.basic_consume(on_message, QUEUE)
+
+        basic_consume(channel, QUEUE, on_message)
         try:
             channel.start_consuming()
         except:
@@ -181,7 +183,7 @@ def test_blocking_connection_basic_consume_inside_txn(producer, as_partial):
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
         channel = connection.channel()
-        channel.basic_consume(on_message, QUEUE)
+        basic_consume(channel, QUEUE, on_message)
         try:
             channel.start_consuming()
         except:
@@ -228,7 +230,7 @@ def test_blocking_connection_basic_consume_stopped_txn(producer, as_partial):
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
         channel = connection.channel()
-        channel.basic_consume(on_message, QUEUE)
+        basic_consume(channel, QUEUE, on_message)
         try:
             channel.start_consuming()
         except:

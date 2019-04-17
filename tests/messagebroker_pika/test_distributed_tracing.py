@@ -1,3 +1,4 @@
+from compat import basic_consume
 import pika
 import six
 
@@ -102,9 +103,7 @@ def test_basic_consume_distributed_tracing_headers():
         properties.headers = {'Hello': 'World'}
 
         try:
-            channel.basic_consume(on_receive,
-                no_ack=True,
-                queue='TESTDT')
+            basic_consume(channel, 'TESTDT', on_receive, auto_ack=False)
             do_basic_publish(channel, 'TESTDT', properties=properties)
             do_basic_consume(channel)
 

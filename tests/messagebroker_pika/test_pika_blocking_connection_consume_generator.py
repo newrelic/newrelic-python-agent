@@ -1,4 +1,3 @@
-from minversion import new_pika_skip, new_pika_xfail
 import pika
 
 from newrelic.api.background_task import background_task
@@ -68,7 +67,6 @@ def test_blocking_connection_consume_connection_close(producer):
         connection.close()
 
 
-@new_pika_xfail
 @validate_transaction_metrics(
         ('test_pika_blocking_connection_consume_generator:'
                 'test_blocking_connection_consume_timeout'),
@@ -84,7 +82,7 @@ def test_blocking_connection_consume_timeout(producer):
 
         for result in channel.consume(QUEUE, inactivity_timeout=0.01):
             # result is None if there is a timeout
-            if result:
+            if result and any(result):
                 method_frame, properties, body = result
                 channel.basic_ack(method_frame.delivery_tag)
                 assert hasattr(method_frame, '_nr_start_time')
@@ -161,7 +159,6 @@ _test_blocking_connection_consume_many_metrics = [
 ]
 
 
-@new_pika_skip
 @validate_transaction_metrics(
         ('test_pika_blocking_connection_consume_generator:'
                 'test_blocking_connection_consume_many'),
@@ -177,14 +174,13 @@ def test_blocking_connection_consume_many(produce_five):
 
         consumed = 0
         for result in channel.consume(QUEUE, inactivity_timeout=0.01):
-            if result:
+            if result and any(result):
                 consumed += 1
             else:
                 assert consumed == 5
                 break
 
 
-@new_pika_xfail
 @validate_transaction_metrics(
         ('test_pika_blocking_connection_consume_generator:'
                 'test_blocking_connection_consume_using_methods'),
@@ -205,7 +201,7 @@ def test_blocking_connection_consume_using_methods(producer):
         assert body == BODY
 
         result = next(consumer)
-        assert result is None
+        assert result is None or not any(result)
 
         try:
             consumer.throw(ZeroDivisionError)
@@ -220,7 +216,6 @@ def test_blocking_connection_consume_using_methods(producer):
         assert result is None
 
 
-@new_pika_skip
 @validate_transaction_metrics(
         'Named/%s' % EXCHANGE,
         scoped_metrics=_test_blocking_connection_consume_metrics,
@@ -278,7 +273,6 @@ def test_blocking_connection_consume_many_outside_txn(produce_five):
                 consumer.close()
 
 
-@new_pika_xfail
 @validate_transaction_metrics(
         'Named/%s' % EXCHANGE,
         scoped_metrics=_test_blocking_connection_consume_metrics,
@@ -298,7 +292,7 @@ def test_blocking_connection_consume_using_methods_outside_txn(producer):
         assert body == BODY
 
         result = next(consumer)
-        assert result is None
+        assert result is None or not any(result)
 
         try:
             consumer.throw(ZeroDivisionError)

@@ -278,9 +278,10 @@ def _ConsumeGeneratorWrapper(wrapped):
                     if created_bt:
                         created_bt.__exit__(*exc)
 
-            except (GeneratorExit, StopIteration):
+            except GeneratorExit:
                 raise
-
+            except StopIteration:
+                pass
             except Exception:
                 exc = sys.exc_info()
                 raise

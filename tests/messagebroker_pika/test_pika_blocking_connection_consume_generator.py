@@ -1,4 +1,4 @@
-from minversion import new_pika_skip, new_pika_xfail, new_pika_xfail_py37
+from minversion import new_pika_skip, new_pika_xfail
 import pika
 
 from newrelic.api.background_task import background_task
@@ -43,7 +43,6 @@ def test_blocking_connection_consume_break(producer):
             break
 
 
-@new_pika_xfail_py37
 @validate_transaction_metrics(
         ('test_pika_blocking_connection_consume_generator:'
                 'test_blocking_connection_consume_connection_close'),

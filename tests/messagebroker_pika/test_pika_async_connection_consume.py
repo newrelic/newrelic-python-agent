@@ -1,4 +1,4 @@
-from minversion import new_pika_skip
+from minversion import pika_version_info
 from compat import basic_consume
 import functools
 import pika
@@ -59,7 +59,6 @@ else:
         ('Function/test_pika_async_connection_consume:on_message', 1))
 
 
-@new_pika_skip
 @parametrized_connection
 @pytest.mark.parametrize('callback_as_partial', [True, False])
 @validate_transaction_metrics(
@@ -87,7 +86,7 @@ def test_async_connection_basic_get_inside_txn(producer, ConnectionClass,
         channel.basic_get(callback=on_message, queue=QUEUE)
 
     def on_open_connection(connection):
-        connection.channel(on_open_channel)
+        connection.channel(on_open_callback=on_open_channel)
 
     connection = ConnectionClass(
             pika.ConnectionParameters(DB_SETTINGS['host']),
@@ -101,7 +100,6 @@ def test_async_connection_basic_get_inside_txn(producer, ConnectionClass,
         raise
 
 
-@new_pika_skip
 @parametrized_connection
 @pytest.mark.parametrize('callback_as_partial', [True, False])
 def test_select_connection_basic_get_outside_txn(producer, ConnectionClass,
@@ -125,7 +123,7 @@ def test_select_connection_basic_get_outside_txn(producer, ConnectionClass,
             channel.basic_get(callback=on_message, queue=QUEUE)
 
         def on_open_connection(connection):
-            connection.channel(on_open_channel)
+            connection.channel(on_open_callback=on_open_channel)
 
         connection = ConnectionClass(
                 pika.ConnectionParameters(DB_SETTINGS['host']),
@@ -151,7 +149,9 @@ _test_select_conn_basic_get_inside_txn_no_callback_metrics = [
 ]
 
 
-@new_pika_skip
+@pytest.mark.skipif(
+    condition=pika_version_info[0] > 0,
+    reason='pika 1.0 removed the ability to use basic_get with callback=None')
 @parametrized_connection
 @validate_transaction_metrics(
     ('test_pika_async_connection_consume:'
@@ -170,7 +170,7 @@ def test_async_connection_basic_get_inside_txn_no_callback(producer,
         connection.ioloop.stop()
 
     def on_open_connection(connection):
-        connection.channel(on_open_channel)
+        connection.channel(on_open_callback=on_open_channel)
 
     connection = ConnectionClass(
             pika.ConnectionParameters(DB_SETTINGS['host']),
@@ -190,7 +190,6 @@ _test_async_connection_basic_get_empty_metrics = [
 ]
 
 
-@new_pika_skip
 @parametrized_connection
 @pytest.mark.parametrize('callback_as_partial', [True, False])
 @validate_transaction_metrics(
@@ -218,7 +217,7 @@ def test_async_connection_basic_get_empty(ConnectionClass,
         connection.ioloop.stop()
 
     def on_open_connection(connection):
-        connection.channel(on_open_channel)
+        connection.channel(on_open_callback=on_open_channel)
 
     connection = ConnectionClass(
             pika.ConnectionParameters(DB_SETTINGS['host']),

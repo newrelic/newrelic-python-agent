@@ -1741,3 +1741,9 @@ def create_distributed_trace_payload():
     transaction = current_transaction()
     if transaction:
         return transaction.create_distributed_trace_payload()
+
+
+def current_trace_id():
+    transaction = current_transaction()
+    if transaction:
+        return transaction.trace_id

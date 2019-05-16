@@ -278,7 +278,7 @@ def test_current_trace_id_api_outside_transaction():
 @background_task(name='test_current_span_id_api_inside_transaction')
 def test_current_span_id_inside_transaction():
     span_id = current_span_id()
-    assert span_id == current_transaction().current_node.guid
+    assert span_id == current_transaction().current_span.guid
 
 
 def test_current_span_id_outside_transaction():

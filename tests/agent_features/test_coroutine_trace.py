@@ -412,12 +412,12 @@ def test_coroutine_saves_trace():
 @background_task(name='test_supportability_metric')
 def test_supportability_metric():
     txn = current_transaction()
-    current_node = txn.current_node
+    current_span = txn.current_span
 
     @function_trace(name='coro')
     def coro():
         # change the current node for no good reason
-        txn.current_node = current_node
+        txn.current_span = current_span
         yield
 
     for _ in coro():

@@ -35,7 +35,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 prev_t = t
 
         assert transaction.total_time >= 0.4
-        assert len(transaction.current_node.children) == 6
+        assert len(transaction.current_span.children) == 6
 
 
 if __name__ == '__main__':

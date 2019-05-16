@@ -33,7 +33,7 @@ def test_span_events(dt_enabled, span_events_enabled, txn_sampled):
     @function_trace(name='function')
     def function():
         txn = current_transaction()
-        txn.current_node.guid = function_guid
+        txn.current_span.guid = function_guid
         child()
 
     _settings = {
@@ -82,7 +82,7 @@ def test_span_events(dt_enabled, span_events_enabled, txn_sampled):
     def _test():
         # Force intrinsics
         txn = current_transaction()
-        txn.current_node.guid = sentinel_guid
+        txn.current_span.guid = sentinel_guid
         txn.guid = guid
         txn._priority = priority
         txn._sampled = txn_sampled

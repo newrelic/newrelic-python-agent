@@ -1,6 +1,11 @@
 unreleased
 ----------
 
+- Add a new API to retrieve the current trace ID
+
+  Retrieving the current trace ID can now be accomplished with a call to
+  ``newrelic.agent.current_trace_id()``.
+
 4.18.0 (2019-04-17)
 ----------
 

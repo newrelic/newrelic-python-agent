@@ -113,15 +113,15 @@ def test_httplib_cross_process_request(distributed_tracing, span_events):
 
 
 _test_httplib_cross_process_response_scoped_metrics = [
-        ('ExternalTransaction/www.example.com/1#2/test', 1)]
+        ('ExternalTransaction/localhost:8989/1#2/test', 1)]
 
 
 _test_httplib_cross_process_response_rollup_metrics = [
         ('External/all', 1),
         ('External/allOther', 1),
-        ('External/www.example.com/all', 1),
-        ('ExternalApp/www.example.com/1#2/all', 1),
-        ('ExternalTransaction/www.example.com/1#2/test', 1)]
+        ('External/localhost:8989/all', 1),
+        ('ExternalApp/localhost:8989/1#2/all', 1),
+        ('ExternalTransaction/localhost:8989/1#2/test', 1)]
 
 
 _test_httplib_cross_process_response_external_node_params = [
@@ -140,8 +140,34 @@ _test_httplib_cross_process_response_external_node_params = [
         params=_test_httplib_cross_process_response_external_node_params)
 @background_task()
 def test_httplib_cross_process_response():
-    connection = httplib.HTTPConnection('www.example.com', 80)
-    connection.request('GET', '/')
-    response = connection.getresponse()
-    response.read()
-    connection.close()
+    with MockExternalHTTPServer():
+        connection = httplib.HTTPConnection('localhost', 8989)
+        connection.request('GET', '/')
+        response = connection.getresponse()
+        response.read()
+        connection.close()
+
+
+def test_httplib_multiple_requests_cross_process_response():
+    with MockExternalHTTPServer():
+        connection = httplib.HTTPConnection('localhost', 8989)
+
+        @validate_transaction_metrics(
+                'test_httplib:test_transaction',
+                scoped_metrics=_test_httplib_cross_process_response_scoped_metrics,
+                rollup_metrics=_test_httplib_cross_process_response_rollup_metrics,
+                background_task=True)
+        @insert_incoming_headers
+        @validate_external_node_params(
+                params=_test_httplib_cross_process_response_external_node_params)
+        @background_task(name='test_httplib:test_transaction')
+        def test_transaction():
+            connection.request('GET', '/')
+            response = connection.getresponse()
+            response.read()
+
+        # make multiple requests with the same connection
+        for _ in range(2):
+            test_transaction()
+
+        connection.close()

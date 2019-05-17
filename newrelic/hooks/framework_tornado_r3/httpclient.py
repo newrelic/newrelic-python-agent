@@ -56,7 +56,7 @@ def _nr_wrapper_httpclient_AsyncHTTPClient_fetch_(
 
     # Because traces are terminal but can be generated concurrently in
     # tornado, pop the trace immediately after entering.
-    if trace.transaction and trace.transaction.current_node is trace:
+    if trace.transaction and trace.transaction.current_span is trace:
         trace.transaction._pop_current(trace)
 
     try:

@@ -113,7 +113,7 @@ def possibly_finalize_transaction(transaction, exc=None, value=None, tb=None):
     if (transaction._request_handler_finalize and
             transaction._server_adapter_finalize and
             transaction._ref_count == 0 and
-            not isinstance(transaction.current_node.parent, Sentinel)):
+            not isinstance(transaction.current_span.parent, Sentinel)):
         _finalize_transaction(transaction, exc, value, tb)
 
 

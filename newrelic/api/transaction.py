@@ -75,7 +75,7 @@ class Transaction(object):
 
         self._frozen_path = None
 
-        self.current_node = None
+        self.current_span = None
 
         self._request_uri = None
         self._port = None
@@ -277,7 +277,7 @@ class Transaction(object):
         # dummy time trace object and when done we will
         # just grab what we need from that.
 
-        self.current_node = Sentinel()
+        self.current_span = Sentinel()
 
         return self
 
@@ -300,13 +300,13 @@ class Transaction(object):
         # will recover later.
 
         for _ in range(self._settings.agent_limits.max_outstanding_traces):
-            if isinstance(self.current_node, Sentinel):
+            if isinstance(self.current_span, Sentinel):
                 break
-            self.current_node._force_exit(None, None, None)
+            self.current_span._force_exit(None, None, None)
         else:
-            _logger.error('Transaction ended but current_node is not Sentinel.'
+            _logger.error('Transaction ended but current_span is not Sentinel.'
                     ' Current node is %r. Report this issue to New Relic '
-                    'support.\n%s', self.current_node, ''.join(
+                    'support.\n%s', self.current_span, ''.join(
                     traceback.format_stack()[:-1]))
             return
 
@@ -388,7 +388,7 @@ class Transaction(object):
         # as negative number. Add our own duration to get
         # our own exclusive time.
 
-        root = self.current_node
+        root = self.current_span
         children = root.children
 
         exclusive = duration + root.exclusive
@@ -962,8 +962,8 @@ class Transaction(object):
 
             if (settings.span_events.enabled and
                     settings.collect_span_events and
-                    self.current_node and self.sampled):
-                data['id'] = self.current_node.guid
+                    self.current_span and self.sampled):
+                data['id'] = self.current_span.guid
 
             self.is_distributed_trace = True
 
@@ -1441,18 +1441,18 @@ class Transaction(object):
         if event:
             self._custom_events.add(event, priority=self.priority)
 
-    def active_node(self):
-        return self.current_node
+    def active_span(self):
+        return self.current_span
 
     def _intern_string(self, value):
         return self._string_cache.setdefault(value, value)
 
-    def _push_current(self, node):
-        self.current_node = node
+    def _push_current(self, span):
+        self.current_span = span
 
-    def _pop_current(self, node):
-        parent = node.parent
-        self.current_node = parent
+    def _pop_current(self, span):
+        parent = span.parent
+        self.current_span = parent
 
         return parent
 
@@ -1564,7 +1564,7 @@ class Transaction(object):
         print >> file, 'Supress Apdex: %s' % (
                 self.suppress_apdex)
         print >> file, 'Current Node: %s' % (
-                self.current_node)
+                self.current_span)
 
 
 def current_transaction(active_only=True):
@@ -1752,4 +1752,4 @@ def current_trace_id():
 def current_span_id():
     transaction = current_transaction()
     if transaction:
-        return transaction.current_node.guid
+        return transaction.current_span.guid

@@ -58,7 +58,7 @@ class TraceContext(object):
         if not self.trace:
             return self
 
-        self.current_trace = self.trace.transaction.current_node
+        self.current_trace = self.trace.transaction.current_span
         if not self.trace.activated:
             self.trace.__enter__()
 
@@ -72,7 +72,7 @@ class TraceContext(object):
             # In the case that the function trace is already active, notify the
             # transaction that this coroutine is now the current node (for
             # automatic parenting)
-            self.trace.transaction.current_node = self.trace
+            self.trace.transaction.current_span = self.trace
 
         return self
 
@@ -84,7 +84,7 @@ class TraceContext(object):
 
         # If the current node has been changed, record this as an error in a
         # supportability metric.
-        if txn.current_node is not self.trace:
+        if txn.current_span is not self.trace:
             txn.record_custom_metric(
                     'Supportability/Python/TraceContext/ExitNodeMismatch',
                     {'count': 1})
@@ -104,7 +104,7 @@ class TraceContext(object):
         # point, we should notify the transaction that this coroutine is no
         # longer the current node for parenting purposes
         if self.current_trace:
-            txn.current_node = self.current_trace
+            txn.current_span = self.current_trace
 
             # Clear out the current trace so that it cannot be reused in future
             # exits and doesn't maintain a dangling reference to a trace.
@@ -118,10 +118,10 @@ class TraceContext(object):
         if self.trace and self.trace.activated:
             txn = self.trace.transaction
             if txn:
-                current_trace = txn.current_node
+                current_trace = txn.current_span
                 self.trace.__exit__(None, None, None)
                 if current_trace is not self.trace:
-                    txn.current_node = current_trace
+                    txn.current_span = current_trace
 
 
 class TransactionContext(object):

@@ -148,12 +148,12 @@ class TimeTraceExit(object):
         self.exc_info = None
 
     def time_function_trace_exit_no_error(self):
-        self.function_trace.parent = self.transaction.current_node
+        self.function_trace.parent = self.transaction.current_span
         self.function_trace._transaction = self._transaction
         self.function_trace.__exit__(None, None, None)
 
     def time_function_trace_exit_with_error(self):
-        self.function_trace.parent = self.transaction.current_node
+        self.function_trace.parent = self.transaction.current_span
         self.function_trace._transaction = self._transaction
         self.function_trace.__exit__(*self.exc_info)
 

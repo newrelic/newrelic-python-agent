@@ -6,7 +6,9 @@ from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import ObjectWrapper
 
-def httplib_connect_wrapper(wrapped, instance, args, kwargs, scheme, library):
+
+def httplib_endheaders_wrapper(wrapped, instance, args, kwargs,
+        scheme, library):
     transaction = current_transaction()
 
     if transaction is None:
@@ -20,25 +22,8 @@ def httplib_connect_wrapper(wrapped, instance, args, kwargs, scheme, library):
 
     connection = instance
 
+    
     url = '%s://%s:%s' % (scheme, connection.host, connection.port)
-
-    with ExternalTrace(transaction, library=library, url=url) as tracer:
-        # Add the tracer to the connection object. The tracer will be
-        # used in getresponse() to add back into the external trace,
-        # after the trace has already completed, details from the
-        # response headers.
-
-        connection._nr_external_tracer = tracer
-
-        return wrapped(*args, **kwargs)
-
-def httplib_endheaders_wrapper(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
-
-    if transaction is None:
-        return wrapped(*args, **kwargs)
-
-    connection = instance
 
     # Check if the NR headers have already been added. This is just in
     # case a higher level library which uses httplib underneath so
@@ -47,20 +32,26 @@ def httplib_endheaders_wrapper(wrapped, instance, args, kwargs):
     try:
         skip_headers = getattr(connection, '_nr_skip_headers', False)
 
-        if skip_headers:
+        with ExternalTrace(transaction, library=library, url=url) as tracer:
+            # Add the tracer to the connection object. The tracer will be
+            # used in getresponse() to add back into the external trace,
+            # after the trace has already completed, details from the
+            # response headers.
+            if not skip_headers and hasattr(tracer, 'generate_request_headers'):
+                outgoing_headers = tracer.generate_request_headers(transaction)
+                for header_name, header_value in outgoing_headers:
+                    connection.putheader(header_name, header_value)
+
+            connection._nr_external_tracer = tracer
+
             return wrapped(*args, **kwargs)
-
-        outgoing_headers = ExternalTrace.generate_request_headers(transaction)
-        for header_name, header_value in outgoing_headers:
-            connection.putheader(header_name, header_value)
-
-        return wrapped(*args, **kwargs)
 
     finally:
         try:
             del connection._nr_skip_headers
         except AttributeError:
             pass
+
 
 def httplib_getresponse_wrapper(wrapped, instance, args, kwargs):
     transaction = current_transaction()
@@ -88,6 +79,7 @@ def httplib_getresponse_wrapper(wrapped, instance, args, kwargs):
 
     return response
 
+
 def httplib_putheader_wrapper(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
@@ -107,6 +99,7 @@ def httplib_putheader_wrapper(wrapped, instance, args, kwargs):
 
     return wrapped(*args, **kwargs)
 
+
 def instrument(module):
 
     if six.PY2:
@@ -114,33 +107,24 @@ def instrument(module):
     else:
         library = 'http'
 
-
-    module.HTTPConnection.connect = ObjectWrapper(
-            module.HTTPConnection.connect,
-            None,
-            functools.partial(httplib_connect_wrapper, scheme='http',
-                    library=library))
-
-    module.HTTPSConnection.connect = ObjectWrapper(
-            module.HTTPSConnection.connect,
-            None,
-            functools.partial(httplib_connect_wrapper, scheme='https',
-                    library=library))
-
     module.HTTPConnection.endheaders = ObjectWrapper(
             module.HTTPConnection.endheaders,
             None,
-            httplib_endheaders_wrapper
-            )
+            functools.partial(httplib_endheaders_wrapper, scheme='http',
+                    library=library))
+
+    module.HTTPSConnection.endheaders = ObjectWrapper(
+            module.HTTPConnection.endheaders,
+            None,
+            functools.partial(httplib_endheaders_wrapper, scheme='https',
+                    library=library))
 
     module.HTTPConnection.getresponse = ObjectWrapper(
             module.HTTPConnection.getresponse,
             None,
-            httplib_getresponse_wrapper
-            )
+            httplib_getresponse_wrapper)
 
     module.HTTPConnection.putheader = ObjectWrapper(
             module.HTTPConnection.putheader,
             None,
-            httplib_putheader_wrapper
-            )
+            httplib_putheader_wrapper)

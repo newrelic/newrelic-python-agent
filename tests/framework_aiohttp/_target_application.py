@@ -138,9 +138,8 @@ def fetch(method, url, loop):
 
 
 @asyncio.coroutine
-def fetch_multiple(method, loop):
-    URLS = ['https://example.com', 'https://example.org']
-    coros = [fetch(method, url, loop) for url in URLS]
+def fetch_multiple(method, loop, url):
+    coros = [fetch(method, url, loop) for _ in range(2)]
     responses = yield from asyncio.gather(*coros, loop=loop)
     return '\n'.join(responses)
 
@@ -152,7 +151,7 @@ def multi_fetch_handler(request):
     except AttributeError:
         loop = request.task._loop
 
-    responses = yield from fetch_multiple('get', loop)
+    responses = yield from fetch_multiple('get', loop, request.query['url'])
     return web.Response(text=responses, content_type='text/html')
 
 

@@ -6,8 +6,6 @@ from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace
 from testing_support.fixtures import validate_transaction_metrics
 
-URLS = ['http://example.com', 'http://example.org']
-
 version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
 
 
@@ -19,8 +17,8 @@ async def fetch(method, url):
             return await response.text()
 
 
-async def fetch_multiple(method):
-    coros = [fetch(method, url) for url in URLS]
+async def fetch_multiple(method, url):
+    coros = [fetch(method, url) for _ in range(2)]
     return await asyncio.gather(*coros, return_exceptions=True)
 
 
@@ -30,8 +28,8 @@ else:
     _expected_error_class = aiohttp.client_exceptions.ClientResponseError
 
 
-def task(loop, method, exc_expected):
-    text_list = loop.run_until_complete(fetch_multiple(method))
+def task(loop, method, exc_expected, url):
+    text_list = loop.run_until_complete(fetch_multiple(method, url))
     if exc_expected:
         assert isinstance(text_list[0],
                 _expected_error_class), text_list[0].__class__
@@ -43,9 +41,9 @@ def task(loop, method, exc_expected):
 
 test_matrix = (
     ('get', False),
-    ('post', False),
-    ('options', False),
-    ('head', False),
+    ('post', True),
+    ('options', True),
+    ('head', True),
     ('put', True),
     ('patch', True),
     ('delete', True),
@@ -53,47 +51,45 @@ test_matrix = (
 
 
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
-def test_client_async_await(method, exc_expected):
+def test_client_async_await(local_server_info, method, exc_expected):
 
     @validate_transaction_metrics(
         'test_client_async_await',
         background_task=True,
         scoped_metrics=[
-            ('External/example.com/aiohttp/%s' % method.upper(), 1),
-            ('External/example.org/aiohttp/%s' % method.upper(), 1),
+            (local_server_info.base_metric + method.upper(), 2),
         ],
         rollup_metrics=[
-            ('External/example.com/aiohttp/%s' % method.upper(), 1),
-            ('External/example.org/aiohttp/%s' % method.upper(), 1),
+            (local_server_info.base_metric + method.upper(), 2),
         ],
     )
     @background_task(name='test_client_async_await')
     def task_test():
         loop = asyncio.get_event_loop()
-        task(loop, method, exc_expected)
+        task(loop, method, exc_expected, local_server_info.url)
 
     task_test()
 
 
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
-def test_client_no_txn_async_await(method, exc_expected):
+def test_client_no_txn_async_await(local_server_info, method, exc_expected):
 
     def task_test():
         loop = asyncio.get_event_loop()
-        task(loop, method, exc_expected)
+        task(loop, method, exc_expected, local_server_info.url)
 
     task_test()
 
 
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
-def test_client_throw_async_await(method, exc_expected):
+def test_client_throw_async_await(local_server_info, method, exc_expected):
 
     class ThrowerException(ValueError):
         pass
 
     async def self_driving_thrower():
         async with aiohttp.ClientSession() as session:
-            coro = session._request(method.upper(), URLS[0])
+            coro = session._request(method.upper(), local_server_info.url)
 
             # activate the coroutine
             next(coro)
@@ -105,10 +101,10 @@ def test_client_throw_async_await(method, exc_expected):
         'test_client_throw_async_await',
         background_task=True,
         scoped_metrics=[
-            ('External/example.com/aiohttp/%s' % method.upper(), 1),
+            (local_server_info.base_metric + method.upper(), 1),
         ],
         rollup_metrics=[
-            ('External/example.com/aiohttp/%s' % method.upper(), 1),
+            (local_server_info.base_metric + method.upper(), 1),
         ],
     )
     @background_task(name='test_client_throw_async_await')
@@ -122,11 +118,11 @@ def test_client_throw_async_await(method, exc_expected):
 
 
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
-def test_client_close_async_await(method, exc_expected):
+def test_client_close_async_await(local_server_info, method, exc_expected):
 
     async def self_driving_closer():
         async with aiohttp.ClientSession() as session:
-            coro = session._request(method.upper(), URLS[0])
+            coro = session._request(method.upper(), local_server_info.url)
 
             # activate the coroutine
             next(coro)
@@ -138,10 +134,10 @@ def test_client_close_async_await(method, exc_expected):
         'test_client_close_async_await',
         background_task=True,
         scoped_metrics=[
-            ('External/example.com/aiohttp/%s' % method.upper(), 1),
+            (local_server_info.base_metric + method.upper(), 1),
         ],
         rollup_metrics=[
-            ('External/example.com/aiohttp/%s' % method.upper(), 1),
+            (local_server_info.base_metric + method.upper(), 1),
         ],
     )
     @background_task(name='test_client_close_async_await')
@@ -153,11 +149,11 @@ def test_client_close_async_await(method, exc_expected):
 
 
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
-def test_await_request_async_await(method, exc_expected):
+def test_await_request_async_await(local_server_info, method, exc_expected):
 
-    async def request_with_await(url):
+    async def request_with_await():
         async with aiohttp.ClientSession() as session:
-            coro = session._request(method.upper(), url)
+            coro = session._request(method.upper(), local_server_info.url)
 
             # force await
             result = await coro
@@ -168,18 +164,16 @@ def test_await_request_async_await(method, exc_expected):
         'test_await_request_async_await',
         background_task=True,
         scoped_metrics=[
-            ('External/example.com/aiohttp/%s' % method.upper(), 1),
-            ('External/example.org/aiohttp/%s' % method.upper(), 1),
+            (local_server_info.base_metric + method.upper(), 2),
         ],
         rollup_metrics=[
-            ('External/example.com/aiohttp/%s' % method.upper(), 1),
-            ('External/example.org/aiohttp/%s' % method.upper(), 1),
+            (local_server_info.base_metric + method.upper(), 2),
         ],
     )
     @background_task(name='test_await_request_async_await')
     def task_test():
         loop = asyncio.get_event_loop()
-        coros = [request_with_await(u) for u in URLS]
+        coros = [request_with_await() for _ in range(2)]
         future = asyncio.gather(*coros, return_exceptions=True)
         text_list = loop.run_until_complete(future)
         if exc_expected:
@@ -194,62 +188,58 @@ def test_await_request_async_await(method, exc_expected):
 
 
 test_ws_matrix = (
-    # example.com and example.org do not accept websocket requests, hence an
+    # the 127.0.0.1 server does not accept websocket requests, hence an
     # exception is expected but a metric will still be created
     ('ws_connect', True),
 )
 
 
 @pytest.mark.parametrize('method,exc_expected', test_ws_matrix)
-def test_ws_connect_async_await(method, exc_expected):
+def test_ws_connect_async_await(local_server_info, method, exc_expected):
 
     @validate_transaction_metrics(
         'test_ws_connect_async_await',
         background_task=True,
         scoped_metrics=[
-            ('External/example.com/aiohttp/GET', 1),
-            ('External/example.org/aiohttp/GET', 1),
+            (local_server_info.base_metric + 'GET', 2),
         ],
         rollup_metrics=[
-            ('External/example.com/aiohttp/GET', 1),
-            ('External/example.org/aiohttp/GET', 1),
+            (local_server_info.base_metric + 'GET', 2),
         ],
     )
     @background_task(name='test_ws_connect_async_await')
     def task_test():
         loop = asyncio.get_event_loop()
-        task(loop, method, exc_expected)
+        task(loop, method, exc_expected, local_server_info.url)
 
     task_test()
 
 
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
-def test_create_task_async_await(method, exc_expected):
+def test_create_task_async_await(local_server_info, method, exc_expected):
 
     # `loop.create_task` returns a Task object which uses the coroutine's
     # `send` method, not `__next__`
 
-    async def fetch_task(url, loop):
+    async def fetch_task(loop):
         async with aiohttp.ClientSession() as session:
             coro = getattr(session, method)
-            resp = await loop.create_task(coro(url))
+            resp = await loop.create_task(coro(local_server_info.url))
             resp.raise_for_status()
             return await resp.text()
 
     async def fetch_multiple(loop):
-        coros = [fetch_task(url, loop) for url in URLS]
+        coros = [fetch_task(loop) for _ in range(2)]
         return await asyncio.gather(*coros, return_exceptions=True)
 
     @validate_transaction_metrics(
         'test_create_task_async_await',
         background_task=True,
         scoped_metrics=[
-            ('External/example.com/aiohttp/%s' % method.upper(), 1),
-            ('External/example.org/aiohttp/%s' % method.upper(), 1),
+            (local_server_info.base_metric + method.upper(), 2),
         ],
         rollup_metrics=[
-            ('External/example.com/aiohttp/%s' % method.upper(), 1),
-            ('External/example.org/aiohttp/%s' % method.upper(), 1),
+            (local_server_info.base_metric + method.upper(), 2),
         ],
     )
     @background_task(name='test_create_task_async_await')
@@ -268,7 +258,7 @@ def test_create_task_async_await(method, exc_expected):
 
 
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
-def test_terminal_parent_async_await(method, exc_expected):
+def test_terminal_parent_async_await(local_server_info, method, exc_expected):
     """
     This test injects a terminal node into a simple background task workflow.
     It was added to validate a bug where our coro.send() wrapper would fail
@@ -281,7 +271,7 @@ def test_terminal_parent_async_await(method, exc_expected):
 
         @function_trace(terminal=True)
         def execute_task():
-            task(loop, method, exc_expected)
+            task(loop, method, exc_expected, local_server_info.url)
 
         execute_task()
 

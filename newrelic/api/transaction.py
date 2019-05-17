@@ -1441,7 +1441,7 @@ class Transaction(object):
         if event:
             self._custom_events.add(event, priority=self.priority)
 
-    def active_node(self):
+    def active_span(self):
         return self.current_span
 
     def _intern_string(self, value):

@@ -76,7 +76,7 @@ def wrapper_GearmanConnectionManager_handle_function(wrapped, instance,
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    tracer = transaction.active_node()
+    tracer = transaction.active_span()
 
     if not isinstance(tracer, ExternalTrace):
         return wrapped(*args, **kwargs)

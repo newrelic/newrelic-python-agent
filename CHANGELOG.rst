@@ -4,7 +4,14 @@ unreleased
 - Add a new API to retrieve the current trace ID
 
   Retrieving the current trace ID can now be accomplished with a call to
-  ``newrelic.agent.current_trace_id()``.
+  ``newrelic.agent.current_trace_id()``. This method will return the current
+  trace id, or None if no transaction is in progress. 
+
+- Add new api current_span_id
+
+  Retrieving the current span ID can now be accomplished with a call to
+  ``newrelic.agent.current_span_id()``. This method will return the id of the
+  current span, or None if no span is in progress. 
 
 4.18.0 (2019-04-17)
 ----------

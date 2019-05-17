@@ -1747,3 +1747,9 @@ def current_trace_id():
     transaction = current_transaction()
     if transaction:
         return transaction.trace_id
+
+
+def current_span_id():
+    transaction = current_transaction()
+    if transaction:
+        return transaction.current_node.guid

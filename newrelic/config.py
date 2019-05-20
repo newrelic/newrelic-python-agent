@@ -2392,6 +2392,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('urllib3.connection',
             'newrelic.hooks.external_urllib3',
             'instrument_urllib3_connection')
+    _process_module_definition('requests.packages.urllib3.connection',
+            'newrelic.hooks.external_urllib3',
+            'instrument_urllib3_connection')
 
     _process_module_definition('sanic.app',
             'newrelic.hooks.framework_sanic',
@@ -2431,9 +2434,6 @@ def _process_module_builtin_defaults():
     _process_module_definition('requests.sessions',
             'newrelic.hooks.external_requests',
             'instrument_requests_sessions')
-    _process_module_definition('requests.packages.urllib3.connection',
-            'newrelic.hooks.external_urllib3',
-            'instrument_urllib3_connection')
 
     _process_module_definition('feedparser',
             'newrelic.hooks.external_feedparser')

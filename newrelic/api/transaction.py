@@ -86,7 +86,7 @@ class Transaction(object):
         self.end_time = 0.0
         self.last_byte_time = 0.0
 
-        self.total_time = None
+        self.total_time = 0.0
 
         self.stopped = False
 
@@ -393,14 +393,9 @@ class Transaction(object):
 
         exclusive = duration + root.exclusive
 
-        # Calculate total time.
+        # Add transaction exclusive time to total exclusive time
         #
-        # Because we do not track activity on threads, and we currently
-        # don't allocate waiting time in the IOLoop to separate segments
-        # (like External or Datastore), for right now, our total_time is
-        # equal to the duration of the transaction.
-
-        self.total_time = duration
+        self.total_time += exclusive
 
         # Construct final root node of transaction trace.
         # Freeze path in case not already done. This will
@@ -1459,6 +1454,7 @@ class Transaction(object):
     def _process_node(self, node):
         self._trace_node_count += 1
         node.node_count = self._trace_node_count
+        self.total_time += node.exclusive
 
         if type(node) is newrelic.core.database_node.DatabaseNode:
             settings = self._settings

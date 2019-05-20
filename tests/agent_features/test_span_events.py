@@ -160,6 +160,25 @@ def test_database_db_statement_format(sql, sql_format, expected):
     _test()
 
 
+@validate_span_events(
+    count=1,
+    exact_intrinsics={'category': 'datastore'},
+    unexpected_agents=['db.statement'],
+)
+@override_application_settings({
+    'distributed_tracing.enabled': True,
+    'span_events.enabled': True,
+    'span_events.attributes.exclude': ['db.statement'],
+})
+@background_task(name='test_database_db_statement_exclude')
+def test_database_db_statement_exclude():
+    transaction = current_transaction()
+    transaction._sampled = True
+
+    with DatabaseTrace(transaction, 'select 1'):
+        pass
+
+
 @pytest.mark.parametrize('exclude_url', (True, False))
 def test_external_spans(exclude_url):
     override_settings = {

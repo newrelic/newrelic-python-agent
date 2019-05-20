@@ -13,6 +13,13 @@ unreleased
   ``newrelic.agent.current_span_id()``. This method will return the id of the
   current span, or None if no span is in progress. 
 
+- Exclusive time incorrectly displayed when using concurrent asyncio
+
+  The New Relic UI may have shown times equaling greater than 100 percent of
+  the total time when executing concurrent tasks in asyncio. The exclusive
+  times reported by the agent will now be correctly displayed in APM and
+  insights.
+
 4.18.0 (2019-04-17)
 ----------
 

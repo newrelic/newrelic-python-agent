@@ -141,7 +141,7 @@ def test_each_span_type(trace_type, args):
     pytest.param('select 1', 'obfuscated', 'select ?'),
 ))
 def test_database_db_statement_format(sql, sql_format, expected):
-    @validate_span_events(count=1, exact_intrinsics={
+    @validate_span_events(count=1, exact_agents={
         'db.statement': expected,
     })
     @override_application_settings({

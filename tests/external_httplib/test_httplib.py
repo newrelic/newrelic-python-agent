@@ -9,8 +9,10 @@ from testing_support.fixtures import (validate_transaction_metrics,
 from testing_support.external_fixtures import (cache_outgoing_headers,
     validate_cross_process_headers, insert_incoming_headers,
     validate_external_node_params)
-from testing_support.mock_external_http_server import MockExternalHTTPServer
+from testing_support.mock_external_http_server import (MockExternalHTTPServer,
+    MockExternalHTTPHResponseHeadersServer)
 
+from newrelic.common.encoding_utils import DistributedTracePayload
 from newrelic.api.background_task import background_task
 from newrelic.packages import six
 
@@ -171,3 +173,41 @@ def test_httplib_multiple_requests_cross_process_response():
             test_transaction()
 
         connection.close()
+
+
+def process_response(response):
+    response = response.decode('utf-8').strip()
+    values = response.splitlines()
+    values = [[x.strip() for x in s.split(':', 1)] for s in values]
+    return {v[0]: v[1] for v in values}
+
+
+def test_httplib_multiple_requests_unique_distributed_tracing_id():
+    with MockExternalHTTPHResponseHeadersServer():
+        connection = httplib.HTTPConnection('localhost', 8989)
+        response_headers = []
+
+        @background_task(name='test_httplib:test_transaction')
+        def test_transaction():
+            connection.request('GET', '/')
+            response = connection.getresponse()
+            response_headers.append(process_response(response.read()))
+            connection.request('GET', '/')
+            response = connection.getresponse()
+            response_headers.append(process_response(response.read()))
+
+        test_transaction = override_application_settings({
+            'distributed_tracing.enabled': True,
+            'span_events.enabled': True,
+        })(test_transaction)
+        # make multiple requests with the same connection
+        test_transaction()
+
+        connection.close()
+    dt_payloads = [DistributedTracePayload.from_http_safe(header['newrelic'])
+        for header in response_headers]
+
+    ids = set()
+    for payload in dt_payloads:
+        assert payload['d']['id'] not in ids
+        ids.add(payload['d']['id'])

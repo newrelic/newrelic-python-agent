@@ -1,15 +1,12 @@
-from newrelic.api.external_trace import wrap_external_trace, ExternalTrace
+from newrelic.api.external_trace import wrap_external_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
-def _nr_wrapper_httplib2_connect_wrapper(scheme):
 
-    def _nr_wrapper_httplib2_connect_wrapper_inner(wrapped, instance, args,
-            kwargs):
-        transaction = current_transaction()
+def _nr_wrapper_httplib2_endheaders_wrapper(*library_info):
 
-        if transaction is None:
-            return wrapped(*args, **kwargs)
+    def _nr_wrapper_httplib2_endheaders_wrapper_inner(wrapped, instance,
+            args, kwargs):
 
         def _connect_unbound(instance, *args, **kwargs):
             return instance
@@ -19,27 +16,19 @@ def _nr_wrapper_httplib2_connect_wrapper(scheme):
 
         connection = instance
 
-        url = '%s://%s:%s' % (scheme, connection.host, connection.port)
+        connection._nr_library_info = library_info
+        return wrapped(*args, **kwargs)
 
-        with ExternalTrace(transaction, library='httplib2', url=url) as tracer:
-            # Add the tracer to the connection object. The tracer will be
-            # used in getresponse() to add back into the external trace,
-            # after the trace has already completed, details from the
-            # response headers.
+    return _nr_wrapper_httplib2_endheaders_wrapper_inner
 
-            connection._nr_external_tracer = tracer
-
-            return wrapped(*args, **kwargs)
-
-    return _nr_wrapper_httplib2_connect_wrapper_inner
 
 def instrument(module):
 
-    wrap_function_wrapper(module, 'HTTPConnectionWithTimeout.connect',
-            _nr_wrapper_httplib2_connect_wrapper('http'))
+    wrap_function_wrapper(module, 'HTTPConnectionWithTimeout.endheaders',
+            _nr_wrapper_httplib2_endheaders_wrapper('httplib2', 'http'))
 
-    wrap_function_wrapper(module, 'HTTPSConnectionWithTimeout.connect',
-            _nr_wrapper_httplib2_connect_wrapper('https'))
+    wrap_function_wrapper(module, 'HTTPSConnectionWithTimeout.endheaders',
+            _nr_wrapper_httplib2_endheaders_wrapper('httplib2', 'https'))
 
     def url_request(connection, uri, *args, **kwargs):
         return uri

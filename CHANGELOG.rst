@@ -1,6 +1,9 @@
 unreleased
 ----------
 
+4.20.0 (2019-05-22)
+-------------------
+
 - Add a new API to retrieve the current trace ID
 
   Retrieving the current trace ID can now be accomplished with a call to

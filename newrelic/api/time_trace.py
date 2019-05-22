@@ -36,7 +36,7 @@ class TimeTrace(object):
                 self.transaction = None
                 return
 
-            self.parent = transaction.active_node()
+            self.parent = transaction.active_span()
 
             # parent shall track children immediately
             if self.parent is not None:

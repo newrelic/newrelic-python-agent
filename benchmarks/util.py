@@ -93,13 +93,13 @@ class MockTransaction(WSGIWebTransaction):
         self._state = WSGIWebTransaction.STATE_STOPPED
         self.stopped = False
         self.enabled = True
-        self.current_node = None
+        self.current_span = None
         self.client_cross_process_id = None
         self._frameworks = set()
         self._name_priority = 0
         self._settings = application.settings
         self._trace_node_count = 0
-        self.current_node = Sentinel()
+        self.current_span = Sentinel()
         self._string_cache = {}
         self._stack_trace_count = 0
         self._explain_plan_count = 0

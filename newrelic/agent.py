@@ -38,8 +38,9 @@ from newrelic.api.transaction import (
         record_custom_metrics as __record_custom_metrics,
         record_custom_event as __record_custom_event,
         accept_distributed_trace_payload as __accept_distributed_trace_payload,
-        create_distributed_trace_payload as
-        __create_distributed_trace_payload)
+        create_distributed_trace_payload as __create_distributed_trace_payload,
+        current_trace_id as __current_trace_id,
+        current_span_id as __current_span_id)
 
 from newrelic.api.transaction_context import (
         TransactionContext as __TransactionContext)
@@ -222,8 +223,10 @@ accept_distributed_trace_payload = __wrap_api_call(
 create_distributed_trace_payload = __wrap_api_call(
         __create_distributed_trace_payload,
         'create_distributed_trace_payload')
+current_trace_id = __wrap_api_call(__current_trace_id, 'current_trace_id')
+current_span_id = __wrap_api_call(__current_span_id, 'current_span_id')
 TransactionContext = __wrap_api_call(__TransactionContext,
-        'TransactionContext')
+'TransactionContext')
 wsgi_application = __wsgi_application
 WebTransaction = __wrap_api_call(__WebTransaction,
         'WebTransaction')

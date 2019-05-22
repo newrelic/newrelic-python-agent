@@ -67,7 +67,7 @@ def test_outbound_cross_process_headers(cat_enabled, distributed_tracing,
 
     def task_test():
         loop = asyncio.get_event_loop()
-        headers = loop.run_until_complete(fetch('http://localhost:8989'))
+        headers = loop.run_until_complete(fetch('http://127.0.0.1:8989'))
 
         transaction = current_transaction()
         transaction._test_request_headers = headers
@@ -110,7 +110,7 @@ def test_outbound_cross_process_headers_custom_headers(customer_headers,
         mock_header_server):
 
     loop = asyncio.get_event_loop()
-    headers = loop.run_until_complete(fetch('http://localhost:8989',
+    headers = loop.run_until_complete(fetch('http://127.0.0.1:8989',
         customer_headers.copy()))
 
     # always honor customer headers
@@ -121,7 +121,7 @@ def test_outbound_cross_process_headers_custom_headers(customer_headers,
 def test_outbound_cross_process_headers_no_txn(mock_header_server):
 
     loop = asyncio.get_event_loop()
-    headers = loop.run_until_complete(fetch('http://localhost:8989'))
+    headers = loop.run_until_complete(fetch('http://127.0.0.1:8989'))
 
     assert not headers.get(ExternalTrace.cat_id_key)
     assert not headers.get(ExternalTrace.cat_transaction_key)
@@ -137,7 +137,7 @@ def test_outbound_cross_process_headers_exception(mock_header_server):
 
     try:
         loop = asyncio.get_event_loop()
-        headers = loop.run_until_complete(fetch('http://localhost:8989'))
+        headers = loop.run_until_complete(fetch('http://127.0.0.1:8989'))
 
         assert not headers.get(ExternalTrace.cat_id_key)
         assert not headers.get(ExternalTrace.cat_transaction_key)
@@ -174,15 +174,15 @@ def test_process_incoming_headers(cat_enabled, response_code,
     # StopIteration is called.
 
     _test_cross_process_response_scoped_metrics = [
-            ('ExternalTransaction/localhost:8990/1#2/test', 1 if cat_enabled
+            ('ExternalTransaction/127.0.0.1:8990/1#2/test', 1 if cat_enabled
                 else None)]
 
     _test_cross_process_response_rollup_metrics = [
             ('External/all', 1),
             ('External/allOther', 1),
-            ('External/localhost:8990/all', 1),
-            ('ExternalApp/localhost:8990/1#2/all', 1 if cat_enabled else None),
-            ('ExternalTransaction/localhost:8990/1#2/test', 1 if cat_enabled
+            ('External/127.0.0.1:8990/all', 1),
+            ('ExternalApp/127.0.0.1:8990/1#2/all', 1 if cat_enabled else None),
+            ('ExternalTransaction/127.0.0.1:8990/1#2/test', 1 if cat_enabled
                 else None)]
 
     _test_cross_process_response_external_node_params = [
@@ -224,7 +224,7 @@ def test_process_incoming_headers(cat_enabled, response_code,
         with MockExternalHTTPServer(handler=respond_with_cat_header,
                 port=8990):
             loop = asyncio.get_event_loop()
-            loop.run_until_complete(fetch('http://localhost:8990',
+            loop.run_until_complete(fetch('http://127.0.0.1:8990',
                 raise_for_status=raise_for_status, connector=connector))
 
     task_test()

@@ -49,10 +49,10 @@ def _nr_wrapper_gen_coroutine_generator_(generator):
                 retrieve_transaction_request(active_transaction))
 
         if request is not None:
-            active_node = active_transaction.active_node()
+            active_span = active_transaction.active_span()
 
-            if hasattr(active_node, 'name'):
-                active_name = active_node.name
+            if hasattr(active_span, 'name'):
+                active_name = active_span.name
 
                 if active_name.endswith(' (coroutine)'):
                     name = active_name.replace(' (coroutine)', ' (yield)')

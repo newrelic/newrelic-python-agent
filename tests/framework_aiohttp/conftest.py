@@ -1,4 +1,6 @@
+import sys
 import asyncio
+from collections import namedtuple
 from aiohttp.test_utils import (AioHTTPTestCase,
         TestClient as _TestClient)
 
@@ -7,6 +9,8 @@ import pytest
 
 from testing_support.fixtures import (code_coverage_fixture,
         collector_agent_registration_fixture, collector_available_fixture)
+from testing_support.mock_external_http_server import (
+        MockExternalHTTPHResponseHeadersServer)
 
 _coverage_source = [
     'newrelic.hooks.framework_aiohttp',
@@ -25,6 +29,9 @@ _default_settings = {
 collector_agent_registration = collector_agent_registration_fixture(
         app_name='Python Agent Test (framework_aiohttp)',
         default_settings=_default_settings)
+
+
+ServerInfo = namedtuple('ServerInfo', ('base_metric', 'url'))
 
 
 @pytest.fixture(scope='session')
@@ -85,3 +92,22 @@ def aiohttp_app(request):
     case.setUp()
     yield case
     case.tearDown()
+
+
+@pytest.fixture(scope='module')
+def external():
+    external = MockExternalHTTPHResponseHeadersServer(port=8989)
+    with external:
+        yield external
+
+
+@pytest.fixture(scope='module')
+def local_server_info(external):
+    host_port = '127.0.0.1:%d' % external.port
+    metric = 'External/%s/aiohttp/' % host_port
+    url = 'http://' + host_port
+    return ServerInfo(metric, url)
+
+
+if sys.version_info < (3, 5):
+    collect_ignore = ['test_client_async_await.py']

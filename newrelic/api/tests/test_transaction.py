@@ -273,7 +273,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
     def test_distributed_trace_with_spans_no_parent(self):
         with self.transaction:
-            self.transaction.current_node.guid = 'abcde'
+            self.transaction.current_span.guid = 'abcde'
             self.transaction.guid = 'this is guid'
 
             # ID and parent should be from the span

@@ -48,7 +48,7 @@ class TestTransactionContext(newrelic.tests.test_cases.TestCase):
                 with transaction_context.TransactionContext(txn):
                     trace.__exit__(None, None, None)
 
-                assert txn.current_node is not trace
+                assert txn.current_span is not trace
             finally:
                 txn.save_transaction()
 
@@ -63,9 +63,9 @@ class TestTransactionContext(newrelic.tests.test_cases.TestCase):
                 txn.drop_transaction()
 
                 with transaction_context.TransactionContext(txn):
-                    assert txn.current_node is trace
+                    assert txn.current_span is trace
 
-                assert txn.current_node is trace
+                assert txn.current_span is trace
             finally:
                 txn.save_transaction()
 

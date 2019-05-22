@@ -69,7 +69,7 @@ Usage
 .. _license key: https://docs.newrelic.com/docs/accounts-partnerships/accounts/account-setup/license-key
 .. _wrapper script: https://docs.newrelic.com/docs/agents/python-agent/installation-configuration/python-agent-integration#wrapper-script
 .. _manually integrate the agent: https://docs.newrelic.com/docs/agents/python-agent/installation-configuration/python-agent-integration#manual-integration
-.. _New Relic RPM UI: https://rpm.newrelic.com
+.. _New Relic UI: https://rpm.newrelic.com
 
 Resources
 ---------

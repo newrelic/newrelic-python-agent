@@ -5,7 +5,8 @@ import copy
 
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import background_task, BackgroundTask
-from newrelic.api.transaction import current_transaction
+from newrelic.api.transaction import (current_transaction, current_trace_id,
+        current_span_id)
 from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.api.wsgi_application import wsgi_application
 
@@ -261,3 +262,25 @@ def test_distributed_tracing_metrics(web_transaction, gen_error, has_parent):
                     transaction.record_exception()
 
     _test()
+
+
+@background_task(name='test_current_trace_id_api_inside_transaction')
+def test_current_trace_id_api_inside_transaction():
+    trace_id = current_trace_id()
+    assert trace_id == current_transaction().guid
+
+
+def test_current_trace_id_api_outside_transaction():
+    trace_id = current_trace_id()
+    assert trace_id is None
+
+
+@background_task(name='test_current_span_id_api_inside_transaction')
+def test_current_span_id_inside_transaction():
+    span_id = current_span_id()
+    assert span_id == current_transaction().current_span.guid
+
+
+def test_current_span_id_outside_transaction():
+    span_id = current_span_id()
+    assert span_id is None

@@ -1,6 +1,28 @@
 unreleased
 ----------
 
+4.20.0 (2019-05-22)
+-------------------
+
+- Add a new API to retrieve the current trace ID
+
+  Retrieving the current trace ID can now be accomplished with a call to
+  ``newrelic.agent.current_trace_id()``. This method will return the current
+  trace id, or None if no transaction is in progress. 
+
+- Add new api current_span_id
+
+  Retrieving the current span ID can now be accomplished with a call to
+  ``newrelic.agent.current_span_id()``. This method will return the id of the
+  current span, or None if no span is in progress. 
+
+- Exclusive time incorrectly displayed when using concurrent asyncio
+
+  The New Relic UI may have shown times equaling greater than 100 percent of
+  the total time when executing concurrent tasks in asyncio. The exclusive
+  times reported by the agent will now be correctly displayed in APM and
+  insights.
+
 4.18.0 (2019-04-17)
 ----------
 

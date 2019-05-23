@@ -62,6 +62,40 @@ def test_database_db_instance_truncation():
         pass
 
 
+@override_application_settings({
+    'transaction_tracer.record_sql': 'raw',
+})
+@validate_tt_segment_params(exact_params={'db.statement': 'select 1'})
+@background_task(name='test_database_db_statement')
+def test_database_db_statement_default_enabled():
+    transaction = current_transaction()
+    with DatabaseTrace(transaction, 'select 1'):
+        pass
+
+
+@override_application_settings({
+    'transaction_tracer.record_sql': 'raw',
+    'agent_limits.sql_query_length_maximum': 1,
+})
+@validate_tt_segment_params(exact_params={'db.statement': 'a'})
+@background_task(name='test_database_db_statement_truncation')
+def test_database_db_statement_truncation():
+    transaction = current_transaction()
+    with DatabaseTrace(transaction, 'a' * 2):
+        pass
+
+
+@override_application_settings({
+    'transaction_segments.attributes.exclude': ['db.*'],
+})
+@validate_tt_segment_params(forgone_params=('db.instance', 'db.statement'))
+@background_task(name='test_database_segment_attributes_disabled')
+def test_database_segment_attributes_disabled():
+    transaction = current_transaction()
+    with DatabaseTrace(transaction, 'select 1', database_name='foo'):
+        pass
+
+
 @pytest.mark.parametrize('trace_type,args', (
     (DatabaseTrace, ('select * from foo', )),
     (DatastoreTrace, ('db_product', 'db_target', 'db_operation')),

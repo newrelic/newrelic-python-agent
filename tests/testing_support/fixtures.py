@@ -1610,6 +1610,16 @@ def validate_tt_segment_params(forgone_params=(), present_params=(),
         def _validate_segment_params(segment):
             segment_params = segment[3]
 
+            # Translate from the string cache
+            for key, value in segment_params.items():
+                if hasattr(value, 'startswith') and value.startswith('`'):
+                    try:
+                        index = int(value[1:])
+                        value = pack_data[1][index]
+                    except ValueError:
+                        pass
+                segment_params[key] = value
+
             recorded_params.update(segment_params)
 
             for child_segment in segment[4]:

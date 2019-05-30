@@ -539,9 +539,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
             raise DiscardDataForRequest(str(e))
     else:
         _logger.warning('Received a non 200 or 202 HTTP response from '
-                'the data collector where url=%r, method=%r, license_key=%r, '
+                'the data collector where url=%r, method=%r, '
                 'agent_run_id=%r, params=%r, headers=%r, status_code=%r '
-                'and content=%r.', url, method, license_key, agent_run_id,
+                'and content=%r.', url, method, agent_run_id,
                 params, headers, r.status_code, content)
 
         internal_metric('Supportability/Python/Collector/Failures', 1)
@@ -967,10 +967,9 @@ class ApplicationSession(object):
             # data collector instances we should use for this agent run.
 
             _logger.debug('Connecting to data collector to register agent '
-                    'with license_key=%r, app_name=%r, '
-                    'linked_applications=%r, environment=%r and settings=%r.',
-                    license_key, app_name, linked_applications, environment,
-                    settings)
+                    'with app_name=%r, linked_applications=%r, environment=%r '
+                    'and settings=%r.', app_name, linked_applications,
+                    environment, settings)
 
             url = collector_url()
 

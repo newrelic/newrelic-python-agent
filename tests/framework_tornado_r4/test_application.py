@@ -4,6 +4,7 @@ import socket
 import sys
 import tornado
 import tornado.web
+import logging
 
 from testing_support.fixtures import (validate_transaction_metrics,
         capture_transaction_metrics, override_generic_settings,
@@ -205,6 +206,21 @@ def test_unsupported_method(app, ioloop, nr_enabled, ignore_status_codes):
         _test = override_generic_settings(settings, {'enabled': False})(_test)
 
     _test()
+
+
+@pytest.mark.parametrize('ioloop', loops)
+def test_handler_calls_handler(app, ioloop, caplog):
+    with caplog.at_level(
+            logging.DEBUG,
+            logger='newrelic.hooks.framework_tornado_r4.web'):
+        response = app.fetch('/call-simple/')
+
+    module = caplog.record_tuples[0][0]
+    level = caplog.record_tuples[0][1]
+
+    assert response.code == 200
+    assert module == 'newrelic.hooks.framework_tornado_r4.web'
+    assert level == logging.DEBUG
 
 
 @pytest.mark.parametrize('ioloop', loops)

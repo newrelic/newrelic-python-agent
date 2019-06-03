@@ -561,10 +561,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
         if r.status_code == 401:
             _logger.error('Data collector is indicating that an incorrect '
-                    'license key has been supplied by the agent. The value '
-                    'which was used by the agent is %r. Please correct any '
-                    'problem with the license key or report this problem to '
-                    'New Relic support.', license_key)
+                    'license key has been supplied by the agent. Please '
+                    'correct any problem with the license key or report '
+                    'this problem to New Relic support.')
         elif r.status_code == 407:
             _logger.warning('Received a proxy authentication required '
                     'response from the data collector. This occurs when '

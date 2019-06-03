@@ -42,6 +42,9 @@ from newrelic.common.utilization import (AWSUtilization, AzureUtilization,
 
 _logger = logging.getLogger(__name__)
 
+PARAMS_WHITELIST = set(['method', 'protocol_version', 'marshal_format',
+    'run_id'])
+
 # User agent string that must be used in all requests. The data collector
 # does not rely on this, but is used to target specific agents if there
 # is a problem with data collector handling requests.
@@ -538,11 +541,13 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
             raise DiscardDataForRequest(str(e))
     else:
+        loggable_params = {k: v for k, v in params.items()
+                if k in PARAMS_WHITELIST}
+
         _logger.warning('Received a non 200 or 202 HTTP response from '
-                'the data collector where url=%r, method=%r, '
-                'agent_run_id=%r, params=%r, headers=%r, status_code=%r '
-                'and content=%r.', url, method, agent_run_id,
-                params, headers, r.status_code, content)
+                'the data collector where url=%r, params=%r, '
+                'headers=%r, status_code=%r and content=%r.', url,
+                loggable_params, headers, r.status_code, content)
 
         internal_metric('Supportability/Python/Collector/Failures', 1)
         internal_metric('Supportability/Python/Collector/Failures/'
@@ -575,12 +580,14 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         elif r.status_code == 409:
             _logger.info('An automatic internal agent restart has been '
                     'requested by the data collector for the application '
-                    'where the agent run was %r.', agent_run_id)
+                    'where the agent run was %r.',
+                    loggable_params.get('run_id'))
         elif r.status_code == 410:
             _logger.critical('Disconnection of the agent has been requested '
                     'by the data collector for the application where the '
                     'agent run was %r. Please contact New Relic support '
-                    'for further information.', agent_run_id)
+                    'for further information.',
+                    loggable_params.get('run_id'))
         elif r.status_code == 429:
             _logger.warning('The agent received a 429 response from the data '
                     'collector, indicating that it is currently experiencing '

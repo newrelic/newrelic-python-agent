@@ -10,7 +10,7 @@ by e-mailing [support@newrelic.com](mailto:support@newrelic.com).
 
 ## [requests](https://pypi.org/project/requests)
 
-Copyright (c) Kenneth Reitz
+Copyright 2014 Kenneth Reitz
 
 Distributed under the following license(s):
 
@@ -19,7 +19,7 @@ Distributed under the following license(s):
 
 ## [six](https://pypi.org/project/six)
 
-Copyright (c) Benjamin Peterson
+Copyright (c) 2010-2013 Benjamin Peterson
 
 Distributed under the following license(s):
 
@@ -28,7 +28,7 @@ Distributed under the following license(s):
 
 ## [time.monotonic](common/_monotonic.c)
 
-Copyright (c) Python Software Foundation
+Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013 Python Software Foundation; All Rights Reserved
 
 Distributed under the following license(s):
 
@@ -37,7 +37,8 @@ Distributed under the following license(s):
 
 ## [wrapt](https://pypi.org/project/wrapt)
 
-Copyright (c) Graham Dumpleton
+Copyright (c) 2013-2017, Graham Dumpleton
+All rights reserved.
 
 Distributed under the following license(s):
 

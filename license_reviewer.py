@@ -531,7 +531,7 @@ by e-mailing [support@newrelic.com](mailto:support@newrelic.com).
 third_party_component = """
 ## [%(name)s](%(url)s)
 
-Copyright (c) %(copyright)s
+%(copyright)s
 
 Distributed under the following license(s):
 

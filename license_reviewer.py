@@ -151,11 +151,12 @@ def add_library_command(args):
     uniqueid = args.id
     name = args.name
     url = args.url.strip()
+    copyright = args.copyright
 
     license_info = load_license_info_file(license_info_file)
 
     try:
-        add_library(license_info, uniqueid, name, url)
+        add_library(license_info, uniqueid, name, url, copyright)
         save_license_info_file(license_info_file, license_info)
     except NR_Error as e:
         print(e.value)
@@ -164,16 +165,18 @@ def add_library_command(args):
     return 0
 
 
-def add_library(license_info, uniqueid, name, url):
+def add_library(license_info, uniqueid, name, url, copyright):
     # if we've never added a library, then create the entry in our map
-    if "libraries" not in license_info:
-        license_info["libraries"] = {}
+    libraries = license_info.setdefault("libraries", {})
 
-    license_info["libraries"][uniqueid] = {
-        "name": name,
-        "url": url,
-        "licenses": []
-    }
+    # if the library is already added, assume this is an update
+    library = libraries.setdefault(uniqueid, {})
+    library["name"] = name
+    library["url"] = url
+    library["copyright"] = copyright
+
+    # Licenses might already be set, in which case we should leave it alone
+    library.setdefault("licenses", [])
 
 
 def add_license_command(args):
@@ -1067,6 +1070,7 @@ def get_and_run_command():
     )
     add_library_command_parser.add_argument("id", help="Unique ID for the library")
     add_library_command_parser.add_argument("name", help="Name of the library")
+    add_library_command_parser.add_argument("copyright", help="Copyright holder")
     add_library_command_parser.add_argument(
         "url", help='URL for the library. Set to " " if one doesn\'t exist'
     )

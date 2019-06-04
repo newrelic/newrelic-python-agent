@@ -74,6 +74,10 @@ class TransactionCache(object):
             if current is not None and current.parent:
                 return id(current)
 
+        task = current_task()
+        if task is not None:
+            return id(task)
+
         return thread.get_ident()
 
     def asyncio_transactions(self, loop_id=None):

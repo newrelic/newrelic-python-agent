@@ -1,39 +1,44 @@
 {
     "libraries": {
         "New Relic": {
+            "copyright": "New Relic",
             "licenses": [
                 "New Relic"
             ],
             "name": "New Relic",
-            "url": "http://newrelic.com"
+            "url": "https://newrelic.com"
         },
         "requests": {
+            "copyright": "Kenneth Reitz",
             "licenses": [
                 "apache2"
             ],
             "name": "requests",
-            "url": "http://pypi.python.org/pypi/requests"
+            "url": "https://pypi.org/project/requests"
         },
         "six": {
+            "copyright": "Benjamin Peterson",
             "licenses": [
                 "MIT"
             ],
             "name": "six",
-            "url": "https://bitbucket.org/gutworth/six/overview"
+            "url": "https://pypi.org/project/six"
         },
         "time.monotonic": {
+            "copyright": "Python Software Foundation",
             "licenses": [
                 "PSF"
             ],
             "name": "time.monotonic",
-            "url": "newrelic/common/_monotonic.c"
+            "url": "common/_monotonic.c"
         },
         "wrapt": {
+            "copyright": "Graham Dumpleton",
             "licenses": [
                 "BSD (2-Clause)"
             ],
             "name": "wrapt",
-            "url": "https://pypi.python.org/pypi/wrapt"
+            "url": "https://pypi.org/project/wrapt"
         }
     },
     "licenses": {
@@ -47,15 +52,15 @@
         },
         "New Relic": {
             "name": "New Relic",
-            "url": "http://newrelic.com"
+            "url": "https://docs.newrelic.com/docs/licenses/license-information/other-licenses/new-relic-agent-license"
         },
         "PSF": {
             "name": "Python Software Foundation",
-            "url": "http://docs.python.org/2/license.html"
+            "url": "https://docs.python.org/3/license.html"
         },
         "apache2": {
             "name": "Apache License, Version 2.0",
-            "url": "http://www.apache.org/licenses/LICENSE-2.0"
+            "url": "https://www.apache.org/licenses/LICENSE-2.0"
         }
     }
 }

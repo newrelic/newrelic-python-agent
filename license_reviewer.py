@@ -603,10 +603,8 @@ def gen_installer_doc_command(args):
     )
     license_info = load_license_info_file(license_info_file)
 
-    output_filename = args.output
-
     file_lines = gen_installer_doc(license_info)
-    write_lines_to_file_if_diff(file_lines, output_filename)
+    write_lines_to_file_if_diff(file_lines, license_file)
 
     return 0
 
@@ -1133,10 +1131,6 @@ def get_and_run_command():
         "if you know the metafiles are correct. This should only be "
         "used for automation purposes.",
     )
-    gen_installer_doc_command_parser.add_argument(
-        "output",
-        help="The output file that will be replaced with the new "
-        "installer doc license file")
     gen_installer_doc_command_parser.set_defaults(func=gen_installer_doc_command)
 
     gen_docs_site_doc_command_parser = subparsers.add_parser(

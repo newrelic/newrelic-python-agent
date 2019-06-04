@@ -1168,33 +1168,16 @@ def get_and_run_command():
         exit_code = args.func(args)
         end_time_ms = int(round(time.time() * 1000))
 
-        print("Time to execute command: "+str(end_time_ms -
-                start_time_ms)+"ms")
-        print("Exiting with code: "+str(exit_code))
+        print("Time to execute command: " + str(end_time_ms - start_time_ms) + "ms")
+        print("Exiting with code: " + str(exit_code))
 
     return exit_code
 
+
 def get_git_root_dir():
-    git_root_dir = ""
-
     # make sure we're at the top of the git working directory
-    git_output = subprocess.check_output(["git", "rev-parse",
-            "--show-toplevel"])
-    file_list = str(git_output).split("\\n")
-
-    count = 0
-    for f in file_list:
-        f_clean = f
-        if count == 0:
-            # note: this is a bit of a hack. not sure why lines start with b'
-            if f.startswith("b'"):
-                f_clean = f[2:]
-                git_root_dir = f_clean.strip()
-            else:
-                git_root_dir = f.strip()
-        else:
-            break
-
+    git_output = subprocess.check_output(["git", "rev-parse", "--show-toplevel"])
+    git_root_dir = git_output.decode('utf-8').strip()
     return git_root_dir
 
 

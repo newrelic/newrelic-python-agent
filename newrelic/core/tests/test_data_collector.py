@@ -1,7 +1,6 @@
 import json
 import os
 import pytest
-import ast
 import logging
 
 from newrelic.common import system_info
@@ -11,7 +10,7 @@ from newrelic.core.config import global_settings
 from newrelic.network.exceptions import (DiscardDataForRequest,
         RetryDataForRequest, ForceAgentRestart, ForceAgentDisconnect)
 from newrelic.core.data_collector import (ApplicationSession, send_request,
-        ServerlessModeSession, PARAMS_WHITELIST)
+        ServerlessModeSession)
 import newrelic.packages.requests as requests
 
 # Global constants used in tests
@@ -432,7 +431,7 @@ def test_status_code_exceptions_raised(status_code, exception):
     (409, ForceAgentRestart),
     (410, ForceAgentDisconnect),
 ])
-def test_logging_run_id_whitelist(status_code, exception, caplog):
+def test_run_id_present_logging(status_code, exception, caplog):
     agent_run_id = 12
 
     session = FakeRequestsSession(status_code,
@@ -450,29 +449,49 @@ def test_logging_run_id_whitelist(status_code, exception, caplog):
                     agent_run_id=agent_run_id)
 
     found = False
-    for record in caplog.record_tuples:
-        if 'where the agent run was %r.' % (str(agent_run_id)) in record[2]:
+    for message in caplog.messages:
+        if 'where the agent run was %r.' % (str(agent_run_id)) in message:
             found = True
     assert found
 
 
-def test_logging_params_whitelist(caplog):
-    session = FakeRequestsSession(404,
+@pytest.mark.parametrize('status_code,exception', [
+    (400, DiscardDataForRequest),
+    (401, ForceAgentRestart),
+    (403, DiscardDataForRequest),
+    (404, DiscardDataForRequest),
+    (405, DiscardDataForRequest),
+    (407, DiscardDataForRequest),
+    (408, RetryDataForRequest),
+    (409, ForceAgentRestart),
+    (410, ForceAgentDisconnect),
+    (411, DiscardDataForRequest),
+    (413, DiscardDataForRequest),
+    (414, DiscardDataForRequest),
+    (415, DiscardDataForRequest),
+    (417, DiscardDataForRequest),
+    (429, RetryDataForRequest),
+    (431, DiscardDataForRequest),
+    (500, RetryDataForRequest),
+    (503, RetryDataForRequest),
+    (201, DiscardDataForRequest),  # != (200 || 202) catch-all case
+])
+def test_license_key_absent_logging(status_code, exception, caplog):
+    session = FakeRequestsSession(status_code,
             json.dumps({'return_value': ''}))
-    with pytest.raises(DiscardDataForRequest):
-        send_request(session, url="", method="", license_key="")
 
-    module = caplog.record_tuples[0][0]
-    level = caplog.record_tuples[0][1]
-    message = caplog.record_tuples[0][2]
-    params = message[message.find('params=') + 7: message.find('headers') - 2]
-    params_dict = ast.literal_eval(params)
+    with pytest.raises(exception):
+        with caplog.at_level(
+                logging.INFO,
+                logger='newrelic.core.data_collector'):
+            send_request(
+                    session,
+                    url="",
+                    method="",
+                    license_key="123LICENSEKEY")
 
-    assert module == 'newrelic.core.data_collector'
-    assert level == logging.WARNING
-    assert "Received a non 200 or 202 HTTP response" in message
-    for key in params_dict.keys():
-        assert key in PARAMS_WHITELIST
+    for message in caplog.messages:
+        assert "123LICENSEKEY" not in message
 
 
 @pytest.mark.parametrize('status_code, expected_return_value', [

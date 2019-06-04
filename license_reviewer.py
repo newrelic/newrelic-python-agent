@@ -679,21 +679,18 @@ def save_license_source_map_file(license_source_map_file, license_source_map):
 def get_ignored_files(ignore_file):
     ignored_files = {}
 
-    f = open(ignore_file, "U")
+    with open(ignore_file, "r") as f:
+        for line in f:
+            relative_path = line.strip()
 
-    for line in f.read().splitlines():
-        relative_path = line.strip()
+            # strip out comments
+            comment_index = line.find("#")
+            if comment_index != -1:
+                relative_path = line[:comment_index].strip()
 
-        # strip out comments
-        comment_index = line.find("#")
-        if comment_index != -1:
-            relative_path = line[:comment_index].strip()
-
-        if len(relative_path) > 0:
-           full_path = os.path.normpath(relative_path)
-           ignored_files[full_path] = full_path
-
-    f.close()
+            if len(relative_path) > 0:
+                full_path = os.path.normpath(relative_path)
+                ignored_files[full_path] = full_path
 
     return ignored_files
 
@@ -1088,7 +1085,7 @@ def get_and_run_command():
 
     set_libraries_command_parser = subparsers.add_parser(
         "setlibrary",
-        description="Map a given source file to a specified 3rd " "party library",
+        description="Map a given source file to a specified 3rd party library",
     )
     set_libraries_command_parser.add_argument(
         "source", help="The source file you want to set libraries on"

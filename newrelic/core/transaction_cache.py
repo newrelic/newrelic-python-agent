@@ -157,7 +157,7 @@ class TransactionCache(object):
 
         thread_id = transaction.thread_id
 
-        if not thread_id in self._cache:
+        if thread_id not in self._cache:
             _logger.error('Runtime instrumentation error. Attempt to '
                     'to drop the transaction but where none is active. '
                     'Report this issue to New Relic support.\n%s',
@@ -179,7 +179,9 @@ class TransactionCache(object):
 
         del self._cache[thread_id]
 
+
 _transaction_cache = TransactionCache()
+
 
 def transaction_cache():
     return _transaction_cache

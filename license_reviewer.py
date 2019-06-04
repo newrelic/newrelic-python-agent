@@ -1019,7 +1019,9 @@ def load_config_file():
     config = ConfigParser.ConfigParser({"review_submodules": False})
 
     if os.path.exists(license_config_file):
-        config.readfp(open(license_config_file))
+        read_config = getattr(config, 'read_file', None) or getattr(config, 'readfp')
+        with open(license_config_file) as f:
+            read_config(f)
 
         try:
             projectname = config.get("LicenseReviewerConfig", "projectname")

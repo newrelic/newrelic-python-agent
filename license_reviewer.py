@@ -34,6 +34,8 @@ license_config_filename = "license_config.ini"
 projectname = ""
 permalink = ""
 review_submodules = False
+license_file = ""
+third_party_notices_file = ""
 
 new_relic_library = "New Relic"
 
@@ -1007,6 +1009,8 @@ def load_config_file():
     global projectname
     global permalink
     global review_submodules
+    global license_file
+    global third_party_notices_file
 
     errors = []
 
@@ -1029,6 +1033,14 @@ def load_config_file():
                 errors.append("permalink variable not set in: " + license_config_file)
 
             review_submodules = config.get("LicenseReviewerConfig", "review_submodules")
+
+            license_file = config.get("LicenseReviewerConfig", "license_file")
+            if len(license_file) == 0:
+                errors.append("license file variable not set in: " + license_config_file)
+
+            third_party_notices_file = config.get("LicenseReviewerConfig", "third_party_notices_file")
+            if len(third_party_notices_file) == 0:
+                errors.append("third party notices file variable not set in: " + license_config_file)
 
         except ConfigParser.NoOptionError:
             errors.append("error reading: " + license_config_file)

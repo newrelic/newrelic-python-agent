@@ -483,10 +483,7 @@ def gen_docs_site_doc(license_info):
     return [html]
 
 
-copyright_body = """
-All other components of this product are:
-
-  Copyright (c) 2010-%(year)s New Relic, Inc. All rights reserved.
+copyright_body = """Copyright (c) 2010-%(year)s New Relic, Inc. All rights reserved.
 
 Certain inventions disclosed in this file may be claimed within patents
 owned or patent applications filed by New Relic, Inc. or third parties.
@@ -518,12 +515,34 @@ KIND, including without any implied warranties of MERCHANTABILITY, FITNESS
 FOR A PARTICULAR PURPOSE, TITLE, or NON-INFRINGEMENT. As a condition to
 your use of these files, you are solely responsible for such use. New Relic
 will have no liability to you for direct, indirect, consequential,
-incidental, special, or punitive damages or for lost profits or data.
+incidental, special, or punitive damages or for lost profits or data."""
+
+
+third_party_notices_header = """# Third Party Notices
+
+The %(projectname)s uses source code from third party libraries which carry
+their own copyright notices and license terms. These notices are provided
+below.
+
+In the event that a required notice is missing or incorrect, please notify us
+by e-mailing [support@newrelic.com](mailto:support@newrelic.com).
+"""
+
+third_party_component = """
+## [%(name)s](%(url)s)
+
+Copyright (c) %(copyright)s
+
+Distributed under the following license(s):
+
+%(licenses)s
 """
 
 
 def gen_installer_doc(license_info):
-    lines = []
+    current_year = datetime.now().year
+    license = [copyright_body % {"year": current_year}]
+    third_party_notices = [third_party_notices_header % {"projectname": projectname}]
 
     for library in sorted(license_info["libraries"]):
         if library == new_relic_library:
@@ -532,15 +551,8 @@ def gen_installer_doc(license_info):
 
         library_name = license_info["libraries"][library]["name"]
         library_url = license_info["libraries"][library]["url"]
-
-        lines.append(75 * '-')
-        lines.append("")
-        lines.append("This product includes:")
-        lines.append("")
-        lines.append("  '%s' (%s)," % (library_name, library_url))
-        lines.append("")
-        lines.append("which contains components released under the following license(s):")
-        lines.append("")
+        library_copyright = license_info["libraries"][library]["copyright"]
+        licenses = []
 
         for license_id in sorted(license_info["libraries"][library]["licenses"]):
             license_name = license_info["licenses"][license_id]["name"]
@@ -552,22 +564,27 @@ def gen_installer_doc(license_info):
             erb_index = license_url.find(".html.erb")
 
             if erb_index != -1:
-                license_file = os.path.join(license_reviewer_metafile_path, license_url)
+                raw_license = os.path.join(license_reviewer_metafile_path, license_url)
 
-                for line in read_list_from_file(license_file):
-                    lines.append("    " + line)
+                licenses.append('```')
+                with open(raw_license) as f:
+                    licenses.append(f.read())
+                licenses.append('```')
 
             else:
-                lines.append("  " + license_name + " <" + license_url + ">")
-        lines.append("")
+                licenses.append("  * [" + license_name + "](" + license_url + ")")
 
-    current_year = datetime.now().year
+        third_party_notices.append(
+            third_party_component
+            % {
+                "name": library_name,
+                "url": library_url,
+                "copyright": library_copyright,
+                "licenses": "\n".join(licenses),
+            }
+        )
 
-    lines.append(75 * '-')
-    lines.append(copyright_body % {"year": current_year})
-    lines.append(75 * '-')
-
-    return lines
+    return license, third_party_notices
 
 
 def write_lines_to_file_if_diff(lines, filename):
@@ -603,8 +620,9 @@ def gen_installer_doc_command(args):
     )
     license_info = load_license_info_file(license_info_file)
 
-    file_lines = gen_installer_doc(license_info)
-    write_lines_to_file_if_diff(file_lines, license_file)
+    license, third_party = gen_installer_doc(license_info)
+    write_lines_to_file_if_diff(license, license_file)
+    write_lines_to_file_if_diff(third_party, third_party_notices_file)
 
     return 0
 

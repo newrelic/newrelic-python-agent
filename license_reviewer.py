@@ -421,29 +421,27 @@ def get_latest_git_articles_dir(articles_dir):
     return 0
 
 
+docs_site_template = """<p>We love open-source software, and use the following in the %(projectname)s. Thank you, open-source community, for making these fine tools! Some of these are listed under multiple software licenses, and in that case we have listed the license we've chosen to use.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th width="150"><b>Library</b></th>
+      <th><b>License</b></th>
+    </tr>
+  </thead>
+  <tbody>
+            %(licenses)s
+  </tbody>
+</table>
+
+<p>The remainder of the code is covered by the <a href="/docs/licenses/license-information/other-licenses/new-relic-agent-license">New Relic agent license agreement</a>.</p>
+
+<h2 id="more_help">For more help</h2>"""
+
+
 def gen_docs_site_doc(license_info):
     lines = []
-
-    lines.append("<%#")
-    lines.append("---")
-    lines.append("article:")
-    lines.append("  permalink: " + permalink)
-    lines.append("  title: " + projectname + " Licenses")
-    lines.append("  keywords: general")
-    lines.append("  beta: false")
-    lines.append("  sub_category: Licenses")
-    lines.append(
-        "  meta_description: Lists third-party licenses we use "
-        "in the " + projectname)
-    lines.append("---")
-    lines.append("%>")
-    lines.append("We love open-source software, and use the following in "
-                 "the " + projectname + ". Thank you, open-source community, for "
-                 "making these fine tools! Some of these are listed under "
-                 "multiple software licenses, and in that case we have listed "
-                 "the license we've chosen to use.")
-
-    lines.append("<table>")
 
     for library in sorted(license_info["libraries"]):
         if library == new_relic_library:
@@ -476,11 +474,11 @@ def gen_docs_site_doc(license_info):
 
         lines.append("    </td>")
         lines.append("  </tr>")
-    lines.append("</table>")
 
-    lines.append("The remainder of the code is covered by the New Relic License agreement found in the LICENSE file.")
+    licenses = '\n'.join(lines)
+    html = docs_site_template % {"projectname": projectname, "licenses": licenses}
 
-    return lines
+    return [html]
 
 
 copyright_body = """

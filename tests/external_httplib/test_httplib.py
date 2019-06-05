@@ -228,3 +228,28 @@ def test_httplib_multiple_requests_unique_distributed_tracing_id():
     for payload in dt_payloads:
         assert payload['d']['id'] not in ids
         ids.add(payload['d']['id'])
+
+
+def test_httplib_nr_headers_added():
+    with MockExternalHTTPHResponseHeadersServer():
+        connection = httplib.HTTPConnection('localhost', 8989)
+        key = 'newrelic'
+        value = 'gobbledygook'
+        headers = []
+
+        @background_task(name='test_httplib:test_transaction')
+        def test_transaction():
+            connection.putrequest('GET', '/')
+            connection.putheader(key, value)
+            connection.endheaders()
+            response = connection.getresponse()
+            headers.append(process_response(response.read()))
+
+        test_transaction = override_application_settings({
+            'distributed_tracing.enabled': True,
+            'span_events.enabled': True,
+        })(test_transaction)
+        test_transaction()
+        connection.close()
+    # verify newrelic headers already added do not get overrode
+    assert headers[0][key] == value

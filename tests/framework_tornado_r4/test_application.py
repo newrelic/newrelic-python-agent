@@ -215,8 +215,7 @@ def test_handler_calls_handler(app, ioloop, caplog):
             logger='newrelic.hooks.framework_tornado_r4.web'):
         response = app.fetch('/call-simple/')
 
-    module = caplog.record_tuples[0][0]
-    level = caplog.record_tuples[0][1]
+    module, level, _ = caplog.record_tuples[0]
 
     assert response.code == 200
     assert module == 'newrelic.hooks.framework_tornado_r4.web'

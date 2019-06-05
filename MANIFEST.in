@@ -3,6 +3,7 @@ include README.rst
 include VERSION
 include newrelic/newrelic.ini
 include newrelic/LICENSE
+include newrelic/THIRD_PARTY_NOTICES.md
 include newrelic/common/cacert.pem
 include newrelic/packages/requests/LICENSE
 include newrelic/packages/requests/NOTICE

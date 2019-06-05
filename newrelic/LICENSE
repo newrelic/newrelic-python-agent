@@ -1,48 +1,4 @@
----------------------------------------------------------------------------
-
-This product includes:
-
-  'requests' (http://pypi.python.org/pypi/requests),
-
-which contains components released under the following license(s):
-
-  Apache License, Version 2.0 <http://www.apache.org/licenses/LICENSE-2.0>
-
----------------------------------------------------------------------------
-
-This product includes:
-
-  'six' (https://bitbucket.org/gutworth/six/overview),
-
-which contains components released under the following license(s):
-
-  The MIT License <http://opensource.org/licenses/MIT>
-
----------------------------------------------------------------------------
-
-This product includes:
-
-  'time.monotonic' (newrelic/common/_monotonic.c),
-
-which contains components released under the following license(s):
-
-  Python Software Foundation <http://docs.python.org/2/license.html>
-
----------------------------------------------------------------------------
-
-This product includes:
-
-  'wrapt' (https://pypi.python.org/pypi/wrapt),
-
-which contains components released under the following license(s):
-
-  The BSD 2-Clause License <http://opensource.org/licenses/BSD-2-Clause>
-
----------------------------------------------------------------------------
-
-All other components of this product are:
-
-  Copyright (c) 2010-2019 New Relic, Inc. All rights reserved.
+Copyright (c) 2010-2019 New Relic, Inc. All rights reserved.
 
 Certain inventions disclosed in this file may be claimed within patents
 owned or patent applications filed by New Relic, Inc. or third parties.
@@ -75,5 +31,3 @@ FOR A PARTICULAR PURPOSE, TITLE, or NON-INFRINGEMENT. As a condition to
 your use of these files, you are solely responsible for such use. New Relic
 will have no liability to you for direct, indirect, consequential,
 incidental, special, or punitive damages or for lost profits or data.
-
----------------------------------------------------------------------------

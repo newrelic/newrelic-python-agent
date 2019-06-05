@@ -1,17 +1,14 @@
 import os
 import sys
 import argparse
-import fileinput
 import json
 import hashlib
 import time
 import subprocess
 import re
-from argparse import RawDescriptionHelpFormatter
 import shutil
 import filecmp
 import tempfile
-import cgi
 from datetime import datetime
 
 try:
@@ -28,37 +25,44 @@ ignored_files = {}
 script_dir = ""
 license_reviewer_metafile_path = ""
 
-ignore_filename = 'license_ignore.txt'
-license_source_map_filename = 'license_source_map.json'
-license_info_filename = 'license_info.json'
-license_config_filename = 'license_config.ini'
+ignore_filename = "license_ignore.txt"
+license_source_map_filename = "license_source_map.json"
+license_info_filename = "license_info.json"
+license_config_filename = "license_config.ini"
 
 # gets read in from the ini file
 projectname = ""
 permalink = ""
 review_submodules = False
+license_file = ""
+third_party_notices_file = ""
 
 new_relic_library = "New Relic"
+
 
 class NR_Error(Exception):
     def __init__(self, value):
         self.value = value
+
     def __str__(self):
         return repr(self.value)
+
 
 def review_command(args):
     print("Validating licenses...\n")
 
-    license_info_file = os.path.join(license_reviewer_metafile_path,
-            license_info_filename)
-    license_source_map_file = os.path.join(license_reviewer_metafile_path,
-            license_source_map_filename)
-    ignore_file = os.path.join(license_reviewer_metafile_path,
-            ignore_filename)
+    license_info_file = os.path.join(
+        license_reviewer_metafile_path, license_info_filename
+    )
+    license_source_map_file = os.path.join(
+        license_reviewer_metafile_path, license_source_map_filename
+    )
+    ignore_file = os.path.join(license_reviewer_metafile_path, ignore_filename)
 
     license_info = load_license_info_file(license_info_file)
-    license_error_filename = os.path.join(license_reviewer_metafile_path,
-            "license_errors.txt")
+    license_error_filename = os.path.join(
+        license_reviewer_metafile_path, "license_errors.txt"
+    )
 
     ignored_files = get_ignored_files(ignore_file)
     license_source_map = load_source_map_file(license_source_map_file)
@@ -66,8 +70,7 @@ def review_command(args):
     root_dir = "."
 
     repo_files = get_git_repo_files()
-    flattened_file_list = get_flattened_file_list(root_dir, ignored_files,
-            repo_files)
+    flattened_file_list = get_flattened_file_list(root_dir, ignored_files, repo_files)
 
     error_count = 0
     errors = []
@@ -75,65 +78,87 @@ def review_command(args):
     f = open(license_error_filename, "w")
 
     errors = check_for_missing_source_files(license_source_map)
-    print_and_write_errors("Source files tracked in manifest but no longer "
-            "in working dir", errors, f)
+    print_and_write_errors(
+        "Source files tracked in manifest but no longer in working dir", errors, f
+    )
     error_count += len(errors)
 
     errors = check_for_orphaned_libraries(license_info, license_source_map)
-    print_and_write_errors("Libraries that are no longer referenced by any "
-            "source files", errors, f)
+    print_and_write_errors(
+        "Libraries that are no longer referenced by any source files", errors, f
+    )
     error_count += len(errors)
 
     errors = check_for_missing_licenses(license_info)
-    print_and_write_errors("Libraries that reference licenses that aren't "
-            "tracked in the license file", errors, f)
+    print_and_write_errors(
+        "Libraries that reference licenses that aren't tracked in the license file",
+        errors,
+        f,
+    )
     error_count += len(errors)
 
     errors = check_local_license_urls(license_info)
-    print_and_write_errors("Licenses that are included as local files but "
-            "have local files that don't exist", errors, f)
+    print_and_write_errors(
+        "Licenses that are included as local files but "
+        "have local files that don't exist",
+        errors,
+        f,
+    )
     error_count += len(errors)
 
     errors = check_for_orphaned_licenses(license_info)
-    print_and_write_errors("Licenses that are no longer referenced by any "
-            "libraries", errors, f)
+    print_and_write_errors(
+        "Licenses that are no longer referenced by any libraries", errors, f
+    )
     error_count += len(errors)
 
-    errors = check_for_source_files_not_in_manifest(flattened_file_list,
-            license_source_map)
-    print_and_write_errors("Source files that are in the git repo that are "
-            "not in the license_source_map file", errors, f)
+    errors = check_for_source_files_not_in_manifest(
+        flattened_file_list, license_source_map
+    )
+    print_and_write_errors(
+        "Source files that are in the git repo that are "
+        "not in the license_source_map file",
+        errors,
+        f,
+    )
     error_count += len(errors)
 
-    errors = check_for_changed_source_files(flattened_file_list,
-            license_source_map)
-    print_and_write_errors("Source files that return a different hash "
-            "value than the last time the setlicense command was called",
-            errors, f)
+    errors = check_for_changed_source_files(flattened_file_list, license_source_map)
+    print_and_write_errors(
+        "Source files that return a different hash "
+        "value than the last time the setlicense command was called",
+        errors,
+        f,
+    )
     error_count += len(errors)
 
     f.flush()
     f.close()
 
     if error_count > 0:
-        print("See '"+license_error_filename+"' for a list of any source "
-                "files that have errors.")
+        print(
+            "See '" + license_error_filename + "' for a list of any source "
+            "files that have errors."
+        )
 
     return error_count
+
 
 def add_library_command(args):
     print("Adding new 3rd party library...\n")
 
-    license_info_file = os.path.join(license_reviewer_metafile_path,
-            license_info_filename)
+    license_info_file = os.path.join(
+        license_reviewer_metafile_path, license_info_filename
+    )
     uniqueid = args.id
     name = args.name
     url = args.url.strip()
+    copyright = args.copyright
 
     license_info = load_license_info_file(license_info_file)
 
     try:
-        add_library(license_info, uniqueid, name, url)
+        add_library(license_info, uniqueid, name, url, copyright)
         save_license_info_file(license_info_file, license_info)
     except NR_Error as e:
         print(e.value)
@@ -141,22 +166,27 @@ def add_library_command(args):
 
     return 0
 
-def add_library(license_info, uniqueid, name, url):
-    # if we've never added a library, then create the entry in our map
-    if "libraries" not in license_info:
-        license_info["libraries"] = {}
 
-    license_info["libraries"][uniqueid] = {
-        "name" : name,
-        "url": url,
-        "licenses":[]
-    }
+def add_library(license_info, uniqueid, name, url, copyright):
+    # if we've never added a library, then create the entry in our map
+    libraries = license_info.setdefault("libraries", {})
+
+    # if the library is already added, assume this is an update
+    library = libraries.setdefault(uniqueid, {})
+    library["name"] = name
+    library["url"] = url
+    library["copyright"] = copyright
+
+    # Licenses might already be set, in which case we should leave it alone
+    library.setdefault("licenses", [])
+
 
 def add_license_command(args):
     print("Adding new 3rd party license...\n")
 
-    license_info_file = os.path.join(license_reviewer_metafile_path,
-            license_info_filename)
+    license_info_file = os.path.join(
+        license_reviewer_metafile_path, license_info_filename
+    )
     uniqueid = args.id
     name = args.name
     url = args.url.strip()
@@ -172,6 +202,7 @@ def add_license_command(args):
 
     return 0
 
+
 def add_license(license_info, uniqueid, name, url):
     # if the license url being referenced isn't a remote url, then make sure
     # we have a copy of the file that's referenced
@@ -180,23 +211,21 @@ def add_license(license_info, uniqueid, name, url):
     if not is_url(url):
         # if it's not a remote url, assume it's a local path
         if not os.path.exists(license_file):
-            raise NR_Error("[FAIL] License file does not exist: " +
-                    license_file)
+            raise NR_Error("[FAIL] License file does not exist: " + license_file)
 
     # if we've never added a license, then create the entry in our map
     if "licenses" not in license_info:
         license_info["licenses"] = {}
 
-    license_info["licenses"][uniqueid] = {
-        "name" : name,
-        "url": url
-    }
+    license_info["licenses"][uniqueid] = {"name": name, "url": url}
+
 
 def set_licenses_command(args):
     print("Mapping license to library...\n")
 
-    license_info_file = os.path.join(license_reviewer_metafile_path,
-            license_info_filename)
+    license_info_file = os.path.join(
+        license_reviewer_metafile_path, license_info_filename
+    )
     library = args.libraryid
     licenses = args.licenseid
 
@@ -211,35 +240,40 @@ def set_licenses_command(args):
 
     return 0
 
+
 def set_licenses(license_info, library, licenses):
     # check to make sure the library they passed is already in our
     # libraries file
     if library not in license_info["libraries"]:
-        raise NR_Error("[ERROR] could not find library: " + library +
-                " in license_info file. Try using the addlibrary command.")
+        raise NR_Error(
+            "[ERROR] could not find library: " + library + " in license_info file. Try using the addlibrary command."
+        )
 
     # check to make sure we already know about all the licenses they
     # passed to us
     for license in licenses:
         if license not in license_info["licenses"]:
-            raise NR_Error("[ERROR] could not find license: " + license +
-                    " in license_info file. Try using the addlicense "
-                    "command.")
+            raise NR_Error(
+                "[ERROR] could not find license: " + license + " in license_info file. Try using the addlicense "
+                "command."
+            )
 
     # add the list of licenses to the library in our license info file
     license_info["libraries"][library]["licenses"] = licenses
 
+
 def set_libraries_command(args):
     print("Mapping source file to library...\n")
 
-    license_info_file = os.path.join(license_reviewer_metafile_path,
-            license_info_filename)
-    license_source_map_file = os.path.join(license_reviewer_metafile_path,
-            license_source_map_filename)
+    license_info_file = os.path.join(
+        license_reviewer_metafile_path, license_info_filename
+    )
+    license_source_map_file = os.path.join(
+        license_reviewer_metafile_path, license_source_map_filename
+    )
     source_file = args.source
     libraries = args.libraryid
-    ignore_file = os.path.join(license_reviewer_metafile_path,
-            ignore_filename)
+    ignore_file = os.path.join(license_reviewer_metafile_path, ignore_filename)
 
     ignored_files = get_ignored_files(ignore_file)
     license_info = load_license_info_file(license_info_file)
@@ -248,8 +282,9 @@ def set_libraries_command(args):
     repo_files = get_git_repo_files()
 
     try:
-        set_libraries(license_info, source_map, repo_files, ignored_files,
-                source_file, libraries)
+        set_libraries(
+            license_info, source_map, repo_files, ignored_files, source_file, libraries
+        )
         save_license_source_map_file(license_source_map_file, source_map)
     except NR_Error as e:
         print(e.value)
@@ -257,17 +292,16 @@ def set_libraries_command(args):
 
     return 0
 
-def ack_file_change_command(args):
-    print("Acknowledging that libraries are still correct for a "
-            "source file...\n")
 
-    license_source_map_file = os.path.join(license_reviewer_metafile_path,
-            license_source_map_filename)
+def ack_file_change_command(args):
+    print("Acknowledging that libraries are still correct for a source file...\n")
+
+    license_source_map_file = os.path.join(
+        license_reviewer_metafile_path, license_source_map_filename
+    )
     source_file = args.source
 
     source_map = load_source_map_file(license_source_map_file)
-
-    repo_files = get_git_repo_files()
 
     try:
         update_hash(source_map, source_file)
@@ -278,9 +312,10 @@ def ack_file_change_command(args):
 
     return 0
 
+
 def update_hash(source_map, source_file):
     if not os.path.exists(source_file):
-        raise NR_Error("[ERROR] source file does not exist: "+source_file)
+        raise NR_Error("[ERROR] source file does not exist: " + source_file)
 
     if source_file not in source_map:
         raise NR_Error("[ERROR] source file not in license_source_map")
@@ -288,30 +323,33 @@ def update_hash(source_map, source_file):
     source_map[source_file]["hash"] = hash_file(source_file)
 
 
-def set_libraries(license_info, source_map, repo_files, ignored_files,
-        source_file, libraries):
+def set_libraries(
+    license_info, source_map, repo_files, ignored_files, source_file, libraries
+):
     if not os.path.exists(source_file):
-        raise NR_Error("[ERROR] source file does not exist: "+source_file)
+        raise NR_Error("[ERROR] source file does not exist: " + source_file)
 
     if source_file in ignored_files:
-        raise NR_Error("[ERROR] Not setting library for: " + source_file +
-                " because it's in the ignore list")
+        raise NR_Error(
+            "[ERROR] Not setting library for: " + source_file + " because it's in the ignore list"
+        )
 
     for library in libraries:
         if library not in license_info["libraries"]:
-            raise NR_Error("[ERROR] could not find library: " + library +
-                    " in license_info file")
+            raise NR_Error(
+                "[ERROR] could not find library: " + library + " in license_info file"
+            )
 
     # if it's a directory, we'll s
     if os.path.isdir(source_file):
-        files = get_flattened_file_list(source_file, ignored_files,
-                repo_files)
+        files = get_flattened_file_list(source_file, ignored_files, repo_files)
         for f in files:
             set_libraries_for_source_file(f, libraries, source_map)
     else:
         set_libraries_for_source_file(source_file, libraries, source_map)
 
     return 0
+
 
 def set_libraries_for_source_file(source_file, libraries, source_map):
     hash_key = ""
@@ -323,16 +361,15 @@ def set_libraries_for_source_file(source_file, libraries, source_map):
     else:
         hash_key = hash_file(source_file)
 
-    source_map[source_file] = {
-        "libraries" : libraries,
-        "hash" : hash_key
-    }
+    source_map[source_file] = {"libraries": libraries, "hash": hash_key}
+
 
 def remove_source_command(args):
     print("Removing source file from license_source_map manifest...\n")
 
-    license_source_map_file = os.path.join(license_reviewer_metafile_path,
-            license_source_map_filename)
+    license_source_map_file = os.path.join(
+        license_reviewer_metafile_path, license_source_map_filename
+    )
     source_file = args.source
 
     source_map = load_source_map_file(license_source_map_file)
@@ -346,11 +383,13 @@ def remove_source_command(args):
 
     return 0
 
+
 def remove_source(source_map, source_file):
     if source_file not in source_map:
-        raise NR_Error("[ERROR] source file not in manifest: "+source_file)
+        raise NR_Error("[ERROR] source file not in manifest: " + source_file)
 
     del source_map[source_file]
+
 
 def check_clean_git_articles_dir(articles_dir):
     cmd = ["git", "diff-index", "--quiet", "--cached", "HEAD"]
@@ -371,40 +410,40 @@ def check_clean_git_articles_dir(articles_dir):
 
     return 0
 
+
 def get_latest_git_articles_dir(articles_dir):
     cmd = ["git", "pull", "upstream", "master"]
     p = subprocess.Popen(cmd, cwd=articles_dir)
     return_code = p.wait()
 
     if return_code != 0:
-        print("[ERROR] failure pulling the latest copy of the docs "
-                "repo down.")
+        print("[ERROR] failure pulling the latest copy of the docs repo down.")
         return return_code
 
     return 0
 
+
+docs_site_template = """<p>We love open-source software, and use the following in the %(projectname)s. Thank you, open-source community, for making these fine tools! Some of these are listed under multiple software licenses, and in that case we have listed the license we've chosen to use.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th width="150"><b>Library</b></th>
+      <th><b>License</b></th>
+    </tr>
+  </thead>
+  <tbody>
+            %(licenses)s
+  </tbody>
+</table>
+
+<p>The remainder of the code is covered by the <a href="/docs/licenses/license-information/other-licenses/new-relic-agent-license">New Relic agent license agreement</a>.</p>
+
+<h2 id="more_help">For more help</h2>"""
+
+
 def gen_docs_site_doc(license_info):
     lines = []
-
-    lines.append("<%#")
-    lines.append("---")
-    lines.append("article:")
-    lines.append("  permalink: "+permalink)
-    lines.append("  title: "+projectname+" Licenses")
-    lines.append("  keywords: general")
-    lines.append("  beta: false")
-    lines.append("  sub_category: Licenses")
-    lines.append("  meta_description: Lists third-party licenses we use "
-            "in the "+projectname)
-    lines.append("---")
-    lines.append("%>")
-    lines.append("We love open-source software, and use the following in "
-            "the "+projectname+". Thank you, open-source community, for "
-            "making these fine tools! Some of these are listed under "
-            "multiple software licenses, and in that case we have listed "
-            "the license we've chosen to use.")
-
-    lines.append("<table>")
 
     for library in sorted(license_info["libraries"]):
         if library == new_relic_library:
@@ -415,8 +454,9 @@ def gen_docs_site_doc(license_info):
         library_url = license_info["libraries"][library]["url"]
 
         lines.append("  <tr>")
-        lines.append("    <td><a href=\""+library_url+"\">"+library_name+
-                "</a></td>")
+        lines.append(
+            '    <td><a href="' + library_url + '">' + library_name + "</a></td>"
+        )
         lines.append("    <td>")
 
         for license in sorted(license_info["libraries"][library]["licenses"]):
@@ -429,24 +469,21 @@ def gen_docs_site_doc(license_info):
             erb_index = license_url.find(".html.erb")
 
             if erb_index != -1:
-                license_url = "/"+license_url[:erb_index]
+                license_url = "/" + license_url[:erb_index]
 
-            lines.append("      <div><a href=\""+license_url+"\">"+
-                    license_name+"</a></div>")
+            lines.append(
+                "      <div><a href=\"" + license_url + "\">" + license_name + "</a></div>")
 
         lines.append("    </td>")
         lines.append("  </tr>")
-    lines.append("</table>")
 
-    lines.append("The remainder of the code is covered by the New Relic "
-            "License agreement found in the LICENSE file.")
+    licenses = '\n'.join(lines)
+    html = docs_site_template % {"projectname": projectname, "licenses": licenses}
 
-    return lines
+    return [html]
 
-copyright_body = """
-All other components of this product are:
 
-  Copyright (c) 2010-%(year)s New Relic, Inc. All rights reserved.
+copyright_body = """Copyright (c) 2010-%(year)s New Relic, Inc. All rights reserved.
 
 Certain inventions disclosed in this file may be claimed within patents
 owned or patent applications filed by New Relic, Inc. or third parties.
@@ -478,11 +515,34 @@ KIND, including without any implied warranties of MERCHANTABILITY, FITNESS
 FOR A PARTICULAR PURPOSE, TITLE, or NON-INFRINGEMENT. As a condition to
 your use of these files, you are solely responsible for such use. New Relic
 will have no liability to you for direct, indirect, consequential,
-incidental, special, or punitive damages or for lost profits or data.
+incidental, special, or punitive damages or for lost profits or data."""
+
+
+third_party_notices_header = """# Third Party Notices
+
+The %(projectname)s uses source code from third party libraries which carry
+their own copyright notices and license terms. These notices are provided
+below.
+
+In the event that a required notice is missing or incorrect, please notify us
+by e-mailing [support@newrelic.com](mailto:support@newrelic.com).
 """
 
+third_party_component = """
+## [%(name)s](%(url)s)
+
+%(copyright)s
+
+Distributed under the following license(s):
+
+%(licenses)s
+"""
+
+
 def gen_installer_doc(license_info):
-    lines = []
+    current_year = datetime.now().year
+    license = [copyright_body % {"year": current_year}]
+    third_party_notices = [third_party_notices_header % {"projectname": projectname}]
 
     for library in sorted(license_info["libraries"]):
         if library == new_relic_library:
@@ -491,19 +551,10 @@ def gen_installer_doc(license_info):
 
         library_name = license_info["libraries"][library]["name"]
         library_url = license_info["libraries"][library]["url"]
+        library_copyright = license_info["libraries"][library]["copyright"]
+        licenses = []
 
-        lines.append(75*'-')
-        lines.append("")
-        lines.append("This product includes:")
-        lines.append("")
-        lines.append("  '%s' (%s)," % (library_name, library_url))
-        lines.append("")
-        lines.append("which contains components released under the "
-                "following license(s):")
-        lines.append("")
-
-        for license_id in sorted(
-                license_info["libraries"][library]["licenses"]):
+        for license_id in sorted(license_info["libraries"][library]["licenses"]):
             license_name = license_info["licenses"][license_id]["name"]
             license_url = license_info["licenses"][license_id]["url"]
 
@@ -513,29 +564,34 @@ def gen_installer_doc(license_info):
             erb_index = license_url.find(".html.erb")
 
             if erb_index != -1:
-                license_file = os.path.join(license_reviewer_metafile_path,
-                        license_url)
+                raw_license = os.path.join(license_reviewer_metafile_path, license_url)
 
-                for line in read_list_from_file(license_file):
-                    lines.append("    "+line)
+                licenses.append('```')
+                with open(raw_license) as f:
+                    licenses.append(f.read())
+                licenses.append('```')
 
             else:
-                lines.append("  "+license_name+" <"+license_url+">")
-        lines.append("")
+                licenses.append("  * [" + license_name + "](" + license_url + ")")
 
-    current_year = datetime.now().year
+        third_party_notices.append(
+            third_party_component
+            % {
+                "name": library_name,
+                "url": library_url,
+                "copyright": library_copyright,
+                "licenses": "\n".join(licenses),
+            }
+        )
 
-    lines.append(75*'-')
-    lines.append(copyright_body % { "year": current_year })
-    lines.append(75*'-')
+    return license, third_party_notices
 
-    return lines
 
 def write_lines_to_file_if_diff(lines, filename):
     tmp_file = tempfile.NamedTemporaryFile("w", delete=False)
 
     for line in lines:
-        tmp_file.write(line+"\n")
+        tmp_file.write(line + "\n")
 
     tmp_file.close()
 
@@ -553,20 +609,23 @@ def gen_installer_doc_command(args):
         # and licenses are correct and up-to-date
         review_results = review_command(args)
         if review_results != 0:
-            print("[FAIL] could not generate documentation because license "
-                   "review failed")
+            print(
+                "[FAIL] could not generate documentation because license "
+                "review failed"
+            )
             return review_results
 
-    license_info_file = os.path.join(license_reviewer_metafile_path,
-            license_info_filename)
+    license_info_file = os.path.join(
+        license_reviewer_metafile_path, license_info_filename
+    )
     license_info = load_license_info_file(license_info_file)
 
-    output_filename = args.output
-
-    file_lines = gen_installer_doc(license_info)
-    write_lines_to_file_if_diff(file_lines, output_filename)
+    license, third_party = gen_installer_doc(license_info)
+    write_lines_to_file_if_diff(license, license_file)
+    write_lines_to_file_if_diff(third_party, third_party_notices_file)
 
     return 0
+
 
 def gen_docs_site_doc_command(args):
     print("Generating doc files for docs site...\n")
@@ -577,12 +636,15 @@ def gen_docs_site_doc_command(args):
         # and licenses are correct and up-to-date
         review_results = review_command(args)
         if review_results != 0:
-            print("[FAIL] could not generate documentation because license "
-                    "review failed")
+            print(
+                "[FAIL] could not generate documentation because license "
+                "review failed"
+            )
             return review_results
 
-    license_info_file = os.path.join(license_reviewer_metafile_path,
-            license_info_filename)
+    license_info_file = os.path.join(
+        license_reviewer_metafile_path, license_info_filename
+    )
     license_info = load_license_info_file(license_info_file)
 
     output_filename = args.output
@@ -591,6 +653,7 @@ def gen_docs_site_doc_command(args):
     write_lines_to_file_if_diff(file_lines, output_filename)
 
     return 0
+
 
 def load_license_info_file(license_info_file):
     json_file = open(license_info_file)
@@ -605,8 +668,7 @@ def load_license_info_file(license_info_file):
 def save_license_info_file(license_info_file, license_info):
     json_file = open(license_info_file, "w")
 
-    json.dump(license_info, json_file, sort_keys=True, indent=4,
-            separators=(',', ': '))
+    json.dump(license_info, json_file, sort_keys=True, indent=4, separators=(",", ": "))
 
     json_file.flush()
     json_file.close()
@@ -621,35 +683,36 @@ def load_source_map_file(license_source_map_file):
 
     return license_source_map
 
+
 def save_license_source_map_file(license_source_map_file, license_source_map):
     json_file = open(license_source_map_file, "w")
 
-    json.dump(license_source_map, json_file, sort_keys=True, indent=4,
-            separators=(',', ': '))
+    json.dump(
+        license_source_map, json_file, sort_keys=True, indent=4, separators=(",", ": ")
+    )
 
     json_file.flush()
     json_file.close()
 
+
 def get_ignored_files(ignore_file):
     ignored_files = {}
 
-    f = open(ignore_file, "U")
+    with open(ignore_file, "r") as f:
+        for line in f:
+            relative_path = line.strip()
 
-    for line in f.read().splitlines():
-        relative_path = line.strip()
+            # strip out comments
+            comment_index = line.find("#")
+            if comment_index != -1:
+                relative_path = line[:comment_index].strip()
 
-        # strip out comments
-        comment_index = line.find("#")
-        if comment_index != -1:
-            relative_path = line[:comment_index].strip()
-
-        if len(relative_path) > 0:
-           full_path = os.path.normpath(relative_path)
-           ignored_files[full_path] = full_path
-
-    f.close()
+            if len(relative_path) > 0:
+                full_path = os.path.normpath(relative_path)
+                ignored_files[full_path] = full_path
 
     return ignored_files
+
 
 def get_git_repo_files():
     # TODO: deal with the b' that gets outputted here
@@ -664,12 +727,12 @@ def get_git_repo_files():
         norm_path = os.path.normpath(file_name)
         repo_files[norm_path] = norm_path
 
-
     if review_submodules:
         # now let's see if there are any git submodules and add all the
         # submodule files to our manifest
-        git_output = subprocess.check_output(["git", "submodule",
-                "foreach", "git ls-files"])
+        git_output = subprocess.check_output(
+            ["git", "submodule", "foreach", "git ls-files"]
+        )
 
         file_list = str(git_output).split("\n")
         if len(file_list) > 1:
@@ -685,12 +748,12 @@ def get_git_repo_files():
                 if submodule:
                     current_submodule = submodule.group(1)
                 else:
-                    norm_path = os.path.normpath(
-                            os.path.join(current_submodule, line))
+                    norm_path = os.path.normpath(os.path.join(current_submodule, line))
 
                     repo_files[norm_path] = norm_path
 
     return repo_files
+
 
 def get_flattened_file_list(root_dir, ignored_files, repo_files):
     flattened_file_list = []
@@ -726,6 +789,7 @@ def get_flattened_file_list(root_dir, ignored_files, repo_files):
 
     return flattened_file_list
 
+
 def check_for_missing_source_files(license_source_map):
     # verify that all files in our license_source_map file actually exist
     # in the working dir.
@@ -739,6 +803,7 @@ def check_for_missing_source_files(license_source_map):
             errors.append(full_path)
 
     return errors
+
 
 def check_for_orphaned_libraries(license_info, license_source_map):
     # checks for libraries that are no longer referenced by any source files
@@ -760,11 +825,13 @@ def check_for_orphaned_libraries(license_info, license_source_map):
     # check that all the libraries in our source file reference licenses
     # that are also in our source file
     for library in license_info["libraries"]:
-        if library not in source_files_by_library or len(
-                source_files_by_library[library]) == 0:
+        if (
+            library not in source_files_by_library or len(source_files_by_library[library]) == 0
+        ):
             errors.append(library)
 
     return errors
+
 
 def check_for_missing_licenses(license_info):
     # checks for libraries that reference licenses that aren't in our
@@ -777,6 +844,7 @@ def check_for_missing_licenses(license_info):
                 errors.append(library)
 
     return errors
+
 
 def check_local_license_urls(license_info):
     # for all licenses in our source file that reference urls by a file path,
@@ -799,6 +867,7 @@ def check_local_license_urls(license_info):
 
     return errors
 
+
 def check_for_orphaned_licenses(license_info):
     errors = []
 
@@ -818,8 +887,8 @@ def check_for_orphaned_licenses(license_info):
 
     return errors
 
-def check_for_source_files_not_in_manifest(flattened_file_list,
-        license_source_map):
+
+def check_for_source_files_not_in_manifest(flattened_file_list, license_source_map):
     errors = []
 
     for full_path in flattened_file_list:
@@ -827,6 +896,7 @@ def check_for_source_files_not_in_manifest(flattened_file_list,
             errors.append(full_path)
 
     return errors
+
 
 def check_for_changed_source_files(flattened_file_list, license_source_map):
     errors = []
@@ -851,26 +921,31 @@ def check_for_changed_source_files(flattened_file_list, license_source_map):
 
     return errors
 
+
 def print_and_write(line, open_file):
     print(line)
-    open_file.write(line+"\n")
+    open_file.write(line + "\n")
+
 
 def print_and_write_errors(subject, errors, open_file):
     if len(errors) > 0:
-        print_and_write("[FAIL] "+subject+" ("+str(len(errors))+" errors)",
-                open_file)
+        print_and_write(
+            "[FAIL] " + subject + " (" + str(len(errors)) + " errors)", open_file
+        )
 
         for error in sorted(errors):
-            print_and_write("  "+error, open_file)
+            print_and_write("  " + error, open_file)
+
 
 def write_list_to_file(file_name, contents):
     f = open(file_name, "w")
 
     for line in contents:
-        f.write(line+"\n")
+        f.write(line + "\n")
 
     f.flush()
     f.close()
+
 
 def read_list_from_file(filename):
     lines = []
@@ -883,6 +958,7 @@ def read_list_from_file(filename):
 
     return lines
 
+
 def replace_file_if_diff(source_filename, dest_filename):
     if not os.path.exists(dest_filename):
         # TODO: test this case
@@ -890,6 +966,7 @@ def replace_file_if_diff(source_filename, dest_filename):
 
     if not filecmp.cmp(source_filename, dest_filename):
         shutil.copy(source_filename, dest_filename)
+
 
 def hash_file(file_name):
     f = open(file_name, "rb")
@@ -907,18 +984,19 @@ def hash_file(file_name):
 
     return str(m.hexdigest())
 
+
 def is_url(test_str):
     # shamelessly stole this regex from django
     url_regex = re.compile(
-        r'^(?:http|ftp)s?://' # http:// or https://
-        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+'
-                '(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #domain...
-        r'localhost|' #localhost...
-        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
-        r'(?::\d+)?' # optional port
+        r'^(?:http|ftp)s?://'  # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
+        r'localhost|'  # localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+        r'(?::\d+)?'  # optional port
         r'(?:/?|[/?]\S+)$', re.IGNORECASE)
 
     return url_regex.match(test_str)
+
 
 def load_environ():
     global license_reviewer_metafile_path
@@ -927,146 +1005,184 @@ def load_environ():
 
     if "LICENSE_REVIEWER_METAFILE_PATH" in os.environ:
         license_reviewer_metafile_path = os.path.realpath(
-                os.environ["LICENSE_REVIEWER_METAFILE_PATH"])
-        print("metafile path: "+license_reviewer_metafile_path)
+            os.environ["LICENSE_REVIEWER_METAFILE_PATH"]
+        )
+        print("metafile path: " + license_reviewer_metafile_path)
     else:
-        errors.append("LICENSE_REVIEWER_METAFILE_PATH environment variable "
-                "must be set. It should be a path relative to the repo "
-                "root, e.g. Agent\\thirdparty")
+        errors.append(
+            "LICENSE_REVIEWER_METAFILE_PATH environment variable "
+            "must be set. It should be a path relative to the repo "
+            "root, e.g. license_data"
+        )
 
     for error in errors:
-        print("[ERROR] "+error)
+        print("[ERROR] " + error)
 
     return len(errors)
+
 
 def load_config_file():
     global projectname
     global permalink
     global review_submodules
+    global license_file
+    global third_party_notices_file
 
     errors = []
 
-    license_config_file = os.path.join(license_reviewer_metafile_path,
-            license_config_filename)
+    license_config_file = os.path.join(
+        license_reviewer_metafile_path, license_config_filename
+    )
 
-    config = ConfigParser.ConfigParser({"review_submodules":False})
+    config = ConfigParser.ConfigParser({"review_submodules": False})
 
     if os.path.exists(license_config_file):
-        config.readfp(open(license_config_file))
+        read_config = getattr(config, 'read_file', None) or getattr(config, 'readfp')
+        with open(license_config_file) as f:
+            read_config(f)
 
         try:
             projectname = config.get("LicenseReviewerConfig", "projectname")
             if len(projectname) == 0:
-                errors.append("projectname variable not set in: "+
-                        license_config_file)
+                errors.append("projectname variable not set in: " + license_config_file)
 
             permalink = config.get("LicenseReviewerConfig", "permalink")
             if len(permalink) == 0:
-                errors.append("permalink variable not set in: "+
-                        license_config_file)
+                errors.append("permalink variable not set in: " + license_config_file)
 
-            review_submodules = config.get("LicenseReviewerConfig",
-                    "review_submodules")
+            review_submodules = config.get("LicenseReviewerConfig", "review_submodules")
 
-        except ConfigParser.NoOptionError as e:
-            errors.append("error reading: "+license_config_file)
+            license_file = config.get("LicenseReviewerConfig", "license_file")
+            if len(license_file) == 0:
+                errors.append("license file variable not set in: " + license_config_file)
+
+            third_party_notices_file = config.get("LicenseReviewerConfig", "third_party_notices_file")
+            if len(third_party_notices_file) == 0:
+                errors.append("third party notices file variable not set in: " + license_config_file)
+
+        except ConfigParser.NoOptionError:
+            errors.append("error reading: " + license_config_file)
 
     else:
-        errors.append(license_config_file+" file does not exist")
+        errors.append(license_config_file + " file does not exist")
 
     for error in errors:
-        print("[ERROR] "+error)
+        print("[ERROR] " + error)
 
     return len(errors)
 
+
 def get_and_run_command():
-    parser = argparse.ArgumentParser(description="Ensures that all 3rd "
-            "party license files are properly accounted for")
+    parser = argparse.ArgumentParser(
+        description="Ensures that all 3rd "
+        "party license files are properly accounted for"
+    )
 
     subparsers = parser.add_subparsers()
 
-    review_command_parser = subparsers.add_parser("review",
-            description="Review source files for any license violations")
+    review_command_parser = subparsers.add_parser(
+        "review", description="Review source files for any license violations"
+    )
     review_command_parser.set_defaults(func=review_command)
 
-    add_license_command_parser = subparsers.add_parser("addlicense",
-            description="Add a new license to the license info file")
-    add_license_command_parser.add_argument("id",
-            help="Unique ID for the license")
-    add_license_command_parser.add_argument("name",
-            help="Name of the license")
-    add_license_command_parser.add_argument("url",
-            help="URL for the license")
+    add_license_command_parser = subparsers.add_parser(
+        "addlicense", description="Add a new license to the license info file"
+    )
+    add_license_command_parser.add_argument("id", help="Unique ID for the license")
+    add_license_command_parser.add_argument("name", help="Name of the license")
+    add_license_command_parser.add_argument("url", help="URL for the license")
     add_license_command_parser.set_defaults(func=add_license_command)
 
-    add_library_command_parser = subparsers.add_parser("addlibrary",
-            description="Add a new library to the library info file")
-    add_library_command_parser.add_argument("id",
-            help="Unique ID for the library")
-    add_library_command_parser.add_argument("name",
-            help="Name of the library")
-    add_library_command_parser.add_argument("url",
-            help="URL for the library. Set to \" \" if one doesn't exist")
+    add_library_command_parser = subparsers.add_parser(
+        "addlibrary", description="Add a new library to the library info file"
+    )
+    add_library_command_parser.add_argument("id", help="Unique ID for the library")
+    add_library_command_parser.add_argument("name", help="Name of the library")
+    add_library_command_parser.add_argument("copyright", help="Copyright holder")
+    add_library_command_parser.add_argument(
+        "url", help='URL for the library. Set to " " if one doesn\'t exist'
+    )
     add_library_command_parser.set_defaults(func=add_library_command)
 
-    set_licenses_command_parser = subparsers.add_parser("setlicense",
-            description="Map a given library file to a specified license")
-    set_licenses_command_parser.add_argument("libraryid",
-            help="The library you want to set licenses on")
-    set_licenses_command_parser.add_argument("licenseid",
-            nargs="+", help="Licenses used by the library")
+    set_licenses_command_parser = subparsers.add_parser(
+        "setlicense", description="Map a given library file to a specified license"
+    )
+    set_licenses_command_parser.add_argument(
+        "libraryid", help="The library you want to set licenses on"
+    )
+    set_licenses_command_parser.add_argument(
+        "licenseid", nargs="+", help="Licenses used by the library"
+    )
     set_licenses_command_parser.set_defaults(func=set_licenses_command)
 
-    set_libraries_command_parser = subparsers.add_parser("setlibrary",
-            description="Map a given source file to a specified 3rd "
-            "party library")
-    set_libraries_command_parser.add_argument("source",
-            help="The source file you want to set libraries on")
-    set_libraries_command_parser.add_argument("libraryid",
-            nargs="+", help="Libraries used by the source file")
+    set_libraries_command_parser = subparsers.add_parser(
+        "setlibrary",
+        description="Map a given source file to a specified 3rd party library",
+    )
+    set_libraries_command_parser.add_argument(
+        "source", help="The source file you want to set libraries on"
+    )
+    set_libraries_command_parser.add_argument(
+        "libraryid", nargs="+", help="Libraries used by the source file"
+    )
     set_libraries_command_parser.set_defaults(func=set_libraries_command)
 
-    ack_file_change_command_parser = subparsers.add_parser("ackfilechange",
-            description="Acknowledge that a source file's contents changed "
-            "and that the referenced libraries don't need to be updated.")
-    ack_file_change_command_parser.add_argument("source",
-            help="The source file to acknowledge")
+    ack_file_change_command_parser = subparsers.add_parser(
+        "ackfilechange",
+        description="Acknowledge that a source file's contents changed "
+        "and that the referenced libraries don't need to be updated.",
+    )
+    ack_file_change_command_parser.add_argument(
+        "source", help="The source file to acknowledge"
+    )
     ack_file_change_command_parser.set_defaults(func=ack_file_change_command)
 
     gen_installer_doc_command_parser = subparsers.add_parser(
-            "geninstallerdoc", description="Generates a plain text file to "
-            "be used by an installer based on current license information")
-    gen_installer_doc_command_parser.add_argument("--noreview",
-            dest="noreview", action="store_true", help="Do not do a license "
-            "review before generating the document. WARNING: only do this "
-            "if you know the metafiles are correct. This should only be "
-            "used for automation purposes.")
-    gen_installer_doc_command_parser.add_argument("output",
-            help="The output file that will be replaced with the new "
-            "installer doc license file")
-    gen_installer_doc_command_parser.set_defaults(
-            func=gen_installer_doc_command)
+        "geninstallerdoc",
+        description="Generates a plain text file to "
+        "be used by an installer based on current license information",
+    )
+    gen_installer_doc_command_parser.add_argument(
+        "--noreview",
+        dest="noreview",
+        action="store_true",
+        help="Do not do a license "
+        "review before generating the document. WARNING: only do this "
+        "if you know the metafiles are correct. This should only be "
+        "used for automation purposes.",
+    )
+    gen_installer_doc_command_parser.set_defaults(func=gen_installer_doc_command)
 
     gen_docs_site_doc_command_parser = subparsers.add_parser(
-            "gendocssitedoc", description="Generates a license file to "
-            "be used by the New Relic docs site based on current license "
-            "information")
-    gen_docs_site_doc_command_parser.add_argument("--noreview",
-            dest="noreview", action="store_true", help="Do not do a "
-            "license review before generating the document. WARNING: "
-            "only do this if you know the metafiles are correct. This "
-            "should only be used for automation purposes.")
-    gen_docs_site_doc_command_parser.add_argument("output",
-            help="The output file that will be replaced with the docs "
-            "site doc license file")
-    gen_docs_site_doc_command_parser.set_defaults(
-            func=gen_docs_site_doc_command)
+        "gendocssitedoc",
+        description="Generates a license file to "
+        "be used by the New Relic docs site based on current license "
+        "information",
+    )
+    gen_docs_site_doc_command_parser.add_argument(
+        "--noreview",
+        dest="noreview",
+        action="store_true",
+        help="Do not do a "
+        "license review before generating the document. WARNING: "
+        "only do this if you know the metafiles are correct. This "
+        "should only be used for automation purposes.",
+    )
+    gen_docs_site_doc_command_parser.add_argument(
+        "output",
+        help="The output file that will be replaced with the docs "
+        "site doc license file",
+    )
+    gen_docs_site_doc_command_parser.set_defaults(func=gen_docs_site_doc_command)
 
-    remove_source_command_parser = subparsers.add_parser("removesource",
-            description="Removes a source file from the "
-            "license_source_map manifest file")
-    remove_source_command_parser.add_argument("source",
-            help="The source file to remove from the manifest file")
+    remove_source_command_parser = subparsers.add_parser(
+        "removesource",
+        description="Removes a source file from the "
+        "license_source_map manifest file",
+    )
+    remove_source_command_parser.add_argument(
+        "source", help="The source file to remove from the manifest file"
+    )
     remove_source_command_parser.set_defaults(func=remove_source_command)
 
     args = parser.parse_args()
@@ -1080,34 +1196,18 @@ def get_and_run_command():
         exit_code = args.func(args)
         end_time_ms = int(round(time.time() * 1000))
 
-        print("Time to execute command: "+str(end_time_ms -
-                start_time_ms)+"ms")
-        print("Exiting with code: "+str(exit_code))
+        print("Time to execute command: " + str(end_time_ms - start_time_ms) + "ms")
+        print("Exiting with code: " + str(exit_code))
 
     return exit_code
 
+
 def get_git_root_dir():
-    git_root_dir = ""
-
     # make sure we're at the top of the git working directory
-    git_output = subprocess.check_output(["git", "rev-parse",
-            "--show-toplevel"])
-    file_list = str(git_output).split("\\n")
-
-    count = 0
-    for f in file_list:
-        f_clean = f
-        if count == 0:
-            # note: this is a bit of a hack. not sure why lines start with b'
-            if f.startswith("b'"):
-                f_clean = f[2:]
-                git_root_dir = f_clean.strip()
-            else:
-                git_root_dir = f.strip()
-        else:
-            break
-
+    git_output = subprocess.check_output(["git", "rev-parse", "--show-toplevel"])
+    git_root_dir = git_output.decode('utf-8').strip()
     return git_root_dir
+
 
 def main():
     global script_dir
@@ -1131,10 +1231,11 @@ def main():
     # otherwise things get weird when they start passing in files
     # relative to their original working directory
     if os.path.realpath(working_dir) != os.path.realpath(git_root_dir):
-        print("[ERROR] script must be run from: "+git_root_dir)
+        print("[ERROR] script must be run from: " + git_root_dir)
         sys.exit(-1)
 
     sys.exit(get_and_run_command())
+
 
 if __name__ == "__main__":
     main()

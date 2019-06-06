@@ -9,8 +9,8 @@ from testing_support.fixtures import (validate_transaction_metrics,
 from testing_support.external_fixtures import (cache_outgoing_headers,
     validate_cross_process_headers, insert_incoming_headers,
     validate_external_node_params)
-from testing_support.mock_external_http_server import (MockExternalHTTPServer,
-    MockExternalHTTPHResponseHeadersServer)
+from testing_support.mock_external_http_server import (
+        MockExternalHTTPHResponseHeadersServer)
 
 from newrelic.common.encoding_utils import DistributedTracePayload
 from newrelic.api.background_task import background_task
@@ -21,9 +21,9 @@ def select_python_version(py2, py3):
     return six.PY3 and py3 or py2
 
 
-@pytest.fixture()
+@pytest.fixture(scope='module', autouse=True)
 def mock_server():
-    with MockExternalHTTPServer() as server:
+    with MockExternalHTTPHResponseHeadersServer() as server:
         yield server
 
 
@@ -46,7 +46,7 @@ _test_httplib_http_request_rollup_metrics = [
         rollup_metrics=_test_httplib_http_request_rollup_metrics,
         background_task=True)
 @background_task()
-def test_httplib_http_request(mock_server):
+def test_httplib_http_request():
     connection = httplib.HTTPConnection('localhost', 8989)
     connection.request('GET', '/')
     response = connection.getresponse()
@@ -100,7 +100,7 @@ _test_httplib_http_request_with_port_rollup_metrics = [
         rollup_metrics=_test_httplib_http_request_with_port_rollup_metrics,
         background_task=True)
 @background_task()
-def test_httplib_http_with_port_request(mock_server):
+def test_httplib_http_with_port_request():
     connection = httplib.HTTPConnection('localhost', 8989)
     connection.request('GET', '/')
     response = connection.getresponse()
@@ -113,7 +113,7 @@ def test_httplib_http_with_port_request(mock_server):
     (True, False),
     (False, False),
 ))
-def test_httplib_cross_process_request(distributed_tracing, span_events, mock_server):
+def test_httplib_cross_process_request(distributed_tracing, span_events):
     @background_task(name='test_httplib:test_httplib_cross_process_request')
     @cache_outgoing_headers
     @validate_cross_process_headers
@@ -160,15 +160,14 @@ _test_httplib_cross_process_response_external_node_params = [
         params=_test_httplib_cross_process_response_external_node_params)
 @background_task()
 def test_httplib_cross_process_response():
-    with MockExternalHTTPServer():
-        connection = httplib.HTTPConnection('localhost', 8989)
-        connection.request('GET', '/')
-        response = connection.getresponse()
-        response.read()
-        connection.close()
+    connection = httplib.HTTPConnection('localhost', 8989)
+    connection.request('GET', '/')
+    response = connection.getresponse()
+    response.read()
+    connection.close()
 
 
-def test_httplib_multiple_requests_cross_process_response(mock_server):
+def test_httplib_multiple_requests_cross_process_response():
     connection = httplib.HTTPConnection('localhost', 8989)
 
     @validate_transaction_metrics(
@@ -200,27 +199,26 @@ def process_response(response):
 
 
 def test_httplib_multiple_requests_unique_distributed_tracing_id():
-    with MockExternalHTTPHResponseHeadersServer():
-        connection = httplib.HTTPConnection('localhost', 8989)
-        response_headers = []
+    connection = httplib.HTTPConnection('localhost', 8989)
+    response_headers = []
 
-        @background_task(name='test_httplib:test_transaction')
-        def test_transaction():
-            connection.request('GET', '/')
-            response = connection.getresponse()
-            response_headers.append(process_response(response.read()))
-            connection.request('GET', '/')
-            response = connection.getresponse()
-            response_headers.append(process_response(response.read()))
+    @background_task(name='test_httplib:test_transaction')
+    def test_transaction():
+        connection.request('GET', '/')
+        response = connection.getresponse()
+        response_headers.append(process_response(response.read()))
+        connection.request('GET', '/')
+        response = connection.getresponse()
+        response_headers.append(process_response(response.read()))
 
-        test_transaction = override_application_settings({
-            'distributed_tracing.enabled': True,
-            'span_events.enabled': True,
-        })(test_transaction)
-        # make multiple requests with the same connection
-        test_transaction()
+    test_transaction = override_application_settings({
+        'distributed_tracing.enabled': True,
+        'span_events.enabled': True,
+    })(test_transaction)
+    # make multiple requests with the same connection
+    test_transaction()
 
-        connection.close()
+    connection.close()
     dt_payloads = [DistributedTracePayload.from_http_safe(header['newrelic'])
         for header in response_headers]
 
@@ -231,25 +229,24 @@ def test_httplib_multiple_requests_unique_distributed_tracing_id():
 
 
 def test_httplib_nr_headers_added():
-    with MockExternalHTTPHResponseHeadersServer():
-        connection = httplib.HTTPConnection('localhost', 8989)
-        key = 'newrelic'
-        value = 'gobbledygook'
-        headers = []
+    connection = httplib.HTTPConnection('localhost', 8989)
+    key = 'newrelic'
+    value = 'gobbledygook'
+    headers = []
 
-        @background_task(name='test_httplib:test_transaction')
-        def test_transaction():
-            connection.putrequest('GET', '/')
-            connection.putheader(key, value)
-            connection.endheaders()
-            response = connection.getresponse()
-            headers.append(process_response(response.read()))
+    @background_task(name='test_httplib:test_transaction')
+    def test_transaction():
+        connection.putrequest('GET', '/')
+        connection.putheader(key, value)
+        connection.endheaders()
+        response = connection.getresponse()
+        headers.append(process_response(response.read()))
 
-        test_transaction = override_application_settings({
-            'distributed_tracing.enabled': True,
-            'span_events.enabled': True,
-        })(test_transaction)
-        test_transaction()
-        connection.close()
+    test_transaction = override_application_settings({
+        'distributed_tracing.enabled': True,
+        'span_events.enabled': True,
+    })(test_transaction)
+    test_transaction()
+    connection.close()
     # verify newrelic headers already added do not get overrode
     assert headers[0][key] == value

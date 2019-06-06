@@ -57,7 +57,7 @@ class Transaction(object):
 
         self._application = application
 
-        self.thread_id = transaction_cache().current_thread_id()
+        self.thread_id = None
 
         self._transaction_id = id(self)
         self._transaction_lock = threading.Lock()
@@ -237,6 +237,7 @@ class Transaction(object):
         # storage so that it can be accessed from
         # anywhere in the context of the transaction.
 
+        self.thread_id = transaction_cache().current_thread_id()
         try:
             self.save_transaction()
         except:  # Catch all

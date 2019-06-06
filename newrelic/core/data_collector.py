@@ -579,14 +579,12 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         elif r.status_code == 409:
             _logger.info('An automatic internal agent restart has been '
                     'requested by the data collector for the application '
-                    'where the agent run was %r.',
-                    loggable_params.get('run_id'))
+                    'where the agent run was %r.', agent_run_id)
         elif r.status_code == 410:
             _logger.critical('Disconnection of the agent has been requested '
                     'by the data collector for the application where the '
                     'agent run was %r. Please contact New Relic support '
-                    'for further information.',
-                    loggable_params.get('run_id'))
+                    'for further information.', agent_run_id)
         elif r.status_code == 429:
             _logger.warning('The agent received a 429 response from the data '
                     'collector, indicating that it is currently experiencing '

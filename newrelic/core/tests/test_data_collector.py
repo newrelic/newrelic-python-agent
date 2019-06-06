@@ -428,34 +428,6 @@ def test_status_code_exceptions_raised(status_code, exception):
 
 
 @pytest.mark.parametrize('status_code,exception', [
-    (409, ForceAgentRestart),
-    (410, ForceAgentDisconnect),
-])
-def test_run_id_present_logging(status_code, exception, caplog):
-    agent_run_id = 12
-
-    session = FakeRequestsSession(status_code,
-            json.dumps({'return_value': ''}))
-
-    with pytest.raises(exception):
-        with caplog.at_level(
-                logging.INFO,
-                logger='newrelic.core.data_collector'):
-            send_request(
-                    session,
-                    url="",
-                    method="",
-                    license_key="",
-                    agent_run_id=agent_run_id)
-
-    found = False
-    for message in caplog.messages:
-        if 'where the agent run was %r.' % (str(agent_run_id)) in message:
-            found = True
-    assert found
-
-
-@pytest.mark.parametrize('status_code,exception', [
     (400, DiscardDataForRequest),
     (401, ForceAgentRestart),
     (403, DiscardDataForRequest),

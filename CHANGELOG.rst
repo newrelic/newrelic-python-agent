@@ -1,6 +1,12 @@
 unreleased
 ----------
 
+- Remove logging of license keys
+
+  The agent logged license keys when data failed to send to New Relic.
+  The agent will no longer log license keys to the agent logs under any
+  circumstance.
+
 4.20.0 (2019-05-22)
 -------------------
 

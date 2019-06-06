@@ -49,6 +49,8 @@ def run_program(args):
 
     for name in sorted(os.environ.keys()):
         if name.startswith('NEW_RELIC_') or name.startswith('PYTHON'):
+            if name == 'NEW_RELIC_LICENSE_KEY':
+                continue
             log_message('%s = %r', name, os.environ.get(name))
 
     from newrelic import __file__ as root_directory

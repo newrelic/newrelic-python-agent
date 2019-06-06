@@ -38,6 +38,8 @@ log_message('sys.path = %r', sys.path)
 
 for name in sorted(os.environ.keys()):
     if name.startswith('NEW_RELIC_') or name.startswith('PYTHON'):
+        if name == 'NEW_RELIC_LICENSE_KEY':
+            continue
         log_message('%s = %r', name, os.environ.get(name))
 
 # We need to import the original sitecustomize.py file if it exists. We

@@ -7,6 +7,14 @@ unreleased
   The agent will no longer log license keys to the agent logs under any
   circumstance.
 
+- Fix operation of distributed tracing and cross application tracing when
+  httplib connections are reused.
+
+  When making multiple requests via a single connection with httplib, httplib2,
+  or urllib3, the proper headers will be added to each outgoing request. As a
+  result, cross application tracing and distributed tracing will now operate as
+  expected when reusing connection objects.
+
 4.20.0 (2019-05-22)
 -------------------
 

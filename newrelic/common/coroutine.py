@@ -151,8 +151,6 @@ class TransactionContext(object):
 
         if not self.transaction._state:
             self.transaction.__enter__()
-        elif self.transaction.enabled:
-            self.transaction.save_transaction()
 
         return self
 
@@ -176,10 +174,6 @@ class TransactionContext(object):
         # case: coroutine completed because of error
         elif exc:
             self.transaction.__exit__(exc, value, tb)
-
-        # case: coroutine suspended but not completed
-        elif self.transaction.enabled:
-            self.transaction.drop_transaction()
 
 
 class Coroutine(ObjectProxy):

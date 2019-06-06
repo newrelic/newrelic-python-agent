@@ -454,7 +454,7 @@ def test_license_key_absent_logging(status_code, exception, caplog):
 
     with pytest.raises(exception):
         with caplog.at_level(
-                logging.INFO,
+                logging.DEBUG,
                 logger='newrelic.core.data_collector'):
             send_request(
                     session,

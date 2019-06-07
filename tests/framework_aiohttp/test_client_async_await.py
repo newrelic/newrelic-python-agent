@@ -4,7 +4,10 @@ import pytest
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.fixtures import (validate_transaction_metrics,
+        override_application_settings)
+from testing_support.validators.validate_transaction_count import (
+        validate_transaction_count)
 
 version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
 
@@ -161,16 +164,20 @@ def test_await_request_async_await(local_server_info, method, exc_expected):
             result.raise_for_status()
             return await result.text()
 
+    @validate_transaction_count(2)
     @validate_transaction_metrics(
         'test_await_request_async_await',
         background_task=True,
         scoped_metrics=[
-            (local_server_info.base_metric + method.upper(), 2),
+            (local_server_info.base_metric + method.upper(), 1),
         ],
         rollup_metrics=[
-            (local_server_info.base_metric + method.upper(), 2),
+            (local_server_info.base_metric + method.upper(), 1),
         ],
     )
+    @override_application_settings({
+        'cross_application_tracer.enabled': False,
+    })
     def task_test():
         loop = asyncio.get_event_loop()
         coros = [request_with_await() for _ in range(2)]
@@ -198,7 +205,7 @@ test_ws_matrix = (
 def test_ws_connect_async_await(local_server_info, method, exc_expected):
 
     @validate_transaction_metrics(
-        'test_ws_connect_async_await',
+        'fetch_multiple',
         background_task=True,
         scoped_metrics=[
             (local_server_info.base_metric + 'GET', 2),
@@ -227,6 +234,7 @@ def test_create_task_async_await(local_server_info, method, exc_expected):
             resp.raise_for_status()
             return await resp.text()
 
+    @background_task(name='test_create_task_async_await')
     async def fetch_multiple(loop):
         coros = [fetch_task(loop) for _ in range(2)]
         return await asyncio.gather(*coros, return_exceptions=True)

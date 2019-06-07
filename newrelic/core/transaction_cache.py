@@ -165,13 +165,15 @@ class TransactionCache(object):
 
         thread_id = transaction.thread_id
 
-        if thread_id in self._cache:
-            _logger.error('Runtime instrumentation error. Attempt to '
-                    'to save the transaction when one is already saved. '
-                    'Report this issue to New Relic support.\n%s',
-                    ''.join(traceback.format_stack()[:-1]))
+        # FIXME: temporarily disable errors for existing cache entries.
+        #
+        #if thread_id in self._cache:
+        #    _logger.error('Runtime instrumentation error. Attempt to '
+        #            'to save the transaction when one is already saved. '
+        #            'Report this issue to New Relic support.\n%s',
+        #            ''.join(traceback.format_stack()[:-1]))
 
-            raise RuntimeError('transaction already active')
+        #    raise RuntimeError('transaction already active')
 
         self._cache[thread_id] = transaction
 

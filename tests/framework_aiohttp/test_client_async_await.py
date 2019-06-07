@@ -17,6 +17,7 @@ async def fetch(method, url):
             return await response.text()
 
 
+@background_task(name='fetch_multiple')
 async def fetch_multiple(method, url):
     coros = [fetch(method, url) for _ in range(2)]
     return await asyncio.gather(*coros, return_exceptions=True)
@@ -54,7 +55,7 @@ test_matrix = (
 def test_client_async_await(local_server_info, method, exc_expected):
 
     @validate_transaction_metrics(
-        'test_client_async_await',
+        'fetch_multiple',
         background_task=True,
         scoped_metrics=[
             (local_server_info.base_metric + method.upper(), 2),
@@ -63,7 +64,6 @@ def test_client_async_await(local_server_info, method, exc_expected):
             (local_server_info.base_metric + method.upper(), 2),
         ],
     )
-    @background_task(name='test_client_async_await')
     def task_test():
         loop = asyncio.get_event_loop()
         task(loop, method, exc_expected, local_server_info.url)
@@ -87,6 +87,7 @@ def test_client_throw_async_await(local_server_info, method, exc_expected):
     class ThrowerException(ValueError):
         pass
 
+    @background_task(name='test_client_throw_async_await')
     async def self_driving_thrower():
         async with aiohttp.ClientSession() as session:
             coro = session._request(method.upper(), local_server_info.url)
@@ -107,7 +108,6 @@ def test_client_throw_async_await(local_server_info, method, exc_expected):
             (local_server_info.base_metric + method.upper(), 1),
         ],
     )
-    @background_task(name='test_client_throw_async_await')
     def task_test():
         loop = asyncio.get_event_loop()
 
@@ -120,6 +120,7 @@ def test_client_throw_async_await(local_server_info, method, exc_expected):
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_client_close_async_await(local_server_info, method, exc_expected):
 
+    @background_task(name='test_client_close_async_await')
     async def self_driving_closer():
         async with aiohttp.ClientSession() as session:
             coro = session._request(method.upper(), local_server_info.url)
@@ -140,7 +141,6 @@ def test_client_close_async_await(local_server_info, method, exc_expected):
             (local_server_info.base_metric + method.upper(), 1),
         ],
     )
-    @background_task(name='test_client_close_async_await')
     def task_test():
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self_driving_closer())
@@ -151,6 +151,7 @@ def test_client_close_async_await(local_server_info, method, exc_expected):
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_await_request_async_await(local_server_info, method, exc_expected):
 
+    @background_task(name='test_await_request_async_await')
     async def request_with_await():
         async with aiohttp.ClientSession() as session:
             coro = session._request(method.upper(), local_server_info.url)
@@ -170,7 +171,6 @@ def test_await_request_async_await(local_server_info, method, exc_expected):
             (local_server_info.base_metric + method.upper(), 2),
         ],
     )
-    @background_task(name='test_await_request_async_await')
     def task_test():
         loop = asyncio.get_event_loop()
         coros = [request_with_await() for _ in range(2)]
@@ -207,7 +207,6 @@ def test_ws_connect_async_await(local_server_info, method, exc_expected):
             (local_server_info.base_metric + 'GET', 2),
         ],
     )
-    @background_task(name='test_ws_connect_async_await')
     def task_test():
         loop = asyncio.get_event_loop()
         task(loop, method, exc_expected, local_server_info.url)
@@ -242,7 +241,6 @@ def test_create_task_async_await(local_server_info, method, exc_expected):
             (local_server_info.base_metric + method.upper(), 2),
         ],
     )
-    @background_task(name='test_create_task_async_await')
     def task_test():
         loop = asyncio.get_event_loop()
         result = loop.run_until_complete(fetch_multiple(loop))
@@ -265,7 +263,6 @@ def test_terminal_parent_async_await(local_server_info, method, exc_expected):
     when transaction's current node was terminal.
     """
 
-    @background_task()
     def task_test():
         loop = asyncio.get_event_loop()
 

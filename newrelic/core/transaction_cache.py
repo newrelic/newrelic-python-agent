@@ -198,7 +198,7 @@ class TransactionCache(object):
         if task is not None:
             transaction._asyncio_loop_id = get_loop_id(task)
 
-    def drop_transaction(self, transaction):
+    def drop_transaction(self, transaction, final=False):
         """Drops the specified transaction, validating that it is
         actually saved away under the current executing thread.
 
@@ -226,7 +226,16 @@ class TransactionCache(object):
 
         transaction._greenlet = None
 
-        del self._cache[thread_id]
+        if final:
+            thread_ids = []
+            for thread_id, cached in self._cache.items():
+                if transaction is cached:
+                    thread_ids.append(thread_id)
+            cached = None
+            for thread_id in thread_ids:
+                del self._cache[thread_id]
+        else:
+            del self._cache[thread_id]
 
 
 _transaction_cache = TransactionCache()

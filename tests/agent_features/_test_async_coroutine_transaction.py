@@ -26,7 +26,4 @@ def native_coroutine_test(transaction, nr_enabled=True, does_hang=False,
             if runtime_error:
                 await asyncio.sleep(0.0)
 
-        if not call_exit:
-            assert current_transaction() is txn
-
     return task

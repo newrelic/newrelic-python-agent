@@ -17,6 +17,33 @@ from newrelic.core.config import global_settings
 
 _logger = logging.getLogger(__name__)
 
+
+def current_task():
+    asyncio = sys.modules.get('asyncio')
+    if not asyncio:
+        return
+
+    current_task = getattr(asyncio, 'current_task', None)
+    if current_task is None:
+        current_task = getattr(asyncio.Task, 'current_task')
+
+    try:
+        return current_task()
+    except:
+        pass
+
+
+def get_loop_id(task):
+    loop_id = None
+    if hasattr(task, 'get_loop'):
+        loop_id = id(task.get_loop())
+    # The loop must be accessed through the attribute on Python < 3.7
+    elif hasattr(task, '_loop'):
+        loop_id = id(getattr(task, '_loop'))
+
+    return loop_id
+
+
 class TransactionCache(object):
 
     def __init__(self):
@@ -48,6 +75,18 @@ class TransactionCache(object):
                 return id(current)
 
         return thread.get_ident()
+
+    def asyncio_transactions(self, loop_id=None):
+        if loop_id is None:
+            task = current_task()
+            loop_id = get_loop_id(task)
+
+        if loop_id is not None:
+            for transaction in self._cache.values():
+                transaction_loop_id = getattr(
+                        transaction, '_asyncio_loop_id', None)
+                if transaction_loop_id == loop_id:
+                    yield transaction
 
     def current_transaction(self):
         """Return the transaction object if one exists for the currently
@@ -149,6 +188,10 @@ class TransactionCache(object):
                 if greenlet:
                     transaction._greenlet = weakref.ref(greenlet.getcurrent())
 
+        task = current_task()
+        if task is not None:
+            transaction._asyncio_loop_id = get_loop_id(task)
+
     def drop_transaction(self, transaction):
         """Drops the specified transaction, validating that it is
         actually saved away under the current executing thread.
@@ -157,7 +200,7 @@ class TransactionCache(object):
 
         thread_id = transaction.thread_id
 
-        if not thread_id in self._cache:
+        if thread_id not in self._cache:
             _logger.error('Runtime instrumentation error. Attempt to '
                     'to drop the transaction but where none is active. '
                     'Report this issue to New Relic support.\n%s',
@@ -179,7 +222,9 @@ class TransactionCache(object):
 
         del self._cache[thread_id]
 
+
 _transaction_cache = TransactionCache()
+
 
 def transaction_cache():
     return _transaction_cache

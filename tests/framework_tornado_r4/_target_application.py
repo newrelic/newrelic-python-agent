@@ -132,8 +132,8 @@ class SimpleHandler(tornado.web.RequestHandler):
 
 
 class CallSimpleHandler(tornado.web.RequestHandler):
-    def get(self, false=False):
-        SimpleHandler(self.application, self.request).get(false)
+    def get(self, fast=False):
+        SimpleHandler(self.application, self.request).get(fast)
 
 
 class OnFinishHandler(SimpleHandler):

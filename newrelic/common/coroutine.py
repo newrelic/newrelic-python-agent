@@ -146,10 +146,7 @@ class TransactionContext(object):
                 pass
 
     def __enter__(self):
-        if not self.transaction:
-            return self
-
-        if not self.transaction._state:
+        if self.transaction and not self.transaction._state:
             self.transaction.__enter__()
 
         return self

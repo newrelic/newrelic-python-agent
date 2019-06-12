@@ -25,7 +25,7 @@ def current_task():
 
     current_task = getattr(asyncio, 'current_task', None)
     if current_task is None:
-        current_task = getattr(asyncio.Task, 'current_task')
+        current_task = getattr(asyncio.Task, 'current_task', None)
 
     try:
         return current_task()

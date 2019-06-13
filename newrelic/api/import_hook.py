@@ -24,7 +24,7 @@ _ok_modules = (
         'gevent.pywsgi', 'cheroot.wsgi', 'cherrypy.wsgiserver',
         'flup.server.cgi', 'flup.server.ajp_base', 'flup.server.fcgi_base',
         'flup.server.scgi_base', 'meinheld.server', 'paste.httpserver',
-        'waitress.server', 'gevent.monkey', 'asyncio.tasks',
+        'waitress.server', 'gevent.monkey', 'asyncio.base_events',
 )
 
 _uninstrumented_modules = set()

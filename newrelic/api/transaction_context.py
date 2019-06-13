@@ -1,3 +1,4 @@
+from newrelic.core.transaction_cache import transaction_cache
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import ObjectProxy
 
@@ -10,6 +11,7 @@ class TransactionContext(object):
             self.trace = transaction.current_span
         self.restore_transaction = None
         self.restore_trace = None
+        self.thread_id = None
 
     def __enter__(self):
         self.restore_transaction = current_transaction(active_only=False)
@@ -19,6 +21,9 @@ class TransactionContext(object):
 
         # If transaction has exited, do not restore
         if self.transaction and self.transaction.enabled:
+            self.thread_id = self.transaction.thread_id
+            self.transaction.thread_id = \
+                    transaction_cache().current_thread_id()
             self.transaction.save_transaction()
             self.restore_trace = self.transaction.current_span
             self.transaction.current_span = self.trace
@@ -33,6 +38,7 @@ class TransactionContext(object):
             current = current_transaction(active_only=False)
             if current is self.transaction:
                 self.transaction.drop_transaction()
+                self.transaction.thread_id = self.thread_id
 
         # Only restore transactions that have not exited
         if self.restore_transaction and self.restore_transaction.enabled:

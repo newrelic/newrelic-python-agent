@@ -57,7 +57,7 @@ class Transaction(object):
 
         self._application = application
 
-        self.thread_id = transaction_cache().current_thread_id()
+        self.thread_id = None
 
         self._transaction_id = id(self)
         self._transaction_lock = threading.Lock()
@@ -216,8 +216,8 @@ class Transaction(object):
     def save_transaction(self):
         transaction_cache().save_transaction(self)
 
-    def drop_transaction(self):
-        transaction_cache().drop_transaction(self)
+    def drop_transaction(self, final=False):
+        transaction_cache().drop_transaction(self, final)
 
     def __enter__(self):
 
@@ -237,6 +237,7 @@ class Transaction(object):
         # storage so that it can be accessed from
         # anywhere in the context of the transaction.
 
+        self.thread_id = transaction_cache().current_thread_id()
         try:
             self.save_transaction()
         except:  # Catch all
@@ -325,7 +326,7 @@ class Transaction(object):
 
         if not self._dead:
             try:
-                self.drop_transaction()
+                self.drop_transaction(final=True)
             except:  # Catch all
                 _logger.exception('Unable to drop transaction.')
                 raise

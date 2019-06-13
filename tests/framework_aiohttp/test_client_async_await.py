@@ -4,7 +4,10 @@ import pytest
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.fixtures import (validate_transaction_metrics,
+        override_application_settings)
+from testing_support.validators.validate_transaction_count import (
+        validate_transaction_count)
 
 version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
 
@@ -17,6 +20,7 @@ async def fetch(method, url):
             return await response.text()
 
 
+@background_task(name='fetch_multiple')
 async def fetch_multiple(method, url):
     coros = [fetch(method, url) for _ in range(2)]
     return await asyncio.gather(*coros, return_exceptions=True)
@@ -54,7 +58,7 @@ test_matrix = (
 def test_client_async_await(local_server_info, method, exc_expected):
 
     @validate_transaction_metrics(
-        'test_client_async_await',
+        'fetch_multiple',
         background_task=True,
         scoped_metrics=[
             (local_server_info.base_metric + method.upper(), 2),
@@ -63,7 +67,6 @@ def test_client_async_await(local_server_info, method, exc_expected):
             (local_server_info.base_metric + method.upper(), 2),
         ],
     )
-    @background_task(name='test_client_async_await')
     def task_test():
         loop = asyncio.get_event_loop()
         task(loop, method, exc_expected, local_server_info.url)
@@ -87,6 +90,7 @@ def test_client_throw_async_await(local_server_info, method, exc_expected):
     class ThrowerException(ValueError):
         pass
 
+    @background_task(name='test_client_throw_async_await')
     async def self_driving_thrower():
         async with aiohttp.ClientSession() as session:
             coro = session._request(method.upper(), local_server_info.url)
@@ -107,7 +111,6 @@ def test_client_throw_async_await(local_server_info, method, exc_expected):
             (local_server_info.base_metric + method.upper(), 1),
         ],
     )
-    @background_task(name='test_client_throw_async_await')
     def task_test():
         loop = asyncio.get_event_loop()
 
@@ -120,6 +123,7 @@ def test_client_throw_async_await(local_server_info, method, exc_expected):
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_client_close_async_await(local_server_info, method, exc_expected):
 
+    @background_task(name='test_client_close_async_await')
     async def self_driving_closer():
         async with aiohttp.ClientSession() as session:
             coro = session._request(method.upper(), local_server_info.url)
@@ -140,7 +144,6 @@ def test_client_close_async_await(local_server_info, method, exc_expected):
             (local_server_info.base_metric + method.upper(), 1),
         ],
     )
-    @background_task(name='test_client_close_async_await')
     def task_test():
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self_driving_closer())
@@ -151,6 +154,7 @@ def test_client_close_async_await(local_server_info, method, exc_expected):
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_await_request_async_await(local_server_info, method, exc_expected):
 
+    @background_task(name='test_await_request_async_await')
     async def request_with_await():
         async with aiohttp.ClientSession() as session:
             coro = session._request(method.upper(), local_server_info.url)
@@ -160,17 +164,20 @@ def test_await_request_async_await(local_server_info, method, exc_expected):
             result.raise_for_status()
             return await result.text()
 
+    @validate_transaction_count(2)
     @validate_transaction_metrics(
         'test_await_request_async_await',
         background_task=True,
         scoped_metrics=[
-            (local_server_info.base_metric + method.upper(), 2),
+            (local_server_info.base_metric + method.upper(), 1),
         ],
         rollup_metrics=[
-            (local_server_info.base_metric + method.upper(), 2),
+            (local_server_info.base_metric + method.upper(), 1),
         ],
     )
-    @background_task(name='test_await_request_async_await')
+    @override_application_settings({
+        'cross_application_tracer.enabled': False,
+    })
     def task_test():
         loop = asyncio.get_event_loop()
         coros = [request_with_await() for _ in range(2)]
@@ -198,7 +205,7 @@ test_ws_matrix = (
 def test_ws_connect_async_await(local_server_info, method, exc_expected):
 
     @validate_transaction_metrics(
-        'test_ws_connect_async_await',
+        'fetch_multiple',
         background_task=True,
         scoped_metrics=[
             (local_server_info.base_metric + 'GET', 2),
@@ -207,7 +214,6 @@ def test_ws_connect_async_await(local_server_info, method, exc_expected):
             (local_server_info.base_metric + 'GET', 2),
         ],
     )
-    @background_task(name='test_ws_connect_async_await')
     def task_test():
         loop = asyncio.get_event_loop()
         task(loop, method, exc_expected, local_server_info.url)
@@ -228,6 +234,7 @@ def test_create_task_async_await(local_server_info, method, exc_expected):
             resp.raise_for_status()
             return await resp.text()
 
+    @background_task(name='test_create_task_async_await')
     async def fetch_multiple(loop):
         coros = [fetch_task(loop) for _ in range(2)]
         return await asyncio.gather(*coros, return_exceptions=True)
@@ -242,7 +249,6 @@ def test_create_task_async_await(local_server_info, method, exc_expected):
             (local_server_info.base_metric + method.upper(), 2),
         ],
     )
-    @background_task(name='test_create_task_async_await')
     def task_test():
         loop = asyncio.get_event_loop()
         result = loop.run_until_complete(fetch_multiple(loop))
@@ -265,7 +271,6 @@ def test_terminal_parent_async_await(local_server_info, method, exc_expected):
     when transaction's current node was terminal.
     """
 
-    @background_task()
     def task_test():
         loop = asyncio.get_event_loop()
 

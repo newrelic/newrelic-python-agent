@@ -39,5 +39,4 @@ def requires_data_collector(collector_available_fixture):
 
 
 if six.PY2:
-    collect_ignore = ['test_coroutine_transaction.py', 'test_async_timing.py',
-            'test_asyncio_transactions.py']
+    collect_ignore = ['test_coroutine_transaction.py', 'test_async_timing.py']

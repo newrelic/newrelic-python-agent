@@ -48,6 +48,7 @@ def test_aiohttp_app_factory(nr_enabled):
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 try:
                     s.connect(('127.0.0.1', PORT))
+                    s.close()
                     break
                 except socket.error:
                     pass

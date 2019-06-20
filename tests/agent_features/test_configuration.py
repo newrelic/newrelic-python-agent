@@ -456,7 +456,6 @@ def test_translate_deprecated_ignored_params_with_new_setting():
 
 @pytest.mark.parametrize('name,expected_value', (
     ('agent_run_id', None),
-    ('io_loop_blocking_threshold', 0.1),
 ))
 def test_default_values(name, expected_value):
     settings = global_settings()

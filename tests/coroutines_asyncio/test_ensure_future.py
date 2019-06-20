@@ -106,9 +106,6 @@ def test_ensure_future(explicit_loop, arg_type, future_arg, in_transaction):
         _test()
 
 
-@pytest.mark.xfail(strict=True, reason="Parenting is not correct for async "
-    "code at the moment and therefore exclusive time is not calculated "
-    "correctly.")
 def test_exclusive_time():
 
     full_metrics = {}

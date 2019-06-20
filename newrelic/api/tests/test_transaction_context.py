@@ -7,7 +7,6 @@ import newrelic.api.transaction_context as transaction_context
 import newrelic.tests.test_cases
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.transaction import current_transaction
-from newrelic.core.transaction_cache import transaction_cache
 
 application = newrelic.api.application.application_instance()
 
@@ -133,7 +132,6 @@ class TestTransactionContext(newrelic.tests.test_cases.TestCase):
     def test_transaction_context_basic(self):
         txn = newrelic.api.background_task.BackgroundTask(application,
                 'test_transaction_context_basic')
-        txn.thread_id = transaction_cache().current_thread_id()
 
         assert current_transaction(active_only=False) is None
 
@@ -147,7 +145,6 @@ class TestTransactionContext(newrelic.tests.test_cases.TestCase):
                 'test_transaction_context_swaps_transactions') as txn:
             other = newrelic.api.background_task.BackgroundTask(application,
                     'temp_other')
-            other.thread_id = transaction_cache().current_thread_id()
 
             assert current_transaction(active_only=False) is txn
 

@@ -53,10 +53,6 @@ class SimpleAiohttpApp(AioHTTPTestCase):
         if middleware:
             self.middleware = [middleware]
 
-    def setUp(self):
-        super(SimpleAiohttpApp, self).setUp()
-        asyncio.set_event_loop(self.loop)
-
     def get_app(self, *args, **kwargs):
         return make_app(self.middleware, loop=self.loop)
 

@@ -1,11 +1,8 @@
 import pytest
-from newrelic.api.application import application_instance
 from newrelic.common.object_wrapper import function_wrapper
-from newrelic.api.background_task import background_task, BackgroundTask
+from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace
 from testing_support.fixtures import capture_transaction_metrics
-from testing_support.validators.validate_transaction_count import (
-        validate_transaction_count)
 
 asyncio = pytest.importorskip('asyncio')
 
@@ -39,7 +36,7 @@ def child():
     yield from asyncio.sleep(0.1)
 
 
-@background_task(name='parent')
+@function_trace(name='parent')
 @asyncio.coroutine
 def parent(calls):
     coros = [child() for _ in range(calls)]
@@ -48,30 +45,14 @@ def parent(calls):
 
 
 @validate_total_time_value_greater_than(0.2)
+@background_task(name='test_total_time_sync')
 def test_total_time_sync():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(parent(1))
 
 
 @validate_total_time_value_greater_than(0.3, concurrent=True)
+@background_task(name='test_total_time_sync')
 def test_total_time_async():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(parent(2))
-
-
-@asyncio.coroutine
-def transaction():
-    application = application_instance()
-    with BackgroundTask(application, 'transaction'):
-        yield from asyncio.sleep(0)
-
-
-@asyncio.coroutine
-def parent_transaction():
-    yield from asyncio.gather(transaction(), transaction())
-
-
-@validate_transaction_count(2)
-def test_async_context_managers():
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(parent_transaction())

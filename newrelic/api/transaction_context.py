@@ -1,8 +1,10 @@
+import warnings
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import ObjectProxy
 
 
 class TransactionContext(object):
+    show_warning = True
 
     def __init__(self, transaction):
         self.transaction = transaction
@@ -10,6 +12,12 @@ class TransactionContext(object):
             self.trace = transaction.current_span
         self.restore_transaction = None
         self.restore_trace = None
+
+        if self.show_warning:
+            warnings.warn((
+                'The TransactionContext API has been deprecated and will be '
+                'removed in a future release.'
+            ), DeprecationWarning)
 
     def __enter__(self):
         self.restore_transaction = current_transaction(active_only=False)
@@ -39,10 +47,14 @@ class TransactionContext(object):
             self.restore_transaction.save_transaction()
 
 
+class _TransactionContext(TransactionContext):
+    show_warning = False
+
+
 class CoroutineTransactionContext(ObjectProxy):
     def __init__(self, coro, transaction):
 
-        self._nr_transaction_context = TransactionContext(transaction)
+        self._nr_transaction_context = _TransactionContext(transaction)
 
         # Wrap the coroutine
         super(CoroutineTransactionContext, self).__init__(coro)

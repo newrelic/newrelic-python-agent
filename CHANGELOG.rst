@@ -1,6 +1,10 @@
 unreleased
 ----------
 
+- TransactionContext API is now deprecated
+
+  The TransactionContext API will be removed in a future release.
+
 - Remove logging of license keys
 
   The agent logged license keys when data failed to send to New Relic.

@@ -19,6 +19,11 @@ unreleased
   result, cross application tracing and distributed tracing will now operate as
   expected when reusing connection objects.
 
+- Improved gRPC support
+
+  The external and transaction pages now show the gRPC method being called in
+  addition to the host and port.
+
 4.20.0 (2019-05-22)
 -------------------
 

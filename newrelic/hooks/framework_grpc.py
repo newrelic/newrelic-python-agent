@@ -8,10 +8,11 @@ from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.object_names import callable_name
 
 
-def _get_uri(instance, *args, **kwargs):
+def _get_uri_method(instance, *args, **kwargs):
     target = instance._channel.target().decode('utf-8')
     method = instance._method.decode('utf-8').lstrip('/')
-    return 'grpc://%s/%s' % (target, method)
+    uri = 'grpc://%s/%s' % (target, method)
+    return (uri, method)
 
 
 def _prepare_request(
@@ -37,14 +38,14 @@ def _prepare_request_stream(
             transaction, guid, request_iterator, *args, **kwargs)
 
 
-def wrap_call(module, object_path, prepare, method):
+def wrap_call(module, object_path, prepare):
 
     def _call_wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction()
         if transaction is None:
             return wrapped(*args, **kwargs)
 
-        uri = _get_uri(instance)
+        uri, method = _get_uri_method(instance)
         with ExternalTrace(transaction, 'gRPC', uri, method):
             request, timeout, args, kwargs = prepare(
                     transaction, None, *args, **kwargs)
@@ -53,7 +54,7 @@ def wrap_call(module, object_path, prepare, method):
     wrap_function_wrapper(module, object_path, _call_wrapper)
 
 
-def wrap_future(module, object_path, prepare, method):
+def wrap_future(module, object_path, prepare):
 
     def _future_wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction()
@@ -61,7 +62,7 @@ def wrap_future(module, object_path, prepare, method):
             return wrapped(*args, **kwargs)
 
         guid = '%016x' % random.getrandbits(64)
-        uri = _get_uri(instance)
+        uri, method = _get_uri_method(instance)
 
         request, timeout, args, kwargs = prepare(
                 transaction, guid, *args, **kwargs)
@@ -178,21 +179,21 @@ def _nr_wrap_abort(wrapped, instance, args, kwargs):
 
 def instrument_grpc__channel(module):
     wrap_call(module, '_UnaryUnaryMultiCallable.__call__',
-            _prepare_request, 'unary_unary')
+            _prepare_request)
     wrap_call(module, '_UnaryUnaryMultiCallable.with_call',
-            _prepare_request, 'unary_unary')
+            _prepare_request)
     wrap_future(module, '_UnaryUnaryMultiCallable.future',
-            _prepare_request, 'unary_unary')
+            _prepare_request)
     wrap_future(module, '_UnaryStreamMultiCallable.__call__',
-            _prepare_request, 'unary_stream')
+            _prepare_request)
     wrap_call(module, '_StreamUnaryMultiCallable.__call__',
-            _prepare_request_stream, 'stream_unary')
+            _prepare_request_stream)
     wrap_call(module, '_StreamUnaryMultiCallable.with_call',
-            _prepare_request_stream, 'stream_unary')
+            _prepare_request_stream)
     wrap_future(module, '_StreamUnaryMultiCallable.future',
-            _prepare_request_stream, 'stream_unary')
+            _prepare_request_stream)
     wrap_future(module, '_StreamStreamMultiCallable.__call__',
-            _prepare_request_stream, 'stream_stream')
+            _prepare_request_stream)
     wrap_function_wrapper(module, '_Rendezvous._next',
             wrap_next)
     wrap_function_wrapper(module, '_Rendezvous.result',

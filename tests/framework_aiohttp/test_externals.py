@@ -1,4 +1,3 @@
-import pytest
 import asyncio
 
 from testing_support.fixtures import (validate_transaction_metrics,
@@ -13,9 +12,6 @@ expected_parenting = (
 ])
 
 
-@pytest.mark.xfail(strict=True,
-        reason='Parenting is broken since propagation is done through '
-               'transaction context')
 @validate_tt_parenting(expected_parenting)
 @validate_transaction_metrics('_target_application:multi_fetch_handler',
         rollup_metrics=[('External/all', 2)])

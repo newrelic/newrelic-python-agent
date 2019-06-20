@@ -25,7 +25,7 @@ def current_task():
 
     current_task = getattr(asyncio, 'current_task', None)
     if current_task is None:
-        current_task = getattr(asyncio.Task, 'current_task', None)
+        current_task = getattr(asyncio.Task, 'current_task')
 
     try:
         return current_task()
@@ -73,10 +73,6 @@ class TransactionCache(object):
             current = greenlet.getcurrent()
             if current is not None and current.parent:
                 return id(current)
-
-        task = current_task()
-        if task is not None:
-            return id(task)
 
         return thread.get_ident()
 
@@ -165,15 +161,13 @@ class TransactionCache(object):
 
         thread_id = transaction.thread_id
 
-        # FIXME: temporarily disable errors for existing cache entries.
-        #
-        #if thread_id in self._cache:
-        #    _logger.error('Runtime instrumentation error. Attempt to '
-        #            'to save the transaction when one is already saved. '
-        #            'Report this issue to New Relic support.\n%s',
-        #            ''.join(traceback.format_stack()[:-1]))
+        if thread_id in self._cache:
+            _logger.error('Runtime instrumentation error. Attempt to '
+                    'to save the transaction when one is already saved. '
+                    'Report this issue to New Relic support.\n%s',
+                    ''.join(traceback.format_stack()[:-1]))
 
-        #    raise RuntimeError('transaction already active')
+            raise RuntimeError('transaction already active')
 
         self._cache[thread_id] = transaction
 
@@ -198,7 +192,7 @@ class TransactionCache(object):
         if task is not None:
             transaction._asyncio_loop_id = get_loop_id(task)
 
-    def drop_transaction(self, transaction, final=False):
+    def drop_transaction(self, transaction):
         """Drops the specified transaction, validating that it is
         actually saved away under the current executing thread.
 
@@ -226,16 +220,7 @@ class TransactionCache(object):
 
         transaction._greenlet = None
 
-        if final:
-            thread_ids = []
-            for thread_id, cached in self._cache.items():
-                if transaction is cached:
-                    thread_ids.append(thread_id)
-            cached = None
-            for thread_id in thread_ids:
-                del self._cache[thread_id]
-        else:
-            del self._cache[thread_id]
+        del self._cache[thread_id]
 
 
 _transaction_cache = TransactionCache()

@@ -1,6 +1,13 @@
 unreleased
 ----------
 
+- Fixed a crash when using uvicorn workers with gunicorn
+
+  When running ASGI applications with gunicorn, the agent would attempt to
+  instrument the application as a WSGI application, resulting in a crash. The
+  agent will no longer attempt to instrument gunicorn applications that are
+  coroutines.
+
 - TransactionContext API is now deprecated
 
   The TransactionContext API will be removed in a future release.

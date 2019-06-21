@@ -1,6 +1,11 @@
 unreleased
 ----------
 
+- Remove tornado r1 instrumentation
+  
+  All support for instrumentation which was previously hidden behind
+  the feature flag tornado.instrumentation.r1 has been completely removed.
+
 4.20.1 (2019-06-21)
 -------------------
 

@@ -1,6 +1,9 @@
 unreleased
 ----------
 
+4.20.1 (2019-06-21)
+-------------------
+
 - Fixed a crash when using uvicorn workers with gunicorn
 
   When running ASGI applications with gunicorn, the agent would attempt to

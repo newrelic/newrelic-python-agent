@@ -23,6 +23,12 @@
             "New Relic"
         ]
     },
+    "newrelic/THIRD_PARTY_NOTICES.md": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/__init__.py": {
         "hash": "n/a",
         "libraries": [

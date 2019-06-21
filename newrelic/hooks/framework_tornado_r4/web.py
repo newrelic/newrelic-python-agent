@@ -56,9 +56,8 @@ def _get_environ(request):
 
 def _nr_request_handler_init(wrapped, instance, args, kwargs):
     if current_transaction() is not None:
-        _logger.error('Attempting to make a request (new transaction) when a '
-                'transaction is already running. Please report this issue to '
-                'New Relic support.\n%s',
+        _logger.debug('Attempting to make a request (new transaction) when a '
+                'transaction is already running.\n%s',
                 ''.join(traceback.format_stack()[:-1]))
         return wrapped(*args, **kwargs)
 

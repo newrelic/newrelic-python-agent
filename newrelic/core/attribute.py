@@ -47,6 +47,7 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set((
         'aws.lambda.coldStart',
         'aws.lambda.eventSource.arn',
         'db.instance',
+        'db.statement',
 ))
 
 MAX_NUM_USER_ATTRIBUTES = 64

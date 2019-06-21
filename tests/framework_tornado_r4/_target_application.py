@@ -131,6 +131,11 @@ class SimpleHandler(tornado.web.RequestHandler):
     patch = get
 
 
+class CallSimpleHandler(tornado.web.RequestHandler):
+    def get(self, fast=False):
+        SimpleHandler(self.application, self.request).get(fast)
+
+
 class OnFinishHandler(SimpleHandler):
     def on_finish(self):
         time.sleep(0.1)
@@ -209,6 +214,7 @@ class HTMLInsertionHandler(tornado.web.RequestHandler):
 def make_app():
     handlers = [
         (r'/simple(/.*)?', SimpleHandler),
+        (r'/call-simple(/.*)?', CallSimpleHandler),
         (r'/coro(/.*)?', CoroHandler),
         (r'/coro-throw(/.*)?', CoroThrowHandler),
         (r'/fake-coro(/.*)?', FakeCoroHandler),

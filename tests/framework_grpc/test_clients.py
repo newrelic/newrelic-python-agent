@@ -58,10 +58,12 @@ def test_client(service_method_type, service_method_method_name,
     streaming_response = service_method_type.split('_')[1] == 'stream'
 
     _test_scoped_metrics = [
-            ('External/localhost:%s/gRPC/%s' % (port, service_method_type), 1),
+            ('External/localhost:%s/gRPC/SampleApplication/%s' % (port,
+                service_method_class_name), 1),
     ]
     _test_rollup_metrics = [
-            ('External/localhost:%s/gRPC/%s' % (port, service_method_type), 1),
+            ('External/localhost:%s/gRPC/SampleApplication/%s' % (port,
+                service_method_class_name), 1),
             ('External/localhost:%s/all' % port, 1),
             ('External/allOther', 1),
             ('External/all', 1),
@@ -161,10 +163,12 @@ def test_future_timeout_error(service_method_type, service_method_method_name,
     streaming_request = service_method_type.split('_')[0] == 'stream'
 
     _test_scoped_metrics = [
-            ('External/localhost:%s/gRPC/%s' % (port, service_method_type), 1),
+            ('External/localhost:%s/gRPC/SampleApplication/%s' % (port,
+                service_method_class_name), 1),
     ]
     _test_rollup_metrics = [
-            ('External/localhost:%s/gRPC/%s' % (port, service_method_type), 1),
+            ('External/localhost:%s/gRPC/SampleApplication/%s' % (port,
+                service_method_class_name), 1),
             ('External/localhost:%s/all' % port, 1),
             ('External/allOther', 1),
             ('External/all', 1),
@@ -208,10 +212,12 @@ def test_server_down(service_method_type, service_method_method_name,
     streaming_request = service_method_type.split('_')[0] == 'stream'
 
     _test_scoped_metrics = [
-            ('External/localhost:%s/gRPC/%s' % (port, service_method_type), 1),
+            ('External/localhost:%s/gRPC/SampleApplication/%s' % (port,
+                service_method_class_name), 1),
     ]
     _test_rollup_metrics = [
-            ('External/localhost:%s/gRPC/%s' % (port, service_method_type), 1),
+            ('External/localhost:%s/gRPC/SampleApplication/%s' % (port,
+                service_method_class_name), 1),
             ('External/localhost:%s/all' % port, 1),
             ('External/allOther', 1),
             ('External/all', 1),
@@ -264,12 +270,12 @@ def test_repeated_result(service_method_type, service_method_method_name,
     streaming_request = service_method_type.split('_')[0] == 'stream'
 
     _test_scoped_metrics = [
-            ('External/localhost:%s/gRPC/%s' % (port, service_method_type),
-                1),
+            ('External/localhost:%s/gRPC/SampleApplication/%s' % (port,
+                service_method_class_name), 1),
     ]
     _test_rollup_metrics = [
-            ('External/localhost:%s/gRPC/%s' % (port, service_method_type),
-                1),
+            ('External/localhost:%s/gRPC/SampleApplication/%s' % (port,
+                service_method_class_name), 1),
             ('External/localhost:%s/all' % port, 1),
             ('External/allOther', 1),
             ('External/all', 1),
@@ -324,10 +330,12 @@ def test_future_cancel(service_method_type, service_method_method_name,
     streaming_request = service_method_type.split('_')[0] == 'stream'
 
     _test_scoped_metrics = [
-            ('External/localhost:%s/gRPC/%s' % (port, service_method_type), 1),
+            ('External/localhost:%s/gRPC/SampleApplication/%s' % (port,
+                service_method_class_name), 1),
     ]
     _test_rollup_metrics = [
-            ('External/localhost:%s/gRPC/%s' % (port, service_method_type), 1),
+            ('External/localhost:%s/gRPC/SampleApplication/%s' % (port,
+                service_method_class_name), 1),
             ('External/localhost:%s/all' % port, 1),
             ('External/allOther', 1),
             ('External/all', 1),
@@ -359,6 +367,5 @@ def test_future_cancel(service_method_type, service_method_method_name,
         for result in reply:
             reply.cancel()
             break
-
 
     _test_future_cancel()

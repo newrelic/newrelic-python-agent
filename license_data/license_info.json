@@ -1,39 +1,44 @@
 {
     "libraries": {
         "New Relic": {
+            "copyright": "New Relic",
             "licenses": [
                 "New Relic"
             ],
             "name": "New Relic",
-            "url": "http://newrelic.com"
+            "url": "https://newrelic.com"
         },
         "requests": {
+            "copyright": "Copyright 2014 Kenneth Reitz",
             "licenses": [
                 "apache2"
             ],
             "name": "requests",
-            "url": "http://pypi.python.org/pypi/requests"
+            "url": "https://pypi.org/project/requests"
         },
         "six": {
+            "copyright": "Copyright (c) 2010-2013 Benjamin Peterson",
             "licenses": [
                 "MIT"
             ],
             "name": "six",
-            "url": "https://bitbucket.org/gutworth/six/overview"
+            "url": "https://pypi.org/project/six"
         },
         "time.monotonic": {
+            "copyright": "Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013 Python Software Foundation; All Rights Reserved",
             "licenses": [
                 "PSF"
             ],
             "name": "time.monotonic",
-            "url": "newrelic/common/_monotonic.c"
+            "url": "common/_monotonic.c"
         },
         "wrapt": {
+            "copyright": "Copyright (c) 2013-2017, Graham Dumpleton\nAll rights reserved.",
             "licenses": [
                 "BSD (2-Clause)"
             ],
             "name": "wrapt",
-            "url": "https://pypi.python.org/pypi/wrapt"
+            "url": "https://pypi.org/project/wrapt"
         }
     },
     "licenses": {
@@ -47,15 +52,15 @@
         },
         "New Relic": {
             "name": "New Relic",
-            "url": "http://newrelic.com"
+            "url": "https://docs.newrelic.com/docs/licenses/license-information/other-licenses/new-relic-agent-license"
         },
         "PSF": {
             "name": "Python Software Foundation",
-            "url": "http://docs.python.org/2/license.html"
+            "url": "https://docs.python.org/3/license.html"
         },
         "apache2": {
             "name": "Apache License, Version 2.0",
-            "url": "http://www.apache.org/licenses/LICENSE-2.0"
+            "url": "https://www.apache.org/licenses/LICENSE-2.0"
         }
     }
 }

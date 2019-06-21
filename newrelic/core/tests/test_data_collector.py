@@ -1,6 +1,7 @@
 import json
 import os
 import pytest
+import logging
 
 from newrelic.common import system_info
 from newrelic.core import data_collector as dc
@@ -424,6 +425,45 @@ def test_status_code_exceptions_raised(status_code, exception):
             json.dumps({'return_value': ''}))
     with pytest.raises(exception):
         send_request(session, url="", method="", license_key="")
+
+
+@pytest.mark.parametrize('status_code,exception', [
+    (400, DiscardDataForRequest),
+    (401, ForceAgentRestart),
+    (403, DiscardDataForRequest),
+    (404, DiscardDataForRequest),
+    (405, DiscardDataForRequest),
+    (407, DiscardDataForRequest),
+    (408, RetryDataForRequest),
+    (409, ForceAgentRestart),
+    (410, ForceAgentDisconnect),
+    (411, DiscardDataForRequest),
+    (413, DiscardDataForRequest),
+    (414, DiscardDataForRequest),
+    (415, DiscardDataForRequest),
+    (417, DiscardDataForRequest),
+    (429, RetryDataForRequest),
+    (431, DiscardDataForRequest),
+    (500, RetryDataForRequest),
+    (503, RetryDataForRequest),
+    (201, DiscardDataForRequest),  # != (200 || 202) catch-all case
+])
+def test_license_key_absent_logging(status_code, exception, caplog):
+    session = FakeRequestsSession(status_code,
+            json.dumps({'return_value': ''}))
+
+    with pytest.raises(exception):
+        with caplog.at_level(
+                logging.DEBUG,
+                logger='newrelic.core.data_collector'):
+            send_request(
+                    session,
+                    url="",
+                    method="",
+                    license_key="123LICENSEKEY")
+
+    for message in caplog.messages:
+        assert "123LICENSEKEY" not in message
 
 
 @pytest.mark.parametrize('status_code, expected_return_value', [

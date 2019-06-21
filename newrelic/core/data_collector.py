@@ -42,6 +42,9 @@ from newrelic.common.utilization import (AWSUtilization, AzureUtilization,
 
 _logger = logging.getLogger(__name__)
 
+PARAMS_WHITELIST = set(['method', 'protocol_version', 'marshal_format',
+    'run_id'])
+
 # User agent string that must be used in all requests. The data collector
 # does not rely on this, but is used to target specific agents if there
 # is a problem with data collector handling requests.
@@ -538,11 +541,13 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
             raise DiscardDataForRequest(str(e))
     else:
+        loggable_params = {k: v for k, v in params.items()
+                if k in PARAMS_WHITELIST}
+
         _logger.warning('Received a non 200 or 202 HTTP response from '
-                'the data collector where url=%r, method=%r, license_key=%r, '
-                'agent_run_id=%r, params=%r, headers=%r, status_code=%r '
-                'and content=%r.', url, method, license_key, agent_run_id,
-                params, headers, r.status_code, content)
+                'the data collector where url=%r, params=%r, '
+                'headers=%r, status_code=%r and content=%r.', url,
+                loggable_params, headers, r.status_code, content)
 
         internal_metric('Supportability/Python/Collector/Failures', 1)
         internal_metric('Supportability/Python/Collector/Failures/'
@@ -556,10 +561,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
         if r.status_code == 401:
             _logger.error('Data collector is indicating that an incorrect '
-                    'license key has been supplied by the agent. The value '
-                    'which was used by the agent is %r. Please correct any '
-                    'problem with the license key or report this problem to '
-                    'New Relic support.', license_key)
+                    'license key has been supplied by the agent. Please '
+                    'correct any problem with the license key or report '
+                    'this problem to New Relic support.')
         elif r.status_code == 407:
             _logger.warning('Received a proxy authentication required '
                     'response from the data collector. This occurs when '
@@ -967,10 +971,9 @@ class ApplicationSession(object):
             # data collector instances we should use for this agent run.
 
             _logger.debug('Connecting to data collector to register agent '
-                    'with license_key=%r, app_name=%r, '
-                    'linked_applications=%r, environment=%r and settings=%r.',
-                    license_key, app_name, linked_applications, environment,
-                    settings)
+                    'with app_name=%r, linked_applications=%r, environment=%r '
+                    'and settings=%r.', app_name, linked_applications,
+                    environment, settings)
 
             url = collector_url()
 

@@ -141,7 +141,7 @@ def test_each_span_type(trace_type, args):
     pytest.param('select 1', 'obfuscated', 'select ?'),
 ))
 def test_database_db_statement_format(sql, sql_format, expected):
-    @validate_span_events(count=1, exact_intrinsics={
+    @validate_span_events(count=1, exact_agents={
         'db.statement': expected,
     })
     @override_application_settings({
@@ -158,6 +158,25 @@ def test_database_db_statement_format(sql, sql_format, expected):
             pass
 
     _test()
+
+
+@validate_span_events(
+    count=1,
+    exact_intrinsics={'category': 'datastore'},
+    unexpected_agents=['db.statement'],
+)
+@override_application_settings({
+    'distributed_tracing.enabled': True,
+    'span_events.enabled': True,
+    'span_events.attributes.exclude': ['db.statement'],
+})
+@background_task(name='test_database_db_statement_exclude')
+def test_database_db_statement_exclude():
+    transaction = current_transaction()
+    transaction._sampled = True
+
+    with DatabaseTrace(transaction, 'select 1'):
+        pass
 
 
 @pytest.mark.parametrize('exclude_url', (True, False))

@@ -52,7 +52,7 @@ def test_span_events(instance_enabled, db_instance_enabled):
     guid = 'dbb533c53b749e0b'
     priority = 0.5
 
-    common = {
+    common_intrinsics = {
         'type': 'Span',
         'transactionId': guid,
         'priority': priority,
@@ -65,13 +65,13 @@ def test_span_events(instance_enabled, db_instance_enabled):
     if instance_enabled:
         settings = _enable_instance_settings.copy()
         hostname = instance_hostname(DB_SETTINGS['host'])
-        common.update({
+        common_intrinsics.update({
             'peer.address': '%s:%s' % (hostname, DB_SETTINGS['port']),
             'peer.hostname': hostname,
         })
     else:
         settings = _disable_instance_settings.copy()
-        common.update({
+        common_intrinsics.update({
             'peer.address': 'Unknown:Unknown',
             'peer.hostname': 'Unknown',
         })
@@ -86,25 +86,31 @@ def test_span_events(instance_enabled, db_instance_enabled):
         exact_agents = {}
         unexpected_agents = ('db.instance',)
 
-    query_1 = common.copy()
-    query_1['name'] = 'Datastore/statement/Postgres/pg_settings/select'
-    query_1['db.statement'] = 'SELECT setting from pg_settings where name=%s'
+    query_1_intrinsics = common_intrinsics.copy()
+    query_1_intrinsics['name'] = \
+            'Datastore/statement/Postgres/pg_settings/select'
 
-    query_2 = common.copy()
-    query_2['name'] = 'Datastore/operation/Postgres/select'
-    query_2['db.statement'] = 'SELECT ?'
+    query_1_agents = exact_agents.copy()
+    query_1_agents['db.statement'] = \
+            'SELECT setting from pg_settings where name=%s'
+
+    query_2_intrinsics = common_intrinsics.copy()
+    query_2_intrinsics['name'] = 'Datastore/operation/Postgres/select'
+
+    query_2_agents = exact_agents.copy()
+    query_2_agents['db.statement'] = 'SELECT ?'
 
     @validate_span_events(
             count=1,
-            exact_intrinsics=query_1,
-            unexpected_intrinsics=('db.instance'),
-            exact_agents=exact_agents,
+            exact_intrinsics=query_1_intrinsics,
+            unexpected_intrinsics=('db.instance', 'db.statement'),
+            exact_agents=query_1_agents,
             unexpected_agents=unexpected_agents)
     @validate_span_events(
             count=1,
-            exact_intrinsics=query_2,
-            unexpected_intrinsics=('db.instance'),
-            exact_agents=exact_agents,
+            exact_intrinsics=query_2_intrinsics,
+            unexpected_intrinsics=('db.instance', 'db.statement'),
+            exact_agents=query_2_agents,
             unexpected_agents=unexpected_agents)
     @override_application_settings(settings)
     @background_task(name='span_events')

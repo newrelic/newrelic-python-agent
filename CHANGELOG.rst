@@ -1,6 +1,39 @@
 unreleased
 ----------
 
+4.20.1 (2019-06-21)
+-------------------
+
+- Fixed a crash when using uvicorn workers with gunicorn
+
+  When running ASGI applications with gunicorn, the agent would attempt to
+  instrument the application as a WSGI application, resulting in a crash. The
+  agent will no longer attempt to instrument gunicorn applications that are
+  coroutines.
+
+- TransactionContext API is now deprecated
+
+  The TransactionContext API will be removed in a future release.
+
+- Remove logging of license keys
+
+  The agent logged license keys when data failed to send to New Relic.
+  The agent will no longer log license keys to the agent logs under any
+  circumstance.
+
+- Fix operation of distributed tracing and cross application tracing when
+  httplib connections are reused.
+
+  When making multiple requests via a single connection with httplib, httplib2,
+  or urllib3, the proper headers will be added to each outgoing request. As a
+  result, cross application tracing and distributed tracing will now operate as
+  expected when reusing connection objects.
+
+- Improved gRPC support
+
+  The external and transaction pages now show the gRPC method being called in
+  addition to the host and port.
+
 4.20.0 (2019-05-22)
 -------------------
 

@@ -193,8 +193,17 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
 
         root.trace_node_count += 1
 
+        sql = self.formatted
+
         # Agent attributes
         self.agent_attributes['db.instance'] = self.db_instance
+        if sql:
+            # Limit the length of any SQL that is reported back.
+
+            limit = root.settings.agent_limits.sql_query_length_maximum
+
+            self.agent_attributes['db.statement'] = sql[:limit]
+
         params = attribute.resolve_agent_attributes(
                 self.agent_attributes,
                 root.settings.attribute_filter,
@@ -211,14 +220,9 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
         if self.port_path_or_id:
             params['port_path_or_id'] = self.port_path_or_id
 
-        sql = self.formatted
-
+        sql = params.get('db.statement')
         if sql:
-            # Limit the length of any SQL that is reported back.
-
-            limit = root.settings.agent_limits.sql_query_length_maximum
-
-            params['sql'] = root.string_table.cache(sql[:limit])
+            params['db.statement'] = root.string_table.cache(sql)
 
             if self.stack_trace:
                 params['backtrace'] = [root.string_table.cache(x) for x in
@@ -240,15 +244,12 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
                 label=None)
 
     def span_event(self, *args, **kwargs):
-        attrs = super(DatabaseNode, self).span_event(*args, **kwargs)
-        i_attrs = attrs[0]
-
         sql = self.formatted
 
-        # Truncate to 2000 bytes and append ...
-        _, sql = attribute.process_user_attribute(
-                'db.statement', sql, max_length=2000, ending='...')
+        if sql:
+            # Truncate to 2000 bytes and append ...
+            _, sql = attribute.process_user_attribute(
+                    'db.statement', sql, max_length=2000, ending='...')
 
-        i_attrs['db.statement'] = sql
-
-        return attrs
+        self.agent_attributes['db.statement'] = sql
+        return super(DatabaseNode, self).span_event(*args, **kwargs)

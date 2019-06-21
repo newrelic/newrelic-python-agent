@@ -2,7 +2,12 @@ import sys
 
 from newrelic.api.wsgi_application import WSGIApplicationWrapper
 from newrelic.common.object_wrapper import wrap_out_function
-from newrelic.common.coroutine import is_coroutine_function
+from newrelic.common.coroutine import (is_coroutine_function,
+        is_asyncio_coroutine)
+
+
+def is_coroutine(fn):
+    return is_coroutine_function(fn) or is_asyncio_coroutine(fn)
 
 
 def _nr_wrapper_Application_wsgi_(application):
@@ -19,10 +24,13 @@ def _nr_wrapper_Application_wsgi_(application):
     except ImportError:
         pass
 
-    if not is_coroutine_function(application):
+    if is_coroutine(application):
+        return application
+    elif (hasattr(application, '__call__') and
+            is_coroutine(application.__call__)):
+        return application
+    else:
         return WSGIApplicationWrapper(application)
-
-    return application
 
 
 def instrument_gunicorn_app_base(module):

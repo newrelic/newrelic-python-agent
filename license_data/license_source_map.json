@@ -1757,48 +1757,6 @@
             "New Relic"
         ]
     },
-    "newrelic/hooks/framework_tornado_r4/__init__.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r4/gen.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r4/httpclient.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r4/httputil.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r4/routing.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r4/utils.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r4/web.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/hooks/framework_twisted.py": {
         "hash": "n/a",
         "libraries": [

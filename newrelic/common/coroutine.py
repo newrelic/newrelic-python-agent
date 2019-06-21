@@ -11,14 +11,16 @@ CancelledError = None
 if hasattr(inspect, 'iscoroutinefunction'):
     def is_coroutine_function(wrapped):
         return inspect.iscoroutinefunction(wrapped)
-
-    def is_asyncio_coroutine(wrapped):
-        """Return True if func is a decorated coroutine function."""
-        return getattr(wrapped, '_is_coroutine', None) is not None
 else:
     def is_coroutine_function(wrapped):
         return False
 
+
+if six.PY3:
+    def is_asyncio_coroutine(wrapped):
+        """Return True if func is a decorated coroutine function."""
+        return getattr(wrapped, '_is_coroutine', None) is not None
+else:
     def is_asyncio_coroutine(wrapped):
         return False
 

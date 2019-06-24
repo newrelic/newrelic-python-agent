@@ -52,7 +52,6 @@ sys.meta_path.insert(0, newrelic.api.import_hook.ImportHookFinder())
 # if feature flags not in set are provided.
 
 _FEATURE_FLAGS = set([
-    'tornado.instrumentation.r1',
     'tornado.instrumentation.r2',
     'tornado.instrumentation.r3',
     'tornado.instrumentation.r4',
@@ -2154,42 +2153,6 @@ def _process_module_builtin_defaults():
         _process_module_definition('tornado.platform.asyncio',
                 'newrelic.hooks.framework_tornado_r3.ioloop',
                 'instrument_tornado_asyncio_loop')
-
-    elif 'tornado.instrumentation.r1' in _settings.feature_flag:
-        _process_module_definition('tornado.wsgi',
-                'newrelic.hooks.framework_tornado_r1',
-                'instrument_tornado_wsgi')
-
-        _process_module_definition('tornado.httpserver',
-                'newrelic.hooks.framework_tornado_r1',
-                'instrument_tornado_httpserver')
-        _process_module_definition('tornado.httputil',
-                'newrelic.hooks.framework_tornado_r1',
-                'instrument_tornado_httputil')
-        _process_module_definition('tornado.web',
-                'newrelic.hooks.framework_tornado_r1',
-                'instrument_tornado_web')
-        _process_module_definition('tornado.template',
-                'newrelic.hooks.framework_tornado_r1',
-                'instrument_tornado_template')
-        _process_module_definition('tornado.stack_context',
-                'newrelic.hooks.framework_tornado_r1',
-                'instrument_tornado_stack_context')
-        _process_module_definition('tornado.ioloop',
-                'newrelic.hooks.framework_tornado_r1',
-                'instrument_tornado_ioloop')
-        _process_module_definition('tornado.iostream',
-                'newrelic.hooks.framework_tornado_r1',
-                'instrument_tornado_iostream')
-        _process_module_definition('tornado.curl_httpclient',
-                'newrelic.hooks.framework_tornado_r1',
-                'instrument_tornado_curl_httpclient')
-        _process_module_definition('tornado.simple_httpclient',
-                'newrelic.hooks.framework_tornado_r1',
-                'instrument_tornado_simple_httpclient')
-        _process_module_definition('tornado.gen',
-                'newrelic.hooks.framework_tornado_r1',
-                'instrument_tornado_gen')
 
     elif 'tornado.instrumentation.r4' in _settings.feature_flag:
         _process_module_definition('tornado.web',

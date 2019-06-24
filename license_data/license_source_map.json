@@ -1757,12 +1757,6 @@
             "New Relic"
         ]
     },
-    "newrelic/hooks/framework_tornado_r1.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/hooks/framework_tornado_r3/__init__.py": {
         "hash": "n/a",
         "libraries": [

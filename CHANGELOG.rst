@@ -16,6 +16,10 @@ unreleased
   All support for instrumentation which was previously hidden behind 
   the feature flag tornado.instrumentation.r4 has been completely removed.
 
+- Remove Tornado 3 instrumentation
+
+  All support for instrumentation of Tornado 3 has been completely removed.
+
 4.20.1 (2019-06-21)
 -------------------
 

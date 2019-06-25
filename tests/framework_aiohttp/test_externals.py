@@ -1,3 +1,4 @@
+import pytest
 import asyncio
 
 from testing_support.fixtures import (validate_transaction_metrics,
@@ -12,6 +13,8 @@ expected_parenting = (
 ])
 
 
+@pytest.mark.xfail(reason="This test relies on proper task management and "
+        "will fail before we transition to a span based cache.", strict=True)
 @validate_tt_parenting(expected_parenting)
 @validate_transaction_metrics('_target_application:multi_fetch_handler',
         rollup_metrics=[('External/all', 2)])

@@ -224,6 +224,7 @@ def test_aborted_connection_creates_transaction(aiohttp_app):
             # In aiohttp 1.X, this can result in a CancelledError being raised
             except asyncio.CancelledError:
                 pass
+            yield
             return
 
         assert False, "Request did not time out"

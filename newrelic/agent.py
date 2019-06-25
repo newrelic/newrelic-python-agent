@@ -42,9 +42,6 @@ from newrelic.api.transaction import (
         current_trace_id as __current_trace_id,
         current_span_id as __current_span_id)
 
-from newrelic.api.transaction_context import (
-        TransactionContext as __TransactionContext)
-
 from newrelic.api.wsgi_application import (
         wsgi_application as __wsgi_application,
         WSGIApplicationWrapper as __WSGIApplicationWrapper,
@@ -225,8 +222,6 @@ create_distributed_trace_payload = __wrap_api_call(
         'create_distributed_trace_payload')
 current_trace_id = __wrap_api_call(__current_trace_id, 'current_trace_id')
 current_span_id = __wrap_api_call(__current_span_id, 'current_span_id')
-TransactionContext = __wrap_api_call(__TransactionContext,
-'TransactionContext')
 wsgi_application = __wsgi_application
 WebTransaction = __wrap_api_call(__WebTransaction,
         'WebTransaction')

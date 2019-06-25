@@ -20,6 +20,11 @@ unreleased
 
   All support for instrumentation of Tornado 3 has been completely removed.
 
+- The TransactionContext API has been removed
+
+  The TransactionContext API is no longer supported and has been removed in
+  this release.
+
 4.20.1 (2019-06-21)
 -------------------
 

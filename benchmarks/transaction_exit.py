@@ -1,13 +1,13 @@
 import sys
 import newrelic.api.transaction as transaction
-from benchmarks.util import MockApplication, MockTransactionCache
-transaction_cache = transaction.transaction_cache
+from benchmarks.util import MockApplication, MockTraceCache
+trace_cache = transaction.trace_cache
 
 
 class TimeSuite:
 
     def setup(self):
-        transaction.transaction_cache = MockTransactionCache
+        transaction.trace_cache = MockTraceCache
         app = MockApplication()
         self.transaction = transaction.Transaction(app)
         self.transaction.__enter__()
@@ -18,7 +18,7 @@ class TimeSuite:
             self.exc_info = sys.exc_info()
 
     def teardown(self):
-        transaction.transaction_cache = transaction_cache
+        transaction.trace_cache = trace_cache
 
     def time_exit_no_error(self):
         self.transaction.enabled = True

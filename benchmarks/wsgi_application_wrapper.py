@@ -1,5 +1,5 @@
 import newrelic.api.wsgi_application as wsgi_application_module
-from newrelic.core.transaction_cache import transaction_cache
+from newrelic.core.trace_cache import trace_cache
 from functools import partial
 from benchmarks.util import (MockApplication, MockTrace, MockTransaction,
         MockTransactionCAT)
@@ -62,7 +62,7 @@ class AlreadyRunningTransaction(Framework):
         super(AlreadyRunningTransaction, self).setup()
         self.transaction = MockTransaction(self.app)
 
-        self.transaction.thread_id = transaction_cache().current_thread_id()
+        self.transaction.thread_id = trace_cache().current_thread_id()
         self.transaction.ignore_transaction = False
         self.transaction.save_transaction()
 

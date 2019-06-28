@@ -42,9 +42,9 @@ from newrelic.core.agent import agent_instance
 from newrelic.core.config import global_settings, flatten_settings
 from newrelic.api.transaction import Transaction
 from newrelic.api.object_wrapper import ObjectWrapper
-from newrelic.core.transaction_cache import transaction_cache
+from newrelic.core.trace_cache import trace_cache
 
-_transaction_cache = transaction_cache()
+_trace_cache = trace_cache()
 
 def shell_command(wrapped):
     args, varargs, keywords, defaults = _argspec(wrapped)
@@ -351,7 +351,7 @@ class ConsoleShell(cmd.Cmd):
         """
         """
 
-        for item in _transaction_cache.active_threads():
+        for item in _trace_cache.active_threads():
             transaction, thread_id, thread_type, frame = item
             print('THREAD', item, file=self.stdout)
             if transaction is not None:

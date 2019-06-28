@@ -11,7 +11,7 @@ import newrelic.packages.six as six
 import newrelic
 
 from newrelic.core.config import global_settings
-from newrelic.core.transaction_cache import transaction_cache
+from newrelic.core.trace_cache import trace_cache
 
 from newrelic.common.encoding_utils import json_encode
 
@@ -94,7 +94,7 @@ def collect_stack_traces(include_nr_threads=False, include_xrays=False):
 
     """
     for (txn, thread_id, thread_category, frame) in \
-            transaction_cache().active_threads():
+            trace_cache().active_threads():
 
         # Skip NR Threads unless explicitly requested.
 

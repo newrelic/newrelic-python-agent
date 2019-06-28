@@ -59,6 +59,9 @@ def test_coroutine_timing(trace, metric):
     assert full_metrics[metric_key].total_call_time >= 0.2
 
 
+@pytest.mark.xfail(strict=True,
+        reason="Without propogating context on task creation "
+        "parenting of async function traces will be incorrect.")
 @validate_tt_parenting(
     ('TransactionNode', [
         ('FunctionNode', [
@@ -367,6 +370,9 @@ def test_coroutine_time_excludes_creation_time():
     assert full_metrics[('Function/coro', '')].total_call_time < 0.1
 
 
+@pytest.mark.xfail(strict=True,
+        reason="Without propogating context on task creation "
+        "parenting of async function traces will be incorrect.")
 @validate_tt_parenting(
     ('TransactionNode', [
         ('FunctionNode', []),  # coro

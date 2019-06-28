@@ -132,7 +132,7 @@ class TraceCache(object):
         if (thread_id in self._cache and
                 self._cache[thread_id].transaction is not trace.transaction):
             _logger.error('Runtime instrumentation error. Attempt to '
-                    'to save a trace from an inactive transaction. '
+                    'save a trace from an inactive transaction. '
                     'Report this issue to New Relic support.\n%s',
                     ''.join(traceback.format_stack()[:-1]))
 
@@ -167,7 +167,7 @@ class TraceCache(object):
 
         if thread_id not in self._cache:
             _logger.error('Runtime instrumentation error. Attempt to '
-                    'to drop the trace but where none is active. '
+                    'drop the trace but where none is active. '
                     'Report this issue to New Relic support.\n%s',
                     ''.join(traceback.format_stack()[:-1]))
 
@@ -177,7 +177,7 @@ class TraceCache(object):
 
         if trace is not current:
             _logger.error('Runtime instrumentation error. Attempt to '
-                    'to drop the trace when it is not the current '
+                    'drop the trace when it is not the current '
                     'trace. Report this issue to New Relic support.\n%s',
                     ''.join(traceback.format_stack()[:-1]))
 

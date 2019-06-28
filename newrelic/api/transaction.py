@@ -294,32 +294,7 @@ class Transaction(object):
         if not self._settings:
             return
 
-        # Ensure that we are actually back at the top of
-        # transaction call stack. Assume that it is an
-        # instrumentation error and return with hope that
-        # will recover later.
-
-        for _ in range(self._settings.agent_limits.max_outstanding_traces):
-            if isinstance(self.current_span, Sentinel):
-                break
-            self.current_span._force_exit(None, None, None)
-        else:
-            _logger.error('Transaction ended but current_span is not Sentinel.'
-                    ' Current node is %r. Report this issue to New Relic '
-                    'support.\n%s', self.current_span, ''.join(
-                    traceback.format_stack()[:-1]))
-            return
-
-        # Mark as stopped and drop the transaction from
-        # thread/coroutine local storage.
-        #
-        # Note that we validate the saved transaction ID
-        # against that for the current transaction object
-        # to protect against situations where a copy was
-        # made of the transaction object for some reason.
-        # Such a copy when garbage collected could trigger
-        # this function and cause a deadlock if it occurs
-        # while original transaction was being recorded.
+        root = self.current_span
 
         self._state = self.STATE_STOPPED
 

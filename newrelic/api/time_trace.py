@@ -2,6 +2,7 @@ import logging
 import random
 import time
 import traceback
+from newrelic.core.trace_cache import trace_cache
 
 _logger = logging.getLogger(__name__)
 
@@ -36,7 +37,7 @@ class TimeTrace(object):
                 self.transaction = None
                 return
 
-            self.parent = transaction.active_span()
+            self.parent = trace_cache().current_trace()
 
             # parent shall track children immediately
             if self.parent is not None:
@@ -54,6 +55,13 @@ class TimeTrace(object):
 
             self.should_record_segment_params = (
                     transaction.should_record_segment_params)
+
+    @property
+    def thread_id(self):
+        if not self.transaction:
+            return
+
+        return self.transaction.thread_id
 
     def __enter__(self):
         if not self.transaction:
@@ -75,7 +83,11 @@ class TimeTrace(object):
 
         # Push ourselves as the current node.
 
-        self.transaction._push_current(self)
+        try:
+            trace_cache().save_trace(self)
+        except:
+            self.transaction = None
+            raise
 
         self.activated = True
 
@@ -128,7 +140,7 @@ class TimeTrace(object):
 
         # Since we're exited we can't possibly schedule more children but we
         # may have children still running if we're async
-        self.transaction._pop_current(self)
+        trace_cache().save_trace(self.parent)
 
         self.exc_data = (exc, value, tb)
 
@@ -171,20 +183,20 @@ class TimeTrace(object):
 
             return
 
+        # wipe out parent
+        parent = self.parent
+        self.parent = None
+
+        # Pop ourselves as current node.
+
+        trace_cache().save_trace(parent)
+
         # Wipe out transaction reference so can't use object
         # again. Retain reference as local variable for use in
         # this call though.
 
         transaction = self.transaction
         self.transaction = None
-
-        # Pop ourselves as current node.
-
-        transaction._pop_current(self)
-
-        # wipe out parent too
-        parent = self.parent
-        self.parent = None
 
         # wipe out exc data
         exc_data = self.exc_data
@@ -294,3 +306,7 @@ class TimeTrace(object):
         # completed
         else:
             self.has_async_children = False
+
+
+def current_trace():
+    return trace_cache().current_trace()

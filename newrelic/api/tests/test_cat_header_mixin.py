@@ -2,7 +2,7 @@ import newrelic.tests.test_cases
 
 from newrelic.api.application import application_instance
 from newrelic.api.message_trace import MessageTrace
-from newrelic.api.transaction import Transaction, current_transaction
+from newrelic.api.transaction import Transaction
 
 application = application_instance()
 
@@ -12,10 +12,6 @@ class TestProcessResponseHeaders(newrelic.tests.test_cases.TestCase):
     def setUp(self):
         super(TestProcessResponseHeaders, self).setUp()
         self.transaction = Transaction(application)
-
-    def tearDown(self):
-        if current_transaction():
-            self.transaction.drop_transaction()
 
     def test_process_response_headers_message_trace_with_transaction(self):
         with self.transaction:

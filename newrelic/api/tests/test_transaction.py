@@ -5,12 +5,12 @@ import unittest
 import newrelic.api.settings
 
 from newrelic.api.application import application_instance
-from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.transaction import (current_transaction,
         accept_distributed_trace_payload, create_distributed_trace_payload)
 from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.core.config import finalize_application_settings
 from newrelic.core.adaptive_sampler import AdaptiveSampler
+from newrelic.core.trace_cache import trace_cache
 
 import newrelic.tests.test_cases
 
@@ -182,7 +182,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
     def test_distributed_trace_with_spans_no_parent(self):
         with self.transaction:
-            self.transaction.current_span.guid = 'abcde'
+            trace_cache().current_trace().guid = 'abcde'
             self.transaction.guid = 'this is guid'
 
             # ID and parent should be from the span

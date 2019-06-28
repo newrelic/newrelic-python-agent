@@ -6,15 +6,13 @@ import time
 from testing_support.fixtures import (validate_transaction_metrics,
         capture_transaction_metrics, validate_transaction_errors,
         validate_tt_parenting)
-from newrelic.api.transaction import current_transaction
 from newrelic.api.background_task import background_task
-from newrelic.api.database_trace import database_trace, DatabaseTrace
-from newrelic.api.datastore_trace import datastore_trace, DatastoreTrace
-from newrelic.api.function_trace import function_trace, FunctionTrace
-from newrelic.api.external_trace import external_trace, ExternalTrace
-from newrelic.api.memcache_trace import memcache_trace, MemcacheTrace
-from newrelic.api.message_trace import message_trace, MessageTrace
-from newrelic.common.coroutine import TraceContext
+from newrelic.api.database_trace import database_trace
+from newrelic.api.datastore_trace import datastore_trace
+from newrelic.api.function_trace import function_trace
+from newrelic.api.external_trace import external_trace
+from newrelic.api.memcache_trace import memcache_trace
+from newrelic.api.message_trace import message_trace
 
 is_pypy = hasattr(sys, 'pypy_version_info')
 

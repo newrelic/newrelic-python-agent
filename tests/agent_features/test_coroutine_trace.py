@@ -401,29 +401,6 @@ def test_coroutine_saves_trace():
     list(_child)
 
 
-@validate_transaction_metrics(
-        'test_supportability_metric',
-        background_task=True,
-        scoped_metrics=[('Function/coro', 1)],
-        rollup_metrics=[('Supportability/Python/'
-                'TraceContext/ExitNodeMismatch', 1),
-                ('Function/coro', 1)],
-)
-@background_task(name='test_supportability_metric')
-def test_supportability_metric():
-    txn = current_transaction()
-    current_span = txn.current_span
-
-    @function_trace(name='coro')
-    def coro():
-        # change the current node for no good reason
-        txn.current_span = current_span
-        yield
-
-    for _ in coro():
-        pass
-
-
 @pytest.mark.parametrize('nr_transaction', [True, False])
 def test_incomplete_coroutine(nr_transaction):
 
@@ -464,29 +441,6 @@ def test_incomplete_coroutine(nr_transaction):
         )(background_task(name='test_incomplete_coroutine')(_test))
 
     _test()
-
-
-@pytest.mark.parametrize('trace', [
-    functools.partial(FunctionTrace, name='simple_gen'),
-    functools.partial(ExternalTrace, library='lib', url='http://foo.com'),
-    functools.partial(DatabaseTrace, sql='select * from foo'),
-    functools.partial(
-            DatastoreTrace, product='lib', target='foo', operation='bar'),
-    functools.partial(MessageTrace, library='lib', operation='op',
-            destination_type='typ', destination_name='name'),
-    functools.partial(MemcacheTrace, command='cmd'),
-])
-def test_context_no_transaction(trace):
-    # Pass it no transaction
-    trace = trace(None)
-
-    context = TraceContext(trace)
-
-    # Check to see that context does not crash
-    with context:
-        pass
-
-    context.close()
 
 
 if sys.version_info >= (3, 5):

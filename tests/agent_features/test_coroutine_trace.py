@@ -1,3 +1,4 @@
+import gc
 import functools
 import pytest
 import sys
@@ -333,12 +334,16 @@ def test_catching_generator_exit_causes_runtime_error():
     gen = coro()
 
     # kickstart the coroutine (we're inside the try now)
-    next(gen)
+    gen.send(None)
 
     # Generators cannot catch generator exit exceptions (which are injected by
     # close). This will result in a runtime error.
     with pytest.raises(RuntimeError):
         gen.close()
+
+    if is_pypy:
+        gen = None
+        gc.collect()
 
 
 @validate_transaction_metrics(

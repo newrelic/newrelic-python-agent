@@ -126,6 +126,7 @@ def test_coroutine_error():
     @background_task(name='test_coroutine_error')
     def _test():
         gen = coro()
+        gen.send(None)
         gen.throw(MyException)
 
     with pytest.raises(MyException):

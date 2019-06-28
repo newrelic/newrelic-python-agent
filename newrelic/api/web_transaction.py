@@ -11,7 +11,7 @@ except ImportError:
 from newrelic.api.application import Application, application_instance
 from newrelic.api.transaction import Transaction, current_transaction
 
-from newrelic.common.coroutine import async_proxy, TransactionContext
+from newrelic.common.async_proxy import async_proxy, TransactionContext
 from newrelic.common.encoding_utils import (obfuscate, json_encode,
         decode_newrelic_header, ensure_str)
 

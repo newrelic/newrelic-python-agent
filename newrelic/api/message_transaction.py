@@ -7,7 +7,7 @@ from newrelic.api.background_task import BackgroundTask
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
-from newrelic.common.coroutine import async_proxy, TransactionContext
+from newrelic.common.async_proxy import async_proxy, TransactionContext
 
 
 class MessageTransaction(BackgroundTask):

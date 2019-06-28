@@ -1,6 +1,7 @@
 import pytest
 
 from newrelic.api.transaction import current_transaction
+from newrelic.api.time_trace import current_trace
 from newrelic.api.background_task import background_task
 
 from newrelic.api.database_trace import DatabaseTrace
@@ -32,8 +33,7 @@ def test_span_events(dt_enabled, span_events_enabled, txn_sampled):
 
     @function_trace(name='function')
     def function():
-        txn = current_transaction()
-        txn.current_span.guid = function_guid
+        current_trace().guid = function_guid
         child()
 
     _settings = {
@@ -82,7 +82,7 @@ def test_span_events(dt_enabled, span_events_enabled, txn_sampled):
     def _test():
         # Force intrinsics
         txn = current_transaction()
-        txn.current_span.guid = sentinel_guid
+        current_trace().guid = sentinel_guid
         txn.guid = guid
         txn._priority = priority
         txn._sampled = txn_sampled

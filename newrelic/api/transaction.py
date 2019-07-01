@@ -76,7 +76,7 @@ class Transaction(object):
 
         self._application = application
 
-        self.thread_id = trace_cache().current_thread_id()
+        self.thread_id = None
 
         self._transaction_id = id(self)
         self._transaction_lock = threading.Lock()
@@ -262,6 +262,12 @@ class Transaction(object):
                 self._utilization_tracker.enter_transaction(thread_instance)
                 self._thread_utilization_start = \
                         self._utilization_tracker.utilization_count()
+
+        # Set the thread ID upon entering the transaction.
+        # This is done here so that any asyncio tasks will
+        # be active and the task ID will be used to
+        # store traces into the trace cache.
+        self.thread_id = trace_cache().current_thread_id()
 
         # Create the root span which pushes itself
         # into the trace cache as the active trace.

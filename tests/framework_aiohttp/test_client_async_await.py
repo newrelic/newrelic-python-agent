@@ -51,9 +51,6 @@ test_matrix = (
 )
 
 
-@pytest.mark.xfail(
-        reason="Parenting is not correct for concurrent fetch while we "
-               "transition to a trace cache.", strict=True)
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_client_async_await(local_server_info, method, exc_expected):
 
@@ -200,14 +197,11 @@ test_ws_matrix = (
 )
 
 
-@pytest.mark.xfail(
-        reason="Parenting is not correct for concurrent fetch while we "
-               "transition to a trace cache.", strict=True)
 @pytest.mark.parametrize('method,exc_expected', test_ws_matrix)
 def test_ws_connect_async_await(local_server_info, method, exc_expected):
 
     @validate_transaction_metrics(
-        'test_ws_connect_async_await',
+        'fetch_multiple',
         background_task=True,
         scoped_metrics=[
             (local_server_info.base_metric + 'GET', 2),
@@ -223,7 +217,6 @@ def test_ws_connect_async_await(local_server_info, method, exc_expected):
     task_test()
 
 
-@pytest.mark.xfail(reason="Waiting on PYTHON-3292", strict=True)
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_create_task_async_await(local_server_info, method, exc_expected):
 

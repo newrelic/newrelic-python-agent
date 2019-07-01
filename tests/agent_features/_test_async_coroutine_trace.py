@@ -35,7 +35,7 @@ def test_awaitable_timing(trace, metric):
     async def coro():
         await asyncio.sleep(0.1)
 
-    @function_trace(name='parent')
+    @background_task(name='test_awaitable')
     async def parent():
         await coro()
 
@@ -48,7 +48,6 @@ def test_awaitable_timing(trace, metric):
             background_task=True,
             scoped_metrics=[(metric, 1)],
             rollup_metrics=[(metric, 1)])
-    @background_task(name='test_awaitable')
     def _test():
         loop = asyncio.get_event_loop()
         loop.run_until_complete(parent())
@@ -93,14 +92,14 @@ def test_asyncio_decorator_timing(trace, metric, yield_from,
         coro = asyncio.coroutine(trace()(coro))
 
     if use_await:
-        @function_trace(name='parent')
         async def parent():
             await coro()
     else:
-        @function_trace(name='parent')
         @asyncio.coroutine
         def parent():
             yield from coro()
+
+    parent = background_task(name='test_awaitable')(parent)
 
     metrics = []
     full_metrics = {}
@@ -111,7 +110,6 @@ def test_asyncio_decorator_timing(trace, metric, yield_from,
             background_task=True,
             scoped_metrics=[(metric, 1)],
             rollup_metrics=[(metric, 1)])
-    @background_task(name='test_awaitable')
     def _test():
         loop = asyncio.get_event_loop()
         loop.run_until_complete(parent())

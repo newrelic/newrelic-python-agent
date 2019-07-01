@@ -25,6 +25,10 @@ unreleased
   The TransactionContext API is no longer supported and has been removed in
   this release.
 
+- Remove support for Python 3.4
+
+  Python 3.4 is no longer supported by the Python Agent.
+
 4.20.1 (2019-06-21)
 -------------------
 

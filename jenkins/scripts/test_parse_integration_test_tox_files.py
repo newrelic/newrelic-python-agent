@@ -60,7 +60,7 @@ _test_get_envs_tox_file_complex = """
 [tox]
 setupdir = {toxinidir}/../..
 envlist =
-    {py27,py34,py35,py36}-Django0110-{old,new}-middleware-{with,without}-extensions,
+    {py27,py35,py36}-Django0110-{old,new}-middleware-{with,without}-extensions,
     pypy-Django0110-{old,new}-middleware-without-extensions,
 
 [jenkins]
@@ -98,11 +98,11 @@ _test_get_envs_tox_file_multi_version = """
 setupdir = {toxinidir}/../..
 envlist =
     {py26,py27}-Django{0103,0104}-{with,without}-extensions,
-    {py26,py27,py33,py34}-Django{0105,0106}-{with,without}-extensions,
-    {py27,py33,py34}-Django{0107}-{with,without}-extensions,
-    {py27,py33,py34,py35,py36}-Django{0108}-{with,without}-extensions,
-    {py27,py34,py35,py36}-Django0109-{with,without}-extensions,
-    {py27,py34,py35,py36}-Django0110-{old,new}-middleware-{with,without}-extensions,
+    {py26,py27,py33}-Django{0105,0106}-{with,without}-extensions,
+    {py27,py33}-Django{0107}-{with,without}-extensions,
+    {py27,py33,py35,py36}-Django{0108}-{with,without}-extensions,
+    {py27,py35,py36}-Django0109-{with,without}-extensions,
+    {py27,py35,py36}-Django0110-{old,new}-middleware-{with,without}-extensions,
     pypy-Django{0103,0104,0105,0106,0107,0108,0109}-without-extensions,
     pypy-Django0110-{old,new}-middleware-without-extensions,
     pypy3-Django{0105,0106,0107,0108}-without-extensions,
@@ -158,30 +158,20 @@ _test_get_envs_all_django_envs = [
     'py33-Django0105-without-extensions',
     'py33-Django0106-with-extensions',
     'py33-Django0106-without-extensions',
-    'py34-Django0105-with-extensions',
-    'py34-Django0105-without-extensions',
-    'py34-Django0106-with-extensions',
-    'py34-Django0106-without-extensions',
     'py27-Django0107-with-extensions',
     'py27-Django0107-without-extensions',
     'py33-Django0107-with-extensions',
     'py33-Django0107-without-extensions',
-    'py34-Django0107-with-extensions',
-    'py34-Django0107-without-extensions',
     'py27-Django0108-with-extensions',
     'py27-Django0108-without-extensions',
     'py33-Django0108-with-extensions',
     'py33-Django0108-without-extensions',
-    'py34-Django0108-with-extensions',
-    'py34-Django0108-without-extensions',
     'py35-Django0108-with-extensions',
     'py35-Django0108-without-extensions',
     'py36-Django0108-with-extensions',
     'py36-Django0108-without-extensions',
     'py27-Django0109-with-extensions',
     'py27-Django0109-without-extensions',
-    'py34-Django0109-with-extensions',
-    'py34-Django0109-without-extensions',
     'py35-Django0109-with-extensions',
     'py35-Django0109-without-extensions',
     'py36-Django0109-with-extensions',
@@ -190,10 +180,6 @@ _test_get_envs_all_django_envs = [
     'py27-Django0110-old-middleware-without-extensions',
     'py27-Django0110-new-middleware-with-extensions',
     'py27-Django0110-new-middleware-without-extensions',
-    'py34-Django0110-old-middleware-with-extensions',
-    'py34-Django0110-old-middleware-without-extensions',
-    'py34-Django0110-new-middleware-with-extensions',
-    'py34-Django0110-new-middleware-without-extensions',
     'py35-Django0110-old-middleware-with-extensions',
     'py35-Django0110-old-middleware-without-extensions',
     'py35-Django0110-new-middleware-with-extensions',
@@ -222,10 +208,6 @@ _test_get_envs_django_0110_envs = [
     'py27-Django0110-old-middleware-without-extensions',
     'py27-Django0110-new-middleware-with-extensions',
     'py27-Django0110-new-middleware-without-extensions',
-    'py34-Django0110-old-middleware-with-extensions',
-    'py34-Django0110-old-middleware-without-extensions',
-    'py34-Django0110-new-middleware-with-extensions',
-    'py34-Django0110-new-middleware-without-extensions',
     'py35-Django0110-old-middleware-with-extensions',
     'py35-Django0110-old-middleware-without-extensions',
     'py35-Django0110-new-middleware-with-extensions',
@@ -241,8 +223,6 @@ _test_get_envs_django_0110_envs = [
 _test_get_envs_django_0110_envs_no_cext = [
     'py27-Django0110-old-middleware-without-extensions',
     'py27-Django0110-new-middleware-without-extensions',
-    'py34-Django0110-old-middleware-without-extensions',
-    'py34-Django0110-new-middleware-without-extensions',
     'py35-Django0110-old-middleware-without-extensions',
     'py35-Django0110-new-middleware-without-extensions',
     'py36-Django0110-old-middleware-without-extensions',
@@ -352,7 +332,7 @@ class TestGetEnvs(unittest.TestCase):
 _test_is_disabled_tox_file_no_jenkins_section = """
 [tox]
 envlist =
-    {py27,py34,py35,py36}-Django0110-{old,new}-middleware-{with,without}-extensions,
+    {py27,py35,py36}-Django0110-{old,new}-middleware-{with,without}-extensions,
     pypy-Django0110-{old,new}-middleware-without-extensions,
 
 [pytest]
@@ -362,7 +342,7 @@ usefixtures = session_initialization requires_data_collector
 _test_is_disabled_tox_file_no_disabled_option = """
 [tox]
 envlist =
-    {py27,py34,py35,py36}-Django0110-{old,new}-middleware-{with,without}-extensions,
+    {py27,py35,py36}-Django0110-{old,new}-middleware-{with,without}-extensions,
     pypy-Django0110-{old,new}-middleware-without-extensions,
 
 [jenkins]
@@ -375,7 +355,7 @@ usefixtures = session_initialization requires_data_collector
 _test_is_disabled_tox_file_disabled_true = """
 [tox]
 envlist =
-    {py27,py34,py35,py36}-Django0110-{old,new}-middleware-{with,without}-extensions,
+    {py27,py35,py36}-Django0110-{old,new}-middleware-{with,without}-extensions,
     pypy-Django0110-{old,new}-middleware-without-extensions,
 
 [jenkins]
@@ -389,7 +369,7 @@ usefixtures = session_initialization requires_data_collector
 _test_is_disabled_tox_file_disabled_false = """
 [tox]
 envlist =
-    {py27,py34,py35,py36}-Django0110-{old,new}-middleware-{with,without}-extensions,
+    {py27,py35,py36}-Django0110-{old,new}-middleware-{with,without}-extensions,
     pypy-Django0110-{old,new}-middleware-without-extensions,
 
 [jenkins]
@@ -436,7 +416,7 @@ class TestIsDisabled(unittest.TestCase):
 _test_most_recent_tox_file_no_jenkins_section = """
 [tox]
 envlist =
-    {py27,py34,py35,py36}-Django0110-{old,new}-middleware-{with,without}-extensions,
+    {py27,py35,py36}-Django0110-{old,new}-middleware-{with,without}-extensions,
     pypy-Django0110-{old,new}-middleware-without-extensions,
 
 [pytest]
@@ -446,7 +426,7 @@ usefixtures = session_initialization requires_data_collector
 _test_most_recent_tox_file_no_most_recent_option = """
 [tox]
 envlist =
-    {py27,py34,py35,py36}-Django0110-{old,new}-middleware-{with,without}-extensions,
+    {py27,py35,py36}-Django0110-{old,new}-middleware-{with,without}-extensions,
     pypy-Django0110-{old,new}-middleware-without-extensions,
 
 [jenkins]
@@ -459,7 +439,7 @@ usefixtures = session_initialization requires_data_collector
 _test_most_recent_tox_file_most_recent_option_set = """
 [tox]
 envlist =
-    {py27,py34,py35,py36}-Django0110-{old,new}-middleware-{with,without}-extensions,
+    {py27,py35,py36}-Django0110-{old,new}-middleware-{with,without}-extensions,
     pypy-Django0110-{old,new}-middleware-without-extensions,
 
 [jenkins]

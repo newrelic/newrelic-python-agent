@@ -36,7 +36,6 @@ RUN add-apt-repository -y ppa:deadsnakes/ppa && \
     apt-get update && \
     apt-get install -y \
     python2.7-dev \
-    python3.4-dev \
     python3.6-dev \
     python3.7-dev
 

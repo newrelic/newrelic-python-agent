@@ -111,7 +111,3 @@ def local_server_info(external):
     metric = 'External/%s/aiohttp/' % host_port
     url = 'http://' + host_port
     return ServerInfo(metric, url)
-
-
-if sys.version_info < (3, 5):
-    collect_ignore = ['test_client_async_await.py']

@@ -1373,6 +1373,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/coroutines_asyncio.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/coroutines_gevent.py": {
         "hash": "n/a",
         "libraries": [

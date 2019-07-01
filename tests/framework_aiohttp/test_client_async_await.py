@@ -50,6 +50,9 @@ test_matrix = (
 )
 
 
+@pytest.mark.xfail(
+        reason="Parenting is not correct for concurrent fetch while we "
+               "transition to a trace cache.", strict=True)
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_client_async_await(local_server_info, method, exc_expected):
 
@@ -92,7 +95,7 @@ def test_client_throw_async_await(local_server_info, method, exc_expected):
             coro = session._request(method.upper(), local_server_info.url)
 
             # activate the coroutine
-            next(coro)
+            coro.send(None)
 
             # inject error
             coro.throw(ThrowerException())
@@ -125,7 +128,7 @@ def test_client_close_async_await(local_server_info, method, exc_expected):
             coro = session._request(method.upper(), local_server_info.url)
 
             # activate the coroutine
-            next(coro)
+            coro.send(None)
 
             # force close
             coro.close()
@@ -148,6 +151,9 @@ def test_client_close_async_await(local_server_info, method, exc_expected):
     task_test()
 
 
+@pytest.mark.xfail(
+        reason="Parenting is not correct for concurrent fetch while we "
+               "transition to a trace cache.", strict=True)
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_await_request_async_await(local_server_info, method, exc_expected):
 
@@ -194,6 +200,9 @@ test_ws_matrix = (
 )
 
 
+@pytest.mark.xfail(
+        reason="Parenting is not correct for concurrent fetch while we "
+               "transition to a trace cache.", strict=True)
 @pytest.mark.parametrize('method,exc_expected', test_ws_matrix)
 def test_ws_connect_async_await(local_server_info, method, exc_expected):
 

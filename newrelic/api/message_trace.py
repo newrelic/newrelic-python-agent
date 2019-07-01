@@ -1,6 +1,6 @@
 import functools
 
-from newrelic.common.coroutine import async_proxy, TraceContext
+from newrelic.common.async_wrapper import async_wrapper
 from newrelic.api.cat_header_mixin import CatHeaderMixin
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import current_transaction
@@ -111,9 +111,9 @@ def MessageTraceWrapper(wrapped, library, operation, destination_type,
         trace = MessageTrace(transaction, _library, _operation,
                 _destination_type, _destination_name, params={})
 
-        proxy = async_proxy(wrapped)
-        if proxy:
-            return proxy(wrapped(*args, **kwargs), TraceContext(trace))
+        wrapper = async_wrapper(wrapped)
+        if wrapper:
+            return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:
             return wrapped(*args, **kwargs)

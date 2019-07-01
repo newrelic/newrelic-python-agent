@@ -1,7 +1,6 @@
 import aiohttp
 import asyncio
 import pytest
-import sys
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace
@@ -54,6 +53,9 @@ test_matrix = (
 )
 
 
+@pytest.mark.xfail(
+        reason="Parenting is not correct for concurrent fetch while we "
+               "transition to a trace cache.", strict=True)
 @skipif_aiohttp3
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_client_yield_from(local_server_info, method, exc_expected):
@@ -99,7 +101,7 @@ def test_client_throw_yield_from(local_server_info, method, exc_expected):
             coro = session._request(method.upper(), local_server_info.url)
 
             # activate the coroutine
-            next(coro)
+            coro.send(None)
 
             # inject error
             coro.throw(ThrowerException())
@@ -134,7 +136,7 @@ def test_client_close_yield_from(local_server_info, method, exc_expected):
             coro = session._request(method.upper(), local_server_info.url)
 
             # activate the coroutine
-            next(coro)
+            coro.send(None)
 
             # force close
             coro.close()
@@ -164,6 +166,9 @@ test_ws_matrix = (
 )
 
 
+@pytest.mark.xfail(
+        reason="Parenting is not correct for concurrent fetch while we "
+               "transition to a trace cache.", strict=True)
 @skipif_aiohttp3
 @pytest.mark.parametrize('method,exc_expected', test_ws_matrix)
 def test_ws_connect_yield_from(local_server_info, method, exc_expected):

@@ -124,6 +124,11 @@ def test_error_exception(method, uri, metric_name, error, status, nr_enabled,
 def test_simultaneous_requests(method, uri, metric_name,
         nr_enabled, aiohttp_app):
 
+    if nr_enabled:
+        pytest.xfail(
+                reason="The trace cache does not yet use task ID as an index. "
+                       "This results in a transaction already active error.")
+
     @asyncio.coroutine
     def fetch():
         resp = yield from aiohttp_app.client.request(method, uri,

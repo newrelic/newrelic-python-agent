@@ -4,6 +4,7 @@ from newrelic.common.object_wrapper import (wrap_function_wrapper,
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.function_trace import FunctionTrace, wrap_function_trace
 from newrelic.api.transaction import current_transaction
+from newrelic.api.time_trace import current_trace
 from newrelic.common.object_names import callable_name
 from newrelic.api.external_trace import ExternalTrace
 
@@ -76,7 +77,7 @@ def wrapper_GearmanConnectionManager_handle_function(wrapped, instance,
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    tracer = transaction.active_span()
+    tracer = current_trace()
 
     if not isinstance(tracer, ExternalTrace):
         return wrapped(*args, **kwargs)

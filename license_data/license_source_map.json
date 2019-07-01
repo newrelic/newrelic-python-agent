@@ -713,6 +713,18 @@
             "time.monotonic"
         ]
     },
+    "newrelic/common/async_proxy.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/async_wrapper.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/cacert.pem": {
         "hash": "n/a",
         "libraries": [
@@ -1211,13 +1223,13 @@
             "New Relic"
         ]
     },
-    "newrelic/core/trace_node.py": {
+    "newrelic/core/trace_cache.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
         ]
     },
-    "newrelic/core/transaction_cache.py": {
+    "newrelic/core/trace_node.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

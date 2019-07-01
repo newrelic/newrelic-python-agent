@@ -122,7 +122,7 @@ class MockTransaction(WSGIWebTransaction):
         pass
 
 
-class MockTransactionCache(object):
+class MockTraceCache(object):
     def save_transaction(*args, **kwargs):
         pass
 

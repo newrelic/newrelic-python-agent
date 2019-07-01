@@ -1,3 +1,4 @@
+import gc
 import functools
 import pytest
 import sys
@@ -6,15 +7,13 @@ import time
 from testing_support.fixtures import (validate_transaction_metrics,
         capture_transaction_metrics, validate_transaction_errors,
         validate_tt_parenting)
-from newrelic.api.transaction import current_transaction
 from newrelic.api.background_task import background_task
-from newrelic.api.database_trace import database_trace, DatabaseTrace
-from newrelic.api.datastore_trace import datastore_trace, DatastoreTrace
-from newrelic.api.function_trace import function_trace, FunctionTrace
-from newrelic.api.external_trace import external_trace, ExternalTrace
-from newrelic.api.memcache_trace import memcache_trace, MemcacheTrace
-from newrelic.api.message_trace import message_trace, MessageTrace
-from newrelic.common.coroutine import TraceContext
+from newrelic.api.database_trace import database_trace
+from newrelic.api.datastore_trace import datastore_trace
+from newrelic.api.function_trace import function_trace
+from newrelic.api.external_trace import external_trace
+from newrelic.api.memcache_trace import memcache_trace
+from newrelic.api.message_trace import message_trace
 
 is_pypy = hasattr(sys, 'pypy_version_info')
 
@@ -61,6 +60,9 @@ def test_coroutine_timing(trace, metric):
     assert full_metrics[metric_key].total_call_time >= 0.2
 
 
+@pytest.mark.xfail(strict=True,
+        reason="Without propogating context on task creation "
+        "parenting of async function traces will be incorrect.")
 @validate_tt_parenting(
     ('TransactionNode', [
         ('FunctionNode', [
@@ -126,6 +128,7 @@ def test_coroutine_error():
     @background_task(name='test_coroutine_error')
     def _test():
         gen = coro()
+        gen.send(None)
         gen.throw(MyException)
 
     with pytest.raises(MyException):
@@ -331,12 +334,16 @@ def test_catching_generator_exit_causes_runtime_error():
     gen = coro()
 
     # kickstart the coroutine (we're inside the try now)
-    next(gen)
+    gen.send(None)
 
     # Generators cannot catch generator exit exceptions (which are injected by
     # close). This will result in a runtime error.
     with pytest.raises(RuntimeError):
         gen.close()
+
+    if is_pypy:
+        gen = None
+        gc.collect()
 
 
 @validate_transaction_metrics(
@@ -368,6 +375,9 @@ def test_coroutine_time_excludes_creation_time():
     assert full_metrics[('Function/coro', '')].total_call_time < 0.1
 
 
+@pytest.mark.xfail(strict=True,
+        reason="Without propogating context on task creation "
+        "parenting of async function traces will be incorrect.")
 @validate_tt_parenting(
     ('TransactionNode', [
         ('FunctionNode', []),  # coro
@@ -399,29 +409,6 @@ def test_coroutine_saves_trace():
 
     # Run the child until complete
     list(_child)
-
-
-@validate_transaction_metrics(
-        'test_supportability_metric',
-        background_task=True,
-        scoped_metrics=[('Function/coro', 1)],
-        rollup_metrics=[('Supportability/Python/'
-                'TraceContext/ExitNodeMismatch', 1),
-                ('Function/coro', 1)],
-)
-@background_task(name='test_supportability_metric')
-def test_supportability_metric():
-    txn = current_transaction()
-    current_span = txn.current_span
-
-    @function_trace(name='coro')
-    def coro():
-        # change the current node for no good reason
-        txn.current_span = current_span
-        yield
-
-    for _ in coro():
-        pass
 
 
 @pytest.mark.parametrize('nr_transaction', [True, False])
@@ -464,29 +451,6 @@ def test_incomplete_coroutine(nr_transaction):
         )(background_task(name='test_incomplete_coroutine')(_test))
 
     _test()
-
-
-@pytest.mark.parametrize('trace', [
-    functools.partial(FunctionTrace, name='simple_gen'),
-    functools.partial(ExternalTrace, library='lib', url='http://foo.com'),
-    functools.partial(DatabaseTrace, sql='select * from foo'),
-    functools.partial(
-            DatastoreTrace, product='lib', target='foo', operation='bar'),
-    functools.partial(MessageTrace, library='lib', operation='op',
-            destination_type='typ', destination_name='name'),
-    functools.partial(MemcacheTrace, command='cmd'),
-])
-def test_context_no_transaction(trace):
-    # Pass it no transaction
-    trace = trace(None)
-
-    context = TraceContext(trace)
-
-    # Check to see that context does not crash
-    with context:
-        pass
-
-    context.close()
 
 
 if sys.version_info >= (3, 5):

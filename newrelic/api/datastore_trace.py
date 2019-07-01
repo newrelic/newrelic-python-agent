@@ -1,6 +1,6 @@
 import functools
 
-from newrelic.common.coroutine import async_proxy, TraceContext
+from newrelic.common.async_wrapper import async_wrapper
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
@@ -169,9 +169,9 @@ def DatastoreTraceWrapper(wrapped, product, target, operation):
 
         trace = DatastoreTrace(transaction, _product, _target, _operation)
 
-        proxy = async_proxy(wrapped)
-        if proxy:
-            return proxy(wrapped(*args, **kwargs), TraceContext(trace))
+        wrapper = async_wrapper(wrapped)
+        if wrapper:
+            return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:
             return wrapped(*args, **kwargs)

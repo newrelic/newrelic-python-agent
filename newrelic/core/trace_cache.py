@@ -18,6 +18,21 @@ from newrelic.core.config import global_settings
 _logger = logging.getLogger(__name__)
 
 
+def current_task():
+    asyncio = sys.modules.get('asyncio')
+    if not asyncio:
+        return
+
+    current_task = getattr(asyncio, 'current_task', None)
+    if current_task is None:
+        current_task = getattr(asyncio.Task, 'current_task', None)
+
+    try:
+        return current_task()
+    except:
+        pass
+
+
 class TraceCache(object):
 
     def __init__(self):
@@ -47,6 +62,10 @@ class TraceCache(object):
             current = greenlet.getcurrent()
             if current is not None and current.parent:
                 return id(current)
+
+        task = current_task()
+        if task is not None:
+            return id(task)
 
         return thread.get_ident()
 

@@ -32,6 +32,8 @@ def coroutine_test(transaction, nr_enabled=True, does_hang=False,
 
         if call_exit:
             txn.__exit__(None, None, None)
+        else:
+            assert current_transaction() is txn
 
         try:
             if does_hang:
@@ -41,9 +43,6 @@ def coroutine_test(transaction, nr_enabled=True, does_hang=False,
         except GeneratorExit:
             if runtime_error:
                 yield from asyncio.sleep(0.0)
-
-        if not call_exit:
-            assert current_transaction() is txn
 
     return task
 

@@ -16,6 +16,7 @@ from newrelic.api.memcache_trace import memcache_trace
 from newrelic.api.message_trace import message_trace
 
 is_pypy = hasattr(sys, 'pypy_version_info')
+asyncio = pytest.importorskip('asyncio')
 
 
 @pytest.mark.parametrize('trace,metric', [
@@ -60,9 +61,6 @@ def test_coroutine_timing(trace, metric):
     assert full_metrics[metric_key].total_call_time >= 0.2
 
 
-@pytest.mark.xfail(strict=True,
-        reason="Without propogating context on task creation "
-        "parenting of async function traces will be incorrect.")
 @validate_tt_parenting(
     ('TransactionNode', [
         ('FunctionNode', [
@@ -82,33 +80,40 @@ def test_coroutine_siblings():
     # | child
     # | child
 
-    # Prior to adding coroutine trace, child would be a child of child
     # This test checks for the presence of 2 child metrics (which wouldn't be
     # the case if child was a child of child since child is terminal)
 
     @function_trace('child', terminal=True)
-    def child():
-        yield
+    @asyncio.coroutine
+    def child(wait, event=None):
+        if event:
+            event.set()
+        yield from wait.wait()
+
+    @asyncio.coroutine
+    def middle():
+        wait = asyncio.Event()
+        started = asyncio.Event()
+
+        child_0 = asyncio.ensure_future(child(wait, started))
+
+        # Wait for the first child to start
+        yield from started.wait()
+
+        child_1 = asyncio.ensure_future(child(wait))
+
+        # Allow children to complete
+        wait.set()
+        yield from child_1
+        yield from child_0
 
     @function_trace('parent')
+    @asyncio.coroutine
     def parent():
-        coros = [child()]
+        yield from asyncio.ensure_future(middle())
 
-        # start one of the children before the other
-        next(coros[-1])
-
-        coros.insert(0, child())
-
-        while coros:
-            coro = coros.pop(0)
-            try:
-                next(coro)
-            except StopIteration:
-                pass
-            else:
-                coros.append(coro)
-
-    parent()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(parent())
 
 
 class MyException(Exception):
@@ -373,42 +378,6 @@ def test_coroutine_time_excludes_creation_time():
     # check that the trace does not include the time between creation and
     # consumption
     assert full_metrics[('Function/coro', '')].total_call_time < 0.1
-
-
-@pytest.mark.xfail(strict=True,
-        reason="Without propogating context on task creation "
-        "parenting of async function traces will be incorrect.")
-@validate_tt_parenting(
-    ('TransactionNode', [
-        ('FunctionNode', []),  # coro
-        ('FunctionNode', [  # child
-            ('FunctionNode', []),  # child-coro
-        ]),
-    ],
-))
-@background_task(name='test_coroutine_saves_trace')
-def test_coroutine_saves_trace():
-    @function_trace(name='coro')
-    def coro():
-        yield
-
-    @function_trace(name='child')
-    def child(_coro):
-        yield
-        # This should exhaust the coro and hopefully not change the current
-        # node
-        list(_coro)
-
-        # If the current node has been changed, this coroutine will be childed
-        # underneath a node other than "child" which is incorrect.
-        for _ in coro():
-            pass
-
-    _coro = coro()
-    _child = child(_coro)
-
-    # Run the child until complete
-    list(_child)
 
 
 @pytest.mark.parametrize('nr_transaction', [True, False])

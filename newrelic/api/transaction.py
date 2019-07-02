@@ -45,6 +45,9 @@ DISTRIBUTED_TRACE_TRANSPORT_TYPES = set((
 class Sentinel(TimeTrace):
     def __init__(self, transaction):
         super(Sentinel, self).__init__(transaction)
+        # Set the thread id to the same as the transaction before
+        # saving in the cache.
+        self.thread_id = transaction.thread_id
         trace_cache().save_trace(self)
 
     def process_child(self, node, ignore_exclusive=False):

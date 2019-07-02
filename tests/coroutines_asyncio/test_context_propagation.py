@@ -59,6 +59,13 @@ def test_context_propagation(nr_enabled, schedule):
     import asyncio
     loop = asyncio.get_event_loop()
 
+    exceptions = []
+
+    def handle_exception(loop, context):
+        exceptions.append(context)
+
+    loop.set_exception_handler(handle_exception)
+
     schedule = getattr(asyncio, schedule, None) or getattr(loop, schedule)
 
     # Override enabled flag
@@ -77,3 +84,6 @@ def test_context_propagation(nr_enabled, schedule):
     # run_until_complete has terminated (all callbacks scheduled inside the
     # task have run)
     assert not trace_cache()._cache
+
+    # Assert that no exceptions have occurred
+    assert not exceptions, exceptions

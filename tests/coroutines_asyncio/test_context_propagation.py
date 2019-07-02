@@ -3,6 +3,7 @@ from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import current_trace
 from newrelic.api.function_trace import function_trace
 from newrelic.core.trace_cache import trace_cache
+from newrelic.core.config import global_settings
 
 
 @function_trace(name='waiter')
@@ -23,9 +24,13 @@ async def task(asyncio, trace, event, wait):
 
 
 @background_task(name='test_context_propagation')
-async def _test(asyncio, schedule):
+async def _test(asyncio, nr_enabled, schedule):
     trace = current_trace()
-    assert trace is not None
+
+    if nr_enabled:
+        assert trace is not None
+    else:
+        assert trace is None
 
     events = [asyncio.Event() for _ in range(2)]
     wait = asyncio.Event()
@@ -45,16 +50,28 @@ async def _test(asyncio, schedule):
     return trace
 
 
-@pytest.mark.parametrize('schedule', ('create_task', 'ensure_future'))
-def test_context_propagation(schedule):
+@pytest.mark.parametrize('nr_enabled,schedule', (
+    (False, 'create_task'),
+    (True, 'create_task'),
+    (True, 'ensure_future'),
+))
+def test_context_propagation(nr_enabled, schedule):
     import asyncio
     loop = asyncio.get_event_loop()
 
     schedule = getattr(asyncio, schedule, None) or getattr(loop, schedule)
 
-    # Keep the trace around so that it's not removed from the trace cache
-    # through reference counting (for testing)
-    _ = loop.run_until_complete(_test(asyncio, schedule))
+    # Override enabled flag
+    settings = global_settings()
+    enabled = settings.enabled
+    settings.enabled = nr_enabled
+
+    try:
+        # Keep the trace around so that it's not removed from the trace cache
+        # through reference counting (for testing)
+        _ = loop.run_until_complete(_test(asyncio, nr_enabled, schedule))
+    finally:
+        settings.enabled = enabled
 
     # The agent should have removed all traces from the cache since
     # run_until_complete has terminated (all callbacks scheduled inside the

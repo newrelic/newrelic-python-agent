@@ -52,7 +52,7 @@ if native_coroutine_test:
     test_matrix.append(native_coroutine_test)
 
 
-@pytest.mark.parametrize('num_coroutines', (1,))
+@pytest.mark.parametrize('num_coroutines', (2,))
 @pytest.mark.parametrize('create_test_task', test_matrix)
 @pytest.mark.parametrize('transaction,metric', [
     (background_task(name='test'), 'OtherTransaction/Function/test'),
@@ -87,7 +87,7 @@ def test_async_coroutine_send(num_coroutines, create_test_task, transaction,
         assert not metrics, metrics
 
 
-@pytest.mark.parametrize('num_coroutines', (1,))
+@pytest.mark.parametrize('num_coroutines', (2,))
 @pytest.mark.parametrize('create_test_task', test_matrix)
 @pytest.mark.parametrize('transaction,metric', [
     (background_task(name='test'), 'OtherTransaction/Function/test'),
@@ -112,7 +112,7 @@ def test_async_coroutine_send_disabled(num_coroutines, create_test_task,
     assert metrics.count((metric, '')) == num_coroutines, metrics
 
 
-@pytest.mark.parametrize('num_coroutines', (1,))
+@pytest.mark.parametrize('num_coroutines', (2,))
 @pytest.mark.parametrize('create_test_task', test_matrix)
 @pytest.mark.parametrize('transaction,metric', [
     (background_task(name='test'), 'OtherTransaction/Function/test'),
@@ -145,7 +145,7 @@ def test_async_coroutine_throw_cancel(num_coroutines, create_test_task,
     assert metrics.count((metric, '')) == num_coroutines, metrics
 
 
-@pytest.mark.parametrize('num_coroutines', (1,))
+@pytest.mark.parametrize('num_coroutines', (2,))
 @pytest.mark.parametrize('create_test_task', test_matrix)
 @pytest.mark.parametrize('transaction,metric', [
     (background_task(name='test'), 'OtherTransaction/Function/test'),

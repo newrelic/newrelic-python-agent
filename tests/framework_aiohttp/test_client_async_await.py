@@ -51,9 +51,6 @@ test_matrix = (
 )
 
 
-@pytest.mark.xfail(
-        reason="Parenting is not correct for concurrent fetch while we "
-               "transition to a trace cache.", strict=True)
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_client_async_await(local_server_info, method, exc_expected):
 
@@ -151,13 +148,9 @@ def test_client_close_async_await(local_server_info, method, exc_expected):
     task_test()
 
 
-@pytest.mark.xfail(
-        reason="Parenting is not correct for concurrent fetch while we "
-               "transition to a trace cache.", strict=True)
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_await_request_async_await(local_server_info, method, exc_expected):
 
-    @background_task(name='test_await_request_async_await')
     async def request_with_await():
         async with aiohttp.ClientSession() as session:
             coro = session._request(method.upper(), local_server_info.url)
@@ -177,6 +170,7 @@ def test_await_request_async_await(local_server_info, method, exc_expected):
             (local_server_info.base_metric + method.upper(), 2),
         ],
     )
+    @background_task(name='test_await_request_async_await')
     def task_test():
         loop = asyncio.get_event_loop()
         coros = [request_with_await() for _ in range(2)]
@@ -200,14 +194,11 @@ test_ws_matrix = (
 )
 
 
-@pytest.mark.xfail(
-        reason="Parenting is not correct for concurrent fetch while we "
-               "transition to a trace cache.", strict=True)
 @pytest.mark.parametrize('method,exc_expected', test_ws_matrix)
 def test_ws_connect_async_await(local_server_info, method, exc_expected):
 
     @validate_transaction_metrics(
-        'test_ws_connect_async_await',
+        'fetch_multiple',
         background_task=True,
         scoped_metrics=[
             (local_server_info.base_metric + 'GET', 2),
@@ -223,7 +214,6 @@ def test_ws_connect_async_await(local_server_info, method, exc_expected):
     task_test()
 
 
-@pytest.mark.xfail(reason="Waiting on PYTHON-3292", strict=True)
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_create_task_async_await(local_server_info, method, exc_expected):
 

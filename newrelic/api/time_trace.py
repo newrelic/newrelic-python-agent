@@ -18,6 +18,7 @@ class TimeTrace(object):
         self.end_time = 0.0
         self.duration = 0.0
         self.exclusive = 0.0
+        self.thread_id = None
         self.activated = False
         self.exited = False
         self.is_async = False
@@ -56,12 +57,6 @@ class TimeTrace(object):
             self.should_record_segment_params = (
                     transaction.should_record_segment_params)
 
-    @property
-    def thread_id(self):
-        if not self.transaction:
-            return
-
-        return self.transaction.thread_id
 
     def __enter__(self):
         if not self.transaction:
@@ -81,10 +76,13 @@ class TimeTrace(object):
 
         self.start_time = time.time()
 
+        cache = trace_cache()
+        self.thread_id = cache.current_thread_id()
+
         # Push ourselves as the current node.
 
         try:
-            trace_cache().save_trace(self)
+            cache.save_trace(self)
         except:
             self.transaction = None
             raise

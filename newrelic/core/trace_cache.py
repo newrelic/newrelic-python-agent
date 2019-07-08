@@ -128,7 +128,7 @@ class TraceCache(object):
         if debug.enable_coroutine_profiling:
             for thread_id, trace in self._cache.items():
                 transaction = trace.transaction
-                if transaction._greenlet is not None:
+                if transaction and transaction._greenlet is not None:
                     gr = transaction._greenlet()
                     if gr and gr.gr_frame is not None:
                         if transaction.background_task:
@@ -149,7 +149,7 @@ class TraceCache(object):
         thread_id = trace.thread_id
 
         if (thread_id in self._cache and
-                self._cache[thread_id].transaction is not trace.transaction):
+                self._cache[thread_id].root is not trace.root):
             _logger.error('Runtime instrumentation error. Attempt to '
                     'save a trace from an inactive transaction. '
                     'Report this issue to New Relic support.\n%s',

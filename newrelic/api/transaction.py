@@ -44,7 +44,9 @@ DISTRIBUTED_TRACE_TRANSPORT_TYPES = set((
 
 class Sentinel(TimeTrace):
     def __init__(self, transaction):
-        super(Sentinel, self).__init__(transaction)
+        super(Sentinel, self).__init__(None)
+        self.transaction = transaction
+
         # Set the thread id to the same as the transaction before
         # saving in the cache.
         self.thread_id = transaction.thread_id
@@ -67,6 +69,14 @@ class Sentinel(TimeTrace):
     def transaction(self, value):
         if value:
             self._transaction = weakref.ref(value)
+
+    @property
+    def root(self):
+        return self
+
+    @root.setter
+    def root(self, value):
+        pass
 
 
 class Transaction(object):

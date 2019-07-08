@@ -6,7 +6,7 @@ from testing_support.settings import solr_settings
 from newrelic.api.background_task import background_task
 
 SOLR_HOST, SOLR_PORT = solr_settings()
-SOLR_URL = 'http://%s:%s/solr' % (SOLR_HOST, SOLR_PORT)
+SOLR_URL = 'http://%s:%s/solr/collection' % (SOLR_HOST, SOLR_PORT)
 
 def _exercise_solr(solr):
     solr.add([

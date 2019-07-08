@@ -68,7 +68,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         with transaction:
             time.sleep(0.5)
             try:
-                with newrelic.api.error_trace.ErrorTrace(transaction):
+                with newrelic.api.error_trace.ErrorTrace():
                     raise RuntimeError("runtime_error")
             except RuntimeError:
                 pass
@@ -158,7 +158,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         with transaction:
             time.sleep(0.5)
             try:
-                with newrelic.api.error_trace.ErrorTrace(transaction):
+                with newrelic.api.error_trace.ErrorTrace():
                     import sys
                     raise RuntimeError(u"runtime_error %s √√√√" %
                                        sys.getdefaultencoding())
@@ -172,7 +172,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         with transaction:
             time.sleep(0.5)
             try:
-                with newrelic.api.error_trace.ErrorTrace(transaction):
+                with newrelic.api.error_trace.ErrorTrace():
                     raise RuntimeError(b"runtime_error \xe2")
             except RuntimeError:
                 pass
@@ -188,7 +188,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             time.sleep(2.0)
             for i in range(25):
                 try:
-                    with newrelic.api.error_trace.ErrorTrace(transaction):
+                    with newrelic.api.error_trace.ErrorTrace():
                         raise RuntimeError("runtime_error %d" % i)
                 except RuntimeError:
                     pass
@@ -202,7 +202,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 time.sleep(2.0)
                 for i in range(10):
                     try:
-                        with newrelic.api.error_trace.ErrorTrace(transaction):
+                        with newrelic.api.error_trace.ErrorTrace():
                             raise RuntimeError("runtime_error %d" % i)
                     except RuntimeError:
                         pass

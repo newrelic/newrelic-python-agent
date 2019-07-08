@@ -87,7 +87,7 @@ def view_handler_wrapper(wrapped, instance, args, kwargs):
 
     transaction.set_transaction_name(name)
 
-    with FunctionTrace(transaction, name):
+    with FunctionTrace(name):
         try:
             return wrapped(*args, **kwargs)
 
@@ -135,7 +135,7 @@ def default_view_mapper_wrapper(wrapped, instance, args, kwargs):
 
         name = callable_name(view)
 
-        with FunctionTrace(transaction, name=name) as tracer:
+        with FunctionTrace(name=name) as tracer:
             try:
                 return wrapper(context, request)
             finally:

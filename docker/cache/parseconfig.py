@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-from ConfigParser import ConfigParser, NoOptionError
+try:
+    from ConfigParser import ConfigParser, NoOptionError
+except:
+    from configparser import ConfigParser, NoOptionError
 import os.path
 import string
 import sys
@@ -33,8 +36,8 @@ def extract_packages(tox_files):
             # Distribution names MUST start and end with an ASCII letter
             # or digit.
             filtered_deps = [d for d in stripped_deps if d and
-                    d[0] in (string.letters + string.digits) and
-                    d[-1] in (string.letters + string.digits)]
+                    d[0] in (string.ascii_letters + string.digits) and
+                    d[-1] in (string.ascii_letters + string.digits)]
             packages |= set(filtered_deps)
 
     return packages

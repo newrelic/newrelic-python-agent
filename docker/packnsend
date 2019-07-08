@@ -20,7 +20,7 @@ APP_SERVICE_IMAGES="
     mongodb \
     redis \
     elasticsearch \
-    solr4 \
+    solr \
     rabbitmq
     "
 

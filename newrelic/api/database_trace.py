@@ -2,8 +2,7 @@ import functools
 import logging
 
 from newrelic.common.async_wrapper import async_wrapper
-from newrelic.api.time_trace import TimeTrace
-from newrelic.api.transaction import current_transaction
+from newrelic.api.time_trace import TimeTrace, current_trace
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.database_node import DatabaseNode
 from newrelic.core.stack_trace import current_stack
@@ -37,15 +36,17 @@ class DatabaseTrace(TimeTrace):
 
     __async_explain_plan_logged = False
 
-    def __init__(self, transaction, sql, dbapi2_module=None,
+    def __init__(self, sql, dbapi2_module=None,
                  connect_params=None, cursor_params=None,
                  sql_parameters=None, execute_params=None,
-                 host=None, port_path_or_id=None, database_name=None):
+                 host=None, port_path_or_id=None, database_name=None,
+                 **kwargs):
 
-        super(DatabaseTrace, self).__init__(transaction)
+        parent = kwargs.get('parent')
+        super(DatabaseTrace, self).__init__(parent)
 
-        if transaction:
-            self.sql = transaction._intern_string(sql)
+        if self.transaction:
+            self.sql = self.transaction._intern_string(sql)
         else:
             self.sql = sql
 
@@ -204,9 +205,9 @@ class DatabaseTrace(TimeTrace):
 def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None):
 
     def _nr_database_trace_wrapper_(wrapped, instance, args, kwargs):
-        transaction = current_transaction()
+        parent = current_trace()
 
-        if transaction is None:
+        if parent is None:
             return wrapped(*args, **kwargs)
 
         if callable(sql):
@@ -217,7 +218,7 @@ def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None):
         else:
             _sql = sql
 
-        trace = DatabaseTrace(transaction, _sql, dbapi2_module)
+        trace = DatabaseTrace(_sql, dbapi2_module, parent=parent)
 
         wrapper = async_wrapper(wrapped)
         if wrapper:

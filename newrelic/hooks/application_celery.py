@@ -77,7 +77,7 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
             return wrapped(*args, **kwargs)
 
         elif transaction:
-            with FunctionTrace(transaction, callable_name(wrapped)):
+            with FunctionTrace(callable_name(wrapped)):
                 return wrapped(*args, **kwargs)
 
         else:

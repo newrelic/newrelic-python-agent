@@ -10,9 +10,8 @@ from newrelic.hooks.database_dbapi2 import (ConnectionWrapper as
 class ConnectionWrapper(DBAPI2ConnectionWrapper):
 
     def __enter__(self):
-        transaction = current_transaction()
         name = callable_name(self.__wrapped__.__enter__)
-        with FunctionTrace(transaction, name):
+        with FunctionTrace(name):
             self.__wrapped__.__enter__()
 
         # Must return a reference to self as otherwise will be
@@ -24,9 +23,8 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
         return self
 
     def __exit__(self, exc, value, tb):
-        transaction = current_transaction()
         name = callable_name(self.__wrapped__.__exit__)
-        with FunctionTrace(transaction, name):
+        with FunctionTrace(name):
             # XXX The pymssql client doesn't appear to to force a
             # commit or rollback from __exit__() explicitly. Need
             # to work out what its behaviour is around auto commit

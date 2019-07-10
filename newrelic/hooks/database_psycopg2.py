@@ -68,7 +68,7 @@ class ConnectionSaveParamsWrapper(DBAPI2ConnectionWrapper):
     def __enter__(self):
         transaction = current_transaction()
         name = callable_name(self.__wrapped__.__enter__)
-        with FunctionTrace(transaction, name):
+        with FunctionTrace(name):
             self.__wrapped__.__enter__()
 
         # Must return a reference to self as otherwise will be
@@ -82,13 +82,13 @@ class ConnectionSaveParamsWrapper(DBAPI2ConnectionWrapper):
     def __exit__(self, exc, value, tb):
         transaction = current_transaction()
         name = callable_name(self.__wrapped__.__exit__)
-        with FunctionTrace(transaction, name):
+        with FunctionTrace(name):
             if exc is None:
-                with DatabaseTrace(transaction, 'COMMIT',
+                with DatabaseTrace('COMMIT',
                         self._nr_dbapi2_module, self._nr_connect_params):
                     return self.__wrapped__.__exit__(exc, value, tb)
             else:
-                with DatabaseTrace(transaction, 'ROLLBACK',
+                with DatabaseTrace('ROLLBACK',
                         self._nr_dbapi2_module, self._nr_connect_params):
                     return self.__wrapped__.__exit__(exc, value, tb)
 

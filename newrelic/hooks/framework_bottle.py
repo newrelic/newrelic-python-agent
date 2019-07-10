@@ -50,7 +50,7 @@ def callback_wrapper(wrapped, instance, args, kwargs):
 
     transaction.set_transaction_name(name, priority=2)
 
-    with FunctionTrace(transaction, name):
+    with FunctionTrace(name):
         try:
             return wrapped(*args, **kwargs)
 

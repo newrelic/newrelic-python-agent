@@ -29,7 +29,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 application, environ)
         with transaction:
             with newrelic.api.message_trace.MessageTrace(
-                    transaction, library='RabbitMQ', operation='Consume',
+                    library='RabbitMQ', operation='Consume',
                     destination_type='Exchange', destination_name='x'):
                 pass
 
@@ -39,7 +39,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 application, environ)
 
         with newrelic.api.message_trace.MessageTrace(
-                transaction, library='RabbitMQ', operation='Consume',
+                library='RabbitMQ', operation='Consume',
                 destination_type='Exchange', destination_name='x'):
             pass
 
@@ -75,7 +75,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         params = {'cats': 'meow', 'dogs': 'wruff'}
         with transaction:
             with newrelic.api.message_trace.MessageTrace(
-                    transaction, library='RabbitMQ', operation='Consume',
+                    library='RabbitMQ', operation='Consume',
                     destination_type='Exchange', destination_name='x',
                     params=params) as mt:
                 assert mt.params == params
@@ -88,7 +88,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         params = {'cats': 'meow', 'dogs': 'wruff'}
         with transaction:
             with newrelic.api.message_trace.MessageTrace(
-                    transaction, library='RabbitMQ', operation='Consume',
+                    library='RabbitMQ', operation='Consume',
                     destination_type='Exchange', destination_name='x',
                     params=params) as mt:
                 assert not mt.params
@@ -102,7 +102,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
         with transaction:
             with newrelic.api.message_trace.MessageTrace(
-                    transaction, library='RabbitMQ', operation='Consume',
+                    library='RabbitMQ', operation='Consume',
                     destination_type='Exchange', destination_name='x'):
                 pass
 

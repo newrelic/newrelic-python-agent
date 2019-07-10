@@ -14,8 +14,7 @@ DEFAULT = object()
 class CursorWrapper(DBAPI2CursorWrapper):
 
     def executescript(self, sql_script):
-        transaction = current_transaction()
-        with DatabaseTrace(transaction, sql_script, self._nr_dbapi2_module,
+        with DatabaseTrace(sql_script, self._nr_dbapi2_module,
                 self._nr_connect_params):
             return self.__wrapped__.executescript(sql_script)
 
@@ -25,9 +24,8 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
     __cursor_wrapper__ = CursorWrapper
 
     def __enter__(self):
-        transaction = current_transaction()
         name = callable_name(self.__wrapped__.__enter__)
-        with FunctionTrace(transaction, name):
+        with FunctionTrace(name):
             self.__wrapped__.__enter__()
 
         # Must return a reference to self as otherwise will be
@@ -39,38 +37,34 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
         return self
 
     def __exit__(self, exc, value, tb):
-        transaction = current_transaction()
         name = callable_name(self.__wrapped__.__exit__)
-        with FunctionTrace(transaction, name):
+        with FunctionTrace(name):
             if exc is None and value is None and tb is None:
-                with DatabaseTrace(transaction, 'COMMIT',
+                with DatabaseTrace('COMMIT',
                         self._nr_dbapi2_module, self._nr_connect_params):
                     return self.__wrapped__.__exit__(exc, value, tb)
             else:
-                with DatabaseTrace(transaction, 'ROLLBACK',
+                with DatabaseTrace('ROLLBACK',
                         self._nr_dbapi2_module, self._nr_connect_params):
                     return self.__wrapped__.__exit__(exc, value, tb)
 
     def execute(self, sql, parameters=DEFAULT):
-        transaction = current_transaction()
         if parameters is not DEFAULT:
-            with DatabaseTrace(transaction, sql, self._nr_dbapi2_module,
+            with DatabaseTrace(sql, self._nr_dbapi2_module,
                     self._nr_connect_params, None, parameters):
                 return self.__wrapped__.execute(sql, parameters)
         else:
-            with DatabaseTrace(transaction, sql, self._nr_dbapi2_module,
+            with DatabaseTrace(sql, self._nr_dbapi2_module,
                     self._nr_connect_params):
                 return self.__wrapped__.execute(sql)
 
     def executemany(self, sql, seq_of_parameters):
-        transaction = current_transaction()
-        with DatabaseTrace(transaction, sql, self._nr_dbapi2_module,
+        with DatabaseTrace(sql, self._nr_dbapi2_module,
                 self._nr_connect_params, None, list(seq_of_parameters)[0]):
             return self.__wrapped__.executemany(sql, seq_of_parameters)
 
     def executescript(self, sql_script):
-        transaction = current_transaction()
-        with DatabaseTrace(transaction, sql_script, self._nr_dbapi2_module,
+        with DatabaseTrace(sql_script, self._nr_dbapi2_module,
                 self._nr_connect_params):
             return self.__wrapped__.executescript(sql_script)
 

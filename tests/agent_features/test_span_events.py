@@ -113,7 +113,7 @@ def test_each_span_type(trace_type, args):
         transaction = current_transaction()
         transaction._sampled = True
 
-        with trace_type(transaction, *args):
+        with trace_type(*args):
             pass
 
     _test()
@@ -154,7 +154,7 @@ def test_database_db_statement_format(sql, sql_format, expected):
         transaction = current_transaction()
         transaction._sampled = True
 
-        with DatabaseTrace(transaction, sql):
+        with DatabaseTrace(sql):
             pass
 
     _test()
@@ -175,7 +175,7 @@ def test_database_db_statement_exclude():
     transaction = current_transaction()
     transaction._sampled = True
 
-    with DatabaseTrace(transaction, 'select 1'):
+    with DatabaseTrace('select 1'):
         pass
 
 
@@ -217,7 +217,6 @@ def test_external_spans(exclude_url):
         transaction._sampled = True
 
         with ExternalTrace(
-                transaction,
                 library='library',
                 url='http://example.com/foo?secret=123',
                 method='get'):
@@ -273,9 +272,7 @@ def test_external_span_limits(kwarg_override, attr_override):
         transaction = current_transaction()
         transaction._sampled = True
 
-        with ExternalTrace(
-                transaction,
-                **kwargs):
+        with ExternalTrace(**kwargs):
             pass
 
     _test()
@@ -338,9 +335,7 @@ def test_datastore_span_limits(kwarg_override, attribute_override):
         transaction = current_transaction()
         transaction._sampled = True
 
-        with DatastoreTrace(
-                transaction,
-                **kwargs):
+        with DatastoreTrace(**kwargs):
             pass
 
     _test()
@@ -370,7 +365,7 @@ def test_collect_span_events_override(collect_span_events,
         transaction = current_transaction()
         transaction._sampled = True
 
-        with FunctionTrace(transaction, 'span_generator'):
+        with FunctionTrace('span_generator'):
             pass
 
     if not spans_expected:
@@ -410,10 +405,10 @@ def test_span_event_agent_attributes(include_attribues):
         transaction.queue_start = 1.0
         transaction._sampled = True
 
-        with FunctionTrace(transaction, 'trace1') as trace_1:
+        with FunctionTrace('trace1') as trace_1:
             trace_1._add_agent_attribute('trace1_a', 'foobar')
             trace_1._add_agent_attribute('trace1_b', 'barbaz')
-            with FunctionTrace(transaction, 'trace2') as trace_2:
+            with FunctionTrace('trace2') as trace_2:
                 trace_2._add_agent_attribute('trace2_a', 'foobar')
                 trace_2._add_agent_attribute('trace2_b', 'barbaz')
 

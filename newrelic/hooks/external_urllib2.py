@@ -28,7 +28,7 @@ def _nr_wrapper_opener_director_open_(wrapped, instance, args, kwargs):
     if details.hostname is None:
         return wrapped(*args, **kwargs)
 
-    with ExternalTrace(transaction, 'urllib2', url):
+    with ExternalTrace('urllib2', url):
         return wrapped(*args, **kwargs)
 
 def instrument(module):

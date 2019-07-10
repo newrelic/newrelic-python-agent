@@ -33,7 +33,7 @@ def _nr_wrapper_factory(bind_params_fn, library):
         if details.hostname is None:
             return wrapped(*args, **kwargs)
 
-        with ExternalTrace(transaction, library, url):
+        with ExternalTrace(library, url):
             return wrapped(*args, **kwargs)
 
     return _nr_wrapper

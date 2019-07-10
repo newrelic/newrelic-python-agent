@@ -214,7 +214,7 @@ def _nr_aiohttp_request_wrapper_(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     method, url = _bind_request(*args, **kwargs)
-    trace = ExternalTrace(transaction, 'aiohttp', url, method)
+    trace = ExternalTrace('aiohttp', url, method)
 
     @asyncio.coroutine
     def _coro():

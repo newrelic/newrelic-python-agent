@@ -26,11 +26,6 @@ def wrapper_GearmanConnectionManager_poll_connections_until_stopped(
     def _bind_params(submitted_connections, *args, **kwargs):
         return submitted_connections
 
-    transaction = current_transaction()
-
-    if transaction is None:
-        return wrapped(*args, **kwargs)
-
     # Because gearman uses a custom message based protocol over a raw
     # socket, we can't readily wrap a single function which is
     # performing a request and then returning a response. The best we
@@ -63,7 +58,7 @@ def wrapper_GearmanConnectionManager_poll_connections_until_stopped(
     url = 'gearman://%s:%s' % (first_connection.gearman_host,
             first_connection.gearman_port)
 
-    with ExternalTrace(transaction, 'gearman', url):
+    with ExternalTrace('gearman', url):
         return wrapped(*args, **kwargs)
 
 def wrapper_GearmanConnectionManager_handle_function(wrapped, instance,
@@ -143,7 +138,7 @@ def wrapper_callback_function(wrapped, instance, args, kwargs):
     # dispatch code and do not actually propagate up to the level of the
     # background task wrapper.
 
-    with FunctionTrace(transaction, callable_name(wrapped)):
+    with FunctionTrace(callable_name(wrapped)):
         try:
             return wrapped(*args, **kwargs)
         except:  # Catch all

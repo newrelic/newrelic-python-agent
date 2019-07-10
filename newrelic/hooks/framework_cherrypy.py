@@ -78,7 +78,7 @@ def handler_wrapper(wrapped, instance, args, kwargs):
     # except those which are used for controlling the actions of the
     # application.
 
-    with FunctionTrace(transaction, name=name):
+    with FunctionTrace(name=name):
         return wrapped(*args, **kwargs)
 
 

@@ -4,13 +4,14 @@ import os
 
 from newrelic.packages import six
 
-from newrelic.api.transaction import current_transaction
+from newrelic.api.time_trace import current_trace
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.common.object_names import callable_name
 
 from newrelic import __file__ as AGENT_PACKAGE_FILE
 AGENT_PACKAGE_DIRECTORY = os.path.dirname(AGENT_PACKAGE_FILE) + '/'
+
 
 class ProfileTrace(object):
 
@@ -25,17 +26,17 @@ class ProfileTrace(object):
                 'exception', 'c_exception']:
             return
 
-        transaction = current_transaction()
+        parent = current_trace()
 
-        if not transaction:
+        if not parent:
             return
 
         # Not sure if setprofile() is reliable in the face of
         # coroutine systems based on greenlets so don't run
         # if we detect may be using greenlets.
 
-        if (hasattr(sys, '_current_frames') and not
-                transaction.thread_id in sys._current_frames()):
+        if (hasattr(sys, '_current_frames') and
+                parent.thread_id not in sys._current_frames()):
             return
 
         co = frame.f_code
@@ -96,7 +97,7 @@ class ProfileTrace(object):
                     name = '%s:@%s#%s' % (func_filename, func_name,
                             func_line_no)
 
-            function_trace = FunctionTrace(transaction, name=name)
+            function_trace = FunctionTrace(name=name, parent=parent)
             function_trace.__enter__()
 
             self.function_traces.append(function_trace)
@@ -117,13 +118,14 @@ class ProfileTrace(object):
                     function_trace.__exit__(None, None, None)
                     self.current_depth -= 1
 
+
 def ProfileTraceWrapper(wrapped, name=None, group=None, label=None,
         params=None, depth=3):
 
     def wrapper(wrapped, instance, args, kwargs):
-        transaction = current_transaction()
+        parent = current_trace()
 
-        if transaction is None:
+        if parent is None:
             return wrapped(*args, **kwargs)
 
         if callable(name):
@@ -165,7 +167,7 @@ def ProfileTraceWrapper(wrapped, name=None, group=None, label=None,
         else:
             _params = params
 
-        with FunctionTrace(transaction, _name, _group, _label, _params):
+        with FunctionTrace(_name, _group, _label, _params, parent=parent):
             if not hasattr(sys, 'getprofile'):
                 return wrapped(*args, **kwargs)
 
@@ -184,9 +186,11 @@ def ProfileTraceWrapper(wrapped, name=None, group=None, label=None,
 
     return FunctionWrapper(wrapped, wrapper)
 
+
 def profile_trace(name=None, group=None, label=None, params=None, depth=3):
     return functools.partial(ProfileTraceWrapper, name=name,
             group=group, label=label, params=params, depth=depth)
+
 
 def wrap_profile_trace(module, object_path, name=None,
         group=None, label=None, params=None, depth=3):

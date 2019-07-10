@@ -46,7 +46,7 @@ def wrap_call(module, object_path, prepare):
             return wrapped(*args, **kwargs)
 
         uri, method = _get_uri_method(instance)
-        with ExternalTrace(transaction, 'gRPC', uri, method):
+        with ExternalTrace('gRPC', uri, method):
             request, timeout, args, kwargs = prepare(
                     transaction, None, *args, **kwargs)
             return wrapped(request, timeout, *args, **kwargs)
@@ -68,7 +68,7 @@ def wrap_future(module, object_path, prepare):
                 transaction, guid, *args, **kwargs)
         future = wrapped(request, timeout, *args, **kwargs)
         future._nr_guid = guid
-        future._nr_args = (transaction, 'gRPC', uri, method)
+        future._nr_args = ('gRPC', uri, method)
         future._nr_start_time = time.time()
 
         # In non-streaming responses, result is typically called instead of

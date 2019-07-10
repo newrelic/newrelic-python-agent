@@ -18,8 +18,7 @@ _test_function_trace_default_group_scoped_metrics = [
         background_task=True)
 @background_task()
 def test_function_trace_default_group():
-    transaction = current_transaction()
-    with FunctionTrace(transaction, 'FunctionTrace'):
+    with FunctionTrace('FunctionTrace'):
         pass
 
 
@@ -33,8 +32,7 @@ _test_function_trace_valid_override_scoped_metrics = [
         background_task=True)
 @background_task()
 def test_function_trace_valid_override():
-    transaction = current_transaction()
-    with FunctionTrace(transaction, 'FunctionTrace', group='Custom'):
+    with FunctionTrace('FunctionTrace', group='Custom'):
         pass
 
 
@@ -48,8 +46,7 @@ _test_function_trace_empty_group_scoped_metrics = [
         background_task=True)
 @background_task()
 def test_function_trace_empty_group():
-    transaction = current_transaction()
-    with FunctionTrace(transaction, 'FunctionTrace', group=''):
+    with FunctionTrace('FunctionTrace', group=''):
         pass
 
 
@@ -63,8 +60,7 @@ _test_function_trace_leading_slash_on_group_scoped_metrics = [
     background_task=True)
 @background_task()
 def test_function_trace_leading_slash_on_group():
-    transaction = current_transaction()
-    with FunctionTrace(transaction, 'FunctionTrace', group='/Group'):
+    with FunctionTrace('FunctionTrace', group='/Group'):
         pass
 
 
@@ -92,15 +88,13 @@ _test_async_trace_parent_ended_parenting = (
 @validate_tt_parenting(_test_async_trace_parent_ended_parenting)
 @background_task()
 def test_async_trace_parent_ended():
-    transaction = current_transaction()
-
-    parent_trace = FunctionTrace(transaction, 'parent')
+    parent_trace = FunctionTrace('parent')
 
     with parent_trace:
-        child_trace = FunctionTrace(transaction, 'child')
+        child_trace = FunctionTrace('child')
 
     with child_trace:
-        child_child_trace = FunctionTrace(transaction, 'child_child')
+        child_child_trace = FunctionTrace('child_child')
 
     with child_child_trace:
         pass
@@ -134,13 +128,11 @@ _test_async_trace_overlapping_children_parenting = (
 @validate_tt_parenting(_test_async_trace_overlapping_children_parenting)
 @background_task()
 def test_async_trace_overlapping_children():
-    transaction = current_transaction()
-
-    parent_trace = FunctionTrace(transaction, 'parent')
+    parent_trace = FunctionTrace('parent')
 
     with parent_trace:
-        child_trace_1 = FunctionTrace(transaction, 'child_1')
-        child_trace_2 = FunctionTrace(transaction, 'child_2')
+        child_trace_1 = FunctionTrace('child_1')
+        child_trace_2 = FunctionTrace('child_2')
 
         child_trace_1.__enter__()
         child_trace_2.__enter__()

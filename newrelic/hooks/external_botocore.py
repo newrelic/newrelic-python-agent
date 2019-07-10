@@ -1,7 +1,6 @@
 from newrelic.api.message_trace import message_trace
 from newrelic.api.datastore_trace import datastore_trace
 from newrelic.api.external_trace import ExternalTrace
-from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
@@ -81,17 +80,11 @@ def _bind_make_request_params(operation_model, request_dict, *args, **kwargs):
 
 
 def _nr_endpoint_make_request_(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
-
-    if transaction is None:
-        return wrapped(*args, **kwargs)
-
     operation_model, request_dict = _bind_make_request_params(*args, **kwargs)
     url = request_dict.get('url', '')
     method = request_dict.get('method', None)
 
-    with ExternalTrace(transaction, library='botocore', url=url,
-            method=method) as trace:
+    with ExternalTrace(library='botocore', url=url, method=method) as trace:
 
         try:
             trace._add_agent_attribute('aws.operation', operation_model.name)

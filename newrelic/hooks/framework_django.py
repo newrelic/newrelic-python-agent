@@ -215,7 +215,7 @@ def wrap_leading_middleware(middleware):
 
             before = (transaction.name, transaction.group)
 
-            with FunctionTrace(transaction, name=name):
+            with FunctionTrace(name=name):
                 try:
                     return wrapped(*args, **kwargs)
 
@@ -281,7 +281,7 @@ def wrap_view_middleware(middleware):
 
             before = (transaction.name, transaction.group)
 
-            with FunctionTrace(transaction, name=name):
+            with FunctionTrace(name=name):
                 try:
                     return _wrapped(*args, **kwargs)
 
@@ -316,12 +316,7 @@ def wrap_trailing_middleware(middleware):
         name = callable_name(wrapped)
 
         def wrapper(wrapped, instance, args, kwargs):
-            transaction = current_transaction()
-
-            if transaction is None:
-                return wrapped(*args, **kwargs)
-
-            with FunctionTrace(transaction, name=name):
+            with FunctionTrace(name=name):
                 return wrapped(*args, **kwargs)
 
         return FunctionWrapper(wrapped, wrapper)
@@ -405,7 +400,7 @@ def _nr_wrapper_GZipMiddleware_process_response_(wrapped, instance, args,
     request, response = _bind_params(*args, **kwargs)
 
     if should_add_browser_timing(response, transaction):
-        with FunctionTrace(transaction,
+        with FunctionTrace(
                 name=callable_name(browser_timing_insertion)):
             response_with_browser = browser_timing_insertion(
                     response, transaction)
@@ -486,7 +481,7 @@ def wrap_handle_uncaught_exception(middleware):
                 transaction.record_exception(*sys.exc_info())
                 raise
 
-        with FunctionTrace(transaction, name=name):
+        with FunctionTrace(name=name):
             return _wrapped(*args, **kwargs)
 
     return FunctionWrapper(middleware, wrapper)
@@ -539,7 +534,7 @@ def wrap_view_handler(wrapped, priority=3):
 
         transaction.set_transaction_name(name, priority=priority)
 
-        with FunctionTrace(transaction, name=name):
+        with FunctionTrace(name=name):
             try:
                 return wrapped(*args, **kwargs)
 
@@ -589,7 +584,7 @@ def wrap_url_resolver(wrapped):
             # XXX This can raise a Resolver404. If this is not dealt
             # with, is this the source of our unnamed 404 requests.
 
-            with FunctionTrace(transaction, name=name, label=path):
+            with FunctionTrace(name=name, label=path):
                 result = wrapped(path)
 
                 if type(result) is tuple:
@@ -622,7 +617,7 @@ def wrap_url_resolver_nnn(wrapped, priority=1):
         if transaction is None:
             return wrapped(*args, **kwargs)
 
-        with FunctionTrace(transaction, name=name):
+        with FunctionTrace(name=name):
             callback, param_dict = wrapped(*args, **kwargs)
             return (wrap_view_handler(callback, priority=priority),
                     param_dict)
@@ -759,12 +754,7 @@ def instrument_django_template(module):
 
 def wrap_template_block(wrapped):
     def wrapper(wrapped, instance, args, kwargs):
-        transaction = current_transaction()
-
-        if transaction is None:
-            return wrapped(*args, **kwargs)
-
-        with FunctionTrace(transaction, name=instance.name,
+        with FunctionTrace(name=instance.name,
                 group='Template/Block'):
             return wrapped(*args, **kwargs)
 
@@ -936,7 +926,7 @@ def wrap_view_dispatch(wrapped):
 
         transaction.set_transaction_name(name, priority=priority)
 
-        with FunctionTrace(transaction, name=name):
+        with FunctionTrace(name=name):
             return wrapped(*args, **kwargs)
 
     return FunctionWrapper(wrapped, wrapper)
@@ -999,11 +989,6 @@ def instrument_django_core_management_base(module):
 def _nr_wrapper_django_inclusion_tag_wrapper_(wrapped, instance,
         args, kwargs):
 
-    transaction = current_transaction()
-
-    if transaction is None:
-        return wrapped(*args, **kwargs)
-
     name = hasattr(wrapped, '__name__') and wrapped.__name__
 
     if name is None:
@@ -1016,7 +1001,7 @@ def _nr_wrapper_django_inclusion_tag_wrapper_(wrapped, instance,
     if '*' not in tags and name not in tags and qualname not in tags:
         return wrapped(*args, **kwargs)
 
-    with FunctionTrace(transaction, name, group='Template/Tag'):
+    with FunctionTrace(name, group='Template/Tag'):
         return wrapped(*args, **kwargs)
 
 
@@ -1045,11 +1030,6 @@ def _nr_wrapper_django_template_base_Library_inclusion_tag_(wrapped,
 def _nr_wrapper_django_template_base_InclusionNode_render_(wrapped,
         instance, args, kwargs):
 
-    transaction = current_transaction()
-
-    if transaction is None:
-        return wrapped(*args, **kwargs)
-
     if wrapped.__self__ is None:
         return wrapped(*args, **kwargs)
 
@@ -1060,7 +1040,7 @@ def _nr_wrapper_django_template_base_InclusionNode_render_(wrapped,
 
     name = wrapped.__self__._nr_file_name
 
-    with FunctionTrace(transaction, name, 'Template/Include'):
+    with FunctionTrace(name, 'Template/Include'):
         return wrapped(*args, **kwargs)
 
 
@@ -1199,7 +1179,7 @@ def _nr_wrap_converted_middleware_(middleware, name):
 
         transaction.set_transaction_name(name, priority=2)
 
-        with FunctionTrace(transaction, name=name):
+        with FunctionTrace(name=name):
             return wrapped(*args, **kwargs)
 
     return _wrapper(middleware)

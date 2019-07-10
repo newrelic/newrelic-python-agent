@@ -18,13 +18,13 @@ class CursorWrapper(ObjectProxy):
     def execute(self, sql, parameters=DEFAULT, *args, **kwargs):
         transaction = current_transaction()
         if parameters is not DEFAULT:
-            with DatabaseTrace(transaction, sql, self._nr_dbapi2_module,
+            with DatabaseTrace(sql, self._nr_dbapi2_module,
                     self._nr_connect_params, self._nr_cursor_params,
                     parameters, (args, kwargs)):
                 return self.__wrapped__.execute(sql, parameters,
                         *args, **kwargs)
         else:
-            with DatabaseTrace(transaction, sql, self._nr_dbapi2_module,
+            with DatabaseTrace(sql, self._nr_dbapi2_module,
                     self._nr_connect_params, self._nr_cursor_params,
                     None, (args, kwargs)):
                 return self.__wrapped__.execute(sql, **kwargs)
@@ -36,18 +36,18 @@ class CursorWrapper(ObjectProxy):
         except (TypeError, IndexError):
             parameters = DEFAULT
         if parameters is not DEFAULT:
-            with DatabaseTrace(transaction, sql, self._nr_dbapi2_module,
+            with DatabaseTrace(sql, self._nr_dbapi2_module,
                     self._nr_connect_params, self._nr_cursor_params,
                     parameters):
                 return self.__wrapped__.executemany(sql, seq_of_parameters)
         else:
-            with DatabaseTrace(transaction, sql, self._nr_dbapi2_module,
+            with DatabaseTrace(sql, self._nr_dbapi2_module,
                     self._nr_connect_params, self._nr_cursor_params):
                 return self.__wrapped__.executemany(sql, seq_of_parameters)
 
     def callproc(self, procname, parameters=DEFAULT):
         transaction = current_transaction()
-        with DatabaseTrace(transaction, 'CALL %s' % procname,
+        with DatabaseTrace('CALL %s' % procname,
                 self._nr_dbapi2_module, self._nr_connect_params):
             if parameters is not DEFAULT:
                 return self.__wrapped__.callproc(procname, parameters)
@@ -70,13 +70,13 @@ class ConnectionWrapper(ObjectProxy):
 
     def commit(self):
         transaction = current_transaction()
-        with DatabaseTrace(transaction, 'COMMIT', self._nr_dbapi2_module,
+        with DatabaseTrace('COMMIT', self._nr_dbapi2_module,
                 self._nr_connect_params):
             return self.__wrapped__.commit()
 
     def rollback(self):
         transaction = current_transaction()
-        with DatabaseTrace(transaction, 'ROLLBACK', self._nr_dbapi2_module,
+        with DatabaseTrace('ROLLBACK', self._nr_dbapi2_module,
                 self._nr_connect_params):
             return self.__wrapped__.rollback()
 
@@ -98,7 +98,7 @@ class ConnectionFactory(ObjectProxy):
         rollup.append('Datastore/%s/all' %
                 self._nr_dbapi2_module._nr_database_product)
 
-        with FunctionTrace(transaction, callable_name(self.__wrapped__),
+        with FunctionTrace(callable_name(self.__wrapped__),
                 terminal=True, rollup=rollup):
             return self.__connection_wrapper__(self.__wrapped__(
                     *args, **kwargs), self._nr_dbapi2_module, (args, kwargs))

@@ -23,7 +23,7 @@ def wrapper_Resource_method(wrapped, instance, args, kwargs):
 
     transaction.set_transaction_name(name)
 
-    with FunctionTrace(transaction, name):
+    with FunctionTrace(name):
         return wrapped(*args, **kwargs)
 
 def wrapper_Resource(view):

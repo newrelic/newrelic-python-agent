@@ -53,7 +53,7 @@ class _WSGIApplicationIterable(object):
             self.transaction._sent_start = time.time()
 
         if not self.response_trace:
-            self.response_trace = FunctionTrace(self.transaction,
+            self.response_trace = FunctionTrace(
                     name='Response', group='Python/WSGI')
             self.response_trace.__enter__()
 
@@ -66,15 +66,15 @@ class _WSGIApplicationIterable(object):
             self.response_trace = None
 
         try:
-            with FunctionTrace(self.transaction, name='Finalize',
-                    group='Python/WSGI'):
+            with FunctionTrace(
+                    name='Finalize', group='Python/WSGI'):
 
                 if isinstance(self.generator, _WSGIApplicationMiddleware):
                     self.generator.close()
 
                 elif hasattr(self.generator, 'close'):
                     name = callable_name(self.generator.close)
-                    with FunctionTrace(self.transaction, name):
+                    with FunctionTrace(name):
                         self.generator.close()
 
         except:  # Catch all
@@ -430,7 +430,7 @@ class _WSGIApplicationMiddleware(object):
 
         if hasattr(self.iterable, 'close'):
             name = callable_name(self.iterable.close)
-            with FunctionTrace(self.transaction, name):
+            with FunctionTrace(name):
                 self.iterable.close()
 
     def __iter__(self):
@@ -656,9 +656,9 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
                 environ['wsgi.input'] = _WSGIInputWrapper(transaction,
                         environ['wsgi.input'])
 
-            with FunctionTrace(transaction, name='Application',
-                    group='Python/WSGI'):
-                with FunctionTrace(transaction, name=callable_name(wrapped)):
+            with FunctionTrace(
+                    name='Application', group='Python/WSGI'):
+                with FunctionTrace(name=callable_name(wrapped)):
                     if (settings and settings.browser_monitoring.enabled and
                             not transaction.autorum_disabled):
                         result = _WSGIApplicationMiddleware(wrapped,

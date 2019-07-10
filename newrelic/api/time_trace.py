@@ -9,9 +9,12 @@ _logger = logging.getLogger(__name__)
 
 class TimeTrace(object):
 
-    def __init__(self, transaction):
-        self.transaction = transaction
-        self.parent = None
+    def __init__(self, parent=None):
+        if parent is None:
+            parent = current_trace()
+
+        self.parent = parent
+        self.root = None
         self.child_count = 0
         self.children = []
         self.start_time = 0.0
@@ -30,36 +33,38 @@ class TimeTrace(object):
         self.guid = '%016x' % random.getrandbits(64)
         self.agent_attributes = {}
 
-        if transaction:
+        if parent:
+
+            # The parent may be exited if the stack is not consistent. This
+            # can occur when using ensure_future to schedule coroutines
+            # instead of using async/await keywords. In those cases, we
+            # must not trace.
+            if self.parent.exited:
+                self.parent = None
+                return
+
+            transaction = parent.root.transaction
 
             # Don't do further tracing of transaction if
             # it has been explicitly stopped.
             if transaction.stopped or not transaction.enabled:
-                self.transaction = None
+                self.parent = None
                 return
 
-            self.parent = trace_cache().current_trace()
 
-            # parent shall track children immediately
-            if self.parent is not None:
-                # The parent may be exited if the stack is not consistent. This
-                # can occur when using ensure_future to schedule coroutines
-                # instead of using async/await keywords. In those cases, we
-                # must not trace.
-                if self.parent.exited:
-                    self.parent = None
-                    self.transaction = None
-                    return
+            elif not self.parent.terminal_node():
+                self.parent.increment_child_count()
 
-                elif not self.parent.terminal_node():
-                    self.parent.increment_child_count()
-
+            self.root = parent.root
             self.should_record_segment_params = (
                     transaction.should_record_segment_params)
 
+    @property
+    def transaction(self):
+        return self.root and self.root.transaction
 
     def __enter__(self):
-        if not self.transaction:
+        if not self.parent:
             return self
 
         # Don't do any tracing if parent is designated
@@ -68,7 +73,6 @@ class TimeTrace(object):
         parent = self.parent
 
         if not parent or parent.terminal_node():
-            self.transaction = None
             self.parent = None
             return parent
 
@@ -84,7 +88,7 @@ class TimeTrace(object):
         try:
             cache.save_trace(self)
         except:
-            self.transaction = None
+            self.parent = None
             raise
 
         self.activated = True
@@ -92,7 +96,7 @@ class TimeTrace(object):
         return self
 
     def __exit__(self, exc, value, tb):
-        if not self.transaction:
+        if not self.parent:
             return
 
         # Check for violation of context manager protocol where
@@ -106,7 +110,7 @@ class TimeTrace(object):
 
             return
 
-        transaction = self.transaction
+        transaction = self.root.transaction
 
         # If recording of time for transaction has already been
         # stopped, then that time has to be used.
@@ -151,8 +155,7 @@ class TimeTrace(object):
         # Async | The node might be created here (if there are no children).
         #       | Otherwise, this will exit siliently without creating the
         #       | node.
-        #       | All references to transaction, parent, exc_data are
-        #       | maintained.
+        #       | All references to parent, exc_data are  maintained.
         # ----------------------------------------------------------------------
         self.complete_trace()
 
@@ -173,7 +176,7 @@ class TimeTrace(object):
             return
 
         # transaction already completed, this is an error
-        if self.transaction is None:
+        if self.parent is None:
             _logger.error('Runtime instrumentation error. The transaction '
                     'already completed meaning a child called complete trace '
                     'after the trace had been finalized. Trace: %r \n%s',
@@ -181,7 +184,10 @@ class TimeTrace(object):
 
             return
 
-        # wipe out parent
+        # Wipe out parent reference so can't use object
+        # again. Retain reference as local variable for use in
+        # this call though.
+
         parent = self.parent
         self.parent = None
 
@@ -189,12 +195,9 @@ class TimeTrace(object):
 
         trace_cache().save_trace(parent)
 
-        # Wipe out transaction reference so can't use object
-        # again. Retain reference as local variable for use in
-        # this call though.
-
-        transaction = self.transaction
-        self.transaction = None
+        # Wipe out root reference as well
+        transaction = self.root.transaction
+        self.root = None
 
         # wipe out exc data
         exc_data = self.exc_data
@@ -210,6 +213,7 @@ class TimeTrace(object):
         # will have been cleared above.
 
         self.finalize_data(transaction, *exc_data)
+        exc_data = None
 
         # Give chance for derived class to create a standin node
         # object to be used in the transaction trace. If we get

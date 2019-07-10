@@ -27,8 +27,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 application, environ)
         with transaction:
             time.sleep(0.1)
-            with newrelic.api.memcache_trace.MemcacheTrace(
-                    transaction, "get"):
+            with newrelic.api.memcache_trace.MemcacheTrace("get"):
                 time.sleep(0.1)
             time.sleep(0.1)
 
@@ -37,8 +36,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         try:
-            with newrelic.api.memcache_trace.MemcacheTrace(
-                    transaction, "get"):
+            with newrelic.api.memcache_trace.MemcacheTrace("get"):
                 time.sleep(0.1)
         except RuntimeError:
             pass

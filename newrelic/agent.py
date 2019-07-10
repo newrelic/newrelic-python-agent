@@ -18,6 +18,9 @@ from newrelic.api.application import (
         register_application as __register_application,
         application_settings as __application_settings)
 
+from newrelic.api.time_trace import (
+        current_trace as __current_trace)
+
 from newrelic.api.transaction import (
         current_transaction as __current_transaction,
         set_transaction_name as __set_transaction_name,
@@ -179,6 +182,8 @@ application = __wrap_api_call(__application,
 register_application = __register_application
 application_settings = __wrap_api_call(__application_settings,
         'application_settings')
+current_trace = __wrap_api_call(__current_trace,
+        'current_trace')
 current_transaction = __wrap_api_call(__current_transaction,
         'current_transaction')
 set_transaction_name = __wrap_api_call(__set_transaction_name,

@@ -27,7 +27,7 @@ _unscoped_metrics = [
 def test_apis_in_transaction():
     transaction = newrelic.agent.current_transaction()
     name = newrelic.agent.callable_name(test_apis_in_transaction)
-    with newrelic.agent.FunctionTrace(transaction, name):
+    with newrelic.agent.FunctionTrace(name):
         pass
 
 

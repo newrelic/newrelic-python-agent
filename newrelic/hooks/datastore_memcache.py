@@ -48,7 +48,7 @@ def MemcacheSingleWrapper(wrapped, product, target, operation, module):
 
         transaction._nr_datastore_instance_info = (None, None, None)
 
-        dt = DatastoreTrace(transaction, product, target, operation)
+        dt = DatastoreTrace(product, target, operation)
 
         with dt:
             result = wrapped(*args, **kwargs)

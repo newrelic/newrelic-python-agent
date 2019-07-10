@@ -42,7 +42,7 @@ def _nr_wrapper_APIView_dispatch_(wrapped, instance, args, kwargs):
     view.handle_exception = _nr_wrapper_APIView_handle_exception_(
             view.handle_exception, request)
 
-    with FunctionTrace(transaction, name):
+    with FunctionTrace(name):
         return wrapped(*args, **kwargs)
 
 

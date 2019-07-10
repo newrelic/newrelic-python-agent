@@ -56,7 +56,7 @@ def _add_consume_rabbitmq_trace(transaction, method, properties,
         params['queue_name'] = queue_name
 
     # create a trace starting at the time the message was received
-    trace = MessageTrace(transaction, library='RabbitMQ',
+    trace = MessageTrace(library='RabbitMQ',
             operation='Consume',
             destination_type='Exchange',
             destination_name=method.exchange or 'Default',
@@ -102,7 +102,7 @@ def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
     if user_headers:
         params['headers'] = user_headers
 
-    with MessageTrace(transaction, library='RabbitMQ',
+    with MessageTrace(library='RabbitMQ',
             operation='Produce',
             destination_type='Exchange',
             destination_name=exchange or 'Default',
@@ -136,7 +136,7 @@ def _wrap_Channel_get_callback(module, obj, wrap_get):
                 transaction._transaction_metrics[KWARGS_ERROR] = m + 1
 
             name = callable_name(callback)
-            with FunctionTrace(transaction=transaction, name=name):
+            with FunctionTrace(name=name):
                 return callback(*_args, **_kwargs)
 
         callback_wrapper._nr_start_time = time.time()
@@ -322,7 +322,7 @@ def _wrap_Channel_consume_callback(module, obj, wrap_consume):
                     transaction.stopped):
                 return wrapped(*args, **kwargs)
             elif transaction:
-                with FunctionTrace(transaction=transaction, name=name):
+                with FunctionTrace(name=name):
                     return wrapped(*args, **kwargs)
             else:
                 if hasattr(channel, '_nr_disable_txn_tracing'):

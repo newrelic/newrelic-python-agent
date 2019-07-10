@@ -171,7 +171,7 @@ def test_distributed_tracing_sends_produce_id():
         try:
             @background_task()
             def _publish():
-                with FunctionTrace(current_transaction(), 'foo') as trace:
+                with FunctionTrace('foo') as trace:
                     channel.basic_publish(
                         exchange='',
                         routing_key='TESTDT',

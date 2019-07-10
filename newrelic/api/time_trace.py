@@ -35,6 +35,14 @@ class TimeTrace(object):
 
         if parent:
 
+            # The parent may be exited if the stack is not consistent. This
+            # can occur when using ensure_future to schedule coroutines
+            # instead of using async/await keywords. In those cases, we
+            # must not trace.
+            if self.parent.exited:
+                self.parent = None
+                return
+
             transaction = parent.root.transaction
 
             # Don't do further tracing of transaction if
@@ -43,13 +51,6 @@ class TimeTrace(object):
                 self.parent = None
                 return
 
-            # The parent may be exited if the stack is not consistent. This
-            # can occur when using ensure_future to schedule coroutines
-            # instead of using async/await keywords. In those cases, we
-            # must not trace.
-            if self.parent.exited:
-                self.parent = None
-                return
 
             elif not self.parent.terminal_node():
                 self.parent.increment_child_count()

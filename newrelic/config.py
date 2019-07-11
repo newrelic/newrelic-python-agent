@@ -2543,6 +2543,10 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.external_botocore',
             'instrument_botocore_client')
 
+    _process_module_definition('tornado.httpserver',
+            'newrelic.hooks.framework_tornado',
+            'instrument_tornado_httpserver')
+
 
 def _process_module_entry_points():
     try:

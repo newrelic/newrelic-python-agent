@@ -134,6 +134,19 @@ class CrashHandler(tornado.web.RequestHandler):
         raise ValueError("whoopsie")
 
 
+class MultiTraceHandler(tornado.web.RequestHandler):
+    async def get(self):
+        coros = (self.trace() for _ in range(2))
+        await tornado.gen.multi(coros)
+        self.write("*")
+
+    def trace(self):
+        from newrelic.api.function_trace import FunctionTrace
+
+        with FunctionTrace(name='trace', terminal=True):
+            pass
+
+
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def on_message(self, message):
         self.write_message("hello " + message)
@@ -155,6 +168,7 @@ def make_app():
                 {'response_code': 304}),
         (r'/echo-headers', EchoHeaderHandler),
         (r'/native-simple', NativeSimpleHandler),
+        (r'/multi-trace', MultiTraceHandler),
         (r'/web-socket', WebSocketHandler),
     ]
     return tornado.web.Application(handlers, log_function=dummy)

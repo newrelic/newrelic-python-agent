@@ -8,21 +8,25 @@ from testing_support.validators.validate_transaction_count import (
         validate_transaction_count)
 
 
-@pytest.mark.parametrize('uri,name', (
-    ('/native-simple', 'tornado.routing:_RoutingDelegate'),
-    ('/simple', 'tornado.routing:_RoutingDelegate'),
-    ('/call-simple', 'tornado.routing:_RoutingDelegate'),
-    ('/coro', 'tornado.routing:_RoutingDelegate'),
-    ('/fake-coro', 'tornado.routing:_RoutingDelegate'),
-    ('/coro-throw', 'tornado.routing:_RoutingDelegate'),
-    ('/init', 'tornado.routing:_RoutingDelegate'),
+@pytest.mark.parametrize('uri,name,metrics', (
+    ('/native-simple', 'tornado.routing:_RoutingDelegate', None),
+    ('/simple', 'tornado.routing:_RoutingDelegate', None),
+    ('/call-simple', 'tornado.routing:_RoutingDelegate', None),
+    ('/coro', 'tornado.routing:_RoutingDelegate', None),
+    ('/fake-coro', 'tornado.routing:_RoutingDelegate', None),
+    ('/coro-throw', 'tornado.routing:_RoutingDelegate', None),
+    ('/init', 'tornado.routing:_RoutingDelegate', None),
+    ('/multi-trace',
+            'tornado.routing:_RoutingDelegate', [('Function/trace', 2)]),
 ))
-def test_server(app, uri, name):
+def test_server(app, uri, name, metrics):
     FRAMEWORK_METRIC = 'Python/Framework/Tornado/%s' % app.tornado_version
+    metrics = metrics or []
+    metrics.append((FRAMEWORK_METRIC, 1))
 
     @validate_transaction_metrics(
         name,
-        rollup_metrics=((FRAMEWORK_METRIC, 1),),
+        rollup_metrics=metrics,
     )
     @validate_transaction_event_attributes(
         required_params={'agent': (), 'user': (), 'intrinsic': ('port',)},
@@ -34,24 +38,28 @@ def test_server(app, uri, name):
     _test()
 
 
-@pytest.mark.parametrize('uri,name', (
-    ('/native-simple', 'tornado.routing:_RoutingDelegate'),
-    ('/simple', 'tornado.routing:_RoutingDelegate'),
-    ('/call-simple', 'tornado.routing:_RoutingDelegate'),
-    ('/coro', 'tornado.routing:_RoutingDelegate'),
-    ('/fake-coro', 'tornado.routing:_RoutingDelegate'),
-    ('/coro-throw', 'tornado.routing:_RoutingDelegate'),
-    ('/init', 'tornado.routing:_RoutingDelegate'),
-    ('/on-finish', 'tornado.routing:_RoutingDelegate'),
+@pytest.mark.parametrize('uri,name,metrics', (
+    ('/native-simple', 'tornado.routing:_RoutingDelegate', None),
+    ('/simple', 'tornado.routing:_RoutingDelegate', None),
+    ('/call-simple', 'tornado.routing:_RoutingDelegate', None),
+    ('/coro', 'tornado.routing:_RoutingDelegate', None),
+    ('/fake-coro', 'tornado.routing:_RoutingDelegate', None),
+    ('/coro-throw', 'tornado.routing:_RoutingDelegate', None),
+    ('/init', 'tornado.routing:_RoutingDelegate', None),
+    ('/multi-trace',
+            'tornado.routing:_RoutingDelegate', [('Function/trace', 2)]),
 ))
-def test_concurrent_inbound_requests(app, uri, name):
+def test_concurrent_inbound_requests(app, uri, name, metrics):
     from tornado import gen
+
     FRAMEWORK_METRIC = 'Python/Framework/Tornado/%s' % app.tornado_version
+    metrics = metrics or []
+    metrics.append((FRAMEWORK_METRIC, 1))
 
     @validate_transaction_count(2)
     @validate_transaction_metrics(
         name,
-        rollup_metrics=((FRAMEWORK_METRIC, 1),),
+        rollup_metrics=metrics,
     )
     def _test():
         url = app.get_url(uri)

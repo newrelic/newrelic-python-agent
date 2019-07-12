@@ -2,7 +2,8 @@ import pytest
 from newrelic.core.config import global_settings
 from testing_support.fixtures import (validate_transaction_metrics,
         override_generic_settings, function_not_called,
-        validate_transaction_event_attributes)
+        validate_transaction_event_attributes,
+        validate_transaction_errors)
 from testing_support.validators.validate_transaction_count import (
         validate_transaction_count)
 
@@ -61,6 +62,12 @@ def test_concurrent_inbound_requests(app, uri, name):
             assert response.code == 200
 
     _test()
+
+
+@validate_transaction_errors(['builtins:ValueError'])
+def test_exceptions_are_recorded(app):
+    response = app.fetch('/crash')
+    assert response.code == 500
 
 
 @override_generic_settings(global_settings(), {

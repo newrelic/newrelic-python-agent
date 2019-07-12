@@ -129,6 +129,11 @@ class HTMLInsertionHandler(tornado.web.RequestHandler):
         self.finish(self.HTML)
 
 
+class CrashHandler(tornado.web.RequestHandler):
+    def get(self):
+        raise ValueError("whoopsie")
+
+
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def on_message(self, message):
         self.write_message("hello " + message)
@@ -137,6 +142,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
 def make_app():
     handlers = [
         (r'/simple', SimpleHandler),
+        (r'/crash', CrashHandler),
         (r'/call-simple', CallSimpleHandler),
         (r'/coro', CoroHandler),
         (r'/coro-throw', CoroThrowHandler),

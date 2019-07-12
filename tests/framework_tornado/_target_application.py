@@ -2,6 +2,7 @@ import tornado.ioloop
 import tornado.web
 import tornado.gen
 import tornado.httpclient
+import tornado.websocket
 
 
 def dummy(*args, **kwargs):
@@ -128,6 +129,11 @@ class HTMLInsertionHandler(tornado.web.RequestHandler):
         self.finish(self.HTML)
 
 
+class WebSocketHandler(tornado.websocket.WebSocketHandler):
+    def on_message(self, message):
+        self.write_message("hello " + message)
+
+
 def make_app():
     handlers = [
         (r'/simple', SimpleHandler),
@@ -143,6 +149,7 @@ def make_app():
                 {'response_code': 304}),
         (r'/echo-headers', EchoHeaderHandler),
         (r'/native-simple', NativeSimpleHandler),
+        (r'/web-socket', WebSocketHandler),
     ]
     return tornado.web.Application(handlers, log_function=dummy)
 

@@ -71,3 +71,35 @@ def test_concurrent_inbound_requests(app, uri, name):
 def test_nr_disabled(app):
     response = app.fetch('/simple')
     assert response.code == 200
+
+
+def test_web_socket(app):
+    import asyncio
+    from tornado.websocket import websocket_connect
+
+    url = app.get_url('/web-socket').replace('http', 'ws')
+
+    @asyncio.coroutine
+    def _connect():
+        conn = yield from websocket_connect(url)
+        return conn
+
+    @validate_transaction_metrics(
+        "tornado.routing:_RoutingDelegate",
+    )
+    def connect():
+        return app.io_loop.run_sync(_connect)
+
+    @function_not_called('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def call(call):
+        @asyncio.coroutine
+        def _call():
+            yield from conn.write_message("test")
+            resp = yield from conn.read_message()
+            assert resp == "hello test"
+        app.io_loop.run_sync(_call)
+
+    conn = connect()
+    call(conn)
+    conn.close()

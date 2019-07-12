@@ -139,7 +139,7 @@ class TraceCache(object):
                                     'REQUEST', gr.gr_frame)
 
     def save_trace(self, trace):
-        """Saves the specified transaction away under the thread ID of
+        """Saves the specified trace away under the thread ID of
         the current executing thread. Will also cache a reference to the
         greenlet if using coroutines. This is so we can later determine
         the stack trace for a transaction when using greenlets.
@@ -175,6 +175,14 @@ class TraceCache(object):
                 greenlet = sys.modules.get('greenlet')
                 if greenlet:
                     trace._greenlet = weakref.ref(greenlet.getcurrent())
+
+    def pop_current(self, trace):
+        """Restore the trace's parent under the thread ID of the current
+        executing thread."""
+
+        thread_id = trace.thread_id
+        parent = trace.parent
+        self._cache[thread_id] = parent
 
     def drop_trace(self, trace):
         """Drops the specified trace, validating that it is

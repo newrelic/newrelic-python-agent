@@ -5,7 +5,7 @@ from newrelic.core.trace_cache import trace_cache
 
 def remove_from_cache(task):
     cache = trace_cache()
-    del cache._cache[id(task)]
+    cache._cache.pop(id(task), None)
 
 
 def propagate_task_context(task):

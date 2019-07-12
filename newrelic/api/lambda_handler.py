@@ -1,7 +1,7 @@
 import functools
 from newrelic.common.object_wrapper import FunctionWrapper
 from newrelic.api.transaction import current_transaction
-from newrelic.api.web_transaction import BaseWebTransaction
+from newrelic.api.web_transaction import WebTransaction
 from newrelic.api.application import application_instance
 from newrelic.core.attribute import truncate
 from newrelic.core.config import global_settings
@@ -71,7 +71,7 @@ def LambdaHandlerWrapper(wrapped, application=None, name=None,
 
         transaction_name = name or getattr(context, 'function_name', None)
 
-        transaction = BaseWebTransaction(
+        transaction = WebTransaction(
                 target_application,
                 transaction_name,
                 group=group,

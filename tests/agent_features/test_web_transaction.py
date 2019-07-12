@@ -3,14 +3,14 @@ import webtest
 import pytest
 import time
 from newrelic.api.application import application_instance
-from newrelic.api.web_transaction import BaseWebTransaction
+from newrelic.api.web_transaction import WebTransaction
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_attributes)
 from testing_support.sample_applications import simple_app
 application = webtest.TestApp(simple_app)
 
 
-# TODO: WSGI metrics must not be generated for a BaseWebTransaction
+# TODO: WSGI metrics must not be generated for a WebTransaction
 METRICS = (
     ('Python/WSGI/Input/Bytes', None),
     ('Python/WSGI/Input/Time', None),
@@ -62,7 +62,7 @@ def test_base_web_transaction(use_bytes):
 
         request_headers = byte_headers
 
-    transaction = BaseWebTransaction(
+    transaction = WebTransaction(
             application,
             'test_base_web_transaction',
             group='Test',

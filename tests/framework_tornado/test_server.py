@@ -3,7 +3,8 @@ from newrelic.core.config import global_settings
 from testing_support.fixtures import (validate_transaction_metrics,
         override_generic_settings, function_not_called,
         validate_transaction_event_attributes,
-        validate_transaction_errors)
+        validate_transaction_errors,
+        override_application_settings)
 from testing_support.validators.validate_transaction_count import (
         validate_transaction_count)
 
@@ -19,20 +20,31 @@ from testing_support.validators.validate_transaction_count import (
     ('/multi-trace',
             'tornado.routing:_RoutingDelegate', [('Function/trace', 2)]),
 ))
+@override_application_settings({'attributes.include': ['request.*']})
 def test_server(app, uri, name, metrics):
     FRAMEWORK_METRIC = 'Python/Framework/Tornado/%s' % app.tornado_version
     metrics = metrics or []
     metrics.append((FRAMEWORK_METRIC, 1))
+
+    host = '127.0.0.1:' + str(app.get_http_port())
 
     @validate_transaction_metrics(
         name,
         rollup_metrics=metrics,
     )
     @validate_transaction_event_attributes(
-        required_params={'agent': (), 'user': (), 'intrinsic': ('port',)},
+        required_params={'agent': (), 'user': (), 'intrinsic': ()},
+        exact_attrs={
+            'agent': {'request.headers.contentType': '1234',
+                'request.headers.host': host,
+                'request.method': 'GET',
+                'request.uri': uri},
+            'user': {},
+            'intrinsic': {'port': app.get_http_port()},
+        },
     )
     def _test():
-        response = app.fetch(uri)
+        response = app.fetch(uri, headers=(('Content-Type', '1234'),))
         assert response.code == 200
 
     _test()

@@ -29,6 +29,11 @@ unreleased
 
   Python 3.4 is no longer supported by the Python Agent.
 
+- Updated the WebTransaction API interface
+
+  The interface for WebTransaction has been generalized and is no longer
+  WSGI specific. For usage of  this API please refer to our docs.
+
 4.20.1 (2019-06-21)
 -------------------
 

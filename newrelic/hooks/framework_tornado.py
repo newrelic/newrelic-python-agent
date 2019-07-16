@@ -1,5 +1,5 @@
 import sys
-from newrelic.api.web_transaction import BaseWebTransaction
+from newrelic.api.web_transaction import WebTransaction
 from newrelic.api.application import application_instance
 from newrelic.common.object_wrapper import (
         function_wrapper, wrap_function_wrapper)
@@ -48,7 +48,7 @@ def wrap_headers_received(request_conn, headers_received):
 
         path, sep, query = start_line.path.partition('?')
 
-        transaction = BaseWebTransaction(
+        transaction = WebTransaction(
             application=application_instance(),
             name=callable_name(instance),
             port=port,

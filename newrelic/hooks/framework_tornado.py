@@ -78,6 +78,24 @@ def wrap_headers_received(request_conn, headers_received):
     return _wrap_headers_received
 
 
+def _bind_response_headers(start_line, headers, *args, **kwargs):
+    return start_line.code, headers
+
+
+@function_wrapper
+def wrap_write_headers(wrapped, instance, args, kwargs):
+    transaction = getattr(instance, '_nr_transaction', None)
+
+    if transaction:
+        http_status, headers = _bind_response_headers(*args, **kwargs)
+        cat_headers = transaction.process_response(http_status, headers)
+
+        for name, value in cat_headers:
+            headers.add(name, value)
+
+    return wrapped(*args, **kwargs)
+
+
 @function_wrapper
 def wrap_finish(wrapped, instance, args, kwargs):
     try:
@@ -97,6 +115,10 @@ def wrap_start_request(wrapped, instance, args, kwargs):
     headers_received = message_delegate.headers_received
     wrapper = wrap_headers_received(request_conn, headers_received)
     message_delegate.headers_received = wrapper(headers_received)
+
+    # Wrap write_headers to get response
+    write_headers = request_conn.write_headers
+    request_conn.write_headers = wrap_write_headers(write_headers)
 
     # Wrap finish (response has been written)
     finish = request_conn.finish

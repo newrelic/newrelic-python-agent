@@ -33,12 +33,15 @@ def test_server(app, uri, name, metrics):
         rollup_metrics=metrics,
     )
     @validate_transaction_event_attributes(
-        required_params={'agent': (), 'user': (), 'intrinsic': ()},
+        required_params={
+            'agent': ('response.headers.contentType',),
+            'user': (), 'intrinsic': ()},
         exact_attrs={
             'agent': {'request.headers.contentType': '1234',
                 'request.headers.host': host,
                 'request.method': 'GET',
-                'request.uri': uri},
+                'request.uri': uri,
+                'response.status': '200'},
             'user': {},
             'intrinsic': {'port': app.get_http_port()},
         },

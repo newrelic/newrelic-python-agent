@@ -1595,6 +1595,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/external_tornado.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/external_urllib.py": {
         "hash": "n/a",
         "libraries": [
@@ -1680,24 +1686,6 @@
         ]
     },
     "newrelic/hooks/framework_tornado.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado/curl_httpclient.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado/httpclient.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado/simple_httpclient.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

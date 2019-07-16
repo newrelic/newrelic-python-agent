@@ -4,7 +4,7 @@ from newrelic.api.transaction import current_transaction
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
         function_wrapper)
-
+from newrelic.api.function_trace import wrap_function_trace
 
 _extract_request = None
 
@@ -123,3 +123,11 @@ def instrument_tornado_httpclient(module):
     _prepare_extract_request()
     wrap_function_wrapper(module, 'AsyncHTTPClient.fetch',
             _nr_wrapper_httpclient_AsyncHTTPClient_fetch_)
+
+
+def instrument_tornado_curl_httpclient(module):
+    wrap_function_trace(module, 'CurlAsyncHTTPClient.fetch')
+
+
+def instrument_tornado_simple_httpclient(module):
+    wrap_function_trace(module, 'SimpleAsyncHTTPClient.fetch')

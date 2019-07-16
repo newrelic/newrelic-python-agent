@@ -61,16 +61,6 @@ def generator_wrapper(wrapped, trace):
 
                 try:
                     value = yield yielded
-                except GeneratorExit as e:
-                    # The generator must re-raise the exception. This means
-                    # normally things will exit here.
-                    yielded = g.throw(type(e), e)
-
-                    # If not, we force exit the trace due to pypy behavior
-                    # https://bitbucket.org/pypy/pypy/issues/1126/__exit__-is-not-called-when-an-exception
-                    trace.__exit__(None, None, None)
-
-                    value = yield yielded
                 except BaseException as e:
                     value = yield g.throw(type(e), e)
 

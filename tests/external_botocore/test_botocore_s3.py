@@ -10,7 +10,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
 from testing_support.validators.validate_span_events import (
         validate_span_events)
 
-MOTO_VERSION = tuple(int(v) for v in moto.__version__.split('.'))
+MOTO_VERSION = tuple(int(v) for v in moto.__version__.split('.')[:3])
 
 # patch earlier versions of moto to support py37
 if sys.version_info >= (3, 7) and MOTO_VERSION <= (1, 3, 1):

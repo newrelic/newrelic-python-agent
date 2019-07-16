@@ -51,7 +51,6 @@ class TimeTrace(object):
                 self.parent = None
                 return
 
-
             elif not self.parent.terminal_node():
                 self.parent.increment_child_count()
 
@@ -140,24 +139,17 @@ class TimeTrace(object):
 
         self.exited = True
 
-        # Since we're exited we can't possibly schedule more children but we
-        # may have children still running if we're async
-        trace_cache().save_trace(self.parent)
-
         self.exc_data = (exc, value, tb)
 
         # in all cases except async, the children will have exited
         # so this will create the node
 
-        # ----------------------------------------------------------------------
-        # SYNC  | The node will be created here. All children will have exited.
-        # ----------------------------------------------------------------------
-        # Async | The node might be created here (if there are no children).
-        #       | Otherwise, this will exit siliently without creating the
-        #       | node.
-        #       | All references to parent, exc_data are  maintained.
-        # ----------------------------------------------------------------------
-        self.complete_trace()
+        if self._ready_to_complete():
+            self._complete_trace()
+        else:
+            # Since we're exited we can't possibly schedule more children but
+            # we may have children still running if we're async
+            trace_cache().pop_current(self)
 
     def _add_agent_attribute(self, key, value):
         self.agent_attributes[key] = value
@@ -166,15 +158,25 @@ class TimeTrace(object):
         self.child_count = len(self.children)
         return self.__exit__(exc, value, tb)
 
-    def complete_trace(self):
+    def _ready_to_complete(self):
         # we shouldn't continue if we're still running
         if not self.exited:
-            return
+            return False
 
         # defer node completion until all children have exited
         if len(self.children) != self.child_count:
-            return
+            return False
 
+        return True
+
+    def complete_trace(self):
+        # This function is called only by children in the case that the node
+        # creation has been deferred. _ready_to_complete should only return
+        # True once the final child has completed.
+        if self._ready_to_complete():
+            self._complete_trace()
+
+    def _complete_trace(self):
         # transaction already completed, this is an error
         if self.parent is None:
             _logger.error('Runtime instrumentation error. The transaction '
@@ -184,16 +186,20 @@ class TimeTrace(object):
 
             return
 
+        parent = self.parent
+
+        # Check to see if we're async
+        if parent.exited or parent.has_async_children:
+            self.is_async = True
+
+        # Pop ourselves as current node. If deferred, we have previously exited
+        # and are being completed by a child trace.
+        trace_cache().pop_current(self)
+
         # Wipe out parent reference so can't use object
         # again. Retain reference as local variable for use in
         # this call though.
-
-        parent = self.parent
         self.parent = None
-
-        # Pop ourselves as current node.
-
-        trace_cache().save_trace(parent)
 
         # Wipe out root reference as well
         transaction = self.root.transaction
@@ -202,10 +208,6 @@ class TimeTrace(object):
         # wipe out exc data
         exc_data = self.exc_data
         self.exc_data = (None, None, None)
-
-        # Check to see if we're async
-        if parent.exited or parent.has_async_children:
-            self.is_async = True
 
         # Give chance for derived class to finalize any data in
         # this object instance. The transaction is passed as a

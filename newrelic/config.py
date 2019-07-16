@@ -2546,6 +2546,15 @@ def _process_module_builtin_defaults():
     _process_module_definition('tornado.httpserver',
             'newrelic.hooks.framework_tornado',
             'instrument_tornado_httpserver')
+    _process_module_definition('tornado.httpclient',
+            'newrelic.hooks.framework_tornado.httpclient',
+            'instrument_tornado_httpclient')
+    _process_module_definition('tornado.curl_httpclient',
+            'newrelic.hooks.framework_tornado.curl_httpclient',
+            'instrument_tornado_curl_httpclient')
+    _process_module_definition('tornado.simple_httpclient',
+            'newrelic.hooks.framework_tornado.simple_httpclient',
+            'instrument_tornado_simple_httpclient')
 
 
 def _process_module_entry_points():

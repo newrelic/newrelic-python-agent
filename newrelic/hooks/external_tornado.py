@@ -1,26 +1,13 @@
 import sys
 
-from newrelic.api.transaction import current_transaction
+from newrelic.api.time_trace import current_trace
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
         function_wrapper)
 from newrelic.api.function_trace import wrap_function_trace
 
-_extract_request = None
-
-
-def _prepare_extract_request():
-    import tornado
-
-    global _extract_request
-
-    if tornado.version_info < (6, 0):
-        def _extract_request(request, callback=None, raise_error=True,
-                **_kwargs):
-            return request, callback, raise_error, _kwargs
-    else:
-        def _extract_request(request, raise_error=True, **_kwargs):
-            return request, None, raise_error, _kwargs
+def _extract_request(request, raise_error=True, **_kwargs):
+    return request, None, raise_error, _kwargs
 
 
 def _prepare_request(*args, **kwargs):
@@ -79,10 +66,11 @@ def wrap_fetch_impl(wrapped, instance, args, kwargs):
 def _nr_wrapper_httpclient_AsyncHTTPClient_fetch_(
         wrapped, instance, args, kwargs):
 
-    transaction = current_transaction()
+    parent_trace = current_trace()
 
-    if transaction is None:
+    if parent_trace is None:
         return wrapped(*args, **kwargs)
+    transaction = parent_trace.transaction
 
     try:
         req, _raise_error, _kwargs = _prepare_request(*args, **kwargs)
@@ -103,13 +91,10 @@ def _nr_wrapper_httpclient_AsyncHTTPClient_fetch_(
         instance_type.fetch_impl = wrap_fetch_impl(instance_type.fetch_impl)
         instance_type._nr_wrapped = True
 
-    trace = ExternalTrace(transaction,
-            'tornado.httpclient', req.url, req.method.upper())
+    trace = ExternalTrace('tornado.httpclient', req.url, req.method.upper(),
+        parent=parent_trace)
     instance._nr_args = (_raise_error, trace)
     trace.__enter__()
-    if trace.transaction and trace.transaction.current_span is trace:
-        # externals should not have children
-        trace.transaction._pop_current(trace)
 
     try:
         future = wrapped(req, raise_error=_raise_error, **_kwargs)
@@ -120,7 +105,6 @@ def _nr_wrapper_httpclient_AsyncHTTPClient_fetch_(
 
 
 def instrument_tornado_httpclient(module):
-    _prepare_extract_request()
     wrap_function_wrapper(module, 'AsyncHTTPClient.fetch',
             _nr_wrapper_httpclient_AsyncHTTPClient_fetch_)
 

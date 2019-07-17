@@ -4,6 +4,7 @@ import socket
 
 from newrelic.api.transaction import current_transaction
 from newrelic.api.background_task import background_task
+from newrelic.api.function_trace import FunctionTrace
 
 from testing_support.external_fixtures import (
         validate_distributed_tracing_header,
@@ -308,15 +309,29 @@ def test_httpclient_fetch_crashes(external):
         client.fetch('http://localhost:%s' % port)
 
 
-@validate_transaction_metrics('_target_application:CrashClientHandler.get',
-    rollup_metrics=[('External/example.com/tornado.httpclient/GET', None)],
-    scoped_metrics=[('External/example.com/tornado.httpclient/GET', None)]
+@validate_transaction_metrics('test_httpclient_fetch_inside_terminal_node',
+    background_task=True,
+    rollup_metrics=[('External/localhost:8989/tornado.httpclient/GET', None)],
+    scoped_metrics=[('External/localhost:8989/tornado.httpclient/GET', None)]
 )
-def test_httpclient_fetch_inside_terminal_node(app):
+@background_task(name='test_httpclient_fetch_inside_terminal_node')
+def test_httpclient_fetch_inside_terminal_node(external):
     # Test that our instrumentation correctly handles the case when the parent
     # is a terminal node
+    import tornado.httpclient
+    import tornado.gen
+    import tornado.ioloop
+    client = tornado.httpclient.AsyncHTTPClient(force_instance=True)
 
     # This is protecting against a "pop_current" when the external trace never
     # actually gets pushed
-    response = app.fetch('/client-terminal-trace')
+    port = external.port
+
+    @tornado.gen.coroutine
+    def _make_request():
+        with FunctionTrace(name='parent', terminal=True):
+            response = yield client.fetch('http://localhost:%s' % port)
+        return response
+
+    response = tornado.ioloop.IOLoop.current().run_sync(_make_request)
     assert response.code == 200

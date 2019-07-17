@@ -259,13 +259,7 @@ def test_client_cat_response_processing(cat_enabled, request_type,
             response = make_request(port, request_type, client_class,
                     raise_error=raise_error)
         except tornado.httpclient.HTTPError as e:
-            # Tornado 4.1 has a bug in HTTPClient where an error is always
-            # raised even when `raise_error` kwarg is passed.
-            # https://github.com/tornadoweb/tornado/blob/v4.1.0/tornado/httpclient.py#L103
-            _tornado0401_httpclient_throw_bug = (
-                    tornado.version_info < (4, 2) and
-                    client_class == 'HTTPClient')
-            assert raise_error or _tornado0401_httpclient_throw_bug
+            assert raise_error
             response = e.response
         else:
             assert not raise_error

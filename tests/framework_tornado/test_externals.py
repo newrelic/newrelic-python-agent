@@ -1,9 +1,6 @@
 import io
 import pytest
 import socket
-import threading
-
-from wsgiref.simple_server import make_server
 
 from newrelic.api.transaction import current_transaction
 from newrelic.api.background_task import background_task
@@ -14,7 +11,8 @@ from testing_support.external_fixtures import (
 from testing_support.fixtures import (validate_transaction_metrics,
         override_application_settings)
 from testing_support.mock_external_http_server import (
-        MockExternalHTTPHResponseHeadersServer)
+        MockExternalHTTPHResponseHeadersServer,
+        MockExternalHTTPServer)
 
 
 ENCODING_KEY = '1234567890123456789012345678901234567890'
@@ -189,6 +187,35 @@ def test_httpclient(cat_enabled, request_type, client_class, user_header,
     _test()
 
 
+CAT_RESPONSE_CODE = None
+
+
+def cat_response_handler(self):
+    global CAT_RESPONSE_CODE
+    # payload
+    # (
+    #     u'1#1', u'WebTransaction/Function/app:beep',
+    #     0, 1.23, -1,
+    #     'dd4a810b7cb7f937',
+    #     False,
+    # )
+    cat_response_header = ('X-NewRelic-App-Data',
+            'ahACFwQUGxpuVVNmQVVbRVZbTVleXBxyQFhUTFBfXx1SREUMV'
+            'V1cQBMeAxgEGAULFR0AHhFQUQJWAAgAUwVQVgJQDgsOEh1UUlhGU2o=')
+    self.send_response(CAT_RESPONSE_CODE)
+    self.send_header(*cat_response_header)
+    self.end_headers()
+    self.wfile.write(b'BEEEEEP')
+
+
+@pytest.fixture(scope='module')
+def cat_response_server():
+    port = _get_open_port()
+    external = MockExternalHTTPServer(handler=cat_response_handler, port=port)
+    with external:
+        yield external
+
+
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @pytest.mark.parametrize('cat_enabled', [True, False])
@@ -199,7 +226,10 @@ def test_httpclient(cat_enabled, request_type, client_class, user_header,
     (200, False),
 ])
 def test_client_cat_response_processing(cat_enabled, request_type,
-        client_class, raise_error, response_code):
+        client_class, raise_error, response_code, cat_response_server):
+    global CAT_RESPONSE_CODE
+    CAT_RESPONSE_CODE = response_code
+
     _custom_settings = {
         'cross_process_id': '1#1',
         'encoding_key': ENCODING_KEY,
@@ -209,26 +239,10 @@ def test_client_cat_response_processing(cat_enabled, request_type,
         'transaction_tracer.transaction_threshold': 0.0,
     }
 
-    def _response_app(environ, start_response):
-        # payload
-        # (
-        #     u'1#1', u'WebTransaction/Function/app:beep',
-        #     0, 1.23, -1,
-        #     'dd4a810b7cb7f937',
-        #     False,
-        # )
-        response_headers = [('X-NewRelic-App-Data',
-                'ahACFwQUGxpuVVNmQVVbRVZbTVleXBxyQFhUTFBfXx1SREUMV'
-                'V1cQBMeAxgEGAULFR0AHhFQUQJWAAgAUwVQVgJQDgsOEh1UUlhGU2o='), ]
-        start_response('%d kittens' % response_code, response_headers)
-        return [b'BEEEEEP']
-
-    wsgi_port = _get_open_port()
-    server = make_server('127.0.0.1', wsgi_port, _response_app)
-
+    port = cat_response_server.port
     expected_metrics = [
         ('ExternalTransaction/localhost:%s/1#1/WebTransaction/'
-                'Function/app:beep' % wsgi_port, 1 if cat_enabled else None),
+                'Function/app:beep' % port, 1 if cat_enabled else None),
     ]
 
     @validate_transaction_metrics(
@@ -242,7 +256,7 @@ def test_client_cat_response_processing(cat_enabled, request_type,
         import tornado
         import tornado.httpclient
         try:
-            response = make_request(wsgi_port, request_type, client_class,
+            response = make_request(port, request_type, client_class,
                     raise_error=raise_error)
         except tornado.httpclient.HTTPError as e:
             # Tornado 4.1 has a bug in HTTPClient where an error is always
@@ -258,10 +272,7 @@ def test_client_cat_response_processing(cat_enabled, request_type,
 
         assert response.code == response_code
 
-    server_thread = threading.Thread(target=server.handle_request)
-    server_thread.start()
     _test()
-    server_thread.join(0.1)
 
 
 @pytest.mark.parametrize('client_class', ['AsyncHTTPClient',

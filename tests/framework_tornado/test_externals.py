@@ -67,7 +67,7 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True,
     client = cls(force_instance=True)
     callback = None
 
-    uri = 'http://localhost:%s/echo-headers' % port
+    uri = 'http://localhost:%s' % port
     if req_type == 'class':
         req = tornado.httpclient.HTTPRequest(uri, **kwargs)
         kwargs = {}
@@ -288,13 +288,24 @@ def test_httpclient_invalid_kwarg(client_class, external):
         make_request(external.port, 'uri', client_class, boop='1234')
 
 
-@validate_transaction_metrics('_target_application:CrashClientHandler.get',
-    rollup_metrics=[('External/example.com/tornado.httpclient/GET', 1)],
-    scoped_metrics=[('External/example.com/tornado.httpclient/GET', 1)]
+@validate_transaction_metrics('test_httpclient_fetch_crashes',
+    background_task=True,
+    rollup_metrics=[('External/localhost:8989/tornado.httpclient/GET', 1)],
+    scoped_metrics=[('External/localhost:8989/tornado.httpclient/GET', 1)]
 )
-def test_httpclient_fetch_crashes(app):
-    response = app.fetch('/crash-client')
-    assert response.code == 200
+@background_task(name='test_httpclient_fetch_crashes')
+def test_httpclient_fetch_crashes(external):
+    import tornado.httpclient
+
+    class CrashClient(tornado.httpclient.AsyncHTTPClient):
+        def fetch_impl(self, *args, **kwargs):
+            raise ValueError("BOOM")
+
+    client = CrashClient(force_instance=True)
+
+    port = external.port
+    with pytest.raises(ValueError):
+        client.fetch('http://localhost:%s' % port)
 
 
 @validate_transaction_metrics('_target_application:CrashClientHandler.get',

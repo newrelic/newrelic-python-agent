@@ -1595,12 +1595,6 @@
             "New Relic"
         ]
     },
-    "newrelic/hooks/external_tornado.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/hooks/external_urllib.py": {
         "hash": "n/a",
         "libraries": [

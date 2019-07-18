@@ -48,7 +48,7 @@ def test_response_to_inbound_cat(app, manual_flush):
     response = app.fetch('/force-cat-response/%s/%s/%s' %
             (client_cross_process_id, txn_header, manual_flush))
     assert response.code == 200
-    assert 'X-Newrelic-App-Data' in list(response.headers.keys())
+    assert 'X-NewRelic-App-Data' in list(response.headers.keys())
 
 
 @validate_transaction_event_attributes(
@@ -81,7 +81,7 @@ def test_cat_headers_not_inserted(app):
     response = app.fetch('/304-cat-response/%s/%s' %
             (client_cross_process_id, txn_header))
     assert response.code == 304
-    assert 'X-Newrelic-App-Data' not in list(response.headers.keys())
+    assert 'X-NewRelic-App-Data' not in list(response.headers.keys())
 
 
 @override_application_settings(_custom_settings)

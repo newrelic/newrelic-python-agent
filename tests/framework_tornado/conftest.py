@@ -17,6 +17,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 _coverage_source = [
     'newrelic.hooks.framework_tornado',
+    'newrelic.hooks.external_tornado',
 ]
 
 code_coverage = code_coverage_fixture(source=_coverage_source)

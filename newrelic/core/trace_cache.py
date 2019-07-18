@@ -3,6 +3,7 @@
 """
 
 import sys
+import random
 import threading
 import weakref
 import traceback
@@ -14,6 +15,7 @@ except ImportError:
     import _thread as thread
 
 from newrelic.core.config import global_settings
+from newrelic.core.loop_node import LoopNode
 
 _logger = logging.getLogger(__name__)
 
@@ -212,6 +214,37 @@ class TraceCache(object):
 
         del self._cache[thread_id]
         trace._greenlet = None
+
+    def record_io_loop_wait(self, start_time, end_time):
+        transaction = self.current_transaction()
+        duration = end_time - start_time
+
+        if duration < transaction.settings.io_loop_detection_threshold:
+            return
+
+        # FIXME: the transaction name can change over time. We need to use only
+        # the finalized transaction name somehow.
+        name = transaction.path
+        roots = set()
+
+        for trace in self._cache.values():
+            # If the trace is on a different transaction and it's asyncio
+            if trace.transaction is not transaction and trace._task:
+                trace.exclusive -= duration
+                roots.add(trace.root)
+
+        for root in roots:
+            guid = '%016x' % random.getrandbits(64)
+            node = LoopNode(
+                name=name,
+                start_time=start_time,
+                end_time=end_time,
+                duration=duration,
+                guid=guid,
+            )
+            transaction = root.transaction
+            transaction._process_node(node)
+            root.process_child(node, ignore_exclusive=True)
 
 
 _trace_cache = TraceCache()

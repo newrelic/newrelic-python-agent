@@ -2556,6 +2556,12 @@ def _process_module_builtin_defaults():
     _process_module_definition('tornado.httpclient',
             'newrelic.hooks.framework_tornado',
             'instrument_tornado_httpclient')
+    _process_module_definition('tornado.routing',
+            'newrelic.hooks.framework_tornado',
+            'instrument_tornado_routing')
+    _process_module_definition('tornado.web',
+            'newrelic.hooks.framework_tornado',
+            'instrument_tornado_web')
 
 
 def _process_module_entry_points():

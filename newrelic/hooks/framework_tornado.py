@@ -1,4 +1,7 @@
+import inspect
 import sys
+from newrelic.api.function_trace import function_trace
+from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import current_trace
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.web_transaction import WebTransaction
@@ -269,3 +272,109 @@ def _nr_wrapper_httpclient_AsyncHTTPClient_fetch_(
 def instrument_tornado_httpclient(module):
     wrap_function_wrapper(module, 'AsyncHTTPClient.fetch',
             _nr_wrapper_httpclient_AsyncHTTPClient_fetch_)
+
+
+def _nr_rulerouter_process_rule(wrapped, instance, args, kwargs):
+    def _bind_params(rule, *args, **kwargs):
+        return rule
+
+    rule = _bind_params(*args, **kwargs)
+
+    _wrap_handlers(rule)
+
+    return wrapped(*args, **kwargs)
+
+
+@function_wrapper
+def _nr_method(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    if getattr(transaction, '_method_seen', None):
+        return wrapped(*args, **kwargs)
+
+    name = callable_name(wrapped)
+    transaction.set_transaction_name(name, priority=2)
+    transaction._method_seen = True
+    return function_trace(name=name)(wrapped)(*args, **kwargs)
+
+
+def _wrap_handlers(rule):
+    if isinstance(rule, (tuple, list)):
+        handler = rule[1]
+    elif hasattr(rule, 'target'):
+        handler = rule.target
+    elif hasattr(rule, 'handler_class'):
+        handler = rule.handler_class
+    else:
+        return
+
+    from tornado.web import RequestHandler
+    from tornado.websocket import WebSocketHandler
+
+    if isinstance(handler, (tuple, list)):
+        # Tornado supports nested rules. For example
+        #
+        # application = web.Application([
+        #     (HostMatches("example.com"), [
+        #         (r"/", MainPageHandler),
+        #         (r"/feed", FeedHandler),
+        #     ]),
+        # ])
+        for subrule in handler:
+            _wrap_handlers(subrule)
+        return
+
+    elif (not inspect.isclass(handler) or
+            issubclass(handler, WebSocketHandler) or
+            not issubclass(handler, RequestHandler)):
+        # This handler does not inherit from RequestHandler so we ignore it.
+        # Tornado supports non class based views and this is probably one of
+        # those. It has also been observed that tornado's internals will pass
+        # class instances as well.
+        return
+
+    if not hasattr(handler, 'SUPPORTED_METHODS'):
+        return
+
+    # Wrap all supported view methods with our FunctionTrace
+    # instrumentation
+    for request_method in handler.SUPPORTED_METHODS:
+        _wrap_if_not_wrapped(handler, request_method.lower(), _nr_method)
+
+
+def _nr_wrapper_web_errorhandler_init(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    name = callable_name(instance)
+    transaction.set_transaction_name(name, priority=2)
+    return wrapped(*args, **kwargs)
+
+
+def _nr_wrapper_web_requesthandler_init(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    name = callable_name(instance)
+    transaction.set_transaction_name(name, priority=1)
+    return wrapped(*args, **kwargs)
+
+
+def instrument_tornado_routing(module):
+    wrap_function_wrapper(module, 'RuleRouter.process_rule',
+            _nr_rulerouter_process_rule)
+
+
+def instrument_tornado_web(module):
+    wrap_function_wrapper(module, 'ErrorHandler.__init__',
+            _nr_wrapper_web_errorhandler_init)
+
+    wrap_function_wrapper(module, 'RequestHandler.__init__',
+            _nr_wrapper_web_requesthandler_init)

@@ -10,15 +10,15 @@ from testing_support.validators.validate_transaction_count import (
 
 
 @pytest.mark.parametrize('uri,name,metrics', (
-    ('/native-simple', 'tornado.routing:_RoutingDelegate', None),
-    ('/simple', 'tornado.routing:_RoutingDelegate', None),
-    ('/call-simple', 'tornado.routing:_RoutingDelegate', None),
-    ('/coro', 'tornado.routing:_RoutingDelegate', None),
-    ('/fake-coro', 'tornado.routing:_RoutingDelegate', None),
-    ('/coro-throw', 'tornado.routing:_RoutingDelegate', None),
-    ('/init', 'tornado.routing:_RoutingDelegate', None),
-    ('/multi-trace',
-            'tornado.routing:_RoutingDelegate', [('Function/trace', 2)]),
+    ('/native-simple', '_target_application:NativeSimpleHandler.get', None),
+    ('/simple', '_target_application:SimpleHandler.get', None),
+    ('/call-simple', '_target_application:CallSimpleHandler.get', None),
+    ('/coro', '_target_application:CoroHandler.get', None),
+    ('/fake-coro', '_target_application:FakeCoroHandler.get', None),
+    ('/coro-throw', '_target_application:CoroThrowHandler.get', None),
+    ('/init', '_target_application:InitializeHandler.get', None),
+    ('/multi-trace', '_target_application:MultiTraceHandler.get',
+        [('Function/trace', 2)]),
 ))
 @override_application_settings({'attributes.include': ['request.*']})
 def test_server(app, uri, name, metrics):
@@ -54,17 +54,18 @@ def test_server(app, uri, name, metrics):
 
 
 @pytest.mark.parametrize('uri,name,metrics', (
-    ('/native-simple', 'tornado.routing:_RoutingDelegate', None),
-    ('/simple', 'tornado.routing:_RoutingDelegate', None),
-    ('/call-simple', 'tornado.routing:_RoutingDelegate', None),
-    ('/coro', 'tornado.routing:_RoutingDelegate', None),
-    ('/fake-coro', 'tornado.routing:_RoutingDelegate', None),
-    ('/coro-throw', 'tornado.routing:_RoutingDelegate', None),
-    ('/init', 'tornado.routing:_RoutingDelegate', None),
+    ('/native-simple', '_target_application:NativeSimpleHandler.get', None),
+    ('/simple', '_target_application:SimpleHandler.get', None),
+    ('/call-simple', '_target_application:CallSimpleHandler.get', None),
+    ('/coro', '_target_application:CoroHandler.get', None),
+    ('/fake-coro', '_target_application:FakeCoroHandler.get', None),
+    ('/coro-throw', '_target_application:CoroThrowHandler.get', None),
+    ('/init', '_target_application:InitializeHandler.get', None),
     ('/ensure-future',
-            'tornado.routing:_RoutingDelegate', [('Function/trace', None)]),
-    ('/multi-trace',
-            'tornado.routing:_RoutingDelegate', [('Function/trace', 2)]),
+            '_target_application:EnsureFutureHandler.get',
+        [('Function/trace', None)]),
+    ('/multi-trace', '_target_application:MultiTraceHandler.get',
+        [('Function/trace', 2)]),
 ))
 def test_concurrent_inbound_requests(app, uri, name, metrics):
     from tornado import gen
@@ -117,7 +118,7 @@ def test_web_socket(app):
         return conn
 
     @validate_transaction_metrics(
-        "tornado.routing:_RoutingDelegate",
+        "_target_application:WebSocketHandler",
     )
     def connect():
         return app.io_loop.run_sync(_connect)

@@ -3,7 +3,7 @@ from newrelic.core.config import global_settings
 from testing_support.fixtures import (validate_transaction_metrics,
         override_generic_settings, function_not_called,
         validate_transaction_event_attributes,
-        validate_transaction_errors,
+        validate_transaction_errors, override_ignore_status_codes,
         override_application_settings)
 from testing_support.validators.validate_transaction_count import (
         validate_transaction_count)
@@ -94,6 +94,34 @@ def test_concurrent_inbound_requests(app, uri, name, metrics):
 def test_exceptions_are_recorded(app):
     response = app.fetch('/crash')
     assert response.code == 500
+
+
+@pytest.mark.parametrize('nr_enabled,ignore_status_codes', [
+    (True, []),
+    (False, None),
+])
+def test_unsupported_method(app, nr_enabled, ignore_status_codes):
+
+    def _test():
+        response = app.fetch('/simple',
+                method='TEAPOT', body=b'', allow_nonstandard_methods=True)
+        assert response.code == 405
+
+    if nr_enabled:
+        _test = override_ignore_status_codes(ignore_status_codes)(_test)
+        _test = validate_transaction_metrics(
+                '_target_application:SimpleHandler')(_test)
+
+        if ignore_status_codes:
+            _test = validate_transaction_errors(errors=[])(_test)
+        else:
+            _test = validate_transaction_errors(
+                    errors=['tornado.web:HTTPError'])(_test)
+    else:
+        settings = global_settings()
+        _test = override_generic_settings(settings, {'enabled': False})(_test)
+
+    _test()
 
 
 @override_generic_settings(global_settings(), {

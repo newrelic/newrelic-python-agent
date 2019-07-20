@@ -106,6 +106,7 @@ def test_exceptions_are_recorded(app):
 
 
 @pytest.mark.parametrize('nr_enabled,ignore_status_codes', [
+    (True, [405]),
     (True, []),
     (False, None),
 ])

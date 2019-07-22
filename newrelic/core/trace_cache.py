@@ -228,6 +228,9 @@ class TraceCache(object):
 
     def record_io_loop_wait(self, start_time, end_time):
         transaction = self.current_transaction()
+        if not transaction:
+            return
+
         duration = end_time - start_time
 
         if duration < transaction.settings.io_loop_detection_threshold:

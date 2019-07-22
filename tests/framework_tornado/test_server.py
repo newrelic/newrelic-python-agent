@@ -24,8 +24,11 @@ from testing_support.validators.validate_transaction_count import (
 @override_application_settings({'attributes.include': ['request.*']})
 def test_server(app, uri, name, metrics):
     FRAMEWORK_METRIC = 'Python/Framework/Tornado/%s' % app.tornado_version
+    METHOD_METRIC = 'Function/%s' % name
+
     metrics = metrics or []
     metrics.append((FRAMEWORK_METRIC, 1))
+    metrics.append((METHOD_METRIC, 1))
 
     host = '127.0.0.1:' + str(app.get_http_port())
 
@@ -73,8 +76,11 @@ def test_concurrent_inbound_requests(app, uri, name, metrics):
     from tornado import gen
 
     FRAMEWORK_METRIC = 'Python/Framework/Tornado/%s' % app.tornado_version
+    METHOD_METRIC = 'Function/%s' % name
+
     metrics = metrics or []
     metrics.append((FRAMEWORK_METRIC, 1))
+    metrics.append((METHOD_METRIC, 1))
 
     @validate_transaction_count(2)
     @validate_transaction_metrics(
@@ -136,11 +142,15 @@ def test_nr_disabled(app):
     assert response.code == 200
 
 
-def test_web_socket(app):
+@pytest.mark.parametrize('uri,name', (
+    ('/web-socket', '_target_application:WebSocketHandler'),
+    ('/call-web-socket', '_target_application:WebNestedHandler'),
+))
+def test_web_socket(uri, name, app):
     import asyncio
     from tornado.websocket import websocket_connect
 
-    url = app.get_url('/web-socket').replace('http', 'ws')
+    url = app.get_url(uri).replace('http', 'ws')
 
     @asyncio.coroutine
     def _connect():
@@ -148,7 +158,7 @@ def test_web_socket(app):
         return conn
 
     @validate_transaction_metrics(
-        "_target_application:WebSocketHandler",
+        name,
     )
     def connect():
         return app.io_loop.run_sync(_connect)

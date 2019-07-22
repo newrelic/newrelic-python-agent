@@ -172,6 +172,11 @@ class EnsureFutureHandler(tornado.web.RequestHandler):
         asyncio.ensure_future(coro_trace())
 
 
+class WebNestedHandler(WebSocketHandler):
+    def on_message(self, message):
+        super(WebNestedHandler, self).on_message(message)
+
+
 class CustomApplication(
         tornado.httputil.HTTPServerConnectionDelegate,
         tornado.httputil.HTTPMessageDelegate):
@@ -211,6 +216,7 @@ def make_app(custom=False):
         (r'/multi-trace', MultiTraceHandler),
         (r'/web-socket', WebSocketHandler),
         (r'/ensure-future', EnsureFutureHandler),
+        (r'/call-web-socket', WebNestedHandler),
     ]
     if custom:
         return CustomApplication()

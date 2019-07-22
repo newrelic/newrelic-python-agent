@@ -74,6 +74,11 @@ class NativeSimpleHandler(tornado.web.RequestHandler):
         self.write("Hello, world")
 
 
+class SuperSimpleHandler(SimpleHandler):
+    def get(self):
+        super(SuperSimpleHandler, self).get()
+
+
 class CallSimpleHandler(tornado.web.RequestHandler):
     def get(self):
         SimpleHandler(self.application, self.request).get()
@@ -191,6 +196,7 @@ def make_app(custom=False):
         (r'/simple', SimpleHandler),
         (r'/crash', CrashHandler),
         (r'/call-simple', CallSimpleHandler),
+        (r'/super-simple', SuperSimpleHandler),
         (r'/coro', CoroHandler),
         (r'/coro-throw', CoroThrowHandler),
         (r'/fake-coro', FakeCoroHandler),

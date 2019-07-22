@@ -1,5 +1,4 @@
 import threading
-import warnings
 
 import newrelic.core.config
 import newrelic.core.agent
@@ -128,13 +127,7 @@ class Application(object):
             return self._agent.normalize_name(self._name, name, rule_type)
         return name, False
 
-    def compute_sampled(self, *args, **kwargs):
-        if args or kwargs:
-            warnings.warn((
-                'Providing arguments to compute_sampled is no longer expected.'
-                ' The compute_sampled interface will be changed to disallow '
-                'arguments in a future version of the agent.'),
-                DeprecationWarning)
+    def compute_sampled(self):
         if not self.active or not self.settings.distributed_tracing.enabled:
             return False
 

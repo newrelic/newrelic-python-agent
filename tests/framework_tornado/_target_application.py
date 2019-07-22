@@ -3,6 +3,7 @@ import tornado.web
 import tornado.gen
 import tornado.httpclient
 import tornado.websocket
+import tornado.httputil
 
 
 def dummy(*args, **kwargs):
@@ -166,7 +167,26 @@ class EnsureFutureHandler(tornado.web.RequestHandler):
         asyncio.ensure_future(coro_trace())
 
 
-def make_app():
+class CustomApplication(
+        tornado.httputil.HTTPServerConnectionDelegate,
+        tornado.httputil.HTTPMessageDelegate):
+
+    def start_request(self, server_conn, http_conn):
+        self.server_conn = server_conn
+        self.http_conn = http_conn
+        return self
+
+    def finish(self):
+        response_line = tornado.httputil.ResponseStartLine(
+                "HTTP/1.1", 200, "OK")
+        headers = tornado.httputil.HTTPHeaders()
+        headers["Content-Type"] = "text/plain"
+        self.http_conn.write_headers(response_line, headers)
+        self.http_conn.write(b"*")
+        self.http_conn.finish()
+
+
+def make_app(custom=False):
     handlers = [
         (r'/simple', SimpleHandler),
         (r'/crash', CrashHandler),
@@ -186,7 +206,10 @@ def make_app():
         (r'/web-socket', WebSocketHandler),
         (r'/ensure-future', EnsureFutureHandler),
     ]
-    return tornado.web.Application(handlers, log_function=dummy)
+    if custom:
+        return CustomApplication()
+    else:
+        return tornado.web.Application(handlers, log_function=dummy)
 
 
 if __name__ == "__main__":

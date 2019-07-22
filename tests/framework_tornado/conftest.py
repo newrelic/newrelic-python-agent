@@ -22,15 +22,16 @@ _coverage_source = [
 code_coverage = code_coverage_fixture(source=_coverage_source)
 
 
-@pytest.fixture(scope='session')
-def app():
+@pytest.fixture(scope='module')
+def app(request):
     import tornado
     from tornado.testing import AsyncHTTPTestCase
     from _target_application import make_app
 
     class App(AsyncHTTPTestCase):
         def get_app(self):
-            return make_app()
+            custom = request.node.get_closest_marker("custom_app")
+            return make_app(custom)
 
         def runTest(self, *args, **kwargs):
             pass

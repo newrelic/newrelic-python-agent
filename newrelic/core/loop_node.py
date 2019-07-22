@@ -6,7 +6,7 @@ from newrelic.core.node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
 
 _LoopNode = namedtuple('_LoopNode',
-        ['name', 'start_time', 'end_time', 'duration', 'guid'])
+        ['fetch_name', 'start_time', 'end_time', 'duration', 'guid'])
 
 
 class LoopNode(_LoopNode, GenericNodeMixin):
@@ -22,6 +22,10 @@ class LoopNode(_LoopNode, GenericNodeMixin):
     @property
     def children(self):
         return ()
+
+    @property
+    def name(self):
+        return self.fetch_name()
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this

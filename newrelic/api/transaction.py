@@ -79,6 +79,22 @@ class Sentinel(TimeTrace):
         pass
 
 
+class CachedPath(object):
+    def __init__(self, transaction):
+        self._name = None
+        self.transaction = weakref.ref(transaction)
+
+    def path(self):
+        if self._name is not None:
+            return self._name
+
+        transaction = self.transaction()
+        if transaction:
+            return transaction.path
+
+        return 'Unknown'
+
+
 class Transaction(object):
 
     STATE_PENDING = 0
@@ -102,6 +118,7 @@ class Transaction(object):
         self._name_priority = 0
         self._group = None
         self._name = None
+        self._cached_path = CachedPath(self)
 
         self._frameworks = set()
 
@@ -413,6 +430,7 @@ class Transaction(object):
             # transaction when distributed tracing or span events are enabled.
             self._compute_sampled_and_priority()
 
+        self._cached_path._name = self.path
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
                 path=self.path,

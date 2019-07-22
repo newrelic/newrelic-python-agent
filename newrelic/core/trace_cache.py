@@ -236,9 +236,7 @@ class TraceCache(object):
         if duration < transaction.settings.io_loop_detection_threshold:
             return
 
-        # FIXME: the transaction name can change over time. We need to use only
-        # the finalized transaction name somehow.
-        name = transaction.path
+        fetch_name = transaction._cached_path.path
         roots = set()
 
         for trace in self._cache.values():
@@ -250,7 +248,7 @@ class TraceCache(object):
         for root in roots:
             guid = '%016x' % random.getrandbits(64)
             node = LoopNode(
-                name=name,
+                fetch_name=fetch_name,
                 start_time=start_time,
                 end_time=end_time,
                 duration=duration,

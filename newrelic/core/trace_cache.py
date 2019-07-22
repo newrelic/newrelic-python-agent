@@ -178,9 +178,17 @@ class TraceCache(object):
                 if greenlet:
                     trace._greenlet = weakref.ref(greenlet.getcurrent())
 
+                asyncio = sys.modules.get('asyncio')
+                if asyncio and not hasattr(trace, '_task'):
+                    task = current_task()
+                    trace._task = task
+
     def pop_current(self, trace):
         """Restore the trace's parent under the thread ID of the current
         executing thread."""
+
+        if hasattr(trace, '_task'):
+            delattr(trace, '_task')
 
         thread_id = trace.thread_id
         parent = trace.parent
@@ -191,6 +199,9 @@ class TraceCache(object):
         actually saved away under the current executing thread.
 
         """
+
+        if hasattr(trace, '_task'):
+            delattr(trace, '_task')
 
         thread_id = trace.thread_id
 

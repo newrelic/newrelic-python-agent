@@ -152,6 +152,20 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         self.write_message("hello " + message)
 
 
+class EnsureFutureHandler(tornado.web.RequestHandler):
+    def get(self):
+        import asyncio
+
+        @asyncio.coroutine
+        def coro_trace():
+            from newrelic.api.function_trace import FunctionTrace
+
+            with FunctionTrace(name='trace', terminal=True):
+                yield from tornado.gen.sleep(0)
+
+        asyncio.ensure_future(coro_trace())
+
+
 def make_app():
     handlers = [
         (r'/simple', SimpleHandler),
@@ -170,6 +184,7 @@ def make_app():
         (r'/native-simple', NativeSimpleHandler),
         (r'/multi-trace', MultiTraceHandler),
         (r'/web-socket', WebSocketHandler),
+        (r'/ensure-future', EnsureFutureHandler),
     ]
     return tornado.web.Application(handlers, log_function=dummy)
 

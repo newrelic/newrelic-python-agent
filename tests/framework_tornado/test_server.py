@@ -61,6 +61,8 @@ def test_server(app, uri, name, metrics):
     ('/fake-coro', 'tornado.routing:_RoutingDelegate', None),
     ('/coro-throw', 'tornado.routing:_RoutingDelegate', None),
     ('/init', 'tornado.routing:_RoutingDelegate', None),
+    ('/ensure-future',
+            'tornado.routing:_RoutingDelegate', [('Function/trace', None)]),
     ('/multi-trace',
             'tornado.routing:_RoutingDelegate', [('Function/trace', 2)]),
 ))

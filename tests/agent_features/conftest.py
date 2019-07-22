@@ -43,4 +43,5 @@ if six.PY2:
         'test_coroutine_trace.py',
         'test_coroutine_transaction.py',
         'test_async_timing.py',
+        'test_io_loop_wait_time.py',
     ]

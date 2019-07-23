@@ -2,7 +2,8 @@ import pytest
 import asyncio
 import time
 from newrelic.api.background_task import background_task
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.fixtures import (validate_transaction_metrics,
+        override_application_settings)
 
 
 @background_task(name="block")
@@ -16,15 +17,6 @@ def block_loop(ready, done, blocking_transaction_active):
         yield from ready.wait()
 
 
-_wait_metrics_scoped = (
-    ("EventLoop/Wait/OtherTransaction/Function/block", 1),
-)
-_wait_metrics_rollup = (
-    ("EventLoop/Wait/all", 1),
-    ("EventLoop/Wait/allOther", 1),
-)
-
-
 @background_task(name="wait")
 @asyncio.coroutine
 def wait_for_loop(ready, done):
@@ -33,9 +25,26 @@ def wait_for_loop(ready, done):
     ready.set()
 
 
-@pytest.mark.parametrize('blocking_transaction_active', (True, False))
-def test_record_event_loop_wait(blocking_transaction_active):
+@pytest.mark.parametrize(
+    'blocking_transaction_active,event_loop_visibility_enabled', (
+    (True, True),
+    (False, True),
+    (False, False),
+))
+def test_record_event_loop_wait(
+        blocking_transaction_active,
+        event_loop_visibility_enabled):
     import asyncio
+
+    metric_count = 1 if event_loop_visibility_enabled else None
+
+    scoped = (
+        ("EventLoop/Wait/OtherTransaction/Function/block", metric_count),
+    )
+    rollup = (
+        ("EventLoop/Wait/all", metric_count),
+        ("EventLoop/Wait/allOther", metric_count),
+    )
 
     ready, done = (asyncio.Event(), asyncio.Event())
     future = asyncio.gather(
@@ -45,10 +54,13 @@ def test_record_event_loop_wait(blocking_transaction_active):
 
     index = 0 if blocking_transaction_active else -1
 
+    @override_application_settings({
+        'event_loop_visibility.enabled': event_loop_visibility_enabled,
+    })
     @validate_transaction_metrics(
         "wait",
-        scoped_metrics=_wait_metrics_scoped,
-        rollup_metrics=_wait_metrics_rollup,
+        scoped_metrics=scoped,
+        rollup_metrics=rollup,
         background_task=True,
         index=index,
     )

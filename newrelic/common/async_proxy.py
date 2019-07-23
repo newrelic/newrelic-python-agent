@@ -53,7 +53,7 @@ class TransactionContext(object):
             start_time = self.enter_time
             self.enter_time = None
 
-            trace_cache().record_io_loop_wait(start_time, exit_time)
+            trace_cache().record_event_loop_wait(start_time, exit_time)
 
         global CancelledError
 

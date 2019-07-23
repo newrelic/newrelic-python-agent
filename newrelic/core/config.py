@@ -205,7 +205,7 @@ class TransactionSegmentAttributesSettings(Settings):
     pass
 
 
-class IoLoopVisibilitySettings(Settings):
+class EventLoopVisibilitySettings(Settings):
     pass
 
 
@@ -220,7 +220,7 @@ _settings.browser_monitoring = BrowserMonitorSettings()
 _settings.browser_monitoring.attributes = BrowserMonitorAttributesSettings()
 _settings.transaction_name = TransactionNameSettings()
 _settings.transaction_metrics = TransactionMetricsSettings()
-_settings.io_loop_visibility = IoLoopVisibilitySettings()
+_settings.event_loop_visibility = EventLoopVisibilitySettings()
 _settings.rum = RumSettings()
 _settings.slow_sql = SlowSqlSettings()
 _settings.agent_limits = AgentLimitsSettings()
@@ -638,8 +638,8 @@ _settings.serverless_mode.enabled = _environ_as_bool(
         default=False)
 _settings.aws_arn = None
 
-_settings.io_loop_visibility.enabled = True
-_settings.io_loop_visibility.blocking_threshold = 0.1
+_settings.event_loop_visibility.enabled = True
+_settings.event_loop_visibility.blocking_threshold = 0.1
 
 
 def global_settings():

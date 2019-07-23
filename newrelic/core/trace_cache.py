@@ -226,11 +226,11 @@ class TraceCache(object):
         del self._cache[thread_id]
         trace._greenlet = None
 
-    def record_io_loop_wait(self, start_time, end_time):
+    def record_event_loop_wait(self, start_time, end_time):
         transaction = self.current_transaction()
         if not transaction:
             return
-        settings = transaction.settings.io_loop_visibility
+        settings = transaction.settings.event_loop_visibility
 
         if not settings.enabled:
             return

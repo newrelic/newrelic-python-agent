@@ -33,7 +33,7 @@ class LoopNode(_LoopNode, GenericNodeMixin):
 
         """
 
-        name = 'IoLoop/Wait/%s' % self.name
+        name = 'EventLoop/Wait/%s' % self.name
 
         yield TimeMetric(name=name, scope='', duration=self.duration,
                 exclusive=self.duration)
@@ -41,7 +41,7 @@ class LoopNode(_LoopNode, GenericNodeMixin):
         yield TimeMetric(name=name, scope=root.path,
                 duration=self.duration, exclusive=self.duration)
 
-        name = 'IoLoop/Wait/all'
+        name = 'EventLoop/Wait/all'
 
         # Create IO loop rollup metrics
         yield TimeMetric(name=name, scope='', duration=self.duration,
@@ -56,7 +56,7 @@ class LoopNode(_LoopNode, GenericNodeMixin):
 
     def trace_node(self, stats, root, connections):
 
-        name = 'IoLoop/Wait/%s' % self.name
+        name = 'EventLoop/Wait/%s' % self.name
 
         name = root.string_table.cache(name)
 
@@ -80,6 +80,6 @@ class LoopNode(_LoopNode, GenericNodeMixin):
         attrs = super(LoopNode, self).span_event(*args, **kwargs)
         i_attrs = attrs[0]
 
-        i_attrs['name'] = 'IoLoop/Wait/%s' % self.name
+        i_attrs['name'] = 'EventLoop/Wait/%s' % self.name
 
         return attrs

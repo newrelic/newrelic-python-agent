@@ -17,11 +17,11 @@ def block_loop(ready, done, blocking_transaction_active):
 
 
 _wait_metrics_scoped = (
-    ("IoLoop/Wait/OtherTransaction/Function/block", 1),
+    ("EventLoop/Wait/OtherTransaction/Function/block", 1),
 )
 _wait_metrics_rollup = (
-    ("IoLoop/Wait/all", 1),
-    ("IoLoop/Wait/allOther", 1),
+    ("EventLoop/Wait/all", 1),
+    ("EventLoop/Wait/allOther", 1),
 )
 
 
@@ -34,7 +34,7 @@ def wait_for_loop(ready, done):
 
 
 @pytest.mark.parametrize('blocking_transaction_active', (True, False))
-def test_record_io_loop_wait(blocking_transaction_active):
+def test_record_event_loop_wait(blocking_transaction_active):
     import asyncio
 
     ready, done = (asyncio.Event(), asyncio.Event())

@@ -4,6 +4,7 @@ import tornado.gen
 import tornado.httpclient
 import tornado.websocket
 import tornado.httputil
+from tornado.routing import PathMatches
 
 
 def dummy(*args, **kwargs):
@@ -198,7 +199,7 @@ class CustomApplication(
 
 def make_app(custom=False):
     handlers = [
-        (r'/simple', SimpleHandler),
+        (PathMatches(r'/simple'), SimpleHandler),
         (r'/crash', CrashHandler),
         (r'/call-simple', CallSimpleHandler),
         (r'/super-simple', SuperSimpleHandler),

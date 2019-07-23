@@ -230,10 +230,14 @@ class TraceCache(object):
         transaction = self.current_transaction()
         if not transaction:
             return
+        settings = transaction.settings.io_loop_visibility
+
+        if not settings.enabled:
+            return
 
         duration = end_time - start_time
 
-        if duration < transaction.settings.io_loop_detection_threshold:
+        if duration < settings.blocking_threshold:
             return
 
         fetch_name = transaction._cached_path.path

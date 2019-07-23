@@ -205,6 +205,10 @@ class TransactionSegmentAttributesSettings(Settings):
     pass
 
 
+class IoLoopVisibilitySettings(Settings):
+    pass
+
+
 _settings = Settings()
 _settings.attributes = AttributesSettings()
 _settings.thread_profiler = ThreadProfilerSettings()
@@ -216,6 +220,7 @@ _settings.browser_monitoring = BrowserMonitorSettings()
 _settings.browser_monitoring.attributes = BrowserMonitorAttributesSettings()
 _settings.transaction_name = TransactionNameSettings()
 _settings.transaction_metrics = TransactionMetricsSettings()
+_settings.io_loop_visibility = IoLoopVisibilitySettings()
 _settings.rum = RumSettings()
 _settings.slow_sql = SlowSqlSettings()
 _settings.agent_limits = AgentLimitsSettings()
@@ -438,7 +443,6 @@ _settings.collect_analytics_events = True
 _settings.collect_custom_events = True
 
 _settings.apdex_t = _environ_as_float('NEW_RELIC_APDEX_T', 0.5)
-_settings.io_loop_detection_threshold = 0.1
 _settings.web_transactions_apdex = {}
 
 _settings.capture_params = None
@@ -633,6 +637,9 @@ _settings.serverless_mode.enabled = _environ_as_bool(
         'NEW_RELIC_SERVERLESS_MODE_ENABLED',
         default=False)
 _settings.aws_arn = None
+
+_settings.io_loop_visibility.enabled = True
+_settings.io_loop_visibility.blocking_threshold = 0.1
 
 
 def global_settings():

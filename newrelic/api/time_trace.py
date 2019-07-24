@@ -111,6 +111,11 @@ class TimeTrace(object):
 
         transaction = self.root.transaction
 
+        # If the transaction has gone out of scope (recorded), there's not much
+        # we can do at this point.
+        if not transaction:
+            return
+
         # If recording of time for transaction has already been
         # stopped, then that time has to be used.
 

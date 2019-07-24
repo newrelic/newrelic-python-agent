@@ -422,5 +422,36 @@ def test_incomplete_coroutine(nr_transaction):
     _test()
 
 
+def test_trace_outlives_transaction():
+    task = []
+    running, finish = asyncio.Event(), asyncio.Event()
+
+    @function_trace(name='coro')
+    @asyncio.coroutine
+    def _coro():
+        running.set()
+        yield from finish.wait()
+
+    @asyncio.coroutine
+    def parent():
+        task.append(asyncio.ensure_future(_coro()))
+        yield from running.wait()
+
+    loop = asyncio.get_event_loop()
+
+    @validate_transaction_metrics(
+        'test_trace_outlives_transaction',
+        background_task=True,
+        scoped_metrics=(('Function/coro', None),),
+    )
+    @background_task(name='test_trace_outlives_transaction')
+    def _test():
+        loop.run_until_complete(parent())
+
+    _test()
+    finish.set()
+    loop.run_until_complete(task.pop())
+
+
 if sys.version_info >= (3, 5):
     from _test_async_coroutine_trace import *  # NOQA

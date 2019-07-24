@@ -3,6 +3,7 @@
 """
 
 import sys
+import random
 import threading
 import weakref
 import traceback
@@ -14,6 +15,7 @@ except ImportError:
     import _thread as thread
 
 from newrelic.core.config import global_settings
+from newrelic.core.loop_node import LoopNode
 
 _logger = logging.getLogger(__name__)
 
@@ -176,9 +178,17 @@ class TraceCache(object):
                 if greenlet:
                     trace._greenlet = weakref.ref(greenlet.getcurrent())
 
+                asyncio = sys.modules.get('asyncio')
+                if asyncio and not hasattr(trace, '_task'):
+                    task = current_task()
+                    trace._task = task
+
     def pop_current(self, trace):
         """Restore the trace's parent under the thread ID of the current
         executing thread."""
+
+        if hasattr(trace, '_task'):
+            delattr(trace, '_task')
 
         thread_id = trace.thread_id
         parent = trace.parent
@@ -189,6 +199,9 @@ class TraceCache(object):
         actually saved away under the current executing thread.
 
         """
+
+        if hasattr(trace, '_task'):
+            delattr(trace, '_task')
 
         thread_id = trace.thread_id
 
@@ -212,6 +225,42 @@ class TraceCache(object):
 
         del self._cache[thread_id]
         trace._greenlet = None
+
+    def record_event_loop_wait(self, start_time, end_time):
+        transaction = self.current_transaction()
+        if not transaction:
+            return
+        settings = transaction.settings.event_loop_visibility
+
+        if not settings.enabled:
+            return
+
+        duration = end_time - start_time
+
+        if duration < settings.blocking_threshold:
+            return
+
+        fetch_name = transaction._cached_path.path
+        roots = set()
+
+        for trace in self._cache.values():
+            # If the trace is on a different transaction and it's asyncio
+            if trace.transaction is not transaction and trace._task:
+                trace.exclusive -= duration
+                roots.add(trace.root)
+
+        for root in roots:
+            guid = '%016x' % random.getrandbits(64)
+            node = LoopNode(
+                fetch_name=fetch_name,
+                start_time=start_time,
+                end_time=end_time,
+                duration=duration,
+                guid=guid,
+            )
+            transaction = root.transaction
+            transaction._process_node(node)
+            root.process_child(node, ignore_exclusive=True)
 
 
 _trace_cache = TraceCache()

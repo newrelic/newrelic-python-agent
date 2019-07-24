@@ -1037,6 +1037,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/loop_node.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/memcache_node.py": {
         "hash": "n/a",
         "libraries": [

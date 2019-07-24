@@ -1,9 +1,11 @@
 import logging
+import time
 import newrelic.packages.six as six
 
 from newrelic.common.coroutine import (is_coroutine_function,
         is_asyncio_coroutine, is_generator_function)
 from newrelic.common.object_wrapper import ObjectProxy
+from newrelic.core.trace_cache import trace_cache
 
 _logger = logging.getLogger(__name__)
 
@@ -12,6 +14,7 @@ CancelledError = None
 
 class TransactionContext(object):
     def __init__(self, transaction):
+        self.enter_time = None
         self.transaction = transaction
         if not self.transaction.enabled:
             self.transaction = None
@@ -38,11 +41,19 @@ class TransactionContext(object):
         if not self.transaction._state:
             self.transaction.__enter__()
 
+        self.enter_time = time.time()
         return self
 
     def __exit__(self, exc, value, tb):
         if not self.transaction:
             return
+
+        if self.enter_time is not None:
+            exit_time = time.time()
+            start_time = self.enter_time
+            self.enter_time = None
+
+            trace_cache().record_event_loop_wait(start_time, exit_time)
 
         global CancelledError
 

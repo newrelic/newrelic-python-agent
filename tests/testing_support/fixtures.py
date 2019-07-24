@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 import os
@@ -408,7 +409,7 @@ def make_synthetics_header(account_id, resource_id, job_id, monitor_id,
 
 def validate_transaction_metrics(name, group='Function',
         background_task=False, scoped_metrics=[], rollup_metrics=[],
-        custom_metrics=[]):
+        custom_metrics=[], index=-1):
 
     if background_task:
         unscoped_metrics = [
@@ -445,7 +446,12 @@ def validate_transaction_metrics(name, group='Function',
                 raise
             else:
                 metrics = instance.stats_table
-                recorded_metrics.append(metrics)
+                # Record a copy of the metric value so that the values aren't
+                # merged in the future
+                _metrics = {}
+                for k, v in metrics.items():
+                    _metrics[k] = copy.copy(v)
+                recorded_metrics.append(_metrics)
 
             return result
 
@@ -476,8 +482,10 @@ def validate_transaction_metrics(name, group='Function',
         _new_wrapper = _validate_transaction_metrics(wrapped)
         val = _new_wrapper(*args, **kwargs)
         assert record_transaction_called
-        record_transaction_called.pop()
-        metrics = recorded_metrics.pop()
+        metrics = recorded_metrics[index]
+
+        record_transaction_called[:] = []
+        recorded_metrics[:] = []
 
         for unscoped_metric in unscoped_metrics:
             _validate(metrics, unscoped_metric, '', 1)

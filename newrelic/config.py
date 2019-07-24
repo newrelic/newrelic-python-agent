@@ -556,6 +556,10 @@ def _process_configuration(section):
                      'get', _map_split_strings)
     _process_setting(section, 'serverless_mode.enabled', 'getboolean', None)
     _process_setting(section, 'apdex_t', 'getfloat', None)
+    _process_setting(section, 'event_loop_visibility.enabled',
+                    'getboolean', None)
+    _process_setting(section, 'event_loop_visibility.blocking_threshold',
+                    'getfloat', None)
 
 
 # Loading of configuration from specified file and for specified

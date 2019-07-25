@@ -132,6 +132,21 @@ def test_unsupported_method(app, nr_enabled, ignore_status_codes):
     _test()
 
 
+@validate_transaction_errors(errors=['tornado.web:HTTPError'])
+@validate_transaction_metrics('tornado.web:ErrorHandler')
+@validate_transaction_event_attributes(
+    required_params={'agent': (), 'user': (), 'intrinsic': ()},
+    exact_attrs={
+        'agent': {'request.uri': '/does-not-exist'},
+        'user': {},
+        'intrinsic': {},
+    },
+)
+def test_not_found(app):
+    response = app.fetch('/does-not-exist')
+    assert response.code == 404
+
+
 @override_generic_settings(global_settings(), {
     'enabled': False,
 })

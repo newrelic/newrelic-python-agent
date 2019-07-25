@@ -118,6 +118,7 @@ def transaction_node(request):
             sampled=True,
             root_span_guid=None,
             trace_id='4485b89db608aece',
+            loop_time=0.0,
     )
     return node
 

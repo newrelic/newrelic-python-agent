@@ -29,6 +29,8 @@ def coroutine_test(transaction, nr_enabled=True, does_hang=False,
 
         if not nr_enabled:
             assert txn is None
+        else:
+            assert txn._loop_time == 0.0
 
         if call_exit:
             txn.__exit__(None, None, None)
@@ -40,6 +42,9 @@ def coroutine_test(transaction, nr_enabled=True, does_hang=False,
                 yield from loop.create_future()
             else:
                 yield from asyncio.sleep(0.0)
+                if nr_enabled and txn.enabled:
+                    # Validate loop time is recorded after suspend
+                    assert txn._loop_time > 0.0
         except GeneratorExit:
             if runtime_error:
                 yield from asyncio.sleep(0.0)

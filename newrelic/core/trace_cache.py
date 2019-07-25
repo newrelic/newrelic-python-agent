@@ -236,6 +236,7 @@ class TraceCache(object):
             return
 
         duration = end_time - start_time
+        transaction._loop_time += duration
 
         if duration < settings.blocking_threshold:
             return

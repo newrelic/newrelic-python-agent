@@ -165,29 +165,36 @@ def test_web_socket(uri, name, app):
     import asyncio
     from tornado.websocket import websocket_connect
 
-    url = app.get_url(uri).replace('http', 'ws')
-
-    @asyncio.coroutine
-    def _connect():
-        conn = yield from websocket_connect(url)
-        return conn
-
     @validate_transaction_metrics(
         name,
+        rollup_metrics=[('Function/%s' % name, None)],
     )
-    def connect():
-        return app.io_loop.run_sync(_connect)
+    def _test():
+        url = app.get_url(uri).replace('http', 'ws')
 
-    @function_not_called('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
-    def call(call):
         @asyncio.coroutine
-        def _call():
-            yield from conn.write_message("test")
-            resp = yield from conn.read_message()
-            assert resp == "hello test"
-        app.io_loop.run_sync(_call)
+        def _connect():
+            conn = yield from websocket_connect(url)
+            return conn
 
-    conn = connect()
-    call(conn)
-    conn.close()
+        @validate_transaction_metrics(
+            name,
+        )
+        def connect():
+            return app.io_loop.run_sync(_connect)
+
+        @function_not_called('newrelic.core.stats_engine',
+                'StatsEngine.record_transaction')
+        def call(call):
+            @asyncio.coroutine
+            def _call():
+                yield from conn.write_message("test")
+                resp = yield from conn.read_message()
+                assert resp == "hello test"
+            app.io_loop.run_sync(_call)
+
+        conn = connect()
+        call(conn)
+        conn.close()
+
+    _test()

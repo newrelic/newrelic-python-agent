@@ -3,28 +3,32 @@ from newrelic.core.config import global_settings
 from testing_support.fixtures import (validate_transaction_metrics,
         override_generic_settings, function_not_called,
         validate_transaction_event_attributes,
-        validate_transaction_errors,
+        validate_transaction_errors, override_ignore_status_codes,
         override_application_settings)
 from testing_support.validators.validate_transaction_count import (
         validate_transaction_count)
 
 
 @pytest.mark.parametrize('uri,name,metrics', (
-    ('/native-simple', 'tornado.routing:_RoutingDelegate', None),
-    ('/simple', 'tornado.routing:_RoutingDelegate', None),
-    ('/call-simple', 'tornado.routing:_RoutingDelegate', None),
-    ('/coro', 'tornado.routing:_RoutingDelegate', None),
-    ('/fake-coro', 'tornado.routing:_RoutingDelegate', None),
-    ('/coro-throw', 'tornado.routing:_RoutingDelegate', None),
-    ('/init', 'tornado.routing:_RoutingDelegate', None),
-    ('/multi-trace',
-            'tornado.routing:_RoutingDelegate', [('Function/trace', 2)]),
+    ('/native-simple', '_target_application:NativeSimpleHandler.get', None),
+    ('/simple', '_target_application:SimpleHandler.get', None),
+    ('/call-simple', '_target_application:CallSimpleHandler.get', None),
+    ('/super-simple', '_target_application:SuperSimpleHandler.get', None),
+    ('/coro', '_target_application:CoroHandler.get', None),
+    ('/fake-coro', '_target_application:FakeCoroHandler.get', None),
+    ('/coro-throw', '_target_application:CoroThrowHandler.get', None),
+    ('/init', '_target_application:InitializeHandler.get', None),
+    ('/multi-trace', '_target_application:MultiTraceHandler.get',
+        [('Function/trace', 2)]),
 ))
 @override_application_settings({'attributes.include': ['request.*']})
 def test_server(app, uri, name, metrics):
     FRAMEWORK_METRIC = 'Python/Framework/Tornado/%s' % app.tornado_version
+    METHOD_METRIC = 'Function/%s' % name
+
     metrics = metrics or []
     metrics.append((FRAMEWORK_METRIC, 1))
+    metrics.append((METHOD_METRIC, 1))
 
     host = '127.0.0.1:' + str(app.get_http_port())
 
@@ -54,24 +58,29 @@ def test_server(app, uri, name, metrics):
 
 
 @pytest.mark.parametrize('uri,name,metrics', (
-    ('/native-simple', 'tornado.routing:_RoutingDelegate', None),
-    ('/simple', 'tornado.routing:_RoutingDelegate', None),
-    ('/call-simple', 'tornado.routing:_RoutingDelegate', None),
-    ('/coro', 'tornado.routing:_RoutingDelegate', None),
-    ('/fake-coro', 'tornado.routing:_RoutingDelegate', None),
-    ('/coro-throw', 'tornado.routing:_RoutingDelegate', None),
-    ('/init', 'tornado.routing:_RoutingDelegate', None),
+    ('/native-simple', '_target_application:NativeSimpleHandler.get', None),
+    ('/simple', '_target_application:SimpleHandler.get', None),
+    ('/call-simple', '_target_application:CallSimpleHandler.get', None),
+    ('/super-simple', '_target_application:SuperSimpleHandler.get', None),
+    ('/coro', '_target_application:CoroHandler.get', None),
+    ('/fake-coro', '_target_application:FakeCoroHandler.get', None),
+    ('/coro-throw', '_target_application:CoroThrowHandler.get', None),
+    ('/init', '_target_application:InitializeHandler.get', None),
     ('/ensure-future',
-            'tornado.routing:_RoutingDelegate', [('Function/trace', None)]),
-    ('/multi-trace',
-            'tornado.routing:_RoutingDelegate', [('Function/trace', 2)]),
+            '_target_application:EnsureFutureHandler.get',
+        [('Function/trace', None)]),
+    ('/multi-trace', '_target_application:MultiTraceHandler.get',
+        [('Function/trace', 2)]),
 ))
 def test_concurrent_inbound_requests(app, uri, name, metrics):
     from tornado import gen
 
     FRAMEWORK_METRIC = 'Python/Framework/Tornado/%s' % app.tornado_version
+    METHOD_METRIC = 'Function/%s' % name
+
     metrics = metrics or []
     metrics.append((FRAMEWORK_METRIC, 1))
+    metrics.append((METHOD_METRIC, 1))
 
     @validate_transaction_count(2)
     @validate_transaction_metrics(
@@ -89,10 +98,54 @@ def test_concurrent_inbound_requests(app, uri, name, metrics):
     _test()
 
 
+@validate_transaction_metrics('_target_application:CrashHandler.get')
 @validate_transaction_errors(['builtins:ValueError'])
 def test_exceptions_are_recorded(app):
     response = app.fetch('/crash')
     assert response.code == 500
+
+
+@pytest.mark.parametrize('nr_enabled,ignore_status_codes', [
+    (True, []),
+    (False, None),
+])
+def test_unsupported_method(app, nr_enabled, ignore_status_codes):
+
+    def _test():
+        response = app.fetch('/simple',
+                method='TEAPOT', body=b'', allow_nonstandard_methods=True)
+        assert response.code == 405
+
+    if nr_enabled:
+        _test = override_ignore_status_codes(ignore_status_codes)(_test)
+        _test = validate_transaction_metrics(
+                '_target_application:SimpleHandler')(_test)
+
+        if ignore_status_codes:
+            _test = validate_transaction_errors(errors=[])(_test)
+        else:
+            _test = validate_transaction_errors(
+                    errors=['tornado.web:HTTPError'])(_test)
+    else:
+        settings = global_settings()
+        _test = override_generic_settings(settings, {'enabled': False})(_test)
+
+    _test()
+
+
+@validate_transaction_errors(errors=['tornado.web:HTTPError'])
+@validate_transaction_metrics('tornado.web:ErrorHandler')
+@validate_transaction_event_attributes(
+    required_params={'agent': (), 'user': (), 'intrinsic': ()},
+    exact_attrs={
+        'agent': {'request.uri': '/does-not-exist'},
+        'user': {},
+        'intrinsic': {},
+    },
+)
+def test_not_found(app):
+    response = app.fetch('/does-not-exist')
+    assert response.code == 404
 
 
 @override_generic_settings(global_settings(), {
@@ -105,33 +158,44 @@ def test_nr_disabled(app):
     assert response.code == 200
 
 
-def test_web_socket(app):
+@pytest.mark.parametrize('uri,name', (
+    ('/web-socket', '_target_application:WebSocketHandler'),
+    ('/call-web-socket', '_target_application:WebNestedHandler'),
+))
+def test_web_socket(uri, name, app):
     import asyncio
     from tornado.websocket import websocket_connect
 
-    url = app.get_url('/web-socket').replace('http', 'ws')
-
-    @asyncio.coroutine
-    def _connect():
-        conn = yield from websocket_connect(url)
-        return conn
-
     @validate_transaction_metrics(
-        "tornado.routing:_RoutingDelegate",
+        name,
+        rollup_metrics=[('Function/%s' % name, None)],
     )
-    def connect():
-        return app.io_loop.run_sync(_connect)
+    def _test():
+        url = app.get_url(uri).replace('http', 'ws')
 
-    @function_not_called('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
-    def call(call):
         @asyncio.coroutine
-        def _call():
-            yield from conn.write_message("test")
-            resp = yield from conn.read_message()
-            assert resp == "hello test"
-        app.io_loop.run_sync(_call)
+        def _connect():
+            conn = yield from websocket_connect(url)
+            return conn
 
-    conn = connect()
-    call(conn)
-    conn.close()
+        @validate_transaction_metrics(
+            name,
+        )
+        def connect():
+            return app.io_loop.run_sync(_connect)
+
+        @function_not_called('newrelic.core.stats_engine',
+                'StatsEngine.record_transaction')
+        def call(call):
+            @asyncio.coroutine
+            def _call():
+                yield from conn.write_message("test")
+                resp = yield from conn.read_message()
+                assert resp == "hello test"
+            app.io_loop.run_sync(_call)
+
+        conn = connect()
+        call(conn)
+        conn.close()
+
+    _test()

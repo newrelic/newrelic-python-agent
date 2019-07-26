@@ -85,7 +85,7 @@ def test_cat_headers_not_inserted(app):
 
 
 @override_application_settings(_custom_settings)
-@validate_transaction_metrics('tornado.routing:_RoutingDelegate',
+@validate_transaction_metrics('_target_application:SimpleHandler.get',
         rollup_metrics=[('ClientApplication/1#1/all', 1)])
 @validate_transaction_event_attributes(
     required_params={'agent': [], 'user': [], 'intrinsic': []},
@@ -108,7 +108,7 @@ def test_inbound_cat_metrics_and_intrinsics(app):
     'distributed_tracing.enabled': True,
 })
 @validate_transaction_metrics(
-    'tornado.routing:_RoutingDelegate',
+    '_target_application:SimpleHandler.get',
     rollup_metrics=(
         ('Supportability/DistributedTrace/AcceptPayload/Success', 1),
     )

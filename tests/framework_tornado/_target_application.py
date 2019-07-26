@@ -3,6 +3,8 @@ import tornado.web
 import tornado.gen
 import tornado.httpclient
 import tornado.websocket
+import tornado.httputil
+from tornado.routing import PathMatches
 
 
 def dummy(*args, **kwargs):
@@ -71,6 +73,11 @@ class SimpleHandler(tornado.web.RequestHandler):
 class NativeSimpleHandler(tornado.web.RequestHandler):
     async def get(self):
         self.write("Hello, world")
+
+
+class SuperSimpleHandler(SimpleHandler):
+    def get(self):
+        super(SuperSimpleHandler, self).get()
 
 
 class CallSimpleHandler(tornado.web.RequestHandler):
@@ -166,11 +173,36 @@ class EnsureFutureHandler(tornado.web.RequestHandler):
         asyncio.ensure_future(coro_trace())
 
 
-def make_app():
+class WebNestedHandler(WebSocketHandler):
+    def on_message(self, message):
+        super(WebNestedHandler, self).on_message(message)
+
+
+class CustomApplication(
+        tornado.httputil.HTTPServerConnectionDelegate,
+        tornado.httputil.HTTPMessageDelegate):
+
+    def start_request(self, server_conn, http_conn):
+        self.server_conn = server_conn
+        self.http_conn = http_conn
+        return self
+
+    def finish(self):
+        response_line = tornado.httputil.ResponseStartLine(
+                "HTTP/1.1", 200, "OK")
+        headers = tornado.httputil.HTTPHeaders()
+        headers["Content-Type"] = "text/plain"
+        self.http_conn.write_headers(response_line, headers)
+        self.http_conn.write(b"*")
+        self.http_conn.finish()
+
+
+def make_app(custom=False):
     handlers = [
-        (r'/simple', SimpleHandler),
+        (PathMatches(r'/simple'), SimpleHandler),
         (r'/crash', CrashHandler),
         (r'/call-simple', CallSimpleHandler),
+        (r'/super-simple', SuperSimpleHandler),
         (r'/coro', CoroHandler),
         (r'/coro-throw', CoroThrowHandler),
         (r'/fake-coro', FakeCoroHandler),
@@ -185,8 +217,12 @@ def make_app():
         (r'/multi-trace', MultiTraceHandler),
         (r'/web-socket', WebSocketHandler),
         (r'/ensure-future', EnsureFutureHandler),
+        (r'/call-web-socket', WebNestedHandler),
     ]
-    return tornado.web.Application(handlers, log_function=dummy)
+    if custom:
+        return CustomApplication()
+    else:
+        return tornado.web.Application(handlers, log_function=dummy)
 
 
 if __name__ == "__main__":

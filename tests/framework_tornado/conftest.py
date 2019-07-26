@@ -12,26 +12,26 @@ _default_settings = {
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-        app_name='Python Agent Test (framework_tornado_r4)',
+        app_name='Python Agent Test (framework_tornado)',
         default_settings=_default_settings)
 
 _coverage_source = [
     'newrelic.hooks.framework_tornado',
-    'newrelic.hooks.external_tornado',
 ]
 
 code_coverage = code_coverage_fixture(source=_coverage_source)
 
 
-@pytest.fixture(scope='session')
-def app():
+@pytest.fixture(scope='module')
+def app(request):
     import tornado
     from tornado.testing import AsyncHTTPTestCase
     from _target_application import make_app
 
     class App(AsyncHTTPTestCase):
         def get_app(self):
-            return make_app()
+            custom = request.node.get_closest_marker("custom_app")
+            return make_app(custom)
 
         def runTest(self, *args, **kwargs):
             pass

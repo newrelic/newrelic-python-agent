@@ -345,17 +345,6 @@ def _wrap_handlers(rule):
         _wrap_if_not_wrapped(handler, request_method.lower(), _nr_method)
 
 
-def _nr_wrapper_web_errorhandler_init(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
-
-    if transaction is None:
-        return wrapped(*args, **kwargs)
-
-    name = callable_name(instance)
-    transaction.set_transaction_name(name, priority=2)
-    return wrapped(*args, **kwargs)
-
-
 def _nr_wrapper_web_requesthandler_init(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
@@ -373,8 +362,5 @@ def instrument_tornado_routing(module):
 
 
 def instrument_tornado_web(module):
-    wrap_function_wrapper(module, 'ErrorHandler.__init__',
-            _nr_wrapper_web_errorhandler_init)
-
     wrap_function_wrapper(module, 'RequestHandler.__init__',
             _nr_wrapper_web_requesthandler_init)

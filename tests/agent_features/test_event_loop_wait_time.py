@@ -2,6 +2,7 @@ import pytest
 import asyncio
 import time
 from newrelic.api.background_task import background_task
+from newrelic.api.function_trace import function_trace
 from testing_support.fixtures import (validate_transaction_metrics,
         override_application_settings)
 
@@ -17,19 +18,19 @@ def block_loop(ready, done, blocking_transaction_active):
         yield from ready.wait()
 
 
+@function_trace(name="waiter")
 @asyncio.coroutine
-def waiter(done):
+def waiter(ready, done):
+    ready.set()
     yield from done.wait()
 
 
 @background_task(name="wait")
 @asyncio.coroutine
 def wait_for_loop(ready, done):
-    ready.set()
-
     # Run the waiter on another task so that the sentinel for wait appears
     # multiple times in the trace cache
-    yield from asyncio.ensure_future(waiter(done))
+    yield from asyncio.ensure_future(waiter(ready, done))
 
     ready.set()
 

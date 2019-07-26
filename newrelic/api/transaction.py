@@ -119,6 +119,7 @@ class Transaction(object):
         self._group = None
         self._name = None
         self._cached_path = CachedPath(self)
+        self._loop_time = 0.0
 
         self._frameworks = set()
 
@@ -485,6 +486,7 @@ class Transaction(object):
                 parent_transport_type=self.parent_transport_type,
                 root_span_guid=root.guid,
                 trace_id=self.trace_id,
+                loop_time=self._loop_time,
         )
 
         # Clear settings as we are all done and don't need it

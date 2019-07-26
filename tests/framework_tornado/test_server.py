@@ -98,6 +98,7 @@ def test_concurrent_inbound_requests(app, uri, name, metrics):
     _test()
 
 
+@validate_transaction_metrics('_target_application:CrashHandler.get')
 @validate_transaction_errors(['builtins:ValueError'])
 def test_exceptions_are_recorded(app):
     response = app.fetch('/crash')

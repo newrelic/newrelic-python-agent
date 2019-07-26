@@ -17,11 +17,20 @@ def block_loop(ready, done, blocking_transaction_active):
         yield from ready.wait()
 
 
+@asyncio.coroutine
+def waiter(done):
+    yield from done.wait()
+
+
 @background_task(name="wait")
 @asyncio.coroutine
 def wait_for_loop(ready, done):
     ready.set()
-    yield from done.wait()
+
+    # Run the waiter on another task so that the sentinel for wait appears
+    # multiple times in the trace cache
+    yield from asyncio.ensure_future(waiter(done))
+
     ready.set()
 
 

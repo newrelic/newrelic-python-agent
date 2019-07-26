@@ -242,12 +242,18 @@ class TraceCache(object):
 
         fetch_name = transaction._cached_path.path
         roots = set()
+        seen = set()
 
         for trace in self._cache.values():
+            if trace in seen:
+                continue
             # If the trace is on a different transaction and it's asyncio
             if trace.transaction is not transaction and trace._task:
                 trace.exclusive -= duration
                 roots.add(trace.root)
+                seen.add(trace)
+
+        seen = None
 
         for root in roots:
             guid = '%016x' % random.getrandbits(64)

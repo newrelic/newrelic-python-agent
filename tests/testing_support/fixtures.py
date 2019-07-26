@@ -476,6 +476,11 @@ def validate_transaction_metrics(name, group='Function',
                 else:
                     assert metric.call_count == count, _metric_details()
 
+                assert metric.total_call_time >= 0, (key, metric)
+                assert metric.total_exclusive_call_time >= 0, (key, metric)
+                assert metric.min_call_time >= 0, (key, metric)
+                assert metric.sum_of_squares >= 0, (key, metric)
+
             else:
                 assert metric is None, _metrics_table()
 

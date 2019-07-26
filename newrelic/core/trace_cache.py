@@ -249,7 +249,8 @@ class TraceCache(object):
             if trace in seen:
                 continue
             # If the trace is on a different transaction and it's asyncio
-            if trace.transaction is not transaction and trace._task:
+            if (trace.transaction is not transaction and
+                    trace._task and trace._is_leaf()):
                 trace.exclusive -= duration
                 roots.add(trace.root)
                 seen.add(trace)

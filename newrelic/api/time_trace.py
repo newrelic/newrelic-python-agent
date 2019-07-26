@@ -62,6 +62,9 @@ class TimeTrace(object):
     def transaction(self):
         return self.root and self.root.transaction
 
+    def _is_leaf(self):
+        return self.child_count == len(self.children)
+
     def __enter__(self):
         if not self.parent:
             return self

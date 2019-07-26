@@ -106,6 +106,7 @@ def test_exceptions_are_recorded(app):
 
 
 @pytest.mark.parametrize('nr_enabled,ignore_status_codes', [
+    (True, [405]),
     (True, []),
     (False, None),
 ])
@@ -133,7 +134,7 @@ def test_unsupported_method(app, nr_enabled, ignore_status_codes):
     _test()
 
 
-@validate_transaction_errors(errors=['tornado.web:HTTPError'])
+@validate_transaction_errors(errors=[])
 @validate_transaction_metrics('tornado.web:ErrorHandler')
 @validate_transaction_event_attributes(
     required_params={'agent': (), 'user': (), 'intrinsic': ()},

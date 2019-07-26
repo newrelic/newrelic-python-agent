@@ -2,6 +2,7 @@ import inspect
 import sys
 from newrelic.api.function_trace import function_trace
 from newrelic.api.transaction import current_transaction
+from newrelic.core.config import ignore_status_code
 from newrelic.api.time_trace import current_trace
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.web_transaction import WebTransaction
@@ -119,7 +120,10 @@ def wrap_finish(wrapped, instance, args, kwargs):
     finally:
         transaction = getattr(instance, '_nr_transaction', None)
         if transaction:
-            transaction.__exit__(*sys.exc_info())
+            transaction.record_exception(
+                    *sys.exc_info(),
+                    ignore_errors=should_ignore)
+            transaction.__exit__(None, None, None)
             instance._nr_transaction = None
 
 
@@ -152,6 +156,15 @@ def instrument_tornado_httpserver(module):
 
     wrap_function_wrapper(
             module, 'HTTPServer.start_request', wrap_start_request)
+
+
+def should_ignore(exc, value, tb):
+    from tornado.web import HTTPError
+
+    if exc is HTTPError:
+        status_code = value.status_code
+        if ignore_status_code(status_code):
+            return True
 
 
 def _nr_wrapper__NormalizedHeaderCache___missing__(

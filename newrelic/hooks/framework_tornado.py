@@ -44,7 +44,7 @@ def _bind_headers_received(start_line, headers, *args, **kwargs):
     return start_line, headers
 
 
-def wrap_headers_received(request_conn, headers_received):
+def wrap_headers_received(request_conn):
 
     @function_wrapper
     def _wrap_headers_received(wrapped, instance, args, kwargs):
@@ -83,10 +83,8 @@ def wrap_headers_received(request_conn, headers_received):
         # transaction lives for the lifetime of that object.
         request_conn._nr_transaction = transaction
 
-        # Restore the original headers_received method in order to prevent side
-        # effects from the message delegate holding a reference to the
-        # connection
-        instance.headers_received = headers_received
+        # Remove the headers_received circular reference
+        vars(instance).pop('headers_received')
 
         return wrapped(*args, **kwargs)
 
@@ -127,17 +125,17 @@ def wrap_start_request(wrapped, instance, args, kwargs):
     message_delegate = wrapped(*args, **kwargs)
 
     # Wrap headers_received (request method / path is known)
-    headers_received = message_delegate.headers_received
-    wrapper = wrap_headers_received(request_conn, headers_received)
-    message_delegate.headers_received = wrapper(headers_received)
+    wrapper = wrap_headers_received(request_conn)
+    message_delegate.headers_received = wrapper(
+            message_delegate.headers_received)
 
     # Wrap write_headers to get response
-    write_headers = request_conn.write_headers
-    request_conn.write_headers = wrap_write_headers(write_headers)
+    _wrap_if_not_wrapped(
+            type(request_conn), 'write_headers', wrap_write_headers)
 
     # Wrap finish (response has been written)
-    finish = request_conn.finish
-    request_conn.finish = wrap_finish(finish)
+    _wrap_if_not_wrapped(
+            type(request_conn), 'finish', wrap_finish)
 
     return message_delegate
 

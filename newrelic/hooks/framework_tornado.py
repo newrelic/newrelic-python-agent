@@ -1,5 +1,6 @@
 import inspect
 import sys
+import time
 from newrelic.api.function_trace import function_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.core.config import ignore_status_code
@@ -7,8 +8,10 @@ from newrelic.api.time_trace import current_trace
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.api.application import application_instance
+from newrelic.core.trace_cache import trace_cache
 from newrelic.common.object_wrapper import (
         function_wrapper, wrap_function_wrapper)
+from newrelic.common.async_proxy import async_proxy
 from newrelic.common.object_names import callable_name
 
 
@@ -120,6 +123,10 @@ def wrap_finish(wrapped, instance, args, kwargs):
     finally:
         transaction = getattr(instance, '_nr_transaction', None)
         if transaction:
+            start_time = getattr(transaction, '_async_start_time', None)
+            if start_time:
+                trace_cache().record_event_loop_wait(start_time, time.time())
+                transaction._async_start_time = None
             transaction.record_exception(
                     *sys.exc_info(),
                     ignore_errors=should_ignore)
@@ -377,3 +384,32 @@ def instrument_tornado_routing(module):
 def instrument_tornado_web(module):
     wrap_function_wrapper(module, 'RequestHandler.__init__',
             _nr_wrapper_web_requesthandler_init)
+    wrap_function_wrapper(module, 'RequestHandler._execute',
+            track_loop_time)
+
+
+class TornadoContext(object):
+    def __init__(self):
+        self.transaction = None
+
+    def __enter__(self):
+        transaction = self.transaction
+        if not transaction:
+            transaction = self.transaction = current_transaction()
+
+        if transaction:
+            transaction._async_start_time = time.time()
+
+    def __exit__(self, exc, value, tb):
+        if self.transaction:
+            start_time = self.transaction._async_start_time
+            if start_time:
+                trace_cache().record_event_loop_wait(start_time, time.time())
+
+
+def track_loop_time(wrapped, instance, args, kwargs):
+    proxy = async_proxy(wrapped)
+    if proxy:
+        return proxy(wrapped(*args, **kwargs), TornadoContext())
+
+    return wrapped(*args, **kwargs)

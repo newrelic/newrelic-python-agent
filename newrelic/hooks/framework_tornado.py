@@ -9,6 +9,7 @@ from newrelic.common.object_names import callable_name
 
 
 _VERSION = None
+_instrumented = set()
 
 
 def _store_version_info():
@@ -21,6 +22,18 @@ def _store_version_info():
         pass
 
     return tornado.version_info
+
+
+def _wrap_if_not_wrapped(obj, attr, wrapper):
+    wrapped = getattr(obj, attr, None)
+
+    if not callable(wrapped):
+        return
+
+    if not (hasattr(wrapped, '__wrapped__') and
+            wrapped.__wrapped__ in _instrumented):
+        setattr(obj, attr, wrapper(wrapped))
+        _instrumented.add(wrapped)
 
 
 def _bind_start_request(server_conn, request_conn, *args, **kwargs):

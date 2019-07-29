@@ -208,14 +208,19 @@ LOOP_TIME_METRICS = (
 )
 
 
+@pytest.mark.parametrize('yield_before_finish', (True, False))
 @validate_transaction_metrics(
     "_target_application:BlockingHandler.get",
     scoped_metrics=LOOP_TIME_METRICS,
 )
-def test_io_loop_blocking_time(app):
+def test_io_loop_blocking_time(app, yield_before_finish):
     from tornado import gen
 
-    url = app.get_url('/block/2')
+    if yield_before_finish:
+        url = app.get_url('/block-with-yield/2')
+    else:
+        url = app.get_url('/block/2')
+
     coros = (app.http_client.fetch(url) for _ in range(2))
     responses = app.io_loop.run_sync(lambda: gen.multi(coros))
 

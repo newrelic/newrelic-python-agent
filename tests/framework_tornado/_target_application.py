@@ -202,6 +202,9 @@ class BlockingHandler(tornado.web.RequestHandler):
     total = 0
     future = None
 
+    def initialize(self, yield_before_finish=False):
+        self.yield_before_finish = yield_before_finish
+
     async def get(self, total=1):
         import asyncio
         total = int(total)
@@ -218,6 +221,9 @@ class BlockingHandler(tornado.web.RequestHandler):
             time.sleep(0.1)
         else:
             await cls.future
+
+        if self.yield_before_finish:
+            await asyncio.sleep(0)
 
         self.write('*')
 
@@ -244,6 +250,8 @@ def make_app(custom=False):
         (r'/ensure-future', EnsureFutureHandler),
         (r'/call-web-socket', WebNestedHandler),
         (r'/block/(\d+)', BlockingHandler),
+        (r'/block-with-yield/(\d+)', BlockingHandler,
+                {'yield_before_finish': True}),
     ]
     if custom:
         return CustomApplication()

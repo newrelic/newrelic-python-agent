@@ -9,29 +9,34 @@ from testing_support.fixtures import (validate_transaction_metrics,
 
 @background_task(name="block")
 @asyncio.coroutine
-def block_loop(ready, done, blocking_transaction_active):
-    yield from ready.wait()
-    time.sleep(0.1)
-    done.set()
-    if blocking_transaction_active:
+def block_loop(ready, done, blocking_transaction_active, times=1):
+    for _ in range(times):
+        yield from ready.wait()
         ready.clear()
+        time.sleep(0.1)
+        done.set()
+
+    if blocking_transaction_active:
         yield from ready.wait()
 
 
 @function_trace(name="waiter")
 @asyncio.coroutine
-def waiter(ready, done):
-    ready.set()
-    yield from done.wait()
+def waiter(ready, done, times=1):
+    for _ in range(times):
+        ready.set()
+        yield from done.wait()
+        done.clear()
 
 
 @background_task(name="wait")
 @asyncio.coroutine
-def wait_for_loop(ready, done):
+def wait_for_loop(ready, done, times=1):
     # Run the waiter on another task so that the sentinel for wait appears
     # multiple times in the trace cache
-    yield from asyncio.ensure_future(waiter(ready, done))
+    yield from asyncio.ensure_future(waiter(ready, done, times))
 
+    # Set the ready to terminate the block_loop if it's running
     ready.set()
 
 
@@ -46,7 +51,7 @@ def test_record_event_loop_wait(
         event_loop_visibility_enabled):
     import asyncio
 
-    metric_count = 1 if event_loop_visibility_enabled else None
+    metric_count = 2 if event_loop_visibility_enabled else None
 
     scoped = (
         ("EventLoop/Wait/OtherTransaction/Function/block", metric_count),
@@ -58,8 +63,8 @@ def test_record_event_loop_wait(
 
     ready, done = (asyncio.Event(), asyncio.Event())
     future = asyncio.gather(
-        wait_for_loop(ready, done),
-        block_loop(ready, done, blocking_transaction_active),
+        wait_for_loop(ready, done, 2),
+        block_loop(ready, done, blocking_transaction_active, 2),
     )
 
     index = 0 if blocking_transaction_active else -1

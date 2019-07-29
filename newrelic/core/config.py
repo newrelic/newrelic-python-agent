@@ -514,6 +514,7 @@ _settings.encoding_key = None
 _settings.sampling_target = 10
 _settings.sampling_target_period_in_seconds = 60
 
+_settings.compressed_content_encoding = 'gzip'
 _settings.max_payload_size_in_bytes = 1000000
 
 _settings.attributes.enabled = True

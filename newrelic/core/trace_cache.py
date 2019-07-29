@@ -268,6 +268,7 @@ class TraceCache(object):
             )
             transaction = root.transaction
             transaction._process_node(node)
+            root.increment_child_count()
             root.process_child(node, ignore_exclusive=True)
 
 

@@ -53,11 +53,16 @@ def test_record_event_loop_wait(
     import asyncio
 
     metric_count = 2 if event_loop_visibility_enabled else None
-    attributes = {'intrinsic': ('eventLoopWait',), 'agent': (), 'user': ()}
+    execute_attributes = {
+            'intrinsic': ('eventLoopTime',), 'agent': (), 'user': ()}
+    wait_attributes = {
+            'intrinsic': ('eventLoopWait',), 'agent': (), 'user': ()}
     if event_loop_visibility_enabled:
-        attributes = {'required_params': attributes}
+        wait_attributes = {'required_params': wait_attributes}
+        execute_attributes = {'required_params': execute_attributes}
     else:
-        attributes = {'forgone_params': attributes}
+        wait_attributes = {'forgone_params': wait_attributes}
+        execute_attributes = {'forgone_params': execute_attributes}
 
     scoped = (
         ("EventLoop/Wait/OtherTransaction/Function/block", metric_count),
@@ -80,7 +85,11 @@ def test_record_event_loop_wait(
     })
     @validate_transaction_event_attributes(
         index=index,
-        **attributes,
+        **wait_attributes,
+    )
+    @validate_transaction_event_attributes(
+        index=index + 1,
+        **execute_attributes,
     )
     @validate_transaction_metrics(
         "wait",

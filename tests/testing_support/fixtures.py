@@ -815,7 +815,7 @@ def validate_database_duration():
 
 
 def validate_transaction_event_attributes(required_params={},
-        forgone_params={}, exact_attrs={}):
+        forgone_params={}, exact_attrs={}, index=-1):
 
     captured_events = []
 
@@ -838,7 +838,8 @@ def validate_transaction_event_attributes(required_params={},
         result = _new_wrapper(*args, **kwargs)
 
         assert captured_events, "No events captured"
-        event_data = captured_events.pop(0)
+        event_data = captured_events[index]
+        captured_events[:] = []
 
         check_event_attributes(event_data, required_params, forgone_params,
                 exact_attrs)

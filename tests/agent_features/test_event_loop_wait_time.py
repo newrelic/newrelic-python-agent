@@ -5,7 +5,7 @@ from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace, FunctionTrace
 from newrelic.core.trace_cache import trace_cache
 from testing_support.fixtures import (validate_transaction_metrics,
-        override_application_settings)
+        override_application_settings, validate_transaction_event_attributes)
 
 
 @background_task(name="block")
@@ -53,6 +53,11 @@ def test_record_event_loop_wait(
     import asyncio
 
     metric_count = 2 if event_loop_visibility_enabled else None
+    attributes = {'intrinsic': ('eventLoopWait',), 'agent': (), 'user': ()}
+    if event_loop_visibility_enabled:
+        attributes = {'required_params': attributes}
+    else:
+        attributes = {'forgone_params': attributes}
 
     scoped = (
         ("EventLoop/Wait/OtherTransaction/Function/block", metric_count),
@@ -73,6 +78,10 @@ def test_record_event_loop_wait(
     @override_application_settings({
         'event_loop_visibility.enabled': event_loop_visibility_enabled,
     })
+    @validate_transaction_event_attributes(
+        index=index,
+        **attributes,
+    )
     @validate_transaction_metrics(
         "wait",
         scoped_metrics=scoped,

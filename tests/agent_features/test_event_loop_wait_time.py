@@ -123,3 +123,33 @@ def test_record_event_loop_wait_outside_task():
 
     for _ in _test():
         pass
+
+
+@validate_transaction_metrics(
+    "wait",
+    background_task=True,
+    rollup_metrics=(("EventLoop/Wait/all", None),),
+)
+def test_blocking_task_on_different_loop():
+    loops = [asyncio.new_event_loop() for _ in range(2)]
+
+    waiter_events = [asyncio.Event(loop=loops[0]) for _ in range(2)]
+    waiter = wait_for_loop(*waiter_events, times=1)
+
+    blocker_events = [asyncio.Event(loop=loops[1]) for _ in range(2)]
+    blocker = block_loop(*blocker_events,
+            blocking_transaction_active=False, times=1)
+
+    waiter_task = loops[0].create_task(waiter)
+    blocker_task = loops[1].create_task(blocker)
+
+    # Set ready on the blocker
+    blocker_events[0].set()
+
+    loops[0].run_until_complete(waiter_events[0].wait())
+
+    # Set done event for waiter
+    waiter_events[1].set()
+
+    loops[1].run_until_complete(blocker_task)
+    loops[0].run_until_complete(waiter_task)

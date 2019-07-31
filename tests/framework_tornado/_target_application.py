@@ -1,3 +1,4 @@
+import time
 import tornado.ioloop
 import tornado.web
 import tornado.gen
@@ -197,6 +198,36 @@ class CustomApplication(
         self.http_conn.finish()
 
 
+class BlockingHandler(tornado.web.RequestHandler):
+    total = 0
+    future = None
+
+    def initialize(self, yield_before_finish=False):
+        self.yield_before_finish = yield_before_finish
+
+    async def get(self, total=1):
+        import asyncio
+        total = int(total)
+
+        cls = type(self)
+        if cls.total == 0:
+            cls.future = asyncio.Future()
+
+        cls.total += 1
+        if cls.total == total:
+            cls.total = 0
+            cls.future.set_result(True)
+            cls.future = None
+            time.sleep(0.1)
+        else:
+            await cls.future
+
+        if self.yield_before_finish:
+            await asyncio.sleep(0)
+
+        self.write('*')
+
+
 def make_app(custom=False):
     handlers = [
         (PathMatches(r'/simple'), SimpleHandler),
@@ -218,6 +249,9 @@ def make_app(custom=False):
         (r'/web-socket', WebSocketHandler),
         (r'/ensure-future', EnsureFutureHandler),
         (r'/call-web-socket', WebNestedHandler),
+        (r'/block/(\d+)', BlockingHandler),
+        (r'/block-with-yield/(\d+)', BlockingHandler,
+                {'yield_before_finish': True}),
     ]
     if custom:
         return CustomApplication()

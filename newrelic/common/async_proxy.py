@@ -73,6 +73,14 @@ class TransactionContext(object):
             self.transaction.__exit__(exc, value, tb)
 
 
+class LoopContext(object):
+    def __enter__(self):
+        self.enter_time = time.time()
+
+    def __exit__(self, exc, value, tb):
+        trace_cache().record_event_loop_wait(self.enter_time, time.time())
+
+
 class Coroutine(ObjectProxy):
     def __init__(self, wrapped, context):
         super(Coroutine, self).__init__(wrapped)

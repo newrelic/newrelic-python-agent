@@ -201,7 +201,7 @@ class TraceCache(object):
         """
 
         if hasattr(trace, '_task'):
-            delattr(trace, '_task')
+            trace._task = None
 
         thread_id = trace.thread_id
 
@@ -250,7 +250,8 @@ class TraceCache(object):
                 continue
             # If the trace is on a different transaction and it's asyncio
             if (trace.transaction is not transaction and
-                    trace._task and trace._is_leaf()):
+                    getattr(trace, '_task', None) is not None and
+                    trace._is_leaf()):
                 trace.exclusive -= duration
                 roots.add(trace.root)
                 seen.add(trace)

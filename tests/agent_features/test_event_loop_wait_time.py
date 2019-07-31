@@ -2,7 +2,8 @@ import pytest
 import asyncio
 import time
 from newrelic.api.background_task import background_task
-from newrelic.api.function_trace import function_trace
+from newrelic.api.function_trace import function_trace, FunctionTrace
+from newrelic.core.trace_cache import trace_cache
 from testing_support.fixtures import (validate_transaction_metrics,
         override_application_settings)
 
@@ -83,3 +84,19 @@ def test_record_event_loop_wait(
         asyncio.get_event_loop().run_until_complete(future)
 
     _test()
+
+
+@override_application_settings({
+    'event_loop_visibility.blocking_threshold': 0,
+})
+def test_record_event_loop_wait_outside_task():
+    # Insert a random trace into the trace cache
+    trace = FunctionTrace(name='testing')
+    trace_cache()._cache[0] = trace
+
+    @background_task(name='test_record_event_loop_wait_outside_task')
+    def _test():
+        yield
+
+    for _ in _test():
+        pass

@@ -5,7 +5,8 @@ from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace, FunctionTrace
 from newrelic.core.trace_cache import trace_cache
 from testing_support.fixtures import (validate_transaction_metrics,
-        override_application_settings, validate_transaction_event_attributes)
+        override_application_settings, validate_transaction_event_attributes,
+        validate_transaction_trace_attributes)
 
 
 @background_task(name="block")
@@ -83,6 +84,10 @@ def test_record_event_loop_wait(
     @override_application_settings({
         'event_loop_visibility.enabled': event_loop_visibility_enabled,
     })
+    @validate_transaction_trace_attributes(
+        index=index + 1,
+        **execute_attributes,
+    )
     @validate_transaction_event_attributes(
         index=index,
         **wait_attributes,

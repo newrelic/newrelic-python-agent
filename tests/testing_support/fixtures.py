@@ -1183,9 +1183,9 @@ def validate_tt_collector_json(required_params={},
 
 
 def validate_transaction_trace_attributes(required_params={},
-        forgone_params={}, should_exist=True, url=None):
+        forgone_params={}, should_exist=True, url=None, index=-1):
 
-    failed = []
+    trace_data = []
 
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
@@ -1194,29 +1194,12 @@ def validate_transaction_trace_attributes(required_params={},
 
         result = wrapped(*args, **kwargs)
 
-        try:
-            # Now that transaction has been recorded, generate
-            # a transaction trace
+        # Now that transaction has been recorded, generate
+        # a transaction trace
 
-            connections = SQLConnections()
-            trace_data = instance.transaction_trace_data(connections)
-
-            if url is not None:
-                trace_url = trace_data[0][3]
-                assert url == trace_url
-
-            pack_data = unpack_field(trace_data[0][4])
-            assert len(pack_data) == 2
-            assert len(pack_data[0]) == 5
-            parameters = pack_data[0][4]
-
-            assert 'intrinsics' in parameters
-            assert 'userAttributes' in parameters
-            assert 'agentAttributes' in parameters
-
-            check_attributes(parameters, required_params, forgone_params)
-        except AssertionError as e:
-            failed.append(e)
+        connections = SQLConnections()
+        _trace_data = instance.transaction_trace_data(connections)
+        trace_data.append(_trace_data)
 
         return result
 
@@ -1225,9 +1208,23 @@ def validate_transaction_trace_attributes(required_params={},
         _new_wrapper = _validate_transaction_trace_attributes(wrapped)
         result = _new_wrapper(*args, **kwargs)
 
-        if failed:
-            e = failed.pop()
-            raise e
+        _trace_data = trace_data[index]
+        trace_data[:] = []
+
+        if url is not None:
+            trace_url = _trace_data[0][3]
+            assert url == trace_url
+
+        pack_data = unpack_field(_trace_data[0][4])
+        assert len(pack_data) == 2
+        assert len(pack_data[0]) == 5
+        parameters = pack_data[0][4]
+
+        assert 'intrinsics' in parameters
+        assert 'userAttributes' in parameters
+        assert 'agentAttributes' in parameters
+
+        check_attributes(parameters, required_params, forgone_params)
 
         return result
 

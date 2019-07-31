@@ -35,6 +35,14 @@ def current_task():
         pass
 
 
+def get_event_loop(task):
+    get_loop = getattr(task, 'get_loop', None)
+    if get_loop:
+        return get_loop()
+    else:
+        return getattr(task, '_loop', None)
+
+
 class TraceCache(object):
 
     def __init__(self):
@@ -245,12 +253,17 @@ class TraceCache(object):
         roots = set()
         seen = set()
 
+        task = getattr(transaction.root_span, '_task', None)
+        loop = get_event_loop(task)
+
         for trace in self._cache.values():
             if trace in seen:
                 continue
+
             # If the trace is on a different transaction and it's asyncio
             if (trace.transaction is not transaction and
                     getattr(trace, '_task', None) is not None and
+                    get_event_loop(trace._task) is loop and
                     trace._is_leaf()):
                 trace.exclusive -= duration
                 roots.add(trace.root)

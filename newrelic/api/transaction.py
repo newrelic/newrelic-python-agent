@@ -707,6 +707,8 @@ class Transaction(object):
             i_attrs['synthetics_monitor_id'] = self.synthetics_monitor_id
         if self.total_time:
             i_attrs['totalTime'] = self.total_time
+        if self._loop_time:
+            i_attrs['eventLoopTime'] = self._loop_time
 
         # Add in special CPU time value for UI to display CPU burn.
 

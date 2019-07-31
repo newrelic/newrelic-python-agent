@@ -9,26 +9,28 @@ from testing_support.validators.validate_transaction_count import (
         validate_transaction_count)
 
 
-@pytest.mark.parametrize('uri,name,metrics', (
-    ('/native-simple', '_target_application:NativeSimpleHandler.get', None),
-    ('/simple', '_target_application:SimpleHandler.get', None),
-    ('/call-simple', '_target_application:CallSimpleHandler.get', None),
-    ('/super-simple', '_target_application:SuperSimpleHandler.get', None),
-    ('/coro', '_target_application:CoroHandler.get', None),
-    ('/fake-coro', '_target_application:FakeCoroHandler.get', None),
-    ('/coro-throw', '_target_application:CoroThrowHandler.get', None),
-    ('/init', '_target_application:InitializeHandler.get', None),
+@pytest.mark.parametrize('uri,name,metrics, method_metric', (
+    ('/native-simple', '_target_application:NativeSimpleHandler.get', None,
+            True),
+    ('/simple', '_target_application:SimpleHandler.get', None, True),
+    ('/call-simple', '_target_application:CallSimpleHandler.get', None, True),
+    ('/super-simple', '_target_application:SuperSimpleHandler.get', None,
+            True),
+    ('/coro', '_target_application:CoroHandler.get', None, False),
+    ('/fake-coro', '_target_application:FakeCoroHandler.get', None, False),
+    ('/coro-throw', '_target_application:CoroThrowHandler.get', None, False),
+    ('/init', '_target_application:InitializeHandler.get', None, True),
     ('/multi-trace', '_target_application:MultiTraceHandler.get',
-        [('Function/trace', 2)]),
+        [('Function/trace', 2)], True),
 ))
 @override_application_settings({'attributes.include': ['request.*']})
-def test_server(app, uri, name, metrics):
+def test_server(app, uri, name, metrics, method_metric):
     FRAMEWORK_METRIC = 'Python/Framework/Tornado/%s' % app.tornado_version
     METHOD_METRIC = 'Function/%s' % name
 
     metrics = metrics or []
     metrics.append((FRAMEWORK_METRIC, 1))
-    metrics.append((METHOD_METRIC, 1))
+    metrics.append((METHOD_METRIC, 1 if method_metric else None))
 
     host = '127.0.0.1:' + str(app.get_http_port())
 
@@ -57,22 +59,24 @@ def test_server(app, uri, name, metrics):
     _test()
 
 
-@pytest.mark.parametrize('uri,name,metrics', (
-    ('/native-simple', '_target_application:NativeSimpleHandler.get', None),
-    ('/simple', '_target_application:SimpleHandler.get', None),
-    ('/call-simple', '_target_application:CallSimpleHandler.get', None),
-    ('/super-simple', '_target_application:SuperSimpleHandler.get', None),
-    ('/coro', '_target_application:CoroHandler.get', None),
-    ('/fake-coro', '_target_application:FakeCoroHandler.get', None),
-    ('/coro-throw', '_target_application:CoroThrowHandler.get', None),
-    ('/init', '_target_application:InitializeHandler.get', None),
+@pytest.mark.parametrize('uri,name,metrics,method_metric', (
+    ('/native-simple', '_target_application:NativeSimpleHandler.get', None,
+            True),
+    ('/simple', '_target_application:SimpleHandler.get', None, True),
+    ('/call-simple', '_target_application:CallSimpleHandler.get', None, True),
+    ('/super-simple', '_target_application:SuperSimpleHandler.get', None,
+            True),
+    ('/coro', '_target_application:CoroHandler.get', None, False),
+    ('/fake-coro', '_target_application:FakeCoroHandler.get', None, False),
+    ('/coro-throw', '_target_application:CoroThrowHandler.get', None, False),
+    ('/init', '_target_application:InitializeHandler.get', None, True),
     ('/ensure-future',
             '_target_application:EnsureFutureHandler.get',
-        [('Function/trace', None)]),
+        [('Function/trace', None)], True),
     ('/multi-trace', '_target_application:MultiTraceHandler.get',
-        [('Function/trace', 2)]),
+        [('Function/trace', 2)], True),
 ))
-def test_concurrent_inbound_requests(app, uri, name, metrics):
+def test_concurrent_inbound_requests(app, uri, name, metrics, method_metric):
     from tornado import gen
 
     FRAMEWORK_METRIC = 'Python/Framework/Tornado/%s' % app.tornado_version
@@ -80,7 +84,7 @@ def test_concurrent_inbound_requests(app, uri, name, metrics):
 
     metrics = metrics or []
     metrics.append((FRAMEWORK_METRIC, 1))
-    metrics.append((METHOD_METRIC, 1))
+    metrics.append((METHOD_METRIC, 1 if method_metric else None))
 
     @validate_transaction_count(2)
     @validate_transaction_metrics(

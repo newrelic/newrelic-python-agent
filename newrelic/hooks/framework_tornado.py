@@ -318,6 +318,8 @@ def _nr_method(wrapped, instance, args, kwargs):
     name = callable_name(wrapped)
     transaction.set_transaction_name(name, priority=2)
     transaction._method_seen = True
+    if getattr(wrapped, '__tornado_coroutine__', False):
+        return wrapped(*args, **kwargs)
     return function_trace(name=name)(wrapped)(*args, **kwargs)
 
 

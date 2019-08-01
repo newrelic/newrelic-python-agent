@@ -10,7 +10,11 @@ from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 class ExternalTrace(TimeTrace, CatHeaderMixin):
 
     def __init__(self, library, url, method=None, **kwargs):
-        parent = kwargs.get('parent')
+        parent = None
+        if kwargs:
+            if len(kwargs) > 1:
+                raise TypeError("Invalid keyword arguments:", kwargs)
+            parent = kwargs['parent']
         super(ExternalTrace, self).__init__(parent)
 
         self.library = library

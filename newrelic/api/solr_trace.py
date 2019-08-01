@@ -7,7 +7,11 @@ import newrelic.api.object_wrapper
 class SolrTrace(newrelic.api.time_trace.TimeTrace):
 
     def __init__(self, library, command, **kwargs):
-        parent = kwargs.get('parent')
+        parent = None
+        if kwargs:
+            if len(kwargs) > 1:
+                raise TypeError("Invalid keyword arguments:", kwargs)
+            parent = kwargs['parent']
         super(SolrTrace, self).__init__(parent)
 
         self.library = library

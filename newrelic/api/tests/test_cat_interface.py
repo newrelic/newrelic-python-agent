@@ -153,7 +153,7 @@ class TestCatInterface(newrelic.tests.test_cases.TestCase):
         url = "cat/meow"
         with Transaction(self.app_api, enabled=True) as txn:
             self.prepare_transaction(txn)
-            trace = ExternalTrace(txn, library, url)
+            trace = ExternalTrace(library, url)
             resp = trace.generate_request_headers(txn)
             self.assertEqual(resp, txn_cat_info.obfuscated_request_headers)
             self.assertTrue(txn.is_part_of_cat)
@@ -164,7 +164,7 @@ class TestCatInterface(newrelic.tests.test_cases.TestCase):
         with Transaction(self.app_api) as txn:
             self.prepare_transaction(txn)
             txn._settings.cross_application_tracer.enabled = False
-            trace = ExternalTrace(txn, library, url)
+            trace = ExternalTrace(library, url)
             resp = trace.generate_request_headers(txn)
             self.assertEqual(resp,
                     [('X-NewRelic-Synthetics', 'Wruff')])
@@ -175,7 +175,7 @@ class TestCatInterface(newrelic.tests.test_cases.TestCase):
         url = "cat/meow"
         with Transaction(self.app_api) as txn:
             self.prepare_transaction(txn)
-            trace = ExternalTrace(txn, library, url)
+            trace = ExternalTrace(library, url)
             resp = trace.get_request_metadata(txn)
             assert resp in txn_cat_info.outgoing_encoded_data
 
@@ -184,7 +184,7 @@ class TestCatInterface(newrelic.tests.test_cases.TestCase):
         url = "cat/meow"
         with Transaction(self.app_api) as txn:
             self.prepare_transaction(txn)
-            trace = ExternalTrace(txn, library, url)
+            trace = ExternalTrace(library, url)
             assert trace.process_response_metadata(
                     txn_cat_info.incoming_response_encoded_data) is None
             self.assertEqual(len(trace.params), 3)

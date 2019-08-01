@@ -127,6 +127,16 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
                 time.sleep(0.1)
 
+    def test_unknown_kwargs_raises_exception(self):
+        environ = {"REQUEST_URI": "/unknown_kwargs"}
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
+                application, environ)
+
+        with transaction:
+            with self.assertRaises(KeyError):
+                newrelic.api.external_trace.ExternalTrace(
+                        "library", "url", unknown_kwarg="foo")
+
 
 if __name__ == '__main__':
     unittest.main()

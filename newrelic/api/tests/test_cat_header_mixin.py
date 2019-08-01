@@ -13,9 +13,9 @@ class TestProcessResponseHeaders(newrelic.tests.test_cases.TestCase):
         super(TestProcessResponseHeaders, self).setUp()
         self.transaction = Transaction(application)
 
-    def test_process_response_headers_message_trace_with_transaction(self):
+    def test_process_response_headers_message_trace_inside_transaction(self):
         with self.transaction:
-            with MessageTrace(self.transaction, 'library', 'operation',
+            with MessageTrace('library', 'operation',
                     'destination_type', 'destination_name') as trace:
                 trace.process_response_headers([])
 
@@ -23,12 +23,12 @@ class TestProcessResponseHeaders(newrelic.tests.test_cases.TestCase):
         with self.transaction:
             settings = self.transaction._settings
             self.transaction._settings = None
-            with MessageTrace(self.transaction, 'library', 'operation',
+            with MessageTrace('library', 'operation',
                     'destination_type', 'destination_name') as trace:
                 trace.process_response_headers([])
             self.transaction._settings = settings
 
     def test_process_response_headers_message_trace_without_transaction(self):
-        with MessageTrace(None, 'library', 'operation', 'destination_type',
+        with MessageTrace('library', 'operation', 'destination_type',
                 'destination_name') as trace:
             trace.process_response_headers([])

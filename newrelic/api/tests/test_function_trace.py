@@ -201,6 +201,16 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         assert not transaction.enabled
         assert transaction._trace_node_count == 2
 
+    def test_unknown_kwargs_raises_exception(self):
+        environ = {"REQUEST_URI": "/unknown_kwargs"}
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
+                application, environ)
+
+        with transaction:
+            with self.assertRaises(KeyError):
+                newrelic.api.function_trace.FunctionTrace(
+                        'name', unknown_kwarg='foo')
+
 
 if __name__ == '__main__':
     unittest.main()

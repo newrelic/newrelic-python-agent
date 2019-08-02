@@ -18,7 +18,11 @@ class MessageTrace(TimeTrace, CatHeaderMixin):
             destination_type, destination_name,
             params=None, **kwargs):
 
-        parent = kwargs.get('parent')
+        parent = None
+        if kwargs:
+            if len(kwargs) > 1:
+                raise TypeError("Invalid keyword arguments:", kwargs)
+            parent = kwargs['parent']
         super(MessageTrace, self).__init__(parent)
 
         self.settings = self.transaction and self.transaction.settings or None

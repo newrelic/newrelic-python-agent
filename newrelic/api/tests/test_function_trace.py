@@ -81,35 +81,32 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         with transaction:
             time.sleep(0.2)
             with newrelic.api.function_trace.FunctionTrace(
-                    transaction, "function-1"):
+                    "function-1"):
                 time.sleep(0.1)
                 with newrelic.api.function_trace.FunctionTrace(
-                        transaction, "function-1-1"):
+                        "function-1-1"):
                     time.sleep(0.1)
                 with newrelic.api.function_trace.FunctionTrace(
-                        transaction, "function-1-2"):
+                        "function-1-2"):
                     time.sleep(0.1)
                 time.sleep(0.1)
             with newrelic.api.function_trace.FunctionTrace(
-                    transaction, "function-2"):
+                    "function-2"):
                 time.sleep(0.1)
                 with newrelic.api.function_trace.FunctionTrace(
-                        transaction, "function-2-1"):
+                        "function-2-1"):
                     time.sleep(0.1)
                     with newrelic.api.function_trace.FunctionTrace(
-                            transaction, "function-2-1-1"):
+                            "function-2-1-1"):
                         time.sleep(0.1)
                     time.sleep(0.1)
                 time.sleep(0.1)
             time.sleep(0.2)
 
     def test_transaction_not_running(self):
-        environ = {"REQUEST_URI": "/transaction_not_running"}
-        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
-                application, environ)
         try:
             with newrelic.api.function_trace.FunctionTrace(
-                    transaction, "function"):
+                    "function"):
                 time.sleep(0.1)
         except RuntimeError:
             pass
@@ -153,14 +150,13 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 application, environ)
 
         with transaction:
-            with newrelic.api.function_trace.FunctionTrace(
-                    transaction, 'parent'):
+            with newrelic.api.function_trace.FunctionTrace('parent'):
                 child_trace = newrelic.api.function_trace.FunctionTrace(
-                        transaction, 'child')
+                        'child')
 
             with child_trace:
                 child_child_trace = newrelic.api.function_trace.FunctionTrace(
-                        transaction, 'child_child')
+                        'child_child')
 
             with child_child_trace:
                 pass
@@ -172,11 +168,11 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
         with transaction:
             with newrelic.api.function_trace.FunctionTrace(
-                    transaction, 'parent'):
+                    'parent'):
                 child_trace_1 = newrelic.api.function_trace.FunctionTrace(
-                        transaction, 'child_1')
+                        'child_1')
                 child_trace_2 = newrelic.api.function_trace.FunctionTrace(
-                        transaction, 'child_2')
+                        'child_2')
 
                 child_trace_1.__enter__()
                 child_trace_2.__enter__()
@@ -204,6 +200,26 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
         assert not transaction.enabled
         assert transaction._trace_node_count == 2
+
+    def test_unknown_kwargs_raises_exception(self):
+        environ = {"REQUEST_URI": "/unknown_kwargs"}
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
+                application, environ)
+
+        with transaction:
+            with self.assertRaises(KeyError):
+                newrelic.api.function_trace.FunctionTrace(
+                        'name', unknown_kwarg='foo')
+
+    def test_extra_kwargs_raises_exception(self):
+        environ = {"REQUEST_URI": "/extra_kwargs"}
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
+                application, environ)
+
+        with transaction:
+            with self.assertRaises(TypeError):
+                newrelic.api.function_trace.FunctionTrace(
+                        'name', parent=None, unknown_kwarg='foo')
 
 
 if __name__ == '__main__':

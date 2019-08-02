@@ -41,8 +41,11 @@ class DatabaseTrace(TimeTrace):
                  sql_parameters=None, execute_params=None,
                  host=None, port_path_or_id=None, database_name=None,
                  **kwargs):
-
-        parent = kwargs.get('parent')
+        parent = None
+        if kwargs:
+            if len(kwargs) > 1:
+                raise TypeError("Invalid keyword arguments:", kwargs)
+            parent = kwargs['parent']
         super(DatabaseTrace, self).__init__(parent)
 
         if self.transaction:

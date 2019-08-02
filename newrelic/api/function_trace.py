@@ -11,7 +11,11 @@ class FunctionTrace(TimeTrace):
 
     def __init__(self, name, group=None, label=None,
             params=None, terminal=False, rollup=None, **kwargs):
-        parent = kwargs.get('parent')
+        parent = None
+        if kwargs:
+            if len(kwargs) > 1:
+                raise TypeError("Invalid keyword arguments:", kwargs)
+            parent = kwargs['parent']
         super(FunctionTrace, self).__init__(parent)
 
         # Deal with users who use group wrongly and add a leading

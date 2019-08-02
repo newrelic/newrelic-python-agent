@@ -7,7 +7,12 @@ from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 class ErrorTrace(object):
 
     def __init__(self, ignore_errors=[], **kwargs):
-        parent = kwargs.get('parent')
+        parent = None
+        if kwargs:
+            if len(kwargs) > 1:
+                raise TypeError("Invalid keyword arguments:", kwargs)
+            parent = kwargs['parent']
+
         if parent is None:
             parent = current_trace()
 

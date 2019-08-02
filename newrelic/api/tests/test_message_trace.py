@@ -117,6 +117,18 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                         "RabbitMQ", "Consume", "Exchange", "x",
                         unknown_kwarg="foo")
 
+    def test_extra_kwargs_raises_exception(self):
+        environ = {"REQUEST_URI": "/extra_kwargs"}
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
+                application, environ)
+
+        with transaction:
+            with self.assertRaises(TypeError):
+                newrelic.api.message_trace.MessageTrace(
+                        "RabbitMQ", "Consume", "Exchange", "x",
+                        parent=None,
+                        unknown_kwarg="foo")
+
 
 if __name__ == '__main__':
     unittest.main()

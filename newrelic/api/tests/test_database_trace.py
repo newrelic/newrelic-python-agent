@@ -130,6 +130,16 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 newrelic.api.database_trace.DatabaseTrace(
                         "select * from cat", unknown_kwarg="foo")
 
+    def test_extra_kwargs_raises_exception(self):
+        environ = {"REQUEST_URI": "/extra_kwargs"}
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
+                application, environ)
+
+        with transaction:
+            with self.assertRaises(TypeError):
+                newrelic.api.database_trace.DatabaseTrace(
+                        "select * from cat", parent=None, unknown_kwarg="foo")
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,10 +1,11 @@
+import functools
+import textwrap
 import inspect
 import sys
 import time
 from newrelic.api.function_trace import function_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.core.config import ignore_status_code
-from newrelic.api.time_trace import current_trace
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.api.application import application_instance
@@ -196,102 +197,65 @@ def instrument_tornado_httputil(module):
             _nr_wrapper__NormalizedHeaderCache___missing__)
 
 
-def _extract_request(request, raise_error=True, **_kwargs):
-    return request, None, raise_error, _kwargs
-
-
-def _prepare_request(*args, **kwargs):
+def _prepare_request(request, raise_error=True, **kwargs):
     from tornado.httpclient import HTTPRequest
-
-    request, callback, raise_error, _kwargs = _extract_request(*args,
-            **kwargs)
 
     # request is either a string or a HTTPRequest object
     if not isinstance(request, HTTPRequest):
-        url = request
-        request = HTTPRequest(url, **_kwargs)
+        request = HTTPRequest(request, **kwargs)
 
-    callback_kwargs = {}
-    if callback:
-        callback_kwargs['callback'] = callback
-
-    return request, raise_error, callback_kwargs
+    return request, raise_error
 
 
-def wrap_handle_response(raise_error, trace):
-    @function_wrapper
-    def wrapper(wrapped, instance, args, kwargs):
-        result = wrapped(*args, **kwargs)
-
-        def _bind_params(response, *args, **kwargs):
+def create_client_wrapper(wrapped, trace):
+    values = {'wrapper': None, 'wrapped': wrapped,
+            'trace': trace, 'functools': functools}
+    wrapper = textwrap.dedent("""
+    @functools.wraps(wrapped)
+    async def wrapper(req, raise_error):
+        with trace:
+            response = None
+            try:
+                response = await wrapped(req, raise_error=raise_error)
+            except Exception as e:
+                response = getattr(e, 'response', None)
+                raise
+            finally:
+                if response:
+                    trace.process_response_headers(response.headers.get_all())
             return response
-
-        response = _bind_params(*args, **kwargs)
-
-        # Process CAT response headers
-        trace.process_response_headers(response.headers.get_all())
-
-        trace.__exit__(None, None, None)
-
-        return result
-    return wrapper
+    """)
+    exec(wrapper, values)
+    return values['wrapper']
 
 
-@function_wrapper
-def wrap_fetch_impl(wrapped, instance, args, kwargs):
-    _nr_args = getattr(instance, '_nr_args', None)
-
-    if not _nr_args:
-        return wrapped(*args, **kwargs)
-
-    def _bind_params(request, callback, *args, **kwargs):
-        return request, callback
-
-    request, handle_response = _bind_params(*args, **kwargs)
-    wrapped_handle_response = wrap_handle_response(*_nr_args)(handle_response)
-
-    return wrapped(request, wrapped_handle_response)
-
-
-def _nr_wrapper_httpclient_AsyncHTTPClient_fetch_(
-        wrapped, instance, args, kwargs):
-
-    parent_trace = current_trace()
-
-    if parent_trace is None:
-        return wrapped(*args, **kwargs)
-    transaction = parent_trace.transaction
-
+def wrap_httpclient_fetch(wrapped, instance, args, kwargs):
     try:
-        req, _raise_error, _kwargs = _prepare_request(*args, **kwargs)
+        req, raise_error = _prepare_request(*args, **kwargs)
     except:
         return wrapped(*args, **kwargs)
 
-    # Prepare outgoing CAT headers
-    outgoing_headers = ExternalTrace.generate_request_headers(transaction)
+    trace = ExternalTrace(
+            'tornado', req.url, req.method.upper())
+
+    outgoing_headers = trace.generate_request_headers(trace.transaction)
     for header_name, header_value in outgoing_headers:
         # User headers should override our CAT headers
         if header_name in req.headers:
             continue
         req.headers[header_name] = header_value
 
-    # wrap the fetch_impl on the unbound method
-    instance_type = type(instance)
-    if not hasattr(instance_type, '_nr_wrapped'):
-        instance_type.fetch_impl = wrap_fetch_impl(instance_type.fetch_impl)
-        instance_type._nr_wrapped = True
+    try:
+        fetch = create_client_wrapper(wrapped, trace)
+    except:
+        return wrapped(*args, **kwargs)
 
-    trace = ExternalTrace('tornado.httpclient', req.url, req.method.upper(),
-        parent=parent_trace)
-    instance._nr_args = (_raise_error, trace)
-
-    with trace:
-        return wrapped(req, raise_error=_raise_error, **_kwargs)
+    return fetch(req, raise_error)
 
 
 def instrument_tornado_httpclient(module):
-    wrap_function_wrapper(module, 'AsyncHTTPClient.fetch',
-            _nr_wrapper_httpclient_AsyncHTTPClient_fetch_)
+    wrap_function_wrapper(module,
+            'AsyncHTTPClient.fetch', wrap_httpclient_fetch)
 
 
 def _nr_rulerouter_process_rule(wrapped, instance, args, kwargs):

@@ -89,8 +89,11 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True,
         else:
             futures = [client.fetch(req, raise_error, **kwargs)
                     for _ in range(count)]
-        responses = yield tornado.gen.multi_future(futures)
-        response = responses[0]
+        if count > 1:
+            responses = yield tornado.gen.multi_future(futures)
+            response = responses[0]
+        else:
+            response = yield futures[0]
 
         raise tornado.gen.Return(response)
 
@@ -131,7 +134,7 @@ def test_httpclient(cat_enabled, request_type, client_class, user_header,
     port = external.port
 
     expected_metrics = [
-        ('External/localhost:%s/tornado.httpclient/GET' % port, num_requests)
+        ('External/localhost:%s/tornado/GET' % port, num_requests)
     ]
 
     @override_application_settings({
@@ -291,8 +294,8 @@ def test_httpclient_invalid_kwarg(client_class, external):
 
 @validate_transaction_metrics('test_httpclient_fetch_crashes',
     background_task=True,
-    rollup_metrics=[('External/localhost:8989/tornado.httpclient/GET', 1)],
-    scoped_metrics=[('External/localhost:8989/tornado.httpclient/GET', 1)]
+    rollup_metrics=[('External/localhost:8989/tornado/GET', 1)],
+    scoped_metrics=[('External/localhost:8989/tornado/GET', 1)]
 )
 @background_task(name='test_httpclient_fetch_crashes')
 def test_httpclient_fetch_crashes(external):
@@ -306,13 +309,14 @@ def test_httpclient_fetch_crashes(external):
 
     port = external.port
     with pytest.raises(ValueError):
-        client.fetch('http://localhost:%s' % port)
+        tornado.ioloop.IOLoop.current().run_sync(
+                lambda: client.fetch('http://localhost:%s' % port))
 
 
 @validate_transaction_metrics('test_httpclient_fetch_inside_terminal_node',
     background_task=True,
-    rollup_metrics=[('External/localhost:8989/tornado.httpclient/GET', None)],
-    scoped_metrics=[('External/localhost:8989/tornado.httpclient/GET', None)]
+    rollup_metrics=[('External/localhost:8989/tornado/GET', None)],
+    scoped_metrics=[('External/localhost:8989/tornado/GET', None)]
 )
 @background_task(name='test_httpclient_fetch_inside_terminal_node')
 def test_httpclient_fetch_inside_terminal_node(external):

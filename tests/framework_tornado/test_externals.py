@@ -89,8 +89,11 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True,
         else:
             futures = [client.fetch(req, raise_error, **kwargs)
                     for _ in range(count)]
-        responses = yield tornado.gen.multi_future(futures)
-        response = responses[0]
+        if count > 1:
+            responses = yield tornado.gen.multi_future(futures)
+            response = responses[0]
+        else:
+            response = yield futures[0]
 
         raise tornado.gen.Return(response)
 

@@ -193,6 +193,12 @@ def _nr_wrapper__NormalizedHeaderCache___missing__(
 
 
 def instrument_tornado_httputil(module):
+    version_info = _store_version_info()
+
+    # Do not instrument Tornado versions < 6.0
+    if version_info[0] < 6:
+        return
+
     wrap_function_wrapper(module, '_NormalizedHeaderCache.__missing__',
             _nr_wrapper__NormalizedHeaderCache___missing__)
 
@@ -254,6 +260,12 @@ def wrap_httpclient_fetch(wrapped, instance, args, kwargs):
 
 
 def instrument_tornado_httpclient(module):
+    version_info = _store_version_info()
+
+    # Do not instrument Tornado versions < 6.0
+    if version_info[0] < 6:
+        return
+
     wrap_function_wrapper(module,
             'AsyncHTTPClient.fetch', wrap_httpclient_fetch)
 
@@ -343,11 +355,23 @@ def _nr_wrapper_web_requesthandler_init(wrapped, instance, args, kwargs):
 
 
 def instrument_tornado_routing(module):
+    version_info = _store_version_info()
+
+    # Do not instrument Tornado versions < 6.0
+    if version_info[0] < 6:
+        return
+
     wrap_function_wrapper(module, 'RuleRouter.process_rule',
             _nr_rulerouter_process_rule)
 
 
 def instrument_tornado_web(module):
+    version_info = _store_version_info()
+
+    # Do not instrument Tornado versions < 6.0
+    if version_info[0] < 6:
+        return
+
     wrap_function_wrapper(module, 'RequestHandler.__init__',
             _nr_wrapper_web_requesthandler_init)
     wrap_function_wrapper(module, 'RequestHandler._execute',

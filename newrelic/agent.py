@@ -18,6 +18,9 @@ from newrelic.api.application import (
         register_application as __register_application,
         application_settings as __application_settings)
 
+from newrelic.api.time_trace import (
+        current_trace as __current_trace)
+
 from newrelic.api.transaction import (
         current_transaction as __current_transaction,
         set_transaction_name as __set_transaction_name,
@@ -41,9 +44,6 @@ from newrelic.api.transaction import (
         create_distributed_trace_payload as __create_distributed_trace_payload,
         current_trace_id as __current_trace_id,
         current_span_id as __current_span_id)
-
-from newrelic.api.transaction_context import (
-        TransactionContext as __TransactionContext)
 
 from newrelic.api.wsgi_application import (
         wsgi_application as __wsgi_application,
@@ -182,6 +182,8 @@ application = __wrap_api_call(__application,
 register_application = __register_application
 application_settings = __wrap_api_call(__application_settings,
         'application_settings')
+current_trace = __wrap_api_call(__current_trace,
+        'current_trace')
 current_transaction = __wrap_api_call(__current_transaction,
         'current_transaction')
 set_transaction_name = __wrap_api_call(__set_transaction_name,
@@ -225,8 +227,6 @@ create_distributed_trace_payload = __wrap_api_call(
         'create_distributed_trace_payload')
 current_trace_id = __wrap_api_call(__current_trace_id, 'current_trace_id')
 current_span_id = __wrap_api_call(__current_span_id, 'current_span_id')
-TransactionContext = __wrap_api_call(__TransactionContext,
-'TransactionContext')
 wsgi_application = __wsgi_application
 WebTransaction = __wrap_api_call(__WebTransaction,
         'WebTransaction')

@@ -7,6 +7,7 @@ from newrelic.api.application import application_instance
 from newrelic.api.background_task import background_task, BackgroundTask
 from newrelic.api.transaction import (current_transaction, current_trace_id,
         current_span_id)
+from newrelic.api.time_trace import current_trace
 from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.api.wsgi_application import wsgi_application
 
@@ -278,7 +279,7 @@ def test_current_trace_id_api_outside_transaction():
 @background_task(name='test_current_span_id_api_inside_transaction')
 def test_current_span_id_inside_transaction():
     span_id = current_span_id()
-    assert span_id == current_transaction().current_span.guid
+    assert span_id == current_trace().guid
 
 
 def test_current_span_id_outside_transaction():

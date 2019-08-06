@@ -10,7 +10,6 @@
 # The first time as pure Python and the second with extensions enabled.
 
 py27=$(which python2.7)
-py34=$(which python3.4)
 py35=$(which python3.5)
 py36=$(which python3.6)
 pypy=$(which pypy)
@@ -20,7 +19,7 @@ ENVIRONMENTS=
 
 if test x"$1" = x""
 then
-    for e in py27 py34 py35 py36 pypy pypy3
+    for e in py27 py35 py36 pypy pypy3
     do
         eval py_exe="\$$e"
         if test x"$py_exe" != x""

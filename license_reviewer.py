@@ -429,6 +429,7 @@ docs_site_template = """<p>We love open-source software, and use the following i
   <thead>
     <tr>
       <th width="150"><b>Library</b></th>
+      <th><b>Copyright</b></th>
       <th><b>License</b></th>
     </tr>
   </thead>
@@ -452,10 +453,11 @@ def gen_docs_site_doc(license_info):
 
         library_name = license_info["libraries"][library]["name"]
         library_url = license_info["libraries"][library]["url"]
+        library_copyright = license_info["libraries"][library]["copyright"]
 
         lines.append("  <tr>")
         lines.append(
-            '    <td><a href="' + library_url + '">' + library_name + "</a></td>"
+            '    <td><a href="' + library_url + '">' + library_name + "</a></td><td>" + library_copyright + "</td>"
         )
         lines.append("    <td>")
 

@@ -1,17 +1,21 @@
 import functools
 
-from newrelic.common.coroutine import async_proxy, TraceContext
+from newrelic.common.async_wrapper import async_wrapper
 from newrelic.api.cat_header_mixin import CatHeaderMixin
-from newrelic.api.time_trace import TimeTrace
-from newrelic.api.transaction import current_transaction
+from newrelic.api.time_trace import TimeTrace, current_trace
 from newrelic.core.external_node import ExternalNode
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
 
 class ExternalTrace(TimeTrace, CatHeaderMixin):
 
-    def __init__(self, transaction, library, url, method=None):
-        super(ExternalTrace, self).__init__(transaction)
+    def __init__(self, library, url, method=None, **kwargs):
+        parent = None
+        if kwargs:
+            if len(kwargs) > 1:
+                raise TypeError("Invalid keyword arguments:", kwargs)
+            parent = kwargs['parent']
+        super(ExternalTrace, self).__init__(parent)
 
         self.library = library
         self.url = url
@@ -46,9 +50,9 @@ class ExternalTrace(TimeTrace, CatHeaderMixin):
 def ExternalTraceWrapper(wrapped, library, url, method=None):
 
     def dynamic_wrapper(wrapped, instance, args, kwargs):
-        transaction = current_transaction()
+        parent = current_trace()
 
-        if transaction is None:
+        if parent is None:
             return wrapped(*args, **kwargs)
 
         if callable(url):
@@ -69,26 +73,26 @@ def ExternalTraceWrapper(wrapped, library, url, method=None):
         else:
             _method = method
 
-        trace = ExternalTrace(transaction, library, _url, _method)
+        trace = ExternalTrace(library, _url, _method, parent=parent)
 
-        proxy = async_proxy(wrapped)
-        if proxy:
-            return proxy(wrapped(*args, **kwargs), TraceContext(trace))
+        wrapper = async_wrapper(wrapped)
+        if wrapper:
+            return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:
             return wrapped(*args, **kwargs)
 
     def literal_wrapper(wrapped, instance, args, kwargs):
-        transaction = current_transaction()
+        parent = current_trace()
 
-        if transaction is None:
+        if parent is None:
             return wrapped(*args, **kwargs)
 
-        trace = ExternalTrace(transaction, library, url, method)
+        trace = ExternalTrace(library, url, method, parent=parent)
 
-        proxy = async_proxy(wrapped)
-        if proxy:
-            return proxy(wrapped(*args, **kwargs), TraceContext(trace))
+        wrapper = async_wrapper(wrapped)
+        if wrapper:
+            return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:
             return wrapped(*args, **kwargs)

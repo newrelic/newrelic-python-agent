@@ -1,34 +1,25 @@
-from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.api.transaction import current_transaction
-from newrelic.api.transaction_context import CoroutineTransactionContext
+from newrelic.common.object_wrapper import wrap_out_function
+from newrelic.api.time_trace import current_trace
+from newrelic.core.trace_cache import trace_cache
 
 
-def _bind_ensure_future(coro_or_future, *, loop=None):
-    return coro_or_future, loop
+def remove_from_cache(task):
+    cache = trace_cache()
+    cache._cache.pop(id(task), None)
 
 
-def wrap_ensure_future(coroutines):
+def propagate_task_context(task):
+    trace = current_trace()
+    if trace:
+        cache = trace_cache()
+        cache._cache[id(task)] = trace
+        task.add_done_callback(remove_from_cache)
 
-    def _wrap_ensure_future(wrapped, instance, args, kwargs):
-        coro, loop = _bind_ensure_future(*args, **kwargs)
-
-        if coroutines.iscoroutine(coro):
-            coro = CoroutineTransactionContext(coro, current_transaction())
-            return wrapped(coro, loop=loop)
-
-        # Avoid any futures / async generators
-        return wrapped(*args, **kwargs)
-
-    return _wrap_ensure_future
+    return task
 
 
-def instrument_asyncio_tasks(module):
-    if not hasattr(module, 'coroutines'):
-        return
-
-    if hasattr(module, 'ensure_future'):
-        wrap_function_wrapper(module, 'ensure_future',
-                wrap_ensure_future(module.coroutines))
-    elif hasattr(module, 'async'):
-        wrap_function_wrapper(module, 'async',
-                wrap_ensure_future(module.coroutines))
+def instrument_asyncio_base_events(module):
+    wrap_out_function(
+        module,
+        'BaseEventLoop.create_task',
+        propagate_task_context)

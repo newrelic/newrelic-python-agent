@@ -27,8 +27,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 application, environ)
         with transaction:
             time.sleep(0.1)
-            with newrelic.api.memcache_trace.MemcacheTrace(
-                    transaction, "get"):
+            with newrelic.api.memcache_trace.MemcacheTrace("get"):
                 time.sleep(0.1)
             time.sleep(0.1)
 
@@ -37,8 +36,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         transaction = newrelic.api.web_transaction.WSGIWebTransaction(
                 application, environ)
         try:
-            with newrelic.api.memcache_trace.MemcacheTrace(
-                    transaction, "get"):
+            with newrelic.api.memcache_trace.MemcacheTrace("get"):
                 time.sleep(0.1)
         except RuntimeError:
             pass
@@ -61,6 +59,27 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 _test_function_1("set", None)
             except TypeError:
                 pass
+
+    def test_unknown_kwargs_raises_exception(self):
+        environ = {"REQUEST_URI": "/unknown_kwargs"}
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
+                application, environ)
+
+        with transaction:
+            with self.assertRaises(KeyError):
+                newrelic.api.memcache_trace.MemcacheTrace(
+                        "get", unknown_kwarg="foo")
+
+    def test_extra_kwargs_raises_exception(self):
+        environ = {"REQUEST_URI": "/extra_kwargs"}
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
+                application, environ)
+
+        with transaction:
+            with self.assertRaises(TypeError):
+                newrelic.api.memcache_trace.MemcacheTrace(
+                        "get", parent=None, unknown_kwarg="foo")
+
 
 if __name__ == '__main__':
     unittest.main()

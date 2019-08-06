@@ -36,7 +36,7 @@ def child():
     yield from asyncio.sleep(0.1)
 
 
-@function_trace(name='parent')
+@background_task(name='parent')
 @asyncio.coroutine
 def parent(calls):
     coros = [child() for _ in range(calls)]
@@ -45,14 +45,12 @@ def parent(calls):
 
 
 @validate_total_time_value_greater_than(0.2)
-@background_task(name='test_total_time_sync')
 def test_total_time_sync():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(parent(1))
 
 
 @validate_total_time_value_greater_than(0.3, concurrent=True)
-@background_task(name='test_total_time_sync')
 def test_total_time_async():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(parent(2))

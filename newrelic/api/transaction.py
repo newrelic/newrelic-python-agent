@@ -2,10 +2,10 @@ import os
 import sys
 import time
 import threading
-import traceback
 import logging
 import itertools
 import random
+import weakref
 
 from collections import deque
 
@@ -16,7 +16,7 @@ import newrelic.core.database_node
 import newrelic.core.error_node
 
 from newrelic.core.stats_engine import CustomMetrics, SampledDataSet
-from newrelic.core.transaction_cache import transaction_cache
+from newrelic.core.trace_cache import trace_cache
 from newrelic.core.thread_utilization import utilization_tracker
 
 from newrelic.core.attribute import (create_attributes,
@@ -43,8 +43,56 @@ DISTRIBUTED_TRACE_TRANSPORT_TYPES = set((
 
 
 class Sentinel(TimeTrace):
-    def __init__(self):
+    def __init__(self, transaction):
         super(Sentinel, self).__init__(None)
+        self.transaction = transaction
+
+        # Set the thread id to the same as the transaction before
+        # saving in the cache.
+        self.thread_id = transaction.thread_id
+        trace_cache().save_trace(self)
+
+    def process_child(self, node, ignore_exclusive=False):
+        if ignore_exclusive:
+            self.children.append(node)
+        else:
+            return super(Sentinel, self).process_child(node)
+
+    def drop_trace(self):
+        trace_cache().drop_trace(self)
+
+    @property
+    def transaction(self):
+        return self._transaction and self._transaction()
+
+    @transaction.setter
+    def transaction(self, value):
+        if value:
+            self._transaction = weakref.ref(value)
+
+    @property
+    def root(self):
+        return self
+
+    @root.setter
+    def root(self, value):
+        pass
+
+
+class CachedPath(object):
+    def __init__(self, transaction):
+        self._name = None
+        self.transaction = weakref.ref(transaction)
+
+    def path(self):
+        if self._name is not None:
+            return self._name
+
+        transaction = self.transaction()
+        if transaction:
+            return transaction.path
+
+        return 'Unknown'
 
 
 class Transaction(object):
@@ -57,7 +105,7 @@ class Transaction(object):
 
         self._application = application
 
-        self.thread_id = transaction_cache().current_thread_id()
+        self.thread_id = None
 
         self._transaction_id = id(self)
         self._transaction_lock = threading.Lock()
@@ -70,12 +118,14 @@ class Transaction(object):
         self._name_priority = 0
         self._group = None
         self._name = None
+        self._cached_path = CachedPath(self)
+        self._loop_time = 0.0
 
         self._frameworks = set()
 
         self._frozen_path = None
 
-        self.current_span = None
+        self.root_span = None
 
         self._request_uri = None
         self._port = None
@@ -213,12 +263,6 @@ class Transaction(object):
         if self._state == self.STATE_RUNNING:
             self.__exit__(None, None, None)
 
-    def save_transaction(self):
-        transaction_cache().save_transaction(self)
-
-    def drop_transaction(self):
-        transaction_cache().drop_transaction(self)
-
     def __enter__(self):
 
         assert(self._state == self.STATE_PENDING)
@@ -227,22 +271,6 @@ class Transaction(object):
 
         if not self.enabled:
             return self
-
-        # Mark transaction as active and update state
-        # used to validate correct usage of class.
-
-        self._state = self.STATE_RUNNING
-
-        # Cache transaction in thread/coroutine local
-        # storage so that it can be accessed from
-        # anywhere in the context of the transaction.
-
-        try:
-            self.save_transaction()
-        except:  # Catch all
-            self._state = self.STATE_PENDING
-            self.enabled = False
-            raise
 
         # Record the start time for transaction.
 
@@ -266,18 +294,20 @@ class Transaction(object):
                 self._thread_utilization_start = \
                         self._utilization_tracker.utilization_count()
 
-        # We need to push an object onto the top of the
-        # node stack so that children can reach back and
-        # add themselves as children to the parent. We
-        # can't use ourself though as we then end up
-        # with a reference count cycle which will cause
-        # the destructor to never be called if the
-        # __exit__() function is never called. We
-        # instead push on to the top of the node stack a
-        # dummy time trace object and when done we will
-        # just grab what we need from that.
+        # Set the thread ID upon entering the transaction.
+        # This is done here so that any asyncio tasks will
+        # be active and the task ID will be used to
+        # store traces into the trace cache.
+        self.thread_id = trace_cache().current_thread_id()
 
-        self.current_span = Sentinel()
+        # Create the root span which pushes itself
+        # into the trace cache as the active trace.
+        self.root_span = Sentinel(self)
+
+        # Mark transaction as active and update state
+        # used to validate correct usage of class.
+
+        self._state = self.STATE_RUNNING
 
         return self
 
@@ -294,41 +324,13 @@ class Transaction(object):
         if not self._settings:
             return
 
-        # Ensure that we are actually back at the top of
-        # transaction call stack. Assume that it is an
-        # instrumentation error and return with hope that
-        # will recover later.
-
-        for _ in range(self._settings.agent_limits.max_outstanding_traces):
-            if isinstance(self.current_span, Sentinel):
-                break
-            self.current_span._force_exit(None, None, None)
-        else:
-            _logger.error('Transaction ended but current_span is not Sentinel.'
-                    ' Current node is %r. Report this issue to New Relic '
-                    'support.\n%s', self.current_span, ''.join(
-                    traceback.format_stack()[:-1]))
-            return
-
-        # Mark as stopped and drop the transaction from
-        # thread/coroutine local storage.
-        #
-        # Note that we validate the saved transaction ID
-        # against that for the current transaction object
-        # to protect against situations where a copy was
-        # made of the transaction object for some reason.
-        # Such a copy when garbage collected could trigger
-        # this function and cause a deadlock if it occurs
-        # while original transaction was being recorded.
+        # Force the root span out of the cache if it's there
+        # This also prevents saving of the root span in the future since the
+        # transaction will be None
+        root = self.root_span
+        root.drop_trace()
 
         self._state = self.STATE_STOPPED
-
-        if not self._dead:
-            try:
-                self.drop_transaction()
-            except:  # Catch all
-                _logger.exception('Unable to drop transaction.')
-                raise
 
         # Record error if one was registered.
 
@@ -388,7 +390,6 @@ class Transaction(object):
         # as negative number. Add our own duration to get
         # our own exclusive time.
 
-        root = self.current_span
         children = root.children
 
         exclusive = duration + root.exclusive
@@ -430,6 +431,7 @@ class Transaction(object):
             # transaction when distributed tracing or span events are enabled.
             self._compute_sampled_and_priority()
 
+        self._cached_path._name = self.path
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
                 path=self.path,
@@ -484,6 +486,7 @@ class Transaction(object):
                 parent_transport_type=self.parent_transport_type,
                 root_span_guid=root.guid,
                 trace_id=self.trace_id,
+                loop_time=self._loop_time,
         )
 
         # Clear settings as we are all done and don't need it
@@ -704,6 +707,8 @@ class Transaction(object):
             i_attrs['synthetics_monitor_id'] = self.synthetics_monitor_id
         if self.total_time:
             i_attrs['totalTime'] = self.total_time
+        if self._loop_time:
+            i_attrs['eventLoopTime'] = self._loop_time
 
         # Add in special CPU time value for UI to display CPU burn.
 
@@ -955,10 +960,11 @@ class Transaction(object):
             if account_id != trusted_account_key:
                 data['tk'] = trusted_account_key
 
+            current_span = trace_cache().current_trace()
             if (settings.span_events.enabled and
                     settings.collect_span_events and
-                    self.current_span and self.sampled):
-                data['id'] = self.current_span.guid
+                    current_span and self.sampled):
+                data['id'] = current_span.guid
 
             self.is_distributed_trace = True
 
@@ -1436,20 +1442,8 @@ class Transaction(object):
         if event:
             self._custom_events.add(event, priority=self.priority)
 
-    def active_span(self):
-        return self.current_span
-
     def _intern_string(self, value):
         return self._string_cache.setdefault(value, value)
-
-    def _push_current(self, span):
-        self.current_span = span
-
-    def _pop_current(self, span):
-        parent = span.parent
-        self.current_span = parent
-
-        return parent
 
     def _process_node(self, node):
         self._trace_node_count += 1
@@ -1559,12 +1553,10 @@ class Transaction(object):
                 self.autorum_disabled)
         print >> file, 'Supress Apdex: %s' % (
                 self.suppress_apdex)
-        print >> file, 'Current Node: %s' % (
-                self.current_span)
 
 
 def current_transaction(active_only=True):
-    current = transaction_cache().current_transaction()
+    current = trace_cache().current_transaction()
     if active_only:
         if current and (current.ignore_transaction or current.stopped):
             return None
@@ -1746,6 +1738,6 @@ def current_trace_id():
 
 
 def current_span_id():
-    transaction = current_transaction()
-    if transaction:
-        return transaction.current_span.guid
+    trace = trace_cache().current_trace()
+    if trace:
+        return trace.guid

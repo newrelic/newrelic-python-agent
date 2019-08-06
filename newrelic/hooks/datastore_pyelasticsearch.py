@@ -80,7 +80,7 @@ def wrap_elasticsearch_client_method(module, name, arg_extractor):
         else:
             index = arg_extractor(*args, **kwargs)
 
-        with DatastoreTrace(transaction, product='Elasticsearch',
+        with DatastoreTrace(product='Elasticsearch',
                 target=index, operation=name):
             return wrapped(*args, **kwargs)
 

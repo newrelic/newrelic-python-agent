@@ -3,7 +3,7 @@ import sys
 
 from newrelic.api.application import Application, application_instance
 from newrelic.api.transaction import Transaction, current_transaction
-from newrelic.common.coroutine import async_proxy, TransactionContext
+from newrelic.common.async_proxy import async_proxy, TransactionContext
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 

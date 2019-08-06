@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 import os
@@ -408,7 +409,7 @@ def make_synthetics_header(account_id, resource_id, job_id, monitor_id,
 
 def validate_transaction_metrics(name, group='Function',
         background_task=False, scoped_metrics=[], rollup_metrics=[],
-        custom_metrics=[]):
+        custom_metrics=[], index=-1):
 
     if background_task:
         unscoped_metrics = [
@@ -445,7 +446,12 @@ def validate_transaction_metrics(name, group='Function',
                 raise
             else:
                 metrics = instance.stats_table
-                recorded_metrics.append(metrics)
+                # Record a copy of the metric value so that the values aren't
+                # merged in the future
+                _metrics = {}
+                for k, v in metrics.items():
+                    _metrics[k] = copy.copy(v)
+                recorded_metrics.append(_metrics)
 
             return result
 
@@ -470,14 +476,21 @@ def validate_transaction_metrics(name, group='Function',
                 else:
                     assert metric.call_count == count, _metric_details()
 
+                assert metric.total_call_time >= 0, (key, metric)
+                assert metric.total_exclusive_call_time >= 0, (key, metric)
+                assert metric.min_call_time >= 0, (key, metric)
+                assert metric.sum_of_squares >= 0, (key, metric)
+
             else:
                 assert metric is None, _metrics_table()
 
         _new_wrapper = _validate_transaction_metrics(wrapped)
         val = _new_wrapper(*args, **kwargs)
         assert record_transaction_called
-        record_transaction_called.pop()
-        metrics = recorded_metrics.pop()
+        metrics = recorded_metrics[index]
+
+        record_transaction_called[:] = []
+        recorded_metrics[:] = []
 
         for unscoped_metric in unscoped_metrics:
             _validate(metrics, unscoped_metric, '', 1)
@@ -802,7 +815,7 @@ def validate_database_duration():
 
 
 def validate_transaction_event_attributes(required_params={},
-        forgone_params={}, exact_attrs={}):
+        forgone_params={}, exact_attrs={}, index=-1):
 
     captured_events = []
 
@@ -825,7 +838,8 @@ def validate_transaction_event_attributes(required_params={},
         result = _new_wrapper(*args, **kwargs)
 
         assert captured_events, "No events captured"
-        event_data = captured_events.pop(0)
+        event_data = captured_events[index]
+        captured_events[:] = []
 
         check_event_attributes(event_data, required_params, forgone_params,
                 exact_attrs)
@@ -1169,9 +1183,9 @@ def validate_tt_collector_json(required_params={},
 
 
 def validate_transaction_trace_attributes(required_params={},
-        forgone_params={}, should_exist=True, url=None):
+        forgone_params={}, should_exist=True, url=None, index=-1):
 
-    failed = []
+    trace_data = []
 
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
@@ -1180,29 +1194,12 @@ def validate_transaction_trace_attributes(required_params={},
 
         result = wrapped(*args, **kwargs)
 
-        try:
-            # Now that transaction has been recorded, generate
-            # a transaction trace
+        # Now that transaction has been recorded, generate
+        # a transaction trace
 
-            connections = SQLConnections()
-            trace_data = instance.transaction_trace_data(connections)
-
-            if url is not None:
-                trace_url = trace_data[0][3]
-                assert url == trace_url
-
-            pack_data = unpack_field(trace_data[0][4])
-            assert len(pack_data) == 2
-            assert len(pack_data[0]) == 5
-            parameters = pack_data[0][4]
-
-            assert 'intrinsics' in parameters
-            assert 'userAttributes' in parameters
-            assert 'agentAttributes' in parameters
-
-            check_attributes(parameters, required_params, forgone_params)
-        except AssertionError as e:
-            failed.append(e)
+        connections = SQLConnections()
+        _trace_data = instance.transaction_trace_data(connections)
+        trace_data.append(_trace_data)
 
         return result
 
@@ -1211,9 +1208,23 @@ def validate_transaction_trace_attributes(required_params={},
         _new_wrapper = _validate_transaction_trace_attributes(wrapped)
         result = _new_wrapper(*args, **kwargs)
 
-        if failed:
-            e = failed.pop()
-            raise e
+        _trace_data = trace_data[index]
+        trace_data[:] = []
+
+        if url is not None:
+            trace_url = _trace_data[0][3]
+            assert url == trace_url
+
+        pack_data = unpack_field(_trace_data[0][4])
+        assert len(pack_data) == 2
+        assert len(pack_data[0]) == 5
+        parameters = pack_data[0][4]
+
+        assert 'intrinsics' in parameters
+        assert 'userAttributes' in parameters
+        assert 'agentAttributes' in parameters
+
+        check_attributes(parameters, required_params, forgone_params)
 
         return result
 
@@ -1940,14 +1951,14 @@ def validate_database_trace_inputs(sql_parameters_type):
             'DatabaseTrace.__init__')
     @catch_background_exceptions
     def _validate_database_trace_inputs(wrapped, instance, args, kwargs):
-        def _bind_params(transaction, sql, dbapi2_module=None,
+        def _bind_params(sql, dbapi2_module=None,
                 connect_params=None, cursor_params=None, sql_parameters=None,
                 execute_params=None, host=None, port_path_or_id=None,
                 database_name=None):
-            return (transaction, sql, dbapi2_module, connect_params,
+            return (sql, dbapi2_module, connect_params,
                     cursor_params, sql_parameters, execute_params)
 
-        (transaction, sql, dbapi2_module, connect_params, cursor_params,
+        (sql, dbapi2_module, connect_params, cursor_params,
             sql_parameters, execute_params) = _bind_params(*args, **kwargs)
 
         assert hasattr(dbapi2_module, 'connect')

@@ -12,14 +12,9 @@ def _nr_wrapper_make_request_(wrapped, instance, args, kwargs, scheme):
     def _bind_params(conn, method, url, *args, **kwargs):
         return "%s://%s:%s" % (scheme, conn.host, conn.port)
 
-    transaction = current_transaction()
-
-    if transaction is None:
-        return wrapped(*args, **kwargs)
-
     url_for_apm_ui = _bind_params(*args, **kwargs)
 
-    with ExternalTrace(transaction, 'urllib3', url_for_apm_ui):
+    with ExternalTrace('urllib3', url_for_apm_ui):
         return wrapped(*args, **kwargs)
 
 

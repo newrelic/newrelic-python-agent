@@ -1,16 +1,20 @@
 import functools
 
-from newrelic.common.coroutine import async_proxy, TraceContext
-from newrelic.api.time_trace import TimeTrace
-from newrelic.api.transaction import current_transaction
+from newrelic.common.async_wrapper import async_wrapper
+from newrelic.api.time_trace import TimeTrace, current_trace
 from newrelic.core.memcache_node import MemcacheNode
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
 
 class MemcacheTrace(TimeTrace):
 
-    def __init__(self, transaction, command):
-        super(MemcacheTrace, self).__init__(transaction)
+    def __init__(self, command, **kwargs):
+        parent = None
+        if kwargs:
+            if len(kwargs) > 1:
+                raise TypeError("Invalid keyword arguments:", kwargs)
+            parent = kwargs['parent']
+        super(MemcacheTrace, self).__init__(parent)
 
         self.command = command
 
@@ -37,9 +41,9 @@ class MemcacheTrace(TimeTrace):
 def MemcacheTraceWrapper(wrapped, command):
 
     def _nr_wrapper_memcache_trace_(wrapped, instance, args, kwargs):
-        transaction = current_transaction()
+        parent = current_trace()
 
-        if transaction is None:
+        if parent is None:
             return wrapped(*args, **kwargs)
 
         if callable(command):
@@ -50,11 +54,11 @@ def MemcacheTraceWrapper(wrapped, command):
         else:
             _command = command
 
-        trace = MemcacheTrace(transaction, _command)
+        trace = MemcacheTrace(_command, parent=parent)
 
-        proxy = async_proxy(wrapped)
-        if proxy:
-            return proxy(wrapped(*args, **kwargs), TraceContext(trace))
+        wrapper = async_wrapper(wrapped)
+        if wrapper:
+            return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:
             return wrapped(*args, **kwargs)

@@ -1,7 +1,6 @@
 import aiohttp
 import asyncio
 import pytest
-import sys
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace
@@ -21,6 +20,7 @@ def fetch(method, url):
         yield from response.text()
 
 
+@background_task(name='fetch_multiple')
 @asyncio.coroutine
 def fetch_multiple(method, url):
     coros = [fetch(method, url) for _ in range(2)]
@@ -58,7 +58,7 @@ test_matrix = (
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_client_yield_from(local_server_info, method, exc_expected):
     @validate_transaction_metrics(
-        'test_client_yield_from',
+        'fetch_multiple',
         background_task=True,
         scoped_metrics=[
             (local_server_info.base_metric + method.upper(), 2),
@@ -67,7 +67,6 @@ def test_client_yield_from(local_server_info, method, exc_expected):
             (local_server_info.base_metric + method.upper(), 2),
         ],
     )
-    @background_task(name='test_client_yield_from')
     def task_test():
         loop = asyncio.get_event_loop()
         task(loop, method, exc_expected, local_server_info.url)
@@ -93,13 +92,14 @@ def test_client_throw_yield_from(local_server_info, method, exc_expected):
     class ThrowerException(ValueError):
         pass
 
+    @background_task(name='test_client_throw_yield_from')
     @asyncio.coroutine
     def self_driving_thrower():
         with aiohttp.ClientSession() as session:
             coro = session._request(method.upper(), local_server_info.url)
 
             # activate the coroutine
-            next(coro)
+            coro.send(None)
 
             # inject error
             coro.throw(ThrowerException())
@@ -114,7 +114,6 @@ def test_client_throw_yield_from(local_server_info, method, exc_expected):
             (local_server_info.base_metric + method.upper(), 1),
         ],
     )
-    @background_task(name='test_client_throw_yield_from')
     def task_test():
         loop = asyncio.get_event_loop()
 
@@ -128,13 +127,14 @@ def test_client_throw_yield_from(local_server_info, method, exc_expected):
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_client_close_yield_from(local_server_info, method, exc_expected):
 
+    @background_task(name='test_client_close_yield_from')
     @asyncio.coroutine
     def self_driving_closer():
         with aiohttp.ClientSession() as session:
             coro = session._request(method.upper(), local_server_info.url)
 
             # activate the coroutine
-            next(coro)
+            coro.send(None)
 
             # force close
             coro.close()
@@ -149,7 +149,6 @@ def test_client_close_yield_from(local_server_info, method, exc_expected):
             (local_server_info.base_metric + method.upper(), 1),
         ],
     )
-    @background_task(name='test_client_close_yield_from')
     def task_test():
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self_driving_closer())
@@ -169,7 +168,7 @@ test_ws_matrix = (
 def test_ws_connect_yield_from(local_server_info, method, exc_expected):
 
     @validate_transaction_metrics(
-        'test_ws_connect_yield_from',
+        'fetch_multiple',
         background_task=True,
         scoped_metrics=[
             (local_server_info.base_metric + 'GET', 2),
@@ -178,7 +177,6 @@ def test_ws_connect_yield_from(local_server_info, method, exc_expected):
             (local_server_info.base_metric + 'GET', 2),
         ],
     )
-    @background_task(name='test_ws_connect_yield_from')
     def task_test():
         loop = asyncio.get_event_loop()
         task(loop, method, exc_expected, local_server_info.url)
@@ -201,6 +199,7 @@ def test_create_task_yield_from(local_server_info, method, exc_expected):
             resp.raise_for_status()
             yield from resp.text()
 
+    @background_task(name='test_create_task_yield_from')
     @asyncio.coroutine
     def fetch_multiple(loop):
         coros = [fetch_task(loop) for _ in range(2)]
@@ -216,7 +215,6 @@ def test_create_task_yield_from(local_server_info, method, exc_expected):
             (local_server_info.base_metric + method.upper(), 2),
         ],
     )
-    @background_task(name='test_create_task_yield_from')
     def task_test():
         loop = asyncio.get_event_loop()
         result = loop.run_until_complete(fetch_multiple(loop))
@@ -238,7 +236,6 @@ def test_terminal_node_yield_from(local_server_info, method, exc_expected):
     when transaction's current node was terminal.
     """
 
-    @background_task()
     def task_test():
         loop = asyncio.get_event_loop()
 

@@ -1,14 +1,18 @@
 import newrelic.core.solr_node
 
-import newrelic.api.transaction
 import newrelic.api.time_trace
 import newrelic.api.object_wrapper
 
 
 class SolrTrace(newrelic.api.time_trace.TimeTrace):
 
-    def __init__(self, transaction, library, command):
-        super(SolrTrace, self).__init__(transaction)
+    def __init__(self, library, command, **kwargs):
+        parent = None
+        if kwargs:
+            if len(kwargs) > 1:
+                raise TypeError("Invalid keyword arguments:", kwargs)
+            parent = kwargs['parent']
+        super(SolrTrace, self).__init__(parent)
 
         self.library = library
         self.command = command
@@ -61,8 +65,8 @@ class SolrTraceWrapper(object):
                               self._nr_command)
 
     def __call__(self, *args, **kwargs):
-        transaction = newrelic.api.transaction.current_transaction()
-        if not transaction:
+        parent = newrelic.api.time_trace.current_trace()
+        if not parent:
             return self._nr_next_object(*args, **kwargs)
 
         if callable(self._nr_library):
@@ -83,7 +87,7 @@ class SolrTraceWrapper(object):
         else:
             command = self._nr_command
 
-        with SolrTrace(transaction, library, command):
+        with SolrTrace(library, command, parent=parent):
             return self._nr_next_object(*args, **kwargs)
 
 

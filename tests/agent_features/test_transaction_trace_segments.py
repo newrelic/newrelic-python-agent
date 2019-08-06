@@ -38,8 +38,7 @@ def test_external_segment_attributes_disabled():
 @validate_tt_segment_params(exact_params={'http.url': 'http://example.org'})
 @background_task(name='test_external_user_params_override_url')
 def test_external_user_params_override_url():
-    transaction = current_transaction()
-    with ExternalTrace(transaction, 'lib', 'http://example.com') as t:
+    with ExternalTrace('lib', 'http://example.com') as t:
         # Pretend like this is a user attribute and it's legal to do this
         t.params['http.url'] = 'http://example.org'
 
@@ -47,8 +46,7 @@ def test_external_user_params_override_url():
 @validate_tt_segment_params(exact_params={'db.instance': 'a' * 255})
 @background_task(name='test_datastore_db_instance_truncation')
 def test_datastore_db_instance_truncation():
-    transaction = current_transaction()
-    with DatastoreTrace(transaction, 'db_product', 'db_target', 'db_operation',
+    with DatastoreTrace('db_product', 'db_target', 'db_operation',
             database_name='a' * 256):
         pass
 
@@ -56,8 +54,7 @@ def test_datastore_db_instance_truncation():
 @validate_tt_segment_params(exact_params={'db.instance': 'a' * 255})
 @background_task(name='test_database_db_instance_truncation')
 def test_database_db_instance_truncation():
-    transaction = current_transaction()
-    with DatabaseTrace(transaction, 'select * from foo',
+    with DatabaseTrace('select * from foo',
             database_name='a' * 256):
         pass
 
@@ -68,8 +65,7 @@ def test_database_db_instance_truncation():
 @validate_tt_segment_params(exact_params={'db.statement': 'select 1'})
 @background_task(name='test_database_db_statement')
 def test_database_db_statement_default_enabled():
-    transaction = current_transaction()
-    with DatabaseTrace(transaction, 'select 1'):
+    with DatabaseTrace('select 1'):
         pass
 
 
@@ -80,8 +76,7 @@ def test_database_db_statement_default_enabled():
 @validate_tt_segment_params(exact_params={'db.statement': 'a'})
 @background_task(name='test_database_db_statement_truncation')
 def test_database_db_statement_truncation():
-    transaction = current_transaction()
-    with DatabaseTrace(transaction, 'a' * 2):
+    with DatabaseTrace('a' * 2):
         pass
 
 
@@ -92,7 +87,7 @@ def test_database_db_statement_truncation():
 @background_task(name='test_database_segment_attributes_disabled')
 def test_database_segment_attributes_disabled():
     transaction = current_transaction()
-    with DatabaseTrace(transaction, 'select 1', database_name='foo'):
+    with DatabaseTrace('select 1', database_name='foo'):
         pass
 
 
@@ -118,7 +113,7 @@ def test_each_segment_type(trace_type, args):
         transaction = current_transaction()
         transaction._sampled = True
 
-        with trace_type(transaction, *args) as trace:
+        with trace_type(*args) as trace:
             trace._add_agent_attribute('blah', 'bloo')
 
     _test()

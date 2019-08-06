@@ -1,3 +1,4 @@
+import gc
 import functools
 import pytest
 import sys
@@ -6,17 +7,16 @@ import time
 from testing_support.fixtures import (validate_transaction_metrics,
         capture_transaction_metrics, validate_transaction_errors,
         validate_tt_parenting)
-from newrelic.api.transaction import current_transaction
 from newrelic.api.background_task import background_task
-from newrelic.api.database_trace import database_trace, DatabaseTrace
-from newrelic.api.datastore_trace import datastore_trace, DatastoreTrace
-from newrelic.api.function_trace import function_trace, FunctionTrace
-from newrelic.api.external_trace import external_trace, ExternalTrace
-from newrelic.api.memcache_trace import memcache_trace, MemcacheTrace
-from newrelic.api.message_trace import message_trace, MessageTrace
-from newrelic.common.coroutine import TraceContext
+from newrelic.api.database_trace import database_trace
+from newrelic.api.datastore_trace import datastore_trace
+from newrelic.api.function_trace import function_trace
+from newrelic.api.external_trace import external_trace
+from newrelic.api.memcache_trace import memcache_trace
+from newrelic.api.message_trace import message_trace
 
 is_pypy = hasattr(sys, 'pypy_version_info')
+asyncio = pytest.importorskip('asyncio')
 
 
 @pytest.mark.parametrize('trace,metric', [
@@ -80,33 +80,40 @@ def test_coroutine_siblings():
     # | child
     # | child
 
-    # Prior to adding coroutine trace, child would be a child of child
     # This test checks for the presence of 2 child metrics (which wouldn't be
     # the case if child was a child of child since child is terminal)
 
     @function_trace('child', terminal=True)
-    def child():
-        yield
+    @asyncio.coroutine
+    def child(wait, event=None):
+        if event:
+            event.set()
+        yield from wait.wait()
+
+    @asyncio.coroutine
+    def middle():
+        wait = asyncio.Event()
+        started = asyncio.Event()
+
+        child_0 = asyncio.ensure_future(child(wait, started))
+
+        # Wait for the first child to start
+        yield from started.wait()
+
+        child_1 = asyncio.ensure_future(child(wait))
+
+        # Allow children to complete
+        wait.set()
+        yield from child_1
+        yield from child_0
 
     @function_trace('parent')
+    @asyncio.coroutine
     def parent():
-        coros = [child()]
+        yield from asyncio.ensure_future(middle())
 
-        # start one of the children before the other
-        next(coros[-1])
-
-        coros.insert(0, child())
-
-        while coros:
-            coro = coros.pop(0)
-            try:
-                next(coro)
-            except StopIteration:
-                pass
-            else:
-                coros.append(coro)
-
-    parent()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(parent())
 
 
 class MyException(Exception):
@@ -126,6 +133,7 @@ def test_coroutine_error():
     @background_task(name='test_coroutine_error')
     def _test():
         gen = coro()
+        gen.send(None)
         gen.throw(MyException)
 
     with pytest.raises(MyException):
@@ -331,12 +339,16 @@ def test_catching_generator_exit_causes_runtime_error():
     gen = coro()
 
     # kickstart the coroutine (we're inside the try now)
-    next(gen)
+    gen.send(None)
 
     # Generators cannot catch generator exit exceptions (which are injected by
     # close). This will result in a runtime error.
     with pytest.raises(RuntimeError):
         gen.close()
+
+    if is_pypy:
+        gen = None
+        gc.collect()
 
 
 @validate_transaction_metrics(
@@ -366,62 +378,6 @@ def test_coroutine_time_excludes_creation_time():
     # check that the trace does not include the time between creation and
     # consumption
     assert full_metrics[('Function/coro', '')].total_call_time < 0.1
-
-
-@validate_tt_parenting(
-    ('TransactionNode', [
-        ('FunctionNode', []),  # coro
-        ('FunctionNode', [  # child
-            ('FunctionNode', []),  # child-coro
-        ]),
-    ],
-))
-@background_task(name='test_coroutine_saves_trace')
-def test_coroutine_saves_trace():
-    @function_trace(name='coro')
-    def coro():
-        yield
-
-    @function_trace(name='child')
-    def child(_coro):
-        yield
-        # This should exhaust the coro and hopefully not change the current
-        # node
-        list(_coro)
-
-        # If the current node has been changed, this coroutine will be childed
-        # underneath a node other than "child" which is incorrect.
-        for _ in coro():
-            pass
-
-    _coro = coro()
-    _child = child(_coro)
-
-    # Run the child until complete
-    list(_child)
-
-
-@validate_transaction_metrics(
-        'test_supportability_metric',
-        background_task=True,
-        scoped_metrics=[('Function/coro', 1)],
-        rollup_metrics=[('Supportability/Python/'
-                'TraceContext/ExitNodeMismatch', 1),
-                ('Function/coro', 1)],
-)
-@background_task(name='test_supportability_metric')
-def test_supportability_metric():
-    txn = current_transaction()
-    current_span = txn.current_span
-
-    @function_trace(name='coro')
-    def coro():
-        # change the current node for no good reason
-        txn.current_span = current_span
-        yield
-
-    for _ in coro():
-        pass
 
 
 @pytest.mark.parametrize('nr_transaction', [True, False])
@@ -466,27 +422,35 @@ def test_incomplete_coroutine(nr_transaction):
     _test()
 
 
-@pytest.mark.parametrize('trace', [
-    functools.partial(FunctionTrace, name='simple_gen'),
-    functools.partial(ExternalTrace, library='lib', url='http://foo.com'),
-    functools.partial(DatabaseTrace, sql='select * from foo'),
-    functools.partial(
-            DatastoreTrace, product='lib', target='foo', operation='bar'),
-    functools.partial(MessageTrace, library='lib', operation='op',
-            destination_type='typ', destination_name='name'),
-    functools.partial(MemcacheTrace, command='cmd'),
-])
-def test_context_no_transaction(trace):
-    # Pass it no transaction
-    trace = trace(None)
+def test_trace_outlives_transaction():
+    task = []
+    running, finish = asyncio.Event(), asyncio.Event()
 
-    context = TraceContext(trace)
+    @function_trace(name='coro')
+    @asyncio.coroutine
+    def _coro():
+        running.set()
+        yield from finish.wait()
 
-    # Check to see that context does not crash
-    with context:
-        pass
+    @asyncio.coroutine
+    def parent():
+        task.append(asyncio.ensure_future(_coro()))
+        yield from running.wait()
 
-    context.close()
+    loop = asyncio.get_event_loop()
+
+    @validate_transaction_metrics(
+        'test_trace_outlives_transaction',
+        background_task=True,
+        scoped_metrics=(('Function/coro', None),),
+    )
+    @background_task(name='test_trace_outlives_transaction')
+    def _test():
+        loop.run_until_complete(parent())
+
+    _test()
+    finish.set()
+    loop.run_until_complete(task.pop())
 
 
 if sys.version_info >= (3, 5):

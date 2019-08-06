@@ -5,8 +5,8 @@ import os
 
 python_version = sys.version_info[:2]
 
-assert python_version in ((2, 7),) or python_version >= (3, 4), \
-        'The New Relic Python agent only supports Python 2.7 and 3.4+.'
+assert python_version in ((2, 7),) or python_version >= (3, 5), \
+        'The New Relic Python agent only supports Python 2.7 and 3.5+.'
 
 with_setuptools = False
 
@@ -79,9 +79,6 @@ packages = [
         "newrelic.extras.framework_django",
         "newrelic.extras.framework_django.templatetags",
         "newrelic.hooks",
-        "newrelic.hooks.framework_tornado",
-        "newrelic.hooks.framework_tornado_r3",
-        "newrelic.hooks.framework_tornado_r4",
         "newrelic.network",
         "newrelic/packages",
         "newrelic/packages/requests",
@@ -99,7 +96,6 @@ classifiers = [
         "Development Status :: 5 - Production/Stable",
         "License :: Other/Proprietary License",
         "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
@@ -122,7 +118,7 @@ kwargs = dict(
         zip_safe = False,
         classifiers = classifiers,
         packages = packages,
-        python_requires = '>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*',
+        python_requires = '>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*',
         package_data = { 'newrelic': ['newrelic.ini', 'LICENSE',
               'common/cacert.pem',
               'packages/requests/LICENSE', 'packages/requests/NOTICE',

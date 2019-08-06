@@ -2,7 +2,7 @@ import functools
 import types
 import sys
 
-from newrelic.api.transaction import current_transaction
+from newrelic.api.time_trace import current_trace
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.common.object_names import callable_name
@@ -12,9 +12,9 @@ def GeneratorTraceWrapper(wrapped, name=None, group=None, label=None,
             params=None):
 
     def wrapper(wrapped, instance, args, kwargs):
-        transaction = current_transaction()
+        parent = current_trace()
 
-        if transaction is None:
+        if parent is None:
             return wrapped(*args, **kwargs)
 
         if callable(name):
@@ -64,7 +64,7 @@ def GeneratorTraceWrapper(wrapped, name=None, group=None, label=None,
                 exc = None
 
                 while True:
-                    transaction = current_transaction()
+                    parent = current_trace()
 
                     params = {}
 
@@ -73,8 +73,8 @@ def GeneratorTraceWrapper(wrapped, name=None, group=None, label=None,
                     params['filename'] = frame.f_code.co_filename
                     params['lineno'] = frame.f_lineno
 
-                    with FunctionTrace(transaction, _gname, _group,
-                             params=params):
+                    with FunctionTrace(_gname, _group,
+                             params=params, parent=parent):
                         try:
                             if exc is not None:
                                 yielded = generator.throw(*exc)
@@ -97,7 +97,7 @@ def GeneratorTraceWrapper(wrapped, name=None, group=None, label=None,
             finally:
                 generator.close()
 
-        with FunctionTrace(transaction, _name, _group, _label, _params):
+        with FunctionTrace(_name, _group, _label, _params, parent=parent):
             try:
                 result = wrapped(*args, **kwargs)
 

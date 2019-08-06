@@ -29,17 +29,14 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         with transaction:
             time.sleep(0.1)
             with newrelic.api.database_trace.DatabaseTrace(
-                    transaction, "select * from cat"):
+                    "select * from cat"):
                 time.sleep(1.0)
             time.sleep(0.1)
 
     def test_transaction_not_running(self):
-        environ = {"REQUEST_URI": "/transaction_not_running"}
-        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
-                application, environ)
         try:
             with newrelic.api.database_trace.DatabaseTrace(
-                    transaction, "select * from cat"):
+                    "select * from cat"):
                 time.sleep(0.1)
         except RuntimeError:
             pass
@@ -78,7 +75,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
         try:
             with transaction:
-                with DatabaseTrace(transaction, "select * from cat", host='a',
+                with DatabaseTrace("select * from cat", host='a',
                         port_path_or_id='b', database_name='c',
                         connect_params=None) as trace:
 
@@ -108,7 +105,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
         try:
             with transaction:
-                with DatabaseTrace(transaction, "select * from cat", host='a',
+                with DatabaseTrace("select * from cat", host='a',
                         port_path_or_id='b', database_name='c',
                         connect_params=None) as trace:
 
@@ -122,6 +119,26 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 original_instance_reporting
             ds_settings.database_name_reporting.enabled = \
                     original_database_name_reporting
+
+    def test_unknown_kwargs_raises_exception(self):
+        environ = {"REQUEST_URI": "/unknown_kwargs"}
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
+                application, environ)
+
+        with transaction:
+            with self.assertRaises(KeyError):
+                newrelic.api.database_trace.DatabaseTrace(
+                        "select * from cat", unknown_kwarg="foo")
+
+    def test_extra_kwargs_raises_exception(self):
+        environ = {"REQUEST_URI": "/extra_kwargs"}
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
+                application, environ)
+
+        with transaction:
+            with self.assertRaises(TypeError):
+                newrelic.api.database_trace.DatabaseTrace(
+                        "select * from cat", parent=None, unknown_kwarg="foo")
 
 
 if __name__ == '__main__':

@@ -66,7 +66,7 @@ def test_no_cat_headers(serverless_application):
         payload = ExternalTrace.generate_request_headers(transaction)
         assert not payload
 
-        trace = ExternalTrace(transaction, 'testlib', 'http://example.com')
+        trace = ExternalTrace('testlib', 'http://example.com')
         response_headers = [('X-NewRelic-App-Data', 'Cookies')]
         with trace:
             trace.process_response_headers(response_headers)

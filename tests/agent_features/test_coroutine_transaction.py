@@ -29,21 +29,25 @@ def coroutine_test(transaction, nr_enabled=True, does_hang=False,
 
         if not nr_enabled:
             assert txn is None
+        else:
+            assert txn._loop_time == 0.0
 
         if call_exit:
             txn.__exit__(None, None, None)
+        else:
+            assert current_transaction() is txn
 
         try:
             if does_hang:
                 yield from loop.create_future()
             else:
                 yield from asyncio.sleep(0.0)
+                if nr_enabled and txn.enabled:
+                    # Validate loop time is recorded after suspend
+                    assert txn._loop_time > 0.0
         except GeneratorExit:
             if runtime_error:
                 yield from asyncio.sleep(0.0)
-
-        if not call_exit:
-            assert current_transaction() is txn
 
     return task
 
@@ -53,6 +57,7 @@ if native_coroutine_test:
     test_matrix.append(native_coroutine_test)
 
 
+@pytest.mark.parametrize('num_coroutines', (2,))
 @pytest.mark.parametrize('create_test_task', test_matrix)
 @pytest.mark.parametrize('transaction,metric', [
     (background_task(name='test'), 'OtherTransaction/Function/test'),
@@ -64,53 +69,55 @@ if native_coroutine_test:
         (True, False),
         (True, True),
 ))
-def test_async_coroutine_send(create_test_task, transaction, metric, call_exit,
-        nr_enabled):
+def test_async_coroutine_send(num_coroutines, create_test_task, transaction,
+        metric, call_exit, nr_enabled):
     metrics = []
 
-    task_a = create_test_task(
+    tasks = [create_test_task(
             transaction, nr_enabled=nr_enabled, call_exit=call_exit)
-    task_b = create_test_task(
-            transaction, nr_enabled=nr_enabled, call_exit=call_exit)
+            for _ in range(num_coroutines)]
 
     @override_generic_settings(settings, {'enabled': nr_enabled})
     @capture_transaction_metrics(metrics)
     def _test_async_coroutine_send():
         loop = asyncio.get_event_loop()
-        driver = asyncio.gather(task_a(), task_b())
+        driver = asyncio.gather(*[t() for t in tasks])
         loop.run_until_complete(driver)
 
     _test_async_coroutine_send()
 
     if nr_enabled:
-        assert metrics.count((metric, '')) == 2, metrics
+        assert metrics.count((metric, '')) == num_coroutines, metrics
     else:
         assert not metrics, metrics
 
 
+@pytest.mark.parametrize('num_coroutines', (2,))
 @pytest.mark.parametrize('create_test_task', test_matrix)
 @pytest.mark.parametrize('transaction,metric', [
     (background_task(name='test'), 'OtherTransaction/Function/test'),
     (message_transaction('lib', 'dest_type', 'dest_name'),
             'OtherTransaction/Message/lib/dest_type/Named/dest_name'),
 ])
-def test_async_coroutine_send_disabled(create_test_task, transaction, metric):
+def test_async_coroutine_send_disabled(num_coroutines, create_test_task,
+        transaction, metric):
     metrics = []
 
-    task_a = create_test_task(transaction, call_exit=True)
-    task_b = create_test_task(transaction, call_exit=True)
+    tasks = [create_test_task(transaction, call_exit=True)
+        for _ in range(num_coroutines)]
 
     @capture_transaction_metrics(metrics)
     def _test_async_coroutine_send():
         loop = asyncio.get_event_loop()
-        driver = asyncio.gather(task_a(), task_b())
+        driver = asyncio.gather(*[t() for t in tasks])
         loop.run_until_complete(driver)
 
     _test_async_coroutine_send()
 
-    assert metrics.count((metric, '')) == 2, metrics
+    assert metrics.count((metric, '')) == num_coroutines, metrics
 
 
+@pytest.mark.parametrize('num_coroutines', (2,))
 @pytest.mark.parametrize('create_test_task', test_matrix)
 @pytest.mark.parametrize('transaction,metric', [
     (background_task(name='test'), 'OtherTransaction/Function/test'),
@@ -118,21 +125,20 @@ def test_async_coroutine_send_disabled(create_test_task, transaction, metric):
             'OtherTransaction/Message/lib/dest_type/Named/dest_name'),
 ])
 @validate_transaction_errors([])
-def test_async_coroutine_throw_cancel(create_test_task, transaction, metric):
+def test_async_coroutine_throw_cancel(num_coroutines, create_test_task,
+        transaction, metric):
     metrics = []
 
-    task_a = create_test_task(transaction)
-    task_b = create_test_task(transaction)
+    tasks = [create_test_task(transaction)
+        for _ in range(num_coroutines)]
 
     @asyncio.coroutine
     def task_c():
-        future_a = asyncio.ensure_future(task_a())
-        future_b = asyncio.ensure_future(task_b())
+        futures = [asyncio.ensure_future(t()) for t in tasks]
 
         yield from asyncio.sleep(0.0)
 
-        future_a.cancel()
-        future_b.cancel()
+        [f.cancel() for f in futures]
 
     @capture_transaction_metrics(metrics)
     def _test_async_coroutine_throw_cancel():
@@ -141,9 +147,10 @@ def test_async_coroutine_throw_cancel(create_test_task, transaction, metric):
 
     _test_async_coroutine_throw_cancel()
 
-    assert metrics.count((metric, '')) == 2, metrics
+    assert metrics.count((metric, '')) == num_coroutines, metrics
 
 
+@pytest.mark.parametrize('num_coroutines', (2,))
 @pytest.mark.parametrize('create_test_task', test_matrix)
 @pytest.mark.parametrize('transaction,metric', [
     (background_task(name='test'), 'OtherTransaction/Function/test'),
@@ -151,21 +158,20 @@ def test_async_coroutine_throw_cancel(create_test_task, transaction, metric):
             'OtherTransaction/Message/lib/dest_type/Named/dest_name'),
 ])
 @validate_transaction_errors(['builtins:ValueError'])
-def test_async_coroutine_throw_error(create_test_task, transaction, metric):
+def test_async_coroutine_throw_error(num_coroutines, create_test_task,
+        transaction, metric):
     metrics = []
 
-    task_a = create_test_task(transaction)
-    task_b = create_test_task(transaction)
+    tasks = [create_test_task(transaction)
+        for _ in range(num_coroutines)]
 
     @asyncio.coroutine
     def task_c():
-        coro_a = task_a()
-        coro_b = task_b()
+        coros = [t() for t in tasks]
 
-        with pytest.raises(ValueError):
-            coro_a.throw(ValueError)
-        with pytest.raises(ValueError):
-            coro_b.throw(ValueError)
+        for coro in coros:
+            with pytest.raises(ValueError):
+                coro.throw(ValueError)
 
     @capture_transaction_metrics(metrics)
     def _test_async_coroutine_throw_error():
@@ -174,11 +180,12 @@ def test_async_coroutine_throw_error(create_test_task, transaction, metric):
 
     _test_async_coroutine_throw_error()
 
-    assert metrics.count((metric, '')) == 2, metrics
-    assert metrics.count(('Errors/' + metric, '')) == 2, metrics
-    assert metrics.count(('Errors/all', '')) == 2, metrics
+    assert metrics.count((metric, '')) == num_coroutines, metrics
+    assert metrics.count(('Errors/' + metric, '')) == num_coroutines, metrics
+    assert metrics.count(('Errors/all', '')) == num_coroutines, metrics
 
 
+@pytest.mark.parametrize('num_coroutines', (1,))
 @pytest.mark.parametrize('create_test_task', test_matrix)
 @pytest.mark.parametrize('transaction,metric', [
     (background_task(name='test'), 'OtherTransaction/Function/test'),
@@ -186,26 +193,23 @@ def test_async_coroutine_throw_error(create_test_task, transaction, metric):
             'OtherTransaction/Message/lib/dest_type/Named/dest_name'),
 ])
 @pytest.mark.parametrize('start_coroutines', (False, True))
-def test_async_coroutine_close(create_test_task, transaction, metric,
-        start_coroutines):
+def test_async_coroutine_close(num_coroutines, create_test_task, transaction,
+        metric, start_coroutines):
     metrics = []
 
-    task_a = create_test_task(transaction)
-    task_b = create_test_task(transaction)
+    tasks = [create_test_task(transaction)
+        for _ in range(num_coroutines)]
 
     @asyncio.coroutine
     def task_c():
-        coro_a = task_a()
-        coro_b = task_b()
+        coros = [t() for t in tasks]
 
         if start_coroutines:
-            asyncio.ensure_future(coro_a)
-            asyncio.ensure_future(coro_b)
+            [asyncio.ensure_future(coro) for coro in coros]
 
             yield from asyncio.sleep(0.0)
 
-        coro_a.close()
-        coro_b.close()
+        [coro.close() for coro in coros]
 
     @capture_transaction_metrics(metrics)
     def _test_async_coroutine_close():
@@ -215,11 +219,12 @@ def test_async_coroutine_close(create_test_task, transaction, metric,
     _test_async_coroutine_close()
 
     if start_coroutines:
-        assert metrics.count((metric, '')) == 2, metrics
+        assert metrics.count((metric, '')) == num_coroutines, metrics
     else:
         assert not metrics
 
 
+@pytest.mark.parametrize('num_coroutines', (1,))
 @pytest.mark.parametrize('create_test_task', test_matrix)
 @pytest.mark.parametrize('transaction,metric', [
     (background_task(name='test'), 'OtherTransaction/Function/test'),
@@ -227,28 +232,24 @@ def test_async_coroutine_close(create_test_task, transaction, metric,
             'OtherTransaction/Message/lib/dest_type/Named/dest_name'),
 ])
 @validate_transaction_errors(['builtins:RuntimeError'])
-def test_async_coroutine_close_raises_error(create_test_task, transaction,
-        metric):
+def test_async_coroutine_close_raises_error(num_coroutines, create_test_task,
+        transaction, metric):
     metrics = []
 
-    task_a = create_test_task(transaction, runtime_error=True)
-    task_b = create_test_task(transaction, runtime_error=True)
+    tasks = [create_test_task(transaction, runtime_error=True)
+            for _ in range(num_coroutines)]
 
     @asyncio.coroutine
     def task_c():
-        coro_a = task_a()
-        coro_b = task_b()
+        coros = [t() for t in tasks]
 
-        asyncio.ensure_future(coro_a)
-        asyncio.ensure_future(coro_b)
+        [c.send(None) for c in coros]
 
         yield from asyncio.sleep(0.0)
 
-        with pytest.raises(RuntimeError):
-            coro_a.close()
-
-        with pytest.raises(RuntimeError):
-            coro_b.close()
+        for coro in coros:
+            with pytest.raises(RuntimeError):
+                coro.close()
 
     @capture_transaction_metrics(metrics)
     def _test_async_coroutine_close_raises_error():
@@ -257,5 +258,5 @@ def test_async_coroutine_close_raises_error(create_test_task, transaction,
 
     _test_async_coroutine_close_raises_error()
 
-    assert metrics.count((metric, '')) == 2, metrics
-    assert metrics.count(('Errors/all', '')) == 2, metrics
+    assert metrics.count((metric, '')) == num_coroutines, metrics
+    assert metrics.count(('Errors/all', '')) == num_coroutines, metrics

@@ -51,17 +51,14 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 application, environ)
         with transaction:
             time.sleep(0.1)
-            with newrelic.api.external_trace.ExternalTrace(transaction,
+            with newrelic.api.external_trace.ExternalTrace(
                     "unit-tests", "http://a:b@external_trace/test/?c=d"):
                 time.sleep(0.1)
             time.sleep(0.1)
 
     def test_transaction_not_running(self):
-        environ = {"REQUEST_URI": "/transaction_not_running"}
-        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
-               application, environ)
         try:
-            with newrelic.api.external_trace.ExternalTrace(transaction,
+            with newrelic.api.external_trace.ExternalTrace(
                     "unit-tests", "http://a:b@transaction_not_running"):
                 time.sleep(0.1)
         except RuntimeError:
@@ -116,11 +113,6 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         with transaction:
             _test_function_1a("http://invalid_url:xxx")
 
-    def test_external_trace_none_for_transaction(self):
-        with newrelic.api.external_trace.ExternalTrace(
-                None, 'library', 'url'):
-            pass
-
     # regression, see PYTHON-2832
     def test_external_trace_stopped(self):
         environ = {"REQUEST_URI": "/external_trace"}
@@ -130,11 +122,30 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
         with transaction:
             with newrelic.api.external_trace.ExternalTrace(
-                    transaction,
                     "unit-tests",
                     "http://a:b@external_trace/test/?c=d"):
 
                 time.sleep(0.1)
+
+    def test_unknown_kwargs_raises_exception(self):
+        environ = {"REQUEST_URI": "/unknown_kwargs"}
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
+                application, environ)
+
+        with transaction:
+            with self.assertRaises(KeyError):
+                newrelic.api.external_trace.ExternalTrace(
+                        "library", "url", unknown_kwarg="foo")
+
+    def test_extra_kwargs_raises_exception(self):
+        environ = {"REQUEST_URI": "/extra_kwargs"}
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
+                application, environ)
+
+        with transaction:
+            with self.assertRaises(TypeError):
+                newrelic.api.external_trace.ExternalTrace(
+                        "library", "url", parent=None, unknown_kwarg="foo")
 
 
 if __name__ == '__main__':

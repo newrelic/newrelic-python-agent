@@ -1,3 +1,4 @@
+import pytest
 import asyncio
 
 from testing_support.fixtures import (validate_transaction_metrics,

@@ -69,7 +69,6 @@ def wrap_elasticsearch_client_method(owner, name, arg_extractor, prefix=None):
         transaction._nr_datastore_instance_info = (None, None, None)
 
         dt = DatastoreTrace(
-                transaction=transaction,
                 product='Elasticsearch',
                 target=index,
                 operation=operation

@@ -4,6 +4,7 @@ from newrelic.common.object_wrapper import (wrap_function_wrapper,
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.function_trace import FunctionTrace, wrap_function_trace
 from newrelic.api.transaction import current_transaction
+from newrelic.api.time_trace import current_trace
 from newrelic.common.object_names import callable_name
 from newrelic.api.external_trace import ExternalTrace
 
@@ -24,11 +25,6 @@ def wrapper_GearmanConnectionManager_poll_connections_until_stopped(
 
     def _bind_params(submitted_connections, *args, **kwargs):
         return submitted_connections
-
-    transaction = current_transaction()
-
-    if transaction is None:
-        return wrapped(*args, **kwargs)
 
     # Because gearman uses a custom message based protocol over a raw
     # socket, we can't readily wrap a single function which is
@@ -62,7 +58,7 @@ def wrapper_GearmanConnectionManager_poll_connections_until_stopped(
     url = 'gearman://%s:%s' % (first_connection.gearman_host,
             first_connection.gearman_port)
 
-    with ExternalTrace(transaction, 'gearman', url):
+    with ExternalTrace('gearman', url):
         return wrapped(*args, **kwargs)
 
 def wrapper_GearmanConnectionManager_handle_function(wrapped, instance,
@@ -76,7 +72,7 @@ def wrapper_GearmanConnectionManager_handle_function(wrapped, instance,
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    tracer = transaction.active_span()
+    tracer = current_trace()
 
     if not isinstance(tracer, ExternalTrace):
         return wrapped(*args, **kwargs)
@@ -142,7 +138,7 @@ def wrapper_callback_function(wrapped, instance, args, kwargs):
     # dispatch code and do not actually propagate up to the level of the
     # background task wrapper.
 
-    with FunctionTrace(transaction, callable_name(wrapped)):
+    with FunctionTrace(callable_name(wrapped)):
         try:
             return wrapped(*args, **kwargs)
         except:  # Catch all

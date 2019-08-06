@@ -65,9 +65,10 @@ def mock_header_server():
 def test_outbound_cross_process_headers(cat_enabled, distributed_tracing,
         span_events, mock_header_server):
 
-    def task_test():
-        loop = asyncio.get_event_loop()
-        headers = loop.run_until_complete(fetch('http://127.0.0.1:8989'))
+    @background_task(name='test_outbound_cross_process_headers')
+    @asyncio.coroutine
+    def _test():
+        headers = yield from fetch('http://127.0.0.1:8989')
 
         transaction = current_transaction()
         transaction._test_request_headers = headers
@@ -82,19 +83,24 @@ def test_outbound_cross_process_headers(cat_enabled, distributed_tracing,
             assert ExternalTrace.cat_id_key not in headers
             assert ExternalTrace.cat_transaction_key not in headers
 
-    if cat_enabled or distributed_tracing:
-        task_test = validate_cross_process_headers(task_test)
+        def _validate():
+            pass
 
-    task_test = background_task(
-            name='test_client_cat:'
-                 'test_outbound_cross_process_headers')(task_test)
-    task_test = override_application_settings({
-                    'cross_application_tracer.enabled': cat_enabled,
-                    'distributed_tracing.enabled': distributed_tracing,
-                    'span_events.enabled': span_events,
-                })(task_test)
+        if cat_enabled or distributed_tracing:
+            _validate = validate_cross_process_headers(_validate)
 
-    task_test()
+        _validate()
+
+    @override_application_settings({
+        'cross_application_tracer.enabled': cat_enabled,
+        'distributed_tracing.enabled': distributed_tracing,
+        'span_events.enabled': span_events,
+    })
+    def test():
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(_test())
+
+    test()
 
 
 _nr_key = ExternalTrace.cat_id_key
@@ -105,13 +111,13 @@ _customer_headers_tests = [
 
 
 @pytest.mark.parametrize('customer_headers', _customer_headers_tests)
-@background_task()
 def test_outbound_cross_process_headers_custom_headers(customer_headers,
         mock_header_server):
 
     loop = asyncio.get_event_loop()
-    headers = loop.run_until_complete(fetch('http://127.0.0.1:8989',
-        customer_headers.copy()))
+    headers = loop.run_until_complete(
+            background_task()(fetch)('http://127.0.0.1:8989',
+            customer_headers.copy()))
 
     # always honor customer headers
     for expected_header, expected_value in customer_headers.items():
@@ -127,22 +133,26 @@ def test_outbound_cross_process_headers_no_txn(mock_header_server):
     assert not headers.get(ExternalTrace.cat_transaction_key)
 
 
-@background_task()
 def test_outbound_cross_process_headers_exception(mock_header_server):
 
-    # corrupt the transaction object to force an error
-    transaction = current_transaction()
-    guid = transaction.guid
-    delattr(transaction, 'guid')
+    @background_task(name='test_outbound_cross_process_headers_exception')
+    @asyncio.coroutine
+    def test():
+        # corrupt the transaction object to force an error
+        transaction = current_transaction()
+        guid = transaction.guid
+        delattr(transaction, 'guid')
 
-    try:
-        loop = asyncio.get_event_loop()
-        headers = loop.run_until_complete(fetch('http://127.0.0.1:8989'))
+        try:
+            headers = yield from fetch('http://127.0.0.1:8989')
 
-        assert not headers.get(ExternalTrace.cat_id_key)
-        assert not headers.get(ExternalTrace.cat_transaction_key)
-    finally:
-        transaction.guid = guid
+            assert not headers.get(ExternalTrace.cat_id_key)
+            assert not headers.get(ExternalTrace.cat_transaction_key)
+        finally:
+            transaction.guid = guid
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(test())
 
 
 class PoorResolvingConnector(aiohttp.TCPConnector):
@@ -195,22 +205,9 @@ def test_process_incoming_headers(cat_enabled, response_code,
 
     connector = connector_class() if connector_class else None
 
-    @override_application_settings({
-        'cross_application_tracer.enabled': cat_enabled,
-        'distributed_tracing.enabled': False
-    })
-    @validate_transaction_metrics(
-            'test_client_cat:test_process_incoming_headers.<locals>.task_test',
-            scoped_metrics=_test_cross_process_response_scoped_metrics,
-            rollup_metrics=_test_cross_process_response_rollup_metrics,
-            background_task=True)
-    @validate_external_node_params(
-            params=(_test_cross_process_response_external_node_params if
-                cat_enabled else []),
-            forgone_params=([] if cat_enabled else
-                _test_cross_process_response_external_node_forgone_params))
-    @background_task()
-    def task_test():
+    @background_task(name='test_process_incoming_headers')
+    @asyncio.coroutine
+    def _test():
         transaction = current_transaction()
         headers = create_incoming_headers(transaction)
 
@@ -223,8 +220,27 @@ def test_process_incoming_headers(cat_enabled, response_code,
 
         with MockExternalHTTPServer(handler=respond_with_cat_header,
                 port=8990):
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(fetch('http://127.0.0.1:8990',
-                raise_for_status=raise_for_status, connector=connector))
+            yield from fetch(
+                    'http://127.0.0.1:8990',
+                    raise_for_status=raise_for_status,
+                    connector=connector)
 
-    task_test()
+    @override_application_settings({
+        'cross_application_tracer.enabled': cat_enabled,
+        'distributed_tracing.enabled': False
+    })
+    @validate_transaction_metrics(
+            'test_process_incoming_headers',
+            scoped_metrics=_test_cross_process_response_scoped_metrics,
+            rollup_metrics=_test_cross_process_response_rollup_metrics,
+            background_task=True)
+    @validate_external_node_params(
+            params=(_test_cross_process_response_external_node_params if
+                cat_enabled else []),
+            forgone_params=([] if cat_enabled else
+                _test_cross_process_response_external_node_forgone_params))
+    def test():
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(_test())
+
+    test()

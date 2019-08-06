@@ -16,10 +16,10 @@ RUN /bin/chmod 755 /usr/sbin/policy-rc.d
 # ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update
-RUN apt-get -y -q install wget
+RUN apt-get -y -q install curl
 
-RUN wget http://www.rabbitmq.com/rabbitmq-signing-key-public.asc
-RUN apt-key add rabbitmq-signing-key-public.asc
+RUN curl -L https://github.com/rabbitmq/signing-keys/releases/download/2.0/rabbitmq-release-signing-key.asc --output rabbitmq-release-signing-key.asc
+RUN gpg --import rabbitmq-release-signing-key.asc
 
 RUN echo "deb http://www.rabbitmq.com/debian/ testing main" > /etc/apt/sources.list.d/rabbitmq.list
 RUN apt-get -y install rabbitmq-server

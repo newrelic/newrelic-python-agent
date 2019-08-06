@@ -1,8 +1,7 @@
 import functools
 
-from newrelic.common.coroutine import async_proxy, TraceContext
-from newrelic.api.time_trace import TimeTrace
-from newrelic.api.transaction import current_transaction
+from newrelic.common.async_wrapper import async_wrapper
+from newrelic.api.time_trace import TimeTrace, current_trace
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.function_node import FunctionNode
@@ -10,9 +9,14 @@ from newrelic.core.function_node import FunctionNode
 
 class FunctionTrace(TimeTrace):
 
-    def __init__(self, transaction, name, group=None, label=None,
-            params=None, terminal=False, rollup=None):
-        super(FunctionTrace, self).__init__(transaction)
+    def __init__(self, name, group=None, label=None,
+            params=None, terminal=False, rollup=None, **kwargs):
+        parent = None
+        if kwargs:
+            if len(kwargs) > 1:
+                raise TypeError("Invalid keyword arguments:", kwargs)
+            parent = kwargs['parent']
+        super(FunctionTrace, self).__init__(parent)
 
         # Deal with users who use group wrongly and add a leading
         # slash on it. This will cause an empty segment which we
@@ -66,9 +70,9 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
             params=None, terminal=False, rollup=None):
 
     def dynamic_wrapper(wrapped, instance, args, kwargs):
-        transaction = current_transaction()
+        parent = current_trace()
 
-        if transaction is None:
+        if parent is None:
             return wrapped(*args, **kwargs)
 
         if callable(name):
@@ -110,30 +114,30 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
         else:
             _params = params
 
-        trace = FunctionTrace(transaction, _name, _group, _label, _params,
-                terminal, rollup)
+        trace = FunctionTrace(_name, _group, _label, _params,
+                terminal, rollup, parent=parent)
 
-        proxy = async_proxy(wrapped)
-        if proxy:
-            return proxy(wrapped(*args, **kwargs), TraceContext(trace))
+        wrapper = async_wrapper(wrapped)
+        if wrapper:
+            return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:
             return wrapped(*args, **kwargs)
 
     def literal_wrapper(wrapped, instance, args, kwargs):
-        transaction = current_transaction()
+        parent = current_trace()
 
-        if transaction is None:
+        if parent is None:
             return wrapped(*args, **kwargs)
 
         _name = name or callable_name(wrapped)
 
-        trace = FunctionTrace(transaction, _name, group, label, params,
-                terminal, rollup)
+        trace = FunctionTrace(_name, group, label, params,
+                terminal, rollup, parent=parent)
 
-        proxy = async_proxy(wrapped)
-        if proxy:
-            return proxy(wrapped(*args, **kwargs), TraceContext(trace))
+        wrapper = async_wrapper(wrapped)
+        if wrapper:
+            return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:
             return wrapped(*args, **kwargs)

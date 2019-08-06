@@ -93,7 +93,7 @@ class RequestProcessWrapper(object):
             # it is not done yet and register deferred callbacks to
             # complete the request.
 
-            with newrelic.api.function_trace.FunctionTrace(transaction,
+            with newrelic.api.function_trace.FunctionTrace(
                     name='Request/Process', group='Python/Twisted'):
                 result = self._nr_next_object()
 
@@ -114,7 +114,7 @@ class RequestProcessWrapper(object):
             else:
                 self._nr_instance._nr_wait_function_trace = \
                         newrelic.api.function_trace.FunctionTrace(
-                        transaction, name='Deferred/Wait',
+                        name='Deferred/Wait',
                         group='Python/Twisted')
 
                 self._nr_instance._nr_wait_function_trace.__enter__()
@@ -207,7 +207,7 @@ class RequestFinishWrapper(object):
             # Most likely the finish() call would never fail anyway.
 
             try:
-                with newrelic.api.function_trace.FunctionTrace(transaction,
+                with newrelic.api.function_trace.FunctionTrace(
                         name='Request/Finish', group='Python/Twisted'):
                     result = self._nr_next_object()
 
@@ -231,7 +231,7 @@ class RequestFinishWrapper(object):
                 self._nr_instance._nr_wait_function_trace.__exit__(
                         None, None, None)
 
-                with newrelic.api.function_trace.FunctionTrace(transaction,
+                with newrelic.api.function_trace.FunctionTrace(
                         name='Request/Finish', group='Python/Twisted'):
                     result = self._nr_next_object()
 
@@ -250,7 +250,7 @@ class RequestFinishWrapper(object):
             # This should be the case where finish() is being called in
             # the original render() function.
 
-            with newrelic.api.function_trace.FunctionTrace(transaction,
+            with newrelic.api.function_trace.FunctionTrace(
                     name='Request/Finish', group='Python/Twisted'):
                 result = self._nr_next_object()
 
@@ -309,7 +309,7 @@ class ResourceRenderWrapper(object):
                 instance), request.method)
         transaction.set_transaction_name(name, priority=1)
 
-        with newrelic.api.function_trace.FunctionTrace(transaction, name):
+        with newrelic.api.function_trace.FunctionTrace(name):
             return self._nr_next_object(*args)
 
 class DeferredUserList(UserList.UserList):
@@ -452,9 +452,9 @@ class DeferredCallbacksWrapper(object):
             # Call the deferred and capture any errors that may come
             # back from it.
 
-            with newrelic.api.error_trace.ErrorTrace(transaction):
+            with newrelic.api.error_trace.ErrorTrace():
                 with newrelic.api.function_trace.FunctionTrace(
-                        transaction, name='Deferred/Call',
+                        name='Deferred/Call',
                         group='Python/Twisted'):
                     return self._nr_next_object()
 
@@ -476,7 +476,7 @@ class DeferredCallbacksWrapper(object):
 
                 request._nr_wait_function_trace = \
                         newrelic.api.function_trace.FunctionTrace(
-                        transaction, name='Deferred/Wait',
+                        name='Deferred/Wait',
                         group='Python/Twisted')
 
                 request._nr_wait_function_trace.__enter__()
@@ -494,9 +494,8 @@ class InlineGeneratorWrapper(object):
         name = newrelic.api.object_wrapper.callable_name(self._nr_wrapped)
         iterable = iter(self._nr_generator)
         while 1:
-            transaction = newrelic.api.transaction.current_transaction()
             with newrelic.api.function_trace.FunctionTrace(
-                  transaction, name, group='Python/Twisted/Generator'):
+                  name, group='Python/Twisted/Generator'):
                 yield next(iterable)
 
 class InlineCallbacksWrapper(object):

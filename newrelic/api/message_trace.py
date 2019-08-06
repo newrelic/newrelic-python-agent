@@ -1,9 +1,8 @@
 import functools
 
-from newrelic.common.coroutine import async_proxy, TraceContext
+from newrelic.common.async_wrapper import async_wrapper
 from newrelic.api.cat_header_mixin import CatHeaderMixin
-from newrelic.api.time_trace import TimeTrace
-from newrelic.api.transaction import current_transaction
+from newrelic.api.time_trace import TimeTrace, current_trace
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.message_node import MessageNode
 
@@ -15,11 +14,16 @@ class MessageTrace(TimeTrace, CatHeaderMixin):
     cat_appdata_key = 'NewRelicAppData'
     cat_synthetics_key = 'NewRelicSynthetics'
 
-    def __init__(self, transaction, library, operation,
+    def __init__(self, library, operation,
             destination_type, destination_name,
-            params=None):
+            params=None, **kwargs):
 
-        super(MessageTrace, self).__init__(transaction)
+        parent = None
+        if kwargs:
+            if len(kwargs) > 1:
+                raise TypeError("Invalid keyword arguments:", kwargs)
+            parent = kwargs['parent']
+        super(MessageTrace, self).__init__(parent)
 
         self.settings = self.transaction and self.transaction.settings or None
 
@@ -71,9 +75,9 @@ def MessageTraceWrapper(wrapped, library, operation, destination_type,
         destination_name, params={}):
 
     def _nr_message_trace_wrapper_(wrapped, instance, args, kwargs):
-        transaction = current_transaction()
+        parent = current_trace()
 
-        if transaction is None:
+        if parent is None:
             return wrapped(*args, **kwargs)
 
         if callable(library):
@@ -108,12 +112,12 @@ def MessageTraceWrapper(wrapped, library, operation, destination_type,
         else:
             _destination_name = destination_name
 
-        trace = MessageTrace(transaction, _library, _operation,
-                _destination_type, _destination_name, params={})
+        trace = MessageTrace(_library, _operation,
+                _destination_type, _destination_name, params={}, parent=None)
 
-        proxy = async_proxy(wrapped)
-        if proxy:
-            return proxy(wrapped(*args, **kwargs), TraceContext(trace))
+        wrapper = async_wrapper(wrapped)
+        if wrapper:
+            return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:
             return wrapped(*args, **kwargs)

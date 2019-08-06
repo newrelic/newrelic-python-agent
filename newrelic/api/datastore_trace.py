@@ -1,8 +1,7 @@
 import functools
 
-from newrelic.common.coroutine import async_proxy, TraceContext
-from newrelic.api.time_trace import TimeTrace
-from newrelic.api.transaction import current_transaction
+from newrelic.common.async_wrapper import async_wrapper
+from newrelic.api.time_trace import TimeTrace, current_trace
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.datastore_node import DatastoreNode
 
@@ -10,8 +9,6 @@ from newrelic.core.datastore_node import DatastoreNode
 class DatastoreTrace(TimeTrace):
     """Context manager for timing datastore queries.
 
-    :param transaction: The Transaction associated with the trace.
-    :type transaction: :class:`newrelic.api.transaction.Transaction`
     :param product: The name of the vendor.
     :type product: str
     :param target: The name of the collection or table. If the name is unknown,
@@ -30,22 +27,28 @@ class DatastoreTrace(TimeTrace):
     :param database_name: The name of database where the current query is being
                           executed.
     :type database_name: str
+    :param parent: The parent trace of this trace.
+    :type parent: :class:`newrelic.api.time_trace.TimeTrace`
 
     Usage::
 
         >>> import newrelic.agent
         >>> with newrelic.agent.DatastoreTrace(
-        ...        newrelic.agent.current_transaction(), product='Redis',
-        ...        target='other', operation='GET', host='localhost',
-        ...        port_path_or_id=1234, database_name='meow') as nr_trace:
+        ...        product='Redis', target='other', operation='GET',
+        ...        host='localhost', port_path_or_id=1234,
+        ...        database_name='meow') as nr_trace:
         ...    pass
 
     """
 
-    def __init__(self, transaction, product, target, operation,
-            host=None, port_path_or_id=None, database_name=None):
-
-        super(DatastoreTrace, self).__init__(transaction)
+    def __init__(self, product, target, operation,
+            host=None, port_path_or_id=None, database_name=None, **kwargs):
+        parent = None
+        if kwargs:
+            if len(kwargs) > 1:
+                raise TypeError("Invalid keyword arguments:", kwargs)
+            parent = kwargs['parent']
+        super(DatastoreTrace, self).__init__(parent)
 
         self.instance_reporting_enabled = False
         self.database_name_enabled = False
@@ -54,7 +57,9 @@ class DatastoreTrace(TimeTrace):
         self.port_path_or_id = None
         self.database_name = None
 
-        if transaction:
+        if self.transaction:
+            transaction = self.transaction
+
             self.product = transaction._intern_string(product)
             self.target = transaction._intern_string(target)
             self.operation = transaction._intern_string(operation)
@@ -138,9 +143,9 @@ def DatastoreTraceWrapper(wrapped, product, target, operation):
     """
 
     def _nr_datastore_trace_wrapper_(wrapped, instance, args, kwargs):
-        transaction = current_transaction()
+        parent = current_trace()
 
-        if transaction is None:
+        if parent is None:
             return wrapped(*args, **kwargs)
 
         if callable(product):
@@ -167,11 +172,11 @@ def DatastoreTraceWrapper(wrapped, product, target, operation):
         else:
             _operation = operation
 
-        trace = DatastoreTrace(transaction, _product, _target, _operation)
+        trace = DatastoreTrace(_product, _target, _operation, parent=parent)
 
-        proxy = async_proxy(wrapped)
-        if proxy:
-            return proxy(wrapped(*args, **kwargs), TraceContext(trace))
+        wrapper = async_wrapper(wrapped)
+        if wrapper:
+            return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:
             return wrapped(*args, **kwargs)

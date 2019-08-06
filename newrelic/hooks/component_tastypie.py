@@ -53,7 +53,7 @@ def outer_fn_wrapper(outer_fn, instance, args, kwargs):
 
         transaction.set_transaction_name(name, group, priority=5)
 
-        with FunctionTrace(transaction, name, group):
+        with FunctionTrace(name, group):
             # django's exception handling will record errors here
             return inner_fn(*args, **kwargs)
 

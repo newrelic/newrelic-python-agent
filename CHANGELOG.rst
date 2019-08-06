@@ -1,6 +1,46 @@
 unreleased
 ----------
 
+5.0.0 (2019-08-06)
+------------------
+
+- Added event loop diagnostics feature
+
+- Added GA support for Tornado 6.x
+
+- Remove tornado r1 instrumentation
+  
+  All support for instrumentation which was previously hidden behind
+  the feature flag tornado.instrumentation.r1 has been completely removed.
+
+- Remove tornado r3 instrumentation
+
+  All support for instrumentation which was previously hidden behind 
+  the feature flag tornado.instrumentation.r3 has been completely removed.
+
+- Remove tornado r4 instrumentation
+
+  All support for instrumentation which was previously hidden behind 
+  the feature flag tornado.instrumentation.r4 has been completely removed.
+
+- Remove Tornado 3 instrumentation
+
+  All support for instrumentation of Tornado 3 has been completely removed.
+
+- The TransactionContext API has been removed
+
+  The TransactionContext API is no longer supported and has been removed in
+  this release.
+
+- Remove support for Python 3.4
+
+  Python 3.4 is no longer supported by the Python Agent.
+
+- Updated the WebTransaction API interface
+
+  The interface for WebTransaction has been generalized and is no longer
+  WSGI specific. For usage of  this API please refer to our docs.
+
 4.20.1 (2019-06-21)
 -------------------
 

@@ -11,7 +11,7 @@ except ImportError:
 from newrelic.api.application import Application, application_instance
 from newrelic.api.transaction import Transaction, current_transaction
 
-from newrelic.common.coroutine import async_proxy, TransactionContext
+from newrelic.common.async_proxy import async_proxy, TransactionContext
 from newrelic.common.encoding_utils import (obfuscate, json_encode,
         decode_newrelic_header, ensure_str)
 
@@ -120,7 +120,7 @@ def _is_websocket(environ):
     return environ.get('HTTP_UPGRADE', '').lower() == 'websocket'
 
 
-class BaseWebTransaction(Transaction):
+class WebTransaction(Transaction):
     unicode_error_reported = False
     QUEUE_TIME_HEADERS = ('x-request-start', 'x-queue-start')
 
@@ -129,7 +129,7 @@ class BaseWebTransaction(Transaction):
             request_path=None, query_string=None, headers=None,
             enabled=None):
 
-        super(BaseWebTransaction, self).__init__(application, enabled)
+        super(WebTransaction, self).__init__(application, enabled)
 
         if not self.enabled:
             return
@@ -335,7 +335,7 @@ class BaseWebTransaction(Transaction):
             self._add_agent_attribute('response.status',
                     str(self._response_code))
 
-        return super(BaseWebTransaction, self).agent_attributes
+        return super(WebTransaction, self).agent_attributes
 
     @property
     def request_parameters_attributes(self):
@@ -439,10 +439,10 @@ class BaseWebTransaction(Transaction):
                     header.encode('ascii')
 
             except UnicodeError:
-                if not BaseWebTransaction.unicode_error_reported:
+                if not WebTransaction.unicode_error_reported:
                     _logger.error('ASCII encoding of js-agent-header failed.',
                             header)
-                    BaseWebTransaction.unicode_error_reported = True
+                    WebTransaction.unicode_error_reported = True
 
                 header = ''
 
@@ -539,10 +539,10 @@ class BaseWebTransaction(Transaction):
                 footer.encode('ascii')
 
         except UnicodeError:
-            if not BaseWebTransaction.unicode_error_reported:
+            if not WebTransaction.unicode_error_reported:
                 _logger.error('ASCII encoding of js-agent-footer failed.',
                         footer)
-                BaseWebTransaction.unicode_error_reported = True
+                WebTransaction.unicode_error_reported = True
 
             footer = ''
 
@@ -623,7 +623,7 @@ class WSGIHeaderProxy(object):
         return self.length
 
 
-class WSGIWebTransaction(BaseWebTransaction):
+class WSGIWebTransaction(WebTransaction):
 
     MOD_WSGI_HEADERS = ('mod_wsgi.request_start', 'mod_wsgi.queue_start')
 
@@ -895,14 +895,6 @@ class WSGIWebTransaction(BaseWebTransaction):
                 status, response_headers)
 
 
-class WebTransaction(WSGIWebTransaction):
-    def __init__(self, application, environ):
-        super(WebTransaction, self).__init__(application, environ)
-        warnings.warn((
-            'The WebTransaction API call has been deprecated.'
-        ), DeprecationWarning)
-
-
 def WebTransactionWrapper(wrapped, application=None, name=None, group=None,
         scheme=None, host=None, port=None, request_method=None,
         request_path=None, query_string=None, headers=None):
@@ -994,7 +986,7 @@ def WebTransactionWrapper(wrapped, application=None, name=None, group=None,
         else:
             _headers = headers
 
-        transaction = BaseWebTransaction(
+        transaction = WebTransaction(
                 _application, _name, _group, _scheme, _host, _port,
                 _request_method, _request_path, _query_string, _headers)
 

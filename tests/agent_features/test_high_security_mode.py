@@ -582,7 +582,7 @@ def test_http_referrer_url_is_sanitized_in_hsm():
 def test_function_trace_params_dropped_in_hsm(hsm_enabled):
     @background_task()
     def _test():
-        with FunctionTrace(current_transaction(), 'trace',
+        with FunctionTrace('trace',
                 params={'secret': 'super secret'}):
             pass
 
@@ -602,7 +602,7 @@ def test_function_trace_params_dropped_in_hsm(hsm_enabled):
 def test_message_trace_params_dropped_in_hsm(hsm_enabled):
     @background_task()
     def _test():
-        with MessageTrace(current_transaction(), 'library', 'operation',
+        with MessageTrace('library', 'operation',
                 'dest_type', 'dest_name', params={'secret': 'super secret'}):
             pass
 

@@ -629,18 +629,6 @@
             "New Relic"
         ]
     },
-    "newrelic/api/tests/test_transaction_context.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/api/tests/test_transaction_context_await.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/api/tests/test_transaction_name.py": {
         "hash": "n/a",
         "libraries": [
@@ -678,12 +666,6 @@
         ]
     },
     "newrelic/api/transaction.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/api/transaction_context.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -729,6 +711,18 @@
         "hash": "7ccf45995f7e4a2e22540da428d9f822",
         "libraries": [
             "time.monotonic"
+        ]
+    },
+    "newrelic/common/async_proxy.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/async_wrapper.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
         ]
     },
     "newrelic/common/cacert.pem": {
@@ -1043,6 +1037,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/loop_node.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/memcache_node.py": {
         "hash": "n/a",
         "libraries": [
@@ -1229,13 +1229,13 @@
             "New Relic"
         ]
     },
-    "newrelic/core/trace_node.py": {
+    "newrelic/core/trace_cache.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
         ]
     },
-    "newrelic/core/transaction_cache.py": {
+    "newrelic/core/trace_node.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -1685,193 +1685,7 @@
             "New Relic"
         ]
     },
-    "newrelic/hooks/framework_tornado/__init__.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado/curl_httpclient.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado/gen.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado/httpserver.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado/httputil.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado/ioloop.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado/iostream.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado/simple_httpclient.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado/stack_context.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado/template.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado/web.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado/wsgi.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r1.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r3/__init__.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r3/concurrent.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r3/curl_httpclient.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r3/gen.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r3/http1connection.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r3/httpclient.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r3/httpserver.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r3/httputil.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r3/ioloop.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r3/stack_context.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r3/util.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r3/web.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r4/__init__.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r4/gen.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r4/httpclient.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r4/httputil.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r4/routing.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r4/utils.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/framework_tornado_r4/web.py": {
+    "newrelic/hooks/framework_tornado.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

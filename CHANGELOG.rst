@@ -1,6 +1,13 @@
 unreleased
 ----------
 
+5.0.0 (2019-08-06)
+------------------
+
+- Added event loop diagnostics feature
+
+- Added GA support for Tornado 6.x
+
 - Remove tornado r1 instrumentation
   
   All support for instrumentation which was previously hidden behind

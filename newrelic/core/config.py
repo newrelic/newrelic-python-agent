@@ -503,19 +503,16 @@ _settings.cross_application_tracer.enabled = True
 _settings.xray_session.enabled = True
 
 _settings.transaction_events.enabled = True
-_settings.transaction_events.max_samples_stored = DEFAULT_RESERVOIR_SIZE
 _settings.transaction_events.attributes.enabled = True
 _settings.transaction_events.attributes.exclude = []
 _settings.transaction_events.attributes.include = []
 
 _settings.custom_insights_events.enabled = True
-_settings.custom_insights_events.max_samples_stored = DEFAULT_RESERVOIR_SIZE
 
 _settings.distributed_tracing.enabled = _environ_as_bool(
         'NEW_RELIC_DISTRIBUTED_TRACING_ENABLED', default=False)
 _settings.span_events.enabled = _environ_as_bool(
         'NEW_RELIC_SPAN_EVENTS_ENABLED', default=True)
-_settings.span_events.max_samples_stored = SPAN_EVENT_RESERVOIR_SIZE
 _settings.span_events.attributes.enabled = True
 _settings.span_events.attributes.exclude = []
 _settings.span_events.attributes.include = []
@@ -539,7 +536,6 @@ _settings.transaction_tracer.attributes.include = []
 
 _settings.error_collector.enabled = True
 _settings.error_collector.capture_events = True
-_settings.error_collector.max_event_samples_stored = ERROR_EVENT_RESERVOIR_SIZE
 _settings.error_collector.capture_source = False
 _settings.error_collector.ignore_errors = []
 _settings.error_collector.ignore_status_codes = _parse_ignore_status_codes(

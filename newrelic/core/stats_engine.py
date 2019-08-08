@@ -1352,28 +1352,28 @@ class StatsEngine(object):
 
         if self.__settings is not None:
             self.__transaction_events = SampledDataSet(
-                    self.__settings.transaction_events.max_samples_stored)
+                    self.__settings.event_harvest_config.harvest_limits.analytic_event_data)
         else:
             self.__transaction_events = SampledDataSet()
 
     def reset_error_events(self):
         if self.__settings is not None:
             self.__error_events = SampledDataSet(
-                    self.__settings.error_collector.max_event_samples_stored)
+                    self.__settings.event_harvest_config.harvest_limits.error_event_data)
         else:
             self.__error_events = SampledDataSet()
 
     def reset_custom_events(self):
         if self.__settings is not None:
             self.__custom_events = SampledDataSet(
-                    self.__settings.custom_insights_events.max_samples_stored)
+                    self.__settings.event_harvest_config.harvest_limits.custom_event_data)
         else:
             self.__custom_events = SampledDataSet()
 
     def reset_span_events(self):
         if self.__settings is not None:
             self.__span_events = SampledDataSet(
-                    self.__settings.span_events.max_samples_stored)
+                    self.__settings.event_harvest_config.harvest_limits.span_event_data)
         else:
             self.__span_events = SampledDataSet()
 

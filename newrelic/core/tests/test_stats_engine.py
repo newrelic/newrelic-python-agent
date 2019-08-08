@@ -21,7 +21,8 @@ class TestStatsEngineCustomEvents(unittest.TestCase):
         stats = StatsEngine()
         self.assertEqual(stats.custom_events.capacity, 100)
 
-        self.settings.custom_insights_events.max_samples_stored = 500
+        self.settings.event_harvest_config.harvest_limits.custom_event_data = \
+                500
         stats.reset_stats(self.settings)
 
         self.assertEqual(stats.custom_events.capacity, 500)
@@ -29,8 +30,8 @@ class TestStatsEngineCustomEvents(unittest.TestCase):
     def test_custom_events_capacity_same_as_transaction_events(self):
         stats = StatsEngine()
 
-        ce_settings = self.settings.custom_insights_events
-        ce_settings.max_samples_stored = DEFAULT_RESERVOIR_SIZE
+        ce_settings = self.settings.event_harvest_config.harvest_limits
+        ce_settings.custom_event_data = DEFAULT_RESERVOIR_SIZE
         stats.reset_stats(self.settings)
 
         self.assertEqual(stats.custom_events.capacity,
@@ -63,29 +64,23 @@ class TestStatsEngineSpanEvents(unittest.TestCase):
         stats = StatsEngine()
         self.assertEqual(stats.span_events.capacity, 100)
 
-        original_setting = self.settings.span_events.max_samples_stored
+        original_setting = self.settings.event_harvest_config\
+                .harvest_limits.span_event_data
         try:
-            self.settings.span_events.max_samples_stored = 321
+            self.settings.event_harvest_config\
+                    .harvest_limits.span_event_data = 321
             stats.reset_stats(self.settings)
 
             self.assertEqual(stats.span_events.capacity, 321)
         finally:
-            self.settings.span_events.max_samples_stored = \
-                    original_setting
+            self.settings.event_harvest_config\
+                    .harvest_limits.span_event_data = original_setting
 
     def test_span_events_reset_stats_set_capacity_disabled(self):
         stats = StatsEngine()
         self.assertEqual(stats.span_events.capacity, 100)
-
-        original_setting = self.settings.span_events.max_samples_stored
-        try:
-            self.settings.span_events.max_samples_stored = 321
-            stats.reset_stats(None)
-
-            self.assertEqual(stats.span_events.capacity, 100)
-        finally:
-            self.settings.span_events.max_samples_stored = \
-                    original_setting
+        stats.reset_stats(None)
+        self.assertEqual(stats.span_events.capacity, 100)
 
     def test_span_events_reset_stats_after_adding_samples(self):
         stats = StatsEngine()
@@ -156,7 +151,7 @@ class TestStatsEngineSpanEvents(unittest.TestCase):
         self.assertEqual(stats.span_events.capacity, SPAN_EVENT_RESERVOIR_SIZE)
 
         over_capacity_settings = {
-            'span_events.max_samples_stored': 2 * SPAN_EVENT_RESERVOIR_SIZE,
+            'event_harvest_config.harvest_limits.span_event_data': 2 * SPAN_EVENT_RESERVOIR_SIZE,
         }
         stats.reset_stats(apply_server_side_settings(over_capacity_settings))
         self.assertEqual(
@@ -168,7 +163,7 @@ class TestStatsEngineSpanEvents(unittest.TestCase):
         self.assertEqual(stats.span_events.capacity, SPAN_EVENT_RESERVOIR_SIZE)
 
         under_capacity_settings = {
-            'span_events.max_samples_stored': SPAN_EVENT_RESERVOIR_SIZE / 2,
+            'event_harvest_config.harvest_limits.span_event_data': SPAN_EVENT_RESERVOIR_SIZE / 2,
         }
         stats.reset_stats(apply_server_side_settings(under_capacity_settings))
         self.assertEqual(stats.span_events.capacity,

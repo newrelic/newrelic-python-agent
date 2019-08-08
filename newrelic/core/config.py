@@ -27,10 +27,6 @@ except ImportError:
 
 DEFAULT_RESERVOIR_SIZE = 1200
 ERROR_EVENT_RESERVOIR_SIZE = 100
-
-# SPAN_EVENT_RESERVOIR_SIZE is both the default value for the span event
-# reservoir capacity, as well as its maximum possible value. server-side
-# config could adjust it lower, but not higher, than this value.
 SPAN_EVENT_RESERVOIR_SIZE = 1000
 
 # settings that should be completely ignored if set server side
@@ -209,6 +205,14 @@ class EventLoopVisibilitySettings(Settings):
     pass
 
 
+class EventDataSettings(Settings):
+    pass
+
+
+class EventDataHarvestLimitSettings(Settings):
+    pass
+
+
 _settings = Settings()
 _settings.attributes = AttributesSettings()
 _settings.thread_profiler = ThreadProfilerSettings()
@@ -249,6 +253,9 @@ _settings.transaction_segments.attributes = \
         TransactionSegmentAttributesSettings()
 _settings.distributed_tracing = DistributedTracingSettings()
 _settings.serverless_mode = ServerlessModeSettings()
+_settings.event_harvest_config = EventDataSettings()
+_settings.event_harvest_config.harvest_limits = EventDataHarvestLimitSettings()
+_settings.event_harvest_config.report_period_ms = 60 * 1000
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 _settings.audit_log_file = os.environ.get('NEW_RELIC_AUDIT_LOG', None)
@@ -580,6 +587,14 @@ _settings.agent_limits.synthetics_events = 200
 _settings.agent_limits.synthetics_transactions = 20
 _settings.agent_limits.data_compression_threshold = 64 * 1024
 _settings.agent_limits.data_compression_level = None
+_settings.event_harvest_config.harvest_limits.analytic_event_data = \
+        DEFAULT_RESERVOIR_SIZE
+_settings.event_harvest_config.harvest_limits.custom_event_data = \
+        DEFAULT_RESERVOIR_SIZE
+_settings.event_harvest_config.harvest_limits.span_event_data = \
+        SPAN_EVENT_RESERVOIR_SIZE
+_settings.event_harvest_config.harvest_limits.error_event_data = \
+        ERROR_EVENT_RESERVOIR_SIZE
 
 _settings.console.listener_socket = None
 _settings.console.allow_interpreter_cmd = False
@@ -790,7 +805,14 @@ def apply_config_setting(settings_object, name, value):
         target = getattr(target, fields[0])
         fields = fields[1].split('.', 1)
 
-    setattr(target, fields[0], value)
+    default_value = getattr(target, fields[0], None)
+    if (isinstance(value, dict) and value and
+            not isinstance(default_value, dict)):
+        for k, v in value.items():
+            k_name = '{}.{}'.format(fields[0], k)
+            apply_config_setting(target, k_name, v)
+    else:
+        setattr(target, fields[0], value)
 
 
 def fetch_config_setting(settings_object, name):

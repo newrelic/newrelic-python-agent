@@ -805,7 +805,14 @@ def apply_config_setting(settings_object, name, value):
         target = getattr(target, fields[0])
         fields = fields[1].split('.', 1)
 
-    setattr(target, fields[0], value)
+    default_value = getattr(target, fields[0], None)
+    if (isinstance(value, dict) and value and
+            not isinstance(default_value, dict)):
+        for k, v in value.items():
+            k_name = '{}.{}'.format(fields[0], k)
+            apply_config_setting(target, k_name, v)
+    else:
+        setattr(target, fields[0], value)
 
 
 def fetch_config_setting(settings_object, name):

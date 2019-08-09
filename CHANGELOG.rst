@@ -1,6 +1,9 @@
 unreleased
 ----------
 
+5.0.1 (2019-08-09)
+------------------
+
 - Fixed a crash when using the Mako template library
 
   When running with the Mako template libraty the agent would attempt

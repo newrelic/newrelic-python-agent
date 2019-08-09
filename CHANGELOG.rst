@@ -1,6 +1,12 @@
 unreleased
 ----------
 
+- Fixed a crash when using the Mako template library
+
+  When running with the Mako template libraty the agent would attempt
+  to use an outdated version of the FunctionTrace API resulting in a
+  crash.
+
 5.0.0 (2019-08-06)
 ------------------
 

@@ -21,7 +21,7 @@ class TemplateRenderWrapper(object):
             if hasattr(template, 'filename'):
                 name = template.filename or '<template>'
                 with newrelic.api.function_trace.FunctionTrace(
-                        transaction, name=name, group='Template/Render'):
+                        name=name, group='Template/Render'):
                     return self.__wrapped(template, *args, **kwargs)
             else:
                 return self.__wrapped(template, *args, **kwargs)

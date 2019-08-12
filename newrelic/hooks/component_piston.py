@@ -1,11 +1,10 @@
-import types
-
 import newrelic.packages.six as six
 
 import newrelic.api.transaction
 import newrelic.api.function_trace
 import newrelic.api.object_wrapper
 import newrelic.api.in_function
+
 
 class MethodWrapper(object):
 
@@ -34,6 +33,7 @@ class MethodWrapper(object):
         else:
             return self._nr_wrapped(*args, **kwargs)
 
+
 class ResourceInitWrapper(object):
 
     def __init__(self, wrapped):
@@ -61,10 +61,12 @@ class ResourceInitWrapper(object):
                 setattr(handler, name, MethodWrapper(
                         getattr(handler, name), priority=6))
 
+
 def instrument_piston_resource(module):
 
     newrelic.api.object_wrapper.wrap_object(module,
             'Resource.__init__', ResourceInitWrapper)
+
 
 def instrument_piston_doc(module):
 

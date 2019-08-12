@@ -38,7 +38,7 @@ class capture_external_trace(object):
             current_transaction = newrelic.api.transaction.current_transaction()
             if current_transaction:
                 trace = newrelic.api.external_trace.ExternalTrace(
-                        current_transaction, 'feedparser', parsed_url, 'GET')
+                        'feedparser', parsed_url, 'GET')
                 context_manager = trace.__enter__()
                 try:
                     result = self._nr_next_object(url, *args, **kwargs)

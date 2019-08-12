@@ -1,5 +1,3 @@
-import pytest
-
 from testing_support.fixtures import (code_coverage_fixture,  # noqa
         collector_agent_registration_fixture, collector_available_fixture)
 
@@ -20,27 +18,3 @@ _coverage_source = [
 ]
 
 code_coverage = code_coverage_fixture(source=_coverage_source)
-
-
-@pytest.fixture(scope='module')
-def app(request):
-    import tornado
-    from tornado.testing import AsyncHTTPTestCase
-    from _target_application import make_app
-
-    class App(AsyncHTTPTestCase):
-        def get_app(self):
-            custom = request.node.get_closest_marker("custom_app")
-            return make_app(custom)
-
-        def runTest(self, *args, **kwargs):
-            pass
-
-        @property
-        def tornado_version(self):
-            return '.'.join(map(str, tornado.version_info))
-
-    case = App()
-    case.setUp()
-    yield case
-    case.tearDown()

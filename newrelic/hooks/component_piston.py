@@ -29,7 +29,7 @@ class MethodWrapper(object):
             transaction.set_transaction_name(self._nr_name,
                     priority=self._nr_priority)
             with newrelic.api.function_trace.FunctionTrace(
-                    transaction, name=self._nr_name):
+                    name=self._nr_name):
                 return self._nr_wrapped(*args, **kwargs)
         else:
             return self._nr_wrapped(*args, **kwargs)

@@ -1,6 +1,9 @@
 unreleased
 ----------
 
+5.0.2 (2019-08-12)
+------------------
+
 - Fixed a crash when using feedparser
 
   When running with the feedparser library the agent would crash on attempting

@@ -1,6 +1,11 @@
 unreleased
 ----------
 
+- Fixed a crash when using django-piston
+
+  When running with the django-piston library the agent would crash on
+  attempting to service a request. This issue has now been corrected.
+
 5.0.1 (2019-08-09)
 ------------------
 

@@ -1,6 +1,11 @@
 unreleased
 ----------
 
+- Fixed a crash when using feedparser
+
+  When running with the feedparser library the agent would crash on attempting
+  to parse an RSS feed. This issue has now been corrected.
+
 - Fixed a crash when using django-piston
 
   When running with the django-piston library the agent would crash on

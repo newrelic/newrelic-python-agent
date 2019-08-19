@@ -205,11 +205,11 @@ class EventLoopVisibilitySettings(Settings):
     pass
 
 
-class EventDataSettings(Settings):
+class EventHarvestConfigSettings(Settings):
     pass
 
 
-class EventDataHarvestLimitSettings(Settings):
+class EventHarvestConfigHarvestLimitSettings(Settings):
     pass
 
 
@@ -253,8 +253,9 @@ _settings.transaction_segments.attributes = \
         TransactionSegmentAttributesSettings()
 _settings.distributed_tracing = DistributedTracingSettings()
 _settings.serverless_mode = ServerlessModeSettings()
-_settings.event_harvest_config = EventDataSettings()
-_settings.event_harvest_config.harvest_limits = EventDataHarvestLimitSettings()
+_settings.event_harvest_config = EventHarvestConfigSettings()
+_settings.event_harvest_config.harvest_limits = \
+        EventHarvestConfigHarvestLimitSettings()
 _settings.event_harvest_config.report_period_ms = 60 * 1000
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)

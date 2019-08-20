@@ -256,5 +256,25 @@ class TestCrossProcessIdParsing(unittest.TestCase):
         assert not settings.application_id
 
 
+class TestFasterEventHarvestConfig(unittest.TestCase):
+    def test_settings_applied(self):
+        config = {"event_harvest_config": {
+                      "report_period_ms": 5000,
+                      "harvest_limits": {
+                          "analytic_event_data": 833,
+                          "custom_event_data": 833,
+                          "error_event_data": 8}
+                      }
+                  }
+        settings = newrelic.core.config.apply_server_side_settings(config)
+        assert settings.event_harvest_config.report_period_ms == 5000
+        assert settings.event_harvest_config\
+            .harvest_limits.analytic_event_data == 833
+        assert settings.event_harvest_config\
+            .harvest_limits.custom_event_data == 833
+        assert settings.event_harvest_config\
+            .harvest_limits.error_event_data == 8
+
+
 if __name__ == '__main__':
     unittest.main()

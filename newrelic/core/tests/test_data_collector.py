@@ -41,6 +41,10 @@ PAYLOAD_ID = ','.join(PAYLOAD_APP_NAME)
 PID = 123
 PROCESSOR_COUNT = 4
 RECORD_SQL = 'record_sql'
+ANALYTIC_EVENT_DATA = 10000
+SPAN_EVENT_DATA = 1000
+CUSTOM_EVENT_DATA = 10000
+ERROR_EVENT_DATA = 100
 
 _backup_methods = {}
 
@@ -131,7 +135,12 @@ def default_settings():
             'utilization.detect_pcf': True,
             'utilization.detect_kubernetes': True,
             'heroku.use_dyno_names': False,
-            'heroku.dyno_name_prefixes_to_shorten': []}
+            'heroku.dyno_name_prefixes_to_shorten': [],
+            'event_harvest_config.harvest_limits.analytic_event_data': ANALYTIC_EVENT_DATA,
+            'event_harvest_config.harvest_limits.span_event_data': SPAN_EVENT_DATA,
+            'event_harvest_config.harvest_limits.custom_event_data': CUSTOM_EVENT_DATA,
+            'event_harvest_config.harvest_limits.error_event_data': ERROR_EVENT_DATA,
+            }
 
 
 def payload_asserts(payload, with_aws=True, with_gcp=True, with_pcf=True,
@@ -182,6 +191,13 @@ def payload_asserts(payload, with_aws=True, with_gcp=True, with_pcf=True,
     assert payload_data['utilization']['metadata_version'] == 5
     assert payload_data['utilization']['total_ram_mib'] == MEMORY
     assert payload_data['utilization']['boot_id'] == BOOT_ID
+
+    # Faster Event Harvest
+    harvest_limits = payload_data['event_harvest_config']['harvest_limits']
+    assert harvest_limits['analytic_event_data'] == ANALYTIC_EVENT_DATA
+    assert harvest_limits['span_event_data'] == SPAN_EVENT_DATA
+    assert harvest_limits['custom_event_data'] == CUSTOM_EVENT_DATA
+    assert harvest_limits['error_event_data'] == ERROR_EVENT_DATA
 
     vendors_len = 0
 

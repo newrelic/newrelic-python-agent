@@ -51,6 +51,8 @@ _logger.addHandler(_NullHandler())
 # sub categories we don't know about.
 
 class Settings(object):
+    nested = False
+
     def __repr__(self):
         return repr(self.__dict__)
 
@@ -206,11 +208,11 @@ class EventLoopVisibilitySettings(Settings):
 
 
 class EventHarvestConfigSettings(Settings):
-    pass
+    nested = True
 
 
 class EventHarvestConfigHarvestLimitSettings(Settings):
-    pass
+    nested = True
 
 
 _settings = Settings()
@@ -675,26 +677,27 @@ def global_settings():
 
 def flatten_settings(settings):
     """This returns dictionary of settings flattened into a single
-    key namespace rather than nested hierarchy.
+    key namespace or a nested hierarchy according to the settings object.
 
     """
 
-    def _flatten(settings, name, object):
-        for key, value in object.__dict__.items():
+    def _flatten(settings, o, name=None):
+        for key, value in vars(o).items():
+            if name:
+                key = '%s.%s' % (name, key)
+
             if isinstance(value, Settings):
-                if name:
-                    _flatten(settings, '%s.%s' % (name, key), value)
+                if value.nested:
+                    _settings = settings[key] = {}
+                    _flatten(_settings, value)
                 else:
-                    _flatten(settings, key, value)
+                    _flatten(settings, value, key)
             else:
-                if name:
-                    settings['%s.%s' % (name, key)] = value
-                else:
-                    settings[key] = value
+                settings[key] = value
 
-        return settings
-
-    return _flatten({}, None, settings)
+    flattened = {}
+    _flatten(flattened, settings)
+    return flattened
 
 
 def create_obfuscated_netloc(username, password, hostname, mask):

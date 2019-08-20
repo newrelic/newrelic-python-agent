@@ -136,11 +136,15 @@ def default_settings():
             'utilization.detect_kubernetes': True,
             'heroku.use_dyno_names': False,
             'heroku.dyno_name_prefixes_to_shorten': [],
-            'event_harvest_config.harvest_limits.analytic_event_data': ANALYTIC_EVENT_DATA,
-            'event_harvest_config.harvest_limits.span_event_data': SPAN_EVENT_DATA,
-            'event_harvest_config.harvest_limits.custom_event_data': CUSTOM_EVENT_DATA,
-            'event_harvest_config.harvest_limits.error_event_data': ERROR_EVENT_DATA,
+            'event_harvest_config': {
+                    'harvest_limits': {
+                        'analytic_event_data': ANALYTIC_EVENT_DATA,
+                        'span_event_data': SPAN_EVENT_DATA,
+                        'custom_event_data': CUSTOM_EVENT_DATA,
+                        'error_event_data': ERROR_EVENT_DATA,
+                    }
             }
+    }
 
 
 def payload_asserts(payload, with_aws=True, with_gcp=True, with_pcf=True,

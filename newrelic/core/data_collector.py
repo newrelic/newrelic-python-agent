@@ -1171,11 +1171,6 @@ class ApplicationSession(object):
             if env_var.startswith('NEW_RELIC_METADATA_'):
                 metadata[env_var] = os.environ[env_var]
 
-        harvest_limits = {}
-        for k in settings:
-            if k.startswith('event_harvest_config.harvest_limits'):
-                harvest_limits[k.rsplit('.', 1)[-1]] = settings[k]
-
         local_config = {
                 'host': hostname,
                 'pid': os.getpid(),
@@ -1189,7 +1184,7 @@ class ApplicationSession(object):
                 'security_settings': security_settings,
                 'utilization': utilization_settings,
                 'high_security': settings['high_security'],
-                'event_harvest_config': {'harvest_limits': harvest_limits},
+                'event_harvest_config': settings['event_harvest_config'],
                 'labels': settings['labels'],
                 'display_host': display_host,
         }

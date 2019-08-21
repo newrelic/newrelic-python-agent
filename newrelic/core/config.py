@@ -63,6 +63,10 @@ class Settings(object):
         return hasattr(self, item)
 
 
+def create_settings(nested):
+    return type('Settings', (Settings,), {'nested': nested})()
+
+
 class AttributesSettings(Settings):
     pass
 
@@ -783,7 +787,7 @@ def global_settings_dump(settings_object=None):
 # Creation of an application settings object from global default settings
 # and any server side configuration settings.
 
-def apply_config_setting(settings_object, name, value):
+def apply_config_setting(settings_object, name, value, nested=False):
     """Apply a setting to the settings object where name is a dotted path.
     If there is no pre existing settings object for a sub category then
     one will be created and added automatically.
@@ -801,7 +805,8 @@ def apply_config_setting(settings_object, name, value):
 
     while len(fields) > 1:
         if not hasattr(target, fields[0]):
-            setattr(target, fields[0], Settings())
+            setattr(target, fields[0], create_settings(nested))
+        nested = False
         target = getattr(target, fields[0])
         fields = fields[1].split('.', 1)
 
@@ -810,7 +815,7 @@ def apply_config_setting(settings_object, name, value):
             not isinstance(default_value, dict)):
         for k, v in value.items():
             k_name = '{}.{}'.format(fields[0], k)
-            apply_config_setting(target, k_name, v)
+            apply_config_setting(target, k_name, v, nested=True)
     else:
         setattr(target, fields[0], value)
 

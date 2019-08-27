@@ -320,7 +320,8 @@ def test_application_harvest_with_spans(distributed_tracing_enabled,
         'license_key': '**NOT A LICENSE KEY**',
         'distributed_tracing.enabled': distributed_tracing_enabled,
         'span_events.enabled': span_events_enabled,
-        'span_events.max_samples_stored': max_samples_stored,
+        'event_harvest_config.harvest_limits.span_event_data':
+            max_samples_stored,
     })
     def _test():
         app = Application('Python Agent Test (Harvest Loop)')
@@ -470,9 +471,9 @@ def test_ca_bundle(collector_agent_registration, ca_bundle_path,
     'license_key': '**NOT A LICENSE KEY**',
     'feature_flag': set(),
     'distributed_tracing.enabled': True,
-    'error_collector.max_event_samples_stored': 1000,
-    'span_events.max_samples_stored': 1000,
-    'custom_insights_events.max_samples_stored': 1000,
+    'event_harvest_config.harvest_limits.error_event_data': 1000,
+    'event_harvest_config.harvest_limits.span_event_data': 1000,
+    'event_harvest_config.harvest_limits.custom_event_data': 1000,
 })
 def test_reservoir_sizes(transaction_node):
     app = Application('Python Agent Test (Harvest Loop)')
@@ -502,7 +503,8 @@ def test_error_event_sampling_info(events_seen):
     @override_generic_settings(settings, {
             'developer_mode': True,
             'license_key': '**NOT A LICENSE KEY**',
-            'error_collector.max_event_samples_stored': reservoir_size,
+            'event_harvest_config.harvest_limits.error_event_data':
+            reservoir_size,
     })
     def _test():
         app = Application('Python Agent Test (Harvest Loop)')
@@ -612,7 +614,8 @@ def test_analytic_event_sampling_info():
     @validate_transaction_event_payloads(validators)
     @override_generic_settings(settings, {
             'developer_mode': True,
-            'transaction_events.max_samples_stored': transactions_limit,
+            'event_harvest_config.harvest_limits.analytic_event_data':
+            transactions_limit,
             'agent_limits.synthetics_events': synthetics_limit,
     })
     def _test():

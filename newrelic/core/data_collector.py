@@ -1184,6 +1184,7 @@ class ApplicationSession(object):
                 'security_settings': security_settings,
                 'utilization': utilization_settings,
                 'high_security': settings['high_security'],
+                'event_harvest_config': settings['event_harvest_config'],
                 'labels': settings['labels'],
                 'display_host': display_host,
         }

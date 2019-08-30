@@ -149,8 +149,6 @@ class Agent(object):
                         'newrelic-admin command with command line of %s.',
                         os.environ['NEW_RELIC_ADMIN_COMMAND'])
 
-        instance = None
-
         with Agent._instance_lock:
             if not Agent._instance:
                 if settings.debug.log_agent_initialization:
@@ -165,22 +163,13 @@ class Agent(object):
                             ''.join(traceback.format_stack()[:-1]))
 
                 instance = Agent(settings)
-
-                Agent._instance = instance
-
-            if instance:
-                _logger.debug('Activating agent instance.')
-
-                instance.activate_agent()
-
                 _logger.debug('Registering builtin data sources.')
 
                 instance.register_data_source(cpu_usage_data_source)
                 instance.register_data_source(memory_usage_data_source)
                 instance.register_data_source(thread_utilization_data_source)
 
-                for callable in Agent._startup_callables:
-                    callable()
+                Agent._instance = instance
 
         return Agent._instance
 
@@ -664,29 +653,34 @@ class Agent(object):
 
     def activate_agent(self):
         """Starts the main background for the agent."""
+        with Agent._instance_lock:
+            # Skip this if agent is not actually enabled.
+            if not self._config.enabled:
+                _logger.warning('The Python Agent is not enabled.')
+                return
+            elif self._config.serverless_mode.enabled:
+                _logger.debug(
+                        'Harvest thread is disabled due to serverless mode.')
+                return
+            elif self._config.debug.disable_harvest_until_shutdown:
+                _logger.debug('Harvest thread is disabled.')
+                return
 
-        # Skip this if agent is not actually enabled.
+            # Skip this if background thread already running.
 
-        if not self._config.enabled:
-            _logger.warning('The Python Agent is not enabled.')
-            return
-        elif self._config.serverless_mode.enabled:
-            _logger.debug('Harvest thread is disabled due to serverless mode.')
-            return
-        elif self._config.debug.disable_harvest_until_shutdown:
-            _logger.debug('Harvest thread is disabled.')
-            return
+            if self._harvest_thread.isAlive():
+                return
 
-        # Skip this if background thread already running.
+            _logger.debug('Activating agent instance.')
 
-        if self._harvest_thread.isAlive():
-            return
+            for callable in self._startup_callables:
+                callable()
 
-        _logger.debug('Start Python Agent main thread.')
+            _logger.debug('Start Python Agent main thread.')
 
-        self._harvest_thread.start()
+            self._harvest_thread.start()
 
-        self._process_id = os.getpid()
+            self._process_id = os.getpid()
 
     def _atexit_shutdown(self):
         """Triggers agent shutdown but flags first that this is being

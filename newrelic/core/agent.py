@@ -398,7 +398,7 @@ class Agent(object):
             # the period of the timeout.
 
             if activate_session:
-                application.activate_session(timeout)
+                application.activate_session(self.activate_agent, timeout)
 
     @property
     def applications(self):

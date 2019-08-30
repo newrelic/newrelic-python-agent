@@ -13,6 +13,7 @@ import os
 import logging
 import copy
 import re
+import threading
 
 from newrelic.core.attribute_filter import AttributeFilter
 
@@ -213,6 +214,19 @@ class EventLoopVisibilitySettings(Settings):
 
 class EventHarvestConfigSettings(Settings):
     nested = True
+    _lock = threading.Lock()
+
+    @property
+    def report_period_ms(self):
+        with self._lock:
+            return vars(_settings.event_harvest_config).get(
+                    "report_period_ms", 60 * 1000)
+
+    @report_period_ms.setter
+    def report_period_ms(self, value):
+        with self._lock:
+            vars(_settings.event_harvest_config)["report_period_ms"] = value
+            vars(self)["report_period_ms"] = value
 
 
 class EventHarvestConfigHarvestLimitSettings(Settings):
@@ -262,7 +276,7 @@ _settings.serverless_mode = ServerlessModeSettings()
 _settings.event_harvest_config = EventHarvestConfigSettings()
 _settings.event_harvest_config.harvest_limits = \
         EventHarvestConfigHarvestLimitSettings()
-_settings.event_harvest_config.report_period_ms = 60 * 1000
+
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 _settings.audit_log_file = os.environ.get('NEW_RELIC_AUDIT_LOG', None)

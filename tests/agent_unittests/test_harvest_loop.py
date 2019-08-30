@@ -258,7 +258,7 @@ endpoints_called = []
 })
 def test_application_harvest(audit_log_file):
     app = Application('Python Agent Test (Harvest Loop)')
-    app.connect_to_data_collector()
+    app.connect_to_data_collector(None)
     app.harvest()
 
     # Verify that the metric_data endpoint is the 2nd to last endpoint called
@@ -277,7 +277,7 @@ def test_application_harvest(audit_log_file):
 })
 def test_serverless_application_harvest(audit_log_file):
     app = Application('Python Agent Test (Serverless Harvest Loop)')
-    app.connect_to_data_collector()
+    app.connect_to_data_collector(None)
     app.harvest()
 
     # verify audit log is not empty
@@ -325,7 +325,7 @@ def test_application_harvest_with_spans(distributed_tracing_enabled,
     })
     def _test():
         app = Application('Python Agent Test (Harvest Loop)')
-        app.connect_to_data_collector()
+        app.connect_to_data_collector(None)
 
         for _ in range(spans_created):
             app._stats_engine.span_events.add('event')
@@ -363,7 +363,7 @@ def test_failed_spans_harvest(span_events_enabled):
         # harvest.
 
         app = Application('Python Agent Test (Harvest Loop)')
-        app.connect_to_data_collector()
+        app.connect_to_data_collector(None)
 
         app._stats_engine.span_events.add('event')
         assert app._stats_engine.span_events.num_samples == 1
@@ -381,7 +381,7 @@ def test_failed_spans_harvest(span_events_enabled):
 })
 def test_transaction_count(transaction_node):
     app = Application('Python Agent Test (Harvest Loop)')
-    app.connect_to_data_collector()
+    app.connect_to_data_collector(None)
 
     app.record_transaction(transaction_node)
 
@@ -414,7 +414,7 @@ def test_adaptive_sampling(transaction_node, monkeypatch):
     # Should always return false for sampling prior to connect
     assert app.compute_sampled() is False
 
-    app.connect_to_data_collector()
+    app.connect_to_data_collector(None)
 
     # First harvest, first N should be sampled
     for _ in range(settings.sampling_target):
@@ -477,7 +477,7 @@ def test_ca_bundle(collector_agent_registration, ca_bundle_path,
 })
 def test_reservoir_sizes(transaction_node):
     app = Application('Python Agent Test (Harvest Loop)')
-    app.connect_to_data_collector()
+    app.connect_to_data_collector(None)
 
     # Record a transaction with events
     app.record_transaction(transaction_node)
@@ -508,7 +508,7 @@ def test_error_event_sampling_info(events_seen):
     })
     def _test():
         app = Application('Python Agent Test (Harvest Loop)')
-        app.connect_to_data_collector()
+        app.connect_to_data_collector(None)
 
         for _ in range(events_seen):
             app._stats_engine.error_events.add('error')
@@ -529,7 +529,7 @@ def test_harvest_reset_adaptive_sampling(transaction_node, serverless_mode):
     })
     def _test():
         app = Application('Python Agent Test (Harvest Loop)')
-        app.connect_to_data_collector()
+        app.connect_to_data_collector(None)
 
         app.record_transaction(transaction_node)
 
@@ -574,7 +574,7 @@ def test_serverless_mode_adaptive_sampling(time_to_next_reset,
 
     app = Application('Python Agent Test (Harvest Loop)')
 
-    app.connect_to_data_collector()
+    app.connect_to_data_collector(None)
     app.adaptive_sampler.computed_count = 123
     app._next_adaptive_sampler_reset = time.time() + time_to_next_reset
 
@@ -589,7 +589,7 @@ def test_serverless_mode_adaptive_sampling(time_to_next_reset,
 })
 def test_compute_sampled_no_reset():
     app = Application('Python Agent Test (Harvest Loop)')
-    app.connect_to_data_collector()
+    app.connect_to_data_collector(None)
     app._next_adaptive_sampler_reset = time.time() - 1
     assert app.compute_sampled() is True
 
@@ -620,7 +620,7 @@ def test_analytic_event_sampling_info():
     })
     def _test():
         app = Application('Python Agent Test (Harvest Loop)')
-        app.connect_to_data_collector()
+        app.connect_to_data_collector(None)
 
         app._stats_engine.transaction_events.add('transaction event')
         app._stats_engine.synthetics_events.add('synthetic event')
@@ -654,7 +654,7 @@ def test_analytic_event_payloads(has_synthetic_events, has_transaction_events):
     @validate_transaction_event_payloads(validators)
     def _test():
         app = Application('Python Agent Test (Harvest Loop)')
-        app.connect_to_data_collector()
+        app.connect_to_data_collector(None)
 
         if has_transaction_events:
             app._stats_engine.transaction_events.add('transaction event')
@@ -683,7 +683,7 @@ def test_transaction_events_disabled():
     @validate_metric_payload(expected_metrics, endpoints_called)
     def _test():
         app = Application('Python Agent Test (Harvest Loop)')
-        app.connect_to_data_collector()
+        app.connect_to_data_collector(None)
         app.harvest()
 
     _test()
@@ -697,7 +697,7 @@ def test_transaction_events_disabled():
 })
 def test_reset_synthetics_events():
     app = Application('Python Agent Test (Harvest Loop)')
-    app.connect_to_data_collector()
+    app.connect_to_data_collector(None)
 
     app._stats_engine.synthetics_events.add('synthetics event')
     app._stats_engine.transaction_events.add('transaction event')
@@ -718,7 +718,7 @@ def test_reset_synthetics_events():
 })
 def test_infinite_merges():
     app = Application('Python Agent Test (Harvest Loop)')
-    app.connect_to_data_collector()
+    app.connect_to_data_collector(None)
 
     app._stats_engine.transaction_events.add('transaction event')
 
@@ -739,7 +739,7 @@ def test_get_agent_commands_returns_none():
 
     try:
         app = Application('Python Agent Test (Harvest Loop)')
-        app.connect_to_data_collector()
+        app.connect_to_data_collector(None)
         app.process_agent_commands()
     finally:
         _developer_mode_responses['get_agent_commands'] = original_return_value
@@ -751,6 +751,6 @@ def test_get_agent_commands_returns_none():
 })
 def test_get_agent_commands_raises():
     app = Application('Python Agent Test (Harvest Loop)')
-    app.connect_to_data_collector()
+    app.connect_to_data_collector(None)
     with pytest.raises(RetryDataForRequest):
         app.process_agent_commands()

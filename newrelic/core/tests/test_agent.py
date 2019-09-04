@@ -9,7 +9,11 @@ class TestAgentLocking(newrelic.tests.test_cases.TestCase):
         self.original_activate_session = \
                 application.Application.activate_session
         self.application_active = event = threading.Event()
-        application.Application.activate_session = event.wait
+
+        def event_wait(self_class, activate_agent, timeout):
+            event.wait(timeout)
+
+        application.Application.activate_session = event_wait
 
     def tearDown(self):
         super(TestAgentLocking, self).tearDown()

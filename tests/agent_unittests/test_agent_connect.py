@@ -15,7 +15,7 @@ SETTINGS = global_settings()
 @failing_endpoint('preconnect', raises=ForceAgentDisconnect)
 def test_http_gone_stops_connect():
     app = Application('Python Agent Test (agent_unittests-connect)')
-    app.connect_to_data_collector()
+    app.connect_to_data_collector(None)
 
     # The agent must not reattempt a connection after a ForceAgentDisconnect.
     # If it does, we'll end up with a session here.

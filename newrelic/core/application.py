@@ -207,7 +207,7 @@ class Application(object):
             print >> file, 'Harvest Discard Count: %d' % (
                     self._discard_count)
 
-    def activate_session(self, timeout=0.0):
+    def activate_session(self, activate_agent=None, timeout=0.0):
         """Creates a background thread to initiate registration of the
         application with the data collector if no active session already
         exists. Will wait up to the timeout specified for the session
@@ -249,7 +249,8 @@ class Application(object):
             self._detect_deadlock = True
 
         thread = threading.Thread(target=self.connect_to_data_collector,
-                name='NR-Activate-Session/%s' % self.name)
+                name='NR-Activate-Session/%s' % self.name,
+                args=(activate_agent,))
         thread.setDaemon(True)
         thread.start()
 
@@ -281,7 +282,7 @@ class Application(object):
 
         return True
 
-    def connect_to_data_collector(self):
+    def connect_to_data_collector(self, activate_agent):
         """Performs the actual registration of the application with the
         data collector if no current active session.
 
@@ -509,6 +510,9 @@ class Application(object):
             # starting of data samplers are protected by their own locks.
 
             self._harvest_enabled = True
+
+            if activate_agent:
+                activate_agent()
 
             # Flag that the session activation has completed to
             # anyone who has been waiting through calling the

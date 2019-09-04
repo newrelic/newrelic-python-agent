@@ -192,6 +192,17 @@ def _nr_wrapper__NormalizedHeaderCache___missing__(
     return normalized
 
 
+def _nr_wrapper_normalize_header(wrapped, instance, args, kwargs):
+    def _bind_params(name, *args, **kwargs):
+        return name
+
+    name = _bind_params(*args, **kwargs)
+    if name.startswith('X-NewRelic'):
+        return name
+
+    return wrapped(*args, **kwargs)
+
+
 def instrument_tornado_httputil(module):
     version_info = _store_version_info()
 
@@ -199,8 +210,12 @@ def instrument_tornado_httputil(module):
     if version_info[0] < 6:
         return
 
-    wrap_function_wrapper(module, '_NormalizedHeaderCache.__missing__',
-            _nr_wrapper__NormalizedHeaderCache___missing__)
+    if hasattr(module, '_NormalizedHeaderCache'):
+        wrap_function_wrapper(module, '_NormalizedHeaderCache.__missing__',
+                _nr_wrapper__NormalizedHeaderCache___missing__)
+    elif hasattr(module, '_normalize_header'):
+        wrap_function_wrapper(module, '_normalize_header',
+                _nr_wrapper_normalize_header)
 
 
 def _prepare_request(request, raise_error=True, **kwargs):

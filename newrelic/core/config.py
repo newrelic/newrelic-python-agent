@@ -898,6 +898,13 @@ def apply_server_side_settings(server_side_config={}, settings=_settings):
     for (name, value) in server_side_config.items():
         apply_config_setting(settings_snapshot, name, value)
 
+    event_harvest_config = server_side_config.get('event_harvest_config', {})
+    harvest_limits = event_harvest_config.get('harvest_limits', ())
+    apply_config_setting(
+            settings_snapshot,
+            'event_harvest_config.whitelist',
+            frozenset(harvest_limits))
+
     # This will be removed at some future point
     # Special case for account_id which will be sent instead of
     # cross_process_id in the future

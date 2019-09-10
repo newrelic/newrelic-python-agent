@@ -278,6 +278,21 @@ class TestFasterEventHarvestConfig(unittest.TestCase):
         assert settings.event_harvest_config\
             .harvest_limits.error_event_data == 8
 
+        whitelist = settings.event_harvest_config.whitelist
+        harvest_keys = config['event_harvest_config']['harvest_limits']
+        assert whitelist == frozenset(harvest_keys)
+
+    def test_settings_missing_harvest_limits(self):
+        config = {
+                    "event_harvest_config": {
+                        "report_period_ms": 5000,
+                    }
+                 }
+        settings = newrelic.core.config.apply_server_side_settings(config)
+
+        whitelist = settings.event_harvest_config.whitelist
+        assert whitelist == frozenset()
+
 
 class TestFlattenConfig(unittest.TestCase):
     def test_nested_dict(self):

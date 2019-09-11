@@ -458,6 +458,9 @@ class Application(object):
 
             configuration = active_session.configuration
 
+            #FIXME: Remove when FEH is implemented fully.
+            configuration.event_harvest_config.whitelist = frozenset()
+
             with self._stats_lock:
                 self._stats_engine.reset_stats(configuration)
 

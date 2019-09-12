@@ -1443,7 +1443,11 @@ class StatsEngine(object):
 
                 reset()
 
-        # If not in a flexible harvest we need to reset metrics and traces
+        # If we are not in a flexible harvest metrics and traces need to be
+        # reset on the stats object. If we are in a flexible harvest metrics
+        # are left on the stats object for when the default harvest occurs
+        # however they are still included on the snapshot so when harvesting we
+        # need to make sure to not send the data.
         if not flexible:
             # The slow transaction map is retained but we need to
             # perform some housework on each harvest snapshot. What

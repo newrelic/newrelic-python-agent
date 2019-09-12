@@ -39,6 +39,7 @@ EVENT_HARVEST_METHODS = {
     'error_event_data': ('reset_error_events',),
 }
 
+
 def c2t(count=0, total=0.0, min=0.0, max=0.0, sum_of_squares=0.0):
     return (count, total, total, min, max, sum_of_squares)
 
@@ -1411,6 +1412,20 @@ class StatsEngine(object):
         event_harvest_whitelist = \
                 self.__settings.event_harvest_config.whitelist
 
+        # Data types only appear in one place, so during a snapshot it must be
+        # represented in either the snapshot or in the current stats object.
+        #
+        #   If we're in flexible harvest, the goal is to have everything in the
+        #   whitelist appear in the snapshot. This means, we must remove the
+        #   whitelist data types from the current stats object.
+        #
+        #   If we're not in flexible harvest, everything excluded from the
+        #   whitelist appears in the snapshot and is removed from the current
+        #   stats object.
+        if flexible:
+            whitelist_stats, other_stats = self, snapshot
+        else:
+            whitelist_stats, other_stats = snapshot, self
 
         # Iterate through event harvest types if they are in
         # the list of events to harvest reset them on stats_engine
@@ -1418,27 +1433,11 @@ class StatsEngine(object):
         for event, methods in EVENT_HARVEST_METHODS.items():
             for method in methods:
                 if event in event_harvest_whitelist:
-                    # If flexible harvest and the event is in the whitelist
-                    # reset the event type on stats_engine
-                    if flexible:
-                        reset = getattr(self, method)
-                        reset()
-                    # If event is in whitelist and it is not a flexible harvest
-                    # remove the event data from the snapshot.
-                    else:
-                        reset = getattr(snapshot, method)
-                        reset()
+                    reset = getattr(whitelist_stats, method)
                 else:
-                    # If the event type is not in the whitelist and it is a
-                    # flexible harvest remove it from the snapshot.
-                    if flexible:
-                        reset = getattr(snapshot, method)
-                        reset()
-                    # If the event is not in the whitelist and it is not a
-                    # flexible harvest reset the data on the stats_engine
-                    else:
-                        reset = getattr(self, method)
-                        reset()
+                    reset = getattr(other_stats, method)
+
+                reset()
 
         # If not in a flexible harvest we need to reset metrics and traces
         if not flexible:

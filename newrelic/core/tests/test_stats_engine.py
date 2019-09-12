@@ -1,6 +1,5 @@
 import unittest
 
-
 from newrelic.core.config import (global_settings, SPAN_EVENT_RESERVOIR_SIZE,
     DEFAULT_RESERVOIR_SIZE, apply_server_side_settings)
 from newrelic.core.stats_engine import StatsEngine, LimitedDataSet
@@ -92,22 +91,6 @@ class TestStatsEngineSpanEvents(unittest.TestCase):
         stats.reset_stats(self.settings)
         self.assertEqual(stats.span_events.num_samples, 0)
         self.assertEqual(stats.span_events.num_seen, 0)
-
-    def test_span_events_harvest_snapshot(self):
-        stats = StatsEngine()
-        stats.reset_stats(self.settings)
-
-        stats.span_events.add('event')
-        self.assertEqual(stats.span_events.num_samples, 1)
-        self.assertEqual(stats.span_events.num_seen, 1)
-
-        snapshot = stats.harvest_snapshot()
-        self.assertEqual(snapshot.span_events.num_samples, 1)
-        self.assertEqual(snapshot.span_events.num_seen, 1)
-
-        self.assertEqual(stats.span_events.num_samples, 0)
-        self.assertEqual(stats.span_events.num_seen, 0)
-        self.assertEqual(stats.span_events.capacity, SPAN_EVENT_RESERVOIR_SIZE)
 
     def test_span_events_merge(self):
         stats = StatsEngine()
@@ -292,6 +275,197 @@ class TestLimitedDataSet(unittest.TestCase):
 
         self.assertEqual(instance.sampling_info['reservoir_size'], 0)
         self.assertEqual(instance.sampling_info['events_seen'], 1)
+
+
+class TestStatsHarvestSnapshot(unittest.TestCase):
+    def test_harvest_snapshot_empty_whitelist_default(self):
+        stats = StatsEngine()
+        settings = apply_server_side_settings()
+        # Test empty whitelist flexible==False, this will return all event
+        # types, metrics, and traces
+        settings.event_harvest_config.whitelist = frozenset()
+        stats.reset_stats(settings)
+        stats.span_events.add('event')
+        stats.error_events.add('event')
+        stats.custom_events.add('event')
+        stats.transaction_events.add('event')
+        stats.synthetics_events.add('event')
+        stats.record_custom_metric('test-metric', 0)
+
+        snapshot = stats.harvest_snapshot(flexible=False)
+
+        # Assert that all event types have been reset
+        self.assertEqual(stats.error_events.num_samples, 0)
+        self.assertEqual(stats.error_events.num_seen, 0)
+        self.assertEqual(stats.custom_events.num_samples, 0)
+        self.assertEqual(stats.custom_events.num_seen, 0)
+        self.assertEqual(stats.transaction_events.num_samples, 0)
+        self.assertEqual(stats.transaction_events.num_seen, 0)
+        self.assertEqual(stats.synthetics_events.num_samples, 0)
+        self.assertEqual(stats.synthetics_events.num_seen, 0)
+        self.assertEqual(stats.span_events.num_samples, 0)
+        self.assertEqual(stats.span_events.num_seen, 0)
+
+        # Assert metrics were reset
+        self.assertEqual(len(stats.stats_table), 0)
+
+        # Assert snapshot contains all relevant data
+        self.assertEqual(snapshot.error_events.num_samples, 1)
+        self.assertEqual(snapshot.error_events.num_seen, 1)
+        self.assertEqual(snapshot.custom_events.num_samples, 1)
+        self.assertEqual(snapshot.custom_events.num_seen, 1)
+        self.assertEqual(snapshot.transaction_events.num_samples, 1)
+        self.assertEqual(snapshot.transaction_events.num_seen, 1)
+        self.assertEqual(snapshot.synthetics_events.num_samples, 1)
+        self.assertEqual(snapshot.synthetics_events.num_seen, 1)
+        self.assertEqual(snapshot.span_events.num_samples, 1)
+        self.assertEqual(snapshot.span_events.num_seen, 1)
+
+        self.assertEqual(len(snapshot.stats_table), 1)
+
+    def test_harvest_snapshot_empty_whitelist_flexible(self):
+        stats = StatsEngine()
+        settings = apply_server_side_settings()
+        # Test empty whitelist flexible==True, this will return a stats
+        # object with no event data
+        settings.event_harvest_config.whitelist = frozenset()
+        stats.reset_stats(settings)
+        stats.span_events.add('event')
+        stats.error_events.add('event')
+        stats.custom_events.add('event')
+        stats.transaction_events.add('event')
+        stats.synthetics_events.add('event')
+        stats.record_custom_metric('test-metric', 0)
+
+        snapshot = stats.harvest_snapshot(flexible=True)
+
+        # Assert that no event types have been reset
+        self.assertEqual(stats.error_events.num_samples, 1)
+        self.assertEqual(stats.error_events.num_seen, 1)
+        self.assertEqual(stats.custom_events.num_samples, 1)
+        self.assertEqual(stats.custom_events.num_seen, 1)
+        self.assertEqual(stats.transaction_events.num_samples, 1)
+        self.assertEqual(stats.transaction_events.num_seen, 1)
+        self.assertEqual(stats.synthetics_events.num_samples, 1)
+        self.assertEqual(stats.synthetics_events.num_seen, 1)
+        self.assertEqual(stats.span_events.num_samples, 1)
+        self.assertEqual(stats.span_events.num_seen, 1)
+
+        # Assert metrics were not reset
+        self.assertEqual(len(stats.stats_table), 1)
+
+        # Assert snapshot contains no event data
+        self.assertEqual(snapshot.error_events.num_samples, 0)
+        self.assertEqual(snapshot.error_events.num_seen, 0)
+        self.assertEqual(snapshot.custom_events.num_samples, 0)
+        self.assertEqual(snapshot.custom_events.num_seen, 0)
+        self.assertEqual(snapshot.transaction_events.num_samples, 0)
+        self.assertEqual(snapshot.transaction_events.num_seen, 0)
+        self.assertEqual(snapshot.synthetics_events.num_samples, 0)
+        self.assertEqual(snapshot.synthetics_events.num_seen, 0)
+        self.assertEqual(snapshot.span_events.num_samples, 0)
+        self.assertEqual(snapshot.span_events.num_seen, 0)
+
+    def test_harvest_snapshot_flexible(self):
+        stats = StatsEngine()
+        settings = apply_server_side_settings()
+        # Test whitelist with two data types in the whitelist flexible==True,
+        # they should be reset on the stats_engine but present in the snapshot.
+
+        settings.event_harvest_config.whitelist = frozenset((
+            'analytic_event_data',
+            'error_event_data'))
+        stats.reset_stats(settings)
+        stats.span_events.add('event')
+        stats.error_events.add('event')
+        stats.custom_events.add('event')
+        stats.transaction_events.add('event')
+        stats.synthetics_events.add('event')
+        stats.record_custom_metric('test-metric', 0)
+
+        snapshot = stats.harvest_snapshot(flexible=True)
+
+        # Assert that harvested event types have been reset
+        self.assertEqual(stats.error_events.num_samples, 0)
+        self.assertEqual(stats.error_events.num_seen, 0)
+        self.assertEqual(stats.transaction_events.num_samples, 0)
+        self.assertEqual(stats.transaction_events.num_seen, 0)
+        self.assertEqual(stats.synthetics_events.num_samples, 0)
+        self.assertEqual(stats.synthetics_events.num_seen, 0)
+
+        # Assert non-flexible events are not reset
+        self.assertEqual(stats.custom_events.num_samples, 1)
+        self.assertEqual(stats.custom_events.num_seen, 1)
+        self.assertEqual(stats.span_events.num_samples, 1)
+        self.assertEqual(stats.span_events.num_seen, 1)
+
+        # Assert metrics were not reset
+        self.assertEqual(len(stats.stats_table), 1)
+
+        # Assert snapshot contains flexible event data
+        self.assertEqual(snapshot.error_events.num_samples, 1)
+        self.assertEqual(snapshot.error_events.num_seen, 1)
+        self.assertEqual(snapshot.transaction_events.num_samples, 1)
+        self.assertEqual(snapshot.transaction_events.num_seen, 1)
+        self.assertEqual(snapshot.synthetics_events.num_samples, 1)
+        self.assertEqual(snapshot.synthetics_events.num_seen, 1)
+
+        # Assert snapshot does not contain non-flexible data.
+        self.assertEqual(snapshot.span_events.num_samples, 0)
+        self.assertEqual(snapshot.span_events.num_seen, 0)
+        self.assertEqual(snapshot.custom_events.num_samples, 0)
+        self.assertEqual(snapshot.custom_events.num_seen, 0)
+
+    def test_harvest_snapshot_non_flexible(self):
+        stats = StatsEngine()
+        settings = apply_server_side_settings()
+        # Test whitelist with two data types in the whitelist flexible==False,
+        # they should not be reset on the stats_engine and
+        # not be present in the snapshot.
+
+        settings.event_harvest_config.whitelist = frozenset((
+            'analytic_event_data',
+            'error_event_data'))
+        stats.reset_stats(settings)
+        stats.span_events.add('event')
+        stats.error_events.add('event')
+        stats.custom_events.add('event')
+        stats.transaction_events.add('event')
+        stats.synthetics_events.add('event')
+        stats.record_custom_metric('test-metric', 0)
+
+        snapshot = stats.harvest_snapshot(flexible=False)
+
+        # Assert that flexible event types have not been reset
+        self.assertEqual(stats.error_events.num_samples, 1)
+        self.assertEqual(stats.error_events.num_seen, 1)
+        self.assertEqual(stats.transaction_events.num_samples, 1)
+        self.assertEqual(stats.transaction_events.num_seen, 1)
+        self.assertEqual(stats.synthetics_events.num_samples, 1)
+        self.assertEqual(stats.synthetics_events.num_seen, 1)
+
+        # Assert non-flexible events are reset
+        self.assertEqual(stats.custom_events.num_samples, 0)
+        self.assertEqual(stats.custom_events.num_seen, 0)
+        self.assertEqual(stats.span_events.num_samples, 0)
+        self.assertEqual(stats.span_events.num_seen, 0)
+
+        # Assert metrics were reset
+        self.assertEqual(len(stats.stats_table), 0)
+
+        # Assert snapshot does not contain flexible data
+        self.assertEqual(snapshot.error_events.num_samples, 0)
+        self.assertEqual(snapshot.error_events.num_seen, 0)
+        self.assertEqual(snapshot.transaction_events.num_samples, 0)
+        self.assertEqual(snapshot.transaction_events.num_seen, 0)
+        self.assertEqual(snapshot.synthetics_events.num_samples, 0)
+        self.assertEqual(snapshot.synthetics_events.num_seen, 0)
+
+        # Assert snapshot does contain non-flexible data.
+        self.assertEqual(snapshot.span_events.num_samples, 1)
+        self.assertEqual(snapshot.span_events.num_seen, 1)
+        self.assertEqual(snapshot.custom_events.num_samples, 1)
+        self.assertEqual(snapshot.custom_events.num_seen, 1)
 
 
 if __name__ == '__main__':

@@ -1411,7 +1411,7 @@ class StatsEngine(object):
         to snapshot the data when doing the harvest.
 
         """
-        snapshot = copy.copy(self)
+        snapshot = self._snapshot()
 
         event_harvest_whitelist = \
                 self.__settings.event_harvest_config.whitelist
@@ -1576,12 +1576,14 @@ class StatsEngine(object):
         # StatsEngine, and self is still the current main StatsEngine. Then
         # we are merging multiple events, but still using the reservoir
         # sampling that gives equal probability for keeping all events
-
+        events = snapshot.transaction_events
+        if not events:
+            return
         if rollback:
-            self.__transaction_events.merge(snapshot.__transaction_events)
+            self.__transaction_events.merge(events)
         else:
-            if snapshot.__transaction_events.num_samples == 1:
-                self.__transaction_events.merge(snapshot.__transaction_events)
+            if events.num_samples == 1:
+                self.__transaction_events.merge(events)
 
     def _merge_synthetics_events(self, snapshot, rollback=False):
 
@@ -1595,24 +1597,32 @@ class StatsEngine(object):
         # StatsEngine, and self is still the current main StatsEngine,
         # Thus, the events already existing in this object will be newer than
         # those in snapshot, and we favor the newer events.
-
-        self.__synthetics_events.merge(snapshot.__synthetics_events)
+        events = snapshot.synthetics_events
+        if not events:
+            return
+        self.__synthetics_events.merge(events)
 
     def _merge_error_events(self, snapshot):
 
         # Merge in error events. Since we are using reservoir sampling that
         # gives equal probability to keeping each event, merge is the same as
         # rollback. There may be multiple error events per transaction.
-
-        self.__error_events.merge(snapshot.error_events)
+        events = snapshot.error_events
+        if not events:
+            return
+        self.__error_events.merge(events)
 
     def _merge_custom_events(self, snapshot, rollback=False):
-
-        self.__custom_events.merge(snapshot.custom_events)
+        events = snapshot.custom_events
+        if not events:
+            return
+        self.__custom_events.merge(events)
 
     def _merge_span_events(self, snapshot, rollback=False):
-
-        self.__span_events.merge(snapshot.span_events)
+        events = snapshot.span_events
+        if not events:
+            return
+        self.__span_events.merge(events)
 
     def _merge_error_traces(self, snapshot):
 
@@ -1692,3 +1702,25 @@ class StatsEngine(object):
                 self.__stats_table[key] = other
             else:
                 stats.merge_stats(other)
+
+    def _snapshot(self):
+        copy = object.__new__(StatsEngineSnapshot)
+        copy.__dict__.update(self.__dict__)
+        return copy
+
+
+class StatsEngineSnapshot(StatsEngine):
+    def reset_transaction_events(self):
+        setattr(self, '_StatsEngine__transaction_events', None)
+
+    def reset_custom_events(self):
+        setattr(self, '_StatsEngine__custom_events', None)
+
+    def reset_span_events(self):
+        setattr(self, '_StatsEngine__span_events', None)
+
+    def reset_synthetics_events(self):
+        setattr(self, '_StatsEngine__synthetics_events', None)
+
+    def reset_error_events(self):
+        setattr(self, '_StatsEngine__error_events', None)

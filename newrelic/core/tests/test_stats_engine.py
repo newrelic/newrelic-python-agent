@@ -355,16 +355,11 @@ class TestStatsHarvestSnapshot(unittest.TestCase):
         self.assertEqual(len(stats.stats_table), 1)
 
         # Assert snapshot contains no event data
-        self.assertEqual(snapshot.error_events.num_samples, 0)
-        self.assertEqual(snapshot.error_events.num_seen, 0)
-        self.assertEqual(snapshot.custom_events.num_samples, 0)
-        self.assertEqual(snapshot.custom_events.num_seen, 0)
-        self.assertEqual(snapshot.transaction_events.num_samples, 0)
-        self.assertEqual(snapshot.transaction_events.num_seen, 0)
-        self.assertEqual(snapshot.synthetics_events.num_samples, 0)
-        self.assertEqual(snapshot.synthetics_events.num_seen, 0)
-        self.assertEqual(snapshot.span_events.num_samples, 0)
-        self.assertEqual(snapshot.span_events.num_seen, 0)
+        self.assertIsNone(snapshot.error_events)
+        self.assertIsNone(snapshot.custom_events)
+        self.assertIsNone(snapshot.transaction_events)
+        self.assertIsNone(snapshot.synthetics_events)
+        self.assertIsNone(snapshot.span_events)
 
     def test_harvest_snapshot_flexible(self):
         stats = StatsEngine()
@@ -411,10 +406,8 @@ class TestStatsHarvestSnapshot(unittest.TestCase):
         self.assertEqual(snapshot.synthetics_events.num_seen, 1)
 
         # Assert snapshot does not contain non-flexible data.
-        self.assertEqual(snapshot.span_events.num_samples, 0)
-        self.assertEqual(snapshot.span_events.num_seen, 0)
-        self.assertEqual(snapshot.custom_events.num_samples, 0)
-        self.assertEqual(snapshot.custom_events.num_seen, 0)
+        self.assertIsNone(snapshot.span_events)
+        self.assertIsNone(snapshot.custom_events)
 
     def test_harvest_snapshot_non_flexible(self):
         stats = StatsEngine()
@@ -454,12 +447,9 @@ class TestStatsHarvestSnapshot(unittest.TestCase):
         self.assertEqual(len(stats.stats_table), 0)
 
         # Assert snapshot does not contain flexible data
-        self.assertEqual(snapshot.error_events.num_samples, 0)
-        self.assertEqual(snapshot.error_events.num_seen, 0)
-        self.assertEqual(snapshot.transaction_events.num_samples, 0)
-        self.assertEqual(snapshot.transaction_events.num_seen, 0)
-        self.assertEqual(snapshot.synthetics_events.num_samples, 0)
-        self.assertEqual(snapshot.synthetics_events.num_seen, 0)
+        self.assertIsNone(snapshot.error_events)
+        self.assertIsNone(snapshot.transaction_events)
+        self.assertIsNone(snapshot.synthetics_events)
 
         # Assert snapshot does contain non-flexible data.
         self.assertEqual(snapshot.span_events.num_samples, 1)

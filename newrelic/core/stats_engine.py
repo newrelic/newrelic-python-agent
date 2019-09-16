@@ -412,17 +412,17 @@ class StatsEngine(object):
     def __init__(self):
         self.__settings = None
         self.__stats_table = {}
-        self.__transaction_events = SampledDataSet()
-        self.__error_events = SampledDataSet()
-        self.__custom_events = SampledDataSet()
-        self.__span_events = SampledDataSet()
+        self._transaction_events = SampledDataSet()
+        self._error_events = SampledDataSet()
+        self._custom_events = SampledDataSet()
+        self._span_events = SampledDataSet()
         self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__slow_transaction_map = {}
         self.__slow_transaction_old_duration = None
         self.__slow_transaction_dry_harvests = 0
         self.__transaction_errors = []
-        self.__synthetics_events = LimitedDataSet()
+        self._synthetics_events = LimitedDataSet()
         self.__synthetics_transactions = []
         self.__xray_transactions = []
         self.xray_sessions = {}
@@ -437,19 +437,19 @@ class StatsEngine(object):
 
     @property
     def transaction_events(self):
-        return self.__transaction_events
+        return self._transaction_events
 
     @property
     def custom_events(self):
-        return self.__custom_events
+        return self._custom_events
 
     @property
     def span_events(self):
-        return self.__span_events
+        return self._span_events
 
     @property
     def synthetics_events(self):
-        return self.__synthetics_events
+        return self._synthetics_events
 
     @property
     def synthetics_transactions(self):
@@ -457,7 +457,7 @@ class StatsEngine(object):
 
     @property
     def error_events(self):
-        return self.__error_events
+        return self._error_events
 
     def metrics_count(self):
         """Returns a count of the number of unique metrics currently
@@ -695,7 +695,7 @@ class StatsEngine(object):
 
         if error_collector.capture_events and settings.collect_error_events:
             event = self._error_event(error_details)
-            self.__error_events.add(event)
+            self._error_events.add(event)
 
         if settings.collect_errors and (len(self.__transaction_errors) <
                 settings.agent_limits.errors_per_harvest):
@@ -734,7 +734,7 @@ class StatsEngine(object):
 
         if (settings.collect_custom_events and
                 settings.custom_insights_events.enabled):
-            self.__custom_events.add(event)
+            self._custom_events.add(event)
 
     def record_custom_metric(self, name, value):
         """Record a single value metric, merging the data with any data
@@ -929,7 +929,7 @@ class StatsEngine(object):
                 settings.collect_error_events):
             events = transaction.error_events(self.__stats_table)
             for event in events:
-                self.__error_events.add(event, priority=transaction.priority)
+                self._error_events.add(event, priority=transaction.priority)
 
         # Capture any sql traces if transaction tracer enabled.
 
@@ -969,13 +969,13 @@ class StatsEngine(object):
 
         if transaction.synthetics_resource_id:
             event = transaction.transaction_event(self.__stats_table)
-            self.__synthetics_events.add(event)
+            self._synthetics_events.add(event)
 
         elif (settings.collect_analytics_events and
                 settings.transaction_events.enabled):
 
             event = transaction.transaction_event(self.__stats_table)
-            self.__transaction_events.add(event, priority=transaction.priority)
+            self._transaction_events.add(event, priority=transaction.priority)
 
         # Merge in custom events
 
@@ -988,7 +988,7 @@ class StatsEngine(object):
         if (settings.distributed_tracing.enabled and transaction.sampled and
                 settings.span_events.enabled and settings.collect_span_events):
             for event in transaction.span_events(self.__settings):
-                self.__span_events.add(event, priority=transaction.priority)
+                self._span_events.add(event, priority=transaction.priority)
 
     def metric_data(self, normalizer=None):
         """Returns a list containing the low level metric data for
@@ -1359,35 +1359,35 @@ class StatsEngine(object):
         """
 
         if self.__settings is not None:
-            self.__transaction_events = SampledDataSet(
+            self._transaction_events = SampledDataSet(
                     self.__settings.event_harvest_config.
                     harvest_limits.analytic_event_data)
         else:
-            self.__transaction_events = SampledDataSet()
+            self._transaction_events = SampledDataSet()
 
     def reset_error_events(self):
         if self.__settings is not None:
-            self.__error_events = SampledDataSet(
+            self._error_events = SampledDataSet(
                     self.__settings.event_harvest_config.
                     harvest_limits.error_event_data)
         else:
-            self.__error_events = SampledDataSet()
+            self._error_events = SampledDataSet()
 
     def reset_custom_events(self):
         if self.__settings is not None:
-            self.__custom_events = SampledDataSet(
+            self._custom_events = SampledDataSet(
                     self.__settings.event_harvest_config.
                     harvest_limits.custom_event_data)
         else:
-            self.__custom_events = SampledDataSet()
+            self._custom_events = SampledDataSet()
 
     def reset_span_events(self):
         if self.__settings is not None:
-            self.__span_events = SampledDataSet(
+            self._span_events = SampledDataSet(
                     self.__settings.event_harvest_config.
                     harvest_limits.span_event_data)
         else:
-            self.__span_events = SampledDataSet()
+            self._span_events = SampledDataSet()
 
     def reset_synthetics_events(self):
         """Resets the accumulated statistics back to initial state for
@@ -1395,10 +1395,10 @@ class StatsEngine(object):
 
         """
         if self.__settings is not None:
-            self.__synthetics_events = LimitedDataSet(
+            self._synthetics_events = LimitedDataSet(
                     self.__settings.agent_limits.synthetics_events)
         else:
-            self.__synthetics_events = LimitedDataSet()
+            self._synthetics_events = LimitedDataSet()
 
     def harvest_snapshot(self, flexible=False):
         """Creates a snapshot of the accumulated statistics, error
@@ -1580,10 +1580,10 @@ class StatsEngine(object):
         if not events:
             return
         if rollback:
-            self.__transaction_events.merge(events)
+            self._transaction_events.merge(events)
         else:
             if events.num_samples == 1:
-                self.__transaction_events.merge(events)
+                self._transaction_events.merge(events)
 
     def _merge_synthetics_events(self, snapshot, rollback=False):
 
@@ -1600,7 +1600,7 @@ class StatsEngine(object):
         events = snapshot.synthetics_events
         if not events:
             return
-        self.__synthetics_events.merge(events)
+        self._synthetics_events.merge(events)
 
     def _merge_error_events(self, snapshot):
 
@@ -1610,19 +1610,19 @@ class StatsEngine(object):
         events = snapshot.error_events
         if not events:
             return
-        self.__error_events.merge(events)
+        self._error_events.merge(events)
 
     def _merge_custom_events(self, snapshot, rollback=False):
         events = snapshot.custom_events
         if not events:
             return
-        self.__custom_events.merge(events)
+        self._custom_events.merge(events)
 
     def _merge_span_events(self, snapshot, rollback=False):
         events = snapshot.span_events
         if not events:
             return
-        self.__span_events.merge(events)
+        self._span_events.merge(events)
 
     def _merge_error_traces(self, snapshot):
 
@@ -1711,16 +1711,16 @@ class StatsEngine(object):
 
 class StatsEngineSnapshot(StatsEngine):
     def reset_transaction_events(self):
-        setattr(self, '_StatsEngine__transaction_events', None)
+        self._transaction_events = None
 
     def reset_custom_events(self):
-        setattr(self, '_StatsEngine__custom_events', None)
+        self._custom_events = None
 
     def reset_span_events(self):
-        setattr(self, '_StatsEngine__span_events', None)
+        self._span_events = None
 
     def reset_synthetics_events(self):
-        setattr(self, '_StatsEngine__synthetics_events', None)
+        self._synthetics_events = None
 
     def reset_error_events(self):
-        setattr(self, '_StatsEngine__error_events', None)
+        self._error_events = None

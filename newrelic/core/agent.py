@@ -6,6 +6,7 @@ interacting with the agent core.
 import os
 import sys
 import time
+import sched
 import logging
 import threading
 import atexit
@@ -197,6 +198,7 @@ class Agent(object):
         self._last_harvest = 0.0
         self._harvest_duration = 0.0
         self._next_harvest = 0.0
+        self._scheduler = None
 
         self._process_shutdown = False
 
@@ -601,63 +603,33 @@ class Agent(object):
         if not shutdown:
             self._scheduler.enter(60.0, 2, self._harvest_default, ())
 
+    def _harvest_timer(self):
+        if self._harvest_shutdown.isSet():
+            return float("inf")
+        return time.time()
+
     def _harvest_loop(self):
         _logger.debug('Entering harvest loop.')
 
-        self._next_harvest = time.time()
+        settings = newrelic.core.config.global_settings()
+        event_harvest_config = settings.event_harvest_config
+
+        self._scheduler = sched.scheduler(
+                self._harvest_timer,
+                self._harvest_shutdown.wait)
+        self._scheduler.enter(
+                event_harvest_config.report_period_ms / 1000.0,
+                1,
+                self._harvest_flexible,
+                ())
+        self._scheduler.enter(
+                60.0,
+                2,
+                self._harvest_default,
+                ())
 
         try:
-            while True:
-                if self._harvest_shutdown.isSet():
-                    # NOTE We would have just finished a harvest or only
-                    # just started the agent, so we could skip doing a
-                    # forced harvest, or at least if most recent harvest
-                    # was started within in certain period of time. The
-                    # chances of it occuring are probably slim enough
-                    # that is not an issue.
-
-                    self._run_harvest(shutdown=True)
-
-                    return
-
-                # We are either going into the loop the first time, or
-                # something really went wrong here and we are overdue
-                # already for next harvest. This can happen when we have
-                # a large number of applications. Can also happen if
-                # clock is changed significantly. Skip it and wait until
-                # the next harvest time instead.
-                #
-                # NOTE This does mean that we aren't going to report on
-                # 1 minute intervals when have lots of applications. We
-                # need to look at using multiple threads when have lots
-                # of applications. Also need to fix problem whereby one
-                # all applications created, that only the first
-                # application will reliably report on an even minute as
-                # when the others report will depend on how long the
-                # first takes.
-
-                now = time.time()
-                while self._next_harvest <= now:
-                    self._next_harvest += 60.0
-
-                # Wait until next harvest period but drop out and force
-                # harvest if been notified that process is being
-                # shutdown.
-
-                delay = self._next_harvest - now
-                self._harvest_shutdown.wait(delay)
-
-                if self._harvest_shutdown.isSet():
-                    # Force a final harvest on agent shutdown.
-
-                    self._run_harvest(shutdown=True)
-
-                    return
-
-                # Run the normal harvest cycle.
-
-                self._run_harvest(shutdown=False)
-
+            self._scheduler.run()
         except Exception:
             # An unexpected error, possibly some sort of internal agent
             # implementation issue or more likely due to modules being

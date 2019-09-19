@@ -545,6 +545,62 @@ class Agent(object):
         application = self._applications.get(app_name, None)
         return application.compute_sampled()
 
+    def _harvest_flexible(self):
+        _logger.debug('Commencing flexible harvest of application data.')
+
+        self._flexible_harvest_count += 1
+        self._last_flexible_harvest = time.time()
+
+        for application in list(six.itervalues(self._applications)):
+            try:
+                application.harvest(shutdown=False, flexible=True)
+            except Exception:
+                _logger.exception('Failed to harvest data '
+                                  'for %s.' % application.name)
+
+        self._flexible_harvest_duration = \
+                time.time() - self._last_flexible_harvest
+
+        _logger.debug('Completed flexible harvest of application data in %.2f '
+                'seconds.', self._flexible_harvest_duration)
+
+        if not self._harvest_shutdown.isSet():
+            event_harvest_config = self.global_settings().event_harvest_config
+
+            self._scheduler.enter(
+                    event_harvest_config.report_period_ms / 1000.0,
+                    1,
+                    self._harvest_flexible,
+                    ())
+
+    def _harvest_default(self):
+        shutdown = self._harvest_shutdown.isSet()
+
+        if shutdown:
+            _logger.debug('Commencing default harvest of application data and '
+                    'forcing a shutdown at the same time.')
+        else:
+            _logger.debug('Commencing default harvest of application data.')
+
+        self._default_harvest_count += 1
+        self._last_default_harvest = time.time()
+
+        for application in list(six.itervalues(self._applications)):
+            try:
+                application.harvest(shutdown, flexible=False)
+            except Exception:
+                _logger.exception('Failed to harvest data '
+                                  'for %s.' % application.name)
+
+        self._default_harvest_duration = \
+                time.time() - self._last_default_harvest
+
+        _logger.debug('Completed default harvest of application data in %.2f '
+                'seconds.', self._default_harvest_duration)
+
+        if not shutdown:
+            self._scheduler.enter(60.0, 2, self._harvest_default, ())
+
     def _harvest_loop(self):
         _logger.debug('Entering harvest loop.')
 

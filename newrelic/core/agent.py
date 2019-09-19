@@ -651,34 +651,6 @@ class Agent(object):
                         'loop. Please report this problem to New Relic '
                         'support for further investigation.')
 
-    def _run_harvest(self, shutdown=False):
-        # This isn't going to maintain order of applications
-        # such that oldest is always done first. A new one could
-        # come in earlier once added and upset the overall
-        # timing. The data collector should cope with this
-        # though.
-
-        if shutdown:
-            _logger.debug('Commencing harvest of all application data and '
-                    'forcing a shutdown at the same time.')
-        else:
-            _logger.debug('Commencing harvest of all application data.')
-
-        self._harvest_count += 1
-        self._last_harvest = time.time()
-
-        for application in list(six.itervalues(self._applications)):
-            try:
-                application.harvest(shutdown)
-            except Exception:
-                _logger.exception('Failed to harvest data '
-                                  'for %s.' % application.name)
-
-        self._harvest_duration = time.time() - self._last_harvest
-
-        _logger.debug('Completed harvest of all application data in %.2f '
-                'seconds.', self._harvest_duration)
-
     def activate_agent(self):
         """Starts the main background for the agent."""
         with Agent._instance_lock:

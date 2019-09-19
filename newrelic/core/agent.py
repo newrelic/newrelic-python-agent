@@ -194,10 +194,12 @@ class Agent(object):
         self._harvest_thread.setDaemon(True)
         self._harvest_shutdown = threading.Event()
 
-        self._harvest_count = 0
-        self._last_harvest = 0.0
-        self._harvest_duration = 0.0
-        self._next_harvest = 0.0
+        self._default_harvest_count = 0
+        self._flexible_harvest_count = 0
+        self._last_default_harvest = 0.0
+        self._last_flexible_harvest = 0.0
+        self._default_harvest_duration = 0.0
+        self._flexible_harvest_duration = 0.0
         self._scheduler = None
 
         self._process_shutdown = False
@@ -237,14 +239,18 @@ class Agent(object):
                 time.asctime(time.localtime(self._creation_time)))
         print >> file, 'Initialization PID: %s' % (
                 self._process_id)
-        print >> file, 'Harvest Count: %d' % (
-                self._harvest_count)
-        print >> file, 'Last Harvest: %s' % (
-                time.asctime(time.localtime(self._last_harvest)))
-        print >> file, 'Harvest Duration: %.2f' % (
-                self._harvest_duration)
-        print >> file, 'Next Harvest: %s' % (
-                time.asctime(time.localtime(self._next_harvest)))
+        print >> file, 'Default Harvest Count: %d' % (
+                self._default_harvest_count)
+        print >> file, 'Flexible Harvest Count: %d' % (
+                self._flexible_harvest_count)
+        print >> file, 'Last Default Harvest: %s' % (
+                time.asctime(time.localtime(self._last_default_harvest)))
+        print >> file, 'Last Flexible Harvest: %s' % (
+                time.asctime(time.localtime(self._last_flexible_harvest)))
+        print >> file, 'Default Harvest Duration: %.2f' % (
+                self._default_harvest_duration)
+        print >> file, 'Flexible Harvest Duration: %.2f' % (
+                self._flexible_harvest_duration)
         print >> file, 'Agent Shutdown: %s' % (
                 self._harvest_shutdown.isSet())
         print >> file, 'Applications: %r' % (

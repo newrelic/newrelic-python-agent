@@ -1232,7 +1232,7 @@ class Application(object):
 
         return {command_id: {}}
 
-    def harvest(self, shutdown=False):
+    def harvest(self, shutdown=False, flexible=False):
         """Performs a harvest, reporting aggregated data for the current
         reporting period to the data collector.
 

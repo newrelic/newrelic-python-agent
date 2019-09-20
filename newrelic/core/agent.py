@@ -540,7 +540,8 @@ class Agent(object):
         application.record_transaction(data, profile_samples)
 
         if self._config.serverless_mode.enabled:
-            application.harvest()
+            application.harvest(flexible=True)
+            application.harvest(flexible=False)
 
     def normalize_name(self, app_name, name, rule_type='url'):
         application = self._applications.get(app_name, None)

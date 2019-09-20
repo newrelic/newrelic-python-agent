@@ -711,6 +711,90 @@ def test_reset_synthetics_events():
     assert app._stats_engine.transaction_events.num_seen == 1
 
 
+@pytest.mark.parametrize('whitelist_event', ('analytic_event_data',
+    'custom_event_data', 'error_event_data', 'span_event_data'))
+@override_generic_settings(settings, {
+        'developer_mode': True,
+        'license_key': '**NOT A LICENSE KEY**',
+})
+def test_flexible_events_harvested(whitelist_event):
+    app = Application('Python Agent Test (Harvest Loop)')
+    app.connect_to_data_collector(None)
+
+    settings.event_harvest_config.whitelist = frozenset((whitelist_event,))
+    app._stats_engine.reset_stats(settings)
+
+    app._stats_engine.transaction_events.add('transaction event')
+    app._stats_engine.error_events.add('error event')
+    app._stats_engine.custom_events.add('custom event')
+    app._stats_engine.span_events.add('span event')
+    app._stats_engine.record_custom_metric('CustomMetric/Int', 1)
+
+    assert app._stats_engine.transaction_events.num_seen == 1
+    assert app._stats_engine.error_events.num_seen == 1
+    assert app._stats_engine.custom_events.num_seen == 1
+    assert app._stats_engine.span_events.num_seen == 1
+    assert app._stats_engine.record_custom_metric('CustomMetric/Int', 1)
+
+    app.harvest(flexible=True)
+
+    num_seen = 0 if (whitelist_event == 'analytic_event_data') else 1
+    assert app._stats_engine.transaction_events.num_seen == num_seen
+
+    num_seen = 0 if (whitelist_event == 'error_event_data') else 1
+    assert app._stats_engine.error_events.num_seen == num_seen
+
+    num_seen = 0 if (whitelist_event == 'custom_event_data') else 1
+    assert app._stats_engine.custom_events.num_seen == num_seen
+
+    num_seen = 0 if (whitelist_event == 'span_event_data') else 1
+    assert app._stats_engine.span_events.num_seen == num_seen
+
+    assert ('CustomMetric/Int', '') in app._stats_engine.stats_table
+    assert app._stats_engine.metrics_count() > 1
+
+
+@pytest.mark.parametrize('whitelist_event', ('analytic_event_data',
+    'custom_event_data', 'error_event_data', 'span_event_data'))
+@override_generic_settings(settings, {
+        'developer_mode': True,
+        'license_key': '**NOT A LICENSE KEY**',
+})
+def test_default_events_harvested(whitelist_event):
+    app = Application('Python Agent Test (Harvest Loop)')
+    app.connect_to_data_collector(None)
+
+    settings.event_harvest_config.whitelist = frozenset((whitelist_event,))
+    app._stats_engine.reset_stats(settings)
+
+    app._stats_engine.transaction_events.add('transaction event')
+    app._stats_engine.error_events.add('error event')
+    app._stats_engine.custom_events.add('custom event')
+    app._stats_engine.span_events.add('span event')
+
+    assert app._stats_engine.transaction_events.num_seen == 1
+    assert app._stats_engine.error_events.num_seen == 1
+    assert app._stats_engine.custom_events.num_seen == 1
+    assert app._stats_engine.span_events.num_seen == 1
+    assert app._stats_engine.metrics_count() == 0
+
+    app.harvest(flexible=False)
+
+    num_seen = 0 if (whitelist_event != 'analytic_event_data') else 1
+    assert app._stats_engine.transaction_events.num_seen == num_seen
+
+    num_seen = 0 if (whitelist_event != 'error_event_data') else 1
+    assert app._stats_engine.error_events.num_seen == num_seen
+
+    num_seen = 0 if (whitelist_event != 'custom_event_data') else 1
+    assert app._stats_engine.custom_events.num_seen == num_seen
+
+    num_seen = 0 if (whitelist_event != 'span_event_data') else 1
+    assert app._stats_engine.span_events.num_seen == num_seen
+
+    assert app._stats_engine.metrics_count() == 1
+
+
 @failing_endpoint('analytic_event_data')
 @override_generic_settings(settings, {
         'developer_mode': True,

@@ -2470,14 +2470,13 @@ def override_generic_settings(settings_object, overrides):
 
             original = settings_object
 
-            backup = dict(original)
+            backup = copy.deepcopy(original.__dict__)
             for name, value in overrides.items():
                 apply_config_setting(original, name, value)
             return wrapped(*args, **kwargs)
         finally:
             original.__dict__.clear()
-            for name, value in backup.items():
-                apply_config_setting(original, name, value)
+            original.__dict__.update(backup)
 
     return _override_generic_settings
 

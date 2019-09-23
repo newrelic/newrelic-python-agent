@@ -32,6 +32,13 @@ def _store_version_info():
     return tornado.version_info
 
 
+def convert_yielded(*args, **kwargs):
+    global convert_yielded
+    from tornado.gen import convert_yielded as _convert_yielded
+    convert_yielded = _convert_yielded
+    return _convert_yielded(*args, **kwargs)
+
+
 def _wrap_if_not_wrapped(obj, attr, wrapper):
     wrapped = getattr(obj, attr, None)
 
@@ -271,7 +278,7 @@ def wrap_httpclient_fetch(wrapped, instance, args, kwargs):
     except:
         return wrapped(*args, **kwargs)
 
-    return fetch(req, raise_error)
+    return convert_yielded(fetch(req, raise_error))
 
 
 def instrument_tornado_httpclient(module):

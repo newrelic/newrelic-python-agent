@@ -490,6 +490,55 @@ def test_reservoir_sizes(transaction_node):
     assert app._stats_engine.span_events.num_samples == 102
 
 
+@pytest.mark.parametrize('harvest_name, event_name', [
+    ('analytic_event_data', 'transaction_events'),
+    ('error_event_data', 'error_events'),
+    ('custom_event_data', 'custom_events'),
+    ('span_event_data', 'span_events')
+])
+@override_generic_settings(settings, {
+    'developer_mode': True,
+    'license_key': '**NOT A LICENSE KEY**',
+    'feature_flag': set(),
+    'distributed_tracing.enabled': True,
+})
+def test_reservoir_size_zeros(harvest_name, event_name):
+    app = Application('Python Agent Test (Harvest Loop)')
+    app.connect_to_data_collector(None)
+
+    setattr(settings.event_harvest_config.harvest_limits, harvest_name, 0)
+    settings.event_harvest_config.whitelist = frozenset(())
+    app._stats_engine.reset_stats(settings)
+
+    app._stats_engine.transaction_events.add('transaction event')
+    app._stats_engine.error_events.add('error event')
+    app._stats_engine.custom_events.add('custom event')
+    app._stats_engine.span_events.add('span event')
+
+    assert app._stats_engine.transaction_events.num_seen == 1
+    assert app._stats_engine.error_events.num_seen == 1
+    assert app._stats_engine.custom_events.num_seen == 1
+    assert app._stats_engine.span_events.num_seen == 1
+
+    stat_events = set(('transaction_events', 'error_events', 'custom_events',
+    'span_events'))
+
+    for stat_event in stat_events:
+        event = getattr(app._stats_engine, stat_event)
+
+        if stat_event == event_name:
+            assert event.num_samples == 0
+        else:
+            assert event.num_samples == 1
+
+    app.harvest()
+
+    assert app._stats_engine.transaction_events.num_seen == 0
+    assert app._stats_engine.error_events.num_seen == 0
+    assert app._stats_engine.custom_events.num_seen == 0
+    assert app._stats_engine.span_events.num_seen == 0
+
+
 @pytest.mark.parametrize('events_seen', (1, 5, 10))
 def test_error_event_sampling_info(events_seen):
 

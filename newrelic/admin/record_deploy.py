@@ -140,8 +140,9 @@ def local_config(args):
         raise RuntimeError(
             "An unexpected HTTP response of %r was received "
             "for request made to %r. The API key for the request was "
-            "%r. The payload for the request was %r. If this issue "
+            "%r. The payload for the request was %r. The response "
+            "payload for the request was %r. If this issue "
             "persists then please report this problem to New Relic "
             "support for further investigation."
-            % (r.status_code, url, api_key, data)
+            % (r.status_code, url, api_key, data, r.json())
         )

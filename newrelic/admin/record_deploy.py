@@ -5,6 +5,7 @@ import os
 import json
 
 import newrelic.packages.requests.adapters as adapters
+
 unpatched_request_url = adapters.HTTPAdapter.request_url
 
 from newrelic.admin import command, usage
@@ -71,6 +72,8 @@ def local_config(args):
 
     if host == "collector.newrelic.com":
         host = "api.newrelic.com"
+    elif host.startswith("collector.eu"):
+        host = "api.eu.newrelic.com"
     elif host == "staging-collector.newrelic.com":
         host = "staging-api.newrelic.com"
 

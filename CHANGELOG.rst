@@ -1,6 +1,9 @@
 unreleased
 ----------
 
+5.2.0 (2019-10-01)
+------------------
+
 - Update newrelic-admin script to record deployments for applications
 
   The script has been updated to support deployment timestamps and recording

@@ -6,6 +6,7 @@ interacting with the agent core.
 import os
 import sys
 import time
+import sched
 import logging
 import threading
 import atexit
@@ -149,8 +150,6 @@ class Agent(object):
                         'newrelic-admin command with command line of %s.',
                         os.environ['NEW_RELIC_ADMIN_COMMAND'])
 
-        instance = None
-
         with Agent._instance_lock:
             if not Agent._instance:
                 if settings.debug.log_agent_initialization:
@@ -165,22 +164,13 @@ class Agent(object):
                             ''.join(traceback.format_stack()[:-1]))
 
                 instance = Agent(settings)
-
-                Agent._instance = instance
-
-            if instance:
-                _logger.debug('Activating agent instance.')
-
-                instance.activate_agent()
-
                 _logger.debug('Registering builtin data sources.')
 
                 instance.register_data_source(cpu_usage_data_source)
                 instance.register_data_source(memory_usage_data_source)
                 instance.register_data_source(thread_utilization_data_source)
 
-                for callable in Agent._startup_callables:
-                    callable()
+                Agent._instance = instance
 
         return Agent._instance
 
@@ -204,10 +194,13 @@ class Agent(object):
         self._harvest_thread.setDaemon(True)
         self._harvest_shutdown = threading.Event()
 
-        self._harvest_count = 0
-        self._last_harvest = 0.0
-        self._harvest_duration = 0.0
-        self._next_harvest = 0.0
+        self._default_harvest_count = 0
+        self._flexible_harvest_count = 0
+        self._last_default_harvest = 0.0
+        self._last_flexible_harvest = 0.0
+        self._default_harvest_duration = 0.0
+        self._flexible_harvest_duration = 0.0
+        self._scheduler = None
 
         self._process_shutdown = False
 
@@ -246,14 +239,18 @@ class Agent(object):
                 time.asctime(time.localtime(self._creation_time)))
         print >> file, 'Initialization PID: %s' % (
                 self._process_id)
-        print >> file, 'Harvest Count: %d' % (
-                self._harvest_count)
-        print >> file, 'Last Harvest: %s' % (
-                time.asctime(time.localtime(self._last_harvest)))
-        print >> file, 'Harvest Duration: %.2f' % (
-                self._harvest_duration)
-        print >> file, 'Next Harvest: %s' % (
-                time.asctime(time.localtime(self._next_harvest)))
+        print >> file, 'Default Harvest Count: %d' % (
+                self._default_harvest_count)
+        print >> file, 'Flexible Harvest Count: %d' % (
+                self._flexible_harvest_count)
+        print >> file, 'Last Default Harvest: %s' % (
+                time.asctime(time.localtime(self._last_default_harvest)))
+        print >> file, 'Last Flexible Harvest: %s' % (
+                time.asctime(time.localtime(self._last_flexible_harvest)))
+        print >> file, 'Default Harvest Duration: %.2f' % (
+                self._default_harvest_duration)
+        print >> file, 'Flexible Harvest Duration: %.2f' % (
+                self._flexible_harvest_duration)
         print >> file, 'Agent Shutdown: %s' % (
                 self._harvest_shutdown.isSet())
         print >> file, 'Applications: %r' % (
@@ -398,7 +395,7 @@ class Agent(object):
             # the period of the timeout.
 
             if activate_session:
-                application.activate_session(timeout)
+                application.activate_session(self.activate_agent, timeout)
 
     @property
     def applications(self):
@@ -543,7 +540,8 @@ class Agent(object):
         application.record_transaction(data, profile_samples)
 
         if self._config.serverless_mode.enabled:
-            application.harvest()
+            application.harvest(flexible=True)
+            application.harvest(flexible=False)
 
     def normalize_name(self, app_name, name, rule_type='url'):
         application = self._applications.get(app_name, None)
@@ -556,63 +554,89 @@ class Agent(object):
         application = self._applications.get(app_name, None)
         return application.compute_sampled()
 
+    def _harvest_flexible(self):
+        _logger.debug('Commencing flexible harvest of application data.')
+
+        self._flexible_harvest_count += 1
+        self._last_flexible_harvest = time.time()
+
+        for application in list(six.itervalues(self._applications)):
+            try:
+                application.harvest(shutdown=False, flexible=True)
+            except Exception:
+                _logger.exception('Failed to harvest data '
+                                  'for %s.' % application.name)
+
+        self._flexible_harvest_duration = \
+                time.time() - self._last_flexible_harvest
+
+        _logger.debug('Completed flexible harvest of application data in %.2f '
+                'seconds.', self._flexible_harvest_duration)
+
+        if not self._harvest_shutdown.isSet():
+            event_harvest_config = self.global_settings().event_harvest_config
+
+            self._scheduler.enter(
+                    event_harvest_config.report_period_ms / 1000.0,
+                    1,
+                    self._harvest_flexible,
+                    ())
+
+    def _harvest_default(self):
+        shutdown = self._harvest_shutdown.isSet()
+
+        if shutdown:
+            _logger.debug('Commencing default harvest of application data and '
+                    'forcing a shutdown at the same time.')
+        else:
+            _logger.debug('Commencing default harvest of application data.')
+
+        self._default_harvest_count += 1
+        self._last_default_harvest = time.time()
+
+        for application in list(six.itervalues(self._applications)):
+            try:
+                application.harvest(shutdown, flexible=False)
+            except Exception:
+                _logger.exception('Failed to harvest data '
+                                  'for %s.' % application.name)
+
+        self._default_harvest_duration = \
+                time.time() - self._last_default_harvest
+
+        _logger.debug('Completed default harvest of application data in %.2f '
+                'seconds.', self._default_harvest_duration)
+
+        if not shutdown:
+            self._scheduler.enter(60.0, 2, self._harvest_default, ())
+
+    def _harvest_timer(self):
+        if self._harvest_shutdown.isSet():
+            return float("inf")
+        return time.time()
+
     def _harvest_loop(self):
         _logger.debug('Entering harvest loop.')
 
-        self._next_harvest = time.time()
+        settings = newrelic.core.config.global_settings()
+        event_harvest_config = settings.event_harvest_config
+
+        self._scheduler = sched.scheduler(
+                self._harvest_timer,
+                self._harvest_shutdown.wait)
+        self._scheduler.enter(
+                event_harvest_config.report_period_ms / 1000.0,
+                1,
+                self._harvest_flexible,
+                ())
+        self._scheduler.enter(
+                60.0,
+                2,
+                self._harvest_default,
+                ())
 
         try:
-            while True:
-                if self._harvest_shutdown.isSet():
-                    # NOTE We would have just finished a harvest or only
-                    # just started the agent, so we could skip doing a
-                    # forced harvest, or at least if most recent harvest
-                    # was started within in certain period of time. The
-                    # chances of it occuring are probably slim enough
-                    # that is not an issue.
-
-                    self._run_harvest(shutdown=True)
-
-                    return
-
-                # We are either going into the loop the first time, or
-                # something really went wrong here and we are overdue
-                # already for next harvest. This can happen when we have
-                # a large number of applications. Can also happen if
-                # clock is changed significantly. Skip it and wait until
-                # the next harvest time instead.
-                #
-                # NOTE This does mean that we aren't going to report on
-                # 1 minute intervals when have lots of applications. We
-                # need to look at using multiple threads when have lots
-                # of applications. Also need to fix problem whereby one
-                # all applications created, that only the first
-                # application will reliably report on an even minute as
-                # when the others report will depend on how long the
-                # first takes.
-
-                now = time.time()
-                while self._next_harvest <= now:
-                    self._next_harvest += 60.0
-
-                # Wait until next harvest period but drop out and force
-                # harvest if been notified that process is being
-                # shutdown.
-
-                delay = self._next_harvest - now
-                self._harvest_shutdown.wait(delay)
-
-                if self._harvest_shutdown.isSet():
-                    # Force a final harvest on agent shutdown.
-
-                    self._run_harvest(shutdown=True)
-
-                    return
-
-                # Run the normal harvest cycle.
-
-                self._run_harvest(shutdown=False)
-
+            self._scheduler.run()
         except Exception:
             # An unexpected error, possibly some sort of internal agent
             # implementation issue or more likely due to modules being
@@ -634,59 +658,36 @@ class Agent(object):
                         'loop. Please report this problem to New Relic '
                         'support for further investigation.')
 
-    def _run_harvest(self, shutdown=False):
-        # This isn't going to maintain order of applications
-        # such that oldest is always done first. A new one could
-        # come in earlier once added and upset the overall
-        # timing. The data collector should cope with this
-        # though.
-
-        if shutdown:
-            _logger.debug('Commencing harvest of all application data and '
-                    'forcing a shutdown at the same time.')
-        else:
-            _logger.debug('Commencing harvest of all application data.')
-
-        self._harvest_count += 1
-        self._last_harvest = time.time()
-
-        for application in list(six.itervalues(self._applications)):
-            try:
-                application.harvest(shutdown)
-            except Exception:
-                _logger.exception('Failed to harvest data '
-                                  'for %s.' % application.name)
-
-        self._harvest_duration = time.time() - self._last_harvest
-
-        _logger.debug('Completed harvest of all application data in %.2f '
-                'seconds.', self._harvest_duration)
-
     def activate_agent(self):
         """Starts the main background for the agent."""
+        with Agent._instance_lock:
+            # Skip this if agent is not actually enabled.
+            if not self._config.enabled:
+                _logger.warning('The Python Agent is not enabled.')
+                return
+            elif self._config.serverless_mode.enabled:
+                _logger.debug(
+                        'Harvest thread is disabled due to serverless mode.')
+                return
+            elif self._config.debug.disable_harvest_until_shutdown:
+                _logger.debug('Harvest thread is disabled.')
+                return
 
-        # Skip this if agent is not actually enabled.
+            # Skip this if background thread already running.
 
-        if not self._config.enabled:
-            _logger.warning('The Python Agent is not enabled.')
-            return
-        elif self._config.serverless_mode.enabled:
-            _logger.debug('Harvest thread is disabled due to serverless mode.')
-            return
-        elif self._config.debug.disable_harvest_until_shutdown:
-            _logger.debug('Harvest thread is disabled.')
-            return
+            if self._harvest_thread.isAlive():
+                return
 
-        # Skip this if background thread already running.
+            _logger.debug('Activating agent instance.')
 
-        if self._harvest_thread.isAlive():
-            return
+            for callable in self._startup_callables:
+                callable()
 
-        _logger.debug('Start Python Agent main thread.')
+            _logger.debug('Start Python Agent main thread.')
 
-        self._harvest_thread.start()
+            self._harvest_thread.start()
 
-        self._process_id = os.getpid()
+            self._process_id = os.getpid()
 
     def _atexit_shutdown(self):
         """Triggers agent shutdown but flags first that this is being

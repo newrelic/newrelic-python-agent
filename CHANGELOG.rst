@@ -1,6 +1,20 @@
 unreleased
 ----------
 
+5.2.0 (2019-10-01)
+------------------
+
+- Update newrelic-admin script to record deployments for applications
+
+  The script has been updated to support deployment timestamps and recording
+  deployments to EU accounts. 
+
+- Update the Tornado instrumentation to fix a crash in Tornado versions >= 6.1
+
+  Tornado 6.1 internals changed in a way that caused the agent's built-in
+  Tornado instrumentation to fail. The instrumentation has now been updated to
+  match the Tornado 6.1 internals.
+
 5.0.2 (2019-08-12)
 ------------------
 

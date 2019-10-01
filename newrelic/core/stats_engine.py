@@ -31,6 +31,14 @@ from newrelic.common.encoding_utils import json_encode
 
 _logger = logging.getLogger(__name__)
 
+EVENT_HARVEST_METHODS = {
+    'analytic_event_data': ('reset_transaction_events',
+                            'reset_synthetics_events',),
+    'span_event_data': ('reset_span_events',),
+    'custom_event_data': ('reset_custom_events',),
+    'error_event_data': ('reset_error_events',),
+}
+
 
 def c2t(count=0, total=0.0, min=0.0, max=0.0, sum_of_squares=0.0):
     return (count, total, total, min, max, sum_of_squares)
@@ -404,17 +412,17 @@ class StatsEngine(object):
     def __init__(self):
         self.__settings = None
         self.__stats_table = {}
-        self.__transaction_events = SampledDataSet()
-        self.__error_events = SampledDataSet()
-        self.__custom_events = SampledDataSet()
-        self.__span_events = SampledDataSet()
+        self._transaction_events = SampledDataSet()
+        self._error_events = SampledDataSet()
+        self._custom_events = SampledDataSet()
+        self._span_events = SampledDataSet()
         self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__slow_transaction_map = {}
         self.__slow_transaction_old_duration = None
         self.__slow_transaction_dry_harvests = 0
         self.__transaction_errors = []
-        self.__synthetics_events = LimitedDataSet()
+        self._synthetics_events = LimitedDataSet()
         self.__synthetics_transactions = []
         self.__xray_transactions = []
         self.xray_sessions = {}
@@ -429,19 +437,19 @@ class StatsEngine(object):
 
     @property
     def transaction_events(self):
-        return self.__transaction_events
+        return self._transaction_events
 
     @property
     def custom_events(self):
-        return self.__custom_events
+        return self._custom_events
 
     @property
     def span_events(self):
-        return self.__span_events
+        return self._span_events
 
     @property
     def synthetics_events(self):
-        return self.__synthetics_events
+        return self._synthetics_events
 
     @property
     def synthetics_transactions(self):
@@ -449,7 +457,7 @@ class StatsEngine(object):
 
     @property
     def error_events(self):
-        return self.__error_events
+        return self._error_events
 
     def metrics_count(self):
         """Returns a count of the number of unique metrics currently
@@ -687,7 +695,7 @@ class StatsEngine(object):
 
         if error_collector.capture_events and settings.collect_error_events:
             event = self._error_event(error_details)
-            self.__error_events.add(event)
+            self._error_events.add(event)
 
         if settings.collect_errors and (len(self.__transaction_errors) <
                 settings.agent_limits.errors_per_harvest):
@@ -726,7 +734,7 @@ class StatsEngine(object):
 
         if (settings.collect_custom_events and
                 settings.custom_insights_events.enabled):
-            self.__custom_events.add(event)
+            self._custom_events.add(event)
 
     def record_custom_metric(self, name, value):
         """Record a single value metric, merging the data with any data
@@ -921,7 +929,7 @@ class StatsEngine(object):
                 settings.collect_error_events):
             events = transaction.error_events(self.__stats_table)
             for event in events:
-                self.__error_events.add(event, priority=transaction.priority)
+                self._error_events.add(event, priority=transaction.priority)
 
         # Capture any sql traces if transaction tracer enabled.
 
@@ -961,13 +969,13 @@ class StatsEngine(object):
 
         if transaction.synthetics_resource_id:
             event = transaction.transaction_event(self.__stats_table)
-            self.__synthetics_events.add(event)
+            self._synthetics_events.add(event)
 
         elif (settings.collect_analytics_events and
                 settings.transaction_events.enabled):
 
             event = transaction.transaction_event(self.__stats_table)
-            self.__transaction_events.add(event, priority=transaction.priority)
+            self._transaction_events.add(event, priority=transaction.priority)
 
         # Merge in custom events
 
@@ -980,7 +988,7 @@ class StatsEngine(object):
         if (settings.distributed_tracing.enabled and transaction.sampled and
                 settings.span_events.enabled and settings.collect_span_events):
             for event in transaction.span_events(self.__settings):
-                self.__span_events.add(event, priority=transaction.priority)
+                self._span_events.add(event, priority=transaction.priority)
 
     def metric_data(self, normalizer=None):
         """Returns a list containing the low level metric data for
@@ -1351,31 +1359,35 @@ class StatsEngine(object):
         """
 
         if self.__settings is not None:
-            self.__transaction_events = SampledDataSet(
-                    self.__settings.transaction_events.max_samples_stored)
+            self._transaction_events = SampledDataSet(
+                    self.__settings.event_harvest_config.
+                    harvest_limits.analytic_event_data)
         else:
-            self.__transaction_events = SampledDataSet()
+            self._transaction_events = SampledDataSet()
 
     def reset_error_events(self):
         if self.__settings is not None:
-            self.__error_events = SampledDataSet(
-                    self.__settings.error_collector.max_event_samples_stored)
+            self._error_events = SampledDataSet(
+                    self.__settings.event_harvest_config.
+                    harvest_limits.error_event_data)
         else:
-            self.__error_events = SampledDataSet()
+            self._error_events = SampledDataSet()
 
     def reset_custom_events(self):
         if self.__settings is not None:
-            self.__custom_events = SampledDataSet(
-                    self.__settings.custom_insights_events.max_samples_stored)
+            self._custom_events = SampledDataSet(
+                    self.__settings.event_harvest_config.
+                    harvest_limits.custom_event_data)
         else:
-            self.__custom_events = SampledDataSet()
+            self._custom_events = SampledDataSet()
 
     def reset_span_events(self):
         if self.__settings is not None:
-            self.__span_events = SampledDataSet(
-                    self.__settings.span_events.max_samples_stored)
+            self._span_events = SampledDataSet(
+                    self.__settings.event_harvest_config.
+                    harvest_limits.span_event_data)
         else:
-            self.__span_events = SampledDataSet()
+            self._span_events = SampledDataSet()
 
     def reset_synthetics_events(self):
         """Resets the accumulated statistics back to initial state for
@@ -1383,12 +1395,12 @@ class StatsEngine(object):
 
         """
         if self.__settings is not None:
-            self.__synthetics_events = LimitedDataSet(
+            self._synthetics_events = LimitedDataSet(
                     self.__settings.agent_limits.synthetics_events)
         else:
-            self.__synthetics_events = LimitedDataSet()
+            self._synthetics_events = LimitedDataSet()
 
-    def harvest_snapshot(self):
+    def harvest_snapshot(self, flexible=False):
         """Creates a snapshot of the accumulated statistics, error
         details and slow transaction and returns it. This is a shallow
         copy, only copying the top level objects. The originals are then
@@ -1399,63 +1411,91 @@ class StatsEngine(object):
         to snapshot the data when doing the harvest.
 
         """
+        snapshot = self._snapshot()
 
-        stats = copy.copy(self)
+        event_harvest_whitelist = \
+                self.__settings.event_harvest_config.whitelist
 
-        # The slow transaction map is retained but we need to
-        # perform some housework on each harvest snapshot. What
-        # we do is add the slow transaction to the map of
-        # transactions and if we reach the threshold for maximum
-        # number we clear the table. Also clear the table if
-        # have number of harvests where no slow transaction was
-        # collected.
+        # Data types only appear in one place, so during a snapshot it must be
+        # represented in either the snapshot or in the current stats object.
+        #
+        #   If we're in flexible harvest, the goal is to have everything in the
+        #   whitelist appear in the snapshot. This means, we must remove the
+        #   whitelist data types from the current stats object.
+        #
+        #   If we're not in flexible harvest, everything excluded from the
+        #   whitelist appears in the snapshot and is removed from the current
+        #   stats object.
+        if flexible:
+            whitelist_stats, other_stats = self, snapshot
+        else:
+            whitelist_stats, other_stats = snapshot, self
 
-        if self.__settings is None:
-            self.__slow_transaction_dry_harvests = 0
-            self.__slow_transaction_map = {}
-            self.__slow_transaction_old_duration = None
+        # Iterate through event harvest types if they are in
+        # the list of events to harvest reset them on stats_engine
+        # otherwise remove them from the snapshot.
+        for event, methods in EVENT_HARVEST_METHODS.items():
+            for method in methods:
+                if event in event_harvest_whitelist:
+                    reset = getattr(whitelist_stats, method)
+                else:
+                    reset = getattr(other_stats, method)
 
-        elif self.__slow_transaction is None:
-            self.__slow_transaction_dry_harvests += 1
-            agent_limits = self.__settings.agent_limits
-            dry_harvests = agent_limits.slow_transaction_dry_harvests
-            if self.__slow_transaction_dry_harvests >= dry_harvests:
+                reset()
+
+        # If we are not in a flexible harvest metrics and traces need to be
+        # reset on the stats object. If we are in a flexible harvest metrics
+        # are left on the stats object for when the default harvest occurs
+        # however they are still included on the snapshot so when harvesting we
+        # need to make sure to not send the data.
+        if not flexible:
+            # The slow transaction map is retained but we need to
+            # perform some housework on each harvest snapshot. What
+            # we do is add the slow transaction to the map of
+            # transactions and if we reach the threshold for maximum
+            # number we clear the table. Also clear the table if
+            # have number of harvests where no slow transaction was
+            # collected.
+            if self.__settings is None:
                 self.__slow_transaction_dry_harvests = 0
                 self.__slow_transaction_map = {}
                 self.__slow_transaction_old_duration = None
 
-        else:
-            self.__slow_transaction_dry_harvests = 0
-            name = self.__slow_transaction.path
-            duration = self.__slow_transaction.duration
-            self.__slow_transaction_map[name] = duration
+            elif self.__slow_transaction is None:
+                self.__slow_transaction_dry_harvests += 1
+                agent_limits = self.__settings.agent_limits
+                dry_harvests = agent_limits.slow_transaction_dry_harvests
+                if self.__slow_transaction_dry_harvests >= dry_harvests:
+                    self.__slow_transaction_dry_harvests = 0
+                    self.__slow_transaction_map = {}
+                    self.__slow_transaction_old_duration = None
 
-            top_n = self.__settings.transaction_tracer.top_n
-            if len(self.__slow_transaction_map) >= top_n:
-                self.__slow_transaction_map = {}
-                self.__slow_transaction_old_duration = None
+            else:
+                self.__slow_transaction_dry_harvests = 0
+                name = self.__slow_transaction.path
+                duration = self.__slow_transaction.duration
+                self.__slow_transaction_map[name] = duration
 
-        # We also retain the table of metric IDs. This should be
-        # okay for continuing connection. If connection is lost
-        # then reset_engine() above would be called and it would
-        # be all thrown away so no chance of following through
-        # with incorrect mappings. Everything else is reset to
-        # initial values.
+                top_n = self.__settings.transaction_tracer.top_n
+                if len(self.__slow_transaction_map) >= top_n:
+                    self.__slow_transaction_map = {}
+                    self.__slow_transaction_old_duration = None
 
-        self.__stats_table = {}
-        self.__sql_stats_table = {}
-        self.__slow_transaction = None
-        self.__transaction_errors = []
-        self.__xray_transactions = []
-        self.__synthetics_transactions = []
+            # We also retain the table of metric IDs. This should be
+            # okay for continuing connection. If connection is lost
+            # then reset_engine() above would be called and it would
+            # be all thrown away so no chance of following through
+            # with incorrect mappings. Everything else is reset to
+            # initial values.
 
-        self.reset_transaction_events()
-        self.reset_error_events()
-        self.reset_custom_events()
-        self.reset_span_events()
-        self.reset_synthetics_events()
+            self.__stats_table = {}
+            self.__sql_stats_table = {}
+            self.__slow_transaction = None
+            self.__transaction_errors = []
+            self.__xray_transactions = []
+            self.__synthetics_transactions = []
 
-        return stats
+        return snapshot
 
     def create_workarea(self):
         """Creates and returns a new empty stats engine object. This would
@@ -1536,12 +1576,14 @@ class StatsEngine(object):
         # StatsEngine, and self is still the current main StatsEngine. Then
         # we are merging multiple events, but still using the reservoir
         # sampling that gives equal probability for keeping all events
-
+        events = snapshot.transaction_events
+        if not events:
+            return
         if rollback:
-            self.__transaction_events.merge(snapshot.__transaction_events)
+            self._transaction_events.merge(events)
         else:
-            if snapshot.__transaction_events.num_samples == 1:
-                self.__transaction_events.merge(snapshot.__transaction_events)
+            if events.num_samples == 1:
+                self._transaction_events.merge(events)
 
     def _merge_synthetics_events(self, snapshot, rollback=False):
 
@@ -1555,24 +1597,32 @@ class StatsEngine(object):
         # StatsEngine, and self is still the current main StatsEngine,
         # Thus, the events already existing in this object will be newer than
         # those in snapshot, and we favor the newer events.
-
-        self.__synthetics_events.merge(snapshot.__synthetics_events)
+        events = snapshot.synthetics_events
+        if not events:
+            return
+        self._synthetics_events.merge(events)
 
     def _merge_error_events(self, snapshot):
 
         # Merge in error events. Since we are using reservoir sampling that
         # gives equal probability to keeping each event, merge is the same as
         # rollback. There may be multiple error events per transaction.
-
-        self.__error_events.merge(snapshot.error_events)
+        events = snapshot.error_events
+        if not events:
+            return
+        self._error_events.merge(events)
 
     def _merge_custom_events(self, snapshot, rollback=False):
-
-        self.__custom_events.merge(snapshot.custom_events)
+        events = snapshot.custom_events
+        if not events:
+            return
+        self._custom_events.merge(events)
 
     def _merge_span_events(self, snapshot, rollback=False):
-
-        self.__span_events.merge(snapshot.span_events)
+        events = snapshot.span_events
+        if not events:
+            return
+        self._span_events.merge(events)
 
     def _merge_error_traces(self, snapshot):
 
@@ -1652,3 +1702,25 @@ class StatsEngine(object):
                 self.__stats_table[key] = other
             else:
                 stats.merge_stats(other)
+
+    def _snapshot(self):
+        copy = object.__new__(StatsEngineSnapshot)
+        copy.__dict__.update(self.__dict__)
+        return copy
+
+
+class StatsEngineSnapshot(StatsEngine):
+    def reset_transaction_events(self):
+        self._transaction_events = None
+
+    def reset_custom_events(self):
+        self._custom_events = None
+
+    def reset_span_events(self):
+        self._span_events = None
+
+    def reset_synthetics_events(self):
+        self._synthetics_events = None
+
+    def reset_error_events(self):
+        self._error_events = None

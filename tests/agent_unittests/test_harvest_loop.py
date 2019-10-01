@@ -258,7 +258,7 @@ endpoints_called = []
 })
 def test_application_harvest(audit_log_file):
     app = Application('Python Agent Test (Harvest Loop)')
-    app.connect_to_data_collector()
+    app.connect_to_data_collector(None)
     app.harvest()
 
     # Verify that the metric_data endpoint is the 2nd to last endpoint called
@@ -277,7 +277,7 @@ def test_application_harvest(audit_log_file):
 })
 def test_serverless_application_harvest(audit_log_file):
     app = Application('Python Agent Test (Serverless Harvest Loop)')
-    app.connect_to_data_collector()
+    app.connect_to_data_collector(None)
     app.harvest()
 
     # verify audit log is not empty
@@ -320,11 +320,12 @@ def test_application_harvest_with_spans(distributed_tracing_enabled,
         'license_key': '**NOT A LICENSE KEY**',
         'distributed_tracing.enabled': distributed_tracing_enabled,
         'span_events.enabled': span_events_enabled,
-        'span_events.max_samples_stored': max_samples_stored,
+        'event_harvest_config.harvest_limits.span_event_data':
+            max_samples_stored,
     })
     def _test():
         app = Application('Python Agent Test (Harvest Loop)')
-        app.connect_to_data_collector()
+        app.connect_to_data_collector(None)
 
         for _ in range(spans_created):
             app._stats_engine.span_events.add('event')
@@ -362,7 +363,7 @@ def test_failed_spans_harvest(span_events_enabled):
         # harvest.
 
         app = Application('Python Agent Test (Harvest Loop)')
-        app.connect_to_data_collector()
+        app.connect_to_data_collector(None)
 
         app._stats_engine.span_events.add('event')
         assert app._stats_engine.span_events.num_samples == 1
@@ -380,7 +381,7 @@ def test_failed_spans_harvest(span_events_enabled):
 })
 def test_transaction_count(transaction_node):
     app = Application('Python Agent Test (Harvest Loop)')
-    app.connect_to_data_collector()
+    app.connect_to_data_collector(None)
 
     app.record_transaction(transaction_node)
 
@@ -413,7 +414,7 @@ def test_adaptive_sampling(transaction_node, monkeypatch):
     # Should always return false for sampling prior to connect
     assert app.compute_sampled() is False
 
-    app.connect_to_data_collector()
+    app.connect_to_data_collector(None)
 
     # First harvest, first N should be sampled
     for _ in range(settings.sampling_target):
@@ -470,13 +471,13 @@ def test_ca_bundle(collector_agent_registration, ca_bundle_path,
     'license_key': '**NOT A LICENSE KEY**',
     'feature_flag': set(),
     'distributed_tracing.enabled': True,
-    'error_collector.max_event_samples_stored': 1000,
-    'span_events.max_samples_stored': 1000,
-    'custom_insights_events.max_samples_stored': 1000,
+    'event_harvest_config.harvest_limits.error_event_data': 1000,
+    'event_harvest_config.harvest_limits.span_event_data': 1000,
+    'event_harvest_config.harvest_limits.custom_event_data': 1000,
 })
 def test_reservoir_sizes(transaction_node):
     app = Application('Python Agent Test (Harvest Loop)')
-    app.connect_to_data_collector()
+    app.connect_to_data_collector(None)
 
     # Record a transaction with events
     app.record_transaction(transaction_node)
@@ -487,6 +488,55 @@ def test_reservoir_sizes(transaction_node):
 
     # Add 1 for the root span
     assert app._stats_engine.span_events.num_samples == 102
+
+
+@pytest.mark.parametrize('harvest_name, event_name', [
+    ('analytic_event_data', 'transaction_events'),
+    ('error_event_data', 'error_events'),
+    ('custom_event_data', 'custom_events'),
+    ('span_event_data', 'span_events')
+])
+@override_generic_settings(settings, {
+    'developer_mode': True,
+    'license_key': '**NOT A LICENSE KEY**',
+    'feature_flag': set(),
+    'distributed_tracing.enabled': True,
+})
+def test_reservoir_size_zeros(harvest_name, event_name):
+    app = Application('Python Agent Test (Harvest Loop)')
+    app.connect_to_data_collector(None)
+
+    setattr(settings.event_harvest_config.harvest_limits, harvest_name, 0)
+    settings.event_harvest_config.whitelist = frozenset(())
+    app._stats_engine.reset_stats(settings)
+
+    app._stats_engine.transaction_events.add('transaction event')
+    app._stats_engine.error_events.add('error event')
+    app._stats_engine.custom_events.add('custom event')
+    app._stats_engine.span_events.add('span event')
+
+    assert app._stats_engine.transaction_events.num_seen == 1
+    assert app._stats_engine.error_events.num_seen == 1
+    assert app._stats_engine.custom_events.num_seen == 1
+    assert app._stats_engine.span_events.num_seen == 1
+
+    stat_events = set(('transaction_events', 'error_events', 'custom_events',
+    'span_events'))
+
+    for stat_event in stat_events:
+        event = getattr(app._stats_engine, stat_event)
+
+        if stat_event == event_name:
+            assert event.num_samples == 0
+        else:
+            assert event.num_samples == 1
+
+    app.harvest()
+
+    assert app._stats_engine.transaction_events.num_seen == 0
+    assert app._stats_engine.error_events.num_seen == 0
+    assert app._stats_engine.custom_events.num_seen == 0
+    assert app._stats_engine.span_events.num_seen == 0
 
 
 @pytest.mark.parametrize('events_seen', (1, 5, 10))
@@ -502,11 +552,12 @@ def test_error_event_sampling_info(events_seen):
     @override_generic_settings(settings, {
             'developer_mode': True,
             'license_key': '**NOT A LICENSE KEY**',
-            'error_collector.max_event_samples_stored': reservoir_size,
+            'event_harvest_config.harvest_limits.error_event_data':
+            reservoir_size,
     })
     def _test():
         app = Application('Python Agent Test (Harvest Loop)')
-        app.connect_to_data_collector()
+        app.connect_to_data_collector(None)
 
         for _ in range(events_seen):
             app._stats_engine.error_events.add('error')
@@ -527,7 +578,7 @@ def test_harvest_reset_adaptive_sampling(transaction_node, serverless_mode):
     })
     def _test():
         app = Application('Python Agent Test (Harvest Loop)')
-        app.connect_to_data_collector()
+        app.connect_to_data_collector(None)
 
         app.record_transaction(transaction_node)
 
@@ -572,7 +623,7 @@ def test_serverless_mode_adaptive_sampling(time_to_next_reset,
 
     app = Application('Python Agent Test (Harvest Loop)')
 
-    app.connect_to_data_collector()
+    app.connect_to_data_collector(None)
     app.adaptive_sampler.computed_count = 123
     app._next_adaptive_sampler_reset = time.time() + time_to_next_reset
 
@@ -587,7 +638,7 @@ def test_serverless_mode_adaptive_sampling(time_to_next_reset,
 })
 def test_compute_sampled_no_reset():
     app = Application('Python Agent Test (Harvest Loop)')
-    app.connect_to_data_collector()
+    app.connect_to_data_collector(None)
     app._next_adaptive_sampler_reset = time.time() - 1
     assert app.compute_sampled() is True
 
@@ -612,12 +663,13 @@ def test_analytic_event_sampling_info():
     @validate_transaction_event_payloads(validators)
     @override_generic_settings(settings, {
             'developer_mode': True,
-            'transaction_events.max_samples_stored': transactions_limit,
+            'event_harvest_config.harvest_limits.analytic_event_data':
+            transactions_limit,
             'agent_limits.synthetics_events': synthetics_limit,
     })
     def _test():
         app = Application('Python Agent Test (Harvest Loop)')
-        app.connect_to_data_collector()
+        app.connect_to_data_collector(None)
 
         app._stats_engine.transaction_events.add('transaction event')
         app._stats_engine.synthetics_events.add('synthetic event')
@@ -651,7 +703,7 @@ def test_analytic_event_payloads(has_synthetic_events, has_transaction_events):
     @validate_transaction_event_payloads(validators)
     def _test():
         app = Application('Python Agent Test (Harvest Loop)')
-        app.connect_to_data_collector()
+        app.connect_to_data_collector(None)
 
         if has_transaction_events:
             app._stats_engine.transaction_events.add('transaction event')
@@ -680,7 +732,7 @@ def test_transaction_events_disabled():
     @validate_metric_payload(expected_metrics, endpoints_called)
     def _test():
         app = Application('Python Agent Test (Harvest Loop)')
-        app.connect_to_data_collector()
+        app.connect_to_data_collector(None)
         app.harvest()
 
     _test()
@@ -694,7 +746,7 @@ def test_transaction_events_disabled():
 })
 def test_reset_synthetics_events():
     app = Application('Python Agent Test (Harvest Loop)')
-    app.connect_to_data_collector()
+    app.connect_to_data_collector(None)
 
     app._stats_engine.synthetics_events.add('synthetics event')
     app._stats_engine.transaction_events.add('transaction event')
@@ -708,6 +760,90 @@ def test_reset_synthetics_events():
     assert app._stats_engine.transaction_events.num_seen == 1
 
 
+@pytest.mark.parametrize('whitelist_event', ('analytic_event_data',
+    'custom_event_data', 'error_event_data', 'span_event_data'))
+@override_generic_settings(settings, {
+        'developer_mode': True,
+        'license_key': '**NOT A LICENSE KEY**',
+})
+def test_flexible_events_harvested(whitelist_event):
+    app = Application('Python Agent Test (Harvest Loop)')
+    app.connect_to_data_collector(None)
+
+    settings.event_harvest_config.whitelist = frozenset((whitelist_event,))
+    app._stats_engine.reset_stats(settings)
+
+    app._stats_engine.transaction_events.add('transaction event')
+    app._stats_engine.error_events.add('error event')
+    app._stats_engine.custom_events.add('custom event')
+    app._stats_engine.span_events.add('span event')
+    app._stats_engine.record_custom_metric('CustomMetric/Int', 1)
+
+    assert app._stats_engine.transaction_events.num_seen == 1
+    assert app._stats_engine.error_events.num_seen == 1
+    assert app._stats_engine.custom_events.num_seen == 1
+    assert app._stats_engine.span_events.num_seen == 1
+    assert app._stats_engine.record_custom_metric('CustomMetric/Int', 1)
+
+    app.harvest(flexible=True)
+
+    num_seen = 0 if (whitelist_event == 'analytic_event_data') else 1
+    assert app._stats_engine.transaction_events.num_seen == num_seen
+
+    num_seen = 0 if (whitelist_event == 'error_event_data') else 1
+    assert app._stats_engine.error_events.num_seen == num_seen
+
+    num_seen = 0 if (whitelist_event == 'custom_event_data') else 1
+    assert app._stats_engine.custom_events.num_seen == num_seen
+
+    num_seen = 0 if (whitelist_event == 'span_event_data') else 1
+    assert app._stats_engine.span_events.num_seen == num_seen
+
+    assert ('CustomMetric/Int', '') in app._stats_engine.stats_table
+    assert app._stats_engine.metrics_count() > 1
+
+
+@pytest.mark.parametrize('whitelist_event', ('analytic_event_data',
+    'custom_event_data', 'error_event_data', 'span_event_data'))
+@override_generic_settings(settings, {
+        'developer_mode': True,
+        'license_key': '**NOT A LICENSE KEY**',
+})
+def test_default_events_harvested(whitelist_event):
+    app = Application('Python Agent Test (Harvest Loop)')
+    app.connect_to_data_collector(None)
+
+    settings.event_harvest_config.whitelist = frozenset((whitelist_event,))
+    app._stats_engine.reset_stats(settings)
+
+    app._stats_engine.transaction_events.add('transaction event')
+    app._stats_engine.error_events.add('error event')
+    app._stats_engine.custom_events.add('custom event')
+    app._stats_engine.span_events.add('span event')
+
+    assert app._stats_engine.transaction_events.num_seen == 1
+    assert app._stats_engine.error_events.num_seen == 1
+    assert app._stats_engine.custom_events.num_seen == 1
+    assert app._stats_engine.span_events.num_seen == 1
+    assert app._stats_engine.metrics_count() == 0
+
+    app.harvest(flexible=False)
+
+    num_seen = 0 if (whitelist_event != 'analytic_event_data') else 1
+    assert app._stats_engine.transaction_events.num_seen == num_seen
+
+    num_seen = 0 if (whitelist_event != 'error_event_data') else 1
+    assert app._stats_engine.error_events.num_seen == num_seen
+
+    num_seen = 0 if (whitelist_event != 'custom_event_data') else 1
+    assert app._stats_engine.custom_events.num_seen == num_seen
+
+    num_seen = 0 if (whitelist_event != 'span_event_data') else 1
+    assert app._stats_engine.span_events.num_seen == num_seen
+
+    assert app._stats_engine.metrics_count() == 1
+
+
 @failing_endpoint('analytic_event_data')
 @override_generic_settings(settings, {
         'developer_mode': True,
@@ -715,7 +851,7 @@ def test_reset_synthetics_events():
 })
 def test_infinite_merges():
     app = Application('Python Agent Test (Harvest Loop)')
-    app.connect_to_data_collector()
+    app.connect_to_data_collector(None)
 
     app._stats_engine.transaction_events.add('transaction event')
 
@@ -736,7 +872,7 @@ def test_get_agent_commands_returns_none():
 
     try:
         app = Application('Python Agent Test (Harvest Loop)')
-        app.connect_to_data_collector()
+        app.connect_to_data_collector(None)
         app.process_agent_commands()
     finally:
         _developer_mode_responses['get_agent_commands'] = original_return_value
@@ -748,6 +884,6 @@ def test_get_agent_commands_returns_none():
 })
 def test_get_agent_commands_raises():
     app = Application('Python Agent Test (Harvest Loop)')
-    app.connect_to_data_collector()
+    app.connect_to_data_collector(None)
     with pytest.raises(RetryDataForRequest):
         app.process_agent_commands()

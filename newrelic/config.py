@@ -560,6 +560,18 @@ def _process_configuration(section):
                     'getboolean', None)
     _process_setting(section, 'event_loop_visibility.blocking_threshold',
                     'getfloat', None)
+    _process_setting(section,
+                    'event_harvest_config.harvest_limits.analytic_event_data',
+                    'getint', None)
+    _process_setting(section,
+                    'event_harvest_config.harvest_limits.custom_event_data',
+                    'getint', None)
+    _process_setting(section,
+                    'event_harvest_config.harvest_limits.span_event_data',
+                    'getint', None)
+    _process_setting(section,
+                    'event_harvest_config.harvest_limits.error_event_data',
+                    'getint', None)
 
 
 # Loading of configuration from specified file and for specified
@@ -722,7 +734,23 @@ def translate_deprecated_settings(settings, cached_settings):
         ),
         (
             'analytics_events.max_samples_stored',
-            'transaction_events.max_samples_stored'
+            'event_harvest_config.harvest_limits.analytic_event_data'
+        ),
+        (
+            'transaction_events.max_samples_stored',
+            'event_harvest_config.harvest_limits.analytic_event_data'
+        ),
+        (
+            'span_events.max_samples_stored',
+            'event_harvest_config.harvest_limits.span_event_data'
+        ),
+        (
+            'error_collector.max_event_samples_stored',
+            'event_harvest_config.harvest_limits.error_event_data'
+        ),
+        (
+            'custom_insights_events.max_samples_stored',
+            'event_harvest_config.harvest_limits.custom_event_data'
         ),
     ]
 

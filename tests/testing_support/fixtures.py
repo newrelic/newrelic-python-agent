@@ -1438,8 +1438,8 @@ def validate_error_event_collector_json(num_errors=1):
 
             sampling_info = decoded_json[1]
 
-            ec_settings = instance.settings.error_collector
-            reservoir_size = ec_settings.max_event_samples_stored
+            harvest_config = instance.settings.event_harvest_config
+            reservoir_size = harvest_config.harvest_limits.error_event_data
 
             assert sampling_info['reservoir_size'] == reservoir_size
             assert sampling_info['events_seen'] == num_errors
@@ -1533,7 +1533,8 @@ def validate_custom_event_collector_json(num_events=1):
             assert decoded_agent_run_id == agent_run_id
             assert decoded_sampling_info == sampling_info
 
-            max_setting = settings.custom_insights_events.max_samples_stored
+            max_setting = \
+                    settings.event_harvest_config.harvest_limits.custom_event_data
             assert decoded_sampling_info['reservoir_size'] == max_setting
 
             assert decoded_sampling_info['events_seen'] == num_events
@@ -2469,14 +2470,13 @@ def override_generic_settings(settings_object, overrides):
 
             original = settings_object
 
-            backup = dict(original)
+            backup = copy.deepcopy(original.__dict__)
             for name, value in overrides.items():
                 apply_config_setting(original, name, value)
             return wrapped(*args, **kwargs)
         finally:
             original.__dict__.clear()
-            for name, value in backup.items():
-                apply_config_setting(original, name, value)
+            original.__dict__.update(backup)
 
     return _override_generic_settings
 

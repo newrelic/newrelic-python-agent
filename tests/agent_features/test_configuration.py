@@ -24,6 +24,19 @@ def parameterize_local_config(settings_list):
     return pytest.mark.parametrize('settings', settings_object_list)
 
 
+_test_dictionary_local_config = [
+    {
+        'request_headers_map': {'NR-SESSION': 'BLANK'},
+        'event_harvest_config': {
+            'harvest_limits': {
+                'analytic_event_data': 100,
+                'custom_event_data': 100,
+                'error_event_data': 8},
+            'report_period_ms': 5000
+        },
+    }
+]
+
 _test_strip_proxy_details_local_configs = [
     {
         'license_key': 'LICENSE-KEY',
@@ -208,6 +221,23 @@ _test_strip_proxy_details_local_configs = [
 ]
 
 
+@parameterize_local_config(_test_dictionary_local_config)
+def test_dict_parse(settings):
+
+    assert 'NR-SESSION' in settings.request_headers_map
+
+    config = settings.event_harvest_config
+
+    assert 'harvest_limits' in config
+    assert 'report_period_ms' in config
+
+    limits = config.harvest_limits
+
+    assert 'analytic_event_data' in limits
+    assert 'custom_event_data' in limits
+    assert 'error_event_data' in limits
+
+
 @parameterize_local_config(_test_strip_proxy_details_local_configs)
 def test_strip_proxy_details(settings):
     assert 'license_key' in settings
@@ -335,12 +365,55 @@ translate_settings_tests = [
     ),
     (
         TSetting('analytics_events.max_samples_stored', 1200, 1200),
-        TSetting('transaction_events.max_samples_stored', 9999, 1200)
+        TSetting('event_harvest_config.harvest_limits.analytic_event_data',
+            9999, 1200)
     ),
     (
         TSetting('analytics_events.max_samples_stored', 9999, 1200),
-        TSetting('transaction_events.max_samples_stored', 1200, 1200)
+        TSetting('event_harvest_config.harvest_limits.analytic_event_data',
+            1200, 1200)
     ),
+    (
+        TSetting('transaction_events.max_samples_stored', 1200, 1200),
+        TSetting('event_harvest_config.harvest_limits.analytic_event_data',
+            9999, 1200)
+    ),
+    (
+        TSetting('transaction_events.max_samples_stored', 9999, 1200),
+        TSetting('event_harvest_config.harvest_limits.analytic_event_data',
+            1200, 1200)
+    ),
+    (
+        TSetting('span_events.max_samples_stored', 1000, 1000),
+        TSetting('event_harvest_config.harvest_limits.span_event_data',
+            9999, 1000)
+    ),
+    (
+        TSetting('span_events.max_samples_stored', 9999, 1000),
+        TSetting('event_harvest_config.harvest_limits.span_event_data',
+            1000, 1000)
+    ),
+    (
+        TSetting('error_collector.max_event_samples_stored', 100, 100),
+        TSetting('event_harvest_config.harvest_limits.error_event_data',
+            9999, 100)
+    ),
+    (
+        TSetting('error_collector.max_event_samples_stored', 9999, 100),
+        TSetting('event_harvest_config.harvest_limits.error_event_data',
+            100, 100)
+    ),
+    (
+        TSetting('custom_insights_events.max_samples_stored', 1200, 1200),
+        TSetting('event_harvest_config.harvest_limits.custom_event_data',
+            9999, 1200)
+    ),
+    (
+        TSetting('custom_insights_events.max_samples_stored', 9999, 1200),
+        TSetting('event_harvest_config.harvest_limits.custom_event_data',
+            1200, 1200)
+    ),
+
 ]
 
 

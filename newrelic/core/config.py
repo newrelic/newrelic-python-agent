@@ -13,6 +13,7 @@ import os
 import logging
 import copy
 import re
+import threading
 
 from newrelic.core.attribute_filter import AttributeFilter
 
@@ -27,10 +28,6 @@ except ImportError:
 
 DEFAULT_RESERVOIR_SIZE = 1200
 ERROR_EVENT_RESERVOIR_SIZE = 100
-
-# SPAN_EVENT_RESERVOIR_SIZE is both the default value for the span event
-# reservoir capacity, as well as its maximum possible value. server-side
-# config could adjust it lower, but not higher, than this value.
 SPAN_EVENT_RESERVOIR_SIZE = 1000
 
 # settings that should be completely ignored if set server side
@@ -55,6 +52,8 @@ _logger.addHandler(_NullHandler())
 # sub categories we don't know about.
 
 class Settings(object):
+    nested = False
+
     def __repr__(self):
         return repr(self.__dict__)
 
@@ -63,6 +62,10 @@ class Settings(object):
 
     def __contains__(self, item):
         return hasattr(self, item)
+
+
+def create_settings(nested):
+    return type('Settings', (Settings,), {'nested': nested})()
 
 
 class AttributesSettings(Settings):
@@ -209,6 +212,27 @@ class EventLoopVisibilitySettings(Settings):
     pass
 
 
+class EventHarvestConfigSettings(Settings):
+    nested = True
+    _lock = threading.Lock()
+
+    @property
+    def report_period_ms(self):
+        with self._lock:
+            return vars(_settings.event_harvest_config).get(
+                    "report_period_ms", 60 * 1000)
+
+    @report_period_ms.setter
+    def report_period_ms(self, value):
+        with self._lock:
+            vars(_settings.event_harvest_config)["report_period_ms"] = value
+            vars(self)["report_period_ms"] = value
+
+
+class EventHarvestConfigHarvestLimitSettings(Settings):
+    nested = True
+
+
 _settings = Settings()
 _settings.attributes = AttributesSettings()
 _settings.thread_profiler = ThreadProfilerSettings()
@@ -249,6 +273,10 @@ _settings.transaction_segments.attributes = \
         TransactionSegmentAttributesSettings()
 _settings.distributed_tracing = DistributedTracingSettings()
 _settings.serverless_mode = ServerlessModeSettings()
+_settings.event_harvest_config = EventHarvestConfigSettings()
+_settings.event_harvest_config.harvest_limits = \
+        EventHarvestConfigHarvestLimitSettings()
+
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 _settings.audit_log_file = os.environ.get('NEW_RELIC_AUDIT_LOG', None)
@@ -496,19 +524,16 @@ _settings.cross_application_tracer.enabled = True
 _settings.xray_session.enabled = True
 
 _settings.transaction_events.enabled = True
-_settings.transaction_events.max_samples_stored = DEFAULT_RESERVOIR_SIZE
 _settings.transaction_events.attributes.enabled = True
 _settings.transaction_events.attributes.exclude = []
 _settings.transaction_events.attributes.include = []
 
 _settings.custom_insights_events.enabled = True
-_settings.custom_insights_events.max_samples_stored = DEFAULT_RESERVOIR_SIZE
 
 _settings.distributed_tracing.enabled = _environ_as_bool(
         'NEW_RELIC_DISTRIBUTED_TRACING_ENABLED', default=False)
 _settings.span_events.enabled = _environ_as_bool(
         'NEW_RELIC_SPAN_EVENTS_ENABLED', default=True)
-_settings.span_events.max_samples_stored = SPAN_EVENT_RESERVOIR_SIZE
 _settings.span_events.attributes.enabled = True
 _settings.span_events.attributes.exclude = []
 _settings.span_events.attributes.include = []
@@ -532,7 +557,6 @@ _settings.transaction_tracer.attributes.include = []
 
 _settings.error_collector.enabled = True
 _settings.error_collector.capture_events = True
-_settings.error_collector.max_event_samples_stored = ERROR_EVENT_RESERVOIR_SIZE
 _settings.error_collector.capture_source = False
 _settings.error_collector.ignore_errors = []
 _settings.error_collector.ignore_status_codes = _parse_ignore_status_codes(
@@ -580,6 +604,14 @@ _settings.agent_limits.synthetics_events = 200
 _settings.agent_limits.synthetics_transactions = 20
 _settings.agent_limits.data_compression_threshold = 64 * 1024
 _settings.agent_limits.data_compression_level = None
+_settings.event_harvest_config.harvest_limits.analytic_event_data = \
+        DEFAULT_RESERVOIR_SIZE
+_settings.event_harvest_config.harvest_limits.custom_event_data = \
+        DEFAULT_RESERVOIR_SIZE
+_settings.event_harvest_config.harvest_limits.span_event_data = \
+        SPAN_EVENT_RESERVOIR_SIZE
+_settings.event_harvest_config.harvest_limits.error_event_data = \
+        ERROR_EVENT_RESERVOIR_SIZE
 
 _settings.console.listener_socket = None
 _settings.console.allow_interpreter_cmd = False
@@ -663,26 +695,27 @@ def global_settings():
 
 def flatten_settings(settings):
     """This returns dictionary of settings flattened into a single
-    key namespace rather than nested hierarchy.
+    key namespace or a nested hierarchy according to the settings object.
 
     """
 
-    def _flatten(settings, name, object):
-        for key, value in object.__dict__.items():
+    def _flatten(settings, o, name=None):
+        for key, value in vars(o).items():
+            if name:
+                key = '%s.%s' % (name, key)
+
             if isinstance(value, Settings):
-                if name:
-                    _flatten(settings, '%s.%s' % (name, key), value)
+                if value.nested:
+                    _settings = settings[key] = {}
+                    _flatten(_settings, value)
                 else:
-                    _flatten(settings, key, value)
+                    _flatten(settings, value, key)
             else:
-                if name:
-                    settings['%s.%s' % (name, key)] = value
-                else:
-                    settings[key] = value
+                settings[key] = value
 
-        return settings
-
-    return _flatten({}, None, settings)
+    flattened = {}
+    _flatten(flattened, settings)
+    return flattened
 
 
 def create_obfuscated_netloc(username, password, hostname, mask):
@@ -768,7 +801,7 @@ def global_settings_dump(settings_object=None):
 # Creation of an application settings object from global default settings
 # and any server side configuration settings.
 
-def apply_config_setting(settings_object, name, value):
+def apply_config_setting(settings_object, name, value, nested=False):
     """Apply a setting to the settings object where name is a dotted path.
     If there is no pre existing settings object for a sub category then
     one will be created and added automatically.
@@ -786,11 +819,19 @@ def apply_config_setting(settings_object, name, value):
 
     while len(fields) > 1:
         if not hasattr(target, fields[0]):
-            setattr(target, fields[0], Settings())
+            setattr(target, fields[0], create_settings(nested))
+        nested = False
         target = getattr(target, fields[0])
         fields = fields[1].split('.', 1)
 
-    setattr(target, fields[0], value)
+    default_value = getattr(target, fields[0], None)
+    if (isinstance(value, dict) and value and
+            not isinstance(default_value, dict)):
+        for k, v in value.items():
+            k_name = '{}.{}'.format(fields[0], k)
+            apply_config_setting(target, k_name, v, nested=True)
+    else:
+        setattr(target, fields[0], value)
 
 
 def fetch_config_setting(settings_object, name):
@@ -856,6 +897,13 @@ def apply_server_side_settings(server_side_config={}, settings=_settings):
 
     for (name, value) in server_side_config.items():
         apply_config_setting(settings_snapshot, name, value)
+
+    event_harvest_config = server_side_config.get('event_harvest_config', {})
+    harvest_limits = event_harvest_config.get('harvest_limits', ())
+    apply_config_setting(
+            settings_snapshot,
+            'event_harvest_config.whitelist',
+            frozenset(harvest_limits))
 
     # This will be removed at some future point
     # Special case for account_id which will be sent instead of

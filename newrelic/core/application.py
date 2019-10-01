@@ -207,7 +207,7 @@ class Application(object):
             print >> file, 'Harvest Discard Count: %d' % (
                     self._discard_count)
 
-    def activate_session(self, timeout=0.0):
+    def activate_session(self, activate_agent=None, timeout=0.0):
         """Creates a background thread to initiate registration of the
         application with the data collector if no active session already
         exists. Will wait up to the timeout specified for the session
@@ -249,7 +249,8 @@ class Application(object):
             self._detect_deadlock = True
 
         thread = threading.Thread(target=self.connect_to_data_collector,
-                name='NR-Activate-Session/%s' % self.name)
+                name='NR-Activate-Session/%s' % self.name,
+                args=(activate_agent,))
         thread.setDaemon(True)
         thread.start()
 
@@ -281,7 +282,7 @@ class Application(object):
 
         return True
 
-    def connect_to_data_collector(self):
+    def connect_to_data_collector(self, activate_agent):
         """Performs the actual registration of the application with the
         data collector if no current active session.
 
@@ -509,6 +510,9 @@ class Application(object):
             # starting of data samplers are protected by their own locks.
 
             self._harvest_enabled = True
+
+            if activate_agent:
+                activate_agent()
 
             # Flag that the session activation has completed to
             # anyone who has been waiting through calling the
@@ -1225,7 +1229,7 @@ class Application(object):
 
         return {command_id: {}}
 
-    def harvest(self, shutdown=False):
+    def harvest(self, shutdown=False, flexible=False):
         """Performs a harvest, reporting aggregated data for the current
         reporting period to the data collector.
 
@@ -1275,75 +1279,80 @@ class Application(object):
 
                     self._last_transaction = 0.0
 
-                    stats = self._stats_engine.harvest_snapshot()
+                    stats = self._stats_engine.harvest_snapshot(flexible)
 
-                with self._stats_custom_lock:
-                    global_events_account = self._global_events_account
-                    self._global_events_account = 0
+                if not flexible:
+                    with self._stats_custom_lock:
+                        global_events_account = self._global_events_account
+                        self._global_events_account = 0
 
-                    stats_custom = self._stats_custom_engine.harvest_snapshot()
+                        stats_custom = \
+                                self._stats_custom_engine.harvest_snapshot()
 
-                # stats_custom should only contain metric stats, no
-                # transactions
+                    # stats_custom should only contain metric stats, no
+                    # transactions
 
-                stats.merge_metric_stats(stats_custom)
+                    stats.merge_metric_stats(stats_custom)
 
-                # Now merge in any metrics from the data samplers
-                # associated with this application.
-                #
-                # NOTE If a data sampler has problems then what data was
-                # collected up to that point is retained. The data
-                # collector itself is still retained and would be used
-                # again on future harvest. If it is a persistent problem
-                # with the data sampler the issue would then reoccur
-                # with every harvest. If data sampler is a user provided
-                # data sampler, then should perhaps deregister it if it
-                # keeps having problems.
+                    # Now merge in any metrics from the data samplers
+                    # associated with this application.
+                    #
+                    # NOTE If a data sampler has problems then what data was
+                    # collected up to that point is retained. The data
+                    # collector itself is still retained and would be used
+                    # again on future harvest. If it is a persistent problem
+                    # with the data sampler the issue would then reoccur
+                    # with every harvest. If data sampler is a user provided
+                    # data sampler, then should perhaps deregister it if it
+                    # keeps having problems.
 
-                _logger.debug('Fetching metrics from data sources for '
-                        'harvest of %r.', self._app_name)
+                    _logger.debug('Fetching metrics from data sources for '
+                            'harvest of %r.', self._app_name)
 
-                for data_sampler in self._data_samplers:
-                    try:
-                        for sample in data_sampler.metrics():
-                            try:
-                                name, value = sample
-                                stats.record_custom_metric(name, value)
-                            except Exception:
-                                _logger.exception('The merging of custom '
-                                        'metric sample %r from data source %r '
-                                        'has failed. Validate the format of '
-                                        'the sample. If this issue persists '
-                                        'then please report this problem to '
-                                        'the data source provider or New '
-                                        'Relic support for further '
-                                        'investigation.', sample,
-                                        data_sampler.name)
-                                break
+                    for data_sampler in self._data_samplers:
+                        try:
+                            for sample in data_sampler.metrics():
+                                try:
+                                    name, value = sample
+                                    stats.record_custom_metric(name, value)
+                                except Exception:
+                                    _logger.exception('The merging of custom '
+                                            'metric sample %r from data '
+                                            'source %r has failed. Validate '
+                                            'the format of the sample. If '
+                                            'this issue persists then please '
+                                            'report this problem to the data '
+                                            'source provider or New Relic '
+                                            'support for further '
+                                            'investigation.', sample,
+                                            data_sampler.name)
+                                    break
 
-                    except Exception:
-                        _logger.exception('The merging of custom metric '
-                                'samples from data source %r has failed. '
-                                'Validate that the data source is producing '
-                                'samples correctly. If this issue persists '
-                                'then please report this problem to the data '
-                                'source provider or New Relic support for '
-                                'further investigation.', data_sampler.name)
+                        except Exception:
+                            _logger.exception('The merging of custom metric '
+                                    'samples from data source %r has failed. '
+                                    'Validate that the data source is '
+                                    'producing samples correctly. If this '
+                                    'issue persists then please report this '
+                                    'problem to the data source provider or '
+                                    'New Relic support for further '
+                                    'investigation.', data_sampler.name)
 
-                # Add a metric we can use to track how many harvest
-                # periods have occurred.
+                    # Add a metric we can use to track how many harvest
+                    # periods have occurred.
 
-                stats.record_custom_metric('Instance/Reporting', 0)
+                    stats.record_custom_metric('Instance/Reporting', 0)
 
-                # If an import order issue was detected, send a metric for each
-                # uninstrumented module
+                    # If an import order issue was detected, send a metric for
+                    # each uninstrumented module
 
-                if self._uninstrumented:
-                    for uninstrumented in self._uninstrumented:
-                        internal_count_metric(
-                                'Supportability/Python/Uninstrumented', 1)
-                        internal_count_metric('Supportability/Uninstrumented/'
-                                '%s' % uninstrumented, 1)
+                    if self._uninstrumented:
+                        for uninstrumented in self._uninstrumented:
+                            internal_count_metric(
+                                    'Supportability/Python/Uninstrumented', 1)
+                            internal_count_metric(
+                                    'Supportability/Uninstrumented/'
+                                    '%s' % uninstrumented, 1)
 
                 # Create our time stamp as to when this reporting period
                 # ends and start reporting the data.
@@ -1375,38 +1384,40 @@ class Application(object):
                     # as separate requests.
 
                     synthetics_events = stats.synthetics_events
-                    if synthetics_events.num_samples:
-                        _logger.debug('Sending synthetics event data for '
-                                'harvest of %r.', self._app_name)
+                    if synthetics_events:
+                        if synthetics_events.num_samples:
+                            _logger.debug('Sending synthetics event data for '
+                                    'harvest of %r.', self._app_name)
 
-                        self._active_session.send_transaction_events(
-                                synthetics_events.sampling_info,
-                                synthetics_events)
+                            self._active_session.send_transaction_events(
+                                    synthetics_events.sampling_info,
+                                    synthetics_events)
 
-                    stats.reset_synthetics_events()
+                        stats.reset_synthetics_events()
 
                     if (configuration.collect_analytics_events and
                             configuration.transaction_events.enabled):
 
                         transaction_events = stats.transaction_events
 
-                        # As per spec
-                        internal_metric('Supportability/Python/'
-                                'RequestSampler/requests',
-                                transaction_events.num_seen)
-                        internal_metric('Supportability/Python/'
-                                'RequestSampler/samples',
-                                transaction_events.num_samples)
+                        if transaction_events:
+                            # As per spec
+                            internal_metric('Supportability/Python/'
+                                    'RequestSampler/requests',
+                                    transaction_events.num_seen)
+                            internal_metric('Supportability/Python/'
+                                    'RequestSampler/samples',
+                                    transaction_events.num_samples)
 
-                        if transaction_events.num_samples:
-                            _logger.debug('Sending analytics event data '
-                                    'for harvest of %r.', self._app_name)
+                            if transaction_events.num_samples:
+                                _logger.debug('Sending analytics event data '
+                                        'for harvest of %r.', self._app_name)
 
-                            self._active_session.send_transaction_events(
-                                    transaction_events.sampling_info,
-                                    transaction_events)
+                                self._active_session.send_transaction_events(
+                                        transaction_events.sampling_info,
+                                        transaction_events)
 
-                    stats.reset_transaction_events()
+                            stats.reset_transaction_events()
 
                     # Send span events
 
@@ -1414,25 +1425,26 @@ class Application(object):
                             configuration.collect_span_events and
                             configuration.distributed_tracing.enabled):
                         spans = stats.span_events
-                        if spans.num_samples > 0:
-                            span_samples = list(spans)
+                        if spans:
+                            if spans.num_samples > 0:
+                                span_samples = list(spans)
 
-                            _logger.debug('Sending span event data '
-                                    'for harvest of %r.', self._app_name)
+                                _logger.debug('Sending span event data '
+                                        'for harvest of %r.', self._app_name)
 
-                            self._active_session.send_span_events(
-                                spans.sampling_info, span_samples)
-                            span_samples = None
+                                self._active_session.send_span_events(
+                                    spans.sampling_info, span_samples)
+                                span_samples = None
 
-                        # As per spec
-                        spans_seen = spans.num_seen
-                        spans_sampled = spans.num_samples
-                        internal_count_metric('Supportability/SpanEvent/'
-                                'TotalEventsSeen', spans_seen)
-                        internal_count_metric('Supportability/SpanEvent/'
-                                'TotalEventsSent', spans_sampled)
+                            # As per spec
+                            spans_seen = spans.num_seen
+                            spans_sampled = spans.num_samples
+                            internal_count_metric('Supportability/SpanEvent/'
+                                    'TotalEventsSeen', spans_seen)
+                            internal_count_metric('Supportability/SpanEvent/'
+                                    'TotalEventsSent', spans_sampled)
 
-                    stats.reset_span_events()
+                            stats.reset_span_events()
 
                     # Send error events
 
@@ -1441,25 +1453,28 @@ class Application(object):
                             configuration.error_collector.enabled):
 
                         error_events = stats.error_events
-                        num_error_samples = error_events.num_samples
-                        if num_error_samples > 0:
-                            error_event_samples = list(error_events)
+                        if error_events:
+                            num_error_samples = error_events.num_samples
+                            if num_error_samples > 0:
+                                error_event_samples = list(error_events)
 
-                            _logger.debug('Sending error event data '
-                                    'for harvest of %r.', self._app_name)
+                                _logger.debug('Sending error event data '
+                                        'for harvest of %r.', self._app_name)
 
-                            samp_info = error_events.sampling_info
-                            self._active_session.send_error_events(samp_info,
-                                    error_event_samples)
-                            error_event_samples = None
+                                samp_info = error_events.sampling_info
+                                self._active_session.send_error_events(
+                                        samp_info,
+                                        error_event_samples)
+                                error_event_samples = None
 
-                        # As per spec
-                        internal_count_metric('Supportability/Events/'
-                                'TransactionError/Seen', error_events.num_seen)
-                        internal_count_metric('Supportability/Events/'
-                                'TransactionError/Sent', num_error_samples)
+                            # As per spec
+                            internal_count_metric('Supportability/Events/'
+                                    'TransactionError/Seen',
+                                    error_events.num_seen)
+                            internal_count_metric('Supportability/Events/'
+                                    'TransactionError/Sent', num_error_samples)
 
-                    stats.reset_error_events()
+                            stats.reset_error_events()
 
                     # Send custom events
 
@@ -1468,23 +1483,24 @@ class Application(object):
 
                         customs = stats.custom_events
 
-                        if customs.num_samples > 0:
-                            custom_samples = list(customs)
+                        if customs:
+                            if customs.num_samples > 0:
+                                custom_samples = list(customs)
 
-                            _logger.debug('Sending custom event data '
-                                    'for harvest of %r.', self._app_name)
+                                _logger.debug('Sending custom event data '
+                                        'for harvest of %r.', self._app_name)
 
-                            self._active_session.send_custom_events(
-                                    customs.sampling_info, custom_samples)
-                            custom_samples = None
+                                self._active_session.send_custom_events(
+                                        customs.sampling_info, custom_samples)
+                                custom_samples = None
 
-                        # As per spec
-                        internal_count_metric('Supportability/Events/'
-                                'Customer/Seen', customs.num_seen)
-                        internal_count_metric('Supportability/Events/'
-                                'Customer/Sent', customs.num_samples)
+                            # As per spec
+                            internal_count_metric('Supportability/Events/'
+                                    'Customer/Seen', customs.num_seen)
+                            internal_count_metric('Supportability/Events/'
+                                    'Customer/Sent', customs.num_samples)
 
-                    stats.reset_custom_events()
+                            stats.reset_custom_events()
 
                     # Send the accumulated error data.
 
@@ -1497,106 +1513,114 @@ class Application(object):
 
                             self._active_session.send_errors(error_data)
 
-                    if configuration.collect_traces:
-                        connections = SQLConnections(
-                                configuration.agent_limits.max_sql_connections)
+                    if not flexible:
+                        if configuration.collect_traces:
+                            connections = SQLConnections(
+                                    configuration.agent_limits
+                                    .max_sql_connections)
 
-                        with connections:
-                            if configuration.slow_sql.enabled:
-                                _logger.debug('Processing slow SQL data '
-                                        'for harvest of %r.', self._app_name)
+                            with connections:
+                                if configuration.slow_sql.enabled:
+                                    _logger.debug('Processing slow SQL data '
+                                            'for harvest of %r.',
+                                            self._app_name)
 
-                                slow_sql_data = stats.slow_sql_data(
-                                        connections)
+                                    slow_sql_data = stats.slow_sql_data(
+                                            connections)
 
-                                if slow_sql_data:
-                                    _logger.debug('Sending slow SQL data for '
-                                            'harvest of %r.', self._app_name)
+                                    if slow_sql_data:
+                                        _logger.debug(
+                                                'Sending slow SQL data for '
+                                                'harvest of %r.',
+                                                self._app_name)
 
-                                    self._active_session.send_sql_traces(
-                                            slow_sql_data)
+                                        self._active_session.send_sql_traces(
+                                                slow_sql_data)
 
-                            slow_transaction_data = (
-                                    stats.transaction_trace_data(
-                                    connections))
+                                slow_transaction_data = (
+                                        stats.transaction_trace_data(
+                                        connections))
 
-                            if slow_transaction_data:
-                                _logger.debug('Sending slow transaction '
-                                        'data for harvest of %r.',
-                                        self._app_name)
+                                if slow_transaction_data:
+                                    _logger.debug('Sending slow transaction '
+                                            'data for harvest of %r.',
+                                            self._app_name)
 
-                                self._active_session.send_transaction_traces(
-                                        slow_transaction_data)
+                                    self._active_session \
+                                    .send_transaction_traces(
+                                            slow_transaction_data)
 
-                    # Create a metric_normalizer based on normalize_name
-                    # If metric rename rules are empty, set normalizer
-                    # to None and the stats engine will skip steps as
-                    # appropriate.
+                        # Create a metric_normalizer based on normalize_name
+                        # If metric rename rules are empty, set normalizer
+                        # to None and the stats engine will skip steps as
+                        # appropriate.
 
-                    if self._rules_engine['metric'].rules:
-                        metric_normalizer = partial(self.normalize_name,
-                                rule_type='metric')
-                    else:
-                        metric_normalizer = None
+                        if self._rules_engine['metric'].rules:
+                            metric_normalizer = partial(self.normalize_name,
+                                    rule_type='metric')
+                        else:
+                            metric_normalizer = None
 
-                    # Merge all ready internal metrics
-                    stats.merge_custom_metrics(internal_metrics.metrics())
+                        # Merge all ready internal metrics
+                        stats.merge_custom_metrics(internal_metrics.metrics())
 
-                    # Clear sent internal metrics
-                    internal_metrics.reset_metric_stats()
+                        # Clear sent internal metrics
+                        internal_metrics.reset_metric_stats()
 
-                    # Pass the metric_normalizer to stats.metric_data to
-                    # do metric renaming.
+                        # Pass the metric_normalizer to stats.metric_data to
+                        # do metric renaming.
 
-                    _logger.debug('Normalizing metrics for harvest of %r.',
-                            self._app_name)
+                        _logger.debug('Normalizing metrics for harvest of %r.',
+                                self._app_name)
 
-                    metric_data = stats.metric_data(metric_normalizer)
+                        metric_data = stats.metric_data(metric_normalizer)
 
-                    _logger.debug('Sending metric data for harvest of %r.',
-                            self._app_name)
+                        _logger.debug('Sending metric data for harvest of %r.',
+                                self._app_name)
 
-                    # Send metrics
-                    self._active_session.send_metric_data(
-                            self._period_start, period_end, metric_data)
+                        # Send metrics
+                        self._active_session.send_metric_data(
+                                self._period_start, period_end, metric_data)
 
-                    _logger.debug('Done sending data for harvest of '
-                            '%r.', self._app_name)
+                        _logger.debug('Done sending data for harvest of '
+                                '%r.', self._app_name)
 
-                    stats.reset_metric_stats()
+                        stats.reset_metric_stats()
 
-                    # Successful, we reset the reporting period start time.
-                    # If an error occurs after this point,
-                    # any remaining data for the period being reported
-                    # on will be thrown away. We reset the count of
-                    # number of merges we have done due to failures as
-                    # only really want to count errors in being able to
-                    # report the main transaction metrics.
+                        # Successful, we reset the reporting period start time.
+                        # If an error occurs after this point,
+                        # any remaining data for the period being reported
+                        # on will be thrown away. We reset the count of
+                        # number of merges we have done due to failures as
+                        # only really want to count errors in being able to
+                        # report the main transaction metrics.
 
-                    self._period_start = period_end
+                        self._period_start = period_end
 
-                    # Fetch agent commands sent from the data collector
-                    # and process them.
+                        # Fetch agent commands sent from the data collector
+                        # and process them.
 
-                    _logger.debug('Process agent commands during '
-                            'harvest of %r.', self._app_name)
-                    self.process_agent_commands()
+                        _logger.debug('Process agent commands during '
+                                'harvest of %r.', self._app_name)
+                        self.process_agent_commands()
 
-                    # Send the accumulated profile data back to the data
-                    # collector. Note that this come after we process
-                    # the agent commands as we might receive an agent
-                    # command to stop the profiling session, but still
-                    # send the data back.  Having the sending of the
-                    # results last ensures we send back that data from
-                    # the stopped profiling session immediately.
+                        # Send the accumulated profile data back to the data
+                        # collector. Note that this come after we process
+                        # the agent commands as we might receive an agent
+                        # command to stop the profiling session, but still
+                        # send the data back.  Having the sending of the
+                        # results last ensures we send back that data from
+                        # the stopped profiling session immediately.
 
-                    _logger.debug('Send profiling data for harvest of '
-                            '%r.', self._app_name)
+                        _logger.debug('Send profiling data for harvest of '
+                                '%r.', self._app_name)
 
-                    self.report_profile_data()
+                        self.report_profile_data()
 
-                    _logger.debug('Finalizing data.')
-                    self._active_session.finalize()
+                        # in serverless mode finalize after flexible and
+                        # default harvests have executed.
+                        _logger.debug('Finalizing data.')
+                        self._active_session.finalize()
 
                     # If this is a final forced harvest for the process
                     # then attempt to shutdown the session.

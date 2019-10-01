@@ -1,5 +1,6 @@
 import copy
 import unittest
+from collections import OrderedDict
 
 import newrelic.core.config
 
@@ -254,6 +255,90 @@ class TestCrossProcessIdParsing(unittest.TestCase):
         settings = newrelic.core.config.apply_server_side_settings(config)
         assert not settings.account_id
         assert not settings.application_id
+
+
+class TestFasterEventHarvestConfig(unittest.TestCase):
+    def test_settings_applied(self):
+        config = {
+                    "event_harvest_config": {
+                        "report_period_ms": 5000,
+                        "harvest_limits": {
+                            "analytic_event_data": 833,
+                            "custom_event_data": 833,
+                            "error_event_data": 8
+                        }
+                    }
+                 }
+        settings = newrelic.core.config.apply_server_side_settings(config)
+        assert settings.event_harvest_config.report_period_ms == 5000
+        assert settings.event_harvest_config\
+            .harvest_limits.analytic_event_data == 833
+        assert settings.event_harvest_config\
+            .harvest_limits.custom_event_data == 833
+        assert settings.event_harvest_config\
+            .harvest_limits.error_event_data == 8
+
+        whitelist = settings.event_harvest_config.whitelist
+        harvest_keys = config['event_harvest_config']['harvest_limits']
+        assert whitelist == frozenset(harvest_keys)
+
+    def test_settings_missing_harvest_limits(self):
+        config = {
+                    "event_harvest_config": {
+                        "report_period_ms": 5000,
+                    }
+                 }
+        settings = newrelic.core.config.apply_server_side_settings(config)
+
+        whitelist = settings.event_harvest_config.whitelist
+        assert whitelist == frozenset()
+
+
+class TestFlattenConfig(unittest.TestCase):
+    def test_nested_dict(self):
+        settings = newrelic.core.config.create_settings(nested=False)
+        settings.a = newrelic.core.config.create_settings(nested=True)
+        settings.a.a = 0
+        settings.a.b = 1
+        settings.a.c = 2
+        _settings = newrelic.core.config.flatten_settings(settings)
+        assert type(_settings['a']) is dict
+
+    def test_flat_dict(self):
+        settings = newrelic.core.config.create_settings(nested=False)
+        settings.a = newrelic.core.config.create_settings(nested=False)
+        settings.a.a = 0
+        settings.a.b = 1
+        settings.a.c = 2
+        _settings = newrelic.core.config.flatten_settings(settings)
+        assert type(_settings['a.a']) is int
+
+    def test_nested_flat_dict(self):
+        settings = newrelic.core.config.create_settings(nested=False)
+        settings.a = newrelic.core.config.create_settings(nested=True)
+        settings.a.a = newrelic.core.config.create_settings(nested=False)
+        settings.a.a.a = 0
+        settings.a.a.b = 1
+        _settings = newrelic.core.config.flatten_settings(settings)
+        assert type(_settings['a']['a.a']) is int
+
+
+class TestApplyConfigSetting(unittest.TestCase):
+    def test_apply_nested_dict(self):
+        settings = newrelic.core.config.Settings()
+        name = 'data_methods'
+
+        value = OrderedDict()
+        value['span_event_data'] = {
+            'report_period_in_seconds': 60,
+            'max_samples_stored': 10000
+        }
+        value['custom_event_data.report_period_in_seconds'] = 60
+        newrelic.core.config.apply_config_setting(
+                settings, name, value)
+        assert settings.data_methods.nested
+        assert settings.data_methods.span_event_data.nested
+        assert not settings.data_methods.custom_event_data.nested
 
 
 if __name__ == '__main__':

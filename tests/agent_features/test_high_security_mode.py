@@ -598,6 +598,7 @@ def test_function_trace_params_dropped_in_hsm(hsm_enabled):
     _test()
 
 
+@pytest.mark.xfail(reason="PYTHON-3416")
 @pytest.mark.parametrize('hsm_enabled', [True, False])
 def test_message_trace_params_dropped_in_hsm(hsm_enabled):
     @background_task()

@@ -7,7 +7,7 @@ from newrelic.core.external_node import ExternalNode
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
 
-class ExternalTrace(TimeTrace, CatHeaderMixin):
+class ExternalTrace(CatHeaderMixin, TimeTrace):
 
     def __init__(self, library, url, method=None, **kwargs):
         parent = None
@@ -21,8 +21,6 @@ class ExternalTrace(TimeTrace, CatHeaderMixin):
         self.url = url
         self.method = method
         self.params = {}
-
-        self.settings = self.transaction and self.transaction.settings or None
 
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, dict(

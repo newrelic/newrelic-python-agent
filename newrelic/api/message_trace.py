@@ -7,7 +7,7 @@ from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.message_node import MessageNode
 
 
-class MessageTrace(TimeTrace, CatHeaderMixin):
+class MessageTrace(CatHeaderMixin, TimeTrace):
 
     cat_id_key = 'NewRelicID'
     cat_transaction_key = 'NewRelicTransaction'
@@ -24,8 +24,6 @@ class MessageTrace(TimeTrace, CatHeaderMixin):
                 raise TypeError("Invalid keyword arguments:", kwargs)
             parent = kwargs['parent']
         super(MessageTrace, self).__init__(parent)
-
-        self.settings = self.transaction and self.transaction.settings or None
 
         if self.transaction:
             self.library = self.transaction._intern_string(library)

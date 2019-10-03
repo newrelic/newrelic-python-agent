@@ -11,6 +11,12 @@ class CatHeaderMixin(object):
     cat_metadata_key = 'x-newrelic-trace'
     cat_distributed_trace_key = 'newrelic'
 
+    def __enter__(self):
+        result = super(CatHeaderMixin, self).__enter__()
+        if result is self:
+            self.settings = self.transaction and self.transaction.settings or None
+        return result
+
     def process_response_headers(self, response_headers):
         """
         Decode the response headers and create appropriate metics based on the
@@ -19,10 +25,11 @@ class CatHeaderMixin(object):
 
         """
 
-        if not self.settings:
+        settings = self.settings
+        if not settings:
             return
 
-        if not self.settings.cross_application_tracer.enabled:
+        if not settings.cross_application_tracer.enabled:
             return
 
         appdata = None
@@ -30,7 +37,7 @@ class CatHeaderMixin(object):
             for k, v in response_headers:
                 if k.upper() == self.cat_appdata_key.upper():
                     appdata = json_decode(deobfuscate(v,
-                            self.settings.encoding_key))
+                            settings.encoding_key))
                     break
 
             if appdata:

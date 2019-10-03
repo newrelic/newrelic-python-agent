@@ -36,8 +36,8 @@ class MessageTrace(CatHeaderMixin, TimeTrace):
         # Only record parameters when not high security mode and only
         # when enabled in settings.
 
-        if (self.should_record_segment_params and self.settings and
-                self.settings.message_tracer.segment_parameters_enabled):
+        # FIXME: This needs to be repaired by PYTHON-3416
+        if self.should_record_segment_params:
             self.params = params
         else:
             self.params = None

@@ -10,11 +10,12 @@ class CatHeaderMixin(object):
     cat_synthetics_key = 'X-NewRelic-Synthetics'
     cat_metadata_key = 'x-newrelic-trace'
     cat_distributed_trace_key = 'newrelic'
+    settings = None
 
     def __enter__(self):
         result = super(CatHeaderMixin, self).__enter__()
-        if result is self:
-            self.settings = self.transaction and self.transaction.settings or None
+        if result is self and self.transaction:
+            self.settings = self.transaction.settings or None
         return result
 
     def process_response_headers(self, response_headers):

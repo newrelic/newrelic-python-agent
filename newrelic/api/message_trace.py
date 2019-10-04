@@ -25,13 +25,8 @@ class MessageTrace(CatHeaderMixin, TimeTrace):
             parent = kwargs['parent']
         super(MessageTrace, self).__init__(parent)
 
-        if self.transaction:
-            self.library = self.transaction._intern_string(library)
-            self.operation = self.transaction._intern_string(operation)
-
-        else:
-            self.library = library
-            self.operation = operation
+        self.library = library
+        self.operation = operation
 
         self.params = params
 
@@ -40,6 +35,10 @@ class MessageTrace(CatHeaderMixin, TimeTrace):
 
     def __enter__(self):
         result = super(MessageTrace, self).__enter__()
+
+        if result and self.transaction:
+            self.library = self.transaction._intern_string(self.library)
+            self.operation = self.transaction._intern_string(self.operation)
 
         # Only record parameters when not high security mode and only
         # when enabled in settings.

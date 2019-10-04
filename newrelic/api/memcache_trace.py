@@ -1,7 +1,7 @@
 import functools
 
 from newrelic.common.async_wrapper import async_wrapper
-from newrelic.api.time_trace import TimeTrace, current_trace
+from newrelic.api.time_trace import TimeTrace
 from newrelic.core.memcache_node import MemcacheNode
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
@@ -41,11 +41,6 @@ class MemcacheTrace(TimeTrace):
 def MemcacheTraceWrapper(wrapped, command):
 
     def _nr_wrapper_memcache_trace_(wrapped, instance, args, kwargs):
-        parent = current_trace()
-
-        if parent is None:
-            return wrapped(*args, **kwargs)
-
         if callable(command):
             if instance is not None:
                 _command = command(instance, *args, **kwargs)
@@ -54,7 +49,7 @@ def MemcacheTraceWrapper(wrapped, command):
         else:
             _command = command
 
-        trace = MemcacheTrace(_command, parent=parent)
+        trace = MemcacheTrace(_command)
 
         wrapper = async_wrapper(wrapped)
         if wrapper:

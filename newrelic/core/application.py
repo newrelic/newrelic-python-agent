@@ -139,8 +139,7 @@ class Application(object):
         if self.adaptive_sampler is None:
             return False
 
-        with self._stats_lock:
-            return self.adaptive_sampler.compute_sampled()
+        return self.adaptive_sampler.compute_sampled()
 
     def dump(self, file):
         """Dumps details about the application to the file object."""
@@ -440,8 +439,14 @@ class Application(object):
             with self._stats_lock:
                 self._stats_engine.reset_stats(configuration)
 
+                if configuration.serverless_mode.enabled:
+                    sampling_target_period = 60.0
+                else:
+                    sampling_target_period = \
+                        configuration.sampling_target_period_in_seconds
                 self.adaptive_sampler = AdaptiveSampler(
-                        configuration.sampling_target)
+                        configuration.sampling_target,
+                        sampling_target_period)
 
             with self._stats_custom_lock:
                 self._stats_custom_engine.reset_stats(configuration)

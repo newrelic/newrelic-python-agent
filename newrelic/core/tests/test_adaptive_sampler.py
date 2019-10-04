@@ -25,7 +25,7 @@ class TestAdaptiveSampler(newrelic.tests.test_cases.TestCase):
         self.value = float('inf')
 
         self.target = 10
-        self.adaptive_sampler = AdaptiveSampler(self.target)
+        self.adaptive_sampler = AdaptiveSampler(self.target, 60.0)
 
     def tearDown(self):
         self.unpatch()
@@ -123,7 +123,7 @@ class TestAdaptiveSampler(newrelic.tests.test_cases.TestCase):
         assert self.adaptive_sampler.compute_sampled() is False
 
     def test_target_zero(self):
-        self.adaptive_sampler = AdaptiveSampler(0)
+        self.adaptive_sampler = AdaptiveSampler(0, 60.0)
 
         assert self.adaptive_sampler.compute_sampled() is False
 

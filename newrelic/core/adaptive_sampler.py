@@ -1,9 +1,14 @@
 import random
+import time
+import threading
 
 
 class AdaptiveSampler(object):
-    def __init__(self, sampling_target):
+    def __init__(self, sampling_target, sampling_period):
         self.adaptive_target = 0.0
+        self.period = sampling_period
+        self.last_reset = time.time()
+        self._lock = threading.Lock()
 
         # For the first harvest, collect a max of sampling_target number of
         # "sampled" transactions.
@@ -14,31 +19,44 @@ class AdaptiveSampler(object):
         self.computed_count = 0
         self.sampled_count = 0
 
+    def reset_if_required(self):
+        time_since_last_reset = time.time() - self.last_reset
+        cycles = time_since_last_reset // self.period
+        if cycles:
+            self._reset()
+            # If more than one cycle has passed we need to reset twice to set
+            # the computed_count = 0
+            if cycles > 1:
+                self._reset()
+
     def compute_sampled(self):
-        if self.sampled_count >= self.max_sampled:
-            return False
+        with self._lock:
+            self.reset_if_required()
+            if self.sampled_count >= self.max_sampled:
+                return False
 
-        elif self.sampled_count < self.sampling_target:
-            sampled = random.randrange(
-                    self.computed_count_last) < self.sampling_target
-            if sampled:
-                self.sampled_count += 1
-        else:
-            sampled = random.randrange(
-                    self.computed_count) < self.adaptive_target
-            if sampled:
-                self.sampled_count += 1
+            elif self.sampled_count < self.sampling_target:
+                sampled = random.randrange(
+                        self.computed_count_last) < self.sampling_target
+                if sampled:
+                    self.sampled_count += 1
+            else:
+                sampled = random.randrange(
+                        self.computed_count) < self.adaptive_target
+                if sampled:
+                    self.sampled_count += 1
 
-                ratio = float(self.sampling_target) / self.sampled_count
-                self.adaptive_target = (self.sampling_target ** ratio -
-                                        self.sampling_target ** 0.5)
+                    ratio = float(self.sampling_target) / self.sampled_count
+                    self.adaptive_target = (self.sampling_target ** ratio -
+                                            self.sampling_target ** 0.5)
 
-        self.computed_count += 1
+            self.computed_count += 1
         return sampled
 
-    def reset(self):
+    def _reset(self):
         # For subsequent harvests, collect a max of twice the
         # self.sampling_target value.
+        self.last_reset = time.time()
         self.max_sampled = 2 * self.sampling_target
         self.adaptive_target = (self.sampling_target -
                                 self.sampling_target ** 0.5)

@@ -49,7 +49,7 @@ class TestAdaptiveSampler(newrelic.tests.test_cases.TestCase):
         self.assertEqual(self.adaptive_sampler.sampled_count, self.target)
 
     def test_sampling_probability_after_harvest(self):
-        self.adaptive_sampler.reset()
+        self.adaptive_sampler._reset()
         max_sampled = 2 * self.target
 
         self.value = 0
@@ -63,7 +63,7 @@ class TestAdaptiveSampler(newrelic.tests.test_cases.TestCase):
 
     def test_sampling_probability_not_sampled(self):
         self.adaptive_sampler.computed_count = 100
-        self.adaptive_sampler.reset()
+        self.adaptive_sampler._reset()
 
         self.value = 99
         self.patch()
@@ -74,7 +74,7 @@ class TestAdaptiveSampler(newrelic.tests.test_cases.TestCase):
         count = 2 * self.target
 
         self.adaptive_sampler.computed_count = count
-        self.adaptive_sampler.reset()
+        self.adaptive_sampler._reset()
 
         self.patch()
         self.value = count - 1
@@ -85,7 +85,7 @@ class TestAdaptiveSampler(newrelic.tests.test_cases.TestCase):
         assert self.adaptive_sampler.compute_sampled() is False
 
     def test_sampling_probability_count_below_target(self):
-        self.adaptive_sampler.reset()
+        self.adaptive_sampler._reset()
 
         for _ in range(self.target):
             assert self.adaptive_sampler.compute_sampled() is True
@@ -97,7 +97,7 @@ class TestAdaptiveSampler(newrelic.tests.test_cases.TestCase):
 
     def test_exponential_backoff(self):
         self.adaptive_sampler.computed_count = 100
-        self.adaptive_sampler.reset()
+        self.adaptive_sampler._reset()
 
         self.patch()
         self.value = self.target - 1
@@ -128,6 +128,6 @@ class TestAdaptiveSampler(newrelic.tests.test_cases.TestCase):
         assert self.adaptive_sampler.compute_sampled() is False
 
         self.adaptive_sampler.computed_count = 0
-        self.adaptive_sampler.reset()
+        self.adaptive_sampler._reset()
 
         assert self.adaptive_sampler.compute_sampled() is False

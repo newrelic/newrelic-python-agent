@@ -259,7 +259,7 @@ def wrap_httpclient_fetch(wrapped, instance, args, kwargs):
     trace = ExternalTrace(
             'tornado', req.url, req.method.upper())
 
-    outgoing_headers = trace.generate_request_headers(trace.transaction)
+    outgoing_headers = trace.generate_request_headers(current_transaction())
     for header_name, header_value in outgoing_headers:
         # User headers should override our CAT headers
         if header_name in req.headers:

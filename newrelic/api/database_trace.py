@@ -48,10 +48,7 @@ class DatabaseTrace(TimeTrace):
             parent = kwargs['parent']
         super(DatabaseTrace, self).__init__(parent)
 
-        if self.transaction:
-            self.sql = self.transaction._intern_string(sql)
-        else:
-            self.sql = sql
+        self.sql = sql
 
         self.dbapi2_module = dbapi2_module
 
@@ -62,6 +59,12 @@ class DatabaseTrace(TimeTrace):
         self.host = host
         self.port_path_or_id = port_path_or_id
         self.database_name = database_name
+
+    def __enter__(self):
+        result = super(DatabaseTrace, self).__enter__()
+        if result and self.transaction:
+            self.sql = self.transaction._intern_string(self.sql)
+        return result
 
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, dict(

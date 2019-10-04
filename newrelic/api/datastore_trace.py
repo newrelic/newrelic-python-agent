@@ -1,7 +1,7 @@
 import functools
 
 from newrelic.common.async_wrapper import async_wrapper
-from newrelic.api.time_trace import TimeTrace, current_trace
+from newrelic.api.time_trace import TimeTrace
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.datastore_node import DatastoreNode
 
@@ -143,11 +143,6 @@ def DatastoreTraceWrapper(wrapped, product, target, operation):
     """
 
     def _nr_datastore_trace_wrapper_(wrapped, instance, args, kwargs):
-        parent = current_trace()
-
-        if parent is None:
-            return wrapped(*args, **kwargs)
-
         if callable(product):
             if instance is not None:
                 _product = product(instance, *args, **kwargs)
@@ -172,7 +167,7 @@ def DatastoreTraceWrapper(wrapped, product, target, operation):
         else:
             _operation = operation
 
-        trace = DatastoreTrace(_product, _target, _operation, parent=parent)
+        trace = DatastoreTrace(_product, _target, _operation)
 
         wrapper = async_wrapper(wrapped)
         if wrapper:

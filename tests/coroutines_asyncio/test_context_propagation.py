@@ -2,6 +2,12 @@ import pytest
 from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import current_trace
 from newrelic.api.function_trace import FunctionTrace, function_trace
+from newrelic.api.database_trace import database_trace
+from newrelic.api.datastore_trace import datastore_trace
+from newrelic.api.external_trace import external_trace
+from newrelic.api.memcache_trace import memcache_trace
+from newrelic.api.message_trace import message_trace
+
 from newrelic.core.trace_cache import trace_cache
 from newrelic.core.config import global_settings
 from testing_support.fixtures import (validate_transaction_metrics,
@@ -123,3 +129,49 @@ def test_nr_disabled():
 
     # Assert that no exceptions have occurred
     assert not exceptions, exceptions
+
+
+@pytest.mark.parametrize('trace', [
+    function_trace(name='simple_gen'),
+    external_trace(library='lib', url='http://foo.com'),
+    database_trace('select * from foo'),
+    datastore_trace('lib', 'foo', 'bar'),
+    message_trace('lib', 'op', 'typ', 'name'),
+    memcache_trace('cmd'),
+])
+def test_two_transactions(trace):
+    """
+    Instantiate a coroutine in one transaction and await it in
+    another. This should not cause any errors.
+    """
+    import asyncio
+    tasks = []
+
+    ready = asyncio.Event()
+    done = asyncio.Event()
+
+    @trace
+    async def task():
+        pass
+
+    @background_task(name="create_coro")
+    async def create_coro():
+        for _ in range(2):
+            coro = task()
+            tasks.append(coro)
+
+        ready.set()
+        await done.wait()
+
+    @background_task(name="await")
+    async def await_task():
+        await ready.wait()
+        while len(tasks) > 0:
+            task = tasks.pop()
+            await task
+
+        done.set()
+
+    afut = asyncio.ensure_future(create_coro())
+    bfut = asyncio.ensure_future(await_task())
+    asyncio.get_event_loop().run_until_complete(asyncio.gather(afut, bfut))

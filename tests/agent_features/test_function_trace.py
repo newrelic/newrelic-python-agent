@@ -64,47 +64,6 @@ def test_function_trace_leading_slash_on_group():
         pass
 
 
-_test_async_trace_parent_ended_scoped_metrics = [
-        ('Function/parent', 1),
-        ('Function/child', 1),
-        ('Function/child_child', 1),
-]
-
-_test_async_trace_parent_ended_parenting = (
-        'test_function_trace:test_async_trace_parent_ended', [
-            ('parent', [
-                ('child', [
-                    ('child_child', []),
-                ]),
-            ]),
-        ]
-)
-
-
-@validate_transaction_metrics(
-        'test_function_trace:test_async_trace_parent_ended',
-        scoped_metrics=_test_async_trace_parent_ended_scoped_metrics,
-        background_task=True)
-@validate_tt_parenting(_test_async_trace_parent_ended_parenting)
-@background_task()
-def test_async_trace_parent_ended():
-    parent_trace = FunctionTrace('parent')
-
-    with parent_trace:
-        child_trace = FunctionTrace('child')
-
-    with child_trace:
-        child_child_trace = FunctionTrace('child_child')
-
-    with child_child_trace:
-        pass
-
-    assert parent_trace.start_time < child_trace.start_time
-    assert parent_trace.end_time < child_trace.start_time
-    assert child_trace.start_time < child_child_trace.start_time
-    assert child_trace.end_time < child_child_trace.start_time
-
-
 _test_async_trace_overlapping_children_scoped_metrics = [
         ('Function/parent', 1),
         ('Function/child_1', 1),
@@ -131,8 +90,8 @@ def test_async_trace_overlapping_children():
     parent_trace = FunctionTrace('parent')
 
     with parent_trace:
-        child_trace_1 = FunctionTrace('child_1')
-        child_trace_2 = FunctionTrace('child_2')
+        child_trace_1 = FunctionTrace('child_1', parent=parent_trace)
+        child_trace_2 = FunctionTrace('child_2', parent=parent_trace)
 
         child_trace_1.__enter__()
         child_trace_2.__enter__()

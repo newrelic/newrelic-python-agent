@@ -32,13 +32,16 @@ class FunctionTrace(TimeTrace):
         self.group = group
         self.label = label
 
-        if self.should_record_segment_params:
-            self.params = params
-        else:
-            self.params = None
+        self.params = params
 
         self.terminal = terminal
         self.rollup = terminal and rollup or None
+
+    def __enter__(self):
+        result = TimeTrace.__enter__(self)
+        if not self.should_record_segment_params:
+            self.params = None
+        return result
 
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, dict(

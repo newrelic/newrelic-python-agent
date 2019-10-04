@@ -33,17 +33,20 @@ class MessageTrace(CatHeaderMixin, TimeTrace):
             self.library = library
             self.operation = operation
 
-        # Only record parameters when not high security mode and only
-        # when enabled in settings.
-
-        # FIXME: This needs to be repaired by PYTHON-3416
-        if self.should_record_segment_params:
-            self.params = params
-        else:
-            self.params = None
+        self.params = params
 
         self.destination_type = destination_type
         self.destination_name = destination_name
+
+    def __enter__(self):
+        result = super(MessageTrace, self).__enter__()
+
+        # Only record parameters when not high security mode and only
+        # when enabled in settings.
+        if not (self.should_record_segment_params and self.settings and
+                self.settings.message_tracer.segment_parameters_enabled):
+            self.params = None
+        return result
 
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, dict(

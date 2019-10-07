@@ -40,6 +40,7 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True,
         as_kwargs=True, **kwargs):
     import tornado.curl_httpclient
     import tornado.gen
+    import tornado.concurrent
     import tornado.httpclient
     import tornado.ioloop
 
@@ -89,6 +90,9 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True,
         else:
             futures = [client.fetch(req, raise_error, **kwargs)
                     for _ in range(count)]
+
+        assert all(isinstance(f, tornado.concurrent.Future) for f in futures)
+
         if count > 1:
             responses = yield tornado.gen.multi_future(futures)
             response = responses[0]

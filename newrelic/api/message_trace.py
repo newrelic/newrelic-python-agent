@@ -2,7 +2,7 @@ import functools
 
 from newrelic.common.async_wrapper import async_wrapper
 from newrelic.api.cat_header_mixin import CatHeaderMixin
-from newrelic.api.time_trace import TimeTrace
+from newrelic.api.time_trace import TimeTrace, current_trace
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.message_node import MessageNode
 
@@ -75,6 +75,14 @@ def MessageTraceWrapper(wrapped, library, operation, destination_type,
         destination_name, params={}):
 
     def _nr_message_trace_wrapper_(wrapped, instance, args, kwargs):
+        wrapper = async_wrapper(wrapped)
+        if not wrapper:
+            parent = current_trace()
+            if not parent:
+                return wrapped(*args, **kwargs)
+        else:
+            parent = None
+
         if callable(library):
             if instance is not None:
                 _library = library(instance, *args, **kwargs)
@@ -108,9 +116,8 @@ def MessageTraceWrapper(wrapped, library, operation, destination_type,
             _destination_name = destination_name
 
         trace = MessageTrace(_library, _operation,
-                _destination_type, _destination_name, params={})
+                _destination_type, _destination_name, params={}, parent=parent)
 
-        wrapper = async_wrapper(wrapped)
         if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)
 

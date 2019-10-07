@@ -2,7 +2,7 @@ import functools
 import logging
 
 from newrelic.common.async_wrapper import async_wrapper
-from newrelic.api.time_trace import TimeTrace
+from newrelic.api.time_trace import TimeTrace, current_trace
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.database_node import DatabaseNode
 from newrelic.core.stack_trace import current_stack
@@ -211,6 +211,14 @@ class DatabaseTrace(TimeTrace):
 def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None):
 
     def _nr_database_trace_wrapper_(wrapped, instance, args, kwargs):
+        wrapper = async_wrapper(wrapped)
+        if not wrapper:
+            parent = current_trace()
+            if not parent:
+                return wrapped(*args, **kwargs)
+        else:
+            parent = None
+
         if callable(sql):
             if instance is not None:
                 _sql = sql(instance, *args, **kwargs)
@@ -219,9 +227,8 @@ def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None):
         else:
             _sql = sql
 
-        trace = DatabaseTrace(_sql, dbapi2_module)
+        trace = DatabaseTrace(_sql, dbapi2_module, parent=parent)
 
-        wrapper = async_wrapper(wrapped)
         if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)
 

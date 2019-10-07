@@ -1,7 +1,7 @@
 import functools
 
 from newrelic.common.async_wrapper import async_wrapper
-from newrelic.api.time_trace import TimeTrace
+from newrelic.api.time_trace import TimeTrace, current_trace
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.function_node import FunctionNode
@@ -73,6 +73,14 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
             params=None, terminal=False, rollup=None):
 
     def dynamic_wrapper(wrapped, instance, args, kwargs):
+        wrapper = async_wrapper(wrapped)
+        if not wrapper:
+            parent = current_trace()
+            if not parent:
+                return wrapped(*args, **kwargs)
+        else:
+            parent = None
+
         if callable(name):
             if instance is not None:
                 _name = name(instance, *args, **kwargs)
@@ -113,9 +121,8 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
             _params = params
 
         trace = FunctionTrace(_name, _group, _label, _params,
-                terminal, rollup)
+                terminal, rollup, parent=parent)
 
-        wrapper = async_wrapper(wrapped)
         if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)
 
@@ -123,12 +130,19 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
             return wrapped(*args, **kwargs)
 
     def literal_wrapper(wrapped, instance, args, kwargs):
+        wrapper = async_wrapper(wrapped)
+        if not wrapper:
+            parent = current_trace()
+            if not parent:
+                return wrapped(*args, **kwargs)
+        else:
+            parent = None
+
         _name = name or callable_name(wrapped)
 
         trace = FunctionTrace(_name, group, label, params,
-                terminal, rollup)
+                terminal, rollup, parent=parent)
 
-        wrapper = async_wrapper(wrapped)
         if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)
 

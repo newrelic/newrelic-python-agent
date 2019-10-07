@@ -2,7 +2,7 @@ import functools
 
 from newrelic.common.async_wrapper import async_wrapper
 from newrelic.api.cat_header_mixin import CatHeaderMixin
-from newrelic.api.time_trace import TimeTrace
+from newrelic.api.time_trace import TimeTrace, current_trace
 from newrelic.core.external_node import ExternalNode
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
@@ -48,6 +48,14 @@ class ExternalTrace(CatHeaderMixin, TimeTrace):
 def ExternalTraceWrapper(wrapped, library, url, method=None):
 
     def dynamic_wrapper(wrapped, instance, args, kwargs):
+        wrapper = async_wrapper(wrapped)
+        if not wrapper:
+            parent = current_trace()
+            if not parent:
+                return wrapped(*args, **kwargs)
+        else:
+            parent = None
+
         if callable(url):
             if instance is not None:
                 _url = url(instance, *args, **kwargs)
@@ -66,9 +74,8 @@ def ExternalTraceWrapper(wrapped, library, url, method=None):
         else:
             _method = method
 
-        trace = ExternalTrace(library, _url, _method)
+        trace = ExternalTrace(library, _url, _method, parent=parent)
 
-        wrapper = async_wrapper(wrapped)
         if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)
 
@@ -76,7 +83,15 @@ def ExternalTraceWrapper(wrapped, library, url, method=None):
             return wrapped(*args, **kwargs)
 
     def literal_wrapper(wrapped, instance, args, kwargs):
-        trace = ExternalTrace(library, url, method)
+        wrapper = async_wrapper(wrapped)
+        if not wrapper:
+            parent = current_trace()
+            if not parent:
+                return wrapped(*args, **kwargs)
+        else:
+            parent = None
+
+        trace = ExternalTrace(library, url, method, parent=parent)
 
         wrapper = async_wrapper(wrapped)
         if wrapper:

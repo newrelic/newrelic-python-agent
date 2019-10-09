@@ -1337,6 +1337,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/application_airflow.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/application_celery.py": {
         "hash": "n/a",
         "libraries": [

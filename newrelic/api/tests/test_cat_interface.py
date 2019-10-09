@@ -185,8 +185,9 @@ class TestCatInterface(newrelic.tests.test_cases.TestCase):
         with Transaction(self.app_api) as txn:
             self.prepare_transaction(txn)
             trace = ExternalTrace(library, url)
-            assert trace.process_response_metadata(
-                    txn_cat_info.incoming_response_encoded_data) is None
+            with trace:
+                assert trace.process_response_metadata(
+                        txn_cat_info.incoming_response_encoded_data) is None
             self.assertEqual(len(trace.params), 3)
             self.assertEqual('1#1',
                     trace.params['cross_process_id'])

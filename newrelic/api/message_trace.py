@@ -7,7 +7,7 @@ from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.message_node import MessageNode
 
 
-class MessageTrace(TimeTrace, CatHeaderMixin):
+class MessageTrace(CatHeaderMixin, TimeTrace):
 
     cat_id_key = 'NewRelicID'
     cat_transaction_key = 'NewRelicTransaction'
@@ -25,27 +25,27 @@ class MessageTrace(TimeTrace, CatHeaderMixin):
             parent = kwargs['parent']
         super(MessageTrace, self).__init__(parent)
 
-        self.settings = self.transaction and self.transaction.settings or None
+        self.library = library
+        self.operation = operation
 
-        if self.transaction:
-            self.library = self.transaction._intern_string(library)
-            self.operation = self.transaction._intern_string(operation)
-
-        else:
-            self.library = library
-            self.operation = operation
-
-        # Only record parameters when not high security mode and only
-        # when enabled in settings.
-
-        if (self.should_record_segment_params and self.settings and
-                self.settings.message_tracer.segment_parameters_enabled):
-            self.params = params
-        else:
-            self.params = None
+        self.params = params
 
         self.destination_type = destination_type
         self.destination_name = destination_name
+
+    def __enter__(self):
+        result = super(MessageTrace, self).__enter__()
+
+        if result and self.transaction:
+            self.library = self.transaction._intern_string(self.library)
+            self.operation = self.transaction._intern_string(self.operation)
+
+        # Only record parameters when not high security mode and only
+        # when enabled in settings.
+        if not (self.should_record_segment_params and self.settings and
+                self.settings.message_tracer.segment_parameters_enabled):
+            self.params = None
+        return result
 
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, dict(
@@ -75,10 +75,13 @@ def MessageTraceWrapper(wrapped, library, operation, destination_type,
         destination_name, params={}):
 
     def _nr_message_trace_wrapper_(wrapped, instance, args, kwargs):
-        parent = current_trace()
-
-        if parent is None:
-            return wrapped(*args, **kwargs)
+        wrapper = async_wrapper(wrapped)
+        if not wrapper:
+            parent = current_trace()
+            if not parent:
+                return wrapped(*args, **kwargs)
+        else:
+            parent = None
 
         if callable(library):
             if instance is not None:
@@ -113,9 +116,8 @@ def MessageTraceWrapper(wrapped, library, operation, destination_type,
             _destination_name = destination_name
 
         trace = MessageTrace(_library, _operation,
-                _destination_type, _destination_name, params={}, parent=None)
+                _destination_type, _destination_name, params={}, parent=parent)
 
-        wrapper = async_wrapper(wrapped)
         if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)
 

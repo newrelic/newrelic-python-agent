@@ -10,9 +10,6 @@ _logger = logging.getLogger(__name__)
 class TimeTrace(object):
 
     def __init__(self, parent=None):
-        if parent is None:
-            parent = current_trace()
-
         self.parent = parent
         self.root = None
         self.child_count = 0
@@ -33,31 +30,6 @@ class TimeTrace(object):
         self.guid = '%016x' % random.getrandbits(64)
         self.agent_attributes = {}
 
-        if parent:
-
-            # The parent may be exited if the stack is not consistent. This
-            # can occur when using ensure_future to schedule coroutines
-            # instead of using async/await keywords. In those cases, we
-            # must not trace.
-            if self.parent.exited:
-                self.parent = None
-                return
-
-            transaction = parent.root.transaction
-
-            # Don't do further tracing of transaction if
-            # it has been explicitly stopped.
-            if transaction.stopped or not transaction.enabled:
-                self.parent = None
-                return
-
-            elif not self.parent.terminal_node():
-                self.parent.increment_child_count()
-
-            self.root = parent.root
-            self.should_record_segment_params = (
-                    transaction.should_record_segment_params)
-
     @property
     def transaction(self):
         return self.root and self.root.transaction
@@ -66,17 +38,33 @@ class TimeTrace(object):
         return self.child_count == len(self.children)
 
     def __enter__(self):
-        if not self.parent:
+        self.parent = parent = self.parent or current_trace()
+        if not parent:
             return self
 
+        # The parent may be exited if the stack is not consistent. This
+        # can occur when using ensure_future to schedule coroutines
+        # instead of using async/await keywords. In those cases, we
+        # must not trace.
+        #
         # Don't do any tracing if parent is designated
         # as a terminal node.
-
-        parent = self.parent
-
-        if not parent or parent.terminal_node():
+        if parent.exited or parent.terminal_node():
             self.parent = None
             return parent
+
+        transaction = parent.root.transaction
+
+        # Don't do further tracing of transaction if
+        # it has been explicitly stopped.
+        if transaction.stopped or not transaction.enabled:
+            return self
+
+        parent.increment_child_count()
+
+        self.root = parent.root
+        self.should_record_segment_params = (
+                transaction.should_record_segment_params)
 
         # Record start time.
 
@@ -85,8 +73,7 @@ class TimeTrace(object):
         cache = trace_cache()
         self.thread_id = cache.current_thread_id()
 
-        # Push ourselves as the current node.
-
+        # Push ourselves as the current node and store parent.
         try:
             cache.save_trace(self)
         except:

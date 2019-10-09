@@ -57,7 +57,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         self.transaction._settings.span_events.enabled = True
         self.transaction._settings.collect_span_events = True
 
-        self.application.adaptive_sampler = AdaptiveSampler(10)
+        self.application.adaptive_sampler = AdaptiveSampler(10, 60.0)
 
     def tearDown(self):
         if current_transaction():
@@ -67,8 +67,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         if sampled:
             # Force the adaptive sampler to reset to 0 computed calls so that
             # sampled is forced to True
-            self.application.adaptive_sampler.reset()
-            self.application.adaptive_sampler.reset()
+            self.application.adaptive_sampler._reset()
+            self.application.adaptive_sampler._reset()
         else:
             # Force sampled = False
             adaptive_sampler = self.application.adaptive_sampler

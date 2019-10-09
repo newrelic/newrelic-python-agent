@@ -12,12 +12,12 @@ class TestApplicationLocking(newrelic.tests.test_cases.TestCase):
         super(TestApplicationLocking, self).setUp()
         # Since these unit tests are modifying the application object, we must
         # prevent the harvest thread from clobbering our edits
-        self.application._stats_lock.acquire()
+        self.application.adaptive_sampler._lock.acquire()
 
     def tearDown(self):
         # Release the lock held by the tests
         try:
-            self.application._stats_lock.release()
+            self.application.adaptive_sampler._lock.release()
         except RuntimeError:
             pass
 
@@ -35,13 +35,13 @@ class TestApplicationLocking(newrelic.tests.test_cases.TestCase):
             assert self.application.adaptive_sampler.sampled_count == 0
         finally:
             # Release the lock
-            self.application._stats_lock.release()
+            self.application.adaptive_sampler._lock.release()
 
         # Join thread
         thread.join(timeout=1.0)
 
         # Re-acquire the lock
-        self.application._stats_lock.acquire()
+        self.application.adaptive_sampler._lock.acquire()
 
         # Check that sampled count is now 1
         assert self.application.adaptive_sampler.sampled_count == 1

@@ -62,7 +62,6 @@ class Application(object):
         self._last_transaction = 0.0
 
         self.adaptive_sampler = None
-        self._next_adaptive_sampler_reset = 0.0
 
         self._global_events_account = 0
 
@@ -140,28 +139,7 @@ class Application(object):
         if self.adaptive_sampler is None:
             return False
 
-        with self._stats_lock:
-
-            if self.configuration.serverless_mode.enabled:
-                now = time.time()
-
-                harvest_cycles = 0
-
-                while now >= self._next_adaptive_sampler_reset:
-                    self._transaction_count = 0
-                    harvest_cycles += 1
-                    self._next_adaptive_sampler_reset += 60.0
-
-                if harvest_cycles:
-                    self.adaptive_sampler.reset()
-
-                    # If more than 1 harvest cycle has passed without a
-                    # transaction, we need to reset the adaptive_sampler twice.
-                    # This resets with computed_count = 0
-                    if harvest_cycles > 1:
-                        self.adaptive_sampler.reset()
-
-            return self.adaptive_sampler.compute_sampled()
+        return self.adaptive_sampler.compute_sampled()
 
     def dump(self, file):
         """Dumps details about the application to the file object."""
@@ -461,8 +439,14 @@ class Application(object):
             with self._stats_lock:
                 self._stats_engine.reset_stats(configuration)
 
+                if configuration.serverless_mode.enabled:
+                    sampling_target_period = 60.0
+                else:
+                    sampling_target_period = \
+                        configuration.sampling_target_period_in_seconds
                 self.adaptive_sampler = AdaptiveSampler(
-                        configuration.sampling_target)
+                        configuration.sampling_target,
+                        sampling_target_period)
 
             with self._stats_custom_lock:
                 self._stats_custom_engine.reset_stats(configuration)
@@ -474,7 +458,6 @@ class Application(object):
 
             self._transaction_count = 0
             self._last_transaction = 0.0
-            self._next_adaptive_sampler_reset = self._period_start + 60.0
 
             self._global_events_account = 0
 
@@ -1273,9 +1256,7 @@ class Application(object):
                 transaction_count = self._transaction_count
 
                 with self._stats_lock:
-                    if not configuration.serverless_mode.enabled:
-                        self.adaptive_sampler.reset()
-                        self._transaction_count = 0
+                    self._transaction_count = 0
 
                     self._last_transaction = 0.0
 

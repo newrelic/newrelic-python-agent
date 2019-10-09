@@ -41,10 +41,13 @@ class MemcacheTrace(TimeTrace):
 def MemcacheTraceWrapper(wrapped, command):
 
     def _nr_wrapper_memcache_trace_(wrapped, instance, args, kwargs):
-        parent = current_trace()
-
-        if parent is None:
-            return wrapped(*args, **kwargs)
+        wrapper = async_wrapper(wrapped)
+        if not wrapper:
+            parent = current_trace()
+            if not parent:
+                return wrapped(*args, **kwargs)
+        else:
+            parent = None
 
         if callable(command):
             if instance is not None:
@@ -56,7 +59,6 @@ def MemcacheTraceWrapper(wrapped, command):
 
         trace = MemcacheTrace(_command, parent=parent)
 
-        wrapper = async_wrapper(wrapped)
         if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)
 

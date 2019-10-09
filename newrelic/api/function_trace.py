@@ -32,13 +32,16 @@ class FunctionTrace(TimeTrace):
         self.group = group
         self.label = label
 
-        if self.should_record_segment_params:
-            self.params = params
-        else:
-            self.params = None
+        self.params = params
 
         self.terminal = terminal
         self.rollup = terminal and rollup or None
+
+    def __enter__(self):
+        result = TimeTrace.__enter__(self)
+        if not self.should_record_segment_params:
+            self.params = None
+        return result
 
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, dict(
@@ -70,10 +73,13 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
             params=None, terminal=False, rollup=None):
 
     def dynamic_wrapper(wrapped, instance, args, kwargs):
-        parent = current_trace()
-
-        if parent is None:
-            return wrapped(*args, **kwargs)
+        wrapper = async_wrapper(wrapped)
+        if not wrapper:
+            parent = current_trace()
+            if not parent:
+                return wrapped(*args, **kwargs)
+        else:
+            parent = None
 
         if callable(name):
             if instance is not None:
@@ -117,7 +123,6 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
         trace = FunctionTrace(_name, _group, _label, _params,
                 terminal, rollup, parent=parent)
 
-        wrapper = async_wrapper(wrapped)
         if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)
 
@@ -125,17 +130,19 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
             return wrapped(*args, **kwargs)
 
     def literal_wrapper(wrapped, instance, args, kwargs):
-        parent = current_trace()
-
-        if parent is None:
-            return wrapped(*args, **kwargs)
+        wrapper = async_wrapper(wrapped)
+        if not wrapper:
+            parent = current_trace()
+            if not parent:
+                return wrapped(*args, **kwargs)
+        else:
+            parent = None
 
         _name = name or callable_name(wrapped)
 
         trace = FunctionTrace(_name, group, label, params,
                 terminal, rollup, parent=parent)
 
-        wrapper = async_wrapper(wrapped)
         if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)
 

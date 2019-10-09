@@ -555,6 +555,15 @@ class Agent(object):
         return application.compute_sampled()
 
     def _harvest_flexible(self):
+        if not self._harvest_shutdown.isSet():
+            event_harvest_config = self.global_settings().event_harvest_config
+
+            self._scheduler.enter(
+                    event_harvest_config.report_period_ms / 1000.0,
+                    1,
+                    self._harvest_flexible,
+                    ())
+
         _logger.debug('Commencing flexible harvest of application data.')
 
         self._flexible_harvest_count += 1
@@ -573,15 +582,6 @@ class Agent(object):
         _logger.debug('Completed flexible harvest of application data in %.2f '
                 'seconds.', self._flexible_harvest_duration)
 
-        if not self._harvest_shutdown.isSet():
-            event_harvest_config = self.global_settings().event_harvest_config
-
-            self._scheduler.enter(
-                    event_harvest_config.report_period_ms / 1000.0,
-                    1,
-                    self._harvest_flexible,
-                    ())
-
     def _harvest_default(self):
         shutdown = self._harvest_shutdown.isSet()
 
@@ -589,6 +589,7 @@ class Agent(object):
             _logger.debug('Commencing default harvest of application data and '
                     'forcing a shutdown at the same time.')
         else:
+            self._scheduler.enter(60.0, 2, self._harvest_default, ())
             _logger.debug('Commencing default harvest of application data.')
 
         self._default_harvest_count += 1
@@ -606,9 +607,6 @@ class Agent(object):
 
         _logger.debug('Completed default harvest of application data in %.2f '
                 'seconds.', self._default_harvest_duration)
-
-        if not shutdown:
-            self._scheduler.enter(60.0, 2, self._harvest_default, ())
 
     def _harvest_timer(self):
         if self._harvest_shutdown.isSet():

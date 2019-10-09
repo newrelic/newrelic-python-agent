@@ -32,6 +32,13 @@ def _store_version_info():
     return tornado.version_info
 
 
+def convert_yielded(*args, **kwargs):
+    global convert_yielded
+    from tornado.gen import convert_yielded as _convert_yielded
+    convert_yielded = _convert_yielded
+    return _convert_yielded(*args, **kwargs)
+
+
 def _wrap_if_not_wrapped(obj, attr, wrapper):
     wrapped = getattr(obj, attr, None)
 
@@ -259,7 +266,7 @@ def wrap_httpclient_fetch(wrapped, instance, args, kwargs):
     trace = ExternalTrace(
             'tornado', req.url, req.method.upper())
 
-    outgoing_headers = trace.generate_request_headers(trace.transaction)
+    outgoing_headers = trace.generate_request_headers(current_transaction())
     for header_name, header_value in outgoing_headers:
         # User headers should override our CAT headers
         if header_name in req.headers:
@@ -271,7 +278,7 @@ def wrap_httpclient_fetch(wrapped, instance, args, kwargs):
     except:
         return wrapped(*args, **kwargs)
 
-    return fetch(req, raise_error)
+    return convert_yielded(fetch(req, raise_error))
 
 
 def instrument_tornado_httpclient(module):

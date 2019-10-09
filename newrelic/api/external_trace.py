@@ -7,7 +7,7 @@ from newrelic.core.external_node import ExternalNode
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
 
-class ExternalTrace(TimeTrace, CatHeaderMixin):
+class ExternalTrace(CatHeaderMixin, TimeTrace):
 
     def __init__(self, library, url, method=None, **kwargs):
         parent = None
@@ -21,8 +21,6 @@ class ExternalTrace(TimeTrace, CatHeaderMixin):
         self.url = url
         self.method = method
         self.params = {}
-
-        self.settings = self.transaction and self.transaction.settings or None
 
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, dict(
@@ -50,10 +48,13 @@ class ExternalTrace(TimeTrace, CatHeaderMixin):
 def ExternalTraceWrapper(wrapped, library, url, method=None):
 
     def dynamic_wrapper(wrapped, instance, args, kwargs):
-        parent = current_trace()
-
-        if parent is None:
-            return wrapped(*args, **kwargs)
+        wrapper = async_wrapper(wrapped)
+        if not wrapper:
+            parent = current_trace()
+            if not parent:
+                return wrapped(*args, **kwargs)
+        else:
+            parent = None
 
         if callable(url):
             if instance is not None:
@@ -75,7 +76,6 @@ def ExternalTraceWrapper(wrapped, library, url, method=None):
 
         trace = ExternalTrace(library, _url, _method, parent=parent)
 
-        wrapper = async_wrapper(wrapped)
         if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)
 
@@ -83,10 +83,13 @@ def ExternalTraceWrapper(wrapped, library, url, method=None):
             return wrapped(*args, **kwargs)
 
     def literal_wrapper(wrapped, instance, args, kwargs):
-        parent = current_trace()
-
-        if parent is None:
-            return wrapped(*args, **kwargs)
+        wrapper = async_wrapper(wrapped)
+        if not wrapper:
+            parent = current_trace()
+            if not parent:
+                return wrapped(*args, **kwargs)
+        else:
+            parent = None
 
         trace = ExternalTrace(library, url, method, parent=parent)
 

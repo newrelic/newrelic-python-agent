@@ -53,31 +53,29 @@ class DatastoreTrace(TimeTrace):
         self.instance_reporting_enabled = False
         self.database_name_enabled = False
 
-        self.host = None
-        self.port_path_or_id = None
-        self.database_name = None
+        self.product = product
+        self.target = target
+        self.operation = operation
 
-        if self.transaction:
+        self.host = host
+        self.port_path_or_id = port_path_or_id
+        self.database_name = database_name
+
+    def __enter__(self):
+        result = super(DatastoreTrace, self).__enter__()
+        if result and self.transaction:
             transaction = self.transaction
 
-            self.product = transaction._intern_string(product)
-            self.target = transaction._intern_string(target)
-            self.operation = transaction._intern_string(operation)
+            self.product = transaction._intern_string(self.product)
+            self.target = transaction._intern_string(self.target)
+            self.operation = transaction._intern_string(self.operation)
 
             datastore_tracer_settings = transaction.settings.datastore_tracer
             self.instance_reporting_enabled = \
                     datastore_tracer_settings.instance_reporting.enabled
             self.database_name_enabled = \
                     datastore_tracer_settings.database_name_reporting.enabled
-
-        else:
-            self.product = product
-            self.target = target
-            self.operation = operation
-
-        self.host = host
-        self.port_path_or_id = port_path_or_id
-        self.database_name = database_name
+        return result
 
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, dict(
@@ -143,10 +141,13 @@ def DatastoreTraceWrapper(wrapped, product, target, operation):
     """
 
     def _nr_datastore_trace_wrapper_(wrapped, instance, args, kwargs):
-        parent = current_trace()
-
-        if parent is None:
-            return wrapped(*args, **kwargs)
+        wrapper = async_wrapper(wrapped)
+        if not wrapper:
+            parent = current_trace()
+            if not parent:
+                return wrapped(*args, **kwargs)
+        else:
+            parent = None
 
         if callable(product):
             if instance is not None:
@@ -174,7 +175,6 @@ def DatastoreTraceWrapper(wrapped, product, target, operation):
 
         trace = DatastoreTrace(_product, _target, _operation, parent=parent)
 
-        wrapper = async_wrapper(wrapped)
         if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)
 

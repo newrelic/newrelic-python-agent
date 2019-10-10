@@ -1,6 +1,11 @@
 unreleased
 ----------
 
+- Add automatic instrumentation for Apache Airflow
+
+  Data is now automatically collected for airflow tasks and will appear in both
+  APM and Insights.
+
 5.2.1 (2019-10-09)
 ------------------
 

@@ -51,7 +51,7 @@ RUN wget https://bitbucket.org/pypy/pypy/downloads/pypy2.7-v7.0.0-linux64.tar.bz
 # Pip.
 RUN wget https://bootstrap.pypa.io/get-pip.py && \
     python get-pip.py && \
-    pip install -U pip==18.0 virtualenv==16.0.0 tox==3.1.3
+    pip install -U pip==18.0 virtualenv==16.0.0 tox==3.14.0
 
 # Needed for tests.
 # The DEBIAN_FRONTEND env var prevents mysql-server from prompting for a root

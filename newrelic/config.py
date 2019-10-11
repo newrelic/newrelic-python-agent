@@ -2439,6 +2439,10 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.component_djangorestframework',
             'instrument_rest_framework_decorators')
 
+    _process_module_definition('airflow.models.taskinstance',
+            'newrelic.hooks.application_airflow',
+            'instrument_airflow_taskinstance')
+
     _process_module_definition('celery.task.base',
             'newrelic.hooks.application_celery',
             'instrument_celery_app_task')

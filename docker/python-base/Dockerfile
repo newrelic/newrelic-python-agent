@@ -37,7 +37,9 @@ RUN add-apt-repository -y ppa:deadsnakes/ppa && \
     apt-get install -y \
     python2.7-dev \
     python3.6-dev \
-    python3.7-dev
+    python3.7-dev \
+    python3.8-dev \
+    python3.8-distutils
 
 RUN wget https://bitbucket.org/pypy/pypy/downloads/pypy2.7-v7.0.0-linux64.tar.bz2 && \
     tar -C /usr/local -xf pypy2.7-v7.0.0-linux64.tar.bz2 && \

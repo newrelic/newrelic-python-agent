@@ -3,6 +3,7 @@ interacting with the agent core.
 
 """
 
+from __future__ import print_function
 import os
 import sys
 import time
@@ -235,26 +236,28 @@ class Agent(object):
     def dump(self, file):
         """Dumps details about the agent to the file object."""
 
-        print >> file, 'Time Created: %s' % (
-                time.asctime(time.localtime(self._creation_time)))
-        print >> file, 'Initialization PID: %s' % (
-                self._process_id)
-        print >> file, 'Default Harvest Count: %d' % (
-                self._default_harvest_count)
-        print >> file, 'Flexible Harvest Count: %d' % (
-                self._flexible_harvest_count)
-        print >> file, 'Last Default Harvest: %s' % (
-                time.asctime(time.localtime(self._last_default_harvest)))
-        print >> file, 'Last Flexible Harvest: %s' % (
-                time.asctime(time.localtime(self._last_flexible_harvest)))
-        print >> file, 'Default Harvest Duration: %.2f' % (
-                self._default_harvest_duration)
-        print >> file, 'Flexible Harvest Duration: %.2f' % (
-                self._flexible_harvest_duration)
-        print >> file, 'Agent Shutdown: %s' % (
-                self._harvest_shutdown.isSet())
-        print >> file, 'Applications: %r' % (
-                sorted(self._applications.keys()))
+        print('Time Created: %s' % (
+                time.asctime(time.localtime(self._creation_time))), file=file)
+        print('Initialization PID: %s' % (
+                self._process_id), file=file)
+        print('Default Harvest Count: %d' % (
+                self._default_harvest_count), file=file)
+        print('Flexible Harvest Count: %d' % (
+                self._flexible_harvest_count), file=file)
+        print('Last Default Harvest: %s' % (
+                time.asctime(time.localtime(self._last_default_harvest))),
+                file=file)
+        print('Last Flexible Harvest: %s' % (
+                time.asctime(time.localtime(self._last_flexible_harvest))),
+                file=file)
+        print('Default Harvest Duration: %.2f' % (
+                self._default_harvest_duration), file=file)
+        print('Flexible Harvest Duration: %.2f' % (
+                self._flexible_harvest_duration), file=file)
+        print('Agent Shutdown: %s' % (
+                self._harvest_shutdown.isSet()), file=file)
+        print('Applications: %r' % (
+                sorted(self._applications.keys())), file=file)
 
     def global_settings(self):
         """Returns the global default settings object. If access is

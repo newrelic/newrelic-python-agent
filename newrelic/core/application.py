@@ -163,7 +163,7 @@ class Application(object):
         if active_session:
             print('Collector URL: %s' % (
                     active_session.collector_url), file=file)
-            print('Agent Run ID: %d' % (
+            print('Agent Run ID: %s' % (
                     active_session.agent_run_id), file=file)
             print('URL Normalization Rules: %r' % (
                     self._rules_engine['url'].rules), file=file)

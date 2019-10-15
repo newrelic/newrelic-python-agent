@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import sys
 import time
@@ -1521,38 +1522,23 @@ class Transaction(object):
     def dump(self, file):
         """Dumps details about the transaction to the file object."""
 
-        print >> file, 'Application: %s' % (
-                self.application.name)
-        print >> file, 'Time Started: %s' % (
-                time.asctime(time.localtime(self.start_time)))
-        print >> file, 'Thread Id: %r' % (
-                self.thread_id,)
-        print >> file, 'Current Status: %d' % (
-                self._state)
-        print >> file, 'Recording Enabled: %s' % (
-                self.enabled)
-        print >> file, 'Ignore Transaction: %s' % (
-                self.ignore_transaction)
-        print >> file, 'Transaction Dead: %s' % (
-                self._dead)
-        print >> file, 'Transaction Stopped: %s' % (
-                self.stopped)
-        print >> file, 'Background Task: %s' % (
-                self.background_task)
-        print >> file, 'Request URI: %s' % (
-                self._request_uri)
-        print >> file, 'Transaction Group: %s' % (
-                self._group)
-        print >> file, 'Transaction Name: %s' % (
-                self._name)
-        print >> file, 'Name Priority: %r' % (
-                self._name_priority)
-        print >> file, 'Frozen Path: %s' % (
-                self._frozen_path)
-        print >> file, 'AutoRUM Disabled: %s' % (
-                self.autorum_disabled)
-        print >> file, 'Supress Apdex: %s' % (
-                self.suppress_apdex)
+        print('Application: %s' % (self.application.name), file=file)
+        print('Time Started: %s' % (
+                time.asctime(time.localtime(self.start_time))), file=file)
+        print('Thread Id: %r' % (self.thread_id), file=file)
+        print('Current Status: %d' % (self._state), file=file)
+        print('Recording Enabled: %s' % (self.enabled), file=file)
+        print('Ignore Transaction: %s' % (self.ignore_transaction), file=file)
+        print('Transaction Dead: %s' % (self._dead), file=file)
+        print('Transaction Stopped: %s' % (self.stopped), file=file)
+        print('Background Task: %s' % (self.background_task), file=file)
+        print('Request URI: %s' % (self._request_uri), file=file)
+        print('Transaction Group: %s' % (self._group), file=file)
+        print('Transaction Name: %s' % (self._name), file=file)
+        print('Name Priority: %r' % (self._name_priority), file=file)
+        print('Frozen Path: %s' % (self._frozen_path), file=file)
+        print('AutoRUM Disabled: %s' % (self.autorum_disabled), file=file)
+        print('Supress Apdex: %s' % (self.suppress_apdex), file=file)
 
 
 def current_transaction(active_only=True):

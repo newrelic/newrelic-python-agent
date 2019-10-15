@@ -2,6 +2,7 @@
 
 """
 
+from __future__ import print_function
 import logging
 import sys
 import threading
@@ -144,46 +145,48 @@ class Application(object):
     def dump(self, file):
         """Dumps details about the application to the file object."""
 
-        print >> file, 'Time Created: %s' % (
-                time.asctime(time.localtime(self._creation_time)))
-        print >> file, 'Linked Applications: %r' % (
-                self._linked_applications)
-        print >> file, 'Registration PID: %s' % (
-                self._process_id)
-        print >> file, 'Harvest Count: %d' % (
-                self._harvest_count)
-        print >> file, 'Agent Restart: %d' % (
-                self._agent_restart)
-        print >> file, 'Forced Shutdown: %s' % (
-                self._agent_shutdown)
+        print('Time Created: %s' % (
+                time.asctime(time.localtime(self._creation_time))), file=file)
+        print('Linked Applications: %r' % (
+                self._linked_applications), file=file)
+        print('Registration PID: %s' % (
+                self._process_id), file=file)
+        print('Harvest Count: %d' % (
+                self._harvest_count), file=file)
+        print('Agent Restart: %d' % (
+                self._agent_restart), file=file)
+        print('Forced Shutdown: %s' % (
+                self._agent_shutdown), file=file)
 
         active_session = self._active_session
 
         if active_session:
-            print >> file, 'Collector URL: %s' % (
-                    active_session.collector_url)
-            print >> file, 'Agent Run ID: %d' % (
-                    active_session.agent_run_id)
-            print >> file, 'URL Normalization Rules: %r' % (
-                    self._rules_engine['url'].rules)
-            print >> file, 'Metric Normalization Rules: %r' % (
-                    self._rules_engine['metric'].rules)
-            print >> file, 'Transaction Normalization Rules: %r' % (
-                    self._rules_engine['transaction'].rules)
-            print >> file, 'Transaction Segment Whitelist Rules: %r' % (
-                    self._rules_engine['segment'].rules)
-            print >> file, 'Harvest Period Start: %s' % (
-                    time.asctime(time.localtime(self._period_start)))
-            print >> file, 'Transaction Count: %d' % (
-                    self._transaction_count)
-            print >> file, 'Last Transaction: %s' % (
-                    time.asctime(time.localtime(self._last_transaction)))
-            print >> file, 'Global Events Count: %d' % (
-                    self._global_events_account)
-            print >> file, 'Harvest Metrics Count: %d' % (
-                    self._stats_engine.metrics_count())
-            print >> file, 'Harvest Discard Count: %d' % (
-                    self._discard_count)
+            print('Collector URL: %s' % (
+                    active_session.collector_url), file=file)
+            print('Agent Run ID: %s' % (
+                    active_session.agent_run_id), file=file)
+            print('URL Normalization Rules: %r' % (
+                    self._rules_engine['url'].rules), file=file)
+            print('Metric Normalization Rules: %r' % (
+                    self._rules_engine['metric'].rules), file=file)
+            print('Transaction Normalization Rules: %r' % (
+                    self._rules_engine['transaction'].rules), file=file)
+            print('Transaction Segment Whitelist Rules: %r' % (
+                    self._rules_engine['segment'].rules), file=file)
+            print('Harvest Period Start: %s' % (
+                    time.asctime(time.localtime(self._period_start))),
+                    file=file)
+            print('Transaction Count: %d' % (
+                    self._transaction_count), file=file)
+            print('Last Transaction: %s' % (
+                    time.asctime(time.localtime(self._last_transaction))),
+                    file=file)
+            print('Global Events Count: %d' % (
+                    self._global_events_account), file=file)
+            print('Harvest Metrics Count: %d' % (
+                    self._stats_engine.metrics_count()), file=file)
+            print('Harvest Discard Count: %d' % (
+                    self._discard_count), file=file)
 
     def activate_session(self, activate_agent=None, timeout=0.0):
         """Creates a background thread to initiate registration of the

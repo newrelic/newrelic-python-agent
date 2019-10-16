@@ -12,6 +12,8 @@
 py27=$(which python2.7)
 py35=$(which python3.5)
 py36=$(which python3.6)
+py37=$(which python3.7)
+py38=$(which python3.8)
 pypy=$(which pypy)
 pypy3=$(which pypy3)
 
@@ -19,7 +21,7 @@ ENVIRONMENTS=
 
 if test x"$1" = x""
 then
-    for e in py27 py35 py36 pypy pypy3
+    for e in py27 py35 py36 py37 py38 pypy pypy3
     do
         eval py_exe="\$$e"
         if test x"$py_exe" != x""

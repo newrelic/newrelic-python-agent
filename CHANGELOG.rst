@@ -1,6 +1,12 @@
 unreleased
 ----------
 
+- Fix untraced database calls when using pymysql context manager assignments
+
+  When using context managers to create and assign a cursor in pymysql,
+  database calls on that cursor object were not traced. Database calls in
+  pymysql are now properly traced.
+
 5.2.1 (2019-10-09)
 ------------------
 

@@ -281,6 +281,12 @@ class Transaction(object):
 
         self._cpu_user_time_start = os.times()[0]
 
+        # Set the thread ID upon entering the transaction.
+        # This is done here so that any asyncio tasks will
+        # be active and the task ID will be used to
+        # store traces into the trace cache.
+        self.thread_id = trace_cache().current_thread_id()
+
         # Calculate initial thread utilisation factor.
         # For now we only do this if we know it is an
         # actual thread and not a greenlet.
@@ -294,12 +300,6 @@ class Transaction(object):
                 self._utilization_tracker.enter_transaction(thread_instance)
                 self._thread_utilization_start = \
                         self._utilization_tracker.utilization_count()
-
-        # Set the thread ID upon entering the transaction.
-        # This is done here so that any asyncio tasks will
-        # be active and the task ID will be used to
-        # store traces into the trace cache.
-        self.thread_id = trace_cache().current_thread_id()
 
         # Create the root span which pushes itself
         # into the trace cache as the active trace.

@@ -1,6 +1,12 @@
 unreleased
 ----------
 
+- Fix thread utilization data on agent versions v5.x.x
+
+  Thread utilization data was not reported for agents v5.x.x, resulting in
+  missing data on the capacity analysis page. The agent will now report thread
+  utilization data.
+
 - Fix untraced database calls when using pymysql context manager assignments
 
   When using context managers to create and assign a cursor in pymysql,

@@ -52,8 +52,14 @@ def test_bad_response_error(app):
 @validate_transaction_metrics('_target_application:BadResponse.on_put')
 @validate_transaction_errors(errors=['_target_application:Crash'])
 def test_unhandled_exception(app):
-    with pytest.raises(app.Crash):
-        app.put('/bad_response')
+    from falcon import __version__ as falcon_version
+
+    # Falcon v3 and above will not raise an uncaught exception
+    if int(falcon_version.split('.', 1)[0]) >= 3:
+        app.put('/bad_response', status=500, expect_errors=True)
+    else:
+        with pytest.raises(app.Crash):
+            app.put('/bad_response')
 
 
 @override_generic_settings(SETTINGS, {

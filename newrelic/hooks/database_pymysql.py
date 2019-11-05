@@ -1,7 +1,32 @@
 from newrelic.api.database_trace import register_database_client
 from newrelic.common.object_wrapper import wrap_object
 
-from newrelic.hooks.database_mysqldb import ConnectionFactory
+from newrelic.hooks.database_mysqldb import (
+    ConnectionFactory as MySqlDBConnectionFactory,
+    ConnectionWrapper as MySqlDBConnectionWrapper,
+)
+
+from newrelic.hooks.database_dbapi2 import (
+    CursorWrapper as DBAPI2CursorWrapper,
+)
+
+
+class CursorWrapper(DBAPI2CursorWrapper):
+
+    def __enter__(self):
+        self.__wrapped__.__enter__()
+        return self
+
+
+class ConnectionWrapper(MySqlDBConnectionWrapper):
+
+    __cursor_wrapper__ = CursorWrapper
+
+
+class ConnectionFactory(MySqlDBConnectionFactory):
+
+    __connection_wrapper__ = ConnectionWrapper
+
 
 def instance_info(args, kwargs):
     def _bind_params(host=None, user=None, passwd=None, db=None,
@@ -11,6 +36,7 @@ def instance_info(args, kwargs):
     host, port, db = _bind_params(*args, **kwargs)
 
     return (host, port, db)
+
 
 def instrument_pymysql(module):
     register_database_client(module, database_product='MySQL',

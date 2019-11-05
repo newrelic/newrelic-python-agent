@@ -21,6 +21,10 @@ from testing_support.sample_applications import fully_featured_app
 
 if sys.version_info >= (3, 0):
     long = int
+try:
+    from newrelic.core._thread_utilization import ThreadUtilization
+except ImportError:
+    ThreadUtilization = None
 
 
 @wsgi_application()
@@ -53,6 +57,8 @@ def test_intrinsics():
 _required_agent = ['request.method', 'wsgi.output.seconds', 'response.status',
         'request.headers.host', 'request.headers.accept', 'request.uri',
         'response.headers.contentType', 'response.headers.contentLength']
+if ThreadUtilization:
+    _required_agent.append('thread.concurrency')
 _forgone_agent = []
 
 

@@ -1,6 +1,9 @@
 unreleased
 ----------
 
+5.2.2 (2019-11-06)
+------------------
+
 - Fix thread utilization data on agent versions v5.x.x
 
   Thread utilization data was not reported for agents v5.x.x, resulting in

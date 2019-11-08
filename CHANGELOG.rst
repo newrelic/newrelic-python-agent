@@ -1,6 +1,12 @@
 unreleased
 ----------
 
+- Restore newrelic-admin record-deploy command interface
+
+  The newrelic-admin command was previously updated to require an application
+  id via the command line. The requirement has been removed, restoring the
+  original record-deploy CLI arguments.
+
 5.2.2 (2019-11-06)
 ------------------
 

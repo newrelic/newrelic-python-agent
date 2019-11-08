@@ -28,29 +28,23 @@ class TestGetHostName(unittest.TestCase):
 
     def setUp(self):
         self.original_socket_gethostname = socket.gethostname
-        self.original_socket_getfqdn = socket.getfqdn
         self.original_socket_socket = socket.socket
 
         self.original_cache_hostname = system_info._nr_cached_hostname
-        self.original_cache_fqdn = system_info._nr_cached_fqdn
         self.original_cache_ip_address = system_info._nr_cached_ip_address
 
         socket.gethostname = self._mock_gethostname_1
-        socket.getfqdn = self._mock_getfqdn_1
         socket.socket = MocketSocket
         MocketSocket.ip_v4 = '127.0.0.1'
 
         system_info._nr_cached_hostname = None
-        system_info._nr_cached_fqdn = None
         system_info._nr_cached_ip_address = None
 
     def tearDown(self):
         socket.gethostname = self.original_socket_gethostname
-        socket.getfqdn = self.original_socket_getfqdn
         socket.socket = self.original_socket_socket
 
         system_info._nr_cached_hostname = self.original_cache_hostname
-        system_info._nr_cached_fqdn = self.original_cache_fqdn
         system_info._nr_cached_ip_address = self.original_cache_ip_address
 
     def _mock_gethostname_1(self):
@@ -59,22 +53,12 @@ class TestGetHostName(unittest.TestCase):
     def _mock_gethostname_2(self):
         return 'mock-hostname-2'
 
-    def _mock_getfqdn_1(self):
-        return 'www.mock-hostname-1'
-
-    def _mock_getfqdn_2(self):
-        return 'www.mock-hostname-2'
-
     def test_gethostname_initial_value(self):
         self.assertEqual(system_info._nr_cached_hostname, None)
 
     def test_gethostname_first_access(self):
         hostname = system_info.gethostname()
         self.assertEqual(hostname, 'mock-hostname-1')
-
-    def test_getfqdn_first_access(self):
-        fqdn = system_info.getfqdn()
-        self.assertEqual(fqdn, 'www.mock-hostname-1')
 
     def test_getips_first_access(self):
         ip = system_info.getips()
@@ -99,21 +83,6 @@ class TestGetHostName(unittest.TestCase):
 
         hostname_2 = system_info.gethostname()
         self.assertEqual(hostname_1, hostname_2)
-
-    def test_getfqdn_returns_cached_value(self):
-        fqdn_1 = system_info.getfqdn()
-
-        # Monkeypatch socket.getfqdn again.
-
-        socket.getfqdn = self._mock_getfqdn_2
-        self.assertEqual(socket.getfqdn(), 'www.mock-hostname-2')
-
-        # If system_info.getfqdn() calls socket.getfqdn()
-        # instead of returning cached value, then this assert
-        # will fail.
-
-        fqdn_2 = system_info.getfqdn()
-        self.assertEqual(fqdn_1, fqdn_2)
 
     def test_ip_address_returns_cached_value(self):
         ip_1 = system_info.getips()

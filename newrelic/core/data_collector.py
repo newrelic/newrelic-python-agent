@@ -1089,7 +1089,6 @@ class ApplicationSession(object):
         hostname = system_info.gethostname(settings['heroku.use_dyno_names'],
                 settings['heroku.dyno_name_prefixes_to_shorten'])
 
-        fqdn = system_info.getfqdn()
         ip_address = system_info.getips()
 
         connect_settings = {}
@@ -1110,8 +1109,6 @@ class ApplicationSession(object):
         utilization_settings['logical_processors'] = logical_processor_count()
         utilization_settings['total_ram_mib'] = total_physical_memory()
         utilization_settings['hostname'] = hostname
-        if fqdn:
-            utilization_settings['full_hostname'] = fqdn
         if ip_address:
             utilization_settings['ip_address'] = ip_address
 

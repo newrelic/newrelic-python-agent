@@ -7,6 +7,7 @@ from newrelic.packages import requests
 from testing_support.fixtures import TerminatingPopen
 
 pytest.importorskip('aiohttp.wsgi')
+pytest.importorskip('gunicorn.workers.gaiohttp')
 
 
 @pytest.mark.parametrize('nr_enabled', [True, False])

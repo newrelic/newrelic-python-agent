@@ -2,9 +2,15 @@ import logging
 import os
 import string
 import re
+import threading
 
 from newrelic.packages import requests
 from newrelic.core.internal_metrics import internal_count_metric
+
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 
 
 _logger = logging.getLogger(__name__)
@@ -16,7 +22,7 @@ class CommonUtilization(object):
     HEADERS = None
     EXPECTED_KEYS = ()
     VENDOR_NAME = ''
-    TIMEOUT = 0.5
+    TIMEOUT = 0.4
 
     @classmethod
     def record_error(cls, resource, data):
@@ -27,7 +33,7 @@ class CommonUtilization(object):
                 cls.VENDOR_NAME, resource, data)
 
     @classmethod
-    def fetch(cls):
+    def _fetch(cls, q):
         # Create own requests session and disable all environment variables,
         # so that we can bypass any proxy set via env var for this request.
 
@@ -35,7 +41,9 @@ class CommonUtilization(object):
         session.trust_env = False
 
         try:
-            resp = session.get(cls.METADATA_URL, timeout=cls.TIMEOUT,
+            resp = session.get(
+                    cls.METADATA_URL,
+                    timeout=cls.TIMEOUT,
                     headers=cls.HEADERS)
             resp.raise_for_status()
         except Exception as e:
@@ -43,7 +51,23 @@ class CommonUtilization(object):
             _logger.debug('Unable to fetch %s data from %r: %r',
                     cls.VENDOR_NAME, cls.METADATA_URL, e)
 
-        return resp
+        q.put(resp)
+
+    @classmethod
+    def fetch(cls):
+        q = queue.Queue()
+        t = threading.Thread(
+            target=cls._fetch,
+            name="UtilizationDetect/{}".format(cls.VENDOR_NAME),
+            args=(q,),
+        )
+        t.daemon = True
+        t.start()
+        try:
+            return q.get(timeout=cls.TIMEOUT + 0.1)
+        except queue.Empty:
+            _logger.debug('Timeout waiting to fetch %s data from %r',
+                    cls.VENDOR_NAME, cls.METADATA_URL)
 
     @classmethod
     def get_values(cls, response):

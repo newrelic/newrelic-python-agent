@@ -184,7 +184,6 @@ def patch_system_info(test):
         initial_logical_processor_count = dc.logical_processor_count
         initial_total_physical_memory = dc.total_physical_memory
         initial_system_info_gethostname = dc.system_info.gethostname
-        initial_system_info_getfqdn = dc.system_info.getfqdn
         initial_system_info_getips = dc.system_info.getips
 
         dc.logical_processor_count = _mock_logical_processor_count(
@@ -193,8 +192,6 @@ def patch_system_info(test):
                 test.get('input_total_ram_mib'))
         dc.system_info.gethostname = _mock_gethostname(
                 test.get('input_hostname'))
-        dc.system_info.getfqdn = _mock_gethostname(
-                test.get('input_full_hostname'))
         dc.system_info.getips = _mock_getips(test.get('input_ip_address'))
 
         try:
@@ -203,7 +200,6 @@ def patch_system_info(test):
             dc.logical_processor_count = initial_logical_processor_count
             dc.total_physical_memory = initial_total_physical_memory
             dc.system_info.gethostname = initial_system_info_gethostname
-            dc.system_info.getfqdn = initial_system_info_getfqdn
             dc.system_info.getips = initial_system_info_getips
 
     return _patch_system_info
@@ -238,6 +234,9 @@ def test_utilization_settings(test, monkeypatch):
                     '', [], [], settings)
             util_output = local_config['utilization']
             expected_output = test['expected_output_json']
+
+            # The agent does not record full_hostname and it's not required
+            expected_output.pop("full_hostname")
 
             assert expected_output == util_output
 

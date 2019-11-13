@@ -59,7 +59,7 @@ class TransactionContext(object):
 
         if CancelledError is None:
             try:
-                from concurrent.futures import CancelledError
+                from asyncio import CancelledError
             except:
                 CancelledError = GeneratorExit
 

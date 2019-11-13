@@ -31,7 +31,6 @@ METADATA = {}
 ENVIRONMENT = []
 HIGH_SECURITY = True
 HOST = "test_host"
-HOST_LONG = "www.test_host"
 IP_ADDRESS = ["127.0.0.1"]
 LABELS = 'labels'
 LINKED_APPS = ['linked_app_1', 'linked_app_2']
@@ -56,11 +55,6 @@ def setup_module(module):
         return HOST
     _backup_methods['gethostname'] = system_info.gethostname
     system_info.gethostname = gethostname
-
-    def getfqdn(*args, **kwargs):
-        return HOST_LONG
-    _backup_methods['getfqdn'] = system_info.getfqdn
-    system_info.getfqdn = getfqdn
 
     def getips(*args, **kwargs):
         return IP_ADDRESS
@@ -121,29 +115,30 @@ def teardown_module(module):
 
 
 def default_settings():
-    return {'browser_monitoring.loader': BROWSER_MONITORING_LOADER,
-            'browser_monitoring.debug': BROWSER_MONITORING_DEBUG,
-            'capture_params': CAPTURE_PARAMS,
-            'transaction_tracer.record_sql': RECORD_SQL,
-            'high_security': HIGH_SECURITY,
-            'labels': LABELS,
-            'process_host.display_name': DISPLAY_NAME,
-            'utilization.detect_aws': True,
-            'utilization.detect_azure': True,
-            'utilization.detect_docker': True,
-            'utilization.detect_gcp': True,
-            'utilization.detect_pcf': True,
-            'utilization.detect_kubernetes': True,
-            'heroku.use_dyno_names': False,
-            'heroku.dyno_name_prefixes_to_shorten': [],
-            'event_harvest_config': {
-                    'harvest_limits': {
-                        'analytic_event_data': ANALYTIC_EVENT_DATA,
-                        'span_event_data': SPAN_EVENT_DATA,
-                        'custom_event_data': CUSTOM_EVENT_DATA,
-                        'error_event_data': ERROR_EVENT_DATA,
-                    }
+    return {
+        'browser_monitoring.loader': BROWSER_MONITORING_LOADER,
+        'browser_monitoring.debug': BROWSER_MONITORING_DEBUG,
+        'capture_params': CAPTURE_PARAMS,
+        'transaction_tracer.record_sql': RECORD_SQL,
+        'high_security': HIGH_SECURITY,
+        'labels': LABELS,
+        'process_host.display_name': DISPLAY_NAME,
+        'utilization.detect_aws': True,
+        'utilization.detect_azure': True,
+        'utilization.detect_docker': True,
+        'utilization.detect_gcp': True,
+        'utilization.detect_pcf': True,
+        'utilization.detect_kubernetes': True,
+        'heroku.use_dyno_names': False,
+        'heroku.dyno_name_prefixes_to_shorten': [],
+        'event_harvest_config': {
+            'harvest_limits': {
+                'analytic_event_data': ANALYTIC_EVENT_DATA,
+                'span_event_data': SPAN_EVENT_DATA,
+                'custom_event_data': CUSTOM_EVENT_DATA,
+                'error_event_data': ERROR_EVENT_DATA,
             }
+        }
     }
 
 
@@ -174,11 +169,7 @@ def payload_asserts(payload, with_aws=True, with_gcp=True, with_pcf=True,
 
     utilization_len = 5
 
-    if HOST_LONG:
-        assert payload_data['utilization']['full_hostname'] == HOST_LONG
-        utilization_len += 1
-    else:
-        assert 'full_hostname' not in payload_data['utilization']
+    assert 'full_hostname' not in payload_data['utilization']
 
     if IP_ADDRESS:
         assert payload_data['utilization']['ip_address'] == IP_ADDRESS
@@ -294,16 +285,13 @@ def test_create_connect_payload_metadata(monkeypatch):
     assert payload_data['metadata'] == {'NEW_RELIC_METADATA_FOOBAR': 'foobar'}
 
 
-def test_create_connect_payload_no_fqdn_no_ip():
+def test_create_connect_payload_no_ip():
     settings = default_settings()
 
-    global HOST_LONG
     global IP_ADDRESS
 
-    ORIGINAL_HOST_LONG = HOST_LONG
     ORIGINAL_IP_ADDRESS = IP_ADDRESS
 
-    HOST_LONG = None
     IP_ADDRESS = None
 
     try:
@@ -312,7 +300,6 @@ def test_create_connect_payload_no_fqdn_no_ip():
 
         payload_asserts(payload)
     finally:
-        HOST_LONG = ORIGINAL_HOST_LONG
         IP_ADDRESS = ORIGINAL_IP_ADDRESS
 
 

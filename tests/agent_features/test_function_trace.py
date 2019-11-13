@@ -2,7 +2,6 @@ import time
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.transaction import current_transaction
 
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_tt_parenting)
@@ -103,3 +102,14 @@ def test_async_trace_overlapping_children():
     assert child_trace_1.start_time < child_trace_2.start_time
     assert child_trace_1.end_time < child_trace_2.end_time
     assert child_trace_2.end_time < parent_trace.end_time
+
+
+@background_task()
+def test_function_trace_settings():
+    with FunctionTrace("test_trace") as trace:
+        assert trace.settings
+
+
+def test_function_trace_settings_no_transaction():
+    with FunctionTrace("test_trace") as trace:
+        assert not trace.settings

@@ -345,11 +345,9 @@ def _resolve_hostname(use_dyno_names, dyno_shorten_prefixes):
 
 
 _nr_cached_hostname_lock = threading.Lock()
-_nr_cached_fqdn_lock = threading.Lock()
 _nr_cached_ipaddress_lock = threading.Lock()
 
 _nr_cached_hostname = None
-_nr_cached_fqdn = None
 _nr_cached_ip_address = None
 
 
@@ -374,28 +372,6 @@ def gethostname(use_dyno_names=False, dyno_shorten_prefixes=()):
                     dyno_shorten_prefixes)
 
     return _nr_cached_hostname
-
-
-def getfqdn():
-    """Cache the output of socket.getfqdn().
-
-    Keeps the reported fqdn consistent throughout an agent run.
-
-    """
-
-    global _nr_cached_fqdn
-    global _nr_cached_fqdn_lock
-
-    if _nr_cached_fqdn is not None:
-        return _nr_cached_fqdn
-
-    # Only lock for the one-time write.
-
-    with _nr_cached_fqdn_lock:
-        if _nr_cached_fqdn is None:
-            _nr_cached_fqdn = socket.getfqdn()
-
-    return _nr_cached_fqdn
 
 
 def getips():

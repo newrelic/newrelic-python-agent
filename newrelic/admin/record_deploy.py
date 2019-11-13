@@ -129,16 +129,17 @@ def record_deploy(args):
     if user is None:
         user = pwd.getpwuid(os.getuid()).pw_gecos
 
-    data = {}
-    data["deployment"] = {}
-    data["deployment"]["revision"] = revision
+    deployment = {}
+    deployment["revision"] = revision
 
-    if description is not None:
-        data["deployment"]["description"] = description
-    if changelog is not None:
-        data["deployment"]["changelog"] = changelog
-    if user is not None:
-        data["deployment"]["user"] = user
+    if description:
+        deployment["description"] = description
+    if changelog:
+        deployment["changelog"] = changelog
+    if user:
+        deployment["user"] = user
+
+    data = {"deployment": deployment}
 
     r = requests.post(
         url,

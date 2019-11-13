@@ -64,7 +64,7 @@ def fetch_app_id(app_name, server):
     r = requests.get(
         url,
         params={"filter[name]": app_name},
-        **api_request_kwargs(),
+        **api_request_kwargs()
     )
     r.raise_for_status()
 
@@ -79,7 +79,7 @@ def fetch_app_id(app_name, server):
 
 @command(
     "record-deploy",
-    "config_file revision [description changelog user timestamp]",
+    "config_file description [revision changelog user]",
     "Records a deployment for the monitored application.",
 )
 def record_deploy(args):
@@ -89,27 +89,11 @@ def record_deploy(args):
         usage("record-deploy")
         sys.exit(1)
 
-    def _args(
-        config_file,
-        revision,
-        description=None,
-        changelog=None,
-        user=None,
-        timestamp=None,
-        *args
-    ):
-        return (
-            config_file,
-            revision,
-            description,
-            changelog,
-            user,
-            timestamp,
-        )
+    def _args(config_file, description, revision="Unknown", changelog=None,
+            user=None, *args):
+        return config_file, description, revision, changelog, user
 
-    config_file, revision, description, changelog, user, timestamp = _args(
-        *args
-    )
+    config_file, description, revision, changelog, user = _args(*args)
 
     settings = global_settings()
 
@@ -145,23 +129,22 @@ def record_deploy(args):
     if user is None:
         user = pwd.getpwuid(os.getuid()).pw_gecos
 
-    data = {}
-    data["deployment"] = {}
-    data["deployment"]["revision"] = revision
+    deployment = {}
+    deployment["revision"] = revision
 
-    if description is not None:
-        data["deployment"]["description"] = description
-    if changelog is not None:
-        data["deployment"]["changelog"] = changelog
-    if user is not None:
-        data["deployment"]["user"] = user
-    if timestamp is not None:
-        data["deployment"]["timestamp"] = timestamp
+    if description:
+        deployment["description"] = description
+    if changelog:
+        deployment["changelog"] = changelog
+    if user:
+        deployment["user"] = user
+
+    data = {"deployment": deployment}
 
     r = requests.post(
         url,
         json=data,
-        **api_request_kwargs(),
+        **api_request_kwargs()
     )
 
     if r.status_code != 201:

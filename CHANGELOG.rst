@@ -1,6 +1,9 @@
 unreleased
 ----------
 
+5.2.3 (2019-11-13)
+------------------
+
 - Restore newrelic-admin record-deploy command interface
 
   The newrelic-admin command was previously updated to require an application

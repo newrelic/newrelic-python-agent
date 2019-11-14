@@ -215,6 +215,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/log.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/memcache_trace.py": {
         "hash": "n/a",
         "libraries": [

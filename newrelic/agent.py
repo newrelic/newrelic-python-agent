@@ -13,6 +13,8 @@ from newrelic.samplers.decorators import (
         data_source_generator as __data_source_generator,
         data_source_factory as __data_source_factory)
 
+from newrelic.api.log import NewRelicContextFormatter
+
 from newrelic.api.application import (
         application_instance as __application,
         register_application as __register_application,

@@ -56,6 +56,36 @@ def test_newrelic_logger_no_error(log_buffer):
     }
 
 
+def test_newrelic_logger_error(log_buffer):
+    try:
+        raise ValueError
+    except ValueError:
+        _logger.exception(u"oops")
+
+    log_buffer.seek(0)
+    message = json.load(log_buffer)
+
+    timestamp = message.pop("timestamp")
+    thread_id = message.pop("thread.id")
+    filename = message.pop("file.name")
+    line_number = message.pop("line.number")
+
+    assert type(timestamp) is int
+    assert type(thread_id) is int
+    assert filename.endswith("/test_logs_in_context.py")
+    assert type(line_number) is int
+
+    assert message == {
+        "entity.type": "SERVICE",
+        "message": "oops",
+        "log.level": "ERROR",
+        "logger.name": "test_logs_in_context",
+        "thread.name": "MainThread",
+        "error.class": "builtins.ValueError",
+        "error.message": "",
+    }
+
+
 EXPECTED_KEYS_TXN = (
     "trace.id",
     "span.id",

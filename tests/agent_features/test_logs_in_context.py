@@ -6,18 +6,19 @@ from newrelic.api.log import NewRelicContextFormatter
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.agent import get_linking_metadata
+import newrelic.packages.six as six
 
-try:
-    from io import StringIO
-except ImportError:
-    from StringIO import StringIO
+if six.PY2:
+    from io import BytesIO as Buffer
+else:
+    from io import StringIO as Buffer
 
 _logger = logging.getLogger(__name__)
 
 
 @pytest.fixture
 def log_buffer(caplog):
-    buf = StringIO()
+    buf = Buffer()
 
     _formatter = NewRelicContextFormatter('%(module)s %(message)s')
     _handler = logging.StreamHandler(buf)
@@ -48,18 +49,22 @@ def test_newrelic_logger_no_error(log_buffer):
     assert type(line_number) is int
 
     assert message == {
-        "entity.type": "SERVICE",
-        "message": "Hello World",
-        "log.level": "INFO",
-        "logger.name": "test_logs_in_context",
-        "thread.name": "MainThread",
+        u"entity.type": u"SERVICE",
+        u"message": u"Hello World",
+        u"log.level": u"INFO",
+        u"logger.name": u"test_logs_in_context",
+        u"thread.name": u"MainThread",
     }
+
+
+class TestException(ValueError):
+    pass
 
 
 def test_newrelic_logger_error(log_buffer):
     try:
-        raise ValueError
-    except ValueError:
+        raise TestException
+    except TestException:
         _logger.exception(u"oops")
 
     log_buffer.seek(0)
@@ -76,13 +81,13 @@ def test_newrelic_logger_error(log_buffer):
     assert type(line_number) is int
 
     assert message == {
-        "entity.type": "SERVICE",
-        "message": "oops",
-        "log.level": "ERROR",
-        "logger.name": "test_logs_in_context",
-        "thread.name": "MainThread",
-        "error.class": "builtins.ValueError",
-        "error.message": "",
+        u"entity.type": u"SERVICE",
+        u"message": u"oops",
+        u"log.level": u"ERROR",
+        u"logger.name": u"test_logs_in_context",
+        u"thread.name": u"MainThread",
+        u"error.class": u"test_logs_in_context.TestException",
+        u"error.message": u"",
     }
 
 

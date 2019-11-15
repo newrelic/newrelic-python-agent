@@ -3,6 +3,7 @@ import random
 import time
 import traceback
 from newrelic.core.trace_cache import trace_cache
+from newrelic.common import system_info
 
 _logger = logging.getLogger(__name__)
 
@@ -311,6 +312,34 @@ class TimeTrace(object):
         else:
             self.has_async_children = False
 
+    def get_linking_metadata(self):
+        metadata = {
+            "entity.type": "SERVICE",
+            "hostname": system_info.gethostname(),
+        }
+        txn = self.transaction
+        if txn:
+            metadata["span.id"] = self.guid
+            metadata["trace.id"] = txn.trace_id
+            settings = txn.settings
+            if settings:
+                metadata["entity.name"] = settings.app_name
+                entity_guid = settings.entity_guid
+                if entity_guid:
+                    metadata["entity.guid"] = entity_guid
+        return metadata
+
 
 def current_trace():
     return trace_cache().current_trace()
+
+
+def get_linking_metadata():
+    trace = current_trace()
+    if trace:
+        return trace.get_linking_metadata()
+    else:
+        return {
+            "entity.type": "SERVICE",
+            "hostname": system_info.gethostname()
+        }

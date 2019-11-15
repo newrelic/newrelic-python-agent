@@ -1,3 +1,4 @@
+import json
 import logging
 import pytest
 
@@ -30,13 +31,29 @@ def log_buffer(caplog):
     _logger.removeHandler(_handler)
 
 
-def test_newrelic_logger(log_buffer):
-    _logger.info(u"Hello World")
+def test_newrelic_logger_no_error(log_buffer):
+    _logger.info(u"Hello %s", u"World")
 
     log_buffer.seek(0)
-    text = log_buffer.read()
+    message = json.load(log_buffer)
 
-    assert text == 'test_logs_in_context Hello World\n'
+    timestamp = message.pop("timestamp")
+    thread_id = message.pop("thread.id")
+    filename = message.pop("file.name")
+    line_number = message.pop("line.number")
+
+    assert type(timestamp) is int
+    assert type(thread_id) is int
+    assert filename.endswith("/test_logs_in_context.py")
+    assert type(line_number) is int
+
+    assert message == {
+        "entity.type": "SERVICE",
+        "message": "Hello World",
+        "log.level": "INFO",
+        "logger.name": "test_logs_in_context",
+        "thread.name": "MainThread",
+    }
 
 
 EXPECTED_KEYS_TXN = (

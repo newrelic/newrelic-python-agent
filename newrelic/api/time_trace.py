@@ -3,7 +3,6 @@ import random
 import time
 import traceback
 from newrelic.core.trace_cache import trace_cache
-from newrelic.common import system_info
 
 _logger = logging.getLogger(__name__)
 
@@ -315,7 +314,6 @@ class TimeTrace(object):
     def get_linking_metadata(self):
         metadata = {
             "entity.type": "SERVICE",
-            "hostname": system_info.gethostname(),
         }
         txn = self.transaction
         if txn:
@@ -341,5 +339,4 @@ def get_linking_metadata():
     else:
         return {
             "entity.type": "SERVICE",
-            "hostname": system_info.gethostname()
         }

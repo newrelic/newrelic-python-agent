@@ -39,18 +39,15 @@ def test_newrelic_logger(log_buffer):
     assert text == 'test_logs_in_context Hello World\n'
 
 
-EXPECTED_KEYS_TXN = [
+EXPECTED_KEYS_TXN = (
     "trace.id",
     "span.id",
     "entity.name",
     "entity.type",
     "entity.guid",
-    "hostname",
-]
+)
 
-EXPECTED_KEYS_TRACE_ENDED = ["entity.type", "hostname"]
-
-EXPECTED_KEYS_NO_TXN = ["entity.type", "hostname"]
+EXPECTED_KEYS_NO_TXN = EXPECTED_KEYS_TRACE_ENDED = ("entity.type",)
 
 
 def validate_metadata(metadata, expected):

@@ -42,9 +42,17 @@ def format_exc_info(exc_info):
 
 class NewRelicContextFormatter(logging.Formatter):
     def format(self, record):
+        exc_info = record.exc_info
+
+        record.exc_info = None
+        try:
+            message = super(NewRelicContextFormatter, self).format(record)
+        finally:
+            record.exc_info = exc_info
+
         output = {
             "timestamp": int(record.created * 1000),
-            "message": record.getMessage(),
+            "message": message,
             "log.level": record.levelname,
             "logger.name": record.name,
             "thread.id": record.thread,
@@ -53,6 +61,6 @@ class NewRelicContextFormatter(logging.Formatter):
             "line.number": record.lineno,
         }
         output.update(get_linking_metadata())
-        if record.exc_info:
-            output.update(format_exc_info(record.exc_info))
+        if exc_info:
+            output.update(format_exc_info(exc_info))
         return json.dumps(output)

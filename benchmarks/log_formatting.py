@@ -3,8 +3,8 @@ from benchmarks.util import MockApplication, MockTransaction
 from newrelic.api.log import NewRelicContextFormatter
 from newrelic.core.trace_cache import trace_cache
 
-NR_FORMATTER = NewRelicContextFormatter("%(module)s %(message)s")
-DEFAULT_FORMATTER = logging.Formatter("%(module)s %(message)s")
+NR_FORMATTER = NewRelicContextFormatter()
+DEFAULT_FORMATTER = logging.Formatter()
 LOG_DICT = {
     "name": __name__,
     "level": logging.INFO,

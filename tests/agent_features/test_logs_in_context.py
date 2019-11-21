@@ -1,3 +1,4 @@
+import json
 import logging
 import pytest
 
@@ -5,18 +6,19 @@ from newrelic.api.log import NewRelicContextFormatter
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.agent import get_linking_metadata
+import newrelic.packages.six as six
 
-try:
-    from io import StringIO
-except ImportError:
-    from StringIO import StringIO
+if six.PY2:
+    from io import BytesIO as Buffer
+else:
+    from io import StringIO as Buffer
 
 _logger = logging.getLogger(__name__)
 
 
 @pytest.fixture
 def log_buffer(caplog):
-    buf = StringIO()
+    buf = Buffer()
 
     _formatter = NewRelicContextFormatter('%(module)s %(message)s')
     _handler = logging.StreamHandler(buf)
@@ -30,13 +32,63 @@ def log_buffer(caplog):
     _logger.removeHandler(_handler)
 
 
-def test_newrelic_logger(log_buffer):
-    _logger.info(u"Hello World")
+def test_newrelic_logger_no_error(log_buffer):
+    _logger.info(u"Hello %s", u"World")
 
     log_buffer.seek(0)
-    text = log_buffer.read()
+    message = json.load(log_buffer)
 
-    assert text == 'test_logs_in_context Hello World\n'
+    timestamp = message.pop("timestamp")
+    thread_id = message.pop("thread.id")
+    filename = message.pop("file.name")
+    line_number = message.pop("line.number")
+
+    assert type(timestamp) is int
+    assert type(thread_id) is int
+    assert filename.endswith("/test_logs_in_context.py")
+    assert type(line_number) is int
+
+    assert message == {
+        u"entity.type": u"SERVICE",
+        u"message": u"test_logs_in_context Hello World",
+        u"log.level": u"INFO",
+        u"logger.name": u"test_logs_in_context",
+        u"thread.name": u"MainThread",
+    }
+
+
+class TestException(ValueError):
+    pass
+
+
+def test_newrelic_logger_error(log_buffer):
+    try:
+        raise TestException
+    except TestException:
+        _logger.exception(u"oops")
+
+    log_buffer.seek(0)
+    message = json.load(log_buffer)
+
+    timestamp = message.pop("timestamp")
+    thread_id = message.pop("thread.id")
+    filename = message.pop("file.name")
+    line_number = message.pop("line.number")
+
+    assert type(timestamp) is int
+    assert type(thread_id) is int
+    assert filename.endswith("/test_logs_in_context.py")
+    assert type(line_number) is int
+
+    assert message == {
+        u"entity.type": u"SERVICE",
+        u"message": u"test_logs_in_context oops",
+        u"log.level": u"ERROR",
+        u"logger.name": u"test_logs_in_context",
+        u"thread.name": u"MainThread",
+        u"error.class": u"test_logs_in_context.TestException",
+        u"error.message": u"",
+    }
 
 
 EXPECTED_KEYS_TXN = (

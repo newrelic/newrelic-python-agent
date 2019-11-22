@@ -20,7 +20,7 @@ _logger = logging.getLogger(__name__)
 def log_buffer(caplog):
     buf = Buffer()
 
-    _formatter = NewRelicContextFormatter('%(module)s %(message)s')
+    _formatter = NewRelicContextFormatter()
     _handler = logging.StreamHandler(buf)
     _handler.setFormatter(_formatter)
 
@@ -50,7 +50,7 @@ def test_newrelic_logger_no_error(log_buffer):
 
     assert message == {
         u"entity.type": u"SERVICE",
-        u"message": u"test_logs_in_context Hello World",
+        u"message": u"Hello World",
         u"log.level": u"INFO",
         u"logger.name": u"test_logs_in_context",
         u"thread.name": u"MainThread",
@@ -82,7 +82,7 @@ def test_newrelic_logger_error(log_buffer):
 
     assert message == {
         u"entity.type": u"SERVICE",
-        u"message": u"test_logs_in_context oops",
+        u"message": u"oops",
         u"log.level": u"ERROR",
         u"logger.name": u"test_logs_in_context",
         u"thread.name": u"MainThread",

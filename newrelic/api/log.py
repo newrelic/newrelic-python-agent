@@ -1,6 +1,6 @@
 import json
-import logging
 import newrelic.packages.six as six
+from logging import Formatter
 from newrelic.api.time_trace import get_linking_metadata
 
 
@@ -40,19 +40,14 @@ def format_exc_info(exc_info):
     }
 
 
-class NewRelicContextFormatter(logging.Formatter):
+class NewRelicContextFormatter(Formatter):
+    def __init__(self):
+        super(NewRelicContextFormatter, self).__init__()
+
     def format(self, record):
-        exc_info = record.exc_info
-
-        record.exc_info = None
-        try:
-            message = super(NewRelicContextFormatter, self).format(record)
-        finally:
-            record.exc_info = exc_info
-
         output = {
             "timestamp": int(record.created * 1000),
-            "message": message,
+            "message": record.getMessage(),
             "log.level": record.levelname,
             "logger.name": record.name,
             "thread.id": record.thread,
@@ -61,6 +56,6 @@ class NewRelicContextFormatter(logging.Formatter):
             "line.number": record.lineno,
         }
         output.update(get_linking_metadata())
-        if exc_info:
-            output.update(format_exc_info(exc_info))
+        if record.exc_info:
+            output.update(format_exc_info(record.exc_info))
         return json.dumps(output)

@@ -307,11 +307,6 @@ def trace_cache():
     return _trace_cache
 
 
-def import_hooks_enabled():
-    _trace_cache.greenlet = False
-    _trace_cache.asyncio = False
-
-
 def greenlet_loaded(module):
     _trace_cache.greenlet = module
 

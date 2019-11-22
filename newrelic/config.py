@@ -17,6 +17,7 @@ from newrelic.core.config import (Settings, apply_config_setting,
 
 import newrelic.core.agent
 import newrelic.core.config
+import newrelic.core.trace_cache as trace_cache
 
 import newrelic.api.settings
 import newrelic.api.import_hook
@@ -1985,6 +1986,14 @@ def _process_module_definition(target, module, function='instrument'):
 
 
 def _process_module_builtin_defaults():
+    trace_cache.import_hooks_enabled()
+    _process_module_definition('asyncio',
+            'newrelic.core.trace_cache',
+            'asyncio_loaded')
+    _process_module_definition('greenlet',
+            'newrelic.core.trace_cache',
+            'greenlet_loaded')
+
     _process_module_definition('asyncio.base_events',
             'newrelic.hooks.coroutines_asyncio',
             'instrument_asyncio_base_events')

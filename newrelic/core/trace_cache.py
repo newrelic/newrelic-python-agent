@@ -44,9 +44,10 @@ def get_event_loop(task):
 
 
 class TraceCache(object):
-
     def __init__(self):
         self._cache = weakref.WeakValueDictionary()
+        self.asyncio = None
+        self.greenlet = None
 
     def current_thread_id(self):
         """Returns the thread ID for the caller.
@@ -291,3 +292,16 @@ _trace_cache = TraceCache()
 
 def trace_cache():
     return _trace_cache
+
+
+def import_hooks_enabled():
+    _trace_cache.greenlet = False
+    _trace_cache.asyncio = False
+
+
+def greenlet_loaded(module):
+    _trace_cache.greenlet = module
+
+
+def asyncio_loaded(module):
+    _trace_cache.asyncio = module

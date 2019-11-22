@@ -52,6 +52,8 @@ class NewRelicContextFormatter(Formatter):
             "logger.name": record.name,
             "thread.id": record.thread,
             "thread.name": record.threadName,
+            "process.id": record.process,
+            "process.name": record.processName,
             "file.name": record.pathname,
             "line.number": record.lineno,
         }

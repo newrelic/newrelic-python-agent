@@ -42,11 +42,28 @@ def get_event_loop(task):
         return getattr(task, '_loop', None)
 
 
+class cached_module(object):
+
+    def __init__(self, module_path, name=None):
+        self.module_path = module_path
+        self.name = name or module_path
+
+    def __get__(self, instance, owner=None):
+        if instance is None:
+            return self
+
+        module = sys.modules.get(self.module_path)
+        if module:
+            instance.__dict__[self.name] = module
+            return module
+
+
 class TraceCache(object):
+    asyncio = cached_module("asyncio")
+    greenlet = cached_module("greenlet")
+
     def __init__(self):
         self._cache = weakref.WeakValueDictionary()
-        self.asyncio = None
-        self.greenlet = None
 
     def current_thread_id(self):
         """Returns the thread ID for the caller.
@@ -55,9 +72,6 @@ class TraceCache(object):
         greenlet then we use the greenlet ID instead of the thread ID.
 
         """
-
-        if self.greenlet is None:
-            self.greenlet = sys.modules.get('greenlet')
 
         if self.greenlet:
             # Greenlet objects are maintained in a tree structure with
@@ -73,9 +87,6 @@ class TraceCache(object):
             current = self.greenlet.getcurrent()
             if current is not None and current.parent:
                 return id(current)
-
-        if self.asyncio is None:
-            self.asyncio = sys.modules.get('asyncio')
 
         if self.asyncio:
             task = current_task(self.asyncio)
@@ -187,14 +198,8 @@ class TraceCache(object):
 
         if hasattr(sys, '_current_frames'):
             if thread_id not in sys._current_frames():
-                if self.greenlet is None:
-                    self.greenlet = sys.modules.get('greenlet')
-
                 if self.greenlet:
                     trace._greenlet = weakref.ref(self.greenlet.getcurrent())
-
-                if self.asyncio is None:
-                    self.asyncio = sys.modules.get('asyncio')
 
                 if self.asyncio and not hasattr(trace, '_task'):
                     task = current_task(self.asyncio)

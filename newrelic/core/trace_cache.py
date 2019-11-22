@@ -20,8 +20,7 @@ from newrelic.core.loop_node import LoopNode
 _logger = logging.getLogger(__name__)
 
 
-def current_task():
-    asyncio = sys.modules.get('asyncio')
+def current_task(asyncio):
     if not asyncio:
         return
 
@@ -57,9 +56,10 @@ class TraceCache(object):
 
         """
 
-        greenlet = sys.modules.get('greenlet')
+        if self.greenlet is None:
+            self.greenlet = sys.modules.get('greenlet')
 
-        if greenlet:
+        if self.greenlet:
             # Greenlet objects are maintained in a tree structure with
             # the 'parent' attribute pointing to that which a specific
             # instance is associated with. Only the root node has no
@@ -70,13 +70,17 @@ class TraceCache(object):
             # all other cases where we can obtain a current greenlet,
             # then it should indicate we are running as a greenlet.
 
-            current = greenlet.getcurrent()
+            current = self.greenlet.getcurrent()
             if current is not None and current.parent:
                 return id(current)
 
-        task = current_task()
-        if task is not None:
-            return id(task)
+        if self.asyncio is None:
+            self.asyncio = sys.modules.get('asyncio')
+
+        if self.asyncio:
+            task = current_task(self.asyncio)
+            if task is not None:
+                return id(task)
 
         return thread.get_ident()
 
@@ -183,13 +187,17 @@ class TraceCache(object):
 
         if hasattr(sys, '_current_frames'):
             if thread_id not in sys._current_frames():
-                greenlet = sys.modules.get('greenlet')
-                if greenlet:
-                    trace._greenlet = weakref.ref(greenlet.getcurrent())
+                if self.greenlet is None:
+                    self.greenlet = sys.modules.get('greenlet')
 
-                asyncio = sys.modules.get('asyncio')
-                if asyncio and not hasattr(trace, '_task'):
-                    task = current_task()
+                if self.greenlet:
+                    trace._greenlet = weakref.ref(self.greenlet.getcurrent())
+
+                if self.asyncio is None:
+                    self.asyncio = sys.modules.get('asyncio')
+
+                if self.asyncio and not hasattr(trace, '_task'):
+                    task = current_task(self.asyncio)
                     trace._task = task
 
     def pop_current(self, trace):

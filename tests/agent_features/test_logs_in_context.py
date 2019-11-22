@@ -40,11 +40,13 @@ def test_newrelic_logger_no_error(log_buffer):
 
     timestamp = message.pop("timestamp")
     thread_id = message.pop("thread.id")
+    process_id = message.pop("process.id")
     filename = message.pop("file.name")
     line_number = message.pop("line.number")
 
     assert type(timestamp) is int
     assert type(thread_id) is int
+    assert type(process_id) is int
     assert filename.endswith("/test_logs_in_context.py")
     assert type(line_number) is int
 
@@ -54,6 +56,7 @@ def test_newrelic_logger_no_error(log_buffer):
         u"log.level": u"INFO",
         u"logger.name": u"test_logs_in_context",
         u"thread.name": u"MainThread",
+        u"process.name": u"MainProcess",
     }
 
 
@@ -72,11 +75,13 @@ def test_newrelic_logger_error(log_buffer):
 
     timestamp = message.pop("timestamp")
     thread_id = message.pop("thread.id")
+    process_id = message.pop("process.id")
     filename = message.pop("file.name")
     line_number = message.pop("line.number")
 
     assert type(timestamp) is int
     assert type(thread_id) is int
+    assert type(process_id) is int
     assert filename.endswith("/test_logs_in_context.py")
     assert type(line_number) is int
 
@@ -86,6 +91,7 @@ def test_newrelic_logger_error(log_buffer):
         u"log.level": u"ERROR",
         u"logger.name": u"test_logs_in_context",
         u"thread.name": u"MainThread",
+        u"process.name": u"MainProcess",
         u"error.class": u"test_logs_in_context.TestException",
         u"error.message": u"",
     }

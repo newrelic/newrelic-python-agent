@@ -168,6 +168,11 @@ def environment_settings():
     # TL;DR: Do NOT use six module for the following iteration.
 
     for name, module in list(sys.modules.items()):
+        # If the module isn't actually loaded (such as failed relative imports
+        # in Python 2.7), the module will be None and should not be reported.
+        if module is None:
+            continue
+
         if name.startswith('newrelic.hooks.'):
             plugins.append(name)
 

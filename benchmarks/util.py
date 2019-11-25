@@ -89,7 +89,7 @@ class MockTrace(object):
 
 
 class MockTransaction(WSGIWebTransaction):
-    def __init__(self, application, *args, **kwargs):
+    def __init__(self, application, thread_id=0, *args, **kwargs):
         self._state = WSGIWebTransaction.STATE_STOPPED
         self.stopped = False
         self.enabled = True
@@ -99,7 +99,8 @@ class MockTransaction(WSGIWebTransaction):
         self._name_priority = 0
         self._settings = application.settings
         self._trace_node_count = 0
-        self.current_span = Sentinel()
+        self.thread_id = thread_id
+        self.current_span = Sentinel(self)
         self._string_cache = {}
         self._stack_trace_count = 0
         self._explain_plan_count = 0

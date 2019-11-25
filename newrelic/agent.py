@@ -13,13 +13,16 @@ from newrelic.samplers.decorators import (
         data_source_generator as __data_source_generator,
         data_source_factory as __data_source_factory)
 
+from newrelic.api.log import NewRelicContextFormatter
+
 from newrelic.api.application import (
         application_instance as __application,
         register_application as __register_application,
         application_settings as __application_settings)
 
 from newrelic.api.time_trace import (
-        current_trace as __current_trace)
+        current_trace as __current_trace,
+        get_linking_metadata as __get_linking_metadata)
 
 from newrelic.api.transaction import (
         current_transaction as __current_transaction,
@@ -184,6 +187,8 @@ application_settings = __wrap_api_call(__application_settings,
         'application_settings')
 current_trace = __wrap_api_call(__current_trace,
         'current_trace')
+get_linking_metadata = __wrap_api_call(__get_linking_metadata,
+        'get_linking_metadata')
 current_transaction = __wrap_api_call(__current_transaction,
         'current_transaction')
 set_transaction_name = __wrap_api_call(__set_transaction_name,

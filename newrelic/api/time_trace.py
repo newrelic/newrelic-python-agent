@@ -311,6 +311,32 @@ class TimeTrace(object):
         else:
             self.has_async_children = False
 
+    def get_linking_metadata(self):
+        metadata = {
+            "entity.type": "SERVICE",
+        }
+        txn = self.transaction
+        if txn:
+            metadata["span.id"] = self.guid
+            metadata["trace.id"] = txn.trace_id
+            settings = txn.settings
+            if settings:
+                metadata["entity.name"] = settings.app_name
+                entity_guid = settings.entity_guid
+                if entity_guid:
+                    metadata["entity.guid"] = entity_guid
+        return metadata
+
 
 def current_trace():
     return trace_cache().current_trace()
+
+
+def get_linking_metadata():
+    trace = current_trace()
+    if trace:
+        return trace.get_linking_metadata()
+    else:
+        return {
+            "entity.type": "SERVICE",
+        }

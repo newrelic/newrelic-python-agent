@@ -1,6 +1,15 @@
 unreleased
 ----------
 
+5.4.0 (2019-11-25)
+------------------
+
+- Logs In Context
+
+  The logs in context feature is now supported by the Python Agent. For more
+  information, see the python logs-in-context page.
+  https://docs.newrelic.com/docs/logs/new-relic-logs/enable-logs-context/enable-logs-context-python
+
 - The plugin list in the environment page may have been inaccurrately reported
 
   When using absolute imports in Python 2, the agent may have reported relative

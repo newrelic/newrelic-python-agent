@@ -420,6 +420,8 @@ def _process_configuration(section):
                      'getint', None)
     _process_setting(section, 'distributed_tracing.enabled',
                      'getboolean', None)
+    _process_setting(section, 'distributed_tracing.format',
+                     'get', None)
     _process_setting(section, 'span_events.enabled',
                      'getboolean', None)
     _process_setting(section, 'span_events.max_samples_stored',

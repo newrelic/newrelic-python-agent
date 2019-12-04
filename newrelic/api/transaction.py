@@ -979,6 +979,11 @@ class Transaction(object):
             self._record_supportability('Supportability/DistributedTrace/'
                     'CreatePayload/Exception')
 
+    def insert_distributed_trace_headers(self, headers):
+        payload = self.create_distributed_trace_payload()
+        payload = payload and payload.http_safe()
+        headers["newrelic"] = payload
+
     def accept_distributed_trace_payload(self, payload, transport_type='HTTP'):
         if not self.enabled:
             return False
@@ -1715,6 +1720,12 @@ def create_distributed_trace_payload():
     transaction = current_transaction()
     if transaction:
         return transaction.create_distributed_trace_payload()
+
+
+def insert_distributed_trace_headers(headers):
+    transaction = current_transaction()
+    if transaction:
+        return transaction.insert_distributed_trace_headers(headers)
 
 
 def current_trace_id():

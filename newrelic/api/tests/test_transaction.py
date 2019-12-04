@@ -116,6 +116,13 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             payload = self.transaction.create_distributed_trace_payload()
             assert type(payload.http_safe()) is str
 
+    def test_insert_distributed_trace_headers(self):
+        with self.transaction:
+            headers = {}
+            self.transaction.insert_distributed_trace_headers(headers)
+            assert "newrelic" in headers
+            assert type(headers["newrelic"]) is str
+
     def test_distributed_trace_no_referring_transaction(self):
         with self.transaction:
             payload = self.transaction.create_distributed_trace_payload()

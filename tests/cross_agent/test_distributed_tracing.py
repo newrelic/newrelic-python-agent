@@ -103,7 +103,7 @@ def target_wsgi_application(environ, start_response):
     outbound_payloads = test_settings['outbound_payloads']
     if outbound_payloads:
         for payload_assertions in outbound_payloads:
-            payload = txn.create_distributed_trace_payload()
+            payload = txn._create_distributed_trace_payload()
             assert_payload(payload, payload_assertions,
                     test_settings['major_version'],
                     test_settings['minor_version'])

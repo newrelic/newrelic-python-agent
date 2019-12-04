@@ -74,12 +74,12 @@ def test_outbound_cross_process_headers(cat_enabled, distributed_tracing,
         transaction._test_request_headers = headers
 
         if distributed_tracing:
-            assert ExternalTrace.cat_distributed_trace_key in headers
+            assert 'newrelic' in headers
         elif cat_enabled:
             assert ExternalTrace.cat_id_key in headers
             assert ExternalTrace.cat_transaction_key in headers
         else:
-            assert ExternalTrace.cat_distributed_trace_key not in headers
+            assert 'newrelic' not in headers
             assert ExternalTrace.cat_id_key not in headers
             assert ExternalTrace.cat_transaction_key not in headers
 

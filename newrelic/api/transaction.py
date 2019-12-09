@@ -1,6 +1,7 @@
 from __future__ import print_function
 import os
 import sys
+import traceback
 import time
 import threading
 import logging
@@ -52,6 +53,18 @@ class Sentinel(TimeTrace):
         # saving in the cache.
         self.thread_id = transaction.thread_id
         trace_cache().save_trace(self)
+
+    @property
+    def exclusive(self):
+        return getattr(self, '_exclusive', 0.0)
+
+    @exclusive.setter
+    def exclusive(self, value):
+        stack = traceback.format_stack()[:-1]
+        _logger.debug(
+                'Sentinel exclusive time was modified from: %r',
+                ''.join(stack))
+        self._exclusive = value
 
     def process_child(self, node, ignore_exclusive=False):
         if ignore_exclusive:

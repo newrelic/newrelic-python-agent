@@ -1,4 +1,3 @@
-import inspect
 import falcon
 import webtest
 
@@ -34,7 +33,12 @@ class BadResponse(object):
         raise Crash()
 
 
-application = falcon.API()
+try:
+    application = falcon.App()
+    name_prefix = 'falcon.app:App'
+except AttributeError:
+    application = falcon.API()
+    name_prefix = 'falcon.api:API'
 
 
 def bad_error_handler(*args, **kwargs):
@@ -55,3 +59,6 @@ _target_application = webtest.TestApp(application)
 
 # Put exception class here for convenience
 _target_application.Crash = Crash
+
+# Put name prefix here for convenience
+_target_application.name_prefix = name_prefix

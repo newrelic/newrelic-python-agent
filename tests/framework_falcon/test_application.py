@@ -6,32 +6,43 @@ from testing_support.fixtures import (validate_transaction_metrics,
 
 SETTINGS = global_settings()
 
-_test_basic_metrics = (
-    ('Function/falcon.api:API.__call__', 1),
-    ('Function/_target_application:Index.on_get', 1),
-)
 
-
-@validate_transaction_metrics('_target_application:Index.on_get',
-        scoped_metrics=_test_basic_metrics,
-        rollup_metrics=_test_basic_metrics)
 def test_basic(app):
-    response = app.get('/', status=200)
-    response.mustcontain('ok')
+    _test_basic_metrics = (
+        ('Function/' + app.name_prefix + '.__call__', 1),
+        ('Function/_target_application:Index.on_get', 1),
+    )
+
+    @validate_transaction_metrics('_target_application:Index.on_get',
+            scoped_metrics=_test_basic_metrics,
+            rollup_metrics=_test_basic_metrics)
+    def _test():
+        response = app.get('/', status=200)
+        response.mustcontain('ok')
+
+    _test()
 
 
-@validate_transaction_metrics('falcon.api:API._handle_exception')
 @override_ignore_status_codes([404])
 @validate_transaction_errors(errors=[])
 def test_ignored_status_code(app):
-    app.get('/foobar', status=404)
+
+    @validate_transaction_metrics(app.name_prefix + '._handle_exception')
+    def _test():
+        app.get('/foobar', status=404)
+
+    _test()
 
 
-@validate_transaction_metrics('falcon.api:API._handle_exception')
 @override_ignore_status_codes([])
 @validate_transaction_errors(errors=['falcon.errors:HTTPNotFound'])
 def test_error_recorded(app):
-    app.get('/foobar', status=404)
+
+    @validate_transaction_metrics(app.name_prefix + '._handle_exception')
+    def _test():
+        app.get('/foobar', status=404)
+
+    _test()
 
 
 # This test verifies that we don't actually break anything if somebody puts

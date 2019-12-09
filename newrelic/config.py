@@ -2074,6 +2074,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('falcon.api',
             'newrelic.hooks.framework_falcon',
             'instrument_falcon_api')
+    _process_module_definition('falcon.app',
+            'newrelic.hooks.framework_falcon',
+            'instrument_falcon_app')
     _process_module_definition('falcon.routing.util',
             'newrelic.hooks.framework_falcon',
             'instrument_falcon_routing_util')

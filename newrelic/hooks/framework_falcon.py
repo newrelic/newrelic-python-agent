@@ -90,6 +90,19 @@ def instrument_falcon_api(module):
             wrap_handle_exception)
 
 
+def instrument_falcon_app(module):
+    framework = framework_details()
+
+    wrap_handle_exception = \
+            build_wrap_handle_exception(_bind_handle_exception_v2)
+
+    wrap_wsgi_application(module, 'App.__call__',
+            framework=framework)
+
+    wrap_function_wrapper(module, 'App._handle_exception',
+            wrap_handle_exception)
+
+
 def instrument_falcon_routing_util(module):
     if hasattr(module, 'map_http_methods'):
         wrap_function_wrapper(module, 'map_http_methods',

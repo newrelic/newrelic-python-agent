@@ -1107,12 +1107,15 @@ class Transaction(object):
         return self._accept_distributed_trace_payload(*args, **kwargs)
 
     def accept_distributed_trace_headers(self, headers, transport_type='HTTP'):
-        distributed_header = headers.get('newrelic')
-        distributed_header = ensure_str(distributed_header)
-        if distributed_header is not None:
-            return self._accept_distributed_trace_payload(
-                    distributed_header,
-                    transport_type)
+        if self.settings.distributed_tracing.format == 'w3c':
+            pass
+        else:
+            distributed_header = headers.get('newrelic')
+            distributed_header = ensure_str(distributed_header)
+            if distributed_header is not None:
+                return self._accept_distributed_trace_payload(
+                        distributed_header,
+                        transport_type)
 
     def _process_incoming_cat_headers(self, encoded_cross_process_id,
             encoded_txn_header):

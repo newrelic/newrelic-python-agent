@@ -23,7 +23,7 @@ class MessageTransaction(BackgroundTask):
         super(MessageTransaction, self).__init__(application, name,
                 group=group)
 
-        cat_id, cat_transaction, dt_transaction = None, None, None
+        cat_id, cat_transaction = None, None
 
         self.headers = headers
 
@@ -32,13 +32,11 @@ class MessageTransaction(BackgroundTask):
                 MessageTrace.cat_id_key, None)
             cat_transaction = self.headers.pop(
                 MessageTrace.cat_transaction_key, None)
-            dt_transaction = self.headers.pop(
-                MessageTrace.cat_distributed_trace_key, None)
 
         if self.settings is not None:
-            if self.settings.distributed_tracing.enabled and dt_transaction:
-                self.accept_distributed_trace_payload(dt_transaction,
-                    transport_type='AMQP')
+            if self.settings.distributed_tracing.enabled:
+                self.accept_distributed_trace_headers(
+                        self.headers, transport_type='AMQP')
             elif self.settings.cross_application_tracer.enabled:
                 self._process_incoming_cat_headers(cat_id, cat_transaction)
 

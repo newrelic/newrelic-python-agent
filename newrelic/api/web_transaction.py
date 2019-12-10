@@ -241,10 +241,7 @@ class WebTransaction(Transaction):
         # Process the New Relic cross process ID header and extract
         # the relevant details.
         if self._settings.distributed_tracing.enabled:
-            distributed_header = self._request_headers.get('newrelic')
-            distributed_header = ensure_str(distributed_header)
-            if distributed_header is not None:
-                self.accept_distributed_trace_payload(distributed_header)
+            self.accept_distributed_trace_headers(self._request_headers)
         else:
             client_cross_process_id = \
                     self._request_headers.get('x-newrelic-id')

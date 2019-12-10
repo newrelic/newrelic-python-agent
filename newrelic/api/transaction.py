@@ -31,7 +31,7 @@ from newrelic.core.custom_event import create_custom_event
 from newrelic.core.stack_trace import exception_stack
 from newrelic.common.encoding_utils import (generate_path_hash, obfuscate,
         deobfuscate, json_encode, json_decode, base64_decode,
-        convert_to_cat_metadata_value, DistributedTracePayload)
+        convert_to_cat_metadata_value, DistributedTracePayload, ensure_str)
 
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.api.time_trace import TimeTrace
@@ -1098,6 +1098,14 @@ class Transaction(object):
                     'AcceptPayload/Exception')
             return False
 
+    def accept_distributed_trace_headers(self, headers, transport_type='HTTP'):
+        distributed_header = headers.get('newrelic')
+        distributed_header = ensure_str(distributed_header)
+        if distributed_header is not None:
+            return self.accept_distributed_trace_payload(
+                    distributed_header,
+                    transport_type)
+
     def _process_incoming_cat_headers(self, encoded_cross_process_id,
             encoded_txn_header):
         settings = self._settings
@@ -1722,6 +1730,14 @@ def accept_distributed_trace_payload(payload, transport_type='HTTP'):
         return transaction.accept_distributed_trace_payload(payload,
                 transport_type)
     return False
+
+
+def accept_distributed_trace_headers(headers, transport_type='HTTP'):
+    transaction = current_transaction()
+    if transaction:
+        return transaction.accept_distributed_trace_headers(
+                headers,
+                transport_type)
 
 
 def create_distributed_trace_payload():

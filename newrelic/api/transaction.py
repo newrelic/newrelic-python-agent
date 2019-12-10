@@ -6,6 +6,7 @@ import threading
 import logging
 import itertools
 import random
+import warnings
 import weakref
 
 from collections import deque
@@ -930,7 +931,7 @@ class Transaction(object):
             payload['d']['id'] = guid
         return payload
 
-    def create_distributed_trace_payload(self):
+    def _create_distributed_trace_payload(self):
         if not self.enabled:
             return
 
@@ -979,8 +980,15 @@ class Transaction(object):
             self._record_supportability('Supportability/DistributedTrace/'
                     'CreatePayload/Exception')
 
+    def create_distributed_trace_payload(self):
+        warnings.warn((
+            'The create_distributed_trace_payload API has been deprecated. '
+            'Please use the insert_distributed_trace_headers API.'
+        ), DeprecationWarning)
+        return self._create_distributed_trace_payload()
+
     def insert_distributed_trace_headers(self, headers):
-        payload = self.create_distributed_trace_payload()
+        payload = self._create_distributed_trace_payload()
         payload = payload and payload.http_safe()
         headers["newrelic"] = payload
 

@@ -1,6 +1,7 @@
 import json
 import time
 import unittest
+import pytest
 
 import newrelic.api.settings
 
@@ -105,7 +106,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
     def test_create_distributed_trace_payload_text(self):
         with self.transaction:
-            payload = self.transaction.create_distributed_trace_payload()
+            with pytest.warns(DeprecationWarning):
+                payload = self.transaction.create_distributed_trace_payload()
             assert type(payload.text()) is str
             assert ('Supportability/DistributedTrace/'
                     'CreatePayload/Success'
@@ -113,9 +115,11 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
     def test_create_distributed_trace_payload_http_safe(self):
         with self.transaction:
-            payload = self.transaction.create_distributed_trace_payload()
+            with pytest.warns(DeprecationWarning):
+                payload = self.transaction.create_distributed_trace_payload()
             assert type(payload.http_safe()) is str
 
+    @pytest.mark.filterwarnings("error")
     def test_insert_distributed_trace_headers(self):
         with self.transaction:
             headers = {}

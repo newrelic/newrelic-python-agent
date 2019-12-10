@@ -127,6 +127,23 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             assert "newrelic" in headers
             assert type(headers["newrelic"]) is str
 
+    @pytest.mark.filterwarnings("error")
+    def test_accept_distributed_trace_headers(self):
+        with self.transaction:
+            # the tk is hardcoded in this encoded payload, so lets hardcode it
+            # here, too
+            self.transaction.settings.trusted_account_key = '1'
+
+            payload = ('eyJkIjogeyJwciI6IDAuMjczMTM1OTc2NTQ0MjQ1NCwgImFjIjogIj'
+                'IwMjY0IiwgInR4IjogIjI2MWFjYTliYzhhZWMzNzQiLCAidHkiOiAiQXBwIiw'
+                'gInRyIjogIjI2MWFjYTliYzhhZWMzNzQiLCAiYXAiOiAiMTAxOTUiLCAidGsi'
+                'OiAiMSIsICJ0aSI6IDE1MjQwMTAyMjY2MTAsICJzYSI6IGZhbHNlfSwgInYiO'
+                'iBbMCwgMV19')
+
+            headers = {'newrelic': payload}
+            result = self.transaction.accept_distributed_trace_headers(headers)
+            assert result is True
+
     def test_distributed_trace_no_referring_transaction(self):
         with self.transaction:
             payload = self.transaction.create_distributed_trace_payload()

@@ -992,7 +992,8 @@ class Transaction(object):
         payload = payload and payload.http_safe()
         headers["newrelic"] = payload
 
-    def accept_distributed_trace_payload(self, payload, transport_type='HTTP'):
+    def _accept_distributed_trace_payload(
+            self, payload, transport_type='HTTP'):
         if not self.enabled:
             return False
 
@@ -1098,11 +1099,18 @@ class Transaction(object):
                     'AcceptPayload/Exception')
             return False
 
+    def accept_distributed_trace_payload(self, *args, **kwargs):
+        warnings.warn((
+            'The accept_distributed_trace_payload API has been deprecated. '
+            'Please use the accept_distributed_trace_headers API.'
+        ), DeprecationWarning)
+        return self._accept_distributed_trace_payload(*args, **kwargs)
+
     def accept_distributed_trace_headers(self, headers, transport_type='HTTP'):
         distributed_header = headers.get('newrelic')
         distributed_header = ensure_str(distributed_header)
         if distributed_header is not None:
-            return self.accept_distributed_trace_payload(
+            return self._accept_distributed_trace_payload(
                     distributed_header,
                     transport_type)
 

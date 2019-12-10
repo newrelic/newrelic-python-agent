@@ -122,10 +122,11 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
     @pytest.mark.filterwarnings("error")
     def test_insert_distributed_trace_headers(self):
         with self.transaction:
-            headers = {}
+            headers = []
             self.transaction.insert_distributed_trace_headers(headers)
-            assert "newrelic" in headers
-            assert type(headers["newrelic"]) is str
+            name, value = headers[0]
+            assert name == 'newrelic'
+            assert type(value) is str
 
     @pytest.mark.filterwarnings("error")
     def test_accept_distributed_trace_headers(self):

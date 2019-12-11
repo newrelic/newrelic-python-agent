@@ -70,9 +70,7 @@ class CatHeaderMixin(object):
         nr_headers = []
 
         if settings.distributed_tracing.enabled:
-            _headers = {}
-            transaction.insert_distributed_trace_headers(_headers)
-            nr_headers.extend(_headers.items())
+            transaction.insert_distributed_trace_headers(nr_headers)
 
         elif settings.cross_application_tracer.enabled:
             transaction.is_part_of_cat = True

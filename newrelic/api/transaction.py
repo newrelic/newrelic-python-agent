@@ -990,7 +990,7 @@ class Transaction(object):
     def insert_distributed_trace_headers(self, headers):
         payload = self._create_distributed_trace_payload()
         payload = payload and payload.http_safe()
-        headers["newrelic"] = payload
+        headers.append(('newrelic', payload))
 
     def _accept_distributed_trace_payload(
             self, payload, transport_type='HTTP'):

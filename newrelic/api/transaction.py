@@ -1121,11 +1121,32 @@ class Transaction(object):
 
     def accept_distributed_trace_headers(self, headers, transport_type='HTTP'):
         if self.settings.distributed_tracing.format == 'w3c':
-            if 'traceparent' in headers:
+            try:
+                traceparent = headers.get('traceparent')
                 tracestate = headers.get('tracestate')
+            except Exception:
+                traceparent = None
+                tracestate = None
+
+                for k, v in headers:
+                    k = ensure_str(k)
+                    if k == 'traceparent':
+                        traceparent = v
+                    elif k == 'tracestate':
+                        tracestate = v
+
+            if traceparent and tracestate:
+                tracestate = ensure_str(tracestate)
                 self.tracestate = self._parse_tracestate_header(tracestate)
         else:
-            distributed_header = headers.get('newrelic')
+            try:
+                distributed_header = headers.get('newrelic')
+            except Exception:
+                for k, v in headers:
+                    k = ensure_str(k)
+                    if k == 'newrelic':
+                        distributed_header = v
+                        break
             distributed_header = ensure_str(distributed_header)
             if distributed_header is not None:
                 return self._accept_distributed_trace_payload(

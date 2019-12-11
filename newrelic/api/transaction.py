@@ -214,6 +214,7 @@ class Transaction(object):
         self.parent_account = None
         self.parent_transport_type = None
         self.parent_transport_duration = None
+        self.tracestate = None
         self._trace_id = None
         self._priority = None
         self._sampled = None
@@ -987,10 +988,18 @@ class Transaction(object):
         ), DeprecationWarning)
         return self._create_distributed_trace_payload()
 
+    def _generate_tracestate_header(self):
+        return self.tracestate
+
     def insert_distributed_trace_headers(self, headers):
-        payload = self._create_distributed_trace_payload()
-        payload = payload and payload.http_safe()
-        headers.append(('newrelic', payload))
+        if self.settings.distributed_tracing.format == 'w3c':
+            tracestate = self._generate_tracestate_header()
+            if tracestate:
+                headers.append(("tracestate", tracestate))
+        else:
+            payload = self._create_distributed_trace_payload()
+            payload = payload and payload.http_safe()
+            headers.append(('newrelic', payload))
 
     def _accept_distributed_trace_payload(
             self, payload, transport_type='HTTP'):
@@ -1106,13 +1115,22 @@ class Transaction(object):
         ), DeprecationWarning)
         return self._accept_distributed_trace_payload(*args, **kwargs)
 
+    @staticmethod
+    def _parse_tracestate_header(tracestate):
+        return tracestate
+
     def accept_distributed_trace_headers(self, headers, transport_type='HTTP'):
-        distributed_header = headers.get('newrelic')
-        distributed_header = ensure_str(distributed_header)
-        if distributed_header is not None:
-            return self._accept_distributed_trace_payload(
-                    distributed_header,
-                    transport_type)
+        if self.settings.distributed_tracing.format == 'w3c':
+            if 'traceparent' in headers:
+                tracestate = headers.get('tracestate')
+                self.tracestate = self._parse_tracestate_header(tracestate)
+        else:
+            distributed_header = headers.get('newrelic')
+            distributed_header = ensure_str(distributed_header)
+            if distributed_header is not None:
+                return self._accept_distributed_trace_payload(
+                        distributed_header,
+                        transport_type)
 
     def _process_incoming_cat_headers(self, encoded_cross_process_id,
             encoded_txn_header):

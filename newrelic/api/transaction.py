@@ -1,5 +1,6 @@
 from __future__ import print_function
 import os
+import re
 import sys
 import time
 import threading
@@ -42,6 +43,7 @@ DISTRIBUTED_TRACE_KEYS_REQUIRED = ('ty', 'ac', 'ap', 'tr', 'ti')
 DISTRIBUTED_TRACE_TRANSPORT_TYPES = set((
     'HTTP', 'HTTPS', 'Kafka', 'JMS',
     'IronMQ', 'AMQP', 'Queue', 'Other'))
+HEXDIGLC_RE = re.compile('^[0-9a-f]+$')
 
 
 class Sentinel(TimeTrace):
@@ -1115,6 +1117,42 @@ class Transaction(object):
         ), DeprecationWarning)
         return self._accept_distributed_trace_payload(*args, **kwargs)
 
+    def _parse_traceparent_header(self, traceparent):
+        version_payload = traceparent.split('-', 1)
+
+        # If there's no clear version, return False
+        if len(version_payload) != 2:
+            return False
+
+        version, payload = version_payload
+
+        # version must be a valid hex digit
+        if not HEXDIGLC_RE.match(version):
+            return False
+        version = int(version, 16)
+
+        # Version 255 is invalid
+        # Only traceparent with at least 55 chars should be parsed
+        if version == 255 or len(traceparent) < 55:
+            return False
+
+        fields = payload.split('-', 3)
+
+        # Expect that there are at least 3 fields
+        if len(fields) < 3:
+            return False
+
+        # Check field lengths and values
+        for field, expected_length in zip(fields, (32, 16, 2)):
+            if len(field) != expected_length or not HEXDIGLC_RE.match(field):
+                return False
+
+        trace_id, parent_id = fields[:2]
+        self._trace_id = trace_id
+        self.parent_span = parent_id
+        self.is_distributed_trace = True
+        return True
+
     @staticmethod
     def _parse_tracestate_header(tracestate):
         return tracestate
@@ -1122,11 +1160,11 @@ class Transaction(object):
     def accept_distributed_trace_headers(self, headers, transport_type='HTTP'):
         if self.settings.distributed_tracing.format == 'w3c':
             try:
-                traceparent = headers.get('traceparent')
-                tracestate = headers.get('tracestate')
+                traceparent = headers.get('traceparent', '')
+                tracestate = headers.get('tracestate', '')
             except Exception:
-                traceparent = None
-                tracestate = None
+                traceparent = ''
+                tracestate = ''
 
                 for k, v in headers:
                     k = ensure_str(k)
@@ -1135,7 +1173,7 @@ class Transaction(object):
                     elif k == 'tracestate':
                         tracestate = v
 
-            if traceparent and tracestate:
+            if self._parse_traceparent_header(traceparent) and tracestate:
                 tracestate = ensure_str(tracestate)
                 self.tracestate = self._parse_tracestate_header(tracestate)
         else:

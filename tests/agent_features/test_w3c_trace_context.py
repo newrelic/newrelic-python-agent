@@ -54,6 +54,40 @@ def test_tracestate_is_propagated():
     assert header_value.endswith(INBOUND_TRACESTATE)
 
 
+@pytest.mark.parametrize('inbound_traceparent,span_events_enabled', (
+    (True, True),
+    (True, False),
+    (False, True),
+))
+def test_traceparent_generation(inbound_traceparent, span_events_enabled):
+    settings = _override_settings.copy()
+    settings['span_events.enabled'] = span_events_enabled
+
+    headers = {}
+    if inbound_traceparent:
+        headers['traceparent'] = INBOUND_TRACEPARENT
+
+    @override_application_settings(settings)
+    def _test():
+        return test_application.get('/', headers=headers)
+
+    response = _test()
+    for header_name, header_value in response.json:
+        if header_name == 'traceparent':
+            break
+    else:
+        assert False, 'traceparent header not present'
+
+    assert len(header_value) == 55
+    assert header_value.startswith('00-')
+    fields = header_value.split('-')
+    assert len(fields) == 4
+    if inbound_traceparent:
+        assert fields[1] == '0af7651916cd43dd8448eb211c80319c'
+        assert fields[2] != '00f067aa0ba902b7'
+    assert fields[3] in ('00', '01')
+
+
 @pytest.mark.parametrize('traceparent,intrinsics', (
     (INBOUND_TRACEPARENT, {
             "traceId": "0af7651916cd43dd8448eb211c80319c",
@@ -72,7 +106,7 @@ def test_tracestate_is_propagated():
     (INBOUND_TRACEPARENT_INVALID_FLAGS, {}),
 ))
 @override_application_settings(_override_settings)
-def test_traceparent_header(traceparent, intrinsics):
+def test_inbound_traceparent_header(traceparent, intrinsics):
     exact = {'agent': {}, 'user': {}, 'intrinsic': intrinsics}
 
     @validate_transaction_event_attributes(exact_attrs=exact)

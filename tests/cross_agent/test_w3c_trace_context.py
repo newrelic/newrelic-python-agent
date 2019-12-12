@@ -2,6 +2,7 @@ import json
 import os
 import pytest
 import webtest
+from newrelic.packages import six
 
 from newrelic.api.transaction import current_transaction
 from newrelic.api.wsgi_application import wsgi_application
@@ -96,10 +97,14 @@ def test_trace_context(test_name, trusted_account_key, account_id,
         '.outbound_calls': outbound_payloads and len(outbound_payloads) or 0,
     }
 
-    inbound_headers = inbound_headers and inbound_headers[0]
+    inbound_headers = inbound_headers and inbound_headers[0] or None
     if transport_type != 'HTTP':
         extra_environ['.inbound_headers'] = inbound_headers
         inbound_headers = None
+    elif six.PY2 and inbound_headers:
+        inbound_headers = {
+                k.encode('utf-8'): v.encode('utf-8')
+                for k, v in inbound_headers.items()}
 
     @override_application_settings(override_settings)
     @override_compute_sampled(force_sampled_true)

@@ -607,7 +607,18 @@ class Transaction(object):
 
     @property
     def trace_id(self):
-        return self._trace_id or self.guid
+        trace_id = self._trace_id
+        if trace_id:
+            return trace_id
+
+        if self._settings.distributed_tracing.format == 'w3c':
+            # Prevent all zeros trace id (illegal)
+            while not trace_id:
+                trace_id = random.getrandbits(128)
+            self._trace_id = '{:032x}'.format(trace_id)
+            return self._trace_id
+
+        return self.guid
 
     @property
     def alternate_path_hashes(self):
@@ -993,8 +1004,28 @@ class Transaction(object):
     def _generate_tracestate_header(self):
         return self.tracestate
 
+    def _generate_traceparent_header(self):
+        self._compute_sampled_and_priority()
+        current_span = trace_cache().current_trace()
+        format_str = '00-{}-{}-{:02x}'
+        if self._settings.span_events.enabled and current_span:
+            return format_str.format(
+                self.trace_id,
+                current_span.guid,
+                int(self.sampled),
+            )
+        else:
+            return format_str.format(
+                self.trace_id,
+                '{:016x}'.format(random.getrandbits(64)),
+                int(self.sampled),
+            )
+
     def insert_distributed_trace_headers(self, headers):
         if self.settings.distributed_tracing.format == 'w3c':
+            traceparent = self._generate_traceparent_header()
+            headers.append(("traceparent", traceparent))
+
             tracestate = self._generate_tracestate_header()
             if tracestate:
                 headers.append(("tracestate", tracestate))

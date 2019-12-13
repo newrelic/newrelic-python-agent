@@ -162,6 +162,26 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             result = self.transaction.accept_distributed_trace_headers(headers)
             assert result is True
 
+    def test_accept_distributed_trace_headers_ignores_second_call(self):
+        with self.transaction:
+            payload = ('eyJkIjogeyJwciI6IDAuMjczMTM1OTc2NTQ0MjQ1NCwgImFjIjogIj'
+                'IwMjY0IiwgInR4IjogIjI2MWFjYTliYzhhZWMzNzQiLCAidHkiOiAiQXBwIiw'
+                'gInRyIjogIjI2MWFjYTliYzhhZWMzNzQiLCAiYXAiOiAiMTAxOTUiLCAidGsi'
+                'OiAiMSIsICJ0aSI6IDE1MjQwMTAyMjY2MTAsICJzYSI6IGZhbHNlfSwgInYiO'
+                'iBbMCwgMV19')
+
+            headers = (('newrelic', payload),)
+            result = self.transaction.accept_distributed_trace_headers(headers)
+            assert result
+            assert self.transaction.distributed_trace_state
+            assert self.transaction.parent_type == 'App'
+
+            result = self.transaction.accept_distributed_trace_payload(headers)
+            assert not result
+            assert ('Supportability/DistributedTrace/'
+                    'AcceptPayload/Ignored/Multiple'
+                    in self.transaction._transaction_metrics)
+
     def test_distributed_trace_no_referring_transaction(self):
         with self.transaction:
             payload = self.transaction.create_distributed_trace_payload()

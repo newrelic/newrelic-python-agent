@@ -533,6 +533,10 @@ class Transaction(object):
         return self._state
 
     @property
+    def is_distributed_trace(self):
+        return self._distributed_trace_state != 0
+
+    @property
     def settings(self):
         return self._settings
 

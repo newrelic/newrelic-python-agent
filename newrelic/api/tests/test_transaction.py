@@ -113,6 +113,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
                     'CreatePayload/Success'
                     in self.transaction._transaction_metrics)
 
+            assert self.transaction.is_distributed_trace is True
+
     def test_create_distributed_trace_payload_http_safe(self):
         with self.transaction:
             with pytest.warns(DeprecationWarning):
@@ -518,6 +520,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             assert self.transaction.trace_id == self.transaction.guid
             assert self.transaction._sampled is None
             assert self.transaction._distributed_trace_state == 0
+            assert self.transaction.is_distributed_trace is False
 
     def test_create_payload_prior_to_connect(self):
         self.transaction.enabled = False

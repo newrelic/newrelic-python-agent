@@ -53,7 +53,7 @@ def target_wsgi_application(environ, start_response):
     txn = current_transaction()
 
     # Make assertions on the WSGIWebTransaction object
-    assert txn.distributed_trace_state
+    assert txn._distributed_trace_state
     assert txn.parent_type == 'App'
     assert txn.parent_app == '2827902'
     assert txn.parent_account == '1'

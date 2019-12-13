@@ -223,7 +223,7 @@ class Transaction(object):
         self._priority = None
         self._sampled = None
 
-        self.distributed_trace_state = 0
+        self._distributed_trace_state = 0
 
         self.client_cross_process_id = None
         self.client_account_id = None
@@ -754,7 +754,7 @@ class Transaction(object):
         i_attrs['priority'] = self.priority
         i_attrs['traceId'] = self.trace_id
 
-        if not self.distributed_trace_state:
+        if not self._distributed_trace_state:
             return i_attrs
 
         if self.parent_type:
@@ -984,7 +984,7 @@ class Transaction(object):
                     current_span and self.sampled):
                 data['id'] = current_span.guid
 
-            self.distributed_trace_state |= CREATED_DISTRIBUTED_TRACE
+            self._distributed_trace_state |= CREATED_DISTRIBUTED_TRACE
 
             self._record_supportability('Supportability/DistributedTrace/'
                     'CreatePayload/Success')
@@ -1045,8 +1045,8 @@ class Transaction(object):
                 settings.trusted_account_key):
             return False
 
-        if self.distributed_trace_state:
-            if self.distributed_trace_state & ACCEPTED_DISTRIBUTED_TRACE:
+        if self._distributed_trace_state:
+            if self._distributed_trace_state & ACCEPTED_DISTRIBUTED_TRACE:
                 self._record_supportability('Supportability/DistributedTrace/'
                         'AcceptPayload/Ignored/Multiple')
             else:
@@ -1136,7 +1136,7 @@ class Transaction(object):
                 self._priority = data.get('pr')
                 self._sampled = data.get('sa', self._sampled)
 
-            self.distributed_trace_state = ACCEPTED_DISTRIBUTED_TRACE
+            self._distributed_trace_state = ACCEPTED_DISTRIBUTED_TRACE
 
             self._record_supportability('Supportability/DistributedTrace/'
                     'AcceptPayload/Success')
@@ -1189,7 +1189,7 @@ class Transaction(object):
         trace_id, parent_id = fields[:2]
         self._trace_id = trace_id
         self.parent_span = parent_id
-        self.distributed_trace_state = ACCEPTED_DISTRIBUTED_TRACE
+        self._distributed_trace_state = ACCEPTED_DISTRIBUTED_TRACE
         return True
 
     @staticmethod

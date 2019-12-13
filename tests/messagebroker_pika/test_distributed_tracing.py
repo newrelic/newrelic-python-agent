@@ -83,7 +83,7 @@ def test_basic_consume_distributed_tracing_headers():
         txn = current_transaction()
 
         assert txn
-        assert txn.distributed_trace_state
+        assert txn._distributed_trace_state
         assert txn.parent_type == 'App'
         assert txn.parent_tx == txn._trace_id
         assert txn.parent_span is not None

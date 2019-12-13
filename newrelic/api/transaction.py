@@ -44,6 +44,8 @@ DISTRIBUTED_TRACE_TRANSPORT_TYPES = set((
     'HTTP', 'HTTPS', 'Kafka', 'JMS',
     'IronMQ', 'AMQP', 'Queue', 'Other'))
 HEXDIGLC_RE = re.compile('^[0-9a-f]+$')
+ACCEPTED_DISTRIBUTED_TRACE = 1
+CREATED_DISTRIBUTED_TRACE = 2
 
 
 class Sentinel(TimeTrace):
@@ -221,7 +223,7 @@ class Transaction(object):
         self._priority = None
         self._sampled = None
 
-        self.is_distributed_trace = False
+        self.distributed_trace_state = 0
 
         self.client_cross_process_id = None
         self.client_account_id = None
@@ -752,7 +754,7 @@ class Transaction(object):
         i_attrs['priority'] = self.priority
         i_attrs['traceId'] = self.trace_id
 
-        if not self.is_distributed_trace:
+        if not self.distributed_trace_state:
             return i_attrs
 
         if self.parent_type:
@@ -982,7 +984,7 @@ class Transaction(object):
                     current_span and self.sampled):
                 data['id'] = current_span.guid
 
-            self.is_distributed_trace = True
+            self.distributed_trace_state |= CREATED_DISTRIBUTED_TRACE
 
             self._record_supportability('Supportability/DistributedTrace/'
                     'CreatePayload/Success')
@@ -1034,14 +1036,8 @@ class Transaction(object):
             payload = payload and payload.http_safe()
             headers.append(('newrelic', payload))
 
-    def _accept_distributed_trace_payload(
-            self, payload, transport_type='HTTP'):
+    def _can_accept_distributed_trace_headers(self):
         if not self.enabled:
-            return False
-
-        if not payload:
-            self._record_supportability('Supportability/DistributedTrace/'
-                    'AcceptPayload/Ignored/Null')
             return False
 
         settings = self._settings
@@ -1049,13 +1045,22 @@ class Transaction(object):
                 settings.trusted_account_key):
             return False
 
-        if self.is_distributed_trace:
-            if self._trace_id:
+        if self.distributed_trace_state:
+            if self.distributed_trace_state & ACCEPTED_DISTRIBUTED_TRACE:
                 self._record_supportability('Supportability/DistributedTrace/'
                         'AcceptPayload/Ignored/Multiple')
             else:
                 self._record_supportability('Supportability/DistributedTrace/'
                         'AcceptPayload/Ignored/CreateBeforeAccept')
+            return False
+
+        return True
+
+    def _accept_distributed_trace_payload(
+            self, payload, transport_type='HTTP'):
+        if not payload:
+            self._record_supportability('Supportability/DistributedTrace/'
+                    'AcceptPayload/Ignored/Null')
             return False
 
         payload = DistributedTracePayload.decode(payload)
@@ -1090,6 +1095,7 @@ class Transaction(object):
                                             'AcceptPayload/ParseException')
                 return False
 
+            settings = self._settings
             account_id = data.get('ac')
 
             # If trust key doesn't exist in the payload, use account_id
@@ -1130,7 +1136,7 @@ class Transaction(object):
                 self._priority = data.get('pr')
                 self._sampled = data.get('sa', self._sampled)
 
-            self.is_distributed_trace = True
+            self.distributed_trace_state = ACCEPTED_DISTRIBUTED_TRACE
 
             self._record_supportability('Supportability/DistributedTrace/'
                     'AcceptPayload/Success')
@@ -1146,6 +1152,8 @@ class Transaction(object):
             'The accept_distributed_trace_payload API has been deprecated. '
             'Please use the accept_distributed_trace_headers API.'
         ), DeprecationWarning)
+        if not self._can_accept_distributed_trace_headers():
+            return False
         return self._accept_distributed_trace_payload(*args, **kwargs)
 
     def _parse_traceparent_header(self, traceparent):
@@ -1181,7 +1189,7 @@ class Transaction(object):
         trace_id, parent_id = fields[:2]
         self._trace_id = trace_id
         self.parent_span = parent_id
-        self.is_distributed_trace = True
+        self.distributed_trace_state = ACCEPTED_DISTRIBUTED_TRACE
         return True
 
     @staticmethod
@@ -1189,6 +1197,9 @@ class Transaction(object):
         return tracestate
 
     def accept_distributed_trace_headers(self, headers, transport_type='HTTP'):
+        if not self._can_accept_distributed_trace_headers():
+            return False
+
         if self.settings.distributed_tracing.format == 'w3c':
             try:
                 traceparent = headers.get('traceparent', '')

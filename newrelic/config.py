@@ -2008,6 +2008,9 @@ def _process_trace_cache_import_hooks():
 
 
 def _process_module_builtin_defaults():
+    _process_module_definition('asyncio.base_events',
+            'newrelic.hooks.coroutines_asyncio',
+            'instrument_asyncio_base_events')
     _process_module_definition('asyncio.events',
             'newrelic.hooks.coroutines_asyncio',
             'instrument_asyncio_events')

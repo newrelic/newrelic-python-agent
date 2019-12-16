@@ -26,10 +26,11 @@ def _bind_loop(loop, *args, **kwargs):
 def wrap_create_task(wrapped, instance, args, kwargs):
     loop = _bind_loop(*args, **kwargs)
 
-    wrap_out_function(
-        loop,
-        'create_task',
-        propagate_task_context)
+    if loop:
+        wrap_out_function(
+            loop,
+            'create_task',
+            propagate_task_context)
 
     return wrapped(*args, **kwargs)
 

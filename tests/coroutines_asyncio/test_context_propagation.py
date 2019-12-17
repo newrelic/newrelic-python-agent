@@ -1,3 +1,4 @@
+import uvloop
 import pytest
 from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import current_trace
@@ -68,6 +69,7 @@ async def _test(asyncio, schedule, nr_enabled=True):
     return trace
 
 
+@pytest.mark.parametrize('loop_policy', (None, uvloop.EventLoopPolicy()))
 @pytest.mark.parametrize('schedule', (
     'create_task',
     'ensure_future',
@@ -81,8 +83,9 @@ async def _test(asyncio, schedule, nr_enabled=True):
         ('Function/waiter3', 2),
     ),
 )
-def test_context_propagation(schedule):
+def test_context_propagation(schedule, loop_policy):
     import asyncio
+    asyncio.set_event_loop_policy(loop_policy)
     loop = asyncio.get_event_loop()
 
     exceptions = []

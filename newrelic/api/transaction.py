@@ -10,7 +10,7 @@ import random
 import warnings
 import weakref
 
-from collections import deque
+from collections import deque, OrderedDict
 
 import newrelic.packages.six as six
 
@@ -44,8 +44,14 @@ DISTRIBUTED_TRACE_TRANSPORT_TYPES = set((
     'HTTP', 'HTTPS', 'Kafka', 'JMS',
     'IronMQ', 'AMQP', 'Queue', 'Other'))
 HEXDIGLC_RE = re.compile('^[0-9a-f]+$')
+DELIMITER_FORMAT_RE = re.compile('[ \t]*,[ \t]*')
 ACCEPTED_DISTRIBUTED_TRACE = 1
 CREATED_DISTRIBUTED_TRACE = 2
+PARENT_TYPE = {
+    '0': 'App',
+    '1': 'Browser',
+    '2': 'Mobile',
+}
 
 
 class Sentinel(TimeTrace):
@@ -213,6 +219,7 @@ class Transaction(object):
         # This may be overridden by processing an inbound CAT header
         self.parent_type = None
         self.parent_span = None
+        self.trusted_parent_span = None
         self.parent_tx = None
         self.parent_app = None
         self.parent_account = None
@@ -1196,9 +1203,58 @@ class Transaction(object):
         self._distributed_trace_state = ACCEPTED_DISTRIBUTED_TRACE
         return True
 
-    @staticmethod
-    def _parse_tracestate_header(tracestate):
-        return tracestate
+    def _parse_tracestate_header(self, tracestate):
+        # Don't parse more than 32 entries
+        entries = DELIMITER_FORMAT_RE.split(tracestate, 32)[:32]
+
+        vendors = OrderedDict()
+        for entry in entries:
+            vendor_value = entry.split('=', 2)
+            if len(vendor_value) != 2:
+                continue
+
+            vendor, value = vendor_value
+
+            if len(vendor) > 256:
+                continue
+
+            if len(value) > 256:
+                continue
+
+            vendors[vendor] = value
+
+        # Remove trusted new relic header if available and parse
+        payload = vendors.pop(self._settings.trusted_account_key + '@nr', '')
+        fields = payload.split('-', 9)
+        if len(fields) >= 9:
+            self.parent_type = PARENT_TYPE.get(fields[1])
+            self.parent_account = fields[2]
+            self.parent_app = fields[3]
+            self.trusted_parent_span = fields[4]
+            self.parent_tx = fields[5]
+            if fields[6]:
+                self._sampled = fields[6] == '1'
+            if fields[7]:
+                try:
+                    self._priority = float(fields[7])
+                except:
+                    pass
+
+            try:
+                transport_start = int(fields[8]) / 1000.0
+                now = time.time()
+                if transport_start > now:
+                    self.parent_transport_duration = 0.0
+                else:
+                    self.parent_transport_duration = now - transport_start
+            except:
+                pass
+
+
+        if not self._settings.span_events.enabled:
+            return tracestate
+
+        return ','.join('{}={}'.format(k, v) for k, v in vendors.items())
 
     def accept_distributed_trace_headers(self, headers, transport_type='HTTP'):
         if not self._can_accept_distributed_trace_headers():

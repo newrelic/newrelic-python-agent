@@ -220,6 +220,7 @@ class Transaction(object):
         self.parent_type = None
         self.parent_span = None
         self.trusted_parent_span = None
+        self.tracing_vendors = None
         self.parent_tx = None
         self.parent_app = None
         self.parent_account = None
@@ -1250,10 +1251,10 @@ class Transaction(object):
             except:
                 pass
 
+        self.tracing_vendors = ','.join(vendors.keys())
 
         if not self._settings.span_events.enabled:
             return tracestate
-
         return ','.join('{}={}'.format(k, v) for k, v in vendors.items())
 
     def accept_distributed_trace_headers(self, headers, transport_type='HTTP'):

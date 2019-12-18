@@ -30,7 +30,8 @@ _TransactionNode = namedtuple('_TransactionNode',
         'distributed_trace_intrinsics', 'user_attributes', 'priority',
         'sampled', 'parent_transport_duration', 'parent_span', 'parent_type',
         'parent_account', 'parent_app', 'parent_tx', 'parent_transport_type',
-        'root_span_guid', 'trace_id', 'loop_time'])
+        'root_span_guid', 'trace_id', 'loop_time', 'trusted_parent_span',
+        'tracing_vendors'])
 
 
 class TransactionNode(_TransactionNode):
@@ -602,6 +603,10 @@ class TransactionNode(_TransactionNode):
 
         if parent_guid:
             i_attrs['parentId'] = parent_guid
+        if self.trusted_parent_span:
+            i_attrs['trustedParentId'] = self.trusted_parent_span
+        if self.tracing_vendors:
+            i_attrs['tracingVendors'] = self.tracing_vendors
 
         return [i_attrs, {}, {}]
 

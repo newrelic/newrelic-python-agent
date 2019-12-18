@@ -502,6 +502,8 @@ class Transaction(object):
                 root_span_guid=root.guid,
                 trace_id=self.trace_id,
                 loop_time=self._loop_time,
+                trusted_parent_span=self.trusted_parent_span,
+                tracing_vendors=self.tracing_vendors,
         )
 
         # Clear settings as we are all done and don't need it
@@ -780,6 +782,10 @@ class Transaction(object):
         if self.parent_transport_duration:
             i_attrs['parent.transportDuration'] = \
                     self.parent_transport_duration
+        if self.trusted_parent_span:
+            i_attrs['trustedParentId'] = self.trusted_parent_span
+        if self.tracing_vendors:
+            i_attrs['tracingVendors'] = self.tracing_vendors
 
         return i_attrs
 

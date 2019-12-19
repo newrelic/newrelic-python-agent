@@ -1,6 +1,16 @@
 unreleased
 ----------
 
+5.4.1 (2019-12-19)
+------------------
+
+- Metrics may be reported with an incorrect throughput after communication failure with New Relic
+
+  For agent versions 5.2.0 through 5.4.0, metric throughput may have been
+  reported inaccurately after experiencing network / communication failures
+  with New Relic. The throughput reported for all metrics after this failure
+  may have been abnormally high.
+
 5.4.0 (2019-11-25)
 ------------------
 

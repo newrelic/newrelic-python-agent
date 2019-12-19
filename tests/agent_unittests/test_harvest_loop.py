@@ -8,8 +8,6 @@ from newrelic.common.object_wrapper import (transient_function_wrapper,
 from newrelic.core.config import global_settings, finalize_application_settings
 from testing_support.fixtures import (override_generic_settings,
         function_not_called, failing_endpoint)
-from testing_support.validators.validate_function_called import (
-        validate_function_called)
 
 from newrelic.core.application import Application
 from newrelic.core.data_collector import (send_request, collector_url,
@@ -595,7 +593,8 @@ def test_serverless_mode_adaptive_sampling(time_to_next_reset,
     assert app.adaptive_sampler.computed_count_last == computed_count_last
 
 
-@function_not_called('newrelic.core.adaptive_sampler', 'AdaptiveSampler._reset')
+@function_not_called(
+        'newrelic.core.adaptive_sampler', 'AdaptiveSampler._reset')
 @override_generic_settings(settings, {
         'developer_mode': True,
 })
@@ -823,6 +822,34 @@ def test_infinite_merges():
 
     # the agent_limits.merge_stats_maximum is not respected
     assert app._stats_engine.transaction_events.num_seen == 1
+
+
+@failing_endpoint('analytic_event_data')
+@override_generic_settings(settings, {
+        'developer_mode': True,
+})
+def test_flexible_harvest_rollback():
+    app = Application('Python Agent Test (Harvest Loop)')
+    app.connect_to_data_collector(None)
+
+    settings.event_harvest_config.whitelist = frozenset(
+            ('analytic_event_data',))
+    app._stats_engine.reset_stats(settings)
+
+    # Cause a transaction event to attempt sending
+    app._stats_engine.transaction_events.add(
+            'Custom/test_flexible_harvest_rollback')
+
+    # Add a metric to the stats engine
+    app._stats_engine.record_custom_metric(
+            'Custom/test_flexible_harvest_rollback', 1)
+    stats_key = ('Custom/test_flexible_harvest_rollback', '')
+    assert stats_key in app._stats_engine.stats_table
+
+    app.harvest(flexible=True)
+
+    # The metric should not be changed after a rollback
+    assert app._stats_engine.stats_table[stats_key].call_count == 1
 
 
 @override_generic_settings(settings, {

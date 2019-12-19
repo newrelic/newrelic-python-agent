@@ -1400,6 +1400,46 @@ class StatsEngine(object):
         else:
             self._synthetics_events = LimitedDataSet()
 
+    def reset_non_event_types(self):
+        # The slow transaction map is retained but we need to
+        # perform some housework on each harvest snapshot. What
+        # we do is add the slow transaction to the map of
+        # transactions and if we reach the threshold for maximum
+        # number we clear the table. Also clear the table if
+        # have number of harvests where no slow transaction was
+        # collected.
+        if self.__settings is None:
+            self.__slow_transaction_dry_harvests = 0
+            self.__slow_transaction_map = {}
+            self.__slow_transaction_old_duration = None
+
+        elif self.__slow_transaction is None:
+            self.__slow_transaction_dry_harvests += 1
+            agent_limits = self.__settings.agent_limits
+            dry_harvests = agent_limits.slow_transaction_dry_harvests
+            if self.__slow_transaction_dry_harvests >= dry_harvests:
+                self.__slow_transaction_dry_harvests = 0
+                self.__slow_transaction_map = {}
+                self.__slow_transaction_old_duration = None
+
+        else:
+            self.__slow_transaction_dry_harvests = 0
+            name = self.__slow_transaction.path
+            duration = self.__slow_transaction.duration
+            self.__slow_transaction_map[name] = duration
+
+            top_n = self.__settings.transaction_tracer.top_n
+            if len(self.__slow_transaction_map) >= top_n:
+                self.__slow_transaction_map = {}
+                self.__slow_transaction_old_duration = None
+
+        self.__slow_transaction = None
+        self.__xray_transactions = []
+        self.__synthetics_transactions = []
+        self.__sql_stats_table = {}
+        self.__stats_table = {}
+        self.__transaction_errors = []
+
     def harvest_snapshot(self, flexible=False):
         """Creates a snapshot of the accumulated statistics, error
         details and slow transaction and returns it. This is a shallow
@@ -1413,9 +1453,6 @@ class StatsEngine(object):
         """
         snapshot = self._snapshot()
 
-        event_harvest_whitelist = \
-                self.__settings.event_harvest_config.whitelist
-
         # Data types only appear in one place, so during a snapshot it must be
         # represented in either the snapshot or in the current stats object.
         #
@@ -1428,72 +1465,25 @@ class StatsEngine(object):
         #   stats object.
         if flexible:
             whitelist_stats, other_stats = self, snapshot
+            snapshot.reset_non_event_types()
         else:
             whitelist_stats, other_stats = snapshot, self
+            self.reset_non_event_types()
 
-        # Iterate through event harvest types if they are in
-        # the list of events to harvest reset them on stats_engine
-        # otherwise remove them from the snapshot.
-        for event, methods in EVENT_HARVEST_METHODS.items():
-            for method in methods:
-                if event in event_harvest_whitelist:
-                    reset = getattr(whitelist_stats, method)
+        event_harvest_whitelist = \
+                self.__settings.event_harvest_config.whitelist
+
+        # Iterate through harvest types. If they are in the list of types to
+        # harvest reset them on stats_engine otherwise remove them from the
+        # snapshot.
+        for nr_method, stats_methods in EVENT_HARVEST_METHODS.items():
+            for stats_method in stats_methods:
+                if nr_method in event_harvest_whitelist:
+                    reset = getattr(whitelist_stats, stats_method)
                 else:
-                    reset = getattr(other_stats, method)
+                    reset = getattr(other_stats, stats_method)
 
                 reset()
-
-        # If we are not in a flexible harvest metrics and traces need to be
-        # reset on the stats object. If we are in a flexible harvest metrics
-        # are left on the stats object for when the default harvest occurs
-        # however they are still included on the snapshot so when harvesting we
-        # need to make sure to not send the data.
-        if not flexible:
-            # The slow transaction map is retained but we need to
-            # perform some housework on each harvest snapshot. What
-            # we do is add the slow transaction to the map of
-            # transactions and if we reach the threshold for maximum
-            # number we clear the table. Also clear the table if
-            # have number of harvests where no slow transaction was
-            # collected.
-            if self.__settings is None:
-                self.__slow_transaction_dry_harvests = 0
-                self.__slow_transaction_map = {}
-                self.__slow_transaction_old_duration = None
-
-            elif self.__slow_transaction is None:
-                self.__slow_transaction_dry_harvests += 1
-                agent_limits = self.__settings.agent_limits
-                dry_harvests = agent_limits.slow_transaction_dry_harvests
-                if self.__slow_transaction_dry_harvests >= dry_harvests:
-                    self.__slow_transaction_dry_harvests = 0
-                    self.__slow_transaction_map = {}
-                    self.__slow_transaction_old_duration = None
-
-            else:
-                self.__slow_transaction_dry_harvests = 0
-                name = self.__slow_transaction.path
-                duration = self.__slow_transaction.duration
-                self.__slow_transaction_map[name] = duration
-
-                top_n = self.__settings.transaction_tracer.top_n
-                if len(self.__slow_transaction_map) >= top_n:
-                    self.__slow_transaction_map = {}
-                    self.__slow_transaction_old_duration = None
-
-            # We also retain the table of metric IDs. This should be
-            # okay for continuing connection. If connection is lost
-            # then reset_engine() above would be called and it would
-            # be all thrown away so no chance of following through
-            # with incorrect mappings. Everything else is reset to
-            # initial values.
-
-            self.__stats_table = {}
-            self.__sql_stats_table = {}
-            self.__slow_transaction = None
-            self.__transaction_errors = []
-            self.__xray_transactions = []
-            self.__synthetics_transactions = []
 
         return snapshot
 

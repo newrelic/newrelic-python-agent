@@ -226,7 +226,7 @@ class Transaction(object):
         self.parent_account = None
         self.parent_transport_type = None
         self.parent_transport_duration = None
-        self.tracestate = None
+        self.tracestate = ''
         self._trace_id = None
         self._priority = None
         self._sampled = None
@@ -1022,7 +1022,37 @@ class Transaction(object):
         return self._create_distributed_trace_payload()
 
     def _generate_tracestate_header(self):
-        return self.tracestate
+        if not self.enabled:
+            return self.tracestate
+
+        settings = self._settings
+        self._compute_sampled_and_priority()
+
+        account_id = settings.account_id
+        trusted_account_key = settings.trusted_account_key
+        application_id = settings.primary_application_id
+
+        current_span = trace_cache().current_trace()
+        timestamp = str(int(time.time() * 1000.0))
+
+        nr_payload = '-'.join((
+            '0-0',
+            account_id,
+            application_id,
+            current_span.guid,
+            self.guid,
+            '1' if self._sampled else '0',
+            '%.5g' % self._priority,
+            timestamp,
+        ))
+
+        nr_entry = '{}@nr={},'.format(
+            trusted_account_key,
+            nr_payload,
+        )
+
+        tracestate = nr_entry + self.tracestate
+        return tracestate
 
     def _generate_traceparent_header(self):
         self._compute_sampled_and_priority()

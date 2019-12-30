@@ -7,12 +7,15 @@ from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.wsgi_application import wsgi_application
 from testing_support.fixtures import (override_application_settings,
         validate_transaction_event_attributes)
+from testing_support.validators.validate_span_events import (
+    validate_span_events)
 
 
 @wsgi_application()
 def target_wsgi_application(environ, start_response):
     start_response('200 OK', [('Content-Type', 'application/json')])
     txn = current_transaction()
+    txn._sampled = True
     headers = ExternalTrace.generate_request_headers(txn)
     return [json.dumps(headers).encode('utf-8')]
 
@@ -31,6 +34,11 @@ INBOUND_TRACEPARENT = \
         '00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01'
 INBOUND_TRACESTATE = \
         'rojo=00f067aa0ba902b7,congo=t61rcWkgMzE'
+INBOUND_UNTRUSTED_NR_TRACESTATE = \
+        '2@nr=0-0-1345936-55632452-27jjj2d8890283b4-b28ce285632jjhl9-'
+INBOUND_NR_TRACESTATE = \
+        ('1@nr=0-0-1349956-41346604-27ddd2d8890283b4-b28be285632bbc0a-'
+        '1-1.1273-1569367663277')
 
 INBOUND_TRACEPARENT_VERSION_FF = \
         'ff-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01'
@@ -118,5 +126,37 @@ def test_inbound_traceparent_header(traceparent, intrinsics):
     @validate_transaction_event_attributes(exact_attrs=exact)
     def _test():
         test_application.get('/', headers={"traceparent": traceparent})
+
+    _test()
+
+
+@pytest.mark.parametrize('tracestate,intrinsics', (
+    (INBOUND_TRACESTATE,
+            {'tracingVendors': 'rojo,congo',
+             'parentId': '00f067aa0ba902b7'}),
+    (INBOUND_NR_TRACESTATE,
+            {'trustedParentId': '27ddd2d8890283b4'}),
+    ('garbage', {'parentId': '00f067aa0ba902b7'}),
+    (INBOUND_TRACESTATE + ',' + INBOUND_NR_TRACESTATE,
+            {'parentId': '00f067aa0ba902b7',
+             'trustedParentId': '27ddd2d8890283b4',
+             'tracingVendors': 'rojo,congo'}),
+    (INBOUND_TRACESTATE + ',' + INBOUND_UNTRUSTED_NR_TRACESTATE,
+            {'parentId': '00f067aa0ba902b7',
+             'tracingVendors': 'rojo,congo,2@nr'}),
+    ('rojo=12345,' + 'v' * 257 + '=x',
+            {'tracingVendors': 'rojo'}),
+    ('rojo=12345,k=' + 'v' * 257,
+            {'tracingVendors': 'rojo'}),
+))
+@override_application_settings(_override_settings)
+def test_inbound_tracestate_header(tracestate, intrinsics):
+
+    @validate_span_events(exact_intrinsics=intrinsics)
+    def _test():
+        test_application.get('/', headers={
+            "traceparent": INBOUND_TRACEPARENT,
+            "tracestate": tracestate,
+        })
 
     _test()

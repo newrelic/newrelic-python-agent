@@ -117,6 +117,8 @@ def transaction_node(request):
             root_span_guid=None,
             trace_id='4485b89db608aece',
             loop_time=0.0,
+            trusted_parent_span=None,
+            tracing_vendors=None,
     )
     return node
 

@@ -1,6 +1,12 @@
 unreleased
 ----------
 
+- Add support for uvloop
+
+  Transaction context may not have been propagated when using uvloop. This
+  could have resulted in incomplete traces or instrumentation failures when
+  using uvloop. uvloop is now supported.
+
 5.4.1 (2019-12-19)
 ------------------
 

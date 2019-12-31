@@ -1022,7 +1022,7 @@ class Transaction(object):
         return self._create_distributed_trace_payload()
 
     def _generate_tracestate_header(self):
-        if not self.enabled:
+        if not self.enabled or not self.settings.span_events.enabled:
             return self.tracestate
 
         settings = self._settings

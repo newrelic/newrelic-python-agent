@@ -50,11 +50,15 @@ INBOUND_TRACEPARENT_INVALID_FLAGS = \
         '00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-x1'
 
 
+@pytest.mark.parametrize('inbound_tracestate,update_tracestate',
+        (('', False),
+        (INBOUND_TRACESTATE, False),
+        (INBOUND_NR_TRACESTATE + ',' + INBOUND_TRACESTATE, True)))
 @override_application_settings(_override_settings)
-def test_tracestate_is_propagated():
+def test_tracestate_is_propagated(inbound_tracestate, update_tracestate):
     headers = {
         'traceparent': INBOUND_TRACEPARENT,
-        'tracestate': INBOUND_TRACESTATE,
+        'tracestate': inbound_tracestate
     }
     response = test_application.get('/', headers=headers)
     for header_name, header_value in response.json:
@@ -63,9 +67,44 @@ def test_tracestate_is_propagated():
     else:
         assert False, 'tracestate header not propagated'
 
-    # Allow for NR values to be prepended to the tracestate. The tracestate
-    # must still contain the unmodified inbound tracestate.
-    assert header_value.endswith(INBOUND_TRACESTATE)
+    nr_header = header_value.split(',')[0]
+    key, value = nr_header.split('=')
+    assert key == '1@nr'
+    fields = value.split('-')
+    assert len(fields) == 9
+    assert fields[0] == '0'
+    assert fields[1] == '0'
+    # sampled and priority should match the inbound tracestate
+    if update_tracestate:
+        assert fields[6] == '1'
+        assert fields[7] == '1.1273'
+    # If included other vendors in tracestate should be left unchanged
+    if inbound_tracestate:
+        assert header_value.endswith(INBOUND_TRACESTATE)
+
+
+def test_tracestate_span_events_disabled():
+    headers = {
+        'traceparent': INBOUND_TRACEPARENT,
+        'tracestate': INBOUND_TRACESTATE
+    }
+    settings = _override_settings.copy()
+    settings['span_events.enabled'] = False
+
+    @override_application_settings(settings)
+    def _test():
+        return test_application.get('/', headers=headers)
+
+    response = _test()
+
+    for header_name, header_value in response.json:
+        if header_name == 'tracestate':
+            break
+    else:
+        assert False, 'tracestate header not propagated'
+
+    # If span_events are disabled the INBOUND_TRACESTATE should be left as is
+    assert header_value == INBOUND_TRACESTATE
 
 
 @pytest.mark.parametrize('inbound_traceparent,span_events_enabled', (

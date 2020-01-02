@@ -1073,12 +1073,18 @@ class Transaction(object):
 
     def insert_distributed_trace_headers(self, headers):
         if self.settings.distributed_tracing.format == 'w3c':
-            traceparent = self._generate_traceparent_header()
-            headers.append(("traceparent", traceparent))
+            try:
+                traceparent = self._generate_traceparent_header()
+                headers.append(("traceparent", traceparent))
 
-            tracestate = self._generate_tracestate_header()
-            if tracestate:
-                headers.append(("tracestate", tracestate))
+                tracestate = self._generate_tracestate_header()
+                if tracestate:
+                    headers.append(("tracestate", tracestate))
+                self._record_supportability('Supportability/TraceContext/'
+                        'Create/Success')
+            except:
+                self._record_supportability('Supportability/TraceContext/'
+                        'Create/Exception')
         else:
             payload = self._create_distributed_trace_payload()
             payload = payload and payload.http_safe()
@@ -1262,6 +1268,9 @@ class Transaction(object):
 
         # Remove trusted new relic header if available and parse
         payload = vendors.pop(self._settings.trusted_account_key + '@nr', '')
+        if not payload:
+            self._record_supportability('Supportability/TraceContext/'
+                    'TraceState/NoNrEntry')
         fields = payload.split('-', 9)
         if len(fields) >= 9:
             self.parent_type = PARENT_TYPE.get(fields[1])
@@ -1289,9 +1298,13 @@ class Transaction(object):
 
         self.tracing_vendors = ','.join(vendors.keys())
 
-        if not self._settings.span_events.enabled:
-            return tracestate
-        return ','.join('{}={}'.format(k, v) for k, v in vendors.items())
+        if self._settings.span_events.enabled:
+            self.tracestate = ','.join(
+                    '{}={}'.format(k, v) for k, v in vendors.items())
+        else:
+            self.tracestate = tracestate
+
+        return True
 
     def accept_distributed_trace_headers(self, headers, transport_type='HTTP'):
         if not self._can_accept_distributed_trace_headers():
@@ -1312,9 +1325,32 @@ class Transaction(object):
                     elif k == 'tracestate':
                         tracestate = v
 
-            if self._parse_traceparent_header(traceparent) and tracestate:
-                tracestate = ensure_str(tracestate)
-                self.tracestate = self._parse_tracestate_header(tracestate)
+            try:
+                _parent_parsed = self._parse_traceparent_header(traceparent)
+            except:
+                _parent_parsed = False
+
+            if _parent_parsed:
+                self._record_supportability('Supportability/TraceContext/'
+                                        'TraceParent/Accept/Success')
+                if tracestate:
+                    tracestate = ensure_str(tracestate)
+                    try:
+                        _state_parsed = self._parse_tracestate_header(
+                                tracestate)
+                    except:
+                        _state_parsed = False
+                    if _state_parsed:
+                        self._record_supportability(
+                                'Supportability/TraceContext/'
+                                'Accept/Success')
+                    else:
+                        self._record_supportability(
+                                'Supportability/TraceContext/'
+                                'TraceState/Parse/Exception')
+            else:
+                self._record_supportability('Supportability/TraceContext/'
+                        'TraceParent/Parse/Exception')
         else:
             try:
                 distributed_header = headers.get('newrelic')

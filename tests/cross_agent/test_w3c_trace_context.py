@@ -7,7 +7,9 @@ from newrelic.packages import six
 from newrelic.api.transaction import current_transaction
 from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.object_wrapper import transient_function_wrapper
-from testing_support.fixtures import override_application_settings
+from testing_support.fixtures import (override_application_settings,
+        validate_transaction_metrics, validate_transaction_event_attributes,
+        validate_attributes)
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures',
@@ -82,6 +84,26 @@ def test_trace_context(test_name, trusted_account_key, account_id,
         span_events_enabled, transport_type, inbound_headers,
         outbound_payloads, intrinsics, expected_metrics):
 
+    # Prepare assertions
+    if not intrinsics:
+        intrinsics = {}
+
+    common = intrinsics.get('common', {})
+    common_required = common.get('expected', [])
+    common_forgone = common.get('unexpected', [])
+    common_exact = common.get('exact', {})
+
+    txn_intrinsics = intrinsics.get('Transaction', {})
+    txn_event_required = {'agent': [], 'user': [],
+            'intrinsic': txn_intrinsics.get('expected', [])}
+    txn_event_required['intrinsic'].extend(common_required)
+    txn_event_forgone = {'agent': [], 'user': [],
+            'intrinsic': txn_intrinsics.get('unexpected', [])}
+    txn_event_forgone['intrinsic'].extend(common_forgone)
+    txn_event_exact = {'agent': {}, 'user': {},
+            'intrinsic': txn_intrinsics.get('exact', {})}
+    txn_event_exact['intrinsic'].update(common_exact)
+
     override_settings = {
         'distributed_tracing.enabled': True,
         'distributed_tracing.format': 'w3c',
@@ -106,6 +128,13 @@ def test_trace_context(test_name, trusted_account_key, account_id,
                 k.encode('utf-8'): v.encode('utf-8')
                 for k, v in inbound_headers.items()}
 
+    @validate_transaction_metrics(test_name,
+            group="Uri",
+            rollup_metrics=expected_metrics,
+            background_task=not web_transaction)
+    @validate_transaction_event_attributes(
+            txn_event_required, txn_event_forgone, txn_event_exact)
+    @validate_attributes('intrinsic', common_required, common_forgone)
     @override_application_settings(override_settings)
     @override_compute_sampled(force_sampled_true)
     def _test():

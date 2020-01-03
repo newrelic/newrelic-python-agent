@@ -6,7 +6,7 @@ from newrelic.api.transaction import current_transaction
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.wsgi_application import wsgi_application
 from testing_support.fixtures import (override_application_settings,
-        validate_transaction_event_attributes)
+        validate_transaction_event_attributes, validate_transaction_metrics)
 from testing_support.validators.validate_span_events import (
     validate_span_events)
 
@@ -49,18 +49,34 @@ INBOUND_TRACEPARENT_INVALID_PARENT_ID = \
 INBOUND_TRACEPARENT_INVALID_FLAGS = \
         '00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-x1'
 
+_metrics = [("Supportability/TraceContext/Create/Success", 1),
+            ("Supportability/TraceContext/TraceParent/Accept/Success", 1)]
 
-@pytest.mark.parametrize('inbound_tracestate,update_tracestate',
-        (('', False),
-        (INBOUND_TRACESTATE, False),
-        (INBOUND_NR_TRACESTATE + ',' + INBOUND_TRACESTATE, True)))
+
+@pytest.mark.parametrize('inbound_tracestate,update_tracestate,metrics',
+        (('', False, []),
+        (INBOUND_TRACESTATE, False, [
+            ("Supportability/TraceContext/Accept/Success", 1),
+            ("Supportability/TraceContext/TraceState/NoNrEntry", 1)]),
+        (INBOUND_NR_TRACESTATE + ',' + INBOUND_TRACESTATE, True,
+            [("Supportability/TraceContext/Accept/Success", 1)])))
 @override_application_settings(_override_settings)
-def test_tracestate_is_propagated(inbound_tracestate, update_tracestate):
+def test_tracestate_is_propagated(
+        inbound_tracestate, update_tracestate, metrics):
     headers = {
         'traceparent': INBOUND_TRACEPARENT,
         'tracestate': inbound_tracestate
     }
-    response = test_application.get('/', headers=headers)
+
+    metrics.extend(_metrics)
+
+    @validate_transaction_metrics("",
+            group="Uri",
+            rollup_metrics=metrics)
+    def _test():
+        return test_application.get('/', headers=headers)
+
+    response = _test()
     for header_name, header_value in response.json:
         if header_name == 'tracestate':
             break
@@ -83,6 +99,14 @@ def test_tracestate_is_propagated(inbound_tracestate, update_tracestate):
         assert header_value.endswith(INBOUND_TRACESTATE)
 
 
+expected_metrics_span_events_disabled = [
+    ("Supportability/TraceContext/Accept/Success", 1),
+    ("Supportability/TraceContext/TraceState/NoNrEntry", 1),
+    ("Supportability/TraceContext/Create/Success", 1),
+    ("Supportability/TraceContext/TraceParent/Accept/Success", 1)
+]
+
+
 def test_tracestate_span_events_disabled():
     headers = {
         'traceparent': INBOUND_TRACEPARENT,
@@ -91,6 +115,8 @@ def test_tracestate_span_events_disabled():
     settings = _override_settings.copy()
     settings['span_events.enabled'] = False
 
+    @validate_transaction_metrics(name="", group="Uri",
+            rollup_metrics=expected_metrics_span_events_disabled)
     @override_application_settings(settings)
     def _test():
         return test_application.get('/', headers=headers)

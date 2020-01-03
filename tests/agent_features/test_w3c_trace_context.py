@@ -170,10 +170,12 @@ def test_traceparent_generation(inbound_traceparent, span_events_enabled):
 @pytest.mark.parametrize('traceparent,intrinsics', (
     (INBOUND_TRACEPARENT, {
             "traceId": "0af7651916cd43dd8448eb211c80319c",
-            "parentSpanId": "00f067aa0ba902b7"}),
+            "parentSpanId": "00f067aa0ba902b7",
+            "parent.transportType": "HTTP"}),
     (INBOUND_TRACEPARENT + '-extra-fields', {
             "traceId": "0af7651916cd43dd8448eb211c80319c",
-            "parentSpanId": "00f067aa0ba902b7"}),
+            "parentSpanId": "00f067aa0ba902b7",
+            "parent.transportType": "HTTP"}),
 
     ('INVALID', {}),
     ('xx-0', {}),

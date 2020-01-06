@@ -1210,7 +1210,7 @@ class Transaction(object):
             return False
         return self._accept_distributed_trace_payload(*args, **kwargs)
 
-    def _parse_traceparent_header(self, traceparent):
+    def _parse_traceparent_header(self, traceparent, transport_type):
         version_payload = traceparent.split('-', 1)
 
         # If there's no clear version, return False
@@ -1243,6 +1243,10 @@ class Transaction(object):
         trace_id, parent_id = fields[:2]
         self._trace_id = trace_id
         self.parent_span = parent_id
+        if transport_type not in DISTRIBUTED_TRACE_TRANSPORT_TYPES:
+            transport_type = 'Unknown'
+
+        self.parent_transport_type = transport_type
         self._distributed_trace_state = ACCEPTED_DISTRIBUTED_TRACE
         return True
 
@@ -1326,7 +1330,8 @@ class Transaction(object):
                         tracestate = v
 
             try:
-                _parent_parsed = self._parse_traceparent_header(traceparent)
+                _parent_parsed = self._parse_traceparent_header(
+                        traceparent, transport_type)
             except:
                 _parent_parsed = False
 

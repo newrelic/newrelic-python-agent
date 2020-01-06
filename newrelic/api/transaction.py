@@ -1272,14 +1272,39 @@ class Transaction(object):
 
         # Remove trusted new relic header if available and parse
         payload = vendors.pop(self._settings.trusted_account_key + '@nr', '')
+
+        self.tracing_vendors = ','.join(vendors.keys())
+
+        if self._settings.span_events.enabled:
+            self.tracestate = ','.join(
+                    '{}={}'.format(k, v) for k, v in vendors.items())
+        else:
+            self.tracestate = tracestate
         if not payload:
             self._record_supportability('Supportability/TraceContext/'
                     'TraceState/NoNrEntry')
+
         fields = payload.split('-', 9)
         if len(fields) >= 9:
-            self.parent_type = PARENT_TYPE.get(fields[1])
-            self.parent_account = fields[2]
-            self.parent_app = fields[3]
+            if not fields[0]:
+                return False
+            parent_type = PARENT_TYPE.get(fields[1], None)
+            if not parent_type:
+                return False
+            parent_account = fields[2]
+            if not parent_account:
+                return False
+            parent_app = fields[3]
+            if not parent_app:
+                return False
+            try:
+                transport_start = int(fields[8]) / 1000.0
+            except:
+                return False
+
+            self.parent_type = parent_type
+            self.parent_account = parent_account
+            self.parent_app = parent_app
             self.trusted_parent_span = fields[4]
             self.parent_tx = fields[5]
             if fields[6]:
@@ -1290,23 +1315,11 @@ class Transaction(object):
                 except:
                     pass
 
-            try:
-                transport_start = int(fields[8]) / 1000.0
-                now = time.time()
-                if transport_start > now:
-                    self.parent_transport_duration = 0.0
-                else:
-                    self.parent_transport_duration = now - transport_start
-            except:
-                pass
-
-        self.tracing_vendors = ','.join(vendors.keys())
-
-        if self._settings.span_events.enabled:
-            self.tracestate = ','.join(
-                    '{}={}'.format(k, v) for k, v in vendors.items())
-        else:
-            self.tracestate = tracestate
+            now = time.time()
+            if transport_start > now:
+                self.parent_transport_duration = 0.0
+            else:
+                self.parent_transport_duration = now - transport_start
 
         return True
 
@@ -1341,15 +1354,16 @@ class Transaction(object):
                 if tracestate:
                     tracestate = ensure_str(tracestate)
                     try:
-                        _state_parsed = self._parse_tracestate_header(
-                                tracestate)
+                        if self._parse_tracestate_header(tracestate):
+                            self._record_supportability(
+                                    'Supportability/TraceContext/'
+                                    'Accept/Success')
+                        else:
+                            self._record_supportability(
+                                    'Supportability/TraceContext/'
+                                    'TraceState/InvalidNrEntry')
+
                     except:
-                        _state_parsed = False
-                    if _state_parsed:
-                        self._record_supportability(
-                                'Supportability/TraceContext/'
-                                'Accept/Success')
-                    else:
                         self._record_supportability(
                                 'Supportability/TraceContext/'
                                 'TraceState/Parse/Exception')

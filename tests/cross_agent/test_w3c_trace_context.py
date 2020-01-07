@@ -7,6 +7,7 @@ from newrelic.packages import six
 from newrelic.api.transaction import current_transaction
 from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.object_wrapper import transient_function_wrapper
+from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.fixtures import (override_application_settings,
         validate_transaction_metrics, validate_transaction_event_attributes,
         validate_attributes)
@@ -143,6 +144,21 @@ def test_trace_context(test_name, trusted_account_key, account_id,
             headers=inbound_headers,
             extra_environ=extra_environ,
         )
+
+    if 'Span' in intrinsics:
+        span_intrinsics = intrinsics.get('Span')
+        span_expected = span_intrinsics.get('expected', [])
+        span_expected.extend(common_required)
+        span_unexpected = span_intrinsics.get('unexpected', [])
+        span_unexpected.extend(common_forgone)
+        span_exact = span_intrinsics.get('exact', {})
+        span_exact.update(common_exact)
+
+        _test = validate_span_events(exact_intrinsics=span_exact,
+            expected_intrinsics=span_expected,
+            unexpected_intrinsics=span_unexpected)(_test)
+    elif not span_events_enabled:
+        _test = validate_span_events(count=0)(_test)
 
     response = _test()
     assert response.status == '200 OK'

@@ -80,23 +80,11 @@ def override_compute_sampled(override):
     return _override_compute_sampled
 
 
-XFAIL_TESTS = [
-    "tracestate_missing_version",
-    "tracestate_missing_account",
-    "tracestate_missing_application",
-    "tracestate_missing_type",
-    "tracestate_missing_timestamp"
-]
-
-
 @pytest.mark.parametrize(_parameters, load_tests())
 def test_trace_context(test_name, trusted_account_key, account_id,
         web_transaction, raises_exception, force_sampled_true,
         span_events_enabled, transport_type, inbound_headers,
         outbound_payloads, intrinsics, expected_metrics):
-
-    if test_name in XFAIL_TESTS:
-        pytest.xfail("Requires tracestate validation")
 
     # Prepare assertions
     if not intrinsics:

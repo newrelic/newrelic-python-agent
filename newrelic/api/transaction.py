@@ -1252,7 +1252,7 @@ class Transaction(object):
 
     def _parse_tracestate_header(self, tracestate):
         # Don't parse more than 32 entries
-        entries = DELIMITER_FORMAT_RE.split(tracestate, 32)[:32]
+        entries = DELIMITER_FORMAT_RE.split(tracestate)
 
         vendors = OrderedDict()
         for entry in entries:
@@ -1277,7 +1277,8 @@ class Transaction(object):
 
         if self._settings.span_events.enabled:
             self.tracestate = ','.join(
-                    '{}={}'.format(k, v) for k, v in vendors.items())
+                    '{}={}'.format(k, v)
+                    for k, v in list(vendors.items())[:31])
         else:
             self.tracestate = tracestate
         if not payload:

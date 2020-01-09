@@ -34,6 +34,8 @@ INBOUND_TRACEPARENT = \
         '00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01'
 INBOUND_TRACESTATE = \
         'rojo=00f067aa0ba902b7,congo=t61rcWkgMzE'
+LONG_TRACESTATE = \
+        ','.join(["{}rojo=f06a0ba902b7".format(x) for x in range(32)])
 INBOUND_UNTRUSTED_NR_TRACESTATE = \
         '2@nr=0-0-1345936-55632452-27jjj2d8890283b4-b28ce285632jjhl9-'
 INBOUND_NR_TRACESTATE = \
@@ -59,6 +61,8 @@ _metrics = [("Supportability/TraceContext/Create/Success", 1),
             ("Supportability/TraceContext/Accept/Success", 1),
             ("Supportability/TraceContext/TraceState/NoNrEntry", 1)]),
         (INBOUND_NR_TRACESTATE + ',' + INBOUND_TRACESTATE, True,
+            [("Supportability/TraceContext/Accept/Success", 1)]),
+        (LONG_TRACESTATE + ',' + INBOUND_NR_TRACESTATE, True,
             [("Supportability/TraceContext/Accept/Success", 1)])))
 @override_application_settings(_override_settings)
 def test_tracestate_is_propagated(
@@ -83,7 +87,9 @@ def test_tracestate_is_propagated(
     else:
         assert False, 'tracestate header not propagated'
 
-    nr_header = header_value.split(',')[0]
+    tracestate = header_value.split(',')
+    assert len(tracestate) <= 32
+    nr_header = tracestate[0]
     key, value = nr_header.split('=')
     assert key == '1@nr'
     fields = value.split('-')
@@ -94,9 +100,6 @@ def test_tracestate_is_propagated(
     if update_tracestate:
         assert fields[6] == '1'
         assert fields[7] == '1.1273'
-    # If included other vendors in tracestate should be left unchanged
-    if inbound_tracestate:
-        assert header_value.endswith(INBOUND_TRACESTATE)
 
 
 expected_metrics_span_events_disabled = [

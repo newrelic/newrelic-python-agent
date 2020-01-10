@@ -1238,6 +1238,9 @@ class Transaction(object):
                 return False
 
         trace_id, parent_id = fields[:2]
+        # trace_id or parent_id of all 0's are invalid
+        if not int(parent_id, 16) or not int(trace_id, 16):
+            return False
         self._trace_id = trace_id
         self.parent_span = parent_id
         if transport_type not in DISTRIBUTED_TRACE_TRANSPORT_TYPES:

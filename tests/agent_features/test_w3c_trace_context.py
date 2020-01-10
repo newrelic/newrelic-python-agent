@@ -48,6 +48,8 @@ INBOUND_NR_TRACESTATE = \
 
 INBOUND_TRACEPARENT_VERSION_FF = \
         'ff-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01'
+INBOUND_TRACEPARENT_VERSION_TOO_LONG = \
+        '000-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01'
 INBOUND_TRACEPARENT_INVALID_TRACE_ID = \
         '00-0aF7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01'
 INBOUND_TRACEPARENT_INVALID_PARENT_ID = \
@@ -205,6 +207,8 @@ def test_traceparent_generation(inbound_traceparent, span_events_enabled):
     (INBOUND_TRACEPARENT_ZERO_TRACE_ID, {},
         [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
     (INBOUND_TRACEPARENT_ZERO_PARENT_ID, {},
+        [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
+    (INBOUND_TRACEPARENT_VERSION_TOO_LONG, {},
         [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
 ))
 @override_application_settings(_override_settings)

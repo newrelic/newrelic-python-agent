@@ -1208,6 +1208,7 @@ class Transaction(object):
         return self._accept_distributed_trace_payload(*args, **kwargs)
 
     def _parse_traceparent_header(self, traceparent, transport_type):
+        traceparent = traceparent.strip()
         version_payload = traceparent.split('-', 1)
 
         # If there's no clear version, return False
@@ -1217,7 +1218,9 @@ class Transaction(object):
         version, payload = version_payload
 
         # version must be a valid hex digit
-        if not HEXDIGLC_RE.match(version):
+        if not HEXDIGLC_RE.match(version) or len(version) != 2:
+            return False
+        if len(version) != 2:
             return False
         version = int(version, 16)
 
@@ -1228,8 +1231,9 @@ class Transaction(object):
 
         fields = payload.split('-', 3)
 
-        # Expect that there are at least 3 fields
-        if len(fields) < 3:
+        # Expect that there are at least 3 fields and only 3 fields if version
+        # 00
+        if len(fields) < 3 or (version == 0 and len(fields) != 3):
             return False
 
         # Check field lengths and values
@@ -1238,6 +1242,9 @@ class Transaction(object):
                 return False
 
         trace_id, parent_id = fields[:2]
+        # trace_id or parent_id of all 0's are invalid
+        if not int(parent_id, 16) or not int(trace_id, 16):
+            return False
         self._trace_id = trace_id
         self.parent_span = parent_id
         if transport_type not in DISTRIBUTED_TRACE_TRANSPORT_TYPES:
@@ -1265,7 +1272,7 @@ class Transaction(object):
             if len(value) > 256:
                 continue
 
-            vendors[vendor] = value
+            vendors[vendor] = value.rstrip()
 
         # Remove trusted new relic header if available and parse
         payload = vendors.pop(self._settings.trusted_account_key + '@nr', '')

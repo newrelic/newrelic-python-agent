@@ -30,8 +30,16 @@ _override_settings = {
 }
 
 
+INBOUND_TRACEPARENT_ZERO_PARENT_ID = \
+        '00-0af7651916cd43dd8448eb211c80319c-0000000000000000-01'
+INBOUND_TRACEPARENT_ZERO_TRACE_ID = \
+        '00-00000000000000000000000000000000-00f067aa0ba902b7-01'
 INBOUND_TRACEPARENT = \
         '00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01'
+INBOUND_TRACEPARENT_NEW_VERSION_EXTRA_FIELDS = \
+        '01-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01-extra-field'
+INBOUND_TRACEPARENT_VERSION_ZERO_EXTRA_FIELDS = \
+        '00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01-extra-field'
 INBOUND_TRACESTATE = \
         'rojo=00f067aa0ba902b7,congo=t61rcWkgMzE'
 LONG_TRACESTATE = \
@@ -44,6 +52,8 @@ INBOUND_NR_TRACESTATE = \
 
 INBOUND_TRACEPARENT_VERSION_FF = \
         'ff-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01'
+INBOUND_TRACEPARENT_VERSION_TOO_LONG = \
+        '000-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01'
 INBOUND_TRACEPARENT_INVALID_TRACE_ID = \
         '00-0aF7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01'
 INBOUND_TRACEPARENT_INVALID_PARENT_ID = \
@@ -61,6 +71,8 @@ _metrics = [("Supportability/TraceContext/Create/Success", 1),
             ("Supportability/TraceContext/Accept/Success", 1),
             ("Supportability/TraceContext/TraceState/NoNrEntry", 1)]),
         (INBOUND_NR_TRACESTATE + ',' + INBOUND_TRACESTATE, True,
+            [("Supportability/TraceContext/Accept/Success", 1)]),
+        (INBOUND_TRACESTATE + ' ', False,
             [("Supportability/TraceContext/Accept/Success", 1)]),
         (LONG_TRACESTATE + ',' + INBOUND_NR_TRACESTATE, True,
             [("Supportability/TraceContext/Accept/Success", 1)])))
@@ -87,6 +99,8 @@ def test_tracestate_is_propagated(
     else:
         assert False, 'tracestate header not propagated'
 
+    # verify header has whitespace removed
+    assert header_value == header_value.strip()
     tracestate = header_value.split(',')
     assert len(tracestate) <= 32
     nr_header = tracestate[0]
@@ -170,30 +184,55 @@ def test_traceparent_generation(inbound_traceparent, span_events_enabled):
     assert fields[3] in ('00', '01')
 
 
-@pytest.mark.parametrize('traceparent,intrinsics', (
+@pytest.mark.parametrize('traceparent,intrinsics,metrics', (
     (INBOUND_TRACEPARENT, {
             "traceId": "0af7651916cd43dd8448eb211c80319c",
             "parentSpanId": "00f067aa0ba902b7",
-            "parent.transportType": "HTTP"}),
-    (INBOUND_TRACEPARENT + '-extra-fields', {
+            "parent.transportType": "HTTP"},
+            [("Supportability/TraceContext/TraceParent/Accept/Success", 1)]),
+    (INBOUND_TRACEPARENT_NEW_VERSION_EXTRA_FIELDS, {
             "traceId": "0af7651916cd43dd8448eb211c80319c",
             "parentSpanId": "00f067aa0ba902b7",
-            "parent.transportType": "HTTP"}),
+            "parent.transportType": "HTTP"},
+            [("Supportability/TraceContext/TraceParent/Accept/Success", 1)]),
+    (INBOUND_TRACEPARENT + ' ', {
+            "traceId": "0af7651916cd43dd8448eb211c80319c",
+            "parentSpanId": "00f067aa0ba902b7",
+            "parent.transportType": "HTTP"},
+            [("Supportability/TraceContext/TraceParent/Accept/Success", 1)]),
 
-    ('INVALID', {}),
-    ('xx-0', {}),
-    (INBOUND_TRACEPARENT_VERSION_FF, {}),
-    (INBOUND_TRACEPARENT[:-1], {}),
-    ('00-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', {}),
-    (INBOUND_TRACEPARENT_INVALID_TRACE_ID, {}),
-    (INBOUND_TRACEPARENT_INVALID_PARENT_ID, {}),
-    (INBOUND_TRACEPARENT_INVALID_FLAGS, {}),
+    ('INVALID', {},
+        [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
+    ('xx-0', {},
+        [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
+    (INBOUND_TRACEPARENT_VERSION_FF, {},
+        [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
+    (INBOUND_TRACEPARENT_VERSION_ZERO_EXTRA_FIELDS, {},
+        [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
+    (INBOUND_TRACEPARENT[:-1], {},
+        [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
+    ('00-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', {},
+        [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
+    (INBOUND_TRACEPARENT_INVALID_TRACE_ID, {},
+        [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
+    (INBOUND_TRACEPARENT_INVALID_PARENT_ID, {},
+        [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
+    (INBOUND_TRACEPARENT_INVALID_FLAGS, {},
+        [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
+    (INBOUND_TRACEPARENT_ZERO_TRACE_ID, {},
+        [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
+    (INBOUND_TRACEPARENT_ZERO_PARENT_ID, {},
+        [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
+    (INBOUND_TRACEPARENT_VERSION_TOO_LONG, {},
+        [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
 ))
 @override_application_settings(_override_settings)
-def test_inbound_traceparent_header(traceparent, intrinsics):
+def test_inbound_traceparent_header(traceparent, intrinsics, metrics):
     exact = {'agent': {}, 'user': {}, 'intrinsic': intrinsics}
 
     @validate_transaction_event_attributes(exact_attrs=exact)
+    @validate_transaction_metrics(
+            "", group="Uri", rollup_metrics=metrics)
     def _test():
         test_application.get('/', headers={"traceparent": traceparent})
 

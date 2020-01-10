@@ -68,6 +68,8 @@ _metrics = [("Supportability/TraceContext/Create/Success", 1),
             ("Supportability/TraceContext/TraceState/NoNrEntry", 1)]),
         (INBOUND_NR_TRACESTATE + ',' + INBOUND_TRACESTATE, True,
             [("Supportability/TraceContext/Accept/Success", 1)]),
+        (INBOUND_TRACESTATE + ' ', False,
+            [("Supportability/TraceContext/Accept/Success", 1)]),
         (LONG_TRACESTATE + ',' + INBOUND_NR_TRACESTATE, True,
             [("Supportability/TraceContext/Accept/Success", 1)])))
 @override_application_settings(_override_settings)
@@ -93,6 +95,8 @@ def test_tracestate_is_propagated(
     else:
         assert False, 'tracestate header not propagated'
 
+    # verify header has whitespace removed
+    assert header_value == header_value.strip()
     tracestate = header_value.split(',')
     assert len(tracestate) <= 32
     nr_header = tracestate[0]

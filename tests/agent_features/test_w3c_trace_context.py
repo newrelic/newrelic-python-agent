@@ -170,30 +170,42 @@ def test_traceparent_generation(inbound_traceparent, span_events_enabled):
     assert fields[3] in ('00', '01')
 
 
-@pytest.mark.parametrize('traceparent,intrinsics', (
+@pytest.mark.parametrize('traceparent,intrinsics,metrics', (
     (INBOUND_TRACEPARENT, {
             "traceId": "0af7651916cd43dd8448eb211c80319c",
             "parentSpanId": "00f067aa0ba902b7",
-            "parent.transportType": "HTTP"}),
+            "parent.transportType": "HTTP"},
+            [("Supportability/TraceContext/TraceParent/Accept/Success", 1)]),
     (INBOUND_TRACEPARENT + '-extra-fields', {
             "traceId": "0af7651916cd43dd8448eb211c80319c",
             "parentSpanId": "00f067aa0ba902b7",
-            "parent.transportType": "HTTP"}),
+            "parent.transportType": "HTTP"},
+            [("Supportability/TraceContext/TraceParent/Accept/Success", 1)]),
 
-    ('INVALID', {}),
-    ('xx-0', {}),
-    (INBOUND_TRACEPARENT_VERSION_FF, {}),
-    (INBOUND_TRACEPARENT[:-1], {}),
-    ('00-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', {}),
-    (INBOUND_TRACEPARENT_INVALID_TRACE_ID, {}),
-    (INBOUND_TRACEPARENT_INVALID_PARENT_ID, {}),
-    (INBOUND_TRACEPARENT_INVALID_FLAGS, {}),
+    ('INVALID', {},
+        [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
+    ('xx-0', {},
+        [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
+    (INBOUND_TRACEPARENT_VERSION_FF, {},
+        [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
+    (INBOUND_TRACEPARENT[:-1], {},
+        [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
+    ('00-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', {},
+        [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
+    (INBOUND_TRACEPARENT_INVALID_TRACE_ID, {},
+        [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
+    (INBOUND_TRACEPARENT_INVALID_PARENT_ID, {},
+        [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
+    (INBOUND_TRACEPARENT_INVALID_FLAGS, {},
+        [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
 ))
 @override_application_settings(_override_settings)
-def test_inbound_traceparent_header(traceparent, intrinsics):
+def test_inbound_traceparent_header(traceparent, intrinsics, metrics):
     exact = {'agent': {}, 'user': {}, 'intrinsic': intrinsics}
 
     @validate_transaction_event_attributes(exact_attrs=exact)
+    @validate_transaction_metrics(
+            "", group="Uri", rollup_metrics=metrics)
     def _test():
         test_application.get('/', headers={"traceparent": traceparent})
 

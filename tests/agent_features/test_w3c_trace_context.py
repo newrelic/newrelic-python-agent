@@ -36,6 +36,10 @@ INBOUND_TRACEPARENT_ZERO_TRACE_ID = \
         '00-00000000000000000000000000000000-00f067aa0ba902b7-01'
 INBOUND_TRACEPARENT = \
         '00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01'
+INBOUND_TRACEPARENT_NEW_VERSION_EXTRA_FIELDS = \
+        '01-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01-extra-field'
+INBOUND_TRACEPARENT_VERSION_ZERO_EXTRA_FIELDS = \
+        '00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01-extra-field'
 INBOUND_TRACESTATE = \
         'rojo=00f067aa0ba902b7,congo=t61rcWkgMzE'
 LONG_TRACESTATE = \
@@ -186,7 +190,7 @@ def test_traceparent_generation(inbound_traceparent, span_events_enabled):
             "parentSpanId": "00f067aa0ba902b7",
             "parent.transportType": "HTTP"},
             [("Supportability/TraceContext/TraceParent/Accept/Success", 1)]),
-    (INBOUND_TRACEPARENT + '-extra-fields', {
+    (INBOUND_TRACEPARENT_NEW_VERSION_EXTRA_FIELDS, {
             "traceId": "0af7651916cd43dd8448eb211c80319c",
             "parentSpanId": "00f067aa0ba902b7",
             "parent.transportType": "HTTP"},
@@ -202,6 +206,8 @@ def test_traceparent_generation(inbound_traceparent, span_events_enabled):
     ('xx-0', {},
         [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
     (INBOUND_TRACEPARENT_VERSION_FF, {},
+        [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
+    (INBOUND_TRACEPARENT_VERSION_ZERO_EXTRA_FIELDS, {},
         [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),
     (INBOUND_TRACEPARENT[:-1], {},
         [("Supportability/TraceContext/TraceParent/Parse/Exception", 1)]),

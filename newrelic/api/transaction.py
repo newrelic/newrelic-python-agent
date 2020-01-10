@@ -1231,8 +1231,9 @@ class Transaction(object):
 
         fields = payload.split('-', 3)
 
-        # Expect that there are at least 3 fields
-        if len(fields) < 3:
+        # Expect that there are at least 3 fields and only 3 fields if version
+        # 00
+        if len(fields) < 3 or (version == 0 and len(fields) != 3):
             return False
 
         # Check field lengths and values

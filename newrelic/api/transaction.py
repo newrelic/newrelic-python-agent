@@ -1208,6 +1208,7 @@ class Transaction(object):
         return self._accept_distributed_trace_payload(*args, **kwargs)
 
     def _parse_traceparent_header(self, traceparent, transport_type):
+        traceparent = traceparent.strip()
         version_payload = traceparent.split('-', 1)
 
         # If there's no clear version, return False

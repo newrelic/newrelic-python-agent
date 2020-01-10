@@ -1271,7 +1271,7 @@ class Transaction(object):
             if len(value) > 256:
                 continue
 
-            vendors[vendor] = value
+            vendors[vendor] = value.rstrip()
 
         # Remove trusted new relic header if available and parse
         payload = vendors.pop(self._settings.trusted_account_key + '@nr', '')

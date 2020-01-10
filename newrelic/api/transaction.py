@@ -1057,19 +1057,16 @@ class Transaction(object):
     def _generate_traceparent_header(self):
         self._compute_sampled_and_priority()
         current_span = trace_cache().current_trace()
-        format_str = '00-{}-{}-{:02x}'
-        if self._settings.span_events.enabled and current_span:
-            return format_str.format(
-                self.trace_id,
-                current_span.guid,
-                int(self.sampled),
-            )
+        if current_span:
+            guid = current_span.guid
         else:
-            return format_str.format(
-                self.trace_id,
-                '{:016x}'.format(random.getrandbits(64)),
-                int(self.sampled),
-            )
+            guid = '{:016x}'.format(random.getrandbits(64))
+        format_str = '00-{}-{}-{:02x}'
+        return format_str.format(
+            self.trace_id,
+            guid,
+            int(self.sampled),
+        )
 
     def insert_distributed_trace_headers(self, headers):
         if self.settings.distributed_tracing.format == 'w3c':

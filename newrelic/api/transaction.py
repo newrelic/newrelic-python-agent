@@ -1217,7 +1217,9 @@ class Transaction(object):
         version, payload = version_payload
 
         # version must be a valid hex digit
-        if not HEXDIGLC_RE.match(version):
+        if not HEXDIGLC_RE.match(version) or len(version) != 2:
+            return False
+        if len(version) != 2:
             return False
         version = int(version, 16)
 

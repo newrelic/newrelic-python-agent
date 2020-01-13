@@ -1085,7 +1085,8 @@ class Transaction(object):
         # Insert proprietary New Relic dt headers for backwards compatibility
         payload = self._create_distributed_trace_payload()
         payload = payload and payload.http_safe()
-        headers.append(('newrelic', payload))
+        if payload:
+            headers.append(('newrelic', payload))
 
     def _can_accept_distributed_trace_headers(self):
         if not self.enabled:

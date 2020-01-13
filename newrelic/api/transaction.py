@@ -1069,23 +1069,23 @@ class Transaction(object):
         )
 
     def insert_distributed_trace_headers(self, headers):
-        if self.settings.distributed_tracing.format == 'w3c':
-            try:
-                traceparent = self._generate_traceparent_header()
-                headers.append(("traceparent", traceparent))
+        # Insert W3C compliant tracecontext headers
+        try:
+            traceparent = self._generate_traceparent_header()
+            headers.append(("traceparent", traceparent))
 
-                tracestate = self._generate_tracestate_header()
-                if tracestate:
-                    headers.append(("tracestate", tracestate))
-                self._record_supportability('Supportability/TraceContext/'
-                        'Create/Success')
-            except:
-                self._record_supportability('Supportability/TraceContext/'
-                        'Create/Exception')
-        else:
-            payload = self._create_distributed_trace_payload()
-            payload = payload and payload.http_safe()
-            headers.append(('newrelic', payload))
+            tracestate = self._generate_tracestate_header()
+            if tracestate:
+                headers.append(("tracestate", tracestate))
+            self._record_supportability('Supportability/TraceContext/'
+                    'Create/Success')
+        except:
+            self._record_supportability('Supportability/TraceContext/'
+                    'Create/Exception')
+        # Insert proprietary New Relic dt headers for backwards compatibility
+        payload = self._create_distributed_trace_payload()
+        payload = payload and payload.http_safe()
+        headers.append(('newrelic', payload))
 
     def _can_accept_distributed_trace_headers(self):
         if not self.enabled:

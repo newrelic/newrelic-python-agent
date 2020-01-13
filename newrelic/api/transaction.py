@@ -1320,21 +1320,21 @@ class Transaction(object):
         if not self._can_accept_distributed_trace_headers():
             return False
 
-        if self.settings.distributed_tracing.format == 'w3c':
-            try:
-                traceparent = headers.get('traceparent', '')
-                tracestate = headers.get('tracestate', '')
-            except Exception:
-                traceparent = ''
-                tracestate = ''
+        try:
+            traceparent = headers.get('traceparent', '')
+            tracestate = headers.get('tracestate', '')
+        except Exception:
+            traceparent = ''
+            tracestate = ''
 
-                for k, v in headers:
-                    k = ensure_str(k)
-                    if k == 'traceparent':
-                        traceparent = v
-                    elif k == 'tracestate':
-                        tracestate = v
+            for k, v in headers:
+                k = ensure_str(k)
+                if k == 'traceparent':
+                    traceparent = v
+                elif k == 'tracestate':
+                    tracestate = v
 
+        if traceparent:
             try:
                 _parent_parsed = self._parse_traceparent_header(
                         traceparent, transport_type)

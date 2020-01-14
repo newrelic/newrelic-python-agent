@@ -26,7 +26,6 @@ test_application = webtest.TestApp(target_wsgi_application)
 _override_settings = {
     'trusted_account_key': '1',
     'distributed_tracing.enabled': True,
-    'distributed_tracing.format': 'w3c',
 }
 
 

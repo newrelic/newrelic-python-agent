@@ -108,7 +108,6 @@ def test_trace_context(test_name, trusted_account_key, account_id,
 
     override_settings = {
         'distributed_tracing.enabled': True,
-        'distributed_tracing.format': 'w3c',
         'span_events.enabled': span_events_enabled,
         'account_id': account_id,
         'trusted_account_key': trusted_account_key,

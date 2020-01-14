@@ -1042,7 +1042,7 @@ class Transaction(object):
             current_span.guid,
             self.guid,
             '1' if self._sampled else '0',
-            '%.5g' % self._priority,
+            '%.6g' % self._priority,
             timestamp,
         ))
 

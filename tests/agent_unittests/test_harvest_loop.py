@@ -63,7 +63,7 @@ def transaction_node(request):
     children = tuple(function for _ in range(num_events))
 
     node = TransactionNode(
-            settings=finalize_application_settings({'agent_run_id': 1234567}),
+            settings=finalize_application_settings({'agent_run_id': '1234567'}),
             path='OtherTransaction/Function/main',
             type='OtherTransaction',
             group='Function',

@@ -58,7 +58,7 @@ class DistributedTracingW3C(object):
             'primary_application_id': '1',
             'trusted_account_key': '9000',
             'distributed_tracing.enabled': True,
-            'distributed_tracing.format': 'w3c'
+            'distributed_tracing.exclude_newrelic_header': True
         })
         self.transaction = MockTransaction(app)
         self.transaction._application = app

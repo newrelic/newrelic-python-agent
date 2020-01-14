@@ -41,7 +41,6 @@ class AcceptDistributedTraceHeaders(object):
                 "primary_application_id": "1",
                 "trusted_account_key": "9000",
                 "distributed_tracing.enabled": True,
-                "distributed_tracing.format": "newrelic",
             }
         )
         self.transaction = Transaction(app)
@@ -58,7 +57,6 @@ class AcceptDistributedTraceHeadersW3C(object):
                 "primary_application_id": "1",
                 "trusted_account_key": "9000",
                 "distributed_tracing.enabled": True,
-                "distributed_tracing.format": "w3c",
             }
         )
         self.transaction = Transaction(app)

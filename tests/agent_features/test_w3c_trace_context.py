@@ -269,3 +269,26 @@ def test_inbound_tracestate_header(tracestate, intrinsics):
         })
 
     _test()
+
+
+def test_w3c_and_newrelic_headers_generated():
+
+    @override_application_settings(_override_settings)
+    def _test():
+        return test_application.get('/')
+
+    response = _test()
+    traceparent = ''
+    tracestate = ''
+    newrelic = ''
+    for header_name, header_value in response.json:
+        if header_name == 'traceparent':
+            traceparent = header_value
+        elif header_name == 'tracestate':
+            tracestate = header_value
+        elif header_name == 'newrelic':
+            newrelic = header_value
+
+    assert traceparent
+    assert tracestate
+    assert newrelic

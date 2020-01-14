@@ -222,6 +222,28 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             # Parent should be excluded
             assert 'pa' not in data
 
+
+    def test_accept_distributed_trace_w3c(self):
+        with self.transaction:
+            self.transaction.settings.trusted_account_key = '1'
+            payload = self._make_test_payload()
+            payload = json.dumps(payload)
+            traceparent = \
+                '00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01'
+            headers = (('newrelic', payload), ('traceparent', traceparent))
+            self.transaction.accept_distributed_trace_headers(headers)
+            # Expect attributes only to be parsed from traceparent if it is
+            # included and no tracestate is present, even if there is a
+            # newrelic header present.
+            assert self.transaction.parent_type == None
+            assert self.transaction.parent_account == None
+            assert self.transaction.trusted_parent_span == None
+            assert self.transaction.parent_tx == None
+            assert self.transaction.parent_transport_type == "HTTP"
+            assert self.transaction._trace_id == \
+                    '0af7651916cd43dd8448eb211c80319c'
+            assert self.transaction.parent_span == '00f067aa0ba902b7'
+
     ##############################################
 
     def _standard_trace_test(self, expected_tx, expected_id=None):

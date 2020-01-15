@@ -76,7 +76,17 @@ _override_settings = {
 }
 
 
+_metrics = [
+        ('Supportability/DistributedTrace/AcceptPayload/Success', 1),
+        ('Supportability/TraceContext/Accept/Success', None)
+]
+
+
 @override_application_settings(_override_settings)
+@validate_transaction_metrics(
+    '',
+    group='Uri',
+    rollup_metrics=_metrics)
 def test_distributed_tracing_web_transaction():
     headers = {'newrelic': json.dumps(payload)}
     response = test_application.get('/', headers=headers)

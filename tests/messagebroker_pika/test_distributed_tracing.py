@@ -22,6 +22,7 @@ _override_settings = {
 }
 
 _test_distributed_tracing_basic_publish_metrics = [
+    ('Supportability/TraceContext/Create/Success', 1),
     ('Supportability/DistributedTrace/CreatePayload/Success', 1),
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/Default', 1),
     ('DurationByCaller/Unknown/Unknown/Unknown/Unknown/all', 1),
@@ -46,7 +47,8 @@ def do_basic_publish(channel, QUEUE, properties=None):
 _test_distributed_tracing_basic_consume_rollup_metrics = [
     ('MessageBroker/RabbitMQ/Exchange/Produce/Named/Default', None),
     ('MessageBroker/RabbitMQ/Exchange/Consume/Named/Default', None),
-    ('Supportability/DistributedTrace/AcceptPayload/Success', 1),
+    ('Supportability/DistributedTrace/AcceptPayload/Success', None),
+    ('Supportability/TraceContext/Accept/Success', 1),
     ('DurationByCaller/App/332029/3896659/AMQP/all', 1),
     ('TransportDuration/App/332029/3896659/AMQP/all', 1),
     ('DurationByCaller/App/332029/3896659/AMQP/allOther', 1),
@@ -85,7 +87,7 @@ def test_basic_consume_distributed_tracing_headers():
         assert txn
         assert txn._distributed_trace_state
         assert txn.parent_type == 'App'
-        assert txn.parent_tx == txn._trace_id
+        assert txn._trace_id.endswith(txn.parent_tx)
         assert txn.parent_span is not None
         assert txn.parent_account == txn.settings.account_id
         assert txn.parent_transport_type == 'AMQP'

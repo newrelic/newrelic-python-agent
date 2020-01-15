@@ -1071,6 +1071,8 @@ class Transaction(object):
         except:
             self._record_supportability('Supportability/TraceContext/'
                     'Create/Exception')
+        if self._settings.distributed_tracing.exclude_newrelic_header:
+            return
         # Insert proprietary New Relic dt headers for backwards compatibility
         payload = self._create_distributed_trace_payload()
         payload = payload and payload.http_safe()

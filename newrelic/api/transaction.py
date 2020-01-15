@@ -623,18 +623,7 @@ class Transaction(object):
 
     @property
     def trace_id(self):
-        trace_id = self._trace_id
-        if trace_id:
-            return trace_id
-
-        if self._settings.distributed_tracing.format == 'w3c':
-            # Prevent all zeros trace id (illegal)
-            while not trace_id:
-                trace_id = random.getrandbits(128)
-            self._trace_id = '{:032x}'.format(trace_id)
-            return self._trace_id
-
-        return self.guid
+        return self._trace_id or self.guid
 
     @property
     def alternate_path_hashes(self):
@@ -1063,7 +1052,7 @@ class Transaction(object):
             guid = '{:016x}'.format(random.getrandbits(64))
         format_str = '00-{}-{}-{:02x}'
         return format_str.format(
-            self.trace_id,
+            self.trace_id.zfill(32),
             guid,
             int(self.sampled),
         )
@@ -1219,9 +1208,7 @@ class Transaction(object):
         version, payload = version_payload
 
         # version must be a valid hex digit
-        if not HEXDIGLC_RE.match(version) or len(version) != 2:
-            return False
-        if len(version) != 2:
+        if len(version) != 2 or not HEXDIGLC_RE.match(version):
             return False
         version = int(version, 16)
 

@@ -132,6 +132,21 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             for header in headers:
                 assert type(header[1]) is str
 
+
+    def test_insert_distributed_trace_headers_newrelic_format_disabled(self):
+        with self.transaction:
+            self.transaction.settings \
+                    .distributed_tracing.exclude_newrelic_header = True
+            headers = []
+            self.transaction.insert_distributed_trace_headers(headers)
+            # Assert only tracecontext headers are added
+            assert len(headers) == 2
+            assert headers[0][0] == 'traceparent'
+            assert headers[1][0] == 'tracestate'
+            for header in headers:
+                assert type(header[1]) is str
+
+
     @pytest.mark.filterwarnings("error")
     def test_accept_distributed_trace_headers(self):
         with self.transaction:

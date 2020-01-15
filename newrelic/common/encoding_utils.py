@@ -9,9 +9,12 @@ import json
 import zlib
 import io
 import gzip
+import re
 from hashlib import md5
 
 from newrelic.packages import six
+
+HEXDIGLC_RE = re.compile('^[0-9a-f]+$')
 
 
 # Functions for encoding/decoding JSON. These wrappers are used in order
@@ -407,3 +410,51 @@ class DistributedTracePayload(dict):
                 pass
             else:
                 return payload
+
+
+class W3CTraceParent(dict):
+
+    def text(self):
+        return '00-{}-{}-{:02x}'.format(
+            self["trace_id"],
+            self["parent_id"],
+            self.get("flags", 0),
+        )
+
+    @classmethod
+    def decode(cls, payload):
+        # Only traceparent with at least 55 chars should be parsed
+        if len(payload) < 55:
+            return None
+
+        fields = payload.split('-', 4)
+
+        # Expect that there are at least 4 fields
+        if len(fields) < 4:
+            return None
+
+        version = fields[0]
+
+        # version must be a valid 2-char hex digit
+        if len(version) != 2 or not HEXDIGLC_RE.match(version):
+            return None
+
+        # Version 255 is invalid
+        if version == 'ff':
+            return None
+
+        # Expect exactly 4 fields if version 00
+        if version == '00' and len(fields) != 4:
+            return None
+
+        # Check field lengths and values
+        for field, expected_length in zip(fields[1:4], (32, 16, 2)):
+            if len(field) != expected_length or not HEXDIGLC_RE.match(field):
+                return None
+
+        # trace_id or parent_id of all 0's are invalid
+        trace_id, parent_id = fields[1:3]
+        if not int(parent_id, 16) or not int(trace_id, 16):
+            return None
+
+        return cls(trace_id=trace_id, parent_id=parent_id)

@@ -73,6 +73,7 @@ def test_method_view(app, method):
 
 
 DT_METRICS = [
+    ('Supportability/DistributedTrace/AcceptPayload/Success', None),
     ('Supportability/TraceContext/TraceParent/Accept/Success', 1),
 ]
 

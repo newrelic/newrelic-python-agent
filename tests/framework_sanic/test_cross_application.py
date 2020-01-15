@@ -16,6 +16,7 @@ BASE_METRICS = [
     ('Function/_target_application:index', 1),
 ]
 DT_METRICS = [
+    ('Supportability/DistributedTrace/AcceptPayload/Success', None),
     ('Supportability/TraceContext/TraceParent/Accept/Success', 1),
 ]
 BASE_ATTRS = ['response.status', 'response.headers.contentType',

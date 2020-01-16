@@ -250,10 +250,10 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             # Expect attributes only to be parsed from traceparent if it is
             # included and no tracestate is present, even if there is a
             # newrelic header present.
-            assert self.transaction.parent_type == None
-            assert self.transaction.parent_account == None
-            assert self.transaction.trusted_parent_span == None
-            assert self.transaction.parent_tx == None
+            assert self.transaction.parent_type is None
+            assert self.transaction.parent_account is None
+            assert self.transaction.trusted_parent_span is None
+            assert self.transaction.parent_tx is None
             assert self.transaction.parent_transport_type == "HTTP"
             assert self.transaction._trace_id == \
                     '0af7651916cd43dd8448eb211c80319c'

@@ -126,12 +126,13 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         with self.transaction:
             headers = []
             self.transaction.insert_distributed_trace_headers(headers)
-            assert headers[0][0] == 'traceparent'
-            assert headers[1][0] == 'tracestate'
-            assert headers[2][0] == 'newrelic'
-            for header in headers:
-                assert type(header[1]) is str
-
+            assert len(headers) == 3
+            headers = dict(headers)
+            assert 'traceparent' in headers
+            assert 'tracestate' in headers
+            assert 'newrelic' in headers
+            for header in headers.values():
+                assert type(header) is str
 
     def test_insert_distributed_trace_headers_newrelic_format_disabled(self):
         with self.transaction:
@@ -139,13 +140,13 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
                     .distributed_tracing.exclude_newrelic_header = True
             headers = []
             self.transaction.insert_distributed_trace_headers(headers)
-            # Assert only tracecontext headers are added
             assert len(headers) == 2
-            assert headers[0][0] == 'traceparent'
-            assert headers[1][0] == 'tracestate'
-            for header in headers:
-                assert type(header[1]) is str
-
+            headers = dict(headers)
+            # Assert only tracecontext headers are added
+            assert 'traceparent' in headers
+            assert 'tracestate' in headers
+            for header in headers.values():
+                assert type(header) is str
 
     @pytest.mark.filterwarnings("error")
     def test_accept_distributed_trace_headers(self):
@@ -236,7 +237,6 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
             # Parent should be excluded
             assert 'pa' not in data
-
 
     def test_accept_distributed_trace_w3c(self):
         with self.transaction:

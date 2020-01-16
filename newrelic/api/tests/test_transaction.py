@@ -126,11 +126,27 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         with self.transaction:
             headers = []
             self.transaction.insert_distributed_trace_headers(headers)
-            assert headers[0][0] == 'traceparent'
-            assert headers[1][0] == 'tracestate'
-            assert headers[2][0] == 'newrelic'
-            for header in headers:
-                assert type(header[1]) is str
+            assert len(headers) == 3
+            headers = dict(headers)
+            assert 'traceparent' in headers
+            assert 'tracestate' in headers
+            assert 'newrelic' in headers
+            for header in headers.values():
+                assert type(header) is str
+
+    def test_insert_distributed_trace_headers_newrelic_format_disabled(self):
+        with self.transaction:
+            self.transaction.settings \
+                    .distributed_tracing.exclude_newrelic_header = True
+            headers = []
+            self.transaction.insert_distributed_trace_headers(headers)
+            assert len(headers) == 2
+            headers = dict(headers)
+            # Assert only tracecontext headers are added
+            assert 'traceparent' in headers
+            assert 'tracestate' in headers
+            for header in headers.values():
+                assert type(header) is str
 
     @pytest.mark.filterwarnings("error")
     def test_accept_distributed_trace_headers(self):
@@ -222,7 +238,6 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             # Parent should be excluded
             assert 'pa' not in data
 
-
     def test_accept_distributed_trace_w3c(self):
         with self.transaction:
             self.transaction.settings.trusted_account_key = '1'
@@ -235,10 +250,10 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             # Expect attributes only to be parsed from traceparent if it is
             # included and no tracestate is present, even if there is a
             # newrelic header present.
-            assert self.transaction.parent_type == None
-            assert self.transaction.parent_account == None
-            assert self.transaction.trusted_parent_span == None
-            assert self.transaction.parent_tx == None
+            assert self.transaction.parent_type is None
+            assert self.transaction.parent_account is None
+            assert self.transaction.trusted_parent_span is None
+            assert self.transaction.parent_tx is None
             assert self.transaction.parent_transport_type == "HTTP"
             assert self.transaction._trace_id == \
                     '0af7651916cd43dd8448eb211c80319c'

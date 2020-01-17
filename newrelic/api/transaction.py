@@ -1338,6 +1338,7 @@ class Transaction(object):
                     tracestate = v
 
         if traceparent:
+            traceparent = ensure_str(traceparent)
             try:
                 _parent_parsed = self._parse_traceparent_header(
                         traceparent, transport_type)

@@ -32,12 +32,15 @@ def create_request(streaming_request, count=1, timesout=False):
 
 
 def get_result(method, request, *args, **kwargs):
-    from grpc._channel import _Rendezvous
+    try:
+        from grpc._channel import _InactiveRpcError as Error
+    except ImportError:
+        from grpc._channel import _Rendezvous as Error
     result = None
     try:
         result = method(request, *args, **kwargs)
         list(result)
-    except _Rendezvous as e:
+    except Error as e:
         result = e
     except Exception:
         pass

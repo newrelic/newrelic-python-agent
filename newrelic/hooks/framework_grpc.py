@@ -194,10 +194,16 @@ def instrument_grpc__channel(module):
             _prepare_request_stream)
     wrap_future(module, '_StreamStreamMultiCallable.__call__',
             _prepare_request_stream)
-    wrap_function_wrapper(module, '_Rendezvous._next',
-            wrap_next)
-    wrap_function_wrapper(module, '_Rendezvous.result',
-            wrap_result)
+    if hasattr(module, '_MultiThreadedRendezvous'):
+        wrap_function_wrapper(module, '_MultiThreadedRendezvous.result',
+                wrap_result)
+        wrap_function_wrapper(module, '_MultiThreadedRendezvous._next',
+                wrap_result)
+    else:
+        wrap_function_wrapper(module, '_Rendezvous.result',
+                wrap_result)
+        wrap_function_wrapper(module, '_Rendezvous._next',
+                wrap_next)
     wrap_function_wrapper(module, '_Rendezvous.cancel',
             wrap_result)
 

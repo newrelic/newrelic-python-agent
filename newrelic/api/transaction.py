@@ -1022,13 +1022,14 @@ class Transaction(object):
         application_id = settings.primary_application_id
 
         current_span = trace_cache().current_trace()
+        current_span_guid = current_span and current_span.guid or ''
         timestamp = str(int(time.time() * 1000.0))
 
         nr_payload = '-'.join((
             '0-0',
             account_id,
             application_id,
-            current_span.guid,
+            current_span_guid,
             self.guid,
             '1' if self._sampled else '0',
             '%.6g' % self._priority,

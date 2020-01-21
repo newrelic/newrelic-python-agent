@@ -1,6 +1,13 @@
 unreleased
 ----------
 
+- Fix grpc v1.26 instrumentation errors
+
+  Customers using grpc v1.26 and above may have experienced an error message in
+  the New Relic logs indicating there was an instrumentation error.
+  Additionally, some data may have been missing when this error was
+  encountered. This issue has now been fixed.
+
 - Add support for uvloop
 
   Transaction context may not have been propagated when using uvloop. This

@@ -34,7 +34,7 @@ def test_inbound_distributed_trace(mock_grpc_server, method_name,
     @validate_transaction_metrics(
         'sample_application:SampleApplicationServicer.' + method_name,
         rollup_metrics=(
-            ('Supportability/DistributedTrace/AcceptPayload/Success', 1),
+            ('Supportability/TraceContext/Accept/Success', 1),
         ),
     )
     @wait_for_transaction_completion

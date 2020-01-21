@@ -1,6 +1,7 @@
 import functools
 import itertools
 import asyncio
+import inspect
 
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import function_trace
@@ -66,7 +67,17 @@ def _nr_aiohttp_view_wrapper_(wrapped, instance, args, kwargs):
 
 def _nr_aiohttp_wrap_view_(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
-    instance._handler = _nr_aiohttp_view_wrapper_(instance._handler)
+    if inspect.isclass(instance._handler):
+        try:
+            init = getattr(instance._handler, '__init__')
+        except AttributeError:
+            def init(*args, **kwargs):
+                pass
+
+        if not hasattr(init, '__wrapped__'):
+            instance._handler.__init__ = _nr_aiohttp_view_wrapper_(init)
+    else:
+        instance._handler = _nr_aiohttp_view_wrapper_(instance._handler)
     return result
 
 

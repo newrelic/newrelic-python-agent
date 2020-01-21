@@ -1,6 +1,12 @@
 unreleased
 ----------
 
+- Fix crash when using aiohttp_cors
+
+  Customers using the agent with aiohttp_cors may have experienced a crash when
+  the aiohttp_cors framework was used in conjunction with aiohttp class based
+  views. This crash has now been fixed.
+
 - Fix grpc v1.26 instrumentation errors
 
   Customers using grpc v1.26 and above may have experienced an error message in

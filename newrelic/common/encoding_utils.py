@@ -414,11 +414,12 @@ class DistributedTracePayload(dict):
 
 class W3CTraceParent(dict):
 
-    def text(self):
+    @staticmethod
+    def text(trace_id, parent_id, flags):
         return '00-{}-{}-{:02x}'.format(
-            self["trace_id"],
-            self["parent_id"],
-            self.get("flags", 0),
+            trace_id,
+            parent_id,
+            flags,
         )
 
     @classmethod
@@ -454,7 +455,7 @@ class W3CTraceParent(dict):
 
         # trace_id or parent_id of all 0's are invalid
         trace_id, parent_id = fields[1:3]
-        if not int(parent_id, 16) or not int(trace_id, 16):
+        if parent_id == '0' * 16 or trace_id == '0' * 32:
             return None
 
         return cls(trace_id=trace_id, parent_id=parent_id)

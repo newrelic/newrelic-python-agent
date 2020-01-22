@@ -1051,11 +1051,11 @@ class Transaction(object):
             guid = current_span.guid
         else:
             guid = '{:016x}'.format(random.getrandbits(64))
-        return W3CTraceParent(
+        return W3CTraceParent.text(
             trace_id=self.trace_id.zfill(32),
             parent_id=guid,
             flags=int(self.sampled),
-        ).text()
+        )
 
     def _generate_distributed_trace_headers(self):
         headers = []

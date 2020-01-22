@@ -202,53 +202,6 @@ def test_future_timeout_error(service_method_type, service_method_method_name,
     _test_future_timeout_error()
 
 
-@pytest.mark.parametrize(*_test_matrix)
-def test_server_down(service_method_type, service_method_method_name,
-        future_response):
-    port = 1234
-
-    service_method_class_name = 'NoTxn%s' % (
-            service_method_type.title().replace('_', ''))
-    streaming_request = service_method_type.split('_')[0] == 'stream'
-
-    _test_scoped_metrics = [
-            ('External/localhost:%s/gRPC/SampleApplication/%s' % (port,
-                service_method_class_name), 1),
-    ]
-    _test_rollup_metrics = [
-            ('External/localhost:%s/gRPC/SampleApplication/%s' % (port,
-                service_method_class_name), 1),
-            ('External/localhost:%s/all' % port, 1),
-            ('External/allOther', 1),
-            ('External/all', 1),
-    ]
-
-    if six.PY2:
-        _test_transaction_name = 'test_clients:_test_server_down'
-    else:
-        _test_transaction_name = (
-                'test_clients:test_server_down.<locals>._test_server_down')
-
-    @validate_transaction_errors(errors=[])
-    @validate_transaction_metrics(_test_transaction_name,
-            scoped_metrics=_test_scoped_metrics,
-            rollup_metrics=_test_rollup_metrics,
-            background_task=True)
-    @background_task()
-    def _test_server_down():
-        stub = create_stub(port)
-
-        service_method_class = getattr(stub, service_method_class_name)
-        service_method_method = getattr(service_method_class,
-                service_method_method_name)
-
-        request = create_request(streaming_request, count=1, timesout=False)
-        reply = get_result(service_method_method, request)
-        assert reply and reply.code() == grpc.StatusCode.UNAVAILABLE
-
-    _test_server_down()
-
-
 _test_matrix = [
     ('service_method_type,service_method_method_name'), (
         ('unary_unary', 'with_call'),

@@ -1051,11 +1051,12 @@ class Transaction(object):
             guid = current_span.guid
         else:
             guid = '{:016x}'.format(random.getrandbits(64))
-        return W3CTraceParent.text(
-            trace_id=self.trace_id.zfill(32),
-            parent_id=guid,
-            flags=int(self.sampled),
+        data = W3CTraceParent(
+            tr=self.trace_id,
+            id=guid,
+            sa=self.sampled,
         )
+        return data.text()
 
     def _generate_distributed_trace_headers(self):
         headers = []
@@ -1208,8 +1209,8 @@ class Transaction(object):
         traceparent = W3CTraceParent.decode(header)
         if not traceparent:
             return False
-        self._trace_id = traceparent['trace_id']
-        self.parent_span = traceparent['parent_id']
+        self._trace_id = traceparent['tr']
+        self.parent_span = traceparent['id']
         if transport_type not in DISTRIBUTED_TRACE_TRANSPORT_TYPES:
             transport_type = 'Unknown'
 

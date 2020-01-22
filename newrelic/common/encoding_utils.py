@@ -3,6 +3,7 @@ of data.
 
 """
 
+import random
 import types
 import base64
 import json
@@ -414,12 +415,16 @@ class DistributedTracePayload(dict):
 
 class W3CTraceParent(dict):
 
-    @staticmethod
-    def text(trace_id, parent_id, flags):
+    def text(self):
+        if 'id' in self:
+            guid = self['id']
+        else:
+            guid = '{:016x}'.format(random.getrandbits(64))
+
         return '00-{}-{}-{:02x}'.format(
-            trace_id,
-            parent_id,
-            flags,
+            self['tr'].zfill(32),
+            guid,
+            int(self.get('sa', 0)),
         )
 
     @classmethod
@@ -458,4 +463,4 @@ class W3CTraceParent(dict):
         if parent_id == '0' * 16 or trace_id == '0' * 32:
             return None
 
-        return cls(trace_id=trace_id, parent_id=parent_id)
+        return cls(tr=trace_id, id=parent_id)

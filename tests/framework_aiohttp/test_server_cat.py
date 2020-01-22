@@ -12,7 +12,7 @@ ENCODING_KEY = '1234567890123456789012345678901234567890'
 test_uris = [
     ('/error?hello=world', '_target_application:error'),
     ('/coro?hello=world', '_target_application:index'),
-    ('/class?hello=world', '_target_application:HelloWorldView'),
+    ('/class?hello=world', '_target_application:HelloWorldView._respond'),
 ]
 
 

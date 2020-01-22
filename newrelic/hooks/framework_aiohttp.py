@@ -1,6 +1,7 @@
 import functools
 import itertools
 import asyncio
+import inspect
 
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import function_trace
@@ -11,6 +12,10 @@ from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
         function_wrapper, ObjectProxy)
 from newrelic.core.config import ignore_status_code
+
+
+SUPPORTED_METHODS = ('connect', 'head', 'get', 'delete', 'options', 'patch',
+        'post', 'put', 'trace')
 
 
 def aiohttp_version_info():
@@ -58,15 +63,48 @@ def _nr_aiohttp_view_wrapper_(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    name = instance and callable_name(instance) or callable_name(wrapped)
+    name = callable_name(wrapped)
     transaction.set_transaction_name(name, priority=1)
 
     return function_trace(name=name)(wrapped)(*args, **kwargs)
 
 
+@function_wrapper
+def _nr_aiohttp_initial_class_transaction_name_(
+        wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
+    name = callable_name(instance)
+    transaction.set_transaction_name(name, priority=1)
+    return wrapped(*args, **kwargs)
+
+
 def _nr_aiohttp_wrap_view_(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
-    instance._handler = _nr_aiohttp_view_wrapper_(instance._handler)
+    from aiohttp.web import View
+    if inspect.isclass(instance._handler):
+        try:
+            init = getattr(instance._handler, '__init__')
+        except AttributeError:
+            def init(*args, **kwargs):
+                pass
+
+        if not hasattr(init, '__wrapped__'):
+            instance._handler.__init__ = \
+                    _nr_aiohttp_initial_class_transaction_name_(init)
+
+        if issubclass(instance._handler, View):
+            for method in SUPPORTED_METHODS:
+                handler = getattr(instance._handler, method, None)
+
+                if handler and not hasattr(handler, '__wrapped__'):
+                    setattr(instance._handler, method,
+                            _nr_aiohttp_view_wrapper_(handler))
+    else:
+        instance._handler = _nr_aiohttp_view_wrapper_(instance._handler)
     return result
 
 

@@ -1011,7 +1011,7 @@ class Transaction(object):
         return self._create_distributed_trace_payload()
 
     def _generate_tracestate_header(self):
-        if not self.enabled or not self.settings.span_events.enabled:
+        if not self.enabled:
             return self.tracestate
 
         settings = self._settings
@@ -1226,7 +1226,7 @@ class Transaction(object):
         tk = self._settings.trusted_account_key
         payload = vendors.pop(tk + '@nr', '')
         self.tracing_vendors = ','.join(vendors.keys())
-        self.tracestate = ',' + vendors.text(limit=31)
+        self.tracestate = vendors.text(limit=31)
 
         if payload:
             data = NrTraceState.decode(payload, tk)

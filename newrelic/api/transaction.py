@@ -32,7 +32,8 @@ from newrelic.core.custom_event import create_custom_event
 from newrelic.core.stack_trace import exception_stack
 from newrelic.common.encoding_utils import (generate_path_hash, obfuscate,
         deobfuscate, json_encode, json_decode, base64_decode,
-        convert_to_cat_metadata_value, DistributedTracePayload, ensure_str)
+        convert_to_cat_metadata_value, DistributedTracePayload, ensure_str,
+        W3CTraceParent)
 
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.api.time_trace import TimeTrace
@@ -43,7 +44,6 @@ DISTRIBUTED_TRACE_KEYS_REQUIRED = ('ty', 'ac', 'ap', 'tr', 'ti')
 DISTRIBUTED_TRACE_TRANSPORT_TYPES = set((
     'HTTP', 'HTTPS', 'Kafka', 'JMS',
     'IronMQ', 'AMQP', 'Queue', 'Other'))
-HEXDIGLC_RE = re.compile('^[0-9a-f]+$')
 DELIMITER_FORMAT_RE = re.compile('[ \t]*,[ \t]*')
 ACCEPTED_DISTRIBUTED_TRACE = 1
 CREATED_DISTRIBUTED_TRACE = 2
@@ -1051,12 +1051,12 @@ class Transaction(object):
             guid = current_span.guid
         else:
             guid = '{:016x}'.format(random.getrandbits(64))
-        format_str = '00-{}-{}-{:02x}'
-        return format_str.format(
-            self.trace_id.zfill(32),
-            guid,
-            int(self.sampled),
+        data = W3CTraceParent(
+            tr=self.trace_id,
+            id=guid,
+            sa=self.sampled,
         )
+        return data.text()
 
     def _generate_distributed_trace_headers(self):
         headers = []
@@ -1204,44 +1204,13 @@ class Transaction(object):
             return False
         return self._accept_distributed_trace_payload(*args, **kwargs)
 
-    def _parse_traceparent_header(self, traceparent, transport_type):
-        traceparent = traceparent.strip()
-        version_payload = traceparent.split('-', 1)
-
-        # If there's no clear version, return False
-        if len(version_payload) != 2:
+    def _accept_traceparent_header(self, header, transport_type):
+        header = header.strip()
+        traceparent = W3CTraceParent.decode(header)
+        if not traceparent:
             return False
-
-        version, payload = version_payload
-
-        # version must be a valid hex digit
-        if len(version) != 2 or not HEXDIGLC_RE.match(version):
-            return False
-        version = int(version, 16)
-
-        # Version 255 is invalid
-        # Only traceparent with at least 55 chars should be parsed
-        if version == 255 or len(traceparent) < 55:
-            return False
-
-        fields = payload.split('-', 3)
-
-        # Expect that there are at least 3 fields and only 3 fields if version
-        # 00
-        if len(fields) < 3 or (version == 0 and len(fields) != 3):
-            return False
-
-        # Check field lengths and values
-        for field, expected_length in zip(fields, (32, 16, 2)):
-            if len(field) != expected_length or not HEXDIGLC_RE.match(field):
-                return False
-
-        trace_id, parent_id = fields[:2]
-        # trace_id or parent_id of all 0's are invalid
-        if not int(parent_id, 16) or not int(trace_id, 16):
-            return False
-        self._trace_id = trace_id
-        self.parent_span = parent_id
+        self._trace_id = traceparent['tr']
+        self.parent_span = traceparent['id']
         if transport_type not in DISTRIBUTED_TRACE_TRANSPORT_TYPES:
             transport_type = 'Unknown'
 
@@ -1344,7 +1313,7 @@ class Transaction(object):
         if traceparent:
             traceparent = ensure_str(traceparent)
             try:
-                _parent_parsed = self._parse_traceparent_header(
+                _parent_parsed = self._accept_traceparent_header(
                         traceparent, transport_type)
             except:
                 _parent_parsed = False

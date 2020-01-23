@@ -3,7 +3,7 @@ import pytest
 import newrelic.packages.six as six
 
 from newrelic.common.encoding_utils import (decode_newrelic_header, obfuscate,
-        json_encode, ensure_str)
+        json_encode, ensure_str, W3CTraceParent)
 
 
 ENCODING_KEY = '1234567890123456789012345678901234567890'
@@ -61,6 +61,72 @@ class EncodingUtilsTests(unittest.TestCase):
 
     def test_ensure_str_none(self):
         assert ensure_str(None) is None
+
+
+@pytest.mark.parametrize('payload,valid', (
+    ('00-11111111111111111111111111111111-2222222222222222-1', False),
+    ('000-11111111111111111111111111111111-2222222222222222-01', False),
+    ('00-111111111111111111111111111111111-2222222222222222-01', False),
+    ('00-11111111111111111111111111111111-22222222222222222-01', False),
+    ('00-11111111111111111111111111111111-2222222222222222-001', False),
+    ('00-11111111111111111111111111111111-0000000000000000-01', False),
+    ('00-00000000000000000000000000000000-1111111111111111-01', False),
+    ('ff-11111111111111111111111111111111-2222222222222222-01', False),
+    ('00-CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC-2222222222222222-01', False),
+    ('00-11111111111111111111111111111111-CCCCCCCCCCCCCCCC-01', False),
+    ('00-11111111111111111111111111111111-2222222222222222-CC', False),
+    ('CC-11111111111111111111111111111111-2222222222222222-01', False),
+    ('00-11111111111111111111111111111111-2222222222222222101', False),
+    ('00-11111111111111111111111111111111-2222222222222222-01-1', False),
+    ('00-11111111111111111111111111111111-2222222222222222-01', True),
+    ('cc-11111111111111111111111111111111-2222222222222222-01', True),
+    ('01-11111111111111111111111111111111-2222222222222222-01-1', True),
+))
+def test_traceparent_decode(payload, valid):
+    if valid:
+        expected = {
+            'tr': '11111111111111111111111111111111',
+            'id': '2222222222222222',
+        }
+    else:
+        expected = None
+
+    assert W3CTraceParent.decode(payload) == expected
+
+
+@pytest.mark.parametrize('span_id,sampled', (
+    ('2222222222222222', True),
+    (None, True),
+    (None, None),
+    (None, False),
+))
+def test_traceparent_text(span_id, sampled):
+    trace_id = '1111111111111111'
+    data = {'tr': trace_id}
+    expected_trace_id = '00000000000000001111111111111111'
+
+    if span_id:
+        data['id'] = span_id
+
+    if sampled is not None:
+        data['sa'] = sampled
+
+    text = W3CTraceParent(data).text()
+    assert len(text) == 55
+
+    fields = text.split('-')
+    assert len(fields) == 4
+
+    assert fields[1] == expected_trace_id
+    if span_id:
+        assert fields[2] == span_id
+    else:
+        assert len(fields[2]) == 16
+
+    if sampled:
+        assert fields[3] == '01'
+    else:
+        assert fields[3] == '00'
 
 
 if __name__ == '__main__':

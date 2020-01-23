@@ -94,5 +94,40 @@ def test_traceparent_decode(payload, valid):
     assert W3CTraceParent.decode(payload) == expected
 
 
+@pytest.mark.parametrize('span_id,sampled', (
+    ('2222222222222222', True),
+    (None, True),
+    (None, None),
+    (None, False),
+))
+def test_traceparent_text(span_id, sampled):
+    trace_id = '1111111111111111'
+    data = {'tr': trace_id}
+    expected_trace_id = '00000000000000001111111111111111'
+
+    if span_id:
+        data['id'] = span_id
+
+    if sampled is not None:
+        data['sa'] = sampled
+
+    text = W3CTraceParent(data).text()
+    assert len(text) == 55
+
+    fields = text.split('-')
+    assert len(fields) == 4
+
+    assert fields[1] == expected_trace_id
+    if span_id:
+        assert fields[2] == span_id
+    else:
+        assert len(fields[2]) == 16
+
+    if sampled:
+        assert fields[3] == '01'
+    else:
+        assert fields[3] == '00'
+
+
 if __name__ == '__main__':
     unittest.main()

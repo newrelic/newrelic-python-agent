@@ -10,7 +10,7 @@ import random
 import warnings
 import weakref
 
-from collections import deque, OrderedDict
+from collections import deque
 
 import newrelic.packages.six as six
 
@@ -33,7 +33,7 @@ from newrelic.core.stack_trace import exception_stack
 from newrelic.common.encoding_utils import (generate_path_hash, obfuscate,
         deobfuscate, json_encode, json_decode, base64_decode,
         convert_to_cat_metadata_value, DistributedTracePayload, ensure_str,
-        W3CTraceParent)
+        W3CTraceParent, W3CTraceState, NrTraceState)
 
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.api.time_trace import TimeTrace
@@ -1220,75 +1220,40 @@ class Transaction(object):
 
     def _parse_tracestate_header(self, tracestate):
         # Don't parse more than 32 entries
-        entries = DELIMITER_FORMAT_RE.split(tracestate)
-
-        vendors = OrderedDict()
-        for entry in entries:
-            vendor_value = entry.split('=', 2)
-            if len(vendor_value) != 2:
-                continue
-
-            vendor, value = vendor_value
-
-            if len(vendor) > 256:
-                continue
-
-            if len(value) > 256:
-                continue
-
-            vendors[vendor] = value.rstrip()
+        vendors = W3CTraceState.decode(tracestate)
 
         # Remove trusted new relic header if available and parse
-        payload = vendors.pop(self._settings.trusted_account_key + '@nr', '')
-
+        tk = self._settings.trusted_account_key
+        payload = vendors.pop(tk + '@nr', '')
         self.tracing_vendors = ','.join(vendors.keys())
+        self.tracestate = ',' + vendors.text(limit=31)
 
-        if self._settings.span_events.enabled:
-            self.tracestate = ','.join(
-                    '{}={}'.format(k, v)
-                    for k, v in list(vendors.items())[:31])
-        else:
-            self.tracestate = tracestate
-        if not payload:
-            self._record_supportability('Supportability/TraceContext/'
-                    'TraceState/NoNrEntry')
+        if payload:
+            data = NrTraceState.decode(payload, tk)
+            if not data:
+                return False
+            transport_start = data.get('ti') / 1000.0
 
-        fields = payload.split('-', 9)
-        if len(fields) >= 9:
-            if not fields[0]:
-                return False
-            parent_type = PARENT_TYPE.get(fields[1], None)
-            if not parent_type:
-                return False
-            parent_account = fields[2]
-            if not parent_account:
-                return False
-            parent_app = fields[3]
-            if not parent_app:
-                return False
-            try:
-                transport_start = int(fields[8]) / 1000.0
-            except:
-                return False
+            self.parent_type = data.get('ty')
+            self.parent_account = data.get('ac')
+            self.parent_app = data.get('ap')
+            self.trusted_parent_span = data.get('id')
+            self.parent_tx = data.get('tx')
 
-            self.parent_type = parent_type
-            self.parent_account = parent_account
-            self.parent_app = parent_app
-            self.trusted_parent_span = fields[4]
-            self.parent_tx = fields[5]
-            if fields[6]:
-                self._sampled = fields[6] == '1'
-            if fields[7]:
-                try:
-                    self._priority = float(fields[7])
-                except:
-                    pass
-
+            # If starting in the future, transport duration should be set to 0
             now = time.time()
             if transport_start > now:
                 self.parent_transport_duration = 0.0
             else:
                 self.parent_transport_duration = now - transport_start
+
+            priority = data.get('pr')
+            if priority is not None:
+                self._priority = priority
+                self._sampled = data.get('sa')
+        else:
+            self._record_supportability('Supportability/TraceContext/'
+                    'TraceState/NoNrEntry')
 
         return True
 

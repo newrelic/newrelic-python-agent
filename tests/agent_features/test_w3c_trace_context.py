@@ -115,40 +115,6 @@ def test_tracestate_is_propagated(
         assert fields[7] == '1.1273'
 
 
-expected_metrics_span_events_disabled = [
-    ("Supportability/TraceContext/Accept/Success", 1),
-    ("Supportability/TraceContext/TraceState/NoNrEntry", 1),
-    ("Supportability/TraceContext/Create/Success", 1),
-    ("Supportability/TraceContext/TraceParent/Accept/Success", 1)
-]
-
-
-def test_tracestate_span_events_disabled():
-    headers = {
-        'traceparent': INBOUND_TRACEPARENT,
-        'tracestate': INBOUND_TRACESTATE
-    }
-    settings = _override_settings.copy()
-    settings['span_events.enabled'] = False
-
-    @validate_transaction_metrics(name="", group="Uri",
-            rollup_metrics=expected_metrics_span_events_disabled)
-    @override_application_settings(settings)
-    def _test():
-        return test_application.get('/', headers=headers)
-
-    response = _test()
-
-    for header_name, header_value in response.json:
-        if header_name == 'tracestate':
-            break
-    else:
-        assert False, 'tracestate header not propagated'
-
-    # If span_events are disabled the INBOUND_TRACESTATE should be left as is
-    assert header_value == INBOUND_TRACESTATE
-
-
 @pytest.mark.parametrize('inbound_traceparent,span_events_enabled', (
     (True, True),
     (True, False),

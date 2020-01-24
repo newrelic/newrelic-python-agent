@@ -3,7 +3,7 @@ import pytest
 import newrelic.packages.six as six
 
 from newrelic.common.encoding_utils import (decode_newrelic_header, obfuscate,
-        json_encode, ensure_str, W3CTraceParent)
+        json_encode, ensure_str, W3CTraceParent, W3CTraceState)
 
 
 ENCODING_KEY = '1234567890123456789012345678901234567890'
@@ -127,6 +127,30 @@ def test_traceparent_text(span_id, sampled):
         assert fields[3] == '01'
     else:
         assert fields[3] == '00'
+
+
+@pytest.mark.parametrize('payload,expected', (
+    ('', {}),
+    ('rojo=00f067aa0ba902b7,congo=t61rcWkgMzE',
+            {'rojo': '00f067aa0ba902b7', 'congo': 't61rcWkgMzE'}),
+    ('x=,y=', {'x': '', 'y': ''}),
+    ('=foo', {'': 'foo'}),
+    ('=', {'': ''}),
+))
+def test_w3c_tracestate_decode(payload, expected):
+    vendors = W3CTraceState.decode(payload)
+    assert vendors == expected
+
+
+def test_w3c_tracestate_text():
+    tracestate = W3CTraceState(
+        x='123',
+        y='456',
+        z='789',
+    )
+
+    # Test that truncation is done in the proper order
+    assert tracestate.text(limit=2) == 'x=123,y=456'
 
 
 if __name__ == '__main__':

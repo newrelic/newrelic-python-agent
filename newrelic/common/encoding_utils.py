@@ -516,7 +516,7 @@ class NrTraceState(dict):
             self.get('tx', ''),
             '1' if self.get('sa') else '0',
             '%.6g' % self['pr'] if 'pr' in self else '',
-            self['ti'],
+            str(self['ti']),
         ))
         return '{}@nr={}'.format(
             self.get('tk', self['ac']),

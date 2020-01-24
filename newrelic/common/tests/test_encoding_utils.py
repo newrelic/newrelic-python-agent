@@ -136,6 +136,7 @@ def test_traceparent_text(span_id, sampled):
     ('x=,y=', {'x': '', 'y': ''}),
     ('=foo', {'': 'foo'}),
     ('=', {'': ''}),
+    ('x=0   ,   y=1    ', {'x': '0', 'y': '1'}),
 ))
 def test_w3c_tracestate_decode(payload, expected):
     vendors = W3CTraceState.decode(payload)

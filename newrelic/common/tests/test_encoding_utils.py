@@ -3,7 +3,7 @@ import pytest
 import newrelic.packages.six as six
 
 from newrelic.common.encoding_utils import (decode_newrelic_header, obfuscate,
-        json_encode, ensure_str, W3CTraceParent, W3CTraceState)
+        json_encode, ensure_str, W3CTraceParent, W3CTraceState, NrTraceState)
 
 
 ENCODING_KEY = '1234567890123456789012345678901234567890'
@@ -151,6 +151,75 @@ def test_w3c_tracestate_text():
 
     # Test that truncation is done in the proper order
     assert tracestate.text(limit=2) == 'x=123,y=456'
+
+
+@pytest.mark.parametrize('payload,expected', (
+    ('0-0-709288-8599547-spanid-txid-1-0.789-1563574856827',
+            {'ty': 'App',
+             'ac': '709288',
+             'ap': '8599547',
+             'id': 'spanid',
+             'tx': 'txid',
+             'sa': True,
+             'pr': 0.789,
+             'ti': 1563574856827}),
+    ('0-0-709288-8599547-spanid-txid-1-0.789-1563574856827-extra-field',
+            {'ty': 'App',
+             'ac': '709288',
+             'ap': '8599547',
+             'id': 'spanid',
+             'tx': 'txid',
+             'sa': True,
+             'pr': 0.789,
+             'ti': 1563574856827}),
+    ('0-0-1349956-41346604--b28be285632bbc0a-1-1.1273-1569367663277',
+            {'ty': 'App',
+             'ac': '1349956',
+             'ap': '41346604',
+             'tx': 'b28be285632bbc0a',
+             'sa': True,
+             'pr': 1.1273,
+             'ti': 1569367663277}),
+    ('0-0-1349956-41346604-27ddd2d8890283b4--1-1.1273-1569367663277',
+            {'ty': 'App',
+             'ac': '1349956',
+             'ap': '41346604',
+             'id': '27ddd2d8890283b4',
+             'sa': True,
+             'pr': 1.1273,
+             'ti': 1569367663277}),
+    ('0-2-332029-2827902-5f474d64b9cc9b2a-7d3efb1b173fecfa---1518469636035',
+            {'ty': 'Mobile',
+             'ac': '332029',
+             'ap': '2827902',
+             'id': '5f474d64b9cc9b2a',
+             'tx': '7d3efb1b173fecfa',
+             'ti': 1518469636035}),
+    ('0-0-1349956-41346604-27ddd2d8890283b4--0-oops-1569367663277',
+            {'ty': 'App',
+             'ac': '1349956',
+             'ap': '41346604',
+             'id': '27ddd2d8890283b4',
+             'sa': False,
+             'pr': None,
+             'ti': 1569367663277}),
+    ('0-0-1349956-41346604-27ddd2d8890283b4--oops-0.1-1569367663277',
+            {'ty': 'App',
+             'ac': '1349956',
+             'ap': '41346604',
+             'id': '27ddd2d8890283b4',
+             'sa': None,
+             'pr': 0.1,
+             'ti': 1569367663277}),
+    ('0-8-1349956-41346604-27ddd2d8890283b4--1-1.1273-1569367663277',
+            None),
+))
+def test_nr_tracestate_entry_decode(payload, expected):
+    decoded = NrTraceState.decode(payload, '1')
+    if decoded is not None:
+        assert decoded.pop('tk') == '1'
+
+    assert decoded == expected
 
 
 if __name__ == '__main__':

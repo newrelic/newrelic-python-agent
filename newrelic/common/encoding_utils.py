@@ -483,23 +483,17 @@ class W3CTraceState(OrderedDict):
 
     @classmethod
     def decode(cls, tracestate):
-        entries = DELIMITER_FORMAT_RE.split(tracestate)
+        entries = DELIMITER_FORMAT_RE.split(tracestate.rstrip())
 
         vendors = cls()
         for entry in entries:
             vendor_value = entry.split('=', 2)
-            if len(vendor_value) != 2:
+            if (len(vendor_value) != 2 or
+                    any(len(v) > 256 for v in vendor_value)):
                 continue
 
             vendor, value = vendor_value
-
-            if len(vendor) > 256:
-                continue
-
-            if len(value) > 256:
-                continue
-
-            vendors[vendor] = value.rstrip()
+            vendors[vendor] = value
 
         return vendors
 

@@ -143,11 +143,10 @@ def test_w3c_tracestate_decode(payload, expected):
 
 
 def test_w3c_tracestate_text():
-    tracestate = W3CTraceState(
-        x='123',
-        y='456',
-        z='789',
-    )
+    tracestate = W3CTraceState()
+    tracestate['x'] = '123'
+    tracestate['y'] = '456'
+    tracestate['z'] = '789'
 
     # Test that truncation is done in the proper order
     assert tracestate.text(limit=2) == 'x=123,y=456'
@@ -220,6 +219,59 @@ def test_nr_tracestate_entry_decode(payload, expected):
         assert decoded.pop('tk') == '1'
 
     assert decoded == expected
+
+
+@pytest.mark.parametrize('data,expected', (
+    ({'ty': 'App',
+      'ac': '709288',
+      'ap': '8599547',
+      'id': 'spanid',
+      'tx': 'txid',
+      'sa': True,
+      'pr': 0.789,
+      'ti': 1563574856827},
+            '709288@nr=0-0-709288-8599547-spanid-txid-1-0.789-1563574856827'),
+    ({'tk': '1',
+      'ty': 'App',
+      'ac': '709288',
+      'ap': '8599547',
+      'id': 'spanid',
+      'tx': 'txid',
+      'sa': False,
+      'pr': 0.789,
+      'ti': 1563574856827},
+            '1@nr=0-0-709288-8599547-spanid-txid-0-0.789-1563574856827'),
+    ({'tk': '1',
+      'ty': 'App',
+      'ac': '709288',
+      'ap': '8599547',
+      'tx': 'txid',
+      'sa': True,
+      'pr': 0.789,
+      'ti': 1563574856827},
+            '1@nr=0-0-709288-8599547--txid-1-0.789-1563574856827'),
+    ({'tk': '1',
+      'ty': 'App',
+      'ac': '709288',
+      'ap': '8599547',
+      'id': 'spanid',
+      'sa': True,
+      'pr': 0.789,
+      'ti': 1563574856827},
+            '1@nr=0-0-709288-8599547-spanid--1-0.789-1563574856827'),
+    ({'tk': '1',
+      'ty': 'App',
+      'ac': '709288',
+      'ap': '8599547',
+      'id': 'spanid',
+      'tx': 'txid',
+      'sa': True,
+      'pr': 0.0078125,
+      'ti': 1563574856827},
+            '1@nr=0-0-709288-8599547-spanid-txid-1-0.007812-1563574856827'),
+))
+def test_nr_tracestate_entry_text(data, expected):
+    assert NrTraceState(data).text() == expected
 
 
 if __name__ == '__main__':

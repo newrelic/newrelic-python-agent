@@ -40,11 +40,12 @@ INBOUND_TRACEPARENT_NEW_VERSION_EXTRA_FIELDS = \
 INBOUND_TRACEPARENT_VERSION_ZERO_EXTRA_FIELDS = \
         '00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01-extra-field'
 INBOUND_TRACESTATE = \
-        'rojo=00f067aa0ba902b7,congo=t61rcWkgMzE'
+        'rojo=f06a0ba902b7,congo=t61rcWkgMzE'
 LONG_TRACESTATE = \
-        ','.join(["{}rojo=f06a0ba902b7".format(x) for x in range(32)])
+        ','.join(["{}@rojo=f06a0ba902b7".format(x) for x in range(32)])
 INBOUND_UNTRUSTED_NR_TRACESTATE = \
-        '2@nr=0-0-1345936-55632452-27jjj2d8890283b4-b28ce285632jjhl9-'
+        ('2@nr=0-0-1345936-55632452-27jjj2d8890283b4-b28ce285632jjhl9-'
+        '1-1.1273-1569367663277')
 INBOUND_NR_TRACESTATE = \
         ('1@nr=0-0-1349956-41346604-27ddd2d8890283b4-b28be285632bbc0a-'
         '1-1.1273-1569367663277')
@@ -64,7 +65,7 @@ _metrics = [("Supportability/TraceContext/Create/Success", 1),
             ("Supportability/TraceContext/TraceParent/Accept/Success", 1)]
 
 
-@pytest.mark.parametrize('inbound_tracestate,update_tracestate,metrics',
+@pytest.mark.parametrize('inbound_tracestate,inbound_nr_payload,metrics',
         (('', False, []),
         (INBOUND_TRACESTATE, False, [
             ("Supportability/TraceContext/Accept/Success", 1),
@@ -77,7 +78,12 @@ _metrics = [("Supportability/TraceContext/Create/Success", 1),
             [("Supportability/TraceContext/Accept/Success", 1)])))
 @override_application_settings(_override_settings)
 def test_tracestate_is_propagated(
-        inbound_tracestate, update_tracestate, metrics):
+        inbound_tracestate, inbound_nr_payload, metrics):
+
+    inbound_rojo = min(inbound_tracestate.count('rojo=f06a0ba902b7'), 31)
+    inbound_congo = min(inbound_tracestate.count('congo=t61rcWkgMzE'), 31)
+    total_entries_expected = inbound_rojo + inbound_congo + 1
+
     headers = {
         'traceparent': INBOUND_TRACEPARENT,
         'tracestate': inbound_tracestate
@@ -99,9 +105,10 @@ def test_tracestate_is_propagated(
         assert False, 'tracestate header not propagated'
 
     # verify header has whitespace removed
+    assert not header_value.endswith(',')
     assert header_value == header_value.strip()
     tracestate = header_value.split(',')
-    assert len(tracestate) <= 32
+    assert len(tracestate) == total_entries_expected
     nr_header = tracestate[0]
     key, value = nr_header.split('=')
     assert key == '1@nr'
@@ -109,10 +116,14 @@ def test_tracestate_is_propagated(
     assert len(fields) == 9
     assert fields[0] == '0'
     assert fields[1] == '0'
-    # sampled and priority should match the inbound tracestate
-    if update_tracestate:
+
+    # sampled and priority should match the inbound NR payload if one exists
+    if inbound_nr_payload:
         assert fields[6] == '1'
         assert fields[7] == '1.1273'
+
+    assert inbound_rojo == header_value.count('rojo=f06a0ba902b7')
+    assert inbound_congo == header_value.count('congo=t61rcWkgMzE')
 
 
 @pytest.mark.parametrize('inbound_traceparent,span_events_enabled', (

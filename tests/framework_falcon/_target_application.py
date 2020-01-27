@@ -2,6 +2,13 @@ import falcon
 import webtest
 
 
+try:
+    from falcon import HTTPRouteNotFound
+    NOT_FOUND_ERROR_NAME = 'falcon.errors:HTTPRouteNotFound'
+except ImportError:
+    NOT_FOUND_ERROR_NAME = 'falcon.errors:HTTPNotFound'
+
+
 def _bind_response(*args, **kwargs):
     args = list(args)
     args.extend(kwargs.values())
@@ -60,5 +67,6 @@ _target_application = webtest.TestApp(application)
 # Put exception class here for convenience
 _target_application.Crash = Crash
 
-# Put name prefix here for convenience
+# Put names here for convenience
 _target_application.name_prefix = name_prefix
+_target_application.not_found_error = NOT_FOUND_ERROR_NAME

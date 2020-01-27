@@ -35,9 +35,9 @@ def test_ignored_status_code(app):
 
 
 @override_ignore_status_codes([])
-@validate_transaction_errors(errors=['falcon.errors:HTTPNotFound'])
 def test_error_recorded(app):
 
+    @validate_transaction_errors(errors=[app.not_found_error])
     @validate_transaction_metrics(app.name_prefix + '._handle_exception')
     def _test():
         app.get('/foobar', status=404)

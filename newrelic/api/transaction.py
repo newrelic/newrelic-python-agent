@@ -1055,6 +1055,8 @@ class Transaction(object):
         headers = []
         try:
             data = self._create_distributed_trace_data()
+            if not data:
+                return headers
 
             traceparent = W3CTraceParent(data).text()
             headers.append(("traceparent", traceparent))

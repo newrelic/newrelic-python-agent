@@ -1042,10 +1042,16 @@ class Transaction(object):
                     d=data,
                 )
                 headers.append(('newrelic', payload.http_safe()))
+                self._record_supportability('Supportability/DistributedTrace/'
+                        'CreatePayload/Success')
 
         except:
             self._record_supportability('Supportability/TraceContext/'
                     'Create/Exception')
+
+            if not self._settings.distributed_tracing.exclude_newrelic_header:
+                self._record_supportability('Supportability/DistributedTrace/'
+                        'CreatePayload/Exception')
 
         return headers
 

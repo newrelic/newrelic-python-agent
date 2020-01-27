@@ -954,7 +954,7 @@ class Transaction(object):
             payload['d']['id'] = guid
         return payload
 
-    def _create_distributed_trace_payload(self):
+    def _create_distributed_trace_data(self):
         if not self.enabled:
             return
 
@@ -969,32 +969,36 @@ class Transaction(object):
                 settings.distributed_tracing.enabled):
             return
 
+        self._compute_sampled_and_priority()
+        data = dict(
+            ty='App',
+            ac=account_id,
+            ap=application_id,
+            tr=self.trace_id,
+            sa=self.sampled,
+            pr=self.priority,
+            tx=self.guid,
+            ti=int(time.time() * 1000.0),
+        )
+
+        if account_id != trusted_account_key:
+            data['tk'] = trusted_account_key
+
+        current_span = trace_cache().current_trace()
+        if (settings.span_events.enabled and
+                settings.collect_span_events and
+                current_span and self.sampled):
+            data['id'] = current_span.guid
+
+        self._distributed_trace_state |= CREATED_DISTRIBUTED_TRACE
+
+        return data
+
+    def _create_distributed_trace_payload(self):
         try:
-            self._compute_sampled_and_priority()
-            data = dict(
-                ty='App',
-                ac=account_id,
-                ap=application_id,
-                tr=self.trace_id,
-                sa=self.sampled,
-                pr=self.priority,
-                tx=self.guid,
-                ti=int(time.time() * 1000.0),
-            )
-
-            if account_id != trusted_account_key:
-                data['tk'] = trusted_account_key
-
-            current_span = trace_cache().current_trace()
-            if (settings.span_events.enabled and
-                    settings.collect_span_events and
-                    current_span and self.sampled):
-                data['id'] = current_span.guid
-
-            self._distributed_trace_state |= CREATED_DISTRIBUTED_TRACE
-
-            self._record_supportability('Supportability/DistributedTrace/'
-                    'CreatePayload/Success')
+            data = self._create_distributed_trace_data()
+            if data is None:
+                return
             return DistributedTracePayload(
                 v=DistributedTracePayload.version,
                 d=data,
@@ -1002,6 +1006,9 @@ class Transaction(object):
         except:
             self._record_supportability('Supportability/DistributedTrace/'
                     'CreatePayload/Exception')
+        else:
+            self._record_supportability('Supportability/DistributedTrace/'
+                    'CreatePayload/Success')
 
     def create_distributed_trace_payload(self):
         warnings.warn((

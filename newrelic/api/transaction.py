@@ -1051,25 +1051,12 @@ class Transaction(object):
         tracestate = nr_entry + self.tracestate
         return tracestate
 
-    def _generate_traceparent_header(self):
-        self._compute_sampled_and_priority()
-        current_span = trace_cache().current_trace()
-        if current_span:
-            guid = current_span.guid
-        else:
-            guid = '{:016x}'.format(random.getrandbits(64))
-        data = W3CTraceParent(
-            tr=self.trace_id,
-            id=guid,
-            sa=self.sampled,
-        )
-        return data.text()
-
     def _generate_distributed_trace_headers(self):
         headers = []
         try:
             data = self._create_distributed_trace_data()
-            traceparent = self._generate_traceparent_header()
+
+            traceparent = W3CTraceParent(data).text()
             headers.append(("traceparent", traceparent))
 
             tracestate = self._generate_tracestate_header()

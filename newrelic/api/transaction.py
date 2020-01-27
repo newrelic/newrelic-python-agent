@@ -1032,19 +1032,19 @@ class Transaction(object):
 
             self._record_supportability('Supportability/TraceContext/'
                     'Create/Success')
+
+            if not self._settings.distributed_tracing.exclude_newrelic_header:
+                # Insert proprietary New Relic dt headers for backwards
+                # compatibility
+                payload = DistributedTracePayload(
+                    v=DistributedTracePayload.version,
+                    d=data,
+                )
+                headers.append(('newrelic', payload.http_safe()))
+
         except:
             self._record_supportability('Supportability/TraceContext/'
                     'Create/Exception')
-            return headers
-
-        if not self._settings.distributed_tracing.exclude_newrelic_header:
-            # Insert proprietary New Relic dt headers for backwards
-            # compatibility
-            payload = DistributedTracePayload(
-                v=DistributedTracePayload.version,
-                d=data,
-            )
-            headers.append(('newrelic', payload.http_safe()))
 
         return headers
 

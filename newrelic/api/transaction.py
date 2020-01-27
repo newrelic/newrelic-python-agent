@@ -1028,7 +1028,10 @@ class Transaction(object):
             traceparent = W3CTraceParent(data).text()
             headers.append(("traceparent", traceparent))
 
-            tracestate = NrTraceState(data).text()
+            nr_tracestate = NrTraceState(data).text()
+            tracestate = nr_tracestate
+            if self.tracestate:
+                tracestate += ',' + self.tracestate
             headers.append(("tracestate", tracestate))
 
             self._record_supportability('Supportability/TraceContext/'

@@ -1068,6 +1068,7 @@ class Transaction(object):
     def _generate_distributed_trace_headers(self):
         headers = []
         try:
+            data = self._create_distributed_trace_data()
             traceparent = self._generate_traceparent_header()
             headers.append(("traceparent", traceparent))
 
@@ -1079,13 +1080,17 @@ class Transaction(object):
         except:
             self._record_supportability('Supportability/TraceContext/'
                     'Create/Exception')
-        if self._settings.distributed_tracing.exclude_newrelic_header:
             return headers
-        # Insert proprietary New Relic dt headers for backwards compatibility
-        payload = self._create_distributed_trace_payload()
-        payload = payload and payload.http_safe()
-        if payload:
-            headers.append(('newrelic', payload))
+
+        if not self._settings.distributed_tracing.exclude_newrelic_header:
+            # Insert proprietary New Relic dt headers for backwards
+            # compatibility
+            payload = DistributedTracePayload(
+                v=DistributedTracePayload.version,
+                d=data,
+            )
+            headers.append(('newrelic', payload.http_safe()))
+
         return headers
 
     def insert_distributed_trace_headers(self, headers):

@@ -949,7 +949,7 @@ class Transaction(object):
         self._transaction_metrics[metric_name] = m + 1
 
     def _create_distributed_trace_payload_with_guid(self, guid):
-        payload = self.create_distributed_trace_payload()
+        payload = self._create_distributed_trace_payload()
         if guid and payload and 'id' in payload['d']:
             payload['d']['id'] = guid
         return payload

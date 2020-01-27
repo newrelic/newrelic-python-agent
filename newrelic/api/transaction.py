@@ -1017,40 +1017,6 @@ class Transaction(object):
         ), DeprecationWarning)
         return self._create_distributed_trace_payload()
 
-    def _generate_tracestate_header(self):
-        if not self.enabled:
-            return self.tracestate
-
-        settings = self._settings
-        self._compute_sampled_and_priority()
-
-        account_id = settings.account_id
-        trusted_account_key = settings.trusted_account_key
-        application_id = settings.primary_application_id
-
-        current_span = trace_cache().current_trace()
-        current_span_guid = current_span and current_span.guid or ''
-        timestamp = str(int(time.time() * 1000.0))
-
-        nr_payload = '-'.join((
-            '0-0',
-            account_id,
-            application_id,
-            current_span_guid,
-            self.guid,
-            '1' if self._sampled else '0',
-            '%.6g' % self._priority,
-            timestamp,
-        ))
-
-        nr_entry = '{}@nr={},'.format(
-            trusted_account_key,
-            nr_payload,
-        )
-
-        tracestate = nr_entry + self.tracestate
-        return tracestate
-
     def _generate_distributed_trace_headers(self):
         headers = []
         try:
@@ -1061,9 +1027,9 @@ class Transaction(object):
             traceparent = W3CTraceParent(data).text()
             headers.append(("traceparent", traceparent))
 
-            tracestate = self._generate_tracestate_header()
-            if tracestate:
-                headers.append(("tracestate", tracestate))
+            tracestate = NrTraceState(data).text()
+            headers.append(("tracestate", tracestate))
+
             self._record_supportability('Supportability/TraceContext/'
                     'Create/Success')
         except:

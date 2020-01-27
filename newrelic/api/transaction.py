@@ -999,7 +999,7 @@ class Transaction(object):
             data = self._create_distributed_trace_data()
             if data is None:
                 return
-            return DistributedTracePayload(
+            payload = DistributedTracePayload(
                 v=DistributedTracePayload.version,
                 d=data,
             )
@@ -1009,6 +1009,7 @@ class Transaction(object):
         else:
             self._record_supportability('Supportability/DistributedTrace/'
                     'CreatePayload/Success')
+            return payload
 
     def create_distributed_trace_payload(self):
         warnings.warn((

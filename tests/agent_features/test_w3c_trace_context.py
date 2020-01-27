@@ -15,7 +15,9 @@ from testing_support.validators.validate_span_events import (
 def target_wsgi_application(environ, start_response):
     start_response('200 OK', [('Content-Type', 'application/json')])
     txn = current_transaction()
-    txn._sampled = True
+    if txn._sampled is None:
+        txn._sampled = True
+        txn._priority = 1.2
     headers = ExternalTrace.generate_request_headers(txn)
     return [json.dumps(headers).encode('utf-8')]
 
@@ -25,6 +27,8 @@ test_application = webtest.TestApp(target_wsgi_application)
 
 _override_settings = {
     'trusted_account_key': '1',
+    'account_id': '1',
+    'primary_application_id': '2',
     'distributed_tracing.enabled': True,
 }
 
@@ -48,7 +52,10 @@ INBOUND_UNTRUSTED_NR_TRACESTATE = \
         '1-1.1273-1569367663277')
 INBOUND_NR_TRACESTATE = \
         ('1@nr=0-0-1349956-41346604-27ddd2d8890283b4-b28be285632bbc0a-'
-        '1-1.1273-1569367663277')
+        '1-1.4-1569367663277')
+INBOUND_NR_TRACESTATE_UNSAMPLED = \
+        ('1@nr=0-0-1349956-41346604-27ddd2d8890283b4-b28be285632bbc0a-'
+        '0-0.4-1569367663277')
 
 INBOUND_TRACEPARENT_VERSION_FF = \
         'ff-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01'
@@ -61,39 +68,23 @@ INBOUND_TRACEPARENT_INVALID_PARENT_ID = \
 INBOUND_TRACEPARENT_INVALID_FLAGS = \
         '00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-x1'
 
-_metrics = [("Supportability/TraceContext/Create/Success", 1),
-            ("Supportability/TraceContext/TraceParent/Accept/Success", 1)]
+_metrics = [("Supportability/TraceContext/Create/Success", 1)]
 
 
-@pytest.mark.parametrize('inbound_tracestate,inbound_nr_payload,metrics',
-        (('', False, []),
-        (INBOUND_TRACESTATE, False, [
-            ("Supportability/TraceContext/Accept/Success", 1),
-            ("Supportability/TraceContext/TraceState/NoNrEntry", 1)]),
-        (INBOUND_NR_TRACESTATE + ',' + INBOUND_TRACESTATE, True,
-            [("Supportability/TraceContext/Accept/Success", 1)]),
-        (INBOUND_TRACESTATE + ' ', False,
-            [("Supportability/TraceContext/Accept/Success", 1)]),
-        (LONG_TRACESTATE + ',' + INBOUND_NR_TRACESTATE, True,
-            [("Supportability/TraceContext/Accept/Success", 1)])))
+@pytest.mark.parametrize('inbound_nr_tracestate', (True, False))
 @override_application_settings(_override_settings)
-def test_tracestate_is_propagated(
-        inbound_tracestate, inbound_nr_payload, metrics):
-
-    inbound_rojo = min(inbound_tracestate.count('rojo=f06a0ba902b7'), 31)
-    inbound_congo = min(inbound_tracestate.count('congo=t61rcWkgMzE'), 31)
-    total_entries_expected = inbound_rojo + inbound_congo + 1
+def test_tracestate_generation(inbound_nr_tracestate):
 
     headers = {
         'traceparent': INBOUND_TRACEPARENT,
-        'tracestate': inbound_tracestate
+        'tracestate': (
+                INBOUND_NR_TRACESTATE_UNSAMPLED if inbound_nr_tracestate
+                else INBOUND_TRACESTATE),
     }
-
-    metrics.extend(_metrics)
 
     @validate_transaction_metrics("",
             group="Uri",
-            rollup_metrics=metrics)
+            rollup_metrics=_metrics)
     def _test():
         return test_application.get('/', headers=headers)
 
@@ -104,26 +95,62 @@ def test_tracestate_is_propagated(
     else:
         assert False, 'tracestate header not propagated'
 
-    # verify header has whitespace removed
-    assert not header_value.endswith(',')
-    assert header_value == header_value.strip()
-    tracestate = header_value.split(',')
-    assert len(tracestate) == total_entries_expected
-    nr_header = tracestate[0]
-    key, value = nr_header.split('=')
+    header_value = header_value.split(',', 1)[0]
+    key, value = header_value.split('=', 2)
     assert key == '1@nr'
+
     fields = value.split('-')
     assert len(fields) == 9
-    assert fields[0] == '0'
-    assert fields[1] == '0'
 
-    # sampled and priority should match the inbound NR payload if one exists
-    if inbound_nr_payload:
-        assert fields[6] == '1'
-        assert fields[7] == '1.1273'
+    assert str(int(fields[8])) == fields[8]
+    deterministic_fields = fields[:4] + fields[6:8]
+    assert deterministic_fields == [
+        '0',
+        '0',
+        '1',
+        '2',
+        '0' if inbound_nr_tracestate else '1',
+        '0.4' if inbound_nr_tracestate else '1.2',
+    ]
 
-    assert inbound_rojo == header_value.count('rojo=f06a0ba902b7')
-    assert inbound_congo == header_value.count('congo=t61rcWkgMzE')
+    # The inbound NR payload has sampled = False so there's no need to include
+    # the span ID
+    if inbound_nr_tracestate:
+        assert len(fields[4]) == 0
+    else:
+        assert len(fields[4]) == 16
+    assert len(fields[5]) == 16
+
+
+@pytest.mark.parametrize('inbound_tracestate,expected', (
+    ('', None),
+    (INBOUND_NR_TRACESTATE + "," + INBOUND_TRACESTATE, INBOUND_TRACESTATE),
+    (INBOUND_TRACESTATE, INBOUND_TRACESTATE),
+    (LONG_TRACESTATE + ',' + INBOUND_NR_TRACESTATE,
+            ','.join("{}@rojo=f06a0ba902b7".format(x) for x in range(31))),
+), ids=(
+    'empty_inbound_payload',
+    'nr_payload',
+    'no_nr_payload',
+    'long_payload',
+))
+@override_application_settings(_override_settings)
+def test_tracestate_propagation(inbound_tracestate, expected):
+    headers = {
+        'traceparent': INBOUND_TRACEPARENT,
+        'tracestate': inbound_tracestate
+    }
+    response = test_application.get('/', headers=headers)
+    for header_name, header_value in response.json:
+        if header_name == 'tracestate':
+            break
+    else:
+        assert False, 'tracestate header not propagated'
+
+    assert not header_value.endswith(',')
+    if inbound_tracestate:
+        _, propagated_tracestate = header_value.split(',', 1)
+        assert propagated_tracestate == expected
 
 
 @pytest.mark.parametrize('inbound_traceparent,span_events_enabled', (
@@ -246,6 +273,7 @@ def test_inbound_tracestate_header(tracestate, intrinsics):
             "tracestate": tracestate,
         })
 
+    # TODO: check NoNrEntry supportability metric here
     _test()
 
 

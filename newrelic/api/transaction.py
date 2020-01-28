@@ -949,12 +949,12 @@ class Transaction(object):
         self._transaction_metrics[metric_name] = m + 1
 
     def _create_distributed_trace_payload_with_guid(self, guid):
-        payload = self.create_distributed_trace_payload()
+        payload = self._create_distributed_trace_payload()
         if guid and payload and 'id' in payload['d']:
             payload['d']['id'] = guid
         return payload
 
-    def _create_distributed_trace_payload(self):
+    def _create_distributed_trace_data(self):
         if not self.enabled:
             return
 
@@ -969,39 +969,47 @@ class Transaction(object):
                 settings.distributed_tracing.enabled):
             return
 
+        self._compute_sampled_and_priority()
+        data = dict(
+            ty='App',
+            ac=account_id,
+            ap=application_id,
+            tr=self.trace_id,
+            sa=self.sampled,
+            pr=self.priority,
+            tx=self.guid,
+            ti=int(time.time() * 1000.0),
+        )
+
+        if account_id != trusted_account_key:
+            data['tk'] = trusted_account_key
+
+        current_span = trace_cache().current_trace()
+        if (settings.span_events.enabled and
+                settings.collect_span_events and
+                current_span and self.sampled):
+            data['id'] = current_span.guid
+
+        self._distributed_trace_state |= CREATED_DISTRIBUTED_TRACE
+
+        return data
+
+    def _create_distributed_trace_payload(self):
         try:
-            self._compute_sampled_and_priority()
-            data = dict(
-                ty='App',
-                ac=account_id,
-                ap=application_id,
-                tr=self.trace_id,
-                sa=self.sampled,
-                pr=self.priority,
-                tx=self.guid,
-                ti=int(time.time() * 1000.0),
-            )
-
-            if account_id != trusted_account_key:
-                data['tk'] = trusted_account_key
-
-            current_span = trace_cache().current_trace()
-            if (settings.span_events.enabled and
-                    settings.collect_span_events and
-                    current_span and self.sampled):
-                data['id'] = current_span.guid
-
-            self._distributed_trace_state |= CREATED_DISTRIBUTED_TRACE
-
-            self._record_supportability('Supportability/DistributedTrace/'
-                    'CreatePayload/Success')
-            return DistributedTracePayload(
+            data = self._create_distributed_trace_data()
+            if data is None:
+                return
+            payload = DistributedTracePayload(
                 v=DistributedTracePayload.version,
                 d=data,
             )
         except:
             self._record_supportability('Supportability/DistributedTrace/'
                     'CreatePayload/Exception')
+        else:
+            self._record_supportability('Supportability/DistributedTrace/'
+                    'CreatePayload/Success')
+            return payload
 
     def create_distributed_trace_payload(self):
         warnings.warn((
@@ -1010,75 +1018,43 @@ class Transaction(object):
         ), DeprecationWarning)
         return self._create_distributed_trace_payload()
 
-    def _generate_tracestate_header(self):
-        if not self.enabled:
-            return self.tracestate
-
-        settings = self._settings
-        self._compute_sampled_and_priority()
-
-        account_id = settings.account_id
-        trusted_account_key = settings.trusted_account_key
-        application_id = settings.primary_application_id
-
-        current_span = trace_cache().current_trace()
-        current_span_guid = current_span and current_span.guid or ''
-        timestamp = str(int(time.time() * 1000.0))
-
-        nr_payload = '-'.join((
-            '0-0',
-            account_id,
-            application_id,
-            current_span_guid,
-            self.guid,
-            '1' if self._sampled else '0',
-            '%.6g' % self._priority,
-            timestamp,
-        ))
-
-        nr_entry = '{}@nr={},'.format(
-            trusted_account_key,
-            nr_payload,
-        )
-
-        tracestate = nr_entry + self.tracestate
-        return tracestate
-
-    def _generate_traceparent_header(self):
-        self._compute_sampled_and_priority()
-        current_span = trace_cache().current_trace()
-        if current_span:
-            guid = current_span.guid
-        else:
-            guid = '{:016x}'.format(random.getrandbits(64))
-        data = W3CTraceParent(
-            tr=self.trace_id,
-            id=guid,
-            sa=self.sampled,
-        )
-        return data.text()
-
     def _generate_distributed_trace_headers(self):
         headers = []
         try:
-            traceparent = self._generate_traceparent_header()
+            data = self._create_distributed_trace_data()
+            if not data:
+                return headers
+
+            traceparent = W3CTraceParent(data).text()
             headers.append(("traceparent", traceparent))
 
-            tracestate = self._generate_tracestate_header()
-            if tracestate:
-                headers.append(("tracestate", tracestate))
+            nr_tracestate = NrTraceState(data).text()
+            tracestate = nr_tracestate
+            if self.tracestate:
+                tracestate += ',' + self.tracestate
+            headers.append(("tracestate", tracestate))
+
             self._record_supportability('Supportability/TraceContext/'
                     'Create/Success')
+
+            if not self._settings.distributed_tracing.exclude_newrelic_header:
+                # Insert New Relic dt headers for backwards compatibility
+                payload = DistributedTracePayload(
+                    v=DistributedTracePayload.version,
+                    d=data,
+                )
+                headers.append(('newrelic', payload.http_safe()))
+                self._record_supportability('Supportability/DistributedTrace/'
+                        'CreatePayload/Success')
+
         except:
             self._record_supportability('Supportability/TraceContext/'
                     'Create/Exception')
-        if self._settings.distributed_tracing.exclude_newrelic_header:
-            return headers
-        # Insert proprietary New Relic dt headers for backwards compatibility
-        payload = self._create_distributed_trace_payload()
-        payload = payload and payload.http_safe()
-        if payload:
-            headers.append(('newrelic', payload))
+
+            if not self._settings.distributed_tracing.exclude_newrelic_header:
+                self._record_supportability('Supportability/DistributedTrace/'
+                        'CreatePayload/Exception')
+
         return headers
 
     def insert_distributed_trace_headers(self, headers):

@@ -123,6 +123,7 @@ def validate_distributed_tracing_header(header='newrelic'):
         assert 'id' not in data
 
     # Verify referring transaction information
+    assert len(data['tr']) == 32
     if transaction.referring_transaction_guid is not None:
         assert data['tr'] == transaction._trace_id
     else:

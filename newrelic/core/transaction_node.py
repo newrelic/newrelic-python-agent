@@ -62,10 +62,6 @@ class TransactionNode(_TransactionNode):
     def name(self):
         return self.name_for_metric
 
-    @property
-    def distributed_trace_received(self):
-        return self.trace_id != self.guid
-
     def time_metrics(self, stats):
         """Return a generator yielding the timed metrics for the
         top level web transaction as well as all the child nodes.

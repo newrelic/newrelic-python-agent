@@ -233,7 +233,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
             # IDs should be the transaction GUID
             assert data['tx'] == self.transaction.guid
-            assert data['tr'] == self.transaction.guid
+            assert data['tr'].startswith(self.transaction.guid)
 
             # Parent should be excluded
             assert 'pa' not in data
@@ -556,7 +556,7 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             assert self.transaction.parent_account is None
             assert self.transaction.parent_transport_type is None
             assert self.transaction.parent_transport_duration is None
-            assert self.transaction.trace_id == self.transaction.guid
+            assert self.transaction.trace_id.startswith(self.transaction.guid)
             assert self.transaction._sampled is None
             assert self.transaction._distributed_trace_state == 0
             assert self.transaction.is_distributed_trace is False

@@ -1038,8 +1038,7 @@ class Transaction(object):
                     'Create/Success')
 
             if not self._settings.distributed_tracing.exclude_newrelic_header:
-                # Insert proprietary New Relic dt headers for backwards
-                # compatibility
+                # Insert New Relic dt headers for backwards compatibility
                 payload = DistributedTracePayload(
                     v=DistributedTracePayload.version,
                     d=data,

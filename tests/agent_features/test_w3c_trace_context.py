@@ -266,6 +266,14 @@ def test_inbound_traceparent_header(traceparent, intrinsics, metrics):
 @override_application_settings(_override_settings)
 def test_inbound_tracestate_header(tracestate, intrinsics):
 
+    nr_entry_count = 1 if '1@nr' not in tracestate else None
+
+    metrics = [
+        ('Supportability/TraceContext/TraceState/NoNrEntry', nr_entry_count),
+    ]
+
+    @validate_transaction_metrics(
+            "", group="Uri", rollup_metrics=metrics)
     @validate_span_events(exact_intrinsics=intrinsics)
     def _test():
         test_application.get('/', headers={
@@ -273,7 +281,6 @@ def test_inbound_tracestate_header(tracestate, intrinsics):
             "tracestate": tracestate,
         })
 
-    # TODO: check NoNrEntry supportability metric here
     _test()
 
 

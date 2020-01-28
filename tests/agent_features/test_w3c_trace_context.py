@@ -185,7 +185,7 @@ def test_traceparent_generation(inbound_traceparent, span_events_enabled):
         assert fields[1] == '0af7651916cd43dd8448eb211c80319c'
         assert fields[2] != '00f067aa0ba902b7'
     else:
-        assert fields[1][:16] == '0' * 16
+        assert len(fields[1]) == 32
     assert fields[3] in ('00', '01')
 
 

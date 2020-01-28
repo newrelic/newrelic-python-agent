@@ -1,3 +1,4 @@
+import json
 import time
 from newrelic.api.transaction import current_transaction
 import grpc
@@ -119,12 +120,8 @@ class SampleApplicationServicer(_SampleApplicationServicer):
         context.abort_with_status(Status)
 
     def extract_dt_value(self, metadata):
-        for k, v in metadata:
-            if k != 'newrelic':
-                continue
-            return Message(text='%s' % v)
-
-        return Message(text='')
+        d = {k: v for k, v in metadata}
+        return Message(text=json.dumps(d))
 
     def DtNoTxnUnaryUnary(self, request, context):
         current_transaction().ignore_transaction = True

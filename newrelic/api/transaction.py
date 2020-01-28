@@ -1019,33 +1019,33 @@ class Transaction(object):
         return self._create_distributed_trace_payload()
 
     def _generate_distributed_trace_headers(self, data=None):
-        headers = []
         try:
             data = data or self._create_distributed_trace_data()
-            if not data:
-                return headers
+            if data:
 
-            traceparent = W3CTraceParent(data).text()
-            headers.append(("traceparent", traceparent))
+                traceparent = W3CTraceParent(data).text()
+                yield ("traceparent", traceparent)
 
-            nr_tracestate = NrTraceState(data).text()
-            tracestate = nr_tracestate
-            if self.tracestate:
-                tracestate += ',' + self.tracestate
-            headers.append(("tracestate", tracestate))
+                tracestate = NrTraceState(data).text()
+                if self.tracestate:
+                    tracestate += ',' + self.tracestate
+                yield ("tracestate", tracestate)
 
-            self._record_supportability('Supportability/TraceContext/'
-                    'Create/Success')
+                self._record_supportability(
+                        'Supportability/TraceContext/'
+                        'Create/Success')
 
-            if not self._settings.distributed_tracing.exclude_newrelic_header:
-                # Insert New Relic dt headers for backwards compatibility
-                payload = DistributedTracePayload(
-                    v=DistributedTracePayload.version,
-                    d=data,
-                )
-                headers.append(('newrelic', payload.http_safe()))
-                self._record_supportability('Supportability/DistributedTrace/'
-                        'CreatePayload/Success')
+                if (not self._settings.
+                        distributed_tracing.exclude_newrelic_header):
+                    # Insert New Relic dt headers for backwards compatibility
+                    payload = DistributedTracePayload(
+                        v=DistributedTracePayload.version,
+                        d=data,
+                    )
+                    yield ('newrelic', payload.http_safe())
+                    self._record_supportability(
+                            'Supportability/DistributedTrace/'
+                            'CreatePayload/Success')
 
         except:
             self._record_supportability('Supportability/TraceContext/'
@@ -1054,8 +1054,6 @@ class Transaction(object):
             if not self._settings.distributed_tracing.exclude_newrelic_header:
                 self._record_supportability('Supportability/DistributedTrace/'
                         'CreatePayload/Exception')
-
-        return headers
 
     def insert_distributed_trace_headers(self, headers):
         headers.extend(self._generate_distributed_trace_headers())

@@ -948,11 +948,11 @@ class Transaction(object):
         m = self._transaction_metrics.get(metric_name, 0)
         self._transaction_metrics[metric_name] = m + 1
 
-    def _create_distributed_trace_payload_with_guid(self, guid):
-        payload = self._create_distributed_trace_payload()
-        if guid and payload and 'id' in payload['d']:
-            payload['d']['id'] = guid
-        return payload
+    def _create_distributed_trace_data_with_guid(self, guid):
+        data = self._create_distributed_trace_data()
+        if guid and data and 'id' in data:
+            data['id'] = guid
+        return data
 
     def _create_distributed_trace_data(self):
         if not self.enabled:
@@ -1018,10 +1018,10 @@ class Transaction(object):
         ), DeprecationWarning)
         return self._create_distributed_trace_payload()
 
-    def _generate_distributed_trace_headers(self):
+    def _generate_distributed_trace_headers(self, data=None):
         headers = []
         try:
-            data = self._create_distributed_trace_data()
+            data = data or self._create_distributed_trace_data()
             if not data:
                 return headers
 

@@ -277,16 +277,21 @@ def test_inbound_tracestate_header(tracestate, intrinsics):
     _test()
 
 
-def test_w3c_and_newrelic_headers_generated():
+@pytest.mark.parametrize('exclude_newrelic_header', (True, False))
+def test_w3c_and_newrelic_headers_generated(exclude_newrelic_header):
 
-    @override_application_settings(_override_settings)
+    settings = _override_settings.copy()
+    settings['distributed_tracing.exclude_newrelic_header'] = \
+            exclude_newrelic_header
+
+    @override_application_settings(settings)
     def _test():
         return test_application.get('/')
 
     response = _test()
-    traceparent = ''
-    tracestate = ''
-    newrelic = ''
+    traceparent = None
+    tracestate = None
+    newrelic = None
     for header_name, header_value in response.json:
         if header_name == 'traceparent':
             traceparent = header_value
@@ -297,4 +302,8 @@ def test_w3c_and_newrelic_headers_generated():
 
     assert traceparent
     assert tracestate
-    assert newrelic
+
+    if exclude_newrelic_header:
+        assert newrelic is None
+    else:
+        assert newrelic

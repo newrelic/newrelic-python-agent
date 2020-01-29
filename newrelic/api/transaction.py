@@ -1248,11 +1248,10 @@ class Transaction(object):
                         self._record_supportability('Supportability/TraceContext/'
                                 'TraceState/NoNrEntry')
 
-                self._record_supportability(
-                        'Supportability/TraceContext/'
-                        'Accept/Success')
-
             self._accept_distributed_trace_data(data, transport_type)
+            self._record_supportability(
+                    'Supportability/TraceContext/'
+                    'Accept/Success')
         else:
             try:
                 distributed_header = headers.get('newrelic')

@@ -141,9 +141,6 @@ def test_outbound_distributed_trace(
             decoded['d'].pop('tk', None)
             w3c_data.pop('tk')
 
-            # Strip leading zeros off of trace id
-            w3c_data['tr'] = w3c_data['tr'][16:]
-
             assert decoded['d'] == w3c_data
 
     _test()

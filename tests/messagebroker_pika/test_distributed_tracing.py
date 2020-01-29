@@ -87,7 +87,7 @@ def test_basic_consume_distributed_tracing_headers():
         assert txn
         assert txn._distributed_trace_state
         assert txn.parent_type == 'App'
-        assert txn._trace_id.endswith(txn.parent_tx)
+        assert txn._trace_id.startswith(txn.parent_tx)
         assert txn.parent_span is not None
         assert txn.parent_account == txn.settings.account_id
         assert txn.parent_transport_type == 'AMQP'
@@ -140,7 +140,6 @@ def do_basic_get(channel, QUEUE):
     assert txn.client_cross_process_id is None
     assert txn.client_account_id is None
     assert txn.client_application_id is None
-    assert txn._trace_id is None
 
 
 @override_application_settings(_override_settings)

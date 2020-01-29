@@ -430,7 +430,7 @@ class W3CTraceParent(dict):
             guid = '{:016x}'.format(random.getrandbits(64))
 
         return '00-{}-{}-{:02x}'.format(
-            self['tr'].zfill(32),
+            self['tr'].lower().zfill(32),
             guid,
             int(self.get('sa', 0)),
         )

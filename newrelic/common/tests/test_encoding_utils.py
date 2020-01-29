@@ -101,9 +101,9 @@ def test_traceparent_decode(payload, valid):
     (None, False),
 ))
 def test_traceparent_text(span_id, sampled):
-    trace_id = '1111111111111111'
+    trace_id = 'FFFFFFFFFFFFFFFF'
     data = {'tr': trace_id}
-    expected_trace_id = '00000000000000001111111111111111'
+    expected_trace_id = '0000000000000000ffffffffffffffff'
 
     if span_id:
         data['id'] = span_id

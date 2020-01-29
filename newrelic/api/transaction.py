@@ -1135,35 +1135,7 @@ class Transaction(object):
                             received_trust_key)
                 return False
 
-            transport_start = data.get('ti') / 1000.0
-
-            self.parent_type = data.get('ty')
-
-            self.parent_span = data.get('id')
-            self.parent_tx = data.get('tx')
-            self.parent_app = data.get('ap')
-            self.parent_account = account_id
-
-            if transport_type not in DISTRIBUTED_TRACE_TRANSPORT_TYPES:
-                transport_type = 'Unknown'
-
-            self.parent_transport_type = transport_type
-
-            # If starting in the future, transport duration should be set to 0
-            now = time.time()
-            if transport_start > now:
-                self.parent_transport_duration = 0.0
-            else:
-                self.parent_transport_duration = now - transport_start
-
-            self._trace_id = data.get('tr')
-
-            if 'pr' in data:
-                self._priority = data.get('pr')
-                self._sampled = data.get('sa', self._sampled)
-
-            self._distributed_trace_state = ACCEPTED_DISTRIBUTED_TRACE
-
+            self._accept_distributed_trace_data(data, transport_type)
             self._record_supportability('Supportability/DistributedTrace/'
                     'AcceptPayload/Success')
             return True

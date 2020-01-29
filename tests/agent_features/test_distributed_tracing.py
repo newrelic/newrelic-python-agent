@@ -278,7 +278,8 @@ def test_distributed_tracing_metrics(web_transaction, gen_error, has_parent):
 @background_task(name='test_current_trace_id_api_inside_transaction')
 def test_current_trace_id_api_inside_transaction():
     trace_id = current_trace_id()
-    assert trace_id == current_transaction().guid
+    assert len(trace_id) == 32
+    assert trace_id == current_transaction().trace_id
 
 
 def test_current_trace_id_api_outside_transaction():

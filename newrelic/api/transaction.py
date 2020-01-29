@@ -213,8 +213,13 @@ class Transaction(object):
 
         self.rum_token = None
 
+        trace_id = '%032x' % random.getrandbits(128)
+
         # 16-digit random hex. Padded with zeros in the front.
-        self.guid = '%016x' % random.getrandbits(64)
+        self.guid = trace_id[:16]
+
+        # 32-digit random hex. Padded with zeros in the front.
+        self._trace_id = trace_id
 
         # This may be overridden by processing an inbound CAT header
         self.parent_type = None
@@ -227,7 +232,6 @@ class Transaction(object):
         self.parent_transport_type = None
         self.parent_transport_duration = None
         self.tracestate = ''
-        self._trace_id = None
         self._priority = None
         self._sampled = None
 
@@ -623,7 +627,7 @@ class Transaction(object):
 
     @property
     def trace_id(self):
-        return self._trace_id or self.guid
+        return self._trace_id
 
     @property
     def alternate_path_hashes(self):

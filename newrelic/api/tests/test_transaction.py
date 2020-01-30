@@ -246,7 +246,9 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             traceparent = \
                 '00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01'
             headers = (('newrelic', payload), ('traceparent', traceparent))
-            self.transaction.accept_distributed_trace_headers(headers)
+            result = self.transaction.accept_distributed_trace_headers(headers)
+            assert result is True
+
             # Expect attributes only to be parsed from traceparent if it is
             # included and no tracestate is present, even if there is a
             # newrelic header present.

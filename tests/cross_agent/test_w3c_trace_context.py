@@ -12,6 +12,7 @@ from testing_support.validators.validate_span_events import (
 from testing_support.fixtures import (override_application_settings,
         validate_transaction_metrics, validate_transaction_event_attributes,
         validate_attributes)
+from newrelic.common.encoding_utils import W3CTraceState
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures',
@@ -37,6 +38,65 @@ def load_tests():
         result.append(param)
 
     return result
+
+
+ATTR_MAP = {
+    'traceparent.version': 0,
+    'traceparent.trace_id': 1,
+    'traceparent.parent_id': 2,
+    'traceparent.trace_flags': 3,
+    'tracestate.version': 0,
+    'tracestate.parent_type': 1,
+    'tracestate.parent_account_id': 2,
+    'tracestate.parent_application_id': 3,
+    'tracestate.span_id': 4,
+    'tracestate.transaction_id': 5,
+    'tracestate.sampled': 6,
+    'tracestate.priority': 7,
+    'tracestate.timestamp': 8,
+    'tracestate.tenant_id': None,
+}
+
+
+def validate_outbound_payload(actual, expected, trusted_account_key):
+    traceparent = ''
+    tracestate = ''
+    for key, value in actual:
+        if key == 'traceparent':
+            traceparent = value.split('-')
+        elif key == 'tracestate':
+            vendors = W3CTraceState.decode(value)
+            nr_entry = vendors.pop(trusted_account_key + '@nr', '')
+            tracestate = nr_entry.split('-')
+    exact_values = expected.get('exact', {})
+    expected_attrs = expected.get('expected', [])
+    unexpected_attrs = expected.get('unexpected', [])
+    expected_vendors = expected.get('vendors', [])
+    for key, value in exact_values.items():
+        header = traceparent if key.startswith('traceparent.') else tracestate
+        attr = ATTR_MAP[key]
+        if attr is not None:
+            if isinstance(value, bool):
+                assert header[attr] == str(int(value))
+            elif isinstance(value, int):
+                assert int(header[attr]) == value
+            else:
+                assert header[attr] == str(value)
+
+    for key in expected_attrs:
+        header = traceparent if key.startswith('traceparent.') else tracestate
+        attr = ATTR_MAP[key]
+        if attr is not None:
+            assert header[attr], key
+
+    for key in unexpected_attrs:
+        header = traceparent if key.startswith('traceparent.') else tracestate
+        attr = ATTR_MAP[key]
+        if attr is not None:
+            assert not header[attr], key
+
+    for vendor in expected_vendors:
+        assert vendor in vendors
 
 
 @wsgi_application()
@@ -162,3 +222,8 @@ def test_trace_context(test_name, trusted_account_key, account_id,
 
     response = _test()
     assert response.status == '200 OK'
+    payloads = response.json
+    if outbound_payloads:
+        assert len(payloads) == len(outbound_payloads)
+        for actual, expected in zip(payloads, outbound_payloads):
+            validate_outbound_payload(actual, expected, trusted_account_key)

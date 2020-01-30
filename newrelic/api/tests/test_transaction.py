@@ -712,6 +712,15 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             # Priority should be set to payload priority
             assert self.transaction.priority == 0.8
 
+    def test_invalid_priority(self):
+        payload = self._make_test_payload(pr='WRONG')
+
+        with self.transaction:
+            assert self.transaction.accept_distributed_trace_payload(payload)
+
+            # If invalid (non-numerical) priority, it should be set to None
+            assert self.transaction.priority is None
+
     def test_sampled_becomes_true(self):
         with self.transaction:
             self.transaction._priority = 0.0

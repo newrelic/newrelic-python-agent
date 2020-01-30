@@ -1135,6 +1135,17 @@ class Transaction(object):
                             received_trust_key)
                 return False
 
+            try:
+                data['ti'] = int(data['ti'])
+            except:
+                return False
+
+            if 'pr' in data:
+                try:
+                    data['pr'] = float(data['pr'])
+                except:
+                    data['pr'] = None
+
             self._accept_distributed_trace_data(data, transport_type)
             self._record_supportability('Supportability/DistributedTrace/'
                     'AcceptPayload/Success')

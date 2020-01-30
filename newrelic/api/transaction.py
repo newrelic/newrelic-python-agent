@@ -1213,10 +1213,11 @@ class Transaction(object):
                 data = W3CTraceParent.decode(traceparent)
             except:
                 data = None
+
             if not data:
                 self._record_supportability('Supportability/TraceContext/'
                         'TraceParent/Parse/Exception')
-                return
+                return False
 
             self._record_supportability('Supportability/TraceContext/'
                                     'TraceParent/Accept/Success')
@@ -1256,6 +1257,7 @@ class Transaction(object):
             self._record_supportability(
                     'Supportability/TraceContext/'
                     'Accept/Success')
+            return True
         elif distributed_header:
             distributed_header = ensure_str(distributed_header)
             return self._accept_distributed_trace_payload(

@@ -1171,8 +1171,6 @@ class Transaction(object):
 
         self.parent_transport_type = transport_type
 
-        transport_start = data.get('ti') / 1000.0
-
         self.parent_type = data.get('ty')
 
         self.parent_span = data.get('id')
@@ -1180,19 +1178,22 @@ class Transaction(object):
         self.parent_app = data.get('ap')
         self.parent_account = data.get('ac')
 
-        # If starting in the future, transport duration should be set to 0
-        now = time.time()
-        if transport_start > now:
-            self.parent_transport_duration = 0.0
-        else:
-            self.parent_transport_duration = now - transport_start
-
         self._trace_id = data.get('tr')
 
         priority = data.get('pr')
         if priority is not None:
             self._priority = priority
             self._sampled = data.get('sa')
+
+        if 'ti' in data:
+            transport_start = data['ti'] / 1000.0
+
+            # If starting in the future, transport duration should be set to 0
+            now = time.time()
+            if transport_start > now:
+                self.parent_transport_duration = 0.0
+            else:
+                self.parent_transport_duration = now - transport_start
 
         self._distributed_trace_state = ACCEPTED_DISTRIBUTED_TRACE
 

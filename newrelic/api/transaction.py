@@ -1155,25 +1155,19 @@ class Transaction(object):
         return self._accept_distributed_trace_payload(*args, **kwargs)
 
     def _accept_distributed_trace_data(self, data, transport_type):
-        self._trace_id = data['tr']
-        self.parent_span = data['id']
         if transport_type not in DISTRIBUTED_TRACE_TRANSPORT_TYPES:
             transport_type = 'Unknown'
 
         self.parent_transport_type = transport_type
-        self._distributed_trace_state = ACCEPTED_DISTRIBUTED_TRACE
 
-        timestamp = data.get('ti', None)
-
-        if not timestamp:
-            return
-
-        transport_start = timestamp / 1000.0
+        transport_start = data.get('ti') / 1000.0
 
         self.parent_type = data.get('ty')
-        self.parent_account = data.get('ac')
-        self.parent_app = data.get('ap')
+
+        self.parent_span = data.get('id')
         self.parent_tx = data.get('tx')
+        self.parent_app = data.get('ap')
+        self.parent_account = data.get('ac')
 
         # If starting in the future, transport duration should be set to 0
         now = time.time()
@@ -1182,10 +1176,14 @@ class Transaction(object):
         else:
             self.parent_transport_duration = now - transport_start
 
+        self._trace_id = data.get('tr')
+
         priority = data.get('pr')
         if priority is not None:
             self._priority = priority
             self._sampled = data.get('sa')
+
+        self._distributed_trace_state = ACCEPTED_DISTRIBUTED_TRACE
 
     def accept_distributed_trace_headers(self, headers, transport_type='HTTP'):
         if not self._can_accept_distributed_trace_headers():

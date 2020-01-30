@@ -1236,14 +1236,16 @@ class Transaction(object):
                         except:
                             tracestate_data = None
                         if tracestate_data:
-                            self.trusted_parent_span = tracestate_data.pop('id', None)
+                            self.trusted_parent_span = \
+                                tracestate_data.pop('id', None)
                             data.update(tracestate_data)
                         else:
                             self._record_supportability(
                                     'Supportability/TraceContext/'
                                     'TraceState/InvalidNrEntry')
                     else:
-                        self._record_supportability('Supportability/TraceContext/'
+                        self._record_supportability(
+                                'Supportability/TraceContext/'
                                 'TraceState/NoNrEntry')
 
             self._accept_distributed_trace_data(data, transport_type)

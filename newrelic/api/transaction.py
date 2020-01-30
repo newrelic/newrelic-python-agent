@@ -1135,35 +1135,18 @@ class Transaction(object):
                             received_trust_key)
                 return False
 
-            transport_start = data.get('ti') / 1000.0
-
-            self.parent_type = data.get('ty')
-
-            self.parent_span = data.get('id')
-            self.parent_tx = data.get('tx')
-            self.parent_app = data.get('ap')
-            self.parent_account = account_id
-
-            if transport_type not in DISTRIBUTED_TRACE_TRANSPORT_TYPES:
-                transport_type = 'Unknown'
-
-            self.parent_transport_type = transport_type
-
-            # If starting in the future, transport duration should be set to 0
-            now = time.time()
-            if transport_start > now:
-                self.parent_transport_duration = 0.0
-            else:
-                self.parent_transport_duration = now - transport_start
-
-            self._trace_id = data.get('tr')
+            try:
+                data['ti'] = int(data['ti'])
+            except:
+                return False
 
             if 'pr' in data:
-                self._priority = data.get('pr')
-                self._sampled = data.get('sa', self._sampled)
+                try:
+                    data['pr'] = float(data['pr'])
+                except:
+                    data['pr'] = None
 
-            self._distributed_trace_state = ACCEPTED_DISTRIBUTED_TRACE
-
+            self._accept_distributed_trace_data(data, transport_type)
             self._record_supportability('Supportability/DistributedTrace/'
                     'AcceptPayload/Success')
             return True
@@ -1182,41 +1165,28 @@ class Transaction(object):
             return False
         return self._accept_distributed_trace_payload(*args, **kwargs)
 
-    def _accept_traceparent_header(self, header, transport_type):
-        header = header.strip()
-        traceparent = W3CTraceParent.decode(header)
-        if not traceparent:
-            return False
-        self._trace_id = traceparent['tr']
-        self.parent_span = traceparent['id']
+    def _accept_distributed_trace_data(self, data, transport_type):
         if transport_type not in DISTRIBUTED_TRACE_TRANSPORT_TYPES:
             transport_type = 'Unknown'
 
         self.parent_transport_type = transport_type
-        self._distributed_trace_state = ACCEPTED_DISTRIBUTED_TRACE
-        return True
 
-    def _parse_tracestate_header(self, tracestate):
-        # Don't parse more than 32 entries
-        vendors = W3CTraceState.decode(tracestate)
+        self.parent_type = data.get('ty')
 
-        # Remove trusted new relic header if available and parse
-        tk = self._settings.trusted_account_key
-        payload = vendors.pop(tk + '@nr', '')
-        self.tracing_vendors = ','.join(vendors.keys())
-        self.tracestate = vendors.text(limit=31)
+        self.parent_span = data.get('id')
+        self.parent_tx = data.get('tx')
+        self.parent_app = data.get('ap')
+        self.parent_account = data.get('ac')
 
-        if payload:
-            data = NrTraceState.decode(payload, tk)
-            if not data:
-                return False
-            transport_start = data.get('ti') / 1000.0
+        self._trace_id = data.get('tr')
 
-            self.parent_type = data.get('ty')
-            self.parent_account = data.get('ac')
-            self.parent_app = data.get('ap')
-            self.trusted_parent_span = data.get('id')
-            self.parent_tx = data.get('tx')
+        priority = data.get('pr')
+        if priority is not None:
+            self._priority = priority
+            self._sampled = data.get('sa')
+
+        if 'ti' in data:
+            transport_start = data['ti'] / 1000.0
 
             # If starting in the future, transport duration should be set to 0
             now = time.time()
@@ -1225,15 +1195,7 @@ class Transaction(object):
             else:
                 self.parent_transport_duration = now - transport_start
 
-            priority = data.get('pr')
-            if priority is not None:
-                self._priority = priority
-                self._sampled = data.get('sa')
-        else:
-            self._record_supportability('Supportability/TraceContext/'
-                    'TraceState/NoNrEntry')
-
-        return True
+        self._distributed_trace_state = ACCEPTED_DISTRIBUTED_TRACE
 
     def accept_distributed_trace_headers(self, headers, transport_type='HTTP'):
         if not self._can_accept_distributed_trace_headers():
@@ -1242,9 +1204,11 @@ class Transaction(object):
         try:
             traceparent = headers.get('traceparent', '')
             tracestate = headers.get('tracestate', '')
+            distributed_header = headers.get('newrelic', '')
         except Exception:
             traceparent = ''
             tracestate = ''
+            distributed_header = ''
 
             for k, v in headers:
                 k = ensure_str(k)
@@ -1252,51 +1216,65 @@ class Transaction(object):
                     traceparent = v
                 elif k == 'tracestate':
                     tracestate = v
+                elif k == 'newrelic':
+                    distributed_header = v
 
         if traceparent:
-            traceparent = ensure_str(traceparent)
             try:
-                _parent_parsed = self._accept_traceparent_header(
-                        traceparent, transport_type)
+                traceparent = ensure_str(traceparent).strip()
+                data = W3CTraceParent.decode(traceparent)
             except:
-                _parent_parsed = False
+                data = None
 
-            if _parent_parsed:
+            if not data:
                 self._record_supportability('Supportability/TraceContext/'
-                                        'TraceParent/Accept/Success')
-                if tracestate:
-                    tracestate = ensure_str(tracestate)
-                    try:
-                        if self._parse_tracestate_header(tracestate):
-                            self._record_supportability(
-                                    'Supportability/TraceContext/'
-                                    'Accept/Success')
+                        'TraceParent/Parse/Exception')
+                return False
+
+            self._record_supportability('Supportability/TraceContext/'
+                                    'TraceParent/Accept/Success')
+            if tracestate:
+                tracestate = ensure_str(tracestate)
+                try:
+                    vendors = W3CTraceState.decode(tracestate)
+                    tk = self._settings.trusted_account_key
+                    payload = vendors.pop(tk + '@nr', '')
+                    self.tracing_vendors = ','.join(vendors.keys())
+                    self.tracestate = vendors.text(limit=31)
+                except:
+                    self._record_supportability(
+                            'Supportability/TraceContext/'
+                            'TraceState/Parse/Exception')
+                else:
+                    # Remove trusted new relic header if available and parse
+                    if payload:
+                        try:
+                            tracestate_data = NrTraceState.decode(payload, tk)
+                        except:
+                            tracestate_data = None
+                        if tracestate_data:
+                            self.trusted_parent_span = \
+                                tracestate_data.pop('id', None)
+                            data.update(tracestate_data)
                         else:
                             self._record_supportability(
                                     'Supportability/TraceContext/'
                                     'TraceState/InvalidNrEntry')
-
-                    except:
+                    else:
                         self._record_supportability(
                                 'Supportability/TraceContext/'
-                                'TraceState/Parse/Exception')
-            else:
-                self._record_supportability('Supportability/TraceContext/'
-                        'TraceParent/Parse/Exception')
-        else:
-            try:
-                distributed_header = headers.get('newrelic')
-            except Exception:
-                for k, v in headers:
-                    k = ensure_str(k)
-                    if k == 'newrelic':
-                        distributed_header = v
-                        break
+                                'TraceState/NoNrEntry')
+
+            self._accept_distributed_trace_data(data, transport_type)
+            self._record_supportability(
+                    'Supportability/TraceContext/'
+                    'Accept/Success')
+            return True
+        elif distributed_header:
             distributed_header = ensure_str(distributed_header)
-            if distributed_header is not None:
-                return self._accept_distributed_trace_payload(
-                        distributed_header,
-                        transport_type)
+            return self._accept_distributed_trace_payload(
+                    distributed_header,
+                    transport_type)
 
     def _process_incoming_cat_headers(self, encoded_cross_process_id,
             encoded_txn_header):

@@ -182,6 +182,23 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             result = self.transaction.accept_distributed_trace_headers(headers)
             assert result is True
 
+    @pytest.mark.filterwarnings("error")
+    def test_accept_distributed_trace_headers_after_invalid_payload(self):
+        with self.transaction:
+            headers = (('newrelic', 'invalid'),)
+            result = self.transaction.accept_distributed_trace_headers(headers)
+            assert result is False
+
+            payload = ('eyJkIjogeyJwciI6IDAuMjczMTM1OTc2NTQ0MjQ1NCwgImFjIjogIj'
+                'IwMjY0IiwgInR4IjogIjI2MWFjYTliYzhhZWMzNzQiLCAidHkiOiAiQXBwIiw'
+                'gInRyIjogIjI2MWFjYTliYzhhZWMzNzQiLCAiYXAiOiAiMTAxOTUiLCAidGsi'
+                'OiAiMSIsICJ0aSI6IDE1MjQwMTAyMjY2MTAsICJzYSI6IGZhbHNlfSwgInYiO'
+                'iBbMCwgMV19')
+
+            headers = (('newrelic', payload),)
+            result = self.transaction.accept_distributed_trace_headers(headers)
+            assert result is True
+
     def test_accept_distributed_trace_headers_ignores_second_call(self):
         with self.transaction:
             payload = ('eyJkIjogeyJwciI6IDAuMjczMTM1OTc2NTQ0MjQ1NCwgImFjIjogIj'
@@ -246,7 +263,9 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             traceparent = \
                 '00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01'
             headers = (('newrelic', payload), ('traceparent', traceparent))
-            self.transaction.accept_distributed_trace_headers(headers)
+            result = self.transaction.accept_distributed_trace_headers(headers)
+            assert result is True
+
             # Expect attributes only to be parsed from traceparent if it is
             # included and no tracestate is present, even if there is a
             # newrelic header present.

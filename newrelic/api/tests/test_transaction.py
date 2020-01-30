@@ -182,6 +182,23 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             result = self.transaction.accept_distributed_trace_headers(headers)
             assert result is True
 
+    @pytest.mark.filterwarnings("error")
+    def test_accept_distributed_trace_headers_after_invalid_payload(self):
+        with self.transaction:
+            headers = (('newrelic', 'invalid'),)
+            result = self.transaction.accept_distributed_trace_headers(headers)
+            assert result is False
+
+            payload = ('eyJkIjogeyJwciI6IDAuMjczMTM1OTc2NTQ0MjQ1NCwgImFjIjogIj'
+                'IwMjY0IiwgInR4IjogIjI2MWFjYTliYzhhZWMzNzQiLCAidHkiOiAiQXBwIiw'
+                'gInRyIjogIjI2MWFjYTliYzhhZWMzNzQiLCAiYXAiOiAiMTAxOTUiLCAidGsi'
+                'OiAiMSIsICJ0aSI6IDE1MjQwMTAyMjY2MTAsICJzYSI6IGZhbHNlfSwgInYiO'
+                'iBbMCwgMV19')
+
+            headers = (('newrelic', payload),)
+            result = self.transaction.accept_distributed_trace_headers(headers)
+            assert result is True
+
     def test_accept_distributed_trace_headers_ignores_second_call(self):
         with self.transaction:
             payload = ('eyJkIjogeyJwciI6IDAuMjczMTM1OTc2NTQ0MjQ1NCwgImFjIjogIj'

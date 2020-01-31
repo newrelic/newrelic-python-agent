@@ -1,6 +1,28 @@
 unreleased
 ----------
 
+5.6.0 (2019-01-31)
+------------------
+
+- Fix crash when using aiohttp_cors
+
+  Customers using the agent with aiohttp_cors may have experienced a crash when
+  the aiohttp_cors framework was used in conjunction with aiohttp class based
+  views. This crash has now been fixed.
+
+- Fix grpc v1.26 instrumentation errors
+
+  Customers using grpc v1.26 and above may have experienced an error message in
+  the New Relic logs indicating there was an instrumentation error.
+  Additionally, some data may have been missing when this error was
+  encountered. This issue has now been fixed.
+
+- Add support for uvloop
+
+  Transaction context may not have been propagated when using uvloop. This
+  could have resulted in incomplete traces or instrumentation failures when
+  using uvloop. uvloop is now supported.
+
 5.4.1 (2019-12-19)
 ------------------
 

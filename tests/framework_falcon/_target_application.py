@@ -1,6 +1,12 @@
-import inspect
 import falcon
 import webtest
+
+
+try:
+    from falcon import HTTPRouteNotFound
+    NOT_FOUND_ERROR_NAME = 'falcon.errors:HTTPRouteNotFound'
+except ImportError:
+    NOT_FOUND_ERROR_NAME = 'falcon.errors:HTTPNotFound'
 
 
 def _bind_response(*args, **kwargs):
@@ -34,7 +40,12 @@ class BadResponse(object):
         raise Crash()
 
 
-application = falcon.API()
+try:
+    application = falcon.App()
+    name_prefix = 'falcon.app:App'
+except AttributeError:
+    application = falcon.API()
+    name_prefix = 'falcon.api:API'
 
 
 def bad_error_handler(*args, **kwargs):
@@ -55,3 +66,7 @@ _target_application = webtest.TestApp(application)
 
 # Put exception class here for convenience
 _target_application.Crash = Crash
+
+# Put names here for convenience
+_target_application.name_prefix = name_prefix
+_target_application.not_found_error = NOT_FOUND_ERROR_NAME

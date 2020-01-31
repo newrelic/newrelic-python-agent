@@ -1,9 +1,11 @@
+import json
 import pytest
 from newrelic.api.application import application_instance
 from newrelic.api.transaction import Transaction, current_transaction
 from newrelic.api.background_task import background_task
 from newrelic.api.external_trace import ExternalTrace
-from newrelic.common.encoding_utils import DistributedTracePayload
+from newrelic.common.encoding_utils import (
+        DistributedTracePayload, W3CTraceParent, W3CTraceState, NrTraceState)
 
 from testing_support.fixtures import (override_application_settings,
         validate_transaction_metrics)
@@ -34,7 +36,7 @@ def test_inbound_distributed_trace(mock_grpc_server, method_name,
     @validate_transaction_metrics(
         'sample_application:SampleApplicationServicer.' + method_name,
         rollup_metrics=(
-            ('Supportability/DistributedTrace/AcceptPayload/Success', 1),
+            ('Supportability/TraceContext/Accept/Success', 1),
         ),
     )
     @wait_for_transaction_completion
@@ -115,13 +117,31 @@ def test_outbound_distributed_trace(
         except (AttributeError, TypeError):
             reply = [reply]
 
+        metadata = json.loads(reply[0].text)
+
         if not dt_enabled or dt_error:
-            assert not reply[0].text
+            assert 'newrelic' not in metadata
+            assert 'traceparent' not in metadata
+            assert 'tracestate' not in metadata
         else:
-            decoded = DistributedTracePayload.decode(reply[0].text)
+            decoded = DistributedTracePayload.decode(metadata['newrelic'])
 
             # The external span should be the parent
             exact_intrinsics['guid'] = decoded['d']['id']
+
+            # Check that tracestate / traceparent payload matches newrelic
+            # payload
+            w3c_data = W3CTraceParent.decode(metadata['traceparent'])
+            nr_tracestate = list(W3CTraceState.decode(
+                    metadata['tracestate']).values())[0]
+            nr_tracestate = NrTraceState.decode(nr_tracestate, None)
+            w3c_data.update(nr_tracestate)
+
+            # Remove all trust keys
+            decoded['d'].pop('tk', None)
+            w3c_data.pop('tk')
+
+            assert decoded['d'] == w3c_data
 
     _test()
 
@@ -156,4 +176,8 @@ def test_outbound_payload_outside_transaction(
         reply = [reply]
 
     # Verify there were no DT headers sent
-    assert not reply[0].text
+    metadata = json.loads(reply[0].text)
+
+    assert 'newrelic' not in metadata
+    assert 'traceparent' not in metadata
+    assert 'tracestate' not in metadata

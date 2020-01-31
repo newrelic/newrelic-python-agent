@@ -51,6 +51,28 @@ class DistributedTracing(object):
         ExternalTrace.generate_request_headers(self.transaction)
 
 
+class DistributedTracingW3C(object):
+    def setup(self):
+        app = MockApplication(settings={
+            'account_id': '1',
+            'primary_application_id': '1',
+            'trusted_account_key': '9000',
+            'distributed_tracing.enabled': True,
+            'distributed_tracing.exclude_newrelic_header': True
+        })
+        self.transaction = MockTransaction(app)
+        self.transaction._application = app
+        self.transaction._transaction_metrics = {}
+        self.transaction._priority = None
+        self.transaction._sampled = None
+        self.transaction._trace_id = None
+        self.transaction.guid = 'GUID'
+        self.transaction.synthetics_header = None
+
+    def time_generate_request_headers(self):
+        ExternalTrace.generate_request_headers(self.transaction)
+
+
 class CatOff(CatClassic):
     def setup(self):
         app = MockApplication(settings={

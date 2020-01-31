@@ -19,15 +19,10 @@ def _prepare_request(
         transaction, guid, request,
         timeout=None, metadata=None, *args, **kwargs):
     metadata = metadata and list(metadata) or []
-    if transaction.settings.distributed_tracing.enabled:
-        payload = transaction._create_distributed_trace_payload_with_guid(guid)
-        if payload:
-            headers = [
-                (ExternalTrace.cat_distributed_trace_key, payload.http_safe()),
-            ]
-            headers.extend(metadata)
-            metadata = headers
-
+    dt_metadata = transaction._create_distributed_trace_data_with_guid(guid)
+    metadata.extend(
+        transaction._generate_distributed_trace_headers(dt_metadata)
+    )
     kwargs['metadata'] = metadata
     return request, timeout, args, kwargs
 
@@ -194,10 +189,16 @@ def instrument_grpc__channel(module):
             _prepare_request_stream)
     wrap_future(module, '_StreamStreamMultiCallable.__call__',
             _prepare_request_stream)
-    wrap_function_wrapper(module, '_Rendezvous._next',
-            wrap_next)
-    wrap_function_wrapper(module, '_Rendezvous.result',
-            wrap_result)
+    if hasattr(module, '_MultiThreadedRendezvous'):
+        wrap_function_wrapper(module, '_MultiThreadedRendezvous.result',
+                wrap_result)
+        wrap_function_wrapper(module, '_MultiThreadedRendezvous._next',
+                wrap_result)
+    else:
+        wrap_function_wrapper(module, '_Rendezvous.result',
+                wrap_result)
+        wrap_function_wrapper(module, '_Rendezvous._next',
+                wrap_next)
     wrap_function_wrapper(module, '_Rendezvous.cancel',
             wrap_result)
 

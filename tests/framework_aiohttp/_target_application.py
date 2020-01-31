@@ -168,6 +168,15 @@ def make_app(middlewares=None, loop=None):
     app.router.add_route('*', '/ws', websocket_handler)
     app.router.add_route('*', '/multi_fetch', multi_fetch_handler)
 
+    for route in app.router.routes():
+        handler = route.handler
+
+        # https://github.com/aio-libs/aiohttp-cors/blob/73510a3a9212afd1d3740fd8b2feba63a1dcfe13/aiohttp_cors/urldispatcher_router_adapter.py#L95
+        # Check that this statement passes for all routes
+        # This statement was causing a crash since issubclass would error on
+        # function wrappers
+        isinstance(handler, type) and issubclass(handler, web.View)
+
     return app
 
 

@@ -1,6 +1,7 @@
 import json
 import time
 import unittest
+import pytest
 
 import newrelic.api.settings
 
@@ -105,16 +106,134 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
     def test_create_distributed_trace_payload_text(self):
         with self.transaction:
-            payload = self.transaction.create_distributed_trace_payload()
+            with pytest.warns(DeprecationWarning):
+                payload = self.transaction.create_distributed_trace_payload()
             assert type(payload.text()) is str
             assert ('Supportability/DistributedTrace/'
                     'CreatePayload/Success'
                     in self.transaction._transaction_metrics)
 
+            assert self.transaction.is_distributed_trace is True
+
     def test_create_distributed_trace_payload_http_safe(self):
         with self.transaction:
-            payload = self.transaction.create_distributed_trace_payload()
+            with pytest.warns(DeprecationWarning):
+                payload = self.transaction.create_distributed_trace_payload()
             assert type(payload.http_safe()) is str
+
+    @pytest.mark.filterwarnings("error")
+    def test_insert_distributed_trace_headers(self):
+        with self.transaction:
+            headers = []
+            self.transaction.insert_distributed_trace_headers(headers)
+            assert len(headers) == 3
+            headers = dict(headers)
+            assert 'traceparent' in headers
+            assert 'tracestate' in headers
+            assert 'newrelic' in headers
+            for header in headers.values():
+                assert type(header) is str
+
+    def test_insert_distributed_trace_headers_newrelic_format_disabled(self):
+        with self.transaction:
+            self.transaction.settings \
+                    .distributed_tracing.exclude_newrelic_header = True
+            headers = []
+            self.transaction.insert_distributed_trace_headers(headers)
+            assert len(headers) == 2
+            headers = dict(headers)
+            # Assert only tracecontext headers are added
+            assert 'traceparent' in headers
+            assert 'tracestate' in headers
+            for header in headers.values():
+                assert type(header) is str
+
+    @pytest.mark.filterwarnings("error")
+    def test_accept_distributed_trace_headers(self):
+        with self.transaction:
+            # the tk is hardcoded in this encoded payload, so lets hardcode it
+            # here, too
+            self.transaction.settings.trusted_account_key = '1'
+
+            payload = ('eyJkIjogeyJwciI6IDAuMjczMTM1OTc2NTQ0MjQ1NCwgImFjIjogIj'
+                'IwMjY0IiwgInR4IjogIjI2MWFjYTliYzhhZWMzNzQiLCAidHkiOiAiQXBwIiw'
+                'gInRyIjogIjI2MWFjYTliYzhhZWMzNzQiLCAiYXAiOiAiMTAxOTUiLCAidGsi'
+                'OiAiMSIsICJ0aSI6IDE1MjQwMTAyMjY2MTAsICJzYSI6IGZhbHNlfSwgInYiO'
+                'iBbMCwgMV19')
+
+            headers = {'newrelic': payload}
+            result = self.transaction.accept_distributed_trace_headers(headers)
+            assert result is True
+
+    @pytest.mark.filterwarnings("error")
+    def test_accept_distributed_trace_headers_iterable(self):
+        with self.transaction:
+            # the tk is hardcoded in this encoded payload, so lets hardcode it
+            # here, too
+            self.transaction.settings.trusted_account_key = '1'
+
+            payload = ('eyJkIjogeyJwciI6IDAuMjczMTM1OTc2NTQ0MjQ1NCwgImFjIjogIj'
+                'IwMjY0IiwgInR4IjogIjI2MWFjYTliYzhhZWMzNzQiLCAidHkiOiAiQXBwIiw'
+                'gInRyIjogIjI2MWFjYTliYzhhZWMzNzQiLCAiYXAiOiAiMTAxOTUiLCAidGsi'
+                'OiAiMSIsICJ0aSI6IDE1MjQwMTAyMjY2MTAsICJzYSI6IGZhbHNlfSwgInYiO'
+                'iBbMCwgMV19')
+
+            headers = (('newrelic', payload),)
+            result = self.transaction.accept_distributed_trace_headers(headers)
+            assert result is True
+
+    @pytest.mark.filterwarnings("error")
+    def test_accept_distributed_trace_headers_after_invalid_payload(self):
+        with self.transaction:
+            headers = (('newrelic', 'invalid'),)
+            result = self.transaction.accept_distributed_trace_headers(headers)
+            assert result is False
+
+            payload = ('eyJkIjogeyJwciI6IDAuMjczMTM1OTc2NTQ0MjQ1NCwgImFjIjogIj'
+                'IwMjY0IiwgInR4IjogIjI2MWFjYTliYzhhZWMzNzQiLCAidHkiOiAiQXBwIiw'
+                'gInRyIjogIjI2MWFjYTliYzhhZWMzNzQiLCAiYXAiOiAiMTAxOTUiLCAidGsi'
+                'OiAiMSIsICJ0aSI6IDE1MjQwMTAyMjY2MTAsICJzYSI6IGZhbHNlfSwgInYiO'
+                'iBbMCwgMV19')
+
+            headers = (('newrelic', payload),)
+            result = self.transaction.accept_distributed_trace_headers(headers)
+            assert result is True
+
+    def test_accept_distributed_trace_headers_ignores_second_call(self):
+        with self.transaction:
+            payload = ('eyJkIjogeyJwciI6IDAuMjczMTM1OTc2NTQ0MjQ1NCwgImFjIjogIj'
+                'IwMjY0IiwgInR4IjogIjI2MWFjYTliYzhhZWMzNzQiLCAidHkiOiAiQXBwIiw'
+                'gInRyIjogIjI2MWFjYTliYzhhZWMzNzQiLCAiYXAiOiAiMTAxOTUiLCAidGsi'
+                'OiAiMSIsICJ0aSI6IDE1MjQwMTAyMjY2MTAsICJzYSI6IGZhbHNlfSwgInYiO'
+                'iBbMCwgMV19')
+
+            headers = (('newrelic', payload),)
+            result = self.transaction.accept_distributed_trace_headers(headers)
+            assert result
+            assert self.transaction._distributed_trace_state
+            assert self.transaction.parent_type == 'App'
+
+            result = self.transaction.accept_distributed_trace_payload(headers)
+            assert not result
+            assert ('Supportability/DistributedTrace/'
+                    'AcceptPayload/Ignored/Multiple'
+                    in self.transaction._transaction_metrics)
+
+    def test_accept_distributed_trace_headers_after_create_payload(self):
+        with self.transaction:
+            self.transaction.insert_distributed_trace_headers([])
+            payload = ('eyJkIjogeyJwciI6IDAuMjczMTM1OTc2NTQ0MjQ1NCwgImFjIjogIj'
+                'IwMjY0IiwgInR4IjogIjI2MWFjYTliYzhhZWMzNzQiLCAidHkiOiAiQXBwIiw'
+                'gInRyIjogIjI2MWFjYTliYzhhZWMzNzQiLCAiYXAiOiAiMTAxOTUiLCAidGsi'
+                'OiAiMSIsICJ0aSI6IDE1MjQwMTAyMjY2MTAsICJzYSI6IGZhbHNlfSwgInYiO'
+                'iBbMCwgMV19')
+
+            headers = (('newrelic', payload),)
+            result = self.transaction.accept_distributed_trace_headers(headers)
+            assert not result
+            assert ('Supportability/DistributedTrace/'
+                    'AcceptPayload/Ignored/CreateBeforeAccept'
+                    in self.transaction._transaction_metrics)
 
     def test_distributed_trace_no_referring_transaction(self):
         with self.transaction:
@@ -131,10 +250,54 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
             # IDs should be the transaction GUID
             assert data['tx'] == self.transaction.guid
-            assert data['tr'] == self.transaction.guid
+            assert data['tr'].startswith(self.transaction.guid)
 
             # Parent should be excluded
             assert 'pa' not in data
+
+    def test_accept_distributed_trace_w3c(self):
+        with self.transaction:
+            self.transaction.settings.trusted_account_key = '1'
+            payload = self._make_test_payload()
+            payload = json.dumps(payload)
+            traceparent = \
+                '00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01'
+            headers = (('newrelic', payload), ('traceparent', traceparent))
+            result = self.transaction.accept_distributed_trace_headers(headers)
+            assert result is True
+
+            # Expect attributes only to be parsed from traceparent if it is
+            # included and no tracestate is present, even if there is a
+            # newrelic header present.
+            assert self.transaction.parent_type is None
+            assert self.transaction.parent_account is None
+            assert self.transaction.trusted_parent_span is None
+            assert self.transaction.parent_tx is None
+            assert self.transaction.parent_transport_type == "HTTP"
+            assert self.transaction._trace_id == \
+                    '0af7651916cd43dd8448eb211c80319c'
+            assert self.transaction.parent_span == '00f067aa0ba902b7'
+
+    def test_generate_distributed_trace_invalid_data(self):
+        data = {'bad_data': 0}
+        with self.transaction:
+            headers = \
+                self.transaction._generate_distributed_trace_headers(data)
+            list(headers)
+            assert ('Supportability/TraceContext/'
+                    'Create/Exception'
+                    in self.transaction._transaction_metrics)
+
+    def test_invalid_tracestate_header(self):
+        with self.transaction:
+            traceparent = \
+                '00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01'
+            tracestate = 1
+            headers = (('traceparent', traceparent), ('tracestate', tracestate))
+            self.transaction.accept_distributed_trace_headers(headers)
+            assert ('Supportability/TraceContext/'
+                'TraceState/Parse/Exception'
+                in self.transaction._transaction_metrics)
 
     ##############################################
 
@@ -217,7 +380,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
                 'gInRyIjogIjI2MWFjYTliYzhhZWMzNzQiLCAiYXAiOiAiMTAxOTUiLCAidGsi'
                 'OiAiMSIsICJ0aSI6IDE1MjQwMTAyMjY2MTAsICJzYSI6IGZhbHNlfSwgInYiO'
                 'iBbMCwgMV19')
-            result = self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
 
     def test_accept_distributed_trace_payload_json(self):
@@ -225,7 +389,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             payload = self._make_test_payload()
             payload = json.dumps(payload)
             assert isinstance(payload, str)
-            result = self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
             assert ('Supportability/DistributedTrace/'
                     'AcceptPayload/Success'
@@ -234,7 +399,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
     def test_accept_distributed_trace_payload_discard_version(self):
         with self.transaction:
             payload = self._make_test_payload(v=[999, 0])
-            result = self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
             assert ('Supportability/DistributedTrace/'
                     'AcceptPayload/Ignored/MajorVersion'
@@ -245,21 +411,24 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             payload = self._make_test_payload(
                 v=[0, 999], new_item='this field should not matter')
 
-            result = self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
 
     def test_accept_distributed_trace_payload_ignores_second_call(self):
         with self.transaction:
             payload = self._make_test_payload()
-            result = self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
-            assert self.transaction.is_distributed_trace
+            assert self.transaction._distributed_trace_state
             assert self.transaction.parent_type == 'Mobile'
 
             payload = self._make_test_payload()
-            result = self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
-            assert self.transaction.is_distributed_trace
+            assert self.transaction._distributed_trace_state
             assert self.transaction.parent_type == 'Mobile'
             assert ('Supportability/DistributedTrace/'
                     'AcceptPayload/Ignored/Multiple'
@@ -270,7 +439,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             payload = self._make_test_payload(ac='9999999999999')
             del payload['d']['tk']
 
-            result = self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
             assert ('Supportability/DistributedTrace/'
                     'AcceptPayload/Ignored/UntrustedAccount'
@@ -281,7 +451,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             payload = self._make_test_payload()
             del payload['d']['tk']
 
-            result = self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
 
     def test_accept_distributed_trace_payload_priority_found(self):
@@ -290,7 +461,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             payload = self._make_test_payload(pr=priority)
 
             original_priority = self.transaction.priority
-            result = self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
             assert self.transaction.priority != original_priority
             assert self.transaction.priority == priority
@@ -302,7 +474,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
             payload = json.dumps(payload)
             assert isinstance(payload, str)
-            result = self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
 
     def test_accept_distributed_trace_payload_tx_missing(self):
@@ -312,7 +485,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
             payload = json.dumps(payload)
             assert isinstance(payload, str)
-            result = self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
 
     def test_accept_distributed_trace_payload_id_and_tx_missing(self):
@@ -323,7 +497,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
             payload = json.dumps(payload)
             assert isinstance(payload, str)
-            result = self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload)
 
             assert not result
             assert ('Supportability/DistributedTrace/'
@@ -334,7 +509,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         with self.transaction:
             payload = self._make_test_payload()
             original_priority = self.transaction.priority
-            result = self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
             assert self.transaction.priority == original_priority
 
@@ -342,7 +518,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         with self.transaction:
             payload = self._make_test_payload()
             original_sampled = self.transaction.sampled
-            result = self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
             assert self.transaction.sampled == original_sampled
 
@@ -352,7 +529,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             payload = self._make_test_payload(tr=trace_id)
 
             assert self.transaction.trace_id != trace_id
-            result = self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
             assert self.transaction.trace_id == trace_id
 
@@ -360,7 +538,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         with self.transaction:
             payload = self._make_test_payload()
             self.transaction.create_distributed_trace_payload()
-            result = self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
             assert ('Supportability/DistributedTrace/'
                     'AcceptPayload/Ignored/CreateBeforeAccept'
@@ -371,7 +550,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         ti = int(time.time() * 1000.0) - 1000
         with self.transaction:
             payload = self._make_test_payload(ti=ti)
-            result = self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
 
             # Transport duration is at least 1 second
@@ -382,7 +562,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         ti = int(time.time() * 1000.0) + 10000
         with self.transaction:
             payload = self._make_test_payload(ti=ti)
-            result = self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
 
             # Transport duration is 0!
@@ -391,7 +572,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
     def test_accept_distributed_trace_payload_transport_type(self):
         with self.transaction:
             payload = self._make_test_payload()
-            result = self.transaction.accept_distributed_trace_payload(payload,
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload,
                         transport_type='HTTPS')
             assert result
             assert self.transaction.parent_transport_type == 'HTTPS'
@@ -399,7 +581,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
     def test_accept_distributed_trace_payload_unknown_transport_type(self):
         with self.transaction:
             payload = self._make_test_payload()
-            result = self.transaction.accept_distributed_trace_payload(payload,
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload,
                         transport_type='Kefka')
             assert result
             assert self.transaction.parent_transport_type == 'Unknown'
@@ -413,8 +596,9 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             assert self.transaction.parent_account is None
             assert self.transaction.parent_transport_type is None
             assert self.transaction.parent_transport_duration is None
-            assert self.transaction.trace_id == self.transaction.guid
+            assert self.transaction.trace_id.startswith(self.transaction.guid)
             assert self.transaction._sampled is None
+            assert self.transaction._distributed_trace_state == 0
             assert self.transaction.is_distributed_trace is False
 
     def test_create_payload_prior_to_connect(self):
@@ -436,27 +620,31 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         self.transaction.enabled = False
         with self.transaction:
             payload = self._make_test_payload()
-            result = self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
 
     def test_accept_payload_cat_disabled(self):
         self.transaction._settings.cross_application_tracer.enabled = False
         with self.transaction:
             payload = self._make_test_payload()
-            result = self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload)
             assert result
 
     def test_accept_payload_feature_off(self):
         self.transaction._settings.distributed_tracing.enabled = False
         with self.transaction:
             payload = self._make_test_payload()
-            result = self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
 
     def test_accept_empty_payload(self):
         with self.transaction:
             payload = {}
-            result = self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
             assert len(self.transaction._transaction_metrics) == 1
             assert ('Supportability/DistributedTrace/'
@@ -467,7 +655,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         with self.transaction:
             assert len(self.transaction._transaction_metrics) == 0
             payload = '{'
-            result = self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
             assert len(self.transaction._transaction_metrics) == 1
             assert ('Supportability/DistributedTrace/'
@@ -479,13 +668,15 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
             payload = {
                 'cookies': 'om nom nom',
             }
-            result = self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(payload)
             assert not result
 
     def test_create_after_accept_correct_payload(self):
         with self.transaction:
             inbound_payload = self._make_test_payload()
-            result = self.transaction.accept_distributed_trace_payload(
+            with pytest.warns(DeprecationWarning):
+                result = self.transaction.accept_distributed_trace_payload(
                     inbound_payload)
 
             assert result
@@ -510,7 +701,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         payload = self._make_test_payload(sa=True, pr=1.8)
 
         with self.transaction:
-            self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                self.transaction.accept_distributed_trace_payload(payload)
 
             assert self.transaction.sampled is True
             assert self.transaction.priority == 1.8
@@ -519,7 +711,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         payload = self._make_test_payload(sa=True)
 
         with self.transaction:
-            self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                self.transaction.accept_distributed_trace_payload(payload)
 
             # If priority is missing, sampled should not be set
             assert self.transaction.sampled is None
@@ -531,13 +724,41 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         payload = self._make_test_payload(pr=0.8)
 
         with self.transaction:
-            self.transaction.accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                self.transaction.accept_distributed_trace_payload(payload)
 
             # Sampled remains uncomputed
             assert self.transaction.sampled is None
 
             # Priority should be set to payload priority
             assert self.transaction.priority == 0.8
+
+    def test_invalid_priority(self):
+        payload = self._make_test_payload(pr='WRONG')
+
+        with self.transaction:
+            assert self.transaction.accept_distributed_trace_payload(payload)
+
+            # If invalid (non-numerical) priority, it should be set to None
+            assert self.transaction.priority is None
+
+    def test_missing_timestamp(self):
+        payload = self._make_test_payload(ti=None)
+
+        with self.transaction as txn:
+            assert txn.accept_distributed_trace_payload(payload) is False
+
+    def test_invalid_timestamp(self):
+        payload = self._make_test_payload(ti='bad_timestamp')
+
+        with self.transaction as txn:
+            assert txn.accept_distributed_trace_payload(payload) is False
+
+    def test_empty_timestamp(self):
+        payload = self._make_test_payload(ti='')
+
+        with self.transaction as txn:
+            assert txn.accept_distributed_trace_payload(payload) is False
 
     def test_sampled_becomes_true(self):
         with self.transaction:
@@ -600,7 +821,8 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
     def test_top_level_accept_api_with_transaction(self):
         with self.transaction:
             payload = self._make_test_payload()
-            result = accept_distributed_trace_payload(payload)
+            with pytest.warns(DeprecationWarning):
+                result = accept_distributed_trace_payload(payload)
             assert result is not None
 
     def test_top_level_create_api_no_transaction(self):

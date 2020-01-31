@@ -118,8 +118,9 @@ def test_error_exception(method, uri, metric_name, error, status, nr_enabled,
 ])
 @pytest.mark.parametrize('uri,metric_name', [
     ('/coro?hello=world', '_target_application:index'),
-    ('/class?hello=world', '_target_application:HelloWorldView'),
-    ('/known_error?hello=world', '_target_application:KnownErrorView'),
+    ('/class?hello=world', '_target_application:HelloWorldView._respond'),
+    ('/known_error?hello=world',
+            '_target_application:KnownErrorView._respond'),
 ])
 def test_simultaneous_requests(method, uri, metric_name,
         nr_enabled, aiohttp_app):

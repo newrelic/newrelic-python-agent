@@ -3,15 +3,27 @@ of data.
 
 """
 
+import random
+import itertools
 import types
 import base64
 import json
 import zlib
 import io
 import gzip
+import re
+from collections import OrderedDict
 from hashlib import md5
 
 from newrelic.packages import six
+
+HEXDIGLC_RE = re.compile('^[0-9a-f]+$')
+DELIMITER_FORMAT_RE = re.compile('[ \t]*,[ \t]*')
+PARENT_TYPE = {
+    '0': 'App',
+    '1': 'Browser',
+    '2': 'Mobile',
+}
 
 
 # Functions for encoding/decoding JSON. These wrappers are used in order
@@ -407,3 +419,136 @@ class DistributedTracePayload(dict):
                 pass
             else:
                 return payload
+
+
+class W3CTraceParent(dict):
+
+    def text(self):
+        if 'id' in self:
+            guid = self['id']
+        else:
+            guid = '{:016x}'.format(random.getrandbits(64))
+
+        return '00-{}-{}-{:02x}'.format(
+            self['tr'].lower().zfill(32),
+            guid,
+            int(self.get('sa', 0)),
+        )
+
+    @classmethod
+    def decode(cls, payload):
+        # Only traceparent with at least 55 chars should be parsed
+        if len(payload) < 55:
+            return None
+
+        fields = payload.split('-', 4)
+
+        # Expect that there are at least 4 fields
+        if len(fields) < 4:
+            return None
+
+        version = fields[0]
+
+        # version must be a valid 2-char hex digit
+        if len(version) != 2 or not HEXDIGLC_RE.match(version):
+            return None
+
+        # Version 255 is invalid
+        if version == 'ff':
+            return None
+
+        # Expect exactly 4 fields if version 00
+        if version == '00' and len(fields) != 4:
+            return None
+
+        # Check field lengths and values
+        for field, expected_length in zip(fields[1:4], (32, 16, 2)):
+            if len(field) != expected_length or not HEXDIGLC_RE.match(field):
+                return None
+
+        # trace_id or parent_id of all 0's are invalid
+        trace_id, parent_id = fields[1:3]
+        if parent_id == '0' * 16 or trace_id == '0' * 32:
+            return None
+
+        return cls(tr=trace_id, id=parent_id)
+
+
+class W3CTraceState(OrderedDict):
+
+    def text(self, limit=32):
+        return ','.join(
+                    '{}={}'.format(k, v)
+                    for k, v in itertools.islice(self.items(), limit))
+
+    @classmethod
+    def decode(cls, tracestate):
+        entries = DELIMITER_FORMAT_RE.split(tracestate.rstrip())
+
+        vendors = cls()
+        for entry in entries:
+            vendor_value = entry.split('=', 2)
+            if (len(vendor_value) != 2 or
+                    any(len(v) > 256 for v in vendor_value)):
+                continue
+
+            vendor, value = vendor_value
+            vendors[vendor] = value
+
+        return vendors
+
+
+class NrTraceState(dict):
+    FIELDS = ('ty', 'ac', 'ap', 'id', 'tx', 'sa', 'pr')
+
+    def text(self):
+        payload = '-'.join((
+            '0-0',
+            self['ac'],
+            self['ap'],
+            self.get('id', ''),
+            self.get('tx', ''),
+            '1' if self.get('sa') else '0',
+            str(self.get('pr', ''))[:8],
+            str(self['ti']),
+        ))
+        return '{}@nr={}'.format(
+            self.get('tk', self['ac']),
+            payload,
+        )
+
+    @classmethod
+    def decode(cls, payload, tk):
+        fields = payload.split('-', 9)
+        if len(fields) >= 9 and all(fields[:4]) and fields[8]:
+            data = cls(tk=tk)
+
+            try:
+                data['ti'] = int(fields[8])
+            except:
+                return
+
+            for name, value in zip(cls.FIELDS, fields[1:]):
+                if value:
+                    data[name] = value
+
+            if data['ty'] in PARENT_TYPE:
+                data['ty'] = PARENT_TYPE[data['ty']]
+            else:
+                return
+
+            if 'sa' in data:
+                if data['sa'] == '1':
+                    data['sa'] = True
+                elif data['sa'] == '0':
+                    data['sa'] = False
+                else:
+                    data['sa'] = None
+
+            if 'pr' in data:
+                try:
+                    data['pr'] = float(fields[7])
+                except:
+                    data['pr'] = None
+
+            return data

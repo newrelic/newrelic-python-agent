@@ -30,7 +30,8 @@ _TransactionNode = namedtuple('_TransactionNode',
         'distributed_trace_intrinsics', 'user_attributes', 'priority',
         'sampled', 'parent_transport_duration', 'parent_span', 'parent_type',
         'parent_account', 'parent_app', 'parent_tx', 'parent_transport_type',
-        'root_span_guid', 'trace_id', 'loop_time'])
+        'root_span_guid', 'trace_id', 'loop_time', 'trusted_parent_span',
+        'tracing_vendors'])
 
 
 class TransactionNode(_TransactionNode):
@@ -60,10 +61,6 @@ class TransactionNode(_TransactionNode):
     @property
     def name(self):
         return self.name_for_metric
-
-    @property
-    def distributed_trace_received(self):
-        return self.trace_id != self.guid
 
     def time_metrics(self, stats):
         """Return a generator yielding the timed metrics for the
@@ -163,12 +160,11 @@ class TransactionNode(_TransactionNode):
         # Generate Distributed Tracing metrics
 
         if self.settings.distributed_tracing.enabled:
-            if self.distributed_trace_received:
-                dt_tag = "%s/%s/%s/%s/all" % (
-                    self.parent_type, self.parent_account,
-                    self.parent_app, self.parent_transport_type)
-            else:
-                dt_tag = "Unknown/Unknown/Unknown/Unknown/all"
+            dt_tag = "%s/%s/%s/%s/all" % (
+                self.parent_type or 'Unknown',
+                self.parent_account or 'Unknown',
+                self.parent_app or 'Unknown',
+                self.parent_transport_type or 'Unknown')
 
             for bonus_tag in ('', metric_suffix):
                 yield TimeMetric(
@@ -177,7 +173,7 @@ class TransactionNode(_TransactionNode):
                     duration=self.duration,
                     exclusive=self.duration)
 
-                if self.distributed_trace_received:
+                if self.parent_transport_duration is not None:
                     yield TimeMetric(
                         name="TransportDuration/%s%s" % (dt_tag, bonus_tag),
                         scope='',
@@ -603,6 +599,10 @@ class TransactionNode(_TransactionNode):
 
         if parent_guid:
             i_attrs['parentId'] = parent_guid
+        if self.trusted_parent_span:
+            i_attrs['trustedParentId'] = self.trusted_parent_span
+        if self.tracing_vendors:
+            i_attrs['tracingVendors'] = self.tracing_vendors
 
         return [i_attrs, {}, {}]
 

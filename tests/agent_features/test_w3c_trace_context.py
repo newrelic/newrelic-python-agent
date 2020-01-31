@@ -329,24 +329,6 @@ def test_invalid_inbound_nr_tracestate_header(tracestate):
     _test()
 
 
-@override_application_settings(_override_settings)
-def test_invalid_tracestate_header():
-
-    metrics = [
-        ('Supportability/TraceContext/TraceState/Parse/Exception', 1)
-    ]
-
-    @validate_transaction_metrics(
-        "", group="Uri", rollup_metrics=metrics)
-    def _test():
-        test_application.get('/', headers={
-            "traceparent": INBOUND_TRACEPARENT,
-            "tracestate": b'\x80abc',
-        })
-
-    _test()
-
-
 @pytest.mark.parametrize('exclude_newrelic_header', (True, False))
 def test_w3c_and_newrelic_headers_generated(exclude_newrelic_header):
 

@@ -288,6 +288,17 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
                     'Create/Exception'
                     in self.transaction._transaction_metrics)
 
+    def test_invalid_tracestate_header(self):
+        with self.transaction:
+            traceparent = \
+                '00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01'
+            tracestate = 1
+            headers = (('traceparent', traceparent), ('tracestate', tracestate))
+            self.transaction.accept_distributed_trace_headers(headers)
+            assert ('Supportability/TraceContext/'
+                'TraceState/Parse/Exception'
+                in self.transaction._transaction_metrics)
+
     ##############################################
 
     def _standard_trace_test(self, expected_tx, expected_id=None):

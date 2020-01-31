@@ -278,6 +278,16 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
                     '0af7651916cd43dd8448eb211c80319c'
             assert self.transaction.parent_span == '00f067aa0ba902b7'
 
+    def test_generate_distributed_trace_invalid_data(self):
+        data = {'bad_data': 0}
+        with self.transaction:
+            headers = \
+                self.transaction._generate_distributed_trace_headers(data)
+            list(headers)
+            assert ('Supportability/TraceContext/'
+                    'Create/Exception'
+                    in self.transaction._transaction_metrics)
+
     ##############################################
 
     def _standard_trace_test(self, expected_tx, expected_id=None):

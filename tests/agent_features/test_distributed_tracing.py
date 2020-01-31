@@ -275,6 +275,61 @@ def test_distributed_tracing_metrics(web_transaction, gen_error, has_parent):
     _test()
 
 
+NEW_RELIC_ACCEPTED = \
+        [('Supportability/DistributedTrace/AcceptPayload/Success', 1),
+         ('Supportability/TraceContext/Accept/Success', None),
+         ('Supportability/TraceContext/TraceParent/Accept/Success', None),
+         ('Supportability/TraceContext/Accept/Success', None)]
+TRACE_CONTEXT_ACCEPTED = \
+        [('Supportability/TraceContext/Accept/Success', 1),
+         ('Supportability/TraceContext/TraceParent/Accept/Success', 1),
+         ('Supportability/TraceContext/Accept/Success', 1),
+         ('Supportability/DistributedTrace/AcceptPayload/Success', None)]
+NO_HEADERS_ACCEPTED = \
+        [('Supportability/DistributedTrace/AcceptPayload/Success', None),
+        ('Supportability/TraceContext/Accept/Success', None),
+        ('Supportability/TraceContext/TraceParent/Accept/Success', None),
+        ('Supportability/TraceContext/Accept/Success', None)]
+TRACEPARENT = '00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01'
+TRACESTATE = 'rojo=f06a0ba902b7,congo=t61rcWkgMzE'
+
+
+@pytest.mark.parametrize('traceparent,tracestate,newrelic,metrics',
+                         [(False, False, False, NO_HEADERS_ACCEPTED),
+                          (False, False, True, NEW_RELIC_ACCEPTED),
+                          (False, True, True, NEW_RELIC_ACCEPTED),
+                          (False, True, False, NO_HEADERS_ACCEPTED),
+                          (True, True, True, TRACE_CONTEXT_ACCEPTED),
+                          (True, False, False, TRACE_CONTEXT_ACCEPTED),
+                          (True, False, True, TRACE_CONTEXT_ACCEPTED),
+                          (True, True, False, TRACE_CONTEXT_ACCEPTED)]
+                         )
+@override_application_settings(_override_settings)
+def test_distributed_tracing_backwards_compatibility(traceparent,
+                                                     tracestate,
+                                                     newrelic,
+                                                     metrics):
+
+    headers = []
+    if traceparent:
+        headers.append(('traceparent', TRACEPARENT))
+    if tracestate:
+        headers.append(('tracestate', TRACESTATE))
+    if newrelic:
+        headers.append(('newrelic', json.dumps(payload)))
+
+    @validate_transaction_metrics(
+        "test_distributed_tracing_backwards_compatibility",
+        background_task=True,
+        rollup_metrics=metrics)
+    @background_task(name='test_distributed_tracing_backwards_compatibility')
+    def _test():
+        transaction = current_transaction()
+        transaction.accept_distributed_trace_headers(headers)
+
+    _test()
+
+
 @background_task(name='test_current_trace_id_api_inside_transaction')
 def test_current_trace_id_api_inside_transaction():
     trace_id = current_trace_id()

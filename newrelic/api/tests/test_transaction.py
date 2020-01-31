@@ -278,6 +278,27 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
                     '0af7651916cd43dd8448eb211c80319c'
             assert self.transaction.parent_span == '00f067aa0ba902b7'
 
+    def test_generate_distributed_trace_invalid_data(self):
+        data = {'bad_data': 0}
+        with self.transaction:
+            headers = \
+                self.transaction._generate_distributed_trace_headers(data)
+            list(headers)
+            assert ('Supportability/TraceContext/'
+                    'Create/Exception'
+                    in self.transaction._transaction_metrics)
+
+    def test_invalid_tracestate_header(self):
+        with self.transaction:
+            traceparent = \
+                '00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01'
+            tracestate = 1
+            headers = (('traceparent', traceparent), ('tracestate', tracestate))
+            self.transaction.accept_distributed_trace_headers(headers)
+            assert ('Supportability/TraceContext/'
+                'TraceState/Parse/Exception'
+                in self.transaction._transaction_metrics)
+
     ##############################################
 
     def _standard_trace_test(self, expected_tx, expected_id=None):
@@ -711,6 +732,33 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
 
             # Priority should be set to payload priority
             assert self.transaction.priority == 0.8
+
+    def test_invalid_priority(self):
+        payload = self._make_test_payload(pr='WRONG')
+
+        with self.transaction:
+            assert self.transaction.accept_distributed_trace_payload(payload)
+
+            # If invalid (non-numerical) priority, it should be set to None
+            assert self.transaction.priority is None
+
+    def test_missing_timestamp(self):
+        payload = self._make_test_payload(ti=None)
+
+        with self.transaction as txn:
+            assert txn.accept_distributed_trace_payload(payload) is False
+
+    def test_invalid_timestamp(self):
+        payload = self._make_test_payload(ti='bad_timestamp')
+
+        with self.transaction as txn:
+            assert txn.accept_distributed_trace_payload(payload) is False
+
+    def test_empty_timestamp(self):
+        payload = self._make_test_payload(ti='')
+
+        with self.transaction as txn:
+            assert txn.accept_distributed_trace_payload(payload) is False
 
     def test_sampled_becomes_true(self):
         with self.transaction:

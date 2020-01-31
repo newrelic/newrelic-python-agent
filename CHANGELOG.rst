@@ -1,6 +1,9 @@
 unreleased
 ----------
 
+5.6.0 (2019-01-31)
+------------------
+
 - Fix crash when using aiohttp_cors
 
   Customers using the agent with aiohttp_cors may have experienced a crash when

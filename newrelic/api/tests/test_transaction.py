@@ -734,20 +734,20 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
     def test_missing_timestamp(self):
         payload = self._make_test_payload(ti=None)
 
-        with self.transaction:
-            assert self.transaction.accept_distributed_trace_payload(payload) is False
+        with self.transaction as txn:
+            assert txn.accept_distributed_trace_payload(payload) is False
 
     def test_invalid_timestamp(self):
         payload = self._make_test_payload(ti='bad_timestamp')
 
-        with self.transaction:
-            assert self.transaction.accept_distributed_trace_payload(payload) is False
+        with self.transaction as txn:
+            assert txn.accept_distributed_trace_payload(payload) is False
 
     def test_empty_timestamp(self):
         payload = self._make_test_payload(ti='')
 
-        with self.transaction:
-            assert self.transaction.accept_distributed_trace_payload(payload) is False
+        with self.transaction as txn:
+            assert txn.accept_distributed_trace_payload(payload) is False
 
     def test_sampled_becomes_true(self):
         with self.transaction:

@@ -56,6 +56,12 @@ INBOUND_NR_TRACESTATE = \
 INBOUND_NR_TRACESTATE_UNSAMPLED = \
         ('1@nr=0-0-1349956-41346604-27ddd2d8890283b4-b28be285632bbc0a-'
         '0-0.4-1569367663277')
+INBOUND_NR_TRACESTATE_INVALID_TIMESTAMP = \
+        ('1@nr=0-0-1349956-41346604-27ddd2d8890283b4-b28be285632bbc0a-'
+        '0-0.4-timestamp')
+INBOUND_NR_TRACESTATE_INVALID_PARENT_TYPE = \
+        ('1@nr=0-parentType-1349956-41346604-'
+         '27ddd2d8890283b4-b28be285632bbc0a-1-1.4-1569367663277')
 
 INBOUND_TRACEPARENT_VERSION_FF = \
         'ff-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01'
@@ -279,6 +285,63 @@ def test_inbound_tracestate_header(tracestate, intrinsics):
         test_application.get('/', headers={
             "traceparent": INBOUND_TRACEPARENT,
             "tracestate": tracestate,
+        })
+
+    _test()
+
+
+@override_application_settings(_override_settings)
+def test_w3c_tracestate_header():
+
+    metrics = [
+        ('Supportability/TraceContext/Accept/Success', 1),
+    ]
+
+    @validate_transaction_metrics(
+        "", group="Uri", rollup_metrics=metrics)
+    def _test():
+        test_application.get('/', headers={
+            "traceparent": INBOUND_TRACEPARENT,
+            "tracestate": INBOUND_TRACESTATE,
+        })
+
+    _test()
+
+
+@pytest.mark.parametrize('tracestate', (
+    (INBOUND_NR_TRACESTATE_INVALID_TIMESTAMP),
+    (INBOUND_NR_TRACESTATE_INVALID_PARENT_TYPE),
+    ))
+@override_application_settings(_override_settings)
+def test_invalid_inbound_nr_tracestate_header(tracestate):
+
+    metrics = [
+        ('Supportability/TraceContext/TraceState/InvalidNrEntry', 1)
+    ]
+    @validate_transaction_metrics(
+        "", group="Uri", rollup_metrics=metrics)
+    def _test():
+        test_application.get('/', headers={
+            "traceparent": INBOUND_TRACEPARENT,
+            "tracestate": tracestate,
+        })
+
+    _test()
+
+
+@override_application_settings(_override_settings)
+def test_invalid_tracestate_header():
+
+    metrics = [
+        ('Supportability/TraceContext/TraceState/Parse/Exception', 1)
+    ]
+
+    @validate_transaction_metrics(
+        "", group="Uri", rollup_metrics=metrics)
+    def _test():
+        test_application.get('/', headers={
+            "traceparent": INBOUND_TRACEPARENT,
+            "tracestate": b'\x80abc',
         })
 
     _test()

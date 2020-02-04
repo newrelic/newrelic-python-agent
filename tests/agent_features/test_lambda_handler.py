@@ -61,7 +61,14 @@ firehose_event = {
     "records": [{
         "recordId": "495469866831355442",
         "data": "SGVsbG8sIHRoaXMgaXMgYSB0ZXN0IDEyMy4=",
-        "approximateArrivalTimestamp": 1495072949453
+        "approximateArrivalTimestamp": 1495072949453,
+        "kinesisRecordMetadata": {
+            "shardId": "shardId-000000000000",
+            "partitionKey": "4d1ad2b9-24f8-4b9d-a088-76e9947c317a",
+            "approximateArrivalTimestamp": "2012-04-23T18:25:43.511Z",
+            "sequenceNumber": "49546986683135544286507457936321625675700192471156785154",
+            "subsequenceNumber": ""
+        }
     }],
     "region": "us-west-2",
     "deliveryStreamArn": "arn:aws:kinesis:EXAMPLE",
@@ -243,6 +250,45 @@ def test_lambda_event_source_arn_attribute(event, arn):
         _expected = {
             'user': [], 'intrinsic': [],
             'agent': ['aws.lambda.eventSource.arn'],
+        }
+        _forgone = None
+
+    @validate_transaction_trace_attributes(
+        required_params=_expected,
+        forgone_params=_forgone)
+    @validate_transaction_event_attributes(
+        required_params=_expected,
+        forgone_params=_forgone,
+        exact_attrs=_exact)
+    @override_application_settings(_override_settings)
+    def _test():
+        handler(event, Context)
+
+    _test()
+
+
+@pytest.mark.parametrize('event', (
+        (empty_event),
+        (firehose_event)))
+def test_lambda_event_source_event_type_attribute(event):
+    if event is empty_event:
+        _exact = None
+        _expected = None
+        _forgone = {
+            'user': [], 'intrinsic': [],
+            'agent': ['aws.lambda.eventSource.arn', 'aws.lambda.eventSource.eventType'],
+        }
+    else:
+        _exact = {
+            'user': {}, 'intrinsic': {},
+            'agent': {
+                'aws.lambda.eventSource.arn': 'arn:aws:kinesis:EXAMPLE',
+                'aws.lambda.eventSource.eventType': 'firehose',
+            },
+        }
+        _expected = {
+            'user': [], 'intrinsic': [],
+            'agent': ['aws.lambda.eventSource.arn', 'aws.lambda.eventSource.eventType'],
         }
         _forgone = None
 

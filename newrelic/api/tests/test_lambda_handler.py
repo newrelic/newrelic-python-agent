@@ -108,3 +108,55 @@ class TestLambdaEventSource(newrelic.tests.test_cases.TestCase):
     def test_failed_arn_lookup(self):
         arn = lambda_handler.extract_event_source_arn(events.GARBAGE_EVENT)
         self.assertEqual(type(arn), str)
+
+
+class TestLambdaEventType(newrelic.tests.test_cases.TestCase):
+    def test_alb(self):
+        event_type = lambda_handler.detect_event_type(events.ALB_EVENT)
+        self.assertEqual(event_type, lambda_handler.EVENT_TYPE_INFO['alb'])
+
+    def test_api_gateway(self):
+        event_type = lambda_handler.detect_event_type(events.API_GATEWAY_EVENT)
+        self.assertEqual(event_type, lambda_handler.EVENT_TYPE_INFO['apiGateway'])
+
+    def test_cloudfront(self):
+        event_type = lambda_handler.detect_event_type(events.CLOUDFRONT_EVENT)
+        self.assertEqual(event_type, lambda_handler.EVENT_TYPE_INFO['cloudFront'])
+
+    def test_cloudwatch_scheduled(self):
+        event_type = lambda_handler.detect_event_type(events.CLOUDWATCH_SCHEDULED)
+        self.assertEqual(event_type, lambda_handler.EVENT_TYPE_INFO['cloudWatch_scheduled'])
+
+    def test_dynamo_streams(self):
+        event_type = lambda_handler.detect_event_type(events.DYNAMO_STREAMS)
+        self.assertEqual(event_type, lambda_handler.EVENT_TYPE_INFO['dynamo_streams'])
+
+    def test_ses(self):
+        event_type = lambda_handler.detect_event_type(events.SES_EVENT)
+        self.assertEqual(event_type, lambda_handler.EVENT_TYPE_INFO['ses'])
+
+    def test_s3(self):
+        event_type = lambda_handler.detect_event_type(events.S3_EVENT)
+        self.assertEqual(event_type, lambda_handler.EVENT_TYPE_INFO['s3'])
+
+    def test_sns(self):
+        event_type = lambda_handler.detect_event_type(events.SNS_EVENT)
+        self.assertEqual(event_type, lambda_handler.EVENT_TYPE_INFO['sns'])
+
+    def test_sqs(self):
+        event_type = lambda_handler.detect_event_type(events.SQS_EVENT)
+        self.assertEqual(event_type, lambda_handler.EVENT_TYPE_INFO['sqs'])
+
+    def test_kinesis_analytics(self):
+        event_type = lambda_handler.detect_event_type(
+                events.KINESIS_RECORD_EVENT)
+        self.assertEqual(event_type, lambda_handler.EVENT_TYPE_INFO['kinesis'])
+
+    def test_kinesis_firehose(self):
+        event_type = lambda_handler.detect_event_type(
+                events.KINESIS_FIREHOSE_EVENT)
+        self.assertEqual(event_type, lambda_handler.EVENT_TYPE_INFO['firehose'])
+
+    def test_failed_event_type(self):
+        event_type = lambda_handler.detect_event_type(events.GARBAGE_EVENT)
+        assert event_type is None

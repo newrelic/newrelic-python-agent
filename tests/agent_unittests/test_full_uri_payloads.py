@@ -1,12 +1,13 @@
 import pytest
 import time
 
-from testing_support.fixtures import (override_application_settings,
+from testing_support.fixtures import (override_generic_settings,
         collector_agent_registration_fixture, initialize_agent)
 from newrelic.core.config import global_settings, global_settings_dump
 from newrelic.core.data_collector import ApplicationSession
 from newrelic.packages.requests.adapters import HTTPAdapter, urldefragauth
 from newrelic.packages.requests import Session
+from newrelic.core.config import global_settings
 
 
 class FullURIAdapter(HTTPAdapter):
@@ -119,7 +120,7 @@ _override_settings = {'compressed_content_encoding': 'deflate',
     ('agent_settings', ({},)),
     ('send_span_events', (EMPTY_SAMPLES, ())),
 ])
-@override_application_settings(_override_settings)
+@override_generic_settings(global_settings(), _override_settings)
 def test_compression_deflate(session, method, args):
     sender = getattr(session, method)
 

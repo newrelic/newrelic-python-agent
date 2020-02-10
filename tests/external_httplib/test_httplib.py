@@ -5,7 +5,9 @@ except ImportError:
     import httplib
 
 from testing_support.fixtures import (validate_transaction_metrics,
-        override_application_settings)
+        override_application_settings, validate_tt_segment_params)
+from testing_support.validators.validate_span_events import (
+        validate_span_events)
 from testing_support.external_fixtures import (cache_outgoing_headers,
     validate_cross_process_headers, insert_incoming_headers,
     validate_external_node_params)
@@ -250,3 +252,46 @@ def test_httplib_nr_headers_added():
     connection.close()
     # verify newrelic headers already added do not get overrode
     assert headers[0][key] == value
+
+
+def test_span_events():
+    connection = httplib.HTTPConnection('localhost', 8989)
+
+    _settings = {
+        'distributed_tracing.enabled': True,
+        'span_events.enabled': True,
+    }
+
+    uri = 'http://localhost:8989'
+
+    exact_intrinsics = {
+        'name': select_python_version(
+                py2='External/localhost:8989/httplib/',
+                py3='External/localhost:8989/http/'),
+        'type': 'Span',
+        'sampled': True,
+
+        'category': 'http',
+        'span.kind': 'client',
+        'component': select_python_version(py2='httplib', py3='http')
+    }
+    exact_agents = {
+        'http.url': uri,
+    }
+
+    expected_intrinsics = ('timestamp', 'duration', 'transactionId')
+
+    @override_application_settings(_settings)
+    @validate_span_events(
+            count=1,
+            exact_intrinsics=exact_intrinsics,
+            exact_agents=exact_agents,
+            expected_intrinsics=expected_intrinsics)
+    @validate_tt_segment_params(exact_params=exact_agents)
+    @background_task(name='test_httplib:test_span_events')
+    def _test():
+        connection.request('GET', '/')
+        response = connection.getresponse()
+        response.read()
+
+    _test()

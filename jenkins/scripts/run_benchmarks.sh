@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Install asv
-/venvs/py36/bin/pip install asv==0.3.0 virtualenv
+/venvs/py36/bin/pip install asv==0.3.0 virtualenv<20
 
 cat <<EOF > ~/.asv-machine.json
 {

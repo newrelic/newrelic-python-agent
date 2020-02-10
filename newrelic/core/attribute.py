@@ -41,6 +41,7 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set((
         'message.queueName',
         'message.routingKey',
         'http.url',
+        'http.statusCode',
         'aws.requestId',
         'aws.operation',
         'aws.lambda.arn',

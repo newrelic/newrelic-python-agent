@@ -277,6 +277,7 @@ def test_span_events():
     }
     exact_agents = {
         'http.url': uri,
+        'http.statusCode': 200,
     }
 
     expected_intrinsics = ('timestamp', 'duration', 'transactionId')

@@ -7,7 +7,6 @@ from newrelic.core.config import global_settings, global_settings_dump
 from newrelic.core.data_collector import ApplicationSession
 from newrelic.packages.requests.adapters import HTTPAdapter, urldefragauth
 from newrelic.packages.requests import Session
-from newrelic.core.config import global_settings
 
 
 class FullURIAdapter(HTTPAdapter):
@@ -80,6 +79,9 @@ EMPTY_SAMPLES = {
 }
 
 
+_override_settings = {'agent_limits.data_compression_threshold': 0}
+
+
 @pytest.mark.parametrize('method,args', [
     ('send_metric_data', (NOW, NOW + 1, ())),
     ('send_transaction_events', (EMPTY_SAMPLES, ())),
@@ -95,6 +97,7 @@ EMPTY_SAMPLES = {
     ('agent_settings', ({},)),
     ('send_span_events', (EMPTY_SAMPLES, ())),
 ])
+@override_generic_settings(global_settings(), _override_settings)
 def test_full_uri_payload(session, method, args):
     sender = getattr(session, method)
 
@@ -104,6 +107,7 @@ def test_full_uri_payload(session, method, args):
 
 _override_settings = {'compressed_content_encoding': 'deflate',
             'agent_limits.data_compression_threshold': 0}
+
 
 @pytest.mark.parametrize('method,args', [
     ('send_metric_data', (NOW, NOW + 1, ())),

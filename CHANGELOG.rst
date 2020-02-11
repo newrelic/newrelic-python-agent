@@ -1,6 +1,12 @@
 unreleased
 ----------
 
+- Add new api add_custom_span_attribute
+
+  There is now a public api method allowing users to add custom attributes
+  directly to span events.
+
+
 5.6.0 (2019-01-31)
 ------------------
 

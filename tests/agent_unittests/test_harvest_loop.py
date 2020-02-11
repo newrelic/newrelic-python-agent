@@ -120,6 +120,7 @@ def transaction_node(request):
             loop_time=0.0,
             trusted_parent_span=None,
             tracing_vendors=None,
+            root_span_user_attributes={},
     )
     return node
 

@@ -10,7 +10,8 @@ from newrelic.core.attribute_filter import DST_TRANSACTION_SEGMENTS
 _MessageNode = namedtuple('_MessageNode',
         ['library', 'operation', 'children', 'start_time',
         'end_time', 'duration', 'exclusive', 'destination_name',
-        'destination_type', 'params', 'is_async', 'guid', 'agent_attributes'])
+        'destination_type', 'params', 'is_async', 'guid',
+        'agent_attributes', 'user_attributes'])
 
 
 class MessageNode(_MessageNode, GenericNodeMixin):

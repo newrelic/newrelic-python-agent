@@ -21,6 +21,7 @@ _ms_node = newrelic.core.message_node.MessageNode(
         is_async=False,
         guid=None,
         agent_attributes={},
+        user_attributes={},
 )
 
 

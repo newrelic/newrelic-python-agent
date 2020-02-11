@@ -9,7 +9,8 @@ from newrelic.core.attribute_filter import DST_TRANSACTION_SEGMENTS
 
 _SolrNode = namedtuple('_SolrNode',
         ['library', 'command', 'children', 'start_time', 'end_time',
-        'duration', 'exclusive', 'guid', 'is_async', 'agent_attributes'])
+        'duration', 'exclusive', 'guid', 'is_async', 'agent_attributes',
+        'user_attributes',])
 
 
 class SolrNode(_SolrNode, GenericNodeMixin):

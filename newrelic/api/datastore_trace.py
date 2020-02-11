@@ -108,7 +108,8 @@ class DatastoreTrace(TimeTrace):
                 database_name=self.database_name,
                 is_async=self.is_async,
                 guid=self.guid,
-                agent_attributes=self.agent_attributes)
+                agent_attributes=self.agent_attributes,
+                user_attributes=self.user_attributes,)
 
 
 def DatastoreTraceWrapper(wrapped, product, target, operation):

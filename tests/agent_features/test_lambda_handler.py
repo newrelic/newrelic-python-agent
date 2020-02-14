@@ -1,3 +1,4 @@
+import functools
 import pytest
 from copy import deepcopy
 from testing_support.fixtures import (override_application_settings,
@@ -258,3 +259,12 @@ def test_lambda_event_source_arn_attribute(event, arn):
         handler(event, Context)
 
     _test()
+
+
+@pytest.mark.parametrize('api', (
+    lambda_handler.lambda_handler,
+    functools.partial(lambda_handler.LambdaHandlerWrapper, handler),
+))
+def test_deprecation_warnings(api):
+    with pytest.deprecated_call():
+        api()

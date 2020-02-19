@@ -75,7 +75,10 @@ def test_s3():
     )
 
     # Create bucket
-    resp = client.create_bucket(Bucket=TEST_BUCKET)
+    resp = client.create_bucket(
+            Bucket=TEST_BUCKET,
+            CreateBucketConfiguration={'LocationConstraint': AWS_REGION_NAME}
+    )
     assert resp['ResponseMetadata']['HTTPStatusCode'] == 200
 
     # Put object

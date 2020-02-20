@@ -1,6 +1,7 @@
 import pytest
 import webtest
 
+from newrelic.api.web_transaction import web_transaction
 from newrelic.api.wsgi_application import wsgi_application
 
 from newrelic.common.encoding_utils import deobfuscate, json_decode
@@ -119,6 +120,25 @@ _external_synthetics_header = ('X-NewRelic-Synthetics',
 def test_valid_synthetics_external_trace_header():
     headers = _make_synthetics_header()
     response = target_application.get('/', headers=headers)
+
+
+@validate_synthetics_external_trace_header(
+        required_header=_external_synthetics_header, should_exist=True)
+@override_application_settings(_override_settings)
+def test_valid_external_trace_header_with_byte_inbound_header():
+    headers = _make_synthetics_header()
+    headers = {k.encode('utf-8'): v.encode('utf-8')
+               for k, v in headers.items()}
+
+    @web_transaction(
+        name='test_valid_external_trace_header_with_byte_inbound_header',
+        headers=headers,
+    )
+    def webapp():
+        pass
+
+
+    webapp()
 
 @validate_synthetics_external_trace_header(should_exist=False)
 @override_application_settings(_override_settings)

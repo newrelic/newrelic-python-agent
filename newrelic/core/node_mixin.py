@@ -21,7 +21,13 @@ class GenericNodeMixin(object):
                 settings.attribute_filter,
                 DST_SPAN_EVENTS)
 
-        return [i_attrs, {}, a_attrs]  # intrinsics, user attrs, agent attrs
+        u_attrs = attribute.resolve_user_attributes(
+                self.user_attributes,
+                settings.attribute_filter,
+                DST_SPAN_EVENTS)
+
+        # intrinsics, user attrs, agent attrs
+        return [i_attrs, u_attrs, a_attrs]
 
     def span_events(self,
             settings, base_attrs=None, parent_guid=None):

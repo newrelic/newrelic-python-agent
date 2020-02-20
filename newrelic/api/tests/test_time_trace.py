@@ -31,7 +31,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_add_custom_attribute(self):
         self.time_trace.add_custom_attribute('test', 'value')
-        self.assertEqual(self.time_trace.custom_attributes['test'], 'value')
+        self.assertEqual(self.time_trace.user_attributes['test'], 'value')
 
     def test_sync_exclusive_calc(self):
         node_child_1 = SimpleNode(is_async=False, start_time=1.0, end_time=2.0)

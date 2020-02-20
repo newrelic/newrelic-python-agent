@@ -1,6 +1,13 @@
 unreleased
 ----------
 
+- Fix application crash when using a non-WSGI framework with the synthetics product
+
+  When the synthetics product was used with an application utilizing a non-WSGI
+  web framework (such as aiohttp), a crash could have occurred if an outbound
+  HTTP request was attempted from within the transaction. This crash has now
+  been fixed.
+
 - Add new api add_custom_span_attribute
 
   There is now a public api method allowing users to add custom attributes

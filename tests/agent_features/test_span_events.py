@@ -1,7 +1,7 @@
 import pytest
 
 from newrelic.api.transaction import current_transaction
-from newrelic.api.time_trace import current_trace
+from newrelic.api.time_trace import current_trace, add_custom_span_attribute
 from newrelic.api.background_task import background_task
 
 from newrelic.api.database_trace import DatabaseTrace
@@ -411,5 +411,54 @@ def test_span_event_agent_attributes(include_attribues):
             with FunctionTrace('trace2') as trace_2:
                 trace_2._add_agent_attribute('trace2_a', 'foobar')
                 trace_2._add_agent_attribute('trace2_b', 'barbaz')
+
+    _test()
+
+
+class FakeTrace(object):
+    def __enter__(self):
+        pass
+
+    def __exit__(self, *args):
+        pass
+
+
+@pytest.mark.parametrize('trace_type,args', (
+    (DatabaseTrace, ('select * from foo', )),
+    (DatastoreTrace, ('db_product', 'db_target', 'db_operation')),
+    (ExternalTrace, ('lib', 'url')),
+    (FunctionTrace, ('name', )),
+    (MemcacheTrace, ('command', )),
+    (MessageTrace, ('lib', 'operation', 'dst_type', 'dst_name')),
+    (SolrTrace, ('lib', 'command')),
+    (FakeTrace, ()),
+))
+@pytest.mark.parametrize('exclude_attributes', (True, False))
+def test_span_event_user_attributes(trace_type, args, exclude_attributes):
+
+    _settings = {
+        'distributed_tracing.enabled': True,
+        'span_events.enabled': True,
+    }
+
+    # We expect user_attributes to be included by default
+    if exclude_attributes:
+        count = 0
+        _settings['attributes.exclude'] = ['*']
+    else:
+        count = 1
+
+    @override_application_settings(_settings)
+    @validate_span_events(
+        count=count,
+        exact_users={'trace1_a': 'foobar', 'trace1_b': 'barbaz'})
+    @background_task(name='test_span_event_user_attributes')
+    def _test():
+        transaction = current_transaction()
+        transaction._sampled = True
+
+        with trace_type(*args):
+            add_custom_span_attribute('trace1_a', 'foobar')
+            add_custom_span_attribute('trace1_b', 'barbaz')
 
     _test()

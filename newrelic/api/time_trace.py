@@ -3,6 +3,8 @@ import random
 import time
 import traceback
 from newrelic.core.trace_cache import trace_cache
+from newrelic.core.attribute import (
+        process_user_attribute, MAX_NUM_USER_ATTRIBUTES)
 
 _logger = logging.getLogger(__name__)
 
@@ -153,7 +155,26 @@ class TimeTrace(object):
             trace_cache().pop_current(self)
 
     def add_custom_attribute(self, key, value):
-        self.user_attributes[key] = value
+        settings = self.settings
+        if not settings:
+            return False
+
+        if settings.high_security:
+            _logger.debug('Cannot add custom parameter in High Security Mode.')
+            return False
+
+        if len(self.user_attributes) >= MAX_NUM_USER_ATTRIBUTES:
+            _logger.debug('Maximum number of custom attributes already '
+                    'added. Dropping attribute: %r=%r', key, value)
+            return False
+
+        key, val = process_user_attribute(key, value)
+
+        if key is None:
+            return False
+        else:
+            self.user_attributes[key] = value
+            return True
 
     def _add_agent_attribute(self, key, value):
         self.agent_attributes[key] = value

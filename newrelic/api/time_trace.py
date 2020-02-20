@@ -29,7 +29,7 @@ class TimeTrace(object):
         # 16-digit random hex. Padded with zeros in the front.
         self.guid = '%016x' % random.getrandbits(64)
         self.agent_attributes = {}
-        self.custom_attributes = {}
+        self.user_attributes = {}
 
     @property
     def transaction(self):
@@ -153,7 +153,7 @@ class TimeTrace(object):
             trace_cache().pop_current(self)
 
     def add_custom_attribute(self, key, value):
-        self.custom_attributes[key] = value
+        self.user_attributes[key] = value
 
     def _add_agent_attribute(self, key, value):
         self.agent_attributes[key] = value

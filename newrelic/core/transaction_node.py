@@ -31,7 +31,7 @@ _TransactionNode = namedtuple('_TransactionNode',
         'sampled', 'parent_transport_duration', 'parent_span', 'parent_type',
         'parent_account', 'parent_app', 'parent_tx', 'parent_transport_type',
         'root_span_guid', 'trace_id', 'loop_time', 'trusted_parent_span',
-        'tracing_vendors'])
+        'tracing_vendors', 'root_span_user_attributes'])
 
 
 class TransactionNode(_TransactionNode):

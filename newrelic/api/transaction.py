@@ -508,6 +508,7 @@ class Transaction(object):
                 loop_time=self._loop_time,
                 trusted_parent_span=self.trusted_parent_span,
                 tracing_vendors=self.tracing_vendors,
+                root_span_user_attributes=root.user_attributes,
         )
 
         # Clear settings as we are all done and don't need it

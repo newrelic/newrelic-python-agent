@@ -9,7 +9,7 @@ from newrelic.core.attribute_filter import DST_TRANSACTION_SEGMENTS
 
 _MemcacheNode = namedtuple('_MemcacheNode',
         ['command', 'children', 'start_time', 'end_time', 'duration',
-        'exclusive', 'is_async', 'guid', 'agent_attributes'])
+        'exclusive', 'is_async', 'guid', 'agent_attributes', 'user_attributes'])
 
 
 class MemcacheNode(_MemcacheNode, GenericNodeMixin):

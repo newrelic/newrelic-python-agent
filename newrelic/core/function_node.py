@@ -12,7 +12,7 @@ from newrelic.packages import six
 _FunctionNode = namedtuple('_FunctionNode',
         ['group', 'name', 'children', 'start_time', 'end_time',
         'duration', 'exclusive', 'label', 'params', 'rollup',
-        'is_async', 'guid', 'agent_attributes'])
+        'is_async', 'guid', 'agent_attributes', 'user_attributes'])
 
 
 class FunctionNode(_FunctionNode, GenericNodeMixin):

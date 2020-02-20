@@ -66,7 +66,8 @@ class FunctionTrace(TimeTrace):
                 rollup=self.rollup,
                 is_async=self.is_async,
                 guid=self.guid,
-                agent_attributes=self.agent_attributes)
+                agent_attributes=self.agent_attributes,
+                user_attributes=self.user_attributes)
 
 
 def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,

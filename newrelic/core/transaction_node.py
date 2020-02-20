@@ -11,9 +11,10 @@ import newrelic.core.trace_node
 
 from newrelic.core.metric import ApdexMetric, TimeMetric
 from newrelic.core.string_table import StringTable
-from newrelic.core.attribute import create_user_attributes
+from newrelic.core.attribute import (create_user_attributes,
+        resolve_user_attributes)
 from newrelic.core.attribute_filter import (DST_ERROR_COLLECTOR,
-        DST_TRANSACTION_TRACER, DST_TRANSACTION_EVENTS)
+        DST_TRANSACTION_TRACER, DST_TRANSACTION_EVENTS, DST_SPAN_EVENTS)
 
 
 _TransactionNode = namedtuple('_TransactionNode',
@@ -604,7 +605,12 @@ class TransactionNode(_TransactionNode):
         if self.tracing_vendors:
             i_attrs['tracingVendors'] = self.tracing_vendors
 
-        return [i_attrs, {}, {}]
+        u_attrs = resolve_user_attributes(
+                self.root_span_user_attributes,
+                settings.attribute_filter,
+                DST_SPAN_EVENTS)
+
+        return [i_attrs, u_attrs, {}]
 
     def span_events(self, settings):
         base_attrs = {

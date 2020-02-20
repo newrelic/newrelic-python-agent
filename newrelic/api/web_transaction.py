@@ -217,6 +217,7 @@ class WebTransaction(Transaction):
                 settings.encoding_key:
 
             encoded_header = self._request_headers.get('x-newrelic-synthetics')
+            encoded_header = encoded_header and ensure_str(encoded_header)
             if not encoded_header:
                 return
 

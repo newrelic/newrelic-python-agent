@@ -3,6 +3,17 @@ from newrelic.core.attribute_filter import DST_SPAN_EVENTS
 
 
 class GenericNodeMixin(object):
+    @property
+    def processed_user_attributes(self):
+        if hasattr(self, '_processed_user_attributes'):
+            return self._processed_user_attributes
+
+        self._processed_user_attributes = u_attrs = {}
+        for k, v in self.user_attributes.items():
+            k, v = attribute.process_user_attribute(k,v)
+            u_attrs[k] = v
+        return u_attrs
+
     def span_event(
             self, settings, base_attrs=None, parent_guid=None):
         i_attrs = base_attrs and base_attrs.copy() or {}
@@ -21,7 +32,13 @@ class GenericNodeMixin(object):
                 settings.attribute_filter,
                 DST_SPAN_EVENTS)
 
-        return [i_attrs, {}, a_attrs]  # intrinsics, user attrs, agent attrs
+        u_attrs = attribute.resolve_user_attributes(
+                self.processed_user_attributes,
+                settings.attribute_filter,
+                DST_SPAN_EVENTS)
+
+        # intrinsics, user attrs, agent attrs
+        return [i_attrs, u_attrs, a_attrs]
 
     def span_events(self,
             settings, base_attrs=None, parent_guid=None):

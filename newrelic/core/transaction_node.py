@@ -12,7 +12,7 @@ import newrelic.core.trace_node
 from newrelic.core.metric import ApdexMetric, TimeMetric
 from newrelic.core.string_table import StringTable
 from newrelic.core.attribute import (create_user_attributes,
-        resolve_user_attributes)
+        resolve_user_attributes, process_user_attribute)
 from newrelic.core.attribute_filter import (DST_ERROR_COLLECTOR,
         DST_TRANSACTION_TRACER, DST_TRANSACTION_EVENTS, DST_SPAN_EVENTS)
 
@@ -588,6 +588,18 @@ class TransactionNode(_TransactionNode):
 
         return intrinsics
 
+    @property
+    def processed_span_user_attributes(self):
+        if hasattr(self, '_processed_span_user_attribtes'):
+            return self._processed_span_user_attribtes
+
+        self._processed_span_user_attributes = u_attrs = {}
+        for k, v in self.root_span_user_attributes.items():
+            k, v = process_user_attribute(k,v)
+            if k is not None:
+                u_attrs[k] = v
+        return u_attrs
+
     def span_event(self, settings, base_attrs=None, parent_guid=None):
         i_attrs = base_attrs and base_attrs.copy() or {}
         i_attrs['type'] = 'Span'
@@ -606,7 +618,7 @@ class TransactionNode(_TransactionNode):
             i_attrs['tracingVendors'] = self.tracing_vendors
 
         u_attrs = resolve_user_attributes(
-                self.root_span_user_attributes,
+                self.processed_span_user_attributes,
                 settings.attribute_filter,
                 DST_SPAN_EVENTS)
 

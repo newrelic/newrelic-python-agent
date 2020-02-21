@@ -157,24 +157,18 @@ class TimeTrace(object):
     def add_custom_attribute(self, key, value):
         settings = self.settings
         if not settings:
-            return False
+            return
 
         if settings.high_security:
             _logger.debug('Cannot add custom parameter in High Security Mode.')
-            return False
+            return
 
         if len(self.user_attributes) >= MAX_NUM_USER_ATTRIBUTES:
             _logger.debug('Maximum number of custom attributes already '
                     'added. Dropping attribute: %r=%r', key, value)
-            return False
+            return
 
-        key, val = process_user_attribute(key, value)
-
-        if key is None:
-            return False
-        else:
-            self.user_attributes[key] = value
-            return True
+        self.user_attributes[key] = value
 
     def _add_agent_attribute(self, key, value):
         self.agent_attributes[key] = value

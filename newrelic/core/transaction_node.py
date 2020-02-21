@@ -596,8 +596,7 @@ class TransactionNode(_TransactionNode):
         self._processed_span_user_attributes = u_attrs = {}
         for k, v in self.root_span_user_attributes.items():
             k, v = process_user_attribute(k,v)
-            if k is not None:
-                u_attrs[k] = v
+            u_attrs[k] = v
         return u_attrs
 
     def span_event(self, settings, base_attrs=None, parent_guid=None):

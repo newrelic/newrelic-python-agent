@@ -11,8 +11,7 @@ class GenericNodeMixin(object):
         self._processed_user_attributes = u_attrs = {}
         for k, v in self.user_attributes.items():
             k, v = attribute.process_user_attribute(k,v)
-            if k is not None:
-                u_attrs[k] = v
+            u_attrs[k] = v
         return u_attrs
 
     def span_event(

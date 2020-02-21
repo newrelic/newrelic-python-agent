@@ -107,7 +107,7 @@ def create_agent_attributes(attr_dict, attribute_filter):
 
 
 def resolve_user_attributes(attr_dict, attribute_filter, target_destination):
-    a_attrs = {}
+    u_attrs = {}
 
     for attr_name, attr_value in attr_dict.items():
         if attr_value is None:
@@ -116,9 +116,9 @@ def resolve_user_attributes(attr_dict, attribute_filter, target_destination):
         dest = attribute_filter.apply(attr_name, DST_ALL)
 
         if dest & target_destination:
-            a_attrs[attr_name] = attr_value
+            u_attrs[attr_name] = attr_value
 
-    return a_attrs
+    return u_attrs
 
 
 def resolve_agent_attributes(attr_dict, attribute_filter, target_destination):

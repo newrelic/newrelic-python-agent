@@ -336,7 +336,11 @@ class TransactionNode(_TransactionNode):
                 break
             children.append(child.trace_node(stats, root, connections))
 
-        params = {}
+        params = resolve_user_attributes(
+                self.processed_span_user_attributes,
+                self.settings.attribute_filter,
+                DST_TRANSACTION_TRACER)
+
         params['exclusive_duration_millis'] = 1000.0 * self.exclusive
 
         return newrelic.core.trace_node.TraceNode(

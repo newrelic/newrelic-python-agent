@@ -1,11 +1,9 @@
 from collections import namedtuple
 
-import newrelic.core.attribute as attribute
 import newrelic.core.trace_node
 
 from newrelic.core.node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
-from newrelic.core.attribute_filter import DST_TRANSACTION_SEGMENTS
 
 from newrelic.packages import six
 
@@ -94,10 +92,7 @@ class FunctionNode(_FunctionNode, GenericNodeMixin):
             children.append(child.trace_node(stats, root, connections))
 
         # Agent attributes
-        params = attribute.resolve_agent_attributes(
-                self.agent_attributes,
-                root.settings.attribute_filter,
-                DST_TRANSACTION_SEGMENTS)
+        params = self.get_trace_segment_params(root.settings)
 
         # User attributes override agent attributes
         if self.params:

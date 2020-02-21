@@ -1,4 +1,5 @@
 import pytest
+import sys
 
 from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import current_trace, add_custom_span_attribute
@@ -451,7 +452,8 @@ def test_span_event_user_attributes(trace_type, args, exclude_attributes):
     @override_application_settings(_settings)
     @validate_span_events(
         count=count,
-        exact_users={'trace1_a': 'foobar', 'trace1_b': 'barbaz'})
+        exact_users={'trace1_a': 'foobar', 'trace1_b': 'barbaz'},
+        unexpected_users=('invalid_value',),)
     @background_task(name='test_span_event_user_attributes')
     def _test():
         transaction = current_transaction()
@@ -460,5 +462,6 @@ def test_span_event_user_attributes(trace_type, args, exclude_attributes):
         with trace_type(*args):
             add_custom_span_attribute('trace1_a', 'foobar')
             add_custom_span_attribute('trace1_b', 'barbaz')
+            add_custom_span_attribute('invalid_value', sys.maxsize + 1) 
 
     _test()

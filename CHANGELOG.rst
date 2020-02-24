@@ -1,4 +1,4 @@
-unreleased
+5.8.0 (2020-02-24)
 ----------
 
 - Fix application crash when using a non-WSGI framework with the synthetics product
@@ -14,7 +14,7 @@ unreleased
   directly to span events.
 
 
-5.6.0 (2019-01-31)
+5.6.0 (2020-01-31)
 ------------------
 
 - Fix crash when using aiohttp_cors

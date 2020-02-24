@@ -20,11 +20,11 @@ class GenericNodeMixin(object):
                 self.agent_attributes,
                 settings.attribute_filter,
                 DST_TRANSACTION_SEGMENTS)
-        params['exclusive_duration_millis'] = 1000.0 * self.exclusive
         params.update(attribute.resolve_user_attributes(
                 self.processed_user_attributes,
                 settings.attribute_filter,
                 DST_TRANSACTION_SEGMENTS))
+        params['exclusive_duration_millis'] = 1000.0 * self.exclusive
         return params
 
     def span_event(

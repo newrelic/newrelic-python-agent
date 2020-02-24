@@ -53,9 +53,6 @@ class MessageNode(_MessageNode, GenericNodeMixin):
         if self.params:
             params.update(self.params)
 
-        # Intrinsic attributes override everything
-        params['exclusive_duration_millis'] = 1000.0 * self.exclusive
-
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,
                 label=None)

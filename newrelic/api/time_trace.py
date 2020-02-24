@@ -3,6 +3,8 @@ import random
 import time
 import traceback
 from newrelic.core.trace_cache import trace_cache
+from newrelic.core.attribute import (
+        process_user_attribute, MAX_NUM_USER_ATTRIBUTES)
 
 _logger = logging.getLogger(__name__)
 
@@ -29,6 +31,7 @@ class TimeTrace(object):
         # 16-digit random hex. Padded with zeros in the front.
         self.guid = '%016x' % random.getrandbits(64)
         self.agent_attributes = {}
+        self.user_attributes = {}
 
     @property
     def transaction(self):
@@ -150,6 +153,22 @@ class TimeTrace(object):
             # Since we're exited we can't possibly schedule more children but
             # we may have children still running if we're async
             trace_cache().pop_current(self)
+
+    def add_custom_attribute(self, key, value):
+        settings = self.settings
+        if not settings:
+            return
+
+        if settings.high_security:
+            _logger.debug('Cannot add custom parameter in High Security Mode.')
+            return
+
+        if len(self.user_attributes) >= MAX_NUM_USER_ATTRIBUTES:
+            _logger.debug('Maximum number of custom attributes already '
+                    'added. Dropping attribute: %r=%r', key, value)
+            return
+
+        self.user_attributes[key] = value
 
     def _add_agent_attribute(self, key, value):
         self.agent_attributes[key] = value
@@ -326,6 +345,12 @@ class TimeTrace(object):
                 if entity_guid:
                     metadata["entity.guid"] = entity_guid
         return metadata
+
+
+def add_custom_span_attribute(key, value):
+    trace = current_trace()
+    if trace:
+        trace.add_custom_attribute(key, value)
 
 
 def current_trace():

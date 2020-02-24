@@ -41,6 +41,7 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set((
         'message.queueName',
         'message.routingKey',
         'http.url',
+        'http.statusCode',
         'aws.requestId',
         'aws.operation',
         'aws.lambda.arn',
@@ -103,6 +104,21 @@ def create_agent_attributes(attr_dict, attribute_filter):
         attributes.append(Attribute(k, v, dest))
 
     return attributes
+
+
+def resolve_user_attributes(attr_dict, attribute_filter, target_destination):
+    u_attrs = {}
+
+    for attr_name, attr_value in attr_dict.items():
+        if attr_value is None:
+            continue
+
+        dest = attribute_filter.apply(attr_name, DST_ALL)
+
+        if dest & target_destination:
+            u_attrs[attr_name] = attr_value
+
+    return u_attrs
 
 
 def resolve_agent_attributes(attr_dict, attribute_filter, target_destination):

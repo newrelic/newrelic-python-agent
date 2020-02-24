@@ -1,7 +1,8 @@
 import pytest
+import sys
 
 from newrelic.api.transaction import current_transaction
-from newrelic.api.time_trace import current_trace
+from newrelic.api.time_trace import current_trace, add_custom_span_attribute
 from newrelic.api.background_task import background_task
 
 from newrelic.api.database_trace import DatabaseTrace
@@ -13,7 +14,7 @@ from newrelic.api.message_trace import MessageTrace
 from newrelic.api.solr_trace import SolrTrace
 
 from testing_support.fixtures import (override_application_settings,
-        function_not_called)
+        function_not_called, validate_tt_segment_params)
 from testing_support.validators.validate_span_events import (
         validate_span_events)
 
@@ -411,5 +412,63 @@ def test_span_event_agent_attributes(include_attribues):
             with FunctionTrace('trace2') as trace_2:
                 trace_2._add_agent_attribute('trace2_a', 'foobar')
                 trace_2._add_agent_attribute('trace2_b', 'barbaz')
+
+    _test()
+
+
+class FakeTrace(object):
+    def __enter__(self):
+        pass
+
+    def __exit__(self, *args):
+        pass
+
+
+@pytest.mark.parametrize('trace_type,args', (
+    (DatabaseTrace, ('select * from foo', )),
+    (DatastoreTrace, ('db_product', 'db_target', 'db_operation')),
+    (ExternalTrace, ('lib', 'url')),
+    (FunctionTrace, ('name', )),
+    (MemcacheTrace, ('command', )),
+    (MessageTrace, ('lib', 'operation', 'dst_type', 'dst_name')),
+    (SolrTrace, ('lib', 'command')),
+    (FakeTrace, ()),
+))
+@pytest.mark.parametrize('exclude_attributes', (True, False))
+def test_span_event_user_attributes(trace_type, args, exclude_attributes):
+
+    _settings = {
+        'distributed_tracing.enabled': True,
+        'span_events.enabled': True,
+    }
+
+    forgone_params = ['invalid_value',]
+    expected_params = {'trace1_a': 'foobar', 'trace1_b': 'barbaz'}
+    # We expect user_attributes to be included by default
+    if exclude_attributes:
+        count = 0
+        _settings['attributes.exclude'] = ['*']
+        forgone_params.extend(('trace1_a', 'trace1_b'))
+        expected_trace_params = {}
+    else:
+        expected_trace_params = expected_params
+        count = 1
+
+    @override_application_settings(_settings)
+    @validate_span_events(
+        count=count,
+        exact_users=expected_params,
+        unexpected_users=forgone_params,)
+    @validate_tt_segment_params(exact_params=expected_trace_params,
+        forgone_params=forgone_params)
+    @background_task(name='test_span_event_user_attributes')
+    def _test():
+        transaction = current_transaction()
+        transaction._sampled = True
+
+        with trace_type(*args):
+            add_custom_span_attribute('trace1_a', 'foobar')
+            add_custom_span_attribute('trace1_b', 'barbaz')
+            add_custom_span_attribute('invalid_value', sys.maxsize + 1) 
 
     _test()

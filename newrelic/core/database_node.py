@@ -7,7 +7,6 @@ from newrelic.common import system_info
 from newrelic.core.database_utils import sql_statement, explain_plan
 from newrelic.core.node_mixin import DatastoreNodeMixin
 from newrelic.core.metric import TimeMetric
-from newrelic.core.attribute_filter import DST_TRANSACTION_SEGMENTS
 
 
 _SlowSqlNode = namedtuple('_SlowSqlNode',
@@ -38,7 +37,7 @@ _DatabaseNode = namedtuple('_DatabaseNode',
         'duration', 'exclusive', 'stack_trace', 'sql_format',
         'connect_params', 'cursor_params', 'sql_parameters',
         'execute_params', 'host', 'port_path_or_id', 'database_name',
-        'is_async', 'guid', 'agent_attributes'])
+        'is_async', 'guid', 'agent_attributes', 'user_attributes'])
 
 
 class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
@@ -204,13 +203,7 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
 
             self.agent_attributes['db.statement'] = sql[:limit]
 
-        params = attribute.resolve_agent_attributes(
-                self.agent_attributes,
-                root.settings.attribute_filter,
-                DST_TRANSACTION_SEGMENTS)
-
-        # Intrinsic attributes override everything
-        params['exclusive_duration_millis'] = 1000.0 * self.exclusive
+        params = self.get_trace_segment_params(root.settings)
 
         # Only send datastore instance params if not empty.
 

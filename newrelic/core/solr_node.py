@@ -1,15 +1,14 @@
 from collections import namedtuple
 
-import newrelic.core.attribute as attribute
 import newrelic.core.trace_node
 
 from newrelic.core.node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
-from newrelic.core.attribute_filter import DST_TRANSACTION_SEGMENTS
 
 _SolrNode = namedtuple('_SolrNode',
         ['library', 'command', 'children', 'start_time', 'end_time',
-        'duration', 'exclusive', 'guid', 'is_async', 'agent_attributes'])
+        'duration', 'exclusive', 'guid', 'is_async', 'agent_attributes',
+        'user_attributes',])
 
 
 class SolrNode(_SolrNode, GenericNodeMixin):
@@ -52,13 +51,7 @@ class SolrNode(_SolrNode, GenericNodeMixin):
         root.trace_node_count += 1
 
         # Agent attributes
-        params = attribute.resolve_agent_attributes(
-                self.agent_attributes,
-                root.settings.attribute_filter,
-                DST_TRANSACTION_SEGMENTS)
-
-        # Intrinsic attributes override everything
-        params['exclusive_duration_millis'] = 1000.0 * self.exclusive
+        params = self.get_trace_segment_params(root.settings)
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,

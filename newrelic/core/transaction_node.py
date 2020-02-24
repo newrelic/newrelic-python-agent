@@ -11,9 +11,10 @@ import newrelic.core.trace_node
 
 from newrelic.core.metric import ApdexMetric, TimeMetric
 from newrelic.core.string_table import StringTable
-from newrelic.core.attribute import create_user_attributes
+from newrelic.core.attribute import (create_user_attributes,
+        resolve_user_attributes, process_user_attribute)
 from newrelic.core.attribute_filter import (DST_ERROR_COLLECTOR,
-        DST_TRANSACTION_TRACER, DST_TRANSACTION_EVENTS)
+        DST_TRANSACTION_TRACER, DST_TRANSACTION_EVENTS, DST_SPAN_EVENTS)
 
 
 _TransactionNode = namedtuple('_TransactionNode',
@@ -31,7 +32,7 @@ _TransactionNode = namedtuple('_TransactionNode',
         'sampled', 'parent_transport_duration', 'parent_span', 'parent_type',
         'parent_account', 'parent_app', 'parent_tx', 'parent_transport_type',
         'root_span_guid', 'trace_id', 'loop_time', 'trusted_parent_span',
-        'tracing_vendors'])
+        'tracing_vendors', 'root_span_user_attributes'])
 
 
 class TransactionNode(_TransactionNode):
@@ -335,7 +336,11 @@ class TransactionNode(_TransactionNode):
                 break
             children.append(child.trace_node(stats, root, connections))
 
-        params = {}
+        params = resolve_user_attributes(
+                self.processed_span_user_attributes,
+                self.settings.attribute_filter,
+                DST_TRANSACTION_TRACER)
+
         params['exclusive_duration_millis'] = 1000.0 * self.exclusive
 
         return newrelic.core.trace_node.TraceNode(
@@ -587,6 +592,17 @@ class TransactionNode(_TransactionNode):
 
         return intrinsics
 
+    @property
+    def processed_span_user_attributes(self):
+        if hasattr(self, '_processed_span_user_attribtes'):
+            return self._processed_span_user_attribtes
+
+        self._processed_span_user_attributes = u_attrs = {}
+        for k, v in self.root_span_user_attributes.items():
+            k, v = process_user_attribute(k,v)
+            u_attrs[k] = v
+        return u_attrs
+
     def span_event(self, settings, base_attrs=None, parent_guid=None):
         i_attrs = base_attrs and base_attrs.copy() or {}
         i_attrs['type'] = 'Span'
@@ -604,7 +620,12 @@ class TransactionNode(_TransactionNode):
         if self.tracing_vendors:
             i_attrs['tracingVendors'] = self.tracing_vendors
 
-        return [i_attrs, {}, {}]
+        u_attrs = resolve_user_attributes(
+                self.processed_span_user_attributes,
+                settings.attribute_filter,
+                DST_SPAN_EVENTS)
+
+        return [i_attrs, u_attrs, {}]
 
     def span_events(self, settings):
         base_attrs = {

@@ -14,6 +14,7 @@ _external_node = newrelic.core.external_node.ExternalNode(
     is_async=False,
     guid=None,
     agent_attributes={},
+    user_attributes={},
 )
 
 

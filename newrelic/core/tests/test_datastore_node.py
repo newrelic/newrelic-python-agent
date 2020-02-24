@@ -36,6 +36,7 @@ _ds_node = newrelic.core.datastore_node.DatastoreNode(
         is_async=False,
         guid=None,
         agent_attributes={},
+        user_attributes={},
 )
 
 

@@ -508,6 +508,7 @@ class Transaction(object):
                 loop_time=self._loop_time,
                 trusted_parent_span=self.trusted_parent_span,
                 tracing_vendors=self.tracing_vendors,
+                root_span_user_attributes=root.user_attributes,
         )
 
         # Clear settings as we are all done and don't need it
@@ -897,8 +898,8 @@ class Transaction(object):
 
     def _compute_sampled_and_priority(self):
         if self._priority is None:
-            # truncate priority field to 5 digits past the decimal
-            self._priority = float('%.5f' % random.random())
+            # truncate priority field to 6 digits past the decimal
+            self._priority = float('%.6f' % random.random())
 
         if self._sampled is None:
             self._sampled = self._application.compute_sampled()

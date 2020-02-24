@@ -127,6 +127,11 @@ _RECORD_SQL = {
     "obfuscated": newrelic.api.settings.RECORDSQL_OBFUSCATED,
 }
 
+_COMPRESSED_CONTENT_ENCODING = {
+    "deflate": newrelic.api.settings.COMPRESSED_CONTENT_ENCODING_DEFLATE,
+    "gzip": newrelic.api.settings.COMPRESSED_CONTENT_ENCODING_GZIP,
+}
+
 
 def _map_log_level(s):
     return _LOG_LEVEL[s.upper()]
@@ -148,6 +153,10 @@ def _map_transaction_threshold(s):
 
 def _map_record_sql(s):
     return _RECORD_SQL[s]
+
+
+def _map_compressed_content_encoding(s):
+    return _COMPRESSED_CONTENT_ENCODING[s]
 
 
 def _map_split_strings(s):
@@ -328,6 +337,8 @@ def _process_configuration(section):
                      'getfloat', None)
     _process_setting(section, 'shutdown_timeout',
                      'getfloat', None)
+    _process_setting(section, 'compressed_content_encoding',
+                     'get', _map_compressed_content_encoding)
     _process_setting(section, 'attributes.enabled',
                      'getboolean', None)
     _process_setting(section, 'attributes.exclude',

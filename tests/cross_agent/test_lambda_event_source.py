@@ -47,7 +47,6 @@ def handler(event, context):
     }
 
 
-@pytest.mark.xfail(reason='Waiting for PYTHON-3018 to merge.')
 @pytest.mark.parametrize('test_name', _load_tests())
 def test_lambda_event_source(test_name):
     _exact = {'user': {}, 'intrinsic': {}, 'agent': {}}

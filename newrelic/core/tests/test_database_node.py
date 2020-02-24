@@ -41,6 +41,7 @@ _db_node = newrelic.core.database_node.DatabaseNode(
         is_async=True,
         guid=None,
         agent_attributes={},
+        user_attributes={},
 )
 
 

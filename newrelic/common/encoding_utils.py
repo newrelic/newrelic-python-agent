@@ -502,6 +502,10 @@ class NrTraceState(dict):
     FIELDS = ('ty', 'ac', 'ap', 'id', 'tx', 'sa', 'pr')
 
     def text(self):
+        pr = self.get('pr', '')
+        if pr:
+            pr = ('%.6f' % pr).rstrip('0').rstrip('.')
+
         payload = '-'.join((
             '0-0',
             self['ac'],
@@ -509,7 +513,7 @@ class NrTraceState(dict):
             self.get('id', ''),
             self.get('tx', ''),
             '1' if self.get('sa') else '0',
-            str(self.get('pr', ''))[:8],
+            pr,
             str(self['ti']),
         ))
         return '{}@nr={}'.format(

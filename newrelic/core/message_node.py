@@ -1,16 +1,15 @@
 from collections import namedtuple
 
-import newrelic.core.attribute as attribute
 import newrelic.core.trace_node
 
 from newrelic.core.node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
-from newrelic.core.attribute_filter import DST_TRANSACTION_SEGMENTS
 
 _MessageNode = namedtuple('_MessageNode',
         ['library', 'operation', 'children', 'start_time',
         'end_time', 'duration', 'exclusive', 'destination_name',
-        'destination_type', 'params', 'is_async', 'guid', 'agent_attributes'])
+        'destination_type', 'params', 'is_async', 'guid',
+        'agent_attributes', 'user_attributes'])
 
 
 class MessageNode(_MessageNode, GenericNodeMixin):
@@ -48,18 +47,8 @@ class MessageNode(_MessageNode, GenericNodeMixin):
 
         root.trace_node_count += 1
 
-        # Agent attributes
-        params = attribute.resolve_agent_attributes(
-                self.agent_attributes,
-                root.settings.attribute_filter,
-                DST_TRANSACTION_SEGMENTS)
-
-        # User attributes override agent attributes
-        if self.params:
-            params.update(self.params)
-
-        # Intrinsic attributes override everything
-        params['exclusive_duration_millis'] = 1000.0 * self.exclusive
+        params = self.get_trace_segment_params(
+                root.settings, params=self.params)
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,

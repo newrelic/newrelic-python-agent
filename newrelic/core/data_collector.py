@@ -255,11 +255,16 @@ def _log_request(url, params, headers, data):
     print(file=_audit_log_fp)
     print('DATA:', end=' ', file=_audit_log_fp)
 
-    if headers.get('Content-Encoding') == 'deflate':
+    content_encoding = headers.get('Content-Encoding')
+    if content_encoding == 'deflate':
         data = zlib.decompress(data)
+    elif content_encoding == 'gzip':
+        decompressor = zlib.decompressobj(31)
+        data = decompressor.decompress(data)
+        data += decompressor.flush()
 
-        if isinstance(data, bytes):
-            data = data.decode('Latin-1')
+    if isinstance(data, bytes):
+        data = data.decode('Latin-1')
 
     try:
         object_from_json = json_decode(data)
@@ -392,14 +397,17 @@ def send_request(session, url, method, license_key, agent_run_id=None,
     threshold = settings.agent_limits.data_compression_threshold
 
     if method not in _deflate_exclude_list and len(data) > threshold:
-        headers['Content-Encoding'] = 'deflate'
+        level = settings.agent_limits.data_compression_level
+        level = level or zlib.Z_DEFAULT_COMPRESSION
+        wbits = 31 if settings.compressed_content_encoding == 'gzip' else 15
 
         internal_metric('Supportability/Python/Collector/ZLIB/Bytes/'
                 '%s' % method, len(data))
 
-        level = settings.agent_limits.data_compression_level
-        level = level or zlib.Z_DEFAULT_COMPRESSION
-        data = zlib.compress(data, level)
+        headers['Content-Encoding'] = settings.compressed_content_encoding
+        compressor = zlib.compressobj(level, zlib.DEFLATED, wbits)
+        data = compressor.compress(data)
+        data += compressor.flush()
 
     # If there is no requests session object provided for making
     # requests create one now. We want to close this as soon as we
@@ -594,6 +602,10 @@ def send_request(session, url, method, license_key, agent_run_id=None,
             if r.status_code == 415 and settings.debug.log_malformed_json_data:
                 if headers['Content-Encoding'] == 'deflate':
                     data = zlib.decompress(data)
+                elif headers['Content-Encoding'] == 'gzip':
+                    decompressor = zlib.decompressobj(31)
+                    data = decompressor.decompress(data)
+                    data += decompressor.flush()
 
                 _logger.info('JSON data which was rejected by the data '
                     'collector was %r.', data)

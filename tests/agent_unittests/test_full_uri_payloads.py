@@ -1,8 +1,8 @@
 import pytest
 import time
 
-from testing_support.fixtures import (collector_agent_registration_fixture,
-        initialize_agent)
+from testing_support.fixtures import (override_generic_settings,
+        collector_agent_registration_fixture, initialize_agent)
 from newrelic.core.config import global_settings, global_settings_dump
 from newrelic.core.data_collector import ApplicationSession
 from newrelic.packages.requests.adapters import HTTPAdapter, urldefragauth
@@ -79,6 +79,9 @@ EMPTY_SAMPLES = {
 }
 
 
+_override_settings = {'agent_limits.data_compression_threshold': 0}
+
+
 @pytest.mark.parametrize('method,args', [
     ('send_metric_data', (NOW, NOW + 1, ())),
     ('send_transaction_events', (EMPTY_SAMPLES, ())),
@@ -94,7 +97,35 @@ EMPTY_SAMPLES = {
     ('agent_settings', ({},)),
     ('send_span_events', (EMPTY_SAMPLES, ())),
 ])
+@override_generic_settings(global_settings(), _override_settings)
 def test_full_uri_payload(session, method, args):
+    sender = getattr(session, method)
+
+    # An exception will be raised here if there's a problem with the response
+    sender(*args)
+
+
+_override_settings = {'compressed_content_encoding': 'deflate',
+            'agent_limits.data_compression_threshold': 0}
+
+
+@pytest.mark.parametrize('method,args', [
+    ('send_metric_data', (NOW, NOW + 1, ())),
+    ('send_transaction_events', (EMPTY_SAMPLES, ())),
+    ('send_custom_events', (EMPTY_SAMPLES, ())),
+    ('send_error_events', (EMPTY_SAMPLES, ())),
+    ('send_transaction_traces', ([[]],)),
+    ('send_sql_traces', ([[]],)),
+    ('get_agent_commands', ()),
+    ('send_profile_data', ([[]],)),
+    ('get_xray_metadata', (0,)),
+    ('send_errors', ([[]],)),
+    ('send_agent_command_results', ({0: {}},)),
+    ('agent_settings', ({},)),
+    ('send_span_events', (EMPTY_SAMPLES, ())),
+])
+@override_generic_settings(global_settings(), _override_settings)
+def test_compression_deflate(session, method, args):
     sender = getattr(session, method)
 
     # An exception will be raised here if there's a problem with the response

@@ -117,3 +117,24 @@ def test_each_segment_type(trace_type, args):
             trace._add_agent_attribute('blah', 'bloo')
 
     _test()
+
+
+@override_application_settings({
+    'distributed_tracing.enabled': True,
+    'span_events.enabled': True,
+    'attributes.include': ['*'],
+})
+@background_task(name='test_attribute_overrides')
+def test_attribute_overrides():
+    with FunctionTrace('test_attribute_overrides_trace') as trace:
+        trace.exclusive = 0.1
+        trace._add_agent_attribute('exclusive_duration_millis', 0.2)
+        trace._add_agent_attribute('test_attr', 'a')
+        trace.add_custom_attribute('exclusive_duration_millis', 0.3)
+        trace.add_custom_attribute('test_attr', 'b')
+        node = trace.create_node()
+
+    params = node.get_trace_segment_params(current_transaction().settings)
+
+    assert params['exclusive_duration_millis'] == 100
+    assert params['test_attr'] == 'b'

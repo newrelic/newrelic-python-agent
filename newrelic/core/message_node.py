@@ -47,11 +47,8 @@ class MessageNode(_MessageNode, GenericNodeMixin):
 
         root.trace_node_count += 1
 
-        # Agent and user attributes
-        params = self.get_trace_segment_params(root.settings)
-
-        if self.params:
-            params.update(self.params)
+        params = self.get_trace_segment_params(
+                root.settings, params=self.params)
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,

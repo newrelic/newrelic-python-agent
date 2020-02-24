@@ -91,12 +91,8 @@ class FunctionNode(_FunctionNode, GenericNodeMixin):
                 break
             children.append(child.trace_node(stats, root, connections))
 
-        # Agent attributes
-        params = self.get_trace_segment_params(root.settings)
-
-        # User attributes override agent attributes
-        if self.params:
-            params.update(self.params)
+        params = self.get_trace_segment_params(
+                root.settings, params=self.params)
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,

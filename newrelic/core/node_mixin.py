@@ -15,17 +15,22 @@ class GenericNodeMixin(object):
             u_attrs[k] = v
         return u_attrs
 
-    def get_trace_segment_params(self, settings):
-        params = attribute.resolve_agent_attributes(
+    def get_trace_segment_params(self, settings, params=None):
+        _params = attribute.resolve_agent_attributes(
                 self.agent_attributes,
                 settings.attribute_filter,
                 DST_TRANSACTION_SEGMENTS)
-        params.update(attribute.resolve_user_attributes(
+
+        if params:
+            _params.update(params)
+
+        _params.update(attribute.resolve_user_attributes(
                 self.processed_user_attributes,
                 settings.attribute_filter,
                 DST_TRANSACTION_SEGMENTS))
-        params['exclusive_duration_millis'] = 1000.0 * self.exclusive
-        return params
+
+        _params['exclusive_duration_millis'] = 1000.0 * self.exclusive
+        return _params
 
     def span_event(
             self, settings, base_attrs=None, parent_guid=None):

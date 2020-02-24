@@ -155,10 +155,9 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
 
         # Agent attributes
         self.agent_attributes['http.url'] = self.http_url
-        params = self.get_trace_segment_params(root.settings)
 
-        # User attributes override agent attributes
-        params.update(self.params)
+        params = self.get_trace_segment_params(
+                root.settings, params=self.params)
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,

@@ -1,5 +1,6 @@
 import newrelic.core.attribute as attribute
-from newrelic.core.attribute_filter import DST_SPAN_EVENTS
+from newrelic.core.attribute_filter import (DST_SPAN_EVENTS,
+        DST_TRANSACTION_SEGMENTS)
 
 
 class GenericNodeMixin(object):
@@ -13,6 +14,23 @@ class GenericNodeMixin(object):
             k, v = attribute.process_user_attribute(k,v)
             u_attrs[k] = v
         return u_attrs
+
+    def get_trace_segment_params(self, settings, params=None):
+        _params = attribute.resolve_agent_attributes(
+                self.agent_attributes,
+                settings.attribute_filter,
+                DST_TRANSACTION_SEGMENTS)
+
+        if params:
+            _params.update(params)
+
+        _params.update(attribute.resolve_user_attributes(
+                self.processed_user_attributes,
+                settings.attribute_filter,
+                DST_TRANSACTION_SEGMENTS))
+
+        _params['exclusive_duration_millis'] = 1000.0 * self.exclusive
+        return _params
 
     def span_event(
             self, settings, base_attrs=None, parent_guid=None):

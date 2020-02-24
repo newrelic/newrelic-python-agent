@@ -14,7 +14,7 @@ from newrelic.api.message_trace import MessageTrace
 from newrelic.api.solr_trace import SolrTrace
 
 from testing_support.fixtures import (override_application_settings,
-        function_not_called)
+        function_not_called, validate_tt_segment_params)
 from testing_support.validators.validate_span_events import (
         validate_span_events)
 
@@ -442,18 +442,25 @@ def test_span_event_user_attributes(trace_type, args, exclude_attributes):
         'span_events.enabled': True,
     }
 
+    forgone_params = ['invalid_value',]
+    expected_params = {'trace1_a': 'foobar', 'trace1_b': 'barbaz'}
     # We expect user_attributes to be included by default
     if exclude_attributes:
         count = 0
         _settings['attributes.exclude'] = ['*']
+        forgone_params.extend(('trace1_a', 'trace1_b'))
+        expected_trace_params = {}
     else:
+        expected_trace_params = expected_params
         count = 1
 
     @override_application_settings(_settings)
     @validate_span_events(
         count=count,
-        exact_users={'trace1_a': 'foobar', 'trace1_b': 'barbaz'},
-        unexpected_users=('invalid_value',),)
+        exact_users=expected_params,
+        unexpected_users=forgone_params,)
+    @validate_tt_segment_params(exact_params=expected_trace_params,
+        forgone_params=forgone_params)
     @background_task(name='test_span_event_user_attributes')
     def _test():
         transaction = current_transaction()

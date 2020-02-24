@@ -602,6 +602,10 @@ def send_request(session, url, method, license_key, agent_run_id=None,
             if r.status_code == 415 and settings.debug.log_malformed_json_data:
                 if headers['Content-Encoding'] == 'deflate':
                     data = zlib.decompress(data)
+                elif headers['Content-Encoding'] == 'gzip':
+                    decompressor = zlib.decompressobj(31)
+                    data = decompressor.decompress(data)
+                    data += decompressor.flush()
 
                 _logger.info('JSON data which was rejected by the data '
                     'collector was %r.', data)

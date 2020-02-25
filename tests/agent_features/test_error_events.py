@@ -4,7 +4,7 @@ import webtest
 
 from newrelic.api.application import (application_instance as application,
         application_settings)
-from newrelic.api.transaction import record_exception
+from newrelic.api.time_trace import record_exception
 from newrelic.common.object_names import callable_name
 
 from testing_support.fixtures import (validate_error_event_sample_data,

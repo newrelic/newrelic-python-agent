@@ -1450,170 +1450,12 @@ class Transaction(object):
 
     def record_exception(self, exc=None, value=None, tb=None,
                          params={}, ignore_errors=[]):
-
-        # Bail out if the transaction is not active or
-        # collection of errors not enabled.
-
-        if not self._settings:
-            return
-
-        settings = self._settings
-        error_collector = settings.error_collector
-
-        if not error_collector.enabled:
-            return
-
-        if not settings.collect_errors and not settings.collect_error_events:
-            return
-
-        # If no exception details provided, use current exception.
-
-        if exc is None and value is None and tb is None:
-            exc, value, tb = sys.exc_info()
-
-        # Has to be an error to be logged.
-
-        if exc is None or value is None or tb is None:
-            return
-
-        # Where ignore_errors is a callable it should return a
-        # tri-state variable with the following behavior.
-        #
-        #   True - Ignore the error.
-        #   False- Record the error.
-        #   None - Use the default ignore rules.
-
-        should_ignore = None
-
-        if callable(ignore_errors):
-            should_ignore = ignore_errors(exc, value, tb)
-            if should_ignore:
-                return
-
-        module = value.__class__.__module__
-        name = value.__class__.__name__
-
-        if should_ignore is None:
-            # We need to check for module.name and module:name.
-            # Originally we used module.class but that was
-            # inconsistent with everything else which used
-            # module:name. So changed to use ':' as separator, but
-            # for backward compatibility need to support '.' as
-            # separator for time being. Check that with the ':'
-            # last as we will use that name as the exception type.
-
-            if module:
-                fullname = '%s.%s' % (module, name)
-            else:
-                fullname = name
-
-            if not callable(ignore_errors) and fullname in ignore_errors:
-                return
-
-            if fullname in error_collector.ignore_errors:
-                return
-
-            if module:
-                fullname = '%s:%s' % (module, name)
-            else:
-                fullname = name
-
-            if not callable(ignore_errors) and fullname in ignore_errors:
-                return
-
-            if fullname in error_collector.ignore_errors:
-                return
-
-        else:
-            if module:
-                fullname = '%s:%s' % (module, name)
-            else:
-                fullname = name
-
-        # Only remember up to limit of what can be caught for a
-        # single transaction. This could be trimmed further
-        # later if there are already recorded errors and would
-        # go over the harvest limit.
-
-        if len(self._errors) >= settings.agent_limits.errors_per_transaction:
-            return
-
-        # Only add params if High Security Mode is off.
-
-        custom_params = {}
-
-        if settings.high_security:
-            if params:
-                _logger.debug('Cannot add custom parameters in '
-                        'High Security Mode.')
-        else:
-            try:
-                for k, v in params.items():
-                    name, val = process_user_attribute(k, v)
-                    if name:
-                        custom_params[name] = val
-            except Exception:
-                _logger.debug('Parameters failed to validate for unknown '
-                        'reason. Dropping parameters for error: %r. Check '
-                        'traceback for clues.', fullname, exc_info=True)
-                custom_params = {}
-
-        # Check to see if we need to strip the message before recording it.
-
-        if (settings.strip_exception_messages.enabled and
-                fullname not in settings.strip_exception_messages.whitelist):
-            message = STRIP_EXCEPTION_MESSAGE
-        else:
-            try:
-
-                # Favor unicode in exception messages.
-
-                message = six.text_type(value)
-
-            except Exception:
-                try:
-
-                    # If exception cannot be represented in unicode, this means
-                    # that it is a byte string encoded with an encoding
-                    # that is not compatible with the default system encoding.
-                    # So, just pass this byte string along.
-
-                    message = str(value)
-
-                except Exception:
-                    message = '<unprintable %s object>' % type(value).__name__
-
-        # Check that we have not recorded this exception
-        # previously for this transaction due to multiple
-        # error traces triggering. This is not going to be
-        # exact but the UI hides exceptions of same type
-        # anyway. Better that we under count exceptions of
-        # same type and message rather than count same one
-        # multiple times.
-
-        for error in self._errors:
-            if error.type == fullname and error.message == message:
-                return
-
-        node = newrelic.core.error_node.ErrorNode(
-                timestamp=time.time(),
-                type=fullname,
-                message=message,
-                stack_trace=exception_stack(tb),
-                custom_params=custom_params,
-                file_name=None,
-                line_number=None,
-                source=None)
-
-        # TODO Errors are recorded in time order. If
-        # there are two exceptions of same type and
-        # different message, the UI displays the first
-        # one. In the PHP agent it was recording the
-        # errors in reverse time order and so the UI
-        # displayed the last one. What is the the
-        # official order in which they should be sent.
-
-        self._errors.append(node)
+        current_span = trace_cache().current_trace()
+        if current_span:
+            current_span.record_exception(
+                    (exc, value, tb),
+                    params=params,
+                    ignore_errors=ignore_errors)
 
     def _create_error_node(self, settings, fullname, message, custom_params, tb):
 
@@ -1848,19 +1690,6 @@ def add_framework_info(name, version=None):
     transaction = current_transaction()
     if transaction:
         transaction.add_framework_info(name, version)
-
-
-def record_exception(exc=None, value=None, tb=None, params={},
-        ignore_errors=[], application=None):
-    if application is None:
-        transaction = current_transaction()
-        if transaction:
-            transaction.record_exception(exc, value, tb, params,
-                    ignore_errors)
-    else:
-        if application.enabled:
-            application.record_exception(exc, value, tb, params,
-                    ignore_errors)
 
 
 def get_browser_timing_header():

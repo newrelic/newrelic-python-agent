@@ -2,7 +2,8 @@ import webtest
 
 from newrelic.api.application import application_instance as application
 from newrelic.api.message_transaction import message_transaction
-from newrelic.api.transaction import add_custom_parameter, record_exception
+from newrelic.api.transaction import add_custom_parameter
+from newrelic.api.time_trace import record_exception
 from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.object_names import callable_name
 

@@ -1615,6 +1615,54 @@ class Transaction(object):
 
         self._errors.append(node)
 
+    def _create_error_node(self, settings, fullname, message, custom_params, tb):
+
+        if not settings.error_collector.enabled:
+            return
+
+        if not settings.collect_errors and not settings.collect_error_events:
+            return
+
+        # Only remember up to limit of what can be caught for a
+        # single transaction. This could be trimmed further
+        # later if there are already recorded errors and would
+        # go over the harvest limit.
+
+        if len(self._errors) >= settings.agent_limits.errors_per_transaction:
+            return
+
+        # Check that we have not recorded this exception
+        # previously for this transaction due to multiple
+        # error traces triggering. This is not going to be
+        # exact but the UI hides exceptions of same type
+        # anyway. Better that we under count exceptions of
+        # same type and message rather than count same one
+        # multiple times.
+
+        for error in self._errors:
+            if error.type == fullname and error.message == message:
+                return
+
+        node = newrelic.core.error_node.ErrorNode(
+                timestamp=time.time(),
+                type=fullname,
+                message=message,
+                stack_trace=exception_stack(tb),
+                custom_params=custom_params,
+                file_name=None,
+                line_number=None,
+                source=None)
+
+        # TODO Errors are recorded in time order. If
+        # there are two exceptions of same type and
+        # different message, the UI displays the first
+        # one. In the PHP agent it was recording the
+        # errors in reverse time order and so the UI
+        # displayed the last one. What is the the
+        # official order in which they should be sent.
+
+        self._errors.append(node)
+
     def record_custom_metric(self, name, value):
         self._custom_metrics.record_custom_metric(name, value)
 

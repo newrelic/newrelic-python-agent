@@ -293,6 +293,10 @@ class TimeTrace(object):
                 except Exception:
                     message = '<unprintable %s object>' % type(value).__name__
 
+        # Add error details as agent attributes to span event.
+        self._add_agent_attribute('error.class', fullname)
+        self._add_agent_attribute('error.message', message)
+
         transaction._create_error_node(
                 settings, fullname, message, custom_params, self.guid, tb)
 

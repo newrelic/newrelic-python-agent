@@ -2,8 +2,10 @@ import pytest
 import sys
 
 from newrelic.api.transaction import current_transaction
-from newrelic.api.time_trace import current_trace, add_custom_span_attribute
+from newrelic.api.time_trace import (current_trace,
+        add_custom_span_attribute, record_exception)
 from newrelic.api.background_task import background_task
+from newrelic.common.object_names import callable_name
 
 from newrelic.api.database_trace import DatabaseTrace
 from newrelic.api.datastore_trace import DatastoreTrace
@@ -470,5 +472,47 @@ def test_span_event_user_attributes(trace_type, args, exclude_attributes):
             add_custom_span_attribute('trace1_a', 'foobar')
             add_custom_span_attribute('trace1_b', 'barbaz')
             add_custom_span_attribute('invalid_value', sys.maxsize + 1) 
+
+    _test()
+
+
+@pytest.mark.parametrize('trace_type,args', (
+    (DatabaseTrace, ('select * from foo', )),
+    (DatastoreTrace, ('db_product', 'db_target', 'db_operation')),
+    (ExternalTrace, ('lib', 'url')),
+    (FunctionTrace, ('name', )),
+    (MemcacheTrace, ('command', )),
+    (MessageTrace, ('lib', 'operation', 'dst_type', 'dst_name')),
+    (SolrTrace, ('lib', 'command')),
+    (FakeTrace, ()),
+))
+def test_span_event_error_attributes(trace_type, args):
+
+    _settings = {
+        'distributed_tracing.enabled': True,
+        'span_events.enabled': True,
+    }
+
+    error = ValueError("whoops")
+
+    exact_agents = {
+        'error.class': callable_name(error),
+        'error.message': 'whoops',
+    }
+
+    @override_application_settings(_settings)
+    @validate_span_events(
+        count=1,
+        exact_agents=exact_agents,)
+    @background_task(name='test_span_event_error_attributes')
+    def _test():
+        transaction = current_transaction()
+        transaction._sampled = True
+
+        with trace_type(*args):
+            try:
+                raise ValueError("whoops")
+            except:
+                record_exception()
 
     _test()

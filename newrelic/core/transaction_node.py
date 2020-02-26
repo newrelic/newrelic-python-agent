@@ -293,7 +293,9 @@ class TransactionNode(_TransactionNode):
             params = {}
             params["stack_trace"] = error.stack_trace
 
-            params['intrinsics'] = self.trace_intrinsics
+            intrinsics = {'spanId': error.span_id}
+            intrinsics.update(self.trace_intrinsics)
+            params['intrinsics'] = intrinsics
 
             params['agentAttributes'] = {}
             for attr in self.agent_attributes:

@@ -1457,7 +1457,7 @@ class Transaction(object):
                     params=params,
                     ignore_errors=ignore_errors)
 
-    def _create_error_node(self, settings, fullname, message, custom_params, tb):
+    def _create_error_node(self, settings, fullname, message, custom_params, span_id, tb):
 
         if not settings.error_collector.enabled:
             return

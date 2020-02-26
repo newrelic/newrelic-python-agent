@@ -1489,6 +1489,7 @@ class Transaction(object):
                 timestamp=time.time(),
                 type=fullname,
                 message=message,
+                span_id=span_id,
                 stack_trace=exception_stack(tb),
                 custom_params=custom_params,
                 file_name=None,

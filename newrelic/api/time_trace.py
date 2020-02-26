@@ -206,6 +206,11 @@ class TimeTrace(object):
 
         should_ignore = None
 
+        if hasattr(transaction, '_ignore_errors'):
+            should_ignore = transaction._ignore_errors(exc, value, tb)
+            if should_ignore:
+                return
+
         if callable(ignore_errors):
             should_ignore = ignore_errors(exc, value, tb)
             if should_ignore:

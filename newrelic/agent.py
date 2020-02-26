@@ -23,7 +23,8 @@ from newrelic.api.application import (
 from newrelic.api.time_trace import (
         current_trace as __current_trace,
         get_linking_metadata as __get_linking_metadata,
-        add_custom_span_attribute as __add_custom_span_attribute)
+        add_custom_span_attribute as __add_custom_span_attribute,
+        record_exception as __record_exception)
 
 from newrelic.api.transaction import (
         current_transaction as __current_transaction,
@@ -36,7 +37,6 @@ from newrelic.api.transaction import (
         add_custom_parameter as __add_custom_parameter,
         add_custom_parameters as __add_custom_parameters,
         add_framework_info as __add_framework_info,
-        record_exception as __record_exception,
         get_browser_timing_header as __get_browser_timing_header,
         get_browser_timing_footer as __get_browser_timing_footer,
         disable_browser_autorum as __disable_browser_autorum,

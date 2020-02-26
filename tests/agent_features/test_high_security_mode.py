@@ -5,12 +5,12 @@ import webtest
 
 from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import background_task
+from newrelic.api.time_trace import record_exception
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.api.transaction import (capture_request_params,
-        add_custom_parameter, record_exception, current_transaction,
-        record_custom_event)
+        add_custom_parameter, current_transaction, record_custom_event)
 from newrelic.api.wsgi_application import wsgi_application
 
 from newrelic.common.object_names import callable_name

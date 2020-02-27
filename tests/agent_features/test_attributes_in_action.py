@@ -19,7 +19,10 @@ from testing_support.fixtures import (validate_transaction_trace_attributes,
 URL_PARAM = 'some_key'
 URL_PARAM2 = 'second_key'
 REQUEST_URL = '/?' + URL_PARAM + '=someval&' + URL_PARAM2 + '=anotherval'
-REQUEST_HEADERS = [('Content-Type', 'text/html; charset=utf-8'),
+REQUEST_HEADERS = [
+        ('Accept', '*/*'),
+        ('User-Agent', 'test_attributes_in_action'),
+        ('Content-Type', 'text/html; charset=utf-8'),
         ('Content-Length', '10'), ]
 
 REQ_PARAMS = ['request.parameters.' + URL_PARAM,
@@ -33,8 +36,9 @@ USER_ATTRS = ['puppies', 'sunshine']
 
 TRACE_ERROR_AGENT_KEYS = ['wsgi.output.seconds', 'response.status',
         'request.method', 'request.headers.contentType', 'request.uri',
-        'request.headers.contentLength', 'response.headers.contentLength',
-        'response.headers.contentType']
+        'request.headers.accept', 'request.headers.contentLength',
+        'request.headers.host', 'request.headers.userAgent',
+        'response.headers.contentLength', 'response.headers.contentType']
 
 AGENT_KEYS_ALL = TRACE_ERROR_AGENT_KEYS + REQ_PARAMS
 

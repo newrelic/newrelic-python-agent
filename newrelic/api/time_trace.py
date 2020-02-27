@@ -294,7 +294,7 @@ class TimeTrace(object):
                     message = '<unprintable %s object>' % type(value).__name__
 
         transaction._create_error_node(
-                settings, fullname, message, custom_params, tb)
+                settings, fullname, message, custom_params, self.guid, tb)
 
     def _add_agent_attribute(self, key, value):
         self.agent_attributes[key] = value

@@ -1457,7 +1457,8 @@ class Transaction(object):
                     params=params,
                     ignore_errors=ignore_errors)
 
-    def _create_error_node(self, settings, fullname, message, custom_params, tb):
+    def _create_error_node(self, settings, fullname, message,
+                           custom_params, span_id, tb):
 
         if not settings.error_collector.enabled:
             return
@@ -1489,6 +1490,7 @@ class Transaction(object):
                 timestamp=time.time(),
                 type=fullname,
                 message=message,
+                span_id=span_id,
                 stack_trace=exception_stack(tb),
                 custom_params=custom_params,
                 file_name=None,

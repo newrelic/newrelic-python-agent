@@ -615,6 +615,7 @@ def validate_transaction_errors(errors=[], required_params=[],
                 expected, compare_to, captured))
 
         for e in captured:
+            assert e.span_id
             for name, value in required_params:
                 assert name in e.custom_params, ('name=%r, '
                         'params=%r' % (name, e.custom_params))

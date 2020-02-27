@@ -2396,7 +2396,7 @@ def validate_tt_parenting(expected_parenting):
             def _bind_params(transaction, *args, **kwargs):
                 return transaction
             transaction = _bind_params(*args, **kwargs)
-            _validate_node_parenting(transaction, expected_parenting)
+            _validate_node_parenting(transaction.root, expected_parenting)
 
         return result
 

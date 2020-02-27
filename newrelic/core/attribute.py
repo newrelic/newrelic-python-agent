@@ -49,6 +49,8 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set((
         'aws.lambda.eventSource.arn',
         'db.instance',
         'db.statement',
+        'error.class',
+        'error.message',
 ))
 
 MAX_NUM_USER_ATTRIBUTES = 64

@@ -15,9 +15,7 @@ BASE_REQUIRED_ATTRS = ['request.headers.contentType',
 
 # The agent should not record these attributes in events unless the settings
 # explicitly say to do so
-BASE_FORGONE_ATTRS = ['request.parameters.hello',
-            'request.headers.accept', 'request.headers.host',
-            'request.headers.userAgent']
+BASE_FORGONE_ATTRS = ['request.parameters.hello']
 
 
 @pytest.mark.parametrize('nr_enabled', [True, False])

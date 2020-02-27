@@ -1,6 +1,12 @@
 unreleased
 ----------
 
+- Add additional attributes to transaction and error events
+
+  request.headers.accept, request.headers.host, and request.headers.userAgent
+  will now be sent by default. To prevent these attributes from being sent,
+  they can be added to the attributes.exclude list.
+
 5.8.0 (2020-02-24)
 ----------
 

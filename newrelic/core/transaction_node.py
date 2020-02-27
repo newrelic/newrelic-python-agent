@@ -492,6 +492,7 @@ class TransactionNode(_TransactionNode):
         intrinsics['error.class'] = error.type
         intrinsics['error.message'] = error.message
         intrinsics['transactionName'] = self.path
+        intrinsics['spanId'] = error.span_id
 
         intrinsics['nr.transactionGuid'] = self.guid
         if self.referring_transaction_guid:

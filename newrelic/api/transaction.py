@@ -15,6 +15,7 @@ from collections import deque
 import newrelic.packages.six as six
 
 import newrelic.core.transaction_node
+import newrelic.core.root_node
 import newrelic.core.database_node
 import newrelic.core.error_node
 
@@ -409,9 +410,23 @@ class Transaction(object):
         # as negative number. Add our own duration to get
         # our own exclusive time.
 
-        children = root.children
-
         exclusive = duration + root.exclusive
+
+        root_node = newrelic.core.root_node.RootNode(
+                name=self.name_for_metric,
+                children=root.children,
+                start_time=self.start_time,
+                end_time=self.end_time,
+                exclusive=exclusive,
+                duration=duration,
+                guid=root.guid,
+                agent_attributes=root.agent_attributes,
+                user_attributes=root.user_attributes,
+                path=self.path,
+                trusted_parent_span=self.trusted_parent_span,
+                tracing_vendors=self.tracing_vendors,
+        )
+
 
         # Add transaction exclusive time to total exclusive time
         #
@@ -468,7 +483,6 @@ class Transaction(object):
                 response_time=response_time,
                 duration=duration,
                 exclusive=exclusive,
-                children=tuple(children),
                 errors=tuple(self._errors),
                 slow_sql=tuple(self._slow_sql),
                 custom_events=self._custom_events,
@@ -506,9 +520,7 @@ class Transaction(object):
                 root_span_guid=root.guid,
                 trace_id=self.trace_id,
                 loop_time=self._loop_time,
-                trusted_parent_span=self.trusted_parent_span,
-                tracing_vendors=self.tracing_vendors,
-                root_span_user_attributes=root.user_attributes,
+                root=root_node,
         )
 
         # Clear settings as we are all done and don't need it

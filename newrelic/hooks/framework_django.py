@@ -479,7 +479,7 @@ def wrap_handle_uncaught_exception(middleware):
                 return wrapped(request, resolver, exc_info)
 
             except:  # Catch all
-                record_exception(*sys.exc_info())
+                record_exception()
                 raise
 
         with FunctionTrace(name=name):

@@ -12,6 +12,7 @@ import newrelic.api.web_transaction
 import newrelic.tests.test_cases
 from newrelic.common.encoding_utils import (json_encode,
         obfuscate, decode_newrelic_header)
+from newrelic.api.time_trace import record_exception
 from newrelic.tests.test_cases import connect # noqa
 
 
@@ -168,7 +169,7 @@ class TestWSGIWebTransaction(newrelic.tests.test_cases.TestCase):
                     transaction._custom_params["1"] = "1"
                     raise RuntimeError("runtime_error %d" % i)
                 except RuntimeError:
-                    transaction.record_exception(*sys.exc_info())
+                    record_exception()
 
     def test_implicit_runtime_error(self):
         environ = {"REQUEST_URI": "/implicit_runtime_error"}

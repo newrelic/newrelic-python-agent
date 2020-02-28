@@ -24,7 +24,7 @@ def transaction_name_delegate(*args, **kwargs):
 def wrap_handle_exception(self):
     transaction = newrelic.api.transaction.current_transaction()
     if transaction:
-        record_exception(*sys.exc_info())
+        record_exception()
 
 def template_name(render_obj, name):
     return name

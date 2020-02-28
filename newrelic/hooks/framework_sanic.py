@@ -7,6 +7,7 @@ from newrelic.common.object_wrapper import (wrap_function_wrapper,
     function_wrapper)
 from newrelic.common.object_names import callable_name
 from newrelic.core.config import ignore_status_code
+from newrelic.core.trace_cache import trace_cache
 
 
 def _bind_add(uri, methods, handler, *args, **kwargs):
@@ -72,7 +73,8 @@ def _nr_wrapper_error_handler_(wrapped, instance, args, kwargs):
     try:
         response = function_trace(name=name)(wrapped)(*args, **kwargs)
     except:
-        transaction.record_exception()
+        current_trace = trace_cache().current_trace()
+        current_trace.record_exception()
         raise
 
     return response

@@ -7,6 +7,7 @@ from newrelic.api.function_trace import function_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.core.config import ignore_status_code
 from newrelic.api.external_trace import ExternalTrace
+from newrelic.api.time_trace import record_exception
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.api.application import application_instance
 from newrelic.core.trace_cache import trace_cache
@@ -135,7 +136,7 @@ def wrap_finish(wrapped, instance, args, kwargs):
             if start_time:
                 trace_cache().record_event_loop_wait(start_time, time.time())
                 transaction._async_start_time = None
-            transaction.record_exception(
+            record_exception(
                     *sys.exc_info(),
                     ignore_errors=should_ignore)
             transaction.__exit__(None, None, None)

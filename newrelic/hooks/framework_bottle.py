@@ -50,7 +50,7 @@ def callback_wrapper(wrapped, instance, args, kwargs):
 
     transaction.set_transaction_name(name, priority=2)
 
-    with FunctionTrace(name):
+    with FunctionTrace(name) as trace:
         try:
             return wrapped(*args, **kwargs)
 
@@ -61,8 +61,7 @@ def callback_wrapper(wrapped, instance, args, kwargs):
             # return it instead. This doesn't always seem to be the case
             # though when plugins are used, although that may depend on
             # the specific bottle version being used.
-
-            transaction.record_exception(ignore_errors=should_ignore)
+            trace.record_exception(ignore_errors=should_ignore)
             raise
 
 def output_wrapper_Bottle_match(result):

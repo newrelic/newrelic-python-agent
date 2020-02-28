@@ -3,6 +3,7 @@ from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
         function_wrapper)
 from newrelic.api.transaction import current_transaction
+from newrelic.api.time_trace import record_exception
 from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.core.config import ignore_status_code
 from newrelic.api.function_trace import function_trace
@@ -34,9 +35,9 @@ def build_wrap_handle_exception(bind_handle_exception):
                 response_code = int(resp.status.split()[0])
                 if ignore_status_code(response_code):
                     return result
-                transaction.record_exception(*exc_info)
+                record_exception(*exc_info)
             except:
-                transaction.record_exception(*exc_info)
+                record_exception(*exc_info)
             finally:
                 exc_info = None
 

@@ -38,7 +38,7 @@ class capture_error(object):
             except webob_exc.HTTPException:
                 raise
             except:  # Catch all
-                record_exception(*sys.exc_info())
+                record_exception()
                 raise
         else:
             return self.__wrapped(*args, **kwargs)

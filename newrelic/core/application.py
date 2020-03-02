@@ -811,54 +811,55 @@ class Application(object):
         internal_metrics = CustomMetrics()
 
         with InternalTraceContext(internal_metrics):
-            try:
-                # We accumulate stats into a workarea and only then merge it
-                # into the main one under a thread lock. Do this to ensure
-                # that the process of generating the metrics into the stats
-                # don't unecessarily lock out another thread.
-
-                stats = self._stats_engine.create_workarea()
-                stats.record_transaction(data)
-
-            except Exception:
-                _logger.exception('The generation of transaction data has '
-                        'failed. This would indicate some sort of internal '
-                        'implementation issue with the agent. Please report '
-                        'this problem to New Relic support for further '
-                        'investigation.')
-
-                if settings.debug.record_transaction_failure:
-                    raise
-
-            if (profile_samples and (data.path in
-                    self._stats_engine.xray_sessions or
-                    'WebTransaction/Agent/__profiler__' in
-                    self._stats_engine.xray_sessions)):
-
+            with InternalTrace('Supportability/Python/RecordTransaction/Calls/record'):
                 try:
-                    background_task, samples = profile_samples
+                    # We accumulate stats into a workarea and only then merge it
+                    # into the main one under a thread lock. Do this to ensure
+                    # that the process of generating the metrics into the stats
+                    # don't unecessarily lock out another thread.
 
-                    tr_type = 'BACKGROUND' if background_task else 'REQUEST'
-
-                    if data.path in self._stats_engine.xray_sessions:
-                        self.profile_manager.add_stack_traces(self._app_name,
-                                data.path, tr_type, samples)
-
-                    if ('WebTransaction/Agent/__profiler__' in
-                            self._stats_engine.xray_sessions):
-                        self.profile_manager.add_stack_traces(self._app_name,
-                                'WebTransaction/Agent/__profiler__', tr_type,
-                                samples)
+                    stats = self._stats_engine.create_workarea()
+                    stats.record_transaction(data)
 
                 except Exception:
-                    _logger.exception('Building xray profile tree has failed.'
-                            'This would indicate some sort of internal '
-                            'implementation issue with the agent. Please '
-                            'report this problem to New Relic support for '
-                            'further investigation.')
+                    _logger.exception('The generation of transaction data has '
+                            'failed. This would indicate some sort of internal '
+                            'implementation issue with the agent. Please report '
+                            'this problem to New Relic support for further '
+                            'investigation.')
 
                     if settings.debug.record_transaction_failure:
                         raise
+
+                if (profile_samples and (data.path in
+                        self._stats_engine.xray_sessions or
+                        'WebTransaction/Agent/__profiler__' in
+                        self._stats_engine.xray_sessions)):
+
+                    try:
+                        background_task, samples = profile_samples
+
+                        tr_type = 'BACKGROUND' if background_task else 'REQUEST'
+
+                        if data.path in self._stats_engine.xray_sessions:
+                            self.profile_manager.add_stack_traces(self._app_name,
+                                    data.path, tr_type, samples)
+
+                        if ('WebTransaction/Agent/__profiler__' in
+                                self._stats_engine.xray_sessions):
+                            self.profile_manager.add_stack_traces(self._app_name,
+                                    'WebTransaction/Agent/__profiler__', tr_type,
+                                    samples)
+
+                    except Exception:
+                        _logger.exception('Building xray profile tree has failed.'
+                                'This would indicate some sort of internal '
+                                'implementation issue with the agent. Please '
+                                'report this problem to New Relic support for '
+                                'further investigation.')
+
+                        if settings.debug.record_transaction_failure:
+                            raise
 
             with self._stats_lock:
                 try:
@@ -1235,8 +1236,10 @@ class Application(object):
 
         internal_metrics = CustomMetrics()
 
+        call_metric = 'flexible' if flexible else 'default'
+
         with InternalTraceContext(internal_metrics):
-            with InternalTrace('Supportability/Python/Harvest/Calls/harvest'):
+            with InternalTrace('Supportability/Python/Harvest/Calls/' + call_metric):
 
                 self._harvest_count += 1
 

@@ -301,21 +301,19 @@ def test_datastore_span_limits(kwarg_override, attribute_override):
         'category': 'datastore',
         'span.kind': 'client',
         'component': 'library',
+    }
+
+    exact_agents = {
+        'db.instance': 'db',
         'peer.hostname': 'foo',
         'peer.address': 'foo:1234',
     }
 
-    db_instance_override = attribute_override.pop('db.instance', None)
-    if db_instance_override:
-        exact_agents = {
-            'db.instance': db_instance_override
-        }
-    else:
-        exact_agents = {
-            'db.instance': 'db',
-        }
-
-    exact_intrinsics.update(attribute_override)
+    for k, v in attribute_override.items():
+        if k in exact_agents:
+            exact_agents[k] = v
+        else:
+            exact_intrinsics[k] = v
 
     kwargs = {
         'product': 'library',

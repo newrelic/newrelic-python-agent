@@ -54,16 +54,17 @@ def test_span_events(instance_enabled):
         'span.kind': 'client',
     }
 
+    exact_agents = {}
     if instance_enabled:
         settings = _enable_instance_settings
         hostname = instance_hostname(DB_SETTINGS['host'])
-        common.update({
+        exact_agents.update({
             'peer.address': '%s:%s' % (hostname, DB_SETTINGS['port']),
             'peer.hostname': hostname,
         })
     else:
         settings = _disable_instance_settings
-        common.update({
+        exact_agents.update({
             'peer.address': 'Unknown:Unknown',
             'peer.hostname': 'Unknown',
         })
@@ -78,10 +79,13 @@ def test_span_events(instance_enabled):
     query_3['name'] = 'Datastore/operation/Memcached/delete'
 
     @validate_span_events(count=1, exact_intrinsics=query_1,
+            exact_agents=exact_agents,
             unexpected_agents=('db.instance',))
     @validate_span_events(count=1, exact_intrinsics=query_2,
+            exact_agents=exact_agents,
             unexpected_agents=('db.instance',))
     @validate_span_events(count=1, exact_intrinsics=query_3,
+            exact_agents=exact_agents,
             unexpected_agents=('db.instance',))
     @validate_span_events(count=0, expected_intrinsics=('db.statement',))
     @override_application_settings(settings)

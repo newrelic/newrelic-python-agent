@@ -7,10 +7,10 @@ from newrelic.hooks.external_httplib2 import (
     _nr_wrapper_httplib2_endheaders_wrapper)
 
 
-def _nr_wrapper_make_request_(wrapped, instance, args, kwargs, scheme):
+def _nr_wrapper_make_request_(wrapped, instance, args, kwargs):
 
     def _bind_params(conn, method, url, *args, **kwargs):
-        return "%s://%s:%s" % (scheme, conn.host, conn.port)
+        return "%s://%s:%s" % (instance.scheme, conn.host, conn.port)
 
     url_for_apm_ui = _bind_params(*args, **kwargs)
 
@@ -19,10 +19,10 @@ def _nr_wrapper_make_request_(wrapped, instance, args, kwargs, scheme):
 
 
 def instrument_urllib3_connectionpool(module):
-    wrap_function_wrapper(module, 'HTTPConnectionPool._make_request',
-            functools.partial(_nr_wrapper_make_request_, scheme='http'))
     wrap_function_wrapper(module, 'HTTPSConnectionPool._make_request',
-            functools.partial(_nr_wrapper_make_request_, scheme='https'))
+            _nr_wrapper_make_request_)
+    wrap_function_wrapper(module, 'HTTPConnectionPool._make_request',
+            _nr_wrapper_make_request_)
 
 
 def instrument_urllib3_connection(module):
@@ -30,8 +30,8 @@ def instrument_urllib3_connection(module):
     # the 'connect' monkey patch separate, because it is also used to patch
     # urllib3 within the requests package.
 
-    wrap_function_wrapper(module, 'HTTPConnection.endheaders',
-        _nr_wrapper_httplib2_endheaders_wrapper('urllib3', 'http'))
-
     wrap_function_wrapper(module, 'HTTPSConnection.endheaders',
         _nr_wrapper_httplib2_endheaders_wrapper('urllib3', 'https'))
+
+    wrap_function_wrapper(module, 'HTTPConnection.endheaders',
+        _nr_wrapper_httplib2_endheaders_wrapper('urllib3', 'http'))

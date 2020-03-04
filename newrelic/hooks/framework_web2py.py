@@ -10,6 +10,8 @@ import newrelic.api.transaction_name
 import newrelic.api.object_wrapper
 import newrelic.api.pre_function
 
+from newrelic.api.time_trace import record_exception
+
 def instrument_gluon_compileapp(module):
 
     # Wrap the run_models_in() function as first phase
@@ -109,7 +111,7 @@ def instrument_gluon_main(module):
                 except HTTP:
                     raise
                 except:  # Catch all
-                    txn.record_exception(*sys.exc_info())
+                    record_exception()
                     raise
             else:
                 return self._nr_next_object(request, response, session)

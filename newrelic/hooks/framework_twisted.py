@@ -10,6 +10,8 @@ import newrelic.api.web_transaction
 import newrelic.api.function_trace
 import newrelic.api.error_trace
 
+from newrelic.api.time_trace import record_exception
+
 _logger = logging.getLogger(__name__)
 
 class RequestProcessWrapper(object):
@@ -212,7 +214,7 @@ class RequestFinishWrapper(object):
                     result = self._nr_next_object()
 
             except:  # Catch all
-                transaction.record_exception(*sys.exc_info())
+                record_exception(*sys.exc_info())
                 raise
 
         elif self._nr_instance._nr_wait_function_trace:

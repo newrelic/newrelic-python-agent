@@ -10,6 +10,8 @@ import newrelic.api.transaction
 import newrelic.api.background_task
 import newrelic.api.web_transaction
 
+from newrelic.api.time_trace import record_exception
+
 is_pypy = '__pypy__' in sys.builtin_module_names
 
 settings = newrelic.api.settings.settings()
@@ -155,7 +157,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 try:
                     raise RuntimeError("runtime_error %d" % i)
                 except RuntimeError:
-                    transaction.record_exception(*sys.exc_info())
+                    record_exception()
 
     def test_implicit_runtime_error(self):
         name = "implicit_runtime_error"

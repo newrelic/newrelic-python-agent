@@ -138,11 +138,11 @@ def wrapper_callback_function(wrapped, instance, args, kwargs):
     # dispatch code and do not actually propagate up to the level of the
     # background task wrapper.
 
-    with FunctionTrace(callable_name(wrapped)):
+    with FunctionTrace(callable_name(wrapped)) as trace:
         try:
             return wrapped(*args, **kwargs)
         except:  # Catch all
-            transaction.record_exception()
+            trace.record_exception()
             raise
 
 def wrapper_GearmanWorker_register_task(wrapped, instance, args, kwargs):

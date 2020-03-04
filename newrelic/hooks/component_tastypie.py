@@ -3,6 +3,7 @@ import sys
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.object_wrapper import ObjectWrapper, callable_name
 from newrelic.api.transaction import current_transaction
+from newrelic.api.time_trace import record_exception
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.core.config import ignore_status_code
 
@@ -12,9 +13,7 @@ def _nr_wrap_handle_exception(wrapped, instance, args, kwargs):
     response = wrapped(*args, **kwargs)
 
     if not ignore_status_code(response.status_code):
-        transaction = current_transaction()
-        if transaction:
-            transaction.record_exception(*sys.exc_info())
+        record_exception()
 
     return response
 

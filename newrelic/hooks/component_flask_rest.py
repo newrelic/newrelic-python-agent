@@ -1,4 +1,5 @@
 from newrelic.api.transaction import current_transaction
+from newrelic.api.time_trace import record_exception
 from newrelic.core.config import ignore_status_code
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
@@ -21,10 +22,7 @@ def _nr_wrap_Api_handle_error_(wrapped, instance, args, kwargs):
     # flask's exception handler and we will capture it there.
     resp = wrapped(*args, **kwargs)
 
-    transaction = current_transaction()
-
-    if transaction:
-        transaction.record_exception(ignore_errors=should_ignore)
+    record_exception(ignore_errors=should_ignore)
 
     return resp
 

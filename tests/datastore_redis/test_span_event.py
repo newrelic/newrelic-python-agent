@@ -59,29 +59,29 @@ def test_span_events(instance_enabled, db_instance_enabled):
         'component': 'Redis',
         'span.kind': 'client',
     }
+    exact_agents = {}
 
     if instance_enabled:
         settings = _enable_instance_settings.copy()
         hostname = instance_hostname(DB_SETTINGS['host'])
-        common.update({
+        exact_agents.update({
             'peer.address': '%s:%s' % (hostname, DB_SETTINGS['port']),
             'peer.hostname': hostname,
         })
     else:
         settings = _disable_instance_settings.copy()
-        common.update({
+        exact_agents.update({
             'peer.address': 'Unknown:Unknown',
             'peer.hostname': 'Unknown',
         })
 
     if db_instance_enabled and instance_enabled:
-        exact_agents = {
+        exact_agents.update({
             'db.instance': str(DATABASE_NUMBER),
-        }
+        })
         unexpected_agents = ()
     else:
         settings['attributes.exclude'] = ['db.instance']
-        exact_agents = {}
         unexpected_agents = ('db.instance',)
 
     query_1 = common.copy()

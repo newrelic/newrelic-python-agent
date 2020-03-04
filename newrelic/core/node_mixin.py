@@ -11,7 +11,7 @@ class GenericNodeMixin(object):
 
         self._processed_user_attributes = u_attrs = {}
         for k, v in self.user_attributes.items():
-            k, v = attribute.process_user_attribute(k,v)
+            k, v = attribute.process_user_attribute(k, v)
             u_attrs[k] = v
         return u_attrs
 
@@ -107,22 +107,23 @@ class DatastoreNodeMixin(GenericNodeMixin):
         self.agent_attributes['db.instance'] = self.db_instance
         attrs = super(DatastoreNodeMixin, self).span_event(*args, **kwargs)
         i_attrs = attrs[0]
+        a_attrs = attrs[2]
 
         i_attrs['category'] = 'datastore'
         i_attrs['component'] = self.product
         i_attrs['span.kind'] = 'client'
 
         if self.instance_hostname:
-            _, i_attrs['peer.hostname'] = attribute.process_user_attribute(
+            _, a_attrs['peer.hostname'] = attribute.process_user_attribute(
                     'peer.hostname', self.instance_hostname)
         else:
-            i_attrs['peer.hostname'] = 'Unknown'
+            a_attrs['peer.hostname'] = 'Unknown'
 
         peer_address = '%s:%s' % (
                 self.instance_hostname or 'Unknown',
                 self.port_path_or_id or 'Unknown')
 
-        _, i_attrs['peer.address'] = attribute.process_user_attribute(
+        _, a_attrs['peer.address'] = attribute.process_user_attribute(
                 'peer.address', peer_address)
 
         return attrs

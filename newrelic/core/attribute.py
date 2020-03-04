@@ -54,6 +54,8 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set((
         'db.statement',
         'error.class',
         'error.message',
+        'peer.hostname',
+        'peer.address',
 ))
 
 MAX_NUM_USER_ATTRIBUTES = 64

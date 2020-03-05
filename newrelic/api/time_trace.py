@@ -293,6 +293,12 @@ class TimeTrace(object):
                 except Exception:
                     message = '<unprintable %s object>' % type(value).__name__
 
+        # Record a supportability metric if error attributes are being
+        # overiden.
+        if 'error.class' in self.agent_attributes:
+            transaction._record_supportability(
+                    'Supportability/'
+                    'SpanEvent/Errors/Dropped')
         # Add error details as agent attributes to span event.
         self._add_agent_attribute('error.class', fullname)
         self._add_agent_attribute('error.message', message)

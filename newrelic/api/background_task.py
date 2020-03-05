@@ -7,6 +7,8 @@ from newrelic.common.async_proxy import async_proxy, TransactionContext
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
+from newrelic.common.metadata_utils import get_function_filename_linenumber
+
 
 class BackgroundTask(Transaction):
 
@@ -39,6 +41,8 @@ class BackgroundTask(Transaction):
 
 
 def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
+
+    filename, line_number = get_function_filename_linenumber(wrapped)
 
     def wrapper(wrapped, instance, args, kwargs):
         if callable(name):
@@ -91,6 +95,10 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
             _application = application
 
         manager = BackgroundTask(_application, _name, _group)
+
+        if line_number:
+            manager.filename = filename
+            manager.line_number = line_number
 
         proxy = async_proxy(wrapped)
         if proxy:

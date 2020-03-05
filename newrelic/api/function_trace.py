@@ -6,6 +6,8 @@ from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.function_node import FunctionNode
 
+from newrelic.common.metadata_utils import get_function_filename_linenumber
+
 
 class FunctionTrace(TimeTrace):
 
@@ -73,6 +75,8 @@ class FunctionTrace(TimeTrace):
 def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
             params=None, terminal=False, rollup=None):
 
+    filename, line_number = get_function_filename_linenumber(wrapped)
+
     def dynamic_wrapper(wrapped, instance, args, kwargs):
         wrapper = async_wrapper(wrapped)
         if not wrapper:
@@ -124,6 +128,10 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
         trace = FunctionTrace(_name, _group, _label, _params,
                 terminal, rollup, parent=parent)
 
+        if line_number:
+            trace._add_agent_attribute("file.name", filename)
+            trace._add_agent_attribute("line.number", line_number)
+
         if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)
 
@@ -143,6 +151,10 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
 
         trace = FunctionTrace(_name, group, label, params,
                 terminal, rollup, parent=parent)
+
+        if line_number:
+            trace._add_agent_attribute("file.name", filename)
+            trace._add_agent_attribute("line.number", line_number)
 
         if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)

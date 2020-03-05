@@ -7,6 +7,8 @@ from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.database_node import DatabaseNode
 from newrelic.core.stack_trace import current_stack
 
+from newrelic.common.metadata_utils import get_function_filename_linenumber
+
 _logger = logging.getLogger(__name__)
 
 
@@ -211,6 +213,8 @@ class DatabaseTrace(TimeTrace):
 
 def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None):
 
+    filename, line_number = get_function_filename_linenumber(wrapped)
+
     def _nr_database_trace_wrapper_(wrapped, instance, args, kwargs):
         wrapper = async_wrapper(wrapped)
         if not wrapper:
@@ -229,6 +233,10 @@ def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None):
             _sql = sql
 
         trace = DatabaseTrace(_sql, dbapi2_module, parent=parent)
+
+        if line_number:
+            trace._add_agent_attribute("file.name", filename)
+            trace._add_agent_attribute("line.number", line_number)
 
         if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)

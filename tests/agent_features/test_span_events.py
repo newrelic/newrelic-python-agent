@@ -16,7 +16,8 @@ from newrelic.api.message_trace import MessageTrace
 from newrelic.api.solr_trace import SolrTrace
 
 from testing_support.fixtures import (override_application_settings,
-        function_not_called, validate_tt_segment_params)
+        function_not_called, validate_tt_segment_params,
+        validate_transaction_metrics)
 from testing_support.validators.validate_span_events import (
         validate_span_events)
 
@@ -508,6 +509,55 @@ def test_span_event_error_attributes(trace_type, args):
         transaction._sampled = True
 
         with trace_type(*args):
+            try:
+                raise ValueError("whoops")
+            except:
+                record_exception()
+
+    _test()
+
+
+_metrics = [("Supportability/SpanEvent/Errors/Dropped", 2)]
+
+
+@pytest.mark.parametrize('trace_type,args', (
+    (FunctionTrace, ('name', )),
+    (FakeTrace, ()),
+))
+def test_span_event_multiple_errors(trace_type, args):
+    _settings = {
+        'distributed_tracing.enabled': True,
+        'span_events.enabled': True,
+    }
+
+    error = ValueError("whoops")
+
+    exact_agents = {
+        'error.class': callable_name(error),
+        'error.message': 'whoops',
+    }
+
+    @override_application_settings(_settings)
+    @validate_span_events(
+        count=1,
+        exact_agents=exact_agents,)
+    @validate_transaction_metrics("test_span_event_multiple_errors",
+            background_task=True,
+            rollup_metrics=_metrics)
+    @background_task(name='test_span_event_multiple_errors')
+    def _test():
+        transaction = current_transaction()
+        transaction._sampled = True
+
+        with trace_type(*args):
+            try:
+                raise RuntimeError("whoaa")
+            except:
+                record_exception()
+            try:
+                raise RuntimeError("whoo")
+            except:
+                record_exception()
             try:
                 raise ValueError("whoops")
             except:

@@ -475,6 +475,9 @@ def test_span_event_user_attributes(trace_type, args, exclude_attributes):
     _test()
 
 
+_span_event_metrics = [("Supportability/SpanEvent/Errors/Dropped", None)]
+
+
 @pytest.mark.parametrize('trace_type,args', (
     (DatabaseTrace, ('select * from foo', )),
     (DatastoreTrace, ('db_product', 'db_target', 'db_operation')),
@@ -500,6 +503,9 @@ def test_span_event_error_attributes(trace_type, args):
     }
 
     @override_application_settings(_settings)
+    @validate_transaction_metrics("test_span_event_error_attributes",
+            background_task=True,
+            rollup_metrics=_span_event_metrics)
     @validate_span_events(
         count=1,
         exact_agents=exact_agents,)

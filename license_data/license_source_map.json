@@ -761,6 +761,12 @@
             "New Relic"
         ]
     },
+    "newrelic/common/metadata_utils.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/object_names.py": {
         "hash": "n/a",
         "libraries": [
@@ -816,6 +822,12 @@
         ]
     },
     "newrelic/common/tests/test_json_wrappers.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_metadata_utils.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

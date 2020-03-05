@@ -14,6 +14,7 @@ from newrelic.api.transaction import Transaction, current_transaction
 from newrelic.common.async_proxy import async_proxy, TransactionContext
 from newrelic.common.encoding_utils import (obfuscate, json_encode,
         decode_newrelic_header, ensure_str)
+from newrelic.common.metadata_utils import get_function_filename_linenumber
 
 from newrelic.core.attribute import create_attributes, process_user_attribute
 from newrelic.core.attribute_filter import DST_BROWSER_MONITORING, DST_NONE
@@ -897,6 +898,8 @@ def WebTransactionWrapper(wrapped, application=None, name=None, group=None,
         scheme=None, host=None, port=None, request_method=None,
         request_path=None, query_string=None, headers=None):
 
+    filename, line_number = get_function_filename_linenumber(wrapped)
+
     def wrapper(wrapped, instance, args, kwargs):
 
         # Don't start a transaction if there's already a transaction in
@@ -987,6 +990,10 @@ def WebTransactionWrapper(wrapped, application=None, name=None, group=None,
         transaction = WebTransaction(
                 _application, _name, _group, _scheme, _host, _port,
                 _request_method, _request_path, _query_string, _headers)
+
+        if line_number:
+            transaction.filename = filename
+            transaction.line_number = line_number
 
         proxy = async_proxy(wrapped)
         if proxy:

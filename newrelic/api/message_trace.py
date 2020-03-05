@@ -6,6 +6,8 @@ from newrelic.api.time_trace import TimeTrace, current_trace
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.message_node import MessageNode
 
+from newrelic.common.metadata_utils import get_function_filename_linenumber
+
 
 class MessageTrace(CatHeaderMixin, TimeTrace):
 
@@ -75,6 +77,8 @@ class MessageTrace(CatHeaderMixin, TimeTrace):
 def MessageTraceWrapper(wrapped, library, operation, destination_type,
         destination_name, params={}):
 
+    filename, line_number = get_function_filename_linenumber(wrapped)
+
     def _nr_message_trace_wrapper_(wrapped, instance, args, kwargs):
         wrapper = async_wrapper(wrapped)
         if not wrapper:
@@ -118,6 +122,10 @@ def MessageTraceWrapper(wrapped, library, operation, destination_type,
 
         trace = MessageTrace(_library, _operation,
                 _destination_type, _destination_name, params={}, parent=parent)
+
+        if line_number:
+            trace._add_agent_attribute("file.name", filename)
+            trace._add_agent_attribute("line.number", line_number)
 
         if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)

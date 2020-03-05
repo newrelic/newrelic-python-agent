@@ -443,7 +443,7 @@ def test_span_event_user_attributes(trace_type, args, exclude_attributes):
         'span_events.enabled': True,
     }
 
-    forgone_params = ['invalid_value',]
+    forgone_params = ['invalid_value', ]
     expected_params = {'trace1_a': 'foobar', 'trace1_b': 'barbaz'}
     # We expect user_attributes to be included by default
     if exclude_attributes:
@@ -470,7 +470,7 @@ def test_span_event_user_attributes(trace_type, args, exclude_attributes):
         with trace_type(*args):
             add_custom_span_attribute('trace1_a', 'foobar')
             add_custom_span_attribute('trace1_b', 'barbaz')
-            add_custom_span_attribute('invalid_value', sys.maxsize + 1) 
+            add_custom_span_attribute('invalid_value', sys.maxsize + 1)
 
     _test()
 

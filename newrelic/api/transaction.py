@@ -167,6 +167,9 @@ class Transaction(object):
         self._custom_params = {}
         self._request_params = {}
 
+        self.filename = None
+        self.line_number = None
+
         self._utilization_tracker = None
 
         self._thread_utilization_start = None
@@ -323,6 +326,9 @@ class Transaction(object):
         # Create the root span which pushes itself
         # into the trace cache as the active trace.
         self.root_span = Sentinel(self)
+        if self.filename and self.line_number:
+            self.root_span._add_agent_attribute("file.name", self.filename)
+            self.root_span._add_agent_attribute("line.number", self.line_number)
 
         # Mark transaction as active and update state
         # used to validate correct usage of class.

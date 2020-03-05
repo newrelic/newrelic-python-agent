@@ -5,6 +5,8 @@ from newrelic.api.time_trace import TimeTrace, current_trace
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.datastore_node import DatastoreNode
 
+from newrelic.common.metadata_utils import get_function_filename_linenumber
+
 
 class DatastoreTrace(TimeTrace):
     """Context manager for timing datastore queries.
@@ -141,6 +143,8 @@ def DatastoreTraceWrapper(wrapped, product, target, operation):
 
     """
 
+    filename, line_number = get_function_filename_linenumber(wrapped)
+
     def _nr_datastore_trace_wrapper_(wrapped, instance, args, kwargs):
         wrapper = async_wrapper(wrapped)
         if not wrapper:
@@ -175,6 +179,10 @@ def DatastoreTraceWrapper(wrapped, product, target, operation):
             _operation = operation
 
         trace = DatastoreTrace(_product, _target, _operation, parent=parent)
+
+        if line_number:
+            trace._add_agent_attribute("file.name", filename)
+            trace._add_agent_attribute("line.number", line_number)
 
         if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)

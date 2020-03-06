@@ -69,6 +69,7 @@ class TimeTrace(object):
         # Don't do further tracing of transaction if
         # it has been explicitly stopped.
         if transaction.stopped or not transaction.enabled:
+            self.parent = None
             return self
 
         parent.increment_child_count()

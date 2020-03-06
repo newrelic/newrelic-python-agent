@@ -797,6 +797,12 @@
             "New Relic"
         ]
     },
+    "newrelic/common/tests/_test_filename_linenumber.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/tests/_test_object_names.py": {
         "hash": "n/a",
         "libraries": [

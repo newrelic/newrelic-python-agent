@@ -1,6 +1,9 @@
 unreleased
 ----------
 
+5.10.0 (2020-03-09)
+-------------------
+
 - Add additional attributes to transaction and error events
 
   request.headers.accept, request.headers.host, and request.headers.userAgent

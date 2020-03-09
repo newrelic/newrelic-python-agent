@@ -6,6 +6,7 @@ from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.api.function_trace import (FunctionTrace, wrap_function_trace,
         FunctionTraceWrapper)
 from newrelic.api.transaction import current_transaction
+from newrelic.api.time_trace import record_exception
 
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
         function_wrapper)
@@ -99,8 +100,7 @@ def _nr_wrapper_Flask_handle_exception_(wrapped, instance, args, kwargs):
     # context of the except clause of the try block. We can therefore
     # rely on grabbing current exception details so we have access to
     # the addition stack trace information.
-
-    transaction.record_exception(ignore_errors=should_ignore)
+    record_exception(ignore_errors=should_ignore)
 
     name = callable_name(wrapped)
 

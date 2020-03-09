@@ -201,7 +201,9 @@ class Agent(object):
         self._last_flexible_harvest = 0.0
         self._default_harvest_duration = 0.0
         self._flexible_harvest_duration = 0.0
-        self._scheduler = None
+        self._scheduler = sched.scheduler(
+                self._harvest_timer,
+                self._harvest_shutdown.wait)
 
         self._process_shutdown = False
 
@@ -557,7 +559,7 @@ class Agent(object):
         application = self._applications.get(app_name, None)
         return application.compute_sampled()
 
-    def _harvest_flexible(self):
+    def _harvest_flexible(self, shutdown=False):
         if not self._harvest_shutdown.isSet():
             event_harvest_config = self.global_settings().event_harvest_config
 
@@ -566,8 +568,11 @@ class Agent(object):
                     1,
                     self._harvest_flexible,
                     ())
-
-        _logger.debug('Commencing flexible harvest of application data.')
+            _logger.debug('Commencing flexible harvest of application data.')
+        elif not shutdown:
+            return
+        else:
+            _logger.debug('Commencing final flexible harvest of application data.')
 
         self._flexible_harvest_count += 1
         self._last_flexible_harvest = time.time()
@@ -585,15 +590,14 @@ class Agent(object):
         _logger.debug('Completed flexible harvest of application data in %.2f '
                 'seconds.', self._flexible_harvest_duration)
 
-    def _harvest_default(self):
-        shutdown = self._harvest_shutdown.isSet()
-
-        if shutdown:
-            _logger.debug('Commencing default harvest of application data and '
-                    'forcing a shutdown at the same time.')
-        else:
+    def _harvest_default(self, shutdown=False):
+        if not self._harvest_shutdown.isSet():
             self._scheduler.enter(60.0, 2, self._harvest_default, ())
             _logger.debug('Commencing default harvest of application data.')
+        elif not shutdown:
+            return
+        else:
+            _logger.debug('Commencing final default harvest of application data.')
 
         self._default_harvest_count += 1
         self._last_default_harvest = time.time()
@@ -622,9 +626,6 @@ class Agent(object):
         settings = newrelic.core.config.global_settings()
         event_harvest_config = settings.event_harvest_config
 
-        self._scheduler = sched.scheduler(
-                self._harvest_timer,
-                self._harvest_shutdown.wait)
         self._scheduler.enter(
                 event_harvest_config.report_period_ms / 1000.0,
                 1,
@@ -707,6 +708,20 @@ class Agent(object):
             timeout = self._config.shutdown_timeout
 
         _logger.info('New Relic Python Agent Shutdown')
+
+        # Schedule final harvests. This is OK to schedule across threads since
+        # the entries will only be added to the end of the list and won't be
+        # popped until harvest_shutdown is set.
+        self._scheduler.enter(
+                float('inf'),
+                3,
+                self._harvest_flexible,
+                (True,))
+        self._scheduler.enter(
+                float('inf'),
+                4,
+                self._harvest_default,
+                (True,))
 
         self._harvest_shutdown.set()
 

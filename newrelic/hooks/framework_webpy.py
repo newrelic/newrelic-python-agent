@@ -9,6 +9,7 @@ import newrelic.api.out_function
 import newrelic.api.pre_function
 from newrelic.api.object_wrapper import callable_name
 from newrelic.api.wsgi_application import WSGIApplicationWrapper
+from newrelic.api.time_trace import record_exception
 
 def transaction_name_delegate(*args, **kwargs):
     transaction = newrelic.api.transaction.current_transaction()
@@ -23,7 +24,7 @@ def transaction_name_delegate(*args, **kwargs):
 def wrap_handle_exception(self):
     transaction = newrelic.api.transaction.current_transaction()
     if transaction:
-        transaction.record_exception(*sys.exc_info())
+        record_exception()
 
 def template_name(render_obj, name):
     return name

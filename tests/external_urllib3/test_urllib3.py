@@ -1,5 +1,10 @@
 import pytest
 import urllib3
+import urllib3.connectionpool
+try:
+    import urllib3.connection
+except ImportError:
+    pass
 
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, override_application_settings)

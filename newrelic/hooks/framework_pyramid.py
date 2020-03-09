@@ -87,12 +87,12 @@ def view_handler_wrapper(wrapped, instance, args, kwargs):
 
     transaction.set_transaction_name(name)
 
-    with FunctionTrace(name):
+    with FunctionTrace(name) as trace:
         try:
             return wrapped(*args, **kwargs)
 
         except:  # Catch all
-            transaction.record_exception(ignore_errors=should_ignore)
+            trace.record_exception(ignore_errors=should_ignore)
             raise
 
 

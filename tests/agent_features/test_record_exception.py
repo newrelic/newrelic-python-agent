@@ -4,7 +4,7 @@ from newrelic.api.application import (application_settings,
         application_instance as application)
 from newrelic.api.background_task import background_task
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
-from newrelic.api.transaction import record_exception
+from newrelic.api.time_trace import record_exception
 
 from newrelic.common.object_names import callable_name
 

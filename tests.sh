@@ -70,6 +70,12 @@ echo "Running tests with Pure Python version of agent!"
 if test x"$NEW_RELIC_ADMIN_TESTS" = x"true"
 then
     NEW_RELIC_EXTENSIONS=false tox -v -e $ENVIRONMENTS -c tox-admin.ini
+    STATUS=$?
+    if test "$STATUS" != "0"
+    then
+        echo "`basename $0`: *** Error $STATUS"
+        exit 1
+    fi
 fi
 
 NEW_RELIC_EXTENSIONS=false tox -v -e $ENVIRONMENTS -c tox.ini $TOX_TESTS

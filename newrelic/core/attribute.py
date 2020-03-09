@@ -36,8 +36,11 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set((
         'request.headers.contentLength',
         'request.uri',
         'response.status',
+        'request.headers.accept',
         'response.headers.contentLength',
         'response.headers.contentType',
+        'request.headers.host',
+        'request.headers.userAgent',
         'message.queueName',
         'message.routingKey',
         'http.url',
@@ -49,6 +52,10 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set((
         'aws.lambda.eventSource.arn',
         'db.instance',
         'db.statement',
+        'error.class',
+        'error.message',
+        'peer.hostname',
+        'peer.address',
 ))
 
 MAX_NUM_USER_ATTRIBUTES = 64

@@ -23,7 +23,7 @@ from newrelic import version
 from newrelic.core.config import (global_settings, global_settings_dump,
         finalize_application_settings)
 from newrelic.core.internal_metrics import (internal_metric,
-        internal_count_metric)
+        internal_count_metric, InternalTrace)
 
 from newrelic.network.exceptions import (NetworkInterfaceException,
         DiscardDataForRequest, RetryDataForRequest, ForceAgentDisconnect,
@@ -405,9 +405,11 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 '%s' % method, len(data))
 
         headers['Content-Encoding'] = settings.compressed_content_encoding
-        compressor = zlib.compressobj(level, zlib.DEFLATED, wbits)
-        data = compressor.compress(data)
-        data += compressor.flush()
+        with InternalTrace('Supportability/Python/Collector/ZLIB/Compress/'
+                '%s' % method):
+            compressor = zlib.compressobj(level, zlib.DEFLATED, wbits)
+            data = compressor.compress(data)
+            data += compressor.flush()
 
     # If there is no requests session object provided for making
     # requests create one now. We want to close this as soon as we

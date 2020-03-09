@@ -74,15 +74,15 @@ def test_instance_hostname():
 
 def test_span_event():
     span_event = _db_node.span_event(finalize_application_settings())
-    i_attrs = span_event[0]
+    a_attrs = span_event[2]
 
     # Verify that all hostnames have been converted to instance_hostname
 
-    host, port = i_attrs['peer.address'].split(':')
+    host, port = a_attrs['peer.address'].split(':')
     assert host == HOST
     assert port == '1234'
 
-    assert i_attrs['peer.hostname'] == HOST
+    assert a_attrs['peer.hostname'] == HOST
 
 
 def test_db_instance_cache():

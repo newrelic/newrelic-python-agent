@@ -615,6 +615,7 @@ def validate_transaction_errors(errors=[], required_params=[],
                 expected, compare_to, captured))
 
         for e in captured:
+            assert e.span_id
             for name, value in required_params:
                 assert name in e.custom_params, ('name=%r, '
                         'params=%r' % (name, e.custom_params))
@@ -2149,6 +2150,7 @@ def validate_error_event_sample_data(required_attrs={},
                 assert intrinsics['error.message'].startswith(
                         required_attrs['error.message'])
                 assert intrinsics['nr.transactionGuid'] is not None
+                assert intrinsics['spanId'] is not None
 
                 # check that transaction event intrinsics haven't bled in
 
@@ -2395,7 +2397,7 @@ def validate_tt_parenting(expected_parenting):
             def _bind_params(transaction, *args, **kwargs):
                 return transaction
             transaction = _bind_params(*args, **kwargs)
-            _validate_node_parenting(transaction, expected_parenting)
+            _validate_node_parenting(transaction.root, expected_parenting)
 
         return result
 

@@ -2,8 +2,10 @@ import pytest
 import sys
 
 from newrelic.api.transaction import current_transaction
-from newrelic.api.time_trace import current_trace, add_custom_span_attribute
+from newrelic.api.time_trace import (current_trace,
+        add_custom_span_attribute, record_exception)
 from newrelic.api.background_task import background_task
+from newrelic.common.object_names import callable_name
 
 from newrelic.api.database_trace import DatabaseTrace
 from newrelic.api.datastore_trace import DatastoreTrace
@@ -14,7 +16,8 @@ from newrelic.api.message_trace import MessageTrace
 from newrelic.api.solr_trace import SolrTrace
 
 from testing_support.fixtures import (override_application_settings,
-        function_not_called, validate_tt_segment_params)
+        function_not_called, validate_tt_segment_params,
+        validate_transaction_metrics)
 from testing_support.validators.validate_span_events import (
         validate_span_events)
 
@@ -299,21 +302,19 @@ def test_datastore_span_limits(kwarg_override, attribute_override):
         'category': 'datastore',
         'span.kind': 'client',
         'component': 'library',
+    }
+
+    exact_agents = {
+        'db.instance': 'db',
         'peer.hostname': 'foo',
         'peer.address': 'foo:1234',
     }
 
-    db_instance_override = attribute_override.pop('db.instance', None)
-    if db_instance_override:
-        exact_agents = {
-            'db.instance': db_instance_override
-        }
-    else:
-        exact_agents = {
-            'db.instance': 'db',
-        }
-
-    exact_intrinsics.update(attribute_override)
+    for k, v in attribute_override.items():
+        if k in exact_agents:
+            exact_agents[k] = v
+        else:
+            exact_intrinsics[k] = v
 
     kwargs = {
         'product': 'library',
@@ -442,7 +443,7 @@ def test_span_event_user_attributes(trace_type, args, exclude_attributes):
         'span_events.enabled': True,
     }
 
-    forgone_params = ['invalid_value',]
+    forgone_params = ['invalid_value', ]
     expected_params = {'trace1_a': 'foobar', 'trace1_b': 'barbaz'}
     # We expect user_attributes to be included by default
     if exclude_attributes:
@@ -469,6 +470,103 @@ def test_span_event_user_attributes(trace_type, args, exclude_attributes):
         with trace_type(*args):
             add_custom_span_attribute('trace1_a', 'foobar')
             add_custom_span_attribute('trace1_b', 'barbaz')
-            add_custom_span_attribute('invalid_value', sys.maxsize + 1) 
+            add_custom_span_attribute('invalid_value', sys.maxsize + 1)
+
+    _test()
+
+
+_span_event_metrics = [("Supportability/SpanEvent/Errors/Dropped", None)]
+
+
+@pytest.mark.parametrize('trace_type,args', (
+    (DatabaseTrace, ('select * from foo', )),
+    (DatastoreTrace, ('db_product', 'db_target', 'db_operation')),
+    (ExternalTrace, ('lib', 'url')),
+    (FunctionTrace, ('name', )),
+    (MemcacheTrace, ('command', )),
+    (MessageTrace, ('lib', 'operation', 'dst_type', 'dst_name')),
+    (SolrTrace, ('lib', 'command')),
+    (FakeTrace, ()),
+))
+def test_span_event_error_attributes(trace_type, args):
+
+    _settings = {
+        'distributed_tracing.enabled': True,
+        'span_events.enabled': True,
+    }
+
+    error = ValueError("whoops")
+
+    exact_agents = {
+        'error.class': callable_name(error),
+        'error.message': 'whoops',
+    }
+
+    @override_application_settings(_settings)
+    @validate_transaction_metrics("test_span_event_error_attributes",
+            background_task=True,
+            rollup_metrics=_span_event_metrics)
+    @validate_span_events(
+        count=1,
+        exact_agents=exact_agents,)
+    @background_task(name='test_span_event_error_attributes')
+    def _test():
+        transaction = current_transaction()
+        transaction._sampled = True
+
+        with trace_type(*args):
+            try:
+                raise ValueError("whoops")
+            except:
+                record_exception()
+
+    _test()
+
+
+_metrics = [("Supportability/SpanEvent/Errors/Dropped", 2)]
+
+
+@pytest.mark.parametrize('trace_type,args', (
+    (FunctionTrace, ('name', )),
+    (FakeTrace, ()),
+))
+def test_span_event_multiple_errors(trace_type, args):
+    _settings = {
+        'distributed_tracing.enabled': True,
+        'span_events.enabled': True,
+    }
+
+    error = ValueError("whoops")
+
+    exact_agents = {
+        'error.class': callable_name(error),
+        'error.message': 'whoops',
+    }
+
+    @override_application_settings(_settings)
+    @validate_span_events(
+        count=1,
+        exact_agents=exact_agents,)
+    @validate_transaction_metrics("test_span_event_multiple_errors",
+            background_task=True,
+            rollup_metrics=_metrics)
+    @background_task(name='test_span_event_multiple_errors')
+    def _test():
+        transaction = current_transaction()
+        transaction._sampled = True
+
+        with trace_type(*args):
+            try:
+                raise RuntimeError("whoaa")
+            except:
+                record_exception()
+            try:
+                raise RuntimeError("whoo")
+            except:
+                record_exception()
+            try:
+                raise ValueError("whoops")
+            except:
+                record_exception()
 
     _test()

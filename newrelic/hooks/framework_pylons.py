@@ -8,6 +8,8 @@ import newrelic.api.error_trace
 import newrelic.api.object_wrapper
 import newrelic.api.import_hook
 
+from newrelic.api.time_trace import record_exception
+
 def name_controller(self, environ, start_response):
     action = environ['pylons.routes_dict']['action']
     return "%s.%s" % (newrelic.api.object_wrapper.callable_name(self), action)
@@ -36,7 +38,7 @@ class capture_error(object):
             except webob_exc.HTTPException:
                 raise
             except:  # Catch all
-                current_transaction.record_exception(*sys.exc_info())
+                record_exception()
                 raise
         else:
             return self.__wrapped(*args, **kwargs)

@@ -1,10 +1,13 @@
 import logging
 import random
 import time
+import sys
+import newrelic.packages.six as six
 import traceback
 from newrelic.core.trace_cache import trace_cache
 from newrelic.core.attribute import (
         process_user_attribute, MAX_NUM_USER_ATTRIBUTES)
+from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 
 _logger = logging.getLogger(__name__)
 
@@ -66,6 +69,7 @@ class TimeTrace(object):
         # Don't do further tracing of transaction if
         # it has been explicitly stopped.
         if transaction.stopped or not transaction.enabled:
+            self.parent = None
             return self
 
         parent.increment_child_count()
@@ -169,6 +173,139 @@ class TimeTrace(object):
             return
 
         self.user_attributes[key] = value
+
+    def record_exception(self, exc_info=None,
+                         params={}, ignore_errors=[]):
+
+        # Bail out if the transaction is not active or
+        # collection of errors not enabled.
+
+        transaction = self.transaction
+        settings = transaction and transaction.settings
+
+        if not settings:
+            return
+
+        # If no exception details provided, use current exception.
+
+        if exc_info and None not in exc_info:
+            exc, value, tb = exc_info
+        else:
+            exc, value, tb = sys.exc_info()
+
+        # Has to be an error to be logged.
+
+        if exc is None or value is None or tb is None:
+            return
+
+        # Where ignore_errors is a callable it should return a
+        # tri-state variable with the following behavior.
+        #
+        #   True - Ignore the error.
+        #   False- Record the error.
+        #   None - Use the default ignore rules.
+
+        should_ignore = None
+
+        if hasattr(transaction, '_ignore_errors'):
+            should_ignore = transaction._ignore_errors(exc, value, tb)
+            if should_ignore:
+                return
+
+        if callable(ignore_errors):
+            should_ignore = ignore_errors(exc, value, tb)
+            if should_ignore:
+                return
+
+        module = value.__class__.__module__
+        name = value.__class__.__name__
+
+        if should_ignore is None:
+            # We need to check for module.name and module:name.
+            # Originally we used module.class but that was
+            # inconsistent with everything else which used
+            # module:name. So changed to use ':' as separator, but
+            # for backward compatibility need to support '.' as
+            # separator for time being. Check that with the ':'
+            # last as we will use that name as the exception type.
+
+            if module:
+                names = ('%s:%s' % (module, name), '%s.%s' % (module, name))
+            else:
+                names = (name)
+
+            for fullname in names:
+                if not callable(ignore_errors) and fullname in ignore_errors:
+                    return
+
+                if fullname in settings.error_collector.ignore_errors:
+                    return
+
+            fullname = names[0]
+
+        else:
+            if module:
+                fullname = '%s:%s' % (module, name)
+            else:
+                fullname = name
+
+        # Only add params if High Security Mode is off.
+
+        custom_params = {}
+
+        if settings.high_security:
+            if params:
+                _logger.debug('Cannot add custom parameters in '
+                        'High Security Mode.')
+        else:
+            try:
+                for k, v in params.items():
+                    name, val = process_user_attribute(k, v)
+                    if name:
+                        custom_params[name] = val
+            except Exception:
+                _logger.debug('Parameters failed to validate for unknown '
+                        'reason. Dropping parameters for error: %r. Check '
+                        'traceback for clues.', fullname, exc_info=True)
+                custom_params = {}
+
+        # Check to see if we need to strip the message before recording it.
+
+        if (settings.strip_exception_messages.enabled and
+                fullname not in settings.strip_exception_messages.whitelist):
+            message = STRIP_EXCEPTION_MESSAGE
+        else:
+            try:
+
+                # Favor unicode in exception messages.
+
+                message = six.text_type(value)
+
+            except Exception:
+                try:
+
+                    # If exception cannot be represented in unicode, this means
+                    # that it is a byte string encoded with an encoding
+                    # that is not compatible with the default system encoding.
+                    # So, just pass this byte string along.
+
+                    message = str(value)
+
+                except Exception:
+                    message = '<unprintable %s object>' % type(value).__name__
+
+        # Record a supportability metric if error attributes are being
+        # overiden.
+        if 'error.class' in self.agent_attributes:
+            transaction._record_supportability(
+                    'Supportability/'
+                    'SpanEvent/Errors/Dropped')
+        # Add error details as agent attributes to span event.
+        self._add_agent_attribute('error.class', fullname)
+        self._add_agent_attribute('error.message', message)
+
+        transaction._create_error_node(
+                settings, fullname, message, custom_params, self.guid, tb)
 
     def _add_agent_attribute(self, key, value):
         self.agent_attributes[key] = value
@@ -365,3 +502,16 @@ def get_linking_metadata():
         return {
             "entity.type": "SERVICE",
         }
+
+
+def record_exception(exc=None, value=None, tb=None, params={},
+        ignore_errors=[], application=None):
+    if application is None:
+        trace = current_trace()
+        if trace:
+            trace.record_exception((exc, value, tb), params,
+                    ignore_errors)
+    else:
+        if application.enabled:
+            application.record_exception(exc, value, tb, params,
+                    ignore_errors)

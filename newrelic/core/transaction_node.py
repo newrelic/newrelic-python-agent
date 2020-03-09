@@ -21,7 +21,7 @@ _TransactionNode = namedtuple('_TransactionNode',
         ['settings', 'path', 'type', 'group', 'base_name', 'name_for_metric',
         'port', 'request_uri', 'queue_start', 'start_time',
         'end_time', 'last_byte_time', 'response_time', 'total_time',
-        'duration', 'exclusive', 'children', 'errors', 'slow_sql',
+        'duration', 'exclusive', 'root', 'errors', 'slow_sql',
         'custom_events', 'apdex_t', 'suppress_apdex', 'custom_metrics', 'guid',
         'cpu_time', 'suppress_transaction_trace', 'client_cross_process_id',
         'referring_transaction_guid', 'record_tt', 'synthetics_resource_id',
@@ -31,8 +31,7 @@ _TransactionNode = namedtuple('_TransactionNode',
         'distributed_trace_intrinsics', 'user_attributes', 'priority',
         'sampled', 'parent_transport_duration', 'parent_span', 'parent_type',
         'parent_account', 'parent_app', 'parent_tx', 'parent_transport_type',
-        'root_span_guid', 'trace_id', 'loop_time', 'trusted_parent_span',
-        'tracing_vendors', 'root_span_user_attributes'])
+        'root_span_guid', 'trace_id', 'loop_time',])
 
 
 class TransactionNode(_TransactionNode):
@@ -213,7 +212,7 @@ class TransactionNode(_TransactionNode):
                     exclusive=None)
 
         # Now for the children.
-        for child in self.children:
+        for child in self.root.children:
             for metric in child.time_metrics(stats, self, self):
                 yield metric
 
@@ -293,7 +292,9 @@ class TransactionNode(_TransactionNode):
             params = {}
             params["stack_trace"] = error.stack_trace
 
-            params['intrinsics'] = self.trace_intrinsics
+            intrinsics = {'spanId': error.span_id}
+            intrinsics.update(self.trace_intrinsics)
+            params['intrinsics'] = intrinsics
 
             params['agentAttributes'] = {}
             for attr in self.agent_attributes:
@@ -320,36 +321,6 @@ class TransactionNode(_TransactionNode):
                     type=error.type,
                     parameters=params)
 
-    def trace_node(self, stats, root, connections):
-
-        name = self.path
-
-        start_time = newrelic.core.trace_node.node_start_time(root, self)
-        end_time = newrelic.core.trace_node.node_end_time(root, self)
-
-        root.trace_node_count += 1
-
-        children = []
-
-        for child in self.children:
-            if root.trace_node_count > root.trace_node_limit:
-                break
-            children.append(child.trace_node(stats, root, connections))
-
-        params = resolve_user_attributes(
-                self.processed_span_user_attributes,
-                self.settings.attribute_filter,
-                DST_TRANSACTION_TRACER)
-
-        params['exclusive_duration_millis'] = 1000.0 * self.exclusive
-
-        return newrelic.core.trace_node.TraceNode(
-                start_time=start_time,
-                end_time=end_time,
-                name=name,
-                params=params,
-                children=children,
-                label=None)
 
     def transaction_trace(self, stats, limit, connections):
 
@@ -358,7 +329,7 @@ class TransactionNode(_TransactionNode):
 
         start_time = newrelic.core.trace_node.root_start_time(self)
 
-        trace_node = self.trace_node(stats, self, connections)
+        trace_node = self.root.trace_node(stats, self, connections)
 
         attributes = {}
 
@@ -521,6 +492,7 @@ class TransactionNode(_TransactionNode):
         intrinsics['error.class'] = error.type
         intrinsics['error.message'] = error.message
         intrinsics['transactionName'] = self.path
+        intrinsics['spanId'] = error.span_id
 
         intrinsics['nr.transactionGuid'] = self.guid
         if self.referring_transaction_guid:
@@ -592,41 +564,6 @@ class TransactionNode(_TransactionNode):
 
         return intrinsics
 
-    @property
-    def processed_span_user_attributes(self):
-        if hasattr(self, '_processed_span_user_attribtes'):
-            return self._processed_span_user_attribtes
-
-        self._processed_span_user_attributes = u_attrs = {}
-        for k, v in self.root_span_user_attributes.items():
-            k, v = process_user_attribute(k,v)
-            u_attrs[k] = v
-        return u_attrs
-
-    def span_event(self, settings, base_attrs=None, parent_guid=None):
-        i_attrs = base_attrs and base_attrs.copy() or {}
-        i_attrs['type'] = 'Span'
-        i_attrs['name'] = self.name
-        i_attrs['guid'] = self.root_span_guid
-        i_attrs['timestamp'] = int(self.start_time * 1000)
-        i_attrs['duration'] = self.duration
-        i_attrs['category'] = 'generic'
-        i_attrs['nr.entryPoint'] = True
-
-        if parent_guid:
-            i_attrs['parentId'] = parent_guid
-        if self.trusted_parent_span:
-            i_attrs['trustedParentId'] = self.trusted_parent_span
-        if self.tracing_vendors:
-            i_attrs['tracingVendors'] = self.tracing_vendors
-
-        u_attrs = resolve_user_attributes(
-                self.processed_span_user_attributes,
-                settings.attribute_filter,
-                DST_SPAN_EVENTS)
-
-        return [i_attrs, u_attrs, {}]
-
     def span_events(self, settings):
         base_attrs = {
             'transactionId': self.guid,
@@ -635,12 +572,9 @@ class TransactionNode(_TransactionNode):
             'priority': self.priority,
         }
 
-        yield self.span_event(settings, base_attrs,
-                parent_guid=self.parent_span)
-
-        for child in self.children:
-            for event in child.span_events(
-                    settings,
-                    base_attrs,
-                    parent_guid=self.root_span_guid):
-                yield event
+        for event in self.root.span_events(
+            settings,
+            base_attrs,
+            parent_guid=self.parent_span
+        ):
+            yield event

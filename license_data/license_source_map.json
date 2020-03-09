@@ -1079,6 +1079,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/root_node.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/rules_engine.py": {
         "hash": "n/a",
         "libraries": [

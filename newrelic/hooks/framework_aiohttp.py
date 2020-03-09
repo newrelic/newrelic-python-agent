@@ -334,9 +334,7 @@ def _nr_request_wrapper(wrapped, instance, args, kwargs):
             return response
 
         # Patch in should_ignore to all record_exception calls
-        transaction.record_exception = functools.partial(
-                transaction.record_exception,
-                ignore_errors=should_ignore)
+        transaction._ignore_errors = should_ignore
 
         import aiohttp
         transaction.add_framework_info(

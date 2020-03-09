@@ -14,6 +14,7 @@ from newrelic.core.data_collector import (send_request, collector_url,
         _developer_mode_responses)
 from newrelic.core.stats_engine import CustomMetrics, SampledDataSet
 from newrelic.core.transaction_node import TransactionNode
+from newrelic.core.root_node import RootNode
 from newrelic.core.custom_event import create_custom_event
 from newrelic.core.error_node import ErrorNode
 from newrelic.core.function_node import FunctionNode
@@ -37,6 +38,7 @@ def transaction_node(request):
             timestamp=0,
             type='foo:bar',
             message='oh no! your foo had a bar',
+            span_id=None,
             stack_trace='',
             custom_params={},
             file_name=None,
@@ -63,6 +65,21 @@ def transaction_node(request):
 
     children = tuple(function for _ in range(num_events))
 
+    root = RootNode(
+            name='Function/main',
+            children=children,
+            start_time=1524764430.0,
+            end_time=1524764430.1,
+            duration=0.1,
+            exclusive=0.1,
+            guid=None,
+            agent_attributes={},
+            user_attributes={},
+            path='OtherTransaction/Function/main',
+            trusted_parent_span=None,
+            tracing_vendors=None,
+    )
+
     node = TransactionNode(
             settings=finalize_application_settings({'agent_run_id': '1234567'}),
             path='OtherTransaction/Function/main',
@@ -80,7 +97,7 @@ def transaction_node(request):
             response_time=0.1,
             duration=0.1,
             exclusive=0.1,
-            children=children,
+            root=root,
             errors=errors,
             slow_sql=(),
             custom_events=custom_events,
@@ -118,9 +135,6 @@ def transaction_node(request):
             root_span_guid=None,
             trace_id='4485b89db608aece',
             loop_time=0.0,
-            trusted_parent_span=None,
-            tracing_vendors=None,
-            root_span_user_attributes={},
     )
     return node
 

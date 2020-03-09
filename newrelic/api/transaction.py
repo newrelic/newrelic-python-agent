@@ -15,6 +15,7 @@ from collections import deque
 import newrelic.packages.six as six
 
 import newrelic.core.transaction_node
+import newrelic.core.root_node
 import newrelic.core.database_node
 import newrelic.core.error_node
 
@@ -354,7 +355,7 @@ class Transaction(object):
         # Record error if one was registered.
 
         if exc is not None and value is not None and tb is not None:
-            self.record_exception(exc, value, tb)
+            root.record_exception((exc, value, tb))
 
         # Record the end time for transaction and then
         # calculate the duration.
@@ -409,9 +410,23 @@ class Transaction(object):
         # as negative number. Add our own duration to get
         # our own exclusive time.
 
-        children = root.children
-
         exclusive = duration + root.exclusive
+
+        root_node = newrelic.core.root_node.RootNode(
+                name=self.name_for_metric,
+                children=root.children,
+                start_time=self.start_time,
+                end_time=self.end_time,
+                exclusive=exclusive,
+                duration=duration,
+                guid=root.guid,
+                agent_attributes=root.agent_attributes,
+                user_attributes=root.user_attributes,
+                path=self.path,
+                trusted_parent_span=self.trusted_parent_span,
+                tracing_vendors=self.tracing_vendors,
+        )
+
 
         # Add transaction exclusive time to total exclusive time
         #
@@ -468,7 +483,6 @@ class Transaction(object):
                 response_time=response_time,
                 duration=duration,
                 exclusive=exclusive,
-                children=tuple(children),
                 errors=tuple(self._errors),
                 slow_sql=tuple(self._slow_sql),
                 custom_events=self._custom_events,
@@ -506,9 +520,7 @@ class Transaction(object):
                 root_span_guid=root.guid,
                 trace_id=self.trace_id,
                 loop_time=self._loop_time,
-                trusted_parent_span=self.trusted_parent_span,
-                tracing_vendors=self.tracing_vendors,
-                root_span_user_attributes=root.user_attributes,
+                root=root_node,
         )
 
         # Clear settings as we are all done and don't need it
@@ -1450,85 +1462,21 @@ class Transaction(object):
 
     def record_exception(self, exc=None, value=None, tb=None,
                          params={}, ignore_errors=[]):
+        current_span = trace_cache().current_trace()
+        if current_span:
+            current_span.record_exception(
+                    (exc, value, tb),
+                    params=params,
+                    ignore_errors=ignore_errors)
 
-        # Bail out if the transaction is not active or
-        # collection of errors not enabled.
+    def _create_error_node(self, settings, fullname, message,
+                           custom_params, span_id, tb):
 
-        if not self._settings:
-            return
-
-        settings = self._settings
-        error_collector = settings.error_collector
-
-        if not error_collector.enabled:
+        if not settings.error_collector.enabled:
             return
 
         if not settings.collect_errors and not settings.collect_error_events:
             return
-
-        # If no exception details provided, use current exception.
-
-        if exc is None and value is None and tb is None:
-            exc, value, tb = sys.exc_info()
-
-        # Has to be an error to be logged.
-
-        if exc is None or value is None or tb is None:
-            return
-
-        # Where ignore_errors is a callable it should return a
-        # tri-state variable with the following behavior.
-        #
-        #   True - Ignore the error.
-        #   False- Record the error.
-        #   None - Use the default ignore rules.
-
-        should_ignore = None
-
-        if callable(ignore_errors):
-            should_ignore = ignore_errors(exc, value, tb)
-            if should_ignore:
-                return
-
-        module = value.__class__.__module__
-        name = value.__class__.__name__
-
-        if should_ignore is None:
-            # We need to check for module.name and module:name.
-            # Originally we used module.class but that was
-            # inconsistent with everything else which used
-            # module:name. So changed to use ':' as separator, but
-            # for backward compatibility need to support '.' as
-            # separator for time being. Check that with the ':'
-            # last as we will use that name as the exception type.
-
-            if module:
-                fullname = '%s.%s' % (module, name)
-            else:
-                fullname = name
-
-            if not callable(ignore_errors) and fullname in ignore_errors:
-                return
-
-            if fullname in error_collector.ignore_errors:
-                return
-
-            if module:
-                fullname = '%s:%s' % (module, name)
-            else:
-                fullname = name
-
-            if not callable(ignore_errors) and fullname in ignore_errors:
-                return
-
-            if fullname in error_collector.ignore_errors:
-                return
-
-        else:
-            if module:
-                fullname = '%s:%s' % (module, name)
-            else:
-                fullname = name
 
         # Only remember up to limit of what can be caught for a
         # single transaction. This could be trimmed further
@@ -1537,51 +1485,6 @@ class Transaction(object):
 
         if len(self._errors) >= settings.agent_limits.errors_per_transaction:
             return
-
-        # Only add params if High Security Mode is off.
-
-        custom_params = {}
-
-        if settings.high_security:
-            if params:
-                _logger.debug('Cannot add custom parameters in '
-                        'High Security Mode.')
-        else:
-            try:
-                for k, v in params.items():
-                    name, val = process_user_attribute(k, v)
-                    if name:
-                        custom_params[name] = val
-            except Exception:
-                _logger.debug('Parameters failed to validate for unknown '
-                        'reason. Dropping parameters for error: %r. Check '
-                        'traceback for clues.', fullname, exc_info=True)
-                custom_params = {}
-
-        # Check to see if we need to strip the message before recording it.
-
-        if (settings.strip_exception_messages.enabled and
-                fullname not in settings.strip_exception_messages.whitelist):
-            message = STRIP_EXCEPTION_MESSAGE
-        else:
-            try:
-
-                # Favor unicode in exception messages.
-
-                message = six.text_type(value)
-
-            except Exception:
-                try:
-
-                    # If exception cannot be represented in unicode, this means
-                    # that it is a byte string encoded with an encoding
-                    # that is not compatible with the default system encoding.
-                    # So, just pass this byte string along.
-
-                    message = str(value)
-
-                except Exception:
-                    message = '<unprintable %s object>' % type(value).__name__
 
         # Check that we have not recorded this exception
         # previously for this transaction due to multiple
@@ -1599,6 +1502,7 @@ class Transaction(object):
                 timestamp=time.time(),
                 type=fullname,
                 message=message,
+                span_id=span_id,
                 stack_trace=exception_stack(tb),
                 custom_params=custom_params,
                 file_name=None,
@@ -1800,19 +1704,6 @@ def add_framework_info(name, version=None):
     transaction = current_transaction()
     if transaction:
         transaction.add_framework_info(name, version)
-
-
-def record_exception(exc=None, value=None, tb=None, params={},
-        ignore_errors=[], application=None):
-    if application is None:
-        transaction = current_transaction()
-        if transaction:
-            transaction.record_exception(exc, value, tb, params,
-                    ignore_errors)
-    else:
-        if application.enabled:
-            application.record_exception(exc, value, tb, params,
-                    ignore_errors)
 
 
 def get_browser_timing_header():

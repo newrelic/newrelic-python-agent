@@ -1,7 +1,10 @@
 import pytest
+import random
+import grpc
 
 from testing_support.fixtures import (code_coverage_fixture,
-        collector_agent_registration_fixture)
+        collector_agent_registration_fixture, collector_available_fixture)
+from testing_support.mock_external_grpc_server import MockExternalgRPCServer
 
 _coverage_source = [
 ]
@@ -23,6 +26,25 @@ collector_agent_registration = collector_agent_registration_fixture(
         default_settings=_default_settings)
 
 
+@pytest.fixture(scope='module')
+def grpc_app_server():
+    port = random.randint(50000, 50099)
+    with MockExternalgRPCServer(port=port) as server:
+        yield server, port
+
+
+@pytest.fixture(scope='module')
+def mock_grpc_server(grpc_app_server):
+    from newrelic.core.mtb_pb2_grpc import add_IngestServiceServicer_to_server
+    from _test_servicer import Servicer
+
+    server, port = grpc_app_server
+    add_IngestServiceServicer_to_server(
+            Servicer(), server
+    )
+    return port
+
+
 @pytest.fixture(scope='session')
 def session_initialization(code_coverage, collector_agent_registration):
     pass
@@ -31,24 +53,3 @@ def session_initialization(code_coverage, collector_agent_registration):
 @pytest.fixture(scope='function')
 def requires_data_collector(collector_available_fixture):
     pass
-
-
-@pytest.fixture(scope='module')
-def grpc_add_to_server():
-    from newrelic.core.mtb_pb2_grpc import add_IngestServiceServicer_to_server
-
-    return add_IngestServiceServicer_to_server
-
-
-@pytest.fixture(scope='module')
-def grpc_servicer():
-    from _test_servicer import Servicer
-
-    return Servicer()
-
-
-@pytest.fixture(scope='module')
-def grpc_stub_cls(grpc_channel):
-    from newrelic.core.mtb_pb2_grpc import IngestServiceStub
-
-    return IngestServiceStub

@@ -2266,5 +2266,17 @@
         "libraries": [
             "New Relic"
         ]
+    },
+    "tests/backend_mtb/_test_servicer.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "tests/backend_mtb/test_grpc_client.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
     }
 }

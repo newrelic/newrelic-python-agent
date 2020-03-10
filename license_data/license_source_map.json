@@ -1067,6 +1067,18 @@
             "New Relic"
         ]
     },
+    "newrelic/core/mtb_pb2.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/core/mtb_pb2_grpc.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/node_mixin.py": {
         "hash": "n/a",
         "libraries": [

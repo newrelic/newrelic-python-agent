@@ -671,7 +671,7 @@ _settings.heroku.dyno_name_prefixes_to_shorten = list(_environ_as_set(
 _settings.serverless_mode.enabled = _environ_as_bool(
         'NEW_RELIC_SERVERLESS_MODE_ENABLED',
         default=False)
-_settings.aws_arn = None
+_settings.aws_lambda_metadata = {}
 
 _settings.event_loop_visibility.enabled = True
 _settings.event_loop_visibility.blocking_threshold = 0.1

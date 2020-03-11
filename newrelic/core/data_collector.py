@@ -1344,15 +1344,11 @@ class ServerlessModeSession(ApplicationSession):
 
     @property
     def payload(self):
-        if not self._metadata.get('arn'):
-            self._update_payload_metadata()
-        return self._payload
-
-    def _update_payload_metadata(self):
         settings = global_settings()
-        self._metadata.update({
-            'arn': settings.aws_arn,
-        })
+        for key in settings.aws_lambda_metadata:
+            if key not in self._metadata:
+                self._metadata[key] = settings.aws_lambda_metadata[key]
+        return self._payload
 
     def send_request(self, session, url, method, license_key,
             agent_run_id=None, request_headers_map=None, payload=(),

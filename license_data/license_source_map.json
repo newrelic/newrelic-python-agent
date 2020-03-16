@@ -1067,6 +1067,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/mtb_pb2.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/node_mixin.py": {
         "hash": "n/a",
         "libraries": [
@@ -2250,6 +2256,18 @@
         ]
     },
     "tddium.yml": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "tests/backend_mtb/_test_handler.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "tests/backend_mtb/test_grpc_client.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

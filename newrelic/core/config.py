@@ -212,6 +212,10 @@ class EventLoopVisibilitySettings(Settings):
     pass
 
 
+class MTBSettings(Settings):
+    pass
+
+
 class EventHarvestConfigSettings(Settings):
     nested = True
     _lock = threading.Lock()
@@ -273,6 +277,7 @@ _settings.transaction_segments.attributes = \
         TransactionSegmentAttributesSettings()
 _settings.distributed_tracing = DistributedTracingSettings()
 _settings.serverless_mode = ServerlessModeSettings()
+_settings.mtb = MTBSettings()
 _settings.event_harvest_config = EventHarvestConfigSettings()
 _settings.event_harvest_config.harvest_limits = \
         EventHarvestConfigHarvestLimitSettings()
@@ -607,6 +612,9 @@ _settings.agent_limits.synthetics_events = 200
 _settings.agent_limits.synthetics_transactions = 20
 _settings.agent_limits.data_compression_threshold = 64 * 1024
 _settings.agent_limits.data_compression_level = None
+
+_settings.mtb.endpoint = os.environ.get('NEW_RELIC_MTB_ENDPOINT', None)
+
 _settings.event_harvest_config.harvest_limits.analytic_event_data = \
         DEFAULT_RESERVOIR_SIZE
 _settings.event_harvest_config.harvest_limits.custom_event_data = \

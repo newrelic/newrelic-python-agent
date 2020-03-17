@@ -4,12 +4,14 @@
 
 from __future__ import print_function
 
+import functools
 import logging
 import os
 import sys
 import time
 import zlib
 import warnings
+import threading
 
 from pprint import pprint
 
@@ -39,6 +41,17 @@ from newrelic.common.system_info import (logical_processor_count,
 from newrelic.common.utilization import (AWSUtilization, AzureUtilization,
         DockerUtilization, GCPUtilization, PCFUtilization,
         KubernetesUtilization)
+
+try:
+    import grpc
+    from newrelic.core.mtb_pb2 import Span, RecordStatus
+except ImportError:
+    grpc = None
+
+try:
+    import urlparse
+except ImportError:
+    import urllib.parse as urlparse
 
 _logger = logging.getLogger(__name__)
 
@@ -707,6 +720,20 @@ def apply_high_security_mode_fixups(local_settings, server_settings):
     return server_settings
 
 
+class InfiniteIterator(object):
+    def __init__(self):
+        self._shutdown = threading.Event()
+
+    def __iter__(self):
+        self._shutdown.wait()
+
+        if False:
+            yield
+
+    def shutdown(self):
+        self._shutdown.set()
+
+
 class ApplicationSession(object):
 
     """ Class which encapsulates communication with the data collector
@@ -721,7 +748,56 @@ class ApplicationSession(object):
         self.agent_run_id = configuration.agent_run_id
         self.request_headers_map = configuration.request_headers_map
 
+        self._streaming_request_iterator = None
+        self._streaming_response_iterator = None
+        self._record_span = None
+
         self._requests_session = None
+
+    def connect_span_stream(self, span_iterator):
+        self._streaming_request_iterator = span_iterator or self._streaming_request_iterator
+
+        record_span = self._record_span
+
+        if not record_span:
+            endpoint = self.configuration.mtb.endpoint
+
+            # FIXME: should we do the parsing here?
+            try:
+                endpoint = endpoint and urlparse.urlparse(endpoint)
+            except:
+                endpoint = None
+
+            if grpc and endpoint and self.configuration.span_events.enabled:
+                if endpoint.scheme == "https":
+                    credentials = grpc.ssl_channel_credentials()
+                    channel = grpc.secure_channel(endpoint.netloc, credentials)
+                elif endpoint.scheme == "http":
+                    # Instantiating a grpc channel with an MTB endpoint
+                    channel = grpc.insecure_channel(endpoint.netloc)
+                else:
+                    _logger.warning("Unknown mtb scheme: %s", endpoint.scheme)
+                    channel = None
+
+                if channel:
+                    # creating stream_stream method off of channel
+                    record_span = self._record_span = channel.stream_stream(
+                        "/com.newrelic.trace.v1.IngestService/RecordSpan",
+                        Span.SerializeToString,
+                        RecordStatus.FromString,
+                    )
+
+        if record_span:
+            metadata = (
+                    ('agent_run_token', self.agent_run_id),
+                    ('license_key', self.license_key))
+
+            self._streaming_response_iterator = self._record_span(
+                    self._streaming_request_iterator, metadata=metadata)
+
+            return self._streaming_response_iterator
+
+        # TODO: Add error handling onto response iterator
 
     @property
     def requests_session(self):
@@ -765,6 +841,10 @@ class ApplicationSession(object):
         due to no more data being reported.
 
         """
+
+        if self._streaming_request_iterator:
+            _logger.debug('Terminating streaming request iterator.')
+            self._streaming_request_iterator.shutdown()
 
         _logger.debug('Connecting to data collector to terminate session '
                 'for agent run %r.', self.agent_run_id)
@@ -1312,6 +1392,9 @@ class DeveloperModeSession(ApplicationSession):
             _log_response(log_id, dict(return_value=result))
 
         return result
+
+    def connect_span_stream(self, span_iterator):
+        pass
 
 
 class ServerlessModeSession(ApplicationSession):

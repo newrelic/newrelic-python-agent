@@ -19,7 +19,7 @@ from newrelic.samplers.data_sampler import DataSampler
 
 from newrelic.core.config import global_settings_dump, global_settings
 from newrelic.core.custom_event import create_custom_event
-from newrelic.core.data_collector import create_session
+from newrelic.core.data_collector import create_session, InfiniteIterator
 from newrelic.network.exceptions import (ForceAgentRestart,
         ForceAgentDisconnect, DiscardDataForRequest, RetryDataForRequest)
 from newrelic.core.environment import environment_settings
@@ -450,6 +450,8 @@ class Application(object):
                 self.adaptive_sampler = AdaptiveSampler(
                         configuration.sampling_target,
                         sampling_target_period)
+
+            active_session.connect_span_stream(iter(InfiniteIterator()))
 
             with self._stats_custom_lock:
                 self._stats_custom_engine.reset_stats(configuration)

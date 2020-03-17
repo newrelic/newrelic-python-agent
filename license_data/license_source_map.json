@@ -863,6 +863,12 @@
             "New Relic"
         ]
     },
+    "newrelic/common/tests/test_streaming_utils.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/tests/test_system_info.py": {
         "hash": "n/a",
         "libraries": [

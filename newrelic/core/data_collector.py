@@ -720,20 +720,6 @@ def apply_high_security_mode_fixups(local_settings, server_settings):
     return server_settings
 
 
-class InfiniteIterator(object):
-    def __init__(self):
-        self._shutdown = threading.Event()
-
-    def __iter__(self):
-        self._shutdown.wait()
-
-        if False:
-            yield
-
-    def shutdown(self):
-        self._shutdown.set()
-
-
 class ApplicationSession(object):
 
     """ Class which encapsulates communication with the data collector

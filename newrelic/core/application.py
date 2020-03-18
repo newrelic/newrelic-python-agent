@@ -19,7 +19,7 @@ from newrelic.samplers.data_sampler import DataSampler
 
 from newrelic.core.config import global_settings_dump, global_settings
 from newrelic.core.custom_event import create_custom_event
-from newrelic.core.data_collector import create_session, InfiniteIterator
+from newrelic.core.data_collector import create_session
 from newrelic.network.exceptions import (ForceAgentRestart,
         ForceAgentDisconnect, DiscardDataForRequest, RetryDataForRequest)
 from newrelic.core.environment import environment_settings
@@ -32,6 +32,7 @@ from newrelic.core.profile_sessions import profile_session_manager
 
 from newrelic.core.database_utils import SQLConnections
 from newrelic.common.object_names import callable_name
+from newrelic.common.streaming_utils import TerminatingDeque
 from newrelic.core.adaptive_sampler import AdaptiveSampler
 
 _logger = logging.getLogger(__name__)
@@ -451,7 +452,8 @@ class Application(object):
                         configuration.sampling_target,
                         sampling_target_period)
 
-            active_session.connect_span_stream(iter(InfiniteIterator()))
+            # TODO: Get the max length for the TerminatingDeque from config
+            active_session.connect_span_stream(TerminatingDeque(0))
 
             with self._stats_custom_lock:
                 self._stats_custom_engine.reset_stats(configuration)

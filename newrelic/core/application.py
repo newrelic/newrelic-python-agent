@@ -1763,6 +1763,11 @@ class Application(object):
         except Exception:
             pass
 
+        try:
+            self._active_session.shutdown_span_stream()
+        except Exception:
+            pass
+
         self._active_session.close_connection()
 
         self._active_session = None

@@ -40,6 +40,17 @@ from newrelic.common.utilization import (AWSUtilization, AzureUtilization,
         DockerUtilization, GCPUtilization, PCFUtilization,
         KubernetesUtilization)
 
+try:
+    import grpc
+    from newrelic.core.mtb_pb2 import Span, RecordStatus
+except ImportError:
+    grpc = None
+
+try:
+    import urlparse
+except ImportError:
+    import urllib.parse as urlparse
+
 _logger = logging.getLogger(__name__)
 
 PARAMS_WHITELIST = set(['method', 'protocol_version', 'marshal_format',
@@ -721,7 +732,61 @@ class ApplicationSession(object):
         self.agent_run_id = configuration.agent_run_id
         self.request_headers_map = configuration.request_headers_map
 
+        self._streaming_request_iterator = None
+        self._streaming_response_iterator = None
+        self._record_span = None
+        self._streaming_channel = None
+
         self._requests_session = None
+
+    def connect_span_stream(self, span_iterator):
+        self._streaming_request_iterator = \
+            span_iterator or self._streaming_request_iterator
+
+        record_span = self._record_span
+
+        if not record_span:
+            endpoint = self.configuration.mtb.endpoint
+
+            # FIXME: should we do the parsing here?
+            try:
+                endpoint = endpoint and urlparse.urlparse(endpoint)
+            except:
+                endpoint = None
+
+            if grpc and endpoint and self.configuration.span_events.enabled:
+                if endpoint.scheme == "https":
+                    credentials = grpc.ssl_channel_credentials()
+                    self._streaming_channel = \
+                        grpc.secure_channel(endpoint.netloc, credentials)
+                elif endpoint.scheme == "http":
+                    # Instantiating a grpc channel with an MTB endpoint
+                    self._streaming_channel = \
+                        grpc.insecure_channel(endpoint.netloc)
+                else:
+                    _logger.warning("Unknown mtb scheme: %s", endpoint.scheme)
+                    self._streaming_channel = None
+
+                if self._streaming_channel:
+                    # creating stream_stream method off of channel
+                    record_span = self._record_span = \
+                        self._streaming_channel.stream_stream(
+                            "/com.newrelic.trace.v1.IngestService/RecordSpan",
+                            Span.SerializeToString,
+                            RecordStatus.FromString,
+                        )
+
+        if record_span:
+            metadata = (
+                    ('agent_run_token', self.agent_run_id),
+                    ('license_key', self.license_key))
+
+            self._streaming_response_iterator = self._record_span(
+                    self._streaming_request_iterator, metadata=metadata)
+
+            return self._streaming_response_iterator
+
+        # TODO: Add error handling onto response iterator
 
     @property
     def requests_session(self):
@@ -757,6 +822,11 @@ class ApplicationSession(object):
                 'agent_settings', self.license_key, self.agent_run_id,
                 self.request_headers_map, payload,
                 self.max_payload_size_in_bytes)
+
+    def shutdown_span_stream(self):
+        if self._streaming_channel:
+            _logger.debug('Terminating streaming span request.')
+            self._streaming_channel.close()
 
     def shutdown_session(self):
         """Called to perform orderly deregistration of agent run against
@@ -1312,6 +1382,9 @@ class DeveloperModeSession(ApplicationSession):
             _log_response(log_id, dict(return_value=result))
 
         return result
+
+    def connect_span_stream(self, span_iterator):
+        pass
 
 
 class ServerlessModeSession(ApplicationSession):

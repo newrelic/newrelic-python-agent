@@ -32,6 +32,7 @@ from newrelic.core.profile_sessions import profile_session_manager
 
 from newrelic.core.database_utils import SQLConnections
 from newrelic.common.object_names import callable_name
+from newrelic.common.streaming_utils import TerminatingDeque
 from newrelic.core.adaptive_sampler import AdaptiveSampler
 
 _logger = logging.getLogger(__name__)
@@ -450,6 +451,9 @@ class Application(object):
                 self.adaptive_sampler = AdaptiveSampler(
                         configuration.sampling_target,
                         sampling_target_period)
+
+            # TODO: Get the max length for the TerminatingDeque from config
+            active_session.connect_span_stream(TerminatingDeque(0))
 
             with self._stats_custom_lock:
                 self._stats_custom_engine.reset_stats(configuration)
@@ -1756,6 +1760,11 @@ class Application(object):
 
         try:
             self._active_session.shutdown_session()
+        except Exception:
+            pass
+
+        try:
+            self._active_session.shutdown_span_stream()
         except Exception:
             pass
 

@@ -1,9 +1,15 @@
+from concurrent import futures
+
 import grpc
 from newrelic.core.mtb_pb2 import RecordStatus, Span
 
 
 def record_span(request, context):
     count = 0
+
+    metadata = dict(context.invocation_metadata())
+    assert 'agent_run_token' in metadata
+    assert 'license_key' in metadata
 
     for span in request:
         count += 1
@@ -21,3 +27,16 @@ HANDLERS = (
         },
     ),
 )
+
+
+def main():
+    server = grpc.server(futures.ThreadPoolExecutor())
+    server.add_generic_rpc_handlers(HANDLERS)
+    server.add_insecure_port("127.0.0.1:8000")
+
+    server.start()
+    server.wait_for_termination()
+
+
+if __name__ == "__main__":
+    main()

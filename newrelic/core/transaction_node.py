@@ -11,11 +11,16 @@ import newrelic.core.trace_node
 
 from newrelic.core.metric import ApdexMetric, TimeMetric
 from newrelic.core.string_table import StringTable
-from newrelic.core.attribute import (create_user_attributes,
-        resolve_user_attributes, process_user_attribute)
+from newrelic.core.attribute import create_user_attributes
 from newrelic.core.attribute_filter import (DST_ERROR_COLLECTOR,
-        DST_TRANSACTION_TRACER, DST_TRANSACTION_EVENTS, DST_SPAN_EVENTS)
+        DST_TRANSACTION_TRACER, DST_TRANSACTION_EVENTS)
 
+from newrelic.common.streaming_utils import SpanProtoAttrs
+
+try:
+    from newrelic.core.mtb_pb2 import Span
+except:
+    pass
 
 _TransactionNode = namedtuple('_TransactionNode',
         ['settings', 'path', 'type', 'group', 'base_name', 'name_for_metric',
@@ -564,17 +569,26 @@ class TransactionNode(_TransactionNode):
 
         return intrinsics
 
-    def span_events(self, settings):
-        base_attrs = {
-            'transactionId': self.guid,
-            'traceId': self.trace_id,
-            'sampled': self.sampled,
-            'priority': self.priority,
-        }
+    def span_protos(self, settings):
+        for i_attrs, u_attrs, a_attrs in self.span_events(
+                    settings, attr_class=SpanProtoAttrs):
+            yield Span(trace_id=self.trace_id,
+                       intrinsics=i_attrs,
+                       user_attributes=u_attrs,
+                       agent_attributes=a_attrs)
+
+    def span_events(self, settings, attr_class=dict):
+        base_attrs = attr_class((
+            ('transactionId', self.guid),
+            ('traceId', self.trace_id),
+            ('sampled', self.sampled),
+            ('priority', self.priority),
+        ))
 
         for event in self.root.span_events(
             settings,
             base_attrs,
-            parent_guid=self.parent_span
+            parent_guid=self.parent_span,
+            attr_class=attr_class,
         ):
             yield event

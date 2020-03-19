@@ -4,11 +4,17 @@ import time
 from newrelic.common.object_wrapper import (transient_function_wrapper,
         function_wrapper)
 
+try:
+    from newrelic.core.mtb_pb2 import AttributeValue
+except:
+    AttributeValue = None
+
 
 def validate_span_events(count=1,
         exact_intrinsics={}, expected_intrinsics=[], unexpected_intrinsics=[],
         exact_agents={}, expected_agents=[], unexpected_agents=[],
-        exact_users={}, expected_users=[], unexpected_users=[]):
+        exact_users={}, expected_users=[], unexpected_users=[],
+        validate_protos=False):
 
     # Used for validating a single span event.
     #
@@ -27,15 +33,25 @@ def validate_span_events(count=1,
         @transient_function_wrapper('newrelic.core.stats_engine',
                 'StatsEngine.record_transaction')
         def capture_span_events(wrapped, instance, args, kwargs):
-            record_transaction_called.append(True)
             try:
                 result = wrapped(*args, **kwargs)
             except:
                 raise
             else:
-                events = [event for priority, seen_at, event
-                                 in instance.span_events.pq]
-                recorded_span_events.append(events)
+                record_transaction_called.append(True)
+                if validate_protos:
+                    def bind_record_transaction(node, *args):
+                        return node
+                    node = bind_record_transaction(*args)
+                    # TODO We should get the span_protos from the queue
+                    # that way we can validate based on mtb being on or off
+                    # and not need to use the validate_protos flag.
+                    recorded_span_events.append(
+                            list(node.span_protos(instance.settings)))
+                else:
+                    events = [event for priority, seen_at, event
+                                     in instance.span_events.pq]
+                    recorded_span_events.append(events)
 
             return result
 
@@ -47,7 +63,12 @@ def validate_span_events(count=1,
         mismatches = []
         matching_span_events = 0
         for captured_event in captured_events:
-            intrinsics, user_attrs, agent_attrs = captured_event
+            if validate_protos:
+                intrinsics = captured_event.intrinsics
+                user_attrs = captured_event.user_attributes
+                agent_attrs = captured_event.agent_attributes
+            else:
+                intrinsics, user_attrs, agent_attrs = captured_event
 
             _check_span_intrinsics(intrinsics)
 
@@ -81,6 +102,31 @@ def validate_span_events(count=1,
     return _validate_wrapper
 
 
+def check_value_equals(dictionary, key, expected_value):
+    value = dictionary.get(key)
+    if AttributeValue and isinstance(value, AttributeValue):
+        for descriptor, val in value.ListFields():
+            if val != expected_value:
+                return False
+        return True
+    else:
+        return value == expected_value
+
+
+def assert_isinstance(value, expected_type):
+    if AttributeValue and isinstance(value, AttributeValue):
+        if expected_type is six.string_types:
+            assert value.HasField('string_value')
+        elif expected_type is float:
+            assert value.HasField('double_value')
+        elif expected_type is int:
+            assert value.HasField('int_value')
+        else:
+            assert False
+    else:
+        assert isinstance(value, expected_type)
+
+
 def _check_span_attributes(attrs, exact, expected, unexpected, mismatches):
     for expected_attribute in expected:
         if expected_attribute not in attrs:
@@ -91,7 +137,7 @@ def _check_span_attributes(attrs, exact, expected, unexpected, mismatches):
                 break
         else:
             for key, value in exact.items():
-                if attrs.get(key) != value:
+                if not check_value_equals(attrs, key, value):
                     mismatches.append('key: %s, value:<%s><%s>' % (
                         key, value, attrs.get(key)))
                     break
@@ -102,18 +148,21 @@ def _check_span_attributes(attrs, exact, expected, unexpected, mismatches):
 
 
 def _check_span_intrinsics(intrinsics):
-    assert intrinsics['type'] == 'Span'
-    assert isinstance(intrinsics['traceId'], six.string_types)
-    assert isinstance(intrinsics['guid'], six.string_types)
+    assert check_value_equals(intrinsics, 'type', 'Span')
+    assert_isinstance(intrinsics['traceId'], six.string_types)
+    assert_isinstance(intrinsics['guid'], six.string_types)
     if 'parentId' in intrinsics:
-        assert isinstance(intrinsics['parentId'], six.string_types)
-    assert isinstance(intrinsics['transactionId'], six.string_types)
-    assert intrinsics['sampled'] is True
-    assert isinstance(intrinsics['priority'], float)
-    assert isinstance(intrinsics['timestamp'], int)
-    assert intrinsics['timestamp'] <= int(time.time() * 1000)
-    assert isinstance(intrinsics['duration'], float)
-    assert isinstance(intrinsics['name'], six.string_types)
-    assert isinstance(intrinsics['category'], six.string_types)
+        assert_isinstance(intrinsics['parentId'], six.string_types)
+    assert_isinstance(intrinsics['transactionId'], six.string_types)
+    intrinsics['sampled'] is True
+    assert_isinstance(intrinsics['priority'], float)
+    assert_isinstance(intrinsics['timestamp'], int)
+    ts = intrinsics['timestamp']
+    if AttributeValue and isinstance(ts, AttributeValue):
+        ts = ts.double_value
+    assert ts <= int(time.time() * 1000)
+    assert_isinstance(intrinsics['duration'], float)
+    assert_isinstance(intrinsics['name'], six.string_types)
+    assert_isinstance(intrinsics['category'], six.string_types)
     if 'nr.entryPoint' in intrinsics:
-        assert intrinsics['nr.entryPoint'] is True
+        assert check_value_equals(intrinsics, 'nr.entryPoint', True)

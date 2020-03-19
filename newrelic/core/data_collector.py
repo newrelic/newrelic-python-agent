@@ -4,14 +4,12 @@
 
 from __future__ import print_function
 
-import functools
 import logging
 import os
 import sys
 import time
 import zlib
 import warnings
-import threading
 
 from pprint import pprint
 
@@ -742,7 +740,8 @@ class ApplicationSession(object):
         self._requests_session = None
 
     def connect_span_stream(self, span_iterator):
-        self._streaming_request_iterator = span_iterator or self._streaming_request_iterator
+        self._streaming_request_iterator = \
+            span_iterator or self._streaming_request_iterator
 
         record_span = self._record_span
 
@@ -758,21 +757,24 @@ class ApplicationSession(object):
             if grpc and endpoint and self.configuration.span_events.enabled:
                 if endpoint.scheme == "https":
                     credentials = grpc.ssl_channel_credentials()
-                    self._streaming_channel = grpc.secure_channel(endpoint.netloc, credentials)
+                    self._streaming_channel = \
+                        grpc.secure_channel(endpoint.netloc, credentials)
                 elif endpoint.scheme == "http":
                     # Instantiating a grpc channel with an MTB endpoint
-                    self._streaming_channel = grpc.insecure_channel(endpoint.netloc)
+                    self._streaming_channel = \
+                        grpc.insecure_channel(endpoint.netloc)
                 else:
                     _logger.warning("Unknown mtb scheme: %s", endpoint.scheme)
                     self._streaming_channel = None
 
                 if self._streaming_channel:
                     # creating stream_stream method off of channel
-                    record_span = self._record_span = self._streaming_channel.stream_stream(
-                        "/com.newrelic.trace.v1.IngestService/RecordSpan",
-                        Span.SerializeToString,
-                        RecordStatus.FromString,
-                    )
+                    record_span = self._record_span = \
+                        self._streaming_channel.stream_stream(
+                            "/com.newrelic.trace.v1.IngestService/RecordSpan",
+                            Span.SerializeToString,
+                            RecordStatus.FromString,
+                        )
 
         if record_span:
             metadata = (

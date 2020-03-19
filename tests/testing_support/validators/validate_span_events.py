@@ -5,16 +5,16 @@ from newrelic.common.object_wrapper import (transient_function_wrapper,
         function_wrapper)
 
 try:
-    from newrelic.core.mtb_pb2 import AttributeValue
+    from newrelic.core.mtb_pb2 import AttributeValue, Span
 except:
     AttributeValue = None
+    Span = None
 
 
 def validate_span_events(count=1,
         exact_intrinsics={}, expected_intrinsics=[], unexpected_intrinsics=[],
         exact_agents={}, expected_agents=[], unexpected_agents=[],
-        exact_users={}, expected_users=[], unexpected_users=[],
-        validate_protos=False):
+        exact_users={}, expected_users=[], unexpected_users=[]):
 
     # Used for validating a single span event.
     #
@@ -33,25 +33,23 @@ def validate_span_events(count=1,
         @transient_function_wrapper('newrelic.core.stats_engine',
                 'StatsEngine.record_transaction')
         def capture_span_events(wrapped, instance, args, kwargs):
+            record_transaction_called.append(True)
             try:
                 result = wrapped(*args, **kwargs)
             except:
                 raise
             else:
-                record_transaction_called.append(True)
-                if validate_protos:
-                    def bind_record_transaction(node, *args):
-                        return node
-                    node = bind_record_transaction(*args)
-                    # TODO We should get the span_protos from the queue
-                    # that way we can validate based on mtb being on or off
-                    # and not need to use the validate_protos flag.
-                    recorded_span_events.append(
-                            list(node.span_protos(instance.settings)))
+                if instance.settings.mtb.endpoint:
+                    # FIXME: This needs to access the deque iterator in stats
+                    # engine where spans will be streamed from
+                    node = args[0]
+                    events = [span for span
+                                   in node.span_protos(instance.settings)]
                 else:
                     events = [event for priority, seen_at, event
-                                     in instance.span_events.pq]
-                    recorded_span_events.append(events)
+                                    in instance.span_events.pq]
+
+                recorded_span_events.append(events)
 
             return result
 
@@ -63,7 +61,7 @@ def validate_span_events(count=1,
         mismatches = []
         matching_span_events = 0
         for captured_event in captured_events:
-            if validate_protos:
+            if Span and isinstance(captured_event, Span):
                 intrinsics = captured_event.intrinsics
                 user_attrs = captured_event.user_attributes
                 agent_attrs = captured_event.agent_attributes

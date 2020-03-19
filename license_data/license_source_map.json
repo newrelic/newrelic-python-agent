@@ -2272,11 +2272,5 @@
         "libraries": [
             "New Relic"
         ]
-    },
-    "tests/backend_mtb/_test_handler.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
     }
 }

@@ -737,6 +737,7 @@ class ApplicationSession(object):
         self._streaming_request_iterator = None
         self._streaming_response_iterator = None
         self._record_span = None
+        self._streaming_channel = None
 
         self._requests_session = None
 
@@ -757,17 +758,17 @@ class ApplicationSession(object):
             if grpc and endpoint and self.configuration.span_events.enabled:
                 if endpoint.scheme == "https":
                     credentials = grpc.ssl_channel_credentials()
-                    channel = grpc.secure_channel(endpoint.netloc, credentials)
+                    self._streaming_channel = grpc.secure_channel(endpoint.netloc, credentials)
                 elif endpoint.scheme == "http":
                     # Instantiating a grpc channel with an MTB endpoint
-                    channel = grpc.insecure_channel(endpoint.netloc)
+                    self._streaming_channel = grpc.insecure_channel(endpoint.netloc)
                 else:
                     _logger.warning("Unknown mtb scheme: %s", endpoint.scheme)
-                    channel = None
+                    self._streaming_channel = None
 
-                if channel:
+                if self._streaming_channel:
                     # creating stream_stream method off of channel
-                    record_span = self._record_span = channel.stream_stream(
+                    record_span = self._record_span = self._streaming_channel.stream_stream(
                         "/com.newrelic.trace.v1.IngestService/RecordSpan",
                         Span.SerializeToString,
                         RecordStatus.FromString,
@@ -820,6 +821,11 @@ class ApplicationSession(object):
                 self.request_headers_map, payload,
                 self.max_payload_size_in_bytes)
 
+    def shutdown_span_stream(self):
+        if self._streaming_channel:
+            _logger.debug('Terminating streaming span request.')
+            self._streaming_channel.close()
+
     def shutdown_session(self):
         """Called to perform orderly deregistration of agent run against
         the data collector, rather than simply dropping the connection and
@@ -827,10 +833,6 @@ class ApplicationSession(object):
         due to no more data being reported.
 
         """
-
-        if self._streaming_request_iterator:
-            _logger.debug('Terminating streaming request iterator.')
-            self._streaming_request_iterator.shutdown()
 
         _logger.debug('Connecting to data collector to terminate session '
                 'for agent run %r.', self.agent_run_id)

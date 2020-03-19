@@ -436,7 +436,9 @@ class FakeTrace(object):
     (FakeTrace, ()),
 ))
 @pytest.mark.parametrize('exclude_attributes', (True, False))
-def test_span_event_user_attributes(trace_type, args, exclude_attributes):
+@pytest.mark.parametrize('test_protos', (True, False))
+def test_span_event_user_attributes(trace_type, args, exclude_attributes,
+            test_protos):
 
     _settings = {
         'distributed_tracing.enabled': True,
@@ -459,7 +461,8 @@ def test_span_event_user_attributes(trace_type, args, exclude_attributes):
     @validate_span_events(
         count=count,
         exact_users=expected_params,
-        unexpected_users=forgone_params,)
+        unexpected_users=forgone_params,
+        validate_protos=test_protos)
     @validate_tt_segment_params(exact_params=expected_trace_params,
         forgone_params=forgone_params)
     @background_task(name='test_span_event_user_attributes')
@@ -488,7 +491,8 @@ _span_event_metrics = [("Supportability/SpanEvent/Errors/Dropped", None)]
     (SolrTrace, ('lib', 'command')),
     (FakeTrace, ()),
 ))
-def test_span_event_error_attributes(trace_type, args):
+@pytest.mark.parametrize('test_protos', (True, False))
+def test_span_event_error_attributes(trace_type, args, test_protos):
 
     _settings = {
         'distributed_tracing.enabled': True,
@@ -508,7 +512,8 @@ def test_span_event_error_attributes(trace_type, args):
             rollup_metrics=_span_event_metrics)
     @validate_span_events(
         count=1,
-        exact_agents=exact_agents,)
+        exact_agents=exact_agents,
+        validate_protos=test_protos)
     @background_task(name='test_span_event_error_attributes')
     def _test():
         transaction = current_transaction()

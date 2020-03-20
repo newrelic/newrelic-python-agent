@@ -459,7 +459,7 @@ def test_span_event_user_attributes(trace_type, args, exclude_attributes):
     @validate_span_events(
         count=count,
         exact_users=expected_params,
-        unexpected_users=forgone_params)
+        unexpected_users=forgone_params,)
     @validate_tt_segment_params(exact_params=expected_trace_params,
         forgone_params=forgone_params)
     @background_task(name='test_span_event_user_attributes')
@@ -508,7 +508,7 @@ def test_span_event_error_attributes(trace_type, args):
             rollup_metrics=_span_event_metrics)
     @validate_span_events(
         count=1,
-        exact_agents=exact_agents)
+        exact_agents=exact_agents,)
     @background_task(name='test_span_event_error_attributes')
     def _test():
         transaction = current_transaction()
@@ -570,15 +570,3 @@ def test_span_event_multiple_errors(trace_type, args):
                 record_exception()
 
     _test()
-
-
-@override_application_settings({
-    'distributed_tracing.enabled': True,
-    'span_events.enabled': True,
-    'mtb.endpoint': True,
-})
-@validate_span_events(count=1)
-@background_task(name='test_mtb_span_events')
-def test_mtb_span_events():
-    transaction = current_transaction()
-    transaction._sampled = True

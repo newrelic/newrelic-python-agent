@@ -4,7 +4,7 @@ import threading
 try:
     from newrelic.core.mtb_pb2 import AttributeValue
 except:
-    pass
+    AttributeValue = None
 
 
 class TerminatingDeque(object):

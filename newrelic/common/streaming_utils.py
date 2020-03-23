@@ -4,7 +4,7 @@ import threading
 try:
     from newrelic.core.mtb_pb2 import AttributeValue
 except:
-    pass
+    AttributeValue = None
 
 
 class TerminatingDeque(object):
@@ -45,9 +45,23 @@ class TerminatingDeque(object):
 
 
 class SpanProtoAttrs(dict):
-    def __init__(self, values=(), **kwargs):
-        for k, v in values:
-            self[k] = v
+    def __init__(self, *args, **kwargs):
+        super(SpanProtoAttrs, self).__init__()
+        if args:
+            arg = args[0]
+            if len(args) > 1:
+                raise TypeError(
+                        "SpanProtoAttrs expected at most 1 argument, got %d",
+                        len(args))
+            elif hasattr(arg, 'keys'):
+                for k in arg:
+                    self[k] = arg[k]
+            else:
+                for k, v in arg:
+                    self[k] = v
+
+        for k in kwargs:
+            self[k] = kwargs[k]
 
     def __setitem__(self, key, value):
         super(SpanProtoAttrs, self).__setitem__(key,
@@ -60,11 +74,11 @@ class SpanProtoAttrs(dict):
 
     @staticmethod
     def get_attribute_value(value):
-        if isinstance(value, float):
+        if isinstance(value, bool):
+            return AttributeValue(bool_value=value)
+        elif isinstance(value, float):
             return AttributeValue(double_value=value)
         elif isinstance(value, int):
             return AttributeValue(int_value=value)
-        elif isinstance(value, bool):
-            return AttributeValue(bool_value=value)
         else:
             return AttributeValue(string_value=str(value))

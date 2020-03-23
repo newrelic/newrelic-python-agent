@@ -1,11 +1,11 @@
 import threading
 import newrelic.tests.test_cases
-from newrelic.common.streaming_utils import TerminatingDeque
+import newrelic.common.streaming_utils as streaming_utils
 
 
 class TestTerminatingDeque(newrelic.tests.test_cases.TestCase):
     def setUp(self):
-        self.terminating_deque = TerminatingDeque(2)
+        self.terminating_deque = streaming_utils.TerminatingDeque(2)
         self.lock = self.terminating_deque._notify
 
     def test_simple_put(self):
@@ -78,3 +78,38 @@ class TestTerminatingDeque(newrelic.tests.test_cases.TestCase):
         thread.join(timeout=0.1)
         assert not thread.is_alive()
         assert consumed == items
+
+
+class AttributeValue(object):
+    def __init__(self, *args, **kwargs):
+        if args:
+            raise TypeError("args not allowed")
+        elif len(kwargs) != 1:
+            raise TypeError("exactly 1 keyword argument must be specified")
+        k, v = list(kwargs.items())[0]
+        setattr(self, k, v)
+
+
+class TestSpanProtoAttrs(newrelic.tests.test_cases.TestCase):
+    def setUp(self):
+        self.restore = streaming_utils.AttributeValue
+        streaming_utils.AttributeValue = AttributeValue
+
+    def tearDown(self):
+        streaming_utils.AttributeValue = self.restore
+
+    def test_get_attribute_value_bool(self):
+        value = streaming_utils.SpanProtoAttrs.get_attribute_value(True)
+        assert value.bool_value is True
+
+    def test_get_attribute_value_int(self):
+        value = streaming_utils.SpanProtoAttrs.get_attribute_value(9000)
+        assert value.int_value == 9000
+
+    def test_get_attribute_value_float(self):
+        value = streaming_utils.SpanProtoAttrs.get_attribute_value(9000.0)
+        assert value.double_value == 9000.0
+
+    def test_get_attribute_value_str(self):
+        value = streaming_utils.SpanProtoAttrs.get_attribute_value("hi")
+        assert value.string_value == "hi"

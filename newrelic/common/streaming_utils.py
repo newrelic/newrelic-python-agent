@@ -45,9 +45,23 @@ class TerminatingDeque(object):
 
 
 class SpanProtoAttrs(dict):
-    def __init__(self, values=(), **kwargs):
-        for k, v in values:
-            self[k] = v
+    def __init__(self, *args, **kwargs):
+        super(SpanProtoAttrs, self).__init__()
+        if args:
+            arg = args[0]
+            if len(args) > 1:
+                raise TypeError(
+                        "SpanProtoAttrs expected at most 1 argument, got %d",
+                        len(args))
+            elif hasattr(arg, 'keys'):
+                for k in arg:
+                    self[k] = arg[k]
+            else:
+                for k, v in arg:
+                    self[k] = v
+
+        for k in kwargs:
+            self[k] = kwargs[k]
 
     def __setitem__(self, key, value):
         super(SpanProtoAttrs, self).__setitem__(key,

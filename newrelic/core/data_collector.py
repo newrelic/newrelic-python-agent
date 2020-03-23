@@ -742,7 +742,10 @@ class StreamingRpc(object):
         self.request_iterator.connect()
         self.response_iterator = self.rpc(
                 self.request_iterator, metadata=self.metadata)
-        return self.response_iterator.add_callback(self.on_rpc_terminate)
+        if not self.response_iterator.add_callback(self.on_rpc_terminate):
+            self.response_iterator.cancel()
+            return False
+        return True
 
     def on_channel_state(self, state):
         if state is grpc.ChannelConnectivity.IDLE:
@@ -758,9 +761,13 @@ class StreamingRpc(object):
         if self.request_iterator.is_running():
             self.backoff = list(self.BACKOFF)
 
-        timeout = self.backoff and self.backoff.pop(0) or self.BACKOFF[-1]
-        time.sleep(timeout)
-        assert self.connect()
+        while True:
+            timeout = self.backoff and self.backoff.pop(0) or self.BACKOFF[-1]
+            time.sleep(timeout)
+            if self.connect():
+                break
+            else:
+                _logger.warning("Failed to add on_rpc_terminate callback.")
 
     def __iter__(self):
         return iter(self.response_iterator)

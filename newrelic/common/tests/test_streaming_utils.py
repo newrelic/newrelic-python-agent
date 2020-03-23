@@ -79,6 +79,30 @@ class TestStreamBuffer(newrelic.tests.test_cases.TestCase):
         assert not thread.is_alive()
         assert consumed == []
 
+    def test_connect_updates_state(self):
+        assert self.buffer.is_running()
+
+        self.buffer.connect()
+
+        assert not self.buffer.is_running()
+
+    def test_state_becomes_running_after_send(self):
+        for _ in range(2):
+            self.buffer.put(object())
+
+        self.buffer.connect()
+        # Buffer is not running after connect is called
+        assert not self.buffer.is_running()
+
+        # First send doesn't mean the buffer is running
+        next(self.buffer)
+        assert not self.buffer.is_running()
+
+        # Second send implies the previous send completed successfully, so the
+        # buffer is running.
+        next(self.buffer)
+        assert self.buffer.is_running()
+
 
 class AttributeValue(object):
     def __init__(self, *args, **kwargs):

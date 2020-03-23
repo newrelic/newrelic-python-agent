@@ -739,6 +739,7 @@ class StreamingRpc(object):
             self.channel = None
 
     def connect(self):
+        self.request_iterator.connect()
         self.response_iterator = self.rpc(
                 self.request_iterator, metadata=self.metadata)
         return self.response_iterator.add_callback(self.on_rpc_terminate)
@@ -752,8 +753,11 @@ class StreamingRpc(object):
         if self.response_iterator.code() is grpc.StatusCode.UNIMPLEMENTED:
             self.channel.close()
 
-        # FIXME: we need a way to "reset" the backoff timer. What counts as a
-        # "success"?
+        # If the RPC has terminated while it's running, the backoff sequence
+        # can start again
+        if self.request_iterator.is_running():
+            self.backoff = list(self.BACKOFF)
+
         timeout = self.backoff and self.backoff.pop(0) or self.BACKOFF[-1]
         time.sleep(timeout)
         assert self.connect()

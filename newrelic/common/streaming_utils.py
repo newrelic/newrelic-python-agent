@@ -74,11 +74,11 @@ class SpanProtoAttrs(dict):
 
     @staticmethod
     def get_attribute_value(value):
-        if isinstance(value, float):
+        if isinstance(value, bool):
+            return AttributeValue(bool_value=value)
+        elif isinstance(value, float):
             return AttributeValue(double_value=value)
         elif isinstance(value, int):
             return AttributeValue(int_value=value)
-        elif isinstance(value, bool):
-            return AttributeValue(bool_value=value)
         else:
             return AttributeValue(string_value=str(value))

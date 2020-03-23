@@ -762,6 +762,9 @@ class StreamingRpc(object):
         time.sleep(timeout)
         assert self.connect()
 
+    def __iter__(self):
+        return iter(self.response_iterator)
+
 
 class ApplicationSession(object):
 

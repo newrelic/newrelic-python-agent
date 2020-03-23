@@ -1,5 +1,5 @@
 from newrelic.core.data_collector import ApplicationSession
-from newrelic.common.streaming_utils import TerminatingDeque
+from newrelic.common.streaming_utils import StreamBuffer
 from newrelic.core.config import finalize_application_settings
 
 
@@ -8,9 +8,9 @@ def test_stream_connect(mock_grpc_server):
         {'mtb.endpoint': 'http://localhost:%d' % mock_grpc_server}
     )
     session = ApplicationSession('http://', settings.license_key, settings)
-    stream_deque = TerminatingDeque(0)
-    responses = session.connect_span_stream(stream_deque)
-    stream_deque.shutdown()
+    stream_buffer = StreamBuffer(0)
+    stream_buffer.shutdown()
+    responses = session.connect_span_stream(stream_buffer)
     responses = list(responses)
     assert len(responses) == 1
     assert responses[0].messages_seen == 0

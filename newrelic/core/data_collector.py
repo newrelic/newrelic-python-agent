@@ -748,6 +748,7 @@ class StreamingRpc(object):
 
     def close(self):
         if self.channel:
+            _logger.debug("Closing streaming rpc.")
             self.channel.close()
             self.channel = None
 
@@ -758,6 +759,7 @@ class StreamingRpc(object):
         if not self.response_iterator.add_callback(self.on_rpc_terminate):
             self.response_iterator.cancel()
             return False
+        _logger.debug("Successfully established streaming rpc.")
         return True
 
     def on_channel_state(self, state):
@@ -767,6 +769,8 @@ class StreamingRpc(object):
 
     def on_rpc_terminate(self):
         if self.response_iterator.code() is grpc.StatusCode.UNIMPLEMENTED:
+            _logger.debug("Streaming RPC received UNIMPLEMENTED response code."
+                    " The agent will not attempt to reestablish the stream.")
             self.channel.close()
 
         # If the RPC has terminated while it's running, the backoff sequence
@@ -776,6 +780,9 @@ class StreamingRpc(object):
 
         while True:
             timeout = self.backoff and self.backoff.pop(0) or self.BACKOFF[-1]
+            _logger.debug(
+                    "Attempting to reestablish rpc stream after %s seconds.",
+                    timeout)
             time.sleep(timeout)
             if self.connect():
                 break

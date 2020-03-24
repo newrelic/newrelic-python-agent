@@ -719,13 +719,26 @@ def apply_high_security_mode_fixups(local_settings, server_settings):
 
 
 class StreamingRpc(object):
+    """Streaming Remote Procedure Call
+
+    This class keeps a stream_stream RPC alive, using a backoff sequence when
+    errors are encountered. If grpc.StatusCode.UNIMPLEMENTED is encountered, a
+    retry will not occur.
+
+    :param channel: A grpc channel object
+    :type channel: grpc.Channel
+    :param stream_buffer: A buffer that holds streaming data
+    :type stream_buffer: newrelic.common.streaming_utils.StreamBuffer
+    :param metadata: (optional) Metadata to attach to streaming rpc calls
+    :type metadata: dict
+    """
     BACKOFF = (15, 15, 30, 60, 120, 300)
 
-    def __init__(self, channel, request_iterator, metadata=None,
+    def __init__(self, channel, stream_buffer, metadata=None,
             path='/com.newrelic.trace.v1.IngestService/RecordSpan'):
         self.channel = channel
         self.metadata = metadata
-        self.request_iterator = request_iterator
+        self.request_iterator = stream_buffer
         self.response_iterator = None
         self.rpc = self.channel.stream_stream(
             path, Span.SerializeToString, RecordStatus.FromString

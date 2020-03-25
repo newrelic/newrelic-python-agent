@@ -771,7 +771,8 @@ class StreamingRpc(object):
         if self.response_iterator.code() is grpc.StatusCode.UNIMPLEMENTED:
             _logger.debug("Streaming RPC received UNIMPLEMENTED response code."
                     " The agent will not attempt to reestablish the stream.")
-            self.channel.close()
+            self.close()
+            return
 
         # If the RPC has terminated while it's running, the backoff sequence
         # can start again

@@ -991,10 +991,14 @@ class StatsEngine(object):
 
         # Merge in span events
 
-        if (settings.distributed_tracing.enabled and transaction.sampled and
+        if (settings.distributed_tracing.enabled and
                 settings.span_events.enabled and settings.collect_span_events):
-            for event in transaction.span_events(self.__settings):
-                self._span_events.add(event, priority=transaction.priority)
+            if settings.mtb.endpoint:
+                for event in transaction.span_protos(settings):
+                    self._span_stream.put(event)
+            elif transaction.sampled:
+                for event in transaction.span_events(self.__settings):
+                    self._span_events.add(event, priority=transaction.priority)
 
     def metric_data(self, normalizer=None):
         """Returns a list containing the low level metric data for

@@ -28,6 +28,7 @@ from newrelic.core.stack_trace import exception_stack
 
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.common.encoding_utils import json_encode
+from newrelic.common.streaming_utils import StreamBuffer
 
 _logger = logging.getLogger(__name__)
 
@@ -416,6 +417,7 @@ class StatsEngine(object):
         self._error_events = SampledDataSet()
         self._custom_events = SampledDataSet()
         self._span_events = SampledDataSet()
+        self._span_stream = None
         self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__slow_transaction_map = {}
@@ -446,6 +448,10 @@ class StatsEngine(object):
     @property
     def span_events(self):
         return self._span_events
+
+    @property
+    def span_stream(self):
+        return self._span_stream
 
     @property
     def synthetics_events(self):
@@ -1386,6 +1392,11 @@ class StatsEngine(object):
             self._span_events = SampledDataSet(
                     self.__settings.event_harvest_config.
                     harvest_limits.span_event_data)
+
+            # FIXME: retrieve stream buffer size from configuration
+            # span stream is never reset after instantiation
+            if self._span_stream is None:
+                self._span_stream = StreamBuffer(1000)
         else:
             self._span_events = SampledDataSet()
 

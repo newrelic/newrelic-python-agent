@@ -7,7 +7,8 @@ except:
     AttributeValue = None
 
 
-class TerminatingDeque(object):
+class StreamBuffer(object):
+
     def __init__(self, maxlen):
         self._queue = collections.deque(maxlen=maxlen)
         self._notify = threading.Condition(threading.Lock())
@@ -27,16 +28,18 @@ class TerminatingDeque(object):
             self._notify.notify_all()
 
     def __next__(self):
-        if self._queue:
-            return self._queue.popleft()
+        while True:
+            if self._shutdown:
+                raise StopIteration
 
-        with self._notify:
-            while not self._queue:
-                if self._shutdown:
-                    raise StopIteration
-                self._notify.wait()
+            try:
+                return self._queue.popleft()
+            except IndexError:
+                pass
 
-        return self._queue.popleft()
+            with self._notify:
+                if not self._shutdown and not self._queue:
+                    self._notify.wait()
 
     next = __next__
 

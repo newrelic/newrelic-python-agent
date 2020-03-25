@@ -718,6 +718,89 @@ def apply_high_security_mode_fixups(local_settings, server_settings):
     return server_settings
 
 
+class StreamingRpc(object):
+    """Streaming Remote Procedure Call
+
+    This class keeps a stream_stream RPC alive, using a backoff sequence when
+    errors are encountered. If grpc.StatusCode.UNIMPLEMENTED is encountered, a
+    retry will not occur.
+
+    :param channel: A grpc channel object
+    :type channel: grpc.Channel
+    :param stream_buffer: A buffer that holds streaming data
+    :type stream_buffer: newrelic.common.streaming_utils.StreamBuffer
+    :param metadata: (optional) Metadata to attach to streaming rpc calls
+    :type metadata: dict
+    """
+    BACKOFF = (15, 15, 30, 60, 120, 300)
+    BACKOFF_RESET_THRESHOLD = 0.5
+
+    def __init__(self, channel, stream_buffer, metadata=None,
+            path='/com.newrelic.trace.v1.IngestService/RecordSpan'):
+        self.channel = channel
+        self.metadata = metadata
+        self.request_iterator = stream_buffer
+        self.response_iterator = None
+        self.rpc = self.channel.stream_stream(
+            path, Span.SerializeToString, RecordStatus.FromString
+        )
+        self.backoff = list(self.BACKOFF)
+        self.last_connect_time = time.time()
+        self.connect() or self.channel.subscribe(self.on_channel_state)
+
+    def close(self):
+        if self.channel:
+            _logger.debug("Closing streaming rpc.")
+            self.channel.close()
+            self.channel = None
+
+    def connect(self):
+        self.response_iterator = self.rpc(
+                self.request_iterator, metadata=self.metadata)
+        if not self.response_iterator.add_callback(self.on_rpc_terminate):
+            self.response_iterator.cancel()
+            return False
+        self.last_connect_time = time.time()
+        _logger.debug("Successfully established streaming rpc.")
+        return True
+
+    def on_channel_state(self, state):
+        if state is grpc.ChannelConnectivity.IDLE:
+            self.channel.unsubscribe(self.on_channel_state)
+            self.connect()
+
+    def on_rpc_terminate(self):
+        if self.response_iterator.code() is grpc.StatusCode.UNIMPLEMENTED:
+            _logger.debug("Streaming RPC received UNIMPLEMENTED response code."
+                    " The agent will not attempt to reestablish the stream.")
+            self.close()
+            return
+
+        # The RPC state is considered "established" if it didn't terminate for
+        # at least BACKOFF_RESET_THRESHOLD seconds. If the RPC was previously
+        # "established", reset the backoff sequence
+        seconds_since_last_connect = time.time() - self.last_connect_time
+        if seconds_since_last_connect > self.BACKOFF_RESET_THRESHOLD:
+            _logger.debug(
+                    "Resetting backoff. Seconds since last connect: %f",
+                    seconds_since_last_connect)
+            self.backoff = list(self.BACKOFF)
+
+        while True:
+            timeout = self.backoff and self.backoff.pop(0) or self.BACKOFF[-1]
+            _logger.debug(
+                    "Attempting to reestablish rpc stream after %s seconds.",
+                    timeout)
+            time.sleep(timeout)
+            if self.connect():
+                break
+            else:
+                _logger.warning("Failed to add on_rpc_terminate callback.")
+
+    def __iter__(self):
+        return iter(self.response_iterator)
+
+
 class ApplicationSession(object):
 
     """ Class which encapsulates communication with the data collector
@@ -732,20 +815,11 @@ class ApplicationSession(object):
         self.agent_run_id = configuration.agent_run_id
         self.request_headers_map = configuration.request_headers_map
 
-        self._streaming_request_iterator = None
-        self._streaming_response_iterator = None
-        self._record_span = None
-        self._streaming_channel = None
-
+        self._rpc = None
         self._requests_session = None
 
     def connect_span_stream(self, span_iterator):
-        self._streaming_request_iterator = \
-            span_iterator or self._streaming_request_iterator
-
-        record_span = self._record_span
-
-        if not record_span:
+        if not self._rpc:
             endpoint = self.configuration.mtb.endpoint
 
             # FIXME: should we do the parsing here?
@@ -755,38 +829,23 @@ class ApplicationSession(object):
                 endpoint = None
 
             if grpc and endpoint and self.configuration.span_events.enabled:
+                metadata = (
+                        ('agent_run_token', self.agent_run_id),
+                        ('license_key', self.license_key))
+
                 if endpoint.scheme == "https":
                     credentials = grpc.ssl_channel_credentials()
-                    self._streaming_channel = \
-                        grpc.secure_channel(endpoint.netloc, credentials)
+                    channel = grpc.secure_channel(endpoint.netloc, credentials)
                 elif endpoint.scheme == "http":
-                    # Instantiating a grpc channel with an MTB endpoint
-                    self._streaming_channel = \
-                        grpc.insecure_channel(endpoint.netloc)
+                    channel = grpc.insecure_channel(endpoint.netloc)
                 else:
                     _logger.warning("Unknown mtb scheme: %s", endpoint.scheme)
-                    self._streaming_channel = None
+                    channel = None
 
-                if self._streaming_channel:
-                    # creating stream_stream method off of channel
-                    record_span = self._record_span = \
-                        self._streaming_channel.stream_stream(
-                            "/com.newrelic.trace.v1.IngestService/RecordSpan",
-                            Span.SerializeToString,
-                            RecordStatus.FromString,
-                        )
-
-        if record_span:
-            metadata = (
-                    ('agent_run_token', self.agent_run_id),
-                    ('license_key', self.license_key))
-
-            self._streaming_response_iterator = self._record_span(
-                    self._streaming_request_iterator, metadata=metadata)
-
-            return self._streaming_response_iterator
-
-        # TODO: Add error handling onto response iterator
+                if channel:
+                    rpc = self._rpc = StreamingRpc(
+                            channel, span_iterator, metadata)
+                    return rpc
 
     @property
     def requests_session(self):
@@ -824,9 +883,9 @@ class ApplicationSession(object):
                 self.max_payload_size_in_bytes)
 
     def shutdown_span_stream(self):
-        if self._streaming_channel:
+        if self._rpc:
             _logger.debug('Terminating streaming span request.')
-            self._streaming_channel.close()
+            self._rpc.close()
 
     def shutdown_session(self):
         """Called to perform orderly deregistration of agent run against

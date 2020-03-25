@@ -8,18 +8,11 @@ except:
 
 
 class StreamBuffer(object):
-    CONNECTING = 0
-    SENT_ONE = 1
-    RUNNING = 2
 
     def __init__(self, maxlen):
         self._queue = collections.deque(maxlen=maxlen)
         self._notify = threading.Condition(threading.Lock())
         self._shutdown = False
-        self._run_state = self.RUNNING
-
-    def connect(self):
-        self._run_state = self.CONNECTING
 
     def shutdown(self):
         with self._notify:
@@ -34,16 +27,7 @@ class StreamBuffer(object):
             self._queue.append(item)
             self._notify.notify_all()
 
-    def is_running(self):
-        return self._run_state == self.RUNNING
-
-    def _update_state(self):
-        if self._run_state < self.RUNNING:
-            self._run_state += 1
-
     def __next__(self):
-        self._update_state()
-
         while True:
             if self._shutdown:
                 raise StopIteration

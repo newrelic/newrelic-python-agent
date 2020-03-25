@@ -753,7 +753,6 @@ class StreamingRpc(object):
             self.channel = None
 
     def connect(self):
-        self.request_iterator.connect()
         self.response_iterator = self.rpc(
                 self.request_iterator, metadata=self.metadata)
         if not self.response_iterator.add_callback(self.on_rpc_terminate):
@@ -774,11 +773,8 @@ class StreamingRpc(object):
             self.close()
             return
 
-        # If the RPC has terminated while it's running, the backoff sequence
-        # can start again
-        if self.request_iterator.is_running():
-            self.backoff = list(self.BACKOFF)
-
+        # FIXME: we need a way to "reset" the backoff timer. What counts as a
+        # "success"?
         while True:
             timeout = self.backoff and self.backoff.pop(0) or self.BACKOFF[-1]
             _logger.debug(

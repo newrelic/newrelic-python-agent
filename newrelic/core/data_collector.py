@@ -758,7 +758,7 @@ class StreamingRpc(object):
         if not self.response_iterator.add_callback(self.on_rpc_terminate):
             self.response_iterator.cancel()
             return False
-        self.last_connect_time = time.time()
+        _logger.info("Streaming RPC connect called successfully.")
         return True
 
     def on_channel_state(self, state):
@@ -768,13 +768,17 @@ class StreamingRpc(object):
 
     def on_rpc_terminate(self):
         if self.response_iterator.code() is grpc.StatusCode.UNIMPLEMENTED:
-            _logger.debug("Streaming RPC received UNIMPLEMENTED response code."
+            _logger.error("Streaming RPC received UNIMPLEMENTED response code."
                     " The agent will not attempt to reestablish the stream.")
             self.close()
             return
 
-        _logger.debug(
-                "RPC terminated, attempting to reestablish after timeout.")
+        code = self.response_iterator.code()
+        details = self.response_iterator.details()
+        _logger.warning(
+            "Streaming RPC failed. Will attempt to reconnect in 15 seconds. "
+            "Code: %s Details: %s", code, details)
+
         while True:
             time.sleep(self.RETRY_TIMEOUT)
             if self.connect():

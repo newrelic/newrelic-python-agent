@@ -733,6 +733,7 @@ class StreamingRpc(object):
     :type metadata: dict
     """
     BACKOFF = (15, 15, 30, 60, 120, 300)
+    BACKOFF_RESET_THRESHOLD = 0.5
 
     def __init__(self, channel, stream_buffer, metadata=None,
             path='/com.newrelic.trace.v1.IngestService/RecordSpan'):
@@ -744,6 +745,7 @@ class StreamingRpc(object):
             path, Span.SerializeToString, RecordStatus.FromString
         )
         self.backoff = list(self.BACKOFF)
+        self.last_connect_time = time.time()
         self.connect() or self.channel.subscribe(self.on_channel_state)
 
     def close(self):
@@ -758,6 +760,7 @@ class StreamingRpc(object):
         if not self.response_iterator.add_callback(self.on_rpc_terminate):
             self.response_iterator.cancel()
             return False
+        self.last_connect_time = time.time()
         _logger.debug("Successfully established streaming rpc.")
         return True
 
@@ -773,8 +776,16 @@ class StreamingRpc(object):
             self.close()
             return
 
-        # FIXME: we need a way to "reset" the backoff timer. What counts as a
-        # "success"?
+        # The RPC state is considered "established" if it didn't terminate for
+        # at least BACKOFF_RESET_THRESHOLD seconds. If the RPC was previously
+        # "established", reset the backoff sequence
+        seconds_since_last_connect = time.time() - self.last_connect_time
+        if seconds_since_last_connect > self.BACKOFF_RESET_THRESHOLD:
+            _logger.debug(
+                    "Resetting backoff. Seconds since last connect: %f",
+                    seconds_since_last_connect)
+            self.backoff = list(self.BACKOFF)
+
         while True:
             timeout = self.backoff and self.backoff.pop(0) or self.BACKOFF[-1]
             _logger.debug(

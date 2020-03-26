@@ -732,8 +732,8 @@ class StreamingRpc(object):
     :param metadata: (optional) Metadata to attach to streaming rpc calls
     :type metadata: dict
     """
-    BACKOFF = (15, 15, 30, 60, 120, 300)
-    BACKOFF_RESET_THRESHOLD = 0.5
+
+    RETRY_TIMEOUT = 15
 
     def __init__(self, channel, stream_buffer, metadata=None,
             path='/com.newrelic.trace.v1.IngestService/RecordSpan'):
@@ -744,8 +744,6 @@ class StreamingRpc(object):
         self.rpc = self.channel.stream_stream(
             path, Span.SerializeToString, RecordStatus.FromString
         )
-        self.backoff = list(self.BACKOFF)
-        self.last_connect_time = time.time()
         self.connect() or self.channel.subscribe(self.on_channel_state)
 
     def close(self):
@@ -761,7 +759,6 @@ class StreamingRpc(object):
             self.response_iterator.cancel()
             return False
         self.last_connect_time = time.time()
-        _logger.debug("Successfully established streaming rpc.")
         return True
 
     def on_channel_state(self, state):
@@ -776,22 +773,10 @@ class StreamingRpc(object):
             self.close()
             return
 
-        # The RPC state is considered "established" if it didn't terminate for
-        # at least BACKOFF_RESET_THRESHOLD seconds. If the RPC was previously
-        # "established", reset the backoff sequence
-        seconds_since_last_connect = time.time() - self.last_connect_time
-        if seconds_since_last_connect > self.BACKOFF_RESET_THRESHOLD:
-            _logger.debug(
-                    "Resetting backoff. Seconds since last connect: %f",
-                    seconds_since_last_connect)
-            self.backoff = list(self.BACKOFF)
-
+        _logger.debug(
+                "RPC terminated, attempting to reestablish after timeout.")
         while True:
-            timeout = self.backoff and self.backoff.pop(0) or self.BACKOFF[-1]
-            _logger.debug(
-                    "Attempting to reestablish rpc stream after %s seconds.",
-                    timeout)
-            time.sleep(timeout)
+            time.sleep(self.RETRY_TIMEOUT)
             if self.connect():
                 break
             else:

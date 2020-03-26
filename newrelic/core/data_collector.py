@@ -123,14 +123,14 @@ def parse_infinite_tracing_endpoint(endpoint):
             parsed = urlparse.urlparse(endpoint)
         except:
             parsed = None
-        if not parsed.scheme or not parsed.netloc:
+        if not parsed or not parsed.scheme or not parsed.netloc:
             _logger.warning('Disabling Infinite Tracing due to '
                             'malformed Trace Observer: %s', endpoint)
             internal_count_metric(
                 'Supportability/InfiniteTracing/MalformedTraceObserver', 1)
             return None
         else:
-            return endpoint
+            return parsed
     return None
 
 
@@ -836,7 +836,6 @@ class ApplicationSession(object):
                 metadata = (
                         ('agent_run_token', self.agent_run_id),
                         ('license_key', self.license_key))
-
                 if endpoint.scheme == "https":
                     credentials = grpc.ssl_channel_credentials()
                     channel = grpc.secure_channel(endpoint.netloc, credentials)

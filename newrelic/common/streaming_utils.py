@@ -13,6 +13,8 @@ class StreamBuffer(object):
         self._queue = collections.deque(maxlen=maxlen)
         self._notify = threading.Condition(threading.Lock())
         self._shutdown = False
+        self._seen = 0
+        self._dropped = 0
 
     def shutdown(self):
         with self._notify:
@@ -24,8 +26,25 @@ class StreamBuffer(object):
             if self._shutdown:
                 return
 
+            self._seen += 1
+
+            # NOTE: dropped can be over-counted as the queue approaches
+            # capacity while data is still being transmitted.
+            #
+            # This is because the length of the queue can be changing as it's
+            # being measured.
+            if len(self._queue) >= self._queue.maxlen:
+                self._dropped += 1
+
             self._queue.append(item)
             self._notify.notify_all()
+
+    def stats(self):
+        with self._notify:
+            seen, dropped = self._seen, self._dropped
+            self._seen, self._dropped = 0, 0
+
+        return seen, dropped
 
     def __next__(self):
         while True:

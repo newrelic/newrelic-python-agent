@@ -79,6 +79,39 @@ class TestStreamBuffer(newrelic.tests.test_cases.TestCase):
         assert not thread.is_alive()
         assert consumed == []
 
+    def test_queue_max_length(self):
+        item = object()
+
+        # Add items to max capacity of queue
+        self.buffer.put(item)
+        self.buffer.put(item)
+
+        assert len(self.buffer._queue) == 2
+
+        # Attempt to add another item to the queue
+        self.buffer.put(item)
+
+        # An item should have been dropped from the queue
+        assert len(self.buffer._queue) == 2
+
+    def test_stream_stats(self):
+        items = [object() for _ in range(2)]
+
+        # Put items into the queue to max capacity
+        for item in items:
+            self.buffer.put(item)
+
+        # Attempt to add another item into the queue
+        item = object()
+        self.buffer.put(item)
+
+        assert len(self.buffer._queue) == 2
+
+        seen, dropped = self.buffer.stats()
+
+        assert seen == 3
+        assert dropped == 1
+
 
 class AttributeValue(object):
     def __init__(self, *args, **kwargs):

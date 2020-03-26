@@ -117,6 +117,23 @@ def collector_url(server=None):
     return url % (scheme, server)
 
 
+def parse_infinite_tracing_endpoint(endpoint):
+    if endpoint is not None:
+        try:
+            parsed = urlparse.urlparse(endpoint)
+        except:
+            parsed = None
+        if not parsed.scheme or not parsed.netloc:
+            _logger.warning('Disabling Infinite Tracing due to '
+                            'malformed Trace Observer: %s', endpoint)
+            internal_count_metric(
+                'Supportability/InfiniteTracing/MalformedTraceObserver', 1)
+            return None
+        else:
+            return endpoint
+    return None
+
+
 def proxy_server():
     """Returns the dictionary of proxy server settings to be supplied to
     the 'requests' library when making requests.
@@ -809,13 +826,8 @@ class ApplicationSession(object):
 
     def connect_span_stream(self, span_iterator):
         if not self._rpc:
-            endpoint = self.configuration.mtb.endpoint
-
-            # FIXME: should we do the parsing here?
-            try:
-                endpoint = endpoint and urlparse.urlparse(endpoint)
-            except:
-                endpoint = None
+            endpoint = parse_infinite_tracing_endpoint(
+                self.configuration.mtb.endpoint)
 
             if (grpc and endpoint and
                     self.configuration.distributed_tracing.enabled and

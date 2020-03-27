@@ -817,7 +817,10 @@ class ApplicationSession(object):
             except:
                 endpoint = None
 
-            if grpc and endpoint and self.configuration.span_events.enabled:
+            if (grpc and endpoint and
+                    self.configuration.distributed_tracing.enabled and
+                    self.configuration.span_events.enabled and
+                    self.configuration.collect_span_events):
                 metadata = (
                         ('agent_run_token', self.agent_run_id),
                         ('license_key', self.license_key))

@@ -9,7 +9,6 @@ from newrelic.api.transaction import current_transaction
     {
         "distributed_tracing.enabled": True,
         "span_events.enabled": True,
-        "mtb.endpoint": True,
     }
 )
 @validate_span_events(count=1)

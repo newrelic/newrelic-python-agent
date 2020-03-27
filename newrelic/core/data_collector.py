@@ -721,7 +721,7 @@ def apply_high_security_mode_fixups(local_settings, server_settings):
 class StreamingRpc(object):
     """Streaming Remote Procedure Call
 
-    This class keeps a stream_stream RPC alive, using a backoff sequence when
+    This class keeps a stream_stream RPC alive, retrying after a timeout when
     errors are encountered. If grpc.StatusCode.UNIMPLEMENTED is encountered, a
     retry will not occur.
 

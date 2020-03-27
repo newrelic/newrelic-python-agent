@@ -828,7 +828,7 @@ class ApplicationSession(object):
     def connect_span_stream(self, span_iterator):
         if not self._rpc:
             endpoint = parse_infinite_tracing_endpoint(
-                self.configuration.mtb.endpoint)
+                self.configuration.infinite_tracing.trace_observer_url)
 
             if (grpc and endpoint and
                     self.configuration.distributed_tracing.enabled and
@@ -843,7 +843,8 @@ class ApplicationSession(object):
                 elif endpoint.scheme == "http":
                     channel = grpc.insecure_channel(endpoint.netloc)
                 else:
-                    _logger.warning("Unknown mtb scheme: %s", endpoint.scheme)
+                    _logger.warning("Unknown Infinite Tracing scheme: %s",
+                                    endpoint.scheme)
                     channel = None
 
                 if channel:

@@ -49,7 +49,7 @@ def validate_span_events(count=1,
             except:
                 raise
             else:
-                if not instance.settings.mtb.endpoint:
+                if not instance.settings.infinite_tracing.trace_observer_url:
                     events = [event for priority, seen_at, event
                                     in instance.span_events.pq]
 

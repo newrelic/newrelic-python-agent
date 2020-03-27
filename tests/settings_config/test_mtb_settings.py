@@ -8,22 +8,27 @@ INI_FILE_EMPTY = b"""
 """
 
 
-INI_FILE_MTB = b"""
+INI_FILE_INFINITE_TRACING = b"""
 [newrelic]
-mtb.endpoint = bar
+infinite_tracing.trace_observer_url = bar
 """
 
 
 # Tests for loading settings and testing for values precedence
 @pytest.mark.parametrize('ini,env,expected_endpoint', (
     (INI_FILE_EMPTY, {}, None),
-    (INI_FILE_EMPTY, {'NEW_RELIC_MTB_ENDPOINT': 'foo'}, 'foo'),
-    (INI_FILE_MTB, {'NEW_RELIC_MTB_ENDPOINT': 'foo'}, 'bar'),
+    (INI_FILE_EMPTY,
+     {'NEW_RELIC_INFINITE_TRACING_TRACE_OBSERVER_URL': 'foo'},
+     'foo'),
+    (INI_FILE_INFINITE_TRACING,
+     {'NEW_RELIC_INFINITE_TRACING_TRACE_OBSERVER_URL': 'foo'},
+     'bar'),
 ))
-def test_mtb_settings(ini, env, expected_endpoint, global_settings):
+def test_infinite_tracing_settings(ini, env,
+        expected_endpoint, global_settings):
 
     settings = global_settings()
-    assert settings.mtb.endpoint == expected_endpoint
+    assert settings.infinite_tracing.trace_observer_url == expected_endpoint
 
 
 # Testing valid and invalid endpoints, including leading

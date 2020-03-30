@@ -33,19 +33,23 @@ def validate_span_events(count=1,
         @transient_function_wrapper('newrelic.core.stats_engine',
                 'StatsEngine.record_transaction')
         def capture_span_events(wrapped, instance, args, kwargs):
+            events = []
+
+            @transient_function_wrapper(
+                    'newrelic.common.streaming_utils',
+                    'StreamBuffer.put')
+            def stream_capture(wrapped, instance, args, kwargs):
+                event = args[0]
+                events.append(event)
+                return wrapped(*args, **kwargs)
+
             record_transaction_called.append(True)
             try:
-                result = wrapped(*args, **kwargs)
+                result = stream_capture(wrapped)(*args, **kwargs)
             except:
                 raise
             else:
-                if instance.settings.mtb.endpoint:
-                    # FIXME: This needs to access the deque iterator in stats
-                    # engine where spans will be streamed from
-                    node = args[0]
-                    events = [span for span
-                                   in node.span_protos(instance.settings)]
-                else:
+                if not instance.settings.mtb.endpoint:
                     events = [event for priority, seen_at, event
                                     in instance.span_events.pq]
 

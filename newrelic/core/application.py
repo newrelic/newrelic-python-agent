@@ -32,7 +32,6 @@ from newrelic.core.profile_sessions import profile_session_manager
 
 from newrelic.core.database_utils import SQLConnections
 from newrelic.common.object_names import callable_name
-from newrelic.common.streaming_utils import StreamBuffer
 from newrelic.core.adaptive_sampler import AdaptiveSampler
 
 _logger = logging.getLogger(__name__)
@@ -452,8 +451,7 @@ class Application(object):
                         configuration.sampling_target,
                         sampling_target_period)
 
-            # TODO: Get the streaming buffer from stats engine
-            active_session.connect_span_stream(StreamBuffer(0))
+            active_session.connect_span_stream(self._stats_engine.span_stream)
 
             with self._stats_custom_lock:
                 self._stats_custom_engine.reset_stats(configuration)

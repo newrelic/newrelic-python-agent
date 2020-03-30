@@ -36,7 +36,7 @@ _TransactionNode = namedtuple('_TransactionNode',
         'distributed_trace_intrinsics', 'user_attributes', 'priority',
         'sampled', 'parent_transport_duration', 'parent_span', 'parent_type',
         'parent_account', 'parent_app', 'parent_tx', 'parent_transport_type',
-        'root_span_guid', 'trace_id', 'loop_time',])
+        'root_span_guid', 'trace_id', 'loop_time'])
 
 
 class TransactionNode(_TransactionNode):
@@ -325,7 +325,6 @@ class TransactionNode(_TransactionNode):
                     message=error.message,
                     type=error.type,
                     parameters=params)
-
 
     def transaction_trace(self, stats, limit, connections):
 

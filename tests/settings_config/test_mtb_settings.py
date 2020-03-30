@@ -31,21 +31,17 @@ def test_mtb_settings(ini, env, expected_endpoint, global_settings):
 @pytest.mark.parametrize('endpoint, expected_components', (
     ('https://test.tracing.edge.nr-data.net/',
      ('https', 'test.tracing.edge.nr-data.net')),
-    ('https://test.tracing.edge.nr-data.net',
-     ('https', 'test.tracing.edge.nr-data.net')),
     ('https://test.tracing.edge.nr-data.net:8080/',
      ('https', 'test.tracing.edge.nr-data.net:8080')),
-    ('http://test.tracing.edge.nr-data.net/',
-     ('http', 'test.tracing.edge.nr-data.net')),
     ('http://test.tracing.edge.nr-data.net',
      ('http', 'test.tracing.edge.nr-data.net')),
-    ('http://test.tracing.edge.nr-data.net:8080/',
-     ('http', 'test.tracing.edge.nr-data.net:8080')),
     ('http://test.tracing.edge.nr-data.net/v1/',
      ('http', 'test.tracing.edge.nr-data.net')),
+    (None, None),
     ('', None),
     ('https:///', None),
     ('//test.tracing.edge.nr-data.net:8080/', None),
+    (123, None)
 ))
 def test_infinite_tracing_endpoint(endpoint, expected_components):
     internal_metrics = CustomMetrics()
@@ -59,6 +55,9 @@ def test_infinite_tracing_endpoint(endpoint, expected_components):
             assert not metrics
         else:
             assert parsed_endpoint is None
-            assert metrics[0] == (
-                'Supportability/InfiniteTracing/MalformedTraceObserver',
-                [1, 0.0, 0.0, 0.0, 0.0, 0.0])
+            if endpoint is None:
+                assert not metrics
+            else:
+                assert metrics[0] == (
+                    'Supportability/InfiniteTracing/MalformedTraceObserver',
+                    [1, 0.0, 0.0, 0.0, 0.0, 0.0])

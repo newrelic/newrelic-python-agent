@@ -1049,6 +1049,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/infinite_tracing_pb2.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/internal_metrics.py": {
         "hash": "n/a",
         "libraries": [
@@ -1074,12 +1080,6 @@
         ]
     },
     "newrelic/core/metric.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/core/mtb_pb2.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

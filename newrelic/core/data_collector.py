@@ -118,20 +118,21 @@ def collector_url(server=None):
 
 
 def parse_infinite_tracing_endpoint(endpoint):
-    if endpoint is not None:
-        try:
-            parsed = urlparse.urlparse(endpoint)
-        except:
-            parsed = None
-        if not parsed or not parsed.scheme or not parsed.netloc:
-            _logger.warning('Disabling Infinite Tracing due to '
-                            'malformed Trace Observer: %s', endpoint)
-            internal_count_metric(
-                'Supportability/InfiniteTracing/MalformedTraceObserver', 1)
-            return None
-        else:
-            return parsed
-    return None
+    if endpoint is None:
+        return None
+
+    try:
+        parsed = urlparse.urlparse(endpoint)
+    except Exception:
+        parsed = None
+    if not parsed or not parsed.scheme or not parsed.netloc:
+        _logger.warning('Disabling Infinite Tracing due to '
+                        'malformed Trace Observer: %s', endpoint)
+        internal_count_metric(
+            'Supportability/InfiniteTracing/MalformedTraceObserver', 1)
+        return None
+    else:
+        return parsed
 
 
 def proxy_server():

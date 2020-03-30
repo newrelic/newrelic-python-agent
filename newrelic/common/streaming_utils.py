@@ -2,7 +2,7 @@ import collections
 import threading
 
 try:
-    from newrelic.core.mtb_pb2 import AttributeValue
+    from newrelic.core.infinite_tracing_pb2 import AttributeValue
 except:
     AttributeValue = None
 

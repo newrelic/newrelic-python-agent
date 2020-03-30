@@ -5,7 +5,7 @@ from newrelic.common.object_wrapper import (transient_function_wrapper,
         function_wrapper)
 
 try:
-    from newrelic.core.mtb_pb2 import AttributeValue, Span
+    from newrelic.core.infinite_tracing_pb2 import AttributeValue, Span
 except:
     AttributeValue = None
     Span = None

@@ -42,7 +42,7 @@ from newrelic.common.utilization import (AWSUtilization, AzureUtilization,
 
 try:
     import grpc
-    from newrelic.core.mtb_pb2 import Span, RecordStatus
+    from newrelic.core.infinite_tracing_pb2 import Span, RecordStatus
 except ImportError:
     grpc = None
 

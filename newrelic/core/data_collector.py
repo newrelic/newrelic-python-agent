@@ -787,6 +787,28 @@ class StreamingRpc(object):
         _logger.info("Streaming RPC connect called successfully.")
         return True
 
+    def process_responses(self):
+        response_iterator = None
+        while True:
+            with self.notify:
+                if not self.channel:
+                    break
+
+                # check if connect has run.
+                # connect will assign self.response_iterator
+                if response_iterator is self.response_iterator:
+                    self.notify.wait()
+
+            if not self.channel:
+                break
+
+            response_iterator = self.response_iterator
+            try:
+                for response in response_iterator:
+                    _logger.debug("Stream response: %s", response)
+            except Exception:
+                pass
+
     def on_channel_state(self, state):
         if state is grpc.ChannelConnectivity.IDLE:
             self.channel.unsubscribe(self.on_channel_state)

@@ -615,6 +615,8 @@ _settings.agent_limits.data_compression_level = None
 
 _settings.infinite_tracing.trace_observer_url = os.environ.get(
     'NEW_RELIC_INFINITE_TRACING_TRACE_OBSERVER_URL', None)
+_settings.infinite_tracing.span_queue_size = _environ_as_int(
+    'NEW_RELIC_INFINITE_TRACING_SPAN_QUEUE_SIZE', 10000)
 
 _settings.event_harvest_config.harvest_limits.analytic_event_data = \
         DEFAULT_RESERVOIR_SIZE

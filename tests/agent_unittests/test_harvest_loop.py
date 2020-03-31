@@ -363,6 +363,24 @@ def test_application_harvest_with_spans(distributed_tracing_enabled,
     _test()
 
 
+@override_generic_settings(settings, {
+    'developer_mode': True,
+    'distributed_tracing.enabled': True,
+    'span_events.enabled': True,
+    'infinite_tracing.trace_observer_url': 'invalid',
+})
+@validate_metric_payload(metrics=[
+    ('Supportability/InfiniteTracing/Span/Seen', 1),
+    ('Supportability/InfiniteTracing/Span/Sent', 1),
+], endpoints_called=[])
+def test_application_harvest_with_span_streaming():
+    app = Application('Python Agent Test (Harvest Loop)')
+    app.connect_to_data_collector(None)
+
+    app._stats_engine.span_stream.put(None)
+    app.harvest()
+
+
 @failing_endpoint('metric_data')
 @pytest.mark.parametrize('span_events_enabled', (True, False))
 def test_failed_spans_harvest(span_events_enabled):

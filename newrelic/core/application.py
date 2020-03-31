@@ -1413,27 +1413,45 @@ class Application(object):
                     if (configuration.span_events.enabled and
                             configuration.collect_span_events and
                             configuration.distributed_tracing.enabled):
-                        spans = stats.span_events
-                        if spans:
-                            if spans.num_samples > 0:
-                                span_samples = list(spans)
+                        if configuration.infinite_tracing.trace_observer_url:
+                            span_stream = stats.span_stream
+                            # Only merge stats as part of default harvest
+                            if span_stream and not flexible:
+                                spans_seen, spans_dropped = span_stream.stats()
+                                spans_sent = spans_seen - spans_dropped
 
-                                _logger.debug('Sending span event data '
-                                        'for harvest of %r.', self._app_name)
+                                internal_count_metric(
+                                        'Supportability/InfiniteTracing/Span/Seen',
+                                        spans_seen)
+                                internal_count_metric(
+                                        'Supportability/InfiniteTracing/Span/Sent',
+                                        spans_sent)
+                        else:
+                            spans = stats.span_events
+                            if spans:
+                                if spans.num_samples > 0:
+                                    span_samples = list(spans)
 
-                                self._active_session.send_span_events(
-                                    spans.sampling_info, span_samples)
-                                span_samples = None
+                                    _logger.debug(
+                                            'Sending span event data '
+                                            'for harvest of %r.',
+                                            self._app_name)
 
-                            # As per spec
-                            spans_seen = spans.num_seen
-                            spans_sampled = spans.num_samples
-                            internal_count_metric('Supportability/SpanEvent/'
-                                    'TotalEventsSeen', spans_seen)
-                            internal_count_metric('Supportability/SpanEvent/'
-                                    'TotalEventsSent', spans_sampled)
+                                    self._active_session.send_span_events(
+                                        spans.sampling_info, span_samples)
+                                    span_samples = None
 
-                            stats.reset_span_events()
+                                # As per spec
+                                spans_seen = spans.num_seen
+                                spans_sampled = spans.num_samples
+                                internal_count_metric(
+                                        'Supportability/SpanEvent/'
+                                        'TotalEventsSeen', spans_seen)
+                                internal_count_metric(
+                                        'Supportability/SpanEvent/'
+                                        'TotalEventsSent', spans_sampled)
+
+                                stats.reset_span_events()
 
                     # Send error events
 

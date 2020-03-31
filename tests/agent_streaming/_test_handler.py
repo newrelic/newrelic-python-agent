@@ -5,16 +5,12 @@ from newrelic.core.infinite_tracing_pb2 import RecordStatus, Span
 
 
 def record_span(request, context):
-    count = 0
-
     metadata = dict(context.invocation_metadata())
     assert 'agent_run_token' in metadata
     assert 'license_key' in metadata
 
     for span in request:
-        count += 1
-
-    yield RecordStatus(messages_seen=count)
+        yield RecordStatus(messages_seen=1)
 
 
 HANDLERS = (

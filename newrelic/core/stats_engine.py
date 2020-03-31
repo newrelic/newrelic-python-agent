@@ -1397,10 +1397,10 @@ class StatsEngine(object):
                     self.__settings.event_harvest_config.
                     harvest_limits.span_event_data)
 
-            # FIXME: retrieve stream buffer size from configuration
             # span stream is never reset after instantiation
             if self._span_stream is None:
-                self._span_stream = StreamBuffer(1000)
+                self._span_stream = StreamBuffer(
+                    self.__settings.infinite_tracing.span_queue_size)
         else:
             self._span_events = SampledDataSet()
 

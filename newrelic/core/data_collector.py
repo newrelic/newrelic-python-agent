@@ -10,6 +10,7 @@ import sys
 import time
 import zlib
 import warnings
+import threading
 
 from pprint import pprint
 
@@ -759,16 +760,19 @@ class StreamingRpc(object):
         self.metadata = metadata
         self.request_iterator = stream_buffer
         self.response_iterator = None
+        self.notify = threading.Condition(threading.Lock())
         self.rpc = self.channel.stream_stream(
             path, Span.SerializeToString, RecordStatus.FromString
         )
         self.connect() or self.channel.subscribe(self.on_channel_state)
 
     def close(self):
-        if self.channel:
-            _logger.debug("Closing streaming rpc.")
-            self.channel.close()
-            self.channel = None
+        with self.notify:
+            if self.channel:
+                _logger.debug("Closing streaming rpc.")
+                self.channel.close()
+                self.channel = None
+            self.notify.notify_all()
 
     def connect(self):
         self.response_iterator = self.rpc(
@@ -798,8 +802,17 @@ class StreamingRpc(object):
             "Code: %s Details: %s", code, details)
 
         while True:
-            time.sleep(self.RETRY_TIMEOUT)
-            if self.connect():
+            _logger.warning(
+                "Streaming RPC closed. "
+                "Will attempt to reconnect in 15 seconds. "
+                "Code: %s Details: %s", code, details)
+
+            with self.notify:
+                if not self.channel:
+                    break
+                self.notify.wait(15)
+
+            if self._connect():
                 break
             else:
                 _logger.warning("Failed to add on_rpc_terminate callback.")

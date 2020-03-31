@@ -21,11 +21,12 @@ _default_settings = {
     "debug.log_autorum_middleware": True,
     "agent_limits.errors_per_harvest": 100,
     "distributed_tracing.enabled": True,
-    "mtb.endpoint": "https://nr-internal.aws-us-east-2.tracing.staging-edge.nr-data.net/",
+    "infinite_tracing.trace_observer_url": "https://nr-internal.aws-us-east-2.tracing.staging-edge.nr-data.net/",
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-    app_name="Python Agent Test (backend_mtb)", default_settings=_default_settings
+    app_name="Python Agent Test (agent_streaming)",
+    default_settings=_default_settings
 )
 
 

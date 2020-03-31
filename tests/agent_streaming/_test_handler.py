@@ -1,7 +1,7 @@
 from concurrent import futures
 
 import grpc
-from newrelic.core.mtb_pb2 import RecordStatus, Span
+from newrelic.core.infinite_tracing_pb2 import RecordStatus, Span
 
 
 def record_span(request, context):

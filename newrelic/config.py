@@ -586,7 +586,9 @@ def _process_configuration(section):
     _process_setting(section,
                     'event_harvest_config.harvest_limits.error_event_data',
                     'getint', None)
-    _process_setting(section, 'mtb.endpoint', 'get', None)
+    _process_setting(section,
+                     'infinite_tracing.trace_observer_url',
+                     'get', None)
 
 
 # Loading of configuration from specified file and for specified

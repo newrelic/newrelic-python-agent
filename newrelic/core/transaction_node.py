@@ -18,7 +18,7 @@ from newrelic.core.attribute_filter import (DST_ERROR_COLLECTOR,
 from newrelic.common.streaming_utils import SpanProtoAttrs
 
 try:
-    from newrelic.core.mtb_pb2 import Span
+    from newrelic.core.infinite_tracing_pb2 import Span
 except:
     pass
 

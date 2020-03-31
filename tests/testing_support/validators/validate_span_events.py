@@ -5,7 +5,7 @@ from newrelic.common.object_wrapper import (transient_function_wrapper,
         function_wrapper)
 
 try:
-    from newrelic.core.mtb_pb2 import AttributeValue, Span
+    from newrelic.core.infinite_tracing_pb2 import AttributeValue, Span
 except:
     AttributeValue = None
     Span = None
@@ -49,7 +49,7 @@ def validate_span_events(count=1,
             except:
                 raise
             else:
-                if not instance.settings.mtb.endpoint:
+                if not instance.settings.infinite_tracing.trace_observer_url:
                     events = [event for priority, seen_at, event
                                     in instance.span_events.pq]
 

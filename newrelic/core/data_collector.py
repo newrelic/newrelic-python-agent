@@ -825,14 +825,14 @@ class StreamingRpc(object):
             return
 
         while True:
-            _logger.warning(
-                "Streaming RPC closed. "
-                "Will attempt to reconnect in 15 seconds. "
-                "Code: %s Details: %s", code, details)
-
             with self.notify:
                 if not self.channel:
                     break
+
+                _logger.warning(
+                    "Streaming RPC closed. "
+                    "Will attempt to reconnect in 15 seconds. "
+                    "Code: %s Details: %s", code, details)
                 self.notify.wait(15)
 
             if self._connect():

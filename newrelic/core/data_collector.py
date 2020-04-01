@@ -10,6 +10,7 @@ import sys
 import time
 import zlib
 import warnings
+import threading
 
 from pprint import pprint
 
@@ -742,70 +743,102 @@ class StreamingRpc(object):
     This class keeps a stream_stream RPC alive, retrying after a timeout when
     errors are encountered. If grpc.StatusCode.UNIMPLEMENTED is encountered, a
     retry will not occur.
-
-    :param channel: A grpc channel object
-    :type channel: grpc.Channel
-    :param stream_buffer: A buffer that holds streaming data
-    :type stream_buffer: newrelic.common.streaming_utils.StreamBuffer
-    :param metadata: (optional) Metadata to attach to streaming rpc calls
-    :type metadata: dict
     """
 
-    RETRY_TIMEOUT = 15
+    PATH = '/com.newrelic.trace.v1.IngestService/RecordSpan'
 
-    def __init__(self, channel, stream_buffer, metadata=None,
-            path='/com.newrelic.trace.v1.IngestService/RecordSpan'):
+    def __init__(self, channel, stream_buffer, metadata):
         self.channel = channel
         self.metadata = metadata
         self.request_iterator = stream_buffer
         self.response_iterator = None
+        self.notify = threading.Condition(threading.Lock())
         self.rpc = self.channel.stream_stream(
-            path, Span.SerializeToString, RecordStatus.FromString
+            self.PATH, Span.SerializeToString, RecordStatus.FromString
         )
-        self.connect() or self.channel.subscribe(self.on_channel_state)
 
     def close(self):
-        if self.channel:
-            _logger.debug("Closing streaming rpc.")
-            self.channel.close()
-            self.channel = None
+        with self.notify:
+            if self.channel:
+                _logger.debug("Closing streaming rpc.")
+                self.channel.close()
+                self.channel = None
+            self.notify.notify_all()
 
     def connect(self):
-        self.response_iterator = self.rpc(
-                self.request_iterator, metadata=self.metadata)
-        if not self.response_iterator.add_callback(self.on_rpc_terminate):
-            self.response_iterator.cancel()
-            return False
+        self.response_processing_thread = threading.Thread(
+                target=self.process_responses,
+                name="NR-StreamingRpc-process-responses")
+        self.response_processing_thread.daemon = True
+        self._connect() or self.channel.subscribe(self.on_channel_state)
+        self.response_processing_thread.start()
+
+    def _connect(self):
+        with self.notify:
+            if not self.channel:
+                return True
+
+            self.response_iterator = self.rpc(
+                    self.request_iterator, metadata=self.metadata)
+            if not self.response_iterator.add_callback(self.on_rpc_terminate):
+                self.response_iterator.cancel()
+                return False
+            self.notify.notify_all()
         _logger.info("Streaming RPC connect called successfully.")
         return True
+
+    def process_responses(self):
+        response_iterator = None
+        while True:
+            with self.notify:
+                if not self.channel:
+                    break
+
+                # check if connect has run.
+                # connect will assign self.response_iterator
+                if response_iterator is self.response_iterator:
+                    self.notify.wait()
+
+            if not self.channel:
+                break
+
+            response_iterator = self.response_iterator
+            try:
+                for response in response_iterator:
+                    _logger.debug("Stream response: %s", response)
+            except Exception:
+                pass
 
     def on_channel_state(self, state):
         if state is grpc.ChannelConnectivity.IDLE:
             self.channel.unsubscribe(self.on_channel_state)
-            self.connect()
+            self._connect()
 
     def on_rpc_terminate(self):
-        if self.response_iterator.code() is grpc.StatusCode.UNIMPLEMENTED:
+        code = self.response_iterator.code()
+        details = self.response_iterator.details()
+
+        if code is grpc.StatusCode.UNIMPLEMENTED:
             _logger.error("Streaming RPC received UNIMPLEMENTED response code."
                     " The agent will not attempt to reestablish the stream.")
             self.close()
             return
 
-        code = self.response_iterator.code()
-        details = self.response_iterator.details()
-        _logger.warning(
-            "Streaming RPC failed. Will attempt to reconnect in 15 seconds. "
-            "Code: %s Details: %s", code, details)
-
         while True:
-            time.sleep(self.RETRY_TIMEOUT)
-            if self.connect():
+            with self.notify:
+                if not self.channel:
+                    break
+
+                _logger.warning(
+                    "Streaming RPC closed. "
+                    "Will attempt to reconnect in 15 seconds. "
+                    "Code: %s Details: %s", code, details)
+                self.notify.wait(15)
+
+            if self._connect():
                 break
             else:
                 _logger.warning("Failed to add on_rpc_terminate callback.")
-
-    def __iter__(self):
-        return iter(self.response_iterator)
 
 
 class ApplicationSession(object):
@@ -850,6 +883,7 @@ class ApplicationSession(object):
                 if channel:
                     rpc = self._rpc = StreamingRpc(
                             channel, span_iterator, metadata)
+                    rpc.connect()
                     return rpc
 
     @property

@@ -363,22 +363,35 @@ def test_application_harvest_with_spans(distributed_tracing_enabled,
     _test()
 
 
-@override_generic_settings(settings, {
-    'developer_mode': True,
-    'distributed_tracing.enabled': True,
-    'span_events.enabled': True,
-    'infinite_tracing.trace_observer_url': 'invalid',
-})
-@validate_metric_payload(metrics=[
-    ('Supportability/InfiniteTracing/Span/Seen', 1),
-    ('Supportability/InfiniteTracing/Span/Sent', 1),
-], endpoints_called=[])
-def test_application_harvest_with_span_streaming():
-    app = Application('Python Agent Test (Harvest Loop)')
-    app.connect_to_data_collector(None)
+@pytest.mark.parametrize(
+    'span_queue_size, spans_to_send, expected_seen, expected_sent', (
+    (0, 1, 1, 0),
+    (1, 1, 1, 1),
+    (7, 10, 10, 7),
+))
+def test_application_harvest_with_span_streaming(span_queue_size,
+        spans_to_send, expected_sent, expected_seen):
 
-    app._stats_engine.span_stream.put(None)
-    app.harvest()
+    @override_generic_settings(settings, {
+        'developer_mode': True,
+        'distributed_tracing.enabled': True,
+        'span_events.enabled': True,
+        'infinite_tracing.trace_observer_url': 'invalid',
+        'infinite_tracing.span_queue_size': span_queue_size,
+    })
+    @validate_metric_payload(metrics=[
+        ('Supportability/InfiniteTracing/Span/Seen', expected_seen),
+        ('Supportability/InfiniteTracing/Span/Sent', expected_sent),
+    ], endpoints_called=[])
+    def _test():
+        app = Application('Python Agent Test (Harvest Loop)')
+        app.connect_to_data_collector(None)
+
+        for _ in range(spans_to_send):
+            app._stats_engine.span_stream.put(None)
+        app.harvest()
+
+    _test()
 
 
 @failing_endpoint('metric_data')

@@ -11,7 +11,8 @@ class GenericNodeMixin(object):
             return self._processed_user_attributes
 
         self._processed_user_attributes = u_attrs = {}
-        for k, v in self.user_attributes.items():
+        user_attributes = getattr(self, 'user_attributes', u_attrs)
+        for k, v in user_attributes.items():
             k, v = attribute.process_user_attribute(k, v)
             u_attrs[k] = v
         return u_attrs

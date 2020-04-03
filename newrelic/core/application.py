@@ -1413,7 +1413,7 @@ class Application(object):
                     if (configuration.span_events.enabled and
                             configuration.collect_span_events and
                             configuration.distributed_tracing.enabled):
-                        if configuration.infinite_tracing.trace_observer_url:
+                        if configuration.infinite_tracing.enabled:
                             span_stream = stats.span_stream
                             # Only merge stats as part of default harvest
                             if span_stream and not flexible:

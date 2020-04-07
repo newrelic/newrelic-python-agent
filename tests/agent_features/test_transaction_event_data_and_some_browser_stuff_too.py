@@ -40,9 +40,9 @@ def test_capture_attributes_enabled():
 
     response = fully_featured_application.get('/')
 
-    header = response.html.html.head.script.text
-    content = response.html.html.body.p.text
-    footer = response.html.html.body.script.text
+    header = response.html.html.head.script.string
+    content = response.html.html.body.p.string
+    footer = response.html.html.body.script.string
 
     # Validate actual body content as sanity check.
 
@@ -104,9 +104,9 @@ def test_no_attributes_recorded():
     response = fully_featured_application.get('/', extra_environ={
             'record_attributes': 'FALSE'})
 
-    header = response.html.html.head.script.text
-    content = response.html.html.body.p.text
-    footer = response.html.html.body.script.text
+    header = response.html.html.head.script.string
+    content = response.html.html.body.p.string
+    footer = response.html.html.body.script.string
 
     # Validate actual body content as sanity check.
 
@@ -150,9 +150,9 @@ def test_analytic_events_capture_attributes_disabled():
 
     response = fully_featured_application.get('/')
 
-    header = response.html.html.head.script.text
-    content = response.html.html.body.p.text
-    footer = response.html.html.body.script.text
+    header = response.html.html.head.script.string
+    content = response.html.html.body.p.string
+    footer = response.html.html.body.script.string
 
     # Validate actual body content as sanity check.
 
@@ -183,9 +183,9 @@ def test_capture_attributes_default():
 
     response = fully_featured_application.get('/')
 
-    header = response.html.html.head.script.text
-    content = response.html.html.body.p.text
-    footer = response.html.html.body.script.text
+    header = response.html.html.head.script.string
+    content = response.html.html.body.p.string
+    footer = response.html.html.body.script.string
 
     # Validate actual body content as sanity check.
 
@@ -251,9 +251,9 @@ def test_capture_attributes_disabled():
 
     response = fully_featured_application.get('/')
 
-    header = response.html.html.head.script.text
-    content = response.html.html.body.p.text
-    footer = response.html.html.body.script.text
+    header = response.html.html.head.script.string
+    content = response.html.html.body.p.string
+    footer = response.html.html.body.script.string
 
     # Validate actual body content as sanity check.
 
@@ -296,9 +296,9 @@ def test_collect_analytic_events_disabled():
 
     response = fully_featured_application.get('/')
 
-    header = response.html.html.head.script.text
-    content = response.html.html.body.p.text
-    footer = response.html.html.body.script.text
+    header = response.html.html.head.script.string
+    content = response.html.html.body.p.string
+    footer = response.html.html.body.script.string
 
     # Validate actual body content as sanity check.
 
@@ -336,9 +336,9 @@ def test_analytic_events_disabled():
 
     response = fully_featured_application.get('/')
 
-    header = response.html.html.head.script.text
-    content = response.html.html.body.p.text
-    footer = response.html.html.body.script.text
+    header = response.html.html.head.script.string
+    content = response.html.html.body.p.string
+    footer = response.html.html.body.script.string
 
     # Validate actual body content as sanity check.
 
@@ -375,7 +375,7 @@ def test_no_database_or_external_attributes_in_analytics():
 
     # Validation of analytic data happens in the decorator.
 
-    content = response.html.html.body.p.text
+    content = response.html.html.body.p.string
 
     # Validate actual body content as sanity check.
 
@@ -404,7 +404,7 @@ def test_database_attributes_in_analytics():
 
     # Validation of analytic data happens in the decorator.
 
-    content = response.html.html.body.p.text
+    content = response.html.html.body.p.string
 
     # Validate actual body content as sanity check.
 
@@ -434,7 +434,7 @@ def test_external_attributes_in_analytics():
 
     # Validation of analytic data happens in the decorator.
 
-    content = response.html.html.body.p.text
+    content = response.html.html.body.p.string
 
     # Validate actual body content as sanity check.
 
@@ -467,7 +467,7 @@ def test_database_and_external_attributes_in_analytics():
 
     # Validation of analytic data happens in the decorator.
 
-    content = response.html.html.body.p.text
+    content = response.html.html.body.p.string
 
     # Validate actual body content as sanity check.
 

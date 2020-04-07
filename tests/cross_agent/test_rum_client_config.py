@@ -75,7 +75,7 @@ def test_browser_montioring(testname, apptime_milliseconds, queuetime_millisecon
         # agent "header", the second one is where the data lives, hence the [1].
 
         footer = response.html.html.head.find_all('script')[1]
-        footer_data = json.loads(footer.text.split('NREUM.info=')[1])
+        footer_data = json.loads(footer.string.split('NREUM.info=')[1])
 
         # Not feasible to test the time metric values in testing
 

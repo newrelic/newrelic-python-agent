@@ -172,7 +172,7 @@ def test_cat_map(name, appName, transactionName, transactionGuid,
 
         assert response.status == '200 OK'
 
-        content = response.html.html.body.p.text
+        content = response.html.html.body.p.string
 
         # Validate actual body content as sansity check.
 

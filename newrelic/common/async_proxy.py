@@ -35,13 +35,19 @@ class TransactionContext(object):
                 pass
 
     def __enter__(self):
-        self.transaction = transaction = \
-                self.transaction_init(current_transaction(active_only=False))
-        if not transaction:
+        # If no transaction attempt to create it if first time entering context
+        # manager.
+        if self.transaction_init:
+            self.transaction = self.transaction_init(
+                    current_transaction(active_only=False))
+            # Set transaction_init to None so we only attempt to create a
+            # transaction the first time entering the context.
+            self.transaction_init = None
+        if not self.transaction:
             return self
 
-        if not transaction._state:
-            transaction.__enter__()
+        if not self.transaction._state:
+            self.transaction.__enter__()
 
         self.enter_time = time.time()
         return self

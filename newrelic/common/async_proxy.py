@@ -13,11 +13,10 @@ CancelledError = None
 
 
 class TransactionContext(object):
-    def __init__(self, transaction):
+    def __init__(self, transaction_init):
         self.enter_time = None
-        self.transaction = transaction
-        if not self.transaction.enabled:
-            self.transaction = None
+        self.transaction = None
+        self.transaction_init = transaction_init
 
     def pre_close(self):
         if self.transaction and not self.transaction._state:
@@ -35,11 +34,12 @@ class TransactionContext(object):
                 pass
 
     def __enter__(self):
-        if not self.transaction:
+        self.transaction = transaction = self.transaction_init()
+        if not transaction:
             return self
 
-        if not self.transaction._state:
-            self.transaction.__enter__()
+        if not transaction._state:
+            transaction.__enter__()
 
         self.enter_time = time.time()
         return self

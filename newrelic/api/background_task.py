@@ -62,6 +62,19 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
         else:
             _group = group
 
+        if type(application) != Application:
+            _application = application_instance(application)
+        else:
+            _application = application
+
+
+        proxy = async_proxy(wrapped)
+
+        if proxy:
+            manager = lambda: BackgroundTask(_application, _name, _group)
+            context_manager = TransactionContext(manager)
+            return proxy(wrapped(*args, **kwargs), context_manager)
+
         # Check to see if any transaction is present, even an inactive
         # one which has been marked to be ignored or which has been
         # stopped already.
@@ -83,19 +96,7 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
 
             return wrapped(*args, **kwargs)
 
-        # Otherwise treat it as top level transaction.
-
-        if type(application) != Application:
-            _application = application_instance(application)
-        else:
-            _application = application
-
         manager = BackgroundTask(_application, _name, _group)
-
-        proxy = async_proxy(wrapped)
-        if proxy:
-            context_manager = TransactionContext(manager)
-            return proxy(wrapped(*args, **kwargs), context_manager)
 
         success = True
 

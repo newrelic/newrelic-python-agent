@@ -5,6 +5,7 @@ import sys
 from newrelic.core.config import global_settings
 from newrelic.api.transaction import current_transaction
 from newrelic.api.background_task import background_task
+from newrelic.api.web_transaction import web_transaction
 from newrelic.api.message_transaction import message_transaction
 from testing_support.fixtures import (validate_transaction_errors,
         capture_transaction_metrics, override_generic_settings)
@@ -262,17 +263,20 @@ def test_async_coroutine_close_raises_error(num_coroutines, create_test_task,
     assert metrics.count(('Errors/all', '')) == num_coroutines, metrics
 
 
-def test_deferred_async_background_task():
-    deferred_metric = ("OtherTransaction/Function/deferred", "")
+@pytest.mark.parametrize('transaction,metric', [
+        (web_transaction, 'Apdex/Function/%s'),
+        (background_task, 'OtherTransaction/Function/%s')])
+def test_deferred_async_background_task(transaction, metric):
+    deferred_metric = (metric % 'deferred', '')
 
-    @background_task(name="deferred")
+    @transaction(name='deferred')
     @asyncio.coroutine
     def child_task():
         yield from asyncio.sleep(0)
 
-    main_metric = ("OtherTransaction/Function/main", "")
+    main_metric = (metric % 'main', '')
 
-    @background_task(name="main")
+    @transaction(name='main')
     @asyncio.coroutine
     def parent_task():
         yield from asyncio.sleep(0)

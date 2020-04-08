@@ -5,6 +5,7 @@ from newrelic.core.config import global_settings
 from testing_support.fixtures import override_generic_settings
 
 from newrelic.core.application import Application
+from newrelic.api.application import application_instance
 from newrelic.core.data_collector import StreamingRpc
 from newrelic.core.infinite_tracing_pb2 import Span, AttributeValue
 from testing_support.validators.validate_metric_payload import (
@@ -70,3 +71,76 @@ def test_infinite_tracing_span_streaming(mock_grpc_server,
         app.harvest(shutdown=True)
 
     _test()
+
+
+@pytest.mark.parametrize('status_code', ('INTERNAL', 'OK'))
+def test_reconnect_on_failure(status_code, monkeypatch, mock_grpc_server):
+    wait_event = threading.Event()
+    continue_event = threading.Event()
+
+    class WaitOnWait(threading.Condition):
+        def wait(self, *args, **kwargs):
+            wait_event.set()
+            continue_event.wait()
+            return True
+
+    monkeypatch.setattr(StreamingRpc, 'CONDITION_CLS', WaitOnWait)
+
+    terminating_span = Span(
+        intrinsics={'status_code': AttributeValue(string_value=status_code)},
+        agent_attributes={},
+        user_attributes={})
+
+    span = Span(
+        intrinsics={},
+        agent_attributes={},
+        user_attributes={})
+
+    @override_generic_settings(settings, {
+        'distributed_tracing.enabled': True,
+        'span_events.enabled': True,
+        'infinite_tracing.trace_observer_url': (
+             'http://localhost:%s' % mock_grpc_server),
+    })
+    def _test():
+        app = Application('Python Agent Test (Infinite Tracing)')
+        app.connect_to_data_collector(None)
+
+        # Send a span that will trigger a failure
+        app._stats_engine.span_stream.put(terminating_span)
+
+        # Send a normal span afterwards
+        app._stats_engine.span_stream.put(span)
+
+        assert wait_event.wait(timeout=5)
+
+        # Verify there are unsent spans in the queue
+        assert app._stats_engine.span_stream._queue
+
+        # Trigger the event so that a reconnect will occur
+        continue_event.set()
+
+        # Wait for the stream buffer to empty meaning all spans have been sent.
+        timeout = time.time() + 10
+        while app._stats_engine.span_stream._queue:
+            assert timeout > time.time()
+
+
+def test_agent_restart():
+    # Get the application connected to the actual 8T endpoint
+    api_application = application_instance()
+    app = api_application._agent._applications[api_application.name]
+    rpc = app._active_session._rpc
+    # Store references to the orginal rpc and threads
+    original_rpc = rpc.rpc
+    original_thread = rpc.response_processing_thread
+    assert original_rpc
+    assert rpc.response_processing_thread.is_alive()
+    # Force an agent restart
+    app.internal_agent_shutdown(restart=True)
+    # Wait for connect to complete
+    app._connected_event.wait()
+    rpc = app._active_session._rpc
+    assert not original_thread.is_alive()
+    assert rpc.rpc is not original_rpc
+    assert rpc.response_processing_thread.is_alive()

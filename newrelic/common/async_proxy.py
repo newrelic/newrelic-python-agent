@@ -20,8 +20,9 @@ class TransactionContext(object):
         self.transaction_init = transaction_init
 
     def pre_close(self):
-        if self.transaction and not self.transaction._state:
-            self.transaction = None
+        # If close is called prior to the start of the coroutine do not create
+        # a transaction.
+        self.transaction_init = None
 
     def close(self):
         if not self.transaction:

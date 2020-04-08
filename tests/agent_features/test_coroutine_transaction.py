@@ -260,3 +260,37 @@ def test_async_coroutine_close_raises_error(num_coroutines, create_test_task,
 
     assert metrics.count((metric, '')) == num_coroutines, metrics
     assert metrics.count(('Errors/all', '')) == num_coroutines, metrics
+
+
+def test_deferred_async_background_task():
+    deferred_metric = ("OtherTransaction/Function/deferred", "")
+
+    @background_task(name="deferred")
+    @asyncio.coroutine
+    def child_task():
+        yield from asyncio.sleep(0)
+
+    main_metric = ("OtherTransaction/Function/main", "")
+
+    @background_task(name="main")
+    @asyncio.coroutine
+    def parent_task():
+        yield from asyncio.sleep(0)
+        return asyncio.create_task(child_task())
+
+    @asyncio.coroutine
+    def test_runner():
+        child = yield from parent_task()
+        yield from child
+
+    metrics = []
+
+    @capture_transaction_metrics(metrics)
+    def _test():
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(test_runner())
+
+    _test()
+
+    assert main_metric in metrics
+    assert deferred_metric in metrics

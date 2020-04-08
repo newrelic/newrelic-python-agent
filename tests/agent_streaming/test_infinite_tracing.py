@@ -1,17 +1,18 @@
 import pytest
 import threading
-import time
 
-from newrelic.core.config import global_settings, finalize_application_settings
-from testing_support.fixtures import (override_generic_settings,
-         function_not_called, failing_endpoint)
+from newrelic.core.config import global_settings
+from testing_support.fixtures import override_generic_settings
 
 from newrelic.core.application import Application
 from newrelic.core.data_collector import StreamingRpc
 from newrelic.core.infinite_tracing_pb2 import Span, AttributeValue
-from testing_support.validators.validate_metric_payload import validate_metric_payload
+from testing_support.validators.validate_metric_payload import (
+    validate_metric_payload)
 
 settings = global_settings()
+
+CONDITION_CLS = type(threading.Condition())
 
 
 @pytest.mark.parametrize(
@@ -20,16 +21,17 @@ settings = global_settings()
             ('Supportability/InfiniteTracing/Span/gRPC/UNIMPLEMENTED', 1),
             ('Supportability/InfiniteTracing/Span/Response/Error', 1)]),
      ('INTERNAL', [
-            ('Supportability/InfiniteTracing/Span/gRPC/INTERNAL', 1), 
+            ('Supportability/InfiniteTracing/Span/gRPC/INTERNAL', 1),
             ('Supportability/InfiniteTracing/Span/Response/Error', 1)]),
      ('OK', [
             ('Supportability/InfiniteTracing/Span/gRPC/OK', 1),
             ('Supportability/InfiniteTracing/Span/Response/Error', None)]),
  ))
-def test_infinite_tracing_span_streaming(mock_grpc_server, status_code, metrics, monkeypatch):
+def test_infinite_tracing_span_streaming(mock_grpc_server,
+        status_code, metrics, monkeypatch):
     event = threading.Event()
 
-    class TerminateOnWait(threading.Condition):
+    class TerminateOnWait(CONDITION_CLS):
         def notify_all(self, *args, **kwargs):
             event.set()
             return super(TerminateOnWait, self).notify_all(*args, **kwargs)
@@ -38,7 +40,11 @@ def test_infinite_tracing_span_streaming(mock_grpc_server, status_code, metrics,
             event.set()
             return super(TerminateOnWait, self).wait(*args, **kwargs)
 
-    monkeypatch.setattr(StreamingRpc, 'CONDITION_CLS', TerminateOnWait)
+    @staticmethod
+    def condition(*args, **kwargs):
+        return TerminateOnWait(*args, **kwargs)
+
+    monkeypatch.setattr(StreamingRpc, 'condition', condition)
 
     span = Span(
         intrinsics={'status_code': AttributeValue(string_value=status_code)},
@@ -48,7 +54,9 @@ def test_infinite_tracing_span_streaming(mock_grpc_server, status_code, metrics,
     @override_generic_settings(settings, {
         'distributed_tracing.enabled': True,
         'span_events.enabled': True,
-        'infinite_tracing.trace_observer_url': 'http://localhost:%s' % mock_grpc_server,
+        'infinite_tracing.trace_observer_host': 'localhost',
+        'infinite_tracing.trace_observer_port': mock_grpc_server,
+        'infinite_tracing.ssl': False,
     })
     @validate_metric_payload(metrics=metrics)
     def _test():

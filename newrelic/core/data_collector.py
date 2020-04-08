@@ -722,7 +722,6 @@ class StreamingRpc(object):
     retry will not occur.
     """
 
-    CONDITION_CLS = threading.Condition
     PATH = '/com.newrelic.trace.v1.IngestService/RecordSpan'
 
     def __init__(self, channel, stream_buffer, metadata, record_metric):
@@ -738,6 +737,10 @@ class StreamingRpc(object):
             self.PATH, Span.SerializeToString, RecordStatus.FromString
         )
         self.record_metric = record_metric
+
+    @staticmethod
+    def condition(*args, **kwargs):
+        return threading.Condition(*args, **kwargs)
 
     def close(self):
         channel = None
@@ -757,10 +760,6 @@ class StreamingRpc(object):
             _logger.debug("Streaming rpc close completed.")
 
     def connect(self):
-        self.response_processing_thread = threading.Thread(
-                target=self.process_responses,
-                name="NR-StreamingRpc-process-responses")
-        self.response_processing_thread.daemon = True
         self.response_processing_thread.start()
 
     def process_responses(self):
@@ -779,7 +778,7 @@ class StreamingRpc(object):
                     if code is not grpc.StatusCode.OK:
                         self.record_metric(
                             'Supportability/InfiniteTracing/'
-                            'Span/Response/Error', 1)
+                            'Span/Response/Error', {'count': 1})
 
                     if code is grpc.StatusCode.UNIMPLEMENTED:
                         _logger.error("Streaming RPC received UNIMPLEMENTED "

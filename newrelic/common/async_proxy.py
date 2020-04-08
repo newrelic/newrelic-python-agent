@@ -2,6 +2,7 @@ import logging
 import time
 import newrelic.packages.six as six
 
+from newrelic.api.transaction import current_transaction
 from newrelic.common.coroutine import (is_coroutine_function,
         is_asyncio_coroutine, is_generator_function)
 from newrelic.common.object_wrapper import ObjectProxy
@@ -34,7 +35,8 @@ class TransactionContext(object):
                 pass
 
     def __enter__(self):
-        self.transaction = transaction = self.transaction_init()
+        self.transaction = transaction = \
+                self.transaction_init(current_transaction(active_only=False))
         if not transaction:
             return self
 

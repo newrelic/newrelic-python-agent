@@ -67,37 +67,34 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
         else:
             _application = application
 
+        def create_transaction(transaction):
+            if transaction:
+                # If there is any active transaction we will return without
+                # applying a new WSGI application wrapper context. In the
+                # case of a transaction which is being ignored or which has
+                # been stopped, we do that without doing anything further.
+
+                if transaction.ignore_transaction or transaction.stopped:
+                    return None
+
+                if not transaction.background_task:
+                    transaction.background_task = True
+                    transaction.set_transaction_name(_name, _group)
+
+                return None
+
+            return BackgroundTask(_application, _name, _group)
 
         proxy = async_proxy(wrapped)
 
         if proxy:
-            manager = lambda: BackgroundTask(_application, _name, _group)
-            context_manager = TransactionContext(manager)
+            context_manager = TransactionContext(create_transaction)
             return proxy(wrapped(*args, **kwargs), context_manager)
 
-        # Check to see if any transaction is present, even an inactive
-        # one which has been marked to be ignored or which has been
-        # stopped already.
+        manager = create_transaction(current_transaction(active_only=False))
 
-        transaction = current_transaction(active_only=False)
-
-        if transaction:
-            # If there is any active transaction we will return without
-            # applying a new WSGI application wrapper context. In the
-            # case of a transaction which is being ignored or which has
-            # been stopped, we do that without doing anything further.
-
-            if transaction.ignore_transaction or transaction.stopped:
-                return wrapped(*args, **kwargs)
-
-            if not transaction.background_task:
-                transaction.background_task = True
-                transaction.set_transaction_name(_name, _group)
-
+        if not manager:
             return wrapped(*args, **kwargs)
-
-        manager = BackgroundTask(_application, _name, _group)
-
         success = True
 
         try:

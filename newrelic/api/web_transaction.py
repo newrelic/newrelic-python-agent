@@ -980,23 +980,26 @@ def WebTransactionWrapper(wrapped, application=None, name=None, group=None,
 
 
         proxy = async_proxy(wrapped)
+
+        def create_transaction(transaction):
+            if transaction:
+                return None
+            return WebTransaction( _application, _name, _group,
+                    _scheme, _host, _port, _request_method,
+                    _request_path, _query_string, _headers)
+
         if proxy:
-            transaction_init = lambda: WebTransaction(
-                    _application, _name, _group, _scheme, _host, _port,
-                    _request_method, _request_path, _query_string, _headers)
-            context_manager = TransactionContext(transaction_init)
+            context_manager = TransactionContext(create_transaction)
             return proxy(wrapped(*args, **kwargs), context_manager)
 
         transaction = WebTransaction(
                 _application, _name, _group, _scheme, _host, _port,
                 _request_method, _request_path, _query_string, _headers)
 
-        # Don't start a transaction if there's already a transaction in
-        # progress
-        transaction = current_transaction(active_only=False)
-        if transaction:
-            return wrapped(*args, **kwargs)
+        transaction = create_transaction(current_transaction(active_only=False))
 
+        if not transaction:
+            return wrapped(*args, **kwargs)
 
         with transaction:
             return wrapped(*args, **kwargs)

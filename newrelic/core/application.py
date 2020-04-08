@@ -451,7 +451,8 @@ class Application(object):
                         configuration.sampling_target,
                         sampling_target_period)
 
-            active_session.connect_span_stream(self._stats_engine.span_stream)
+            active_session.connect_span_stream(self._stats_engine.span_stream,
+                self._stats_engine.record_custom_metric)
 
             with self._stats_custom_lock:
                 self._stats_custom_engine.reset_stats(configuration)

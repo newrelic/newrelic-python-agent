@@ -1,3 +1,4 @@
+import sys
 import tempfile
 import pytest
 from testing_support.fixtures import code_coverage_fixture
@@ -17,6 +18,14 @@ try:
 except NameError:
     # python 3.x
     from imp import reload
+
+
+class FakeProtos(object):
+    Span = object()
+
+
+sys.modules['grpc'] = object()
+sys.modules['newrelic.core.infinite_tracing_pb2'] = FakeProtos
 
 
 @pytest.fixture(scope='function')

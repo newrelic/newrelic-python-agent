@@ -1535,7 +1535,7 @@ def validate_custom_event_collector_json(num_events=1):
             assert decoded_sampling_info == sampling_info
 
             max_setting = \
-                    settings.event_harvest_config.harvest_limits.custom_event_data
+                settings.event_harvest_config.harvest_limits.custom_event_data
             assert decoded_sampling_info['reservoir_size'] == max_setting
 
             assert decoded_sampling_info['events_seen'] == num_events
@@ -2439,23 +2439,20 @@ def override_application_settings(overrides):
             # it when done.
 
             original_settings = application_settings()
-            backup = dict(original_settings)
+            backup = copy.deepcopy(original_settings.__dict__)
             for name, value in overrides.items():
                 apply_config_setting(original_settings, name, value)
 
             # should also update the attribute filter since it is affected
             # by application settings
 
-            original_filter = original_settings.attribute_filter
             flat_settings = flatten_settings(original_settings)
             original_settings.attribute_filter = AttributeFilter(flat_settings)
 
             return wrapped(*args, **kwargs)
         finally:
             original_settings.__dict__.clear()
-            for name, value in backup.items():
-                apply_config_setting(original_settings, name, value)
-            original_settings.attribute_filter = original_filter
+            original_settings.__dict__.update(backup)
 
     return _override_application_settings
 

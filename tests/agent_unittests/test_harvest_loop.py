@@ -376,7 +376,7 @@ def test_application_harvest_with_span_streaming(span_queue_size,
         'developer_mode': True,
         'distributed_tracing.enabled': True,
         'span_events.enabled': True,
-        'infinite_tracing.trace_observer_url': 'invalid',
+        'infinite_tracing._trace_observer_url': 'x',
         'infinite_tracing.span_queue_size': span_queue_size,
     })
     @validate_metric_payload(metrics=[

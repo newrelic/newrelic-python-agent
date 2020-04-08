@@ -47,11 +47,6 @@ try:
 except ImportError:
     grpc = None
 
-try:
-    import urlparse
-except ImportError:
-    import urllib.parse as urlparse
-
 _logger = logging.getLogger(__name__)
 
 PARAMS_WHITELIST = set(['method', 'protocol_version', 'marshal_format',
@@ -116,24 +111,6 @@ def collector_url(server=None):
             server = '%s' % settings.host
 
     return url % (scheme, server)
-
-
-def parse_infinite_tracing_endpoint(endpoint):
-    if endpoint is None:
-        return None
-
-    try:
-        parsed = urlparse.urlparse(endpoint)
-    except Exception:
-        parsed = None
-    if not parsed or not parsed.scheme or not parsed.netloc:
-        _logger.warning('Disabling Infinite Tracing due to '
-                        'malformed Trace Observer: %s', endpoint)
-        internal_count_metric(
-            'Supportability/InfiniteTracing/MalformedTraceObserver', 1)
-        return None
-    else:
-        return parsed
 
 
 def proxy_server():
@@ -834,31 +811,26 @@ class ApplicationSession(object):
 
     def connect_span_stream(self, span_iterator):
         if not self._rpc:
-            endpoint = parse_infinite_tracing_endpoint(
-                self.configuration.infinite_tracing.trace_observer_url)
+            endpoint = self.configuration.infinite_tracing.trace_observer_url
 
-            if (grpc and endpoint and
+            if (endpoint and
                     self.configuration.distributed_tracing.enabled and
                     self.configuration.span_events.enabled and
                     self.configuration.collect_span_events):
+                if endpoint.scheme == "http":
+                    channel = grpc.insecure_channel(endpoint.netloc)
+                else:
+                    credentials = grpc.ssl_channel_credentials()
+                    channel = grpc.secure_channel(endpoint.netloc, credentials)
+
                 metadata = (
                         ('agent_run_token', self.agent_run_id),
                         ('license_key', self.license_key))
-                if endpoint.scheme == "https":
-                    credentials = grpc.ssl_channel_credentials()
-                    channel = grpc.secure_channel(endpoint.netloc, credentials)
-                elif endpoint.scheme == "http":
-                    channel = grpc.insecure_channel(endpoint.netloc)
-                else:
-                    _logger.warning("Unknown Infinite Tracing scheme: %s",
-                                    endpoint.scheme)
-                    channel = None
 
-                if channel:
-                    rpc = self._rpc = StreamingRpc(
-                            channel, span_iterator, metadata)
-                    rpc.connect()
-                    return rpc
+                rpc = self._rpc = StreamingRpc(
+                        channel, span_iterator, metadata)
+                rpc.connect()
+                return rpc
 
     @property
     def requests_session(self):

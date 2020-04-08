@@ -22,6 +22,12 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
+try:
+    import grpc
+    from newrelic.core.infinite_tracing_pb2 import Span as _  # NOQA
+except ImportError:
+    grpc = None
+
 
 # By default, Transaction Events and Custom Events have the same size
 # reservoir. Error Events have a different default size.
@@ -213,7 +219,44 @@ class EventLoopVisibilitySettings(Settings):
 
 
 class InfiniteTracingSettings(Settings):
-    pass
+    _trace_observer_url = None
+    _supported_schemes = set(("http", "https"))
+
+    @property
+    def trace_observer_url(self):
+        return self._trace_observer_url
+
+    @trace_observer_url.setter
+    def trace_observer_url(self, value):
+        self._trace_observer_url = self._parse_infinite_tracing_endpoint(value)
+
+    def _parse_infinite_tracing_endpoint(self, endpoint):
+        if endpoint is None:
+            return None
+
+        if grpc is None:
+            _logger.error(
+                "Unable to import libraries required for infinite tracing. "
+                "Please run pip install newrelic[infinite_tracing] "
+                "to install required dependencies. "
+                "Falling back to infinite tracing disabled.")
+            return None
+
+        try:
+            parsed = urlparse.urlparse(endpoint)
+        except Exception:
+            parsed = None
+
+        if not parsed or not parsed.scheme or not parsed.netloc:
+            _logger.warning('Disabling Infinite Tracing due to '
+                            'malformed Trace Observer: %s', endpoint)
+            parsed = None
+        elif parsed.scheme not in self._supported_schemes:
+            _logger.warning('Disabling Infinite Tracing due to '
+                            'Unknown scheme: %s', parsed.scheme)
+            parsed = None
+
+        return parsed
 
 
 class EventHarvestConfigSettings(Settings):
@@ -614,9 +657,9 @@ _settings.agent_limits.data_compression_threshold = 64 * 1024
 _settings.agent_limits.data_compression_level = None
 
 _settings.infinite_tracing.trace_observer_url = os.environ.get(
-    'NEW_RELIC_INFINITE_TRACING_TRACE_OBSERVER_URL', None)
+        'NEW_RELIC_INFINITE_TRACING_TRACE_OBSERVER_URL', None)
 _settings.infinite_tracing.span_queue_size = _environ_as_int(
-    'NEW_RELIC_INFINITE_TRACING_SPAN_QUEUE_SIZE', 10000)
+        'NEW_RELIC_INFINITE_TRACING_SPAN_QUEUE_SIZE', 10000)
 
 _settings.event_harvest_config.harvest_limits.analytic_event_data = \
         DEFAULT_RESERVOIR_SIZE
@@ -715,6 +758,11 @@ def flatten_settings(settings):
 
     def _flatten(settings, o, name=None):
         for key, value in vars(o).items():
+            # Remove any leading underscores on keys accessed through
+            # properties for reporting.
+            if key.startswith('_'):
+                key = key[1:]
+
             if name:
                 key = '%s.%s' % (name, key)
 

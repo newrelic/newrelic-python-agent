@@ -357,16 +357,6 @@ class TestTransactionApis(newrelic.tests.test_cases.TestCase):
         with self.transaction:
             self._standard_trace_test(self.transaction.guid)
 
-    def test_distributed_trace_id_omitted_when_not_sampled(self):
-        with self.transaction:
-            self.transaction._priority = 0.0
-            self.transaction._sampled = False
-
-            payload = self.transaction.create_distributed_trace_payload()
-
-            data = payload['d']
-            assert 'id' not in data
-
     ##############################################
 
     def test_accept_distributed_trace_payload_encoded(self):

@@ -119,12 +119,8 @@ def test_tracestate_generation(inbound_nr_tracestate):
         '0.4' if inbound_nr_tracestate else '1.2',
     ]
 
-    # The inbound NR payload has sampled = False so there's no need to include
-    # the span ID
-    if inbound_nr_tracestate:
-        assert len(fields[4]) == 0
-    else:
-        assert len(fields[4]) == 16
+
+    assert len(fields[4]) == 16
     assert len(fields[5]) == 16
 
 

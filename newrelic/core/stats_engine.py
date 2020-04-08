@@ -993,7 +993,7 @@ class StatsEngine(object):
 
         if (settings.distributed_tracing.enabled and
                 settings.span_events.enabled and settings.collect_span_events):
-            if settings.infinite_tracing.trace_observer_url:
+            if settings.infinite_tracing.enabled:
                 for event in transaction.span_protos(settings):
                     self._span_stream.put(event)
             elif transaction.sampled:

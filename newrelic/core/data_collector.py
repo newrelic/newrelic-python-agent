@@ -811,17 +811,22 @@ class ApplicationSession(object):
 
     def connect_span_stream(self, span_iterator):
         if not self._rpc:
-            endpoint = self.configuration.infinite_tracing.trace_observer_url
+            host = self.configuration.infinite_tracing.trace_observer_host
+            if not host:
+                return
 
-            if (endpoint and
-                    self.configuration.distributed_tracing.enabled and
+            port = self.configuration.infinite_tracing.trace_observer_port
+            ssl = self.configuration.infinite_tracing.ssl
+            endpoint = '{}:{}'.format(host, port)
+
+            if (self.configuration.distributed_tracing.enabled and
                     self.configuration.span_events.enabled and
                     self.configuration.collect_span_events):
-                if endpoint.scheme == "http":
-                    channel = grpc.insecure_channel(endpoint.netloc)
-                else:
+                if ssl:
                     credentials = grpc.ssl_channel_credentials()
-                    channel = grpc.secure_channel(endpoint.netloc, credentials)
+                    channel = grpc.secure_channel(endpoint, credentials)
+                else:
+                    channel = grpc.insecure_channel(endpoint)
 
                 metadata = (
                         ('agent_run_token', self.agent_run_id),

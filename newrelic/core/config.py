@@ -219,44 +219,34 @@ class EventLoopVisibilitySettings(Settings):
 
 
 class InfiniteTracingSettings(Settings):
-    _trace_observer_url = None
-    _supported_schemes = set(("http", "https"))
+    _trace_observer_host = None
 
     @property
-    def trace_observer_url(self):
-        return self._trace_observer_url
+    def enabled(self):
+        return bool(self._trace_observer_host)
 
-    @trace_observer_url.setter
-    def trace_observer_url(self, value):
-        self._trace_observer_url = self._parse_infinite_tracing_endpoint(value)
+    @property
+    def trace_observer_host(self):
+        return self._trace_observer_host
 
-    def _parse_infinite_tracing_endpoint(self, endpoint):
-        if endpoint is None:
-            return None
+    @trace_observer_host.setter
+    def trace_observer_host(self, value):
+        if value and self._can_enable_infinite_tracing():
+            self._trace_observer_host = value
+        else:
+            self._trace_observer_host = None
 
+    @staticmethod
+    def _can_enable_infinite_tracing():
         if grpc is None:
             _logger.error(
                 "Unable to import libraries required for infinite tracing. "
                 "Please run pip install newrelic[infinite_tracing] "
                 "to install required dependencies. "
                 "Falling back to infinite tracing disabled.")
-            return None
+            return False
 
-        try:
-            parsed = urlparse.urlparse(endpoint)
-        except Exception:
-            parsed = None
-
-        if not parsed or not parsed.scheme or not parsed.netloc:
-            _logger.warning('Disabling Infinite Tracing due to '
-                            'malformed Trace Observer: %s', endpoint)
-            parsed = None
-        elif parsed.scheme not in self._supported_schemes:
-            _logger.warning('Disabling Infinite Tracing due to '
-                            'Unknown scheme: %s', parsed.scheme)
-            parsed = None
-
-        return parsed
+        return True
 
 
 class EventHarvestConfigSettings(Settings):
@@ -656,8 +646,11 @@ _settings.agent_limits.synthetics_transactions = 20
 _settings.agent_limits.data_compression_threshold = 64 * 1024
 _settings.agent_limits.data_compression_level = None
 
-_settings.infinite_tracing.trace_observer_url = os.environ.get(
-        'NEW_RELIC_INFINITE_TRACING_TRACE_OBSERVER_URL', None)
+_settings.infinite_tracing.trace_observer_host = os.environ.get(
+        'NEW_RELIC_INFINITE_TRACING_TRACE_OBSERVER_HOST', None)
+_settings.infinite_tracing.trace_observer_port = _environ_as_int(
+        'NEW_RELIC_INFINITE_TRACING_TRACE_OBSERVER_PORT', 443)
+_settings.infinite_tracing.ssl = True
 _settings.infinite_tracing.span_queue_size = _environ_as_int(
         'NEW_RELIC_INFINITE_TRACING_SPAN_QUEUE_SIZE', 10000)
 

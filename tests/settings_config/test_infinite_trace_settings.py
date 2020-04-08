@@ -1,6 +1,4 @@
 import pytest
-from newrelic.core.stats_engine import CustomMetrics
-from newrelic.core.internal_metrics import InternalTraceContext
 
 INI_FILE_EMPTY = b"""
 [newrelic]
@@ -9,30 +7,39 @@ INI_FILE_EMPTY = b"""
 
 INI_FILE_INFINITE_TRACING = b"""
 [newrelic]
-infinite_tracing.trace_observer_url = http://y
+infinite_tracing.trace_observer_host = y
+infinite_tracing.trace_observer_port = 1234
 infinite_tracing.span_queue_size = 2000
 """
 
 
 # Tests for loading settings and testing for values precedence
-@pytest.mark.parametrize('ini,env,expected_scheme,expected_netloc', (
-    (INI_FILE_EMPTY, {}, None, None),
+@pytest.mark.parametrize('ini,env,expected_host', (
+    (INI_FILE_EMPTY, {}, None),
     (INI_FILE_EMPTY,
-     {'NEW_RELIC_INFINITE_TRACING_TRACE_OBSERVER_URL': 'https://x'},
-     'https', 'x'),
+     {'NEW_RELIC_INFINITE_TRACING_TRACE_OBSERVER_HOST': 'x'}, 'x'),
     (INI_FILE_INFINITE_TRACING,
-     {'NEW_RELIC_INFINITE_TRACING_TRACE_OBSERVER_URL': 'https://x'},
-     'http', 'y'),
+     {'NEW_RELIC_INFINITE_TRACING_TRACE_OBSERVER_HOST': 'x'}, 'y'),
 ))
-def test_infinite_tracing_settings(ini, env,
-        expected_scheme, expected_netloc, global_settings):
+def test_infinite_tracing_host(ini, env,
+        expected_host, global_settings):
 
     settings = global_settings()
-    if expected_scheme is None:
-        assert settings.infinite_tracing.trace_observer_url is None
-    else:
-        assert settings.infinite_tracing.trace_observer_url.scheme == expected_scheme
-        assert settings.infinite_tracing.trace_observer_url.netloc == expected_netloc
+    assert settings.infinite_tracing.trace_observer_host == expected_host
+
+
+@pytest.mark.parametrize('ini,env,expected_port', (
+    (INI_FILE_EMPTY, {}, 443),
+    (INI_FILE_EMPTY,
+     {'NEW_RELIC_INFINITE_TRACING_TRACE_OBSERVER_PORT': '6789'}, 6789),
+    (INI_FILE_INFINITE_TRACING,
+     {'NEW_RELIC_INFINITE_TRACING_TRACE_OBSERVER_PORT': '6789'}, 1234),
+))
+def test_infinite_tracing_port(ini, env,
+        expected_port, global_settings):
+
+    settings = global_settings()
+    assert settings.infinite_tracing.trace_observer_port == expected_port
 
 
 # Tests for loading Infinite Tracing span queue size setting

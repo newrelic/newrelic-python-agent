@@ -587,8 +587,11 @@ def _process_configuration(section):
                     'event_harvest_config.harvest_limits.error_event_data',
                     'getint', None)
     _process_setting(section,
-                     'infinite_tracing.trace_observer_url',
+                     'infinite_tracing.trace_observer_host',
                      'get', None)
+    _process_setting(section,
+                     'infinite_tracing.trace_observer_port',
+                     'getint', None)
     _process_setting(section,
                      'infinite_tracing.span_queue_size',
                      'getint', None)

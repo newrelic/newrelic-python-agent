@@ -751,94 +751,68 @@ class StreamingRpc(object):
         self.channel = channel
         self.metadata = metadata
         self.request_iterator = stream_buffer
-        self.response_iterator = None
         self.notify = threading.Condition(threading.Lock())
         self.rpc = self.channel.stream_stream(
             self.PATH, Span.SerializeToString, RecordStatus.FromString
         )
 
     def close(self):
+        channel = None
         with self.notify:
             if self.channel:
-                _logger.debug("Closing streaming rpc.")
-                self.channel.close()
+                channel = self.channel
                 self.channel = None
             self.notify.notify_all()
+
+        if channel:
+            _logger.debug("Closing streaming rpc.")
+            channel.close()
+            _logger.debug("Streaming rpc close completed.")
 
     def connect(self):
         self.response_processing_thread = threading.Thread(
                 target=self.process_responses,
                 name="NR-StreamingRpc-process-responses")
         self.response_processing_thread.daemon = True
-        self._connect() or self.channel.subscribe(self.on_channel_state)
         self.response_processing_thread.start()
-
-    def _connect(self):
-        with self.notify:
-            if not self.channel:
-                return True
-
-            self.response_iterator = self.rpc(
-                    self.request_iterator, metadata=self.metadata)
-            if not self.response_iterator.add_callback(self.on_rpc_terminate):
-                self.response_iterator.cancel()
-                return False
-            self.notify.notify_all()
-        _logger.info("Streaming RPC connect called successfully.")
-        return True
 
     def process_responses(self):
         response_iterator = None
+
         while True:
             with self.notify:
+                if self.channel and response_iterator:
+                    code = response_iterator.code()
+                    details = response_iterator.details()
+
+                    if code is grpc.StatusCode.UNIMPLEMENTED:
+                        _logger.error("Streaming RPC received UNIMPLEMENTED "
+                                "response code. The agent will not attempt to "
+                                "reestablish the stream.")
+                        break
+
+                    _logger.warning(
+                        "Streaming RPC closed. "
+                        "Will attempt to reconnect in 15 seconds. "
+                        "Code: %s Details: %s", code, details)
+                    self.notify.wait(15)
+
                 if not self.channel:
                     break
 
-                # check if connect has run.
-                # connect will assign self.response_iterator
-                if response_iterator is self.response_iterator:
-                    self.notify.wait()
+                response_iterator = self.rpc(
+                        self.request_iterator,
+                        metadata=self.metadata)
+                _logger.info("Streaming RPC connect completed.")
 
-            if not self.channel:
-                break
-
-            response_iterator = self.response_iterator
             try:
                 for response in response_iterator:
                     _logger.debug("Stream response: %s", response)
             except Exception:
                 pass
 
-    def on_channel_state(self, state):
-        if state is grpc.ChannelConnectivity.IDLE:
-            self.channel.unsubscribe(self.on_channel_state)
-            self._connect()
-
-    def on_rpc_terminate(self):
-        code = self.response_iterator.code()
-        details = self.response_iterator.details()
-
-        if code is grpc.StatusCode.UNIMPLEMENTED:
-            _logger.error("Streaming RPC received UNIMPLEMENTED response code."
-                    " The agent will not attempt to reestablish the stream.")
-            self.close()
-            return
-
-        while True:
-            with self.notify:
-                if not self.channel:
-                    break
-
-                _logger.warning(
-                    "Streaming RPC closed. "
-                    "Will attempt to reconnect in 15 seconds. "
-                    "Code: %s Details: %s", code, details)
-                self.notify.wait(15)
-
-            if self._connect():
-                break
-            else:
-                _logger.warning("Failed to add on_rpc_terminate callback.")
+        self.close()
+        _logger.info("Process response thread ending.")
 
 
 class ApplicationSession(object):
@@ -923,7 +897,6 @@ class ApplicationSession(object):
 
     def shutdown_span_stream(self):
         if self._rpc:
-            _logger.debug('Terminating streaming span request.')
             self._rpc.close()
 
     def shutdown_session(self):

@@ -263,20 +263,27 @@ def test_async_coroutine_close_raises_error(num_coroutines, create_test_task,
     assert metrics.count(('Errors/all', '')) == num_coroutines, metrics
 
 
-@pytest.mark.parametrize('transaction,metric', [
-        (web_transaction, 'Apdex/Function/%s'),
-        (background_task, 'OtherTransaction/Function/%s')])
-def test_deferred_async_background_task(transaction, metric):
+@pytest.mark.parametrize('transaction,metric,arguements', [
+    (web_transaction, 'Apdex/Function/%s', lambda name: ([], {'name':name})),
+    (message_transaction, 'OtherTransaction/Message/lib/dest_type/Named/%s',
+        lambda name: (['lib', 'dest_type', name], {})),
+    (background_task, 'OtherTransaction/Function/%s',
+        lambda name: ([], {'name':name}))])
+def test_deferred_async_background_task(transaction, metric, arguements):
     deferred_metric = (metric % 'deferred', '')
 
-    @transaction(name='deferred')
+    args, kwargs = arguements("deferred")
+
+    @transaction(*args, **kwargs)
     @asyncio.coroutine
     def child_task():
         yield from asyncio.sleep(0)
 
     main_metric = (metric % 'main', '')
 
-    @transaction(name='main')
+    args, kwargs = arguements("main")
+
+    @transaction(*args, **kwargs)
     @asyncio.coroutine
     def parent_task():
         yield from asyncio.sleep(0)

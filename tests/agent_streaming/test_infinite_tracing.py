@@ -1,5 +1,6 @@
 import pytest
 import threading
+import time
 
 from newrelic.core.config import global_settings
 from testing_support.fixtures import override_generic_settings
@@ -144,3 +145,68 @@ def test_agent_restart():
     assert not original_thread.is_alive()
     assert rpc.rpc is not original_rpc
     assert rpc.response_processing_thread.is_alive()
+
+
+def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch):
+    event = threading.Event()
+
+    class WaitOnNotify(threading.Condition):
+        def notify_all(self, *args, **kwargs):
+            event.set()
+            return super(WaitOnNotify, self).notify_all(*args, **kwargs)
+
+    monkeypatch.setattr(StreamingRpc, 'CONDITION_CLS', WaitOnNotify)
+
+    terminating_span = Span(
+        intrinsics={'status_code': AttributeValue(string_value='UNIMPLEMENTED')},
+        agent_attributes={},
+        user_attributes={})
+
+    span = Span(
+        intrinsics={},
+        agent_attributes={},
+        user_attributes={})
+
+    @override_generic_settings(settings, {
+        'distributed_tracing.enabled': True,
+        'span_events.enabled': True,
+        'infinite_tracing.trace_observer_url': (
+             'http://localhost:%s' % mock_grpc_server),
+    })
+    def _test():
+        app = Application('Python Agent Test (Infinite Tracing)')
+        app.connect_to_data_collector(None)
+
+        # Send a span that will trigger disconnect
+        app._stats_engine.span_stream.put(terminating_span)
+
+        # Send a normal span afterwards
+        app._stats_engine.span_stream.put(span)
+
+        # Wait for the notify event in close to be called
+        assert event.wait(timeout=5)
+
+        # Verify the rpc management thread is killed
+        rpc_thread = app._active_session._rpc.response_processing_thread
+        rpc_thread.join(timeout=5)
+        assert not rpc_thread.is_alive()
+
+        # Verify there are unsent spans in the queue
+        assert app._stats_engine.span_stream._queue
+
+        # Trigger an agent restart
+        app.internal_agent_shutdown(restart=True)
+
+        # Wait for the restart to complete
+        app._connected_event.wait()
+
+        # Check data was discarded during restart
+        assert app._stats_engine.span_stream._queue
+
+        # Send a normal span to confirm reconnect occured with restart
+        app._stats_engine.span_stream.put(span)
+
+        # Wait for the stream buffer to empty meaning all spans have been sent.
+        timeout = time.time() + 10
+        while app._stats_engine.span_stream._queue:
+            assert timeout < time.time()

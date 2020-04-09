@@ -28,6 +28,7 @@ def test_close_before_connect(mock_grpc_server):
     # closed
     rpc.response_processing_thread.join(timeout=5)
     assert not rpc.response_processing_thread.is_alive()
+    rpc.close()
 
 
 def test_close_while_connected(mock_grpc_server):

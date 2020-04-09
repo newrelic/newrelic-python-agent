@@ -130,6 +130,7 @@ def test_reconnect_on_failure(status_code, monkeypatch, mock_grpc_server):
         timeout = time.time() + 10
         while app._stats_engine.span_stream._queue:
             assert timeout > time.time()
+        app.internal_agent_shutdown(restart=False)
 
 
 def test_agent_restart():
@@ -150,6 +151,7 @@ def test_agent_restart():
     assert not original_thread.is_alive()
     assert rpc.rpc is not original_rpc
     assert rpc.response_processing_thread.is_alive()
+    app.internal_agent_shutdown(restart=False)
 
 
 def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch):
@@ -220,6 +222,7 @@ def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch):
         timeout = time.time() + 10
         while app._stats_engine.span_stream._queue:
             assert timeout > time.time()
+        app.internal_agent_shutdown()
 
 
 def test_agent_shutdown():
@@ -229,6 +232,6 @@ def test_agent_shutdown():
     rpc = app._active_session._rpc
     # Store references to the orginal rpc and threads
     assert rpc.response_processing_thread.is_alive()
-    app.internal_agent_shutdown()
+    app.internal_agent_shutdown(restart=False)
     assert not rpc.response_processing_thread.is_alive()
     assert not rpc.channel

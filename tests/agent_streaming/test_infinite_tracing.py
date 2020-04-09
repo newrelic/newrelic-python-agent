@@ -104,8 +104,9 @@ def test_reconnect_on_failure(status_code, monkeypatch, mock_grpc_server):
     @override_generic_settings(settings, {
         'distributed_tracing.enabled': True,
         'span_events.enabled': True,
-        'infinite_tracing.trace_observer_url': (
-             'http://localhost:%s' % mock_grpc_server),
+        'infinite_tracing.trace_observer_host': 'localhost',
+        'infinite_tracing.trace_observer_port': mock_grpc_server,
+        'infinite_tracing.ssl': False,
     })
     def _test():
         app = Application('Python Agent Test (Infinite Tracing)')
@@ -178,8 +179,9 @@ def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch):
     @override_generic_settings(settings, {
         'distributed_tracing.enabled': True,
         'span_events.enabled': True,
-        'infinite_tracing.trace_observer_url': (
-             'http://localhost:%s' % mock_grpc_server),
+        'infinite_tracing.trace_observer_host': 'localhost',
+        'infinite_tracing.trace_observer_port': mock_grpc_server,
+        'infinite_tracing.ssl': False,
     })
     def _test():
         app = Application('Python Agent Test (Infinite Tracing)')

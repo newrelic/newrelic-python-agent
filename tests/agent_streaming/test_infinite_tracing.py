@@ -4,6 +4,7 @@ import time
 
 from newrelic.core.config import global_settings
 from testing_support.fixtures import override_generic_settings
+from newrelic.core.agent import shutdown_agent
 
 from newrelic.core.application import Application
 from newrelic.api.application import application_instance
@@ -220,3 +221,15 @@ def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch):
         timeout = time.time() + 10
         while app._stats_engine.span_stream._queue:
             assert timeout < time.time()
+
+
+def test_agent_shutdown():
+    # Get the application connected to the actual 8T endpoint
+    api_application = application_instance()
+    app = api_application._agent._applications[api_application.name]
+    rpc = app._active_session._rpc
+    # Store references to the orginal rpc and threads
+    assert rpc.response_processing_thread.is_alive()
+    shutdown_agent(timeout=5)
+    assert not rpc.response_processing_thread.is_alive()
+    assert not rpc.channel

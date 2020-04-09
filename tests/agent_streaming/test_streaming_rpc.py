@@ -7,6 +7,7 @@ from newrelic.common.streaming_utils import StreamBuffer
 from newrelic.core.infinite_tracing_pb2 import Span, AttributeValue
 
 
+CONDITION_CLS = type(threading.Condition())
 DEFAULT_METADATA = (("agent_run_token", ""),)
 
 
@@ -58,13 +59,17 @@ def test_close_while_connected(mock_grpc_server):
 def test_close_while_awaiting_reconnect(mock_grpc_server, monkeypatch):
     event = threading.Event()
 
-    class WaitOnWait(threading.Condition):
+    class WaitOnWait(CONDITION_CLS):
         def wait(self, *args, **kwargs):
             event.set()
             # Call super wait with no arguements to block until a notify
             return super(WaitOnWait, self).wait()
 
-    monkeypatch.setattr(StreamingRpc, "CONDITION_CLS", WaitOnWait)
+    @staticmethod
+    def condition(*args, **kwargs):
+        return WaitOnWait(*args, **kwargs)
+
+    monkeypatch.setattr(StreamingRpc, 'condition', condition)
 
     span = Span(
         intrinsics={"status_code": AttributeValue(string_value="INTERNAL")},

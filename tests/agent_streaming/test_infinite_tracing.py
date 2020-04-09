@@ -79,13 +79,17 @@ def test_reconnect_on_failure(status_code, monkeypatch, mock_grpc_server):
     wait_event = threading.Event()
     continue_event = threading.Event()
 
-    class WaitOnWait(threading.Condition):
+    class WaitOnWait(CONDITION_CLS):
         def wait(self, *args, **kwargs):
             wait_event.set()
             continue_event.wait()
             return True
 
-    monkeypatch.setattr(StreamingRpc, 'CONDITION_CLS', WaitOnWait)
+    @staticmethod
+    def condition(*args, **kwargs):
+        return WaitOnWait(*args, **kwargs)
+
+    monkeypatch.setattr(StreamingRpc, 'condition', condition)
 
     terminating_span = Span(
         intrinsics={'status_code': AttributeValue(string_value=status_code)},
@@ -150,12 +154,16 @@ def test_agent_restart():
 def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch):
     event = threading.Event()
 
-    class WaitOnNotify(threading.Condition):
+    class WaitOnNotify(CONDITION_CLS):
         def notify_all(self, *args, **kwargs):
             event.set()
             return super(WaitOnNotify, self).notify_all(*args, **kwargs)
 
-    monkeypatch.setattr(StreamingRpc, 'CONDITION_CLS', WaitOnNotify)
+    @staticmethod
+    def condition(*args, **kwargs):
+        return WaitOnNotify(*args, **kwargs)
+
+    monkeypatch.setattr(StreamingRpc, 'condition', condition)
 
     terminating_span = Span(
         intrinsics={'status_code': AttributeValue(string_value='UNIMPLEMENTED')},

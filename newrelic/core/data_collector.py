@@ -724,14 +724,23 @@ class StreamingRpc(object):
 
     PATH = '/com.newrelic.trace.v1.IngestService/RecordSpan'
 
-    def __init__(self, channel, stream_buffer, metadata):
+    def __init__(self, channel, stream_buffer, metadata, record_metric):
         self.channel = channel
         self.metadata = metadata
         self.request_iterator = stream_buffer
-        self.notify = threading.Condition(threading.Lock())
+        self.response_processing_thread = threading.Thread(
+            target=self.process_responses,
+            name="NR-StreamingRpc-process-responses")
+        self.response_processing_thread.daemon = True
+        self.notify = self.condition()
         self.rpc = self.channel.stream_stream(
             self.PATH, Span.SerializeToString, RecordStatus.FromString
         )
+        self.record_metric = record_metric
+
+    @staticmethod
+    def condition(*args, **kwargs):
+        return threading.Condition(*args, **kwargs)
 
     def close(self):
         channel = None
@@ -744,13 +753,13 @@ class StreamingRpc(object):
         if channel:
             _logger.debug("Closing streaming rpc.")
             channel.close()
+            try:
+                self.response_processing_thread.join(timeout=5)
+            except Exception:
+                pass
             _logger.debug("Streaming rpc close completed.")
 
     def connect(self):
-        self.response_processing_thread = threading.Thread(
-                target=self.process_responses,
-                name="NR-StreamingRpc-process-responses")
-        self.response_processing_thread.daemon = True
         self.response_processing_thread.start()
 
     def process_responses(self):
@@ -761,6 +770,15 @@ class StreamingRpc(object):
                 if self.channel and response_iterator:
                     code = response_iterator.code()
                     details = response_iterator.details()
+
+                    self.record_metric(
+                        'Supportability/InfiniteTracing/'
+                        'Span/gRPC/%s' % code.name, {'count': 1})
+
+                    if code is not grpc.StatusCode.OK:
+                        self.record_metric(
+                            'Supportability/InfiniteTracing/'
+                            'Span/Response/Error', {'count': 1})
 
                     if code is grpc.StatusCode.UNIMPLEMENTED:
                         _logger.error("Streaming RPC received UNIMPLEMENTED "
@@ -809,7 +827,7 @@ class ApplicationSession(object):
         self._rpc = None
         self._requests_session = None
 
-    def connect_span_stream(self, span_iterator):
+    def connect_span_stream(self, span_iterator, record_metric):
         if not self._rpc:
             host = self.configuration.infinite_tracing.trace_observer_host
             if not host:
@@ -833,7 +851,7 @@ class ApplicationSession(object):
                         ('license_key', self.license_key))
 
                 rpc = self._rpc = StreamingRpc(
-                        channel, span_iterator, metadata)
+                        channel, span_iterator, metadata, record_metric)
                 rpc.connect()
                 return rpc
 
@@ -1431,7 +1449,7 @@ class DeveloperModeSession(ApplicationSession):
 
         return result
 
-    def connect_span_stream(self, span_iterator):
+    def connect_span_stream(self, span_iterator, record_metric):
         pass
 
 

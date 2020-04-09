@@ -220,7 +220,7 @@ def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch):
         # Wait for the stream buffer to empty meaning all spans have been sent.
         timeout = time.time() + 10
         while app._stats_engine.span_stream._queue:
-            assert timeout < time.time()
+            assert timeout > time.time()
 
 
 def test_agent_shutdown():

@@ -137,6 +137,7 @@ def test_agent_restart():
     # Store references to the orginal rpc and threads
     original_rpc = rpc.rpc
     original_thread = rpc.response_processing_thread
+    original_span_stream = app._stats_engine.span_stream
     assert original_rpc
     assert rpc.response_processing_thread.is_alive()
     # Force an agent restart
@@ -146,12 +147,12 @@ def test_agent_restart():
     rpc = app._active_session._rpc
     assert not original_thread.is_alive()
     assert rpc.rpc is not original_rpc
+    assert app._stats_engine.span_stream is not original_span_stream
     assert rpc.response_processing_thread.is_alive()
     app.internal_agent_shutdown(restart=False)
 
 
-def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch,
-        buffer_empty_event):
+def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch):
     event = threading.Event()
 
     class WaitOnNotify(CONDITION_CLS):
@@ -198,25 +199,6 @@ def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch,
         rpc_thread.join(timeout=5)
         assert not rpc_thread.is_alive()
 
-        # Put a span in the queue after the connection closes
-        app._stats_engine.span_stream.put(span)
-
-        buffer_empty_event.clear()
-
-        # Trigger an agent restart
-        app.internal_agent_shutdown(restart=True)
-
-        # Wait for the restart to complete
-        app._connected_event.wait()
-
-        # Check data was discarded during restart
-        assert len(app._stats_engine.span_stream._queue) == 0
-
-        # Send a normal span to confirm reconnect occured with restart
-        app._stats_engine.span_stream.put(span)
-
-        # Wait for the stream buffer to empty meaning all spans have been sent.
-        assert buffer_empty_event.wait(10)
         app.internal_agent_shutdown(restart=False)
 
     _test()

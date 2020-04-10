@@ -78,4 +78,4 @@ def buffer_empty_event(monkeypatch):
         return SetEventOnWait(event, *args, **kwargs)
 
     monkeypatch.setattr(StreamBuffer, 'condition', condition)
-    yield event
+    return event

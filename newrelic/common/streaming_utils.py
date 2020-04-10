@@ -11,7 +11,7 @@ class StreamBuffer(object):
 
     def __init__(self, maxlen):
         self._queue = collections.deque(maxlen=maxlen)
-        self._notify = StreamBuffer.condition()
+        self._notify = self.condition()
         self._shutdown = False
         self._seen = 0
         self._dropped = 0

@@ -15,6 +15,22 @@ settings = global_settings()
 CONDITION_CLS = type(threading.Condition())
 
 
+@pytest.fixture()
+def app():
+    app = Application('Python Agent Test (Infinite Tracing)')
+    yield app
+    # Calling internal_agent_shutdown on an application that is already closed
+    # will raise an exception.
+    active_session = app._active_session
+    try:
+        app.internal_agent_shutdown(restart=False)
+    except:
+        pass
+    if active_session:
+        assert not active_session._rpc.response_processing_thread.is_alive()
+        assert not active_session._rpc.channel
+
+
 @pytest.mark.parametrize(
      'status_code, metrics', (
      ('UNIMPLEMENTED', [
@@ -28,7 +44,7 @@ CONDITION_CLS = type(threading.Condition())
             ('Supportability/InfiniteTracing/Span/Response/Error', None)]),
  ))
 def test_infinite_tracing_span_streaming(mock_grpc_server,
-        status_code, metrics, monkeypatch):
+        status_code, metrics, monkeypatch, app):
     event = threading.Event()
 
     class TerminateOnWait(CONDITION_CLS):
@@ -60,7 +76,6 @@ def test_infinite_tracing_span_streaming(mock_grpc_server,
     })
     @validate_metric_payload(metrics=metrics)
     def _test():
-        app = Application('Python Agent Test (Infinite Tracing)')
         app.connect_to_data_collector(None)
 
         app._stats_engine.span_stream.put(span)
@@ -74,7 +89,7 @@ def test_infinite_tracing_span_streaming(mock_grpc_server,
 
 @pytest.mark.parametrize('status_code', ('INTERNAL', 'OK'))
 def test_reconnect_on_failure(status_code, monkeypatch, mock_grpc_server,
-        buffer_empty_event):
+        buffer_empty_event, app):
     wait_event = threading.Event()
     continue_event = threading.Event()
 
@@ -108,7 +123,6 @@ def test_reconnect_on_failure(status_code, monkeypatch, mock_grpc_server,
         'infinite_tracing.ssl': False,
     })
     def _test():
-        app = Application('Python Agent Test (Infinite Tracing)')
         app.connect_to_data_collector(None)
 
         # Send a span that will trigger a failure
@@ -128,31 +142,35 @@ def test_reconnect_on_failure(status_code, monkeypatch, mock_grpc_server,
         assert buffer_empty_event.wait(10)
         app.internal_agent_shutdown(restart=False)
 
+    _test()
 
-def test_agent_restart():
+
+def test_agent_restart(app):
     # Get the application connected to the actual 8T endpoint
-    app = Application('Python Agent Test (Infinite Tracing)')
     app.connect_to_data_collector(None)
     rpc = app._active_session._rpc
+
     # Store references to the orginal rpc and threads
     original_rpc = rpc.rpc
     original_thread = rpc.response_processing_thread
     original_span_stream = app._stats_engine.span_stream
     assert original_rpc
     assert rpc.response_processing_thread.is_alive()
+
     # Force an agent restart
     app.internal_agent_shutdown(restart=True)
+
     # Wait for connect to complete
     app._connected_event.wait()
     rpc = app._active_session._rpc
+
     assert not original_thread.is_alive()
     assert rpc.rpc is not original_rpc
     assert app._stats_engine.span_stream is not original_span_stream
     assert rpc.response_processing_thread.is_alive()
-    app.internal_agent_shutdown(restart=False)
 
 
-def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch):
+def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch, app):
     event = threading.Event()
 
     class WaitOnNotify(CONDITION_CLS):
@@ -172,11 +190,6 @@ def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch):
         agent_attributes={},
         user_attributes={})
 
-    span = Span(
-        intrinsics={},
-        agent_attributes={},
-        user_attributes={})
-
     @override_generic_settings(settings, {
         'distributed_tracing.enabled': True,
         'span_events.enabled': True,
@@ -185,7 +198,6 @@ def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch):
         'infinite_tracing.ssl': False,
     })
     def _test():
-        app = Application('Python Agent Test (Infinite Tracing)')
         app.connect_to_data_collector(None)
 
         # Send a span that will trigger disconnect
@@ -198,8 +210,6 @@ def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch):
         rpc_thread = app._active_session._rpc.response_processing_thread
         rpc_thread.join(timeout=5)
         assert not rpc_thread.is_alive()
-
-        app.internal_agent_shutdown(restart=False)
 
     _test()
 

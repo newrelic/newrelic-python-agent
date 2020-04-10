@@ -10,13 +10,13 @@ CONDITION_CLS = type(threading.Condition())
 DEFAULT_METADATA = (("agent_run_token", ""), ("license_key", ""))
 
 
+def record_metric(*args, **kwargs):
+    pass
+
+
 def test_close_before_connect(mock_grpc_server):
     channel = grpc.insecure_channel("localhost:%s" % mock_grpc_server)
     stream_buffer = StreamBuffer(0)
-    metrics = []
-
-    def record_metric(*args):
-        metrics.append(args)
 
     rpc = StreamingRpc(channel, stream_buffer, DEFAULT_METADATA, record_metric)
 
@@ -27,16 +27,11 @@ def test_close_before_connect(mock_grpc_server):
     # closed
     rpc.response_processing_thread.join(timeout=5)
     assert not rpc.response_processing_thread.is_alive()
-    rpc.close()
 
 
 def test_close_while_connected(mock_grpc_server, buffer_empty_event):
     channel = grpc.insecure_channel("localhost:%s" % mock_grpc_server)
     stream_buffer = StreamBuffer(1)
-    metrics = []
-
-    def record_metric(*args):
-        metrics.append(args)
 
     rpc = StreamingRpc(channel, stream_buffer, DEFAULT_METADATA, record_metric)
 
@@ -79,10 +74,6 @@ def test_close_while_awaiting_reconnect(mock_grpc_server, monkeypatch):
     channel = grpc.insecure_channel("localhost:%s" % mock_grpc_server)
 
     stream_buffer = StreamBuffer(1)
-    metrics = []
-
-    def record_metric(*args):
-        metrics.append(args)
 
     rpc = StreamingRpc(channel, stream_buffer, DEFAULT_METADATA, record_metric)
 

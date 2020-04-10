@@ -72,7 +72,8 @@ class SetEventOnWait(CONDITION_CLS):
 
 @pytest.fixture(scope="function")
 def buffer_empty_event(monkeypatch):
-    event = threading.Event() 
+    event = threading.Event()
+
     @staticmethod
     def condition(*args, **kwargs):
         return SetEventOnWait(event, *args, **kwargs)

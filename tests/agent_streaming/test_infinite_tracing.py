@@ -115,13 +115,10 @@ def test_reconnect_on_failure(status_code, monkeypatch, mock_grpc_server):
         # Send a span that will trigger a failure
         app._stats_engine.span_stream.put(terminating_span)
 
-        # Send a normal span afterwards
-        app._stats_engine.span_stream.put(span)
-
         assert wait_event.wait(timeout=5)
 
-        # Verify there are unsent spans in the queue
-        assert app._stats_engine.span_stream._queue
+        # Send a normal span afterwards
+        app._stats_engine.span_stream.put(span)
 
         # Trigger the event so that a reconnect will occur
         continue_event.set()
@@ -169,7 +166,8 @@ def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch):
     monkeypatch.setattr(StreamingRpc, 'condition', condition)
 
     terminating_span = Span(
-        intrinsics={'status_code': AttributeValue(string_value='UNIMPLEMENTED')},
+        intrinsics={'status_code': AttributeValue(
+            string_value='UNIMPLEMENTED')},
         agent_attributes={},
         user_attributes={})
 
@@ -192,9 +190,6 @@ def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch):
         # Send a span that will trigger disconnect
         app._stats_engine.span_stream.put(terminating_span)
 
-        # Send a normal span afterwards
-        app._stats_engine.span_stream.put(span)
-
         # Wait for the notify event in close to be called
         assert event.wait(timeout=5)
 
@@ -203,8 +198,8 @@ def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch):
         rpc_thread.join(timeout=5)
         assert not rpc_thread.is_alive()
 
-        # Verify there are unsent spans in the queue
-        assert app._stats_engine.span_stream._queue
+        # Put a span in the queue after the connection closes
+        app._stats_engine.span_stream.put(span)
 
         # Trigger an agent restart
         app.internal_agent_shutdown(restart=True)
@@ -213,7 +208,7 @@ def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch):
         app._connected_event.wait()
 
         # Check data was discarded during restart
-        assert app._stats_engine.span_stream._queue
+        assert not app._stats_engine.span_stream._queue
 
         # Send a normal span to confirm reconnect occured with restart
         app._stats_engine.span_stream.put(span)
@@ -222,7 +217,9 @@ def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch):
         timeout = time.time() + 10
         while app._stats_engine.span_stream._queue:
             assert timeout > time.time()
-        app.internal_agent_shutdown()
+        app.internal_agent_shutdown(restart=False)
+
+    _test()
 
 
 def test_agent_shutdown():

@@ -1,6 +1,5 @@
 import grpc
 import threading
-import time
 
 from newrelic.core.data_collector import StreamingRpc
 from newrelic.common.streaming_utils import StreamBuffer
@@ -8,7 +7,7 @@ from newrelic.core.infinite_tracing_pb2 import Span, AttributeValue
 
 
 CONDITION_CLS = type(threading.Condition())
-DEFAULT_METADATA = (("agent_run_token", ""),)
+DEFAULT_METADATA = (("agent_run_token", ""), ("license_key", ""))
 
 
 def test_close_before_connect(mock_grpc_server):

@@ -440,7 +440,9 @@ class Application(object):
             configuration = active_session.configuration
 
             with self._stats_lock:
-                self._stats_engine.reset_stats(configuration)
+                self._stats_engine.reset_stats(
+                        configuration,
+                        reset_stream=True)
 
                 if configuration.serverless_mode.enabled:
                     sampling_target_period = 60.0

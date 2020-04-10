@@ -1327,7 +1327,7 @@ class StatsEngine(object):
 
         return trace_data
 
-    def reset_stats(self, settings):
+    def reset_stats(self, settings, reset_stream=False):
         """Resets the accumulated statistics back to initial state and
         associates the application settings object with the stats
         engine. This should be called when application is first
@@ -1353,6 +1353,10 @@ class StatsEngine(object):
         self.reset_custom_events()
         self.reset_span_events()
         self.reset_synthetics_events()
+        # streams are never reset after instantiation
+        if reset_stream:
+            self._span_stream = StreamBuffer(
+                settings.infinite_tracing.span_queue_size)
 
     def reset_metric_stats(self):
         """Resets the accumulated statistics back to initial state for
@@ -1396,11 +1400,6 @@ class StatsEngine(object):
             self._span_events = SampledDataSet(
                     self.__settings.event_harvest_config.
                     harvest_limits.span_event_data)
-
-            # span stream is never reset after instantiation
-            if self._span_stream is None:
-                self._span_stream = StreamBuffer(
-                    self.__settings.infinite_tracing.span_queue_size)
         else:
             self._span_events = SampledDataSet()
 

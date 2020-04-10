@@ -210,7 +210,7 @@ def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch,
         app._connected_event.wait()
 
         # Check data was discarded during restart
-        assert not app._stats_engine.span_stream._queue
+        assert len(app._stats_engine.span_stream._queue) == 0
 
         # Send a normal span to confirm reconnect occured with restart
         app._stats_engine.span_stream.put(span)

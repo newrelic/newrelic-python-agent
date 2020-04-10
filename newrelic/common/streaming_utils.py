@@ -11,10 +11,14 @@ class StreamBuffer(object):
 
     def __init__(self, maxlen):
         self._queue = collections.deque(maxlen=maxlen)
-        self._notify = threading.Condition(threading.Lock())
+        self._notify = self.condition()
         self._shutdown = False
         self._seen = 0
         self._dropped = 0
+
+    @staticmethod
+    def condition(*args, **kwargs):
+        return threading.Condition(*args, **kwargs)
 
     def shutdown(self):
         with self._notify:

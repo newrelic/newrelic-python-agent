@@ -62,7 +62,7 @@ def test_close_while_awaiting_reconnect(mock_grpc_server, monkeypatch):
     class WaitOnWait(CONDITION_CLS):
         def wait(self, *args, **kwargs):
             event.set()
-            # Call super wait with no arguements to block until a notify
+            # Call super wait with no arguments to block until a notify
             return super(WaitOnWait, self).wait()
 
     @staticmethod
@@ -88,9 +88,9 @@ def test_close_while_awaiting_reconnect(mock_grpc_server, monkeypatch):
     rpc = StreamingRpc(channel, stream_buffer, DEFAULT_METADATA, record_metric)
 
     rpc.connect()
-    # Send a span to trigger reconnet
+    # Send a span to trigger reconnect
     stream_buffer.put(span)
-    # Wait until for StreamingRpc to pause before attempting recconect
+    # Wait until for StreamingRpc to pause before attempting reconnect
     assert event.wait(timeout=5)
     # Close the rpc
     rpc.close()

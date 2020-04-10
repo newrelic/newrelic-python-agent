@@ -31,7 +31,7 @@ def test_close_before_connect(mock_grpc_server):
     rpc.close()
 
 
-def test_close_while_connected(mock_grpc_server):
+def test_close_while_connected(mock_grpc_server, buffer_empty_event):
     channel = grpc.insecure_channel("localhost:%s" % mock_grpc_server)
     stream_buffer = StreamBuffer(1)
     metrics = []
@@ -47,11 +47,10 @@ def test_close_while_connected(mock_grpc_server):
 
     span = Span(intrinsics={}, agent_attributes={}, user_attributes={})
 
+    buffer_empty_event.clear()
     stream_buffer.put(span)
 
-    timeout = time.time() + 5
-    while stream_buffer._queue:
-        assert timeout > time.time()
+    assert buffer_empty_event.wait(5)
 
     rpc.close()
     assert not rpc.response_processing_thread.is_alive()

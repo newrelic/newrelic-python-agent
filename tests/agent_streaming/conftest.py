@@ -7,6 +7,10 @@ from testing_support.fixtures import (
     collector_available_fixture,
 )
 from testing_support.mock_external_grpc_server import MockExternalgRPCServer
+from newrelic.common.streaming_utils import StreamBuffer
+import threading
+
+CONDITION_CLS = type(threading.Condition())
 
 _coverage_source = []
 
@@ -54,3 +58,24 @@ def session_initialization(code_coverage, collector_agent_registration):
 @pytest.fixture(scope="function")
 def requires_data_collector(collector_available_fixture):
     pass
+
+
+class SetEventOnWait(CONDITION_CLS):
+    def __init__(self, event, *args, **kwargs):
+        super(SetEventOnWait, self).__init__(*args, **kwargs)
+        self._event = event
+
+    def wait(self, *args, **kwargs):
+        self._event.set()
+        return super(SetEventOnWait, self).wait(*args, **kwargs)
+
+
+@pytest.fixture(scope="function")
+def buffer_empty_event(monkeypatch):
+    event = threading.Event() 
+    @staticmethod
+    def condition(*args, **kwargs):
+        return SetEventOnWait(event, *args, **kwargs)
+
+    monkeypatch.setattr(StreamBuffer, 'condition', condition)
+    yield event

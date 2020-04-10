@@ -732,7 +732,7 @@ class StreamingRpc(object):
             target=self.process_responses,
             name="NR-StreamingRpc-process-responses")
         self.response_processing_thread.daemon = True
-        self.notify = self.condition()
+        self.notify = StreamingRpc.condition()
         self.rpc = self.channel.stream_stream(
             self.PATH, Span.SerializeToString, RecordStatus.FromString
         )

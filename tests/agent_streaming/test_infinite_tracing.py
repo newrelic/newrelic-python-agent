@@ -75,7 +75,8 @@ def test_infinite_tracing_span_streaming(mock_grpc_server,
 
 
 @pytest.mark.parametrize('status_code', ('INTERNAL', 'OK'))
-def test_reconnect_on_failure(status_code, monkeypatch, mock_grpc_server):
+def test_reconnect_on_failure(status_code, monkeypatch, mock_grpc_server,
+        buffer_empty_event):
     wait_event = threading.Event()
     continue_event = threading.Event()
 
@@ -120,13 +121,13 @@ def test_reconnect_on_failure(status_code, monkeypatch, mock_grpc_server):
         # Send a normal span afterwards
         app._stats_engine.span_stream.put(span)
 
+        buffer_empty_event.clear()
+
         # Trigger the event so that a reconnect will occur
         continue_event.set()
 
         # Wait for the stream buffer to empty meaning all spans have been sent.
-        timeout = time.time() + 10
-        while app._stats_engine.span_stream._queue:
-            assert timeout > time.time()
+        assert buffer_empty_event.wait(10)
         app.internal_agent_shutdown(restart=False)
 
 
@@ -151,7 +152,8 @@ def test_agent_restart():
     app.internal_agent_shutdown(restart=False)
 
 
-def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch):
+def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch,
+        buffer_empty_event):
     event = threading.Event()
 
     class WaitOnNotify(CONDITION_CLS):
@@ -201,6 +203,8 @@ def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch):
         # Put a span in the queue after the connection closes
         app._stats_engine.span_stream.put(span)
 
+        buffer_empty_event.clear()
+
         # Trigger an agent restart
         app.internal_agent_shutdown(restart=True)
 
@@ -214,9 +218,7 @@ def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch):
         app._stats_engine.span_stream.put(span)
 
         # Wait for the stream buffer to empty meaning all spans have been sent.
-        timeout = time.time() + 10
-        while app._stats_engine.span_stream._queue:
-            assert timeout > time.time()
+        assert buffer_empty_event.wait(10)
         app.internal_agent_shutdown(restart=False)
 
     _test()

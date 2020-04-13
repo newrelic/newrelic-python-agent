@@ -241,7 +241,7 @@ class InfiniteTracingSettings(Settings):
         if grpc is None:
             _logger.error(
                 "Unable to import libraries required for infinite tracing. "
-                "Please run pip install newrelic[infinite_tracing] "
+                "Please run pip install newrelic[infinite-tracing] "
                 "to install required dependencies. "
                 "Falling back to infinite tracing disabled.")
             return False

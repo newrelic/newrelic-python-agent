@@ -22,6 +22,12 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
+try:
+    import grpc
+    from newrelic.core.infinite_tracing_pb2 import Span as _  # NOQA
+except ImportError:
+    grpc = None
+
 
 # By default, Transaction Events and Custom Events have the same size
 # reservoir. Error Events have a different default size.
@@ -212,6 +218,37 @@ class EventLoopVisibilitySettings(Settings):
     pass
 
 
+class InfiniteTracingSettings(Settings):
+    _trace_observer_host = None
+
+    @property
+    def enabled(self):
+        return bool(self._trace_observer_host)
+
+    @property
+    def trace_observer_host(self):
+        return self._trace_observer_host
+
+    @trace_observer_host.setter
+    def trace_observer_host(self, value):
+        if value and self._can_enable_infinite_tracing():
+            self._trace_observer_host = value
+        else:
+            self._trace_observer_host = None
+
+    @staticmethod
+    def _can_enable_infinite_tracing():
+        if grpc is None:
+            _logger.error(
+                "Unable to import libraries required for infinite tracing. "
+                "Please run pip install newrelic[infinite-tracing] "
+                "to install required dependencies. "
+                "Falling back to infinite tracing disabled.")
+            return False
+
+        return True
+
+
 class EventHarvestConfigSettings(Settings):
     nested = True
     _lock = threading.Lock()
@@ -273,6 +310,7 @@ _settings.transaction_segments.attributes = \
         TransactionSegmentAttributesSettings()
 _settings.distributed_tracing = DistributedTracingSettings()
 _settings.serverless_mode = ServerlessModeSettings()
+_settings.infinite_tracing = InfiniteTracingSettings()
 _settings.event_harvest_config = EventHarvestConfigSettings()
 _settings.event_harvest_config.harvest_limits = \
         EventHarvestConfigHarvestLimitSettings()
@@ -607,6 +645,15 @@ _settings.agent_limits.synthetics_events = 200
 _settings.agent_limits.synthetics_transactions = 20
 _settings.agent_limits.data_compression_threshold = 64 * 1024
 _settings.agent_limits.data_compression_level = None
+
+_settings.infinite_tracing.trace_observer_host = os.environ.get(
+        'NEW_RELIC_INFINITE_TRACING_TRACE_OBSERVER_HOST', None)
+_settings.infinite_tracing.trace_observer_port = _environ_as_int(
+        'NEW_RELIC_INFINITE_TRACING_TRACE_OBSERVER_PORT', 443)
+_settings.infinite_tracing.ssl = True
+_settings.infinite_tracing.span_queue_size = _environ_as_int(
+        'NEW_RELIC_INFINITE_TRACING_SPAN_QUEUE_SIZE', 10000)
+
 _settings.event_harvest_config.harvest_limits.analytic_event_data = \
         DEFAULT_RESERVOIR_SIZE
 _settings.event_harvest_config.harvest_limits.custom_event_data = \
@@ -671,7 +718,7 @@ _settings.heroku.dyno_name_prefixes_to_shorten = list(_environ_as_set(
 _settings.serverless_mode.enabled = _environ_as_bool(
         'NEW_RELIC_SERVERLESS_MODE_ENABLED',
         default=False)
-_settings.aws_arn = None
+_settings.aws_lambda_metadata = {}
 
 _settings.event_loop_visibility.enabled = True
 _settings.event_loop_visibility.blocking_threshold = 0.1
@@ -704,6 +751,11 @@ def flatten_settings(settings):
 
     def _flatten(settings, o, name=None):
         for key, value in vars(o).items():
+            # Remove any leading underscores on keys accessed through
+            # properties for reporting.
+            if key.startswith('_'):
+                key = key[1:]
+
             if name:
                 key = '%s.%s' % (name, key)
 

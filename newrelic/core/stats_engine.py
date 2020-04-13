@@ -28,6 +28,7 @@ from newrelic.core.stack_trace import exception_stack
 
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.common.encoding_utils import json_encode
+from newrelic.common.streaming_utils import StreamBuffer
 
 _logger = logging.getLogger(__name__)
 
@@ -416,6 +417,7 @@ class StatsEngine(object):
         self._error_events = SampledDataSet()
         self._custom_events = SampledDataSet()
         self._span_events = SampledDataSet()
+        self._span_stream = None
         self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__slow_transaction_map = {}
@@ -446,6 +448,10 @@ class StatsEngine(object):
     @property
     def span_events(self):
         return self._span_events
+
+    @property
+    def span_stream(self):
+        return self._span_stream
 
     @property
     def synthetics_events(self):
@@ -985,10 +991,14 @@ class StatsEngine(object):
 
         # Merge in span events
 
-        if (settings.distributed_tracing.enabled and transaction.sampled and
+        if (settings.distributed_tracing.enabled and
                 settings.span_events.enabled and settings.collect_span_events):
-            for event in transaction.span_events(self.__settings):
-                self._span_events.add(event, priority=transaction.priority)
+            if settings.infinite_tracing.enabled:
+                for event in transaction.span_protos(settings):
+                    self._span_stream.put(event)
+            elif transaction.sampled:
+                for event in transaction.span_events(self.__settings):
+                    self._span_events.add(event, priority=transaction.priority)
 
     def metric_data(self, normalizer=None):
         """Returns a list containing the low level metric data for
@@ -1317,7 +1327,7 @@ class StatsEngine(object):
 
         return trace_data
 
-    def reset_stats(self, settings):
+    def reset_stats(self, settings, reset_stream=False):
         """Resets the accumulated statistics back to initial state and
         associates the application settings object with the stats
         engine. This should be called when application is first
@@ -1343,6 +1353,10 @@ class StatsEngine(object):
         self.reset_custom_events()
         self.reset_span_events()
         self.reset_synthetics_events()
+        # streams are never reset after instantiation
+        if reset_stream:
+            self._span_stream = StreamBuffer(
+                settings.infinite_tracing.span_queue_size)
 
     def reset_metric_stats(self):
         """Resets the accumulated statistics back to initial state for

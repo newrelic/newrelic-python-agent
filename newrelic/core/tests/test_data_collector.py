@@ -311,10 +311,12 @@ def test_serverless_session_metadata(execution_environment_set, arn_set,
         monkeypatch):
 
     settings = global_settings()
-    original_arn = settings.aws_arn
+    original_metadata = settings.aws_lambda_metadata.copy()
+    settings.aws_lambda_metadata.update({'arn': None, 'function_version': '$LATEST'})
     expected_metadata = {
             'protocol_version': 17,
             'agent_version': AGENT_VERSION,
+            'function_version': '$LATEST'
     }
 
     if execution_environment_set:
@@ -326,7 +328,7 @@ def test_serverless_session_metadata(execution_environment_set, arn_set,
 
     if arn_set:
         aws_arn = 'aaaaaaaaaaaaarn'
-        settings.aws_arn = aws_arn
+        settings.aws_lambda_metadata['arn'] = aws_arn
         expected_metadata['arn'] = aws_arn
     else:
         expected_metadata['arn'] = None
@@ -342,34 +344,34 @@ def test_serverless_session_metadata(execution_environment_set, arn_set,
             assert key in captured_metadata
             assert captured_metadata[key] == value
     finally:
-        settings.aws_arn = original_arn
+        settings.aws_lambda_metadata = original_metadata
 
 
 def test_serverless_session_retries_for_arn_but_not_for_other_keys(
         monkeypatch):
 
     settings = global_settings()
-    original_arn = settings.aws_arn
+    original_metadata = settings.aws_lambda_metadata.copy()
     session = ServerlessModeSession(None, None, settings)
 
     captured_metadata = session.payload['metadata']
     assert captured_metadata['execution_environment'] is None
-    assert captured_metadata['arn'] is None
+    assert captured_metadata.get('arn') is None
 
     monkeypatch.setenv('AWS_EXECUTION_ENV',
             'this should not set the execution environment')
     captured_metadata = session.payload['metadata']
     assert captured_metadata['execution_environment'] is None
-    assert captured_metadata['arn'] is None
+    assert captured_metadata.get('arn') is None
 
     aws_arn = 'aaaaaaaaaaaaarn'
-    settings.aws_arn = aws_arn
+    settings.aws_lambda_metadata['arn'] = aws_arn
     captured_metadata = session.payload['metadata']
     try:
         assert captured_metadata['execution_environment'] is None
         assert captured_metadata['arn'] == aws_arn
     finally:
-        settings.aws_arn = original_arn
+        settings.aws_lambda_metadata = original_metadata
 
 
 class FakeRequestsSession(requests.Session):

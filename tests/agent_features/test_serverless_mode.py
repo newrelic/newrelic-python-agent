@@ -135,12 +135,13 @@ def test_payload_metadata_arn(serverless_application, arn_set):
     # lambda handler records it there, then this test will fail.
 
     settings = global_settings()
-    original_arn = settings.aws_arn
-    settings.aws_arn = None
+    original_metadata = settings.aws_lambda_metadata.copy()
 
     arn = None
     if arn_set:
         arn = 'arrrrrrrrrrRrrrrrrrn'
+
+    settings.aws_lambda_metadata.update({'arn': arn, 'function_version': '$LATEST'})
 
     class Context(object):
         invoked_function_arn = arn
@@ -148,10 +149,10 @@ def test_payload_metadata_arn(serverless_application, arn_set):
     @validate_serverless_metadata(exact_metadata={'arn': arn})
     @lambda_handler(application=serverless_application)
     def handler(event, context):
-        assert settings.aws_arn == arn
+        assert settings.aws_lambda_metadata['arn'] == arn
         return {}
 
     try:
         handler({}, Context)
     finally:
-        settings.aws_arn = original_arn
+        settings.aws_lambda_metadata = original_metadata

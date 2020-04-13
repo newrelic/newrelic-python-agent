@@ -1,4 +1,5 @@
 import newrelic.core.attribute as attribute
+
 from newrelic.core.attribute_filter import (DST_SPAN_EVENTS,
         DST_TRANSACTION_SEGMENTS)
 
@@ -10,7 +11,8 @@ class GenericNodeMixin(object):
             return self._processed_user_attributes
 
         self._processed_user_attributes = u_attrs = {}
-        for k, v in self.user_attributes.items():
+        user_attributes = getattr(self, 'user_attributes', u_attrs)
+        for k, v in user_attributes.items():
             k, v = attribute.process_user_attribute(k, v)
             u_attrs[k] = v
         return u_attrs
@@ -33,8 +35,12 @@ class GenericNodeMixin(object):
         return _params
 
     def span_event(
-            self, settings, base_attrs=None, parent_guid=None):
-        i_attrs = base_attrs and base_attrs.copy() or {}
+                self,
+                settings,
+                base_attrs=None,
+                parent_guid=None,
+                attr_class=dict):
+        i_attrs = base_attrs and base_attrs.copy() or attr_class()
         i_attrs['type'] = 'Span'
         i_attrs['name'] = self.name
         i_attrs['guid'] = self.guid
@@ -48,29 +54,33 @@ class GenericNodeMixin(object):
         a_attrs = attribute.resolve_agent_attributes(
                 self.agent_attributes,
                 settings.attribute_filter,
-                DST_SPAN_EVENTS)
+                DST_SPAN_EVENTS,
+                attr_class=attr_class)
 
         u_attrs = attribute.resolve_user_attributes(
                 self.processed_user_attributes,
                 settings.attribute_filter,
-                DST_SPAN_EVENTS)
+                DST_SPAN_EVENTS,
+                attr_class=attr_class)
 
         # intrinsics, user attrs, agent attrs
         return [i_attrs, u_attrs, a_attrs]
 
     def span_events(self,
-            settings, base_attrs=None, parent_guid=None):
+            settings, base_attrs=None, parent_guid=None, attr_class=dict):
 
         yield self.span_event(
                 settings,
                 base_attrs=base_attrs,
-                parent_guid=parent_guid)
+                parent_guid=parent_guid,
+                attr_class=attr_class)
 
         for child in self.children:
             for event in child.span_events(
                     settings,
                     base_attrs=base_attrs,
-                    parent_guid=self.guid):
+                    parent_guid=self.guid,
+                    attr_class=attr_class):
                 yield event
 
 

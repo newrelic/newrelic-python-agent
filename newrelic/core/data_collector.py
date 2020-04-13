@@ -10,6 +10,7 @@ import sys
 import time
 import zlib
 import warnings
+import threading
 
 from pprint import pprint
 
@@ -39,6 +40,12 @@ from newrelic.common.system_info import (logical_processor_count,
 from newrelic.common.utilization import (AWSUtilization, AzureUtilization,
         DockerUtilization, GCPUtilization, PCFUtilization,
         KubernetesUtilization)
+
+try:
+    import grpc
+    from newrelic.core.infinite_tracing_pb2 import Span, RecordStatus
+except ImportError:
+    grpc = None
 
 _logger = logging.getLogger(__name__)
 
@@ -707,6 +714,102 @@ def apply_high_security_mode_fixups(local_settings, server_settings):
     return server_settings
 
 
+class StreamingRpc(object):
+    """Streaming Remote Procedure Call
+
+    This class keeps a stream_stream RPC alive, retrying after a timeout when
+    errors are encountered. If grpc.StatusCode.UNIMPLEMENTED is encountered, a
+    retry will not occur.
+    """
+
+    PATH = '/com.newrelic.trace.v1.IngestService/RecordSpan'
+
+    def __init__(self, channel, stream_buffer, metadata, record_metric):
+        self.channel = channel
+        self.metadata = metadata
+        self.request_iterator = stream_buffer
+        self.response_processing_thread = threading.Thread(
+            target=self.process_responses,
+            name="NR-StreamingRpc-process-responses")
+        self.response_processing_thread.daemon = True
+        self.notify = self.condition()
+        self.rpc = self.channel.stream_stream(
+            self.PATH, Span.SerializeToString, RecordStatus.FromString
+        )
+        self.record_metric = record_metric
+
+    @staticmethod
+    def condition(*args, **kwargs):
+        return threading.Condition(*args, **kwargs)
+
+    def close(self):
+        channel = None
+        with self.notify:
+            if self.channel:
+                channel = self.channel
+                self.channel = None
+            self.notify.notify_all()
+
+        if channel:
+            _logger.debug("Closing streaming rpc.")
+            channel.close()
+            try:
+                self.response_processing_thread.join(timeout=5)
+            except Exception:
+                pass
+            _logger.debug("Streaming rpc close completed.")
+
+    def connect(self):
+        self.response_processing_thread.start()
+
+    def process_responses(self):
+        response_iterator = None
+
+        while True:
+            with self.notify:
+                if self.channel and response_iterator:
+                    code = response_iterator.code()
+                    details = response_iterator.details()
+
+                    self.record_metric(
+                        'Supportability/InfiniteTracing/'
+                        'Span/gRPC/%s' % code.name, {'count': 1})
+
+                    if code is not grpc.StatusCode.OK:
+                        self.record_metric(
+                            'Supportability/InfiniteTracing/'
+                            'Span/Response/Error', {'count': 1})
+
+                    if code is grpc.StatusCode.UNIMPLEMENTED:
+                        _logger.error("Streaming RPC received UNIMPLEMENTED "
+                                "response code. The agent will not attempt to "
+                                "reestablish the stream.")
+                        break
+
+                    _logger.warning(
+                        "Streaming RPC closed. "
+                        "Will attempt to reconnect in 15 seconds. "
+                        "Code: %s Details: %s", code, details)
+                    self.notify.wait(15)
+
+                if not self.channel:
+                    break
+
+                response_iterator = self.rpc(
+                        self.request_iterator,
+                        metadata=self.metadata)
+                _logger.info("Streaming RPC connect completed.")
+
+            try:
+                for response in response_iterator:
+                    _logger.debug("Stream response: %s", response)
+            except Exception:
+                pass
+
+        self.close()
+        _logger.info("Process response thread ending.")
+
+
 class ApplicationSession(object):
 
     """ Class which encapsulates communication with the data collector
@@ -721,7 +824,36 @@ class ApplicationSession(object):
         self.agent_run_id = configuration.agent_run_id
         self.request_headers_map = configuration.request_headers_map
 
+        self._rpc = None
         self._requests_session = None
+
+    def connect_span_stream(self, span_iterator, record_metric):
+        if not self._rpc:
+            host = self.configuration.infinite_tracing.trace_observer_host
+            if not host:
+                return
+
+            port = self.configuration.infinite_tracing.trace_observer_port
+            ssl = self.configuration.infinite_tracing.ssl
+            endpoint = '{}:{}'.format(host, port)
+
+            if (self.configuration.distributed_tracing.enabled and
+                    self.configuration.span_events.enabled and
+                    self.configuration.collect_span_events):
+                if ssl:
+                    credentials = grpc.ssl_channel_credentials()
+                    channel = grpc.secure_channel(endpoint, credentials)
+                else:
+                    channel = grpc.insecure_channel(endpoint)
+
+                metadata = (
+                        ('agent_run_token', self.agent_run_id),
+                        ('license_key', self.license_key))
+
+                rpc = self._rpc = StreamingRpc(
+                        channel, span_iterator, metadata, record_metric)
+                rpc.connect()
+                return rpc
 
     @property
     def requests_session(self):
@@ -757,6 +889,10 @@ class ApplicationSession(object):
                 'agent_settings', self.license_key, self.agent_run_id,
                 self.request_headers_map, payload,
                 self.max_payload_size_in_bytes)
+
+    def shutdown_span_stream(self):
+        if self._rpc:
+            self._rpc.close()
 
     def shutdown_session(self):
         """Called to perform orderly deregistration of agent run against
@@ -1313,6 +1449,9 @@ class DeveloperModeSession(ApplicationSession):
 
         return result
 
+    def connect_span_stream(self, span_iterator, record_metric):
+        pass
+
 
 class ServerlessModeSession(ApplicationSession):
     def __init__(self, *args, **kwargs):
@@ -1344,15 +1483,11 @@ class ServerlessModeSession(ApplicationSession):
 
     @property
     def payload(self):
-        if not self._metadata.get('arn'):
-            self._update_payload_metadata()
-        return self._payload
-
-    def _update_payload_metadata(self):
         settings = global_settings()
-        self._metadata.update({
-            'arn': settings.aws_arn,
-        })
+        for key in settings.aws_lambda_metadata:
+            if key not in self._metadata:
+                self._metadata[key] = settings.aws_lambda_metadata[key]
+        return self._payload
 
     def send_request(self, session, url, method, license_key,
             agent_run_id=None, request_headers_map=None, payload=(),

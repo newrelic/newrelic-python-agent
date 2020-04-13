@@ -322,6 +322,12 @@ class TestFlattenConfig(unittest.TestCase):
         _settings = newrelic.core.config.flatten_settings(settings)
         assert type(_settings['a']['a.a']) is int
 
+    def test_leading_underscore_omitted(self):
+        settings = newrelic.core.config.create_settings(nested=False)
+        settings._foo = 'bar'
+        _settings = newrelic.core.config.flatten_settings(settings)
+        assert _settings['foo'] == 'bar'
+
 
 class TestApplyConfigSetting(unittest.TestCase):
     def test_apply_nested_dict(self):

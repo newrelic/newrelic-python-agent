@@ -1,6 +1,7 @@
 import pytest
 import asyncio
 import time
+from newrelic.api.transaction import current_transaction
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace, FunctionTrace
 from newrelic.core.trace_cache import trace_cache
@@ -34,6 +35,9 @@ def waiter(ready, done, times=1):
 @background_task(name="wait")
 @asyncio.coroutine
 def wait_for_loop(ready, done, times=1):
+    transaction = current_transaction()
+    transaction._sampled = True
+
     # Run the waiter on another task so that the sentinel for wait appears
     # multiple times in the trace cache
     yield from asyncio.ensure_future(waiter(ready, done, times))
@@ -83,6 +87,7 @@ def test_record_event_loop_wait(
 
     @override_application_settings({
         'event_loop_visibility.enabled': event_loop_visibility_enabled,
+        'distributed_tracing.enabled': True,
     })
     @validate_transaction_trace_attributes(
         index=index + 1,

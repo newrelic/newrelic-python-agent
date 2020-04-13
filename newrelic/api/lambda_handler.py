@@ -114,8 +114,8 @@ def _LambdaHandlerWrapper(wrapped, application=None, name=None,
             except:
                 pass
 
-        if not settings.aws_arn and aws_arn:
-            settings.aws_arn = aws_arn
+        if not settings.aws_lambda_metadata and aws_arn:
+            settings.aws_lambda_metadata['arn'] = aws_arn
 
         with transaction:
             result = wrapped(*args, **kwargs)

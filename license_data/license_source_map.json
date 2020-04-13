@@ -779,6 +779,12 @@
             "New Relic"
         ]
     },
+    "newrelic/common/streaming_utils.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/system_info.py": {
         "hash": "n/a",
         "libraries": [
@@ -852,6 +858,12 @@
         ]
     },
     "newrelic/common/tests/test_stopwatch.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_streaming_utils.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -1032,6 +1044,12 @@
         ]
     },
     "newrelic/core/function_node.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/core/infinite_tracing_pb2.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

@@ -15,7 +15,7 @@ _ok_modules = (
         # These modules are imported by the newrelic package and/or do not do
         # nested imports, so they're ok to import before newrelic.
         'urllib', 'urllib2', 'httplib', 'http.client', 'urllib.request',
-        'newrelic.agent',
+        'newrelic.agent', 'asyncio','asyncio.events',
 
         # These modules should not be added to the _uninstrumented_modules set
         # because they have been deemed okay to import before initialization by

@@ -57,9 +57,9 @@ def test_footer_attributes():
 
     response = target_application_manual_rum.get('/', headers=headers)
 
-    header = response.html.html.head.script.text
-    content = response.html.html.body.p.text
-    footer = response.html.html.body.script.text
+    header = response.html.html.head.script.string
+    content = response.html.html.body.p.string
+    footer = response.html.html.body.script.string
 
     # Validate actual body content as sansity check.
 
@@ -108,7 +108,7 @@ def test_ssl_for_http_is_none():
     assert settings.browser_monitoring.ssl_for_http is None
 
     response = target_application_manual_rum.get('/')
-    footer = response.html.html.body.script.text
+    footer = response.html.html.body.script.string
     data = json.loads(footer.split('NREUM.info=')[1])
 
     assert 'sslForHttp' not in data
@@ -127,7 +127,7 @@ def test_ssl_for_http_is_true():
     assert settings.browser_monitoring.ssl_for_http is True
 
     response = target_application_manual_rum.get('/')
-    footer = response.html.html.body.script.text
+    footer = response.html.html.body.script.string
     data = json.loads(footer.split('NREUM.info=')[1])
 
     assert data['sslForHttp'] is True
@@ -146,7 +146,7 @@ def test_ssl_for_http_is_false():
     assert settings.browser_monitoring.ssl_for_http is False
 
     response = target_application_manual_rum.get('/')
-    footer = response.html.html.body.script.text
+    footer = response.html.html.body.script.string
     data = json.loads(footer.split('NREUM.info=')[1])
 
     assert data['sslForHttp'] is False

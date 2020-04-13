@@ -1004,7 +1004,7 @@ class Transaction(object):
         current_span = trace_cache().current_trace()
         if (settings.span_events.enabled and
                 settings.collect_span_events and
-                current_span and self.sampled):
+                current_span):
             data['id'] = current_span.guid
 
         self._distributed_trace_state |= CREATED_DISTRIBUTED_TRACE

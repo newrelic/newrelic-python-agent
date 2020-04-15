@@ -174,14 +174,17 @@ class TraceCache(object):
 
         thread_id = trace.thread_id
 
-        if (thread_id in self._cache and
-                self._cache[thread_id].root is not trace.root):
-            _logger.error('Runtime instrumentation error. Attempt to '
-                    'save a trace from an inactive transaction. '
-                    'Report this issue to New Relic support.\n%s',
-                    ''.join(traceback.format_stack()[:-1]))
+        if thread_id in self._cache:
+            cache_root = self._cache[thread_id].root
+            if (cache_root and cache_root is not trace.root and
+                    not cache_root.exited):
+                # Cached trace exists and has a valid root still
+                _logger.error('Runtime instrumentation error. Attempt to '
+                        'save a trace from an inactive transaction. '
+                        'Report this issue to New Relic support.\n%s',
+                        ''.join(traceback.format_stack()[:-1]))
 
-            raise RuntimeError('transaction already active')
+                raise RuntimeError('transaction already active')
 
         self._cache[thread_id] = trace
 

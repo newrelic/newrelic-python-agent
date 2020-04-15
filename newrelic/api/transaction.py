@@ -73,6 +73,7 @@ class Sentinel(TimeTrace):
 
     def drop_trace(self):
         trace_cache().drop_trace(self)
+        self.exited = True
 
     @property
     def transaction(self):

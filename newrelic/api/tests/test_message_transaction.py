@@ -5,9 +5,31 @@ import newrelic.tests.test_cases
 import newrelic.api.settings
 import newrelic.api.application
 import newrelic.api.message_transaction
+from newrelic.core.config import finalize_application_settings
 
 settings = newrelic.api.settings.settings()
 application = newrelic.api.application.application_instance(settings.app_name)
+
+
+class FakeApp(newrelic.api.application.Application):
+    def __init__(self, *args, **kwargs):
+        super(FakeApp, self).__init__(*args, **kwargs)
+        self._settings = None
+        self._sampled = True
+
+    @property
+    def settings(self):
+        return self._settings
+
+    @property
+    def global_settings(self):
+        return self._settings
+
+    def compute_sampled(self, *args, **kwargs):
+        return self._sampled
+
+    def activate(self, *args, **kwargs):
+        pass
 
 
 @newrelic.api.message_transaction.message_transaction(library='library',
@@ -56,6 +78,21 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             except TypeError:
                 raises = True
         assert raises
+
+    def test_message_transaction_dt_enabled(self):
+        dt_config = {'enabled': True,
+                     'trusted_account_key': 1,
+                     'distributed_tracing.enabled': True}
+        _settings = finalize_application_settings(dt_config, settings)
+        app = FakeApp(settings.app_name)
+        app._settings = _settings
+        transaction = newrelic.api.message_transaction.MessageTransaction(
+                library='library', destination_type='Exchange',
+                destination_name='x',
+                application=app)
+
+        with transaction:
+            pass
 
     def test_process_cat_empty_settings(self):
 

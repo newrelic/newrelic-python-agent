@@ -1,6 +1,7 @@
 import uvloop
 import pytest
-from newrelic.api.background_task import background_task
+from newrelic.api.background_task import background_task, BackgroundTask
+from newrelic.api.application import application_instance as application
 from newrelic.api.time_trace import current_trace
 from newrelic.api.function_trace import FunctionTrace, function_trace
 from newrelic.api.database_trace import database_trace
@@ -178,3 +179,80 @@ def test_two_transactions(trace):
     afut = asyncio.ensure_future(create_coro())
     bfut = asyncio.ensure_future(await_task())
     asyncio.get_event_loop().run_until_complete(asyncio.gather(afut, bfut))
+
+
+# Sentinel left in cache transaction exited
+async def sentinel_in_cache_txn_exited(bg):
+    sentinel = None
+    with BackgroundTask(application(), 'fg') as txn:
+        sentinel = txn.root_span
+        task = asyncio.ensure_future(bg())
+    await asyncio.sleep(0)
+    return task
+
+
+# Trace left in cache, transaction exited
+async def trace_in_cache_txn_exited(bg):
+    trace = None
+    with BackgroundTask(application(), 'fg'):
+        with FunctionTrace('fg') as _trace:
+            trace = _trace
+            task = asyncio.ensure_future(bg())
+    await asyncio.sleep(0)
+    return task
+
+
+# Trace left in cache, transaction active
+async def trace_in_cache_txn_active(bg):
+    trace = None
+    with BackgroundTask(application(), 'fg'):
+        with FunctionTrace('fg') as _trace:
+            trace = _trace
+            task = asyncio.ensure_future(bg())
+        await asyncio.sleep(0)
+    return task
+
+
+@pytest.mark.parametrize('fg', (sentinel_in_cache_txn_exited,
+                                trace_in_cache_txn_exited,
+                                trace_in_cache_txn_active,))
+def test_transaction_exit_trace_cache(fg):
+    """
+    Verifying that the use of ensure_future will not cause errors
+    when traces remain in the trace cache after transaction exit
+    """
+    import asyncio
+    trace_root = []
+    exceptions = []
+
+    def handle_exception(loop, context):
+        exceptions.append(context)
+
+    async def bg():
+        with BackgroundTask(
+                application(), 'bg'):
+            await asyncio.sleep(0)
+
+    @background_task(name="fg")
+    async def fg():
+        sentinel = current_trace()
+        trace_root.append(sentinel)
+        return asyncio.ensure_future(bg())
+
+    async def handler():
+        bg = await fg()
+        await bg
+
+    def _test():
+        loop = asyncio.get_event_loop()
+        loop.set_exception_handler(handle_exception)
+        return loop.run_until_complete(handler())
+
+    _test()
+
+    # The agent should have removed all traces from the cache since
+    # run_until_complete has terminated
+    assert not trace_cache()._cache
+
+    # Assert that no exceptions have occurred
+    assert not exceptions, exceptions

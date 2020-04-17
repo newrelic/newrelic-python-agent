@@ -58,6 +58,10 @@ class cached_module(object):
             return module
 
 
+class TraceCacheNoActiveTraceError(RuntimeError):
+    pass
+
+
 class TraceCache(object):
     asyncio = cached_module("asyncio")
     greenlet = cached_module("greenlet")
@@ -236,7 +240,7 @@ class TraceCache(object):
                     'Report this issue to New Relic support.\n%s',
                     ''.join(traceback.format_stack()[:-1]))
 
-            raise RuntimeError('no active trace')
+            raise TraceCacheNoActiveTraceError('no active trace')
 
         current = self._cache.get(thread_id)
 

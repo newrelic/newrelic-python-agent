@@ -39,8 +39,14 @@ class TransactionContext(object):
         # If no transaction attempt to create it if first time entering context
         # manager.
         if self.transaction_init:
-            self.transaction = self.transaction_init(
-                    current_transaction(active_only=False))
+            transaction = current_transaction(active_only=False)
+
+            # If the current transaction's Sentinel is exited we can ignore it.
+            if not transaction or transaction.root_span.exited:
+                self.transaction = self.transaction_init(None)
+            else:
+                self.transaction = self.transaction_init(transaction)
+
             # Set transaction_init to None so we only attempt to create a
             # transaction the first time entering the context.
             self.transaction_init = None

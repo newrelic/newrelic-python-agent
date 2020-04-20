@@ -899,12 +899,6 @@ def WebTransactionWrapper(wrapped, application=None, name=None, group=None,
 
     def wrapper(wrapped, instance, args, kwargs):
 
-        # Don't start a transaction if there's already a transaction in
-        # progress
-        transaction = current_transaction(active_only=False)
-        if transaction:
-            return wrapped(*args, **kwargs)
-
         if type(application) != Application:
             _application = application_instance(application)
         else:
@@ -984,14 +978,28 @@ def WebTransactionWrapper(wrapped, application=None, name=None, group=None,
         else:
             _headers = headers
 
+
+        proxy = async_proxy(wrapped)
+
+        def create_transaction(transaction):
+            if transaction:
+                return None
+            return WebTransaction( _application, _name, _group,
+                    _scheme, _host, _port, _request_method,
+                    _request_path, _query_string, _headers)
+
+        if proxy:
+            context_manager = TransactionContext(create_transaction)
+            return proxy(wrapped(*args, **kwargs), context_manager)
+
         transaction = WebTransaction(
                 _application, _name, _group, _scheme, _host, _port,
                 _request_method, _request_path, _query_string, _headers)
 
-        proxy = async_proxy(wrapped)
-        if proxy:
-            context_manager = TransactionContext(transaction)
-            return proxy(wrapped(*args, **kwargs), context_manager)
+        transaction = create_transaction(current_transaction(active_only=False))
+
+        if not transaction:
+            return wrapped(*args, **kwargs)
 
         with transaction:
             return wrapped(*args, **kwargs)

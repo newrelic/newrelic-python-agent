@@ -154,53 +154,51 @@ def MessageTransactionWrapper(wrapped, library, destination_type,
         else:
             _correlation_id = correlation_id
 
-        # Check to see if any transaction is present, even an inactive
-        # one which has been marked to be ignored or which has been
-        # stopped already.
+        def create_transaction(transaction):
+            if transaction:
+                # If there is any active transaction we will return without
+                # applying a new WSGI application wrapper context. In the
+                # case of a transaction which is being ignored or which has
+                # been stopped, we do that without doing anything further.
 
-        transaction = current_transaction(active_only=False)
+                if transaction.ignore_transaction or transaction.stopped:
+                    return None
 
-        if transaction:
-            # If there is any active transaction we will return without
-            # applying a new WSGI application wrapper context. In the
-            # case of a transaction which is being ignored or which has
-            # been stopped, we do that without doing anything further.
+                if not transaction.background_task:
+                    transaction.background_task = True
+                    transaction.set_transaction_name(
+                            *MessageTransaction.get_transaction_name(
+                                _library, _destination_type,
+                                _destination_name))
 
-            if transaction.ignore_transaction or transaction.stopped:
-                return wrapped(*args, **kwargs)
+                return None
 
-            if not transaction.background_task:
-                transaction.background_task = True
-                transaction.set_transaction_name(
-                        *MessageTransaction.get_transaction_name(
-                            _library, _destination_type,
-                            _destination_name))
+            if type(application) != Application:
+                _application = application_instance(application)
+            else:
+                _application = application
 
-            return wrapped(*args, **kwargs)
-
-        # Otherwise treat it as top level transaction.
-
-        if type(application) != Application:
-            _application = application_instance(application)
-        else:
-            _application = application
-
-        manager = MessageTransaction(
-                library=_library,
-                destination_type=_destination_type,
-                destination_name=_destination_name,
-                application=_application,
-                routing_key=_routing_key,
-                exchange_type=_exchange_type,
-                headers=_headers,
-                queue_name=_queue_name,
-                reply_to=_reply_to,
-                correlation_id=_correlation_id)
+            return MessageTransaction(
+                    library=_library,
+                    destination_type=_destination_type,
+                    destination_name=_destination_name,
+                    application=_application,
+                    routing_key=_routing_key,
+                    exchange_type=_exchange_type,
+                    headers=_headers,
+                    queue_name=_queue_name,
+                    reply_to=_reply_to,
+                    correlation_id=_correlation_id)
 
         proxy = async_proxy(wrapped)
         if proxy:
-            context_manager = TransactionContext(manager)
+            context_manager = TransactionContext(create_transaction)
             return proxy(wrapped(*args, **kwargs), context_manager)
+
+        manager = create_transaction(current_transaction(active_only=False))
+
+        if not manager:
+            return wrapped(*args, **kwargs)
 
         success = True
 

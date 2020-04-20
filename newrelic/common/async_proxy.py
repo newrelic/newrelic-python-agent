@@ -2,6 +2,7 @@ import logging
 import time
 import newrelic.packages.six as six
 
+from newrelic.api.transaction import current_transaction
 from newrelic.common.coroutine import (is_coroutine_function,
         is_asyncio_coroutine, is_generator_function)
 from newrelic.common.object_wrapper import ObjectProxy
@@ -13,15 +14,15 @@ CancelledError = None
 
 
 class TransactionContext(object):
-    def __init__(self, transaction):
+    def __init__(self, transaction_init):
         self.enter_time = None
-        self.transaction = transaction
-        if not self.transaction.enabled:
-            self.transaction = None
+        self.transaction = None
+        self.transaction_init = transaction_init
 
     def pre_close(self):
-        if self.transaction and not self.transaction._state:
-            self.transaction = None
+        # If close is called prior to the start of the coroutine do not create
+        # a transaction.
+        self.transaction_init = None
 
     def close(self):
         if not self.transaction:
@@ -35,6 +36,20 @@ class TransactionContext(object):
                 pass
 
     def __enter__(self):
+        # If no transaction attempt to create it if first time entering context
+        # manager.
+        if self.transaction_init:
+            transaction = current_transaction(active_only=False)
+
+            # If the current transaction's Sentinel is exited we can ignore it.
+            if not transaction or transaction.root_span.exited:
+                self.transaction = self.transaction_init(None)
+            else:
+                self.transaction = self.transaction_init(transaction)
+
+            # Set transaction_init to None so we only attempt to create a
+            # transaction the first time entering the context.
+            self.transaction_init = None
         if not self.transaction:
             return self
 

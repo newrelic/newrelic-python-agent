@@ -1569,6 +1569,16 @@ class TestWebsocketWSGIWebTransaction(newrelic.tests.test_cases.TestCase):
         with transaction:
             assert transaction.browser_timing_header()
 
+    def test_browser_timing_header_transaction_disabled(self):
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application,
+                None,
+                enabled=False)
+
+        with transaction:
+            assert not transaction.rum_header_generated
+            assert not transaction.browser_timing_header()
+
     def test_browser_timing_header_unicode_error(self):
         original_loader = application.settings.js_agent_loader
         application.settings.js_agent_loader = u'\u26f5'

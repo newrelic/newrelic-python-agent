@@ -659,12 +659,6 @@ class WSGIWebTransaction(WebTransaction):
             self.autorum_disabled = True
             self.enabled = False
 
-        # Flags for tracking whether RUM header and footer have been
-        # generated.
-
-        self.rum_header_generated = False
-        self.rum_footer_generated = False
-
         # Bail out if the transaction is running in a
         # disabled state.
 

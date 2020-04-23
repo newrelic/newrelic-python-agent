@@ -131,6 +131,12 @@ class WebTransaction(Transaction):
 
         super(WebTransaction, self).__init__(application, enabled)
 
+        # Flags for tracking whether RUM header and footer have been
+        # generated.
+
+        self.rum_header_generated = False
+        self.rum_footer_generated = False
+
         if not self.enabled:
             return
 
@@ -182,12 +188,6 @@ class WebTransaction(Transaction):
             self.set_transaction_name(name, group, priority=1)
         elif request_path is not None:
             self.set_transaction_name(request_path, 'Uri', priority=1)
-
-        # Flags for tracking whether RUM header and footer have been
-        # generated.
-
-        self.rum_header_generated = False
-        self.rum_footer_generated = False
 
     def _process_queue_time(self):
         for queue_time_header in self.QUEUE_TIME_HEADERS:
@@ -786,12 +786,6 @@ class WSGIWebTransaction(WebTransaction):
 
             except Exception:
                 pass
-
-        # Flags for tracking whether RUM header and footer have been
-        # generated.
-
-        self.rum_header_generated = False
-        self.rum_footer_generated = False
 
     def __exit__(self, exc, value, tb):
         self.record_custom_metric('Python/WSGI/Input/Bytes',

@@ -20,7 +20,9 @@ import newrelic.core.database_node
 import newrelic.core.error_node
 
 from newrelic.core.stats_engine import CustomMetrics, SampledDataSet
-from newrelic.core.trace_cache import trace_cache, TraceCacheNoActiveTraceError
+from newrelic.core.trace_cache import (trace_cache,
+        TraceCacheNoActiveTraceError,
+        TraceCacheActiveTraceError)
 from newrelic.core.thread_utilization import utilization_tracker
 
 from newrelic.core.attribute import (create_attributes,
@@ -59,10 +61,8 @@ class Sentinel(TimeTrace):
         super(Sentinel, self).__init__(None)
         self.transaction = transaction
 
-        # Set the thread id to the same as the transaction before
-        # saving in the cache.
+        # Set the thread id to the same as the transaction
         self.thread_id = transaction.thread_id
-        trace_cache().save_trace(self)
 
     def process_child(self, node, ignore_exclusive=False):
         if ignore_exclusive:
@@ -322,7 +322,15 @@ class Transaction(object):
 
         # Create the root span which pushes itself
         # into the trace cache as the active trace.
-        self.root_span = Sentinel(self)
+        self.root_span = root_span = Sentinel(self)
+
+        try:
+            trace_cache().save_trace(root_span)
+        except TraceCacheActiveTraceError:
+            _logger.debug("New transaction disabled because there is already"
+                    " one in progress.")
+            self.enabled = False
+            return self
 
         # Mark transaction as active and update state
         # used to validate correct usage of class.

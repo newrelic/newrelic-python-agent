@@ -20,7 +20,7 @@ import newrelic.core.database_node
 import newrelic.core.error_node
 
 from newrelic.core.stats_engine import CustomMetrics, SampledDataSet
-from newrelic.core.trace_cache import trace_cache
+from newrelic.core.trace_cache import trace_cache, TraceCacheNoActiveTraceError
 from newrelic.core.thread_utilization import utilization_tracker
 
 from newrelic.core.attribute import (create_attributes,
@@ -36,7 +36,6 @@ from newrelic.common.encoding_utils import (generate_path_hash, obfuscate,
         convert_to_cat_metadata_value, DistributedTracePayload, ensure_str,
         W3CTraceParent, W3CTraceState, NrTraceState)
 
-from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.api.time_trace import TimeTrace
 
 _logger = logging.getLogger(__name__)
@@ -349,7 +348,16 @@ class Transaction(object):
         # This also prevents saving of the root span in the future since the
         # transaction will be None
         root = self.root_span
-        root.drop_trace()
+        try:
+            root.drop_trace()
+        except TraceCacheNoActiveTraceError:
+            # It's possible that the weakref can be cleared prior to a
+            # finalizer call. This results in traces being implicitly dropped
+            # from the cache even though they're still referenced at this time.
+            #
+            # https://bugs.python.org/issue40312
+            if not self._dead:
+                raise
 
         self._state = self.STATE_STOPPED
 
@@ -427,7 +435,6 @@ class Transaction(object):
                 trusted_parent_span=self.trusted_parent_span,
                 tracing_vendors=self.tracing_vendors,
         )
-
 
         # Add transaction exclusive time to total exclusive time
         #

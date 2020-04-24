@@ -306,6 +306,19 @@ class Transaction(object):
         # store traces into the trace cache.
         self.thread_id = trace_cache().current_thread_id()
 
+        # Create the root span then push it
+        # into the trace cache as the active trace.
+        # If there is an active transaction already
+        # mark this one as disabled and do not raise the
+        # exception.
+        self.root_span = root_span = Sentinel(self)
+
+        try:
+            trace_cache().save_trace(root_span)
+        except TraceCacheActiveTraceError:
+            self.enabled = False
+            return self
+
         # Calculate initial thread utilisation factor.
         # For now we only do this if we know it is an
         # actual thread and not a greenlet.
@@ -319,18 +332,6 @@ class Transaction(object):
                 self._utilization_tracker.enter_transaction(thread_instance)
                 self._thread_utilization_start = \
                         self._utilization_tracker.utilization_count()
-
-        # Create the root span which pushes itself
-        # into the trace cache as the active trace.
-        self.root_span = root_span = Sentinel(self)
-
-        try:
-            trace_cache().save_trace(root_span)
-        except TraceCacheActiveTraceError:
-            _logger.debug("New transaction disabled because there is already"
-                    " one in progress.")
-            self.enabled = False
-            return self
 
         # Mark transaction as active and update state
         # used to validate correct usage of class.

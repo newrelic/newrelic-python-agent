@@ -1,4 +1,3 @@
-import functools
 import itertools
 import asyncio
 import inspect
@@ -252,7 +251,7 @@ def _nr_aiohttp_request_wrapper_(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     method, url = _bind_request(*args, **kwargs)
-    trace = ExternalTrace('aiohttp', url, method)
+    trace = ExternalTrace('aiohttp', str(url), method)
 
     @asyncio.coroutine
     def _coro():

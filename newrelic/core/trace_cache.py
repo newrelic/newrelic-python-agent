@@ -235,11 +235,6 @@ class TraceCache(object):
         thread_id = trace.thread_id
 
         if thread_id not in self._cache:
-            _logger.error('Runtime instrumentation error. Attempt to '
-                    'drop the trace but where none is active. '
-                    'Report this issue to New Relic support.\n%s',
-                    ''.join(traceback.format_stack()[:-1]))
-
             raise TraceCacheNoActiveTraceError('no active trace')
 
         current = self._cache.get(thread_id)

@@ -426,7 +426,7 @@ class Transaction(object):
 
         root_node = newrelic.core.root_node.RootNode(
                 name=self.name_for_metric,
-                children=root.children,
+                children=tuple(root.children),
                 start_time=self.start_time,
                 end_time=self.end_time,
                 exclusive=exclusive,

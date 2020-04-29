@@ -256,3 +256,36 @@ def test_transaction_exit_trace_cache(fg):
 
     # Assert that no exceptions have occurred
     assert not exceptions, exceptions
+
+
+def test_sentinel_exited_drop_trace_exception():
+    """
+    This test implements a circular reference which causes an exception
+    to be raised in TraceCache drop_trace(). It verifies that the
+    sentinel.exited property is set to true if an exception is raised
+    in drop_trace()
+    """
+    import asyncio
+    expected_error = "not the current trace"
+
+    @background_task(name="bg")
+    async def bg():
+        pass
+
+    async def create_transaction():
+        try:
+            txn = None
+            sentinel = None
+            with BackgroundTask(application(), "Parent") as txn:
+                sentinel = txn.root_span
+                other_txn = asyncio.ensure_future(bg())
+                with FunctionTrace("trace"):
+                    txn.__exit__(None, None, None)
+            await other_txn
+        except RuntimeError as e:
+            assert str(e) == expected_error
+        finally:
+            assert sentinel.exited
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(create_transaction())

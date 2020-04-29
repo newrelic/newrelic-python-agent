@@ -62,6 +62,10 @@ class TraceCacheNoActiveTraceError(RuntimeError):
     pass
 
 
+class TraceCacheActiveTraceError(RuntimeError):
+    pass
+
+
 class TraceCache(object):
     asyncio = cached_module("asyncio")
     greenlet = cached_module("greenlet")
@@ -188,7 +192,7 @@ class TraceCache(object):
                         'Report this issue to New Relic support.\n%s',
                         ''.join(traceback.format_stack()[:-1]))
 
-                raise RuntimeError('transaction already active')
+                raise TraceCacheActiveTraceError('transaction already active')
 
         self._cache[thread_id] = trace
 

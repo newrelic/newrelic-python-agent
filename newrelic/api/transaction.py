@@ -71,8 +71,10 @@ class Sentinel(TimeTrace):
             return super(Sentinel, self).process_child(node)
 
     def drop_trace(self):
-        trace_cache().drop_trace(self)
-        self.exited = True
+        try:
+            trace_cache().drop_trace(self)
+        finally:
+            self.exited = True
 
     @property
     def transaction(self):

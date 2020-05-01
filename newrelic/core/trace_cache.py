@@ -117,6 +117,14 @@ class TraceCache(object):
 
         return thread.get_ident()
 
+    def task_start(self, task):
+        trace = self.current_trace()
+        if trace:
+            self._cache[id(task)] = trace
+
+    def task_stop(self, task):
+        self._cache.pop(id(task), None)
+
     def current_transaction(self):
         """Return the transaction object if one exists for the currently
         executing thread.

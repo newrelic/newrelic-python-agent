@@ -355,6 +355,8 @@ class Transaction(object):
         if not self._settings:
             return
 
+        self._state = self.STATE_STOPPED
+
         # Force the root span out of the cache if it's there
         # This also prevents saving of the root span in the future since the
         # transaction will be None
@@ -372,8 +374,6 @@ class Transaction(object):
                         'drop the trace but where none is active. '
                         'Report this issue to New Relic support.'),
                 raise
-
-        self._state = self.STATE_STOPPED
 
         # Record error if one was registered.
 

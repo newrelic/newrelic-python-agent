@@ -64,11 +64,8 @@ class Sentinel(TimeTrace):
         # Set the thread id to the same as the transaction
         self.thread_id = transaction.thread_id
 
-    def process_child(self, node, ignore_exclusive=False):
-        if ignore_exclusive:
-            self.children.append(node)
-        else:
-            return super(Sentinel, self).process_child(node)
+    def add_child(self, node):
+        self.children.append(node)
 
     def drop_trace(self):
         try:

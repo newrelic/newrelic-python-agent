@@ -182,34 +182,38 @@ def test_two_transactions(trace):
 
 
 # Sentinel left in cache transaction exited
-async def sentinel_in_cache_txn_exited(bg):
-    sentinel = None
+async def sentinel_in_cache_txn_exited(asyncio, bg):
+    event = asyncio.Event()
+
     with BackgroundTask(application(), 'fg') as txn:
-        sentinel = txn.root_span
-        task = asyncio.ensure_future(bg())
-    await asyncio.sleep(0)
+        _ = txn.root_span
+        task = asyncio.ensure_future(bg(event))
+
+    await event.wait()
     return task
 
 
 # Trace left in cache, transaction exited
-async def trace_in_cache_txn_exited(bg):
-    trace = None
+async def trace_in_cache_txn_exited(asyncio, bg):
+    event = asyncio.Event()
+
     with BackgroundTask(application(), 'fg'):
-        with FunctionTrace('fg') as _trace:
-            trace = _trace
-            task = asyncio.ensure_future(bg())
-    await asyncio.sleep(0)
+        with FunctionTrace('fg') as _:
+            task = asyncio.ensure_future(bg(event))
+
+    await event.wait()
     return task
 
 
 # Trace left in cache, transaction active
-async def trace_in_cache_txn_active(bg):
-    trace = None
+async def trace_in_cache_txn_active(asyncio, bg):
+    event = asyncio.Event()
+
     with BackgroundTask(application(), 'fg'):
-        with FunctionTrace('fg') as _trace:
-            trace = _trace
-            task = asyncio.ensure_future(bg())
-        await asyncio.sleep(0)
+        with FunctionTrace('fg') as _:
+            task = asyncio.ensure_future(bg(event))
+        await event.wait()
+
     return task
 
 
@@ -222,26 +226,19 @@ def test_transaction_exit_trace_cache(fg):
     when traces remain in the trace cache after transaction exit
     """
     import asyncio
-    trace_root = []
     exceptions = []
 
     def handle_exception(loop, context):
         exceptions.append(context)
 
-    async def bg():
+    async def bg(event):
         with BackgroundTask(
                 application(), 'bg'):
-            await asyncio.sleep(0)
-
-    @background_task(name="fg")
-    async def fg():
-        sentinel = current_trace()
-        trace_root.append(sentinel)
-        return asyncio.ensure_future(bg())
+            event.set()
 
     async def handler():
-        bg = await fg()
-        await bg
+        task = await fg(asyncio, bg)
+        await task
 
     def _test():
         loop = asyncio.get_event_loop()

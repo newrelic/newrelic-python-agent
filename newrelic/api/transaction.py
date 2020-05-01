@@ -73,6 +73,10 @@ class Sentinel(TimeTrace):
         finally:
             self.exited = True
 
+    @staticmethod
+    def complete_trace():
+        pass
+
     @property
     def transaction(self):
         return self._transaction and self._transaction()

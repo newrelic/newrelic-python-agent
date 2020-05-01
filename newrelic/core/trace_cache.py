@@ -257,24 +257,24 @@ class TraceCache(object):
 
         """
 
-        if root.has_outstanding_children() and hasattr(root, '_task'):
-            task_ids = (id(task) for task in all_tasks(self.asyncio))
-
-            to_complete = []
-
-            for task_id in task_ids:
-                entry = self._cache.get(task_id)
-
-                if entry is not root and entry.root is root:
-                    to_complete.append(entry)
-
-            while to_complete:
-                entry = to_complete.pop()
-                if entry.parent and entry.parent is not root:
-                    to_complete.append(entry.parent)
-                entry.__exit__(None, None, None)
-
         if hasattr(root, '_task'):
+            if root.has_outstanding_children():
+                task_ids = (id(task) for task in all_tasks(self.asyncio))
+
+                to_complete = []
+
+                for task_id in task_ids:
+                    entry = self._cache.get(task_id)
+
+                    if entry and entry is not root and entry.root is root:
+                        to_complete.append(entry)
+
+                while to_complete:
+                    entry = to_complete.pop()
+                    if entry.parent and entry.parent is not root:
+                        to_complete.append(entry.parent)
+                    entry.__exit__(None, None, None)
+
             root._task = None
 
         thread_id = root.thread_id

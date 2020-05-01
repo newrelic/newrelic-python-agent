@@ -66,7 +66,6 @@ class MessageTrace(CatHeaderMixin, TimeTrace):
                 destination_name=self.destination_name,
                 destination_type=self.destination_type,
                 params=self.params,
-                is_async=self.is_async,
                 guid=self.guid,
                 agent_attributes=self.agent_attributes,
                 user_attributes=self.user_attributes)

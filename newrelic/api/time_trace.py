@@ -382,7 +382,7 @@ class TimeTrace(object):
 
         if node:
             transaction._process_node(node)
-            parent.process_child(node)
+            parent.process_child(node, self.is_async)
 
         # ----------------------------------------------------------------------
         # SYNC  | The parent will not have exited yet, so no node will be
@@ -433,9 +433,9 @@ class TimeTrace(object):
             self.parent.update_async_exclusive_time(min_child_start_time,
                     exclusive_duration_remaining)
 
-    def process_child(self, node):
+    def process_child(self, node, is_async):
         self.children.append(node)
-        if node.is_async:
+        if is_async:
 
             # record the lowest start time
             self.min_child_start_time = min(self.min_child_start_time,

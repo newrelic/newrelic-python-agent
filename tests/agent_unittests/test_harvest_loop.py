@@ -58,7 +58,6 @@ def transaction_node(request):
             label=None,
             params=None,
             rollup=None,
-            is_async=True,
             guid='GUID',
             agent_attributes={},
             user_attributes={},)
@@ -81,7 +80,8 @@ def transaction_node(request):
     )
 
     node = TransactionNode(
-            settings=finalize_application_settings({'agent_run_id': '1234567'}),
+            settings=finalize_application_settings(
+                    {'agent_run_id': '1234567'}),
             path='OtherTransaction/Function/main',
             type='OtherTransaction',
             group='Function',

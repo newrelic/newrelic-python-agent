@@ -285,3 +285,105 @@ def test_sentinel_exited_drop_trace_exception():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(create_transaction())
+
+
+def test_incomplete_traces_exit_when_root_exits():
+    """Verifies that child traces in the same task are exited when the root
+    exits"""
+
+    import asyncio
+
+    @function_trace(name='child')
+    async def child(start, end):
+        start.set()
+        await end.wait()
+
+    @background_task(name='parent')
+    async def parent():
+        start = asyncio.Event()
+        end = asyncio.Event()
+        task = asyncio.ensure_future(child(start, end))
+        await start.wait()
+        end.set()
+        return task
+
+    @validate_transaction_metrics(
+        'parent', background_task=True,
+        scoped_metrics=[('Function/child', 1)],
+    )
+    def test(loop):
+        return loop.run_until_complete(parent())
+
+    loop = asyncio.get_event_loop()
+    task = test(loop)
+    loop.run_until_complete(task)
+
+
+def test_incomplete_traces_with_multiple_transactions():
+    import asyncio
+
+    loop = asyncio.get_event_loop()
+
+    @background_task(name='dummy')
+    async def dummy():
+        task = asyncio.ensure_future(child(True))
+        await end.wait()
+        await task
+
+    @function_trace(name='child')
+    async def child(running_at_end=False):
+        trace = current_trace()
+        start.set()
+        await end.wait()
+        if running_at_end:
+            assert current_trace() is trace
+        else:
+            assert current_trace() is not trace
+
+    @background_task(name='parent')
+    async def parent():
+        task = asyncio.ensure_future(child())
+        await start.wait()
+        return task
+
+    @validate_transaction_metrics(
+        'parent', background_task=True,
+        scoped_metrics=[('Function/child', 1)],
+    )
+    def parent_assertions(task):
+        return loop.run_until_complete(task)
+
+    @validate_transaction_metrics(
+        'dummy', background_task=True,
+        scoped_metrics=[('Function/child', 1)],
+    )
+    def dummy_assertions(task):
+        return loop.run_until_complete(task)
+
+    async def startup():
+        return asyncio.Event(), asyncio.Event()
+
+    async def start_dummy():
+        dummy_task = asyncio.ensure_future(dummy())
+        await start.wait()
+        start.clear()
+        return dummy_task
+
+    start, end = loop.run_until_complete(startup())
+
+    # Kick start dummy transaction (forcing an ensure_future on another
+    # transaction)
+    dummy_task = loop.run_until_complete(start_dummy())
+
+    # start and end a transaction, forcing the child to truncate
+    child_task = parent_assertions(parent())
+
+    # Signal to end any in progress tasks
+    # * dummy
+    # * dummy->child
+    # * parent[ended]->child
+    end.set()
+
+    # Wait for dummy/parent->child to terminate
+    dummy_assertions(dummy_task)
+    loop.run_until_complete(child_task)

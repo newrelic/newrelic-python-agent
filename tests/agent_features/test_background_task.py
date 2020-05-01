@@ -35,3 +35,6 @@ def test_sentinel_exited_complete_root_exception():
         assert str(e) == expected_error
     finally:
         assert sentinel.exited
+        # Make sure to exit properly so cleanup is performed
+        trace.__exit__(None, None, None)
+        txn.__exit__(None, None, None)

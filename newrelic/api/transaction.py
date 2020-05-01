@@ -67,9 +67,9 @@ class Sentinel(TimeTrace):
     def add_child(self, node):
         self.children.append(node)
 
-    def drop_trace(self):
+    def complete_root(self):
         try:
-            trace_cache().drop_trace(self)
+            trace_cache().complete_root(self)
         finally:
             self.exited = True
 
@@ -359,7 +359,7 @@ class Transaction(object):
         # transaction will be None
         root = self.root_span
         try:
-            root.drop_trace()
+            root.complete_root()
         except TraceCacheNoActiveTraceError:
             # It's possible that the weakref can be cleared prior to a
             # finalizer call. This results in traces being implicitly dropped

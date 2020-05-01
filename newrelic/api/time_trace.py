@@ -310,9 +310,8 @@ class TimeTrace(object):
     def _add_agent_attribute(self, key, value):
         self.agent_attributes[key] = value
 
-    def _force_exit(self, exc, value, tb):
-        self.child_count = len(self.children)
-        return self.__exit__(exc, value, tb)
+    def has_outstanding_children(self):
+        return len(self.children) != self.child_count
 
     def _ready_to_complete(self):
         # we shouldn't continue if we're still running
@@ -320,7 +319,7 @@ class TimeTrace(object):
             return False
 
         # defer node completion until all children have exited
-        if len(self.children) != self.child_count:
+        if self.has_outstanding_children():
             return False
 
         return True

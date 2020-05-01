@@ -34,6 +34,20 @@ def current_task(asyncio):
         pass
 
 
+def all_tasks(asyncio):
+    if not asyncio:
+        return
+
+    all_tasks = getattr(asyncio, 'all_tasks', None)
+    if all_tasks is None:
+        all_tasks = getattr(asyncio.Task, 'all_tasks', None)
+
+    try:
+        return all_tasks()
+    except:
+        pass
+
+
 def get_event_loop(task):
     get_loop = getattr(task, 'get_loop', None)
     if get_loop:
@@ -227,32 +241,51 @@ class TraceCache(object):
         parent = trace.parent
         self._cache[thread_id] = parent
 
-    def drop_trace(self, trace):
-        """Drops the specified trace, validating that it is
+    def complete_root(self, root):
+        """Completes a trace specified by the given root
+
+        Drops the specified root, validating that it is
         actually saved away under the current executing thread.
 
         """
 
-        if hasattr(trace, '_task'):
-            trace._task = None
+        if root.has_outstanding_children() and hasattr(root, '_task'):
+            task_ids = (id(task) for task in all_tasks(self.asyncio))
 
-        thread_id = trace.thread_id
+            to_complete = []
+
+            for task_id in task_ids:
+                entry = self._cache.get(task_id)
+
+                if entry is not root and entry.root is root:
+                    to_complete.append(entry)
+
+            while to_complete:
+                entry = to_complete.pop()
+                if entry.parent and entry.parent is not root:
+                    to_complete.append(entry.parent)
+                entry.__exit__(None, None, None)
+
+        if hasattr(root, '_task'):
+            root._task = None
+
+        thread_id = root.thread_id
 
         if thread_id not in self._cache:
             raise TraceCacheNoActiveTraceError('no active trace')
 
         current = self._cache.get(thread_id)
 
-        if trace is not current:
+        if root is not current:
             _logger.error('Runtime instrumentation error. Attempt to '
-                    'drop the trace when it is not the current '
+                    'drop the root when it is not the current '
                     'trace. Report this issue to New Relic support.\n%s',
                     ''.join(traceback.format_stack()[:-1]))
 
             raise RuntimeError('not the current trace')
 
         del self._cache[thread_id]
-        trace._greenlet = None
+        root._greenlet = None
 
     def record_event_loop_wait(self, start_time, end_time):
         transaction = self.current_transaction()

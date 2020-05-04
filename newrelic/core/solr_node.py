@@ -7,8 +7,8 @@ from newrelic.core.metric import TimeMetric
 
 _SolrNode = namedtuple('_SolrNode',
         ['library', 'command', 'children', 'start_time', 'end_time',
-        'duration', 'exclusive', 'guid', 'is_async', 'agent_attributes',
-        'user_attributes',])
+        'duration', 'exclusive', 'guid', 'agent_attributes',
+        'user_attributes'])
 
 
 class SolrNode(_SolrNode, GenericNodeMixin):

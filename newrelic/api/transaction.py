@@ -20,7 +20,9 @@ import newrelic.core.database_node
 import newrelic.core.error_node
 
 from newrelic.core.stats_engine import CustomMetrics, SampledDataSet
-from newrelic.core.trace_cache import trace_cache
+from newrelic.core.trace_cache import (trace_cache,
+        TraceCacheNoActiveTraceError,
+        TraceCacheActiveTraceError)
 from newrelic.core.thread_utilization import utilization_tracker
 
 from newrelic.core.attribute import (create_attributes,
@@ -36,7 +38,6 @@ from newrelic.common.encoding_utils import (generate_path_hash, obfuscate,
         convert_to_cat_metadata_value, DistributedTracePayload, ensure_str,
         W3CTraceParent, W3CTraceState, NrTraceState)
 
-from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.api.time_trace import TimeTrace
 
 _logger = logging.getLogger(__name__)
@@ -60,19 +61,21 @@ class Sentinel(TimeTrace):
         super(Sentinel, self).__init__(None)
         self.transaction = transaction
 
-        # Set the thread id to the same as the transaction before
-        # saving in the cache.
+        # Set the thread id to the same as the transaction
         self.thread_id = transaction.thread_id
-        trace_cache().save_trace(self)
 
-    def process_child(self, node, ignore_exclusive=False):
-        if ignore_exclusive:
-            self.children.append(node)
-        else:
-            return super(Sentinel, self).process_child(node)
+    def add_child(self, node):
+        self.children.append(node)
 
-    def drop_trace(self):
-        trace_cache().drop_trace(self)
+    def complete_root(self):
+        try:
+            trace_cache().complete_root(self)
+        finally:
+            self.exited = True
+
+    @staticmethod
+    def complete_trace():
+        pass
 
     @property
     def transaction(self):
@@ -306,6 +309,19 @@ class Transaction(object):
         # store traces into the trace cache.
         self.thread_id = trace_cache().current_thread_id()
 
+        # Create the root span then push it
+        # into the trace cache as the active trace.
+        # If there is an active transaction already
+        # mark this one as disabled and do not raise the
+        # exception.
+        self.root_span = root_span = Sentinel(self)
+
+        try:
+            trace_cache().save_trace(root_span)
+        except TraceCacheActiveTraceError:
+            self.enabled = False
+            return self
+
         # Calculate initial thread utilisation factor.
         # For now we only do this if we know it is an
         # actual thread and not a greenlet.
@@ -319,10 +335,6 @@ class Transaction(object):
                 self._utilization_tracker.enter_transaction(thread_instance)
                 self._thread_utilization_start = \
                         self._utilization_tracker.utilization_count()
-
-        # Create the root span which pushes itself
-        # into the trace cache as the active trace.
-        self.root_span = Sentinel(self)
 
         # Mark transaction as active and update state
         # used to validate correct usage of class.
@@ -344,13 +356,25 @@ class Transaction(object):
         if not self._settings:
             return
 
+        self._state = self.STATE_STOPPED
+
         # Force the root span out of the cache if it's there
         # This also prevents saving of the root span in the future since the
         # transaction will be None
         root = self.root_span
-        root.drop_trace()
-
-        self._state = self.STATE_STOPPED
+        try:
+            root.complete_root()
+        except TraceCacheNoActiveTraceError:
+            # It's possible that the weakref can be cleared prior to a
+            # finalizer call. This results in traces being implicitly dropped
+            # from the cache even though they're still referenced at this time.
+            #
+            # https://bugs.python.org/issue40312
+            if not self._dead:
+                _logger.exception('Runtime instrumentation error. Attempt to '
+                        'drop the trace but where none is active. '
+                        'Report this issue to New Relic support.'),
+                raise
 
         # Record error if one was registered.
 
@@ -414,7 +438,7 @@ class Transaction(object):
 
         root_node = newrelic.core.root_node.RootNode(
                 name=self.name_for_metric,
-                children=root.children,
+                children=tuple(root.children),
                 start_time=self.start_time,
                 end_time=self.end_time,
                 exclusive=exclusive,
@@ -426,7 +450,6 @@ class Transaction(object):
                 trusted_parent_span=self.trusted_parent_span,
                 tracing_vendors=self.tracing_vendors,
         )
-
 
         # Add transaction exclusive time to total exclusive time
         #

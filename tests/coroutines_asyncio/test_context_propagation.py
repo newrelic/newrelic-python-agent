@@ -1,6 +1,7 @@
 import uvloop
 import pytest
-from newrelic.api.background_task import background_task
+from newrelic.api.background_task import background_task, BackgroundTask
+from newrelic.api.application import application_instance as application
 from newrelic.api.time_trace import current_trace
 from newrelic.api.function_trace import FunctionTrace, function_trace
 from newrelic.api.database_trace import database_trace
@@ -178,3 +179,179 @@ def test_two_transactions(trace):
     afut = asyncio.ensure_future(create_coro())
     bfut = asyncio.ensure_future(await_task())
     asyncio.get_event_loop().run_until_complete(asyncio.gather(afut, bfut))
+
+
+# Sentinel left in cache transaction exited
+async def sentinel_in_cache_txn_exited(asyncio, bg):
+    event = asyncio.Event()
+
+    with BackgroundTask(application(), 'fg') as txn:
+        _ = txn.root_span
+        task = asyncio.ensure_future(bg(event))
+
+    await event.wait()
+    return task
+
+
+# Trace left in cache, transaction exited
+async def trace_in_cache_txn_exited(asyncio, bg):
+    event = asyncio.Event()
+
+    with BackgroundTask(application(), 'fg'):
+        with FunctionTrace('fg') as _:
+            task = asyncio.ensure_future(bg(event))
+
+    await event.wait()
+    return task
+
+
+# Trace left in cache, transaction active
+async def trace_in_cache_txn_active(asyncio, bg):
+    event = asyncio.Event()
+
+    with BackgroundTask(application(), 'fg'):
+        with FunctionTrace('fg') as _:
+            task = asyncio.ensure_future(bg(event))
+        await event.wait()
+
+    return task
+
+
+@pytest.mark.parametrize('fg', (sentinel_in_cache_txn_exited,
+                                trace_in_cache_txn_exited,
+                                trace_in_cache_txn_active,))
+def test_transaction_exit_trace_cache(fg):
+    """
+    Verifying that the use of ensure_future will not cause errors
+    when traces remain in the trace cache after transaction exit
+    """
+    import asyncio
+    exceptions = []
+
+    def handle_exception(loop, context):
+        exceptions.append(context)
+
+    async def bg(event):
+        with BackgroundTask(
+                application(), 'bg'):
+            event.set()
+
+    async def handler():
+        task = await fg(asyncio, bg)
+        await task
+
+    def _test():
+        loop = asyncio.get_event_loop()
+        loop.set_exception_handler(handle_exception)
+        return loop.run_until_complete(handler())
+
+    _test()
+
+    # The agent should have removed all traces from the cache since
+    # run_until_complete has terminated
+    assert not trace_cache()._cache
+
+    # Assert that no exceptions have occurred
+    assert not exceptions, exceptions
+
+
+def test_incomplete_traces_exit_when_root_exits():
+    """Verifies that child traces in the same task are exited when the root
+    exits"""
+
+    import asyncio
+
+    @function_trace(name='child')
+    async def child(start, end):
+        start.set()
+        await end.wait()
+
+    @background_task(name='parent')
+    async def parent():
+        start = asyncio.Event()
+        end = asyncio.Event()
+        task = asyncio.ensure_future(child(start, end))
+        await start.wait()
+        end.set()
+        return task
+
+    @validate_transaction_metrics(
+        'parent', background_task=True,
+        scoped_metrics=[('Function/child', 1)],
+    )
+    def test(loop):
+        return loop.run_until_complete(parent())
+
+    loop = asyncio.get_event_loop()
+    task = test(loop)
+    loop.run_until_complete(task)
+
+
+def test_incomplete_traces_with_multiple_transactions():
+    import asyncio
+
+    loop = asyncio.get_event_loop()
+
+    @background_task(name='dummy')
+    async def dummy():
+        task = asyncio.ensure_future(child(True))
+        await end.wait()
+        await task
+
+    @function_trace(name='child')
+    async def child(running_at_end=False):
+        trace = current_trace()
+        start.set()
+        await end.wait()
+        if running_at_end:
+            assert current_trace() is trace
+        else:
+            assert current_trace() is not trace
+
+    @background_task(name='parent')
+    async def parent():
+        task = asyncio.ensure_future(child())
+        await start.wait()
+        return task
+
+    @validate_transaction_metrics(
+        'parent', background_task=True,
+        scoped_metrics=[('Function/child', 1)],
+    )
+    def parent_assertions(task):
+        return loop.run_until_complete(task)
+
+    @validate_transaction_metrics(
+        'dummy', background_task=True,
+        scoped_metrics=[('Function/child', 1)],
+    )
+    def dummy_assertions(task):
+        return loop.run_until_complete(task)
+
+    async def startup():
+        return asyncio.Event(), asyncio.Event()
+
+    async def start_dummy():
+        dummy_task = asyncio.ensure_future(dummy())
+        await start.wait()
+        start.clear()
+        return dummy_task
+
+    start, end = loop.run_until_complete(startup())
+
+    # Kick start dummy transaction (forcing an ensure_future on another
+    # transaction)
+    dummy_task = loop.run_until_complete(start_dummy())
+
+    # start and end a transaction, forcing the child to truncate
+    child_task = parent_assertions(parent())
+
+    # Signal to end any in progress tasks
+    # * dummy
+    # * dummy->child
+    # * parent[ended]->child
+    end.set()
+
+    # Wait for dummy/parent->child to terminate
+    dummy_assertions(dummy_task)
+    loop.run_until_complete(child_task)

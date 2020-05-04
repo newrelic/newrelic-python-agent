@@ -13,15 +13,15 @@ CancelledError = None
 
 
 class TransactionContext(object):
-    def __init__(self, transaction):
+    def __init__(self, transaction_init):
         self.enter_time = None
-        self.transaction = transaction
-        if not self.transaction.enabled:
-            self.transaction = None
+        self.transaction = None
+        self.transaction_init = transaction_init
 
     def pre_close(self):
-        if self.transaction and not self.transaction._state:
-            self.transaction = None
+        # If close is called prior to the start of the coroutine do not create
+        # a transaction.
+        self.transaction_init = None
 
     def close(self):
         if not self.transaction:
@@ -35,6 +35,21 @@ class TransactionContext(object):
                 pass
 
     def __enter__(self):
+        # If no transaction attempt to create it if first time entering context
+        # manager.
+        if self.transaction_init:
+            current_trace = trace_cache().prepare_for_root()
+            current_transaction = current_trace and current_trace.transaction
+
+            # If the current transaction's Sentinel is exited we can ignore it.
+            if not current_transaction:
+                self.transaction = self.transaction_init(None)
+            else:
+                self.transaction = self.transaction_init(current_transaction)
+
+            # Set transaction_init to None so we only attempt to create a
+            # transaction the first time entering the context.
+            self.transaction_init = None
         if not self.transaction:
             return self
 

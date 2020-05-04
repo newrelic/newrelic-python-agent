@@ -37,7 +37,7 @@ _DatabaseNode = namedtuple('_DatabaseNode',
         'duration', 'exclusive', 'stack_trace', 'sql_format',
         'connect_params', 'cursor_params', 'sql_parameters',
         'execute_params', 'host', 'port_path_or_id', 'database_name',
-        'is_async', 'guid', 'agent_attributes', 'user_attributes'])
+        'guid', 'agent_attributes', 'user_attributes'])
 
 
 class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):

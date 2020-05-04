@@ -34,6 +34,20 @@ def current_task(asyncio):
         pass
 
 
+def all_tasks(asyncio):
+    if not asyncio:
+        return
+
+    all_tasks = getattr(asyncio, 'all_tasks', None)
+    if all_tasks is None:
+        all_tasks = getattr(asyncio.Task, 'all_tasks', None)
+
+    try:
+        return all_tasks()
+    except:
+        pass
+
+
 def get_event_loop(task):
     get_loop = getattr(task, 'get_loop', None)
     if get_loop:
@@ -56,6 +70,14 @@ class cached_module(object):
         if module:
             instance.__dict__[self.name] = module
             return module
+
+
+class TraceCacheNoActiveTraceError(RuntimeError):
+    pass
+
+
+class TraceCacheActiveTraceError(RuntimeError):
+    pass
 
 
 class TraceCache(object):
@@ -94,6 +116,14 @@ class TraceCache(object):
                 return id(task)
 
         return thread.get_ident()
+
+    def task_start(self, task):
+        trace = self.current_trace()
+        if trace:
+            self._cache[id(task)] = trace
+
+    def task_stop(self, task):
+        self._cache.pop(id(task), None)
 
     def current_transaction(self):
         """Return the transaction object if one exists for the currently
@@ -164,6 +194,29 @@ class TraceCache(object):
                             yield (transaction, thread_id,
                                     'REQUEST', gr.gr_frame)
 
+    def prepare_for_root(self):
+        """Updates the cache state so that a new root can be created if the
+        trace in the cache is from a different task (for asyncio). Returns the
+        current trace after the cache is updated."""
+        thread_id = self.current_thread_id()
+        trace = self._cache.get(thread_id)
+        if not trace:
+            return None
+
+        if not hasattr(trace, '_task'):
+            return trace
+
+        task = current_task(self.asyncio)
+        if task is not None and id(trace._task) != id(task):
+            self._cache.pop(thread_id, None)
+            return None
+
+        if trace.root and trace.root.exited:
+            self._cache.pop(thread_id, None)
+            return None
+
+        return trace
+
     def save_trace(self, trace):
         """Saves the specified trace away under the thread ID of
         the current executing thread. Will also cache a reference to the
@@ -174,14 +227,17 @@ class TraceCache(object):
 
         thread_id = trace.thread_id
 
-        if (thread_id in self._cache and
-                self._cache[thread_id].root is not trace.root):
-            _logger.error('Runtime instrumentation error. Attempt to '
-                    'save a trace from an inactive transaction. '
-                    'Report this issue to New Relic support.\n%s',
-                    ''.join(traceback.format_stack()[:-1]))
+        if thread_id in self._cache:
+            cache_root = self._cache[thread_id].root
+            if (cache_root and cache_root is not trace.root and
+                    not cache_root.exited):
+                # Cached trace exists and has a valid root still
+                _logger.error('Runtime instrumentation error. Attempt to '
+                        'save a trace from an inactive transaction. '
+                        'Report this issue to New Relic support.\n%s',
+                        ''.join(traceback.format_stack()[:-1]))
 
-            raise RuntimeError('transaction already active')
+                raise TraceCacheActiveTraceError('transaction already active')
 
         self._cache[thread_id] = trace
 
@@ -216,37 +272,51 @@ class TraceCache(object):
         parent = trace.parent
         self._cache[thread_id] = parent
 
-    def drop_trace(self, trace):
-        """Drops the specified trace, validating that it is
+    def complete_root(self, root):
+        """Completes a trace specified by the given root
+
+        Drops the specified root, validating that it is
         actually saved away under the current executing thread.
 
         """
 
-        if hasattr(trace, '_task'):
-            trace._task = None
+        if hasattr(root, '_task'):
+            if root.has_outstanding_children():
+                task_ids = (id(task) for task in all_tasks(self.asyncio))
 
-        thread_id = trace.thread_id
+                to_complete = []
+
+                for task_id in task_ids:
+                    entry = self._cache.get(task_id)
+
+                    if entry and entry is not root and entry.root is root:
+                        to_complete.append(entry)
+
+                while to_complete:
+                    entry = to_complete.pop()
+                    if entry.parent and entry.parent is not root:
+                        to_complete.append(entry.parent)
+                    entry.__exit__(None, None, None)
+
+            root._task = None
+
+        thread_id = root.thread_id
 
         if thread_id not in self._cache:
-            _logger.error('Runtime instrumentation error. Attempt to '
-                    'drop the trace but where none is active. '
-                    'Report this issue to New Relic support.\n%s',
-                    ''.join(traceback.format_stack()[:-1]))
-
-            raise RuntimeError('no active trace')
+            raise TraceCacheNoActiveTraceError('no active trace')
 
         current = self._cache.get(thread_id)
 
-        if trace is not current:
+        if root is not current:
             _logger.error('Runtime instrumentation error. Attempt to '
-                    'drop the trace when it is not the current '
+                    'drop the root when it is not the current '
                     'trace. Report this issue to New Relic support.\n%s',
                     ''.join(traceback.format_stack()[:-1]))
 
             raise RuntimeError('not the current trace')
 
         del self._cache[thread_id]
-        trace._greenlet = None
+        root._greenlet = None
 
     def record_event_loop_wait(self, start_time, end_time):
         transaction = self.current_transaction()
@@ -297,7 +367,7 @@ class TraceCache(object):
             transaction = root.transaction
             transaction._process_node(node)
             root.increment_child_count()
-            root.process_child(node, ignore_exclusive=True)
+            root.add_child(node)
 
 
 _trace_cache = TraceCache()

@@ -1,6 +1,7 @@
 import asyncio
 import aiohttp
 import pytest
+from yarl import URL
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace
@@ -67,6 +68,26 @@ def test_client_async_await(local_server_info, method, exc_expected):
     def task_test():
         loop = asyncio.get_event_loop()
         task(loop, method, exc_expected, local_server_info.url)
+
+    task_test()
+
+
+def test_client_yarl_async_await(local_server_info):
+    method = 'get'
+
+    @validate_transaction_metrics(
+        'fetch_multiple',
+        background_task=True,
+        scoped_metrics=[
+            (local_server_info.base_metric + method.upper(), 2),
+        ],
+        rollup_metrics=[
+            (local_server_info.base_metric + method.upper(), 2),
+        ],
+    )
+    def task_test():
+        loop = asyncio.get_event_loop()
+        task(loop, method, False, URL(local_server_info.url))
 
     task_test()
 

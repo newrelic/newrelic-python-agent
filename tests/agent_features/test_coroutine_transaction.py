@@ -5,7 +5,9 @@ import sys
 from newrelic.core.config import global_settings
 from newrelic.api.transaction import current_transaction
 from newrelic.api.background_task import background_task
+from newrelic.api.web_transaction import web_transaction
 from newrelic.api.message_transaction import message_transaction
+from newrelic.api.function_trace import function_trace
 from testing_support.fixtures import (validate_transaction_errors,
         capture_transaction_metrics, override_generic_settings)
 
@@ -260,3 +262,161 @@ def test_async_coroutine_close_raises_error(num_coroutines, create_test_task,
 
     assert metrics.count((metric, '')) == num_coroutines, metrics
     assert metrics.count(('Errors/all', '')) == num_coroutines, metrics
+
+
+@pytest.mark.parametrize('transaction,metric,arguments', [
+    (web_transaction, 'Apdex/Function/%s', lambda name: ([], {'name': name})),
+    (message_transaction, 'OtherTransaction/Message/lib/dest_type/Named/%s',
+        lambda name: (['lib', 'dest_type', name], {})),
+    (background_task, 'OtherTransaction/Function/%s',
+        lambda name: ([], {'name': name}))])
+def test_deferred_async_background_task(transaction, metric, arguments):
+    loop = asyncio.get_event_loop()
+    deferred_metric = (metric % 'deferred', '')
+
+    args, kwargs = arguments("deferred")
+
+    @transaction(*args, **kwargs)
+    @asyncio.coroutine
+    def child_task():
+        yield from asyncio.sleep(0)
+
+    main_metric = (metric % 'main', '')
+
+    args, kwargs = arguments("main")
+
+    @transaction(*args, **kwargs)
+    @asyncio.coroutine
+    def parent_task():
+        yield from asyncio.sleep(0)
+        return loop.create_task(child_task())
+
+    @asyncio.coroutine
+    def test_runner():
+        child = yield from parent_task()
+        yield from child
+
+    metrics = []
+
+    @capture_transaction_metrics(metrics)
+    def _test():
+        loop.run_until_complete(test_runner())
+
+    _test()
+
+    assert main_metric in metrics
+    assert deferred_metric in metrics
+
+
+@pytest.mark.parametrize('transaction,metric,arguments', [
+    (web_transaction, 'Apdex/Function/%s', lambda name: ([], {'name': name})),
+    (message_transaction, 'OtherTransaction/Message/lib/dest_type/Named/%s',
+        lambda name: (['lib', 'dest_type', name], {})),
+    (background_task, 'OtherTransaction/Function/%s',
+        lambda name: ([], {'name': name}))])
+def test_child_transaction_when_parent_is_running(
+        transaction, metric, arguments):
+    loop = asyncio.get_event_loop()
+    deferred_metric = (metric % 'deferred', '')
+
+    args, kwargs = arguments("deferred")
+
+    @transaction(*args, **kwargs)
+    @asyncio.coroutine
+    def child_task():
+        yield from asyncio.sleep(0)
+
+    main_metric = (metric % 'main', '')
+
+    args, kwargs = arguments("main")
+
+    @transaction(*args, **kwargs)
+    @asyncio.coroutine
+    def parent_task():
+        yield from loop.create_task(child_task())
+
+    metrics = []
+
+    @capture_transaction_metrics(metrics)
+    def _test():
+        loop.run_until_complete(parent_task())
+
+    _test()
+
+    assert main_metric in metrics
+    assert deferred_metric in metrics
+
+
+@pytest.mark.parametrize('transaction,metric,arguments', [
+    (web_transaction, 'Apdex/Function/%s', lambda name: ([], {'name': name})),
+    (message_transaction, 'OtherTransaction/Message/lib/dest_type/Named/%s',
+        lambda name: (['lib', 'dest_type', name], {})),
+    (background_task, 'OtherTransaction/Function/%s',
+        lambda name: ([], {'name': name}))])
+def test_nested_coroutine_inside_sync(transaction, metric, arguments):
+    loop = asyncio.get_event_loop()
+    child_metric = (metric % 'child', '')
+
+    args, kwargs = arguments("child")
+
+    @transaction(*args, **kwargs)
+    @asyncio.coroutine
+    def child_task():
+        yield from asyncio.sleep(0)
+
+    main_metric = (metric % 'main', '')
+    args, kwargs = arguments("main")
+
+    metrics = []
+
+    @capture_transaction_metrics(metrics)
+    @transaction(*args, **kwargs)
+    def parent():
+        loop.run_until_complete(child_task())
+
+    parent()
+
+    assert main_metric in metrics
+    assert child_metric not in metrics
+
+
+@pytest.mark.parametrize('transaction,metric,arguments', [
+    (web_transaction, 'Apdex/Function/%s', lambda name: ([], {'name': name})),
+    (message_transaction, 'OtherTransaction/Message/lib/dest_type/Named/%s',
+        lambda name: (['lib', 'dest_type', name], {})),
+    (background_task, 'OtherTransaction/Function/%s',
+        lambda name: ([], {'name': name}))])
+def test_nested_coroutine_task_already_active(transaction, metric, arguments):
+    loop = asyncio.get_event_loop()
+    deferred_metric = (metric % 'deferred', '')
+
+    args, kwargs = arguments("deferred")
+
+    @transaction(*args, **kwargs)
+    @asyncio.coroutine
+    def child_task():
+        yield from asyncio.sleep(0)
+
+    @function_trace()
+    def child_trace():
+        yield from child_task()
+
+    main_metric = (metric % 'main', '')
+
+    args, kwargs = arguments("main")
+
+    @transaction(*args, **kwargs)
+    @asyncio.coroutine
+    def parent_task():
+        yield from loop.create_task(child_trace())
+
+    metrics = []
+
+    @capture_transaction_metrics(metrics)
+    def _test():
+        loop.run_until_complete(parent_task())
+
+    _test()
+
+    assert main_metric in metrics
+    assert deferred_metric not in metrics

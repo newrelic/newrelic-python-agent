@@ -71,10 +71,10 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         node_child_2 = SimpleNode(is_async=False, start_time=2.0, end_time=2.5)
 
         self.time_trace.increment_child_count()
-        self.time_trace.process_child(node_child_1)
+        self.time_trace.process_child(node_child_1, node_child_1.is_async)
 
         self.time_trace.increment_child_count()
-        self.time_trace.process_child(node_child_2)
+        self.time_trace.process_child(node_child_2, node_child_2.is_async)
 
         self.assertEqual(self.time_trace.exclusive, -1.5)
 
@@ -85,8 +85,8 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         self.time_trace.increment_child_count()
         self.time_trace.increment_child_count()
 
-        self.time_trace.process_child(node_child_1)
-        self.time_trace.process_child(node_child_2)
+        self.time_trace.process_child(node_child_1, node_child_1.is_async)
+        self.time_trace.process_child(node_child_2, node_child_2.is_async)
 
         self.assertEqual(self.time_trace.exclusive, -1.5)
 
@@ -97,10 +97,10 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         node_child_2 = SimpleNode(is_async=True, start_time=2.0, end_time=2.5)
 
         self.time_trace.increment_child_count()
-        self.time_trace.process_child(node_child_1)
+        self.time_trace.process_child(node_child_1, node_child_1.is_async)
 
         self.time_trace.increment_child_count()
-        self.time_trace.process_child(node_child_2)
+        self.time_trace.process_child(node_child_2, node_child_2.is_async)
 
         self.assertEqual(self.time_trace.exclusive, 0)
 
@@ -113,10 +113,10 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         node_child_2 = SimpleNode(is_async=True, start_time=2.0, end_time=2.5)
 
         self.time_trace.increment_child_count()
-        self.time_trace.process_child(node_child_1)
+        self.time_trace.process_child(node_child_1, node_child_1.is_async)
 
         self.time_trace.increment_child_count()
-        self.time_trace.process_child(node_child_2)
+        self.time_trace.process_child(node_child_2, node_child_2.is_async)
 
         self.assertEqual(self.time_trace.exclusive, 1.0)
 

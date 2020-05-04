@@ -310,9 +310,8 @@ class TimeTrace(object):
     def _add_agent_attribute(self, key, value):
         self.agent_attributes[key] = value
 
-    def _force_exit(self, exc, value, tb):
-        self.child_count = len(self.children)
-        return self.__exit__(exc, value, tb)
+    def has_outstanding_children(self):
+        return len(self.children) != self.child_count
 
     def _ready_to_complete(self):
         # we shouldn't continue if we're still running
@@ -320,7 +319,7 @@ class TimeTrace(object):
             return False
 
         # defer node completion until all children have exited
-        if len(self.children) != self.child_count:
+        if self.has_outstanding_children():
             return False
 
         return True
@@ -382,7 +381,7 @@ class TimeTrace(object):
 
         if node:
             transaction._process_node(node)
-            parent.process_child(node)
+            parent.process_child(node, self.is_async)
 
         # ----------------------------------------------------------------------
         # SYNC  | The parent will not have exited yet, so no node will be
@@ -433,9 +432,9 @@ class TimeTrace(object):
             self.parent.update_async_exclusive_time(min_child_start_time,
                     exclusive_duration_remaining)
 
-    def process_child(self, node):
+    def process_child(self, node, is_async):
         self.children.append(node)
-        if node.is_async:
+        if is_async:
 
             # record the lowest start time
             self.min_child_start_time = min(self.min_child_start_time,

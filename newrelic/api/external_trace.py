@@ -40,7 +40,6 @@ class ExternalTrace(CatHeaderMixin, TimeTrace):
                 duration=self.duration,
                 exclusive=self.exclusive,
                 params=self.params,
-                is_async=self.is_async,
                 guid=self.guid,
                 agent_attributes=self.agent_attributes,
                 user_attributes=self.user_attributes)

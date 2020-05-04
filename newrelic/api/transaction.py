@@ -64,17 +64,18 @@ class Sentinel(TimeTrace):
         # Set the thread id to the same as the transaction
         self.thread_id = transaction.thread_id
 
-    def process_child(self, node, ignore_exclusive=False):
-        if ignore_exclusive:
-            self.children.append(node)
-        else:
-            return super(Sentinel, self).process_child(node)
+    def add_child(self, node):
+        self.children.append(node)
 
-    def drop_trace(self):
+    def complete_root(self):
         try:
-            trace_cache().drop_trace(self)
+            trace_cache().complete_root(self)
         finally:
             self.exited = True
+
+    @staticmethod
+    def complete_trace():
+        pass
 
     @property
     def transaction(self):
@@ -355,12 +356,14 @@ class Transaction(object):
         if not self._settings:
             return
 
+        self._state = self.STATE_STOPPED
+
         # Force the root span out of the cache if it's there
         # This also prevents saving of the root span in the future since the
         # transaction will be None
         root = self.root_span
         try:
-            root.drop_trace()
+            root.complete_root()
         except TraceCacheNoActiveTraceError:
             # It's possible that the weakref can be cleared prior to a
             # finalizer call. This results in traces being implicitly dropped
@@ -372,8 +375,6 @@ class Transaction(object):
                         'drop the trace but where none is active. '
                         'Report this issue to New Relic support.'),
                 raise
-
-        self._state = self.STATE_STOPPED
 
         # Record error if one was registered.
 

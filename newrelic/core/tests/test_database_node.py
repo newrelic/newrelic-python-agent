@@ -38,7 +38,6 @@ _db_node = newrelic.core.database_node.DatabaseNode(
         host='localhost',
         port_path_or_id='1234',
         database_name='bar',
-        is_async=True,
         guid=None,
         agent_attributes={},
         user_attributes={},

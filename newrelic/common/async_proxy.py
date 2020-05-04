@@ -2,7 +2,6 @@ import logging
 import time
 import newrelic.packages.six as six
 
-from newrelic.api.transaction import current_transaction
 from newrelic.common.coroutine import (is_coroutine_function,
         is_asyncio_coroutine, is_generator_function)
 from newrelic.common.object_wrapper import ObjectProxy
@@ -39,13 +38,14 @@ class TransactionContext(object):
         # If no transaction attempt to create it if first time entering context
         # manager.
         if self.transaction_init:
-            transaction = current_transaction(active_only=False)
+            current_trace = trace_cache().prepare_for_root()
+            current_transaction = current_trace and current_trace.transaction
 
             # If the current transaction's Sentinel is exited we can ignore it.
-            if not transaction or transaction.root_span.exited:
+            if not current_transaction:
                 self.transaction = self.transaction_init(None)
             else:
-                self.transaction = self.transaction_init(transaction)
+                self.transaction = self.transaction_init(current_transaction)
 
             # Set transaction_init to None so we only attempt to create a
             # transaction the first time entering the context.

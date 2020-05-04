@@ -194,6 +194,29 @@ class TraceCache(object):
                             yield (transaction, thread_id,
                                     'REQUEST', gr.gr_frame)
 
+    def prepare_for_root(self):
+        """Updates the cache state so that a new root can be created if the
+        trace in the cache is from a different task (for asyncio). Returns the
+        current trace after the cache is updated."""
+        thread_id = self.current_thread_id()
+        trace = self._cache.get(thread_id)
+        if not trace:
+            return None
+
+        if not hasattr(trace, '_task'):
+            return trace
+
+        task = current_task(self.asyncio)
+        if task is not None and id(trace._task) != id(task):
+            self._cache.pop(thread_id, None)
+            return None
+
+        if trace.root and trace.root.exited:
+            self._cache.pop(thread_id, None)
+            return None
+
+        return trace
+
     def save_trace(self, trace):
         """Saves the specified trace away under the thread ID of
         the current executing thread. Will also cache a reference to the

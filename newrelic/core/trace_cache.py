@@ -194,14 +194,14 @@ class TraceCache(object):
                             yield (transaction, thread_id,
                                     'REQUEST', gr.gr_frame)
 
-    def request_new_transaction(self):
+    def prepare_for_root(self):
         thread_id = self.current_thread_id()
         trace = self._cache.get(thread_id)
         if not trace:
             return None
 
         if not hasattr(trace, '_task'):
-            return trace.transaction
+            return trace
 
         task = current_task(self.asyncio)
         if task is not None and id(trace._task) != id(task):
@@ -212,7 +212,7 @@ class TraceCache(object):
             self._cache.pop(thread_id, None)
             return None
 
-        return trace.transaction
+        return trace
 
     def save_trace(self, trace):
         """Saves the specified trace away under the thread ID of

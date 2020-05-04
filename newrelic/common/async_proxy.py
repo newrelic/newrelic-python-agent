@@ -38,7 +38,8 @@ class TransactionContext(object):
         # If no transaction attempt to create it if first time entering context
         # manager.
         if self.transaction_init:
-            current_transaction = trace_cache().request_new_transaction()
+            current_trace = trace_cache().prepare_for_root()
+            current_transaction = current_trace and current_trace.transaction
 
             # If the current transaction's Sentinel is exited we can ignore it.
             if not current_transaction:

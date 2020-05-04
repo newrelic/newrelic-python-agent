@@ -195,6 +195,9 @@ class TraceCache(object):
                                     'REQUEST', gr.gr_frame)
 
     def prepare_for_root(self):
+        """Updates the cache state so that a new root can be created if the
+        trace in the cache is from a different task (for asyncio). Returns the
+        current trace after the cache is updated."""
         thread_id = self.current_thread_id()
         trace = self._cache.get(thread_id)
         if not trace:

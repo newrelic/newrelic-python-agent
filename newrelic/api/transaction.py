@@ -439,11 +439,13 @@ class Transaction(object):
             if not self._sent_end:
                 self._sent_end = time.time()
 
+        request_params = self.request_parameters
         root_attributes = root.agent_attributes
 
         # Update agent attributes and include them on the root node
         self.update_agent_attributes()
         root_attributes.update(self._agent_attributes)
+        root_attributes.update(request_params)
         exclusive = duration + root.exclusive
 
         root_node = newrelic.core.root_node.RootNode(
@@ -487,6 +489,8 @@ class Transaction(object):
             self._compute_sampled_and_priority()
 
         self._cached_path._name = self.path
+        agent_attributes = self.agent_attributes
+        agent_attributes.extend(self.filter_request_parameters(request_params))
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
                 path=self.path,
@@ -527,7 +531,7 @@ class Transaction(object):
                 alternate_path_hashes=self.alternate_path_hashes,
                 trace_intrinsics=self.trace_intrinsics,
                 distributed_trace_intrinsics=self.distributed_trace_intrinsics,
-                agent_attributes=self.agent_attributes,
+                agent_attributes=agent_attributes,
                 user_attributes=self.user_attributes,
                 priority=self.priority,
                 sampled=self.sampled,
@@ -816,10 +820,9 @@ class Transaction(object):
 
         return i_attrs
 
-    @property
-    def request_parameters_attributes(self):
+    def filter_request_parameters(self, params):
         # Request parameters are a special case of agent attributes, so
-        # they must be added on to agent_attributes separately
+        # they must be filtered separately
 
         # There are 3 cases we need to handle:
         #
@@ -846,9 +849,19 @@ class Transaction(object):
         #    That means by default, request parameters won't get included in
         #    any destination. But, it will allow user added include/exclude
         #    attribute filtering rules to be applied to the request parameters.
-
         attributes_request = []
 
+        if self.capture_params is None:
+            attributes_request = create_attributes(params,
+                    DST_NONE, self.attribute_filter)
+        elif self.capture_params:
+            attributes_request = create_attributes(params,
+                    DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER,
+                    self.attribute_filter)
+        return attributes_request
+
+    @property
+    def request_parameters(self):
         if (self.capture_params is None) or self.capture_params:
 
             if self._request_params:
@@ -865,15 +878,8 @@ class Transaction(object):
                     if final_key:
                         r_attrs[final_key] = final_val
 
-                if self.capture_params is None:
-                    attributes_request = create_attributes(r_attrs,
-                            DST_NONE, self.attribute_filter)
-                elif self.capture_params:
-                    attributes_request = create_attributes(r_attrs,
-                            DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER,
-                            self.attribute_filter)
-
-        return attributes_request
+                return r_attrs
+        return {}
 
     def _add_agent_attribute(self, key, value):
         self._agent_attributes[key] = value
@@ -882,8 +888,6 @@ class Transaction(object):
     def agent_attributes(self):
         agent_attributes = create_agent_attributes(self._agent_attributes,
                 self.attribute_filter)
-
-        agent_attributes.extend(self.request_parameters_attributes)
         return agent_attributes
 
     def update_agent_attributes(self):

@@ -470,8 +470,11 @@ class WebTransaction(Transaction):
         if user_attributes:
             attributes['u'] = user_attributes
 
+        request_parameters = self.request_parameters
+        request_parameter_attributes = self.filter_request_parameters(
+                request_parameters)
         agent_attributes = {}
-        for attr in self.request_parameters_attributes:
+        for attr in request_parameter_attributes:
             if attr.destinations & DST_BROWSER_MONITORING:
                 agent_attributes[attr.name] = attr.value
 

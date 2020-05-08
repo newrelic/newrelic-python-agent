@@ -392,7 +392,7 @@ def test_span_event_agent_attributes(include_attribues):
 
     @override_application_settings(override_settings)
     @validate_span_events(
-            count=0, expected_agents=['webfrontend.queue.seconds'])
+            count=count, expected_agents=['webfrontend.queue.seconds'])
     @validate_span_events(
             count=count,
             exact_agents={'trace1_a': 'foobar', 'trace1_b': 'barbaz'},

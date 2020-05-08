@@ -13,7 +13,10 @@ from testing_support.fixtures import (validate_transaction_trace_attributes,
         validate_browser_attributes, validate_error_event_attributes,
         validate_error_trace_attributes_outside_transaction,
         validate_error_event_attributes_outside_transaction,
-        reset_core_stats_engine, validate_attributes)
+        reset_core_stats_engine, validate_attributes, dt_enabled)
+
+from testing_support.validators.validate_span_events import (
+        validate_span_events)
 
 
 URL_PARAM = 'some_key'
@@ -127,6 +130,12 @@ _expected_absent_attributes = {'agent': ['wsgi.output.seconds'] + REQ_PARAMS,
         _expected_absent_attributes)
 @override_application_settings({})
 def test_transaction_event_default_attribute_settings():
+    normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
+
+
+@dt_enabled
+@validate_span_events(expected_users=_expected_attributes['user'])
+def test_root_span_default_attribute_settings():
     normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 # Browser monitoring off by default, turn on and check default destinations
@@ -410,6 +419,18 @@ _expected_absent_attributes = {'agent': REQ_PARAMS,
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_transaction_event_exclude_user_attribute():
+    normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
+
+
+_override_settings = {'span_events.attributes.exclude': ['puppies']}
+
+
+@override_application_settings(_override_settings)
+@dt_enabled
+@validate_span_events(
+        expected_users=_expected_attributes['user'],
+        unexpected_users=_expected_absent_attributes['user'])
+def test_span_event_exclude_user_attribute():
     normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 

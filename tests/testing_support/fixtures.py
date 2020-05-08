@@ -2428,6 +2428,21 @@ def override_application_name(app_name):
     return _override_application_name
 
 
+@function_wrapper
+def dt_enabled(wrapped, instance, args, kwargs):
+    @transient_function_wrapper('newrelic.core.adaptive_sampler',
+            'AdaptiveSampler.compute_sampled')
+    def force_sampled(wrapped, instance, args, kwargs):
+        wrapped(*args, **kwargs)
+        return True
+
+    settings = {'distributed_tracing.enabled': True}
+    wrapped = override_application_settings(settings)(wrapped)
+    wrapped = force_sampled(wrapped)
+
+    return wrapped(*args, **kwargs)
+
+
 def override_application_settings(overrides):
     @function_wrapper
     def _override_application_settings(wrapped, instance, args, kwargs):

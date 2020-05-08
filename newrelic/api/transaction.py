@@ -1623,6 +1623,7 @@ class Transaction(object):
             return False
         else:
             self._custom_params[key] = val
+            self.root_span.add_custom_attribute(key, val)
             return True
 
     def add_custom_parameters(self, items):

@@ -443,7 +443,7 @@ class Transaction(object):
         root_attributes = root.agent_attributes
 
         # Update agent attributes and include them on the root node
-        self.update_agent_attributes()
+        self._update_agent_attributes()
         root_attributes.update(self._agent_attributes)
         root_attributes.update(request_params)
         exclusive = duration + root.exclusive
@@ -890,7 +890,7 @@ class Transaction(object):
                 self.attribute_filter)
         return agent_attributes
 
-    def update_agent_attributes(self):
+    def _update_agent_attributes(self):
         a_attrs = self._agent_attributes
 
         if self._settings.process_host.display_name:

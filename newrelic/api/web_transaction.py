@@ -293,7 +293,7 @@ class WebTransaction(Transaction):
 
         return self._generate_response_headers(read_length)
 
-    def update_agent_attributes(self):
+    def _update_agent_attributes(self):
         if 'accept' in self._request_headers:
             self._add_agent_attribute('request.headers.accept',
                     self._request_headers['accept'])
@@ -332,7 +332,7 @@ class WebTransaction(Transaction):
             self._add_agent_attribute('response.status',
                     str(self._response_code))
 
-        return super(WebTransaction, self).update_agent_attributes()
+        return super(WebTransaction, self)._update_agent_attributes()
 
     def browser_timing_header(self):
         """Returns the JavaScript header to be included in any HTML
@@ -780,7 +780,7 @@ class WSGIWebTransaction(WebTransaction):
 
         return super(WSGIWebTransaction, self).__exit__(exc, value, tb)
 
-    def update_agent_attributes(self):
+    def _update_agent_attributes(self):
         # Add WSGI agent attributes
         if self.read_duration != 0:
             self._add_agent_attribute('wsgi.input.seconds',
@@ -811,7 +811,7 @@ class WSGIWebTransaction(WebTransaction):
             self._add_agent_attribute('wsgi.output.calls.yield',
                     self._calls_yield)
 
-        return super(WSGIWebTransaction, self).update_agent_attributes()
+        return super(WSGIWebTransaction, self)._update_agent_attributes()
 
     def process_response(self, status, response_headers, *args):
         """Processes response status and headers, extracting any

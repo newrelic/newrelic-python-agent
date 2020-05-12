@@ -1833,6 +1833,10 @@ def validate_attributes(attr_type, required_attr_names=[],
             attributes = transaction.user_attributes
             attribute_names = [a.name for a in attributes]
 
+            # validate that all user attributes are included on the RootNode
+            root_attribute_names = transaction.root.user_attributes.keys()
+            for name in attribute_names:
+                assert name in root_attribute_names, name
         for name in required_attr_names:
             assert name in attribute_names, ('name=%r,'
                     'attributes=%r' % (name, attributes))

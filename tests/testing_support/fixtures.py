@@ -1825,6 +1825,10 @@ def validate_attributes(attr_type, required_attr_names=[],
         elif attr_type == 'agent':
             attributes = transaction.agent_attributes
             attribute_names = [a.name for a in attributes]
+            # validate that all agent attributes are included on the RootNode
+            root_attribute_names = transaction.root.agent_attributes.keys()
+            for name in attribute_names:
+                assert name in root_attribute_names, name
         elif attr_type == 'user':
             attributes = transaction.user_attributes
             attribute_names = [a.name for a in attributes]

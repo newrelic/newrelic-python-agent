@@ -429,11 +429,23 @@ class Transaction(object):
                         self._thread_utilization_end -
                         self._thread_utilization_start) / duration
 
-        # Derive generated values from the raw data. The
-        # dummy root node has exclusive time of children
-        # as negative number. Add our own duration to get
-        # our own exclusive time.
+        self._freeze_path()
 
+        # _sent_end should already be set by this point, but in case it
+        # isn't, set it now before we record the custom metrics and derive
+        # agent attributes
+
+        if self._sent_start:
+            if not self._sent_end:
+                self._sent_end = time.time()
+
+        request_params = self.request_parameters
+        root_attributes = root.agent_attributes
+
+        # Update agent attributes and include them on the root node
+        self._update_agent_attributes()
+        root_attributes.update(self._agent_attributes)
+        root_attributes.update(request_params)
         exclusive = duration + root.exclusive
 
         root_node = newrelic.core.root_node.RootNode(
@@ -455,18 +467,6 @@ class Transaction(object):
         #
         self.total_time += exclusive
 
-        # Construct final root node of transaction trace.
-        # Freeze path in case not already done. This will
-        # construct out path.
-
-        self._freeze_path()
-
-        # _sent_end should already be set by this point, but in case it
-        # isn't, set it now before we record the custom metrics.
-
-        if self._sent_start:
-            if not self._sent_end:
-                self._sent_end = time.time()
 
         if self.client_cross_process_id is not None:
             metric_name = 'ClientApplication/%s/all' % (
@@ -489,6 +489,8 @@ class Transaction(object):
             self._compute_sampled_and_priority()
 
         self._cached_path._name = self.path
+        agent_attributes = self.agent_attributes
+        agent_attributes.extend(self.filter_request_parameters(request_params))
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
                 path=self.path,
@@ -529,7 +531,7 @@ class Transaction(object):
                 alternate_path_hashes=self.alternate_path_hashes,
                 trace_intrinsics=self.trace_intrinsics,
                 distributed_trace_intrinsics=self.distributed_trace_intrinsics,
-                agent_attributes=self.agent_attributes,
+                agent_attributes=agent_attributes,
                 user_attributes=self.user_attributes,
                 priority=self.priority,
                 sampled=self.sampled,
@@ -818,10 +820,9 @@ class Transaction(object):
 
         return i_attrs
 
-    @property
-    def request_parameters_attributes(self):
+    def filter_request_parameters(self, params):
         # Request parameters are a special case of agent attributes, so
-        # they must be added on to agent_attributes separately
+        # they must be filtered separately
 
         # There are 3 cases we need to handle:
         #
@@ -848,9 +849,19 @@ class Transaction(object):
         #    That means by default, request parameters won't get included in
         #    any destination. But, it will allow user added include/exclude
         #    attribute filtering rules to be applied to the request parameters.
-
         attributes_request = []
 
+        if self.capture_params is None:
+            attributes_request = create_attributes(params,
+                    DST_NONE, self.attribute_filter)
+        elif self.capture_params:
+            attributes_request = create_attributes(params,
+                    DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER,
+                    self.attribute_filter)
+        return attributes_request
+
+    @property
+    def request_parameters(self):
         if (self.capture_params is None) or self.capture_params:
 
             if self._request_params:
@@ -867,21 +878,19 @@ class Transaction(object):
                     if final_key:
                         r_attrs[final_key] = final_val
 
-                if self.capture_params is None:
-                    attributes_request = create_attributes(r_attrs,
-                            DST_NONE, self.attribute_filter)
-                elif self.capture_params:
-                    attributes_request = create_attributes(r_attrs,
-                            DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER,
-                            self.attribute_filter)
-
-        return attributes_request
+                return r_attrs
+        return {}
 
     def _add_agent_attribute(self, key, value):
         self._agent_attributes[key] = value
 
     @property
     def agent_attributes(self):
+        agent_attributes = create_agent_attributes(self._agent_attributes,
+                self.attribute_filter)
+        return agent_attributes
+
+    def _update_agent_attributes(self):
         a_attrs = self._agent_attributes
 
         if self._settings.process_host.display_name:
@@ -891,15 +900,6 @@ class Transaction(object):
             a_attrs['thread.concurrency'] = self._thread_utilization_value
         if self.queue_wait != 0:
             a_attrs['webfrontend.queue.seconds'] = self.queue_wait
-
-        agent_attributes = create_agent_attributes(a_attrs,
-                self.attribute_filter)
-
-        # Include request parameters in agent attributes
-
-        agent_attributes.extend(self.request_parameters_attributes)
-
-        return agent_attributes
 
     @property
     def user_attributes(self):

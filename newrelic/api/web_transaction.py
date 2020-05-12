@@ -293,8 +293,7 @@ class WebTransaction(Transaction):
 
         return self._generate_response_headers(read_length)
 
-    @property
-    def agent_attributes(self):
+    def _update_agent_attributes(self):
         if 'accept' in self._request_headers:
             self._add_agent_attribute('request.headers.accept',
                     self._request_headers['accept'])
@@ -333,39 +332,7 @@ class WebTransaction(Transaction):
             self._add_agent_attribute('response.status',
                     str(self._response_code))
 
-        return super(WebTransaction, self).agent_attributes
-
-    @property
-    def request_parameters_attributes(self):
-        # Request parameters are a special case of agent attributes, so they
-        # must be added on to agent_attributes separately
-        #
-        # Filter request parameters through the AttributeFilter, but set the
-        # destinations to NONE.
-        #
-        # That means by default, request parameters won't get included in any
-        # destination. But, it will allow user added include/exclude attribute
-        # filtering rules to be applied to the request parameters.
-
-        attributes_request = []
-
-        if self._request_params:
-
-            r_attrs = {}
-
-            for k, v in self._request_params.items():
-                new_key = 'request.parameters.%s' % k
-                new_val = ",".join(v)
-
-                final_key, final_val = process_user_attribute(new_key, new_val)
-
-                if final_key:
-                    r_attrs[final_key] = final_val
-
-            attributes_request = create_attributes(r_attrs, DST_NONE,
-                    self._settings.attribute_filter)
-
-        return attributes_request
+        return super(WebTransaction, self)._update_agent_attributes()
 
     def browser_timing_header(self):
         """Returns the JavaScript header to be included in any HTML
@@ -503,8 +470,11 @@ class WebTransaction(Transaction):
         if user_attributes:
             attributes['u'] = user_attributes
 
+        request_parameters = self.request_parameters
+        request_parameter_attributes = self.filter_request_parameters(
+                request_parameters)
         agent_attributes = {}
-        for attr in self.request_parameters_attributes:
+        for attr in request_parameter_attributes:
             if attr.destinations & DST_BROWSER_MONITORING:
                 agent_attributes[attr.name] = attr.value
 
@@ -810,29 +780,7 @@ class WSGIWebTransaction(WebTransaction):
 
         return super(WSGIWebTransaction, self).__exit__(exc, value, tb)
 
-    @property
-    def agent_attributes(self):
-        # LEGACY: capture_params = True
-        #
-        #    Filter request parameters as a normal agent attribute.
-        #
-        #    If the user does not add any additional attribute filtering
-        #    rules, this will result in the same outcome as the old
-        #    capture_params = True behavior. They will be added to transaction
-        #    traces and error traces.
-        if self.capture_params is True:
-            for k, v in self._request_params.items():
-                new_key = 'request.parameters.%s' % k
-                new_val = ",".join(v)
-
-                final_key, final_val = process_user_attribute(new_key,
-                        new_val)
-
-                if final_key:
-                    self._add_agent_attribute(final_key, final_val)
-
-            self._request_params.clear()
-
+    def _update_agent_attributes(self):
         # Add WSGI agent attributes
         if self.read_duration != 0:
             self._add_agent_attribute('wsgi.input.seconds',
@@ -863,7 +811,7 @@ class WSGIWebTransaction(WebTransaction):
             self._add_agent_attribute('wsgi.output.calls.yield',
                     self._calls_yield)
 
-        return super(WSGIWebTransaction, self).agent_attributes
+        return super(WSGIWebTransaction, self)._update_agent_attributes()
 
     def process_response(self, status, response_headers, *args):
         """Processes response status and headers, extracting any

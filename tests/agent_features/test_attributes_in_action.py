@@ -506,6 +506,25 @@ def test_transaction_event_exclude_agent_attribute():
     normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 
+_override_settings = {'attributes.exclude': ['request.*'],
+        'attributes.include': ['request.headers.*', 'wsgi.*']}
+
+_expected_agent_attributes = ['wsgi.output.seconds', 'response.status',
+        'request.headers.contentType', 'request.headers.contentLength']
+
+_expected_absent_agent_attributes = ['request.method',
+        'request.uri'] + REQ_PARAMS
+
+
+@override_application_settings(_override_settings)
+@dt_enabled
+@validate_span_events(
+        expected_agents=_expected_agent_attributes,
+        unexpected_agents=_expected_absent_agent_attributes)
+def test_span_event_exclude_agent_attribute():
+    normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
+
+
 # The only agent attributes browser has are request parameters, which are
 # tested in the request parameters test cases
 

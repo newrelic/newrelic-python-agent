@@ -16,6 +16,7 @@ class RootNode(_RootNode, GenericNodeMixin):
     def span_event(self, *args, **kwargs):
         span = super(RootNode, self).span_event(*args, **kwargs)
         i_attrs = span[0]
+        i_attrs['transaction.name'] = self.path
         i_attrs['nr.entryPoint'] = True
         if self.trusted_parent_span:
             i_attrs['trustedParentId'] = self.trusted_parent_span

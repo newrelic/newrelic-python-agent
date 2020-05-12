@@ -29,6 +29,7 @@ def test_span_events(dt_enabled, span_events_enabled, txn_sampled):
     guid = 'dbb536c53b749e0b'
     sentinel_guid = '0687e0c371ea2c4e'
     function_guid = '482439c52de807ee'
+    transaction_name = 'OtherTransaction/Function/transaction'
     priority = 0.5
 
     @function_trace(name='child')
@@ -60,6 +61,7 @@ def test_span_events(dt_enabled, span_events_enabled, txn_sampled):
 
     exact_intrinsics_root = exact_intrinsics_common.copy()
     exact_intrinsics_root['name'] = 'Function/transaction'
+    exact_intrinsics_root['transaction.name'] = transaction_name
     exact_intrinsics_root['nr.entryPoint'] = True
 
     exact_intrinsics_function = exact_intrinsics_common.copy()

@@ -9,13 +9,15 @@ import time
 startup_debug = os.environ.get('NEW_RELIC_STARTUP_DEBUG',
         'off').lower() in ('on', 'true', '1')
 
-def log_message(text, *args):
-    if startup_debug:
+
+def log_message(text, *args, critical=False):
+    if startup_debug or critical:
         text = text % args
         timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
         sys.stdout.write('NEWRELIC: %s (%d) - %s\n' % (timestamp,
                 os.getpid(), text))
         sys.stdout.flush()
+
 
 log_message('New Relic Bootstrap (%s)', __file__)
 
@@ -136,3 +138,10 @@ if python_prefix_matches and python_version_matches:
         # Finally initialize the agent.
 
         newrelic.config.initialize(config_file, environment)
+else:
+    log_message("""New Relic could not start because the newrelic-admin script was called from a Python installation that is different from the Python installation that is currently running. To fix this problem, call the newrelic-admin script from the Python installation that is currently running (details below).
+
+newrelic-admin Python directory: %r
+current Python directory: %r
+newrelic-admin Python version: %r
+current Python version: %r""", expected_python_prefix, actual_python_prefix, expected_python_version, actual_python_version, critical=True)

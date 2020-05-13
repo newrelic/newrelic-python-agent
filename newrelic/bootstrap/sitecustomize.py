@@ -139,7 +139,7 @@ if python_prefix_matches and python_version_matches:
 
         newrelic.config.initialize(config_file, environment)
 else:
-    log_message("""New Relic refusing to start because the newrelic-admin script was called from a Python installation that is different from the currently running Python installation.
+    log_message("""New Relic could not start because the newrelic-admin script was called from a Python installation that is different from the Python installation that is currently running. To fix this problem, call the newrelic-admin script from the Python installation that is currently running (details below).
 
 newrelic-admin Python directory: %r
 current Python directory: %r

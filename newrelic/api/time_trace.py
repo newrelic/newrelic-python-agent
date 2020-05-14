@@ -186,6 +186,17 @@ class TimeTrace(object):
         if not settings:
             return
 
+        if not settings.error_collector.enabled:
+            return
+
+        # At least one destination for error events must be enabled
+        if not (
+                settings.collect_traces or
+                settings.collect_span_events or
+                settings.collect_errors or
+                settings.collect_error_events):
+            return
+
         # If no exception details provided, use current exception.
 
         if exc_info and None not in exc_info:

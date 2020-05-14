@@ -39,7 +39,8 @@ def httplib_endheaders_wrapper(wrapped, instance, args, kwargs,
             # used in getresponse() to add back into the external trace,
             # after the trace has already completed, details from the
             # response headers.
-            if not skip_headers and hasattr(tracer, 'generate_request_headers'):
+            if not skip_headers and hasattr(
+                    tracer, 'generate_request_headers'):
                 outgoing_headers = tracer.generate_request_headers(transaction)
                 for header_name, header_value in outgoing_headers:
                     connection.putheader(header_name, header_value)
@@ -76,10 +77,8 @@ def httplib_getresponse_wrapper(wrapped, instance, args, kwargs):
 
     del connection._nr_external_tracer
 
-    if hasattr(tracer, 'process_response_headers'):
-        tracer.process_response_headers(response.getheaders())
-
-    tracer._add_agent_attribute('http.statusCode', response.status)
+    if hasattr(tracer, 'process_response'):
+        tracer.process_response(response.status, response.getheaders())
 
     return response
 

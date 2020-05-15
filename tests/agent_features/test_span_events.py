@@ -17,7 +17,7 @@ from newrelic.api.solr_trace import SolrTrace
 
 from testing_support.fixtures import (override_application_settings,
         function_not_called, validate_tt_segment_params,
-        validate_transaction_metrics)
+        validate_transaction_metrics, dt_enabled)
 from testing_support.validators.validate_span_events import (
         validate_span_events)
 
@@ -523,6 +523,29 @@ def test_span_event_error_attributes(trace_type, args):
                 record_exception()
 
     _test()
+
+
+@pytest.mark.parametrize('trace_type,args', (
+    (DatabaseTrace, ('select * from foo', )),
+    (DatastoreTrace, ('db_product', 'db_target', 'db_operation')),
+    (ExternalTrace, ('lib', 'url')),
+    (FunctionTrace, ('name', )),
+    (MemcacheTrace, ('command', )),
+    (MessageTrace, ('lib', 'operation', 'dst_type', 'dst_name')),
+    (SolrTrace, ('lib', 'command')),
+    (FakeTrace, ()),
+))
+@override_application_settings({'error_collector.enabled': False})
+@validate_span_events(count=0, expected_agents=['error.class'])
+@validate_span_events(count=0, expected_agents=['error.message'])
+@dt_enabled
+@background_task(name='test_span_event_errors_disabled')
+def test_span_event_errors_disabled(trace_type, args):
+    with trace_type(*args):
+        try:
+            raise ValueError("whoops")
+        except:
+            record_exception()
 
 
 _metrics = [("Supportability/SpanEvent/Errors/Dropped", 2)]

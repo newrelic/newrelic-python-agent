@@ -490,7 +490,7 @@ _span_event_metrics = [("Supportability/SpanEvent/Errors/Dropped", None)]
     (SolrTrace, ('lib', 'command')),
     (FakeTrace, ()),
 ))
-def test_span_event_error_attributes(trace_type, args):
+def test_span_event_error_attributes_record_exception(trace_type, args):
 
     _settings = {
         'distributed_tracing.enabled': True,
@@ -505,13 +505,14 @@ def test_span_event_error_attributes(trace_type, args):
     }
 
     @override_application_settings(_settings)
-    @validate_transaction_metrics("test_span_event_error_attributes",
+    @validate_transaction_metrics(
+            'test_span_event_error_attributes_record_exception',
             background_task=True,
             rollup_metrics=_span_event_metrics)
     @validate_span_events(
         count=1,
         exact_agents=exact_agents,)
-    @background_task(name='test_span_event_error_attributes')
+    @background_task(name='test_span_event_error_attributes_record_exception')
     def _test():
         transaction = current_transaction()
         transaction._sampled = True
@@ -521,6 +522,46 @@ def test_span_event_error_attributes(trace_type, args):
                 raise ValueError("whoops")
             except:
                 record_exception()
+
+    _test()
+
+
+@pytest.mark.parametrize('trace_type,args', (
+    (DatabaseTrace, ('select * from foo', )),
+    (DatastoreTrace, ('db_product', 'db_target', 'db_operation')),
+    (ExternalTrace, ('lib', 'url')),
+    (FunctionTrace, ('name', )),
+    (MemcacheTrace, ('command', )),
+    (MessageTrace, ('lib', 'operation', 'dst_type', 'dst_name')),
+    (SolrTrace, ('lib', 'command')),
+))
+def test_span_event_error_attributes_observed(trace_type, args):
+
+    error = ValueError("whoops")
+
+    exact_agents = {
+        'error.class': callable_name(error),
+        'error.message': 'whoops',
+    }
+
+    # Verify errors are not recorded since record_exception is not called
+    rollups = [('Errors/all', None)] + _span_event_metrics
+
+    @dt_enabled
+    @validate_transaction_metrics(
+            'test_span_event_error_attributes_observed',
+            background_task=True,
+            rollup_metrics=rollups)
+    @validate_span_events(
+        count=1,
+        exact_agents=exact_agents,)
+    @background_task(name='test_span_event_error_attributes_observed')
+    def _test():
+        try:
+            with trace_type(*args):
+                raise error
+        except:
+            pass
 
     _test()
 

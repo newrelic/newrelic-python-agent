@@ -1485,6 +1485,17 @@ class Transaction(object):
 
     def record_exception(self, exc=None, value=None, tb=None,
                          params={}, ignore_errors=[]):
+        settings = self._settings
+
+        if not settings:
+            return
+
+        if not settings.error_collector.enabled:
+            return
+
+        if not settings.collect_errors and not settings.collect_error_events:
+            return
+
         current_span = trace_cache().current_trace()
         if current_span:
             current_span.record_exception(
@@ -1494,13 +1505,6 @@ class Transaction(object):
 
     def _create_error_node(self, settings, fullname, message,
                            custom_params, span_id, tb):
-
-        if not settings.error_collector.enabled:
-            return
-
-        if not settings.collect_errors and not settings.collect_error_events:
-            return
-
         # Only remember up to limit of what can be caught for a
         # single transaction. This could be trimmed further
         # later if there are already recorded errors and would

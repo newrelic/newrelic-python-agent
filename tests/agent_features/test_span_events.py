@@ -21,6 +21,9 @@ from testing_support.fixtures import (override_application_settings,
 from testing_support.validators.validate_span_events import (
         validate_span_events)
 
+ERROR = ValueError("whoops")
+ERROR_NAME = callable_name(ERROR)
+
 
 @pytest.mark.parametrize('dt_enabled', (True, False))
 @pytest.mark.parametrize('span_events_enabled', (True, False))
@@ -564,6 +567,31 @@ def test_span_event_error_attributes_observed(trace_type, args):
             pass
 
     _test()
+
+
+@pytest.mark.parametrize('trace_type,args', (
+    (DatabaseTrace, ('select * from foo', )),
+    (DatastoreTrace, ('db_product', 'db_target', 'db_operation')),
+    (ExternalTrace, ('lib', 'url')),
+    (FunctionTrace, ('name', )),
+    (MemcacheTrace, ('command', )),
+    (MessageTrace, ('lib', 'operation', 'dst_type', 'dst_name')),
+    (SolrTrace, ('lib', 'command')),
+    (FakeTrace, ()),
+))
+@dt_enabled
+@validate_span_events(count=1, exact_agents={'error.class': ERROR_NAME, 'error.message': 'whoops'})
+@background_task(name='test_span_event_record_exception_overrides_observed')
+def test_span_event_record_exception_overrides_observed(trace_type, args):
+    try:
+        with trace_type(*args):
+            try:
+                raise ERROR
+            except:
+                record_exception()
+                raise ValueError
+    except ValueError:
+        pass
 
 
 @pytest.mark.parametrize('trace_type,args', (

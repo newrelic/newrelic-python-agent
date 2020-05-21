@@ -303,7 +303,9 @@ class TraceCache(object):
         thread_id = root.thread_id
 
         if thread_id not in self._cache:
-            raise TraceCacheNoActiveTraceError('no active trace')
+            thread_id = self.current_thread_id()
+            if thread_id not in self._cache:
+                raise TraceCacheNoActiveTraceError('no active trace')
 
         current = self._cache.get(thread_id)
 

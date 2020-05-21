@@ -775,22 +775,27 @@ class StreamingRpc(object):
                         'Supportability/InfiniteTracing/'
                         'Span/gRPC/%s' % code.name, {'count': 1})
 
-                    if code is not grpc.StatusCode.OK:
+                    if code is grpc.StatusCode.OK:
+                        _logger.debug("Streaming RPC received OK "
+                                "response code. The agent will attempt "
+                                "to reestablish the stream immediately.")
+                    else:
                         self.record_metric(
                             'Supportability/InfiniteTracing/'
                             'Span/Response/Error', {'count': 1})
 
-                    if code is grpc.StatusCode.UNIMPLEMENTED:
-                        _logger.error("Streaming RPC received UNIMPLEMENTED "
-                                "response code. The agent will not attempt to "
-                                "reestablish the stream.")
-                        break
+                        if code is grpc.StatusCode.UNIMPLEMENTED:
+                            _logger.error("Streaming RPC received "
+                                    "UNIMPLEMENTED response code. "
+                                    "The agent will not attempt to "
+                                    "reestablish the stream.")
+                            break
 
-                    _logger.warning(
-                        "Streaming RPC closed. "
-                        "Will attempt to reconnect in 15 seconds. "
-                        "Code: %s Details: %s", code, details)
-                    self.notify.wait(15)
+                        _logger.warning(
+                            "Streaming RPC closed. "
+                            "Will attempt to reconnect in 15 seconds. "
+                            "Code: %s Details: %s", code, details)
+                        self.notify.wait(15)
 
                 if not self.channel:
                     break

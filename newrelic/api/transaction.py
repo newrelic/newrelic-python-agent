@@ -440,12 +440,15 @@ class Transaction(object):
                 self._sent_end = time.time()
 
         request_params = self.request_parameters
-        root_attributes = root.agent_attributes
+        root_user_attributes = dict(self._custom_params)
+        root_user_attributes.update(root.user_attributes)
 
         # Update agent attributes and include them on the root node
         self._update_agent_attributes()
-        root_attributes.update(self._agent_attributes)
-        root_attributes.update(request_params)
+        root_agent_attributes = dict(self._agent_attributes)
+        root_agent_attributes.update(request_params)
+        root_agent_attributes.update(root.agent_attributes)
+
         exclusive = duration + root.exclusive
 
         root_node = newrelic.core.root_node.RootNode(
@@ -456,8 +459,8 @@ class Transaction(object):
                 exclusive=exclusive,
                 duration=duration,
                 guid=root.guid,
-                agent_attributes=root.agent_attributes,
-                user_attributes=root.user_attributes,
+                agent_attributes=root_agent_attributes,
+                user_attributes=root_user_attributes,
                 path=self.path,
                 trusted_parent_span=self.trusted_parent_span,
                 tracing_vendors=self.tracing_vendors,
@@ -466,7 +469,6 @@ class Transaction(object):
         # Add transaction exclusive time to total exclusive time
         #
         self.total_time += exclusive
-
 
         if self.client_cross_process_id is not None:
             metric_name = 'ClientApplication/%s/all' % (
@@ -1627,7 +1629,6 @@ class Transaction(object):
             return False
         else:
             self._custom_params[key] = val
-            self.root_span.add_custom_attribute(key, val)
             return True
 
     def add_custom_parameters(self, items):

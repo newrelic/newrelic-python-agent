@@ -480,6 +480,30 @@ def test_span_event_user_attributes(trace_type, args, exclude_attributes):
     _test()
 
 
+@validate_span_events(count=1, exact_users={'foo': 'b'})
+@dt_enabled
+@background_task(name='test_span_user_attribute_overrides_transaction_attribute')
+def test_span_user_attribute_overrides_transaction_attribute():
+    transaction = current_transaction()
+
+    transaction.add_custom_parameter('foo', 'a')
+    add_custom_span_attribute('foo', 'b')
+    transaction.add_custom_parameter('foo', 'c')
+
+
+@override_application_settings({'attributes.include': '*'})
+@validate_span_events(count=1, exact_agents={'foo': 'b'})
+@dt_enabled
+@background_task(name='test_span_agent_attribute_overrides_transaction_attribute')
+def test_span_agent_attribute_overrides_transaction_attribute():
+    transaction = current_transaction()
+    trace = current_trace()
+
+    transaction._add_agent_attribute('foo', 'a')
+    trace._add_agent_attribute('foo', 'b')
+    transaction._add_agent_attribute('foo', 'c')
+
+
 _span_event_metrics = [("Supportability/SpanEvent/Errors/Dropped", None)]
 
 
@@ -580,7 +604,8 @@ def test_span_event_error_attributes_observed(trace_type, args):
     (FakeTrace, ()),
 ))
 @dt_enabled
-@validate_span_events(count=1, exact_agents={'error.class': ERROR_NAME, 'error.message': 'whoops'})
+@validate_span_events(count=1,
+        exact_agents={'error.class': ERROR_NAME, 'error.message': 'whoops'})
 @background_task(name='test_span_event_record_exception_overrides_observed')
 def test_span_event_record_exception_overrides_observed(trace_type, args):
     try:

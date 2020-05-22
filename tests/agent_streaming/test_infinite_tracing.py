@@ -39,9 +39,6 @@ def app():
      ('INTERNAL', [
             ('Supportability/InfiniteTracing/Span/gRPC/INTERNAL', 1),
             ('Supportability/InfiniteTracing/Span/Response/Error', 1)]),
-     ('OK', [
-            ('Supportability/InfiniteTracing/Span/gRPC/OK', 1),
-            ('Supportability/InfiniteTracing/Span/Response/Error', None)]),
  ))
 def test_infinite_tracing_span_streaming(mock_grpc_server,
         status_code, metrics, monkeypatch, app):
@@ -87,9 +84,10 @@ def test_infinite_tracing_span_streaming(mock_grpc_server,
     _test()
 
 
-@pytest.mark.parametrize('status_code', ('INTERNAL', 'OK'))
-def test_reconnect_on_failure(status_code, monkeypatch, mock_grpc_server,
+def test_reconnect_on_failure(monkeypatch, mock_grpc_server,
         buffer_empty_event, app):
+
+    status_code = "INTERNAL"
     wait_event = threading.Event()
     continue_event = threading.Event()
 
@@ -224,3 +222,68 @@ def test_agent_shutdown():
     app.internal_agent_shutdown(restart=False)
     assert not rpc.response_processing_thread.is_alive()
     assert not rpc.channel
+
+
+def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app):
+    wait_event = threading.Event()
+    connect_event = threading.Event()
+
+    metrics = [('Supportability/InfiniteTracing/Span/gRPC/OK', 1),
+            ('Supportability/InfiniteTracing/Span/Response/Error', None)]
+
+    class SetFlagOnWait(CONDITION_CLS):
+        def wait(self, *args, **kwargs):
+            wait_event.set()
+            return super(SetFlagOnWait, self).wait(*args, **kwargs)
+
+    @staticmethod
+    def condition(*args, **kwargs):
+        return SetFlagOnWait(*args, **kwargs)
+
+    monkeypatch.setattr(StreamingRpc, 'condition', condition)
+    span = Span(
+        intrinsics={"status_code": AttributeValue(string_value="OK")},
+        agent_attributes={},
+        user_attributes={},
+    )
+
+    @override_generic_settings(settings, {
+        'distributed_tracing.enabled': True,
+        'span_events.enabled': True,
+        'infinite_tracing.trace_observer_host': 'localhost',
+        'infinite_tracing.trace_observer_port': mock_grpc_server,
+        'infinite_tracing.ssl': False,
+    })
+    @validate_metric_payload(metrics=metrics)
+    def _test():
+
+        def connect_complete():
+            connect_event.set()
+
+        app.connect_to_data_collector(connect_complete)
+
+        assert connect_event.wait(timeout=5)
+        connect_event.clear()
+
+        # Send a span that will trigger disconnect
+        stream_buffer = app._stats_engine.span_stream
+        rpc = app._active_session._rpc
+
+        _rpc = rpc.rpc
+
+        def patched_rpc(*args, **kwargs):
+            connect_event.set()
+            return _rpc(*args, **kwargs)
+
+        rpc.rpc = patched_rpc
+
+
+        # Put a span that will trigger an OK status code and wait for an attempted
+        # recconect.
+        stream_buffer.put(span)
+        assert connect_event.wait(timeout=5)
+        rpc.close()
+        assert not wait_event.is_set()
+        app.harvest()
+
+    _test()

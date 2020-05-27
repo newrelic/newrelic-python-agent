@@ -17,7 +17,8 @@ from newrelic.api.solr_trace import SolrTrace
 
 from testing_support.fixtures import (override_application_settings,
         function_not_called, validate_tt_segment_params,
-        validate_transaction_metrics, dt_enabled)
+        validate_transaction_metrics, dt_enabled,
+        validate_transaction_event_attributes)
 from testing_support.validators.validate_span_events import (
         validate_span_events)
 
@@ -502,6 +503,47 @@ def test_span_agent_attribute_overrides_transaction_attribute():
     transaction._add_agent_attribute('foo', 'a')
     trace._add_agent_attribute('foo', 'b')
     transaction._add_agent_attribute('foo', 'c')
+
+
+def test_span_custom_attribute_limit():
+    """
+    This test validates that span attributes take precedence when
+    adding the span and transaction custom parameters that reach the
+    maximum user attribute limit.
+    """
+    span_custom_attrs = []
+    txn_custom_attrs = []
+    unexpected_txn_attrs = []
+
+    for i in range(64):
+        if i < 32:
+            span_custom_attrs.append('span_attr%i' % i)
+        txn_custom_attrs.append('txn_attr%i' % i)
+
+    unexpected_txn_attrs.extend(span_custom_attrs)
+    span_custom_attrs.extend(txn_custom_attrs[:32])
+    expected_txn_attrs = {'user': txn_custom_attrs, 'agent': [],
+                                   'intrinsic': []}
+    expected_absent_txn_attrs = {'agent': [],
+                                  'user':  unexpected_txn_attrs,
+                                  'intrinsic': []}
+
+    @override_application_settings({'attributes.include': '*'})
+    @validate_transaction_event_attributes(expected_txn_attrs,
+                                           expected_absent_txn_attrs)
+    @validate_span_events(count=1,
+                          expected_users=span_custom_attrs,
+                          unexpected_users=txn_custom_attrs[32:])
+    @dt_enabled
+    @background_task(name='test_span_attribute_limit')
+    def _test():
+        transaction = current_transaction()
+
+        for i in range(64):
+            transaction.add_custom_parameter('txn_attr%i' % i, 'txnValue')
+            if i < 32:
+                add_custom_span_attribute('span_attr%i' % i, 'spanValue')
+    _test()
 
 
 _span_event_metrics = [("Supportability/SpanEvent/Errors/Dropped", None)]

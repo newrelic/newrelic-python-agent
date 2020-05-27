@@ -11,6 +11,7 @@ import warnings
 import weakref
 
 from collections import deque
+from collections import OrderedDict
 
 import newrelic.packages.six as six
 
@@ -66,6 +67,20 @@ class Sentinel(TimeTrace):
 
     def add_child(self, node):
         self.children.append(node)
+
+    def update_with_transaction_custom_attributes(self, transaction_params):
+        """
+        Loops through the transaction attributes and adds them to the
+        root span's user attributes.
+        """
+        for key, value in transaction_params.items():
+            if len(self.user_attributes) >= MAX_NUM_USER_ATTRIBUTES:
+                _logger.debug('Maximum number of custom attributes already '
+                              'added to span. Some transaction attributes may '
+                              'not be included.')
+                break
+            if key not in self.user_attributes:
+                self.user_attributes[key] = value
 
     def complete_root(self):
         try:
@@ -167,7 +182,7 @@ class Transaction(object):
 
         self._string_cache = {}
 
-        self._custom_params = {}
+        self._custom_params = OrderedDict()
         self._request_params = {}
 
         self._utilization_tracker = None
@@ -440,8 +455,8 @@ class Transaction(object):
                 self._sent_end = time.time()
 
         request_params = self.request_parameters
-        root_user_attributes = dict(self._custom_params)
-        root_user_attributes.update(root.user_attributes)
+
+        root.update_with_transaction_custom_attributes(self._custom_params)
 
         # Update agent attributes and include them on the root node
         self._update_agent_attributes()
@@ -460,7 +475,7 @@ class Transaction(object):
                 duration=duration,
                 guid=root.guid,
                 agent_attributes=root_agent_attributes,
-                user_attributes=root_user_attributes,
+                user_attributes=root.user_attributes,
                 path=self.path,
                 trusted_parent_span=self.trusted_parent_span,
                 tracing_vendors=self.tracing_vendors,

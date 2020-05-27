@@ -4,6 +4,7 @@ import time
 import sys
 import newrelic.packages.six as six
 import traceback
+from collections import OrderedDict
 from newrelic.core.trace_cache import trace_cache
 from newrelic.core.attribute import (
         process_user_attribute, MAX_NUM_USER_ATTRIBUTES)
@@ -34,7 +35,7 @@ class TimeTrace(object):
         # 16-digit random hex. Padded with zeros in the front.
         self.guid = '%016x' % random.getrandbits(64)
         self.agent_attributes = {}
-        self.user_attributes = {}
+        self.user_attributes = OrderedDict()
 
     @property
     def transaction(self):

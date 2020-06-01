@@ -174,9 +174,7 @@ class TimeTrace(object):
 
         self.user_attributes[key] = value
 
-    def record_exception(self, exc_info=None,
-                         params={}, ignore_errors=[]):
-
+    def _observe_exception(self, exc_info=None, ignore_errors=[]):
         # Bail out if the transaction is not active or
         # collection of errors not enabled.
 
@@ -184,6 +182,17 @@ class TimeTrace(object):
         settings = transaction and transaction.settings
 
         if not settings:
+            return
+
+        if not settings.error_collector.enabled:
+            return
+
+        # At least one destination for error events must be enabled
+        if not (
+                settings.collect_traces or
+                settings.collect_span_events or
+                settings.collect_errors or
+                settings.collect_error_events):
             return
 
         # If no exception details provided, use current exception.
@@ -249,26 +258,6 @@ class TimeTrace(object):
             else:
                 fullname = name
 
-        # Only add params if High Security Mode is off.
-
-        custom_params = {}
-
-        if settings.high_security:
-            if params:
-                _logger.debug('Cannot add custom parameters in '
-                        'High Security Mode.')
-        else:
-            try:
-                for k, v in params.items():
-                    name, val = process_user_attribute(k, v)
-                    if name:
-                        custom_params[name] = val
-            except Exception:
-                _logger.debug('Parameters failed to validate for unknown '
-                        'reason. Dropping parameters for error: %r. Check '
-                        'traceback for clues.', fullname, exc_info=True)
-                custom_params = {}
-
         # Check to see if we need to strip the message before recording it.
 
         if (settings.strip_exception_messages.enabled and
@@ -303,9 +292,39 @@ class TimeTrace(object):
         # Add error details as agent attributes to span event.
         self._add_agent_attribute('error.class', fullname)
         self._add_agent_attribute('error.message', message)
+        return fullname, message, tb
 
-        transaction._create_error_node(
-                settings, fullname, message, custom_params, self.guid, tb)
+    def record_exception(self, exc_info=None,
+                         params={}, ignore_errors=[]):
+
+        recorded = self._observe_exception(exc_info, ignore_errors)
+        if recorded:
+            fullname, message, tb = recorded
+            transaction = self.transaction
+            settings = transaction and transaction.settings
+
+            # Only add params if High Security Mode is off.
+
+            custom_params = {}
+
+            if settings.high_security:
+                if params:
+                    _logger.debug('Cannot add custom parameters in '
+                            'High Security Mode.')
+            else:
+                try:
+                    for k, v in params.items():
+                        name, val = process_user_attribute(k, v)
+                        if name:
+                            custom_params[name] = val
+                except Exception:
+                    _logger.debug('Parameters failed to validate for unknown '
+                            'reason. Dropping parameters for error: %r. Check '
+                            'traceback for clues.', fullname, exc_info=True)
+                    custom_params = {}
+
+            transaction._create_error_node(
+                    settings, fullname, message, custom_params, self.guid, tb)
 
     def _add_agent_attribute(self, key, value):
         self.agent_attributes[key] = value
@@ -356,13 +375,18 @@ class TimeTrace(object):
         # this call though.
         self.parent = None
 
-        # Wipe out root reference as well
-        transaction = self.root.transaction
-        self.root = None
-
         # wipe out exc data
         exc_data = self.exc_data
         self.exc_data = (None, None, None)
+
+        # Observe errors on the span only if record_exception hasn't been
+        # called already
+        if exc_data[0] and 'error.class' not in self.agent_attributes:
+            self._observe_exception(exc_data)
+
+        # Wipe out root reference as well
+        transaction = self.root.transaction
+        self.root = None
 
         # Give chance for derived class to finalize any data in
         # this object instance. The transaction is passed as a

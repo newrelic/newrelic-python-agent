@@ -1825,10 +1825,18 @@ def validate_attributes(attr_type, required_attr_names=[],
         elif attr_type == 'agent':
             attributes = transaction.agent_attributes
             attribute_names = [a.name for a in attributes]
+            # validate that all agent attributes are included on the RootNode
+            root_attribute_names = transaction.root.agent_attributes.keys()
+            for name in attribute_names:
+                assert name in root_attribute_names, name
         elif attr_type == 'user':
             attributes = transaction.user_attributes
             attribute_names = [a.name for a in attributes]
 
+            # validate that all user attributes are included on the RootNode
+            root_attribute_names = transaction.root.user_attributes.keys()
+            for name in attribute_names:
+                assert name in root_attribute_names, name
         for name in required_attr_names:
             assert name in attribute_names, ('name=%r,'
                     'attributes=%r' % (name, attributes))
@@ -2426,6 +2434,21 @@ def override_application_name(app_name):
         return wrapped(application, *_args, **_kwargs)
 
     return _override_application_name
+
+
+@function_wrapper
+def dt_enabled(wrapped, instance, args, kwargs):
+    @transient_function_wrapper('newrelic.core.adaptive_sampler',
+            'AdaptiveSampler.compute_sampled')
+    def force_sampled(wrapped, instance, args, kwargs):
+        wrapped(*args, **kwargs)
+        return True
+
+    settings = {'distributed_tracing.enabled': True}
+    wrapped = override_application_settings(settings)(wrapped)
+    wrapped = force_sampled(wrapped)
+
+    return wrapped(*args, **kwargs)
 
 
 def override_application_settings(overrides):

@@ -26,6 +26,10 @@ class ExternalTrace(CatHeaderMixin, TimeTrace):
         return '<%s %s>' % (self.__class__.__name__, dict(
                 library=self.library, url=self.url, method=self.method))
 
+    def process_response(self, status_code, headers):
+        self._add_agent_attribute('http.statusCode', status_code)
+        self.process_response_headers(headers)
+
     def terminal_node(self):
         return True
 

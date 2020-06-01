@@ -13,7 +13,10 @@ from testing_support.fixtures import (validate_transaction_trace_attributes,
         validate_browser_attributes, validate_error_event_attributes,
         validate_error_trace_attributes_outside_transaction,
         validate_error_event_attributes_outside_transaction,
-        reset_core_stats_engine, validate_attributes)
+        reset_core_stats_engine, validate_attributes, dt_enabled)
+
+from testing_support.validators.validate_span_events import (
+        validate_span_events)
 
 
 URL_PARAM = 'some_key'
@@ -127,6 +130,12 @@ _expected_absent_attributes = {'agent': ['wsgi.output.seconds'] + REQ_PARAMS,
         _expected_absent_attributes)
 @override_application_settings({})
 def test_transaction_event_default_attribute_settings():
+    normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
+
+
+@dt_enabled
+@validate_span_events(expected_users=_expected_attributes['user'])
+def test_root_span_default_attribute_settings():
     normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 # Browser monitoring off by default, turn on and check default destinations
@@ -413,6 +422,18 @@ def test_transaction_event_exclude_user_attribute():
     normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 
+_override_settings = {'span_events.attributes.exclude': ['puppies']}
+
+
+@override_application_settings(_override_settings)
+@dt_enabled
+@validate_span_events(
+        expected_users=_expected_attributes['user'],
+        unexpected_users=_expected_absent_attributes['user'])
+def test_span_event_exclude_user_attribute():
+    normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
+
+
 _override_settings = {'browser_monitoring.attributes.enabled': True,
         'browser_monitoring.attributes.exclude': ['puppies']}
 
@@ -482,6 +503,25 @@ _expected_absent_attributes = {'agent': ['request.method',
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_transaction_event_exclude_agent_attribute():
+    normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
+
+
+_override_settings = {'attributes.exclude': ['request.*'],
+        'attributes.include': ['request.headers.*', 'wsgi.*']}
+
+_expected_agent_attributes = ['wsgi.output.seconds', 'response.status',
+        'request.headers.contentType', 'request.headers.contentLength']
+
+_expected_absent_agent_attributes = ['request.method',
+        'request.uri'] + REQ_PARAMS
+
+
+@override_application_settings(_override_settings)
+@dt_enabled
+@validate_span_events(
+        expected_agents=_expected_agent_attributes,
+        unexpected_agents=_expected_absent_agent_attributes)
+def test_span_event_exclude_agent_attribute():
     normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 

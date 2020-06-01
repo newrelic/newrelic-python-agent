@@ -2,7 +2,6 @@ import functools
 import sys
 
 from newrelic.api.application import Application, application_instance
-from newrelic.core.attribute import create_agent_attributes
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.transaction import current_transaction
@@ -47,9 +46,8 @@ class MessageTransaction(BackgroundTask):
         name = 'Named/%s' % destination_name
         return name, group
 
-    @property
-    def agent_attributes(self):
-        ms_attrs = {}
+    def _update_agent_attributes(self):
+        ms_attrs = self._agent_attributes
 
         if self.exchange_type is not None:
             ms_attrs['message.exchangeType'] = self.exchange_type
@@ -67,13 +65,7 @@ class MessageTransaction(BackgroundTask):
         if self.routing_key is not None:
             ms_attrs['message.routingKey'] = self.routing_key
 
-        messagebroker_attributes = create_agent_attributes(ms_attrs,
-                self.attribute_filter)
-
-        attributes = super(MessageTransaction, self).agent_attributes
-        attributes.extend(messagebroker_attributes)
-
-        return attributes
+        super(MessageTransaction, self)._update_agent_attributes()
 
 
 def MessageTransactionWrapper(wrapped, library, destination_type,

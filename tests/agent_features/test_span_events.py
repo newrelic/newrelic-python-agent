@@ -17,9 +17,13 @@ from newrelic.api.solr_trace import SolrTrace
 
 from testing_support.fixtures import (override_application_settings,
         function_not_called, validate_tt_segment_params,
-        validate_transaction_metrics)
+        validate_transaction_metrics, dt_enabled,
+        validate_transaction_event_attributes)
 from testing_support.validators.validate_span_events import (
         validate_span_events)
+
+ERROR = ValueError("whoops")
+ERROR_NAME = callable_name(ERROR)
 
 
 @pytest.mark.parametrize('dt_enabled', (True, False))
@@ -29,6 +33,7 @@ def test_span_events(dt_enabled, span_events_enabled, txn_sampled):
     guid = 'dbb536c53b749e0b'
     sentinel_guid = '0687e0c371ea2c4e'
     function_guid = '482439c52de807ee'
+    transaction_name = 'OtherTransaction/Function/transaction'
     priority = 0.5
 
     @function_trace(name='child')
@@ -60,6 +65,7 @@ def test_span_events(dt_enabled, span_events_enabled, txn_sampled):
 
     exact_intrinsics_root = exact_intrinsics_common.copy()
     exact_intrinsics_root['name'] = 'Function/transaction'
+    exact_intrinsics_root['transaction.name'] = transaction_name
     exact_intrinsics_root['nr.entryPoint'] = True
 
     exact_intrinsics_function = exact_intrinsics_common.copy()
@@ -392,7 +398,7 @@ def test_span_event_agent_attributes(include_attribues):
 
     @override_application_settings(override_settings)
     @validate_span_events(
-            count=0, expected_agents=['webfrontend.queue.seconds'])
+            count=count, expected_agents=['webfrontend.queue.seconds'])
     @validate_span_events(
             count=count,
             exact_agents={'trace1_a': 'foobar', 'trace1_b': 'barbaz'},
@@ -475,6 +481,71 @@ def test_span_event_user_attributes(trace_type, args, exclude_attributes):
     _test()
 
 
+@validate_span_events(count=1, exact_users={'foo': 'b'})
+@dt_enabled
+@background_task(name='test_span_user_attribute_overrides_transaction_attribute')
+def test_span_user_attribute_overrides_transaction_attribute():
+    transaction = current_transaction()
+
+    transaction.add_custom_parameter('foo', 'a')
+    add_custom_span_attribute('foo', 'b')
+    transaction.add_custom_parameter('foo', 'c')
+
+
+@override_application_settings({'attributes.include': '*'})
+@validate_span_events(count=1, exact_agents={'foo': 'b'})
+@dt_enabled
+@background_task(name='test_span_agent_attribute_overrides_transaction_attribute')
+def test_span_agent_attribute_overrides_transaction_attribute():
+    transaction = current_transaction()
+    trace = current_trace()
+
+    transaction._add_agent_attribute('foo', 'a')
+    trace._add_agent_attribute('foo', 'b')
+    transaction._add_agent_attribute('foo', 'c')
+
+
+def test_span_custom_attribute_limit():
+    """
+    This test validates that span attributes take precedence when
+    adding the span and transaction custom parameters that reach the
+    maximum user attribute limit.
+    """
+    span_custom_attrs = []
+    txn_custom_attrs = []
+    unexpected_txn_attrs = []
+
+    for i in range(64):
+        if i < 32:
+            span_custom_attrs.append('span_attr%i' % i)
+        txn_custom_attrs.append('txn_attr%i' % i)
+
+    unexpected_txn_attrs.extend(span_custom_attrs)
+    span_custom_attrs.extend(txn_custom_attrs[:32])
+    expected_txn_attrs = {'user': txn_custom_attrs, 'agent': [],
+                                   'intrinsic': []}
+    expected_absent_txn_attrs = {'agent': [],
+                                  'user':  unexpected_txn_attrs,
+                                  'intrinsic': []}
+
+    @override_application_settings({'attributes.include': '*'})
+    @validate_transaction_event_attributes(expected_txn_attrs,
+                                           expected_absent_txn_attrs)
+    @validate_span_events(count=1,
+                          expected_users=span_custom_attrs,
+                          unexpected_users=txn_custom_attrs[32:])
+    @dt_enabled
+    @background_task(name='test_span_attribute_limit')
+    def _test():
+        transaction = current_transaction()
+
+        for i in range(64):
+            transaction.add_custom_parameter('txn_attr%i' % i, 'txnValue')
+            if i < 32:
+                add_custom_span_attribute('span_attr%i' % i, 'spanValue')
+    _test()
+
+
 _span_event_metrics = [("Supportability/SpanEvent/Errors/Dropped", None)]
 
 
@@ -488,7 +559,7 @@ _span_event_metrics = [("Supportability/SpanEvent/Errors/Dropped", None)]
     (SolrTrace, ('lib', 'command')),
     (FakeTrace, ()),
 ))
-def test_span_event_error_attributes(trace_type, args):
+def test_span_event_error_attributes_record_exception(trace_type, args):
 
     _settings = {
         'distributed_tracing.enabled': True,
@@ -503,13 +574,14 @@ def test_span_event_error_attributes(trace_type, args):
     }
 
     @override_application_settings(_settings)
-    @validate_transaction_metrics("test_span_event_error_attributes",
+    @validate_transaction_metrics(
+            'test_span_event_error_attributes_record_exception',
             background_task=True,
             rollup_metrics=_span_event_metrics)
     @validate_span_events(
         count=1,
         exact_agents=exact_agents,)
-    @background_task(name='test_span_event_error_attributes')
+    @background_task(name='test_span_event_error_attributes_record_exception')
     def _test():
         transaction = current_transaction()
         transaction._sampled = True
@@ -521,6 +593,95 @@ def test_span_event_error_attributes(trace_type, args):
                 record_exception()
 
     _test()
+
+
+@pytest.mark.parametrize('trace_type,args', (
+    (DatabaseTrace, ('select * from foo', )),
+    (DatastoreTrace, ('db_product', 'db_target', 'db_operation')),
+    (ExternalTrace, ('lib', 'url')),
+    (FunctionTrace, ('name', )),
+    (MemcacheTrace, ('command', )),
+    (MessageTrace, ('lib', 'operation', 'dst_type', 'dst_name')),
+    (SolrTrace, ('lib', 'command')),
+))
+def test_span_event_error_attributes_observed(trace_type, args):
+
+    error = ValueError("whoops")
+
+    exact_agents = {
+        'error.class': callable_name(error),
+        'error.message': 'whoops',
+    }
+
+    # Verify errors are not recorded since record_exception is not called
+    rollups = [('Errors/all', None)] + _span_event_metrics
+
+    @dt_enabled
+    @validate_transaction_metrics(
+            'test_span_event_error_attributes_observed',
+            background_task=True,
+            rollup_metrics=rollups)
+    @validate_span_events(
+        count=1,
+        exact_agents=exact_agents,)
+    @background_task(name='test_span_event_error_attributes_observed')
+    def _test():
+        try:
+            with trace_type(*args):
+                raise error
+        except:
+            pass
+
+    _test()
+
+
+@pytest.mark.parametrize('trace_type,args', (
+    (DatabaseTrace, ('select * from foo', )),
+    (DatastoreTrace, ('db_product', 'db_target', 'db_operation')),
+    (ExternalTrace, ('lib', 'url')),
+    (FunctionTrace, ('name', )),
+    (MemcacheTrace, ('command', )),
+    (MessageTrace, ('lib', 'operation', 'dst_type', 'dst_name')),
+    (SolrTrace, ('lib', 'command')),
+    (FakeTrace, ()),
+))
+@dt_enabled
+@validate_span_events(count=1,
+        exact_agents={'error.class': ERROR_NAME, 'error.message': 'whoops'})
+@background_task(name='test_span_event_record_exception_overrides_observed')
+def test_span_event_record_exception_overrides_observed(trace_type, args):
+    try:
+        with trace_type(*args):
+            try:
+                raise ERROR
+            except:
+                record_exception()
+                raise ValueError
+    except ValueError:
+        pass
+
+
+@pytest.mark.parametrize('trace_type,args', (
+    (DatabaseTrace, ('select * from foo', )),
+    (DatastoreTrace, ('db_product', 'db_target', 'db_operation')),
+    (ExternalTrace, ('lib', 'url')),
+    (FunctionTrace, ('name', )),
+    (MemcacheTrace, ('command', )),
+    (MessageTrace, ('lib', 'operation', 'dst_type', 'dst_name')),
+    (SolrTrace, ('lib', 'command')),
+    (FakeTrace, ()),
+))
+@override_application_settings({'error_collector.enabled': False})
+@validate_span_events(count=0, expected_agents=['error.class'])
+@validate_span_events(count=0, expected_agents=['error.message'])
+@dt_enabled
+@background_task(name='test_span_event_errors_disabled')
+def test_span_event_errors_disabled(trace_type, args):
+    with trace_type(*args):
+        try:
+            raise ValueError("whoops")
+        except:
+            record_exception()
 
 
 _metrics = [("Supportability/SpanEvent/Errors/Dropped", 2)]

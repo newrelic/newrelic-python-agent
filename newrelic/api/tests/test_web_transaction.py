@@ -1539,6 +1539,7 @@ class TestWebsocketWSGIWebTransaction(newrelic.tests.test_cases.TestCase):
         with transaction:
             transaction.process_response(200, (('Content-Length', '2'),))
 
+            transaction._update_agent_attributes()
             assert transaction.agent_attributes
             assert transaction._agent_attributes[
                     'request.headers.contentLength'] == 1
@@ -1555,6 +1556,7 @@ class TestWebsocketWSGIWebTransaction(newrelic.tests.test_cases.TestCase):
         with transaction:
             transaction.process_response(200, (('Content-Length', 'x'),))
 
+            transaction._update_agent_attributes()
             assert transaction.agent_attributes
             assert 'request.headers.contentLength' \
                     not in transaction._agent_attributes
@@ -1809,6 +1811,7 @@ def test_http_referer_header_stripped_transaction(capture_params, connect):
     assert application.settings
     transaction = newrelic.api.web_transaction.WSGIWebTransaction(
             application, environ)
+    transaction._update_agent_attributes()
     assert transaction.agent_attributes
     assert transaction._agent_attributes['request.headers.referer'] == url
     assert transaction.capture_params == capture_params
@@ -1831,6 +1834,7 @@ def test_http_referer_header_stripped_base_transaction(high_security_mode,
                 None,
                 request_path='DUMMY',
                 headers={'referer': url + params}.items())
+        transaction._update_agent_attributes()
         assert transaction.agent_attributes
         assert transaction._agent_attributes['request.headers.referer'] == url
     finally:

@@ -355,3 +355,34 @@ def test_incomplete_traces_with_multiple_transactions():
     # Wait for dummy/parent->child to terminate
     dummy_assertions(dummy_task)
     loop.run_until_complete(child_task)
+
+@validate_transaction_metrics("Parent", background_task=True)
+def test_transaction_end_on_different_task():
+    import asyncio
+
+    txn = BackgroundTask(application(), name="Parent")
+
+    async def parent():
+        txn.__enter__()
+        child_start = asyncio.Event()
+        parent_end = asyncio.Event()
+        child_task = asyncio.ensure_future(child(child_start, parent_end))
+        await child_start.wait()
+        parent_end.set()
+        return child_task
+
+    async def child(child_start, parent_end):
+        child_start.set()
+        await parent_end.wait()
+
+        # Calling asyncio.sleep(0) allows the scheduled done callbacks to run
+        # done callbacks are scheduled through call_soon
+        await asyncio.sleep(0)
+        txn.__exit__(None, None, None)
+
+    async def test():
+        task = await asyncio.ensure_future(parent())
+        await task
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(test())

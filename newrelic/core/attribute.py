@@ -127,8 +127,9 @@ def create_agent_attributes(attr_dict, attribute_filter):
     return attributes
 
 
-def resolve_user_attributes(attr_dict, attribute_filter, target_destination):
-    u_attrs = {}
+def resolve_user_attributes(
+            attr_dict, attribute_filter, target_destination, attr_class=dict):
+    u_attrs = attr_class()
 
     for attr_name, attr_value in attr_dict.items():
         if attr_value is None:
@@ -142,8 +143,9 @@ def resolve_user_attributes(attr_dict, attribute_filter, target_destination):
     return u_attrs
 
 
-def resolve_agent_attributes(attr_dict, attribute_filter, target_destination):
-    a_attrs = {}
+def resolve_agent_attributes(
+            attr_dict, attribute_filter, target_destination, attr_class=dict):
+    a_attrs = attr_class()
 
     for attr_name, attr_value in attr_dict.items():
         if attr_value is None:

@@ -141,6 +141,7 @@ kwargs = dict(
                                      'packages/requests/cacert.pem'],
         },
         scripts = [ 'scripts/newrelic-admin' ],
+        extras_require = {'infinite-tracing': ['grpcio<2', 'protobuf<4']},
 )
 
 if with_setuptools:

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-version = '5.6.0'
+version = '5.8.0'
 
 try:
     from newrelic.build import build_number

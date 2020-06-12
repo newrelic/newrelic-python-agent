@@ -93,6 +93,8 @@ def httplib_getresponse_wrapper(wrapped, instance, args, kwargs):
     if hasattr(tracer, 'process_response_headers'):
         tracer.process_response_headers(response.getheaders())
 
+    tracer._add_agent_attribute('http.statusCode', response.status)
+
     return response
 
 

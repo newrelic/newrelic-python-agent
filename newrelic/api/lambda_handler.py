@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import functools
+import warnings
 from newrelic.common.object_wrapper import FunctionWrapper
 from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import WebTransaction
@@ -41,7 +42,7 @@ def extract_event_source_arn(event):
         pass
 
 
-def LambdaHandlerWrapper(wrapped, application=None, name=None,
+def _LambdaHandlerWrapper(wrapped, application=None, name=None,
         group=None):
 
     def _nr_lambda_handler_wrapper_(wrapped, instance, args, kwargs):
@@ -152,6 +153,22 @@ def LambdaHandlerWrapper(wrapped, application=None, name=None,
     return FunctionWrapper(wrapped, _nr_lambda_handler_wrapper_)
 
 
+def LambdaHandlerWrapper(*args, **kwargs):
+
+    warnings.warn((
+        'The LambdaHandlerWrapper API has been deprecated. Please use the '
+        'APIs provided in the newrelic-lambda package.'
+    ), DeprecationWarning)
+
+    return _LambdaHandlerWrapper(*args, **kwargs)
+
+
 def lambda_handler(application=None, name=None, group=None):
-    return functools.partial(LambdaHandlerWrapper, application=application,
+
+    warnings.warn((
+        'The lambda_handler API has been deprecated. Please use the '
+        'APIs provided in the newrelic-lambda package.'
+    ), DeprecationWarning)
+
+    return functools.partial(_LambdaHandlerWrapper, application=application,
             name=name, group=group)

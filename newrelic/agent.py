@@ -36,7 +36,8 @@ from newrelic.api.application import (
 
 from newrelic.api.time_trace import (
         current_trace as __current_trace,
-        get_linking_metadata as __get_linking_metadata)
+        get_linking_metadata as __get_linking_metadata,
+        add_custom_span_attribute as __add_custom_span_attribute)
 
 from newrelic.api.transaction import (
         current_transaction as __current_transaction,
@@ -205,6 +206,8 @@ current_trace = __wrap_api_call(__current_trace,
         'current_trace')
 get_linking_metadata = __wrap_api_call(__get_linking_metadata,
         'get_linking_metadata')
+add_custom_span_attribute = __wrap_api_call(__add_custom_span_attribute,
+        'add_custom_span_attribute')
 current_transaction = __wrap_api_call(__current_transaction,
         'current_transaction')
 set_transaction_name = __wrap_api_call(__set_transaction_name,

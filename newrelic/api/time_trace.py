@@ -48,6 +48,11 @@ class TimeTrace(object):
     def transaction(self):
         return self.root and self.root.transaction
 
+    @property
+    def settings(self):
+        transaction = self.transaction
+        return transaction and transaction.settings
+
     def _is_leaf(self):
         return self.child_count == len(self.children)
 

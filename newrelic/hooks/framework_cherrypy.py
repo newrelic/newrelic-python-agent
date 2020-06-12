@@ -34,7 +34,7 @@
 # * We don't track time spent in hook functions which may be registered
 #   for events such as before_handler, on_end_request etc.
 #
-# * We don't handle any sub dispatching that may be occuring due to the
+# * We don't handle any sub dispatching that may be occurring due to the
 #   use of XMLRPCDispatcher.
 
 from newrelic.api.function_trace import FunctionTrace, wrap_function_trace

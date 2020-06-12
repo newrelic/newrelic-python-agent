@@ -494,7 +494,7 @@ def _obfuscate_explain_plan_postgresql(columns, rows, mask=None):
 
     text = _obfuscate_explain_plan_postgresql_substitute(text, mask)
 
-    # The mask option dictates whether we use the slightly more aggresive
+    # The mask option dictates whether we use the slightly more aggressive
     # obfuscation and simply mask out any line preceded by a label.
 
     if mask:

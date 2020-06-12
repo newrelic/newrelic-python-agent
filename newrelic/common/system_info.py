@@ -230,7 +230,7 @@ def physical_processor_count():
 def _linux_total_physical_memory(filename=None):
     # For Linux we can use information from /proc/meminfo. Although the
     # units is given in the file, it is always in kilobytes so we do not
-    # need to accomodate any other unit types beside 'kB'.
+    # need to accommodate any other unit types beside 'kB'.
 
     filename = filename or '/proc/meminfo'
 

@@ -38,7 +38,7 @@ def _extract_stack(f, skip, limit):
     # For calculating the stack trace we have the bottom most frame we
     # are interested in. We need to work upwards to get the full stack.
     # We append to a list and reverse at the end to get things in the
-    # order we want as it is more effecient.
+    # order we want as it is more efficient.
 
     n = 0
     l = []

@@ -355,7 +355,7 @@ class ProfileSessionManager(object):
 
     def _profiler_loop(self):
         """Infinite loop that wakes up periodically to collect stack traces,
-        merge it into call tree if necessaray, finally update the state of all
+        merge it into call tree if necessary, finally update the state of all
         the active profile sessions.
 
         """

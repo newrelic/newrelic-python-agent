@@ -29,7 +29,7 @@ _Attribute = namedtuple('_Attribute',
         ['name', 'value', 'destinations'])
 
 # The following destinations are created here, never changed, and only
-# used increate_agent_attributes. It is placed at the module level here
+# used in create_agent_attributes. It is placed at the module level here
 # as an optimization.
 
 # All agent attributes go to transaction traces and error traces by default.

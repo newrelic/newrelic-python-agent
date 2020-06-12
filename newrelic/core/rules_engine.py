@@ -129,7 +129,7 @@ class SegmentCollapseEngine(object):
             # may be a possibility of getting an extraneous trailing
             # slash. Therefore remove any trailing slashes. Technically
             # we can do away with the check for two segments, or at
-            # least allow minimumum of two and the algorithm will still
+            # least allow minimum of two and the algorithm will still
             # work as the regex for pre match and how remainder is
             # collected from pattern, will deal with prefixes of
             # different length and will choose the longest match.

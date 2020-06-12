@@ -34,7 +34,7 @@ class CatHeaderMixin(object):
 
     def process_response_headers(self, response_headers):
         """
-        Decode the response headers and create appropriate metics based on the
+        Decode the response headers and create appropriate metrics based on the
         header values. The response_headers are passed in as a list of tuples.
         [(HEADER_NAME0, HEADER_VALUE0), (HEADER_NAME1, HEADER_VALUE1)]
 

@@ -14,7 +14,7 @@
 
 import functools
 
-from newrelic.api.time_trace import current_trace
+from newrelic.api.time_trace import current_trace, record_exception
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
 
@@ -43,7 +43,7 @@ class ErrorTrace(object):
         if self._transaction is None:
             return
 
-        self._transaction.record_exception(exc=exc, value=value, tb=tb,
+        record_exception(exc=exc, value=value, tb=tb,
                 ignore_errors=self._ignore_errors)
 
 

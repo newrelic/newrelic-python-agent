@@ -18,6 +18,7 @@ import time
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.web_transaction import WebTransactionWrapper
 from newrelic.api.transaction import current_transaction
+from newrelic.api.time_trace import record_exception
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.object_names import callable_name
 
@@ -179,9 +180,7 @@ def _nr_wrap_status_code(wrapped, instance, args, kwargs):
 
 
 def _nr_wrap_abort(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
-    if transaction:
-        transaction.record_exception()
+    record_exception()
 
     return wrapped(*args, **kwargs)
 

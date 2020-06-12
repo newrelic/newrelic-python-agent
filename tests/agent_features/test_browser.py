@@ -75,7 +75,7 @@ def test_footer_attributes():
     content = response.html.html.body.p.string
     footer = response.html.html.body.script.string
 
-    # Validate actual body content as sansity check.
+    # Validate actual body content.
 
     assert content == 'RESPONSE'
 
@@ -629,9 +629,9 @@ _test_html_insertion_invalid_content_length_settings = {
 def test_html_insertion_invalid_content_length():
     response = target_application_invalid_content_length.get('/', status=200)
 
-    # This is actually relying on WebTest being a bit broken and
-    # not actually validating that value of the Content-Length
-    # response header and just passing it through as is.
+    # This is relying on WebTest not validating the
+    # value of the Content-Length response header
+    # and just passing it through as is.
 
     assert 'Content-Type' in response.headers
     assert 'Content-Length' in response.headers

@@ -103,16 +103,6 @@ def test_end_of_transaction():
         pass
 
 
-@pytest.mark.parametrize('correct_order', [True, False])
-def test_import_order_supportability_metrics(correct_order):
-    settings = newrelic.agent.global_settings()
-    cmd = ['python', 'uninstrumented_tester.py', '--correct-order',
-            str(correct_order), '--license-key', settings.license_key,
-            '--host', settings.host]
-    returncode = subprocess.call(cmd)
-    assert returncode == 0
-
-
 @validate_metric_payload(metrics=[
         ('Supportability/Python/Uninstrumented', None),
 ])

@@ -14,8 +14,8 @@
 
 import pytest
 import time
-from newrelic.core.config import global_settings, global_settings_dump
-from newrelic.core.data_collector import create_session
+from newrelic.core.config import finalize_application_settings
+from newrelic.core.data_collector import ApplicationSession
 from testing_support.fixtures import initialize_agent
 from newrelic.network.exceptions import DiscardDataForRequest
 
@@ -40,12 +40,13 @@ def session():
         app_name='Python Agent Test (test_max_payload_size)',
         default_settings=_default_settings)
 
-    session = create_session(
-            None, global_settings().app_name, [], (), global_settings_dump())
+    session = ApplicationSession(
+            "https://collector.newrelic.com",
+            None, finalize_application_settings())
 
-    # Disable outbound requests
-    assert session._requests_session is session.requests_session
+    # patch in application sesssion requests
     original_request = session.requests_session.request
+    assert original_request
 
     def request(*args, **kwargs):
         assert False, "Outbound request made"
@@ -57,7 +58,6 @@ def session():
 
     # Re-enable requests
     session.requests_session.request = original_request
-    session.shutdown_session()
 
 
 @pytest.mark.parametrize('method,args', [

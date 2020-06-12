@@ -162,7 +162,7 @@ def test_agent_restart(app):
     app.connect_to_data_collector(None)
     rpc = app._active_session._rpc
 
-    # Store references to the orginal rpc and threads
+    # Store references to the original rpc and threads
     original_rpc = rpc.rpc
     original_thread = rpc.response_processing_thread
     original_span_stream = app._stats_engine.span_stream
@@ -231,7 +231,7 @@ def test_agent_shutdown():
     app = Application('Python Agent Test (Infinite Tracing)')
     app.connect_to_data_collector(None)
     rpc = app._active_session._rpc
-    # Store references to the orginal rpc and threads
+    # Store references to the original rpc and threads
     assert rpc.response_processing_thread.is_alive()
     app.internal_agent_shutdown(restart=False)
     assert not rpc.response_processing_thread.is_alive()
@@ -293,7 +293,7 @@ def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app):
 
 
         # Put a span that will trigger an OK status code and wait for an attempted
-        # recconect.
+        # reconnect.
         stream_buffer.put(span)
         assert connect_event.wait(timeout=5)
         rpc.close()

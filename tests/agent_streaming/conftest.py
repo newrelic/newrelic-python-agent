@@ -40,6 +40,7 @@ _default_settings = {
     "agent_limits.errors_per_harvest": 100,
     "distributed_tracing.enabled": True,
     "infinite_tracing.trace_observer_host": "nr-internal.aws-us-east-2.tracing.staging-edge.nr-data.net",
+    "debug.connect_span_stream_in_developer_mode": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(

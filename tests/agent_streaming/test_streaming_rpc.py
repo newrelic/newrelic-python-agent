@@ -37,7 +37,7 @@ def test_close_before_connect(mock_grpc_server):
     # Calling close will close the grpc channel
     rpc.close()
     rpc.connect()
-    # The response processing thread should immediatly exit if the channel is
+    # The response processing thread should immediately exit if the channel is
     # closed
     rpc.response_processing_thread.join(timeout=5)
     assert not rpc.response_processing_thread.is_alive()
@@ -50,7 +50,7 @@ def test_close_while_connected(mock_grpc_server, buffer_empty_event):
     rpc = StreamingRpc(channel, stream_buffer, DEFAULT_METADATA, record_metric)
 
     rpc.connect()
-    # Check the procesing thread is alive and spans are being sent
+    # Check the processing thread is alive and spans are being sent
     assert rpc.response_processing_thread.is_alive()
 
     span = Span(intrinsics={}, agent_attributes={}, user_attributes={})

@@ -54,6 +54,7 @@ def requires_data_collector(collector_available_fixture):
 
 if six.PY2:
     collect_ignore = [
+        'test_async_context_propagation.py',
         'test_coroutine_trace.py',
         'test_coroutine_transaction.py',
         'test_async_timing.py',

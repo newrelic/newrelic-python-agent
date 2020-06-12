@@ -33,7 +33,7 @@ from newrelic.core.custom_event import create_custom_event
 from newrelic.core.error_node import ErrorNode
 from newrelic.core.function_node import FunctionNode
 
-from newrelic.network.exceptions import RetryDataForRequest
+from newrelic.network.exceptions import RetryDataForRequest, ForceAgentDisconnect
 
 settings = global_settings()
 
@@ -511,8 +511,12 @@ def test_ca_bundle(collector_agent_registration, ca_bundle_path,
     def preconnect():
         url = collector_url()
         license_key = global_settings().license_key
-        result = send_request(None, url, 'preconnect', license_key)
-        assert result
+        try:
+            result = send_request(None, url, 'preconnect', license_key)
+            assert result
+        except ForceAgentDisconnect:
+            # If the license key is invalid, we should see a force agent disconnect
+            pass
 
     @override_generic_settings(settings, {
         'ca_bundle_path': ca_bundle_path,

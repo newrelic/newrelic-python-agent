@@ -196,7 +196,7 @@ def test_coroutine_caught_exception():
         scoped_metrics=[('Function/parent', 1), ('Function/coro', None)],
         rollup_metrics=[('Function/parent', 1), ('Function/coro', None)])
 def test_coroutine_handles_terminal_nodes():
-    # somtimes coroutines can be called underneath terminal nodes
+    # sometimes coroutines can be called underneath terminal nodes
     # In this case, the trace shouldn't actually be created and we also
     # shouldn't get any errors
 

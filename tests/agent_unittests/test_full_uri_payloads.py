@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pytest
+import os
 import time
 
 from testing_support.fixtures import (override_generic_settings,
@@ -146,6 +147,7 @@ def test_compression_deflate(session, method, args):
     sender(*args)
 
 
+@pytest.mark.skipif('NEW_RELIC_LICENSE_KEY' not in os.environ, reason="License key is not expected to be valid")
 def test_full_uri_protocol_lifecycle():
     """Exercises the following endpoints:
 

@@ -284,7 +284,7 @@ def validate_synthetics_external_trace_header(required_header=(),
                 # update, so would fail. For now what we do is use
                 # a little proxy wrapper so that updates do not
                 # fail. The use of this wrapper needs to be
-                # reviewed and a better way of achieveing what is
+                # reviewed and a better way of achieving what is
                 # required found.
 
                 class _Transaction(object):

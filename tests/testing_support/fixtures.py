@@ -245,8 +245,8 @@ def collector_agent_registration_fixture(app_name=None, default_settings={},
             wrap_function_wrapper('newrelic.core.data_collector',
                     'send_request', fake_collector_wrapper)
 
-        # Attempt to record deployment marker for test. We don't
-        # care if it fails.
+        # Attempt to record deployment marker for test. It's ok
+        # if the deployment marker does not record successfully.
 
         api_host = settings.host
 
@@ -1120,7 +1120,7 @@ def validate_tt_collector_json(required_params={},
 
             # let's just test the first child
             trace_segment = children[0]
-            assert isinstance(trace_segment[0], float)  # entry timestmp
+            assert isinstance(trace_segment[0], float)  # entry timestamp
             assert isinstance(trace_segment[1], float)  # exit timestamp
             assert isinstance(trace_segment[2], six.string_types)  # scope
             assert isinstance(trace_segment[3], dict)  # request params
@@ -2469,11 +2469,10 @@ def override_application_settings(overrides):
     @function_wrapper
     def _override_application_settings(wrapped, instance, args, kwargs):
         try:
-            # This is a bit horrible as the one settings object, has
-            # references from a number of different places. We have to
-            # create a copy, overlay the temporary settings and then
-            # when done clear the top level settings object and rebuild
-            # it when done.
+            # The settings object has references from a number of
+            # different places. We have to create a copy, overlay
+            # the temporary settings and then when done clear the
+            # top level settings object and rebuild it when done.
 
             original_settings = application_settings()
             backup = copy.deepcopy(original_settings.__dict__)
@@ -2498,10 +2497,10 @@ def override_generic_settings(settings_object, overrides):
     @function_wrapper
     def _override_generic_settings(wrapped, instance, args, kwargs):
         try:
-            # This is a bit horrible as in some cases a settings object may
-            # have references from a number of different places. We have
-            # to create a copy, overlay the temporary settings and then
-            # when done clear the top level settings object and rebuild
+            # In some cases, a settings object may have references
+            # from a number of different places. We have to create
+            # a copy, overlay the temporary settings and then when
+            # done, clear the top level settings object and rebuild
             # it when done.
 
             original = settings_object

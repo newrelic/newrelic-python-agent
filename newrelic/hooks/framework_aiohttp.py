@@ -11,8 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-import functools
 import itertools
 import asyncio
 import inspect
@@ -266,7 +264,7 @@ def _nr_aiohttp_request_wrapper_(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     method, url = _bind_request(*args, **kwargs)
-    trace = ExternalTrace('aiohttp', url, method)
+    trace = ExternalTrace('aiohttp', str(url), method)
 
     @asyncio.coroutine
     def _coro():

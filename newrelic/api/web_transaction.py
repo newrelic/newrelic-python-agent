@@ -145,6 +145,12 @@ class WebTransaction(Transaction):
 
         super(WebTransaction, self).__init__(application, enabled)
 
+        # Flags for tracking whether RUM header and footer have been
+        # generated.
+
+        self.rum_header_generated = False
+        self.rum_footer_generated = False
+
         if not self.enabled:
             return
 
@@ -196,12 +202,6 @@ class WebTransaction(Transaction):
             self.set_transaction_name(name, group, priority=1)
         elif request_path is not None:
             self.set_transaction_name(request_path, 'Uri', priority=1)
-
-        # Flags for tracking whether RUM header and footer have been
-        # generated.
-
-        self.rum_header_generated = False
-        self.rum_footer_generated = False
 
     def _process_queue_time(self):
         for queue_time_header in self.QUEUE_TIME_HEADERS:
@@ -307,8 +307,7 @@ class WebTransaction(Transaction):
 
         return self._generate_response_headers(read_length)
 
-    @property
-    def agent_attributes(self):
+    def _update_agent_attributes(self):
         if 'accept' in self._request_headers:
             self._add_agent_attribute('request.headers.accept',
                     self._request_headers['accept'])
@@ -347,39 +346,7 @@ class WebTransaction(Transaction):
             self._add_agent_attribute('response.status',
                     str(self._response_code))
 
-        return super(WebTransaction, self).agent_attributes
-
-    @property
-    def request_parameters_attributes(self):
-        # Request parameters are a special case of agent attributes, so they
-        # must be added on to agent_attributes separately
-        #
-        # Filter request parameters through the AttributeFilter, but set the
-        # destinations to NONE.
-        #
-        # That means by default, request parameters won't get included in any
-        # destination. But, it will allow user added include/exclude attribute
-        # filtering rules to be applied to the request parameters.
-
-        attributes_request = []
-
-        if self._request_params:
-
-            r_attrs = {}
-
-            for k, v in self._request_params.items():
-                new_key = 'request.parameters.%s' % k
-                new_val = ",".join(v)
-
-                final_key, final_val = process_user_attribute(new_key, new_val)
-
-                if final_key:
-                    r_attrs[final_key] = final_val
-
-            attributes_request = create_attributes(r_attrs, DST_NONE,
-                    self._settings.attribute_filter)
-
-        return attributes_request
+        return super(WebTransaction, self)._update_agent_attributes()
 
     def browser_timing_header(self):
         """Returns the JavaScript header to be included in any HTML
@@ -517,8 +484,11 @@ class WebTransaction(Transaction):
         if user_attributes:
             attributes['u'] = user_attributes
 
+        request_parameters = self.request_parameters
+        request_parameter_attributes = self.filter_request_parameters(
+                request_parameters)
         agent_attributes = {}
-        for attr in self.request_parameters_attributes:
+        for attr in request_parameter_attributes:
             if attr.destinations & DST_BROWSER_MONITORING:
                 agent_attributes[attr.name] = attr.value
 
@@ -801,12 +771,6 @@ class WSGIWebTransaction(WebTransaction):
             except Exception:
                 pass
 
-        # Flags for tracking whether RUM header and footer have been
-        # generated.
-
-        self.rum_header_generated = False
-        self.rum_footer_generated = False
-
     def __exit__(self, exc, value, tb):
         self.record_custom_metric('Python/WSGI/Input/Bytes',
                             self._bytes_read)
@@ -830,29 +794,7 @@ class WSGIWebTransaction(WebTransaction):
 
         return super(WSGIWebTransaction, self).__exit__(exc, value, tb)
 
-    @property
-    def agent_attributes(self):
-        # LEGACY: capture_params = True
-        #
-        #    Filter request parameters as a normal agent attribute.
-        #
-        #    If the user does not add any additional attribute filtering
-        #    rules, this will result in the same outcome as the old
-        #    capture_params = True behavior. They will be added to transaction
-        #    traces and error traces.
-        if self.capture_params is True:
-            for k, v in self._request_params.items():
-                new_key = 'request.parameters.%s' % k
-                new_val = ",".join(v)
-
-                final_key, final_val = process_user_attribute(new_key,
-                        new_val)
-
-                if final_key:
-                    self._add_agent_attribute(final_key, final_val)
-
-            self._request_params.clear()
-
+    def _update_agent_attributes(self):
         # Add WSGI agent attributes
         if self.read_duration != 0:
             self._add_agent_attribute('wsgi.input.seconds',
@@ -883,7 +825,7 @@ class WSGIWebTransaction(WebTransaction):
             self._add_agent_attribute('wsgi.output.calls.yield',
                     self._calls_yield)
 
-        return super(WSGIWebTransaction, self).agent_attributes
+        return super(WSGIWebTransaction, self)._update_agent_attributes()
 
     def process_response(self, status, response_headers, *args):
         """Processes response status and headers, extracting any
@@ -912,12 +854,6 @@ def WebTransactionWrapper(wrapped, application=None, name=None, group=None,
         request_path=None, query_string=None, headers=None):
 
     def wrapper(wrapped, instance, args, kwargs):
-
-        # Don't start a transaction if there's already a transaction in
-        # progress
-        transaction = current_transaction(active_only=False)
-        if transaction:
-            return wrapped(*args, **kwargs)
 
         if type(application) != Application:
             _application = application_instance(application)
@@ -998,14 +934,28 @@ def WebTransactionWrapper(wrapped, application=None, name=None, group=None,
         else:
             _headers = headers
 
+
+        proxy = async_proxy(wrapped)
+
+        def create_transaction(transaction):
+            if transaction:
+                return None
+            return WebTransaction( _application, _name, _group,
+                    _scheme, _host, _port, _request_method,
+                    _request_path, _query_string, _headers)
+
+        if proxy:
+            context_manager = TransactionContext(create_transaction)
+            return proxy(wrapped(*args, **kwargs), context_manager)
+
         transaction = WebTransaction(
                 _application, _name, _group, _scheme, _host, _port,
                 _request_method, _request_path, _query_string, _headers)
 
-        proxy = async_proxy(wrapped)
-        if proxy:
-            context_manager = TransactionContext(transaction)
-            return proxy(wrapped(*args, **kwargs), context_manager)
+        transaction = create_transaction(current_transaction(active_only=False))
+
+        if not transaction:
+            return wrapped(*args, **kwargs)
 
         with transaction:
             return wrapped(*args, **kwargs)

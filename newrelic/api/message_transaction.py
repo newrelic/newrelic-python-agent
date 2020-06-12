@@ -16,7 +16,6 @@ import functools
 import sys
 
 from newrelic.api.application import Application, application_instance
-from newrelic.core.attribute import create_agent_attributes
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.transaction import current_transaction
@@ -37,22 +36,17 @@ class MessageTransaction(BackgroundTask):
         super(MessageTransaction, self).__init__(application, name,
                 group=group)
 
-        cat_id, cat_transaction = None, None
-
         self.headers = headers
 
-        if self.headers:
-            cat_id = self.headers.pop(
-                MessageTrace.cat_id_key, None)
-            cat_transaction = self.headers.pop(
-                MessageTrace.cat_transaction_key, None)
-
-        if self.settings is not None:
+        if headers is not None and self.settings is not None:
             if self.settings.distributed_tracing.enabled:
                 self.accept_distributed_trace_headers(
-                        self.headers, transport_type='AMQP')
+                        headers, transport_type='AMQP')
             elif self.settings.cross_application_tracer.enabled:
-                self._process_incoming_cat_headers(cat_id, cat_transaction)
+                self._process_incoming_cat_headers(
+                    headers.pop(MessageTrace.cat_id_key, None),
+                    headers.pop(MessageTrace.cat_transaction_key, None)
+                )
 
         self.routing_key = routing_key
         self.exchange_type = exchange_type
@@ -66,9 +60,8 @@ class MessageTransaction(BackgroundTask):
         name = 'Named/%s' % destination_name
         return name, group
 
-    @property
-    def agent_attributes(self):
-        ms_attrs = {}
+    def _update_agent_attributes(self):
+        ms_attrs = self._agent_attributes
 
         if self.exchange_type is not None:
             ms_attrs['message.exchangeType'] = self.exchange_type
@@ -86,13 +79,7 @@ class MessageTransaction(BackgroundTask):
         if self.routing_key is not None:
             ms_attrs['message.routingKey'] = self.routing_key
 
-        messagebroker_attributes = create_agent_attributes(ms_attrs,
-                self.attribute_filter)
-
-        attributes = super(MessageTransaction, self).agent_attributes
-        attributes.extend(messagebroker_attributes)
-
-        return attributes
+        super(MessageTransaction, self)._update_agent_attributes()
 
 
 def MessageTransactionWrapper(wrapped, library, destination_type,
@@ -173,53 +160,51 @@ def MessageTransactionWrapper(wrapped, library, destination_type,
         else:
             _correlation_id = correlation_id
 
-        # Check to see if any transaction is present, even an inactive
-        # one which has been marked to be ignored or which has been
-        # stopped already.
+        def create_transaction(transaction):
+            if transaction:
+                # If there is any active transaction we will return without
+                # applying a new WSGI application wrapper context. In the
+                # case of a transaction which is being ignored or which has
+                # been stopped, we do that without doing anything further.
 
-        transaction = current_transaction(active_only=False)
+                if transaction.ignore_transaction or transaction.stopped:
+                    return None
 
-        if transaction:
-            # If there is any active transaction we will return without
-            # applying a new WSGI application wrapper context. In the
-            # case of a transaction which is being ignored or which has
-            # been stopped, we do that without doing anything further.
+                if not transaction.background_task:
+                    transaction.background_task = True
+                    transaction.set_transaction_name(
+                            *MessageTransaction.get_transaction_name(
+                                _library, _destination_type,
+                                _destination_name))
 
-            if transaction.ignore_transaction or transaction.stopped:
-                return wrapped(*args, **kwargs)
+                return None
 
-            if not transaction.background_task:
-                transaction.background_task = True
-                transaction.set_transaction_name(
-                        *MessageTransaction.get_transaction_name(
-                            _library, _destination_type,
-                            _destination_name))
+            if type(application) != Application:
+                _application = application_instance(application)
+            else:
+                _application = application
 
-            return wrapped(*args, **kwargs)
-
-        # Otherwise treat it as top level transaction.
-
-        if type(application) != Application:
-            _application = application_instance(application)
-        else:
-            _application = application
-
-        manager = MessageTransaction(
-                library=_library,
-                destination_type=_destination_type,
-                destination_name=_destination_name,
-                application=_application,
-                routing_key=_routing_key,
-                exchange_type=_exchange_type,
-                headers=_headers,
-                queue_name=_queue_name,
-                reply_to=_reply_to,
-                correlation_id=_correlation_id)
+            return MessageTransaction(
+                    library=_library,
+                    destination_type=_destination_type,
+                    destination_name=_destination_name,
+                    application=_application,
+                    routing_key=_routing_key,
+                    exchange_type=_exchange_type,
+                    headers=_headers,
+                    queue_name=_queue_name,
+                    reply_to=_reply_to,
+                    correlation_id=_correlation_id)
 
         proxy = async_proxy(wrapped)
         if proxy:
-            context_manager = TransactionContext(manager)
+            context_manager = TransactionContext(create_transaction)
             return proxy(wrapped(*args, **kwargs), context_manager)
+
+        manager = create_transaction(current_transaction(active_only=False))
+
+        if not manager:
+            return wrapped(*args, **kwargs)
 
         success = True
 

@@ -434,6 +434,8 @@ def _process_configuration(section):
                      'getint', None)
     _process_setting(section, 'distributed_tracing.enabled',
                      'getboolean', None)
+    _process_setting(section, 'distributed_tracing.exclude_newrelic_header',
+                     'getboolean', None)
     _process_setting(section, 'span_events.enabled',
                      'getboolean', None)
     _process_setting(section, 'span_events.max_samples_stored',
@@ -2023,6 +2025,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('asyncio.base_events',
             'newrelic.hooks.coroutines_asyncio',
             'instrument_asyncio_base_events')
+    _process_module_definition('asyncio.events',
+            'newrelic.hooks.coroutines_asyncio',
+            'instrument_asyncio_events')
     _process_module_definition('django.core.handlers.base',
             'newrelic.hooks.framework_django',
             'instrument_django_core_handlers_base')
@@ -2086,6 +2091,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('falcon.api',
             'newrelic.hooks.framework_falcon',
             'instrument_falcon_api')
+    _process_module_definition('falcon.app',
+            'newrelic.hooks.framework_falcon',
+            'instrument_falcon_app')
     _process_module_definition('falcon.routing.util',
             'newrelic.hooks.framework_falcon',
             'instrument_falcon_routing_util')

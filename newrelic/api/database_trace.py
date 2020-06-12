@@ -62,10 +62,7 @@ class DatabaseTrace(TimeTrace):
             parent = kwargs['parent']
         super(DatabaseTrace, self).__init__(parent)
 
-        if self.transaction:
-            self.sql = self.transaction._intern_string(sql)
-        else:
-            self.sql = sql
+        self.sql = sql
 
         self.dbapi2_module = dbapi2_module
 
@@ -76,6 +73,12 @@ class DatabaseTrace(TimeTrace):
         self.host = host
         self.port_path_or_id = port_path_or_id
         self.database_name = database_name
+
+    def __enter__(self):
+        result = super(DatabaseTrace, self).__enter__()
+        if result and self.transaction:
+            self.sql = self.transaction._intern_string(self.sql)
+        return result
 
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, dict(
@@ -222,10 +225,13 @@ class DatabaseTrace(TimeTrace):
 def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None):
 
     def _nr_database_trace_wrapper_(wrapped, instance, args, kwargs):
-        parent = current_trace()
-
-        if parent is None:
-            return wrapped(*args, **kwargs)
+        wrapper = async_wrapper(wrapped)
+        if not wrapper:
+            parent = current_trace()
+            if not parent:
+                return wrapped(*args, **kwargs)
+        else:
+            parent = None
 
         if callable(sql):
             if instance is not None:
@@ -237,7 +243,6 @@ def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None):
 
         trace = DatabaseTrace(_sql, dbapi2_module, parent=parent)
 
-        wrapper = async_wrapper(wrapped)
         if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)
 

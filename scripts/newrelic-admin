@@ -1,0 +1,5 @@
+#!/usr/bin/env python
+
+import newrelic.admin
+
+newrelic.admin.main()

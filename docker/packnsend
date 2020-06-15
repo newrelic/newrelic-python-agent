@@ -701,6 +701,17 @@ case "$COMMAND" in
         exit `expr $STATUS`
         ;;
 
+    rungit)
+        create_work_directory
+        export_git_repository
+        create_remote_launchers
+        create_docker_file
+        create_docker_test_image
+        launch_remote_with_git "$@"
+        cleanup_containers
+        exit `expr $STATUS`
+        ;;
+
     asvrun)
         create_work_directory
         export_git_repository

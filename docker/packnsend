@@ -111,7 +111,7 @@ ADD . /data
 RUN chown -R guest.users /data && \
     chmod 0755 /data
 USER guest
-ENV HOME /home/guest
+ENV HOME=/home/guest SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0
 VOLUME /data
 WORKDIR /data/$WORK_DIRECTORY
 EOF

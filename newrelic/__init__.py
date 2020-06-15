@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-version = '5.15.0'
+import os.path
+THIS_DIR = os.path.dirname(__file__)
 
 try:
-    from newrelic.build import build_number
-except ImportError:
-    build_number = 0
+    with open(os.path.join(THIS_DIR, 'version.txt'), 'r') as f:
+        version = f.read()
+except:
+    version = '0.0.0.0'
 
-version_info = list(map(int, version.split('.'))) + [build_number]
-version = '.'.join(map(str, version_info))
+version_info = list(map(int, version.split('.')))

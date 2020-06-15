@@ -218,7 +218,7 @@ use(extensions) {
             }
 
             steps {
-                shell('./build.sh')
+                shell('./docker/packnsend rungit ./build.sh')
             }
         }
     }

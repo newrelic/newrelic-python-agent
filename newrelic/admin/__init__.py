@@ -20,7 +20,6 @@ import logging
 _builtin_plugins = [
     'debug_console',
     'generate_config',
-    'license_info',
     'license_key',
     'local_config',
     'network_config',

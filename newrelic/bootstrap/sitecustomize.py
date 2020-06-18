@@ -10,7 +10,8 @@ startup_debug = os.environ.get('NEW_RELIC_STARTUP_DEBUG',
         'off').lower() in ('on', 'true', '1')
 
 
-def log_message(text, *args, critical=False):
+def log_message(text, *args, **kwargs):
+    critical = kwargs.get('critical', False)
     if startup_debug or critical:
         text = text % args
         timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())

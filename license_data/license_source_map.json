@@ -35,25 +35,25 @@
             "New Relic"
         ]
     },
+    "LICENSE": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "README.rst": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
         ]
     },
+    "THIRD_PARTY_NOTICES.md": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "deploy/Dockerfile": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/LICENSE": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/THIRD_PARTY_NOTICES.md": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -2292,6 +2292,12 @@
         ]
     },
     "services.sh": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "setup.cfg": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

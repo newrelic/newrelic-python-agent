@@ -90,7 +90,7 @@ class Agent(object):
 
     The global configuration settings would normally be setup from the
     agent configuration file or could also be set explicitly. Direct access
-    to global configuration setings prior to the agent instance being
+    to global configuration settings prior to the agent instance being
     created needs to be via the 'newrelic.core.config' module.
 
     After the network connection details have been set, and the agent
@@ -433,7 +433,7 @@ class Agent(object):
     def application(self, app_name):
         """Returns the internal application object for the named
         application or None if not created. When an application object
-        is returned, it does not relect whether activation has been
+        is returned, it does not reflect whether activation has been
         successful or not. To determine if application is currently in an
         activated state use application_settings() method to see if a valid
         application settings objects is available or query the application

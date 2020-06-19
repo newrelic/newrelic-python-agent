@@ -158,7 +158,7 @@ def xor_cipher_decrypt(text, key):
 def xor_cipher_encrypt_base64(text, key):
     """Encrypts the UTF-8 encoded representation of the text using an
     XOR cipher using the key. The key can be a byte array generated
-    using xor_cipher_genkey() or an appropiate string of the correct
+    using xor_cipher_genkey() or an appropriate string of the correct
     type and composition, in which case if will be converted to a byte
     array using xor_cipher_genkey(). The key cannot be an empty byte
     array or string. Where the key is shorter than the text to be

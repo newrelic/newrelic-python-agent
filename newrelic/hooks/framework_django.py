@@ -237,7 +237,7 @@ def wrap_leading_middleware(middleware):
                 finally:
                     # We want to name the transaction after this
                     # middleware but only if the transaction wasn't
-                    # named from within the middleware itself explicity.
+                    # named from within the middleware itself explicitly.
 
                     after = (transaction.name, transaction.group)
                     if before == after:
@@ -303,7 +303,7 @@ def wrap_view_middleware(middleware):
                 finally:
                     # We want to name the transaction after this
                     # middleware but only if the transaction wasn't
-                    # named from within the middleware itself explicity.
+                    # named from within the middleware itself explicitly.
 
                     after = (transaction.name, transaction.group)
                     if before == after:
@@ -521,7 +521,7 @@ def instrument_django_core_handlers_wsgi(module):
     # The handle_uncaught_exception() function produces a 500
     # error response page and otherwise suppresses the
     # exception, so last chance to do this as exception will not
-    # propogate up to the WSGI application.
+    # propagate up to the WSGI application.
 
     if hasattr(module.WSGIHandler, 'handle_uncaught_exception'):
         module.WSGIHandler.handle_uncaught_exception = (
@@ -814,11 +814,6 @@ def instrument_django_core_servers_basehttp(module):
     def wrap_wsgi_application_entry_point(server, application, **kwargs):
         return ((server, WSGIApplicationWrapper(application,
             framework='Django'),), kwargs)
-
-    # XXX Because of risk of people still trying to use the
-    # inbuilt Django development server and since the code is
-    # not going to be changed, could just patch it to fix
-    # problem and the instrumentation we need.
 
     if (not hasattr(module, 'simple_server') and
             hasattr(module.ServerHandler, 'run')):

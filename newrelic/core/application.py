@@ -540,7 +540,7 @@ class Application(object):
         except Exception:
             # If an exception occurs after agent has been flagged to be
             # shutdown then we ignore the error. This is because all
-            # sorts of wierd errors could occur when main thread start
+            # sorts of weird errors could occur when main thread start
             # destroying objects and this background thread to register
             # the application is still running.
 
@@ -835,7 +835,7 @@ class Application(object):
                     # We accumulate stats into a workarea and only then merge it
                     # into the main one under a thread lock. Do this to ensure
                     # that the process of generating the metrics into the stats
-                    # don't unecessarily lock out another thread.
+                    # don't unnecessarily lock out another thread.
 
                     stats = self._stats_engine.create_workarea()
                     stats.record_transaction(data)
@@ -1858,7 +1858,7 @@ class Application(object):
                     self.stop_xray(x_ray_id=xs.xray_id,
                             key_transaction_name=xs.key_txn)
 
-            # For each agent command received, call the appropiate agent
+            # For each agent command received, call the appropriate agent
             # command handler. Reply to the data collector with the
             # acknowledgement of the agent command.
 

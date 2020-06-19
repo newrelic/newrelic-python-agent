@@ -89,7 +89,7 @@ def instance_info(args, kwargs):
                 port_path_or_id or
                 os.getenv('MYSQL_TCP_PORT', '3306'))
 
-    # There is no default database if ommitted from the connect params
+    # There is no default database if omitted from the connect params
     # In this case, we should report unknown
     db = db or 'unknown'
 

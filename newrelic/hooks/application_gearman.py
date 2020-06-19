@@ -95,7 +95,7 @@ def wrapper_GearmanConnectionManager_handle_function(wrapped, instance,
     # ended up communicating with. This could get overridden multiple
     # times in the context of a single poll_connections_until_stopped()
     # call and so will be set to the last server data was processed for.
-    # This thus may not necessarily be correct if commnicating with
+    # This thus may not necessarily be correct if communicating with
     # multiple servers and data from more than one was being handled for
     # some reason. Can't really do much better than this though but will
     # be fine for the expected typical use case of a single server.

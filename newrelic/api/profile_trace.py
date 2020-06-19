@@ -59,13 +59,12 @@ class ProfileTrace(object):
         func_filename = co.co_filename
 
         def _callable_name():
-            # This is pretty ugly and inefficient, but a stack
-            # frame doesn't provide any information about the
+            # A stack frame doesn't provide any information about the
             # original callable object. We thus need to try and
             # deduce what it is by searching through the stack
             # frame globals. This will still not work in many
             # cases, including lambdas, generator expressions,
-            # and decoratored attributes such as properties of
+            # and decorated attributes such as properties of
             # classes.
 
             try:

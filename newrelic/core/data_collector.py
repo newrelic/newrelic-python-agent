@@ -183,8 +183,7 @@ def _requests_proxy_scheme_workaround(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 # This is a monkey patch for requests contained within our bundled requests.
-# Have no idea why they made the change, but the change they made in the
-# commit:
+# A change made in this commit:
 #
 #   https://github.com/kennethreitz/requests/commit/8b7fcfb49a38cd6ee1cbb4a52e0a4af57969abb3
 #

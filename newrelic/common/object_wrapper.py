@@ -189,7 +189,7 @@ def resolve_path(module, name):
         # to work. For the case of a class we therefore access
         # the __dict__ directly. To cope though with the wrong
         # class being given to us, or a method being moved into
-        # a base class, we need to walk the class heirarchy to
+        # a base class, we need to walk the class hierarchy to
         # work out exactly which __dict__ the method was defined
         # in, as accessing it from __dict__ will fail if it was
         # not actually on the class given. Fallback to using

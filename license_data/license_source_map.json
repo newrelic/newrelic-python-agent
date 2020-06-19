@@ -89,12 +89,6 @@
             "New Relic"
         ]
     },
-    "newrelic/admin/license_info.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/admin/license_key.py": {
         "hash": "n/a",
         "libraries": [

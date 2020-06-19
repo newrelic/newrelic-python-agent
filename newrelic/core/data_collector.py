@@ -1370,6 +1370,7 @@ _developer_mode_responses = {
         u'error_beacon': u'fake-jserror.newrelic.com',
         u'apdex_t': 0.5,
         u'encoding_key': u'1111111111111111111111111111111111111111',
+        u'entity_guid': u'DEVELOPERMODEENTITYGUID',
         u'agent_run_id': u'1234567',
         u'product_level': 50,
         u'trusted_account_ids': [12345],

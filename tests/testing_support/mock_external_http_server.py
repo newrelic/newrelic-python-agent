@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import socket
 import threading
 
 from newrelic.packages.six.moves import BaseHTTPServer
@@ -41,24 +42,23 @@ class MockExternalHTTPServer(threading.Thread):
     # ../framework_tornado_r3/test_async_application.py
     RESPONSE = b'external response'
 
-    def __init__(self, handler=simple_get, port=8989, *args, **kwargs):
+    def __init__(self, handler=simple_get, port=None, *args, **kwargs):
         super(MockExternalHTTPServer, self).__init__(*args, **kwargs)
-        # We hardcode the port number to 8989. This allows us to easily use the
-        # port number in the expected metrics that we validate without
-        # reworking the fixtures. If we are worried 8989 may be in use and we
-        # want to have the OS hand us an available port we could do:
-        #
-        # self.httpd = BaseHTTPServer.HTTPServer(('localhost', 0),
-        #         MockExternalHTTPServer.ExternalHandler)
-        # self.port = self.httpd.socket.getsockname()[1]
-
-        self.port = port
+        self.port = port or self.get_open_port()
         handler = type('ResponseHandler',
                 (BaseHTTPServer.BaseHTTPRequestHandler, object,),
                 {'do_GET': handler})
-        self.httpd = BaseHTTPServer.HTTPServer(('localhost', port),
+        self.httpd = BaseHTTPServer.HTTPServer(('localhost', self.port),
                 handler)
         self.daemon = True
+
+    @staticmethod
+    def get_open_port():
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.bind(("", 0))
+        port = s.getsockname()[1]
+        s.close()
+        return port
 
     def __enter__(self):
         self.start()
@@ -93,6 +93,6 @@ class MockExternalHTTPHResponseHeadersServer(MockExternalHTTPServer):
 
     """
 
-    def __init__(self, handler=incoming_headers_to_body_text, port=8989):
+    def __init__(self, handler=incoming_headers_to_body_text, port=None):
         super(MockExternalHTTPHResponseHeadersServer, self).__init__(
                 handler=handler, port=port)

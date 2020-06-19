@@ -48,7 +48,8 @@ jobs:
       run: |
         py_version=$(echo ${{ matrix.python-version }} | tr -d "." | sed 's/pypy2/pypy/')
         toxenvs=$(tox -c tests/${{ matrix.test-directory }}/tox.ini -l | grep ${py_version}- | xargs echo | tr " " ",")
-        [ ! -z  $toxenvs ] && tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini -e $toxenvs
+        [ -z $toxenvs ] && exit 0
+        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini -e $toxenvs
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0

@@ -10,41 +10,52 @@ def feedparser():
 
 
 @pytest.mark.parametrize("url", (
-    "http://localhost:8989",
-    "feed:http://localhost:8989",
-    "feed://localhost:8989",
+    "http://localhost",
+    "feed:http://localhost",
+    "feed://localhost",
 ))
-@validate_transaction_metrics(
-    "test_feedparser_external",
-    background_task=True,
-    scoped_metrics=(("External/localhost:8989/feedparser/GET", 1),),
-)
-@background_task(name="test_feedparser_external")
 def test_feedparser_external(feedparser, server, url):
-    feed = feedparser.parse(url)
-    assert feed["feed"]["link"] == u"https://pypi.org/"
+    url = url + ':' + str(server.port)
+
+    @validate_transaction_metrics(
+        "test_feedparser_external",
+        background_task=True,
+        scoped_metrics=(("External/localhost:%d/feedparser/GET" % server.port, 1),),
+    )
+    @background_task(name="test_feedparser_external")
+    def _test():
+        feed = feedparser.parse(url)
+        assert feed["feed"]["link"] == u"https://pypi.org/"
+
+    _test()
 
 
 @pytest.mark.parametrize("stream", (True, False))
-@validate_transaction_metrics(
-    "test_feedparser_file",
-    background_task=True,
-    scoped_metrics=(("External/localhost:8989/feedparser/GET", None),),
-)
-@background_task(name="test_feedparser_file")
-def test_feedparser_file(feedparser, stream):
-    if stream:
-        with open("packages.xml", "rb") as f:
-            feed = feedparser.parse(f)
-    else:
-        feed = feedparser.parse("packages.xml")
-    assert feed["feed"]["link"] == u"https://pypi.org/"
+def test_feedparser_file(feedparser, stream, server):
+
+    @validate_transaction_metrics(
+        "test_feedparser_file",
+        background_task=True,
+        scoped_metrics=(("External/localhost:%d/feedparser/GET" % server.port, None),),
+    )
+    @background_task(name="test_feedparser_file")
+    def _test():
+        if stream:
+            with open("packages.xml", "rb") as f:
+                feed = feedparser.parse(f)
+        else:
+            feed = feedparser.parse("packages.xml")
+        assert feed["feed"]["link"] == u"https://pypi.org/"
+
+    _test()
 
 
 @pytest.mark.parametrize("url", (
-    "http://localhost:8989",
+    "http://localhost",
     "packages.xml",
 ))
 def test_feedparser_no_transaction(feedparser, server, url):
+    if url.startswith('http://'):
+        url = url + ':' + str(server.port)
     feed = feedparser.parse(url)
     assert feed["feed"]["link"] == u"https://pypi.org/"

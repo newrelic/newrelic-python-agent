@@ -3,6 +3,9 @@ import pytest
 from testing_support.fixtures import (code_coverage_fixture,
         collector_agent_registration_fixture, collector_available_fixture)
 
+from testing_support.mock_external_http_server import (
+        MockExternalHTTPHResponseHeadersServer)
+
 _coverage_source = [
     'newrelic.api.external_trace',
     'newrelic.hooks.external_urllib3',
@@ -29,3 +32,8 @@ def session_initialization(code_coverage, collector_agent_registration):
 @pytest.fixture(scope='function')
 def requires_data_collector(collector_available_fixture):
     pass
+
+@pytest.fixture(scope='session')
+def server():
+    with MockExternalHTTPHResponseHeadersServer() as _server:
+        yield _server

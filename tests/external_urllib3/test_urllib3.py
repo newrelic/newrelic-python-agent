@@ -11,7 +11,6 @@ from testing_support.fixtures import (validate_transaction_metrics,
 from testing_support.external_fixtures import (cache_outgoing_headers,
     validate_cross_process_headers, insert_incoming_headers,
     validate_external_node_params)
-from testing_support.mock_external_http_server import MockExternalHTTPServer
 from testing_support.util import version2tuple
 
 from newrelic.api.background_task import background_task
@@ -99,27 +98,28 @@ def test_https_request_connection_pool_request():
     pool.request('GET', '/index.html')
 
 
-_test_port_included_scoped_metrics = [
-        ('External/localhost:8989/urllib3/', 1)]
+def test_port_included(server):
+    scoped = [
+            ('External/localhost:%d/urllib3/' % server.port, 1)]
 
-_test_port_included_rollup_metrics = [
-        ('External/all', 1),
-        ('External/allOther', 1),
-        ('External/localhost:8989/all', 1),
-        ('External/localhost:8989/urllib3/', 1)]
+    rollup = [
+            ('External/all', 1),
+            ('External/allOther', 1),
+            ('External/localhost:%d/all' % server.port, 1),
+            ('External/localhost:%d/urllib3/' % server.port, 1)]
 
-
-@validate_transaction_errors(errors=[])
-@validate_transaction_metrics(
-        'test_urllib3:test_port_included',
-        scoped_metrics=_test_port_included_scoped_metrics,
-        rollup_metrics=_test_port_included_rollup_metrics,
-        background_task=True)
-@background_task()
-def test_port_included():
-    with MockExternalHTTPServer():
-        conn = urllib3.connection_from_url('localhost:8989')
+    @validate_transaction_errors(errors=[])
+    @validate_transaction_metrics(
+            'test_urllib3:test_port_included',
+            scoped_metrics=scoped,
+            rollup_metrics=rollup,
+            background_task=True)
+    @background_task(name='test_urllib3:test_port_included')
+    def _test():
+        conn = urllib3.connection_from_url('localhost:%d' % server.port)
         conn.request('GET', '/')
+
+    _test()
 
 
 # Starting in urllib3 1.8, urllib3 wrote their own version of the
@@ -127,17 +127,28 @@ def test_port_included():
 # was used. We test httplib in a different test directory so we skip this test.
 @pytest.mark.skipif(version2tuple(urllib3.__version__) < (1, 8),
         reason='urllib3.connection.HTTPConnection added in 1.8')
-@validate_transaction_errors(errors=[])
-@validate_transaction_metrics(
-        'test_urllib3:test_HTTPConnection_port_included',
-        scoped_metrics=_test_port_included_scoped_metrics,
-        rollup_metrics=_test_port_included_rollup_metrics,
-        background_task=True)
-@background_task()
-def test_HTTPConnection_port_included():
-    with MockExternalHTTPServer():
-        conn = urllib3.connection.HTTPConnection('localhost:8989')
+def test_HTTPConnection_port_included(server):
+    scoped = [
+            ('External/localhost:%d/urllib3/' % server.port, 1)]
+
+    rollup = [
+            ('External/all', 1),
+            ('External/allOther', 1),
+            ('External/localhost:%d/all' % server.port, 1),
+            ('External/localhost:%d/urllib3/' % server.port, 1)]
+
+    @validate_transaction_errors(errors=[])
+    @validate_transaction_metrics(
+            'test_urllib3:test_HTTPConnection_port_included',
+            scoped_metrics=scoped,
+            rollup_metrics=rollup,
+            background_task=True)
+    @background_task(name='test_urllib3:test_HTTPConnection_port_included')
+    def _test():
+        conn = urllib3.connection.HTTPConnection('localhost:%d' % server.port)
         conn.request('GET', '/')
+
+    _test()
 
 
 @pytest.mark.parametrize('distributed_tracing,span_events', (

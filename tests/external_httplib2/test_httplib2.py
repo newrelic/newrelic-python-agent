@@ -6,7 +6,6 @@ from testing_support.fixtures import (validate_transaction_metrics,
 from testing_support.external_fixtures import (cache_outgoing_headers,
     validate_cross_process_headers, insert_incoming_headers,
     validate_external_node_params)
-from testing_support.mock_external_http_server import MockExternalHTTPServer
 
 from newrelic.api.background_task import background_task
 
@@ -59,29 +58,30 @@ def test_httplib2_https_connection_request():
     connection.close()
 
 
-_test_httplib2_http_request_scoped_metrics = [
-        ('External/localhost:8989/httplib2/', 1)]
+def test_httplib2_http_connection_with_port(server):
+    scoped = [
+            ('External/localhost:%d/httplib2/' % server.port, 1)]
 
-_test_httplib2_http_request_rollup_metrics = [
-        ('External/all', 1),
-        ('External/allOther', 1),
-        ('External/localhost:8989/all', 1),
-        ('External/localhost:8989/httplib2/', 1)]
+    rollup = [
+            ('External/all', 1),
+            ('External/allOther', 1),
+            ('External/localhost:%d/all' % server.port, 1),
+            ('External/localhost:%d/httplib2/' % server.port, 1)]
 
-
-@validate_transaction_metrics(
-        'test_httplib2:test_httplib2_http_connection_with_port',
-        scoped_metrics=_test_httplib2_http_request_scoped_metrics,
-        rollup_metrics=_test_httplib2_http_request_rollup_metrics,
-        background_task=True)
-@background_task()
-def test_httplib2_http_connection_with_port():
-    with MockExternalHTTPServer():
-        connection = httplib2.HTTPConnectionWithTimeout('localhost', 8989)
+    @validate_transaction_metrics(
+            'test_httplib2:test_httplib2_http_connection_with_port',
+            scoped_metrics=scoped,
+            rollup_metrics=rollup,
+            background_task=True)
+    @background_task(name='test_httplib2:test_httplib2_http_connection_with_port')
+    def _test():
+        connection = httplib2.HTTPConnectionWithTimeout('localhost', server.port)
         connection.request('GET', '/')
         response = connection.getresponse()
         response.read()
         connection.close()
+
+    _test()
 
 
 _test_httplib2_http_request_scoped_metrics = [

@@ -633,9 +633,13 @@ def wrap_url_resolver_nnn(wrapped, priority=1):
             return wrapped(*args, **kwargs)
 
         with FunctionTrace(name=name):
-            callback, param_dict = wrapped(*args, **kwargs)
-            return (wrap_view_handler(callback, priority=priority),
-                    param_dict)
+            result = wrapped(*args, **kwargs)
+            if callable(result):
+                return wrap_view_handler(result, priority=priority)
+            else:
+                callback, param_dict = result
+                return (wrap_view_handler(callback, priority=priority),
+                        param_dict)
 
     return FunctionWrapper(wrapped, wrapper)
 

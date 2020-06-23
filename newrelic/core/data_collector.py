@@ -30,8 +30,6 @@ from pprint import pprint
 
 import newrelic.packages.six as six
 
-import newrelic.packages.requests as requests
-
 from newrelic.common import certs, system_info
 
 from newrelic import version
@@ -158,57 +156,6 @@ def connection_type(proxies):
 
     return '%s-proxy/%s' % (proxy_scheme, request_scheme)
 
-# This is a monkey patch for urllib3 contained within our bundled requests
-# library. This is to override the urllib3 behaviour for how the proxy
-# is communicated with so as to allow us to restore the old broken
-# behaviour from before requests 2.0.0 so that we can transition
-# customers over without outright breaking their existing configurations.
-
-
-@patch_function_wrapper(
-        'newrelic.packages.requests.packages.urllib3.connectionpool',
-        'HTTPSConnectionPool._prepare_conn')
-def _requests_proxy_scheme_workaround(wrapped, instance, args, kwargs):
-    def _params(connection, *args, **kwargs):
-        return connection
-
-    pool, connection = instance, _params(*args, **kwargs)
-
-    settings = global_settings()
-
-    if pool.proxy and pool.proxy.scheme == 'https':
-        if settings.proxy_scheme in (None, 'https'):
-            return connection
-
-    return wrapped(*args, **kwargs)
-
-# This is a monkey patch for requests contained within our bundled requests.
-# A change made in this commit:
-#
-#   https://github.com/kennethreitz/requests/commit/8b7fcfb49a38cd6ee1cbb4a52e0a4af57969abb3
-#
-# breaks proxying an HTTPS requests over an HTTPS proxy. The original seems to
-# be more correct than the changed version and works in testing. Return the
-# functionality back to how it worked previously.
-
-
-@patch_function_wrapper(
-        'newrelic.packages.requests.adapters',
-        'HTTPAdapter.request_url')
-def _requests_request_url_workaround(wrapped, instance, args, kwargs):
-    from newrelic.packages.requests.adapters import urldefragauth
-
-    def _bind_params(request, proxies):
-        return request, proxies
-
-    request, proxies = _bind_params(*args, **kwargs)
-
-    if 'https' in proxies:
-        return urldefragauth(request.url)
-
-    return wrapped(*args, **kwargs)
-
-
 # This is a monkey patch for urllib3 + python3.6 + gevent/eventlet.
 # Gevent/Eventlet patches the ssl library resulting in a re-binding that causes
 # infinite recursion in a super call. In order to prevent this error, the
@@ -219,9 +166,6 @@ def _requests_request_url_workaround(wrapped, instance, args, kwargs):
 #   https://github.com/shazow/urllib3/pull/1177
 #   https://bugs.python.org/issue29149
 #
-@patch_function_wrapper(
-        'newrelic.packages.requests.packages.urllib3.util.ssl_',
-        'SSLContext')
 def _urllib3_ssl_recursion_workaround(wrapped, instance, args, kwargs):
     try:
         import ssl
@@ -495,7 +439,8 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
         content = r.content
 
-    except requests.RequestException:
+    # FIXME: this should be changed to the urllib3 network exception
+    except ValueError:
         exc_type, message = sys.exc_info()[:2]
 
         internal_metric('Supportability/Python/Collector/Failures', 1)
@@ -1468,6 +1413,10 @@ class DeveloperModeSession(ApplicationSession):
 
         return result
 
+    @property
+    def requests_session(self):
+        return None
+
     def connect_span_stream(self, span_iterator, record_metric):
         if self.configuration.debug.connect_span_stream_in_developer_mode:
             super(DeveloperModeSession, self).connect_span_stream(
@@ -1564,6 +1513,10 @@ def create_session(license_key, app_name, linked_applications,
         environment, settings):
 
     _global_settings = global_settings()
+
+    # FIXME: This patch is temporary while we convert to urllib3 and MUST be
+    # removed
+    ApplicationSession = DeveloperModeSession
 
     if _global_settings.serverless_mode.enabled:
         session = ServerlessModeSession.create_session(license_key, app_name,

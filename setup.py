@@ -100,6 +100,13 @@ packages = [
         "newrelic.hooks",
         "newrelic.network",
         "newrelic/packages",
+        "newrelic/packages/urllib3",
+        "newrelic/packages/urllib3/util",
+        "newrelic/packages/urllib3/contrib",
+        "newrelic/packages/urllib3/contrib/_securetransport",
+        "newrelic/packages/urllib3/packages",
+        "newrelic/packages/urllib3/packages/backports",
+        "newrelic/packages/urllib3/packages/ssl_match_hostname",
         "newrelic/packages/wrapt",
         "newrelic.samplers",
 ]

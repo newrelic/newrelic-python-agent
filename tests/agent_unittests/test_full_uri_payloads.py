@@ -20,6 +20,8 @@ from testing_support.fixtures import (override_generic_settings,
         collector_agent_registration_fixture, initialize_agent)
 from newrelic.core.config import global_settings, global_settings_dump
 from newrelic.core.data_collector import ApplicationSession
+# FIXME: urllib3
+pytest.importorskip('newrelic.packages.requests')
 from newrelic.packages.requests.adapters import HTTPAdapter, urldefragauth
 from newrelic.packages.requests import Session
 

@@ -505,6 +505,7 @@ def test_adaptive_sampling(transaction_node, monkeypatch):
     ('this/is/not/a/path/to/a/file.pem', True),
     ('this/is/not/a/path/to/a/file.pem', False),
 ])
+@pytest.mark.skip(reason="urllib3")
 def test_ca_bundle(collector_agent_registration, ca_bundle_path,
         disable_certificate_validation):
 

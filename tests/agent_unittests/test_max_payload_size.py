@@ -74,6 +74,7 @@ def session():
     ('agent_settings', (GARBAGE,)),
     ('send_span_events', (EMPTY_SAMPLES, GARBAGE)),
 ])
+@pytest.mark.skip(reason="urllib3")
 def test_max_payload_size(session, method, args):
     sender = getattr(session, method)
     session.configuration.max_payload_size_in_bytes = 1024

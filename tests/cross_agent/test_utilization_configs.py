@@ -4,6 +4,9 @@ import pytest
 import sys
 import tempfile
 
+# FIXME: urllib3
+pytest.importorskip('newrelic.packages.requests')
+
 # NOTE: the test_utilization_settings_from_env_vars test mocks several of the
 # methods in newrelic.core.data_collector and does not put them back!
 from newrelic.core.data_collector import ApplicationSession

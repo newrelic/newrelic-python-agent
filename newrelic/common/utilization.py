@@ -18,7 +18,6 @@ import string
 import re
 import threading
 
-from newrelic.packages import requests
 from newrelic.core.internal_metrics import internal_count_metric
 
 try:
@@ -48,6 +47,11 @@ class CommonUtilization(object):
 
     @classmethod
     def _fetch(cls, q):
+        # FIXME: this class will need to be refactored as part of the
+        # conversion to urllib3
+        q.put(None)
+        return
+
         # Create own requests session and disable all environment variables,
         # so that we can bypass any proxy set via env var for this request.
 

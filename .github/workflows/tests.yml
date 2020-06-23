@@ -43,7 +43,7 @@ jobs:
     - name: Install Dependencies
       run: |
         pip install -U pip
-        pip install -U wheel setuptools tox
+        pip install -U wheel setuptools tox virtualenv!=20.0.24
     - name: Test
       run: |
         py_version=$(echo ${{ matrix.python-version }} | tr -d "." | sed 's/pypy2/pypy/')

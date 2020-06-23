@@ -3,10 +3,10 @@ import pytest
 import random
 import socket
 import time
-from newrelic.packages import requests
 from testing_support.fixtures import TerminatingPopen
 
 aiohttp = pytest.importorskip('aiohttp')
+from urllib.request import urlopen
 version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
 
 
@@ -57,9 +57,9 @@ def test_aiohttp_app_factory(nr_enabled):
             else:
                 continue
 
-            resp = requests.get('http://127.0.0.1:%d' % PORT)
-            assert resp.status_code == 200
-            assert resp.text == 'PONG'
+            with urlopen('http://127.0.0.1:%d' % PORT) as resp:
+                assert resp.getcode() == 200
+                assert resp.read() == b'PONG'
 
         # test passed
         break

@@ -3,10 +3,10 @@ import os
 import random
 import socket
 import time
-from newrelic.packages import requests
 from testing_support.fixtures import TerminatingPopen
 
 pytest.importorskip('asyncio')
+from urllib.request import urlopen
 
 
 @pytest.mark.parametrize('nr_enabled', (True, False))
@@ -52,9 +52,9 @@ def test_asgi_app(nr_enabled):
                 time.sleep(0.1)
             else:
                 continue
-            resp = requests.get('http://127.0.0.1:%d' % PORT)
-            assert resp.status_code == 200
-            assert resp.text == 'PONG'
+            with urlopen('http://127.0.0.1:%d' % PORT) as resp:
+                assert resp.getcode() == 200
+                assert resp.read() == b'PONG'
 
         # test passed
         break

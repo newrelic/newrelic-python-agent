@@ -24,6 +24,14 @@
             "name": "time.monotonic",
             "url": "common/_monotonic.c"
         },
+        "urllib3": {
+            "copyright": "Copyright (c) 2008-2019 Andrey Petrov and contributors (see CONTRIBUTORS.txt)",
+            "licenses": [
+                "MIT"
+            ],
+            "name": "urllib3",
+            "url": "https://pypi.org/project/urllib3"
+        },
         "wrapt": {
             "copyright": "Copyright (c) 2013-2017, Graham Dumpleton\nAll rights reserved.",
             "licenses": [

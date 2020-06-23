@@ -24,17 +24,7 @@ from newrelic.config import initialize
 from newrelic.core.config import global_settings
 from newrelic.network.addresses import proxy_details
 
-from newrelic.packages import requests
-
-import newrelic.packages.requests.adapters as adapters
-
-unpatched_request_url = adapters.HTTPAdapter.request_url
-
-# Remove a patch to the request_url forcing the full URL to be sent in the
-# request line. See _requests_request_url_workaround in data_collector.py
-# This is currently unsupported by the API endpoint. The common
-# case is to send only the relative URL.
-adapters.HTTPAdapter.request_url = unpatched_request_url
+# FIXME: urllib3 conversion
 
 
 def api_request_kwargs():

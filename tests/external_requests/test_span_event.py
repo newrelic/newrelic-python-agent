@@ -11,25 +11,25 @@ from newrelic.api.transaction import current_transaction
 
 @pytest.fixture(scope='module', autouse=True)
 def server():
-    with MockExternalHTTPServer():
-        yield
+    with MockExternalHTTPServer() as _server:
+        yield _server
 
 
 @pytest.mark.parametrize('path', ('', '/foo', '/' + 'a' * 256))
-def test_span_events(path):
+def test_span_events(server, path):
     _settings = {
         'distributed_tracing.enabled': True,
         'span_events.enabled': True,
     }
 
-    uri = 'http://localhost:8989'
+    uri = 'http://localhost:%d' % server.port
     if path:
         uri += path
 
     expected_uri = uri[:255]
 
     exact_intrinsics = {
-        'name': 'External/localhost:8989/requests/',
+        'name': 'External/localhost:%d/requests/' % server.port,
         'type': 'Span',
         'sampled': True,
         'priority': 0.5,

@@ -55,8 +55,8 @@ def fetch(url, headers=None, raise_for_status=False, connector=None):
 
 @pytest.fixture(scope='module')
 def mock_header_server():
-    with MockExternalHTTPHResponseHeadersServer():
-        yield
+    with MockExternalHTTPHResponseHeadersServer() as _server:
+        yield _server
 
 
 @pytest.mark.parametrize('cat_enabled', (True, False))
@@ -68,7 +68,8 @@ def test_outbound_cross_process_headers(cat_enabled, distributed_tracing,
     @background_task(name='test_outbound_cross_process_headers')
     @asyncio.coroutine
     def _test():
-        headers = yield from fetch('http://127.0.0.1:8989')
+        headers = yield from fetch(
+                'http://127.0.0.1:%d' % mock_header_server.port)
 
         transaction = current_transaction()
         transaction._test_request_headers = headers
@@ -116,7 +117,8 @@ def test_outbound_cross_process_headers_custom_headers(customer_headers,
 
     loop = asyncio.get_event_loop()
     headers = loop.run_until_complete(
-            background_task()(fetch)('http://127.0.0.1:8989',
+            background_task()(fetch)(
+            'http://127.0.0.1:%d' % mock_header_server.port,
             customer_headers.copy()))
 
     # always honor customer headers
@@ -127,7 +129,8 @@ def test_outbound_cross_process_headers_custom_headers(customer_headers,
 def test_outbound_cross_process_headers_no_txn(mock_header_server):
 
     loop = asyncio.get_event_loop()
-    headers = loop.run_until_complete(fetch('http://127.0.0.1:8989'))
+    headers = loop.run_until_complete(fetch(
+            'http://127.0.0.1:%d' % mock_header_server.port))
 
     assert not headers.get(ExternalTrace.cat_id_key)
     assert not headers.get(ExternalTrace.cat_transaction_key)
@@ -144,7 +147,7 @@ def test_outbound_cross_process_headers_exception(mock_header_server):
         delattr(transaction, 'guid')
 
         try:
-            headers = yield from fetch('http://127.0.0.1:8989')
+            headers = yield from fetch('http://127.0.0.1:%d' % mock_header_server.port)
 
             assert not headers.get(ExternalTrace.cat_id_key)
             assert not headers.get(ExternalTrace.cat_transaction_key)

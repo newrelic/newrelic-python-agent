@@ -1,3 +1,17 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import functools
 import sys
 import os
@@ -45,13 +59,12 @@ class ProfileTrace(object):
         func_filename = co.co_filename
 
         def _callable_name():
-            # This is pretty ugly and inefficient, but a stack
-            # frame doesn't provide any information about the
+            # A stack frame doesn't provide any information about the
             # original callable object. We thus need to try and
             # deduce what it is by searching through the stack
             # frame globals. This will still not work in many
             # cases, including lambdas, generator expressions,
-            # and decoratored attributes such as properties of
+            # and decorated attributes such as properties of
             # classes.
 
             try:

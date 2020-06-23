@@ -1,5 +1,41 @@
 {
+    ".github/CODEOWNERS": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    ".github/workflows/deploy.yml": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    ".github/workflows/tests.yml": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "CHANGELOG.rst": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "CODE_OF_CONDUCT.md": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "CONTRIBUTING.rst": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "LICENSE": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -11,19 +47,13 @@
             "New Relic"
         ]
     },
+    "THIRD_PARTY_NOTICES.md": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "deploy/Dockerfile": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/LICENSE": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/THIRD_PARTY_NOTICES.md": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -54,12 +84,6 @@
         ]
     },
     "newrelic/admin/generate_config.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/admin/license_info.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -2262,6 +2286,12 @@
         ]
     },
     "services.sh": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "setup.cfg": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

@@ -77,13 +77,3 @@ Resources
 * `New Relic for Python Documentation <https://docs.newrelic.com/docs/agents/python-agent>`_
 * `New Relic for Python Release Notes <https://docs.newrelic.com/docs/release-notes/agent-release-notes/python-release-notes>`_
 * `New Relic Forum <http://discuss.newrelic.com>`_
-
-License
--------
-
-New Relic for Python is free-to-use, proprietary software. Please see the LICENSE file in the distribution for details on the New Relic License agreement and the licenses of its dependencies.
-
-Copyright
----------
-
-Copyright (c) 2010-2019 New Relic, Inc. All rights reserved.

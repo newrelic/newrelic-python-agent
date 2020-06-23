@@ -1,3 +1,17 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """This module implements the communications layer with the data collector.
 
 """
@@ -169,8 +183,7 @@ def _requests_proxy_scheme_workaround(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 # This is a monkey patch for requests contained within our bundled requests.
-# Have no idea why they made the change, but the change they made in the
-# commit:
+# A change made in this commit:
 #
 #   https://github.com/kennethreitz/requests/commit/8b7fcfb49a38cd6ee1cbb4a52e0a4af57969abb3
 #
@@ -1357,6 +1370,7 @@ _developer_mode_responses = {
         u'error_beacon': u'fake-jserror.newrelic.com',
         u'apdex_t': 0.5,
         u'encoding_key': u'1111111111111111111111111111111111111111',
+        u'entity_guid': u'DEVELOPERMODEENTITYGUID',
         u'agent_run_id': u'1234567',
         u'product_level': 50,
         u'trusted_account_ids': [12345],
@@ -1455,7 +1469,9 @@ class DeveloperModeSession(ApplicationSession):
         return result
 
     def connect_span_stream(self, span_iterator, record_metric):
-        pass
+        if self.configuration.debug.connect_span_stream_in_developer_mode:
+            super(DeveloperModeSession, self).connect_span_stream(
+                    span_iterator, record_metric)
 
 
 class ServerlessModeSession(ApplicationSession):

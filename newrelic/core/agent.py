@@ -1,3 +1,17 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """This module holds the Agent class which is the primary interface for
 interacting with the agent core.
 
@@ -76,7 +90,7 @@ class Agent(object):
 
     The global configuration settings would normally be setup from the
     agent configuration file or could also be set explicitly. Direct access
-    to global configuration setings prior to the agent instance being
+    to global configuration settings prior to the agent instance being
     created needs to be via the 'newrelic.core.config' module.
 
     After the network connection details have been set, and the agent
@@ -419,7 +433,7 @@ class Agent(object):
     def application(self, app_name):
         """Returns the internal application object for the named
         application or None if not created. When an application object
-        is returned, it does not relect whether activation has been
+        is returned, it does not reflect whether activation has been
         successful or not. To determine if application is currently in an
         activated state use application_settings() method to see if a valid
         application settings objects is available or query the application

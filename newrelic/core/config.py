@@ -1,3 +1,17 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """ This module provides a structure to hang the configuration settings. We
 use an empty class structure and manually populate it. The global defaults
 will be overlaid with any settings from the local agent configuration file.
@@ -52,7 +66,7 @@ _logger.addHandler(_NullHandler())
 
 # The Settings objects and the global default settings. We create a
 # distinct type for each sub category of settings that the agent knows
-# about so that an error when accessing a non existant setting is more
+# about so that an error when accessing a non-existent setting is more
 # descriptive and identifies the category of settings. When applying
 # server side configuration we create normal Settings object for new
 # sub categories we don't know about.
@@ -687,6 +701,7 @@ _settings.debug.explain_plan_obfuscation = 'simple'
 _settings.debug.disable_certificate_validation = False
 _settings.debug.log_untrusted_distributed_trace_keys = False
 _settings.debug.disable_harvest_until_shutdown = False
+_settings.debug.connect_span_stream_in_developer_mode = False
 
 _settings.message_tracer.segment_parameters_enabled = True
 

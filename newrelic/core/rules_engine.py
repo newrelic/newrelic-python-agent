@@ -1,3 +1,17 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import re
 
 from collections import namedtuple
@@ -115,7 +129,7 @@ class SegmentCollapseEngine(object):
             # may be a possibility of getting an extraneous trailing
             # slash. Therefore remove any trailing slashes. Technically
             # we can do away with the check for two segments, or at
-            # least allow minimumum of two and the algorithm will still
+            # least allow minimum of two and the algorithm will still
             # work as the regex for pre match and how remainder is
             # collected from pattern, will deal with prefixes of
             # different length and will choose the longest match.

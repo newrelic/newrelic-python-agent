@@ -9,7 +9,6 @@ from testing_support.fixtures import validate_transaction_metrics
 from testing_support.external_fixtures import (cache_outgoing_headers,
     validate_cross_process_headers, insert_incoming_headers,
     validate_external_node_params)
-from testing_support.mock_external_http_server import MockExternalHTTPServer
 
 from newrelic.api.background_task import background_task
 
@@ -57,26 +56,27 @@ def test_urlopener_https_request():
     opener.open('https://www.example.com/')
 
 
-_test_urlopener_http_request_with_port_scoped_metrics = [
-        ('External/localhost:8989/urllib/', 1)]
+def test_urlopener_http_request_with_port(server):
+    scoped = [
+            ('External/localhost:%d/urllib/' % server.port, 1)]
 
-_test_urlopener_http_request_with_port_rollup_metrics = [
-        ('External/all', 1),
-        ('External/allOther', 1),
-        ('External/localhost:8989/all', 1),
-        ('External/localhost:8989/urllib/', 1)]
+    rollup = [
+            ('External/all', 1),
+            ('External/allOther', 1),
+            ('External/localhost:%d/all' % server.port, 1),
+            ('External/localhost:%d/urllib/' % server.port, 1)]
 
-
-@validate_transaction_metrics(
-        'test_urllib:test_urlopener_http_request_with_port',
-        scoped_metrics=_test_urlopener_http_request_with_port_scoped_metrics,
-        rollup_metrics=_test_urlopener_http_request_with_port_rollup_metrics,
-        background_task=True)
-@background_task()
-def test_urlopener_http_request_with_port():
-    with MockExternalHTTPServer():
+    @validate_transaction_metrics(
+            'test_urllib:test_urlopener_http_request_with_port',
+            scoped_metrics=scoped,
+            rollup_metrics=rollup,
+            background_task=True)
+    @background_task(name='test_urllib:test_urlopener_http_request_with_port')
+    def _test():
         opener = urllib.URLopener()
-        opener.open('http://localhost:8989/')
+        opener.open('http://localhost:%d/' % server.port)
+
+    _test()
 
 
 _test_urlopener_file_request_scoped_metrics = [

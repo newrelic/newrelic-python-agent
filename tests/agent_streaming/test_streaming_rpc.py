@@ -1,3 +1,17 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import grpc
 import threading
 
@@ -23,7 +37,7 @@ def test_close_before_connect(mock_grpc_server):
     # Calling close will close the grpc channel
     rpc.close()
     rpc.connect()
-    # The response processing thread should immediatly exit if the channel is
+    # The response processing thread should immediately exit if the channel is
     # closed
     rpc.response_processing_thread.join(timeout=5)
     assert not rpc.response_processing_thread.is_alive()
@@ -36,7 +50,7 @@ def test_close_while_connected(mock_grpc_server, buffer_empty_event):
     rpc = StreamingRpc(channel, stream_buffer, DEFAULT_METADATA, record_metric)
 
     rpc.connect()
-    # Check the procesing thread is alive and spans are being sent
+    # Check the processing thread is alive and spans are being sent
     assert rpc.response_processing_thread.is_alive()
 
     span = Span(intrinsics={}, agent_attributes={}, user_attributes={})

@@ -1,3 +1,17 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import print_function
 
 import sys
@@ -21,29 +35,34 @@ from distutils.command.build_ext import build_ext
 from distutils.errors import (CCompilerError, DistutilsExecError,
         DistutilsPlatformError)
 
+
+def newrelic_agent_guess_next_version(tag_version):
+    version, _, _ = str(tag_version).partition("+")
+    version_info = list(map(int, version.split(".")))
+    if len(version_info) < 4:
+        return version
+    version_info[1] += 1
+    if version_info[1] % 2:
+        version_info[3] = 0
+    else:
+        version_info[3] += 1
+    return ".".join(map(str, version_info))
+
+
+def newrelic_agent_next_version(version):
+    if version.exact:
+        return version.format_with("{tag}")
+    else:
+        return version.format_next_version(
+            newrelic_agent_guess_next_version, fmt="{guessed}"
+        )
+
+
 script_directory = os.path.dirname(__file__)
 if not script_directory:
     script_directory = os.getcwd()
 
-develop_file = os.path.join(script_directory, 'DEVELOP')
-version_file = os.path.join(script_directory, 'VERSION')
 readme_file = os.path.join(script_directory, 'README.rst')
-
-if os.path.exists(develop_file):
-    # Building from source repository.
-
-    import newrelic
-
-    package_version = newrelic.version
-
-    version_file_fds = open(version_file, 'w')
-    print(package_version, file=version_file_fds)
-    version_file_fds.close()
-
-else:
-    # Installing from release package.
-
-    package_version = open(version_file, 'r').read().strip()
 
 if sys.platform == 'win32' and python_version > (2, 6):
     build_ext_errors = (CCompilerError, DistutilsExecError,
@@ -94,7 +113,7 @@ packages = [
 
 classifiers = [
         "Development Status :: 5 - Production/Stable",
-        "License :: Other/Proprietary License",
+        "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
@@ -107,7 +126,13 @@ classifiers = [
 
 kwargs = dict(
         name = "newrelic",
-        version = package_version,
+        use_scm_version={
+            "version_scheme": newrelic_agent_next_version,
+            "local_scheme": "no-local-version",
+            "git_describe_command": "git describe --dirty --tags --long --match *.*.*.*",
+            "write_to": "newrelic/version.txt",
+        },
+        setup_requires=['setuptools_scm'],
         description = "New Relic Python Agent",
         long_description = open(readme_file).read(),
         url = "http://newrelic.com/docs/python/new-relic-for-python",
@@ -115,15 +140,18 @@ kwargs = dict(
         author_email = "support@newrelic.com",
         maintainer = 'New Relic',
         maintainer_email = 'support@newrelic.com',
-        license = 'New Relic License',
+        license = 'Apache-2.0',
         zip_safe = False,
         classifiers = classifiers,
         packages = packages,
         python_requires = '>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*',
-        package_data = { 'newrelic': ['newrelic.ini', 'LICENSE',
-              'common/cacert.pem',
-              'packages/requests/LICENSE', 'packages/requests/NOTICE',
-              'packages/requests/cacert.pem'] },
+        package_data = {'newrelic': ['newrelic.ini',
+                                     'version.txt',
+                                     'common/cacert.pem',
+                                     'packages/requests/LICENSE',
+                                     'packages/requests/NOTICE',
+                                     'packages/requests/cacert.pem'],
+        },
         scripts = [ 'scripts/newrelic-admin' ],
         extras_require = {'infinite-tracing': ['grpcio<2', 'protobuf<4']},
 )

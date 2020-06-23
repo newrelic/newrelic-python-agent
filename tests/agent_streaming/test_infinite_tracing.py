@@ -1,3 +1,17 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import pytest
 import threading
 
@@ -148,7 +162,7 @@ def test_agent_restart(app):
     app.connect_to_data_collector(None)
     rpc = app._active_session._rpc
 
-    # Store references to the orginal rpc and threads
+    # Store references to the original rpc and threads
     original_rpc = rpc.rpc
     original_thread = rpc.response_processing_thread
     original_span_stream = app._stats_engine.span_stream
@@ -217,7 +231,7 @@ def test_agent_shutdown():
     app = Application('Python Agent Test (Infinite Tracing)')
     app.connect_to_data_collector(None)
     rpc = app._active_session._rpc
-    # Store references to the orginal rpc and threads
+    # Store references to the original rpc and threads
     assert rpc.response_processing_thread.is_alive()
     app.internal_agent_shutdown(restart=False)
     assert not rpc.response_processing_thread.is_alive()
@@ -279,7 +293,7 @@ def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app):
 
 
         # Put a span that will trigger an OK status code and wait for an attempted
-        # recconect.
+        # reconnect.
         stream_buffer.put(span)
         assert connect_event.wait(timeout=5)
         rpc.close()

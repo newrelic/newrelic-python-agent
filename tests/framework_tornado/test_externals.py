@@ -296,50 +296,56 @@ def test_httpclient_invalid_kwarg(client_class, external):
         make_request(external.port, 'uri', client_class, boop='1234')
 
 
-@validate_transaction_metrics('test_httpclient_fetch_crashes',
-    background_task=True,
-    rollup_metrics=[('External/localhost:8989/tornado/GET', 1)],
-    scoped_metrics=[('External/localhost:8989/tornado/GET', 1)]
-)
-@background_task(name='test_httpclient_fetch_crashes')
 def test_httpclient_fetch_crashes(external):
-    import tornado.httpclient
+    @validate_transaction_metrics('test_httpclient_fetch_crashes',
+        background_task=True,
+        rollup_metrics=[('External/localhost:%d/tornado/GET' % external.port, 1)],
+        scoped_metrics=[('External/localhost:%d/tornado/GET' % external.port, 1)]
+    )
+    @background_task(name='test_httpclient_fetch_crashes')
+    def _test():
+        import tornado.httpclient
 
-    class CrashClient(tornado.httpclient.AsyncHTTPClient):
-        def fetch_impl(self, *args, **kwargs):
-            raise ValueError("BOOM")
+        class CrashClient(tornado.httpclient.AsyncHTTPClient):
+            def fetch_impl(self, *args, **kwargs):
+                raise ValueError("BOOM")
 
-    client = CrashClient(force_instance=True)
+        client = CrashClient(force_instance=True)
 
-    port = external.port
-    with pytest.raises(ValueError):
-        tornado.ioloop.IOLoop.current().run_sync(
-                lambda: client.fetch('http://localhost:%s' % port))
+        port = external.port
+        with pytest.raises(ValueError):
+            tornado.ioloop.IOLoop.current().run_sync(
+                    lambda: client.fetch('http://localhost:%s' % port))
+
+    _test()
 
 
-@validate_transaction_metrics('test_httpclient_fetch_inside_terminal_node',
-    background_task=True,
-    rollup_metrics=[('External/localhost:8989/tornado/GET', None)],
-    scoped_metrics=[('External/localhost:8989/tornado/GET', None)]
-)
-@background_task(name='test_httpclient_fetch_inside_terminal_node')
 def test_httpclient_fetch_inside_terminal_node(external):
-    # Test that our instrumentation correctly handles the case when the parent
-    # is a terminal node
-    import tornado.httpclient
-    import tornado.gen
-    import tornado.ioloop
-    client = tornado.httpclient.AsyncHTTPClient(force_instance=True)
+    @validate_transaction_metrics('test_httpclient_fetch_inside_terminal_node',
+        background_task=True,
+        rollup_metrics=[('External/localhost:%d/tornado/GET' % external.port, None)],
+        scoped_metrics=[('External/localhost:%d/tornado/GET' % external.port, None)]
+    )
+    @background_task(name='test_httpclient_fetch_inside_terminal_node')
+    def _test():
+        # Test that our instrumentation correctly handles the case when the parent
+        # is a terminal node
+        import tornado.httpclient
+        import tornado.gen
+        import tornado.ioloop
+        client = tornado.httpclient.AsyncHTTPClient(force_instance=True)
 
-    # This is protecting against a "pop_current" when the external trace never
-    # actually gets pushed
-    port = external.port
+        # This is protecting against a "pop_current" when the external trace never
+        # actually gets pushed
+        port = external.port
 
-    @tornado.gen.coroutine
-    def _make_request():
-        with FunctionTrace(name='parent', terminal=True):
-            response = yield client.fetch('http://localhost:%s' % port)
-        return response
+        @tornado.gen.coroutine
+        def _make_request():
+            with FunctionTrace(name='parent', terminal=True):
+                response = yield client.fetch('http://localhost:%s' % port)
+            return response
 
-    response = tornado.ioloop.IOLoop.current().run_sync(_make_request)
-    assert response.code == 200
+        response = tornado.ioloop.IOLoop.current().run_sync(_make_request)
+        assert response.code == 200
+
+    _test()

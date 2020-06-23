@@ -11,7 +11,6 @@ from newrelic.network.exceptions import (DiscardDataForRequest,
         RetryDataForRequest, ForceAgentRestart, ForceAgentDisconnect)
 from newrelic.core.data_collector import (ApplicationSession, send_request,
         ServerlessModeSession)
-import newrelic.packages.requests as requests
 
 # Global constants used in tests
 AGENT_VERSION = '2.0.0.0'
@@ -374,22 +373,28 @@ def test_serverless_session_retries_for_arn_but_not_for_other_keys(
         settings.aws_lambda_metadata = original_metadata
 
 
-class FakeRequestsSession(requests.Session):
+# FIXME: these tests must be refactored upon converting to urllib3 sessions
+# since the send_request signature will change
+
+class FakeResponse(object):
+    pass
+
+
+class FakeRequestsSession(object):
     def __init__(self, status, text, headers_sent={}):
         self.status = status
         self.text = text
         self.headers_sent = headers_sent
 
-    def request(self, *args, **kwargs):
+    def post(self, *args, **kwargs):
 
         headers = kwargs.get('headers')
         if headers:
             self.headers_sent.update(headers)
 
-        response = requests.Response()
+        response = FakeResponse()
         response.status_code = self.status
-        response._content_consumed = True
-        response._content = self.text.encode('utf-8')
+        response.content = self.text.encode('utf-8')
 
         return response
 

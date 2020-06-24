@@ -1889,6 +1889,228 @@
             "six"
         ]
     },
+    "newrelic/packages/urllib3/LICENSE.txt": {
+        "hash": "65715c2eb961313d71b297dd5a04f85e",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/__init__.py": {
+        "hash": "1cd1d747a04d90155430fa3d1e668ffc",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/_collections.py": {
+        "hash": "b0441681fe3a081cd204cffc6ce34326",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/connection.py": {
+        "hash": "7602b5e9f771e1163eaf75fe3ec02d01",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/connectionpool.py": {
+        "hash": "df343c0ffbf0cf5a9d4036049507ea2d",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/contrib/__init__.py": {
+        "hash": "d41d8cd98f00b204e9800998ecf8427e",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/contrib/_appengine_environ.py": {
+        "hash": "acc1a179e0ec7e6c78ddf8ca298ab6c2",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/contrib/_securetransport/__init__.py": {
+        "hash": "d41d8cd98f00b204e9800998ecf8427e",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/contrib/_securetransport/bindings.py": {
+        "hash": "e0d1567f970bb32e59f6bb89ac56298e",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/contrib/_securetransport/low_level.py": {
+        "hash": "500110e7e8d32b18bae37313639b3d24",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/contrib/appengine.py": {
+        "hash": "b1a1b4c7112b4271d02e9e25213fa8b3",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/contrib/ntlmpool.py": {
+        "hash": "c96af6b2ee6983e36140ec41fbdc745f",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/contrib/pyopenssl.py": {
+        "hash": "eb7e04118cb430013f25b4969825ea9d",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/contrib/securetransport.py": {
+        "hash": "0f950ee613949970285d9970d4d3b45d",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/contrib/socks.py": {
+        "hash": "983d8038eea18de848e00c316dbb441d",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/exceptions.py": {
+        "hash": "8ba35e4a3bed78ee685583ae6dd2ed7a",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/fields.py": {
+        "hash": "fe10b8f19d7b57825d391cbe11c4603a",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/filepost.py": {
+        "hash": "679545057b50191ec7cc324f967475de",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/packages/__init__.py": {
+        "hash": "672889fc70a58564420f64d966e7adc8",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/packages/backports/__init__.py": {
+        "hash": "d41d8cd98f00b204e9800998ecf8427e",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/packages/backports/makefile.py": {
+        "hash": "64b91cb6ce5cfec1a0ab97dc86674253",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/packages/six.py": {
+        "hash": "48d4625a08131872536cf0a526ac9401",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/packages/ssl_match_hostname/__init__.py": {
+        "hash": "5881d55b3fae3dea78c89f5f35ac551f",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/packages/ssl_match_hostname/_implementation.py": {
+        "hash": "d22cd53df77ec411cc8c0dfa98366ed8",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/poolmanager.py": {
+        "hash": "e15d9560d1106cb77609515234cce78d",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/request.py": {
+        "hash": "381b0e850393dcb31f486841cb041f1d",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/response.py": {
+        "hash": "fbed528f8a182046c73f0af0ce986579",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/util/__init__.py": {
+        "hash": "5b4e1c10905d19a1d549fd47187c696e",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/util/connection.py": {
+        "hash": "ea1d1326d874aff7073b5839955a07ce",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/util/queue.py": {
+        "hash": "3710933c748ea0c20bc66ec0295438a6",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/util/request.py": {
+        "hash": "87f38845cd72f95766c7bbe30207bd8b",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/util/response.py": {
+        "hash": "bf4f5641c81e71fc42805c8672df51ce",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/util/retry.py": {
+        "hash": "0250305cfe67b2b17a08c42bde13a855",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/util/ssl_.py": {
+        "hash": "a926139991ff1aa999462480d8bc4ed8",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/util/timeout.py": {
+        "hash": "ebd28ae6940dc78fc690846f94ee4e1d",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/util/url.py": {
+        "hash": "ec076a98f378fca9e2e73a13f9c31d1f",
+        "libraries": [
+            "urllib3"
+        ]
+    },
+    "newrelic/packages/urllib3/util/wait.py": {
+        "hash": "ff324450eec7ac7630fa185f7f670a03",
+        "libraries": [
+            "urllib3"
+        ]
+    },
     "newrelic/packages/wrapt/LICENSE": {
         "hash": "61c27930012e86b3dc7e36f92e83c4d8",
         "libraries": [

@@ -57,7 +57,6 @@ from newrelic.core.stats_engine import CustomMetrics
 
 from newrelic.network.addresses import proxy_details
 from newrelic.network.exceptions import RetryDataForRequest
-from newrelic.packages import requests
 
 from testing_support.sample_applications import (user_attributes_added,
         error_user_params_added)
@@ -291,8 +290,7 @@ def collector_agent_registration_fixture(app_name=None, default_settings={},
         if not use_fake_collector and not use_developer_mode:
             try:
                 _logger.debug("Record deployment marker at %s" % url)
-                requests.post(url, proxies=proxies, headers=headers,
-                        timeout=timeout, data=data, verify=cert_loc)
+                # FIXME: use deployment marker api for conversion to urllib3
             except Exception:
                 _logger.exception("Unable to record deployment marker.")
                 pass

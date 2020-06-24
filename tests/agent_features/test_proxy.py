@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+# FIXME: urllib3
+requests = pytest.importorskip('newrelic.packages.requests')
 from newrelic.core.data_collector import _requests_request_url_workaround
 from testing_support.mock_external_http_server import (
     MockExternalHTTPHResponseHeadersServer)
-from newrelic.packages import requests
 
 import pytest
 

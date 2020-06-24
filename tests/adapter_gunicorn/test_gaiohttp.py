@@ -3,11 +3,11 @@ import random
 import pytest
 import time
 import socket
-from newrelic.packages import requests
 from testing_support.fixtures import TerminatingPopen
 
 pytest.importorskip('aiohttp.wsgi')
 pytest.importorskip('gunicorn.workers.gaiohttp')
+from urllib.request import urlopen
 
 
 @pytest.mark.parametrize('nr_enabled', [True, False])
@@ -54,9 +54,9 @@ def test_gunicorn_gaiohttp_worker(nr_enabled):
             else:
                 continue
 
-            resp = requests.get('http://127.0.0.1:%d' % PORT)
-            assert resp.status_code == 200
-            assert resp.text == 'PONG'
+            with urlopen('http://127.0.0.1:%d' % PORT) as resp:
+                assert resp.getcode() == 200
+                assert resp.read() == b'PONG'
 
         # test passed
         break

@@ -1,6 +1,8 @@
+import pytest
 import mock
 from newrelic.common.utilization import AWSUtilization
-from newrelic.packages import requests
+# FIXME: urllib3
+requests = pytest.importorskip('newrelic.packages.requests')
 
 
 _mock_response_data = b"""{

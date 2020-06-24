@@ -1,6 +1,8 @@
+import pytest
 import mock
 
-from newrelic.packages import requests
+# FIXME: urllib3
+requests = pytest.importorskip('newrelic.packages.requests')
 from newrelic.common.utilization import AzureUtilization
 
 azure_success_response = (

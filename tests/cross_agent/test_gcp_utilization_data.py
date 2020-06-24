@@ -3,7 +3,8 @@ import mock
 import os
 import pytest
 
-from newrelic.packages import requests
+# FIXME: urllib3
+requests = pytest.importorskip('newrelic.packages.requests')
 from newrelic.common.utilization import GCPUtilization
 
 from testing_support.fixtures import validate_internal_metrics

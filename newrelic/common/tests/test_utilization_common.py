@@ -3,7 +3,8 @@ import pytest
 import threading
 import time
 
-from newrelic.packages import requests
+# FIXME: urllib3
+requests = pytest.importorskip('newrelic.packages.requests')
 from newrelic.packages.six.moves import BaseHTTPServer
 from newrelic.common.utilization import CommonUtilization
 from newrelic.core.stats_engine import CustomMetrics

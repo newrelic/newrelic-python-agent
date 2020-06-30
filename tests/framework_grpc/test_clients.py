@@ -101,7 +101,7 @@ def test_client(service_method_type, service_method_method_name,
         request = create_request(streaming_request, count=message_count,
                 timesout=cancel)
 
-        reply = service_method_method(request)
+        reply = service_method_method(request, None, None, None)
 
         if isinstance(reply, tuple):
             reply = reply[0]

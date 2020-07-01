@@ -38,8 +38,8 @@ def _prepare_request(
     metadata.extend(
         transaction._generate_distributed_trace_headers(dt_metadata)
     )
-    kwargs['metadata'] = metadata
-    return request, timeout, args, kwargs
+    args = (request, timeout, metadata) + args
+    return args, kwargs
 
 
 def _prepare_request_stream(
@@ -57,9 +57,8 @@ def wrap_call(module, object_path, prepare):
 
         uri, method = _get_uri_method(instance)
         with ExternalTrace('gRPC', uri, method):
-            request, timeout, args, kwargs = prepare(
-                    transaction, None, *args, **kwargs)
-            return wrapped(request, timeout, *args, **kwargs)
+            args, kwargs = prepare(transaction, None, *args, **kwargs)
+            return wrapped(*args, **kwargs)
 
     wrap_function_wrapper(module, object_path, _call_wrapper)
 
@@ -74,9 +73,8 @@ def wrap_future(module, object_path, prepare):
         guid = '%016x' % random.getrandbits(64)
         uri, method = _get_uri_method(instance)
 
-        request, timeout, args, kwargs = prepare(
-                transaction, guid, *args, **kwargs)
-        future = wrapped(request, timeout, *args, **kwargs)
+        args, kwargs = prepare(transaction, guid, *args, **kwargs)
+        future = wrapped(*args, **kwargs)
         future._nr_guid = guid
         future._nr_args = ('gRPC', uri, method)
         future._nr_start_time = time.time()

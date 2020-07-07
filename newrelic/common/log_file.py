@@ -104,12 +104,12 @@ def initialize_logging(log_file, log_level):
         _lock.release()
 
 # This is to filter out the overly verbose log messages at INFO level
-# made by the urllib3 module embedded in the bundled requests module.
+# made by the urllib3 module.
 
-class RequestsConnectionFilter(logging.Filter):
+class Urllib3ConnectionFilter(logging.Filter):
     def filter(self, record):
         return False
 
-_requests_logger = logging.getLogger(
-    'newrelic.packages.requests.packages.urllib3.connectionpool')
-_requests_logger.addFilter(RequestsConnectionFilter())
+_urllib3_logger = logging.getLogger(
+    'newrelic.packages.urllib3.connectionpool')
+_urllib3_logger.addFilter(Urllib3ConnectionFilter())

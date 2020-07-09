@@ -3,7 +3,6 @@
 .. |header| image:: https://github.com/newrelic/opensource-website/raw/master/src/images/categories/Community_Project.png
     :target: https://opensource.newrelic.com/oss-category/#community-project
 
-======================
 New Relic Python Agent
 ======================
 
@@ -17,15 +16,15 @@ Visit `Python Application Performance Monitoring with New Relic`_ to learn more.
 .. _New Relic APM: http://newrelic.com/application-monitoring
 .. _Python Application Performance Monitoring with New Relic: http://newrelic.com/python
 
-Installation
-------------
+Usage
+-----
+
+This package can be installed via pip:
 
 .. code:: bash
 
     $ pip install newrelic
 
-Usage
------
 
 (These instructions can also be found online: `Python Agent Quick Start`_.)
 
@@ -76,9 +75,37 @@ Usage
 .. _manually integrate the agent: https://docs.newrelic.com/docs/agents/python-agent/installation-configuration/python-agent-integration#manual-integration
 .. _New Relic UI: https://rpm.newrelic.com
 
-Resources
----------
+Additional resources may be found here:
 
 * `New Relic for Python Documentation <https://docs.newrelic.com/docs/agents/python-agent>`_
 * `New Relic for Python Release Notes <https://docs.newrelic.com/docs/release-notes/agent-release-notes/python-release-notes>`_
-* `New Relic Forum <http://discuss.newrelic.com>`_
+
+Support
+-------
+
+New Relic hosts and moderates an online forum where customers can
+interact with New Relic employees as well as other customers to get help
+and share best practices. Like all official New Relic open source
+projects, there’s a related Community topic in the New Relic Explorers
+Hub. You can find this project’s topic/threads here:
+
+    `New Relic Forum <https://discuss.newrelic.com/c/support-products-agents/python-agent>`_
+
+Contributing
+------------
+
+We encourage your contributions to improve the New Relic Python Agent! Keep in
+mind when you submit your pull request, you’ll need to sign the CLA via the
+click-through using CLA-Assistant. You only have to sign the CLA one time per
+project. If you have any questions, or to execute our corporate CLA, required
+if your contribution is on behalf of a company, please drop us an email at
+opensource@newrelic.com.
+
+License
+-------
+
+The New Relic Python Agent is licensed under the `Apache 2.0
+<http://apache.org/licenses/LICENSE-2.0.txt>`__ License. The New Relic Python
+Agent also uses source code from third-party libraries. You can find full
+details on which libraries are used and the terms under which they are licensed
+in the third-party notices document.

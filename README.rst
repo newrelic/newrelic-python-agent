@@ -89,7 +89,7 @@ and share best practices. Like all official New Relic open source
 projects, there’s a related Community topic in the New Relic Explorers
 Hub. You can find this project’s topic/threads here:
 
-    `New Relic Forum <https://discuss.newrelic.com/c/support-products-agents/python-agent>`_
+`New Relic Forum <https://discuss.newrelic.com/c/support-products-agents/python-agent>`_
 
 Contributing
 ------------

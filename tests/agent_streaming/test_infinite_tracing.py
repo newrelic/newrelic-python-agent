@@ -19,7 +19,7 @@ from newrelic.core.config import global_settings
 from testing_support.fixtures import override_generic_settings
 
 from newrelic.core.application import Application
-from newrelic.core.data_collector import StreamingRpc
+from newrelic.core.agent_streaming import StreamingRpc
 from newrelic.core.infinite_tracing_pb2 import Span, AttributeValue
 from testing_support.validators.validate_metric_payload import (
     validate_metric_payload)

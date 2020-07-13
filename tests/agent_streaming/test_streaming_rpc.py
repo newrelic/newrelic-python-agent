@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import grpc
 import threading
 
-from newrelic.core.data_collector import StreamingRpc
+from newrelic.core.agent_streaming import StreamingRpc
 from newrelic.common.streaming_utils import StreamBuffer
 from newrelic.core.infinite_tracing_pb2 import Span, AttributeValue
 
@@ -29,10 +28,12 @@ def record_metric(*args, **kwargs):
 
 
 def test_close_before_connect(mock_grpc_server):
-    channel = grpc.insecure_channel("localhost:%s" % mock_grpc_server)
+    endpoint = "localhost:%s" % mock_grpc_server
     stream_buffer = StreamBuffer(0)
 
-    rpc = StreamingRpc(channel, stream_buffer, DEFAULT_METADATA, record_metric)
+    rpc = StreamingRpc(
+        endpoint, stream_buffer, DEFAULT_METADATA, record_metric, ssl=False
+    )
 
     # Calling close will close the grpc channel
     rpc.close()
@@ -44,10 +45,12 @@ def test_close_before_connect(mock_grpc_server):
 
 
 def test_close_while_connected(mock_grpc_server, buffer_empty_event):
-    channel = grpc.insecure_channel("localhost:%s" % mock_grpc_server)
+    endpoint = "localhost:%s" % mock_grpc_server
     stream_buffer = StreamBuffer(1)
 
-    rpc = StreamingRpc(channel, stream_buffer, DEFAULT_METADATA, record_metric)
+    rpc = StreamingRpc(
+        endpoint, stream_buffer, DEFAULT_METADATA, record_metric, ssl=False
+    )
 
     rpc.connect()
     # Check the processing thread is alive and spans are being sent
@@ -77,7 +80,7 @@ def test_close_while_awaiting_reconnect(mock_grpc_server, monkeypatch):
     def condition(*args, **kwargs):
         return WaitOnWait(*args, **kwargs)
 
-    monkeypatch.setattr(StreamingRpc, 'condition', condition)
+    monkeypatch.setattr(StreamingRpc, "condition", condition)
 
     span = Span(
         intrinsics={"status_code": AttributeValue(string_value="INTERNAL")},
@@ -85,11 +88,12 @@ def test_close_while_awaiting_reconnect(mock_grpc_server, monkeypatch):
         user_attributes={},
     )
 
-    channel = grpc.insecure_channel("localhost:%s" % mock_grpc_server)
-
+    endpoint = "localhost:%s" % mock_grpc_server
     stream_buffer = StreamBuffer(1)
 
-    rpc = StreamingRpc(channel, stream_buffer, DEFAULT_METADATA, record_metric)
+    rpc = StreamingRpc(
+        endpoint, stream_buffer, DEFAULT_METADATA, record_metric, ssl=False
+    )
 
     rpc.connect()
     # Send a span to trigger reconnect

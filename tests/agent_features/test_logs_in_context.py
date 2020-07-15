@@ -47,7 +47,7 @@ def log_buffer(caplog):
 
 
 def test_newrelic_logger_no_error(log_buffer):
-    _logger.info(u"Hello %s", u"World")
+    _logger.info(u"Hello %s", u"World", extra={"foo": "bar"})
 
     log_buffer.seek(0)
     message = json.load(log_buffer)
@@ -71,17 +71,18 @@ def test_newrelic_logger_no_error(log_buffer):
         u"logger.name": u"test_logs_in_context",
         u"thread.name": u"MainThread",
         u"process.name": u"MainProcess",
+        u"extra.foo": u"bar",
     }
 
 
-class TestException(ValueError):
+class ExceptionForTest(ValueError):
     pass
 
 
 def test_newrelic_logger_error(log_buffer):
     try:
-        raise TestException
-    except TestException:
+        raise ExceptionForTest
+    except ExceptionForTest:
         _logger.exception(u"oops")
 
     log_buffer.seek(0)
@@ -106,7 +107,7 @@ def test_newrelic_logger_error(log_buffer):
         u"logger.name": u"test_logs_in_context",
         u"thread.name": u"MainThread",
         u"process.name": u"MainProcess",
-        u"error.class": u"test_logs_in_context.TestException",
+        u"error.class": u"test_logs_in_context.ExceptionForTest",
         u"error.message": u"",
     }
 

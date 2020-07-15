@@ -34,7 +34,7 @@ _logger = logging.getLogger(__name__)
 def log_buffer(caplog):
     buf = Buffer()
 
-    _formatter = NewRelicContextFormatter()
+    _formatter = NewRelicContextFormatter("", datefmt="ISO8601")
     _handler = logging.StreamHandler(buf)
     _handler.setFormatter(_formatter)
 

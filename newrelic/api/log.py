@@ -14,7 +14,7 @@
 
 import json
 import newrelic.packages.six as six
-from logging import Formatter
+from logging import Formatter, LogRecord
 from newrelic.api.time_trace import get_linking_metadata
 
 
@@ -25,7 +25,7 @@ def format_exc_info(exc_info):
     name = value.__class__.__name__
 
     if module:
-        fullname = '{}.{}'.format(module, name)
+        fullname = "{}.{}".format(module, name)
     else:
         fullname = name
 
@@ -46,7 +46,7 @@ def format_exc_info(exc_info):
             message = str(value)
 
         except Exception:
-            message = '<unprintable %s object>' % type(value).__name__
+            message = "<unprintable %s object>" % type(value).__name__
 
     return {
         "error.class": fullname,
@@ -55,6 +55,8 @@ def format_exc_info(exc_info):
 
 
 class NewRelicContextFormatter(Formatter):
+    DEFAULT_LOG_RECORD_KEYS = frozenset(vars(LogRecord("", 0, "", 0, "", (), None)))
+
     def __init__(self, *args, **kwargs):
         super(NewRelicContextFormatter, self).__init__()
 
@@ -72,6 +74,18 @@ class NewRelicContextFormatter(Formatter):
             "line.number": record.lineno,
         }
         output.update(get_linking_metadata())
+
+        DEFAULT_LOG_RECORD_KEYS = self.DEFAULT_LOG_RECORD_KEYS
+        if len(record.__dict__) > len(DEFAULT_LOG_RECORD_KEYS):
+            for key in record.__dict__:
+                if key not in DEFAULT_LOG_RECORD_KEYS:
+                    try:
+                        value = str(getattr(record, key))
+                    except Exception:
+                        continue
+
+                    output["extra." + key] = value
+
         if record.exc_info:
             output.update(format_exc_info(record.exc_info))
         return json.dumps(output)

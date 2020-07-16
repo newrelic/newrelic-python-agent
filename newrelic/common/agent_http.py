@@ -479,14 +479,20 @@ class DeveloperModeClient(BaseClient):
             payload,
             headers,
         )
+        if not params or "method" not in params:
+            return 400, b"Missing method parameter"
+
         method = params["method"]
+        if method not in self.RESPONSES:
+            return 400, b"Invalid method received"
+
         result = self.RESPONSES[method]
         payload = {"return_value": result}
         response_data = json_encode(payload).encode("utf-8")
         self.log_response(
             self._audit_log_fp, request_id, 200, {}, response_data,
         )
-        return (200, response_data)
+        return 200, response_data
 
 
 class ServerlessModeClient(DeveloperModeClient):
@@ -502,11 +508,15 @@ class ServerlessModeClient(DeveloperModeClient):
         headers=None,
         payload=None,
     ):
-        agent_method = params["method"]
-        self.payload[agent_method] = payload
-        return super(ServerlessModeClient, self).send_request(
+        result = super(ServerlessModeClient, self).send_request(
             method=method, path=path, params=params, headers=headers, payload=payload
         )
+
+        if result[0] == 200:
+            agent_method = params["method"]
+            self.payload[agent_method] = payload
+
+        return result
 
     def finalize(self):
         output = dict(self.payload)

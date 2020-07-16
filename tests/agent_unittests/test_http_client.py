@@ -393,15 +393,22 @@ def test_max_payload_does_not_send(insecure_server):
         "sql_trace_data",
         "profile_data",
         "shutdown",
+        "INVALID",
+        None,
     ),
 )
 def test_developer_mode_client(method):
+    params = {}
     with DeveloperModeClient("localhost", 1) as client:
-        params = {"method": method}
+        if method:
+            params["method"] = method
         status, data = client.send_request(params=params)
 
-    assert status == 200
-    assert json.loads(data.decode("utf-8"))
+    if not method or method == "INVALID":
+        assert status == 400
+    else:
+        assert status == 200
+        assert json.loads(data.decode("utf-8"))
 
 
 def test_serverless_mode_client():
@@ -425,7 +432,16 @@ def test_serverless_mode_client():
             assert status == 200
             assert json.loads(data.decode("utf-8"))
 
+        # Verify that missing methods aren't captured
+        status, _ = client.send_request(payload=b"*")
+        assert status == 400
+
+        # Verify that invalid methods aren't captured
+        status, _ = client.send_request(params={"method": "foo"}, payload=b"*")
+        assert status == 400
+
     payloads = client.finalize()
+    assert len(payloads) == len(methods)
     for method in methods:
         assert payloads[method] == method.encode("utf-8")
 

@@ -55,7 +55,7 @@ def format_exc_info(exc_info):
 
 
 class NewRelicContextFormatter(Formatter):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super(NewRelicContextFormatter, self).__init__()
 
     def format(self, record):

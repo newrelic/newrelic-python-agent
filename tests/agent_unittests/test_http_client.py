@@ -82,7 +82,11 @@ class SecureServer(InsecureServer):
     def __init__(self, *args, **kwargs):
         super(SecureServer, self).__init__(*args, **kwargs)
         self.httpd.socket = ssl.wrap_socket(
-            self.httpd.socket, server_side=True, keyfile=SERVER_CERT, certfile=SERVER_CERT,
+            self.httpd.socket,
+            server_side=True,
+            keyfile=SERVER_CERT,
+            certfile=SERVER_CERT,
+            do_handshake_on_connect=False,
         )
 
 

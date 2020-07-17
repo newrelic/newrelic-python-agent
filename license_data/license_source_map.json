@@ -743,6 +743,12 @@
             "time.monotonic"
         ]
     },
+    "newrelic/common/agent_http.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/async_proxy.py": {
         "hash": "n/a",
         "libraries": [

@@ -456,23 +456,25 @@ def test_serverless_mode_client():
         (InsecureHttpClient, None),
     ),
 )
-def test_audit_logging(server, client_cls, proxy_host):
+def test_audit_logging(server, insecure_server, client_cls, proxy_host):
     audit_log_fp = StringIO()
     params = {"method": "metric_data"}
     prefix = getattr(client_cls, "PREFIX_SCHEME", "https://")
+    if prefix == "https://":
+        port = server.port
+    else:
+        port = insecure_server.port
+
     with client_cls(
         "localhost",
-        server.port,
+        port,
         proxy_scheme="https",
         proxy_host=proxy_host,
         proxy_port=server.port,
         audit_log_fp=audit_log_fp,
         disable_certificate_validation=True,
     ) as client:
-        try:
-            client.send_request(params=params)
-        except ProtocolError:
-            pass
+        client.send_request(params=params)
 
     # Verify the audit log isn't empty
     assert audit_log_fp.tell()

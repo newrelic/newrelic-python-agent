@@ -4,17 +4,14 @@ import pytest
 import sys
 import tempfile
 
-# FIXME: urllib3
-pytest.importorskip('newrelic.packages.requests')
 
 # NOTE: the test_utilization_settings_from_env_vars test mocks several of the
 # methods in newrelic.core.data_collector and does not put them back!
-from newrelic.core.data_collector import ApplicationSession
+from testing_support.mock_http_client import MockHttpClient
+from newrelic.core.agent_protocol import AgentProtocol
 from newrelic.common.system_info import BootIdUtilization
-from newrelic.common.utilization import (AWSUtilization,
-        AzureUtilization, GCPUtilization)
-from newrelic.common.object_wrapper import (transient_function_wrapper,
-        function_wrapper)
+from newrelic.common.utilization import (CommonUtilization)
+from newrelic.common.object_wrapper import (function_wrapper)
 import newrelic.core.config
 
 try:
@@ -62,8 +59,7 @@ def _mock_getips(ip_addresses):
 
 
 class UpdatedSettings(object):
-    def __init__(self, test):
-        self.test = test
+    def __init__(self):
         self.initial_settings = newrelic.core.config._settings
 
     def __enter__(self):
@@ -83,21 +79,10 @@ class UpdatedSettings(object):
         reload(newrelic.core.config)
         reload(newrelic.config)
 
-        return newrelic.core.config.global_settings_dump()
+        return newrelic.core.config.global_settings()
 
     def __exit__(self, *args, **kwargs):
         newrelic.core.config._settings = self.initial_settings
-
-
-def _get_effected_url_for_test(test):
-    if test.get('input_aws_id'):
-        return AWSUtilization.METADATA_URL
-    elif test.get('input_azure_id'):
-        return AzureUtilization.METADATA_URL
-    elif test.get('input_gcp_id'):
-        return GCPUtilization.METADATA_URL
-    elif test.get('input_boot_id'):
-        return BootIdUtilization.METADATA_URL
 
 
 def _get_response_body_for_test(test):
@@ -121,37 +106,6 @@ def _get_response_body_for_test(test):
             'name': test.get('input_gcp_name'),
             'zone': test.get('input_gcp_zone'),
         }).encode('utf8')
-
-
-class MockResponse(object):
-
-    def __init__(self, code, body):
-        self.code = code
-        self.text = body
-
-    def raise_for_status(self):
-        assert str(self.code) == '200'
-
-    def json(self):
-        if hasattr(self.text, 'decode'):
-            self.text = self.text.decode('utf-8')
-        return json.loads(self.text)
-
-
-def patch_Session_get(test):
-    @transient_function_wrapper('newrelic.packages.requests', 'Session.get')
-    def _patch_Session_get(wrapped, instance, args, kwargs):
-        def _bind_params(url, *args, **kwargs):
-            return url
-
-        url = _bind_params(*args, **kwargs)
-        effected_url = _get_effected_url_for_test(test)
-        if url != effected_url:
-            return MockResponse('500', 'Not the correct url, this is fine')
-
-        body = _get_response_body_for_test(test)
-        return MockResponse('200', body)
-    return _patch_Session_get
 
 
 def patch_boot_id_file(test):
@@ -180,32 +134,36 @@ def patch_boot_id_file(test):
     return _patch_boot_id_file
 
 
-def patch_system_info(test):
+def patch_system_info(test, monkeypatch):
     @function_wrapper
     def _patch_system_info(wrapped, instance, args, kwargs):
-        dc = newrelic.core.data_collector
-        initial_logical_processor_count = dc.logical_processor_count
-        initial_total_physical_memory = dc.total_physical_memory
-        initial_system_info_gethostname = dc.system_info.gethostname
-        initial_system_info_getips = dc.system_info.getips
+        sys_info = newrelic.common.system_info
 
-        dc.logical_processor_count = _mock_logical_processor_count(
-                test.get('input_logical_processors'))
-        dc.total_physical_memory = _mock_total_physical_memory(
-                test.get('input_total_ram_mib'))
-        dc.system_info.gethostname = _mock_gethostname(
-                test.get('input_hostname'))
-        dc.system_info.getips = _mock_getips(test.get('input_ip_address'))
+        monkeypatch.setattr(sys_info, "logical_processor_count",
+                            _mock_logical_processor_count(
+                                test.get('input_logical_processors')))
+        monkeypatch.setattr(sys_info, "total_physical_memory",
+                            _mock_total_physical_memory(
+                                test.get('input_total_ram_mib')))
+        monkeypatch.setattr(sys_info, "gethostname",
+                            _mock_gethostname(
+                                test.get('input_hostname')))
+        monkeypatch.setattr(sys_info, "getips",
+                            _mock_getips(
+                                test.get('input_ip_address')))
 
-        try:
-            return wrapped(*args, **kwargs)
-        finally:
-            dc.logical_processor_count = initial_logical_processor_count
-            dc.total_physical_memory = initial_total_physical_memory
-            dc.system_info.gethostname = initial_system_info_gethostname
-            dc.system_info.getips = initial_system_info_getips
+        return wrapped(*args, **kwargs)
 
     return _patch_system_info
+
+
+@pytest.fixture(autouse=True)
+def reset_http_client():
+    yield
+    MockHttpClient.FAIL = False
+    MockHttpClient.STATUS = 200
+    MockHttpClient.DATA = None
+    MockHttpClient.EXPECTED_URL = None
 
 
 @pytest.mark.parametrize('test', _load_tests())
@@ -223,17 +181,19 @@ def test_utilization_settings(test, monkeypatch):
     for key, val in env.items():
         monkeypatch.setenv(key, val)
 
-    @patch_Session_get(test)
     @patch_boot_id_file(test)
-    @patch_system_info(test)
+    @patch_system_info(test, monkeypatch)
     def _test_utilization_data():
-        with UpdatedSettings(test) as settings:
 
+        monkeypatch.setattr(CommonUtilization, "CLIENT_CLS", MockHttpClient)
+        MockHttpClient.DATA = _get_response_body_for_test(test)
+
+        with UpdatedSettings() as settings:
             # Ignoring docker will ensure that there is nothing extra in the
-            # gathered utilizations data
-            settings['utilization.detect_docker'] = False
+            # gathered utilization data
+            monkeypatch.setattr(settings.utilization, "detect_docker", False)
 
-            local_config, = ApplicationSession._create_connect_payload(
+            local_config, = AgentProtocol._connect_payload(
                     '', [], [], settings)
             util_output = local_config['utilization']
             expected_output = test['expected_output_json']

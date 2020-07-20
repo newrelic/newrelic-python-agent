@@ -11,7 +11,6 @@ import newrelic.packages.urllib3 as urllib3
 from newrelic import version
 from newrelic.common.encoding_utils import json_decode, json_encode
 from newrelic.common.object_wrapper import patch_function_wrapper
-from newrelic.network.exceptions import DiscardDataForRequest
 
 # User agent string that must be used in all requests. The data collector
 # does not rely on this, but is used to target specific agents if there
@@ -161,7 +160,7 @@ class BaseClient(object):
         headers=None,
         payload=None,
     ):
-        pass
+        return 202, b""
 
 
 class HttpClient(BaseClient):
@@ -345,7 +344,7 @@ class HttpClient(BaseClient):
         )
 
         if body and len(body) > self._max_payload_size_in_bytes:
-            raise DiscardDataForRequest
+            return 413, b""
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")

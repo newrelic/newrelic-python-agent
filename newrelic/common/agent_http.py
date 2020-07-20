@@ -11,6 +11,7 @@ import newrelic.packages.urllib3 as urllib3
 from newrelic import version
 from newrelic.common.encoding_utils import json_decode, json_encode
 from newrelic.common.object_wrapper import patch_function_wrapper
+from newrelic.network.exceptions import NetworkInterfaceException
 
 # User agent string that must be used in all requests. The data collector
 # does not rely on this, but is used to target specific agents if there
@@ -106,7 +107,7 @@ class BaseClient(object):
 
         try:
             data = json_decode(payload.decode("utf-8"))
-        except:
+        except Exception:
             data = payload
 
         pprint(data, stream=fp)
@@ -126,7 +127,7 @@ class BaseClient(object):
 
         try:
             result = json_decode(data)
-        except:
+        except Exception:
             result = data
 
         print(
@@ -349,14 +350,19 @@ class HttpClient(BaseClient):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
 
-            response = self._connection.request_encode_url(
-                method,
-                path,
-                fields=params,
-                body=body,
-                headers=merged_headers,
-                **self._urlopen_kwargs
-            )
+            try:
+                response = self._connection.request_encode_url(
+                    method,
+                    path,
+                    fields=params,
+                    body=body,
+                    headers=merged_headers,
+                    **self._urlopen_kwargs
+                )
+            except urllib3.exceptions.HTTPError:
+                # All urllib3 HTTP errors should be treated as a network
+                # interface exception.
+                raise NetworkInterfaceException
 
         self.log_response(
             self._audit_log_fp,

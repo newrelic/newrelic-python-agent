@@ -336,8 +336,9 @@ class TraceCache(object):
 
     def record_event_loop_wait(self, start_time, end_time):
         transaction = self.current_transaction()
-        if not transaction:
+        if not transaction or not transaction.settings:
             return
+
         settings = transaction.settings.event_loop_visibility
 
         if not settings.enabled:

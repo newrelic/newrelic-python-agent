@@ -2,7 +2,6 @@ import base64
 import json
 import os.path
 import ssl
-import time
 import zlib
 
 import pytest
@@ -13,7 +12,7 @@ from newrelic.common.agent_http import (
     ServerlessModeClient,
 )
 from newrelic.common.encoding_utils import ensure_str
-from newrelic.packages.urllib3.exceptions import ProtocolError
+from newrelic.network.exceptions import NetworkInterfaceException
 from newrelic.packages.urllib3.util import Url
 from testing_support.mock_external_http_server import (
     BaseHTTPServer,
@@ -347,7 +346,7 @@ def test_ssl_via_non_ssl_proxy(insecure_server, auth):
     ) as client:
         try:
             client.send_request()
-        except:
+        except Exception:
             pass
 
     try:
@@ -487,3 +486,11 @@ def test_audit_logging(server, insecure_server, client_cls, proxy_host):
     audit_log_fp.seek(0)
     audit_log_contents = audit_log_fp.read()
     assert prefix in audit_log_contents
+
+
+def test_closed_connection():
+    with HttpClient(
+        "localhost", MockExternalHTTPServer.get_open_port()
+    ) as client:
+        with pytest.raises(NetworkInterfaceException):
+            client.send_request()

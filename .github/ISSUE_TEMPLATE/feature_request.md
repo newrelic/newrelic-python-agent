@@ -4,7 +4,7 @@ about: Suggest an idea for this project
 title: ''
 labels: ''
 assignees: ''
-priority: '' 
+priority: ''
 ---
 
 ### Is your feature request related to a problem? Please describe.
@@ -20,5 +20,5 @@ A clear and concise description of any alternative solutions or features you've 
 Add any other context here.
 
 ### Priority
-Please help us better understand this feature request by choosing a priority from the following options: 
-[Nice to Have, Really Want, Must Have, Blocker] 
+Please help us better understand this feature request by choosing a priority from the following options:
+[Nice to Have, Really Want, Must Have, Blocker]

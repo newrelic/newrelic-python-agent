@@ -995,6 +995,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/agent_protocol.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/agent_streaming.py": {
         "hash": "n/a",
         "libraries": [

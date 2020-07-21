@@ -823,12 +823,19 @@ def global_settings_dump(settings_object=None):
 
     settings = flatten_settings(settings_object)
 
-    # Strip out any sensitive settings as can be sent unencrypted.
+    # Convert unserializable settings into serializable types
+    if 'attribute_filter' in settings:
+        settings['attribute_filter'] = str(settings['attribute_filter'])
+
+    # Strip out any sensitive settings.
     # The license key is being sent already, but no point sending
     # it again.
 
     del settings['license_key']
     del settings['api_key']
+    del settings['encoding_key']
+    del settings['js_agent_loader']
+    del settings['js_agent_file']
 
     # If proxy credentials are included in the settings, we obfuscate
     # them before sending, rather than deleting.

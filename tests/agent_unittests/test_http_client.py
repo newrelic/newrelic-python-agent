@@ -13,7 +13,6 @@ from newrelic.common.agent_http import (
     ServerlessModeClient,
 )
 from newrelic.common.encoding_utils import ensure_str
-from newrelic.network.exceptions import DiscardDataForRequest
 from newrelic.packages.urllib3.exceptions import ProtocolError
 from newrelic.packages.urllib3.util import Url
 from testing_support.mock_external_http_server import (
@@ -375,8 +374,10 @@ def test_max_payload_does_not_send(insecure_server):
     with InsecureHttpClient(
         "localhost", insecure_server.port, max_payload_size_in_bytes=0
     ) as client:
-        with pytest.raises(DiscardDataForRequest):
-            client.send_request(payload=b"*")
+        status, data = client.send_request(payload=b"*")
+
+    assert status == 413
+    assert not data
 
 
 @pytest.mark.parametrize(

@@ -172,3 +172,24 @@ def test_blocking_task_on_different_loop():
 
     loops[1].run_until_complete(blocker_task)
     loops[0].run_until_complete(waiter_task)
+
+
+def test_record_event_loop_wait_on_different_task():
+    import asyncio
+    loop = asyncio.get_event_loop()
+
+    async def recorder(ready, wait):
+        ready.set()
+        await wait.wait()
+        trace_cache().record_event_loop_wait(0, 1)
+
+    @background_task(name="test_record_event_loop_wait_on_different_task")
+    async def transaction():
+        coroutine_start, transaction_exit = asyncio.Event(), asyncio.Event()
+        task = loop.create_task(recorder(coroutine_start, transaction_exit))
+        await coroutine_start.wait()
+        current_transaction().__exit__(None, None, None)
+        transaction_exit.set()
+        await task
+
+    loop.run_until_complete(transaction())

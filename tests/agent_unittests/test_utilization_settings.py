@@ -17,7 +17,7 @@ import pytest
 import tempfile
 
 from newrelic.common.object_wrapper import function_wrapper
-from newrelic.core.data_collector import ApplicationSession
+from newrelic.core.agent_protocol import AgentProtocol
 from newrelic.config import initialize
 
 # these will be reloaded for each test
@@ -132,8 +132,8 @@ def test_billing_hostname_from_env_vars():
     settings = global_settings()
     assert settings.utilization.billing_hostname == 'env-hostname'
 
-    local_config, = ApplicationSession._create_connect_payload(
-            '', [], [], newrelic.core.config.global_settings_dump())
+    local_config, = AgentProtocol._connect_payload(
+            '', [], [], settings)
     util_conf = local_config['utilization'].get('config')
     assert util_conf == {'hostname': 'env-hostname'}
 
@@ -144,8 +144,8 @@ def test_billing_hostname_precedence():
     settings = global_settings()
     assert settings.utilization.billing_hostname == 'file-hostname'
 
-    local_config, = ApplicationSession._create_connect_payload(
-            '', [], [], newrelic.core.config.global_settings_dump())
+    local_config, = AgentProtocol._connect_payload(
+            '', [], [], settings)
     util_conf = local_config['utilization'].get('config')
     assert util_conf == {'hostname': 'file-hostname'}
 
@@ -157,8 +157,8 @@ def test_billing_hostname_with_blank_ini_file_no_env():
 
     # if no utilization config settings are set, the 'config' section is not in
     # the payload at all
-    local_config, = ApplicationSession._create_connect_payload(
-            '', [], [], newrelic.core.config.global_settings_dump())
+    local_config, = AgentProtocol._connect_payload(
+            '', [], [], settings)
     util_conf = local_config['utilization'].get('config')
     assert util_conf is None
 
@@ -168,8 +168,8 @@ def test_billing_hostname_with_set_in_ini_not_in_env():
     settings = global_settings()
     assert settings.utilization.billing_hostname == 'file-hostname'
 
-    local_config, = ApplicationSession._create_connect_payload(
-            '', [], [], newrelic.core.config.global_settings_dump())
+    local_config, = AgentProtocol._connect_payload(
+            '', [], [], settings)
     util_conf = local_config['utilization'].get('config')
     assert util_conf == {'hostname': 'file-hostname'}
 
@@ -179,8 +179,8 @@ def test_bad_value_in_ini_file():
     settings = global_settings()
     assert settings.utilization.logical_processors == 0
 
-    local_config, = ApplicationSession._create_connect_payload(
-            '', [], [], newrelic.core.config.global_settings_dump())
+    local_config, = AgentProtocol._connect_payload(
+            '', [], [], settings)
     util_conf = local_config['utilization'].get('config')
     assert util_conf == {'hostname': 'file-hostname', 'total_ram_mib': 12345}
 
@@ -190,8 +190,8 @@ def test_bad_value_in_env_var():
     settings = global_settings()
     assert settings.utilization.logical_processors == 0
 
-    local_config, = ApplicationSession._create_connect_payload(
-            '', [], [], newrelic.core.config.global_settings_dump())
+    local_config, = AgentProtocol._connect_payload(
+            '', [], [], settings)
     util_conf = local_config['utilization'].get('config')
     assert util_conf == {'hostname': 'env-hostname', 'total_ram_mib': 98765}
 

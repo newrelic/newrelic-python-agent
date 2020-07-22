@@ -355,8 +355,7 @@ class Application(object):
 
                 with InternalTraceContext(internal_metrics):
                     active_session = create_session(None, self._app_name,
-                            self.linked_applications, environment_settings(),
-                            global_settings_dump())
+                            self.linked_applications, environment_settings())
 
                 # We were successful, but first need to make sure we do
                 # not have any problems with the agent normalization

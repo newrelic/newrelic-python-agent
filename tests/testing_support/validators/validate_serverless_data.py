@@ -24,13 +24,12 @@ def validate_serverless_data(
     def _validate_wrapper(wrapped, instance, args, kwargs):
         payloads = []
 
-        @transient_function_wrapper('newrelic.core.data_collector',
-                'ServerlessModeSession.finalize')
+        @transient_function_wrapper('newrelic.common.agent_http',
+                'ServerlessModeClient.finalize')
         def _capture(wrapped, instance, args, kwargs):
-            payload = instance._data.copy()
+            payload = wrapped(*args, **kwargs)
             payloads.append(payload)
-            result = wrapped(*args, **kwargs)
-            return result
+            return payload
 
         def _validate():
             assert payloads

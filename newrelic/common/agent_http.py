@@ -267,8 +267,9 @@ class HttpClient(BaseClient):
         return self
 
     def __exit__(self, exc, value, tb):
-        self._connection_attr.__exit__(exc, value, tb)
-        self._connection_attr = None
+        if self._connection_attr:
+            self._connection_attr.__exit__(exc, value, tb)
+            self._connection_attr = None
 
     @property
     def _connection(self):

@@ -15,7 +15,6 @@
 import pytest
 import time
 from newrelic.core.config import finalize_application_settings
-from newrelic.core.data_collector import ApplicationSession
 from testing_support.fixtures import initialize_agent
 from newrelic.network.exceptions import DiscardDataForRequest
 

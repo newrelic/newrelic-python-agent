@@ -1,8 +1,10 @@
+import inspect
 import logging
 import tempfile
 from collections import namedtuple
 
 import pytest
+from newrelic.common import certs
 from newrelic.common.agent_http import DeveloperModeClient
 from newrelic.common.encoding_utils import json_decode, serverless_payload_decode
 from newrelic.core.agent_protocol import AgentProtocol, ServerlessModeProtocol
@@ -25,6 +27,14 @@ class HttpClientRecorder(DeveloperModeClient):
     SENT = []
     STATUS_CODE = None
     STATE = 0
+    CA_BUNDLE_PATH = None
+
+    def __init__(self, *args, **kwargs):
+        DeveloperModeClient.__init__(self, *args, **kwargs)
+        bound_args = inspect.getcallargs(
+            DeveloperModeClient.__init__, self, *args, **kwargs
+        )
+        HttpClientRecorder.CA_BUNDLE_PATH = bound_args["ca_bundle_path"]
 
     def send_request(
         self,
@@ -61,6 +71,7 @@ def clear_sent_values():
     HttpClientRecorder.SENT[:] = []
     HttpClientRecorder.STATUS_CODE = None
     HttpClientRecorder.STATE = 0
+    HttpClientRecorder.CA_BUNDLE_PATH = None
 
 
 @pytest.mark.parametrize("status_code", (None, 202))
@@ -263,3 +274,11 @@ def test_audit_logging():
 
     assert audit_log_contents.startswith("*\n")
     assert len(audit_log_contents) > 2
+
+
+@pytest.mark.parametrize("ca_bundle_path", (None, "custom",))
+def test_ca_bundle_path(ca_bundle_path):
+    settings = finalize_application_settings({"ca_bundle_path": ca_bundle_path})
+    AgentProtocol(settings, client_cls=HttpClientRecorder)
+    expected = ca_bundle_path or certs.where()
+    assert HttpClientRecorder.CA_BUNDLE_PATH == expected

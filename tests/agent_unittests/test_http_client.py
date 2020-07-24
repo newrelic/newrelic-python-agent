@@ -197,6 +197,11 @@ def test_http_close_connection(server):
     client.close_connection()
 
 
+def test_http_close_connection_in_context_manager():
+    client = HttpClient("localhost", 1000)
+    with client:
+        client.close_connection()
+
 @pytest.mark.parametrize("method", ("gzip", "deflate"))
 @pytest.mark.parametrize("threshold", (0, 100))
 def test_http_payload_compression(server, method, threshold):

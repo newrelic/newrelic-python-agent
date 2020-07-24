@@ -28,7 +28,7 @@ Request = namedtuple("Request", ("method", "path", "params", "headers", "payload
 
 # Global constants used in tests
 APP_NAME = "test_app"
-AWS = AZURE = GCP = PCF = BOOT_ID = DOCKER = KUBERNETES = None
+IP_ADDRESS = AWS = AZURE = GCP = PCF = BOOT_ID = DOCKER = KUBERNETES = None
 BROWSER_MONITORING_DEBUG = "debug"
 BROWSER_MONITORING_LOADER = "loader"
 CAPTURE_PARAMS = "capture_params"
@@ -37,7 +37,6 @@ METADATA = {}
 ENVIRONMENT = [["Agent Version", "test"]]
 HIGH_SECURITY = True
 HOST = "test_host"
-IP_ADDRESS = ["127.0.0.1"]
 LABELS = "labels"
 LINKED_APPS = ["linked_app_1", "linked_app_2"]
 MEMORY = 12000.0
@@ -144,6 +143,8 @@ def override_utilization(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def override_system_info(monkeypatch):
+    global IP_ADDRESS
+    IP_ADDRESS = ["127.0.0.1"]
     monkeypatch.setattr(system_info, "gethostname", lambda *args, **kwargs: HOST)
     monkeypatch.setattr(system_info, "getips", lambda *args, **kwargs: IP_ADDRESS)
     monkeypatch.setattr(
@@ -265,7 +266,7 @@ def connect_payload_asserts(
     with_kubernetes=True,
 ):
     payload_data = payload[0]
-    assert type(payload_data["agent_version"]) is str
+    assert type(payload_data["agent_version"]) is type(u"")
     assert payload_data["app_name"] == PAYLOAD_APP_NAME
     assert payload_data["display_host"] == DISPLAY_NAME
     assert payload_data["environment"] == ENVIRONMENT
@@ -351,25 +352,27 @@ def connect_payload_asserts(
 
 
 @pytest.mark.parametrize(
-    "with_aws,with_pcf,with_gcp,with_azure,with_docker,with_kubernetes",
+    "with_aws,with_pcf,with_gcp,with_azure,with_docker,with_kubernetes,with_ip",
     [
-        (True, False, False, False, True, True),
-        (False, True, False, False, True, True),
-        (False, False, True, False, True, True),
-        (False, False, False, True, True, True),
-        (True, False, False, False, False, False),
-        (False, True, False, False, False, False),
-        (False, False, True, False, False, False),
-        (False, False, False, True, False, False),
-        (True, True, True, True, True, True),
-        (True, True, True, True, True, False),
-        (True, True, True, True, False, True),
+        (False, False, False, False, False, False, False),
+        (False, False, False, False, False, False, True),
+        (True, False, False, False, True, True, True),
+        (False, True, False, False, True, True, True),
+        (False, False, True, False, True, True, True),
+        (False, False, False, True, True, True, True),
+        (True, False, False, False, False, False, True),
+        (False, True, False, False, False, False, True),
+        (False, False, True, False, False, False, True),
+        (False, False, False, True, False, False, True),
+        (True, True, True, True, True, True, True),
+        (True, True, True, True, True, False, True),
+        (True, True, True, True, False, True, True),
     ],
 )
 def test_connect(
-    with_aws, with_pcf, with_gcp, with_azure, with_docker, with_kubernetes
+    with_aws, with_pcf, with_gcp, with_azure, with_docker, with_kubernetes, with_ip
 ):
-    global AWS, AZURE, GCP, PCF, BOOT_ID, DOCKER, KUBERNETES
+    global AWS, AZURE, GCP, PCF, BOOT_ID, DOCKER, KUBERNETES, IP_ADDRESS
     if not with_aws:
         AWS = Exception
     if not with_pcf:
@@ -382,6 +385,8 @@ def test_connect(
         DOCKER = Exception
     if not with_kubernetes:
         KUBERNETES = Exception
+    if not with_ip:
+        IP_ADDRESS = None
     settings = finalize_application_settings(
         {
             "browser_monitoring.loader": BROWSER_MONITORING_LOADER,
@@ -446,6 +451,22 @@ def test_connect(
 
     # Verify that the connection is closed
     assert HttpClientRecorder.STATE == 0
+
+
+def test_connect_metadata(monkeypatch):
+    monkeypatch.setenv("NEW_RELIC_METADATA_FOOBAR", "foobar")
+    monkeypatch.setenv("_NEW_RELIC_METADATA_WRONG", "wrong")
+    protocol = AgentProtocol.connect(
+        APP_NAME,
+        LINKED_APPS,
+        ENVIRONMENT,
+        finalize_application_settings(),
+        client_cls=HttpClientRecorder,
+    )
+    connect = HttpClientRecorder.SENT[1]
+    assert connect.params["method"] == "connect"
+    connect_payload = json_decode(connect.payload.decode("utf-8"))[0]
+    assert connect_payload["metadata"] == {"NEW_RELIC_METADATA_FOOBAR": "foobar"}
 
 
 def test_serverless_protocol_connect():

@@ -35,7 +35,8 @@ from newrelic.core.config import global_settings_dump, global_settings
 from newrelic.core.custom_event import create_custom_event
 from newrelic.core.data_collector import create_session
 from newrelic.network.exceptions import (ForceAgentRestart,
-        ForceAgentDisconnect, DiscardDataForRequest, RetryDataForRequest)
+        ForceAgentDisconnect, DiscardDataForRequest, RetryDataForRequest,
+        NetworkInterfaceException)
 from newrelic.core.environment import environment_settings
 from newrelic.core.rules_engine import RulesEngine, SegmentCollapseEngine
 from newrelic.core.stats_engine import StatsEngine, CustomMetrics
@@ -339,216 +340,218 @@ class Application(object):
                    (120, False, False), (300, False, True), ]
 
         connect_attempts = 0
+        settings = global_settings()
 
-        try:
-            while not active_session:
+        while not active_session:
+            if self._agent_shutdown:
+                return
 
-                if self._agent_shutdown:
-                    return
+            if self._pending_shutdown:
+                return
 
-                if self._pending_shutdown:
-                    return
+            connect_attempts += 1
 
-                connect_attempts += 1
-
-                internal_metrics = CustomMetrics()
-
-                with InternalTraceContext(internal_metrics):
-                    active_session = create_session(None, self._app_name,
-                            self.linked_applications, environment_settings(),
-                            global_settings_dump())
-
-                # We were successful, but first need to make sure we do
-                # not have any problems with the agent normalization
-                # rules provided by the data collector. These could blow
-                # up when being compiled if the patterns are broken or
-                # use text which conflicts with extensions in Python's
-                # regular expression syntax.
-
-                if active_session:
-                    configuration = active_session.configuration
-
-                    try:
-                        settings = global_settings()
-
-                        if settings.debug.log_normalization_rules:
-                            _logger.info('The URL normalization rules for '
-                                    '%r are %r.', self._app_name,
-                                     configuration.url_rules)
-                            _logger.info('The metric normalization rules '
-                                    'for %r are %r.', self._app_name,
-                                     configuration.metric_name_rules)
-                            _logger.info('The transaction normalization '
-                                    'rules for %r are %r.', self._app_name,
-                                     configuration.transaction_name_rules)
-
-                        self._rules_engine['url'] = RulesEngine(
-                                configuration.url_rules)
-                        self._rules_engine['metric'] = RulesEngine(
-                                configuration.metric_name_rules)
-                        self._rules_engine['transaction'] = RulesEngine(
-                                configuration.transaction_name_rules)
-                        self._rules_engine['segment'] = SegmentCollapseEngine(
-                                configuration.transaction_segment_terms)
-
-                    except Exception:
-                        _logger.exception('The agent normalization rules '
-                                'received from the data collector could not '
-                                'be compiled properly by the agent due to a '
-                                'syntactical error or other problem. Please '
-                                'report this to New Relic support for '
-                                'investigation.')
-
-                        # For good measure, in this situation we explicitly
-                        # shutdown the session as then the data collector
-                        # will record this. Ignore any error from this. Then
-                        # we discard the session so we go into a retry loop
-                        # on presumption that issue with the URL rules will
-                        # be fixed.
-
-                        try:
-                            active_session.shutdown_session()
-                        except Exception:
-                            pass
-
-                        active_session = None
-
-                # Were we successful. If not we will sleep for a bit and
-                # then go back and try again. Log warnings or errors as
-                # per schedule associated with the retry intervals.
-
-                if not active_session:
-                    if retries:
-                        timeout, warning, error = retries.pop(0)
-
-                        if warning:
-                            _logger.warning('Registration of the application '
-                                    '%r with the data collector failed after '
-                                    'multiple attempts. Check the prior log '
-                                    'entries and remedy any issue as '
-                                    'necessary, or if the problem persists, '
-                                    'report this problem to New Relic '
-                                    'support for further investigation.',
-                                    self._app_name)
-
-                        elif error:
-                            _logger.error('Registration of the application '
-                                    '%r with the data collector failed after '
-                                    'further additional attempts. Please '
-                                    'report this problem to New Relic support '
-                                    'for further investigation.',
-                                    self._app_name)
-
-                    else:
-                        timeout = 300
-
-                    _logger.debug('Retrying registration of the application '
-                            '%r with the data collector after a further %d '
-                            'seconds.', self._app_name, timeout)
-
-                    time.sleep(timeout)
-
-            # We were successful. Ensure we have cleared out any cached
-            # data from a prior agent run for this application.
-
-            configuration = active_session.configuration
-
-            with self._stats_lock:
-                self._stats_engine.reset_stats(
-                        configuration,
-                        reset_stream=True)
-
-                if configuration.serverless_mode.enabled:
-                    sampling_target_period = 60.0
-                else:
-                    sampling_target_period = \
-                        configuration.sampling_target_period_in_seconds
-                self.adaptive_sampler = AdaptiveSampler(
-                        configuration.sampling_target,
-                        sampling_target_period)
-
-            active_session.connect_span_stream(self._stats_engine.span_stream,
-                self.record_custom_metric)
-
-            with self._stats_custom_lock:
-                self._stats_custom_engine.reset_stats(configuration)
-
-            # Record an initial start time for the reporting period and
-            # clear record of last transaction processed.
-
-            self._period_start = time.time()
-
-            self._transaction_count = 0
-            self._last_transaction = 0.0
-
-            self._global_events_account = 0
-
-            # Record metrics for how long it took us to connect and how
-            # many attempts we made. Also record metrics for the final
-            # successful attempt. If we went through multiple attempts,
-            # individual details of errors before the final one that
-            # worked are not recorded as recording them all in the
-            # initial harvest would possibly skew first harvest metrics
-            # and cause confusion as we cannot properly mark the time over
-            # which they were recorded. Make sure we do this before we
-            # mark the session active so we don't have to grab a lock on
-            # merging the internal metrics.
+            internal_metrics = CustomMetrics()
 
             with InternalTraceContext(internal_metrics):
-                internal_metric('Supportability/Python/Application/'
-                        'Registration/Duration',
-                        self._period_start - connect_start)
-                internal_metric('Supportability/Python/Application/'
-                        'Registration/Attempts',
-                        connect_attempts)
+                try:
+                    active_session = create_session(None, self._app_name,
+                            self.linked_applications, environment_settings())
+                except ForceAgentDisconnect:
+                    # Any disconnect exception means we should stop trying to connect
+                    _logger.error(
+                            'The New Relic service has requested that the agent '
+                            'stop attempting to connect. The agent will no longer '
+                            'attempt a connection with New Relic. Your application '
+                            'must be manually restarted in order to connect to New '
+                            'Relic.')
+                    return
+                except NetworkInterfaceException:
+                    active_session = None
+                except Exception:
+                    # If an exception occurs after agent has been flagged to be
+                    # shutdown then we ignore the error. This is because all
+                    # sorts of weird errors could occur when main thread start
+                    # destroying objects and this background thread to register
+                    # the application is still running.
 
-            self._stats_engine.merge_custom_metrics(
-                    internal_metrics.metrics())
+                    if not self._agent_shutdown and not self._pending_shutdown:
+                        _logger.exception(
+                                'Unexpected exception when registering '
+                                'agent with the data collector. If this problem '
+                                'persists, please report this problem to New Relic '
+                                'support for further investigation.')
+                    return
 
-            # Update the active session in this object. This will the
-            # recording of transactions to start.
+            # We were successful, but first need to make sure we do
+            # not have any problems with the agent normalization
+            # rules provided by the data collector. These could blow
+            # up when being compiled if the patterns are broken or
+            # use text which conflicts with extensions in Python's
+            # regular expression syntax.
 
-            self._active_session = active_session
+            if active_session:
+                configuration = active_session.configuration
 
-            # Enable the ability to perform a harvest. This is okay to
-            # do at this point as the processing of agent commands and
-            # starting of data samplers are protected by their own locks.
+                try:
+                    if settings.debug.log_normalization_rules:
+                        _logger.info('The URL normalization rules for '
+                                '%r are %r.', self._app_name,
+                                    configuration.url_rules)
+                        _logger.info('The metric normalization rules '
+                                'for %r are %r.', self._app_name,
+                                    configuration.metric_name_rules)
+                        _logger.info('The transaction normalization '
+                                'rules for %r are %r.', self._app_name,
+                                    configuration.transaction_name_rules)
 
-            self._harvest_enabled = True
+                    self._rules_engine['url'] = RulesEngine(
+                            configuration.url_rules)
+                    self._rules_engine['metric'] = RulesEngine(
+                            configuration.metric_name_rules)
+                    self._rules_engine['transaction'] = RulesEngine(
+                            configuration.transaction_name_rules)
+                    self._rules_engine['segment'] = SegmentCollapseEngine(
+                            configuration.transaction_segment_terms)
 
-            if activate_agent:
-                activate_agent()
+                except Exception:
+                    _logger.exception('The agent normalization rules '
+                            'received from the data collector could not '
+                            'be compiled properly by the agent due to a '
+                            'syntactical error or other problem. Please '
+                            'report this to New Relic support for '
+                            'investigation.')
 
-            # Flag that the session activation has completed to
-            # anyone who has been waiting through calling the
-            # wait_for_session_activation() method.
+                    # For good measure, in this situation we explicitly
+                    # shutdown the session as then the data collector
+                    # will record this. Ignore any error from this. Then
+                    # we discard the session so we go into a retry loop
+                    # on presumption that issue with the URL rules will
+                    # be fixed.
 
-            self._connected_event.set()
+                    try:
+                        active_session.shutdown_session()
+                    except Exception:
+                        pass
 
-            # Start any data samplers so they are aware of the start of
-            # the harvest period.
+                    active_session = None
 
-            self.start_data_samplers()
+            # If not successful we will sleep for a bit and
+            # then go back and try again. Log warnings or errors as
+            # per schedule associated with the retry intervals.
 
-        except ForceAgentDisconnect:
-            # Any disconnect exception means we should stop trying to connect
-            _logger.error('The New Relic service has requested that the agent '
-                    'stop attempting to connect. The agent will no longer '
-                    'attempt a connection with New Relic. Your application '
-                    'must be manually restarted in order to connect to New '
-                    'Relic.')
-        except Exception:
-            # If an exception occurs after agent has been flagged to be
-            # shutdown then we ignore the error. This is because all
-            # sorts of weird errors could occur when main thread start
-            # destroying objects and this background thread to register
-            # the application is still running.
+            if not active_session:
+                if retries:
+                    timeout, warning, error = retries.pop(0)
 
-            if not self._agent_shutdown and not self._pending_shutdown:
-                _logger.exception('Unexpected exception when registering '
-                        'agent with the data collector. If this problem '
-                        'persists, please report this problem to New Relic '
-                        'support for further investigation.')
+                    if warning:
+                        _logger.warning('Registration of the application '
+                                '%r with the data collector failed after '
+                                'multiple attempts. Check the prior log '
+                                'entries and remedy any issue as '
+                                'necessary, or if the problem persists, '
+                                'report this problem to New Relic '
+                                'support for further investigation.',
+                                self._app_name)
+
+                    elif error:
+                        _logger.error('Registration of the application '
+                                '%r with the data collector failed after '
+                                'further additional attempts. Please '
+                                'report this problem to New Relic support '
+                                'for further investigation.',
+                                self._app_name)
+
+                else:
+                    timeout = 300
+
+                _logger.debug('Retrying registration of the application '
+                        '%r with the data collector after a further %d '
+                        'seconds.', self._app_name, timeout)
+
+                time.sleep(timeout)
+
+        # We were successful. Ensure we have cleared out any cached
+        # data from a prior agent run for this application.
+
+        configuration = active_session.configuration
+
+        with self._stats_lock:
+            self._stats_engine.reset_stats(
+                    configuration,
+                    reset_stream=True)
+
+            if configuration.serverless_mode.enabled:
+                sampling_target_period = 60.0
+            else:
+                sampling_target_period = \
+                    configuration.sampling_target_period_in_seconds
+            self.adaptive_sampler = AdaptiveSampler(
+                    configuration.sampling_target,
+                    sampling_target_period)
+
+        active_session.connect_span_stream(self._stats_engine.span_stream,
+            self.record_custom_metric)
+
+        with self._stats_custom_lock:
+            self._stats_custom_engine.reset_stats(configuration)
+
+        # Record an initial start time for the reporting period and
+        # clear record of last transaction processed.
+
+        self._period_start = time.time()
+
+        self._transaction_count = 0
+        self._last_transaction = 0.0
+
+        self._global_events_account = 0
+
+        # Record metrics for how long it took us to connect and how
+        # many attempts we made. Also record metrics for the final
+        # successful attempt. If we went through multiple attempts,
+        # individual details of errors before the final one that
+        # worked are not recorded as recording them all in the
+        # initial harvest would possibly skew first harvest metrics
+        # and cause confusion as we cannot properly mark the time over
+        # which they were recorded. Make sure we do this before we
+        # mark the session active so we don't have to grab a lock on
+        # merging the internal metrics.
+
+        with InternalTraceContext(internal_metrics):
+            internal_metric('Supportability/Python/Application/'
+                    'Registration/Duration',
+                    self._period_start - connect_start)
+            internal_metric('Supportability/Python/Application/'
+                    'Registration/Attempts',
+                    connect_attempts)
+
+        self._stats_engine.merge_custom_metrics(
+                internal_metrics.metrics())
+
+        # Update the active session in this object. This will the
+        # recording of transactions to start.
+
+        self._active_session = active_session
+
+        # Enable the ability to perform a harvest. This is okay to
+        # do at this point as the processing of agent commands and
+        # starting of data samplers are protected by their own locks.
+
+        self._harvest_enabled = True
+
+        if activate_agent:
+            activate_agent()
+
+        # Flag that the session activation has completed to
+        # anyone who has been waiting through calling the
+        # wait_for_session_activation() method.
+
+        self._connected_event.set()
+
+        # Start any data samplers so they are aware of the start of
+        # the harvest period.
+
+        self.start_data_samplers()
 
         try:
             self._active_session.close_connection()

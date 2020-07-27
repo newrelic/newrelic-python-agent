@@ -50,12 +50,11 @@ from newrelic.core.attribute_filter import (AttributeFilter,
         DST_ERROR_COLLECTOR, DST_TRANSACTION_TRACER)
 from newrelic.core.config import (apply_config_setting, flatten_settings,
         global_settings)
-from newrelic.core.data_collector import _developer_mode_responses
+from newrelic.common.agent_http import DeveloperModeClient
 from newrelic.core.database_utils import SQLConnections
 from newrelic.core.internal_metrics import InternalTraceContext
 from newrelic.core.stats_engine import CustomMetrics
 
-from newrelic.network.addresses import proxy_details
 from newrelic.network.exceptions import RetryDataForRequest
 
 from testing_support.sample_applications import (user_attributes_added,
@@ -88,17 +87,7 @@ def _lookup_string_table(name, string_table, default=None):
 
 
 if _environ_as_bool('NEW_RELIC_HIGH_SECURITY'):
-    _developer_mode_responses['connect']['high_security'] = True
-
-
-def fake_collector_wrapper(wrapped, instance, args, kwargs):
-    def _bind_params(session, url, method, license_key, agent_run_id=None,
-            payload=()):
-        return method
-
-    method = _bind_params(*args, **kwargs)
-
-    return _developer_mode_responses[method]
+    DeveloperModeClient.RESPONSES['connect']['high_security'] = True
 
 
 def initialize_agent(app_name=None, default_settings={}):
@@ -238,11 +227,7 @@ def collector_agent_registration_fixture(app_name=None, default_settings={},
         use_fake_collector = _environ_as_bool(
                 'NEW_RELIC_FAKE_COLLECTOR', False)
         use_developer_mode = _environ_as_bool(
-                'NEW_RELIC_DEVELOPER_MODE', False)
-
-        if use_fake_collector:
-            wrap_function_wrapper('newrelic.core.data_collector',
-                    'send_request', fake_collector_wrapper)
+                'NEW_RELIC_DEVELOPER_MODE', use_fake_collector)
 
         # Attempt to record deployment marker for test. It's ok
         # if the deployment marker does not record successfully.
@@ -268,9 +253,6 @@ def collector_agent_registration_fixture(app_name=None, default_settings={},
         proxy_pass = settings.proxy_pass
 
         timeout = settings.agent_limits.data_collector_timeout
-
-        proxies = proxy_details(None, proxy_host, proxy_port, proxy_user,
-                proxy_pass)
 
         user = pwd.getpwuid(os.getuid()).pw_gecos
 
@@ -2778,10 +2760,10 @@ def failing_endpoint(endpoint, raises=RetryDataForRequest, call_number=1):
 
     called_list = []
 
-    @transient_function_wrapper('newrelic.core.data_collector',
-            'DeveloperModeSession.send_request')
+    @transient_function_wrapper('newrelic.core.agent_protocol',
+            'AgentProtocol.send')
     def send_request_wrapper(wrapped, instance, args, kwargs):
-        def _bind_params(session, url, method, *args, **kwargs):
+        def _bind_params(method, *args, **kwargs):
             return method
 
         method = _bind_params(*args, **kwargs)

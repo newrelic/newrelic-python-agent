@@ -77,7 +77,7 @@ class TestCatInterface(newrelic.tests.test_cases.TestCase):
         super(TestCatInterface, self).tearDown()
         agent = newrelic.core.agent.agent_instance()
         app = agent.application(self.app_api.name)
-        app._active_session.configuration = self.agent_settings
+        app._active_session._protocol.configuration = self.agent_settings
 
     def prepare_transaction(self, txn):
         txn.client_cross_process_id = "Meow"

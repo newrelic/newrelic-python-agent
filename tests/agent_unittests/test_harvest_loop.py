@@ -15,6 +15,7 @@
 import random
 import pytest
 import six
+import tempfile
 import time
 
 from newrelic.common.object_wrapper import (transient_function_wrapper,
@@ -23,9 +24,8 @@ from newrelic.core.config import global_settings, finalize_application_settings
 from testing_support.fixtures import (override_generic_settings,
         function_not_called, failing_endpoint)
 
+from newrelic.common.agent_http import DeveloperModeClient
 from newrelic.core.application import Application
-from newrelic.core.data_collector import (send_request, collector_url,
-        _developer_mode_responses)
 from newrelic.core.stats_engine import CustomMetrics, SampledDataSet
 from newrelic.core.transaction_node import TransactionNode
 from newrelic.core.root_node import RootNode
@@ -153,26 +153,14 @@ def transaction_node(request):
     return node
 
 
-@pytest.fixture
-def audit_log_file():
-    import newrelic.core.data_collector as data_collector
-    fp = six.StringIO()
-    orig = data_collector._audit_log_fp
-    data_collector._audit_log_fp = fp
-    yield fp
-    data_collector._audit_log_fp = orig
-
-
 def validate_metric_payload(metrics=[], endpoints_called=[]):
 
     sent_metrics = {}
 
-    @transient_function_wrapper('newrelic.core.data_collector',
-            'DeveloperModeSession.send_request')
+    @transient_function_wrapper('newrelic.core.agent_protocol',
+            'AgentProtocol.send')
     def send_request_wrapper(wrapped, instance, args, kwargs):
-        def _bind_params(session, url, method, license_key,
-                agent_run_id=None, request_headers_map=None, payload=(), *args,
-                **kwargs):
+        def _bind_params(method, payload=(), *args, **kwargs):
             return method, payload
 
         method, payload = _bind_params(*args, **kwargs)
@@ -213,12 +201,10 @@ def validate_transaction_event_payloads(payload_validators):
 
         payloads = []
 
-        @transient_function_wrapper('newrelic.core.data_collector',
-                'DeveloperModeSession.send_request')
+        @transient_function_wrapper('newrelic.core.agent_protocol',
+                'AgentProtocol.send')
         def send_request_wrapper(wrapped, instance, args, kwargs):
-            def _bind_params(session, url, method, license_key,
-                    agent_run_id=None, request_headers_map=None, payload=(),
-                    *args, **kwargs):
+            def _bind_params(method, payload=(), *args, **kwargs):
                 return method, payload
 
             method, payload = _bind_params(*args, **kwargs)
@@ -245,11 +231,9 @@ def validate_error_event_sampling(events_seen, reservoir_size,
         endpoints_called=[]):
 
     @transient_function_wrapper('newrelic.core.data_collector',
-            'DeveloperModeSession.send_request')
+            'AgentProtocol.send')
     def send_request_wrapper(wrapped, instance, args, kwargs):
-        def _bind_params(session, url, method, license_key,
-                agent_run_id=None, request_headers_map=None, payload=(), *args,
-                **kwargs):
+        def _bind_params(method, payload=(), *args, **kwargs):
             return method, payload
 
         method, payload = _bind_params(*args, **kwargs)
@@ -284,9 +268,9 @@ endpoints_called = []
     'developer_mode': True,
     'license_key': '**NOT A LICENSE KEY**',
     'feature_flag': set(),
-    'audit_log_file': True,  # This value doesn't matter
+    'audit_log_file': tempfile.NamedTemporaryFile().name,
 })
-def test_application_harvest(audit_log_file):
+def test_application_harvest():
     app = Application('Python Agent Test (Harvest Loop)')
     app.connect_to_data_collector(None)
     app.harvest()
@@ -296,22 +280,24 @@ def test_application_harvest(audit_log_file):
     assert endpoints_called[-2] == 'metric_data'
 
     # verify audit log is not empty
-    assert audit_log_file.tell()
+    with open(settings.audit_log_file, 'rb') as f:
+        assert f.read()
 
 
 @override_generic_settings(settings, {
     'serverless_mode.enabled': True,
     'license_key': '**NOT A LICENSE KEY**',
     'feature_flag': set(),
-    'audit_log_file': True,  # This value doesn't matter
+    'audit_log_file': tempfile.NamedTemporaryFile().name,
 })
-def test_serverless_application_harvest(audit_log_file):
+def test_serverless_application_harvest():
     app = Application('Python Agent Test (Serverless Harvest Loop)')
     app.connect_to_data_collector(None)
     app.harvest()
 
     # verify audit log is not empty
-    assert audit_log_file.tell()
+    with open(settings.audit_log_file, 'rb') as f:
+        assert f.read()
 
 
 @pytest.mark.parametrize(
@@ -924,15 +910,19 @@ def test_flexible_harvest_rollback():
         'developer_mode': True,
 })
 def test_get_agent_commands_returns_none():
-    original_return_value = _developer_mode_responses.get('get_agent_commands')
-    _developer_mode_responses['get_agent_commands'] = None
+    MISSING = object()
+    original_return_value = DeveloperModeClient.RESPONSES.get('get_agent_commands', MISSING)
+    DeveloperModeClient.RESPONSES['get_agent_commands'] = None
 
     try:
         app = Application('Python Agent Test (Harvest Loop)')
         app.connect_to_data_collector(None)
         app.process_agent_commands()
     finally:
-        _developer_mode_responses['get_agent_commands'] = original_return_value
+        if original_return_value is MISSING:
+            DeveloperModeClient.RESPONSES.pop('get_agent_commands')
+        else:
+            DeveloperModeClient.RESPONSES['get_agent_commands'] = original_return_value
 
 
 @failing_endpoint('get_agent_commands')

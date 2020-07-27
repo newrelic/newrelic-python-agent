@@ -1,12 +1,15 @@
 import inspect
+import os
 import logging
 import tempfile
 from collections import namedtuple
 
 import pytest
 from newrelic.common import certs
+from newrelic.common import system_info
 from newrelic.common.agent_http import DeveloperModeClient
 from newrelic.common.encoding_utils import json_decode, serverless_payload_decode
+from newrelic.common.utilization import CommonUtilization
 from newrelic.core.agent_protocol import AgentProtocol, ServerlessModeProtocol
 from newrelic.core.config import (
     finalize_application_settings,
@@ -21,6 +24,31 @@ from newrelic.network.exceptions import (
 )
 
 Request = namedtuple("Request", ("method", "path", "params", "headers", "payload"))
+
+
+# Global constants used in tests
+APP_NAME = "test_app"
+IP_ADDRESS = AWS = AZURE = GCP = PCF = BOOT_ID = DOCKER = KUBERNETES = None
+BROWSER_MONITORING_DEBUG = "debug"
+BROWSER_MONITORING_LOADER = "loader"
+CAPTURE_PARAMS = "capture_params"
+DISPLAY_NAME = "display_name"
+METADATA = {}
+ENVIRONMENT = [["Agent Version", "test"]]
+HIGH_SECURITY = True
+HOST = "test_host"
+LABELS = "labels"
+LINKED_APPS = ["linked_app_1", "linked_app_2"]
+MEMORY = 12000.0
+PAYLOAD_APP_NAME = [APP_NAME] + LINKED_APPS
+PAYLOAD_ID = ",".join(PAYLOAD_APP_NAME)
+PID = 123
+PROCESSOR_COUNT = 4
+RECORD_SQL = "record_sql"
+ANALYTIC_EVENT_DATA = 10000
+SPAN_EVENT_DATA = 1000
+CUSTOM_EVENT_DATA = 10000
+ERROR_EVENT_DATA = 100
 
 
 class HttpClientRecorder(DeveloperModeClient):
@@ -72,6 +100,60 @@ def clear_sent_values():
     HttpClientRecorder.STATUS_CODE = None
     HttpClientRecorder.STATE = 0
     HttpClientRecorder.CA_BUNDLE_PATH = None
+
+
+@pytest.fixture(autouse=True)
+def override_utilization(monkeypatch):
+    global AWS, AZURE, GCP, PCF, BOOT_ID, DOCKER, KUBERNETES
+    AWS = {"id": "foo", "type": "bar", "zone": "baz"}
+    AZURE = {"location": "foo", "name": "bar", "vmId": "baz", "vmSize": "boo"}
+    GCP = {"id": 1, "machineType": "trmntr-t1000", "name": "arnold", "zone": "abc"}
+    PCF = {"cf_instance_guid": "1", "cf_instance_ip": "7", "memory_limit": "0"}
+    BOOT_ID = "cca356a7d72737f645a10c122ebbe906"
+    DOCKER = {"id": "foobar"}
+    KUBERNETES = {"kubernetes_service_host": "10.96.0.1"}
+
+    @classmethod
+    def detect(cls):
+        name = cls.__name__
+        output = None
+        if name.startswith("BootId"):
+            output = BOOT_ID
+        elif name.startswith("AWS"):
+            output = AWS
+        elif name.startswith("Azure"):
+            output = AZURE
+        elif name.startswith("GCP"):
+            output = GCP
+        elif name.startswith("PCF"):
+            output = PCF
+        elif name.startswith("Docker"):
+            output = DOCKER
+        elif name.startswith("Kubernetes"):
+            output = KUBERNETES
+        else:
+            assert False, "Unknown utilization class"
+
+        if output is Exception:
+            raise Exception
+        return output
+
+    monkeypatch.setattr(CommonUtilization, "detect", detect)
+
+
+@pytest.fixture(autouse=True)
+def override_system_info(monkeypatch):
+    global IP_ADDRESS
+    IP_ADDRESS = ["127.0.0.1"]
+    monkeypatch.setattr(system_info, "gethostname", lambda *args, **kwargs: HOST)
+    monkeypatch.setattr(system_info, "getips", lambda *args, **kwargs: IP_ADDRESS)
+    monkeypatch.setattr(
+        system_info, "logical_processor_count", lambda *args, **kwargs: PROCESSOR_COUNT
+    )
+    monkeypatch.setattr(
+        system_info, "total_physical_memory", lambda *args, **kwargs: MEMORY
+    )
+    monkeypatch.setattr(os, "getpid", lambda *args, **kwargs: PID)
 
 
 @pytest.mark.parametrize("status_code", (None, 202))
@@ -174,14 +256,164 @@ def test_close_connection():
     assert HttpClientRecorder.STATE == -1
 
 
-def test_connect():
-    settings = global_settings()
+def connect_payload_asserts(
+    payload,
+    with_aws=True,
+    with_gcp=True,
+    with_pcf=True,
+    with_azure=True,
+    with_docker=True,
+    with_kubernetes=True,
+):
+    payload_data = payload[0]
+    assert type(payload_data["agent_version"]) is type(u"")
+    assert payload_data["app_name"] == PAYLOAD_APP_NAME
+    assert payload_data["display_host"] == DISPLAY_NAME
+    assert payload_data["environment"] == ENVIRONMENT
+    assert payload_data["metadata"] == METADATA
+    assert payload_data["high_security"] == HIGH_SECURITY
+    assert payload_data["host"] == HOST
+    assert payload_data["identifier"] == PAYLOAD_ID
+    assert payload_data["labels"] == LABELS
+    assert payload_data["language"] == "python"
+    assert payload_data["pid"] == PID
+    assert len(payload_data["security_settings"]) == 2
+    assert payload_data["security_settings"]["capture_params"] == CAPTURE_PARAMS
+    assert payload_data["security_settings"]["transaction_tracer"] == {
+        "record_sql": RECORD_SQL
+    }
+    assert len(payload_data["settings"]) == 2
+    assert payload_data["settings"]["browser_monitoring.loader"] == (
+        BROWSER_MONITORING_LOADER
+    )
+    assert payload_data["settings"]["browser_monitoring.debug"] == (
+        BROWSER_MONITORING_DEBUG
+    )
+
+    utilization_len = 5
+
+    assert "full_hostname" not in payload_data["utilization"]
+
+    if IP_ADDRESS:
+        assert payload_data["utilization"]["ip_address"] == IP_ADDRESS
+        utilization_len += 1
+    else:
+        assert "ip_address" not in payload_data["utilization"]
+
+    utilization_len = utilization_len + any(
+        [with_aws, with_pcf, with_gcp, with_azure, with_docker, with_kubernetes]
+    )
+    assert len(payload_data["utilization"]) == utilization_len
+    assert payload_data["utilization"]["hostname"] == HOST
+
+    assert payload_data["utilization"]["logical_processors"] == PROCESSOR_COUNT
+    assert payload_data["utilization"]["metadata_version"] == 5
+    assert payload_data["utilization"]["total_ram_mib"] == MEMORY
+    assert payload_data["utilization"]["boot_id"] == BOOT_ID
+
+    # Faster Event Harvest
+    harvest_limits = payload_data["event_harvest_config"]["harvest_limits"]
+    assert harvest_limits["analytic_event_data"] == ANALYTIC_EVENT_DATA
+    assert harvest_limits["span_event_data"] == SPAN_EVENT_DATA
+    assert harvest_limits["custom_event_data"] == CUSTOM_EVENT_DATA
+    assert harvest_limits["error_event_data"] == ERROR_EVENT_DATA
+
+    vendors_len = 0
+
+    if any([with_aws, with_pcf, with_gcp, with_azure]):
+        vendors_len += 1
+
+    if with_docker:
+        vendors_len += 1
+
+    if with_kubernetes:
+        vendors_len += 1
+
+    if vendors_len:
+        assert len(payload_data["utilization"]["vendors"]) == vendors_len
+
+        # check ordering
+        if with_aws:
+            assert payload_data["utilization"]["vendors"]["aws"] == AWS
+        elif with_pcf:
+            assert payload_data["utilization"]["vendors"]["pcf"] == PCF
+        elif with_gcp:
+            assert payload_data["utilization"]["vendors"]["gcp"] == GCP
+        elif with_azure:
+            assert payload_data["utilization"]["vendors"]["azure"] == AZURE
+
+        if with_docker:
+            assert payload_data["utilization"]["vendors"]["docker"] == DOCKER
+
+        if with_kubernetes:
+            assert payload_data["utilization"]["vendors"]["kubernetes"] == KUBERNETES
+    else:
+        assert "vendors" not in payload_data["utilization"]
+
+
+@pytest.mark.parametrize(
+    "with_aws,with_pcf,with_gcp,with_azure,with_docker,with_kubernetes,with_ip",
+    [
+        (False, False, False, False, False, False, False),
+        (False, False, False, False, False, False, True),
+        (True, False, False, False, True, True, True),
+        (False, True, False, False, True, True, True),
+        (False, False, True, False, True, True, True),
+        (False, False, False, True, True, True, True),
+        (True, False, False, False, False, False, True),
+        (False, True, False, False, False, False, True),
+        (False, False, True, False, False, False, True),
+        (False, False, False, True, False, False, True),
+        (True, True, True, True, True, True, True),
+        (True, True, True, True, True, False, True),
+        (True, True, True, True, False, True, True),
+    ],
+)
+def test_connect(
+    with_aws, with_pcf, with_gcp, with_azure, with_docker, with_kubernetes, with_ip
+):
+    global AWS, AZURE, GCP, PCF, BOOT_ID, DOCKER, KUBERNETES, IP_ADDRESS
+    if not with_aws:
+        AWS = Exception
+    if not with_pcf:
+        PCF = Exception
+    if not with_gcp:
+        GCP = Exception
+    if not with_azure:
+        AZURE = Exception
+    if not with_docker:
+        DOCKER = Exception
+    if not with_kubernetes:
+        KUBERNETES = Exception
+    if not with_ip:
+        IP_ADDRESS = None
+    settings = finalize_application_settings(
+        {
+            "browser_monitoring.loader": BROWSER_MONITORING_LOADER,
+            "browser_monitoring.debug": BROWSER_MONITORING_DEBUG,
+            "capture_params": CAPTURE_PARAMS,
+            "process_host.display_name": DISPLAY_NAME,
+            "transaction_tracer.record_sql": RECORD_SQL,
+            "high_security": HIGH_SECURITY,
+            "labels": LABELS,
+            "utilization.detect_aws": with_aws,
+            "utilization.detect_pcf": with_pcf,
+            "utilization.detect_gcp": with_gcp,
+            "utilization.detect_azure": with_azure,
+            "utilization.detect_docker": with_docker,
+            "utilization.detect_kubernetes": with_kubernetes,
+            "event_harvest_config": {
+                "harvest_limits": {
+                    "analytic_event_data": ANALYTIC_EVENT_DATA,
+                    "span_event_data": SPAN_EVENT_DATA,
+                    "custom_event_data": CUSTOM_EVENT_DATA,
+                    "error_event_data": ERROR_EVENT_DATA,
+                }
+            },
+        }
+    )
     protocol = AgentProtocol.connect(
-        "testapp",
-        ["foo"],
-        [("Agent Version", "test")],
-        settings,
-        client_cls=HttpClientRecorder,
+        APP_NAME, LINKED_APPS, ENVIRONMENT, settings, client_cls=HttpClientRecorder,
     )
 
     # verify there are exactly 3 calls to HttpClientRecorder
@@ -196,15 +428,15 @@ def test_connect():
     connect = HttpClientRecorder.SENT[1]
     assert connect.params["method"] == "connect"
     connect_payload = json_decode(connect.payload.decode("utf-8"))
-
-    assert len(connect_payload) == 1
-    connect_payload = connect_payload[0]
-
-    # Verify inputs to connect are sent in the payload
-    assert connect_payload["language"] == "python"
-    assert connect_payload["app_name"] == ["testapp", "foo"]
-    assert connect_payload["identifier"] == "testapp,foo"
-    assert connect_payload["environment"] == [["Agent Version", "test"]]
+    connect_payload_asserts(
+        connect_payload,
+        with_aws=with_aws,
+        with_pcf=with_pcf,
+        with_gcp=with_gcp,
+        with_azure=with_azure,
+        with_docker=with_docker,
+        with_kubernetes=with_kubernetes,
+    )
 
     # Verify agent_settings call is done with the finalized settings
     agent_settings = HttpClientRecorder.SENT[2]
@@ -219,6 +451,22 @@ def test_connect():
 
     # Verify that the connection is closed
     assert HttpClientRecorder.STATE == 0
+
+
+def test_connect_metadata(monkeypatch):
+    monkeypatch.setenv("NEW_RELIC_METADATA_FOOBAR", "foobar")
+    monkeypatch.setenv("_NEW_RELIC_METADATA_WRONG", "wrong")
+    protocol = AgentProtocol.connect(
+        APP_NAME,
+        LINKED_APPS,
+        ENVIRONMENT,
+        finalize_application_settings(),
+        client_cls=HttpClientRecorder,
+    )
+    connect = HttpClientRecorder.SENT[1]
+    assert connect.params["method"] == "connect"
+    connect_payload = json_decode(connect.payload.decode("utf-8"))[0]
+    assert connect_payload["metadata"] == {"NEW_RELIC_METADATA_FOOBAR": "foobar"}
 
 
 def test_serverless_protocol_connect():

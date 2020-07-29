@@ -546,3 +546,10 @@ def test_ca_bundle_path(ca_bundle_path):
     AgentProtocol(settings, client_cls=HttpClientRecorder)
     expected = ca_bundle_path or certs.where()
     assert HttpClientRecorder.CA_BUNDLE_PATH == expected
+
+
+def test_max_payload_size_limit():
+    settings = finalize_application_settings({"max_payload_size_in_bytes": 0, "port": -1})
+    protocol = AgentProtocol(settings, host="localhost")
+    with pytest.raises(DiscardDataForRequest):
+        protocol.send("metric_data")

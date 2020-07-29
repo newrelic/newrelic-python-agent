@@ -13,158 +13,89 @@
 # limitations under the License.
 
 import pytest
-# FIXME: urllib3
-pytest.importorskip('newrelic.packages.requests')
 import os
 import time
 
-from testing_support.fixtures import (override_generic_settings,
-        collector_agent_registration_fixture, initialize_agent)
-from newrelic.core.config import global_settings, global_settings_dump
-from newrelic.core.data_collector import ApplicationSession
-from newrelic.packages.requests.adapters import HTTPAdapter, urldefragauth
-from newrelic.packages.requests import Session
+
+from testing_support.fixtures import collector_agent_registration_fixture
+from newrelic.core.agent_protocol import AgentProtocol
+from newrelic.common.agent_http import HttpClient
+from newrelic.core.config import global_settings
 
 
-class FullURIAdapter(HTTPAdapter):
-    def request_url(self, request, proxies):
-        return urldefragauth(request.url)
-
-
-class FullURIApplicationSession(ApplicationSession):
-
-    @classmethod
-    def send_request(cls, session, *args, **kwargs):
-        session = Session()
-
-        # Mount an adapter that will force the full URI to be sent
-        session.mount('https://', FullURIAdapter())
-        session.mount('http://', FullURIAdapter())
-
-        return ApplicationSession.send_request(
-                session, *args, **kwargs
-        )
+class FullUriClient(HttpClient):
+    def send_request(
+        self, method="POST", path="/agent_listener/invoke_raw_method", *args, **kwargs
+    ):
+        path = "https://" + self._host + path
+        return super(FullUriClient, self).send_request(method, path, *args, **kwargs)
 
 
 _default_settings = {
-    'debug.log_data_collector_payloads': True,
-    'debug.record_transaction_failure': True,
-    'startup_timeout': 10.0,
+    "debug.log_data_collector_payloads": True,
+    "debug.record_transaction_failure": True,
+    "startup_timeout": 10.0,
 }
 application = collector_agent_registration_fixture(
-        app_name='Python Agent Test (test_full_uri_payloads)',
-        default_settings=_default_settings)
+    app_name="Python Agent Test (test_full_uri_payloads)",
+    default_settings=_default_settings,
+)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture
 def session(application):
     session = application._agent.application(application.name)._active_session
-    assert session is not None
-
-    # Mount an adapter that will force the full URI to be sent
-    for _ in range(3):
-        # connect_to_data_collector will close the session once a connection
-        # has been established. Force a context switch and wait for this to
-        # happen.
-        time.sleep(0.1)
-        if session._requests_session is None:
-            break
-    else:
-        assert False, "Session was never closed during connect."
-
-    # Force a new request session to be created and store the id
-    before_id = id(session.requests_session)
-
-    original_adapters = session.requests_session.adapters.copy()
-
-    session.requests_session.mount('https://', FullURIAdapter())
-    session.requests_session.mount('http://', FullURIAdapter())
-
-    yield session
-
-    # Check that the requests session hasn't been modified
-    assert before_id == id(session.requests_session)
-
-    # Restore the original HTTP adapters
-    session.requests_session.adapters = original_adapters
+    return session
 
 
 NOW = time.time()
 EMPTY_SAMPLES = {
-    'reservoir_size': 100,
-    'events_seen': 0,
+    "reservoir_size": 100,
+    "events_seen": 0,
 }
 
 
-_override_settings = {'agent_limits.data_compression_threshold': 0}
-
-
-@pytest.mark.parametrize('method,args', [
-    ('send_metric_data', (NOW, NOW + 1, ())),
-    ('send_transaction_events', (EMPTY_SAMPLES, ())),
-    ('send_custom_events', (EMPTY_SAMPLES, ())),
-    ('send_error_events', (EMPTY_SAMPLES, ())),
-    ('send_transaction_traces', ([[]],)),
-    ('send_sql_traces', ([[]],)),
-    ('get_agent_commands', ()),
-    ('send_profile_data', ([[]],)),
-    ('get_xray_metadata', (0,)),
-    ('send_errors', ([[]],)),
-    ('send_agent_command_results', ({0: {}},)),
-    ('agent_settings', ({},)),
-    ('send_span_events', (EMPTY_SAMPLES, ())),
-])
-@override_generic_settings(global_settings(), _override_settings)
-def test_full_uri_payload(session, method, args):
-    sender = getattr(session, method)
-
+@pytest.mark.skipif(
+    "NEW_RELIC_LICENSE_KEY" not in os.environ,
+    reason="License key is not expected to be valid",
+)
+@pytest.mark.parametrize(
+    "method,payload",
+    [
+        ("metric_data", []),
+        ("analytic_event_data", []),
+        ("custom_event_data", []),
+        ("error_event_data", []),
+        ("transaction_sample_data", []),
+        ("sql_trace_data", []),
+        ("get_agent_commands", []),
+        ("profile_data", []),
+        ("error_data", []),
+        ("span_event_data", []),
+        ("agent_command_results", ["", {"0": {}}]),
+    ],
+)
+def test_full_uri_payload(session, method, payload):
+    redirect_host = session._protocol.client._host
+    if method == "agent_command_results":
+        payload[0] = session.configuration.agent_run_id
+    protocol = AgentProtocol(
+        session.configuration, redirect_host, client_cls=FullUriClient
+    )
     # An exception will be raised here if there's a problem with the response
-    sender(*args)
+    protocol.send(method, payload)
 
 
-_override_settings = {'compressed_content_encoding': 'deflate',
-            'agent_limits.data_compression_threshold': 0}
-
-
-@pytest.mark.parametrize('method,args', [
-    ('send_metric_data', (NOW, NOW + 1, ())),
-    ('send_transaction_events', (EMPTY_SAMPLES, ())),
-    ('send_custom_events', (EMPTY_SAMPLES, ())),
-    ('send_error_events', (EMPTY_SAMPLES, ())),
-    ('send_transaction_traces', ([[]],)),
-    ('send_sql_traces', ([[]],)),
-    ('get_agent_commands', ()),
-    ('send_profile_data', ([[]],)),
-    ('get_xray_metadata', (0,)),
-    ('send_errors', ([[]],)),
-    ('send_agent_command_results', ({0: {}},)),
-    ('agent_settings', ({},)),
-    ('send_span_events', (EMPTY_SAMPLES, ())),
-])
-@override_generic_settings(global_settings(), _override_settings)
-def test_compression_deflate(session, method, args):
-    sender = getattr(session, method)
-
+@pytest.mark.skipif(
+    "NEW_RELIC_LICENSE_KEY" not in os.environ,
+    reason="License key is not expected to be valid",
+)
+def test_full_uri_connect():
     # An exception will be raised here if there's a problem with the response
-    sender(*args)
-
-
-@pytest.mark.skipif('NEW_RELIC_LICENSE_KEY' not in os.environ, reason="License key is not expected to be valid")
-def test_full_uri_protocol_lifecycle():
-    """Exercises the following endpoints:
-
-    * preconnect
-    * connect
-    * shutdown
-    """
-    initialize_agent(
-        app_name='Python Agent Test (test_full_uri_payloads)',
-        default_settings=_default_settings)
-
-    environment = ()
-    linked_apps = []
-
-    session = FullURIApplicationSession.create_session(
-            None, global_settings().app_name,
-            linked_apps, environment, global_settings_dump())
-    session.shutdown_session()
+    AgentProtocol.connect(
+        "Python Agent Test (test_full_uri_payloads)",
+        [],
+        [],
+        global_settings(),
+        client_cls=FullUriClient,
+    )

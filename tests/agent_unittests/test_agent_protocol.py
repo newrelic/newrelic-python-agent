@@ -1,12 +1,12 @@
 import inspect
-import os
 import logging
+import os
 import tempfile
 from collections import namedtuple
 
 import pytest
-from newrelic.common import certs
-from newrelic.common import system_info
+
+from newrelic.common import certs, system_info
 from newrelic.common.agent_http import DeveloperModeClient
 from newrelic.common.encoding_utils import json_decode, serverless_payload_decode
 from newrelic.common.utilization import CommonUtilization
@@ -16,6 +16,8 @@ from newrelic.core.config import (
     flatten_settings,
     global_settings,
 )
+from newrelic.core.internal_metrics import InternalTraceContext
+from newrelic.core.stats_engine import CustomMetrics
 from newrelic.network.exceptions import (
     DiscardDataForRequest,
     ForceAgentDisconnect,
@@ -225,8 +227,22 @@ def test_status_code_exceptions(status_code, expected_exc, log_level, caplog):
     HttpClientRecorder.STATUS_CODE = status_code
     settings = finalize_application_settings({"license_key": "123LICENSEKEY",})
     protocol = AgentProtocol(settings, client_cls=HttpClientRecorder)
-    with pytest.raises(expected_exc):
-        protocol.send("analytic_event_data")
+
+    internal_metrics = CustomMetrics()
+    with InternalTraceContext(internal_metrics):
+        with pytest.raises(expected_exc):
+            protocol.send("analytic_event_data")
+
+    internal_metrics = dict(internal_metrics.metrics())
+    if status_code == 413:
+        assert internal_metrics[
+            "Supportability/Python/Collector/MaxPayloadSizeLimit/analytic_event_data"
+        ] == [1, 0, 0, 0, 0, 0]
+    else:
+        assert (
+            "Supportability/Python/Collector/MaxPayloadSizeLimit/analytic_event_data"
+            not in internal_metrics
+        )
 
     assert len(HttpClientRecorder.SENT) == 1
     request = HttpClientRecorder.SENT[0]

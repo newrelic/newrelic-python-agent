@@ -4,6 +4,7 @@ import os
 from newrelic import version
 from newrelic.common import certs, system_info
 from newrelic.common.agent_http import HttpClient, ServerlessModeClient
+from newrelic.core.internal_metrics import internal_count_metric
 from newrelic.common.encoding_utils import (
     json_decode,
     json_encode,
@@ -209,6 +210,11 @@ class AgentProtocol(object):
         status, data = response
 
         if not 200 <= status < 300:
+            if status == 413:
+                internal_count_metric(
+                    "Supportability/Python/Collector/MaxPayloadSizeLimit/%s" % method,
+                    1,
+                )
             level, message = self.LOG_MESSAGES.get(status, self.LOG_MESSAGES["default"])
             _logger.log(
                 level,

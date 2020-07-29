@@ -10,7 +10,9 @@ from pprint import pprint
 import newrelic.packages.urllib3 as urllib3
 from newrelic import version
 from newrelic.common.encoding_utils import json_decode, json_encode
+from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import patch_function_wrapper
+from newrelic.core.internal_metrics import internal_count_metric, internal_metric
 from newrelic.network.exceptions import NetworkInterfaceException
 
 # User agent string that must be used in all requests. The data collector
@@ -79,8 +81,37 @@ class BaseClient(object):
     def finalize(self):
         pass
 
+    @staticmethod
+    def _supportability_request(params, payload, body, compression_time):
+        # *********
+        # Used only for supportability metrics. Do not use to drive business
+        # logic!
+        agent_method = params and params.get("method")
+        # *********
+
+        if agent_method and body:
+            # Compression was applied
+            if compression_time is not None:
+                internal_metric(
+                    "Supportability/Python/Collector/ZLIB/Bytes/%s" % agent_method,
+                    len(payload),
+                )
+                internal_metric(
+                    "Supportability/Python/Collector/ZLIB/Compress/%s" % agent_method,
+                    compression_time,
+                )
+
+            internal_metric(
+                "Supportability/Python/Collector/Output/Bytes/%s" % agent_method,
+                len(body),
+            )
+
     @classmethod
-    def log_request(cls, fp, method, url, params, payload, headers):
+    def log_request(
+        cls, fp, method, url, params, payload, headers, body=None, compression_time=None
+    ):
+        cls._supportability_request(params, payload, body, compression_time)
+
         if not fp:
             return
 
@@ -120,8 +151,35 @@ class BaseClient(object):
 
         return cls.AUDIT_LOG_ID
 
+    @staticmethod
+    def _supportability_response(status, exc, connection="direct"):
+        if exc or not 200 <= status < 300:
+            internal_count_metric("Supportability/Python/Collector/Failures", 1)
+            internal_count_metric(
+                "Supportability/Python/Collector/Failures/%s" % connection, 1
+            )
+
+            if exc:
+                internal_count_metric(
+                    "Supportability/Python/Collector/Exception/"
+                    "%s" % callable_name(exc),
+                    1,
+                )
+            else:
+                internal_count_metric(
+                    "Supportability/Python/Collector/HTTPError/%d" % status, 1
+                )
+
     @classmethod
-    def log_response(cls, fp, log_id, status, headers, data):
+    def log_response(cls, fp, log_id, status, headers, data, connection="direct"):
+        if not status:
+            # Exclude traceback in order to prevent a reference cycle
+            exc_info = sys.exc_info()[:2]
+        else:
+            exc_info = None
+
+        cls._supportability_response(status, exc_info and exc_info[0], connection)
+
         if not fp:
             return
 
@@ -138,16 +196,20 @@ class BaseClient(object):
         print(file=fp)
         print("PID: %r" % os.getpid(), file=fp)
         print(file=fp)
-        print("STATUS: %r" % status, file=fp)
-        print(file=fp)
-        print("HEADERS:", end=" ", file=fp)
-        pprint(dict(headers), stream=fp)
-        print(file=fp)
-        print("RESULT:", end=" ", file=fp)
 
-        pprint(result, stream=fp)
+        if exc_info:
+            print("Exception: %r" % exc_info[1], file=fp)
+            print(file=fp)
+        else:
+            print("STATUS: %r" % status, file=fp)
+            print(file=fp)
+            print("HEADERS:", end=" ", file=fp)
+            pprint(dict(headers), stream=fp)
+            print(file=fp)
+            print("RESULT:", end=" ", file=fp)
+            pprint(result, stream=fp)
+            print(file=fp)
 
-        print(file=fp)
         print(78 * "=", file=fp)
         print(file=fp)
 
@@ -233,6 +295,9 @@ class HttpClient(BaseClient):
                 if proxy_headers:
                     self._headers.update(proxy_headers)
 
+        # Logging
+        self._proxy = proxy
+
         self._connection_attr = None
 
     @staticmethod
@@ -293,30 +358,37 @@ class HttpClient(BaseClient):
             self._connection_attr.close()
             self._connection_attr = None
 
-    def log_request(self, fp, method, url, params, payload, headers):
-        if not fp:
-            return
-
+    def log_request(
+        self,
+        fp,
+        method,
+        url,
+        params,
+        payload,
+        headers,
+        body=None,
+        compression_time=None,
+    ):
         if not self._prefix:
             url = self.CONNECTION_CLS.scheme + "://" + self._host + url
 
         return super(HttpClient, self).log_request(
-            fp, method, url, params, payload, headers
+            fp, method, url, params, payload, headers, body, compression_time
         )
 
     @staticmethod
-    def _compress(data, method="gzip", threshold=20, level=None):
-        if len(data) > threshold:
-            level = level or zlib.Z_DEFAULT_COMPRESSION
-            wbits = 31 if method == "gzip" else 15
+    def _compress(data, method="gzip", level=None):
+        compression_start = time.time()
+        level = level or zlib.Z_DEFAULT_COMPRESSION
+        wbits = 31 if method == "gzip" else 15
 
-            compressor = zlib.compressobj(level, zlib.DEFLATED, wbits)
-            data = compressor.compress(data)
-            data += compressor.flush()
-        else:
-            method = "Identity"
+        compressor = zlib.compressobj(level, zlib.DEFLATED, wbits)
+        data = compressor.compress(data)
+        data += compressor.flush()
 
-        return data, method
+        compression_time = max(time.time(), compression_start) - compression_start
+
+        return data, compression_time
 
     def send_request(
         self,
@@ -326,23 +398,40 @@ class HttpClient(BaseClient):
         headers=None,
         payload=None,
     ):
+        if self._proxy:
+            proxy_scheme = self._proxy.scheme or "http"
+            connection = proxy_scheme + "-proxy"
+        else:
+            connection = "direct"
+
         merged_headers = dict(self._headers)
         if headers:
             merged_headers.update(headers)
         path = self._prefix + path
+        body = payload
+        compression_time = None
         if payload is not None:
-            body, content_encoding = self._compress(
-                payload,
-                method=self._compression_method,
-                threshold=self._compression_threshold,
-                level=self._compression_level,
-            )
+            if len(payload) > self._compression_threshold:
+                body, compression_time = self._compress(
+                    payload,
+                    method=self._compression_method,
+                    level=self._compression_level,
+                )
+                content_encoding = self._compression_method
+            else:
+                content_encoding = "Identity"
+
             merged_headers["Content-Encoding"] = content_encoding
-        else:
-            body = None
 
         request_id = self.log_request(
-            self._audit_log_fp, "POST", path, params, payload, merged_headers
+            self._audit_log_fp,
+            "POST",
+            path,
+            params,
+            payload,
+            merged_headers,
+            body,
+            compression_time,
         )
 
         if body and len(body) > self._max_payload_size_in_bytes:
@@ -360,10 +449,13 @@ class HttpClient(BaseClient):
                     headers=merged_headers,
                     **self._urlopen_kwargs
                 )
-            except urllib3.exceptions.HTTPError:
+            except urllib3.exceptions.HTTPError as e:
+                self.log_response(
+                    self._audit_log_fp, request_id, 0, None, None, connection,
+                )
                 # All urllib3 HTTP errors should be treated as a network
                 # interface exception.
-                raise NetworkInterfaceException
+                raise NetworkInterfaceException(e)
 
         self.log_response(
             self._audit_log_fp,
@@ -371,6 +463,7 @@ class HttpClient(BaseClient):
             response.status,
             response.headers,
             response.data,
+            connection,
         )
 
         return response.status, response.data

@@ -5,6 +5,7 @@ import ssl
 import zlib
 
 import pytest
+
 from newrelic.common.agent_http import (
     DeveloperModeClient,
     HttpClient,
@@ -12,6 +13,9 @@ from newrelic.common.agent_http import (
     ServerlessModeClient,
 )
 from newrelic.common.encoding_utils import ensure_str
+from newrelic.common.object_names import callable_name
+from newrelic.core.internal_metrics import InternalTraceContext
+from newrelic.core.stats_engine import CustomMetrics
 from newrelic.network.exceptions import NetworkInterfaceException
 from newrelic.packages.urllib3.util import Url
 from testing_support.mock_external_http_server import (
@@ -182,6 +186,23 @@ def test_http_no_payload(server, method):
     assert foo_header == "bar"
 
 
+def test_non_ok_response(server):
+    internal_metrics = CustomMetrics()
+
+    with InternalTraceContext(internal_metrics):
+        with HttpClient(
+            "localhost", server.port, disable_certificate_validation=True
+        ) as client:
+            status, _ = client.send_request(method="PUT")
+
+    assert status != 200
+    assert dict(internal_metrics.metrics()) == {
+        "Supportability/Python/Collector/Failures": [1, 0, 0, 0, 0, 0],
+        "Supportability/Python/Collector/Failures/direct": [1, 0, 0, 0, 0, 0],
+        "Supportability/Python/Collector/HTTPError/%d" % status: [1, 0, 0, 0, 0, 0],
+    }
+
+
 def test_http_close_connection(server):
     client = HttpClient("localhost", server.port, disable_certificate_validation=True,)
 
@@ -202,24 +223,54 @@ def test_http_close_connection_in_context_manager():
     with client:
         client.close_connection()
 
+
 @pytest.mark.parametrize("method", ("gzip", "deflate"))
 @pytest.mark.parametrize("threshold", (0, 100))
 def test_http_payload_compression(server, method, threshold):
     payload = b"*" * 20
 
-    with HttpClient(
-        "localhost",
-        server.port,
-        disable_certificate_validation=True,
-        compression_method=method,
-        compression_threshold=threshold,
-    ) as client:
-        status, data = client.send_request(payload=payload)
+    internal_metrics = CustomMetrics()
+
+    with InternalTraceContext(internal_metrics):
+        with HttpClient(
+            "localhost",
+            server.port,
+            disable_certificate_validation=True,
+            compression_method=method,
+            compression_threshold=threshold,
+        ) as client:
+            status, data = client.send_request(
+                payload=payload, params={"method": "test"}
+            )
 
     assert status == 200
     data = data.split(b"\n")
     sent_payload = data[-1]
+    payload_byte_len = len(sent_payload)
+
+    internal_metrics = dict(internal_metrics.metrics())
+    assert internal_metrics["Supportability/Python/Collector/Output/Bytes/test"][
+        :2
+    ] == [1, payload_byte_len,]
+
     if threshold < 20:
+        assert len(internal_metrics) == 3
+
+        # Verify compression time is recorded
+        assert (
+            internal_metrics["Supportability/Python/Collector/ZLIB/Compress/test"][0]
+            == 1
+        )
+        assert (
+            internal_metrics["Supportability/Python/Collector/ZLIB/Compress/test"][1]
+            > 0
+        )
+
+        # Verify the original payload length is recorded
+        assert internal_metrics["Supportability/Python/Collector/ZLIB/Bytes/test"][
+            :2
+        ] == [1, len(payload)]
+
         expected_content_encoding = method.encode("utf-8")
         assert sent_payload != payload
         if method == "deflate":
@@ -230,6 +281,9 @@ def test_http_payload_compression(server, method, threshold):
             sent_payload += decompressor.flush()
     else:
         expected_content_encoding = b"Identity"
+
+        # Verify no ZLIB compression metrics were sent
+        assert len(internal_metrics) == 1
 
     for header in data[1:-1]:
         if header.lower().startswith(b"content-encoding"):
@@ -456,34 +510,58 @@ def test_serverless_mode_client():
 
 
 @pytest.mark.parametrize(
-    "client_cls,proxy_host",
+    "client_cls,proxy_host,exception",
     (
-        (HttpClient, "localhost"),
-        (HttpClient, None),
-        (DeveloperModeClient, None),
-        (ServerlessModeClient, None),
-        (InsecureHttpClient, None),
+        (HttpClient, "localhost", False),
+        (HttpClient, None, False),
+        (HttpClient, None, True),
+        (HttpClient, "localhost", True),
+        (DeveloperModeClient, None, False),
+        (ServerlessModeClient, None, False),
+        (InsecureHttpClient, None, False),
     ),
 )
-def test_audit_logging(server, insecure_server, client_cls, proxy_host):
+def test_audit_logging(server, insecure_server, client_cls, proxy_host, exception):
     audit_log_fp = StringIO()
     params = {"method": "metric_data"}
     prefix = getattr(client_cls, "PREFIX_SCHEME", "https://")
-    if prefix == "https://":
+    if exception:
+        port = MockExternalHTTPServer.get_open_port()
+    elif prefix == "https://":
         port = server.port
     else:
         port = insecure_server.port
 
-    with client_cls(
-        "localhost",
-        port,
-        proxy_scheme="https",
-        proxy_host=proxy_host,
-        proxy_port=server.port,
-        audit_log_fp=audit_log_fp,
-        disable_certificate_validation=True,
-    ) as client:
-        client.send_request(params=params)
+    internal_metrics = CustomMetrics()
+
+    with InternalTraceContext(internal_metrics):
+        with client_cls(
+            "localhost",
+            port,
+            proxy_scheme="https",
+            proxy_host=proxy_host,
+            proxy_port=server.port if not exception else port,
+            audit_log_fp=audit_log_fp,
+            disable_certificate_validation=True,
+        ) as client:
+            try:
+                client.send_request(params=params)
+                exc = ""
+            except Exception as e:
+                exc = callable_name(type(e.args[0]))
+
+    internal_metrics = dict(internal_metrics.metrics())
+    if exception:
+        if proxy_host:
+            connection = "https-proxy"
+        else:
+            connection = "direct"
+        assert internal_metrics == {
+            "Supportability/Python/Collector/Failures": [1, 0, 0, 0, 0, 0],
+            "Supportability/Python/Collector/Failures/%s"
+            % connection: [1, 0, 0, 0, 0, 0],
+            "Supportability/Python/Collector/Exception/%s" % exc: [1, 0, 0, 0, 0, 0],
+        }
 
     # Verify the audit log isn't empty
     assert audit_log_fp.tell()
@@ -494,8 +572,6 @@ def test_audit_logging(server, insecure_server, client_cls, proxy_host):
 
 
 def test_closed_connection():
-    with HttpClient(
-        "localhost", MockExternalHTTPServer.get_open_port()
-    ) as client:
+    with HttpClient("localhost", MockExternalHTTPServer.get_open_port()) as client:
         with pytest.raises(NetworkInterfaceException):
             client.send_request()

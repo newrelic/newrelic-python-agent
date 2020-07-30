@@ -1144,7 +1144,7 @@ def validate_tt_collector_json(required_params={},
 
             # x-ray session ID
 
-            assert trace[8] is None or isinstance(trace[8], six.string_types)
+            assert trace[8] is None
 
             # Synthetics ID
 

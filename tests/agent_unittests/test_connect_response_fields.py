@@ -43,7 +43,6 @@ _all_endpoints = (
     ('send_sql_traces', ([[]],)),
     ('get_agent_commands', ()),
     ('send_profile_data', ([[]],)),
-    ('get_xray_metadata', (0,)),
     ('send_errors', ([[]],)),
     ('send_agent_command_results', ({0: {}},)),
     ('agent_settings', ({},)),

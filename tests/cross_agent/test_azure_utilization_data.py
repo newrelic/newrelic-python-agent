@@ -3,7 +3,7 @@ import os
 import pytest
 
 from newrelic.common.utilization import AzureUtilization
-from testing_support.mock_http_client import MockHttpClient
+from testing_support.mock_http_client import create_client_cls
 from testing_support.fixtures import validate_internal_metrics
 
 
@@ -30,15 +30,6 @@ def _parametrize_test(test):
 _azure_tests = [_parametrize_test(t) for t in _load_tests()]
 
 
-@pytest.fixture(autouse=True)
-def reset_http_client():
-    yield
-    MockHttpClient.FAIL = False
-    MockHttpClient.STATUS = 200
-    MockHttpClient.DATA = None
-    MockHttpClient.EXPECTED_URL = None
-
-
 @pytest.mark.parametrize(_parameters, _azure_tests)
 def test_azure(monkeypatch, testname, uri,
                expected_vendors_hash, expected_metrics):
@@ -52,13 +43,11 @@ def test_azure(monkeypatch, testname, uri,
             body = json.dumps(api_result['response'])
             return 200, body.encode('utf-8')
 
-    MockHttpClient.EXPECTED_URL = list(uri.keys())[0]
-    status, data = (
-        _get_mock_return_value(uri[MockHttpClient.EXPECTED_URL]))
+    url, api_result = uri.popitem()
+    status, data = _get_mock_return_value(api_result)
 
-    monkeypatch.setattr(AzureUtilization, "CLIENT_CLS", MockHttpClient)
-    MockHttpClient.STATUS = status
-    MockHttpClient.DATA = data
+    client_cls = create_client_cls(status, data, url)
+    monkeypatch.setattr(AzureUtilization, "CLIENT_CLS", client_cls)
 
     metrics = []
     if expected_metrics:
@@ -81,4 +70,4 @@ def test_azure(monkeypatch, testname, uri,
 
     _test_azure_data()
 
-    assert not MockHttpClient.FAIL
+    assert not client_cls.FAIL

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import urllib3
+import newrelic.packages.urllib3 as urllib3
 
 try:
     from urllib import urlencode
@@ -22,55 +22,49 @@ except ImportError:
 from newrelic.common.agent_http import BaseClient
 
 
-class MockHttpClient(BaseClient):
-    STATUS = 200
-    DATA = None
-    EXPECTED_URL = None
-    FAIL = False
+def create_client_cls(status, data, url=None):
+    if url:
+        expected = urllib3.util.parse_url(url)
+        if expected.port:
+            expected_port = expected.port
+        elif expected.scheme == 'https':
+            expected_port = 443
+        elif expected.scheme == 'http':
+            expected_port = 80
+        else:
+            assert False, "Expected URL is missing scheme and port"
+    else:
+        expected = None
 
-    def __init__(
-            self,
-            host,
-            port=80,
-            proxy_scheme=None,
-            proxy_host=None,
-            proxy_port=None,
-            proxy_user=None,
-            proxy_pass=None,
-            timeout=None,
-            ca_bundle_path=None,
-            disable_certificate_validation=False,
-            compression_threshold=64 * 1024,
-            compression_level=None,
-            compression_method="gzip",
-            max_payload_size_in_bytes=1000000,
-            audit_log_fp=None,
-    ):
-        self.host = host
-        self.port = port
+    class MockHttpClient(BaseClient):
+        FAIL = False
 
-    def send_request(
-            self,
-            method="POST",
-            path="/agent_listener/invoke_raw_method",
-            params=None,
-            headers=None,
-            payload=None,
-    ):
-        if self.EXPECTED_URL:
-            components = urllib3.util.parse_url(self.EXPECTED_URL)
-            port = components.port or 80
-            try:
-                assert components.scheme == "http"
-                assert components.host == self.host
-                assert port == self.port
-                assert components.path == path
-                if params:
-                    query = urlencode(params)
-                    assert components.query == query
-            except:
-                MockHttpClient.FAIL = True
+        def __init__(self, host, port=80, *args, **kwargs):
+            self.host = host
+            self.port = port
 
-        if self.STATUS == 0:
-            raise Exception
-        return self.STATUS, self.DATA
+        def send_request(
+                self,
+                method="POST",
+                path="/agent_listener/invoke_raw_method",
+                params=None,
+                headers=None,
+                payload=None,
+        ):
+            if expected:
+                try:
+                    assert self.host == expected.host
+                    assert self.port == expected_port
+                    assert path == expected.path
+                    if expected.query:
+                        query = urlencode(params)
+                        assert query == expected.query
+                except:
+                    MockHttpClient.FAIL = True
+
+            if status == 0:
+                raise Exception
+
+            return status, data
+
+    return MockHttpClient

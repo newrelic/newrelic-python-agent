@@ -7,7 +7,7 @@ import tempfile
 
 # NOTE: the test_utilization_settings_from_env_vars test mocks several of the
 # methods in newrelic.core.data_collector and does not put them back!
-from testing_support.mock_http_client import MockHttpClient
+from testing_support.mock_http_client import create_client_cls
 from newrelic.core.agent_protocol import AgentProtocol
 from newrelic.common.system_info import BootIdUtilization
 from newrelic.common.utilization import (CommonUtilization)
@@ -157,15 +157,6 @@ def patch_system_info(test, monkeypatch):
     return _patch_system_info
 
 
-@pytest.fixture(autouse=True)
-def reset_http_client():
-    yield
-    MockHttpClient.FAIL = False
-    MockHttpClient.STATUS = 200
-    MockHttpClient.DATA = None
-    MockHttpClient.EXPECTED_URL = None
-
-
 @pytest.mark.parametrize('test', _load_tests())
 def test_utilization_settings(test, monkeypatch):
 
@@ -185,8 +176,9 @@ def test_utilization_settings(test, monkeypatch):
     @patch_system_info(test, monkeypatch)
     def _test_utilization_data():
 
-        monkeypatch.setattr(CommonUtilization, "CLIENT_CLS", MockHttpClient)
-        MockHttpClient.DATA = _get_response_body_for_test(test)
+        data = _get_response_body_for_test(test)
+        client_cls = create_client_cls(200, data)
+        monkeypatch.setattr(CommonUtilization, "CLIENT_CLS", client_cls)
 
         with UpdatedSettings() as settings:
             # Ignoring docker will ensure that there is nothing extra in the

@@ -14,22 +14,35 @@
 
 import logging
 import os
-import string
 import re
+import socket
+import string
 import threading
 
-from newrelic.common.encoding_utils import json_decode
 from newrelic.common.agent_http import InsecureHttpClient
+from newrelic.common.encoding_utils import json_decode
 from newrelic.core.internal_metrics import internal_count_metric
-
-try:
-    import queue
-except ImportError:
-    import Queue as queue
-
 
 _logger = logging.getLogger(__name__)
 VALID_CHARS_RE = re.compile(r'[0-9a-zA-Z_ ./-]')
+
+class UtilizationHttpClient(InsecureHttpClient):
+    SOCKET_TIMEOUT = 0.05
+
+    def send_request(self, *args, **kwargs):
+        sock = socket.socket()
+        sock.settimeout(self.SOCKET_TIMEOUT)
+
+        # If we cannot connect to the metadata host in SOCKET_TIMEOUT time,
+        # this will raise an exception, terminating the fetch before attempting
+        # to use an http client.
+        # This is an optimization which will speed up connect.
+        try:
+            sock.connect((self._host, self._port))
+        finally:
+            sock.close()
+
+        return super(UtilizationHttpClient, self).send_request(*args, **kwargs)
 
 
 class CommonUtilization(object):
@@ -39,8 +52,8 @@ class CommonUtilization(object):
     HEADERS = None
     EXPECTED_KEYS = ()
     VENDOR_NAME = ''
-    TIMEOUT = 0.4
-    CLIENT_CLS = InsecureHttpClient
+    FETCH_TIMEOUT = 0.4
+    CLIENT_CLS = UtilizationHttpClient
 
     @classmethod
     def record_error(cls, resource, data):
@@ -51,37 +64,21 @@ class CommonUtilization(object):
                 cls.VENDOR_NAME, resource, data)
 
     @classmethod
-    def _fetch(cls, q):
+    def fetch(cls):
         try:
             with cls.CLIENT_CLS(cls.METADATA_HOST,
-                                timeout=cls.TIMEOUT) as client:
+                                timeout=cls.FETCH_TIMEOUT) as client:
                 resp = client.send_request(method='GET',
                                            path=cls.METADATA_PATH,
                                            params=cls.METADATA_QUERY,
                                            headers=cls.HEADERS)
             if not 200 <= resp[0] < 300:
                 raise ValueError(resp[0])
-            q.put(resp[1])
+            return resp[1]
         except Exception as e:
             _logger.debug('Unable to fetch %s data from %s%s: %r',
                     cls.VENDOR_NAME, cls.METADATA_HOST, cls.METADATA_PATH, e)
-            q.put(None)
-
-    @classmethod
-    def fetch(cls):
-        q = queue.Queue()
-        t = threading.Thread(
-            target=cls._fetch,
-            name="UtilizationDetect/{}".format(cls.VENDOR_NAME),
-            args=(q,),
-        )
-        t.daemon = True
-        t.start()
-        try:
-            return q.get(timeout=cls.TIMEOUT + 0.1)
-        except queue.Empty:
-            _logger.debug('Timeout waiting to fetch %s data from %s%s',
-                    cls.VENDOR_NAME, cls.METADATA_HOST, cls.METADATA_PATH)
+            return None
 
     @classmethod
     def get_values(cls, response):

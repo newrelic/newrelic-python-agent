@@ -152,10 +152,6 @@ class CrossApplicationTracerSettings(Settings):
     pass
 
 
-class XraySessionSettings(Settings):
-    pass
-
-
 class TransactionEventsSettings(Settings):
     pass
 
@@ -302,7 +298,6 @@ _settings.agent_limits = AgentLimitsSettings()
 _settings.console = ConsoleSettings()
 _settings.debug = DebugSettings()
 _settings.cross_application_tracer = CrossApplicationTracerSettings()
-_settings.xray_session = XraySessionSettings()
 _settings.transaction_events = TransactionEventsSettings()
 _settings.transaction_events.attributes = TransactionEventsAttributesSettings()
 _settings.custom_insights_events = CustomInsightsEventsSettings()
@@ -575,7 +570,6 @@ _settings.attributes.include = []
 
 _settings.thread_profiler.enabled = True
 _settings.cross_application_tracer.enabled = True
-_settings.xray_session.enabled = True
 
 _settings.transaction_events.enabled = True
 _settings.transaction_events.attributes.enabled = True
@@ -652,9 +646,6 @@ _settings.agent_limits.errors_per_transaction = 5
 _settings.agent_limits.errors_per_harvest = 20
 _settings.agent_limits.slow_transaction_dry_harvests = 5
 _settings.agent_limits.thread_profiler_nodes = 20000
-_settings.agent_limits.xray_transactions = 10
-_settings.agent_limits.xray_profile_overhead = 0.05
-_settings.agent_limits.xray_profile_maximum = 500
 _settings.agent_limits.synthetics_events = 200
 _settings.agent_limits.synthetics_transactions = 20
 _settings.agent_limits.data_compression_threshold = 64 * 1024

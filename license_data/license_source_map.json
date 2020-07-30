@@ -1313,12 +1313,6 @@
             "New Relic"
         ]
     },
-    "newrelic/core/xray_session.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/extras/__init__.py": {
         "hash": "n/a",
         "libraries": [

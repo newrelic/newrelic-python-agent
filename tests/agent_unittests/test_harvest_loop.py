@@ -486,40 +486,6 @@ def test_adaptive_sampling(transaction_node, monkeypatch):
         assert app.compute_sampled() is False
 
 
-@pytest.mark.parametrize('ca_bundle_path,disable_certificate_validation', [
-    (None, True),
-    ('this/is/not/a/path/to/a/file.pem', True),
-    ('this/is/not/a/path/to/a/file.pem', False),
-])
-@pytest.mark.skip(reason="urllib3")
-def test_ca_bundle(collector_agent_registration, ca_bundle_path,
-        disable_certificate_validation):
-
-    def preconnect():
-        url = collector_url()
-        license_key = global_settings().license_key
-        try:
-            result = send_request(None, url, 'preconnect', license_key)
-            assert result
-        except ForceAgentDisconnect:
-            # If the license key is invalid, we should see a force agent disconnect
-            pass
-
-    @override_generic_settings(settings, {
-        'ca_bundle_path': ca_bundle_path,
-        'debug.disable_certificate_validation': disable_certificate_validation,
-    })
-    def _test():
-        if ca_bundle_path and not disable_certificate_validation:
-            with pytest.raises(RetryDataForRequest,
-                    message='No such file or directory'):
-                preconnect()
-        else:
-            preconnect()
-
-    _test()
-
-
 @override_generic_settings(settings, {
     'developer_mode': True,
     'license_key': '**NOT A LICENSE KEY**',

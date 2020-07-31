@@ -303,9 +303,32 @@ def test_cert_path(server):
         status, data = client.send_request()
 
 
-def test_default_cert_path():
-    client = HttpClient("localhost", ca_bundle_path=None)
-    assert client._connection_kwargs["ca_certs"] == certs.where()
+@pytest.mark.parametrize("system_certs_available", (True, False))
+def test_default_cert_path(monkeypatch, system_certs_available):
+    if system_certs_available:
+        cert_file = "foo"
+    else:
+        cert_file = None
+
+    class DefaultVerifyPaths(object):
+        cafile = cert_file
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+    monkeypatch.setattr(ssl, "DefaultVerifyPaths", DefaultVerifyPaths)
+    internal_metrics = CustomMetrics()
+    with InternalTraceContext(internal_metrics):
+        client = HttpClient("localhost", ca_bundle_path=None)
+
+    internal_metrics = dict(internal_metrics.metrics())
+    cert_metric = "Supportability/Python/Certificate/BundleRequired"
+    if system_certs_available:
+        assert "ca_certs" not in client._connection_kwargs
+        assert cert_metric not in internal_metrics
+    else:
+        assert client._connection_kwargs["ca_certs"] == certs.where()
+        assert internal_metrics[cert_metric][-3:-1] == [1, 1]
 
 
 @pytest.mark.parametrize(

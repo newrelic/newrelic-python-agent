@@ -82,9 +82,6 @@ def record_deploy(args):
     headers = {"X-Api-Key": settings.api_key or "", "Content-Type": "application/json"}
 
     cert_loc = settings.ca_bundle_path
-    if cert_loc is None:
-        cert_loc = certs.where()
-
     client = agent_http.HttpClient(
         host=host,
         port=port,

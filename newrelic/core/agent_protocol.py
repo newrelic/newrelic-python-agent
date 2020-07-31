@@ -2,7 +2,7 @@ import logging
 import os
 
 from newrelic import version
-from newrelic.common import certs, system_info
+from newrelic.common import system_info
 from newrelic.common.agent_http import HttpClient, ServerlessModeClient
 from newrelic.core.internal_metrics import internal_count_metric
 from newrelic.common.encoding_utils import (
@@ -144,8 +144,6 @@ class AgentProtocol(object):
         else:
             audit_log_fp = None
 
-        ca_bundle_path = settings.ca_bundle_path or certs.where()
-
         self.client = client_cls(
             host=host or settings.host,
             port=settings.port or 443,
@@ -155,7 +153,7 @@ class AgentProtocol(object):
             proxy_user=settings.proxy_user,
             proxy_pass=settings.proxy_pass,
             timeout=settings.agent_limits.data_collector_timeout,
-            ca_bundle_path=ca_bundle_path,
+            ca_bundle_path=settings.ca_bundle_path,
             disable_certificate_validation=settings.debug.disable_certificate_validation,
             compression_threshold=settings.agent_limits.data_compression_threshold,
             compression_level=settings.agent_limits.data_compression_level,

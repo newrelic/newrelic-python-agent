@@ -6,6 +6,7 @@ import zlib
 
 import pytest
 
+from newrelic.common import certs
 from newrelic.common.agent_http import (
     DeveloperModeClient,
     HttpClient,
@@ -300,6 +301,11 @@ def test_http_payload_compression(server, method, threshold):
 def test_cert_path(server):
     with HttpClient("localhost", server.port, ca_bundle_path=SERVER_CERT) as client:
         status, data = client.send_request()
+
+
+def test_default_cert_path():
+    client = HttpClient("localhost", ca_bundle_path=None)
+    assert client._connection_kwargs["ca_certs"] == certs.where()
 
 
 @pytest.mark.parametrize(

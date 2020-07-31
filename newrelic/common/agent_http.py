@@ -9,6 +9,7 @@ from pprint import pprint
 
 import newrelic.packages.urllib3 as urllib3
 from newrelic import version
+from newrelic.common import certs
 from newrelic.common.encoding_utils import json_decode, json_encode
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import patch_function_wrapper
@@ -268,11 +269,14 @@ class HttpClient(BaseClient):
         self._urlopen_kwargs = urlopen_kwargs = {}
 
         if self.CONNECTION_CLS.scheme == "https":
-            if ca_bundle_path:
-                if os.path.isdir(ca_bundle_path):
-                    connection_kwargs["ca_cert_dir"] = ca_bundle_path
-                else:
-                    connection_kwargs["ca_certs"] = ca_bundle_path
+            if not ca_bundle_path:
+                ca_bundle_path = certs.where()
+
+            if os.path.isdir(ca_bundle_path):
+                connection_kwargs["ca_cert_dir"] = ca_bundle_path
+            else:
+                connection_kwargs["ca_certs"] = ca_bundle_path
+
             if disable_certificate_validation:
                 connection_kwargs["cert_reqs"] = "NONE"
 

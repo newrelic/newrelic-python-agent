@@ -16,6 +16,18 @@ from newrelic.common.object_wrapper import patch_function_wrapper
 from newrelic.core.internal_metrics import internal_count_metric, internal_metric
 from newrelic.network.exceptions import NetworkInterfaceException
 
+try:
+    from ssl import get_default_verify_paths
+except ImportError:
+
+    class _DEFAULT_CERT_PATH(object):
+        cafile = None
+        capath = None
+
+    def get_default_verify_paths():
+        return _DEFAULT_CERT_PATH
+
+
 # User agent string that must be used in all requests. The data collector
 # does not rely on this, but is used to target specific agents if there
 # is a problem with data collector handling requests.
@@ -270,12 +282,21 @@ class HttpClient(BaseClient):
 
         if self.CONNECTION_CLS.scheme == "https":
             if not ca_bundle_path:
-                ca_bundle_path = certs.where()
+                verify_path = get_default_verify_paths()
 
-            if os.path.isdir(ca_bundle_path):
-                connection_kwargs["ca_cert_dir"] = ca_bundle_path
-            else:
-                connection_kwargs["ca_certs"] = ca_bundle_path
+                # If there is no resolved cafile, assume the bundled certs are
+                # required and report this condition as a supportability metric.
+                if not verify_path.cafile:
+                    ca_bundle_path = certs.where()
+                    internal_metric(
+                        "Supportability/Python/Certificate/BundleRequired", 1
+                    )
+
+            if ca_bundle_path:
+                if os.path.isdir(ca_bundle_path):
+                    connection_kwargs["ca_cert_dir"] = ca_bundle_path
+                else:
+                    connection_kwargs["ca_certs"] = ca_bundle_path
 
             if disable_certificate_validation:
                 connection_kwargs["cert_reqs"] = "NONE"

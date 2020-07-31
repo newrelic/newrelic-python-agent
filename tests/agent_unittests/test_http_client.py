@@ -190,10 +190,10 @@ def test_http_no_payload(server, method):
 def test_non_ok_response(server):
     internal_metrics = CustomMetrics()
 
-    with InternalTraceContext(internal_metrics):
-        with HttpClient(
-            "localhost", server.port, disable_certificate_validation=True
-        ) as client:
+    with HttpClient(
+        "localhost", server.port, disable_certificate_validation=True
+    ) as client:
+        with InternalTraceContext(internal_metrics):
             status, _ = client.send_request(method="PUT")
 
     assert status != 200
@@ -232,14 +232,14 @@ def test_http_payload_compression(server, method, threshold):
 
     internal_metrics = CustomMetrics()
 
-    with InternalTraceContext(internal_metrics):
-        with HttpClient(
-            "localhost",
-            server.port,
-            disable_certificate_validation=True,
-            compression_method=method,
-            compression_threshold=threshold,
-        ) as client:
+    with HttpClient(
+        "localhost",
+        server.port,
+        disable_certificate_validation=True,
+        compression_method=method,
+        compression_threshold=threshold,
+    ) as client:
+        with InternalTraceContext(internal_metrics):
             status, data = client.send_request(
                 payload=payload, params={"method": "test"}
             )
@@ -563,16 +563,16 @@ def test_audit_logging(server, insecure_server, client_cls, proxy_host, exceptio
 
     internal_metrics = CustomMetrics()
 
-    with InternalTraceContext(internal_metrics):
-        with client_cls(
-            "localhost",
-            port,
-            proxy_scheme="https",
-            proxy_host=proxy_host,
-            proxy_port=server.port if not exception else port,
-            audit_log_fp=audit_log_fp,
-            disable_certificate_validation=True,
-        ) as client:
+    with client_cls(
+        "localhost",
+        port,
+        proxy_scheme="https",
+        proxy_host=proxy_host,
+        proxy_port=server.port if not exception else port,
+        audit_log_fp=audit_log_fp,
+        disable_certificate_validation=True,
+    ) as client:
+        with InternalTraceContext(internal_metrics):
             try:
                 client.send_request(params=params)
                 exc = ""

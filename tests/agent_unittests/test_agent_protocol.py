@@ -1,6 +1,7 @@
 import inspect
 import logging
 import os
+import ssl
 import tempfile
 from collections import namedtuple
 
@@ -532,7 +533,16 @@ def test_audit_logging():
 
 
 @pytest.mark.parametrize("ca_bundle_path", (None, "custom",))
-def test_ca_bundle_path(ca_bundle_path):
+def test_ca_bundle_path(monkeypatch, ca_bundle_path):
+    # Pretend CA certificates are not available
+    class DefaultVerifyPaths(object):
+        cafile = None
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+    monkeypatch.setattr(ssl, "DefaultVerifyPaths", DefaultVerifyPaths)
+
     settings = finalize_application_settings({"ca_bundle_path": ca_bundle_path})
     protocol = AgentProtocol(settings)
     expected = ca_bundle_path or certs.where()

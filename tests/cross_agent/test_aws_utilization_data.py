@@ -1,12 +1,9 @@
 import json
-import mock
 import os
 import pytest
 
-# FIXME: urllib3
-requests = pytest.importorskip('newrelic.packages.requests')
 from newrelic.common.utilization import AWSUtilization
-
+from testing_support.mock_http_client import create_client_cls
 from testing_support.fixtures import validate_internal_metrics
 
 
@@ -33,32 +30,25 @@ def _parametrize_test(test):
 _aws_tests = [_parametrize_test(t) for t in _load_tests()]
 
 
-class MockResponse(object):
-
-    def __init__(self, code, body):
-        self.code = code
-        self.text = body
-
-    def raise_for_status(self):
-        assert str(self.code) == '200'
-
-    def json(self):
-        return self.text
-
-
 @pytest.mark.parametrize(_parameters, _aws_tests)
-def test_aws(testname, uri, expected_vendors_hash, expected_metrics):
+def test_aws(monkeypatch, testname, uri,
+             expected_vendors_hash, expected_metrics):
 
-    # Generate mock responses for requests.Session.get
+    # Generate mock responses for InsecureHttpClient
 
     def _get_mock_return_value(api_result):
         if api_result['timeout']:
-            return Exception
+            return 0, None
         else:
-            return MockResponse('200', api_result['response'])
+            body = json.dumps(api_result['response'])
+            return 200, body.encode('utf-8')
 
-    mock_return_values = (
-            _get_mock_return_value(uri[AWSUtilization.METADATA_URL]),)
+    url, api_result = uri.popitem()
+    status, data = _get_mock_return_value(api_result)
+
+    client_cls = create_client_cls(status, data, url)
+
+    monkeypatch.setattr(AWSUtilization, "CLIENT_CLS", client_cls)
 
     metrics = []
     if expected_metrics:
@@ -68,9 +58,7 @@ def test_aws(testname, uri, expected_vendors_hash, expected_metrics):
     # Define function that actually runs the test
 
     @validate_internal_metrics(metrics=metrics)
-    @mock.patch.object(requests.Session, 'get')
-    def _test_aws_data(mock_get):
-        mock_get.side_effect = mock_return_values
+    def _test_aws_data():
 
         data = AWSUtilization.detect()
 
@@ -82,3 +70,5 @@ def test_aws(testname, uri, expected_vendors_hash, expected_metrics):
         assert aws_vendor_hash == expected_vendors_hash
 
     _test_aws_data()
+
+    assert not client_cls.FAIL

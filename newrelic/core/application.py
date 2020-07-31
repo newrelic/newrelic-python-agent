@@ -1267,9 +1267,6 @@ class Application(object):
 
                 start = time.time()
 
-                _logger.debug('Commencing data harvest of %r.',
-                        self._app_name)
-
                 # Create a snapshot of the transaction stats and
                 # application specific custom metrics stats, then merge
                 # them together. The originals will be reset at the time
@@ -1277,8 +1274,7 @@ class Application(object):
                 # this point onwards will be accumulated in a fresh
                 # bucket.
 
-                _logger.debug('Snapshotting metrics for harvest of %r.',
-                        self._app_name)
+                _logger.debug('Snapshotting for harvest[%s] of %r.', call_metric, self._app_name)
 
                 configuration = self._active_session.configuration
                 transaction_count = self._transaction_count
@@ -1731,8 +1727,8 @@ class Application(object):
 
                 duration = time.time() - start
 
-                _logger.debug('Completed harvest for %r in %.2f seconds.',
-                        self._app_name, duration)
+                _logger.debug('Completed harvest[%s] for %r in %.2f seconds.',
+                        call_metric, self._app_name, duration)
 
                 # Force close the socket connection which has been
                 # created for this harvest if session still exists.

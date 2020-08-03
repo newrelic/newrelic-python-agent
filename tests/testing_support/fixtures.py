@@ -30,6 +30,7 @@ except ImportError:
 
 from newrelic.packages import six
 
+from newrelic.admin.record_deploy import record_deploy
 from newrelic.api.application import (register_application,
         application_instance, application_settings, application_instance as
         application)
@@ -187,8 +188,8 @@ def capture_harvest_errors():
                 'Supportability/Python/Harvest/Exception') and
                 not metric_name.endswith('DiscardDataForRequest') and
                 not metric_name.endswith('RetryDataForRequest') and
-                not metric_name.endswith(('newrelic.packages.requests.'
-                        'packages.urllib3.exceptions:ClosedPoolError'))):
+                not metric_name.endswith(('newrelic.packages.urllib3.'
+                        'exceptions:ClosedPoolError'))):
             exc_info = sys.exc_info()
             queue.put(exc_info)
 
@@ -229,54 +230,6 @@ def collector_agent_registration_fixture(app_name=None, default_settings={},
         use_developer_mode = _environ_as_bool(
                 'NEW_RELIC_DEVELOPER_MODE', use_fake_collector)
 
-        # Attempt to record deployment marker for test. It's ok
-        # if the deployment marker does not record successfully.
-
-        api_host = settings.host
-
-        if api_host is None:
-            api_host = 'api.newrelic.com'
-        elif api_host == 'staging-collector.newrelic.com':
-            api_host = 'staging-api.newrelic.com'
-
-        url = '%s://%s/deployments.xml'
-
-        scheme = 'https'
-        server = settings.port and '%s:%d' % (api_host,
-                settings.port) or api_host
-
-        url = url % (scheme, server)
-
-        proxy_host = settings.proxy_host
-        proxy_port = settings.proxy_port
-        proxy_user = settings.proxy_user
-        proxy_pass = settings.proxy_pass
-
-        timeout = settings.agent_limits.data_collector_timeout
-
-        user = pwd.getpwuid(os.getuid()).pw_gecos
-
-        data = {}
-
-        data['deployment[app_name]'] = settings.app_name
-        data['deployment[description]'] = os.path.basename(
-                os.path.normpath(sys.prefix))
-        data['deployment[user]'] = user
-
-        headers = {}
-
-        headers['X-API-Key'] = settings.api_key
-
-        cert_loc = certs.where()
-
-        if not use_fake_collector and not use_developer_mode:
-            try:
-                _logger.debug("Record deployment marker at %s" % url)
-                # FIXME: use deployment marker api for conversion to urllib3
-            except Exception:
-                _logger.exception("Unable to record deployment marker.")
-                pass
-
         # Catch exceptions in the harvest thread and reraise them in the main
         # thread. This way the tests will reveal any unhandled exceptions in
         # either of the two agent threads.
@@ -293,6 +246,40 @@ def collector_agent_registration_fixture(app_name=None, default_settings={},
         # Force registration of the application.
 
         application = register_application()
+
+        # Attempt to record deployment marker for test. It's ok
+        # if the deployment marker does not record successfully.
+
+        api_host = settings.host
+
+        if api_host is None:
+            api_host = 'api.newrelic.com'
+        elif api_host == 'staging-collector.newrelic.com':
+            api_host = 'staging-api.newrelic.com'
+
+        if not use_fake_collector and not use_developer_mode:
+            description = os.path.basename(
+                    os.path.normpath(sys.prefix))
+            try:
+                _logger.debug("Record deployment marker host: %s" % api_host)
+                record_deploy(
+                    host=api_host,
+                    api_key=settings.api_key,
+                    app_name=settings.app_name,
+                    description=description,
+                    port=settings.port or 443,
+                    proxy_scheme=settings.proxy_scheme,
+                    proxy_host=settings.proxy_host,
+                    proxy_user=settings.proxy_user,
+                    proxy_pass=settings.proxy_pass,
+                    timeout=settings.agent_limits.data_collector_timeout,
+                    ca_bundle_path=settings.ca_bundle_path,
+                    disable_certificate_validation=settings.debug.disable_certificate_validation,
+                )
+            except Exception:
+                _logger.exception("Unable to record deployment marker.")
+                pass
+
 
         def finalize():
             shutdown_agent()

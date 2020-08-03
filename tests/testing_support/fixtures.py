@@ -230,6 +230,23 @@ def collector_agent_registration_fixture(app_name=None, default_settings={},
         use_developer_mode = _environ_as_bool(
                 'NEW_RELIC_DEVELOPER_MODE', use_fake_collector)
 
+        # Catch exceptions in the harvest thread and reraise them in the main
+        # thread. This way the tests will reveal any unhandled exceptions in
+        # either of the two agent threads.
+
+        capture_harvest_errors()
+
+        # Associate linked applications.
+
+        application = application_instance()
+
+        for name in linked_applications:
+            application.link_to_application(name)
+
+        # Force registration of the application.
+
+        application = register_application()
+
         # Attempt to record deployment marker for test. It's ok
         # if the deployment marker does not record successfully.
 
@@ -263,22 +280,6 @@ def collector_agent_registration_fixture(app_name=None, default_settings={},
                 _logger.exception("Unable to record deployment marker.")
                 pass
 
-        # Catch exceptions in the harvest thread and reraise them in the main
-        # thread. This way the tests will reveal any unhandled exceptions in
-        # either of the two agent threads.
-
-        capture_harvest_errors()
-
-        # Associate linked applications.
-
-        application = application_instance()
-
-        for name in linked_applications:
-            application.link_to_application(name)
-
-        # Force registration of the application.
-
-        application = register_application()
 
         def finalize():
             shutdown_agent()

@@ -6,6 +6,7 @@ import zlib
 
 import pytest
 
+from newrelic.common import certs
 from newrelic.common.agent_http import (
     DeveloperModeClient,
     HttpClient,
@@ -189,10 +190,10 @@ def test_http_no_payload(server, method):
 def test_non_ok_response(server):
     internal_metrics = CustomMetrics()
 
-    with InternalTraceContext(internal_metrics):
-        with HttpClient(
-            "localhost", server.port, disable_certificate_validation=True
-        ) as client:
+    with HttpClient(
+        "localhost", server.port, disable_certificate_validation=True
+    ) as client:
+        with InternalTraceContext(internal_metrics):
             status, _ = client.send_request(method="PUT")
 
     assert status != 200
@@ -231,14 +232,14 @@ def test_http_payload_compression(server, method, threshold):
 
     internal_metrics = CustomMetrics()
 
-    with InternalTraceContext(internal_metrics):
-        with HttpClient(
-            "localhost",
-            server.port,
-            disable_certificate_validation=True,
-            compression_method=method,
-            compression_threshold=threshold,
-        ) as client:
+    with HttpClient(
+        "localhost",
+        server.port,
+        disable_certificate_validation=True,
+        compression_method=method,
+        compression_threshold=threshold,
+    ) as client:
+        with InternalTraceContext(internal_metrics):
             status, data = client.send_request(
                 payload=payload, params={"method": "test"}
             )
@@ -300,6 +301,34 @@ def test_http_payload_compression(server, method, threshold):
 def test_cert_path(server):
     with HttpClient("localhost", server.port, ca_bundle_path=SERVER_CERT) as client:
         status, data = client.send_request()
+
+
+@pytest.mark.parametrize("system_certs_available", (True, False))
+def test_default_cert_path(monkeypatch, system_certs_available):
+    if system_certs_available:
+        cert_file = "foo"
+    else:
+        cert_file = None
+
+    class DefaultVerifyPaths(object):
+        cafile = cert_file
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+    monkeypatch.setattr(ssl, "DefaultVerifyPaths", DefaultVerifyPaths)
+    internal_metrics = CustomMetrics()
+    with InternalTraceContext(internal_metrics):
+        client = HttpClient("localhost", ca_bundle_path=None)
+
+    internal_metrics = dict(internal_metrics.metrics())
+    cert_metric = "Supportability/Python/Certificate/BundleRequired"
+    if system_certs_available:
+        assert "ca_certs" not in client._connection_kwargs
+        assert cert_metric not in internal_metrics
+    else:
+        assert client._connection_kwargs["ca_certs"] == certs.where()
+        assert internal_metrics[cert_metric][-3:-1] == [1, 1]
 
 
 @pytest.mark.parametrize(
@@ -534,16 +563,16 @@ def test_audit_logging(server, insecure_server, client_cls, proxy_host, exceptio
 
     internal_metrics = CustomMetrics()
 
-    with InternalTraceContext(internal_metrics):
-        with client_cls(
-            "localhost",
-            port,
-            proxy_scheme="https",
-            proxy_host=proxy_host,
-            proxy_port=server.port if not exception else port,
-            audit_log_fp=audit_log_fp,
-            disable_certificate_validation=True,
-        ) as client:
+    with client_cls(
+        "localhost",
+        port,
+        proxy_scheme="https",
+        proxy_host=proxy_host,
+        proxy_port=server.port if not exception else port,
+        audit_log_fp=audit_log_fp,
+        disable_certificate_validation=True,
+    ) as client:
+        with InternalTraceContext(internal_metrics):
             try:
                 client.send_request(params=params)
                 exc = ""

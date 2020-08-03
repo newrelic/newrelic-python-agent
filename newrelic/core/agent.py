@@ -582,11 +582,11 @@ class Agent(object):
                     1,
                     self._harvest_flexible,
                     ())
-            _logger.debug('Commencing flexible harvest of application data.')
+            _logger.debug('Commencing harvest[flexible] of application data.')
         elif not shutdown:
             return
         else:
-            _logger.debug('Commencing final flexible harvest of application data.')
+            _logger.debug('Commencing final harvest[flexible] of application data.')
 
         self._flexible_harvest_count += 1
         self._last_flexible_harvest = time.time()
@@ -601,17 +601,17 @@ class Agent(object):
         self._flexible_harvest_duration = \
                 time.time() - self._last_flexible_harvest
 
-        _logger.debug('Completed flexible harvest of application data in %.2f '
+        _logger.debug('Completed harvest[flexible] of application data in %.2f '
                 'seconds.', self._flexible_harvest_duration)
 
     def _harvest_default(self, shutdown=False):
         if not self._harvest_shutdown.isSet():
             self._scheduler.enter(60.0, 2, self._harvest_default, ())
-            _logger.debug('Commencing default harvest of application data.')
+            _logger.debug('Commencing harvest[default] of application data.')
         elif not shutdown:
             return
         else:
-            _logger.debug('Commencing final default harvest of application data.')
+            _logger.debug('Commencing final harvest[default] of application data.')
 
         self._default_harvest_count += 1
         self._last_default_harvest = time.time()
@@ -626,7 +626,7 @@ class Agent(object):
         self._default_harvest_duration = \
                 time.time() - self._last_default_harvest
 
-        _logger.debug('Completed default harvest of application data in %.2f '
+        _logger.debug('Completed harvest[default] of application data in %.2f '
                 'seconds.', self._default_harvest_duration)
 
     def _harvest_timer(self):

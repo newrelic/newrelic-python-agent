@@ -9,11 +9,24 @@ from pprint import pprint
 
 import newrelic.packages.urllib3 as urllib3
 from newrelic import version
+from newrelic.common import certs
 from newrelic.common.encoding_utils import json_decode, json_encode
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import patch_function_wrapper
 from newrelic.core.internal_metrics import internal_count_metric, internal_metric
 from newrelic.network.exceptions import NetworkInterfaceException
+
+try:
+    from ssl import get_default_verify_paths
+except ImportError:
+
+    class _DEFAULT_CERT_PATH(object):
+        cafile = None
+        capath = None
+
+    def get_default_verify_paths():
+        return _DEFAULT_CERT_PATH
+
 
 # User agent string that must be used in all requests. The data collector
 # does not rely on this, but is used to target specific agents if there
@@ -268,11 +281,23 @@ class HttpClient(BaseClient):
         self._urlopen_kwargs = urlopen_kwargs = {}
 
         if self.CONNECTION_CLS.scheme == "https":
+            if not ca_bundle_path:
+                verify_path = get_default_verify_paths()
+
+                # If there is no resolved cafile, assume the bundled certs are
+                # required and report this condition as a supportability metric.
+                if not verify_path.cafile:
+                    ca_bundle_path = certs.where()
+                    internal_metric(
+                        "Supportability/Python/Certificate/BundleRequired", 1
+                    )
+
             if ca_bundle_path:
                 if os.path.isdir(ca_bundle_path):
                     connection_kwargs["ca_cert_dir"] = ca_bundle_path
                 else:
                     connection_kwargs["ca_certs"] = ca_bundle_path
+
             if disable_certificate_validation:
                 connection_kwargs["cert_reqs"] = "NONE"
 

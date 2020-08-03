@@ -43,64 +43,44 @@ def fetch_app_id(app_name, client, headers):
             return application["id"]
 
 
-@command(
-    "record-deploy",
-    "config_file description [revision changelog user]",
-    "Records a deployment for the monitored application.",
-)
-def record_deploy(args):
-    import sys
+def record_deploy(
+    host,
+    api_key,
+    app_name,
+    description,
+    revision="Unknown",
+    changelog=None,
+    user=None,
+    port=443,
+    proxy_scheme=None,
+    proxy_host=None,
+    proxy_user=None,
+    proxy_pass=None,
+    timeout=None,
+    ca_bundle_path=None,
+    disable_certificate_validation=False,
+):
+    headers = {"X-Api-Key": api_key or "", "Content-Type": "application/json"}
 
-    if len(args) < 2:
-        usage("record-deploy")
-        sys.exit(1)
-
-    def _args(
-        config_file, description, revision="Unknown", changelog=None, user=None, *args
-    ):
-        return config_file, description, revision, changelog, user
-
-    config_file, description, revision, changelog, user = _args(*args)
-
-    settings = global_settings()
-
-    settings.monitor_mode = False
-
-    initialize(config_file)
-
-    host = settings.host
-
-    if host == "collector.newrelic.com":
-        host = "api.newrelic.com"
-    elif host.startswith("collector.eu"):
-        host = "api.eu.newrelic.com"
-    elif host == "staging-collector.newrelic.com":
-        host = "staging-api.newrelic.com"
-
-    port = settings.port or 443
-
-    headers = {"X-Api-Key": settings.api_key or "", "Content-Type": "application/json"}
-
-    cert_loc = settings.ca_bundle_path
     client = agent_http.HttpClient(
         host=host,
         port=port,
-        proxy_scheme=settings.proxy_scheme,
-        proxy_host=settings.proxy_host,
-        proxy_user=settings.proxy_user,
-        proxy_pass=settings.proxy_pass,
-        timeout=settings.agent_limits.data_collector_timeout,
-        ca_bundle_path=cert_loc,
-        disable_certificate_validation=settings.debug.disable_certificate_validation,
+        proxy_scheme=proxy_scheme,
+        proxy_host=proxy_host,
+        proxy_user=proxy_user,
+        proxy_pass=proxy_pass,
+        timeout=timeout,
+        ca_bundle_path=ca_bundle_path,
+        disable_certificate_validation=disable_certificate_validation,
     )
 
     with client:
-        app_id = fetch_app_id(settings.app_name, client, headers)
+        app_id = fetch_app_id(app_name, client, headers)
         if app_id is None:
             raise RuntimeError(
                 "The application named %r was not found in your account. Please "
                 "try running the newrelic-admin server-config command to force "
-                "the application to register with New Relic." % settings.app_name
+                "the application to register with New Relic." % app_name
             )
 
         path = "/v2/applications/{}/deployments.json".format(app_id)
@@ -134,3 +114,58 @@ def record_deploy(args):
                 "Relic support for further investigation."
                 % (status_code, host, port, path, data, response)
             )
+
+
+@command(
+    "record-deploy",
+    "config_file description [revision changelog user]",
+    "Records a deployment for the monitored application.",
+)
+def record_deploy_cmd(args):
+    import sys
+
+    if len(args) < 2:
+        usage("record-deploy")
+        sys.exit(1)
+
+    def _args(
+        config_file, description, revision="Unknown", changelog=None, user=None, *args
+    ):
+        return config_file, description, revision, changelog, user
+
+    config_file, description, revision, changelog, user = _args(*args)
+
+    settings = global_settings()
+
+    settings.monitor_mode = False
+
+    initialize(config_file)
+
+    host = settings.host
+
+    if host == "collector.newrelic.com":
+        host = "api.newrelic.com"
+    elif host.startswith("collector.eu"):
+        host = "api.eu.newrelic.com"
+    elif host == "staging-collector.newrelic.com":
+        host = "staging-api.newrelic.com"
+
+    port = settings.port or 443
+
+    record_deploy(
+        host=host,
+        api_key=settings.api_key,
+        app_name=settings.app_name,
+        description=description,
+        revision=revision,
+        changelog=changelog,
+        user=user,
+        port=port,
+        proxy_scheme=settings.proxy_scheme,
+        proxy_host=settings.proxy_host,
+        proxy_user=settings.proxy_user,
+        proxy_pass=settings.proxy_pass,
+        timeout=settings.agent_limits.data_collector_timeout,
+        ca_bundle_path=settings.ca_bundle_path,
+        disable_certificate_validation=settings.debug.disable_certificate_validation,
+    )

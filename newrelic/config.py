@@ -363,8 +363,6 @@ def _process_configuration(section):
                      'get', None)
     _process_setting(section, 'thread_profiler.enabled',
                      'getboolean', None)
-    _process_setting(section, 'xray_session.enabled',
-                     'getboolean', None)
     _process_setting(section, 'transaction_tracer.enabled',
                      'getboolean', None)
     _process_setting(section, 'transaction_tracer.transaction_threshold',
@@ -490,12 +488,6 @@ def _process_configuration(section):
     _process_setting(section, 'agent_limits.slow_transaction_dry_harvests',
                      'getint', None)
     _process_setting(section, 'agent_limits.thread_profiler_nodes',
-                     'getint', None)
-    _process_setting(section, 'agent_limits.xray_transactions',
-                     'getint', None)
-    _process_setting(section, 'agent_limits.xray_profile_overhead',
-                     'getfloat', None)
-    _process_setting(section, 'agent_limits.xray_profile_maximum',
                      'getint', None)
     _process_setting(section, 'agent_limits.synthetics_events',
                      'getint', None)

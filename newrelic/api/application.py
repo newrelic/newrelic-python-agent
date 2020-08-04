@@ -132,9 +132,9 @@ class Application(object):
         if self.active:
             self._agent.record_custom_event(self._name, event_type, params)
 
-    def record_transaction(self, data, profile_samples=None):
+    def record_transaction(self, data):
         if self.active:
-            self._agent.record_transaction(self._name, data, profile_samples)
+            self._agent.record_transaction(self._name, data)
 
     def normalize_name(self, name, rule_type='url'):
         if self.active:

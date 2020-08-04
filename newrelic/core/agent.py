@@ -544,7 +544,7 @@ class Agent(object):
 
         application.record_custom_event(event_type, params)
 
-    def record_transaction(self, app_name, data, profile_samples=None):
+    def record_transaction(self, app_name, data):
         """Processes the raw transaction data, generating and recording
         appropriate metrics against the named application. If there has
         been no prior request to activate the application, the metric is
@@ -556,7 +556,7 @@ class Agent(object):
         if application is None or not application.active:
             return
 
-        application.record_transaction(data, profile_samples)
+        application.record_transaction(data)
 
         if self._config.serverless_mode.enabled:
             application.harvest(flexible=True)

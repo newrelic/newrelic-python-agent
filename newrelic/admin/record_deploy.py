@@ -14,75 +14,27 @@
 
 from __future__ import print_function
 
-import pwd
 import os
+import pwd
 
 from newrelic.admin import command, usage
-
-from newrelic.common import certs
+from newrelic.common import agent_http, certs, encoding_utils
 from newrelic.config import initialize
 from newrelic.core.config import global_settings
-from newrelic.network.addresses import proxy_details
-
-from newrelic.packages import requests
-
-import newrelic.packages.requests.adapters as adapters
-
-unpatched_request_url = adapters.HTTPAdapter.request_url
-
-# Remove a patch to the request_url forcing the full URL to be sent in the
-# request line. See _requests_request_url_workaround in data_collector.py
-# This is currently unsupported by the API endpoint. The common
-# case is to send only the relative URL.
-adapters.HTTPAdapter.request_url = unpatched_request_url
 
 
-def api_request_kwargs():
-    settings = global_settings()
-    api_key = settings.api_key or "NO API KEY WAS SET IN AGENT CONFIGURATION"
-
-    proxy_scheme = settings.proxy_scheme
-    proxy_host = settings.proxy_host
-    proxy_port = settings.proxy_port
-    proxy_user = settings.proxy_user
-    proxy_pass = settings.proxy_pass
-
-    if proxy_scheme is None:
-        proxy_scheme = "https"
-
-    timeout = settings.agent_limits.data_collector_timeout
-
-    proxies = proxy_details(
-        proxy_scheme, proxy_host, proxy_port, proxy_user, proxy_pass
-    )
-
-    cert_loc = settings.ca_bundle_path
-    if cert_loc is None:
-        cert_loc = certs.where()
-
-    if settings.debug.disable_certificate_validation:
-        cert_loc = False
-
-    headers = {"X-Api-Key": api_key}
-
-    return {
-        'proxies': proxies,
-        'headers': headers,
-        'timeout': timeout,
-        'verify': cert_loc,
-    }
-
-
-def fetch_app_id(app_name, server):
-    url = "https://{}/v2/applications.json".format(server)
-    r = requests.get(
-        url,
+def fetch_app_id(app_name, client, headers):
+    status, data = client.send_request(
+        "GET",
+        "/v2/applications.json",
         params={"filter[name]": app_name},
-        **api_request_kwargs()
+        headers=headers,
     )
-    r.raise_for_status()
 
-    response_json = r.json()
+    if not 200 <= status < 300:
+        raise RuntimeError("Status not OK", status)
+
+    response_json = encoding_utils.json_decode(encoding_utils.ensure_str(data))
     if "applications" not in response_json:
         return
 
@@ -91,20 +43,94 @@ def fetch_app_id(app_name, server):
             return application["id"]
 
 
+def record_deploy(
+    host,
+    api_key,
+    app_name,
+    description,
+    revision="Unknown",
+    changelog=None,
+    user=None,
+    port=443,
+    proxy_scheme=None,
+    proxy_host=None,
+    proxy_user=None,
+    proxy_pass=None,
+    timeout=None,
+    ca_bundle_path=None,
+    disable_certificate_validation=False,
+):
+    headers = {"X-Api-Key": api_key or "", "Content-Type": "application/json"}
+
+    client = agent_http.HttpClient(
+        host=host,
+        port=port,
+        proxy_scheme=proxy_scheme,
+        proxy_host=proxy_host,
+        proxy_user=proxy_user,
+        proxy_pass=proxy_pass,
+        timeout=timeout,
+        ca_bundle_path=ca_bundle_path,
+        disable_certificate_validation=disable_certificate_validation,
+    )
+
+    with client:
+        app_id = fetch_app_id(app_name, client, headers)
+        if app_id is None:
+            raise RuntimeError(
+                "The application named %r was not found in your account. Please "
+                "try running the newrelic-admin server-config command to force "
+                "the application to register with New Relic." % app_name
+            )
+
+        path = "/v2/applications/{}/deployments.json".format(app_id)
+
+        if user is None:
+            user = pwd.getpwuid(os.getuid()).pw_gecos
+
+        deployment = {}
+        deployment["revision"] = revision
+
+        if description:
+            deployment["description"] = description
+        if changelog:
+            deployment["changelog"] = changelog
+        if user:
+            deployment["user"] = user
+
+        data = {"deployment": deployment}
+        payload = encoding_utils.json_encode(data).encode("utf-8")
+
+        status_code, response = client.send_request(
+            "POST", path, headers=headers, payload=payload
+        )
+
+        if status_code != 201:
+            raise RuntimeError(
+                "An unexpected HTTP response of %r was received "
+                "for request made to https://%s:%d%s. The payload for the "
+                "request was %r. The response payload for the request was %r. "
+                "If this issue persists then please report this problem to New "
+                "Relic support for further investigation."
+                % (status_code, host, port, path, data, response)
+            )
+
+
 @command(
     "record-deploy",
     "config_file description [revision changelog user]",
     "Records a deployment for the monitored application.",
 )
-def record_deploy(args):
+def record_deploy_cmd(args):
     import sys
 
     if len(args) < 2:
         usage("record-deploy")
         sys.exit(1)
 
-    def _args(config_file, description, revision="Unknown", changelog=None,
-            user=None, *args):
+    def _args(
+        config_file, description, revision="Unknown", changelog=None, user=None, *args
+    ):
         return config_file, description, revision, changelog, user
 
     config_file, description, revision, changelog, user = _args(*args)
@@ -124,49 +150,22 @@ def record_deploy(args):
     elif host == "staging-collector.newrelic.com":
         host = "staging-api.newrelic.com"
 
-    port = settings.port
+    port = settings.port or 443
 
-    server = port and "%s:%d" % (host, port) or host
-
-    app_id = fetch_app_id(settings.app_name, server=server)
-    if app_id is None:
-        raise RuntimeError(
-            "The application named %r was not found in your account. Please "
-            "try running the newrelic-admin server-config command to force "
-            "the application to register with New Relic."
-            % settings.app_name
-        )
-
-    url = "https://{}/v2/applications/{}/deployments.json".format(
-            server, app_id)
-
-    if user is None:
-        user = pwd.getpwuid(os.getuid()).pw_gecos
-
-    deployment = {}
-    deployment["revision"] = revision
-
-    if description:
-        deployment["description"] = description
-    if changelog:
-        deployment["changelog"] = changelog
-    if user:
-        deployment["user"] = user
-
-    data = {"deployment": deployment}
-
-    r = requests.post(
-        url,
-        json=data,
-        **api_request_kwargs()
+    record_deploy(
+        host=host,
+        api_key=settings.api_key,
+        app_name=settings.app_name,
+        description=description,
+        revision=revision,
+        changelog=changelog,
+        user=user,
+        port=port,
+        proxy_scheme=settings.proxy_scheme,
+        proxy_host=settings.proxy_host,
+        proxy_user=settings.proxy_user,
+        proxy_pass=settings.proxy_pass,
+        timeout=settings.agent_limits.data_collector_timeout,
+        ca_bundle_path=settings.ca_bundle_path,
+        disable_certificate_validation=settings.debug.disable_certificate_validation,
     )
-
-    if r.status_code != 201:
-        raise RuntimeError(
-            "An unexpected HTTP response of %r was received "
-            "for request made to %r. The payload for the request was %r. "
-            "The response payload for the request was %r. If this issue "
-            "persists then please report this problem to New Relic "
-            "support for further investigation."
-            % (r.status_code, url, data, r.json())
-        )

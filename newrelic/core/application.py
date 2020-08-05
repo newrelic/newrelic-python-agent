@@ -27,21 +27,19 @@ import imp
 
 from functools import partial
 
-import newrelic.packages.six as six
-
 from newrelic.samplers.data_sampler import DataSampler
 
-from newrelic.core.config import global_settings_dump, global_settings
+from newrelic.core.config import global_settings
 from newrelic.core.custom_event import create_custom_event
 from newrelic.core.data_collector import create_session
 from newrelic.network.exceptions import (ForceAgentRestart,
-        ForceAgentDisconnect, DiscardDataForRequest, RetryDataForRequest)
+        ForceAgentDisconnect, DiscardDataForRequest, RetryDataForRequest,
+        NetworkInterfaceException)
 from newrelic.core.environment import environment_settings
 from newrelic.core.rules_engine import RulesEngine, SegmentCollapseEngine
 from newrelic.core.stats_engine import StatsEngine, CustomMetrics
 from newrelic.core.internal_metrics import (InternalTrace,
         InternalTraceContext, internal_metric, internal_count_metric)
-from newrelic.core.xray_session import XraySession
 from newrelic.core.profile_sessions import profile_session_manager
 
 from newrelic.core.database_utils import SQLConnections
@@ -121,16 +119,7 @@ class Application(object):
         # self._profiler_started = False
         # self._send_profile_data = False
 
-        # self._xray_profiler = None
-        self.xray_session_running = False
-
         self.profile_manager = profile_session_manager()
-
-        # This holds a dictionary of currently active xray sessions.
-        # key = xray_id
-        # value = XraySession object
-
-        self._active_xrays = {}
 
         self._uninstrumented = None
 
@@ -339,216 +328,218 @@ class Application(object):
                    (120, False, False), (300, False, True), ]
 
         connect_attempts = 0
+        settings = global_settings()
 
-        try:
-            while not active_session:
+        while not active_session:
+            if self._agent_shutdown:
+                return
 
-                if self._agent_shutdown:
-                    return
+            if self._pending_shutdown:
+                return
 
-                if self._pending_shutdown:
-                    return
+            connect_attempts += 1
 
-                connect_attempts += 1
-
-                internal_metrics = CustomMetrics()
-
-                with InternalTraceContext(internal_metrics):
-                    active_session = create_session(None, self._app_name,
-                            self.linked_applications, environment_settings(),
-                            global_settings_dump())
-
-                # We were successful, but first need to make sure we do
-                # not have any problems with the agent normalization
-                # rules provided by the data collector. These could blow
-                # up when being compiled if the patterns are broken or
-                # use text which conflicts with extensions in Python's
-                # regular expression syntax.
-
-                if active_session:
-                    configuration = active_session.configuration
-
-                    try:
-                        settings = global_settings()
-
-                        if settings.debug.log_normalization_rules:
-                            _logger.info('The URL normalization rules for '
-                                    '%r are %r.', self._app_name,
-                                     configuration.url_rules)
-                            _logger.info('The metric normalization rules '
-                                    'for %r are %r.', self._app_name,
-                                     configuration.metric_name_rules)
-                            _logger.info('The transaction normalization '
-                                    'rules for %r are %r.', self._app_name,
-                                     configuration.transaction_name_rules)
-
-                        self._rules_engine['url'] = RulesEngine(
-                                configuration.url_rules)
-                        self._rules_engine['metric'] = RulesEngine(
-                                configuration.metric_name_rules)
-                        self._rules_engine['transaction'] = RulesEngine(
-                                configuration.transaction_name_rules)
-                        self._rules_engine['segment'] = SegmentCollapseEngine(
-                                configuration.transaction_segment_terms)
-
-                    except Exception:
-                        _logger.exception('The agent normalization rules '
-                                'received from the data collector could not '
-                                'be compiled properly by the agent due to a '
-                                'syntactical error or other problem. Please '
-                                'report this to New Relic support for '
-                                'investigation.')
-
-                        # For good measure, in this situation we explicitly
-                        # shutdown the session as then the data collector
-                        # will record this. Ignore any error from this. Then
-                        # we discard the session so we go into a retry loop
-                        # on presumption that issue with the URL rules will
-                        # be fixed.
-
-                        try:
-                            active_session.shutdown_session()
-                        except Exception:
-                            pass
-
-                        active_session = None
-
-                # Were we successful. If not we will sleep for a bit and
-                # then go back and try again. Log warnings or errors as
-                # per schedule associated with the retry intervals.
-
-                if not active_session:
-                    if retries:
-                        timeout, warning, error = retries.pop(0)
-
-                        if warning:
-                            _logger.warning('Registration of the application '
-                                    '%r with the data collector failed after '
-                                    'multiple attempts. Check the prior log '
-                                    'entries and remedy any issue as '
-                                    'necessary, or if the problem persists, '
-                                    'report this problem to New Relic '
-                                    'support for further investigation.',
-                                    self._app_name)
-
-                        elif error:
-                            _logger.error('Registration of the application '
-                                    '%r with the data collector failed after '
-                                    'further additional attempts. Please '
-                                    'report this problem to New Relic support '
-                                    'for further investigation.',
-                                    self._app_name)
-
-                    else:
-                        timeout = 300
-
-                    _logger.debug('Retrying registration of the application '
-                            '%r with the data collector after a further %d '
-                            'seconds.', self._app_name, timeout)
-
-                    time.sleep(timeout)
-
-            # We were successful. Ensure we have cleared out any cached
-            # data from a prior agent run for this application.
-
-            configuration = active_session.configuration
-
-            with self._stats_lock:
-                self._stats_engine.reset_stats(
-                        configuration,
-                        reset_stream=True)
-
-                if configuration.serverless_mode.enabled:
-                    sampling_target_period = 60.0
-                else:
-                    sampling_target_period = \
-                        configuration.sampling_target_period_in_seconds
-                self.adaptive_sampler = AdaptiveSampler(
-                        configuration.sampling_target,
-                        sampling_target_period)
-
-            active_session.connect_span_stream(self._stats_engine.span_stream,
-                self.record_custom_metric)
-
-            with self._stats_custom_lock:
-                self._stats_custom_engine.reset_stats(configuration)
-
-            # Record an initial start time for the reporting period and
-            # clear record of last transaction processed.
-
-            self._period_start = time.time()
-
-            self._transaction_count = 0
-            self._last_transaction = 0.0
-
-            self._global_events_account = 0
-
-            # Record metrics for how long it took us to connect and how
-            # many attempts we made. Also record metrics for the final
-            # successful attempt. If we went through multiple attempts,
-            # individual details of errors before the final one that
-            # worked are not recorded as recording them all in the
-            # initial harvest would possibly skew first harvest metrics
-            # and cause confusion as we cannot properly mark the time over
-            # which they were recorded. Make sure we do this before we
-            # mark the session active so we don't have to grab a lock on
-            # merging the internal metrics.
+            internal_metrics = CustomMetrics()
 
             with InternalTraceContext(internal_metrics):
-                internal_metric('Supportability/Python/Application/'
-                        'Registration/Duration',
-                        self._period_start - connect_start)
-                internal_metric('Supportability/Python/Application/'
-                        'Registration/Attempts',
-                        connect_attempts)
+                try:
+                    active_session = create_session(None, self._app_name,
+                            self.linked_applications, environment_settings())
+                except ForceAgentDisconnect:
+                    # Any disconnect exception means we should stop trying to connect
+                    _logger.error(
+                            'The New Relic service has requested that the agent '
+                            'stop attempting to connect. The agent will no longer '
+                            'attempt a connection with New Relic. Your application '
+                            'must be manually restarted in order to connect to New '
+                            'Relic.')
+                    return
+                except NetworkInterfaceException:
+                    active_session = None
+                except Exception:
+                    # If an exception occurs after agent has been flagged to be
+                    # shutdown then we ignore the error. This is because all
+                    # sorts of weird errors could occur when main thread start
+                    # destroying objects and this background thread to register
+                    # the application is still running.
 
-            self._stats_engine.merge_custom_metrics(
-                    internal_metrics.metrics())
+                    if not self._agent_shutdown and not self._pending_shutdown:
+                        _logger.exception(
+                                'Unexpected exception when registering '
+                                'agent with the data collector. If this problem '
+                                'persists, please report this problem to New Relic '
+                                'support for further investigation.')
+                    return
 
-            # Update the active session in this object. This will the
-            # recording of transactions to start.
+            # We were successful, but first need to make sure we do
+            # not have any problems with the agent normalization
+            # rules provided by the data collector. These could blow
+            # up when being compiled if the patterns are broken or
+            # use text which conflicts with extensions in Python's
+            # regular expression syntax.
 
-            self._active_session = active_session
+            if active_session:
+                configuration = active_session.configuration
 
-            # Enable the ability to perform a harvest. This is okay to
-            # do at this point as the processing of agent commands and
-            # starting of data samplers are protected by their own locks.
+                try:
+                    if settings.debug.log_normalization_rules:
+                        _logger.info('The URL normalization rules for '
+                                '%r are %r.', self._app_name,
+                                    configuration.url_rules)
+                        _logger.info('The metric normalization rules '
+                                'for %r are %r.', self._app_name,
+                                    configuration.metric_name_rules)
+                        _logger.info('The transaction normalization '
+                                'rules for %r are %r.', self._app_name,
+                                    configuration.transaction_name_rules)
 
-            self._harvest_enabled = True
+                    self._rules_engine['url'] = RulesEngine(
+                            configuration.url_rules)
+                    self._rules_engine['metric'] = RulesEngine(
+                            configuration.metric_name_rules)
+                    self._rules_engine['transaction'] = RulesEngine(
+                            configuration.transaction_name_rules)
+                    self._rules_engine['segment'] = SegmentCollapseEngine(
+                            configuration.transaction_segment_terms)
 
-            if activate_agent:
-                activate_agent()
+                except Exception:
+                    _logger.exception('The agent normalization rules '
+                            'received from the data collector could not '
+                            'be compiled properly by the agent due to a '
+                            'syntactical error or other problem. Please '
+                            'report this to New Relic support for '
+                            'investigation.')
 
-            # Flag that the session activation has completed to
-            # anyone who has been waiting through calling the
-            # wait_for_session_activation() method.
+                    # For good measure, in this situation we explicitly
+                    # shutdown the session as then the data collector
+                    # will record this. Ignore any error from this. Then
+                    # we discard the session so we go into a retry loop
+                    # on presumption that issue with the URL rules will
+                    # be fixed.
 
-            self._connected_event.set()
+                    try:
+                        active_session.shutdown_session()
+                    except Exception:
+                        pass
 
-            # Start any data samplers so they are aware of the start of
-            # the harvest period.
+                    active_session = None
 
-            self.start_data_samplers()
+            # If not successful we will sleep for a bit and
+            # then go back and try again. Log warnings or errors as
+            # per schedule associated with the retry intervals.
 
-        except ForceAgentDisconnect:
-            # Any disconnect exception means we should stop trying to connect
-            _logger.error('The New Relic service has requested that the agent '
-                    'stop attempting to connect. The agent will no longer '
-                    'attempt a connection with New Relic. Your application '
-                    'must be manually restarted in order to connect to New '
-                    'Relic.')
-        except Exception:
-            # If an exception occurs after agent has been flagged to be
-            # shutdown then we ignore the error. This is because all
-            # sorts of weird errors could occur when main thread start
-            # destroying objects and this background thread to register
-            # the application is still running.
+            if not active_session:
+                if retries:
+                    timeout, warning, error = retries.pop(0)
 
-            if not self._agent_shutdown and not self._pending_shutdown:
-                _logger.exception('Unexpected exception when registering '
-                        'agent with the data collector. If this problem '
-                        'persists, please report this problem to New Relic '
-                        'support for further investigation.')
+                    if warning:
+                        _logger.warning('Registration of the application '
+                                '%r with the data collector failed after '
+                                'multiple attempts. Check the prior log '
+                                'entries and remedy any issue as '
+                                'necessary, or if the problem persists, '
+                                'report this problem to New Relic '
+                                'support for further investigation.',
+                                self._app_name)
+
+                    elif error:
+                        _logger.error('Registration of the application '
+                                '%r with the data collector failed after '
+                                'further additional attempts. Please '
+                                'report this problem to New Relic support '
+                                'for further investigation.',
+                                self._app_name)
+
+                else:
+                    timeout = 300
+
+                _logger.debug('Retrying registration of the application '
+                        '%r with the data collector after a further %d '
+                        'seconds.', self._app_name, timeout)
+
+                time.sleep(timeout)
+
+        # We were successful. Ensure we have cleared out any cached
+        # data from a prior agent run for this application.
+
+        configuration = active_session.configuration
+
+        with self._stats_lock:
+            self._stats_engine.reset_stats(
+                    configuration,
+                    reset_stream=True)
+
+            if configuration.serverless_mode.enabled:
+                sampling_target_period = 60.0
+            else:
+                sampling_target_period = \
+                    configuration.sampling_target_period_in_seconds
+            self.adaptive_sampler = AdaptiveSampler(
+                    configuration.sampling_target,
+                    sampling_target_period)
+
+        active_session.connect_span_stream(self._stats_engine.span_stream,
+            self.record_custom_metric)
+
+        with self._stats_custom_lock:
+            self._stats_custom_engine.reset_stats(configuration)
+
+        # Record an initial start time for the reporting period and
+        # clear record of last transaction processed.
+
+        self._period_start = time.time()
+
+        self._transaction_count = 0
+        self._last_transaction = 0.0
+
+        self._global_events_account = 0
+
+        # Record metrics for how long it took us to connect and how
+        # many attempts we made. Also record metrics for the final
+        # successful attempt. If we went through multiple attempts,
+        # individual details of errors before the final one that
+        # worked are not recorded as recording them all in the
+        # initial harvest would possibly skew first harvest metrics
+        # and cause confusion as we cannot properly mark the time over
+        # which they were recorded. Make sure we do this before we
+        # mark the session active so we don't have to grab a lock on
+        # merging the internal metrics.
+
+        with InternalTraceContext(internal_metrics):
+            internal_metric('Supportability/Python/Application/'
+                    'Registration/Duration',
+                    self._period_start - connect_start)
+            internal_metric('Supportability/Python/Application/'
+                    'Registration/Attempts',
+                    connect_attempts)
+
+        self._stats_engine.merge_custom_metrics(
+                internal_metrics.metrics())
+
+        # Update the active session in this object. This will the
+        # recording of transactions to start.
+
+        self._active_session = active_session
+
+        # Enable the ability to perform a harvest. This is okay to
+        # do at this point as the processing of agent commands and
+        # starting of data samplers are protected by their own locks.
+
+        self._harvest_enabled = True
+
+        if activate_agent:
+            activate_agent()
+
+        # Flag that the session activation has completed to
+        # anyone who has been waiting through calling the
+        # wait_for_session_activation() method.
+
+        self._connected_event.set()
+
+        # Start any data samplers so they are aware of the start of
+        # the harvest period.
+
+        self.start_data_samplers()
 
         try:
             self._active_session.close_connection()
@@ -798,7 +789,7 @@ class Application(object):
                 self._global_events_account += 1
                 self._stats_engine.record_custom_event(event)
 
-    def record_transaction(self, data, profile_samples=None):
+    def record_transaction(self, data):
         """Record a single transaction against this application."""
 
         if not self._active_session:
@@ -850,36 +841,6 @@ class Application(object):
                     if settings.debug.record_transaction_failure:
                         raise
 
-                if (profile_samples and (data.path in
-                        self._stats_engine.xray_sessions or
-                        'WebTransaction/Agent/__profiler__' in
-                        self._stats_engine.xray_sessions)):
-
-                    try:
-                        background_task, samples = profile_samples
-
-                        tr_type = 'BACKGROUND' if background_task else 'REQUEST'
-
-                        if data.path in self._stats_engine.xray_sessions:
-                            self.profile_manager.add_stack_traces(self._app_name,
-                                    data.path, tr_type, samples)
-
-                        if ('WebTransaction/Agent/__profiler__' in
-                                self._stats_engine.xray_sessions):
-                            self.profile_manager.add_stack_traces(self._app_name,
-                                    'WebTransaction/Agent/__profiler__', tr_type,
-                                    samples)
-
-                    except Exception:
-                        _logger.exception('Building xray profile tree has failed.'
-                                'This would indicate some sort of internal '
-                                'implementation issue with the agent. Please '
-                                'report this problem to New Relic support for '
-                                'further investigation.')
-
-                        if settings.debug.record_transaction_failure:
-                            raise
-
             with self._stats_lock:
                 try:
                     self._transaction_count += 1
@@ -905,242 +866,6 @@ class Application(object):
 
                     if settings.debug.record_transaction_failure:
                         raise
-
-    def start_xray(self, command_id=0, **kwargs):
-        """Handler for agent command 'start_xray_session'. """
-
-        if not self._active_session.configuration.xray_session.enabled:
-            _logger.warning('An xray session was requested '
-                    'for %r but xray sessions are disabled by the current '
-                    'agent configuration. Enable "xray_session.enabled" '
-                    'in the agent configuration.', self._app_name)
-            return {command_id: {'error': 'The xray sessions are disabled'}}
-
-        try:
-            xray_id = kwargs['x_ray_id']
-            name = kwargs['key_transaction_name']
-            duration_s = kwargs.get('duration', 864000)  # 86400s = 24hrs
-            max_traces = kwargs.get('requested_trace_count', 100)
-            sample_period_s = kwargs.get('sample_period', 0.1)
-            run_profiler = kwargs.get('run_profiler', True)
-        except KeyError:
-
-            # A KeyError can happen if an xray id was present in
-            # active_xray_sessions but it was cancelled by the user before the
-            # agent could get it's metadata.
-
-            _logger.warning('An xray session was requested but appropriate '
-                    'parameters were not provided. Report this error '
-                    'to New Relic support for further investigation. '
-                    'Provided Params: %r', kwargs)
-            return {command_id: {'error': 'The xray sessions error'}}
-
-        stop_time_s = self._period_start + duration_s
-
-        # Check whether we are already running an xray session for this
-        # xray id and ignore the subsequent request if we are.
-
-        if self._active_xrays.get(xray_id) is not None:
-            _logger.warning('An xray session was requested for %r but '
-                      'an xray session for the requested key transaction '
-                      '%r with ID of %r is already in progress. Ignoring '
-                      'the subsequent request. This can happen, but if it '
-                      'keeps occurring on a regular basis, please report '
-                      'this problem to New Relic support for further '
-                      'investigation.', self._app_name, name, xray_id)
-
-            return {command_id: {'error': 'Xray session already running.'}}
-
-        # Check whether we have an xray session running for the same key
-        # transaction, we should only ever have one. If already have one
-        # and the existing one has an ID which indicates it is older, then
-        # stop the existing one so we can replace it with the newer one.
-        # Otherwise allow the existing one to stand and ignore the new one.
-
-        xs = self._stats_engine.xray_sessions.get(name)
-
-        if xs:
-            if xs.xray_id < xray_id:
-                _logger.warning('An xray session was requested for %r but '
-                        'an xray session with id %r for the requested key '
-                        'transaction %r is already in progress. Replacing '
-                        'the existing older xray session with the newer xray '
-                        'session with id %r. This can happen occassionally. '
-                        'But if it keeps occurring on a regular basis, '
-                        'please report this problem to New Relic support '
-                        'for further  investigation.', self._app_name,
-                        xs.xray_id, name, xray_id)
-
-                self.stop_xray(x_ray_id=xs.xray_id,
-                        key_transaction_name=xs.key_txn)
-
-            else:
-                _logger.warning('An xray session was requested for %r but '
-                        'a newer xray session with id %r for the requested '
-                        'key transaction %r is already in progress. Ignoring '
-                        'the older xray session request with id %r. This can '
-                        'happen occassionally. But if it keeps occurring '
-                        'on a regular basis, please report this problem '
-                        'to New Relic support for further  investigation.',
-                        self._app_name, xs.xray_id, name, xray_id)
-
-                return {command_id: {'error': 'Xray session already running.'}}
-
-        xs = XraySession(xray_id, name, stop_time_s, max_traces,
-                sample_period_s)
-
-        # Add it to the currently active xrays.
-
-        self._active_xrays[xray_id] = xs
-
-        # Add it to the stats engine to start recording Xray TTs.
-
-        self._stats_engine.xray_sessions[name] = xs
-
-        # Start the xray profiler only if requested by collector.
-
-        if run_profiler:
-            profiler_status = self.profile_manager.start_profile_session(
-                    self._app_name, -1, stop_time_s, sample_period_s, False,
-                    name, xray_id)
-
-            if not profiler_status:
-                _logger.warning('Unable to start profile session for '
-                        'application %s', self._app_name)
-
-        _logger.info('Starting an xray session for %r. '
-                'duration:%d mins name:%s xray_id:%d', self._app_name,
-                duration_s / 60, name, xray_id)
-
-        return {command_id: {}}
-
-    def stop_xray(self, command_id=0, **kwargs):
-        """Handler for agent command 'stop_xray_session'. This command
-        is sent by collector under two conditions:
-
-        1. When there are enough traces for the xray session.
-        2. When the user cancels an xray session in progress.
-
-        """
-        try:
-            xray_id = kwargs['x_ray_id']
-            name = kwargs['key_transaction_name']
-        except KeyError:
-            _logger.warning('A stop xray was requested but appropriate '
-                    'parameters were not provided. Report this error '
-                    'to New Relic support for further investigation. '
-                    'Provided Params: %r', kwargs)
-            return {command_id: {'error': 'Xray session stop error.'}}
-
-        # An xray session is deemed as already_running if the xray_id is
-        # already present in the self._active_xrays or the key txn is already
-        # tracked in the stats_engine.xray_sessions.
-
-        already_running = self._active_xrays.get(xray_id) is not None
-        already_running |= (self._stats_engine.xray_sessions.get(name) is not
-                None)
-        if not already_running:
-            _logger.warning('A request was received to stop xray '
-                    'session %d for %r, but the xray session is not running. '
-                    'If this keeps occurring on a regular basis, please '
-                    'report this problem to New Relic support for further '
-                    'investigation.', xray_id, self._app_name)
-
-            return {command_id: {'error': 'Xray session not running.'}}
-
-        try:
-            xs = self._active_xrays.pop(xray_id)
-            self._stats_engine.xray_sessions.pop(xs.key_txn)
-        except KeyError:
-            pass
-
-        # We are deliberately ignoring the return value from
-        # stop_profile_session because there is a chance that the profiler has
-        # stopped automatically after the alloted duration has elapsed before
-        # the collector got a chance to issue the stop_xray command. We don't
-        # want to raise an alarm for that scenario.
-
-        _logger.info('Stopping xray session %d for %r', xray_id,
-                self._app_name)
-
-        self.profile_manager.stop_profile_session(self._app_name, xs.key_txn)
-
-        return {command_id: {}}
-
-    def cmd_active_xray_sessions(self, command_id=0, **kwargs):
-        """Receives  a list of xray_ids that are currently active in the
-        datacollector.
-
-        """
-
-        # If xray_sessions are disabled in the config file, just ignore the
-        # active_xray_sessions command and proceed.
-        #
-        # This can happen if one of the hosts has the xrays disabled but the
-        # other hosts are running x-rays.
-
-        if not self._active_session.configuration.xray_session.enabled:
-            return None
-
-        # Create a set from the xray_ids received from the collector.
-
-        collector_xray_ids = set(kwargs['xray_ids'])
-
-        _logger.debug('X Ray sessions expected to be running for %r are '
-                '%r.', self._app_name, collector_xray_ids)
-
-        # Create a set from the xray_ids currently active in the agent.
-
-        agent_xray_ids = set(self._active_xrays)
-
-        _logger.debug('X Ray sessions actually running for %r are '
-                '%r.', self._app_name, agent_xray_ids)
-
-        # Result of the (agent_xray_ids - collector_xray_ids) will be
-        # the ids that are not active in collector but are still active
-        # in the agent. These xray sessions must be stopped.
-
-        stopped_xrays = agent_xray_ids - collector_xray_ids
-
-        _logger.debug('X Ray sessions to be stopped for %r are '
-                '%r.', self._app_name, stopped_xrays)
-
-        for xray_id in stopped_xrays:
-            xs = self._active_xrays.get(xray_id)
-            self.stop_xray(x_ray_id=xs.xray_id,
-                    key_transaction_name=xs.key_txn)
-
-        # Result of the (collector_xray_ids - agent_xray_ids) will be
-        # the ids that are new xray sessions created in the collector
-        # but are not yet activated in the agent. Agent will contact the
-        # collector with each xray_id and ask for it's metadata, then
-        # start the corresponding xray_sessions. Note that we sort the
-        # list of IDs and give precedence to larger value, which should
-        # be newer. Do this just in case the data collector is tardy
-        # in flushing out a complete one and UI has allowed a new one
-        # to be created and so have multiple for same key transaction.
-
-        new_xrays = sorted(collector_xray_ids - agent_xray_ids, reverse=True)
-
-        _logger.debug('X Ray sessions to be started for %r are '
-                '%r.', self._app_name, new_xrays)
-
-        for xray_id in new_xrays:
-            metadata = self._active_session.get_xray_metadata(xray_id)
-            if not metadata:
-                # We may get empty meta data if the xray session had
-                # completed or been deleted just prior to requesting
-                # the meta data.
-
-                _logger.debug('Meta data for xray session with id %r '
-                        'of %r is empty, ignore it.', xray_id, self._app_name)
-            else:
-                self.start_xray(0, **metadata[0])
-
-        # Note that 'active_xray_sessions' does NOT need to send an
-        # acknowledgement back to the collector
-
-        return None
 
     def cmd_start_profiler(self, command_id=0, **kwargs):
         """Triggered by the start_profiler agent command to start a
@@ -1264,9 +989,6 @@ class Application(object):
 
                 start = time.time()
 
-                _logger.debug('Commencing data harvest of %r.',
-                        self._app_name)
-
                 # Create a snapshot of the transaction stats and
                 # application specific custom metrics stats, then merge
                 # them together. The originals will be reset at the time
@@ -1274,8 +996,7 @@ class Application(object):
                 # this point onwards will be accumulated in a fresh
                 # bucket.
 
-                _logger.debug('Snapshotting metrics for harvest of %r.',
-                        self._app_name)
+                _logger.debug('Snapshotting for harvest[%s] of %r.', call_metric, self._app_name)
 
                 configuration = self._active_session.configuration
                 transaction_count = self._transaction_count
@@ -1728,8 +1449,8 @@ class Application(object):
 
                 duration = time.time() - start
 
-                _logger.debug('Completed harvest for %r in %.2f seconds.',
-                        self._app_name, duration)
+                _logger.debug('Completed harvest[%s] for %r in %.2f seconds.',
+                        call_metric, self._app_name, duration)
 
                 # Force close the socket connection which has been
                 # created for this harvest if session still exists.
@@ -1747,9 +1468,7 @@ class Application(object):
             self._stats_engine.merge_custom_metrics(internal_metrics.metrics())
 
     def report_profile_data(self):
-        """Report back any profile data. This may be partial thread
-        profile data for X-Ray sessions, or final thread profile data
-        for a full profiling session.
+        """Report back any profile data.
 
         """
 
@@ -1766,14 +1485,9 @@ class Application(object):
         """
 
         # We need to stop any thread profiler session related to this
-        # application. This may be a full thread profiling session or
-        # one run in relation to active X-Ray sessions. We also need to
-        # throw away any X-Ray sessions. These will be restarted as
-        # necessary after a reconnect if done.
+        # application.
 
         self.profile_manager.shutdown(self._app_name)
-
-        self._active_xrays = {}
 
         # Attempt to report back any profile data which was left when
         # all profiling was shutdown due to the agent shutdown for this
@@ -1836,27 +1550,6 @@ class Application(object):
 
             if agent_commands is None:
                 return
-
-            # Extract the command names from the agent_commands. This is
-            # used to check for the presence of active_xray_sessions command
-            # in the list.
-
-            cmd_names = [x[1]['name'] for x in agent_commands]
-
-            no_xray_cmds = 'active_xray_sessions' not in cmd_names
-
-            # If there are active xray sessions running but the agent
-            # commands doesn't have any active_xray_session ids then all the
-            # active xray sessions must be stopped.
-
-            if self._active_xrays and no_xray_cmds:
-                _logger.debug('Stopping all X Ray sessions for %r. '
-                    'Current sessions running are %r.', self._app_name,
-                    list(six.iterkeys(self._active_xrays)))
-
-                for xs in list(six.itervalues(self._active_xrays)):
-                    self.stop_xray(x_ray_id=xs.xray_id,
-                            key_transaction_name=xs.key_txn)
 
             # For each agent command received, call the appropriate agent
             # command handler. Reply to the data collector with the

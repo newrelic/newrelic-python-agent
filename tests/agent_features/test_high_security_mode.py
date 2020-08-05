@@ -35,9 +35,10 @@ from newrelic.core.attribute import (Attribute, DST_TRANSACTION_TRACER,
         DST_ERROR_COLLECTOR, DST_ALL)
 from newrelic.core.config import (global_settings, Settings,
         apply_config_setting)
-from newrelic.core.data_collector import apply_high_security_mode_fixups
+from newrelic.core.agent_protocol import AgentProtocol
 
 from testing_support.fixtures import (override_application_settings,
+        override_generic_settings,
         validate_custom_parameters, validate_transaction_errors,
         validate_request_params_omitted, validate_attributes_complete,
         validate_non_transaction_error_event, reset_core_stats_engine,
@@ -290,7 +291,10 @@ def test_remote_config_fixups_hsm_disabled(local_settings, server_settings):
     original_strip_messages = agent_config['strip_exception_messages.enabled']
     original_custom_events = agent_config['custom_insights_events.enabled']
 
-    settings = apply_high_security_mode_fixups(local_settings, server_settings)
+    _settings = global_settings()
+    settings = override_generic_settings(_settings, local_settings)(
+        AgentProtocol._apply_high_security_mode_fixups
+    )(server_settings, _settings)
 
     agent_config = settings['agent_config']
 
@@ -312,7 +316,10 @@ def test_remote_config_fixups_hsm_enabled(local_settings, server_settings):
 
     assert u'high_security' in server_settings
 
-    settings = apply_high_security_mode_fixups(local_settings, server_settings)
+    _settings = global_settings()
+    settings = override_generic_settings(_settings, local_settings)(
+        AgentProtocol._apply_high_security_mode_fixups
+    )(server_settings, _settings)
 
     agent_config = settings['agent_config']
 
@@ -332,7 +339,10 @@ def test_remote_config_hsm_fixups_server_side_disabled():
     local_settings = {'high_security': True}
     server_settings = {'high_security': True}
 
-    settings = apply_high_security_mode_fixups(local_settings, server_settings)
+    _settings = global_settings()
+    settings = override_generic_settings(_settings, local_settings)(
+        AgentProtocol._apply_high_security_mode_fixups
+    )(server_settings, _settings)
 
     assert 'high_security' not in settings
 

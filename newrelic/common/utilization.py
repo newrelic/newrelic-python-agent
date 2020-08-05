@@ -14,29 +14,46 @@
 
 import logging
 import os
-import string
 import re
+import socket
+import string
 import threading
 
-from newrelic.packages import requests
+from newrelic.common.agent_http import InsecureHttpClient
+from newrelic.common.encoding_utils import json_decode
 from newrelic.core.internal_metrics import internal_count_metric
-
-try:
-    import queue
-except ImportError:
-    import Queue as queue
-
 
 _logger = logging.getLogger(__name__)
 VALID_CHARS_RE = re.compile(r'[0-9a-zA-Z_ ./-]')
 
+class UtilizationHttpClient(InsecureHttpClient):
+    SOCKET_TIMEOUT = 0.05
+
+    def send_request(self, *args, **kwargs):
+        sock = socket.socket()
+        sock.settimeout(self.SOCKET_TIMEOUT)
+
+        # If we cannot connect to the metadata host in SOCKET_TIMEOUT time,
+        # this will raise an exception, terminating the fetch before attempting
+        # to use an http client.
+        # This is an optimization which will speed up connect.
+        try:
+            sock.connect((self._host, self._port))
+        finally:
+            sock.close()
+
+        return super(UtilizationHttpClient, self).send_request(*args, **kwargs)
+
 
 class CommonUtilization(object):
-    METADATA_URL = ''
+    METADATA_HOST = ''
+    METADATA_PATH = ''
+    METADATA_QUERY = None
     HEADERS = None
     EXPECTED_KEYS = ()
     VENDOR_NAME = ''
-    TIMEOUT = 0.4
+    FETCH_TIMEOUT = 0.4
+    CLIENT_CLS = UtilizationHttpClient
 
     @classmethod
     def record_error(cls, resource, data):
@@ -47,41 +64,21 @@ class CommonUtilization(object):
                 cls.VENDOR_NAME, resource, data)
 
     @classmethod
-    def _fetch(cls, q):
-        # Create own requests session and disable all environment variables,
-        # so that we can bypass any proxy set via env var for this request.
-
-        session = requests.Session()
-        session.trust_env = False
-
-        try:
-            resp = session.get(
-                    cls.METADATA_URL,
-                    timeout=cls.TIMEOUT,
-                    headers=cls.HEADERS)
-            resp.raise_for_status()
-        except Exception as e:
-            resp = None
-            _logger.debug('Unable to fetch %s data from %r: %r',
-                    cls.VENDOR_NAME, cls.METADATA_URL, e)
-
-        q.put(resp)
-
-    @classmethod
     def fetch(cls):
-        q = queue.Queue()
-        t = threading.Thread(
-            target=cls._fetch,
-            name="UtilizationDetect/{}".format(cls.VENDOR_NAME),
-            args=(q,),
-        )
-        t.daemon = True
-        t.start()
         try:
-            return q.get(timeout=cls.TIMEOUT + 0.1)
-        except queue.Empty:
-            _logger.debug('Timeout waiting to fetch %s data from %r',
-                    cls.VENDOR_NAME, cls.METADATA_URL)
+            with cls.CLIENT_CLS(cls.METADATA_HOST,
+                                timeout=cls.FETCH_TIMEOUT) as client:
+                resp = client.send_request(method='GET',
+                                           path=cls.METADATA_PATH,
+                                           params=cls.METADATA_QUERY,
+                                           headers=cls.HEADERS)
+            if not 200 <= resp[0] < 300:
+                raise ValueError(resp[0])
+            return resp[1]
+        except Exception as e:
+            _logger.debug('Unable to fetch %s data from %s%s: %r',
+                    cls.VENDOR_NAME, cls.METADATA_HOST, cls.METADATA_PATH, e)
+            return None
 
     @classmethod
     def get_values(cls, response):
@@ -89,13 +86,11 @@ class CommonUtilization(object):
             return
 
         try:
-            j = response.json()
+            return json_decode(response.decode('utf-8'))
         except ValueError:
-            _logger.debug('Invalid %s data (%r): %r',
-                    cls.VENDOR_NAME, cls.METADATA_URL, response.text)
-            return
-
-        return j
+            _logger.debug('Invalid %s data (%s%s): %r',
+                    cls.VENDOR_NAME, cls.METADATA_HOST,
+                    cls.METADATA_PATH, response)
 
     @classmethod
     def valid_chars(cls, data):
@@ -164,15 +159,15 @@ class CommonUtilization(object):
 
 class AWSUtilization(CommonUtilization):
     EXPECTED_KEYS = ('availabilityZone', 'instanceId', 'instanceType')
-    METADATA_URL = '%s/2016-09-02/dynamic/instance-identity/document' % (
-        'http://169.254.169.254'
-    )
+    METADATA_HOST = '169.254.169.254'
+    METADATA_PATH = '/2016-09-02/dynamic/instance-identity/document'
     VENDOR_NAME = 'aws'
 
 
 class AzureUtilization(CommonUtilization):
-    METADATA_URL = ('http://169.254.169.254'
-            '/metadata/instance/compute?api-version=2017-03-01')
+    METADATA_HOST = '169.254.169.254'
+    METADATA_PATH = '/metadata/instance/compute'
+    METADATA_QUERY = {'api-version': '2017-03-01'}
     EXPECTED_KEYS = ('location', 'name', 'vmId', 'vmSize')
     HEADERS = {'Metadata': 'true'}
     VENDOR_NAME = 'azure'
@@ -181,8 +176,9 @@ class AzureUtilization(CommonUtilization):
 class GCPUtilization(CommonUtilization):
     EXPECTED_KEYS = ('id', 'machineType', 'name', 'zone')
     HEADERS = {'Metadata-Flavor': 'Google'}
-    METADATA_URL = 'http://%s/computeMetadata/v1/instance/?recursive=true' % (
-            'metadata.google.internal')
+    METADATA_HOST = 'metadata.google.internal'
+    METADATA_PATH = '/computeMetadata/v1/instance/'
+    METADATA_QUERY = {'recursive': 'true'}
     VENDOR_NAME = 'gcp'
 
     @classmethod

@@ -25,10 +25,10 @@ def validate_metric_payload(metrics=[]):
 
         recorded_metrics = []
 
+        @transient_function_wrapper('newrelic.core.agent_protocol',
+                'AgentProtocol.send')
         def send_request_wrapper(wrapped, instance, args, kwargs):
-            def _bind_params(session, url, method, license_key,
-                    agent_run_id=None, request_headers_map=None, payload=(),
-                    *args, **kwargs):
+            def _bind_params(method, payload=(), *args, **kwargs):
                 return method, payload
 
             method, payload = _bind_params(*args, **kwargs)
@@ -43,15 +43,7 @@ def validate_metric_payload(metrics=[]):
 
             return wrapped(*args, **kwargs)
 
-        dev_mode_wrapper = transient_function_wrapper(
-                'newrelic.core.data_collector',
-                'DeveloperModeSession.send_request')(send_request_wrapper)
-        application_session_wrapper = transient_function_wrapper(
-                'newrelic.core.data_collector',
-                'ApplicationSession.send_request')(send_request_wrapper)
-
-        wrapped = dev_mode_wrapper(wrapped)
-        wrapped = application_session_wrapper(wrapped)
+        wrapped = send_request_wrapper(wrapped)
         val = wrapped(*args, **kwargs)
         assert recorded_metrics
 

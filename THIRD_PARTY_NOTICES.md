@@ -8,15 +8,6 @@ In the event that a required notice is missing or incorrect, please notify us
 by e-mailing [support@newrelic.com](mailto:support@newrelic.com).
 
 
-## [requests](https://pypi.org/project/requests)
-
-Copyright 2014 Kenneth Reitz
-
-Distributed under the following license(s):
-
-  * [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)
-
-
 ## [six](https://pypi.org/project/six)
 
 Copyright (c) 2010-2013 Benjamin Peterson
@@ -33,6 +24,15 @@ Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 
 Distributed under the following license(s):
 
   * [Python Software Foundation](https://docs.python.org/3/license.html)
+
+
+## [urllib3](https://pypi.org/project/urllib3)
+
+Copyright (c) 2008-2019 Andrey Petrov and contributors (see CONTRIBUTORS.txt)
+
+Distributed under the following license(s):
+
+  * [The MIT License](http://opensource.org/licenses/MIT)
 
 
 ## [wrapt](https://pypi.org/project/wrapt)

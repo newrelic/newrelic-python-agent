@@ -36,7 +36,7 @@ try:
 except ImportError:
     from urllib.parse import parse_qsl
 
-from newrelic.packages.requests.packages.urllib3 import util as ul3_util
+from newrelic.packages.urllib3 import util as ul3_util
 
 
 # These functions return True if a non-default connection or cursor class is

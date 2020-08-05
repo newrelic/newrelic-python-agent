@@ -105,9 +105,9 @@ Privacy
 
 At New Relic we take your privacy and the security of your information seriously, and are committed to protecting your information. We must emphasize the importance of not sharing personal data in public forums, and ask all users to scrub logs and diagnostic information for sensitive information, whether personal, proprietary, or otherwise.
 
-We define “Personal Data” as any information relating to an identified or identifiable individual, including, for example, your name, phone number, post code or zip code, Device ID, IP address and email address.
+We define "Personal Data" as any information relating to an identified or identifiable individual, including, for example, your name, phone number, post code or zip code, Device ID, IP address and email address.
 
-Please review `New Relic’s General Data Privacy Notice <https://newrelic.com/termsandconditions/privacy>`_ for more information.
+Please review `New Relic's General Data Privacy Notice <https://newrelic.com/termsandconditions/privacy>`_ for more information.
 
 Roadmap
 -------
@@ -118,7 +118,7 @@ Contributing
 ------------
 
 We encourage your contributions to improve the New Relic Python Agent! Keep in
-mind when you submit your pull request, you’ll need to sign the CLA via the
+mind when you submit your pull request, you'll need to sign the CLA via the
 click-through using CLA-Assistant. You only have to sign the CLA one time per
 project. If you have any questions, or to execute our corporate CLA, required
 if your contribution is on behalf of a company, please drop us an email at

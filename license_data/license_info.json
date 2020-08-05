@@ -22,7 +22,7 @@
                 "PSF"
             ],
             "name": "time.monotonic",
-            "url": "common/_monotonic.c"
+            "url": "newrelic/common/_monotonic.c"
         },
         "urllib3": {
             "copyright": "Copyright (c) 2008-2019 Andrey Petrov and contributors (see CONTRIBUTORS.txt)",

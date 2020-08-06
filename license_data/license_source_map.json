@@ -5,6 +5,36 @@
             "New Relic"
         ]
     },
+    ".github/ISSUE_TEMPLATE/bug_report.md": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    ".github/ISSUE_TEMPLATE/config.yml": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    ".github/ISSUE_TEMPLATE/feature_request.md": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    ".github/ISSUE_TEMPLATE/troubleshooting.md": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    ".github/pull_request_template.md": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     ".github/workflows/deploy.yml": {
         "hash": "n/a",
         "libraries": [
@@ -42,6 +72,12 @@
         ]
     },
     "README.rst": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "ROADMAP.md": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

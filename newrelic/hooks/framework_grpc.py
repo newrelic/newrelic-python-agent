@@ -1,3 +1,17 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import random
 import time
 
@@ -24,8 +38,8 @@ def _prepare_request(
     metadata.extend(
         transaction._generate_distributed_trace_headers(dt_metadata)
     )
-    kwargs['metadata'] = metadata
-    return request, timeout, args, kwargs
+    args = (request, timeout, metadata) + args
+    return args, kwargs
 
 
 def _prepare_request_stream(
@@ -43,9 +57,8 @@ def wrap_call(module, object_path, prepare):
 
         uri, method = _get_uri_method(instance)
         with ExternalTrace('gRPC', uri, method):
-            request, timeout, args, kwargs = prepare(
-                    transaction, None, *args, **kwargs)
-            return wrapped(request, timeout, *args, **kwargs)
+            args, kwargs = prepare(transaction, None, *args, **kwargs)
+            return wrapped(*args, **kwargs)
 
     wrap_function_wrapper(module, object_path, _call_wrapper)
 
@@ -60,9 +73,8 @@ def wrap_future(module, object_path, prepare):
         guid = '%016x' % random.getrandbits(64)
         uri, method = _get_uri_method(instance)
 
-        request, timeout, args, kwargs = prepare(
-                transaction, guid, *args, **kwargs)
-        future = wrapped(request, timeout, *args, **kwargs)
+        args, kwargs = prepare(transaction, guid, *args, **kwargs)
+        future = wrapped(*args, **kwargs)
         future._nr_guid = guid
         future._nr_args = ('gRPC', uri, method)
         future._nr_start_time = time.time()

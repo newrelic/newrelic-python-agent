@@ -1,3 +1,17 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from newrelic.common.object_wrapper import (transient_function_wrapper,
         function_wrapper)
 
@@ -11,12 +25,10 @@ def validate_metric_payload(metrics=[]):
 
         recorded_metrics = []
 
-        @transient_function_wrapper('newrelic.core.data_collector',
-                'ApplicationSession.send_request')
+        @transient_function_wrapper('newrelic.core.agent_protocol',
+                'AgentProtocol.send')
         def send_request_wrapper(wrapped, instance, args, kwargs):
-            def _bind_params(session, url, method, license_key,
-                    agent_run_id=None, request_headers_map=None, payload=(),
-                    *args, **kwargs):
+            def _bind_params(method, payload=(), *args, **kwargs):
                 return method, payload
 
             method, payload = _bind_params(*args, **kwargs)
@@ -31,8 +43,8 @@ def validate_metric_payload(metrics=[]):
 
             return wrapped(*args, **kwargs)
 
-        _new_wrapper = send_request_wrapper(wrapped)
-        val = _new_wrapper(*args, **kwargs)
+        wrapped = send_request_wrapper(wrapped)
+        val = wrapped(*args, **kwargs)
         assert recorded_metrics
 
         for sent_metrics in recorded_metrics:

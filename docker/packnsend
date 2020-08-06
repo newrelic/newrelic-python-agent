@@ -111,7 +111,7 @@ ADD . /data
 RUN chown -R guest.users /data && \
     chmod 0755 /data
 USER guest
-ENV HOME /home/guest
+ENV HOME=/home/guest SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0
 VOLUME /data
 WORKDIR /data/$WORK_DIRECTORY
 EOF
@@ -697,6 +697,17 @@ case "$COMMAND" in
         create_docker_file
         create_docker_test_image
         launch_remote_command "$@"
+        cleanup_containers
+        exit `expr $STATUS`
+        ;;
+
+    rungit)
+        create_work_directory
+        export_git_repository
+        create_remote_launchers
+        create_docker_file
+        create_docker_test_image
+        launch_remote_with_git "$@"
         cleanup_containers
         exit `expr $STATUS`
         ;;

@@ -1,3 +1,17 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """ This module provides a structure to hang the configuration settings. We
 use an empty class structure and manually populate it. The global defaults
 will be overlaid with any settings from the local agent configuration file.
@@ -52,7 +66,7 @@ _logger.addHandler(_NullHandler())
 
 # The Settings objects and the global default settings. We create a
 # distinct type for each sub category of settings that the agent knows
-# about so that an error when accessing a non existant setting is more
+# about so that an error when accessing a non-existent setting is more
 # descriptive and identifies the category of settings. When applying
 # server side configuration we create normal Settings object for new
 # sub categories we don't know about.
@@ -135,10 +149,6 @@ class DebugSettings(Settings):
 
 
 class CrossApplicationTracerSettings(Settings):
-    pass
-
-
-class XraySessionSettings(Settings):
     pass
 
 
@@ -288,7 +298,6 @@ _settings.agent_limits = AgentLimitsSettings()
 _settings.console = ConsoleSettings()
 _settings.debug = DebugSettings()
 _settings.cross_application_tracer = CrossApplicationTracerSettings()
-_settings.xray_session = XraySessionSettings()
 _settings.transaction_events = TransactionEventsSettings()
 _settings.transaction_events.attributes = TransactionEventsAttributesSettings()
 _settings.custom_insights_events = CustomInsightsEventsSettings()
@@ -561,7 +570,6 @@ _settings.attributes.include = []
 
 _settings.thread_profiler.enabled = True
 _settings.cross_application_tracer.enabled = True
-_settings.xray_session.enabled = True
 
 _settings.transaction_events.enabled = True
 _settings.transaction_events.attributes.enabled = True
@@ -638,9 +646,6 @@ _settings.agent_limits.errors_per_transaction = 5
 _settings.agent_limits.errors_per_harvest = 20
 _settings.agent_limits.slow_transaction_dry_harvests = 5
 _settings.agent_limits.thread_profiler_nodes = 20000
-_settings.agent_limits.xray_transactions = 10
-_settings.agent_limits.xray_profile_overhead = 0.05
-_settings.agent_limits.xray_profile_maximum = 500
 _settings.agent_limits.synthetics_events = 200
 _settings.agent_limits.synthetics_transactions = 20
 _settings.agent_limits.data_compression_threshold = 64 * 1024
@@ -687,6 +692,7 @@ _settings.debug.explain_plan_obfuscation = 'simple'
 _settings.debug.disable_certificate_validation = False
 _settings.debug.log_untrusted_distributed_trace_keys = False
 _settings.debug.disable_harvest_until_shutdown = False
+_settings.debug.connect_span_stream_in_developer_mode = False
 
 _settings.message_tracer.segment_parameters_enabled = True
 
@@ -808,12 +814,19 @@ def global_settings_dump(settings_object=None):
 
     settings = flatten_settings(settings_object)
 
-    # Strip out any sensitive settings as can be sent unencrypted.
+    # Convert unserializable settings into serializable types
+    if 'attribute_filter' in settings:
+        settings['attribute_filter'] = str(settings['attribute_filter'])
+
+    # Strip out any sensitive settings.
     # The license key is being sent already, but no point sending
     # it again.
 
     del settings['license_key']
     del settings['api_key']
+    del settings['encoding_key']
+    del settings['js_agent_loader']
+    del settings['js_agent_file']
 
     # If proxy credentials are included in the settings, we obfuscate
     # them before sending, rather than deleting.

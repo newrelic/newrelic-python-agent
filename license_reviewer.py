@@ -623,7 +623,6 @@ def gen_installer_doc_command(args):
     license_info = load_license_info_file(license_info_file)
 
     license, third_party = gen_installer_doc(license_info)
-    write_lines_to_file_if_diff(license, license_file)
     write_lines_to_file_if_diff(third_party, third_party_notices_file)
 
     return 0

@@ -1,7 +1,7 @@
-import mock
+import functools
 
-from newrelic.packages import requests
 from newrelic.common.utilization import AzureUtilization
+from newrelic.common.tests.test_utilization_common import http_client_cls
 
 azure_success_response = (
 b'{'
@@ -24,12 +24,10 @@ b'    "location": "eastus",'
 b'}')
 
 
-@mock.patch.object(requests.Session, 'get')
-def test_azure_success(mock_get):
-    response = requests.models.Response()
-    response.status_code = 200
-    response._content = azure_success_response
-    mock_get.return_value = response
+def test_azure_success():
+    AzureUtilization.CLIENT_CLS = http_client_cls(status=200,
+                                            data=azure_success_response,
+                                            utilization_cls=AzureUtilization)
 
     d = AzureUtilization.detect()
 
@@ -38,13 +36,14 @@ def test_azure_success(mock_get):
             'vmSize': 'Standard_DS1_v2',
             'name': 'pythontest'}
 
+    assert not AzureUtilization.CLIENT_CLS.FAIL
 
-@mock.patch.object(requests.Session, 'get')
-def test_azure_fail(mock_get):
-    response = requests.models.Response()
-    response.status_code = 200
-    response._content = azure_fail_response
-    mock_get.return_value = response
+
+
+def test_azure_fail():
+    AzureUtilization.CLIENT_CLS = http_client_cls(status=200,
+                                            data=azure_fail_response,
+                                            utilization_cls=AzureUtilization)
 
     d = AzureUtilization.detect()
 

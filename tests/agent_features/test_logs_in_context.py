@@ -1,3 +1,17 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import json
 import logging
 import pytest
@@ -20,7 +34,7 @@ _logger = logging.getLogger(__name__)
 def log_buffer(caplog):
     buf = Buffer()
 
-    _formatter = NewRelicContextFormatter()
+    _formatter = NewRelicContextFormatter("", datefmt="ISO8601")
     _handler = logging.StreamHandler(buf)
     _handler.setFormatter(_formatter)
 
@@ -33,7 +47,7 @@ def log_buffer(caplog):
 
 
 def test_newrelic_logger_no_error(log_buffer):
-    _logger.info(u"Hello %s", u"World")
+    _logger.info(u"Hello %s", u"World", extra={"foo": "bar"})
 
     log_buffer.seek(0)
     message = json.load(log_buffer)
@@ -57,17 +71,18 @@ def test_newrelic_logger_no_error(log_buffer):
         u"logger.name": u"test_logs_in_context",
         u"thread.name": u"MainThread",
         u"process.name": u"MainProcess",
+        u"extra.foo": u"bar",
     }
 
 
-class TestException(ValueError):
+class ExceptionForTest(ValueError):
     pass
 
 
 def test_newrelic_logger_error(log_buffer):
     try:
-        raise TestException
-    except TestException:
+        raise ExceptionForTest
+    except ExceptionForTest:
         _logger.exception(u"oops")
 
     log_buffer.seek(0)
@@ -92,7 +107,7 @@ def test_newrelic_logger_error(log_buffer):
         u"logger.name": u"test_logs_in_context",
         u"thread.name": u"MainThread",
         u"process.name": u"MainProcess",
-        u"error.class": u"test_logs_in_context.TestException",
+        u"error.class": u"test_logs_in_context.ExceptionForTest",
         u"error.message": u"",
     }
 

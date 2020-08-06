@@ -1,3 +1,17 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import pytest
 import asyncio
 import time
@@ -158,3 +172,24 @@ def test_blocking_task_on_different_loop():
 
     loops[1].run_until_complete(blocker_task)
     loops[0].run_until_complete(waiter_task)
+
+
+def test_record_event_loop_wait_on_different_task():
+    import asyncio
+    loop = asyncio.get_event_loop()
+
+    async def recorder(ready, wait):
+        ready.set()
+        await wait.wait()
+        trace_cache().record_event_loop_wait(0, 1)
+
+    @background_task(name="test_record_event_loop_wait_on_different_task")
+    async def transaction():
+        coroutine_start, transaction_exit = asyncio.Event(), asyncio.Event()
+        task = loop.create_task(recorder(coroutine_start, transaction_exit))
+        await coroutine_start.wait()
+        current_transaction().__exit__(None, None, None)
+        transaction_exit.set()
+        await task
+
+    loop.run_until_complete(transaction())

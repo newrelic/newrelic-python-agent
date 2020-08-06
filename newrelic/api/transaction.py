@@ -1,3 +1,17 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import print_function
 import os
 import re
@@ -5,12 +19,10 @@ import sys
 import time
 import threading
 import logging
-import itertools
 import random
 import warnings
 import weakref
 
-from collections import deque
 from collections import OrderedDict
 
 import newrelic.packages.six as six
@@ -272,11 +284,6 @@ class Transaction(object):
         self.synthetics_header = None
 
         self._custom_metrics = CustomMetrics()
-
-        self._profile_samples = deque()
-        self._profile_frames = {}
-        self._profile_skip = 1
-        self._profile_count = 0
 
         global_settings = application.global_settings
 
@@ -579,15 +586,8 @@ class Transaction(object):
         # new samples can cause an error.
 
         if not self.ignore_transaction:
-            profile_samples = []
 
-            if self._profile_samples:
-                with self._transaction_lock:
-                    profile_samples = self._profile_samples
-                    self._profile_samples = deque()
-
-            self._application.record_transaction(node,
-                    (self.background_task, profile_samples))
+            self._application.record_transaction(node)
 
     @property
     def sampled(self):
@@ -673,10 +673,6 @@ class Transaction(object):
         return '%s/%s' % (self.type, self.name_for_metric)
 
     @property
-    def profile_sample(self):
-        return self._profile_samples
-
-    @property
     def trip_id(self):
         return self._trip_id or self.guid
 
@@ -725,7 +721,7 @@ class Transaction(object):
 
         path_hash = generate_path_hash(identifier, seed)
 
-        # Only store upto 10 alternate path hashes.
+        # Only store up to 10 alternate path hashes.
 
         if len(self._alternate_path_hashes) < 10:
             self._alternate_path_hashes[identifier] = path_hash
@@ -922,31 +918,6 @@ class Transaction(object):
     def user_attributes(self):
         return create_user_attributes(self._custom_params,
                 self.attribute_filter)
-
-    def add_profile_sample(self, stack_trace):
-        if self._state != self.STATE_RUNNING:
-            return
-
-        self._profile_count += 1
-
-        if self._profile_count < self._profile_skip:
-            return
-
-        self._profile_count = 0
-
-        with self._transaction_lock:
-            new_stack_trace = tuple(self._profile_frames.setdefault(
-                    frame, frame) for frame in stack_trace)
-            self._profile_samples.append(new_stack_trace)
-
-            agent_limits = self._application.global_settings.agent_limits
-            profile_maximum = agent_limits.xray_profile_maximum
-
-            if len(self._profile_samples) >= profile_maximum:
-                self._profile_samples = deque(itertools.islice(
-                        self._profile_samples, 0,
-                        len(self._profile_samples), 2))
-                self._profile_skip = 2 * self._profile_skip
 
     def _compute_sampled_and_priority(self):
         if self._priority is None:
@@ -1487,10 +1458,9 @@ class Transaction(object):
         if isinstance(name, bytes):
             name = name.decode('Latin-1')
 
-        # Deal with users who use group wrongly and add a leading
-        # slash on it. This will cause an empty segment which we
-        # want to avoid. In that case insert back in Function as
-        # the leading segment.
+        # Handle incorrect groupings and leading slashes. This will
+        # cause an empty segment which we want to avoid. In that case
+        # insert back in Function as the leading segment.
 
         group = group or 'Function'
 

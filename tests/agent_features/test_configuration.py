@@ -1,3 +1,17 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import collections
 import pytest
 
@@ -41,6 +55,9 @@ _test_strip_proxy_details_local_configs = [
     {
         'license_key': 'LICENSE-KEY',
         'api_key': 'API-KEY',
+        'encoding_key': 'ENCODING-KEY',
+        'js_agent_loader': 'AGENT-LOADER-JS',
+        'js_agent_file': 'AGENT-LOADER-FILE',
 
         'proxy_scheme': None,
         'proxy_host': None,
@@ -53,6 +70,9 @@ _test_strip_proxy_details_local_configs = [
     {
         'license_key': 'LICENSE-KEY',
         'api_key': 'API-KEY',
+        'encoding_key': 'ENCODING-KEY',
+        'js_agent_loader': 'AGENT-LOADER-JS',
+        'js_agent_file': 'AGENT-LOADER-FILE',
 
         'proxy_scheme': None,
         'proxy_host': 'hostname',
@@ -65,6 +85,9 @@ _test_strip_proxy_details_local_configs = [
     {
         'license_key': 'LICENSE-KEY',
         'api_key': 'API-KEY',
+        'encoding_key': 'ENCODING-KEY',
+        'js_agent_loader': 'AGENT-LOADER-JS',
+        'js_agent_file': 'AGENT-LOADER-FILE',
 
         'proxy_scheme': None,
         'proxy_host': 'hostname',
@@ -77,6 +100,9 @@ _test_strip_proxy_details_local_configs = [
     {
         'license_key': 'LICENSE-KEY',
         'api_key': 'API-KEY',
+        'encoding_key': 'ENCODING-KEY',
+        'js_agent_loader': 'AGENT-LOADER-JS',
+        'js_agent_file': 'AGENT-LOADER-FILE',
 
         'proxy_scheme': None,
         'proxy_host': 'hostname',
@@ -89,6 +115,9 @@ _test_strip_proxy_details_local_configs = [
     {
         'license_key': 'LICENSE-KEY',
         'api_key': 'API-KEY',
+        'encoding_key': 'ENCODING-KEY',
+        'js_agent_loader': 'AGENT-LOADER-JS',
+        'js_agent_file': 'AGENT-LOADER-FILE',
 
         'proxy_scheme': None,
         'proxy_host': 'hostname',
@@ -101,6 +130,9 @@ _test_strip_proxy_details_local_configs = [
     {
         'license_key': 'LICENSE-KEY',
         'api_key': 'API-KEY',
+        'encoding_key': 'ENCODING-KEY',
+        'js_agent_loader': 'AGENT-LOADER-JS',
+        'js_agent_file': 'AGENT-LOADER-FILE',
 
         'proxy_scheme': None,
         'proxy_host': 'http://hostname',
@@ -113,6 +145,9 @@ _test_strip_proxy_details_local_configs = [
     {
         'license_key': 'LICENSE-KEY',
         'api_key': 'API-KEY',
+        'encoding_key': 'ENCODING-KEY',
+        'js_agent_loader': 'AGENT-LOADER-JS',
+        'js_agent_file': 'AGENT-LOADER-FILE',
 
         'proxy_scheme': None,
         'proxy_host': 'http://hostname:8888',
@@ -125,6 +160,9 @@ _test_strip_proxy_details_local_configs = [
     {
         'license_key': 'LICENSE-KEY',
         'api_key': 'API-KEY',
+        'encoding_key': 'ENCODING-KEY',
+        'js_agent_loader': 'AGENT-LOADER-JS',
+        'js_agent_file': 'AGENT-LOADER-FILE',
 
         'proxy_scheme': None,
         'proxy_host': 'http://hostname',
@@ -137,6 +175,9 @@ _test_strip_proxy_details_local_configs = [
     {
         'license_key': 'LICENSE-KEY',
         'api_key': 'API-KEY',
+        'encoding_key': 'ENCODING-KEY',
+        'js_agent_loader': 'AGENT-LOADER-JS',
+        'js_agent_file': 'AGENT-LOADER-FILE',
 
         'proxy_scheme': None,
         'proxy_host': 'http://hostname:8888',
@@ -149,6 +190,9 @@ _test_strip_proxy_details_local_configs = [
     {
         'license_key': 'LICENSE-KEY',
         'api_key': 'API-KEY',
+        'encoding_key': 'ENCODING-KEY',
+        'js_agent_loader': 'AGENT-LOADER-JS',
+        'js_agent_file': 'AGENT-LOADER-FILE',
 
         'proxy_scheme': None,
         'proxy_host': 'http://username@hostname',
@@ -161,6 +205,9 @@ _test_strip_proxy_details_local_configs = [
     {
         'license_key': 'LICENSE-KEY',
         'api_key': 'API-KEY',
+        'encoding_key': 'ENCODING-KEY',
+        'js_agent_loader': 'AGENT-LOADER-JS',
+        'js_agent_file': 'AGENT-LOADER-FILE',
 
         'proxy_scheme': None,
         'proxy_host': 'http://username@hostname:8888',
@@ -173,6 +220,9 @@ _test_strip_proxy_details_local_configs = [
     {
         'license_key': 'LICENSE-KEY',
         'api_key': 'API-KEY',
+        'encoding_key': 'ENCODING-KEY',
+        'js_agent_loader': 'AGENT-LOADER-JS',
+        'js_agent_file': 'AGENT-LOADER-FILE',
 
         'proxy_scheme': None,
         'proxy_host': 'http://username:password@hostname',
@@ -185,6 +235,9 @@ _test_strip_proxy_details_local_configs = [
     {
         'license_key': 'LICENSE-KEY',
         'api_key': 'API-KEY',
+        'encoding_key': 'ENCODING-KEY',
+        'js_agent_loader': 'AGENT-LOADER-JS',
+        'js_agent_file': 'AGENT-LOADER-FILE',
 
         'proxy_scheme': None,
         'proxy_host': 'http://username:password@hostname:8888',
@@ -197,6 +250,9 @@ _test_strip_proxy_details_local_configs = [
     {
         'license_key': 'LICENSE-KEY',
         'api_key': 'API-KEY',
+        'encoding_key': 'ENCODING-KEY',
+        'js_agent_loader': 'AGENT-LOADER-JS',
+        'js_agent_file': 'AGENT-LOADER-FILE',
 
         'proxy_scheme': None,
         'proxy_host': 'https://username:password@hostname',
@@ -209,6 +265,9 @@ _test_strip_proxy_details_local_configs = [
     {
         'license_key': 'LICENSE-KEY',
         'api_key': 'API-KEY',
+        'encoding_key': 'ENCODING-KEY',
+        'js_agent_loader': 'AGENT-LOADER-JS',
+        'js_agent_file': 'AGENT-LOADER-FILE',
 
         'proxy_scheme': None,
         'proxy_host': 'https://username:password@hostname:8888',

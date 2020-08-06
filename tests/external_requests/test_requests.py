@@ -58,26 +58,28 @@ def test_https_request_get():
     requests.get('https://www.example.com/', verify=False)
 
 
-_test_requests_http_request_with_port_scoped_metrics = [
-        ('External/localhost:8989/requests/', 1)]
-
-_test_requests_http_request_with_port_rollup_metrics = [
-        ('External/all', 1),
-        ('External/allOther', 1),
-        ('External/localhost:8989/all', 1),
-        ('External/localhost:8989/requests/', 1)]
-
-
-@validate_transaction_errors(errors=[])
-@validate_transaction_metrics(
-        'test_requests:test_http_request_with_port',
-        scoped_metrics=_test_requests_http_request_with_port_scoped_metrics,
-        rollup_metrics=_test_requests_http_request_with_port_rollup_metrics,
-        background_task=True)
-@background_task()
 def test_http_request_with_port():
-    with MockExternalHTTPServer():
-        requests.get('http://localhost:8989/')
+    with MockExternalHTTPServer() as server:
+        _test_requests_http_request_with_port_scoped_metrics = [
+                ('External/localhost:%d/requests/' % server.port, 1)]
+
+        _test_requests_http_request_with_port_rollup_metrics = [
+                ('External/all', 1),
+                ('External/allOther', 1),
+                ('External/localhost:%d/all' % server.port, 1),
+                ('External/localhost:%d/requests/' % server.port, 1)]
+
+        @validate_transaction_errors(errors=[])
+        @validate_transaction_metrics(
+                'test_requests:test_http_request_with_port',
+                scoped_metrics=_test_requests_http_request_with_port_scoped_metrics,
+                rollup_metrics=_test_requests_http_request_with_port_rollup_metrics,
+                background_task=True)
+        @background_task(name='test_requests:test_http_request_with_port')
+        def _test():
+            requests.get('http://localhost:%d/' % server.port)
+
+        _test()
 
 
 @pytest.mark.skipif(get_requests_version() < (1, 0),

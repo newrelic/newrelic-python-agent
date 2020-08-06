@@ -1,9 +1,9 @@
 import json
-import mock
+import functools
 
 from newrelic.common.utilization import (CommonUtilization,
         GCPUtilization)
-from newrelic.packages import requests
+from newrelic.common.tests.test_utilization_common import http_client_cls
 
 
 _mock_response_data = b"""{
@@ -47,19 +47,16 @@ def test_gcp_vendor_info():
     assert gcp.VENDOR_NAME == 'gcp'
 
 
-@mock.patch.object(requests.Session, 'get')
-def test_fetch(get_mock):
-    response_mock = mock.Mock()
+def test_fetch():
+    GCPUtilization.CLIENT_CLS = http_client_cls(status=200,
+                                            data=b'{"data": "check"}',
+                                            utilization_cls=GCPUtilization)
+    response = b'{"data": "check"}'
+    resp = GCPUtilization().fetch()
 
-    get_mock.return_value = response_mock
+    assert resp == response
 
-    gcp = GCPUtilization()
-    assert gcp.fetch() == response_mock
-
-    get_mock.assert_called_with(GCPUtilization.METADATA_URL,
-            headers={'Metadata-Flavor': 'Google'},
-            timeout=GCPUtilization.TIMEOUT)
-    response_mock.raise_for_status.assert_called_with()
+    assert not GCPUtilization.CLIENT_CLS.FAIL
 
 
 def test_normalize_instance_id():
@@ -92,6 +89,8 @@ def test_normalize_different_key():
     assert GCPUtilization.normalize('O--nn', data) == \
             CommonUtilization.normalize('O--nn', data)
 
+    assert not GCPUtilization.CLIENT_CLS.FAIL
+
 
 def test_sanitize():
     gcp = GCPUtilization()
@@ -99,40 +98,34 @@ def test_sanitize():
             {'id': '1234567890123456', 'name': 'meow-bot',
             'machineType': 'f1-micro', 'zone': 'us-central1-b'}
 
+    assert not GCPUtilization.CLIENT_CLS.FAIL
 
-@mock.patch.object(requests.Session, 'get')
-def test_detect_good_response(get_mock):
-    response = requests.models.Response()
-    response.status_code = 200
-    response._content = _mock_response_data
-    get_mock.return_value = response
+
+def test_detect_good_response():
+    GCPUtilization.CLIENT_CLS = http_client_cls(status=200,
+                                            data=_mock_response_data,
+                                            utilization_cls=GCPUtilization)
 
     gcp = GCPUtilization()
     assert gcp.detect() == {'id': '1234567890123456', 'name': 'meow-bot',
             'machineType': 'f1-micro', 'zone': 'us-central1-b'}
-    get_mock.assert_called_with(GCPUtilization.METADATA_URL,
-            headers={'Metadata-Flavor': 'Google'},
-            timeout=GCPUtilization.TIMEOUT)
-    assert len(get_mock.call_args_list) == 1  # Should be called once.
+
+    assert not GCPUtilization.CLIENT_CLS.FAIL
 
 
-@mock.patch.object(requests.Session, 'get')
-def test_detect_bad_response(get_mock):
-    response = requests.models.Response()
-    response.status_code = 500
-    get_mock.return_value = response
+def test_detect_error_status():
+    GCPUtilization.CLIENT_CLS = http_client_cls(status=500,
+                                            data=None,
+                                            utilization_cls=GCPUtilization)
 
     gcp = GCPUtilization()
     assert gcp.detect() is None
 
 
-@mock.patch.object(requests.Session, 'get')
-def test_detect_ugly_response(get_mock):
-    response = requests.models.Response()
-    response.status_code = 200
-    response._content = b"{'id': 123456789, 'name': 'meow-bot'}"
-
-    get_mock.return_value = response
+def test_detect_invalid_response():
+    GCPUtilization.CLIENT_CLS = http_client_cls(status=200,
+                                            data=b"{'id': 1234567,'name': 'meow-bot'}",
+                                            utilization_cls=GCPUtilization)
 
     gcp = GCPUtilization()
     assert gcp.detect() is None

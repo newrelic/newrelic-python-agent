@@ -1,3 +1,17 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Instrumentation module for CherryPy framework.
 
 """
@@ -20,7 +34,7 @@
 # * We don't track time spent in hook functions which may be registered
 #   for events such as before_handler, on_end_request etc.
 #
-# * We don't handle any sub dispatching that may be occuring due to the
+# * We don't handle any sub dispatching that may be occurring due to the
 #   use of XMLRPCDispatcher.
 
 from newrelic.api.function_trace import FunctionTrace, wrap_function_trace

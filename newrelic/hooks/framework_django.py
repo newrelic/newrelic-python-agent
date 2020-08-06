@@ -1,3 +1,17 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import sys
 import threading
 import logging
@@ -223,7 +237,7 @@ def wrap_leading_middleware(middleware):
                 finally:
                     # We want to name the transaction after this
                     # middleware but only if the transaction wasn't
-                    # named from within the middleware itself explicity.
+                    # named from within the middleware itself explicitly.
 
                     after = (transaction.name, transaction.group)
                     if before == after:
@@ -289,7 +303,7 @@ def wrap_view_middleware(middleware):
                 finally:
                     # We want to name the transaction after this
                     # middleware but only if the transaction wasn't
-                    # named from within the middleware itself explicity.
+                    # named from within the middleware itself explicitly.
 
                     after = (transaction.name, transaction.group)
                     if before == after:
@@ -507,7 +521,7 @@ def instrument_django_core_handlers_wsgi(module):
     # The handle_uncaught_exception() function produces a 500
     # error response page and otherwise suppresses the
     # exception, so last chance to do this as exception will not
-    # propogate up to the WSGI application.
+    # propagate up to the WSGI application.
 
     if hasattr(module.WSGIHandler, 'handle_uncaught_exception'):
         module.WSGIHandler.handle_uncaught_exception = (
@@ -619,9 +633,13 @@ def wrap_url_resolver_nnn(wrapped, priority=1):
             return wrapped(*args, **kwargs)
 
         with FunctionTrace(name=name):
-            callback, param_dict = wrapped(*args, **kwargs)
-            return (wrap_view_handler(callback, priority=priority),
-                    param_dict)
+            result = wrapped(*args, **kwargs)
+            if callable(result):
+                return wrap_view_handler(result, priority=priority)
+            else:
+                callback, param_dict = result
+                return (wrap_view_handler(callback, priority=priority),
+                        param_dict)
 
     return FunctionWrapper(wrapped, wrapper)
 
@@ -800,11 +818,6 @@ def instrument_django_core_servers_basehttp(module):
     def wrap_wsgi_application_entry_point(server, application, **kwargs):
         return ((server, WSGIApplicationWrapper(application,
             framework='Django'),), kwargs)
-
-    # XXX Because of risk of people still trying to use the
-    # inbuilt Django development server and since the code is
-    # not going to be changed, could just patch it to fix
-    # problem and the instrumentation we need.
 
     if (not hasattr(module, 'simple_server') and
             hasattr(module.ServerHandler, 'run')):

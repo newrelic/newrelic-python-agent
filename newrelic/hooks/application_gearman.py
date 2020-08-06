@@ -1,3 +1,17 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from newrelic.api.application import application_instance as default_application
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
         FunctionWrapper)
@@ -81,7 +95,7 @@ def wrapper_GearmanConnectionManager_handle_function(wrapped, instance,
     # ended up communicating with. This could get overridden multiple
     # times in the context of a single poll_connections_until_stopped()
     # call and so will be set to the last server data was processed for.
-    # This thus may not necessarily be correct if commnicating with
+    # This thus may not necessarily be correct if communicating with
     # multiple servers and data from more than one was being handled for
     # some reason. Can't really do much better than this though but will
     # be fine for the expected typical use case of a single server.

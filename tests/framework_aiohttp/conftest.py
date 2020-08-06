@@ -100,7 +100,7 @@ def aiohttp_app(request):
 
 @pytest.fixture(scope='module')
 def external():
-    external = MockExternalHTTPHResponseHeadersServer(port=8989)
+    external = MockExternalHTTPHResponseHeadersServer()
     with external:
         yield external
 

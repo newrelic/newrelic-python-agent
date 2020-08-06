@@ -1,3 +1,17 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """This module sets up use of the Python logging module by the agent. As
 we don't want to rely exclusively on the user having configured the
 logging module themselves to capture any logged output we attach our own
@@ -90,12 +104,12 @@ def initialize_logging(log_file, log_level):
         _lock.release()
 
 # This is to filter out the overly verbose log messages at INFO level
-# made by the urllib3 module embedded in the bundled requests module.
+# made by the urllib3 module.
 
-class RequestsConnectionFilter(logging.Filter):
+class Urllib3ConnectionFilter(logging.Filter):
     def filter(self, record):
         return False
 
-_requests_logger = logging.getLogger(
-    'newrelic.packages.requests.packages.urllib3.connectionpool')
-_requests_logger.addFilter(RequestsConnectionFilter())
+_urllib3_logger = logging.getLogger(
+    'newrelic.packages.urllib3.connectionpool')
+_urllib3_logger.addFilter(Urllib3ConnectionFilter())

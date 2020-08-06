@@ -1,3 +1,17 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from newrelic.common.encoding_utils import (obfuscate, deobfuscate,
         json_encode, json_decode, base64_encode, base64_decode)
 
@@ -20,7 +34,7 @@ class CatHeaderMixin(object):
 
     def process_response_headers(self, response_headers):
         """
-        Decode the response headers and create appropriate metics based on the
+        Decode the response headers and create appropriate metrics based on the
         header values. The response_headers are passed in as a list of tuples.
         [(HEADER_NAME0, HEADER_VALUE0), (HEADER_NAME1, HEADER_VALUE1)]
 

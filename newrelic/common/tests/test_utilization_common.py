@@ -1,13 +1,49 @@
-import mock
 import pytest
 import threading
 import time
+import functools
+import inspect
 
-from newrelic.packages import requests
+from newrelic.common.agent_http import BaseClient, InsecureHttpClient
 from newrelic.packages.six.moves import BaseHTTPServer
 from newrelic.common.utilization import CommonUtilization
 from newrelic.core.stats_engine import CustomMetrics
 from newrelic.core.internal_metrics import InternalTraceContext
+
+
+def http_client_cls(status=200, data=None, utilization_cls=None):
+
+    class FakeHttpClient(BaseClient):
+
+        FAIL = False
+        STATUS = status
+        DATA = data
+        UTILIZATION_CLS = utilization_cls
+
+        def __init__(self, host, timeout=None, port=80, *args, **kwargs):
+            self.host = host
+            self.port = port
+
+        def send_request(
+                self,
+                method="POST",
+                path="/agent_listener/invoke_raw_method",
+                params=None,
+                headers=None,
+                payload=None,
+        ):
+            try:
+                assert self.host == self.UTILIZATION_CLS.METADATA_HOST
+                assert path == self.UTILIZATION_CLS.METADATA_PATH
+                assert headers == self.UTILIZATION_CLS.HEADERS
+                assert params == self.UTILIZATION_CLS.METADATA_QUERY
+                assert self.timeout == self.UTILIZATION_CLS.TIMEOUT
+            except:
+                FakeHttpClient.FAIL = False
+
+            return self.STATUS, self.DATA
+
+    return FakeHttpClient
 
 
 @pytest.fixture
@@ -168,22 +204,21 @@ class TimeoutHttpServer(threading.Thread):
         self.join()
 
 
-@mock.patch.object(requests.Session, 'get')
-def test_fetch_success(mock_get):
-    response = requests.models.Response()
-    response.status_code = 200
-    mock_get.return_value = response
+def test_fetch_success():
+    CommonUtilization.CLIENT_CLS = http_client_cls(status=200,
+                                            data=b'{"data": "check"}',
+                                            utilization_cls=CommonUtilization)
 
+    response = b'{"data": "check"}'
     resp = CommonUtilization.fetch()
 
     assert resp is response
 
 
-@mock.patch.object(requests.Session, 'get')
-def test_fetch_unsuccessful_http_status(mock_get):
-    response = requests.models.Response()
-    response.status_code = 404
-    mock_get.return_value = response
+def test_fetch_unsuccessful_http_status():
+    CommonUtilization.CLIENT_CLS = http_client_cls(status=404,
+                                            data=None,
+                                            utilization_cls=CommonUtilization)
 
     resp = CommonUtilization.fetch()
 
@@ -204,9 +239,7 @@ def test_fetch_timeout():
 # Test Get Values
 
 def test_get_values_success():
-    response = requests.models.Response()
-    response.status_code = 200
-    response._content = b'{"data": "check"}'
+    response = b'{"data": "check"}'
 
     vals = CommonUtilization.get_values(response)
 
@@ -214,9 +247,7 @@ def test_get_values_success():
 
 
 def test_get_values_fail():
-    response = requests.models.Response()
-    response.status_code = 200
-    response._content = b'{'
+    response = b'{'
 
     vals = CommonUtilization.get_values(response)
 
@@ -294,45 +325,40 @@ def test_sanitize_nonetype(validate_error_metric_forgone):
 
 # Test detect
 
-@mock.patch.object(requests.Session, 'get')
-def test_detect_success(mock_get):
+def test_detect_success():
     class ExpectKey(CommonUtilization):
         EXPECTED_KEYS = ['key1', 'key2']
 
-    response = requests.models.Response()
-    response.status_code = 200
-    response._content = b'{"key1": "x", "key2": "y", "key3": "z"}'
-    mock_get.return_value = response
+    ExpectKey.CLIENT_CLS = http_client_cls(status=200,
+                                    data=b'{"key1": "x","key2": "y","key3": "z"}',
+                                    utilization_cls=ExpectKey)
 
     d = ExpectKey.detect()
 
     assert d == {'key1': 'x', 'key2': 'y'}
 
 
-@mock.patch.object(requests.Session, 'get')
-def test_detect_missing_key(mock_get):
+def test_detect_missing_key():
     class ExpectKey(CommonUtilization):
         EXPECTED_KEYS = ['key1', 'key2']
 
-    response = requests.models.Response()
-    response.status_code = 200
-    response._content = b'{"key1": "x", "key3": "z"}'
-    mock_get.return_value = response
+    ExpectKey.CLIENT_CLS = http_client_cls(status=200,
+                                    data=b'{"key1": "x", "key3": "z"}',
+                                    utilization_cls=ExpectKey)
 
     d = ExpectKey.detect()
 
     assert d is None
 
 
-@mock.patch.object(requests.Session, 'get')
-def test_detect_invalid_json(mock_get):
+def test_detect_invalid_json():
     class ExpectKey(CommonUtilization):
         EXPECTED_KEYS = ['key1', 'key2']
 
-    response = requests.models.Response()
-    response.status_code = 200
-    response._content = b':-3'
-    mock_get.return_value = response
+
+    ExpectKey.CLIENT_CLS = http_client_cls(status=200,
+                                    data=b':-3',
+                                    utilization_cls=ExpectKey)
 
     d = ExpectKey.detect()
 

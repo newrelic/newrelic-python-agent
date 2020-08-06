@@ -1,3 +1,17 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """The stats engine is what collects the accumulated transactions metrics,
 details of errors and slow transactions. There is one instance of the stats
 engine per application. This will be cleared upon each successful harvest of
@@ -426,8 +440,6 @@ class StatsEngine(object):
         self.__transaction_errors = []
         self._synthetics_events = LimitedDataSet()
         self.__synthetics_transactions = []
-        self.__xray_transactions = []
-        self.xray_sessions = {}
 
     @property
     def settings(self):
@@ -804,29 +816,6 @@ class StatsEngine(object):
 
         return key
 
-    def _update_xray_transaction(self, transaction):
-        """Check if transaction is an x-ray transaction and save it to the
-        __xray_transactions
-        """
-
-        settings = self.__settings
-
-        # Nothing to do if we have reached the max limit of x-ray transactions
-        # to send per harvest.
-
-        maximum = settings.agent_limits.xray_transactions
-        if len(self.__xray_transactions) >= maximum:
-            return
-
-        # If current transaction qualifies as an xray_transaction, set the
-        # xray_id on the transaction object and save it in the
-        # xray_transactions list.
-
-        xray_session = self.xray_sessions.get(transaction.path)
-        if xray_session:
-            transaction.xray_id = xray_session.xray_id
-            self.__xray_transactions.append(transaction)
-
     def _update_slow_transaction(self, transaction):
         """Check if transaction is the slowest transaction and update
         accordingly.
@@ -955,10 +944,9 @@ class StatsEngine(object):
         if (not transaction.suppress_transaction_trace and
                 transaction_tracer.enabled and settings.collect_traces):
 
-            # Transactions saved for x-ray session and Synthetics transactions
+            # Transactions saved for Synthetics transactions
             # do not depend on the transaction threshold.
 
-            self._update_xray_transaction(transaction)
             self._update_synthetics_transaction(transaction)
 
             threshold = transaction_tracer.transaction_threshold
@@ -1165,13 +1153,12 @@ class StatsEngine(object):
             return []
 
         # Create a set 'traces' that is a union of slow transaction,
-        # xray_transactions, and Synthetics transactions.
-        # This ensures we don't send duplicates of a transaction.
+        # and Synthetics transactions. This ensures we don't send
+        # duplicates of a transaction.
 
         traces = set()
         if self.__slow_transaction:
             traces.add(self.__slow_transaction)
-        traces.update(self.__xray_transactions)
         traces.update(self.__synthetics_transactions)
 
         # Return an empty list if no transactions were captured.
@@ -1250,9 +1237,8 @@ class StatsEngine(object):
                 pack_data = pack_data.decode('Latin-1')
 
             root = transaction_trace.root
-            xray_id = getattr(trace, 'xray_id', None)
 
-            if (xray_id or trace.record_tt):
+            if trace.record_tt:
                 force_persist = True
             else:
                 force_persist = False
@@ -1270,7 +1256,7 @@ class StatsEngine(object):
                     trace.guid,
                     None,
                     force_persist,
-                    xray_id,
+                    None,
                     trace.synthetics_resource_id, ])
 
         return trace_data
@@ -1345,8 +1331,6 @@ class StatsEngine(object):
         self.__slow_transaction_old_duration = None
         self.__transaction_errors = []
         self.__synthetics_transactions = []
-        self.__xray_transactions = []
-        self.xray_sessions = {}
 
         self.reset_transaction_events()
         self.reset_error_events()
@@ -1448,7 +1432,6 @@ class StatsEngine(object):
                 self.__slow_transaction_old_duration = None
 
         self.__slow_transaction = None
-        self.__xray_transactions = []
         self.__synthetics_transactions = []
         self.__sql_stats_table = {}
         self.__stats_table = {}
@@ -1510,8 +1493,6 @@ class StatsEngine(object):
 
         stats = copy.copy(self)
         stats.reset_stats(self.__settings)
-
-        stats.xray_sessions = self.xray_sessions
 
         return stats
 
@@ -1655,16 +1636,6 @@ class StatsEngine(object):
 
     def _merge_traces(self, snapshot):
 
-        # Limit number of x-ray traces to the limit.
-        # Spill over traces after the limit should have no x-ray ids. This
-        # qualifies the trace to be considered for slow transaction.
-
-        maximum = self.__settings.agent_limits.xray_transactions
-        self.__xray_transactions.extend(snapshot.__xray_transactions)
-        for txn in self.__xray_transactions[maximum:]:
-            txn.xray_id = None
-        self.__xray_transactions = self.__xray_transactions[:maximum]
-
         # Limit number of Synthetics transactions
 
         maximum = self.__settings.agent_limits.synthetics_transactions
@@ -1675,15 +1646,7 @@ class StatsEngine(object):
 
         transaction = snapshot.__slow_transaction
 
-        # If the transaction has an xray_id then it does not qualify to
-        # be considered for slow transaction.  This is because in the Core
-        # app, there is logic to NOT show TTs with x-ray ids in the
-        # WebTransactions tab. If a TT has xray_id it is only shown under
-        # the x-ray page.
-
-        xray_id = getattr(transaction, 'xray_id', None)
-        if transaction and xray_id is None:
-
+        if transaction:
             # Restore original slow transaction if slower than any newer slow
             # transaction.
 

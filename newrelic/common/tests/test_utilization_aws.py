@@ -1,7 +1,9 @@
-import mock
-from newrelic.common.utilization import AWSUtilization
-from newrelic.packages import requests
+import pytest
+import functools
+import logging
 
+from newrelic.common.utilization import AWSUtilization
+from newrelic.common.tests.test_utilization_common import http_client_cls
 
 _mock_response_data = b"""{
         "devpayProductCodes": null,
@@ -25,32 +27,47 @@ def test_aws_vendor_info():
     assert aws.VENDOR_NAME == 'aws'
 
 
-@mock.patch.object(requests.Session, 'get')
-def test_aws_good_response(mock_get):
-    response = requests.models.Response()
-    response.status_code = 200
-    response._content = _mock_response_data
-    mock_get.return_value = response
+def test_aws_good_response():
+    AWSUtilization.CLIENT_CLS = http_client_cls(status=200,
+                                            data=_mock_response_data,
+                                            utilization_cls=AWSUtilization)
 
     assert AWSUtilization.detect() == {'instanceId': 'i-00ddba01e845e4875',
             'availabilityZone': u'us-west-2c',
             'instanceType': u't2.nano'}
 
+    assert not AWSUtilization.CLIENT_CLS.FAIL
 
-@mock.patch.object(requests.Session, 'get')
-def test_aws_bad_response(mock_get):
-    response = requests.models.Response()
-    response.status_code = 500
-    mock_get.return_value = response
+
+def test_aws_error_status():
+    AWSUtilization.CLIENT_CLS = http_client_cls(status=500,
+                                            data=b"",
+                                            utilization_cls=AWSUtilization)
+
+    assert AWSUtilization.detect() is None
+
+
+@pytest.mark.parametrize('body', (b"wruff", b""))
+def test_aws_invalid_response(body):
+    AWSUtilization.CLIENT_CLS = http_client_cls(status=200,
+                                            data=body,
+                                            utilization_cls=AWSUtilization)
 
     assert AWSUtilization.detect() is None
 
 
-@mock.patch.object(requests.Session, 'get')
-def test_aws_ugly_response(mock_get):
-    response = requests.models.Response()
-    response.status_code = 200
-    response._content = b"wruff"
-    mock_get.return_value = response
+def test_aws_fetch_log(caplog):
+    caplog.set_level(logging.DEBUG)
 
-    assert AWSUtilization.detect() is None
+    metadata_url = AWSUtilization.METADATA_HOST + AWSUtilization.METADATA_PATH
+
+    AWSUtilization.CLIENT_CLS = http_client_cls(status=404,
+                                            data=None,
+                                            utilization_cls=AWSUtilization)
+    AWSUtilization.fetch()
+
+    assert len(caplog.records) == 1
+
+    message = caplog.records[0].getMessage()
+
+    assert metadata_url in message

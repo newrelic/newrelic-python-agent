@@ -21,7 +21,7 @@ on:
 
 
 jobs:
-  pypi:
+  deploy:
 
     runs-on: ubuntu-latest
 
@@ -35,9 +35,21 @@ jobs:
       run: |
         pip install -U pip
         pip install -U wheel setuptools twine
-    - name: Build and Upload Packages
+    - name: Build Package
+      run: python setup.py sdist
+    - name: Upload Package to S3
       run: |
-        python setup.py sdist
+        tarball="$(python setup.py --fullname).tar.gz"
+        md5_file=$(mktemp)
+        openssl md5 -binary dist/$tarball | xxd -p | tr -d '\n' > $md5_file
+        aws s3 cp $md5_file $S3_DST/${tarball}.md5
+        aws s3 cp dist/$tarball $S3_DST/$tarball
+      env:
+        S3_DST: s3://nr-downloads-main/python_agent/release
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    - name: Upload Package to PyPI
+      run: |
         twine upload --non-interactive dist/*
       env:
         TWINE_USERNAME: __token__

@@ -29,7 +29,7 @@ import grpc
 class MockExternalgRPCServer(object):
 
     def __init__(self, port=50051, *args, **kwargs):
-        self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
+        self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=4))
         self.server.port = self.server.add_insecure_port('127.0.0.1:%s' % port)
 
     def __enter__(self):

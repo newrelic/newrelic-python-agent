@@ -8,6 +8,7 @@ import pytest
 
 from newrelic.common import certs
 from newrelic.common.agent_http import (
+    ApplicationModeClient,
     DeveloperModeClient,
     HttpClient,
     InsecureHttpClient,
@@ -190,7 +191,7 @@ def test_http_no_payload(server, method):
 def test_non_ok_response(server):
     internal_metrics = CustomMetrics()
 
-    with HttpClient(
+    with ApplicationModeClient(
         "localhost", server.port, disable_certificate_validation=True
     ) as client:
         with InternalTraceContext(internal_metrics):
@@ -232,7 +233,7 @@ def test_http_payload_compression(server, method, threshold):
 
     internal_metrics = CustomMetrics()
 
-    with HttpClient(
+    with ApplicationModeClient(
         "localhost",
         server.port,
         disable_certificate_validation=True,
@@ -543,8 +544,8 @@ def test_serverless_mode_client():
     (
         (HttpClient, "localhost", False),
         (HttpClient, None, False),
-        (HttpClient, None, True),
-        (HttpClient, "localhost", True),
+        (ApplicationModeClient, None, True),
+        (ApplicationModeClient, "localhost", True),
         (DeveloperModeClient, None, False),
         (ServerlessModeClient, None, False),
         (InsecureHttpClient, None, False),

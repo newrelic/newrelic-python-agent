@@ -96,28 +96,7 @@ class BaseClient(object):
 
     @staticmethod
     def _supportability_request(params, payload, body, compression_time):
-        # *********
-        # Used only for supportability metrics. Do not use to drive business
-        # logic!
-        agent_method = params and params.get("method")
-        # *********
-
-        if agent_method and body:
-            # Compression was applied
-            if compression_time is not None:
-                internal_metric(
-                    "Supportability/Python/Collector/ZLIB/Bytes/%s" % agent_method,
-                    len(payload),
-                )
-                internal_metric(
-                    "Supportability/Python/Collector/ZLIB/Compress/%s" % agent_method,
-                    compression_time,
-                )
-
-            internal_metric(
-                "Supportability/Python/Collector/Output/Bytes/%s" % agent_method,
-                len(body),
-            )
+        pass
 
     @classmethod
     def log_request(
@@ -166,22 +145,7 @@ class BaseClient(object):
 
     @staticmethod
     def _supportability_response(status, exc, connection="direct"):
-        if exc or not 200 <= status < 300:
-            internal_count_metric("Supportability/Python/Collector/Failures", 1)
-            internal_count_metric(
-                "Supportability/Python/Collector/Failures/%s" % connection, 1
-            )
-
-            if exc:
-                internal_count_metric(
-                    "Supportability/Python/Collector/Exception/"
-                    "%s" % callable_name(exc),
-                    1,
-                )
-            else:
-                internal_count_metric(
-                    "Supportability/Python/Collector/HTTPError/%d" % status, 1
-                )
+        pass
 
     @classmethod
     def log_response(cls, fp, log_id, status, headers, data, connection="direct"):
@@ -544,7 +508,57 @@ class InsecureHttpClient(HttpClient):
         )
 
 
-class DeveloperModeClient(BaseClient):
+class SupportabilityMixin(object):
+    @staticmethod
+    def _supportability_request(params, payload, body, compression_time):
+        # *********
+        # Used only for supportability metrics. Do not use to drive business
+        # logic!
+        agent_method = params and params.get("method")
+        # *********
+
+        if agent_method and body:
+            # Compression was applied
+            if compression_time is not None:
+                internal_metric(
+                    "Supportability/Python/Collector/ZLIB/Bytes/%s" % agent_method,
+                    len(payload),
+                )
+                internal_metric(
+                    "Supportability/Python/Collector/ZLIB/Compress/%s" % agent_method,
+                    compression_time,
+                )
+
+            internal_metric(
+                "Supportability/Python/Collector/Output/Bytes/%s" % agent_method,
+                len(body),
+            )
+
+    @staticmethod
+    def _supportability_response(status, exc, connection="direct"):
+        if exc or not 200 <= status < 300:
+            internal_count_metric("Supportability/Python/Collector/Failures", 1)
+            internal_count_metric(
+                "Supportability/Python/Collector/Failures/%s" % connection, 1
+            )
+
+            if exc:
+                internal_count_metric(
+                    "Supportability/Python/Collector/Exception/"
+                    "%s" % callable_name(exc),
+                    1,
+                )
+            else:
+                internal_count_metric(
+                    "Supportability/Python/Collector/HTTPError/%d" % status, 1
+                )
+
+
+class ApplicationModeClient(SupportabilityMixin, HttpClient):
+    pass
+
+
+class DeveloperModeClient(SupportabilityMixin, BaseClient):
     RESPONSES = {
         "preconnect": {u"redirect_host": u"fake-collector.newrelic.com"},
         "agent_settings": [],

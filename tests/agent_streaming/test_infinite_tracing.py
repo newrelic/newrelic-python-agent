@@ -238,6 +238,7 @@ def test_agent_shutdown():
     assert not rpc.channel
 
 
+@pytest.mark.xfail(reason="This test is flaky", strict=False)
 def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app):
     wait_event = threading.Event()
     connect_event = threading.Event()

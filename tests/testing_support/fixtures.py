@@ -123,7 +123,7 @@ def initialize_agent(app_name=None, default_settings={}):
         log_directory = '.'
 
     log_file = os.path.join(log_directory, 'python-agent-test.log')
-    if 'JENKINS_HOME' in os.environ:
+    if 'GITHUB_ACTIONS' in os.environ:
         log_level = logging.DEBUG
     else:
         log_level = logging.INFO
@@ -2318,7 +2318,7 @@ def code_coverage_fixture(source=['newrelic']):
         if not source:
             return
 
-        if os.environ.get('TDDIUM') is not None:
+        if os.environ.get('GITHUB_ACTIONS') is not None:
             return
 
         from coverage import coverage

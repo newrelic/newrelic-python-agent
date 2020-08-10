@@ -21,8 +21,8 @@ from __future__ import print_function
 import logging
 
 from newrelic.common.agent_http import (
+    ApplicationModeClient,
     DeveloperModeClient,
-    HttpClient,
     ServerlessModeClient,
 )
 from newrelic.core.agent_protocol import AgentProtocol, ServerlessModeProtocol
@@ -34,7 +34,7 @@ _logger = logging.getLogger(__name__)
 
 class Session(object):
     PROTOCOL = AgentProtocol
-    CLIENT = HttpClient
+    CLIENT = ApplicationModeClient
 
     def __init__(self, app_name, linked_applications, environment, settings):
         self._protocol = self.PROTOCOL.connect(

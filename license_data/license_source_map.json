@@ -191,6 +191,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/asgi_application.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/background_task.py": {
         "hash": "n/a",
         "libraries": [
@@ -1923,6 +1929,12 @@
         "hash": "n/a",
         "libraries": [
             "New Relic"
+        ]
+    },
+    "newrelic/packages/asgiref_compatibility.py": {
+        "hash": "7e8dfdc216ead80de1a869311e678e01",
+        "libraries": [
+            "asgiref"
         ]
     },
     "newrelic/packages/six.py": {

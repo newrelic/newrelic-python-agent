@@ -70,6 +70,18 @@ from newrelic.api.wsgi_application import (
         WSGIApplicationWrapper as __WSGIApplicationWrapper,
         wrap_wsgi_application as __wrap_wsgi_application)
 
+try:
+    from newrelic.api.asgi_application import (
+            asgi_application as __asgi_application,
+            ASGIApplicationWrapper as __ASGIApplicationWrapper,
+            wrap_asgi_application as __wrap_asgi_application)
+except SyntaxError:
+    def __asgi_application(*args, **kwargs):
+        pass
+
+    __ASGIApplicationWrapper = __asgi_application
+    __wrap_asgi_application = __asgi_application
+
 from newrelic.api.web_transaction import (
         WebTransaction as __WebTransaction,
         web_transaction as __web_transaction,
@@ -258,6 +270,7 @@ insert_distributed_trace_headers = __wrap_api_call(
 current_trace_id = __wrap_api_call(__current_trace_id, 'current_trace_id')
 current_span_id = __wrap_api_call(__current_span_id, 'current_span_id')
 wsgi_application = __wsgi_application
+asgi_application = __asgi_application
 WebTransaction = __wrap_api_call(__WebTransaction,
         'WebTransaction')
 web_transaction = __wrap_api_call(__web_transaction,
@@ -268,6 +281,8 @@ wrap_web_transaction = __wrap_api_call(__wrap_web_transaction,
         'wrap_web_transaction')
 WSGIApplicationWrapper = __WSGIApplicationWrapper
 wrap_wsgi_application = __wrap_wsgi_application
+ASGIApplicationWrapper = __ASGIApplicationWrapper
+wrap_asgi_application = __wrap_asgi_application
 background_task = __wrap_api_call(__background_task,
         'background_task')
 BackgroundTask = __wrap_api_call(__BackgroundTask,

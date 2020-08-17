@@ -23,6 +23,7 @@ from newrelic.network.exceptions import (
     DiscardDataForRequest,
     ForceAgentDisconnect,
     ForceAgentRestart,
+    NetworkInterfaceException,
     RetryDataForRequest,
 )
 
@@ -86,6 +87,18 @@ class HttpClientRecorder(DeveloperModeClient):
 
     def close_connection(self):
         HttpClientRecorder.STATE -= 1
+
+
+class HttpClientException(DeveloperModeClient):
+    def send_request(
+        self,
+        method="POST",
+        path="/agent_listener/invoke_raw_method",
+        params=None,
+        headers=None,
+        payload=None,
+    ):
+        raise NetworkInterfaceException
 
 
 @pytest.fixture(autouse=True)
@@ -244,6 +257,14 @@ def test_status_code_exceptions(status_code, expected_exc, log_level, caplog):
     assert caplog.records[0].levelname == log_level
     message = caplog.records[0].getMessage()
     assert "123LICENSEKEY" not in message
+
+
+def test_protocol_http_error_causes_retry():
+    protocol = AgentProtocol(
+        finalize_application_settings(), client_cls=HttpClientException
+    )
+    with pytest.raises(RetryDataForRequest):
+        protocol.send("analytic_event_data")
 
 
 def test_protocol_context_manager():

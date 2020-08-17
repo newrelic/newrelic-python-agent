@@ -27,6 +27,7 @@ from newrelic.network.exceptions import (
     DiscardDataForRequest,
     ForceAgentDisconnect,
     ForceAgentRestart,
+    NetworkInterfaceException,
     RetryDataForRequest,
 )
 
@@ -202,9 +203,15 @@ class AgentProtocol(object):
 
     def send(self, method, payload=()):
         params, headers, payload = self._to_http(method, payload)
-        response = self.client.send_request(
-            params=params, headers=headers, payload=payload
-        )
+
+        try:
+            response = self.client.send_request(
+                params=params, headers=headers, payload=payload
+            )
+        except NetworkInterfaceException:
+            # All HTTP errors are currently retried
+            raise RetryDataForRequest
+
         status, data = response
 
         if not 200 <= status < 300:

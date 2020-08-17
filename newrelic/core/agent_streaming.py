@@ -73,7 +73,7 @@ class StreamingRpc(object):
                     details = response_iterator.details()
 
                     self.record_metric(
-                        "Supportability/InfiniteTracing/" "Span/gRPC/%s" % code.name,
+                        "Supportability/InfiniteTracing/Span/gRPC/%s" % code.name,
                         {"count": 1},
                     )
 
@@ -85,7 +85,7 @@ class StreamingRpc(object):
                         )
                     else:
                         self.record_metric(
-                            "Supportability/InfiniteTracing/" "Span/Response/Error",
+                            "Supportability/InfiniteTracing/Span/Response/Error",
                             {"count": 1},
                         )
 

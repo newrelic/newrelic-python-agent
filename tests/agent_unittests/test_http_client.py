@@ -8,6 +8,7 @@ import pytest
 
 from newrelic.common import certs
 from newrelic.common.agent_http import (
+    ApplicationModeClient,
     DeveloperModeClient,
     HttpClient,
     InsecureHttpClient,
@@ -187,21 +188,27 @@ def test_http_no_payload(server, method):
     assert foo_header == "bar"
 
 
-def test_non_ok_response(server):
+@pytest.mark.parametrize("client_cls", (HttpClient, ApplicationModeClient))
+def test_non_ok_response(client_cls, server):
     internal_metrics = CustomMetrics()
 
-    with HttpClient(
+    with client_cls(
         "localhost", server.port, disable_certificate_validation=True
     ) as client:
         with InternalTraceContext(internal_metrics):
             status, _ = client.send_request(method="PUT")
 
     assert status != 200
-    assert dict(internal_metrics.metrics()) == {
-        "Supportability/Python/Collector/Failures": [1, 0, 0, 0, 0, 0],
-        "Supportability/Python/Collector/Failures/direct": [1, 0, 0, 0, 0, 0],
-        "Supportability/Python/Collector/HTTPError/%d" % status: [1, 0, 0, 0, 0, 0],
-    }
+    internal_metrics = dict(internal_metrics.metrics())
+
+    if client_cls is ApplicationModeClient:
+        assert internal_metrics == {
+            "Supportability/Python/Collector/Failures": [1, 0, 0, 0, 0, 0],
+            "Supportability/Python/Collector/Failures/direct": [1, 0, 0, 0, 0, 0],
+            "Supportability/Python/Collector/HTTPError/%d" % status: [1, 0, 0, 0, 0, 0],
+        }
+    else:
+        assert not internal_metrics
 
 
 def test_http_close_connection(server):
@@ -225,14 +232,23 @@ def test_http_close_connection_in_context_manager():
         client.close_connection()
 
 
-@pytest.mark.parametrize("method", ("gzip", "deflate"))
-@pytest.mark.parametrize("threshold", (0, 100))
-def test_http_payload_compression(server, method, threshold):
+@pytest.mark.parametrize(
+    "client_cls,method,threshold",
+    (
+        (HttpClient, "gzip", 0),
+        (HttpClient, "gzip", 100),
+        (ApplicationModeClient, "gzip", 0),
+        (ApplicationModeClient, "gzip", 100),
+        (ApplicationModeClient, "deflate", 0),
+        (ApplicationModeClient, "deflate", 100),
+    ),
+)
+def test_http_payload_compression(server, client_cls, method, threshold):
     payload = b"*" * 20
 
     internal_metrics = CustomMetrics()
 
-    with HttpClient(
+    with client_cls(
         "localhost",
         server.port,
         disable_certificate_validation=True,
@@ -250,28 +266,39 @@ def test_http_payload_compression(server, method, threshold):
     payload_byte_len = len(sent_payload)
 
     internal_metrics = dict(internal_metrics.metrics())
-    assert internal_metrics["Supportability/Python/Collector/Output/Bytes/test"][
-        :2
-    ] == [1, payload_byte_len,]
+    if client_cls is ApplicationModeClient:
+        assert internal_metrics["Supportability/Python/Collector/Output/Bytes/test"][
+            :2
+        ] == [1, payload_byte_len,]
+
+        if threshold < 20:
+            # Verify compression time is recorded
+            assert (
+                internal_metrics["Supportability/Python/Collector/ZLIB/Compress/test"][
+                    0
+                ]
+                == 1
+            )
+            assert (
+                internal_metrics["Supportability/Python/Collector/ZLIB/Compress/test"][
+                    1
+                ]
+                > 0
+            )
+
+            # Verify the original payload length is recorded
+            assert internal_metrics["Supportability/Python/Collector/ZLIB/Bytes/test"][
+                :2
+            ] == [1, len(payload)]
+
+            assert len(internal_metrics) == 3
+        else:
+            # Verify no ZLIB compression metrics were sent
+            assert len(internal_metrics) == 1
+    else:
+        assert not internal_metrics
 
     if threshold < 20:
-        assert len(internal_metrics) == 3
-
-        # Verify compression time is recorded
-        assert (
-            internal_metrics["Supportability/Python/Collector/ZLIB/Compress/test"][0]
-            == 1
-        )
-        assert (
-            internal_metrics["Supportability/Python/Collector/ZLIB/Compress/test"][1]
-            > 0
-        )
-
-        # Verify the original payload length is recorded
-        assert internal_metrics["Supportability/Python/Collector/ZLIB/Bytes/test"][
-            :2
-        ] == [1, len(payload)]
-
         expected_content_encoding = method.encode("utf-8")
         assert sent_payload != payload
         if method == "deflate":
@@ -282,9 +309,6 @@ def test_http_payload_compression(server, method, threshold):
             sent_payload += decompressor.flush()
     else:
         expected_content_encoding = b"Identity"
-
-        # Verify no ZLIB compression metrics were sent
-        assert len(internal_metrics) == 1
 
     for header in data[1:-1]:
         if header.lower().startswith(b"content-encoding"):
@@ -544,7 +568,8 @@ def test_serverless_mode_client():
         (HttpClient, "localhost", False),
         (HttpClient, None, False),
         (HttpClient, None, True),
-        (HttpClient, "localhost", True),
+        (ApplicationModeClient, None, True),
+        (ApplicationModeClient, "localhost", True),
         (DeveloperModeClient, None, False),
         (ServerlessModeClient, None, False),
         (InsecureHttpClient, None, False),
@@ -580,7 +605,7 @@ def test_audit_logging(server, insecure_server, client_cls, proxy_host, exceptio
                 exc = callable_name(type(e.args[0]))
 
     internal_metrics = dict(internal_metrics.metrics())
-    if exception:
+    if exception and client_cls is ApplicationModeClient:
         if proxy_host:
             connection = "https-proxy"
         else:
@@ -591,6 +616,8 @@ def test_audit_logging(server, insecure_server, client_cls, proxy_host, exceptio
             % connection: [1, 0, 0, 0, 0, 0],
             "Supportability/Python/Collector/Exception/%s" % exc: [1, 0, 0, 0, 0, 0],
         }
+    else:
+        assert not internal_metrics
 
     # Verify the audit log isn't empty
     assert audit_log_fp.tell()

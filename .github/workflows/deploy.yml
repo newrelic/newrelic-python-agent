@@ -21,12 +21,14 @@ on:
 
 
 jobs:
-  deploy:
+  deploy-linux:
 
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        persist-credentials: false
     - uses: actions/setup-python@v2
       with:
         python-version: '3.x'
@@ -35,8 +37,12 @@ jobs:
       run: |
         pip install -U pip
         pip install -U wheel setuptools twine
-    - name: Build Package
+    - name: Build Source Package
       run: python setup.py sdist
+    - name: Build Manylinux Wheels
+      uses: RalfG/python-wheels-manylinux-build@f7c9db24751e53d2d3c90edc2b04a9ffaa96cd01
+      with:
+        python-versions: 'cp27-cp27m cp35-cp35m cp36-cp36m cp37-cp37m cp38-cp38'
     - name: Upload Package to S3
       run: |
         tarball="$(python setup.py --fullname).tar.gz"
@@ -50,7 +56,7 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     - name: Upload Package to PyPI
       run: |
-        twine upload --non-interactive dist/*
+        twine upload --non-interactive dist/*.tar.gz dist/*-manylinux*.whl
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}

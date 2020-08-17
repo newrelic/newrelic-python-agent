@@ -3,7 +3,7 @@ import os
 
 from newrelic import version
 from newrelic.common import system_info
-from newrelic.common.agent_http import HttpClient, ServerlessModeClient
+from newrelic.common.agent_http import ApplicationModeClient, ServerlessModeClient
 from newrelic.core.internal_metrics import internal_count_metric
 from newrelic.common.encoding_utils import (
     json_decode,
@@ -139,7 +139,7 @@ class AgentProtocol(object):
         "VERBOSE": _logger.debug,
     }
 
-    def __init__(self, settings, host=None, client_cls=HttpClient):
+    def __init__(self, settings, host=None, client_cls=ApplicationModeClient):
         if settings.audit_log_file:
             audit_log_fp = open(settings.audit_log_file, "a")
         else:
@@ -424,7 +424,12 @@ class AgentProtocol(object):
 
     @classmethod
     def connect(
-        cls, app_name, linked_applications, environment, settings, client_cls=HttpClient
+        cls,
+        app_name,
+        linked_applications,
+        environment,
+        settings,
+        client_cls=ApplicationModeClient,
     ):
         with cls(settings, client_cls=client_cls) as preconnect:
             redirect_host = preconnect.send("preconnect")["redirect_host"]

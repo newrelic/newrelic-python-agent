@@ -35,6 +35,12 @@
             "New Relic"
         ]
     },
+    ".github/stale.yml": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     ".github/workflows/deploy.yml": {
         "hash": "n/a",
         "libraries": [

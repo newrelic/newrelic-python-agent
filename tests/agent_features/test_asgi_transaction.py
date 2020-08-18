@@ -1,47 +1,23 @@
 import pytest
-import asyncio
-from testing_support.sample_asgi_applications import simple_app_v2, simple_app_v3
-from testing_support.fixtures import validate_transaction_metrics, override_application_settings
+from testing_support.sample_asgi_applications import simple_app_v2_raw, simple_app_v3_raw, simple_app_v2, simple_app_v3
+from testing_support.fixtures import validate_transaction_metrics, override_application_settings, function_not_called
+from newrelic.api.asgi_application import asgi_application
+from testing_support.asgi_testing import AsgiTest
+
+#Setup test apps from sample_asgi_applications.py
+simple_app_v2_original = AsgiTest(simple_app_v2_raw)
+simple_app_v3_original = AsgiTest(simple_app_v3_raw)
+
+simple_app_v3_wrapped = AsgiTest(simple_app_v3)
+simple_app_v2_wrapped = AsgiTest(simple_app_v2)
 
 
-class AsgiRequest(object):
-    scope = {
-        'asgi': {'spec_version': '2.1', 'version': '3.0'},
-        'client': ('127.0.0.1', 54768),
-        'headers': [(b'host', b'localhost:8000')],
-        'http_version': '1.1',
-        'method': 'GET',
-        'path': '/',
-        'query_string': b'',
-        'raw_path': b'/',
-        'root_path': '',
-        'scheme': 'http',
-        'server': ('127.0.0.1', 8000),
-        'type': 'http'
-    }
-
-    def __init__(self):
-        self.sent = []
-
-    async def receive(self):
-        pass
-        
-    async def send(self, event):
-        self.sent.append(event)
-
-
+#Test naming scheme logic and ASGIApplicationWrapper for a single callable
 @pytest.mark.parametrize("naming_scheme", (None, "component", "framework"))
-def test_simple_app(naming_scheme):
-    request = AsgiRequest()
-
-    async def _test():
-        await simple_app_v3(request.scope, request.receive, request.send)
-        assert request.sent[0]["type"] == "http.response.start"
-        assert request.sent[0]["status"] == 200
-        assert request.sent[1]["type"] == "http.response.body"
+def test_single_callable_naming_scheme(naming_scheme):
 
     if naming_scheme in ("component", "framework"):
-        expected_name = "testing_support.sample_asgi_applications:simple_app_v3"
+        expected_name = "testing_support.sample_asgi_applications:simple_app_v3_raw"
         expected_group = "Function"
     else:
         expected_name = ""
@@ -49,8 +25,81 @@ def test_simple_app(naming_scheme):
 
     @validate_transaction_metrics(name=expected_name, group=expected_group)
     @override_application_settings({"transaction_name.naming_scheme": naming_scheme})
-    def run():
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(_test())
-    
-    run()
+    def _test():
+        response = simple_app_v3_wrapped.make_request("GET", "/")
+        assert response.status == 200
+        assert response.headers == {}
+        assert response.body == b""
+
+    _test()
+
+
+#Test the default naming scheme logic and ASGIApplicationWrapper for a double callable
+@validate_transaction_metrics(name="", group="Uri")
+def test_double_callable_default_naming_scheme():
+
+    def _test():
+        response = simple_app_v2_wrapped.make_request("GET", "/")
+        assert response.status == 200
+        assert response.headers == {}
+        assert response.body == b""
+
+    _test()
+
+
+#No harm test on single callable asgi app with agent disabled to ensure proper response
+def test_single_callable_raw():
+
+    def _test():
+        response = simple_app_v3_original.make_request("GET", "/")
+        assert response.status == 200
+        assert response.headers == {}
+        assert response.body == b""
+
+    _test()
+
+
+#No harm test on double callable asgi app with agent disabled to ensure proper response
+def test_double_callable_raw():
+
+    def _test():
+        response = simple_app_v3_original.make_request("GET", "/")
+        assert response.status == 200
+        assert response.headers == {}
+        assert response.body == b""
+
+    _test()
+
+
+#Test asgi_application decorator with parameters passed in on a single callable
+@pytest.mark.parametrize("group", (None, "group", ""))
+@pytest.mark.parametrize("framework", (None, "function", ""))
+def test_asgi_application_decorator_single_callable(group, framework):
+
+    @validate_transaction_metrics(name="", group="Uri")
+    def _test():
+        asgi_decorator = asgi_application(name="", group=group, framework=framework)
+        decorated_application = asgi_decorator(simple_app_v3_raw)
+        application = AsgiTest(decorated_application)
+        response = application.make_request("GET", "/")
+        assert response.status == 200
+        assert response.headers == {}
+        assert response.body == b""
+
+    _test()
+
+
+#Test asgi_application decorator using default values on a double callable
+def test_asgi_application_decorator_no_params_double_callable():
+
+    @validate_transaction_metrics(name="", group="Uri")
+    def _test():
+        asgi_decorator = asgi_application()
+        decorated_application = asgi_decorator(simple_app_v2_raw)
+        application = AsgiTest(decorated_application)
+        response = application.make_request("GET", "/")
+        assert response.status == 200
+        assert response.headers == {}
+        assert response.body == b""
+
+    _test()

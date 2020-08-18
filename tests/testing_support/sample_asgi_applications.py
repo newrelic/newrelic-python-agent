@@ -12,20 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.asgi_application import asgi_application
+from newrelic.api.asgi_application import ASGIApplicationWrapper
 
 
-@asgi_application()
-class simple_app_v2:
+class simple_app_v2_raw:
     def __init__(self, scope):
         assert scope["type"] == "http"
 
     async def __call__(self, receive, send):
         await send({"type": "http.response.start", "status": 200})
-        await send({"type": "http.response.body", "body": b""})
+        await send({"type": "http.response.body"})
 
 
-@asgi_application()
-async def simple_app_v3(scope, receive, send):
+async def simple_app_v3_raw(scope, receive, send):
+    if scope["type"] != "http":
+        raise ValueError("unsupported")
+
     await send({"type": "http.response.start", "status": 200})
-    await send({"type": "http.response.body", "body": b""})
+    await send({"type": "http.response.body"})
+
+
+simple_app_v2 = ASGIApplicationWrapper(simple_app_v2_raw)
+simple_app_v3 = ASGIApplicationWrapper(simple_app_v3_raw)

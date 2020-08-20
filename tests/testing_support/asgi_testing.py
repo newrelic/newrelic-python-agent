@@ -38,6 +38,9 @@ class AsgiTest(object):
         coro = self.make_request_async(method, path, params, headers, body)
         return loop.run_until_complete(coro)
 
+    def get(self, path, params=None, headers=None, body=None):
+        return self.make_request("GET", path, params, headers, body)
+
     async def make_request_async(self, method, path, params, headers, body):
         self.input_queue = asyncio.Queue()
         self.output_queue = asyncio.Queue()

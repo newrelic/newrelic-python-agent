@@ -15,11 +15,183 @@
 import functools
 
 import newrelic.packages.asgiref_compatibility as asgiref_compatibility
+import newrelic.packages.six as six
 from newrelic.api.application import application_instance
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_object
 from newrelic.common.async_proxy import CoroutineProxy, LoopContext
+from newrelic.api.html_insertion import insert_html_snippet, verify_body_exists
+
+
+class ASGIBrowserMiddleware(object):
+    def __init__(self, app, transaction=None, search_maximum=64 * 1024):
+        self.app = app
+        self.send = None
+        self.messages = []
+        self.initial_message = None
+        self.body = b""
+        self.more_body = True
+        self.transaction = transaction
+        self.search_maximum = search_maximum
+        self.pass_through = not (transaction and transaction.enabled)
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+
+        self.send = send
+        return await self.app(scope, receive, self.send_inject_browser_agent)
+
+    async def send_buffered(self):
+        self.pass_through = True
+        await self.send(self.initial_message)
+        await self.send(
+            {
+                "type": "http.response.body",
+                "body": self.body,
+                "more_body": self.more_body,
+            }
+        )
+        # Clear any saved messages
+        self.messages = None
+
+    async def abort(self):
+        self.pass_through = True
+        for message in self.messages:
+            await self.send(message)
+        # Clear any saved messages
+        self.messages = None
+
+    def should_insert_html(self, headers):
+        if self.transaction.autorum_disabled or self.transaction.rum_header_generated:
+            return False
+
+        content_encoding = None
+        content_disposition = None
+        content_type = None
+
+        for header_name, header_value in headers:
+            # assume header names are lower cased in accordance with ASGI spec
+            if header_name == b"content-type":
+                content_type = header_value
+            elif header_name == b"content-encoding":
+                content_encoding = header_value
+            elif header_name == b"content-disposition":
+                content_disposition = header_value
+
+        if content_encoding is not None:
+            # This will match any encoding, including if the
+            # value 'identity' is used. Technically the value
+            # 'identity' should only be used in the header
+            # Accept-Encoding and not Content-Encoding. In
+            # other words, a WSGI application should not be
+            # returning identity. We could check and allow it
+            # anyway and still do RUM insertion, but don't.
+
+            return False
+
+        if content_type is None:
+            return False
+
+        if (
+            content_disposition is not None
+            and content_disposition.split(b";", 1)[0].strip().lower() == b"attachment"
+        ):
+            return False
+
+        allowed_content_type = self.transaction.settings.browser_monitoring.content_type
+
+        content_type = content_type.split(b";", 1)[0].decode("utf-8")
+
+        if content_type not in allowed_content_type:
+            return False
+
+        return True
+
+    async def send_inject_browser_agent(self, message):
+        if self.pass_through:
+            return await self.send(message)
+
+        # Store messages in case of an abort
+        self.messages.append(message)
+
+        message_type = message["type"]
+        if message_type == "http.response.start" and not self.initial_message:
+            headers = list(message.get("headers", ()))
+            if not self.should_insert_html(headers):
+                await self.abort()
+                return
+            message["headers"] = headers
+            self.initial_message = message
+        elif message_type == "http.response.body" and self.initial_message:
+            body = message.get("body", b"")
+            self.more_body = message.get("more_body", False)
+
+            # Add this message to the current body
+            self.body += body
+
+            # if there's a valid body string, attempt to insert the HTML
+            if verify_body_exists(self.body):
+                header = self.transaction.browser_timing_header()
+                if not header:
+                    # If there's no header, abort browser monitoring injection
+                    await self.send_buffered()
+                    return
+
+                footer = self.transaction.browser_timing_footer()
+                browser_agent_data = six.b(header) + six.b(footer)
+
+                body = insert_html_snippet(
+                    self.body, lambda: browser_agent_data, self.search_maximum
+                )
+
+                # If we have inserted the browser agent
+                if len(body) != len(self.body):
+                    # check to see if we have to modify the content-length
+                    # header
+                    headers = self.initial_message["headers"]
+                    for header_index, header_data in enumerate(headers):
+                        header_name, header_value = header_data
+                        if header_name.lower() == b"content-length":
+                            break
+                    else:
+                        header_value = None
+
+                    try:
+                        content_length = int(header_value)
+                    except ValueError:
+                        # Invalid content length results in an abort
+                        await self.send_buffered()
+                        return
+
+                    if content_length is not None:
+                        delta = len(body) - len(self.body)
+                        headers[header_index] = (
+                            b"content-length",
+                            str(content_length + delta).encode("utf-8"),
+                        )
+
+                    # Body is found and modified so we can now send the
+                    # modified data and stop searching
+                    self.body = body
+                    await self.send_buffered()
+                    return
+
+            # 1. Body is found but not modified
+            # 2. Body is not found
+
+            # No more body
+            if not self.more_body:
+                await self.send_buffered()
+
+            # We have hit our search limit
+            elif len(self.body) >= self.search_maximum:
+                await self.send_buffered()
+
+        # Protocol error, unexpected message: abort
+        else:
+            await self.abort()
 
 
 class ASGIWebTransaction(WebTransaction):
@@ -95,7 +267,15 @@ def make_single_callable(original, wrapped, application, name, group, framework)
             elif name:
                 transaction.set_transaction_name(name, group, priority=1)
 
-            coro = wrapped(scope, transaction.receive, transaction.send)
+            if (
+                settings
+                and settings.browser_monitoring.enabled
+                and not transaction.autorum_disabled
+            ):
+                app = ASGIBrowserMiddleware(wrapped, transaction)
+            else:
+                app = wrapped
+            coro = app(scope, transaction.receive, transaction.send)
             coro = CoroutineProxy(coro, LoopContext())
             return await coro
 

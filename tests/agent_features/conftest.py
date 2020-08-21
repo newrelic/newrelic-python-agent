@@ -60,4 +60,5 @@ if six.PY2:
         'test_async_timing.py',
         'test_event_loop_wait_time.py',
         'test_asgi_transaction.py',
+        'test_asgi_browser.py',
     ]

@@ -61,4 +61,6 @@ if six.PY2:
         'test_event_loop_wait_time.py',
         'test_asgi_transaction.py',
         'test_asgi_browser.py',
+        'test_asgi_distributed_tracing.py',
+        'test_asgi_w3c_trace_context.py'
     ]

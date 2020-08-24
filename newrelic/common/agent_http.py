@@ -571,7 +571,7 @@ class DeveloperModeClient(SupportabilityMixin, BaseClient):
             u"error_beacon": u"fake-jserror.newrelic.com",
             u"apdex_t": 0.5,
             u"encoding_key": u"1111111111111111111111111111111111111111",
-            u'entity_guid': u'DEVELOPERMODEENTITYGUID',
+            u"entity_guid": u"DEVELOPERMODEENTITYGUID",
             u"agent_run_id": u"1234567",
             u"product_level": 50,
             u"trusted_account_ids": [12345],
@@ -653,7 +653,7 @@ class ServerlessModeClient(DeveloperModeClient):
 
         if result[0] == 200:
             agent_method = params["method"]
-            self.payload[agent_method] = payload
+            self.payload[agent_method] = json_decode(payload.decode("utf-8"))
 
         return result
 

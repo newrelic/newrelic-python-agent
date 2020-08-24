@@ -17,6 +17,7 @@ from testing_support.sample_asgi_applications import simple_app_v2_raw, simple_a
 from testing_support.fixtures import validate_transaction_metrics, override_application_settings, function_not_called
 from newrelic.api.asgi_application import asgi_application
 from testing_support.asgi_testing import AsgiTest
+from newrelic.api.transaction import current_transaction
 
 #Setup test apps from sample_asgi_applications.py
 simple_app_v2_original = AsgiTest(simple_app_v2_raw)
@@ -24,7 +25,6 @@ simple_app_v3_original = AsgiTest(simple_app_v3_raw)
 
 simple_app_v3_wrapped = AsgiTest(simple_app_v3)
 simple_app_v2_wrapped = AsgiTest(simple_app_v2)
-
 
 #Test naming scheme logic and ASGIApplicationWrapper for a single callable
 @pytest.mark.parametrize("naming_scheme", (None, "component", "framework"))
@@ -107,3 +107,19 @@ def test_asgi_application_decorator_no_params_double_callable():
     assert response.headers == {}
     assert response.body == b""
 
+
+#Test for presence of framework info based on whether framework is specified
+@pytest.mark.parametrize("framework", (None, ('framework1', 'v1')))
+def test_framework_metrics(framework):
+    @asgi_application(framework=framework)
+    async def simple_app_v3_frameworks(scope, receive, send):
+        transaction = current_transaction()
+        await send({"type": "http.response.start", "status": 200})
+        await send({"type": "http.response.body"})
+        if framework is None:
+            assert len(transaction._frameworks) == 0
+        else:
+            assert ('framework1', 'v1') in transaction._frameworks
+
+    simple_app_framework_metrics = AsgiTest(simple_app_v3_frameworks)
+    simple_app_framework_metrics.make_request("GET", "/")

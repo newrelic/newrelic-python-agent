@@ -236,6 +236,11 @@ def make_single_callable(original, wrapped, application, name, group, framework)
             application=_application, scope=scope, receive=receive, send=send
         ) as transaction:
 
+            # Record details of framework against the transaction for later
+            # reporting as supportability metrics.
+            if framework:
+                transaction.add_framework_info(name=framework[0], version=framework[1])
+
             # Override the initial web transaction name to be the supplied
             # name, or the name of the wrapped callable if wanting to use
             # the callable as the default. This will override the use of a

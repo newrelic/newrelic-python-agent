@@ -542,24 +542,24 @@ def test_serverless_mode_client():
         for method in methods:
             params = {"method": method}
             status, data = client.send_request(
-                params=params, payload=method.encode("utf-8")
+                params=params, payload=json.dumps({"method": method}).encode("utf-8"),
             )
 
             assert status == 200
             assert json.loads(data.decode("utf-8"))
 
         # Verify that missing methods aren't captured
-        status, _ = client.send_request(payload=b"*")
+        status, _ = client.send_request(payload=b"{}")
         assert status == 400
 
         # Verify that invalid methods aren't captured
-        status, _ = client.send_request(params={"method": "foo"}, payload=b"*")
+        status, _ = client.send_request(params={"method": "foo"}, payload=b"{}")
         assert status == 400
 
     payloads = client.finalize()
     assert len(payloads) == len(methods)
     for method in methods:
-        assert payloads[method] == method.encode("utf-8")
+        assert payloads[method] == {"method": method}
 
 
 @pytest.mark.parametrize(

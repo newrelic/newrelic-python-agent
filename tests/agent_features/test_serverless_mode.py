@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import pytest
 
 from newrelic.api.application import application_instance
@@ -68,6 +69,9 @@ def test_serverless_payload(capsys, serverless_application):
 
     # Validate that something is printed to stdout
     assert out
+
+    # Verify that the payload is loadable JSON
+    payload = json.loads(out)
 
 
 def test_no_cat_headers(serverless_application):

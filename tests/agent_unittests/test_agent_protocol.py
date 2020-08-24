@@ -532,7 +532,7 @@ def test_serverless_protocol_finalize(capsys):
     assert payload[:2] == [1, "NR_LAMBDA_MONITORING"]
 
     data = serverless_payload_decode(payload[2])
-    assert data["data"] == {"metric_data": "[1,2,3]"}
+    assert data["data"] == {"metric_data": [1,2,3]}
 
     assert data["metadata"]["foo"] == "bar"
     assert data["metadata"]["agent_version"] != "x"

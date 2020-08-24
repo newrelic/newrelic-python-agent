@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 from newrelic.common.object_wrapper import (
         transient_function_wrapper,
         function_wrapper)
@@ -39,6 +40,9 @@ def validate_serverless_data(
 
                 for method in expected_methods:
                     assert method in payload
+
+                    # Verify the method is not a byte string
+                    assert isinstance(payload[method], (dict, list))
 
                 for method in forgone_methods:
                     assert method not in payload

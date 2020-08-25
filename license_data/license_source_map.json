@@ -2320,5 +2320,17 @@
         "libraries": [
             "New Relic"
         ]
+    },
+    "tests/agent_features/test_asgi_distributed_tracing.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "tests/agent_features/test_asgi_w3c_trace_context.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
     }
 }

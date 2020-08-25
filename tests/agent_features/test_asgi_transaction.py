@@ -25,7 +25,6 @@ simple_app_v3_original = AsgiTest(simple_app_v3_raw)
 simple_app_v3_wrapped = AsgiTest(simple_app_v3)
 simple_app_v2_wrapped = AsgiTest(simple_app_v2)
 
-
 #Test naming scheme logic and ASGIApplicationWrapper for a single callable
 @pytest.mark.parametrize("naming_scheme", (None, "component", "framework"))
 def test_single_callable_naming_scheme(naming_scheme):
@@ -67,7 +66,7 @@ def test_single_callable_raw():
 
 #No harm test on double callable asgi app with agent disabled to ensure proper response
 def test_double_callable_raw():
-    response = simple_app_v3_original.make_request("GET", "/")
+    response = simple_app_v2_original.make_request("GET", "/")
     assert response.status == 200
     assert response.headers == {}
     assert response.body == b""
@@ -107,3 +106,11 @@ def test_asgi_application_decorator_no_params_double_callable():
     assert response.headers == {}
     assert response.body == b""
 
+
+#Test for presence of framework info based on whether framework is specified
+@validate_transaction_metrics(name="test", custom_metrics=[("Python/Framework/framework/v1", 1)])
+def test_framework_metrics():
+    asgi_decorator = asgi_application(name="test", framework=("framework", "v1"))
+    decorated_application = asgi_decorator(simple_app_v2_raw)
+    application = AsgiTest(decorated_application)
+    application.make_request("GET", "/")

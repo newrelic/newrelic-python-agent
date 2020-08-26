@@ -32,5 +32,21 @@ async def simple_app_v3_raw(scope, receive, send):
     await send({"type": "http.response.body"})
 
 
+class AppWithDescriptor:
+    @ASGIApplicationWrapper
+    async def method(self, scope, receive, send):
+        return await simple_app_v3_raw(scope, receive, send)
+
+    @ASGIApplicationWrapper
+    @classmethod
+    async def cls(cls, scope, receive, send):
+        return await simple_app_v3_raw(scope, receive, send)
+
+    @ASGIApplicationWrapper
+    @staticmethod
+    async def static(scope, receive, send):
+        return await simple_app_v3_raw(scope, receive, send)
+
+
 simple_app_v2 = ASGIApplicationWrapper(simple_app_v2_raw)
 simple_app_v3 = ASGIApplicationWrapper(simple_app_v3_raw)

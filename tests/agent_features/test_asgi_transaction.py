@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import pytest
-from testing_support.sample_asgi_applications import simple_app_v2_raw, simple_app_v3_raw, simple_app_v2, simple_app_v3
+from testing_support.sample_asgi_applications import simple_app_v2_raw, simple_app_v3_raw, simple_app_v2, simple_app_v3, AppWithDescriptor
 from testing_support.fixtures import validate_transaction_metrics, override_application_settings, function_not_called
-from newrelic.api.asgi_application import asgi_application
+from newrelic.api.asgi_application import asgi_application, ASGIApplicationWrapper
 from testing_support.asgi_testing import AsgiTest
 
 #Setup test apps from sample_asgi_applications.py
@@ -114,3 +114,13 @@ def test_framework_metrics():
     decorated_application = asgi_decorator(simple_app_v2_raw)
     application = AsgiTest(decorated_application)
     application.make_request("GET", "/")
+
+
+@pytest.mark.parametrize("method", ("method", "cls", "static"))
+@validate_transaction_metrics(name="", group="Uri")
+def test_app_with_descriptor(method):
+    application = AsgiTest(getattr(AppWithDescriptor(), method))
+    response = application.make_request("GET", "/")
+    assert response.status == 200
+    assert response.headers == {}
+    assert response.body == b""

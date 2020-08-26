@@ -41,7 +41,7 @@
             "url": "https://pypi.org/project/urllib3"
         },
         "wrapt": {
-            "copyright": "Copyright (c) 2013-2017, Graham Dumpleton\nAll rights reserved.",
+            "copyright": "Copyright (c) 2013-2019, Graham Dumpleton\nAll rights reserved.",
             "licenses": [
                 "BSD (2-Clause)"
             ],

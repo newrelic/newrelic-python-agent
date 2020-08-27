@@ -539,7 +539,7 @@ def test_transaction_event_exclude_agent_attribute(normal_application):
 
 
 _override_settings = {'attributes.exclude': ['request.*'],
-        'attributes.include': ['request.headers.*', 'wsgi.*']}
+        'attributes.include': ['request.headers.*']}
 
 _expected_agent_attributes = ['response.status',
         'request.headers.contentType', 'request.headers.contentLength']

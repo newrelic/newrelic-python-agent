@@ -62,9 +62,17 @@ class AsgiTest(object):
     def generate_input(self, method, path, params, headers, body):
         headers_list = []
         if headers:
-            for key, value in headers.items():
-                header_tuple = (key.encode("utf-8"), value.encode("utf-8"))
+            try:
+                iterable = headers.items()
+            except AttributeError:
+                iterable = iter(headers)
+
+            for key, value in iterable:
+                header_tuple = (key.lower().encode("utf-8"), value.encode("utf-8"))
                 headers_list.append(header_tuple)
+        if not params:
+            path, _, params = path.partition("?")
+
         scope = {
             "asgi": {"spec_version": "2.1", "version": "3.0"},
             "client": ("127.0.0.1", 54768),

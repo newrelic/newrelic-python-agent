@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from newrelic.api.time_trace import record_exception
+from newrelic.api.transaction import add_custom_parameter
 from newrelic.api.asgi_application import ASGIApplicationWrapper
 
 
@@ -50,3 +52,25 @@ class AppWithDescriptor:
 
 simple_app_v2 = ASGIApplicationWrapper(simple_app_v2_raw)
 simple_app_v3 = ASGIApplicationWrapper(simple_app_v3_raw)
+
+
+@ASGIApplicationWrapper
+async def normal_asgi_application(scope, receive, send):
+    output = b"<html><head>header</head><body><p>RESPONSE</p></body></html>"
+    add_custom_parameter("puppies", "test_value")
+    add_custom_parameter("sunshine", "test_value")
+
+    response_headers = [
+        (b"content-type", b"text/html; charset=utf-8"),
+        (b"content-length", str(len(output)).encode("utf-8")),
+    ]
+
+    try:
+        raise ValueError('Transaction had bad value')
+    except ValueError:
+        record_exception(params={'ohnoes': 'param-value'})
+
+    await send(
+        {"type": "http.response.start", "status": 200, "headers": response_headers}
+    )
+    await send({"type": "http.response.body", "body": output})

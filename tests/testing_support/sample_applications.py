@@ -66,6 +66,10 @@ def fully_featured_app(environ, start_response):
     path = environ.get('PATH_INFO')
     use_user_attrs = environ.get('record_attributes', 'TRUE') == 'TRUE'
 
+    environ['wsgi.input'].read()
+    environ['wsgi.input'].readline()
+    environ['wsgi.input'].readlines()
+
     if use_user_attrs:
 
         for attr, val in _custom_parameters.items():
@@ -103,7 +107,9 @@ def fully_featured_app(environ, start_response):
 
     response_headers = [('Content-type', 'text/html; charset=utf-8'),
                         ('Content-Length', str(len(output)))]
-    start_response(status, response_headers)
+    write = start_response(status, response_headers)
+
+    write(b'')
 
     return [output]
 

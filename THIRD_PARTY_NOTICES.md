@@ -8,6 +8,15 @@ In the event that a required notice is missing or incorrect, please notify us
 by e-mailing [support@newrelic.com](mailto:support@newrelic.com).
 
 
+## [asgiref](https://pypi.org/project/asgiref/)
+
+Copyright (c) Django Software Foundation and individual contributors.
+
+Distributed under the following license(s):
+
+  * [The BSD 3-Clause License](https://opensource.org/licenses/BSD-3-Clause)
+
+
 ## [six](https://pypi.org/project/six)
 
 Copyright (c) 2010-2013 Benjamin Peterson

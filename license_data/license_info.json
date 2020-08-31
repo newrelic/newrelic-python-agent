@@ -8,6 +8,14 @@
             "name": "New Relic",
             "url": "https://newrelic.com"
         },
+        "asgiref": {
+            "copyright": "Copyright (c) Django Software Foundation and individual contributors.",
+            "licenses": [
+                "BSD (3-Clause)"
+            ],
+            "name": "asgiref",
+            "url": "https://pypi.org/project/asgiref/"
+        },
         "six": {
             "copyright": "Copyright (c) 2010-2013 Benjamin Peterson",
             "licenses": [
@@ -33,7 +41,7 @@
             "url": "https://pypi.org/project/urllib3"
         },
         "wrapt": {
-            "copyright": "Copyright (c) 2013-2017, Graham Dumpleton\nAll rights reserved.",
+            "copyright": "Copyright (c) 2013-2019, Graham Dumpleton\nAll rights reserved.",
             "licenses": [
                 "BSD (2-Clause)"
             ],
@@ -45,6 +53,10 @@
         "BSD (2-Clause)": {
             "name": "The BSD 2-Clause License",
             "url": "http://opensource.org/licenses/BSD-2-Clause"
+        },
+        "BSD (3-Clause)": {
+            "name": "The BSD 3-Clause License",
+            "url": "https://opensource.org/licenses/BSD-3-Clause"
         },
         "MIT": {
             "name": "The MIT License",

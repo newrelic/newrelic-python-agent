@@ -197,6 +197,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/asgi_application.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/background_task.py": {
         "hash": "n/a",
         "libraries": [
@@ -1931,6 +1937,12 @@
             "New Relic"
         ]
     },
+    "newrelic/packages/asgiref_compatibility.py": {
+        "hash": "7e8dfdc216ead80de1a869311e678e01",
+        "libraries": [
+            "asgiref"
+        ]
+    },
     "newrelic/packages/six.py": {
         "hash": "653f63e52e678a4f539906b2f2ee61bd",
         "libraries": [
@@ -2166,49 +2178,43 @@
         ]
     },
     "newrelic/packages/wrapt/LICENSE": {
-        "hash": "61c27930012e86b3dc7e36f92e83c4d8",
+        "hash": "fdfc019b57affbe1d7a32e3d34e83db4",
         "libraries": [
             "wrapt"
         ]
     },
     "newrelic/packages/wrapt/README.rst": {
-        "hash": "305268458781a20c6af886a4ec15c808",
+        "hash": "3f053b610679116fbfc99409bd95c0c6",
         "libraries": [
             "wrapt"
         ]
     },
     "newrelic/packages/wrapt/__init__.py": {
-        "hash": "be1b52f022413cbb67e7e799d44fa527",
+        "hash": "0cab7d9e6a89093bce7bbda1ba19ce97",
         "libraries": [
             "wrapt"
         ]
     },
     "newrelic/packages/wrapt/_wrappers.c": {
-        "hash": "edbdd5e03da3da059e57e538b01980aa",
-        "libraries": [
-            "wrapt"
-        ]
-    },
-    "newrelic/packages/wrapt/arguments.py": {
-        "hash": "3756998b87e376d7e7f6f024af5619a4",
+        "hash": "9194a94984f04aee872477902ecfb1a9",
         "libraries": [
             "wrapt"
         ]
     },
     "newrelic/packages/wrapt/decorators.py": {
-        "hash": "a89f01804e0f80fc951a898cb5859e60",
+        "hash": "40d40930229ff648df4ab67ebe6eff78",
         "libraries": [
             "wrapt"
         ]
     },
     "newrelic/packages/wrapt/importer.py": {
-        "hash": "da69aa1d4874357a3c806de49e76e7e2",
+        "hash": "db0b5ffebcb1c886967b21d45f0cc438",
         "libraries": [
             "wrapt"
         ]
     },
     "newrelic/packages/wrapt/wrappers.py": {
-        "hash": "dec047f8b665eb44e3fb68ac1ed31c57",
+        "hash": "68f5e4b526c65ec81889c7d7d585296f",
         "libraries": [
             "wrapt"
         ]
@@ -2304,6 +2310,18 @@
         ]
     },
     "tddium.yml": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "tests/agent_features/test_asgi_distributed_tracing.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "tests/agent_features/test_asgi_w3c_trace_context.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

@@ -7,13 +7,12 @@ import sys
 import threading
 
 PY2 = sys.version_info[0] == 2
-PY3 = sys.version_info[0] == 3
 
-if PY3:
+if PY2:
+    string_types = basestring,
+else:
     import importlib
     string_types = str,
-else:
-    string_types = basestring,
 
 from .decorators import synchronized
 
@@ -188,21 +187,7 @@ class ImportHookFinder:
         # Now call back into the import system again.
 
         try:
-            if PY3:
-                # For Python 3 we need to use find_loader() from
-                # the importlib module. It doesn't actually
-                # import the target module and only finds the
-                # loader. If a loader is found, we need to return
-                # our own loader which will then in turn call the
-                # real loader to import the module and invoke the
-                # post import hooks.
-
-                loader = importlib.find_loader(fullname, path)
-
-                if loader:
-                    return _ImportHookChainedLoader(loader)
-
-            else:
+            if PY2:
                 # For Python 2 we don't have much choice but to
                 # call back in to __import__(). This will
                 # actually cause the module to be imported. If no
@@ -214,6 +199,23 @@ class ImportHookFinder:
                 __import__(fullname)
 
                 return _ImportHookLoader()
+
+            else:
+                # For Python 3 we need to use find_spec().loader
+                # from the importlib.util module. It doesn't actually
+                # import the target module and only finds the
+                # loader. If a loader is found, we need to return
+                # our own loader which will then in turn call the
+                # real loader to import the module and invoke the
+                # post import hooks.
+                try:
+                    import importlib.util
+                    loader = importlib.util.find_spec(fullname).loader
+                except (ImportError, AttributeError):
+                    loader = importlib.find_loader(fullname, path)
+                if loader:
+                    return _ImportHookChainedLoader(loader)
+
 
         finally:
             del self.in_progress[fullname]

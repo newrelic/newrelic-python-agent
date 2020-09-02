@@ -2351,6 +2351,10 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.external_urllib3',
             'instrument_urllib3_connection')
 
+    _process_module_definition('uvicorn.config',
+            'newrelic.hooks.adapter_uvicorn',
+            'instrument_uvicorn_config')
+
     _process_module_definition('sanic.app',
             'newrelic.hooks.framework_sanic',
             'instrument_sanic_app')

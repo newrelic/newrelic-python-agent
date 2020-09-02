@@ -3,7 +3,7 @@ import functools
 import logging
 import socket
 import threading
-from urllib.request import urlopen
+from urllib.request import HTTPError, urlopen
 
 import pytest
 from uvicorn.config import Config
@@ -11,6 +11,7 @@ from uvicorn.main import Server
 
 from testing_support.fixtures import (
     override_application_settings,
+    validate_transaction_errors,
     validate_transaction_metrics,
 )
 from testing_support.sample_asgi_applications import simple_app_v2_raw
@@ -59,9 +60,17 @@ def port():
 
 
 @override_application_settings({"transaction_name.naming_scheme": "framework"})
-@validate_transaction_metrics(
-    "testing_support.sample_asgi_applications:simple_app_v2_raw"
-)
-def test_uvicorn(port):
+@validate_transaction_metrics("testing_support.sample_asgi_applications:simple_app_v2_raw")
+def test_uvicorn_200(port):
     response = urlopen("http://localhost:%d" % port)
     assert response.status == 200
+
+
+@override_application_settings({"transaction_name.naming_scheme": "framework"})
+@validate_transaction_errors(["builtins:ValueError"])
+@validate_transaction_metrics("testing_support.sample_asgi_applications:simple_app_v2_raw")
+def test_uvicorn_500(port):
+    try:
+        urlopen("http://localhost:%d/exc" % port)
+    except HTTPError:
+        pass

@@ -15,19 +15,32 @@
 import asyncio
 import logging
 import pytest
-from testing_support.sample_asgi_applications import simple_app_v2_raw, simple_app_v3_raw, simple_app_v2, simple_app_v3, AppWithDescriptor
-from testing_support.fixtures import validate_transaction_metrics, override_application_settings, function_not_called
+from testing_support.sample_asgi_applications import (
+    simple_app_v2_raw,
+    simple_app_v3_raw,
+    simple_app_v2,
+    simple_app_v3,
+    AppWithDescriptor,
+    simple_app_v2_init_exc,
+)
+from testing_support.fixtures import (
+    validate_transaction_metrics,
+    override_application_settings,
+    function_not_called,
+    validate_transaction_errors,
+)
 from newrelic.api.asgi_application import asgi_application, ASGIApplicationWrapper
 from testing_support.asgi_testing import AsgiTest
 
-#Setup test apps from sample_asgi_applications.py
+# Setup test apps from sample_asgi_applications.py
 simple_app_v2_original = AsgiTest(simple_app_v2_raw)
 simple_app_v3_original = AsgiTest(simple_app_v3_raw)
 
 simple_app_v3_wrapped = AsgiTest(simple_app_v3)
 simple_app_v2_wrapped = AsgiTest(simple_app_v2)
+simple_app_v2_init_exc = AsgiTest(simple_app_v2_init_exc)
 
-#Test naming scheme logic and ASGIApplicationWrapper for a single callable
+# Test naming scheme logic and ASGIApplicationWrapper for a single callable
 @pytest.mark.parametrize("naming_scheme", (None, "component", "framework"))
 def test_single_callable_naming_scheme(naming_scheme):
 
@@ -49,7 +62,7 @@ def test_single_callable_naming_scheme(naming_scheme):
     _test()
 
 
-#Test the default naming scheme logic and ASGIApplicationWrapper for a double callable
+# Test the default naming scheme logic and ASGIApplicationWrapper for a double callable
 @validate_transaction_metrics(name="", group="Uri")
 def test_double_callable_default_naming_scheme():
     response = simple_app_v2_wrapped.make_request("GET", "/")
@@ -58,7 +71,7 @@ def test_double_callable_default_naming_scheme():
     assert response.body == b""
 
 
-#No harm test on single callable asgi app with agent disabled to ensure proper response
+# No harm test on single callable asgi app with agent disabled to ensure proper response
 def test_single_callable_raw():
     response = simple_app_v3_original.make_request("GET", "/")
     assert response.status == 200
@@ -66,7 +79,7 @@ def test_single_callable_raw():
     assert response.body == b""
 
 
-#No harm test on double callable asgi app with agent disabled to ensure proper response
+# No harm test on double callable asgi app with agent disabled to ensure proper response
 def test_double_callable_raw():
     response = simple_app_v2_original.make_request("GET", "/")
     assert response.status == 200
@@ -74,8 +87,10 @@ def test_double_callable_raw():
     assert response.body == b""
 
 
-#Test asgi_application decorator with parameters passed in on a single callable
-@pytest.mark.parametrize("name, group", ((None, "group"), ("name", "group"), ("", "group")))
+# Test asgi_application decorator with parameters passed in on a single callable
+@pytest.mark.parametrize(
+    "name, group", ((None, "group"), ("name", "group"), ("", "group"))
+)
 def test_asgi_application_decorator_single_callable(name, group):
     if name:
         expected_name = name
@@ -97,7 +112,7 @@ def test_asgi_application_decorator_single_callable(name, group):
     _test()
 
 
-#Test asgi_application decorator using default values on a double callable
+# Test asgi_application decorator using default values on a double callable
 @validate_transaction_metrics(name="", group="Uri")
 def test_asgi_application_decorator_no_params_double_callable():
     asgi_decorator = asgi_application()
@@ -109,8 +124,10 @@ def test_asgi_application_decorator_no_params_double_callable():
     assert response.body == b""
 
 
-#Test for presence of framework info based on whether framework is specified
-@validate_transaction_metrics(name="test", custom_metrics=[("Python/Framework/framework/v1", 1)])
+# Test for presence of framework info based on whether framework is specified
+@validate_transaction_metrics(
+    name="test", custom_metrics=[("Python/Framework/framework/v1", 1)]
+)
 def test_framework_metrics():
     asgi_decorator = asgi_application(name="test", framework=("framework", "v1"))
     decorated_application = asgi_decorator(simple_app_v2_raw)
@@ -157,3 +174,12 @@ def test_non_http_scope_v2():
     loop = asyncio.get_event_loop()
     with pytest.raises(ValueError):
         loop.run_until_complete(_test())
+
+
+@pytest.mark.parametrize(
+    "app", (simple_app_v3_wrapped, simple_app_v2_wrapped, simple_app_v2_init_exc)
+)
+@validate_transaction_errors(errors=["builtins:ValueError"])
+def test_exception_capture(app):
+    with pytest.raises(ValueError):
+        app.make_request("GET", "/exc")

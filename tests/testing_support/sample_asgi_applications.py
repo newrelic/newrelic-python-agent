@@ -24,13 +24,24 @@ class simple_app_v2_raw:
     async def __call__(self, receive, send):
         if self.scope["type"] != "http":
             raise ValueError("unsupported")
+
+        if self.scope["path"] == "/exc":
+            raise ValueError("whoopsies")
         await send({"type": "http.response.start", "status": 200})
         await send({"type": "http.response.body"})
+
+
+class simple_app_v2_init_exc(simple_app_v2_raw):
+    def __init__(self, scope):
+        raise ValueError("oh no!")
 
 
 async def simple_app_v3_raw(scope, receive, send):
     if scope["type"] != "http":
         raise ValueError("unsupported")
+
+    if scope["path"] == "/exc":
+        raise ValueError("whoopsies")
 
     await send({"type": "http.response.start", "status": 200})
     await send({"type": "http.response.body"})
@@ -53,6 +64,7 @@ class AppWithDescriptor:
 
 
 simple_app_v2 = ASGIApplicationWrapper(simple_app_v2_raw)
+simple_app_v2_init_exc = ASGIApplicationWrapper(simple_app_v2_init_exc)
 simple_app_v3 = ASGIApplicationWrapper(simple_app_v3_raw)
 
 
@@ -68,9 +80,9 @@ async def normal_asgi_application(scope, receive, send):
     ]
 
     try:
-        raise ValueError('Transaction had bad value')
+        raise ValueError("Transaction had bad value")
     except ValueError:
-        record_exception(params={'ohnoes': 'param-value'})
+        record_exception(params={"ohnoes": "param-value"})
 
     await send(
         {"type": "http.response.start", "status": 200, "headers": response_headers}

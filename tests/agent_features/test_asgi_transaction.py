@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
 import logging
 import pytest
 from testing_support.sample_asgi_applications import simple_app_v2_raw, simple_app_v3_raw, simple_app_v2, simple_app_v3, AppWithDescriptor
@@ -137,3 +138,22 @@ def test_multiple_calls_to_asgi_wrapper(caplog):
 
     assert response.status == 200
     assert not caplog.records
+
+
+def test_non_http_scope_v3():
+    async def _test():
+        await simple_app_v3({"type": "cookies"}, None, None)
+
+    loop = asyncio.get_event_loop()
+    with pytest.raises(ValueError):
+        loop.run_until_complete(_test())
+
+
+def test_non_http_scope_v2():
+    async def _test():
+        call_me = simple_app_v2({"type": "cookies"})
+        await call_me(None, None)
+
+    loop = asyncio.get_event_loop()
+    with pytest.raises(ValueError):
+        loop.run_until_complete(_test())

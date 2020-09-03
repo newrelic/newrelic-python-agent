@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import pytest
 from testing_support.sample_asgi_applications import simple_app_v2_raw, simple_app_v3_raw, simple_app_v2, simple_app_v3, AppWithDescriptor
 from testing_support.fixtures import validate_transaction_metrics, override_application_settings, function_not_called
@@ -124,3 +125,15 @@ def test_app_with_descriptor(method):
     assert response.status == 200
     assert response.headers == {}
     assert response.body == b""
+
+
+# Verify that errors are not generated when using multiple wrappers
+def test_multiple_calls_to_asgi_wrapper(caplog):
+    app = ASGIApplicationWrapper(simple_app_v3)
+    app = AsgiTest(app)
+
+    with caplog.at_level(logging.ERROR, logger="newrelic"):
+        response = app.make_request("GET", "/")
+
+    assert response.status == 200
+    assert not caplog.records

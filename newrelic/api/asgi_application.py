@@ -16,10 +16,15 @@ import functools
 
 import newrelic.packages.asgiref_compatibility as asgiref_compatibility
 import newrelic.packages.six as six
+from newrelic.api.transaction import current_transaction
 from newrelic.api.application import application_instance
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import wrap_object, FunctionWrapper, function_wrapper
+from newrelic.common.object_wrapper import (
+    wrap_object,
+    FunctionWrapper,
+    function_wrapper,
+)
 from newrelic.common.async_proxy import CoroutineProxy, LoopContext
 from newrelic.api.html_insertion import insert_html_snippet, verify_body_exists
 
@@ -105,7 +110,7 @@ class ASGIBrowserMiddleware(object):
             # value 'identity' is used. Technically the value
             # 'identity' should only be used in the header
             # Accept-Encoding and not Content-Encoding. In
-            # other words, a WSGI application should not be
+            # other words, a ASGI application should not be
             # returning identity. We could check and allow it
             # anyway and still do RUM insertion, but don't.
 
@@ -251,14 +256,12 @@ class ASGIWebTransaction(WebTransaction):
 def ASGIApplicationWrapper(
     wrapped, application=None, name=None, group=None, framework=None
 ):
-
     def nr_asgi_wrapper(wrapped, instance, args, kwargs):
         double_callable = asgiref_compatibility.is_double_callable(wrapped)
         if double_callable:
             is_v2_signature = (len(args) + len(kwargs)) == 1
             if not is_v2_signature:
                 return wrapped(*args, **kwargs)
-            wrapped = double_to_single_callable(wrapped)
 
         scope = _bind_scope(*args, **kwargs)
 
@@ -266,6 +269,52 @@ def ASGIApplicationWrapper(
             return wrapped(*args, **kwargs)
 
         async def nr_async_asgi(receive, send):
+            # Check to see if any transaction is present, even an inactive
+            # one which has been marked to be ignored or which has been
+            # stopped already.
+
+            transaction = current_transaction(active_only=False)
+
+            if transaction:
+                # If there is any active transaction we will return without
+                # applying a new ASGI application wrapper context. In the
+                # case of a transaction which is being ignored or which has
+                # been stopped, we do that without doing anything further.
+
+                if transaction.ignore_transaction or transaction.stopped:
+                    return await wrapped(scope, receive, send)
+
+                # For any other transaction, we record the details of any
+                # framework against the transaction for later reporting as
+                # supportability metrics.
+
+                if framework:
+                    transaction.add_framework_info(
+                        name=framework[0], version=framework[1]
+                    )
+
+                # Also override the web transaction name to be the name of
+                # the wrapped callable if not explicitly named, and we want
+                # the default name to be that of the ASGI component for the
+                # framework. This will override the use of a raw URL which
+                # can result in metric grouping issues where a framework is
+                # not instrumented or is leaking URLs.
+
+                settings = transaction._settings
+
+                if name is None and settings:
+                    if framework is not None:
+                        naming_scheme = settings.transaction_name.naming_scheme
+                        if naming_scheme in (None, "framework"):
+                            transaction.set_transaction_name(
+                                callable_name(wrapped), priority=1
+                            )
+
+                elif name:
+                    transaction.set_transaction_name(name, group, priority=1)
+
+                return await wrapped(scope, receive, send)
+
             with ASGIWebTransaction(
                 application=application_instance(application),
                 scope=scope,
@@ -324,6 +373,7 @@ def ASGIApplicationWrapper(
                 return await coro
 
         if double_callable:
+            wrapped = double_to_single_callable(wrapped)
             return nr_async_asgi
         else:
             return nr_async_asgi(*_bind_receive_send(*args, **kwargs))

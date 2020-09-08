@@ -27,6 +27,8 @@ from testing_support.fixtures import (
     override_application_settings,
     validate_transaction_errors,
     validate_transaction_metrics,
+    raise_background_exceptions,
+    wait_for_background_threads,
 )
 from testing_support.sample_asgi_applications import simple_app_v2_raw
 
@@ -75,6 +77,8 @@ def port():
 
 @override_application_settings({"transaction_name.naming_scheme": "framework"})
 @validate_transaction_metrics("testing_support.sample_asgi_applications:simple_app_v2_raw")
+@raise_background_exceptions()
+@wait_for_background_threads()
 def test_uvicorn_200(port):
     response = urlopen("http://localhost:%d" % port)
     assert response.status == 200
@@ -83,6 +87,8 @@ def test_uvicorn_200(port):
 @override_application_settings({"transaction_name.naming_scheme": "framework"})
 @validate_transaction_errors(["builtins:ValueError"])
 @validate_transaction_metrics("testing_support.sample_asgi_applications:simple_app_v2_raw")
+@raise_background_exceptions()
+@wait_for_background_threads()
 def test_uvicorn_500(port):
     try:
         urlopen("http://localhost:%d/exc" % port)

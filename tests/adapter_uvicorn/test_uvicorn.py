@@ -60,11 +60,14 @@ def port():
         config = Config(simple_app_v2_raw, host="127.0.0.1", port=port, loop="asyncio")
         config.callback_notify = on_tick
         config.log_config = {"version": 1}
+        config.disable_lifespan = True
         config.logger = logging.getLogger("uvicorn")
         server = Server(config=config)
         server.install_signal_handlers = lambda *args, **kwargs: None
-        if isinstance(server.started, type(ready)):
+        try:
             server.started.set = on_tick_sync
+        except Exception:
+            pass
         server.run()
 
     thread = threading.Thread(target=server_run)

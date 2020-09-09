@@ -46,7 +46,7 @@ Distributed under the following license(s):
 
 ## [wrapt](https://pypi.org/project/wrapt)
 
-Copyright (c) 2013-2017, Graham Dumpleton
+Copyright (c) 2013-2019, Graham Dumpleton
 All rights reserved.
 
 Distributed under the following license(s):

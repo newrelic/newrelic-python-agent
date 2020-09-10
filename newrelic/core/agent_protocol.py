@@ -455,7 +455,7 @@ class AgentProtocol(object):
         settings = finalize_application_settings(configuration, settings)
 
         with cls(settings, host=redirect_host, client_cls=client_cls) as protocol:
-            protocol.send("agent_settings", (global_settings_dump(settings),))
+            protocol.send("agent_settings", (global_settings_dump(settings, serializable=True),))
 
         if "messages" in configuration:
             for item in configuration["messages"]:

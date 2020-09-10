@@ -19,9 +19,11 @@ from newrelic.api.asgi_application import ASGIApplicationWrapper
 
 class simple_app_v2_raw:
     def __init__(self, scope):
-        assert scope["type"] == "http"
+        self.scope = scope
 
     async def __call__(self, receive, send):
+        if self.scope["type"] != "http":
+            raise ValueError("unsupported")
         await send({"type": "http.response.start", "status": 200})
         await send({"type": "http.response.body"})
 

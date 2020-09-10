@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
+import logging
 import pytest
 from testing_support.sample_asgi_applications import simple_app_v2_raw, simple_app_v3_raw, simple_app_v2, simple_app_v3, AppWithDescriptor
 from testing_support.fixtures import validate_transaction_metrics, override_application_settings, function_not_called
@@ -124,3 +126,34 @@ def test_app_with_descriptor(method):
     assert response.status == 200
     assert response.headers == {}
     assert response.body == b""
+
+
+# Verify that errors are not generated when using multiple wrappers
+def test_multiple_calls_to_asgi_wrapper(caplog):
+    app = ASGIApplicationWrapper(simple_app_v3)
+    app = AsgiTest(app)
+
+    with caplog.at_level(logging.ERROR, logger="newrelic"):
+        response = app.make_request("GET", "/")
+
+    assert response.status == 200
+    assert not caplog.records
+
+
+def test_non_http_scope_v3():
+    async def _test():
+        await simple_app_v3({"type": "cookies"}, None, None)
+
+    loop = asyncio.get_event_loop()
+    with pytest.raises(ValueError):
+        loop.run_until_complete(_test())
+
+
+def test_non_http_scope_v2():
+    async def _test():
+        call_me = simple_app_v2({"type": "cookies"})
+        await call_me(None, None)
+
+    loop = asyncio.get_event_loop()
+    with pytest.raises(ValueError):
+        loop.run_until_complete(_test())

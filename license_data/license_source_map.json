@@ -1799,6 +1799,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/framework_starlette.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/framework_tornado.py": {
         "hash": "n/a",
         "libraries": [

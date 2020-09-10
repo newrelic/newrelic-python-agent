@@ -2358,6 +2358,13 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.external_urllib3',
             'instrument_urllib3_connection')
 
+    _process_module_definition('starlette.routing',
+            'newrelic.hooks.framework_starlette',
+            'instrument_starlette_routing')
+    _process_module_definition('starlette.applications',
+            'newrelic.hooks.framework_starlette',
+            'instrument_starlette_applications')
+
     _process_module_definition('uvicorn.config',
             'newrelic.hooks.adapter_uvicorn',
             'instrument_uvicorn_config')

@@ -15,10 +15,9 @@
 import pytest
 import functools
 import time
-from copy import deepcopy
 
 from testing_support.fixtures import override_generic_settings
-from newrelic.core.config import global_settings, global_settings_dump
+from newrelic.core.config import global_settings
 from newrelic.core.agent_protocol import AgentProtocol
 from newrelic.common.agent_http import DeveloperModeClient
 from newrelic.common.encoding_utils import json_encode
@@ -109,7 +108,6 @@ def test_no_blob_behavior(headers_map_present):
     assert headers == {
         "Content-Type": "application/json",
     }
-
 
 
 def test_blob():

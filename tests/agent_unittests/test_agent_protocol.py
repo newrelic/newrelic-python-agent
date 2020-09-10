@@ -7,6 +7,7 @@ from collections import namedtuple
 
 import pytest
 
+import newrelic.packages.six as six
 from newrelic.common import certs, system_info
 from newrelic.common.agent_http import DeveloperModeClient
 from newrelic.common.encoding_utils import json_decode, serverless_payload_decode
@@ -478,6 +479,13 @@ def test_connect(
     assert agent_settings_payload["agent_run_id"] is not None
     assert protocol.configuration.agent_run_id is not None
 
+    # Verify that agent settings sent have converted null, containers, and
+    # unserializable types to string
+    assert agent_settings_payload["proxy_host"] == "None"
+    assert agent_settings_payload["attributes.include"] == "[]"
+    assert agent_settings_payload["feature_flag"] == str(set())
+    assert isinstance(agent_settings_payload["attribute_filter"], six.string_types)
+
     # Verify that the connection is closed
     assert HttpClientRecorder.STATE == 0
 
@@ -532,7 +540,7 @@ def test_serverless_protocol_finalize(capsys):
     assert payload[:2] == [1, "NR_LAMBDA_MONITORING"]
 
     data = serverless_payload_decode(payload[2])
-    assert data["data"] == {"metric_data": [1,2,3]}
+    assert data["data"] == {"metric_data": [1, 2, 3]}
 
     assert data["metadata"]["foo"] == "bar"
     assert data["metadata"]["agent_version"] != "x"
@@ -571,7 +579,9 @@ def test_ca_bundle_path(monkeypatch, ca_bundle_path):
 
 
 def test_max_payload_size_limit():
-    settings = finalize_application_settings({"max_payload_size_in_bytes": 0, "port": -1})
+    settings = finalize_application_settings(
+        {"max_payload_size_in_bytes": 0, "port": -1}
+    )
     protocol = AgentProtocol(settings, host="localhost")
     with pytest.raises(DiscardDataForRequest):
         protocol.send("metric_data")

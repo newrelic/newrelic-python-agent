@@ -20,9 +20,12 @@ import threading
 from urllib.request import HTTPError, urlopen
 
 import pytest
+import uvicorn
 from uvicorn.config import Config
 from uvicorn.main import Server
 
+from newrelic.api.asgi_application import ASGIApplicationWrapper
+from newrelic.common.object_names import callable_name
 from testing_support.fixtures import (
     override_application_settings,
     validate_transaction_errors,
@@ -30,7 +33,14 @@ from testing_support.fixtures import (
     raise_background_exceptions,
     wait_for_background_threads,
 )
-from testing_support.sample_asgi_applications import simple_app_v2_raw
+from testing_support.sample_asgi_applications import (
+    simple_app_v2_raw,
+    AppWithCall,
+    AppWithCallRaw,
+)
+
+
+UVICORN_VERSION = tuple(int(v) for v in uvicorn.__version__.split(".")[:2])
 
 
 def get_open_port():
@@ -41,8 +51,30 @@ def get_open_port():
     return port
 
 
+@pytest.fixture(
+    params=(
+        simple_app_v2_raw,
+        pytest.param(
+            AppWithCallRaw(),
+            marks=pytest.mark.skipif(
+                UVICORN_VERSION < (0, 6), reason="ASGI3 unsupported"
+            ),
+        ),
+        pytest.param(
+            AppWithCall(),
+            marks=pytest.mark.skipif(
+                UVICORN_VERSION < (0, 6), reason="ASGI3 unsupported"
+            ),
+        ),
+    ),
+    ids=("raw", "class_with_call", "class_with_call_double_wrapped"),
+)
+def app(request):
+    return request.param
+
+
 @pytest.fixture
-def port():
+def port(app):
     port = get_open_port()
 
     loops = []
@@ -57,7 +89,7 @@ def port():
         async def on_tick():
             on_tick_sync()
 
-        config = Config(simple_app_v2_raw, host="127.0.0.1", port=port, loop="asyncio")
+        config = Config(app, host="127.0.0.1", port=port, loop="asyncio")
         config.callback_notify = on_tick
         config.log_config = {"version": 1}
         config.disable_lifespan = True
@@ -79,21 +111,26 @@ def port():
 
 
 @override_application_settings({"transaction_name.naming_scheme": "framework"})
-@validate_transaction_metrics("testing_support.sample_asgi_applications:simple_app_v2_raw")
-@raise_background_exceptions()
-@wait_for_background_threads()
-def test_uvicorn_200(port):
-    response = urlopen("http://localhost:%d" % port)
-    assert response.status == 200
+def test_uvicorn_200(port, app):
+    @validate_transaction_metrics(callable_name(app))
+    @raise_background_exceptions()
+    @wait_for_background_threads()
+    def response():
+        return urlopen("http://localhost:%d" % port)
+
+    assert response().status == 200
 
 
 @override_application_settings({"transaction_name.naming_scheme": "framework"})
 @validate_transaction_errors(["builtins:ValueError"])
-@validate_transaction_metrics("testing_support.sample_asgi_applications:simple_app_v2_raw")
-@raise_background_exceptions()
-@wait_for_background_threads()
-def test_uvicorn_500(port):
-    try:
-        urlopen("http://localhost:%d/exc" % port)
-    except HTTPError:
-        pass
+def test_uvicorn_500(port, app):
+    @validate_transaction_metrics(callable_name(app))
+    @raise_background_exceptions()
+    @wait_for_background_threads()
+    def _test():
+        try:
+            urlopen("http://localhost:%d/exc" % port)
+        except HTTPError:
+            pass
+
+    _test()

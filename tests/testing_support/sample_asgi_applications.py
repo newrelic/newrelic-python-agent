@@ -63,6 +63,17 @@ class AppWithDescriptor:
         return await simple_app_v3_raw(scope, receive, send)
 
 
+class AppWithCallRaw:
+    async def __call__(self, scope, receive, send):
+        return await simple_app_v3_raw(scope, receive, send)
+
+
+class AppWithCall(AppWithCallRaw):
+    @ASGIApplicationWrapper
+    async def __call__(self, scope, receive, send):
+        return await super(AppWithCall, self).__call__(scope, receive, send)
+
+
 simple_app_v2 = ASGIApplicationWrapper(simple_app_v2_raw)
 simple_app_v2_init_exc = ASGIApplicationWrapper(simple_app_v2_init_exc)
 simple_app_v3 = ASGIApplicationWrapper(simple_app_v3_raw)

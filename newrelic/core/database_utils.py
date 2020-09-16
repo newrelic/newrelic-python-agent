@@ -401,6 +401,9 @@ _operation_table = {
     'alter': None,
     'commit': None,
     'rollback': None,
+    'begin': None,
+    'prepare': None,
+    'copy': None,
 }
 
 _parse_operation_p = r'(\w+)'

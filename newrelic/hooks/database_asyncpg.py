@@ -132,4 +132,4 @@ def instrument_asyncpg_protocol(module):
 
 
 def instrument_asyncpg_connect_utils(module):
-    wrap_function_wrapper(module, '_connect', wrap_connect)
+    wrap_function_wrapper(module, '_connect_addr', wrap_connect)

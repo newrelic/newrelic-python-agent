@@ -1505,6 +1505,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/database_asyncpg.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/database_cx_oracle.py": {
         "hash": "n/a",
         "libraries": [

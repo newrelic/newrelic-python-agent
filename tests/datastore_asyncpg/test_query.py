@@ -7,11 +7,14 @@ from io import BytesIO
 
 from newrelic.api.background_task import background_task
 from testing_support.fixtures import validate_transaction_metrics
+from testing_support.util import instance_hostname
 from utils import DB_SETTINGS
 
 
 PG_PREFIX = "Datastore/operation/Postgres/"
-ASYNCPG_VERSION = tuple(int(x) for x in getattr(asyncpg, "__version__", "0.0").split(".")[:2])
+ASYNCPG_VERSION = tuple(
+    int(x) for x in getattr(asyncpg, "__version__", "0.0").split(".")[:2]
+)
 
 if ASYNCPG_VERSION < (0, 11):
     CONNECT_METRICS = ()
@@ -46,10 +49,8 @@ def test_single(method):
 @validate_transaction_metrics(
     "test_prepared_single",
     background_task=True,
-    scoped_metrics=CONNECT_METRICS + (
-        (PG_PREFIX + "prepare", 1),
-        (PG_PREFIX + "select", 1),
-    ),
+    scoped_metrics=CONNECT_METRICS
+    + ((PG_PREFIX + "prepare", 1), (PG_PREFIX + "select", 1),),
     rollup_metrics=(("Datastore/all", 2 + len(CONNECT_METRICS)),),
 )
 @background_task(name="test_prepared_single")
@@ -92,11 +93,14 @@ def test_prepare():
     loop.run_until_complete(amain())
 
 
-@pytest.mark.skipif(ASYNCPG_VERSION < (0, 11), reason="Copy wasn't implemented before 0.11")
+@pytest.mark.skipif(
+    ASYNCPG_VERSION < (0, 11), reason="Copy wasn't implemented before 0.11"
+)
 @validate_transaction_metrics(
     "test_copy",
     background_task=True,
-    scoped_metrics=CONNECT_METRICS + (
+    scoped_metrics=CONNECT_METRICS
+    + (
         (PG_PREFIX + "drop", 2),
         (PG_PREFIX + "create", 1),
         (PG_PREFIX + "prepare", 1),
@@ -139,10 +143,8 @@ def test_copy():
 @validate_transaction_metrics(
     "test_select_many",
     background_task=True,
-    scoped_metrics=CONNECT_METRICS + (
-        (PG_PREFIX + "prepare", 1),
-        (PG_PREFIX + "select", 1),
-    ),
+    scoped_metrics=CONNECT_METRICS
+    + ((PG_PREFIX + "prepare", 1), (PG_PREFIX + "select", 1),),
     rollup_metrics=(("Datastore/all", 2 + len(CONNECT_METRICS)),),
 )
 @background_task(name="test_select_many")
@@ -164,11 +166,8 @@ def test_select_many():
 @validate_transaction_metrics(
     "test_transaction",
     background_task=True,
-    scoped_metrics=CONNECT_METRICS + (
-        (PG_PREFIX + "begin", 1),
-        (PG_PREFIX + "select", 1),
-        (PG_PREFIX + "commit", 1),
-    ),
+    scoped_metrics=CONNECT_METRICS
+    + ((PG_PREFIX + "begin", 1), (PG_PREFIX + "select", 1), (PG_PREFIX + "commit", 1),),
     rollup_metrics=(("Datastore/all", 3 + len(CONNECT_METRICS)),),
 )
 @background_task(name="test_transaction")
@@ -191,7 +190,8 @@ def test_transaction():
 @validate_transaction_metrics(
     "test_cursor",
     background_task=True,
-    scoped_metrics=CONNECT_METRICS + (
+    scoped_metrics=CONNECT_METRICS
+    + (
         (PG_PREFIX + "begin", 1),
         (PG_PREFIX + "prepare", 2),
         (PG_PREFIX + "select", 3),
@@ -214,6 +214,30 @@ def test_cursor():
                 pass
 
             await conn.cursor("SELECT 0")
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(amain())
+
+
+@validate_transaction_metrics(
+    "test_unix_socket_connect",
+    background_task=True,
+    rollup_metrics=[
+        (
+            "Datastore/instance/Postgres/"
+            + instance_hostname("localhost")
+            + "//.s.PGSQL.THIS_FILE_BETTER_NOT_EXIST",
+            1,
+        )
+    ],
+)
+@background_task(name="test_unix_socket_connect")
+def test_unix_socket_connect():
+    async def amain():
+        with pytest.raises(OSError):
+            await asyncpg.connect(
+                "postgres://?host=/.s.PGSQL.THIS_FILE_BETTER_NOT_EXIST"
+            )
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(amain())

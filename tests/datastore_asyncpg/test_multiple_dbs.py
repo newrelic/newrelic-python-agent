@@ -12,6 +12,25 @@ from utils import DB_MULTIPLE_SETTINGS
 
 from newrelic.api.background_task import background_task
 
+ASYNCPG_VERSION = tuple(int(x) for x in getattr(asyncpg, "__version__", "0.0").split(".")[:2])
+
+if ASYNCPG_VERSION < (0, 11):
+    CONNECT_METRICS = []
+
+    # Only 1 statement will be recorded since connect is not captured
+    STATEMENT_COUNT = 1
+
+    # 2 DBs are queried
+    TOTAL_COUNT = STATEMENT_COUNT * 2
+else:
+    CONNECT_METRICS = [("Datastore/operation/Postgres/connect", 2)]
+
+    # Two statements are executed per DB - connect / select
+    STATEMENT_COUNT = 2
+
+    # 2 DBs are queried
+    TOTAL_COUNT = STATEMENT_COUNT * 2
+
 
 # Settings
 
@@ -25,15 +44,15 @@ _disable_instance_settings = {
 
 # Metrics
 
-_base_scoped_metrics = [
+_base_scoped_metrics = CONNECT_METRICS + [
     ("Datastore/statement/Postgres/pg_settings/select", 2),
 ]
 
 _base_rollup_metrics = [
-    ("Datastore/all", 4),
-    ("Datastore/allOther", 4),
-    ("Datastore/Postgres/all", 4),
-    ("Datastore/Postgres/allOther", 4),
+    ("Datastore/all", TOTAL_COUNT),
+    ("Datastore/allOther", TOTAL_COUNT),
+    ("Datastore/Postgres/all", TOTAL_COUNT),
+    ("Datastore/Postgres/allOther", TOTAL_COUNT),
     ("Datastore/statement/Postgres/pg_settings/select", 2),
 ]
 
@@ -56,7 +75,7 @@ if len(DB_MULTIPLE_SETTINGS) > 1:
     _instance_metric_name_2 = "Datastore/instance/Postgres/%s/%s" % (_host_2, _port_2)
 
     _enable_rollup_metrics.extend(
-        [(_instance_metric_name_1, 1), (_instance_metric_name_2, 1)]
+        [(_instance_metric_name_1, STATEMENT_COUNT), (_instance_metric_name_2, STATEMENT_COUNT)]
     )
     _disable_rollup_metrics.extend(
         [(_instance_metric_name_1, None), (_instance_metric_name_2, None)]

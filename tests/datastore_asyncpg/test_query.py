@@ -10,11 +10,14 @@ from testing_support.fixtures import validate_transaction_metrics
 from utils import DB_SETTINGS
 
 
+PG_PREFIX = "Datastore/operation/Postgres/"
+
+
 @validate_transaction_metrics(
     "test_single",
     background_task=True,
-    scoped_metrics=(("Datastore/operation/Postgres/select", 1),),
-    rollup_metrics=(("Datastore/operation/Postgres/select", 1), ("Datastore/all", 2)),
+    scoped_metrics=((PG_PREFIX + "connect", 1), (PG_PREFIX + "select", 1),),
+    rollup_metrics=(("Datastore/all", 2),),
 )
 @background_task(name="test_single")
 @pytest.mark.parametrize("method", ("execute",))
@@ -38,14 +41,11 @@ def test_single(method):
     "test_prepared_single",
     background_task=True,
     scoped_metrics=(
-        ("Datastore/operation/Postgres/prepare", 1),
-        ("Datastore/operation/Postgres/select", 1),
+        (PG_PREFIX + "connect", 1),
+        (PG_PREFIX + "prepare", 1),
+        (PG_PREFIX + "select", 1),
     ),
-    rollup_metrics=(
-        ("Datastore/operation/Postgres/prepare", 1),
-        ("Datastore/operation/Postgres/select", 1),
-        ("Datastore/all", 3),
-    ),
+    rollup_metrics=(("Datastore/all", 3),),
 )
 @background_task(name="test_prepared_single")
 @pytest.mark.parametrize("method", ("fetch", "fetchrow", "fetchval"))
@@ -68,8 +68,8 @@ def test_prepared_single(method):
 @validate_transaction_metrics(
     "test_prepare",
     background_task=True,
-    scoped_metrics=(("Datastore/operation/Postgres/prepare", 1),),
-    rollup_metrics=(("Datastore/operation/Postgres/prepare", 1), ("Datastore/all", 2)),
+    scoped_metrics=((PG_PREFIX + "connect", 1), (PG_PREFIX + "prepare", 1),),
+    rollup_metrics=(("Datastore/all", 2),),
 )
 @background_task(name="test_prepare")
 def test_prepare():
@@ -91,10 +91,13 @@ def test_prepare():
     "test_copy",
     background_task=True,
     scoped_metrics=(
-        ("Datastore/operation/Postgres/prepare", 1),
-        ("Datastore/operation/Postgres/copy", 3),
+        (PG_PREFIX + "drop", 2),
+        (PG_PREFIX + "create", 1),
+        (PG_PREFIX + "connect", 1),
+        (PG_PREFIX + "prepare", 1),
+        (PG_PREFIX + "copy", 3),
     ),
-    rollup_metrics=(("Datastore/operation/Postgres/copy", 3), ("Datastore/all", 8)),
+    rollup_metrics=(("Datastore/all", 8),),
 )
 @background_task(name="test_copy")
 def test_copy():
@@ -132,14 +135,11 @@ def test_copy():
     "test_select_many",
     background_task=True,
     scoped_metrics=(
-        ("Datastore/operation/Postgres/prepare", 1),
-        ("Datastore/operation/Postgres/select", 1),
+        (PG_PREFIX + "connect", 1),
+        (PG_PREFIX + "prepare", 1),
+        (PG_PREFIX + "select", 1),
     ),
-    rollup_metrics=(
-        ("Datastore/operation/Postgres/prepare", 1),
-        ("Datastore/operation/Postgres/select", 1),
-        ("Datastore/all", 3),
-    ),
+    rollup_metrics=(("Datastore/all", 3),),
 )
 @background_task(name="test_select_many")
 def test_select_many():
@@ -161,16 +161,12 @@ def test_select_many():
     "test_transaction",
     background_task=True,
     scoped_metrics=(
-        ("Datastore/operation/Postgres/begin", 1),
-        ("Datastore/operation/Postgres/commit", 1),
-        ("Datastore/operation/Postgres/select", 1),
+        (PG_PREFIX + "connect", 1),
+        (PG_PREFIX + "begin", 1),
+        (PG_PREFIX + "select", 1),
+        (PG_PREFIX + "commit", 1),
     ),
-    rollup_metrics=(
-        ("Datastore/operation/Postgres/begin", 1),
-        ("Datastore/operation/Postgres/commit", 1),
-        ("Datastore/operation/Postgres/select", 1),
-        ("Datastore/all", 4),
-    ),
+    rollup_metrics=(("Datastore/all", 4),),
 )
 @background_task(name="test_transaction")
 def test_transaction():
@@ -193,18 +189,13 @@ def test_transaction():
     "test_cursor",
     background_task=True,
     scoped_metrics=(
-        ("Datastore/operation/Postgres/begin", 1),
-        ("Datastore/operation/Postgres/commit", 1),
-        ("Datastore/operation/Postgres/prepare", 2),
-        ("Datastore/operation/Postgres/select", 3),
+        (PG_PREFIX + "connect", 1),
+        (PG_PREFIX + "begin", 1),
+        (PG_PREFIX + "prepare", 2),
+        (PG_PREFIX + "select", 3),
+        (PG_PREFIX + "commit", 1),
     ),
-    rollup_metrics=(
-        ("Datastore/operation/Postgres/begin", 1),
-        ("Datastore/operation/Postgres/commit", 1),
-        ("Datastore/operation/Postgres/prepare", 2),
-        ("Datastore/operation/Postgres/select", 3),
-        ("Datastore/all", 8),
-    ),
+    rollup_metrics=(("Datastore/all", 8),),
 )
 @background_task(name="test_cursor")
 def test_cursor():

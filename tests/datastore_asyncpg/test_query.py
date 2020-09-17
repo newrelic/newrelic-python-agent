@@ -219,6 +219,10 @@ def test_cursor():
     loop.run_until_complete(amain())
 
 
+@pytest.mark.skipif(
+    ASYNCPG_VERSION < (0, 11),
+    reason="This is testing connect behavior which is only captured on newer asyncpg versions",
+)
 @validate_transaction_metrics(
     "test_unix_socket_connect",
     background_task=True,

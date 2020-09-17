@@ -241,3 +241,33 @@ def test_unix_socket_connect():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(amain())
+
+
+@pytest.mark.skipif(
+    ASYNCPG_VERSION < (0, 11),
+    reason="This is testing connect behavior which is only captured on newer asyncpg versions",
+)
+@validate_transaction_metrics(
+    "test_pool_acquire",
+    background_task=True,
+    scoped_metrics=((PG_PREFIX + "connect", 2),),
+)
+@background_task(name="test_pool_acquire")
+def test_pool_acquire():
+    async def amain():
+        pool = await asyncpg.create_pool(
+            user=DB_SETTINGS["user"],
+            password=DB_SETTINGS["password"],
+            database=DB_SETTINGS["name"],
+            host=DB_SETTINGS["host"],
+            min_size=1,
+        )
+
+        async with pool.acquire():
+            async with pool.acquire():
+                pass
+
+        await pool.close()
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(amain())

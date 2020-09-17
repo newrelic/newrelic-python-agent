@@ -17,7 +17,7 @@ from newrelic.api.database_trace import (
     enable_datastore_instance_feature,
     register_database_client,
 )
-from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
 
 
@@ -44,7 +44,6 @@ register_database_client(
     instance_info=PostgresApi.instance_info,
 )
 enable_datastore_instance_feature(PostgresApi)
-ROLLUP = ('Datastore/all', 'Datastore/%s/all' % PostgresApi._nr_database_product)
 
 
 class ProtocolProxy(ObjectProxy):
@@ -122,8 +121,20 @@ def proxy_protocol(wrapped, instance, args, kwargs):
 
 
 def wrap_connect(wrapped, instance, args, kwargs):
-    trace = FunctionTrace(name='asyncpg_connect', terminal=True, rollup=ROLLUP)
-    with trace:
+    host = port = database_name = None
+    if "addr" in kwargs:
+        host, port, database_name = PostgresApi._instance_info(
+            kwargs["addr"], None, kwargs.get("params")
+        )
+
+    with DatastoreTrace(
+        PostgresApi._nr_database_product,
+        None,
+        "connect",
+        host=host,
+        port_path_or_id=port,
+        database_name=database_name,
+    ):
         return wrapped(*args, **kwargs)
 
 
@@ -132,4 +143,4 @@ def instrument_asyncpg_protocol(module):
 
 
 def instrument_asyncpg_connect_utils(module):
-    wrap_function_wrapper(module, '_connect_addr', wrap_connect)
+    wrap_function_wrapper(module, "_connect_addr", wrap_connect)

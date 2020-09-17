@@ -135,3 +135,8 @@ class DatastoreNode(_DatastoreNode, DatastoreNodeMixin):
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,
                 label=None)
+
+    def span_event(self, *args, **kwargs):
+        if self.operation:
+            self.agent_attributes["db.operation"] = self.operation
+        return super(DatastoreNode, self).span_event(*args, **kwargs)

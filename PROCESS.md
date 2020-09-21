@@ -174,45 +174,21 @@ carried out to do the actual release.
     sed 's/$/.../' | pbcopy
     ```
 
-2. Check out the ``develop`` branch of the Python agent repository and
-update the version number in ``newrelic/__init__.py`` for the release.
+2. Merge the external repo's ``main`` branch into develop by creating a branch ``merge-external-repo`` off of the ``develop`` branch.
+This can be done with ``git remote add external https://github.com/newrelic/newrelic-python-agent.git``,
+``git fetch external``, ``git merge external/main``. Open a PR as described below.
 
-    * Note: With our odd/even numbering scheme, this means you should be
-    incrementing the ``B`` component of the ``A.B.C`` version number from
-    the odd number used during development to the even number used for the
-    release.
-
-3. Update ``CHANGELOG.rst`` to change ``unreleased`` to the to be released
-version including today's date.
-
-    ```
-    2.94.0 (2017-09-19)
-    -------------------
-    ```
-
-4. Perform any other final adhoc local tests deemed necessary for the release.
-
-5. Create a release branch with `git checkout -b release/vA.B.C`
-
-6. Commit change made to ``newrelic/__init__.py`` and ``CHANGELOG.rst``
-into the release branch you just created. Format the commit message like this:
-
-    ```
-    Increment version to A.B.C for release.
-    ```
-
-7. Push the release/vA.B.C branch up and create a pull request. The pull
-request will contain the following:
-
-    1. The PR will be merged against the ``develop`` branch
-    2. The body of the PR should contain the text `[skip-ci]` so that
+    1. The body of the PR should contain the text `[skip-ci]` so that
     jenkins doesn't trigger a job against this PR to verify its contents
-    3. Get someone to add the `sidekick:approved` label and merge
-        * Note: The `sidekick:approved` label is necessary because no changes
-        can be added to the code without being side-kick approved. Security
-        will keep sending you emails if you don't do this.
+    2. The PR should be titled:
+        ```
+        Merge external/main into develop for release A.B.C
+        ```
 
-8. Create a PR from ``develop`` to ``master``. The pull request will contain
+[integration-master]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_INTEGRATION-TESTS-master_/
+[unit-master]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_UNIT-TESTS-master_/
+
+3. Create a PR from ``develop`` to ``master``. The pull request will contain
 the following:
 
     1. The body of the PR should contain the text `[skip-ci]` so that
@@ -221,17 +197,16 @@ the following:
         ```
         Merge develop into master for release A.B.C
         ```
-
-9. Get a buddy to sidekick and merge the PR from ``develop`` to ``master``.
+    3. Get a buddy to sidekick and merge the PR from ``develop`` to ``master``.
 
     * Note: Merging the PR will trigger the following Jenkins jobs. Confirm they
     have triggered. If not, run them manually. In a later step these will be
     checked and confirmed to have passed successfully.
 
-        1. [`_INTEGRATION-TESTS-master_`](https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_INTEGRATION-TESTS-master_/)
-        2. [`_UNIT-TESTS-master_`](https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_UNIT-TESTS-master_/)
+        1. [`_INTEGRATION-TESTS-master_`][integration-master]
+        2. [`_UNIT-TESTS-master_`][unit-master]
 
-10. Switch back to the ``develop`` branch and perform a merge from
+4. Switch back to the ``develop`` branch and perform a merge from
 ``master`` back into the ``develop`` branch.
 
     * Note: This is to synchronize the two branches so git doesn't keep tracking them
@@ -244,16 +219,17 @@ the following:
         * Confirm this command results in a fast-forward operation, as noted on stdout.
         Stop and debug if it does not.
 
-11. Push the ``develop`` branch back to the GIT repo.
+5. Push the ``develop`` branch back to the GIT repo.
 
     From the command line:
 
         git push origin develop
 
-12. Tag the release in the ``develop`` branch on the GIT repo with tag of
+[releases]: https://github.com/newrelic/newrelic-python-agent/releases
+
+6. Tag the release in the ``develop`` branch on the GIT repo with tag of
 the form ``vA.B.C`` and ``vA.B.C.D``, where ``D`` is the build number. This
-value is the next number in the Build History section of
-[build-and-archive-package][build]. Push the tags to Github master.
+value is the next number in the sequence of releases. Refer to [github releases][releases].
 
     From the command line:
 
@@ -265,90 +241,28 @@ value is the next number in the Build History section of
         git push origin vA.B.C
         git push origin vA.B.C.D
 
-[build]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Deploy/job/build-and-archive-package/
+7. Reconcile external repo with internal repo. Any changes on the internal repo that need to be ported out to the external repo
+should be committed with ``newrelic <opensource@newrelic.com>`` as the author.
 
+    .gitconfig:
 
-13. Create a branch off ``develop`` to increment the version number for
-development by running `git checkout -b increment-development-version-A.B.C`
+    ```
+    [user]
+        name = newrelic
+        email = opensource@newrelic.com
+    ```
 
-    Increment ``B`` to the next minor version. With our odd/even numbering
-    scheme, ``B`` should always be odd after this change.
+8. Draft release notes on public github. The title and tag should both be set to the release version prefixed by a v (example v5.20.0.149).
+The release notes should contain a link to the full release notes on the docs page. Click "save draft".
 
-14. Update the version number in``newrelic/__init__.py`` by incrementing ``B``
-as described in the previous step.
-
-    Format the commit message like this:
-
-        Increment version to A.B.C for development.
-
-15. Push the `increment-development-version-A.B.C` branch from steps #13/#14.
-
-    From the command line:
-
-        git push origin increment-development-version-A.B.C
-
-16. Create a PR for merging in the `increment-development-version-A.B.C` branch into ``develop``. The body
-of the pull request should contain the text `[skip-ci]` so that jenkins doesn't
-trigger a job against this PR to verify its contents.
-
-17. Get a buddy to sidekick and merge the `increment-development-version-A.B.C` PR.
-
-18. In Jenkins, build and upload the release to Artifactory.
-
-    1. Wait for [`_INTEGRATION-TESTS-master_`][integration-master] and [`_UNIT-TESTS-master_`][unit-master] tests to be completed successfully
-    2. Log in and go to [build-and-archive-package][build].
-    3. From the menu on the left select "Build with Parameters".
-    4. Type in the version number INCLUDING the next build that will be created when you push the build button.
-    5. Push the build button.
-
-    This will build and upload the package to artifactory.
-    If the build fails, you must add a new tag for `vA.B.C.D` (see the previous step).
-
-[build]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Deploy/job/build-and-archive-package/
-
-19. Check Artifactory upload
-
-    1. Go to [Artifactory][artifactory].
-    2. In the navigator on the left, go to ``pypi-newrelic``->``A.B.C.D``->``newrelic-A.B.C.D.tar.gz``. Check that the Checksum for MD5 says ""(Uploaded: Identical)"".
-    3. Download the tarball and validate that a `pip install /path/to/package` works.
-    4. Confirm that a `newrelic-admin validate-config` test runs okay.
-    5. Create a small test app and confirm that starting it with `newrelic-admin run-program` runs okay.
-
-[artifactory]:https://artifacts.datanerd.us/webapp/#/artifacts/browse/tree/General/pypi-newrelic/newrelic
-
-20. Pause here, regroup before continuing
+9. Pause here, regroup before continuing
 
     1. Wait for release notes to be completed
-    2. Check in with the rest of the team (mention @team in slack)
+    2. Check in with the rest of the team (mention @here in #python-agent-dev)
 
-[integration-master]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_INTEGRATION-TESTS-master_/
-[unit-master]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_UNIT-TESTS-master_/
+10. Publish the release notes on public github. Naviagate to [github releases][releases] and click on the draft. Click "publish release".
 
-21. Upload from Artifactory to PyPI
-
-    1. Go back to Jenkins, and select the other project, [deploy-to-pypi][deploy-pypi].
-    2. From the menu on the left select "Build with Parameters".
-    3. From the drop down menu `PYPI_REPOSITORY`, select pypi. Type in the version number, including the build in the `AGENT_VERSION` box.
-    4. Push the build button.
-    5. Go to [PyPI][pypi] and check that the version uploaded.
-    6. Validate that ``pip install`` of package into a virtual environment works.
-    7. Validate that a ``newrelic-admin validate-config`` test runs okay.
-    8. Create a small test app and confirm that starting it with `newrelic-admin run-program` runs okay.
-
-[pypi]: https://pypi.python.org/pypi/newrelic
-[deploy-pypi]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Deploy/job/deploy-to-pypi/
-
-22. Upload from Artifactory to Amazon S3
-
-    1. Go back to Jenkins, and select the other project, [deploy-to-s3][deploy-s3].
-    2. From the menu on the left select "Build with Parameters".
-    3. From the drop down menu `S3_RELEASE_TYPE`, select "release". Type in the version number, including the build in the `AGENT_VERSION` box.
-    4. Push the build button.
-    5. Make sure the job finishes successfully.
-
-[deploy-s3]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Deploy/job/deploy-to-s3/
-
-23. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM
+11. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM
 systems configuration pages at: https://rpm-admin.newrelic.com/admin/system_configurations
 and https://rpm-admin.eu.newrelic.com/admin/system_configurations.
 
@@ -359,28 +273,24 @@ update the ``min_python_agent_version`` to ``A.B.C.D``.
 sure APM is gated to the correct version, put in a PR to the [Agent Feature
 Service](https://source.datanerd.us/APM/agent_feature_service).
 
-24. Verify that the build number is correct in the version string in the release notes. If
-it needs to change, edit the release notes, but get in touch with the Documentation team so
-that they can change the URL for the release notes page.
-
-25. Make the "Release Notes" public. (You don't need to have the Documentation
+12. Make the "Release Notes" public. (You don't need to have the Documentation
 Team do this step. We have the authority to publish release notes.)
 
-26. Contact the Documentation team so they can release any new or changed
+13. Contact the Documentation team so they can release any new or changed
 public documentation.
 
-27. Send an email to ``agent-releases@newrelic.com`` notifying them about
+14. Send an email to ``agent-releases@newrelic.com`` notifying them about
 the release. This will go to agent-team, partnership-team, and other
 interested parties. Include a copy of the public release notes, plus a
 separate section if necessary with additional details that may be relevant
 to internal parties.
 
-28. Send an email to ``gts-python@newrelic.com`` with the Support notes
+15. Send an email to ``gts-python@newrelic.com`` with the Support notes
 drafted in the pre-release steps.
 
-29. Notify Python Agent Slack channel that release is out!
+16. Notify Python Agent Slack channel that release is out! ``@channel Python Agent 5.20.0.149 is released!``
 
-30. Make sure that all JIRA stories associated with the release version have
+17. Make sure that all JIRA stories associated with the release version have
 been updated as having been released.
 
 

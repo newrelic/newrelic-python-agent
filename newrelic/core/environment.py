@@ -153,11 +153,24 @@ def environment_settings():
             dispatcher.append(('Dispatcher', 'gunicorn (gevent)'))
         elif 'gunicorn.workers.geventlet' in sys.modules:
             dispatcher.append(('Dispatcher', 'gunicorn (eventlet)'))
+        elif 'uvicorn.workers' in sys.modules:
+            dispatcher.append(('Dispatcher', 'gunicorn (uvicorn)'))
+            uvicorn = sys.modules.get('uvicorn')
+            if hasattr(uvicorn, '__version__'):
+                dispatcher.append(('Worker Version', uvicorn.__version__))
         else:
             dispatcher.append(('Dispatcher', 'gunicorn'))
+
         gunicorn = sys.modules['gunicorn']
         if hasattr(gunicorn, '__version__'):
             dispatcher.append(('Dispatcher Version', gunicorn.__version__))
+
+    if not dispatcher and 'uvicorn' in sys.modules:
+        dispatcher.append(('Dispatcher', 'uvicorn'))
+        uvicorn = sys.modules['uvicorn']
+
+        if hasattr(uvicorn, '__version__'):
+            dispatcher.append(('Dispatcher Version', uvicorn.__version__))
 
     if not dispatcher and 'tornado' in sys.modules:
         dispatcher.append(('Dispatcher', 'tornado'))

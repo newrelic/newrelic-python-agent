@@ -2269,6 +2269,13 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.database_psycopg2cffi',
             'instrument_psycopg2cffi_extensions')
 
+    _process_module_definition('asyncpg.connect_utils',
+            'newrelic.hooks.database_asyncpg',
+            'instrument_asyncpg_connect_utils')
+    _process_module_definition('asyncpg.protocol',
+            'newrelic.hooks.database_asyncpg',
+            'instrument_asyncpg_protocol')
+
     _process_module_definition('postgresql.driver.dbapi20',
             'newrelic.hooks.database_postgresql',
             'instrument_postgresql_driver_dbapi20')
@@ -2350,6 +2357,10 @@ def _process_module_builtin_defaults():
     _process_module_definition('requests.packages.urllib3.connection',
             'newrelic.hooks.external_urllib3',
             'instrument_urllib3_connection')
+
+    _process_module_definition('uvicorn.config',
+            'newrelic.hooks.adapter_uvicorn',
+            'instrument_uvicorn_config')
 
     _process_module_definition('sanic.app',
             'newrelic.hooks.framework_sanic',

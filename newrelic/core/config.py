@@ -31,6 +31,8 @@ import threading
 
 from newrelic.core.attribute_filter import AttributeFilter
 
+import newrelic.packages.six as six
+
 try:
     import urlparse
 except ImportError:
@@ -802,7 +804,7 @@ def create_obfuscated_netloc(username, password, hostname, mask):
     return netloc
 
 
-def global_settings_dump(settings_object=None):
+def global_settings_dump(settings_object=None, serializable=False):
     """This returns dictionary of global settings flattened into a single
     key namespace rather than nested hierarchy. This is used to send the
     global settings configuration back to core application.
@@ -813,10 +815,6 @@ def global_settings_dump(settings_object=None):
         settings_object = _settings
 
     settings = flatten_settings(settings_object)
-
-    # Convert unserializable settings into serializable types
-    if 'attribute_filter' in settings:
-        settings['attribute_filter'] = str(settings['attribute_filter'])
 
     # Strip out any sensitive settings.
     # The license key is being sent already, but no point sending
@@ -862,6 +860,16 @@ def global_settings_dump(settings_object=None):
                         components.path)
 
             settings['proxy_host'] = uri
+
+    if serializable:
+        for key, value in list(six.iteritems(settings)):
+            if not isinstance(key, six.string_types):
+                del settings[key]
+
+            if (not isinstance(value, six.string_types) and
+                    not isinstance(value, float) and
+                    not isinstance(value, six.integer_types)):
+                settings[key] = repr(value)
 
     return settings
 

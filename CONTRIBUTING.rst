@@ -7,9 +7,9 @@ How to Contribute
 -----------------
 
 Contributions are always welcome. Before contributing please read the
-`code of conduct <./CODE_OF_CONDUCT.md>`__ and `search the issue tracker <../../issues>`__; your issue may have already been discussed or fixed in `main`. To contribute, `fork <https://help.github.com/articles/fork-a-repo/>`__ this repository, commit your changes, and `send a Pull Request <https://help.github.com/articles/using-pull-requests/>`__.
+`code of conduct <https://github.com/newrelic/.github/blob/master/CODE_OF_CONDUCT.md>`__ and `search the issue tracker <../../issues>`__; your issue may have already been discussed or fixed in `main`. To contribute, `fork <https://help.github.com/articles/fork-a-repo/>`__ this repository, commit your changes, and `send a Pull Request <https://help.github.com/articles/using-pull-requests/>`__.
 
-Note that our `code of conduct <./CODE_OF_CONDUCT.md/>`__ applies to all platforms and venues related to this project; please follow it in all your interactions with the project and its participants.
+Note that our `code of conduct <https://github.com/newrelic/.github/blob/master/CODE_OF_CONDUCT.md>`__ applies to all platforms and venues related to this project; please follow it in all your interactions with the project and its participants.
 
 How to Get Help or Ask Questions
 --------------------------------

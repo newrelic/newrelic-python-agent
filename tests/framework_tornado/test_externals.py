@@ -1,6 +1,7 @@
 import io
 import pytest
 import socket
+import sys
 
 from newrelic.api.transaction import current_transaction
 from newrelic.api.background_task import background_task
@@ -15,8 +16,9 @@ from testing_support.mock_external_http_server import (
         MockExternalHTTPHResponseHeadersServer,
         MockExternalHTTPServer)
 
-
 ENCODING_KEY = '1234567890123456789012345678901234567890'
+
+is_pypy = hasattr(sys, 'pypy_version_info')
 
 
 @pytest.fixture(scope='module')
@@ -38,7 +40,6 @@ def _get_open_port():
 @background_task(name='make_request')
 def make_request(port, req_type, client_cls, count=1, raise_error=True,
         as_kwargs=True, **kwargs):
-    import tornado.curl_httpclient
     import tornado.gen
     import tornado.concurrent
     import tornado.httpclient
@@ -58,6 +59,9 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True,
     if client_cls == 'AsyncHTTPClient':
         cls.configure(None)
     elif client_cls == 'CurlAsyncHTTPClient':
+        if is_pypy:
+            pytest.skip("Pypy not supported by Pycurl")
+        import tornado.curl_httpclient
         cls.configure(tornado.curl_httpclient.CurlAsyncHTTPClient)
     elif client_cls == 'HTTPClient':
         cls = tornado.httpclient.HTTPClient

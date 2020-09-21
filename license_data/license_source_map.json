@@ -59,12 +59,6 @@
             "New Relic"
         ]
     },
-    "CODE_OF_CONDUCT.md": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "CONTRIBUTING.rst": {
         "hash": "n/a",
         "libraries": [
@@ -1433,6 +1427,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/adapter_uvicorn.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/adapter_waitress.py": {
         "hash": "n/a",
         "libraries": [
@@ -1494,6 +1494,12 @@
         ]
     },
     "newrelic/hooks/coroutines_gevent.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/database_asyncpg.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

@@ -252,6 +252,14 @@ should be committed with ``newrelic <opensource@newrelic.com>`` as the author.
         email = opensource@newrelic.com
     ```
 
+    While there aren't any standard steps involved in this process, the goal is
+    to match the state of the external repo to the state of the internal repo.
+
+    Steps that may be taken to achieve that goal:
+
+    * git diff to retrieve files that have changed since last release
+    * copy files from internal repo to external repo
+
 8. Draft release notes on public github. The title and tag should both be set to the release version prefixed by a v (example v5.20.0.149).
 The release notes should contain a link to the full release notes on the docs page. Click "save draft".
 

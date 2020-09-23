@@ -18,6 +18,10 @@ from starlette.routing import Route
 from testing_support.asgi_testing import AsgiTest
 
 
+class HandledError(Exception):
+    pass
+
+
 async def index(request):
     return PlainTextResponse("Hello, world!")
 
@@ -26,20 +30,27 @@ def non_async(request):
     return PlainTextResponse("Not async!")
 
 
-async def error(request):
+async def runtime_error(request):
     raise RuntimeError("Oopsies...")
 
 
-def startup():
-    print("Ready to go")
+async def handled_error(request):
+    raise HandledError("it's cool")
+
+
+async def error_handler(request, exc):
+    return PlainTextResponse("Dude, your app crashed", status_code=500)
 
 
 routes = [
     Route("/index", index),
     Route("/non_async", non_async),
-    Route("/error", error),
+    Route("/runtime_error", runtime_error),
+    Route("/handled_error", handled_error),
 ]
 
-app = Starlette(debug=True, routes=routes, on_startup=[startup])
+app = Starlette(routes=routes)
+app.add_exception_handler(Exception, error_handler)
+app.add_exception_handler(HandledError, error_handler)
 
 target_application = AsgiTest(app)

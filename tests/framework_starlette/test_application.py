@@ -30,10 +30,6 @@ def test_application_index(target_application):
     assert response.status == 200
 
 
-@pytest.mark.xfail(
-    reason="Trace context isn't propagated across threads. See PYTHON-3728",
-    strict=True,
-)
 @validate_transaction_metrics(
     "_target_application:non_async", rollup_metrics=[FRAMEWORK_METRIC]
 )

@@ -2358,6 +2358,9 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.external_urllib3',
             'instrument_urllib3_connection')
 
+    _process_module_definition('starlette.requests',
+            'newrelic.hooks.framework_starlette',
+            'instrument_starlette_requests')
     _process_module_definition('starlette.routing',
             'newrelic.hooks.framework_starlette',
             'instrument_starlette_routing')

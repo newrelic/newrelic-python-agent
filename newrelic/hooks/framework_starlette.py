@@ -1,7 +1,8 @@
 from newrelic.api.asgi_application import wrap_asgi_application
-from newrelic.api.transaction import current_transaction
+from newrelic.api.time_trace import current_trace
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper, function_wrapper
+from newrelic.core.trace_cache import trace_cache
 
 
 def framework_details():
@@ -10,11 +11,20 @@ def framework_details():
     return ("Starlette", getattr(starlette, "__version__", None))
 
 
+def bind_request(request, *args, **kwargs):
+    return request
+
+
 @function_wrapper
 def route_naming_wrapper(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
+    trace = getattr(bind_request(*args, **kwargs), "_nr_trace", None)
+    transaction = trace and trace.transaction
     if transaction:
         transaction.set_transaction_name(callable_name(wrapped))
+
+    # Propagate trace context onto the current task
+    if trace:
+        trace_cache().save_trace(trace)
 
     return wrapped(*args, **kwargs)
 
@@ -29,9 +39,19 @@ def wrap_route(wrapped, instance, args, kwargs):
     return wrapped(path, endpoint, *args, **kwargs)
 
 
+def wrap_request(wrapped, instance, args, kwargs):
+    result = wrapped(*args, **kwargs)
+    result._nr_trace = current_trace()
+    return result
+
+
 def instrument_starlette_applications(module):
     wrap_asgi_application(module, "Starlette.__call__", framework=framework_details())
 
 
 def instrument_starlette_routing(module):
     wrap_function_wrapper(module, "Route", wrap_route)
+
+
+def instrument_starlette_requests(module):
+    wrap_function_wrapper(module, "Request", wrap_request)

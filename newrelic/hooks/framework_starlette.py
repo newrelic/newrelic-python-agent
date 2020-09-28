@@ -5,6 +5,8 @@ from newrelic.api.function_trace import FunctionTraceWrapper, wrap_function_trac
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper, function_wrapper
 from newrelic.core.trace_cache import trace_cache
+from newrelic.api.time_trace import record_exception
+from newrelic.core.config import ignore_status_code
 
 
 def framework_details():
@@ -41,6 +43,10 @@ def route_naming_wrapper(wrapped, instance, args, kwargs):
 
 def bind_endpoint(path, endpoint, *args, **kwargs):
     return path, endpoint, args, kwargs
+
+
+def bind_exception(request, exc, *args, **kwargs):
+    return request, exc, args, kwargs
 
 
 def wrap_route(wrapped, instance, args, kwargs):
@@ -99,6 +105,13 @@ def wrap_starlette(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
+def wrap_exception_middleware(wrapped, instance, args, kwargs):
+    request, exc, args, kwargs = bind_exception(*args, **kwargs)
+    if not ignore_status_code(exc.status_code):
+        record_exception()
+    return wrapped(request, exc, *args, **kwargs)
+
+
 def instrument_starlette_applications(module):
     framework = framework_details()
     version_info = tuple(int(v) for v in framework[1].split(".", 3)[:3])
@@ -124,6 +137,9 @@ def instrument_starlette_middleware_errors(module):
 
 def instrument_starlette_exceptions(module):
     wrap_function_trace(module, "ExceptionMiddleware.__call__")
+
+    wrap_function_wrapper(module, "ExceptionMiddleware.http_exception",
+        wrap_exception_middleware)
 
 
 def instrument_starlette_background_task(module):

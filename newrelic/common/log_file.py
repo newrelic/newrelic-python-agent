@@ -24,6 +24,7 @@ import os
 import sys
 import logging
 import threading
+import warnings
 
 _lock = threading.Lock()
 
@@ -113,3 +114,6 @@ class Urllib3ConnectionFilter(logging.Filter):
 _urllib3_logger = logging.getLogger(
     'newrelic.packages.urllib3.connectionpool')
 _urllib3_logger.addFilter(Urllib3ConnectionFilter())
+
+# Also ignore any urllib3 warning messages
+warnings.filterwarnings("ignore", module='newrelic\.packages\.urllib3')

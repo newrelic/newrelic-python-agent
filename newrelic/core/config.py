@@ -244,9 +244,30 @@ class InfiniteTracingSettings(Settings):
     @trace_observer_host.setter
     def trace_observer_host(self, value):
         if value and self._can_enable_infinite_tracing():
-            self._trace_observer_host = value
+            self._trace_observer_host = self._normalize_host(value)
         else:
             self._trace_observer_host = None
+
+    @staticmethod
+    def _normalize_host(value):
+        u = urlparse.urlparse(value)
+        if u.hostname:
+            _logger.warning(
+                "An invalid host (%s) was configured for infinite tracing. "
+                "A host of %s has been extracted by interpreting the "
+                "configuration value as a URL. An update to the configuration "
+                "value is recommended.",
+                value, u.hostname)
+            return u.hostname
+        elif "/" in value or ":" in value:
+            _logger.error(
+                "An invalid host (%s) was configured for infinite tracing. "
+                "Please verify that only the host name was supplied via the "
+                "infinite tracing configuration. "
+                "Falling back to infinite tracing disabled.", value)
+            return None
+
+        return value
 
     @staticmethod
     def _can_enable_infinite_tracing():

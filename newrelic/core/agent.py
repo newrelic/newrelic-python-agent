@@ -691,7 +691,7 @@ class Agent(object):
 
             # Skip this if background thread already running.
 
-            if self._harvest_thread.isAlive():
+            if self._harvest_thread.is_alive():
                 return
 
             _logger.debug('Activating agent instance.')

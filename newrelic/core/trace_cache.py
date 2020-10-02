@@ -38,9 +38,9 @@ def current_task(asyncio):
     if not asyncio:
         return
 
-    current_task = getattr(asyncio, 'current_task', None)
+    current_task = getattr(asyncio, "current_task", None)
     if current_task is None:
-        current_task = getattr(asyncio.Task, 'current_task', None)
+        current_task = getattr(asyncio.Task, "current_task", None)
 
     try:
         return current_task()
@@ -52,9 +52,9 @@ def all_tasks(asyncio):
     if not asyncio:
         return
 
-    all_tasks = getattr(asyncio, 'all_tasks', None)
+    all_tasks = getattr(asyncio, "all_tasks", None)
     if all_tasks is None:
-        all_tasks = getattr(asyncio.Task, 'all_tasks', None)
+        all_tasks = getattr(asyncio.Task, "all_tasks", None)
 
     try:
         return all_tasks()
@@ -63,15 +63,14 @@ def all_tasks(asyncio):
 
 
 def get_event_loop(task):
-    get_loop = getattr(task, 'get_loop', None)
+    get_loop = getattr(task, "get_loop", None)
     if get_loop:
         return get_loop()
     else:
-        return getattr(task, '_loop', None)
+        return getattr(task, "_loop", None)
 
 
 class cached_module(object):
-
     def __init__(self, module_path, name=None):
         self.module_path = module_path
         self.name = name or module_path
@@ -172,9 +171,9 @@ class TraceCache(object):
             transaction = trace and trace.transaction
             if transaction is not None:
                 if transaction.background_task:
-                    yield transaction, thread_id, 'BACKGROUND', frame
+                    yield transaction, thread_id, "BACKGROUND", frame
                 else:
-                    yield transaction, thread_id, 'REQUEST', frame
+                    yield transaction, thread_id, "REQUEST", frame
             else:
                 # Note that there may not always be a thread object.
                 # This is because thread could have been created direct
@@ -183,10 +182,10 @@ class TraceCache(object):
                 # obtain a name for as being 'OTHER'.
 
                 thread = threading._active.get(thread_id)
-                if thread is not None and thread.getName().startswith('NR-'):
-                    yield None, thread_id, 'AGENT', frame
+                if thread is not None and thread.getName().startswith("NR-"):
+                    yield None, thread_id, "AGENT", frame
                 else:
-                    yield None, thread_id, 'OTHER', frame
+                    yield None, thread_id, "OTHER", frame
 
         # Now yield up those corresponding to greenlets. Right now only
         # doing this for greenlets in which any active transactions are
@@ -202,11 +201,9 @@ class TraceCache(object):
                     gr = transaction._greenlet()
                     if gr and gr.gr_frame is not None:
                         if transaction.background_task:
-                            yield (transaction, thread_id,
-                                    'BACKGROUND', gr.gr_frame)
+                            yield (transaction, thread_id, "BACKGROUND", gr.gr_frame)
                         else:
-                            yield (transaction, thread_id,
-                                    'REQUEST', gr.gr_frame)
+                            yield (transaction, thread_id, "REQUEST", gr.gr_frame)
 
     def prepare_for_root(self):
         """Updates the cache state so that a new root can be created if the
@@ -217,7 +214,7 @@ class TraceCache(object):
         if not trace:
             return None
 
-        if not hasattr(trace, '_task'):
+        if not hasattr(trace, "_task"):
             return trace
 
         task = current_task(self.asyncio)
@@ -243,15 +240,16 @@ class TraceCache(object):
 
         if thread_id in self._cache:
             cache_root = self._cache[thread_id].root
-            if (cache_root and cache_root is not trace.root and
-                    not cache_root.exited):
+            if cache_root and cache_root is not trace.root and not cache_root.exited:
                 # Cached trace exists and has a valid root still
-                _logger.error('Runtime instrumentation error. Attempt to '
-                        'save a trace from an inactive transaction. '
-                        'Report this issue to New Relic support.\n%s',
-                        ''.join(traceback.format_stack()[:-1]))
+                _logger.error(
+                    "Runtime instrumentation error. Attempt to "
+                    "save a trace from an inactive transaction. "
+                    "Report this issue to New Relic support.\n%s",
+                    "".join(traceback.format_stack()[:-1]),
+                )
 
-                raise TraceCacheActiveTraceError('transaction already active')
+                raise TraceCacheActiveTraceError("transaction already active")
 
         self._cache[thread_id] = trace
 
@@ -266,21 +264,29 @@ class TraceCache(object):
 
         trace._greenlet = None
 
-        if hasattr(sys, '_current_frames'):
+        if hasattr(sys, "_current_frames"):
             if thread_id not in sys._current_frames():
                 if self.greenlet:
                     trace._greenlet = weakref.ref(self.greenlet.getcurrent())
 
-                if self.asyncio and not hasattr(trace, '_task'):
+                if self.asyncio and not hasattr(trace, "_task"):
                     task = current_task(self.asyncio)
                     trace._task = task
+
+    def thread_start(self, trace):
+        current_thread_id = self.current_thread_id()
+        self._cache[current_thread_id] = trace
+        return current_thread_id
+
+    def thread_stop(self, thread_id):
+        self._cache.pop(thread_id, None)
 
     def pop_current(self, trace):
         """Restore the trace's parent under the thread ID of the current
         executing thread."""
 
-        if hasattr(trace, '_task'):
-            delattr(trace, '_task')
+        if hasattr(trace, "_task"):
+            delattr(trace, "_task")
 
         thread_id = trace.thread_id
         parent = trace.parent
@@ -294,7 +300,7 @@ class TraceCache(object):
 
         """
 
-        if hasattr(root, '_task'):
+        if hasattr(root, "_task"):
             if root.has_outstanding_children():
                 task_ids = (id(task) for task in all_tasks(self.asyncio))
 
@@ -319,17 +325,19 @@ class TraceCache(object):
         if thread_id not in self._cache:
             thread_id = self.current_thread_id()
             if thread_id not in self._cache:
-                raise TraceCacheNoActiveTraceError('no active trace')
+                raise TraceCacheNoActiveTraceError("no active trace")
 
         current = self._cache.get(thread_id)
 
         if root is not current:
-            _logger.error('Runtime instrumentation error. Attempt to '
-                    'drop the root when it is not the current '
-                    'trace. Report this issue to New Relic support.\n%s',
-                    ''.join(traceback.format_stack()[:-1]))
+            _logger.error(
+                "Runtime instrumentation error. Attempt to "
+                "drop the root when it is not the current "
+                "trace. Report this issue to New Relic support.\n%s",
+                "".join(traceback.format_stack()[:-1]),
+            )
 
-            raise RuntimeError('not the current trace')
+            raise RuntimeError("not the current trace")
 
         del self._cache[thread_id]
         root._greenlet = None
@@ -354,7 +362,7 @@ class TraceCache(object):
         roots = set()
         seen = set()
 
-        task = getattr(transaction.root_span, '_task', None)
+        task = getattr(transaction.root_span, "_task", None)
         loop = get_event_loop(task)
 
         for trace in self._cache.values():
@@ -362,10 +370,12 @@ class TraceCache(object):
                 continue
 
             # If the trace is on a different transaction and it's asyncio
-            if (trace.transaction is not transaction and
-                    getattr(trace, '_task', None) is not None and
-                    get_event_loop(trace._task) is loop and
-                    trace._is_leaf()):
+            if (
+                trace.transaction is not transaction
+                and getattr(trace, "_task", None) is not None
+                and get_event_loop(trace._task) is loop
+                and trace._is_leaf()
+            ):
                 trace.exclusive -= duration
                 roots.add(trace.root)
                 seen.add(trace)
@@ -373,7 +383,7 @@ class TraceCache(object):
         seen = None
 
         for root in roots:
-            guid = '%016x' % random.getrandbits(64)
+            guid = "%016x" % random.getrandbits(64)
             node = LoopNode(
                 fetch_name=fetch_name,
                 start_time=start_time,

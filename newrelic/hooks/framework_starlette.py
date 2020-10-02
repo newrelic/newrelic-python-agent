@@ -22,11 +22,19 @@ def route_naming_wrapper(wrapped, instance, args, kwargs):
     if transaction:
         transaction.set_transaction_name(callable_name(wrapped))
 
-    # Propagate trace context onto the current task
-    if trace:
-        trace_cache().save_trace(trace)
+    force_propagate = current_trace() != trace
 
-    return wrapped(*args, **kwargs)
+    # Propagate trace context onto the current task
+    if force_propagate:
+        thread_id = trace_cache().thread_start(trace)
+
+    result = wrapped(*args, **kwargs)
+
+    # Remove any context from the current thread as it was force propagated above
+    if force_propagate:
+        trace_cache().thread_stop(thread_id)
+
+    return result
 
 
 def bind_endpoint(path, endpoint, *args, **kwargs):
@@ -36,12 +44,14 @@ def bind_endpoint(path, endpoint, *args, **kwargs):
 def wrap_route(wrapped, instance, args, kwargs):
     path, endpoint, args, kwargs = bind_endpoint(*args, **kwargs)
     endpoint = route_naming_wrapper(endpoint)
+
     return wrapped(path, endpoint, *args, **kwargs)
 
 
 def wrap_request(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
     result._nr_trace = current_trace()
+
     return result
 
 

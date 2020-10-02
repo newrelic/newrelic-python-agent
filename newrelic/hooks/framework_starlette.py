@@ -22,7 +22,7 @@ def route_naming_wrapper(wrapped, instance, args, kwargs):
     if transaction:
         transaction.set_transaction_name(callable_name(wrapped))
 
-    force_propagate = current_trace() != trace
+    force_propagate = trace and current_trace() is None
 
     # Propagate trace context onto the current task
     if force_propagate:

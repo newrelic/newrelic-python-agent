@@ -39,21 +39,23 @@ RUN add-apt-repository -y ppa:deadsnakes/ppa && \
     python3.6-dev \
     python3.7-dev \
     python3.8-dev \
-    python3.8-distutils
+    python3.9-dev \
+    python3.8-distutils \
+    python3.9-distutils
 
-RUN wget https://bitbucket.org/pypy/pypy/downloads/pypy2.7-v7.0.0-linux64.tar.bz2 && \
-    tar -C /usr/local -xf pypy2.7-v7.0.0-linux64.tar.bz2 && \
-    rm pypy2.7-v7.0.0-linux64.tar.bz2 && \
-    ln -s /usr/local/pypy2.7-v7.0.0-linux64/bin/pypy /usr/local/bin/pypy && \
-    wget https://bitbucket.org/pypy/pypy/downloads/pypy3.6-v7.3.0-linux64.tar.bz2 && \
-    tar -C /usr/local -xf pypy3.6-v7.3.0-linux64.tar.bz2 && \
-    rm pypy3.6-v7.3.0-linux64.tar.bz2 && \
-    ln -s /usr/local/pypy3.6-v7.3.0-linux64/bin/pypy3 /usr/local/bin/pypy3
+RUN wget https://downloads.python.org/pypy/pypy2.7-v7.3.2-linux64.tar.bz2 && \
+    tar -C /usr/local -xf pypy2.7-v7.3.2-linux64.tar.bz2 && \
+    rm pypy2.7-v7.3.2-linux64.tar.bz2 && \
+    ln -s /usr/local/pypy2.7-v7.3.2-linux64/bin/pypy /usr/local/bin/pypy && \
+    wget https://downloads.python.org/pypy/pypy3.6-v7.3.2-linux64.tar.bz2 && \
+    tar -C /usr/local -xf pypy3.6-v7.3.2-linux64.tar.bz2 && \
+    rm pypy3.6-v7.3.2-linux64.tar.bz2 && \
+    ln -s /usr/local/pypy3.6-v7.3.2-linux64/bin/pypy3 /usr/local/bin/pypy3
 
 # Pip.
 RUN wget https://bootstrap.pypa.io/get-pip.py && \
-    python get-pip.py && \
-    pip install -U pip==18.0 virtualenv==16.0.0 tox==3.1.3
+    python3.8 get-pip.py && \
+    python3.8 -m pip install -U pip==20.2.3 virtualenv==20.0.32 tox==3.20.0
 
 # Needed for tests.
 # The DEBIAN_FRONTEND env var prevents mysql-server from prompting for a root

@@ -3,7 +3,6 @@ from __future__ import print_function
 import os
 import sys
 import time
-import warnings
 import zlib
 from pprint import pprint
 
@@ -426,25 +425,22 @@ class HttpClient(BaseClient):
         if body and len(body) > self._max_payload_size_in_bytes:
             return 413, b""
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-
-            try:
-                response = self._connection.request_encode_url(
-                    method,
-                    path,
-                    fields=params,
-                    body=body,
-                    headers=merged_headers,
-                    **self._urlopen_kwargs
-                )
-            except urllib3.exceptions.HTTPError as e:
-                self.log_response(
-                    self._audit_log_fp, request_id, 0, None, None, connection,
-                )
-                # All urllib3 HTTP errors should be treated as a network
-                # interface exception.
-                raise NetworkInterfaceException(e)
+        try:
+            response = self._connection.request_encode_url(
+                method,
+                path,
+                fields=params,
+                body=body,
+                headers=merged_headers,
+                **self._urlopen_kwargs
+            )
+        except urllib3.exceptions.HTTPError as e:
+            self.log_response(
+                self._audit_log_fp, request_id, 0, None, None, connection,
+            )
+            # All urllib3 HTTP errors should be treated as a network
+            # interface exception.
+            raise NetworkInterfaceException(e)
 
         self.log_response(
             self._audit_log_fp,

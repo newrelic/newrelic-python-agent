@@ -76,7 +76,7 @@ class CatHeaderMixin(object):
 
         """
 
-        if transaction is None:
+        if transaction is None or transaction.settings is None:
             return []
 
         settings = transaction.settings

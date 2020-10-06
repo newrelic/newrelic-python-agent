@@ -38,6 +38,7 @@ PARENT_TYPE = {
     '1': 'Browser',
     '2': 'Mobile',
 }
+BASE64_DECODE_STR = getattr(base64, 'decodestring', None)
 
 
 # Functions for encoding/decoding JSON. These wrappers are used in order
@@ -241,7 +242,7 @@ def unpack_field(field):
     if not isinstance(field, bytes):
         field = field.encode('UTF-8')
 
-    data = base64.decodestring(field)
+    data = getattr(base64, 'decodebytes', BASE64_DECODE_STR)(field)
     data = zlib.decompress(data)
 
     if isinstance(data, bytes):

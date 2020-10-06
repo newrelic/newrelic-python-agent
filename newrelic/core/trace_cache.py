@@ -275,10 +275,13 @@ class TraceCache(object):
 
     def thread_start(self, trace):
         current_thread_id = self.current_thread_id()
-        if current_thread_id and current_thread_id not in self._cache:
+        if current_thread_id not in self._cache:
             self._cache[current_thread_id] = trace
         else:
-            raise RuntimeError("Cannot insert current thread into cache- it does not exist or is already in cache.")
+            _logger.error(
+                "Runtime instrumentation error. An active trace already exists in the cache on thread_id %s. Report "
+                "this issue to New Relic support.\n " % current_thread_id
+            )
 
         return current_thread_id
 

@@ -18,6 +18,7 @@ function create_venvs {
     virtualenv /venvs/py36 -p /usr/bin/python3.6
     virtualenv /venvs/py37 -p /usr/bin/python3.7
     virtualenv /venvs/py38 -p /usr/bin/python3.8
+    virtualenv /venvs/py39 -p /usr/bin/python3.9
     virtualenv /venvs/pypy -p /usr/local/bin/pypy
     virtualenv /venvs/pypy3 -p /usr/local/bin/pypy3
 }

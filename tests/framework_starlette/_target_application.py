@@ -18,6 +18,11 @@ from starlette.routing import Route
 from testing_support.asgi_testing import AsgiTest
 from newrelic.api.transaction import current_transaction
 
+try:
+    from starlette.middleware import Middleware
+except ImportError:
+    Middleware = None
+
 
 class HandledError(Exception):
     pass
@@ -51,8 +56,24 @@ routes = [
     Route("/handled_error", handled_error),
 ]
 
-app = Starlette(routes=routes)
+def middleware(app):
+    async def middleware(scope, receive, send):
+        return await app(scope, receive, send)
+
+    return middleware
+
+if Middleware:
+    app = Starlette(routes=routes, middleware=[Middleware(middleware)])
+else:
+    app = Starlette(routes=routes)
+    app.add_middleware(middleware)
 app.add_exception_handler(Exception, error_handler)
 app.add_exception_handler(HandledError, error_handler)
+app.add_middleware(middleware)
+
+
+@app.middleware("http")
+async def middleware_decorator(request, call_next):
+    return await call_next(request)
 
 target_application = AsgiTest(app)

@@ -15,7 +15,7 @@
 import textwrap
 import functools
 from newrelic.common.coroutine import (
-    is_coroutine_function,
+    is_coroutine_callable,
     is_asyncio_coroutine,
     is_generator_function,
 )
@@ -82,7 +82,7 @@ def generator_wrapper(wrapped, trace):
 
 
 def async_wrapper(wrapped):
-    if is_coroutine_function(wrapped):
+    if is_coroutine_callable(wrapped):
         return coroutine_wrapper
     elif is_generator_function(wrapped):
         if is_asyncio_coroutine(wrapped):

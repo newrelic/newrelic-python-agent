@@ -1,5 +1,6 @@
 from newrelic.api.asgi_application import wrap_asgi_application
 from newrelic.api.time_trace import current_trace
+from newrelic.api.function_trace import FunctionTraceWrapper, wrap_function_trace
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper, function_wrapper
 from newrelic.core.trace_cache import trace_cache
@@ -43,8 +44,7 @@ def bind_endpoint(path, endpoint, *args, **kwargs):
 
 def wrap_route(wrapped, instance, args, kwargs):
     path, endpoint, args, kwargs = bind_endpoint(*args, **kwargs)
-    endpoint = route_naming_wrapper(endpoint)
-
+    endpoint = route_naming_wrapper(FunctionTraceWrapper(endpoint))
     return wrapped(path, endpoint, *args, **kwargs)
 
 
@@ -55,8 +55,51 @@ def wrap_request(wrapped, instance, args, kwargs):
     return result
 
 
+@function_wrapper
+def wrap_middleware(wrapped, instance, args, kwargs):
+    result = wrapped(*args, **kwargs)
+
+    dispatch_func = getattr(result, "dispatch_func", None)
+    name = dispatch_func and callable_name(dispatch_func)
+
+    return FunctionTraceWrapper(result, name=name)
+
+
+def bind_middleware(middleware_class, *args, **kwargs):
+    return middleware_class, args, kwargs
+
+
+def wrap_add_middleware(wrapped, instance, args, kwargs):
+    middleware, args, kwargs = bind_middleware(*args, **kwargs)
+    return wrapped(wrap_middleware(middleware), *args, **kwargs)
+
+
+def bind_middleware_starlette(
+    debug=False, routes=None, middleware=None, *args, **kwargs
+):
+    return middleware
+
+
+def wrap_starlette(wrapped, instance, args, kwargs):
+    middlewares = bind_middleware_starlette(*args, **kwargs)
+    if middlewares:
+        for middleware in middlewares:
+            cls = getattr(middleware, "cls", None)
+            if cls and not hasattr(cls, "__wrapped__"):
+                middleware.cls = wrap_middleware(cls)
+
+    return wrapped(*args, **kwargs)
+
+
 def instrument_starlette_applications(module):
-    wrap_asgi_application(module, "Starlette.__call__", framework=framework_details())
+    framework = framework_details()
+    version_info = tuple(int(v) for v in framework[1].split(".", 3)[:3])
+
+    wrap_asgi_application(module, "Starlette.__call__", framework=framework)
+    wrap_function_wrapper(module, "Starlette.add_middleware", wrap_add_middleware)
+
+    if version_info >= (0, 12, 13):
+        wrap_function_wrapper(module, "Starlette", wrap_starlette)
 
 
 def instrument_starlette_routing(module):
@@ -65,3 +108,11 @@ def instrument_starlette_routing(module):
 
 def instrument_starlette_requests(module):
     wrap_function_wrapper(module, "Request", wrap_request)
+
+
+def instrument_starlette_middleware_errors(module):
+    wrap_function_trace(module, "ServerErrorMiddleware.__call__")
+
+
+def instrument_starlette_exceptions(module):
+    wrap_function_trace(module, "ExceptionMiddleware.__call__")

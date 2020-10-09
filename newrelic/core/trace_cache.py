@@ -281,7 +281,7 @@ class TraceCache(object):
             _logger.error(
                 "Runtime instrumentation error. An active "
                 "trace already exists in the cache on thread_id %s. Report "
-                "this issue to New Relic support.\n " % current_thread_id
+                "this issue to New Relic support.\n ", current_thread_id
             )
             return None
 

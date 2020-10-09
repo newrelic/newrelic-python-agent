@@ -16,6 +16,7 @@ from starlette.applications import Starlette
 from starlette.responses import PlainTextResponse
 from starlette.routing import Route
 from testing_support.asgi_testing import AsgiTest
+from newrelic.api.transaction import current_transaction
 
 
 class HandledError(Exception):
@@ -27,6 +28,7 @@ async def index(request):
 
 
 def non_async(request):
+    assert current_transaction()
     return PlainTextResponse("Not async!")
 
 

@@ -19,6 +19,7 @@ from testing_support.fixtures import (
     validate_transaction_errors,
 )
 
+
 FRAMEWORK_METRIC = ("Python/Framework/Starlette/%s" % starlette.__version__, 1)
 
 
@@ -30,10 +31,6 @@ def test_application_index(target_application):
     assert response.status == 200
 
 
-@pytest.mark.xfail(
-    reason="Trace context isn't propagated across threads. See PYTHON-3728",
-    strict=True,
-)
 @validate_transaction_metrics(
     "_target_application:non_async", rollup_metrics=[FRAMEWORK_METRIC]
 )
@@ -53,7 +50,8 @@ def test_application_generic_error(target_application):
 
 
 @pytest.mark.xfail(
-    reason="Handled errors aren't captured yet. See PYTHON-3730", strict=True,
+    reason="Handled errors aren't captured yet. See PYTHON-3730",
+    strict=True,
 )
 @validate_transaction_errors(errors=["_target_application:HandledError"])
 @validate_transaction_metrics(

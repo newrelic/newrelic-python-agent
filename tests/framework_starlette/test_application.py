@@ -18,6 +18,7 @@ from testing_support.fixtures import (
     validate_transaction_metrics,
     validate_transaction_errors,
     capture_transaction_metrics,
+    override_ignore_status_codes,
 )
 
 
@@ -62,10 +63,6 @@ def test_application_generic_error(target_application):
         target_application.get("/runtime_error")
 
 
-@pytest.mark.xfail(
-    reason="Handled errors aren't captured yet. See PYTHON-3730",
-    strict=True,
-)
 @validate_transaction_errors(errors=["_target_application:HandledError"])
 @validate_transaction_metrics(
     "_target_application:handled_error",
@@ -73,6 +70,16 @@ def test_application_generic_error(target_application):
     rollup_metrics=[FRAMEWORK_METRIC],
 )
 def test_application_handled_error(target_application):
+    response = target_application.get("/handled_error")
+    assert response.status == 500
+
+
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics(
+    "_target_application:handled_error", rollup_metrics=[FRAMEWORK_METRIC]
+)
+@override_ignore_status_codes(set((500,)))
+def test_application_ignored_error(target_application):
     response = target_application.get("/handled_error")
     assert response.status == 500
 

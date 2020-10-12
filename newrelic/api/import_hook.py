@@ -18,11 +18,6 @@ import sys
 
 _logger = logging.getLogger(__name__)
 
-try:
-    from importlib import find_loader
-except ImportError:
-    find_loader = None
-
 _import_hooks = {}
 
 _ok_modules = (
@@ -173,25 +168,14 @@ class ImportHookFinder:
         self._skip[fullname] = True
 
         try:
-            # For Python 3 we need to use find_loader() from the new
-            # importlib module.
-
-            if find_loader:
-                loader = find_loader(fullname, path)
-
-                if loader:
-                    return _ImportHookChainedLoader(loader)
-
-            else:
+            try:
+                from importlib.util import find_spec
+                return _ImportHookChainedLoader(find_spec(fullname).loader)
+            except AttributeError:
+                return None
+            except ImportError:
                 __import__(fullname)
-
-                # If we get this far then the module we are
-                # interested in does actually exist and so return
-                # our loader to trigger import hooks and then return
-                # the module.
-
                 return _ImportHookLoader()
-
         finally:
             del self._skip[fullname]
 

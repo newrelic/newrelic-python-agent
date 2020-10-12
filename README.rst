@@ -16,7 +16,7 @@ Visit `Python Application Performance Monitoring with New Relic`_ to learn more.
 .. _New Relic APM: http://newrelic.com/application-monitoring
 .. _Python Application Performance Monitoring with New Relic: http://newrelic.com/python
 
-Usage
+Installation
 -----
 
 This package can be installed via pip:
@@ -25,7 +25,8 @@ This package can be installed via pip:
 
     $ pip install newrelic
 
-
+Getting Started
+-----
 (These instructions can also be found online: `Python Agent Quick Start`_.)
 
 1. Generate the agent configuration file with your `license key`_.

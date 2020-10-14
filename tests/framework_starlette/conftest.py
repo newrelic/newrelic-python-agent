@@ -50,7 +50,7 @@ def requires_data_collector(collector_available_fixture):
     pass
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def target_application():
     import _target_application
 

@@ -1,7 +1,7 @@
 from newrelic.api.asgi_application import wrap_asgi_application
 from newrelic.api.background_task import BackgroundTaskWrapper
 from newrelic.api.time_trace import current_trace
-from newrelic.api.function_trace import FunctionTraceWrapper, wrap_function_trace
+from newrelic.api.function_trace import FunctionTraceWrapper, wrap_function_trace, function_trace
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper, function_wrapper, FunctionWrapper
 from newrelic.core.trace_cache import trace_cache
@@ -51,7 +51,7 @@ def route_naming_wrapper(wrapped, instance, args, kwargs):
     with RequestContext(bind_request(*args, **kwargs)):
         transaction = current_transaction()
         if transaction:
-            transaction.set_transaction_name(callable_name(wrapped))
+            transaction.set_transaction_name(callable_name(wrapped), priority=1)
         return wrapped(*args, **kwargs)
 
 
@@ -123,40 +123,59 @@ def wrap_starlette(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
-def record_response_error(response, value=None):
+def record_response_error(response, value):
     status_code = getattr(response, "status_code", None)
     exc = getattr(value, "__class__", None)
     tb = getattr(value, "__traceback__", None)
-    if not ignore_status_code(status_code):
+    if ignore_status_code(status_code):
+        transaction = current_transaction()
+        transaction._ignore_errors = lambda exc, value, tb: True
+    else:
         record_exception(exc, value, tb)
 
 
-async def wrap_exception_handler_async(coro):
+async def wrap_exception_handler_async(coro, exc):
     response = await coro
-    record_response_error(response)
+    record_response_error(response, exc)
     return response
 
 
 def wrap_exception_handler(wrapped, instance, args, kwargs):
     if is_coroutine_function(wrapped):
-        return wrap_exception_handler_async(wrapped(*args, **kwargs))
+        transaction = current_transaction()
+        if transaction:
+            transaction.set_transaction_name(callable_name(wrapped), priority=2)
+        return wrap_exception_handler_async(function_trace(name=callable_name(wrapped))(wrapped)(*args, **kwargs), bind_exc(*args, **kwargs))
     else:
         with RequestContext(bind_request(*args, **kwargs)):
-            response = wrapped(*args, **kwargs)
+            transaction = current_transaction()
+            if transaction:
+                transaction.set_transaction_name(callable_name(wrapped), priority=2)
+            response = function_trace(name=callable_name(wrapped))(wrapped)(*args, **kwargs)
             record_response_error(response, bind_exc(*args, **kwargs))
             return response
 
 
+def wrap_server_error_handler(wrapped, instance, args, kwargs):
+    result = wrapped(*args, **kwargs)
+    handler = getattr(instance, 'handler', None)
+    if handler:
+        instance.handler = FunctionWrapper(handler, wrap_exception_handler)
+    return result
+
+
 def wrap_add_exception_handler(wrapped, instance, args, kwargs):
     exc_class_or_status_code, handler, args, kwargs = bind_add_exception_handler(*args, **kwargs)
-    handler = FunctionWrapper(handler, wrap_exception_handler)
+    is_wrapped = getattr(handler, "_nr_wrapped", None)
+    if is_wrapped is None:
+        handler = FunctionWrapper(handler, wrap_exception_handler)
+        handler._nr_wrapped = True
     return wrapped(exc_class_or_status_code, handler, *args, **kwargs)
 
 
 def instrument_starlette_applications(module):
     framework = framework_details()
     version_info = tuple(int(v) for v in framework[1].split(".", 3)[:3])
-
     wrap_asgi_application(module, "Starlette.__call__", framework=framework)
     wrap_function_wrapper(module, "Starlette.add_middleware", wrap_add_middleware)
 
@@ -175,9 +194,18 @@ def instrument_starlette_requests(module):
 def instrument_starlette_middleware_errors(module):
     wrap_function_trace(module, "ServerErrorMiddleware.__call__")
 
+    wrap_function_wrapper(module, "ServerErrorMiddleware.__init__", wrap_server_error_handler)
+
+    wrap_function_wrapper(module, "ServerErrorMiddleware.error_response", wrap_exception_handler)
+
+    wrap_function_wrapper(module, "ServerErrorMiddleware.debug_response", wrap_exception_handler)
+
 
 def instrument_starlette_exceptions(module):
     wrap_function_trace(module, "ExceptionMiddleware.__call__")
+
+    wrap_function_wrapper(module, "ExceptionMiddleware.__init__",
+        wrap_server_error_handler)
 
     wrap_function_wrapper(module, "ExceptionMiddleware.http_exception",
         wrap_exception_handler)

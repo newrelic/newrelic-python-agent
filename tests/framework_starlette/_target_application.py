@@ -29,6 +29,14 @@ class HandledError(Exception):
     pass
 
 
+class NonAsyncHandledError(Exception):
+    pass
+
+
+class CoolStuffError(Exception):
+    pass
+
+
 async def index(request):
     return PlainTextResponse("Hello, world!")
 
@@ -46,8 +54,24 @@ async def handled_error(request):
     raise HandledError("it's cool")
 
 
-async def error_handler(request, exc):
+def non_async_handled_error(request):
+    raise NonAsyncHandledError("No problems here!")
+
+
+async def async_error_handler(request, exc):
+    return PlainTextResponse("Dude, your app crashed - async style", status_code=500)
+
+
+def non_async_error_handler(request, exc):
     return PlainTextResponse("Dude, your app crashed", status_code=500)
+
+
+async def its_cool(request, exc):
+    return PlainTextResponse("It's cool yo!", status_code=200)
+
+
+async def non_error_but_error(request):
+    raise CoolStuffError("okeedokee")
 
 
 async def run_bg_task(request):
@@ -64,12 +88,13 @@ async def bg_task_async():
 def bg_task_non_async():
     pass
 
-
 routes = [
     Route("/index", index),
     Route("/non_async", non_async),
     Route("/runtime_error", runtime_error),
     Route("/handled_error", handled_error),
+    Route("/non_async_handled_error", non_async_handled_error),
+    Route("/non_error_but_error", non_error_but_error),
     Route("/run_bg_task", run_bg_task),
 ]
 
@@ -86,8 +111,10 @@ if Middleware:
 else:
     app = Starlette(routes=routes)
     app.add_middleware(middleware)
-app.add_exception_handler(Exception, error_handler)
-app.add_exception_handler(HandledError, error_handler)
+# app.add_exception_handler(Exception, async_error_handler)
+app.add_exception_handler(HandledError, async_error_handler)
+app.add_exception_handler(NonAsyncHandledError, non_async_error_handler)
+app.add_exception_handler(CoolStuffError, its_cool)
 app.add_middleware(middleware)
 
 

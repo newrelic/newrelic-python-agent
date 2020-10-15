@@ -50,7 +50,7 @@ def wrap_route(wrapped, instance, args, kwargs):
 
 def wrap_request(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
-    result._nr_trace = current_trace()
+    instance._nr_trace = current_trace()
 
     return result
 
@@ -99,15 +99,15 @@ def instrument_starlette_applications(module):
     wrap_function_wrapper(module, "Starlette.add_middleware", wrap_add_middleware)
 
     if version_info >= (0, 12, 13):
-        wrap_function_wrapper(module, "Starlette", wrap_starlette)
+        wrap_function_wrapper(module, "Starlette.__init__", wrap_starlette)
 
 
 def instrument_starlette_routing(module):
-    wrap_function_wrapper(module, "Route", wrap_route)
+    wrap_function_wrapper(module, "Route.__init__", wrap_route)
 
 
 def instrument_starlette_requests(module):
-    wrap_function_wrapper(module, "Request", wrap_request)
+    wrap_function_wrapper(module, "Request.__init__", wrap_request)
 
 
 def instrument_starlette_middleware_errors(module):

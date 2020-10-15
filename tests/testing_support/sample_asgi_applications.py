@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from newrelic.api.time_trace import record_exception
-from newrelic.api.transaction import add_custom_parameter
+from newrelic.api.transaction import add_custom_parameter, current_transaction
 from newrelic.api.asgi_application import ASGIApplicationWrapper
 
 
@@ -47,6 +47,21 @@ async def simple_app_v3_raw(scope, receive, send):
     await send({"type": "http.response.body"})
 
 
+async def simple_app_v4_raw(scope, receive, send):
+    if scope["type"] != "http":
+        raise ValueError("unsupported")
+
+    if scope["path"] == "/exc":
+        raise ValueError("whoopsies")
+
+    await send({"type": "http.response.start", "status": 200})
+    await send({"type": "http.response.body"})
+
+    txn = current_transaction()
+
+    assert txn is None
+
+
 class AppWithDescriptor:
     @ASGIApplicationWrapper
     async def method(self, scope, receive, send):
@@ -77,6 +92,7 @@ class AppWithCall(AppWithCallRaw):
 simple_app_v2 = ASGIApplicationWrapper(simple_app_v2_raw)
 simple_app_v2_init_exc = ASGIApplicationWrapper(simple_app_v2_init_exc)
 simple_app_v3 = ASGIApplicationWrapper(simple_app_v3_raw)
+simple_app_v4 = ASGIApplicationWrapper(simple_app_v4_raw)
 
 
 @ASGIApplicationWrapper

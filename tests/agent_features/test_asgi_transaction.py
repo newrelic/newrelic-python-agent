@@ -18,8 +18,10 @@ import pytest
 from testing_support.sample_asgi_applications import (
     simple_app_v2_raw,
     simple_app_v3_raw,
+    simple_app_v4_raw,
     simple_app_v2,
     simple_app_v3,
+    simple_app_v4,
     AppWithDescriptor,
     simple_app_v2_init_exc,
 )
@@ -35,10 +37,13 @@ from testing_support.asgi_testing import AsgiTest
 # Setup test apps from sample_asgi_applications.py
 simple_app_v2_original = AsgiTest(simple_app_v2_raw)
 simple_app_v3_original = AsgiTest(simple_app_v3_raw)
+simple_app_v4_original = AsgiTest(simple_app_v4_raw)
 
+simple_app_v4_wrapped = AsgiTest(simple_app_v4)
 simple_app_v3_wrapped = AsgiTest(simple_app_v3)
 simple_app_v2_wrapped = AsgiTest(simple_app_v2)
 simple_app_v2_init_exc = AsgiTest(simple_app_v2_init_exc)
+
 
 # Test naming scheme logic and ASGIApplicationWrapper for a single callable
 @pytest.mark.parametrize("naming_scheme", (None, "component", "framework"))
@@ -183,3 +188,11 @@ def test_non_http_scope_v2():
 def test_exception_capture(app):
     with pytest.raises(ValueError):
         app.make_request("GET", "/exc")
+
+
+@pytest.mark.parametrize(
+    "app", (simple_app_v4_original, simple_app_v4_wrapped)
+)
+def test_asgi_transaction_end(app):
+    response = app.make_request('GET', '/')
+    assert response.status == 200

@@ -1769,6 +1769,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/framework_fastapi.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/framework_flask.py": {
         "hash": "n/a",
         "libraries": [

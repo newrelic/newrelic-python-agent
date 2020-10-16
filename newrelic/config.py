@@ -2112,6 +2112,10 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.framework_falcon',
             'instrument_falcon_routing_util')
 
+    _process_module_definition('fastapi.routing',
+            'newrelic.hooks.framework_fastapi',
+            'instrument_fastapi_routing')
+
     _process_module_definition('flask.app',
             'newrelic.hooks.framework_flask',
             'instrument_flask_app')

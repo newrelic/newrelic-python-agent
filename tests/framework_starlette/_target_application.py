@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from starlette.applications import Starlette
+from starlette.background import BackgroundTasks
 from starlette.responses import PlainTextResponse
 from starlette.routing import Route
 from testing_support.asgi_testing import AsgiTest
@@ -49,18 +50,36 @@ async def error_handler(request, exc):
     return PlainTextResponse("Dude, your app crashed", status_code=500)
 
 
+async def run_bg_task(request):
+    tasks = BackgroundTasks()
+    tasks.add_task(bg_task_async)
+    tasks.add_task(bg_task_non_async)
+    return PlainTextResponse("Hello, world!", background=tasks)
+
+
+async def bg_task_async():
+    pass
+
+
+def bg_task_non_async():
+    pass
+
+
 routes = [
     Route("/index", index),
     Route("/non_async", non_async),
     Route("/runtime_error", runtime_error),
     Route("/handled_error", handled_error),
+    Route("/run_bg_task", run_bg_task),
 ]
+
 
 def middleware(app):
     async def middleware(scope, receive, send):
         return await app(scope, receive, send)
 
     return middleware
+
 
 if Middleware:
     app = Starlette(routes=routes, middleware=[Middleware(middleware)])

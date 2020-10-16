@@ -49,10 +49,6 @@ def test_application_non_async(target_application):
     assert response.status == 200
 
 
-@pytest.mark.xfail(
-    reason="Handled errors aren't captured yet. See PYTHON-3730",
-    strict=True,
-)
 @validate_transaction_errors(errors=["builtins:RuntimeError"])
 @validate_transaction_metrics(
     "_target_application:runtime_error",

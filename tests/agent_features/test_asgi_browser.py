@@ -725,34 +725,35 @@ def test_html_insertion_plain_text():
     assert b'NREUM HEADER' not in response.body
     assert b'NREUM.info' not in response.body
 
+
 @asgi_application()
-async def target_asgi_application_param_on_close(scope, receive, send):
+async def target_asgi_application_param(scope, receive, send):
     output = b'<html><body><p>RESPONSE</p></body></html>'
 
     response_headers = [
             (b'content-type', b'text/html; charset=utf-8'),
             (b'content-length', str(len(output)).encode("utf-8"))]
 
+    add_custom_parameter('key', 'value')
     await send({"type": "http.response.start", "status": 200, "headers": response_headers})
-    try:
-        await send({"type": "http.response.body", "body": output})
-        return
-    finally:
-        add_custom_parameter('key', 'value')
+    await send({"type": "http.response.body", "body": output})
 
-target_application_param_on_close = AsgiTest(
-        target_asgi_application_param_on_close)
 
-_test_html_insertion_param_on_close_settings = {
+target_application_param = AsgiTest(
+        target_asgi_application_param)
+
+
+_test_html_insertion_param_settings = {
     'browser_monitoring.enabled': True,
     'browser_monitoring.auto_instrument': True,
     'js_agent_loader': u'<!-- NREUM HEADER -->',
 }
 
-@override_application_settings(_test_html_insertion_param_on_close_settings)
+
+@override_application_settings(_test_html_insertion_param_settings)
 @validate_custom_parameters(required_params=[('key', 'value')])
-def test_html_insertion_param_on_close():
-    response = target_application_param_on_close.get('/')
+def test_html_insertion_param():
+    response = target_application_param.get('/')
     assert response.status == 200
 
     assert b'NREUM HEADER' in response.body

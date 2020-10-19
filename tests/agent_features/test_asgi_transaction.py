@@ -40,6 +40,7 @@ simple_app_v3_wrapped = AsgiTest(simple_app_v3)
 simple_app_v2_wrapped = AsgiTest(simple_app_v2)
 simple_app_v2_init_exc = AsgiTest(simple_app_v2_init_exc)
 
+
 # Test naming scheme logic and ASGIApplicationWrapper for a single callable
 @pytest.mark.parametrize("naming_scheme", (None, "component", "framework"))
 def test_single_callable_naming_scheme(naming_scheme):

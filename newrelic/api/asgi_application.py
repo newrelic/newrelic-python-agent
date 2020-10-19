@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 import functools
 
 import newrelic.packages.asgiref_compatibility as asgiref_compatibility
@@ -248,7 +249,15 @@ class ASGIWebTransaction(WebTransaction):
             self.capture_params = self._settings.capture_params
 
     async def send(self, event):
-        if event["type"] == "http.response.start":
+        if (
+                event["type"] == "http.response.body"
+                and not event.get("more_body", False)
+        ):
+            try:
+                return await self._send(event)
+            finally:
+                self.__exit__(*sys.exc_info())
+        elif event["type"] == "http.response.start":
             self.process_response(event["status"], event.get("headers", ()))
         return await self._send(event)
 

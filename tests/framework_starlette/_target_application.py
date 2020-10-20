@@ -65,11 +65,11 @@ def non_async_error_handler(request, exc):
     return PlainTextResponse("Dude, your app crashed", status_code=500)
 
 
-async def teapot(request, exc=None):
-    if exc:
-        return PlainTextResponse("Teapot", status_code=418)
-    else:
-        raise HTTPException(418, "I'm a teapot")
+async def teapot(request):
+    raise HTTPException(418, "I'm a teapot")
+
+async def teapot_handler(request, exc):
+    return PlainTextResponse("Teapot", status_code=418)
 
 class CustomRoute(object):
     def __init__(self, route):
@@ -120,28 +120,28 @@ async def middleware_decorator(request, call_next):
 
 # Generating target applications
 app_name_map = {
-    "no_error_handler": (True, False),
-    "async_error_handler_no_middleware": (False, False),
-    "non_async_error_handler_no_middleware": (False, False),
-    "no_middleware": (False, False),
-    "debug_no_middleware": (False, True),
-    "teapot_exception_handler_no_middleware": (False, False),
+    "no_error_handler": (True, False, {}),
+    "async_error_handler_no_middleware": (False, False, {Exception: async_error_handler}),
+    "non_async_error_handler_no_middleware": (False, False, {}),
+    "no_middleware": (False, False, {}),
+    "debug_no_middleware": (False, True, {}),
+    "teapot_exception_handler_no_middleware": (False, False, {}),
 }
 
 
 target_application = dict()
 for app_name, flags in app_name_map.items():
-    # Bind flags
-    middleware_on, debug = flags
+    # Bind options
+    middleware_on, debug, exception_handlers = flags
 
     # Instantiate app
     if not middleware_on:
-        app = Starlette(debug=debug, routes=routes)
+        app = Starlette(debug=debug, routes=routes, exception_handlers=exception_handlers)
     else:
         if Middleware:
-            app = Starlette(debug=debug, routes=routes, middleware=[Middleware(middleware)])
+            app = Starlette(debug=debug, routes=routes, middleware=[Middleware(middleware)], exception_handlers=exception_handlers)
         else:
-            app = Starlette(debug=debug, routes=routes)
+            app = Starlette(debug=debug, routes=routes, exception_handlers=exception_handlers)
             # in earlier versions of starlette, middleware is not a legal argument on the Starlette application class
             # In order to keep the counts the same, we add the middleware twice using the add_middleware interface
             app.add_middleware(middleware)
@@ -157,6 +157,6 @@ for app_name, flags in app_name_map.items():
     target_application[app_name] = AsgiTest(app)
 
 # Add custom error handlers
-target_application["async_error_handler_no_middleware"].asgi_application.add_exception_handler(Exception, async_error_handler)
+# target_application["async_error_handler_no_middleware"].asgi_application.add_exception_handler(, )
 target_application["non_async_error_handler_no_middleware"].asgi_application.add_exception_handler(Exception, non_async_error_handler)
-target_application["teapot_exception_handler_no_middleware"].asgi_application.add_exception_handler(418, teapot)
+target_application["teapot_exception_handler_no_middleware"].asgi_application.add_exception_handler(418, teapot_handler)

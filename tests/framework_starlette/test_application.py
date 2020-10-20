@@ -21,14 +21,15 @@ from testing_support.fixtures import (
     override_ignore_status_codes,
 )
 
-
 FRAMEWORK_METRIC = ("Python/Framework/Starlette/%s" % starlette.__version__, 1)
-MIDDLEWARE_METRICS = [
+DEFAULT_MIDDLEWARE_METRICS = [
     ("Function/starlette.middleware.errors:ServerErrorMiddleware.__call__", 1),
     ("Function/starlette.exceptions:ExceptionMiddleware.__call__", 1),
-    ("Function/_target_application:middleware.<locals>.middleware", 2),
-    ("Function/_target_application:middleware_decorator", 1),
 ]
+MIDDLEWARE_METRICS = [
+                         ("Function/_target_application:middleware.<locals>.middleware", 2),
+                         ("Function/_target_application:middleware_decorator", 1),
+                     ] + DEFAULT_MIDDLEWARE_METRICS
 
 
 @pytest.mark.parametrize("app_name", ("no_error_handler",))
@@ -55,18 +56,22 @@ def test_application_non_async(target_application, app_name):
     assert response.status == 200
 
 
-@pytest.mark.parametrize("app_name,transaction_name,path", (
-        ("non_async_error_handler_no_middleware", "_target_application:runtime_error", "/runtime_error"),
-        ("async_error_handler_no_middleware", "_target_application:runtime_error", "/runtime_error"),
-        ("no_middleware", "_target_application:runtime_error", "/runtime_error"),
-        ("debug_no_middleware", "_target_application:runtime_error", "/runtime_error"),
-        ("no_middleware", "_target_application:CustomRoute", "/raw_runtime_error"),
+@pytest.mark.parametrize("app_name,transaction_name,path,scoped_metrics", (
+        ("non_async_error_handler_no_middleware", "_target_application:runtime_error", "/runtime_error", []),
+        ("async_error_handler_no_middleware", "_target_application:runtime_error", "/runtime_error",
+         [("Function/_target_application:async_error_handler", 1)]),
+        ("no_middleware", "_target_application:runtime_error", "/runtime_error",
+         [("Function/starlette.middleware.errors:ServerErrorMiddleware.error_response", 1)]),
+        ("debug_no_middleware", "_target_application:runtime_error", "/runtime_error",
+         [("Function/starlette.middleware.errors:ServerErrorMiddleware.debug_response", 1)]),
+        ("no_middleware", "_target_application:CustomRoute", "/raw_runtime_error", []),
 ))
 @validate_transaction_errors(errors=["builtins:RuntimeError"])
-def test_server_error_middleware(target_application, app_name, transaction_name, path):
+def test_server_error_middleware(target_application, app_name, transaction_name, path, scoped_metrics):
     @validate_transaction_metrics(
         transaction_name,
-        scoped_metrics=[("Function/_target_application:runtime_error", 1)],
+        scoped_metrics=scoped_metrics + [
+            ("Function/_target_application:runtime_error", 1)] + DEFAULT_MIDDLEWARE_METRICS,
         rollup_metrics=[FRAMEWORK_METRIC],
     )
     def _test():
@@ -119,15 +124,23 @@ def test_application_ignored_error(target_application, app_name, transaction_nam
     _test()
 
 
-@pytest.mark.parametrize("app_name", ("no_middleware", "teapot_exception_handler_no_middleware"))
-@validate_transaction_errors(errors=["starlette.exceptions:HTTPException"])
-@validate_transaction_metrics(
-    "_target_application:teapot", rollup_metrics=[FRAMEWORK_METRIC]
-)
-def test_starlette_http_exception(target_application, app_name):
-    app = target_application[app_name]
-    response = app.get("/418")
-    assert response.status == 418
+@pytest.mark.parametrize("app_name,scoped_metrics", (
+        ("no_middleware", [("Function/starlette.exceptions:ExceptionMiddleware.http_exception", 1)]),
+        ("teapot_exception_handler_no_middleware", [("Function/_target_application:teapot_handler", 1)])
+))
+def test_starlette_http_exception(target_application, app_name, scoped_metrics):
+    @validate_transaction_errors(errors=["starlette.exceptions:HTTPException"])
+    @validate_transaction_metrics(
+        "_target_application:teapot",
+        scoped_metrics=scoped_metrics + DEFAULT_MIDDLEWARE_METRICS,
+        rollup_metrics=[FRAMEWORK_METRIC]
+    )
+    def _test():
+        app = target_application[app_name]
+        response = app.get("/418")
+        assert response.status == 418
+
+    _test()
 
 
 @pytest.mark.parametrize("app_name", ("no_middleware",))

@@ -207,3 +207,4 @@ def instrument_starlette_exceptions(module):
 
 def instrument_starlette_background_task(module):
     wrap_function_wrapper(module, "BackgroundTask.__call__", wrap_background_method)
+

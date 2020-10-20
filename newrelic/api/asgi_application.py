@@ -247,6 +247,11 @@ class ASGIWebTransaction(WebTransaction):
 
         if self._settings:
             self.capture_params = self._settings.capture_params
+    
+    def __exit__(self, exc, value, tb):
+        if getattr(value, "_ignored", False):
+            exc, value, tb = None, None, None
+        return super(ASGIWebTransaction, self).__exit__(exc, value, tb)
 
     async def send(self, event):
         if (

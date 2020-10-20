@@ -31,98 +31,114 @@ MIDDLEWARE_METRICS = [
 ]
 
 
+@pytest.mark.parametrize("app_name", ("no_error_handler",))
 @validate_transaction_metrics(
     "_target_application:index",
     scoped_metrics=MIDDLEWARE_METRICS + [("Function/_target_application:index", 1)],
     rollup_metrics=[FRAMEWORK_METRIC],
 )
-def test_application_index(target_application):
-    response = target_application.get("/index")
+def test_application_index(target_application, app_name):
+    app = target_application[app_name]
+    response = app.get("/index")
     assert response.status == 200
 
 
+@pytest.mark.parametrize("app_name", ("no_error_handler",))
 @validate_transaction_metrics(
     "_target_application:non_async",
     scoped_metrics=MIDDLEWARE_METRICS + [("Function/_target_application:non_async", 1)],
     rollup_metrics=[FRAMEWORK_METRIC],
 )
-def test_application_non_async(target_application):
-    response = target_application.get("/non_async")
+def test_application_non_async(target_application, app_name):
+    app = target_application[app_name]
+    response = app.get("/non_async")
     assert response.status == 200
 
 
+@pytest.mark.parametrize("app_name,transaction_name,path", (
+        ("non_async_error_handler_no_middleware", "_target_application:runtime_error", "/runtime_error"),
+        ("async_error_handler_no_middleware", "_target_application:runtime_error", "/runtime_error"),
+        ("no_middleware", "_target_application:runtime_error", "/runtime_error"),
+        ("debug_no_middleware", "_target_application:runtime_error", "/runtime_error"),
+        ("no_middleware", "_target_application:CustomRoute", "/raw_runtime_error"),
+))
+@validate_transaction_errors(errors=["builtins:RuntimeError"])
+def test_server_error_middleware(target_application, app_name, transaction_name, path):
+    @validate_transaction_metrics(
+        transaction_name,
+        scoped_metrics=[("Function/_target_application:runtime_error", 1)],
+        rollup_metrics=[FRAMEWORK_METRIC],
+    )
+    def _test():
+        app = target_application[app_name]
+        with pytest.raises(RuntimeError):
+            app.get(path)
+
+    _test()
+
+
+@pytest.mark.parametrize("app_name,transaction_name,path,error", (
+        ("async_error_handler_no_middleware", "_target_application:handled_error", "/handled_error",
+         "_target_application:HandledError"),
+        ("non_async_error_handler_no_middleware", "_target_application:non_async_handled_error",
+         "/non_async_handled_error", "_target_application:NonAsyncHandledError")
+))
+def test_application_handled_error(target_application, app_name, transaction_name, path, error):
+    @validate_transaction_errors(errors=[error])
+    @validate_transaction_metrics(
+        transaction_name,
+        scoped_metrics=[("Function/" + transaction_name, 1)],
+        rollup_metrics=[FRAMEWORK_METRIC],
+    )
+    def _test():
+        app = target_application[app_name]
+        response = app.get(path)
+        assert response.status == 500
+
+    _test()
+
+
+@pytest.mark.parametrize("app_name,transaction_name,path", (
+        ("async_error_handler_no_middleware", "_target_application:handled_error", "/handled_error"),
+        ("non_async_error_handler_no_middleware", "_target_application:non_async_handled_error",
+         "/non_async_handled_error")
+))
+@override_ignore_status_codes(set((500,)))
+def test_application_ignored_error(target_application, app_name, transaction_name, path):
+    @validate_transaction_errors(errors=[])
+    @validate_transaction_metrics(
+        transaction_name,
+        scoped_metrics=[("Function/" + transaction_name, 1)],
+        rollup_metrics=[FRAMEWORK_METRIC]
+    )
+    def _test():
+        app = target_application[app_name]
+        response = app.get(path)
+        assert response.status == 500
+
+    _test()
+
+
+@pytest.mark.parametrize("app_name", ("no_middleware", "teapot_exception_handler_no_middleware"))
+@validate_transaction_errors(errors=["starlette.exceptions:HTTPException"])
+@validate_transaction_metrics(
+    "_target_application:teapot", rollup_metrics=[FRAMEWORK_METRIC]
+)
+def test_starlette_http_exception(target_application, app_name):
+    app = target_application[app_name]
+    response = app.get("/418")
+    assert response.status == 418
+
+
+@pytest.mark.parametrize("app_name", ("no_middleware",))
 @validate_transaction_errors(errors=["builtins:RuntimeError"])
 @validate_transaction_metrics(
-    "starlette.middleware.errors:ServerErrorMiddleware.error_response",
-    scoped_metrics=MIDDLEWARE_METRICS + [("Function/_target_application:runtime_error", 1)],
-    rollup_metrics=[FRAMEWORK_METRIC],
+    "_target_application:CustomRoute", rollup_metrics=[FRAMEWORK_METRIC]
 )
-def test_application_generic_error(target_application):
-    # When the generic exception handler is used, the error is reraised
+def test_starlette_http_exception_after_response_start(target_application, app_name):
+    app = target_application[app_name]
     with pytest.raises(RuntimeError):
-       target_application.get("/runtime_error")
-
-
-@validate_transaction_errors(errors=["builtins:RuntimeError"])
-@validate_transaction_metrics(
-    "starlette.middleware.errors:ServerErrorMiddleware.debug_response",
-    scoped_metrics=MIDDLEWARE_METRICS + [("Function/_target_application:runtime_error", 1)],
-    rollup_metrics=[FRAMEWORK_METRIC],
-)
-def test_application_generic_error_with_debug(target_application):
-    # When the generic exception handler is used, the error is reraised
-    # Set to debug and run test
-    target_application.asgi_application.debug = True
-    with pytest.raises(RuntimeError):
-        target_application.get("/runtime_error")
-
-
-@validate_transaction_errors(errors=["_target_application:HandledError"])
-@validate_transaction_metrics(
-    "_target_application:async_error_handler",
-    scoped_metrics=MIDDLEWARE_METRICS + [("Function/_target_application:handled_error", 1)],
-    rollup_metrics=[FRAMEWORK_METRIC],
-)
-def test_application_handled_error(target_application):
-    response = target_application.get("/handled_error")
-    assert response.status == 500
-
-
-@validate_transaction_errors(errors=["_target_application:NonAsyncHandledError"])
-@validate_transaction_metrics(
-    "_target_application:non_async_error_handler",
-    scoped_metrics=MIDDLEWARE_METRICS + [("Function/_target_application:non_async_handled_error", 1)],
-    rollup_metrics=[FRAMEWORK_METRIC],
-)
-def test_application_non_async_handled_error(target_application):
-    response = target_application.get("/non_async_handled_error")
-    assert response.status == 500
-
-
-@validate_transaction_errors(errors=[])
-@validate_transaction_metrics(
-    "_target_application:async_error_handler", rollup_metrics=[FRAMEWORK_METRIC]
-)
-@override_ignore_status_codes(set((500,)))
-def test_application_ignored_error(target_application):
-    response = target_application.get("/handled_error")
-    assert response.status == 500
-
-
-@validate_transaction_errors(errors=[])
-@validate_transaction_metrics(
-    "_target_application:non_async_error_handler", rollup_metrics=[FRAMEWORK_METRIC]
-)
-@override_ignore_status_codes(set((500,)))
-def test_application_non_async_ignored_error(target_application):
-    response = target_application.get("/non_async_handled_error")
-    assert response.status == 500
-
-
-@validate_transaction_errors(errors=[])
-def test_should_ignore(target_application):
-    response = target_application.get("/non_error_but_error")
-    assert response.status == 200
+        app.get("/raw_http_error")
 
 
 def test_application_background_tasks(target_application):

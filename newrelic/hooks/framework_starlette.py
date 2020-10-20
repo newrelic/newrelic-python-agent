@@ -25,6 +25,7 @@ def bind_exc(request, exc, *args, **kwargs):
     return exc
 
 
+
 class RequestContext(object):
     def __init__(self, request):
         self.request = request
@@ -51,7 +52,7 @@ def route_naming_wrapper(wrapped, instance, args, kwargs):
     with RequestContext(bind_request(*args, **kwargs)):
         transaction = current_transaction()
         if transaction:
-            transaction.set_transaction_name(callable_name(wrapped), priority=1)
+            transaction.set_transaction_name(callable_name(wrapped), priority=3)
         return wrapped(*args, **kwargs)
 
 
@@ -128,8 +129,7 @@ def record_response_error(response, value):
     exc = getattr(value, "__class__", None)
     tb = getattr(value, "__traceback__", None)
     if ignore_status_code(status_code):
-        transaction = current_transaction()
-        transaction._ignore_errors = lambda exc, value, tb: True
+        value._ignored = True
     else:
         record_exception(exc, value, tb)
 
@@ -142,16 +142,10 @@ async def wrap_exception_handler_async(coro, exc):
 
 def wrap_exception_handler(wrapped, instance, args, kwargs):
     if is_coroutine_function(wrapped):
-        transaction = current_transaction()
-        if transaction:
-            transaction.set_transaction_name(callable_name(wrapped), priority=2)
-        return wrap_exception_handler_async(function_trace(name=callable_name(wrapped))(wrapped)(*args, **kwargs), bind_exc(*args, **kwargs))
+        return wrap_exception_handler_async(FunctionTraceWrapper(wrapped)(*args, **kwargs), bind_exc(*args, **kwargs))
     else:
         with RequestContext(bind_request(*args, **kwargs)):
-            transaction = current_transaction()
-            if transaction:
-                transaction.set_transaction_name(callable_name(wrapped), priority=2)
-            response = function_trace(name=callable_name(wrapped))(wrapped)(*args, **kwargs)
+            response = FunctionTraceWrapper(wrapped)(*args, **kwargs)
             record_response_error(response, bind_exc(*args, **kwargs))
             return response
 
@@ -203,9 +197,6 @@ def instrument_starlette_middleware_errors(module):
 
 def instrument_starlette_exceptions(module):
     wrap_function_trace(module, "ExceptionMiddleware.__call__")
-
-    wrap_function_wrapper(module, "ExceptionMiddleware.__init__",
-        wrap_server_error_handler)
 
     wrap_function_wrapper(module, "ExceptionMiddleware.http_exception",
         wrap_exception_handler)

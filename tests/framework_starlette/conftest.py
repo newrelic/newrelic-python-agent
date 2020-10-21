@@ -39,9 +39,8 @@ collector_agent_registration = collector_agent_registration_fixture(
     default_settings=_default_settings,
 )
 
-#TOOO: Add code_coverage as a parameter on line 44
 @pytest.fixture(scope="session")
-def session_initialization(collector_agent_registration):
+def session_initialization(code_coverage, collector_agent_registration):
     pass
 
 

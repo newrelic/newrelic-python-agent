@@ -16,8 +16,11 @@ from starlette.applications import Starlette
 from starlette.background import BackgroundTasks
 from starlette.responses import PlainTextResponse
 from starlette.routing import Route
+from starlette.exceptions import HTTPException
 from testing_support.asgi_testing import AsgiTest
 from newrelic.api.transaction import current_transaction
+from newrelic.api.function_trace import FunctionTrace
+from newrelic.common.object_names import callable_name
 
 try:
     from starlette.middleware import Middleware
@@ -26,6 +29,10 @@ except ImportError:
 
 
 class HandledError(Exception):
+    pass
+
+
+class NonAsyncHandledError(Exception):
     pass
 
 
@@ -46,8 +53,34 @@ async def handled_error(request):
     raise HandledError("it's cool")
 
 
-async def error_handler(request, exc):
+def non_async_handled_error(request):
+    raise NonAsyncHandledError("No problems here!")
+
+
+async def async_error_handler(request, exc):
+    return PlainTextResponse("Dude, your app crashed - async style", status_code=500)
+
+
+def non_async_error_handler(request, exc):
     return PlainTextResponse("Dude, your app crashed", status_code=500)
+
+
+async def teapot(request):
+    raise HTTPException(418, "I'm a teapot")
+
+
+async def teapot_handler(request, exc):
+    return PlainTextResponse("Teapot", status_code=418)
+
+
+class CustomRoute(object):
+    def __init__(self, route):
+        self.route = route
+
+    async def __call__(self, scope, receive, send):
+        await send({"type": "http.response.start", "status": 200, "headers": []})
+        with FunctionTrace(name=callable_name(self.route)):
+            await self.route(None)
 
 
 async def run_bg_task(request):
@@ -64,12 +97,15 @@ async def bg_task_async():
 def bg_task_non_async():
     pass
 
-
 routes = [
     Route("/index", index),
+    Route("/418", teapot),
     Route("/non_async", non_async),
     Route("/runtime_error", runtime_error),
     Route("/handled_error", handled_error),
+    Route("/non_async_handled_error", non_async_handled_error),
+    Route("/raw_runtime_error", CustomRoute(runtime_error)),
+    Route("/raw_http_error", CustomRoute(teapot)),
     Route("/run_bg_task", run_bg_task),
 ]
 
@@ -80,19 +116,52 @@ def middleware(app):
 
     return middleware
 
-
-if Middleware:
-    app = Starlette(routes=routes, middleware=[Middleware(middleware)])
-else:
-    app = Starlette(routes=routes)
-    app.add_middleware(middleware)
-app.add_exception_handler(Exception, error_handler)
-app.add_exception_handler(HandledError, error_handler)
-app.add_middleware(middleware)
-
-
-@app.middleware("http")
 async def middleware_decorator(request, call_next):
     return await call_next(request)
 
-target_application = AsgiTest(app)
+
+# Generating target applications
+app_name_map = {
+    "no_error_handler": (True, False, {}),
+    "async_error_handler_no_middleware": (False, False, {Exception: async_error_handler}),
+    "non_async_error_handler_no_middleware": (False, False, {}),
+    "no_middleware": (False, False, {}),
+    "debug_no_middleware": (False, True, {}),
+    "teapot_exception_handler_no_middleware": (False, False, {}),
+}
+
+
+target_application = dict()
+for app_name, flags in app_name_map.items():
+    # Bind options
+    middleware_on, debug, exception_handlers = flags
+
+    # Instantiate app
+    if not middleware_on:
+        app = Starlette(debug=debug, routes=routes, exception_handlers=exception_handlers)
+    else:
+        if Middleware:
+            app = Starlette(debug=debug, routes=routes, middleware=[Middleware(middleware)], exception_handlers=exception_handlers)
+        else:
+            app = Starlette(debug=debug, routes=routes, exception_handlers=exception_handlers)
+            # in earlier versions of starlette, middleware is not a legal argument on the Starlette application class
+            # In order to keep the counts the same, we add the middleware twice using the add_middleware interface
+            app.add_middleware(middleware)
+
+        app.add_middleware(middleware)
+        app.middleware("http")(middleware_decorator)
+
+    # Adding custom exception handlers
+    app.add_exception_handler(HandledError, async_error_handler)
+
+    # Add exception handler multiple times to verify the handler is not double wrapped
+    app.add_exception_handler(NonAsyncHandledError, non_async_error_handler)
+    app.add_exception_handler(NonAsyncHandledError, non_async_error_handler)
+
+    if app_name == "non_async_error_handler_no_middleware":
+        app.add_exception_handler(Exception, non_async_error_handler)
+    elif app_name == "teapot_exception_handler_no_middleware":
+        app.add_exception_handler(418, teapot_handler)
+
+    # Assign to dict
+    target_application[app_name] = AsgiTest(app)

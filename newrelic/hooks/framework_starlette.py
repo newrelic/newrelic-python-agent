@@ -3,8 +3,12 @@ from newrelic.api.background_task import BackgroundTaskWrapper
 from newrelic.api.time_trace import current_trace
 from newrelic.api.function_trace import FunctionTraceWrapper, wrap_function_trace
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import wrap_function_wrapper, function_wrapper
+from newrelic.common.object_wrapper import wrap_function_wrapper, function_wrapper, FunctionWrapper
 from newrelic.core.trace_cache import trace_cache
+from newrelic.api.time_trace import record_exception
+from newrelic.core.config import ignore_status_code
+from newrelic.common.coroutine import is_coroutine_function
+from newrelic.api.transaction import current_transaction
 
 
 def framework_details():
@@ -17,30 +21,46 @@ def bind_request(request, *args, **kwargs):
     return request
 
 
+def bind_exc(request, exc, *args, **kwargs):
+    return exc
+
+
+class RequestContext(object):
+    def __init__(self, request):
+        self.request = request
+        self.force_propagate = False
+        self.thread_id = None
+
+    def __enter__(self):
+        trace = getattr(self.request, "_nr_trace", None)
+        self.force_propagate = trace and current_trace() is None
+
+        # Propagate trace context onto the current task
+        if self.force_propagate:
+            self.thread_id = trace_cache().thread_start(trace)
+
+    def __exit__(self, exc, value, tb):
+        # Remove any context from the current thread as it was force propagated above
+        if self.force_propagate:
+            trace_cache().thread_stop(self.thread_id)
+
+
 @function_wrapper
 def route_naming_wrapper(wrapped, instance, args, kwargs):
-    trace = getattr(bind_request(*args, **kwargs), "_nr_trace", None)
-    transaction = trace and trace.transaction
-    if transaction:
-        transaction.set_transaction_name(callable_name(wrapped))
 
-    force_propagate = trace and current_trace() is None
-
-    # Propagate trace context onto the current task
-    if force_propagate:
-        thread_id = trace_cache().thread_start(trace)
-
-    result = wrapped(*args, **kwargs)
-
-    # Remove any context from the current thread as it was force propagated above
-    if force_propagate:
-        trace_cache().thread_stop(thread_id)
-
-    return result
+    with RequestContext(bind_request(*args, **kwargs)):
+        transaction = current_transaction()
+        if transaction:
+            transaction.set_transaction_name(callable_name(wrapped), priority=3)
+        return wrapped(*args, **kwargs)
 
 
 def bind_endpoint(path, endpoint, *args, **kwargs):
     return path, endpoint, args, kwargs
+
+
+def bind_add_exception_handler(exc_class_or_status_code, handler, *args, **kwargs):
+    return exc_class_or_status_code, handler, args, kwargs
 
 
 def wrap_route(wrapped, instance, args, kwargs):
@@ -99,10 +119,49 @@ def wrap_starlette(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
+def record_response_error(response, value):
+    status_code = getattr(response, "status_code", None)
+    exc = getattr(value, "__class__", None)
+    tb = getattr(value, "__traceback__", None)
+    if ignore_status_code(status_code):
+        value._nr_ignored = True
+    else:
+        record_exception(exc, value, tb)
+
+
+async def wrap_exception_handler_async(coro, exc):
+    response = await coro
+    record_response_error(response, exc)
+    return response
+
+
+def wrap_exception_handler(wrapped, instance, args, kwargs):
+    if is_coroutine_function(wrapped):
+        return wrap_exception_handler_async(FunctionTraceWrapper(wrapped)(*args, **kwargs), bind_exc(*args, **kwargs))
+    else:
+        with RequestContext(bind_request(*args, **kwargs)):
+            response = FunctionTraceWrapper(wrapped)(*args, **kwargs)
+            record_response_error(response, bind_exc(*args, **kwargs))
+            return response
+
+
+def wrap_server_error_handler(wrapped, instance, args, kwargs):
+    result = wrapped(*args, **kwargs)
+    handler = getattr(instance, 'handler', None)
+    if handler:
+        instance.handler = FunctionWrapper(handler, wrap_exception_handler)
+    return result
+
+
+def wrap_add_exception_handler(wrapped, instance, args, kwargs):
+    exc_class_or_status_code, handler, args, kwargs = bind_add_exception_handler(*args, **kwargs)
+    handler = FunctionWrapper(handler, wrap_exception_handler)
+    return wrapped(exc_class_or_status_code, handler, *args, **kwargs)
+
+
 def instrument_starlette_applications(module):
     framework = framework_details()
     version_info = tuple(int(v) for v in framework[1].split(".", 3)[:3])
-
     wrap_asgi_application(module, "Starlette.__call__", framework=framework)
     wrap_function_wrapper(module, "Starlette.add_middleware", wrap_add_middleware)
 
@@ -121,10 +180,23 @@ def instrument_starlette_requests(module):
 def instrument_starlette_middleware_errors(module):
     wrap_function_trace(module, "ServerErrorMiddleware.__call__")
 
+    wrap_function_wrapper(module, "ServerErrorMiddleware.__init__", wrap_server_error_handler)
+
+    wrap_function_wrapper(module, "ServerErrorMiddleware.error_response", wrap_exception_handler)
+
+    wrap_function_wrapper(module, "ServerErrorMiddleware.debug_response", wrap_exception_handler)
+
 
 def instrument_starlette_exceptions(module):
     wrap_function_trace(module, "ExceptionMiddleware.__call__")
 
+    wrap_function_wrapper(module, "ExceptionMiddleware.http_exception",
+        wrap_exception_handler)
+
+    wrap_function_wrapper(module, "ExceptionMiddleware.add_exception_handler",
+        wrap_add_exception_handler)
+
 
 def instrument_starlette_background_task(module):
     wrap_function_wrapper(module, "BackgroundTask.__call__", wrap_background_method)
+

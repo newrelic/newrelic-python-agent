@@ -1,7 +1,7 @@
 from newrelic.api.asgi_application import wrap_asgi_application
 from newrelic.api.background_task import BackgroundTaskWrapper
 from newrelic.api.time_trace import current_trace
-from newrelic.api.function_trace import FunctionTraceWrapper, wrap_function_trace, function_trace
+from newrelic.api.function_trace import FunctionTraceWrapper, wrap_function_trace
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper, function_wrapper, FunctionWrapper
 from newrelic.core.trace_cache import trace_cache
@@ -57,10 +57,6 @@ def route_naming_wrapper(wrapped, instance, args, kwargs):
 
 def bind_endpoint(path, endpoint, *args, **kwargs):
     return path, endpoint, args, kwargs
-
-
-def bind_exception(request, exc, *args, **kwargs):
-    return request, exc, args, kwargs
 
 
 def bind_add_exception_handler(exc_class_or_status_code, handler, *args, **kwargs):

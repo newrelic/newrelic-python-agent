@@ -147,7 +147,9 @@ def test_starlette_http_exception_after_response_start(target_application, app_n
         app.get("/raw_http_error")
 
 
-def test_application_background_tasks(target_application):
+@pytest.mark.parametrize("app_name", ("no_error_handler",))
+def test_application_background_tasks(target_application, app_name):
+    app = target_application[app_name]
     metrics = []
     expected_metrics = [
         'OtherTransaction/Function/_target_application:bg_task_async',
@@ -157,7 +159,7 @@ def test_application_background_tasks(target_application):
 
     @capture_transaction_metrics(metrics)
     def _test():
-        response = target_application.get("/run_bg_task")
+        response = app.get("/run_bg_task")
         assert response.status == 200
 
     _test()

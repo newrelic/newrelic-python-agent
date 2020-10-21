@@ -124,7 +124,7 @@ def record_response_error(response, value):
     exc = getattr(value, "__class__", None)
     tb = getattr(value, "__traceback__", None)
     if ignore_status_code(status_code):
-        value._ignored = True
+        value._nr_ignored = True
     else:
         record_exception(exc, value, tb)
 

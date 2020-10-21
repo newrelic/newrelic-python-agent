@@ -249,7 +249,7 @@ class ASGIWebTransaction(WebTransaction):
             self.capture_params = self._settings.capture_params
     
     def __exit__(self, exc, value, tb):
-        if getattr(value, "_ignored", False):
+        if getattr(value, "_nr_ignored", False):
             exc, value, tb = None, None, None
         return super(ASGIWebTransaction, self).__exit__(exc, value, tb)
 

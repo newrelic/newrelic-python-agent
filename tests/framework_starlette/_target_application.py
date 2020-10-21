@@ -68,8 +68,10 @@ def non_async_error_handler(request, exc):
 async def teapot(request):
     raise HTTPException(418, "I'm a teapot")
 
+
 async def teapot_handler(request, exc):
     return PlainTextResponse("Teapot", status_code=418)
+
 
 class CustomRoute(object):
     def __init__(self, route):

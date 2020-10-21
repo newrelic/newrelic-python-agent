@@ -25,7 +25,6 @@ def bind_exc(request, exc, *args, **kwargs):
     return exc
 
 
-
 class RequestContext(object):
     def __init__(self, request):
         self.request = request
@@ -39,7 +38,7 @@ class RequestContext(object):
         # Propagate trace context onto the current task
         if self.force_propagate:
             self.thread_id = trace_cache().thread_start(trace)
-    
+
     def __exit__(self, exc, value, tb):
         # Remove any context from the current thread as it was force propagated above
         if self.force_propagate:

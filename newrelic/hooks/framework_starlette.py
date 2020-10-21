@@ -155,10 +155,7 @@ def wrap_server_error_handler(wrapped, instance, args, kwargs):
 
 def wrap_add_exception_handler(wrapped, instance, args, kwargs):
     exc_class_or_status_code, handler, args, kwargs = bind_add_exception_handler(*args, **kwargs)
-    is_wrapped = getattr(handler, "_nr_wrapped", None)
-    if is_wrapped is None:
-        handler = FunctionWrapper(handler, wrap_exception_handler)
-        handler._nr_wrapped = True
+    handler = FunctionWrapper(handler, wrap_exception_handler)
     return wrapped(exc_class_or_status_code, handler, *args, **kwargs)
 
 

@@ -153,12 +153,15 @@ for app_name, flags in app_name_map.items():
 
     # Adding custom exception handlers
     app.add_exception_handler(HandledError, async_error_handler)
+
+    # Add exception handler multiple times to verify the handler is not double wrapped
     app.add_exception_handler(NonAsyncHandledError, non_async_error_handler)
+    app.add_exception_handler(NonAsyncHandledError, non_async_error_handler)
+
+    if app_name == "non_async_error_handler_no_middleware":
+        app.add_exception_handler(Exception, non_async_error_handler)
+    elif app_name == "teapot_exception_handler_no_middleware":
+        app.add_exception_handler(418, teapot_handler)
 
     # Assign to dict
     target_application[app_name] = AsgiTest(app)
-
-# Add custom error handlers
-# target_application["async_error_handler_no_middleware"].asgi_application.add_exception_handler(, )
-target_application["non_async_error_handler_no_middleware"].asgi_application.add_exception_handler(Exception, non_async_error_handler)
-target_application["teapot_exception_handler_no_middleware"].asgi_application.add_exception_handler(418, teapot_handler)

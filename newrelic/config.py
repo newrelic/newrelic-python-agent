@@ -2377,6 +2377,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('starlette.exceptions',
             'newrelic.hooks.framework_starlette',
             'instrument_starlette_exceptions')
+    _process_module_definition('starlette.background',
+            'newrelic.hooks.framework_starlette',
+            'instrument_starlette_background_task')
 
     _process_module_definition('uvicorn.config',
             'newrelic.hooks.adapter_uvicorn',

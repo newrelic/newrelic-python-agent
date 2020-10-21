@@ -17,6 +17,7 @@ import pytest
 from testing_support.fixtures import (
     validate_transaction_metrics,
     validate_transaction_errors,
+    capture_transaction_metrics,
 )
 
 
@@ -74,3 +75,23 @@ def test_application_generic_error(target_application):
 def test_application_handled_error(target_application):
     response = target_application.get("/handled_error")
     assert response.status == 500
+
+
+def test_application_background_tasks(target_application):
+    metrics = []
+    expected_metrics = [
+        'OtherTransaction/Function/_target_application:bg_task_async',
+        'OtherTransaction/Function/_target_application:bg_task_non_async',
+        'Function/_target_application:run_bg_task'
+    ]
+
+    @capture_transaction_metrics(metrics)
+    def _test():
+        response = target_application.get("/run_bg_task")
+        assert response.status == 200
+
+    _test()
+
+    metric_names = {metric[0] for metric in metrics}
+    for metric in expected_metrics:
+        assert metric in metric_names

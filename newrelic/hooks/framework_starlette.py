@@ -1,4 +1,5 @@
 from newrelic.api.asgi_application import wrap_asgi_application
+from newrelic.api.background_task import BackgroundTaskWrapper
 from newrelic.api.time_trace import current_trace
 from newrelic.api.function_trace import FunctionTraceWrapper, wrap_function_trace
 from newrelic.common.object_names import callable_name
@@ -53,6 +54,13 @@ def wrap_request(wrapped, instance, args, kwargs):
     instance._nr_trace = current_trace()
 
     return result
+
+
+def wrap_background_method(wrapped, instance, args, kwargs):
+    func = getattr(instance, "func", None)
+    if func:
+        instance.func = BackgroundTaskWrapper(func)
+    return wrapped(*args, **kwargs)
 
 
 @function_wrapper
@@ -116,3 +124,7 @@ def instrument_starlette_middleware_errors(module):
 
 def instrument_starlette_exceptions(module):
     wrap_function_trace(module, "ExceptionMiddleware.__call__")
+
+
+def instrument_starlette_background_task(module):
+    wrap_function_wrapper(module, "BackgroundTask.__call__", wrap_background_method)

@@ -19,9 +19,9 @@ import sys
 _logger = logging.getLogger(__name__)
 
 try:
-    from importlib import find_loader
+    from importlib.util import find_spec
 except ImportError:
-    find_loader = None
+    find_spec = None
 
 _import_hooks = {}
 
@@ -173,11 +173,12 @@ class ImportHookFinder:
         self._skip[fullname] = True
 
         try:
-            # For Python 3 we need to use find_loader() from the new
-            # importlib module.
+            # For Python 3 we need to use find_spec() from the importlib
+            # module.
 
-            if find_loader:
-                loader = find_loader(fullname, path)
+            if find_spec:
+                spec = find_spec(fullname)
+                loader = getattr(spec, 'loader', None)
 
                 if loader:
                     return _ImportHookChainedLoader(loader)

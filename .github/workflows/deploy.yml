@@ -42,7 +42,7 @@ jobs:
     - name: Build Manylinux Wheels
       uses: RalfG/python-wheels-manylinux-build@f7c9db24751e53d2d3c90edc2b04a9ffaa96cd01
       with:
-        python-versions: 'cp27-cp27m cp35-cp35m cp36-cp36m cp37-cp37m cp38-cp38'
+        python-versions: 'cp27-cp27m cp35-cp35m cp36-cp36m cp37-cp37m cp38-cp38 cp39-cp39'
     - name: Upload Package to S3
       run: |
         tarball="$(python setup.py --fullname).tar.gz"

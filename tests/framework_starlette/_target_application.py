@@ -78,7 +78,7 @@ class CustomRoute(object):
         self.route = route
 
     async def __call__(self, scope, receive, send):
-        await send({"type": "http.response.start", "status": 200})
+        await send({"type": "http.response.start", "status": 200, "headers": []})
         with FunctionTrace(name=callable_name(self.route)):
             await self.route(None)
 

@@ -16,7 +16,7 @@ import logging
 import time
 import newrelic.packages.six as six
 
-from newrelic.common.coroutine import (is_coroutine_function,
+from newrelic.common.coroutine import (is_coroutine_callable,
         is_asyncio_coroutine, is_generator_function)
 from newrelic.common.object_wrapper import ObjectProxy
 from newrelic.core.trace_cache import trace_cache
@@ -159,7 +159,7 @@ class CoroutineProxy(Coroutine):
 
 
 def async_proxy(wrapped):
-    if is_coroutine_function(wrapped):
+    if is_coroutine_callable(wrapped):
         return CoroutineProxy
     elif is_generator_function(wrapped):
         if is_asyncio_coroutine(wrapped):

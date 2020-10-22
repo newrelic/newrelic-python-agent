@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from newrelic.api.time_trace import record_exception
-from newrelic.api.transaction import add_custom_parameter
+from newrelic.api.transaction import add_custom_parameter, current_transaction
 from newrelic.api.asgi_application import ASGIApplicationWrapper
 
 
@@ -30,6 +30,10 @@ class simple_app_v2_raw:
         await send({"type": "http.response.start", "status": 200})
         await send({"type": "http.response.body"})
 
+        txn = current_transaction()
+
+        assert txn is None
+
 
 class simple_app_v2_init_exc(simple_app_v2_raw):
     def __init__(self, scope):
@@ -45,6 +49,11 @@ async def simple_app_v3_raw(scope, receive, send):
 
     await send({"type": "http.response.start", "status": 200})
     await send({"type": "http.response.body"})
+
+    txn = current_transaction()
+
+    assert txn is None
+
 
 
 class AppWithDescriptor:

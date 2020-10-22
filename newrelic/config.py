@@ -16,6 +16,7 @@ import os
 import sys
 import logging
 import traceback
+import warnings
 
 try:
     import ConfigParser
@@ -2112,6 +2113,10 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.framework_falcon',
             'instrument_falcon_routing_util')
 
+    _process_module_definition('fastapi.routing',
+            'newrelic.hooks.framework_fastapi',
+            'instrument_fastapi_routing')
+
     _process_module_definition('flask.app',
             'newrelic.hooks.framework_flask',
             'instrument_flask_app')
@@ -2357,6 +2362,25 @@ def _process_module_builtin_defaults():
     _process_module_definition('requests.packages.urllib3.connection',
             'newrelic.hooks.external_urllib3',
             'instrument_urllib3_connection')
+
+    _process_module_definition('starlette.requests',
+            'newrelic.hooks.framework_starlette',
+            'instrument_starlette_requests')
+    _process_module_definition('starlette.routing',
+            'newrelic.hooks.framework_starlette',
+            'instrument_starlette_routing')
+    _process_module_definition('starlette.applications',
+            'newrelic.hooks.framework_starlette',
+            'instrument_starlette_applications')
+    _process_module_definition('starlette.middleware.errors',
+            'newrelic.hooks.framework_starlette',
+            'instrument_starlette_middleware_errors')
+    _process_module_definition('starlette.exceptions',
+            'newrelic.hooks.framework_starlette',
+            'instrument_starlette_exceptions')
+    _process_module_definition('starlette.background',
+            'newrelic.hooks.framework_starlette',
+            'instrument_starlette_background_task')
 
     _process_module_definition('uvicorn.config',
             'newrelic.hooks.adapter_uvicorn',
@@ -2754,6 +2778,14 @@ def _setup_agent_console():
 
 def initialize(config_file=None, environment=None, ignore_errors=None,
             log_file=None, log_level=None):
+
+    version_info = sys.version_info[:2]
+    if version_info == (3, 5):
+        warnings.warn('A future version of the newrelic package will drop '
+                'support for Python 3.5. Please upgrade your version of '
+                'Python.',
+                DeprecationWarning,
+                stacklevel=2)
 
     if config_file is None:
         config_file = os.environ.get('NEW_RELIC_CONFIG_FILE', None)

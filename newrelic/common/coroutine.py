@@ -39,3 +39,7 @@ def is_generator_function(wrapped):
 
 def _iscoroutinefunction_tornado(fn):
     return hasattr(fn, '__tornado_coroutine__')
+
+
+def is_coroutine_callable(wrapped):
+    return is_coroutine_function(wrapped) or is_coroutine_function(getattr(wrapped, "__call__", None))

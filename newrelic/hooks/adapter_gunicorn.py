@@ -16,12 +16,12 @@ import sys
 
 from newrelic.api.wsgi_application import WSGIApplicationWrapper
 from newrelic.common.object_wrapper import wrap_out_function
-from newrelic.common.coroutine import (is_coroutine_function,
+from newrelic.common.coroutine import (is_coroutine_callable,
         is_asyncio_coroutine)
 
 
 def is_coroutine(fn):
-    return is_coroutine_function(fn) or is_asyncio_coroutine(fn)
+    return is_coroutine_callable(fn) or is_asyncio_coroutine(fn)
 
 
 def _nr_wrapper_Application_wsgi_(application):

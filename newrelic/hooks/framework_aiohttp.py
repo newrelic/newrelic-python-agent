@@ -19,7 +19,7 @@ from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import function_trace
 from newrelic.api.transaction import current_transaction, ignore_transaction
 from newrelic.api.web_transaction import web_transaction
-from newrelic.common.async_wrapper import is_coroutine_function, async_wrapper
+from newrelic.common.async_wrapper import is_coroutine_callable, async_wrapper
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
         function_wrapper, ObjectProxy)
@@ -219,7 +219,7 @@ def _nr_aiohttp_add_cat_headers_(wrapped, instance, args, kwargs):
     tmp = instance.headers
     instance.headers = HeaderProxy(tmp, cat_headers)
 
-    if is_coroutine_function(wrapped):
+    if is_coroutine_callable(wrapped):
         @asyncio.coroutine
         def new_coro():
             try:

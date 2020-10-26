@@ -27,7 +27,7 @@ DEFAULT_MIDDLEWARE_METRICS = [
     ("Function/starlette.exceptions:ExceptionMiddleware.__call__", 1),
 ]
 MIDDLEWARE_METRICS = [
-    ("Function/_target_application:middleware.<locals>.middleware", 2),
+    ("Function/_target_application:middleware_factory.<locals>.middleware", 2),
     ("Function/_target_application:middleware_decorator", 1),
 ] + DEFAULT_MIDDLEWARE_METRICS
 
@@ -57,8 +57,8 @@ def test_application_non_async(target_application, app_name):
 
 
 @pytest.mark.parametrize("app_name, transaction_name", (
-        ("no_error_handler", "starlette.exceptions:ExceptionMiddleware.http_exception"),
-        ("non_async_error_handler_no_middleware", "_target_application:missing_route_handler"),
+        ("no_error_handler", "starlette.exceptions:ExceptionMiddleware.__call__"),
+        ("non_async_error_handler_no_middleware", "starlette.exceptions:ExceptionMiddleware.__call__"),
     ))
 def test_application_nonexistent_route(target_application, app_name, transaction_name):
     @validate_transaction_metrics(
@@ -76,8 +76,8 @@ def test_application_nonexistent_route(target_application, app_name, transaction
 
 @pytest.mark.parametrize("app_name", ("no_error_handler",))    
 @validate_transaction_metrics(
-    "_target_application:middleware",
-    scoped_metrics=MIDDLEWARE_METRICS + [("Function/_target_application:middleware", 1)],
+    "_target_application:middleware_factory.<locals>.middleware",
+    scoped_metrics=[("Function/_target_application:middleware_factory.<locals>.middleware", 1)],
     rollup_metrics=[FRAMEWORK_METRIC],
 )
 def test_exception_in_middleware(target_application, app_name):

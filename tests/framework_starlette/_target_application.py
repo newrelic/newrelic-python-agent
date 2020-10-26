@@ -114,7 +114,7 @@ routes = [
 ]
 
 
-def middleware(app):
+def middleware_factory(app):
     async def middleware(scope, receive, send):
         if scope["path"] == "/crash_me_now":
             raise ValueError("Oh dear")
@@ -148,14 +148,14 @@ for app_name, flags in app_name_map.items():
         app = Starlette(debug=debug, routes=routes, exception_handlers=exception_handlers)
     else:
         if Middleware:
-            app = Starlette(debug=debug, routes=routes, middleware=[Middleware(middleware)], exception_handlers=exception_handlers)
+            app = Starlette(debug=debug, routes=routes, middleware=[Middleware(middleware_factory)], exception_handlers=exception_handlers)
         else:
             app = Starlette(debug=debug, routes=routes, exception_handlers=exception_handlers)
             # in earlier versions of starlette, middleware is not a legal argument on the Starlette application class
             # In order to keep the counts the same, we add the middleware twice using the add_middleware interface
-            app.add_middleware(middleware)
+            app.add_middleware(middleware_factory)
 
-        app.add_middleware(middleware)
+        app.add_middleware(middleware_factory)
         app.middleware("http")(middleware_decorator)
 
     # Adding custom exception handlers

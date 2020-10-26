@@ -51,7 +51,7 @@ def route_naming_wrapper(wrapped, instance, args, kwargs):
     with RequestContext(bind_request(*args, **kwargs)):
         transaction = current_transaction()
         if transaction:
-            transaction.set_transaction_name(callable_name(wrapped), priority=3)
+            transaction.set_transaction_name(callable_name(wrapped), priority=2)
         return wrapped(*args, **kwargs)
 
 
@@ -83,14 +83,20 @@ def wrap_background_method(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
-@function_wrapper
-def wrap_middleware(wrapped, instance, args, kwargs):
+def middleware_wrapper(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
+
+    transaction = current_transaction()
+    if transaction:
+        transaction.set_transaction_name(callable_name(wrapped), priority=1)
 
     dispatch_func = getattr(result, "dispatch_func", None)
     name = dispatch_func and callable_name(dispatch_func)
 
     return FunctionTraceWrapper(result, name=name)
+
+
+wrap_middleware = function_wrapper(middleware_wrapper)
 
 
 def bind_middleware(middleware_class, *args, **kwargs):
@@ -178,7 +184,8 @@ def instrument_starlette_requests(module):
 
 
 def instrument_starlette_middleware_errors(module):
-    wrap_function_trace(module, "ServerErrorMiddleware.__call__")
+    #wrap_function_wrapper(module, "ServerErrorMiddleware.__call__", middleware_wrapper)
+    wrap_middleware(module, "ExceptionMiddleware.__call__")
 
     wrap_function_wrapper(module, "ServerErrorMiddleware.__init__", wrap_server_error_handler)
 
@@ -188,7 +195,8 @@ def instrument_starlette_middleware_errors(module):
 
 
 def instrument_starlette_exceptions(module):
-    wrap_function_trace(module, "ExceptionMiddleware.__call__")
+    #wrap_function_wrapper(module, "ExceptionMiddleware.__call__", middleware_wrapper)
+    wrap_middleware(module, "ExceptionMiddleware.__call__")
 
     wrap_function_wrapper(module, "ExceptionMiddleware.http_exception",
         wrap_exception_handler)

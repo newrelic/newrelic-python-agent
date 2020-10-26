@@ -56,6 +56,36 @@ def test_application_non_async(target_application, app_name):
     assert response.status == 200
 
 
+@pytest.mark.parametrize("app_name, transaction_name", (
+        ("no_error_handler", "starlette.exceptions:ExceptionMiddleware.http_exception"),
+        ("non_async_error_handler_no_middleware", "_target_application:missing_route_handler"),
+    ))
+def test_application_nonexistent_route(target_application, app_name, transaction_name):
+    @validate_transaction_metrics(
+        transaction_name,
+        scoped_metrics=[("Function/" + transaction_name, 1)],
+        rollup_metrics=[FRAMEWORK_METRIC],
+    )
+    def _test():
+        app = target_application[app_name]
+        response = app.get("/nonexistent_route")
+        assert response.status == 404
+    
+    _test()
+
+
+@pytest.mark.parametrize("app_name", ("no_error_handler",))    
+@validate_transaction_metrics(
+    "_target_application:middleware",
+    scoped_metrics=MIDDLEWARE_METRICS + [("Function/_target_application:middleware", 1)],
+    rollup_metrics=[FRAMEWORK_METRIC],
+)
+def test_exception_in_middleware(target_application, app_name):
+    app = target_application[app_name]
+    with pytest.raises(ValueError):
+        app.get("/crash_me_now")
+
+
 @pytest.mark.parametrize("app_name,transaction_name,path,scoped_metrics", (
     ("non_async_error_handler_no_middleware", "_target_application:runtime_error", "/runtime_error", []),
     ("async_error_handler_no_middleware", "_target_application:runtime_error", "/runtime_error", [("Function/_target_application:async_error_handler", 1)]),
@@ -167,3 +197,5 @@ def test_application_background_tasks(target_application, app_name):
     metric_names = {metric[0] for metric in metrics}
     for metric in expected_metrics:
         assert metric in metric_names
+
+

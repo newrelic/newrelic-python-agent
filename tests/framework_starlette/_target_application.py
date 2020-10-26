@@ -73,6 +73,10 @@ async def teapot_handler(request, exc):
     return PlainTextResponse("Teapot", status_code=418)
 
 
+def missing_route_handler(request, exc):
+    return PlainTextResponse("This route is missing!", status_code=404)
+
+
 class CustomRoute(object):
     def __init__(self, route):
         self.route = route
@@ -112,9 +116,12 @@ routes = [
 
 def middleware(app):
     async def middleware(scope, receive, send):
+        if scope["path"] == "/crash_me_now":
+            raise ValueError("Oh dear")
         return await app(scope, receive, send)
 
     return middleware
+
 
 async def middleware_decorator(request, call_next):
     return await call_next(request)
@@ -160,6 +167,7 @@ for app_name, flags in app_name_map.items():
 
     if app_name == "non_async_error_handler_no_middleware":
         app.add_exception_handler(Exception, non_async_error_handler)
+        app.add_exception_handler(404, missing_route_handler)
     elif app_name == "teapot_exception_handler_no_middleware":
         app.add_exception_handler(418, teapot_handler)
 

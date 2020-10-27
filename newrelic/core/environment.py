@@ -185,16 +185,14 @@ def environment_settings():
 
     plugins = []
 
-    # Using six to create create a snapshot of sys.modules can occassionally
+    # Using any iterable to create a snapshot of sys.modules can occassionally
     # fail in a rare case when modules are imported in parallel by different
-    # threads. This is because list(six.iteritems(sys.modules)) results in
-    # list(iter(sys.modules.iteritems())), which means sys.modules could change
-    # between the time when the iterable is handed over from the iter() to
-    # list().
+    # threads.
     #
-    # TL;DR: Do NOT use six module for the following iteration.
+    # TL;DR: Do NOT use an iterable on the original sys.modules to generate the
+    # list
 
-    for name, module in list(sys.modules.items()):
+    for name, module in sys.modules.copy().items():
         # If the module isn't actually loaded (such as failed relative imports
         # in Python 2.7), the module will be None and should not be reported.
         if module is None:

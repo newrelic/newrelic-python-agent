@@ -27,7 +27,7 @@ DEFAULT_MIDDLEWARE_METRICS = [
     ("Function/starlette.exceptions:ExceptionMiddleware.__call__", 1),
 ]
 MIDDLEWARE_METRICS = [
-    ("Function/_target_application:middleware.<locals>.middleware", 2),
+    ("Function/_target_application:middleware_factory.<locals>.middleware", 2),
     ("Function/_target_application:middleware_decorator", 1),
 ] + DEFAULT_MIDDLEWARE_METRICS
 
@@ -54,6 +54,36 @@ def test_application_non_async(target_application, app_name):
     app = target_application[app_name]
     response = app.get("/non_async")
     assert response.status == 200
+
+
+@pytest.mark.parametrize("app_name, transaction_name", (
+        ("no_error_handler", "starlette.exceptions:ExceptionMiddleware.__call__"),
+        ("non_async_error_handler_no_middleware", "starlette.exceptions:ExceptionMiddleware.__call__"),
+    ))
+def test_application_nonexistent_route(target_application, app_name, transaction_name):
+    @validate_transaction_metrics(
+        transaction_name,
+        scoped_metrics=[("Function/" + transaction_name, 1)],
+        rollup_metrics=[FRAMEWORK_METRIC],
+    )
+    def _test():
+        app = target_application[app_name]
+        response = app.get("/nonexistent_route")
+        assert response.status == 404
+    
+    _test()
+
+
+@pytest.mark.parametrize("app_name", ("no_error_handler",))    
+@validate_transaction_metrics(
+    "_target_application:middleware_factory.<locals>.middleware",
+    scoped_metrics=[("Function/_target_application:middleware_factory.<locals>.middleware", 1)],
+    rollup_metrics=[FRAMEWORK_METRIC],
+)
+def test_exception_in_middleware(target_application, app_name):
+    app = target_application[app_name]
+    with pytest.raises(ValueError):
+        app.get("/crash_me_now")
 
 
 @pytest.mark.parametrize("app_name,transaction_name,path,scoped_metrics", (
@@ -167,3 +197,5 @@ def test_application_background_tasks(target_application, app_name):
     metric_names = {metric[0] for metric in metrics}
     for metric in expected_metrics:
         assert metric in metric_names
+
+

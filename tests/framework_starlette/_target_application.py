@@ -73,6 +73,10 @@ async def teapot_handler(request, exc):
     return PlainTextResponse("Teapot", status_code=418)
 
 
+def missing_route_handler(request, exc):
+    return PlainTextResponse("This route is missing!", status_code=404)
+
+
 class CustomRoute(object):
     def __init__(self, route):
         self.route = route
@@ -110,11 +114,14 @@ routes = [
 ]
 
 
-def middleware(app):
+def middleware_factory(app):
     async def middleware(scope, receive, send):
+        if scope["path"] == "/crash_me_now":
+            raise ValueError("Oh dear")
         return await app(scope, receive, send)
 
     return middleware
+
 
 async def middleware_decorator(request, call_next):
     return await call_next(request)
@@ -141,14 +148,14 @@ for app_name, flags in app_name_map.items():
         app = Starlette(debug=debug, routes=routes, exception_handlers=exception_handlers)
     else:
         if Middleware:
-            app = Starlette(debug=debug, routes=routes, middleware=[Middleware(middleware)], exception_handlers=exception_handlers)
+            app = Starlette(debug=debug, routes=routes, middleware=[Middleware(middleware_factory)], exception_handlers=exception_handlers)
         else:
             app = Starlette(debug=debug, routes=routes, exception_handlers=exception_handlers)
             # in earlier versions of starlette, middleware is not a legal argument on the Starlette application class
             # In order to keep the counts the same, we add the middleware twice using the add_middleware interface
-            app.add_middleware(middleware)
+            app.add_middleware(middleware_factory)
 
-        app.add_middleware(middleware)
+        app.add_middleware(middleware_factory)
         app.middleware("http")(middleware_decorator)
 
     # Adding custom exception handlers
@@ -160,6 +167,7 @@ for app_name, flags in app_name_map.items():
 
     if app_name == "non_async_error_handler_no_middleware":
         app.add_exception_handler(Exception, non_async_error_handler)
+        app.add_exception_handler(404, missing_route_handler)
     elif app_name == "teapot_exception_handler_no_middleware":
         app.add_exception_handler(418, teapot_handler)
 

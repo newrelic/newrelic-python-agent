@@ -43,6 +43,37 @@ def test_plugin_list():
     assert "newrelic.hooks.newrelic" not in plugin_list
 
 
+class NoIteratorDict(object):
+    def __init__(self, d):
+        self.d = d
+
+    def copy(self):
+        return self.d.copy()
+
+    def get(self, *args, **kwargs):
+        return self.d.get(*args, **kwargs)
+
+    def __getitem__(self, *args, **kwargs):
+        return self.d.__getitem__(*args, **kwargs)
+
+    def __contains__(self, *args, **kwargs):
+        return self.d.__contains__(*args, **kwargs)
+
+
+def test_plugin_list_uses_no_sys_modules_iterator(monkeypatch):
+    modules = NoIteratorDict(sys.modules)
+    monkeypatch.setattr(sys, 'modules', modules)
+
+    # If environment_settings iterates over sys.modules, an attribute error will be generated
+    environment_info = environment_settings()
+
+    for key, plugin_list in environment_info:
+        if key == "Plugin List":
+            break
+    else:
+        assert False, "'Plugin List' not found"
+
+
 @pytest.mark.parametrize(
     "loaded_modules,dispatcher,dispatcher_version,worker_version",
     (

@@ -81,3 +81,19 @@ def test_region_aware_license_keys(ini, env, expected_host,
     settings = global_settings()
     assert settings.host == expected_host
     assert settings.license_key == expected_license_key
+
+
+@pytest.mark.parametrize("ini,license_key,host_override,expected_host", (
+    (INI_FILE_WITHOUT_LICENSE_KEY, NO_REGION_KEY, None, "collector.newrelic.com"),
+    (INI_FILE_WITHOUT_LICENSE_KEY, EU01_KEY, None, "collector.eu01.nr-data.net"),
+    (INI_FILE_WITHOUT_LICENSE_KEY, NO_REGION_KEY, "foo.newrelic.com", "foo.newrelic.com"),
+))
+def test_region_aware_global_settings(ini, license_key, host_override,
+        expected_host, global_settings):
+    settings = global_settings()
+
+    if host_override:
+        settings.host = host_override
+
+    settings.license_key = license_key
+    assert settings.host == expected_host

@@ -90,6 +90,21 @@ def create_settings(nested):
     return type('Settings', (Settings,), {'nested': nested})()
 
 
+class TopLevelSettings(Settings):
+    _host = None
+
+    @property
+    def host(self):
+        if self._host:
+            return self._host
+        else:
+            return default_host(self.license_key)
+
+    @host.setter
+    def host(self, value):
+        self._host = value
+
+
 class AttributesSettings(Settings):
     pass
 
@@ -303,7 +318,7 @@ class EventHarvestConfigHarvestLimitSettings(Settings):
     nested = True
 
 
-_settings = Settings()
+_settings = TopLevelSettings()
 _settings.attributes = AttributesSettings()
 _settings.thread_profiler = ThreadProfilerSettings()
 _settings.transaction_tracer = TransactionTracerSettings()
@@ -502,8 +517,7 @@ _settings.api_key = os.environ.get('NEW_RELIC_API_KEY', None)
 
 _settings.ssl = _environ_as_bool('NEW_RELIC_SSL', True)
 
-_settings.host = os.environ.get('NEW_RELIC_HOST',
-        default_host(_settings.license_key))
+_settings.host = os.environ.get('NEW_RELIC_HOST')
 _settings.port = int(os.environ.get('NEW_RELIC_PORT', '0'))
 
 _settings.agent_run_id = None

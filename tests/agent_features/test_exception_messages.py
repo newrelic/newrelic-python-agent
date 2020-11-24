@@ -159,8 +159,8 @@ def test_py3_transaction_exception_message_unicode_english():
 @validate_transaction_exception_message(INCORRECTLY_DECODED_BYTES_PY3)
 @background_task()
 def test_py3_transaction_exception_message_bytes_non_english():
-    """It really makes a mess of things when you cast from bytes to a
-    string in python 3 (that is using str(), not using encode/decode methods).
+    """An issue can occur if you cast from bytes to a string in
+    python 3 (that is using str(), not using encode/decode methods).
     This is because all characters in bytes are literals, no implicit
     decoding happens, like it does in python 2. You just shouldn't use bytes
     for exception messages in Python 3. THIS TEST ASSERTS THAT THE

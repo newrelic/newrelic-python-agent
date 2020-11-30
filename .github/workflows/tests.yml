@@ -39,7 +39,7 @@ jobs:
     - name: Get Date
       id: get-date
       run: |
-        echo "::set-output name=date::$(/bin/date -u "+%Y-%m")"
+        echo "::set-output name=date::$(/bin/date -u "+%Y-%m-%d")"
       shell: bash
 
     - name: Cache Tox and Pip (Linux)
@@ -54,7 +54,7 @@ jobs:
           ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
           ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
           ${{ runner.os }}-${{ matrix.test-directory }}-
-          
+
     # Set up all versions of python
     - uses: actions/setup-python@v2
       with:

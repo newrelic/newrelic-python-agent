@@ -36,6 +36,12 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Get Date
+      id: get-date
+      run: |
+        echo "::set-output name=date::$(/bin/date -u "+%Y-%m")"
+      shell: bash
+
     - name: Cache Tox and Pip (Linux)
       if: startsWith(runner.os, 'Linux')
       uses: actions/cache@v2
@@ -43,8 +49,12 @@ jobs:
         path: |
           **/.tox
           ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}
-
+        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
+        restore_keys: |
+          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
+          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
+          ${{ runner.os }}-${{ matrix.test-directory }}-
+          
     # Set up all versions of python
     - uses: actions/setup-python@v2
       with:

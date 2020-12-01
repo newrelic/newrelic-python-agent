@@ -47,7 +47,6 @@ jobs:
       uses: actions/cache@v2
       with:
         path: |
-          **/.tox
           ~/.cache/pip
         key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
         restore-keys: |

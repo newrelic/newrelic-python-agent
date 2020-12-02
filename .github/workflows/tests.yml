@@ -29,7 +29,12 @@ jobs:
 
     strategy:
       matrix:
-        test-directory: [agent_features, agent_streaming, agent_unittests, framework_starlette]
+        test-directory: 
+          - agent_features
+          - agent_streaming
+          - agent_unittests
+          - framework_fastapi
+          - framework_starlette
 
     runs-on: ubuntu-latest
 

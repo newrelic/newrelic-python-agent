@@ -1,0 +1,15 @@
+{% load custom_tags %}
+{% load newrelic_tags %}
+<!DOCTYPE html>
+<html>
+<head>
+    {% newrelic_browser_timing_header %}
+    Some header
+</head>
+<body>
+    <h1>My First Heading</h1>
+    <p>My first paragraph.</p>
+    {% show_results %}
+    {% newrelic_browser_timing_footer %}
+</body>
+</html>

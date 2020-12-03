@@ -30,7 +30,7 @@ class PostgresApi(object):
         else:
             host, port = addr
 
-        return (host, port, getattr(con_params, "database", None))
+        return (host, str(port), getattr(con_params, "database", None))
 
     @classmethod
     def instance_info(cls, args, kwargs):

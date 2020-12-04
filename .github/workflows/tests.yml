@@ -30,11 +30,14 @@ jobs:
     strategy:
       matrix:
         test-directory: 
+          - adapter_uvicorn
           - agent_features
           - agent_streaming
           - agent_unittests
+          - application_celery
           - framework_fastapi
           - framework_flask
+          - framework_sanic
           - framework_starlette
 
     runs-on: ubuntu-latest

@@ -34,6 +34,7 @@ jobs:
           - agent_features
           - agent_streaming
           - agent_unittests
+          - application_celery
           - framework_fastapi
           - framework_sanic
           - framework_starlette

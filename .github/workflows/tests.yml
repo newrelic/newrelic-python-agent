@@ -30,6 +30,7 @@ jobs:
     strategy:
       matrix:
         test-directory: 
+          - adapter_uvicorn
           - agent_features
           - agent_streaming
           - agent_unittests

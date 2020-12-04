@@ -48,7 +48,7 @@ def test_error_recorded(app):
 # This test verifies that we don't actually break anything if somebody puts
 # garbage into the status code
 @validate_transaction_metrics('_target_application:BadResponse.on_get')
-@validate_transaction_errors(errors=['_target_application:Oops'])
+@validate_transaction_errors(errors=['_target_application:BadGetRequest'])
 def test_bad_response_error(app):
     # Disable linting since this should actually be an invalid response
     # (incorrect media type int)
@@ -61,7 +61,7 @@ def test_bad_response_error(app):
 
 
 @validate_transaction_metrics('_target_application:BadResponse.on_put')
-@validate_transaction_errors(errors=['_target_application:Crash'])
+@validate_transaction_errors(errors=['_target_application:BadPutRequest'])
 def test_unhandled_exception(app):
     from falcon import __version__ as falcon_version
 
@@ -69,7 +69,7 @@ def test_unhandled_exception(app):
     if int(falcon_version.split('.', 1)[0]) >= 3:
         app.put('/bad_response', status=500, expect_errors=True)
     else:
-        with pytest.raises(app.Crash):
+        with pytest.raises(app.BadPutRequest):
             app.put('/bad_response')
 
 

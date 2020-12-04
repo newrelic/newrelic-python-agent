@@ -17,11 +17,11 @@ def _bind_response(*args, **kwargs):
             return arg
 
 
-class Oops(ValueError):
+class BadGetRequest(ValueError):
     pass
 
 
-class Crash(ValueError):
+class BadPutRequest(ValueError):
     pass
 
 
@@ -34,10 +34,10 @@ class Index(object):
 
 class BadResponse(object):
     def on_get(self, req, resp):
-        raise Oops()
+        raise BadGetRequest()
 
     def on_put(self, req, resp):
-        raise Crash()
+        raise BadPutRequest()
 
 
 try:
@@ -60,12 +60,12 @@ def bad_error_handler(*args, **kwargs):
 
 application.add_route('/', Index())
 application.add_route('/bad_response', BadResponse())
-application.add_error_handler(Oops, bad_error_handler)
+application.add_error_handler(BadGetRequest, bad_error_handler)
 
 _target_application = webtest.TestApp(application)
 
 # Put exception class here for convenience
-_target_application.Crash = Crash
+_target_application.BadPutRequest = BadPutRequest
 
 # Put names here for convenience
 _target_application.name_prefix = name_prefix

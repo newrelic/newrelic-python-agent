@@ -17,7 +17,7 @@ class BadGetStatusHandler(tornado.web.RequestHandler):
         self.write("Hello, world")
 
     def get_status(self, *args, **kwargs):
-        raise ValueError("OOPS")
+        raise ValueError("Bad Status")
 
 
 class ProcessCatHeadersHandler(tornado.web.RequestHandler):
@@ -90,14 +90,14 @@ class CoroThrowHandler(tornado.web.RequestHandler):
     @tornado.gen.coroutine
     def get(self):
         try:
-            yield self.boom()
+            yield self.throw_exception()
         except ValueError:
             pass
         self.write("Hello, world")
 
     @tornado.gen.coroutine
-    def boom(self):
-        raise ValueError('BOOM!')
+    def throw_exception(self):
+        raise ValueError('Throwing exception.')
 
 
 class CoroHandler(tornado.web.RequestHandler):

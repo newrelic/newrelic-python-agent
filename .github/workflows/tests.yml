@@ -36,6 +36,7 @@ jobs:
           - agent_streaming
           - agent_unittests
           - application_celery
+          - component_flask_rest
           - framework_bottle
           - framework_falcon
           - framework_fastapi

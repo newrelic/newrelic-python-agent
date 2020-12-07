@@ -8,13 +8,15 @@ from newrelic.core.config import global_settings
 from newrelic.common.object_names import callable_name
 
 
-@pytest.fixture(params=["flask_restful", "flask_restplus"])
+@pytest.fixture(params=["flask_restful", "flask_restplus", "flask_restx"])
 def application(request):
     from _test_application import get_test_application
     if request.param == "flask_restful":
         import flask_restful as module
     elif request.param == "flask_restplus":
         import flask_restplus as module
+    elif request.param == "flask_restx":
+        import flask_restx as module
     else:
         assert False
 

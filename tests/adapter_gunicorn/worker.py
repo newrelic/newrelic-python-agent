@@ -16,12 +16,10 @@ class WsgiProxy(object):
         start_response('200 OK', [])
         return [b'PONG']
 
-    @asyncio.coroutine
-    def send(self, message):
+    async def send(self, message):
         pass
 
-    @asyncio.coroutine
-    def receive(self):
+    async def receive(self):
         return {'type': 'http.request'}
 
 

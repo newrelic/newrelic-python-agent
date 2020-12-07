@@ -1,0 +1,48 @@
+import pytest
+
+from testing_support.fixtures import (validate_transaction_metrics,
+    validate_transaction_errors)
+
+try:
+    # The __version__ attribute was only added in 0.7.0.
+    from flask import __version__ as flask_version
+    is_gt_flask060 = True
+except ImportError:
+    is_gt_flask060 = False
+
+requires_error_handler = pytest.mark.skipif(not is_gt_flask060,
+        reason="The error handler decorator is not supported.")
+
+def target_application():
+    # We need to delay Flask application creation because of ordering
+    # issues whereby the agent needs to be initialised before Flask is
+    # imported and the routes configured. Normally pytest only runs the
+    # global fixture which will initialise the agent after each test
+    # file is imported, which is too late. We also can't do application
+    # creation within a function as we will then get view handler
+    # functions are different between Python 2 and 3, with the latter
+    # showing <local> scope in path.
+
+    from _test_not_found import _test_application
+    return _test_application
+
+_test_error_handler_not_found_scoped_metrics = [
+        ('Function/flask.app:Flask.wsgi_app', 1),
+        ('Python/WSGI/Application', 1),
+        ('Python/WSGI/Response', 1),
+        ('Python/WSGI/Finalize', 1),
+        ('Function/_test_not_found:page_not_found', 1),
+        ('Function/flask.app:Flask.handle_http_exception', 1),
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
+
+if is_gt_flask060:
+    _test_error_handler_not_found_scoped_metrics.extend([
+            ('Function/flask.app:Flask.handle_user_exception', 1)])
+
+@requires_error_handler
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics('_test_not_found:page_not_found',
+        scoped_metrics=_test_error_handler_not_found_scoped_metrics)
+def test_error_handler_not_found():
+    application = target_application()
+    response = application.get('/missing', status=404)

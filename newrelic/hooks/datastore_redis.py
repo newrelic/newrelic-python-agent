@@ -53,7 +53,7 @@ _redis_client_methods = ('bgrewriteaof', 'bgsave', 'client_kill',
 _redis_multipart_commands = set(['client', 'cluster', 'command', 'config',
     'debug', 'sentinel', 'slowlog', 'script'])
 
-_redis_operation_re = re.compile('[-\s]+')
+_redis_operation_re = re.compile(r'[-\s]+')
 
 def _conn_attrs_to_dict(connection):
     return {

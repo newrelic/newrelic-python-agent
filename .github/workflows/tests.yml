@@ -37,6 +37,7 @@ jobs:
           - application_celery
           - framework_bottle
           - framework_falcon
+          - framework_cherrypy
           - framework_fastapi
           - framework_sanic
           - framework_starlette

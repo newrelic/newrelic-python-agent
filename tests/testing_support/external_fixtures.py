@@ -23,7 +23,6 @@ OUTBOUND_TRACE_KEYS_REQUIRED = (
         'ty', 'ac', 'ap', 'tr', 'pr', 'sa', 'ti')
 
 
-
 def validate_outbound_headers(header_id='X-NewRelic-ID',
         header_transaction='X-NewRelic-Transaction'):
     transaction = current_transaction()

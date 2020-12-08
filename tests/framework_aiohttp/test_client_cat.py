@@ -11,8 +11,6 @@ from testing_support.external_fixtures import (create_incoming_headers,
         validate_external_node_params, validate_cross_process_headers)
 from testing_support.fixtures import (override_application_settings,
         validate_transaction_metrics)
-from testing_support.mock_external_http_server import (
-        MockExternalHTTPHResponseHeadersServer, MockExternalHTTPServer)
 
 version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
 
@@ -21,23 +19,6 @@ if version_info < (2, 0):
 else:
     _expected_error_class = aiohttp.client_exceptions.ClientResponseError
 
-
-@pytest.fixture(scope="module")
-def mock_external_http_server():    
-    response_values = []
-    port = 8000 + os.getpid()
-
-    def respond_with_cat_header(self):
-        headers, response_code = response_values.pop()
-        self.send_response(response_code)
-        for header, value in headers:
-            self.send_header(header, value)
-        self.end_headers()
-        self.wfile.write(b'')
-
-
-    with MockExternalHTTPServer(handler=respond_with_cat_header, port=port) as server:
-        yield (server, response_values)
 
 @asyncio.coroutine
 def fetch(url, headers=None, raise_for_status=False, connector=None):
@@ -69,12 +50,6 @@ def fetch(url, headers=None, raise_for_status=False, connector=None):
     f = session.close()
     yield from asyncio.ensure_future(f)
     return headers
-
-
-@pytest.fixture(scope='module')
-def mock_header_server():
-    with MockExternalHTTPHResponseHeadersServer() as _server:
-        yield _server
 
 
 @pytest.mark.parametrize('cat_enabled', (True, False))

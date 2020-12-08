@@ -10,7 +10,7 @@ import pytest
 from testing_support.fixtures import (code_coverage_fixture,
         collector_agent_registration_fixture, collector_available_fixture)
 from testing_support.mock_external_http_server import (
-        MockExternalHTTPHResponseHeadersServer)
+        MockExternalHTTPHResponseHeadersServer, MockExternalHTTPServer)
 
 _coverage_source = [
     'newrelic.hooks.framework_aiohttp',
@@ -99,15 +99,29 @@ def aiohttp_app(request):
 
 
 @pytest.fixture(scope='module')
-def external():
-    external = MockExternalHTTPHResponseHeadersServer()
-    with external:
-        yield external
+def mock_header_server():
+    with MockExternalHTTPHResponseHeadersServer() as _server:
+        yield _server
+
+@pytest.fixture(scope="module")
+def mock_external_http_server():    
+    response_values = []
+
+    def respond_with_cat_header(self):
+        headers, response_code = response_values.pop()
+        self.send_response(response_code)
+        for header, value in headers:
+            self.send_header(header, value)
+        self.end_headers()
+        self.wfile.write(b'')
+
+    with MockExternalHTTPServer(handler=respond_with_cat_header) as server:
+        yield (server, response_values)
 
 
 @pytest.fixture(scope='module')
-def local_server_info(external):
-    host_port = '127.0.0.1:%d' % external.port
+def local_server_info(mock_header_server):
+    host_port = '127.0.0.1:%d' % mock_header_server.port
     metric = 'External/%s/aiohttp/' % host_port
     url = 'http://' + host_port
     return ServerInfo(metric, url)

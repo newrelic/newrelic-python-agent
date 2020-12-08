@@ -1,6 +1,7 @@
 import pytest
 import asyncio
 import aiohttp
+import os
 
 from newrelic.api.background_task import background_task
 from newrelic.api.external_trace import ExternalTrace
@@ -186,16 +187,18 @@ def test_process_incoming_headers(cat_enabled, response_code,
     # always called and thus makes sure the trace is not ended before
     # StopIteration is called.
 
+    PORT = 8000 + os.getpid()
+
     _test_cross_process_response_scoped_metrics = [
-            ('ExternalTransaction/127.0.0.1:8990/1#2/test', 1 if cat_enabled
+            ('ExternalTransaction/127.0.0.1:%d/1#2/test' % PORT, 1 if cat_enabled
                 else None)]
 
     _test_cross_process_response_rollup_metrics = [
             ('External/all', 1),
             ('External/allOther', 1),
-            ('External/127.0.0.1:8990/all', 1),
-            ('ExternalApp/127.0.0.1:8990/1#2/all', 1 if cat_enabled else None),
-            ('ExternalTransaction/127.0.0.1:8990/1#2/test', 1 if cat_enabled
+            ('External/127.0.0.1:%d/all' % PORT, 1),
+            ('ExternalApp/127.0.0.1:%d/1#2/all' % PORT, 1 if cat_enabled else None),
+            ('ExternalTransaction/127.0.0.1:%d/1#2/test' % PORT, 1 if cat_enabled
                 else None)]
 
     _test_cross_process_response_external_node_params = [
@@ -221,10 +224,10 @@ def test_process_incoming_headers(cat_enabled, response_code,
             self.end_headers()
             self.wfile.write(b'')
 
-        with MockExternalHTTPServer(handler=respond_with_cat_header,
-                port=8990):
+        with MockExternalHTTPServer(handler=respond_with_cat_header, port=PORT) as server:
+            address = 'http://127.0.0.1:%d' % server.port
             yield from fetch(
-                    'http://127.0.0.1:8990',
+                    address,
                     raise_for_status=raise_for_status,
                     connector=connector)
 

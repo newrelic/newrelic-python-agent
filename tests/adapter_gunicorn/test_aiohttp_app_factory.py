@@ -4,6 +4,8 @@ import random
 import socket
 import time
 from testing_support.fixtures import TerminatingPopen
+from testing_support.util import get_open_port
+
 
 aiohttp = pytest.importorskip('aiohttp')
 from urllib.request import urlopen
@@ -19,7 +21,7 @@ def test_aiohttp_app_factory(nr_enabled):
 
     # Restart the server if it dies during testing
     for _ in range(5):
-        PORT = random.randint(8000, 9000)
+        PORT = get_open_port()
         cmd = [gunicorn, '-b', '127.0.0.1:%d' % PORT, '--worker-class',
                 'aiohttp.GunicornWebWorker', 'async_app:app_factory']
 

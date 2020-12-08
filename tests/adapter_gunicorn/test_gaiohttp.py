@@ -4,10 +4,13 @@ import pytest
 import time
 import socket
 from testing_support.fixtures import TerminatingPopen
+from testing_support.util import get_open_port
+
 
 pytest.importorskip('aiohttp.wsgi')
 pytest.importorskip('gunicorn.workers.gaiohttp')
 from urllib.request import urlopen
+from testing_support.util import get_open_port
 
 
 @pytest.mark.parametrize('nr_enabled', [True, False])
@@ -18,7 +21,7 @@ def test_gunicorn_gaiohttp_worker(nr_enabled):
 
     # Restart the server if it dies during testing
     for _ in range(5):
-        PORT = random.randint(8000, 9000)
+        PORT = get_open_port()
         cmd = [gunicorn, '-b', '127.0.0.1:%d' % PORT, '-k', 'gaiohttp',
                 'app:application']
 

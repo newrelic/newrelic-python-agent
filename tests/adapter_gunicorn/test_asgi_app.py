@@ -4,17 +4,19 @@ import random
 import socket
 import time
 from testing_support.fixtures import TerminatingPopen
+from testing_support.util import get_open_port
+
 
 pytest.importorskip('asyncio')
 from urllib.request import urlopen
-
+from testing_support.util import get_open_port
 
 @pytest.mark.parametrize('nr_enabled', (True, False))
 def test_asgi_app(nr_enabled):
     nr_admin = os.path.join(os.environ['TOX_ENVDIR'], 'bin', 'newrelic-admin')
     gunicorn = os.path.join(os.environ['TOX_ENVDIR'], 'bin', 'gunicorn')
 
-    PORT = random.randint(8000, 9000)
+    PORT = get_open_port()
     cmd = [gunicorn, '-b', '127.0.0.1:%d' % PORT, '--worker-class',
             'worker.AsgiWorker', 'asgi_app:Application']
 

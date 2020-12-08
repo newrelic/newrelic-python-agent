@@ -34,7 +34,3 @@ try:
 except ImportError:
     import django.core.handlers.wsgi
     application = django.core.handlers.wsgi.WSGIHandler()
-
-# Apply WSGI middleware here.
-# from helloworld.wsgi import HelloWorldApplication
-# application = HelloWorldApplication(application)

@@ -38,6 +38,7 @@ jobs:
           - application_celery
           - component_flask_rest
           - framework_bottle
+          - framework_django
           - framework_falcon
           - framework_fastapi
           - framework_flask

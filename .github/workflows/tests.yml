@@ -30,12 +30,17 @@ jobs:
     strategy:
       matrix:
         test-directory: 
+          - adapter_cheroot
           - adapter_uvicorn
           - agent_features
           - agent_streaming
           - agent_unittests
           - application_celery
+          - component_flask_rest
+          - framework_bottle
+          - framework_falcon
           - framework_fastapi
+          - framework_flask
           - framework_sanic
           - framework_starlette
 
@@ -94,12 +99,13 @@ jobs:
 
     - uses: actions/setup-python@v2
       with:
-        python-version: pypy2
+        python-version: pypy3
         architecture: x64
 
+    # Setup pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
     - uses: actions/setup-python@v2
       with:
-        python-version: pypy3
+        python-version: pypy2
         architecture: x64
 
     - name: Install Dependencies
@@ -190,12 +196,108 @@ jobs:
 
     - uses: actions/setup-python@v2
       with:
+        python-version: pypy3
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
         python-version: pypy2
+        architecture: x64
+
+    - name: Install Dependencies
+      run: |
+        pip install -U pip
+        pip install -U wheel setuptools tox virtualenv!=20.0.24
+
+    - name: Test
+      run: |
+        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
+      env:
+        TOX_PARALLEL_NO_SPINNER: 1
+        PY_COLORS: 0
+
+  redis:
+
+    strategy:
+      matrix:
+        test-directory: [datastore_redis]
+
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: redis
+        env:
+          POSTGRES_PASSWORD: redis
+        ports:
+          - 8080:6379
+          - 8081:6379
+        # Set health checks to wait until redis has started
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Get Date
+      id: get-date
+      run: |
+        echo "::set-output name=date::$(/bin/date -u "+%Y-%m-%d")"
+      shell: bash
+
+    - name: Cache Tox and Pip (Linux)
+      if: startsWith(runner.os, 'Linux')
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cache/pip
+        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
+        restore-keys: |
+          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
+          ${{ runner.os }}-${{ matrix.test-directory }}-
+
+    # Set up all versions of python
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 2.7
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.5
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.6
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.7
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
         architecture: x64
 
     - uses: actions/setup-python@v2
       with:
         python-version: pypy3
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: pypy2
         architecture: x64
 
     - name: Install Dependencies

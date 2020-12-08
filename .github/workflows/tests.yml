@@ -43,6 +43,7 @@ jobs:
           - framework_flask
           - framework_sanic
           - framework_starlette
+          - framework_tornado
 
     runs-on: ubuntu-latest
 

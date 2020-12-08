@@ -139,7 +139,7 @@ class HTMLInsertionHandler(tornado.web.RequestHandler):
 
 class CrashHandler(tornado.web.RequestHandler):
     def get(self):
-        raise ValueError("whoopsie")
+        raise ValueError("CrashHandler")
 
 
 class MultiTraceHandler(tornado.web.RequestHandler):

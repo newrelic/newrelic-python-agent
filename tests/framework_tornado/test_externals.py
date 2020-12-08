@@ -217,7 +217,7 @@ def cat_response_handler(self):
     self.send_response(CAT_RESPONSE_CODE)
     self.send_header(*cat_response_header)
     self.end_headers()
-    self.wfile.write(b'BEEEEEP')
+    self.wfile.write(b'Example Data')
 
 
 @pytest.fixture(scope='module')

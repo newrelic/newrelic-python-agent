@@ -22,6 +22,23 @@ else:
     _expected_error_class = aiohttp.client_exceptions.ClientResponseError
 
 
+@pytest.fixture(scope="module")
+def mock_external_http_server():    
+    response_values = []
+    port = 8000 + os.getpid()
+
+    def respond_with_cat_header(self):
+        headers, response_code = response_values.pop()
+        self.send_response(response_code)
+        for header, value in headers:
+            self.send_header(header, value)
+        self.end_headers()
+        self.wfile.write(b'')
+
+
+    with MockExternalHTTPServer(handler=respond_with_cat_header, port=port) as server:
+        yield (server, response_values)
+
 @asyncio.coroutine
 def fetch(url, headers=None, raise_for_status=False, connector=None):
 
@@ -177,7 +194,7 @@ class PoorResolvingConnector(aiohttp.TCPConnector):
 @pytest.mark.parametrize('connector_class',
         [None, PoorResolvingConnector])  # None will use default
 def test_process_incoming_headers(cat_enabled, response_code,
-        raise_for_status, connector_class):
+        raise_for_status, connector_class, mock_external_http_server):
 
     # It was discovered via packnsend that the `throw` method of the `_request`
     # coroutine is used in the case of poorly resolved hosts. An older version
@@ -186,19 +203,20 @@ def test_process_incoming_headers(cat_enabled, response_code,
     # `PoorResolvingConnector` connector in this test ensures that `throw` is
     # always called and thus makes sure the trace is not ended before
     # StopIteration is called.
-
-    PORT = 8000 + os.getpid()
+    server, response_values = mock_external_http_server
+    address = 'http://127.0.0.1:%d' % server.port
+    port = server.port
 
     _test_cross_process_response_scoped_metrics = [
-            ('ExternalTransaction/127.0.0.1:%d/1#2/test' % PORT, 1 if cat_enabled
+            ('ExternalTransaction/127.0.0.1:%d/1#2/test' % port, 1 if cat_enabled
                 else None)]
 
     _test_cross_process_response_rollup_metrics = [
             ('External/all', 1),
             ('External/allOther', 1),
-            ('External/127.0.0.1:%d/all' % PORT, 1),
-            ('ExternalApp/127.0.0.1:%d/1#2/all' % PORT, 1 if cat_enabled else None),
-            ('ExternalTransaction/127.0.0.1:%d/1#2/test' % PORT, 1 if cat_enabled
+            ('External/127.0.0.1:%d/all' % port, 1),
+            ('ExternalApp/127.0.0.1:%d/1#2/all' % port, 1 if cat_enabled else None),
+            ('ExternalTransaction/127.0.0.1:%d/1#2/test' % port, 1 if cat_enabled
                 else None)]
 
     _test_cross_process_response_external_node_params = [
@@ -211,25 +229,18 @@ def test_process_incoming_headers(cat_enabled, response_code,
 
     connector = connector_class() if connector_class else None
 
+
     @background_task(name='test_process_incoming_headers')
-    @asyncio.coroutine
-    def _test():
+    async def _test():
         transaction = current_transaction()
         headers = create_incoming_headers(transaction)
 
-        def respond_with_cat_header(self):
-            self.send_response(response_code)
-            for header, value in headers:
-                self.send_header(header, value)
-            self.end_headers()
-            self.wfile.write(b'')
+        response_values.append((headers, response_code))
 
-        with MockExternalHTTPServer(handler=respond_with_cat_header, port=PORT) as server:
-            address = 'http://127.0.0.1:%d' % server.port
-            yield from fetch(
-                    address,
-                    raise_for_status=raise_for_status,
-                    connector=connector)
+        await fetch(
+                address,
+                raise_for_status=raise_for_status,
+                connector=connector)
 
     @override_application_settings({
         'cross_application_tracer.enabled': cat_enabled,

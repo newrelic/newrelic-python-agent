@@ -44,6 +44,7 @@ jobs:
           - framework_flask
           - framework_sanic
           - framework_starlette
+          - framework_tornado
 
     runs-on: ubuntu-latest
 
@@ -66,6 +67,13 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
           ${{ runner.os }}-${{ matrix.test-directory }}-
+
+    # Special case packages
+    - name: Install libcurl-dev
+      if: ${{ matrix.test-directory == 'framework_tornado' }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install libcurl4-openssl-dev
 
     # Set up all versions of python
     - uses: actions/setup-python@v2

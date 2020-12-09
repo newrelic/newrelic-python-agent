@@ -49,21 +49,26 @@ class MockExternalHTTPServer(threading.Thread):
                 (BaseHTTPServer.BaseHTTPRequestHandler, object,),
                 {'do_GET': handler})
 
-        # If port not set, try to bind to a port until successful
-        retries = 5  # Set retry limit to prevent infinite loops
-        while not port and retries > 0:
-            retries -= 1
-            try:
-                # Obtain random open port
-                port = self.get_open_port()
-                # Attempt to bind to port
-                self.httpd = BaseHTTPServer.HTTPServer(('localhost', port), handler)
-            except OSError as exc:
-                # Reraise errors other than port already in use
-                if "Address already in use" not in exc:
-                    raise
+        if port:
+            self.httpd = BaseHTTPServer.HTTPServer(('localhost', port), handler)
+            self.port = port
+        else:
+            # If port not set, try to bind to a port until successful
+            retries = 5  # Set retry limit to prevent infinite loops
+            self.port = None  # Initialize empty
+            while not self.port and retries > 0:
+                retries -= 1
+                try:
+                    # Obtain random open port
+                    port = self.get_open_port()
+                    # Attempt to bind to port
+                    self.httpd = BaseHTTPServer.HTTPServer(('localhost', port), handler)
+                    self.port = port
+                except OSError as exc:
+                    # Reraise errors other than port already in use
+                    if "Address already in use" not in exc:
+                        raise
 
-        self.port = port
 
     @staticmethod
     def get_open_port():

@@ -98,12 +98,12 @@ def aiohttp_app(request):
     case.tearDown()
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def mock_header_server():
     with MockExternalHTTPHResponseHeadersServer() as _server:
         yield _server
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def mock_external_http_server():    
     response_values = []
 
@@ -119,7 +119,7 @@ def mock_external_http_server():
         yield (server, response_values)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def local_server_info(mock_header_server):
     host_port = '127.0.0.1:%d' % mock_header_server.port
     metric = 'External/%s/aiohttp/' % host_port

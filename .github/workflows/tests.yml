@@ -42,6 +42,7 @@ jobs:
           - framework_falcon
           - framework_fastapi
           - framework_flask
+          - framework_pyramid
           - framework_sanic
           - framework_starlette
           - framework_tornado

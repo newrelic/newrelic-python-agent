@@ -234,16 +234,109 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      postgres:
+      redis:
         image: redis
-        env:
-          POSTGRES_PASSWORD: redis
         ports:
           - 8080:6379
           - 8081:6379
         # Set health checks to wait until redis has started
         options: >-
           --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Get Date
+      id: get-date
+      run: |
+        echo "::set-output name=date::$(/bin/date -u "+%Y-%m-%d")"
+      shell: bash
+
+    - name: Cache Tox and Pip (Linux)
+      if: startsWith(runner.os, 'Linux')
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cache/pip
+        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
+        restore-keys: |
+          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
+          ${{ runner.os }}-${{ matrix.test-directory }}-
+
+    # Set up all versions of python
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 2.7
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.5
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.6
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.7
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: pypy3
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: pypy2
+        architecture: x64
+
+    - name: Install Dependencies
+      run: |
+        pip install -U pip
+        pip install -U wheel setuptools tox virtualenv!=20.0.24
+
+    - name: Test
+      run: |
+        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
+      env:
+        TOX_PARALLEL_NO_SPINNER: 1
+        PY_COLORS: 0
+
+  memcached:
+
+    strategy:
+      matrix:
+        test-directory: 
+          - datastore_bmemcached
+
+    runs-on: ubuntu-latest
+
+    services:
+      memcached:
+        image: memcached
+        ports:
+          - 8080:11211
+          - 8081:11211
+        # Set health checks to wait until memcached has started
+        options: >-
+          --health-cmd "timeout 5 bash -c 'cat < /dev/null > /dev/udp/127.0.0.1/11211'"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5

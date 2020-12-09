@@ -1,10 +1,15 @@
 import pytest
-pytest.importorskip("cornice")
 
 from testing_support.fixtures import (validate_transaction_errors,
         validate_transaction_metrics)
 
 from newrelic.packages import six
+
+
+@pytest.fixture(autouse=True, scope="module")
+def skip_if_not_cornice():
+    pytest.importorskip("cornice")
+
 
 def target_application():
     # We need to delay Pyramid application creation because of ordering

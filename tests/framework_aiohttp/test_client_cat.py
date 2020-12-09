@@ -99,7 +99,7 @@ def test_outbound_cross_process_headers(cat_enabled, distributed_tracing,
 
 _nr_key = ExternalTrace.cat_id_key
 _customer_headers_tests = [
-        {'TestHeader': 'Test Data 1'},
+        {'Test-Header': 'Test Data 1'},
         {_nr_key.title(): 'Test Data 2'},
 ]
 

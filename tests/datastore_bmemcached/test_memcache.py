@@ -1,14 +1,15 @@
 import os
+from testing_support.db_settings import memcached_settings
 import bmemcached
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import set_background_task
 
 from testing_support.fixtures import validate_transaction_metrics
+from testing_support.db_settings import memcached_settings
 
 
-def _e(key, default):
-    return os.environ.get(key, default)
+DB_SETTINGS = memcached_settings()[0]
 
 MEMCACHED_HOST = DB_SETTINGS['host']
 MEMCACHED_PORT = DB_SETTINGS['port']

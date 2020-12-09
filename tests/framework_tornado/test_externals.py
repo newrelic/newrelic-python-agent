@@ -28,15 +28,6 @@ def external():
         yield external
 
 
-def _get_open_port():
-    # https://stackoverflow.com/questions/2838244/get-open-tcp-port-in-python/2838309#2838309
-    s = socket.socket()
-    s.bind(('', 0))
-    port = s.getsockname()[1]
-    s.close()
-    return port
-
-
 @background_task(name='make_request')
 def make_request(port, req_type, client_cls, count=1, raise_error=True,
         as_kwargs=True, **kwargs):
@@ -222,8 +213,7 @@ def cat_response_handler(self):
 
 @pytest.fixture(scope='module')
 def cat_response_server():
-    port = _get_open_port()
-    external = MockExternalHTTPServer(handler=cat_response_handler, port=port)
+    external = MockExternalHTTPServer(handler=cat_response_handler)
     with external:
         yield external
 

@@ -30,6 +30,7 @@ def test_gunicorn_gaiohttp_worker(nr_enabled):
                 'NEW_RELIC_ENABLED': 'true',
                 'NEW_RELIC_HOST': 'staging-collector.newrelic.com',
                 'NEW_RELIC_APP_NAME': 'Python Agent Test (gunicorn)',
+                'NEW_RELIC_CONFIG_FILE': 'config.ini',
                 'NEW_RELIC_LOG': 'stderr',
                 'NEW_RELIC_LOG_LEVEL': 'debug',
                 'NEW_RELIC_STARTUP_TIMEOUT': '10.0',

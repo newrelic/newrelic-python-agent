@@ -90,6 +90,7 @@ def memcached_settings():
         {
             "host": "localhost",
             "port": base_port + instance_num,
+            "namespace": str(os.getpid()),
         }
         for instance_num in range(instances)
     ]

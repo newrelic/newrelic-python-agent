@@ -4,12 +4,12 @@ from elasticsearch import Elasticsearch
 
 from testing_support.fixtures import (validate_transaction_metrics,
     override_application_settings)
-from testing_support.settings import elasticsearch_multiple_settings
+from testing_support.db_settings import elasticsearch_settings
 from testing_support.util import instance_hostname
 
 from newrelic.api.background_task import background_task
 
-ES_MULTIPLE_SETTINGS = elasticsearch_multiple_settings()
+ES_MULTIPLE_SETTINGS = elasticsearch_settings()
 
 # Settings
 

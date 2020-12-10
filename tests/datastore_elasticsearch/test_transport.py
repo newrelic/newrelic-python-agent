@@ -7,9 +7,9 @@ from elasticsearch.serializer import JSONSerializer
 from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import BackgroundTask
 
-from testing_support.settings import elasticsearch_multiple_settings
+from testing_support.db_settings import elasticsearch_settings
 
-ES_SETTINGS = elasticsearch_multiple_settings()[0]
+ES_SETTINGS = elasticsearch_settings()[0]
 HOST = {
     'host':ES_SETTINGS['host'],
     'port': int(ES_SETTINGS['port'])

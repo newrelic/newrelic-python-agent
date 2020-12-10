@@ -38,11 +38,12 @@ jobs:
           - agent_unittests
           - application_celery
           - component_flask_rest
+          - cross_agent
           - framework_aiohttp
           - framework_bottle
+          - framework_cherrypy
           - framework_django
           - framework_falcon
-          - framework_cherrypy
           - framework_fastapi
           - framework_flask
           - framework_pyramid

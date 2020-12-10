@@ -328,6 +328,7 @@ jobs:
       matrix:
         test-directory: 
           - datastore_bmemcached
+          - datastore_memcache
 
     runs-on: ubuntu-latest
 

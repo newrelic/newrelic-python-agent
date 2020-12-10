@@ -1,7 +1,9 @@
 import postgresql.driver.dbapi20
 
-from testing_support.fixtures import (
-    validate_transaction_metrics,
+
+from testing_support.fixtures import validate_transaction_metrics
+
+from testing_support.validators.validate_database_trace_inputs import (
     validate_database_trace_inputs,
 )
 
@@ -138,5 +140,6 @@ def test_rollback_on_exception():
         ):
 
             raise RuntimeError("error")
+
     except RuntimeError:
         pass

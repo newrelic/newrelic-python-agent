@@ -149,6 +149,7 @@ jobs:
           - datastore_asyncpg
           - datastore_psycopg2cffi
           - datastore_psycopg2
+          - datastore_postgresql
 
     runs-on: ubuntu-latest
 

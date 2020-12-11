@@ -77,25 +77,25 @@ _disable_rollup_metrics.append(
 
 # Query
 
-def _exercise_db(connection):
+def _exercise_db(connection, table_name):
     with connection as cursor:
-        cursor.execute("""drop table if exists datastore_mysqldb""")
+        cursor.execute("""drop table if exists %s""" % table_name)
 
-        cursor.execute("""create table datastore_mysqldb """
-                """(a integer, b real, c text)""")
+        cursor.execute("""create table %s """
+                """(a integer, b real, c text)""" % table_name)
 
-        cursor.executemany("""insert into datastore_mysqldb """
-                """values (%s, %s, %s)""", [(1, 1.0, '1.0'),
-                (2, 2.2, '2.2'), (3, 3.3, '3.3')])
+        cursor.executemany("""insert into %s """
+                """values (%s, %s, %s)""", [(table_name, 1, 1.0, '1.0'),
+                (table_name, 2, 2.2, '2.2'), (table_name, 3, 3.3, '3.3')])
 
-        cursor.execute("""select * from datastore_mysqldb""")
+        cursor.execute("""select * from %s""" % table_name)
 
         for row in cursor: pass
 
-        cursor.execute("""update datastore_mysqldb set a=%s, b=%s, """
-                """c=%s where a=%s""", (4, 4.0, '4.0', 1))
+        cursor.execute("""update %s set a=%s, b=%s, """
+                """c=%s where a=%s""", (table_name, 4, 4.0, '4.0', 1))
 
-        cursor.execute("""delete from datastore_mysqldb where a=2""")
+        cursor.execute("""delete from %s where a=2""" % table_name)
 
         cursor.execute("""show authors""")
 
@@ -110,11 +110,11 @@ def _exercise_db(connection):
         background_task=True)
 @validate_database_trace_inputs(tuple)
 @background_task()
-def test_connect_using_alias_enable():
+def test_connect_using_alias_enable(table_name):
     connection = MySQLdb.Connect(db=DB_SETTINGS['name'],
             user=DB_SETTINGS['user'], passwd=DB_SETTINGS['password'],
             host=DB_SETTINGS['host'], port=DB_SETTINGS['port'])
-    _exercise_db(connection)
+    _exercise_db(connection, table_name)
 
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics('test_alias:test_connect_using_alias_disable',
@@ -123,8 +123,8 @@ def test_connect_using_alias_enable():
         background_task=True)
 @validate_database_trace_inputs(tuple)
 @background_task()
-def test_connect_using_alias_disable():
+def test_connect_using_alias_disable(table_name):
     connection = MySQLdb.Connect(db=DB_SETTINGS['name'],
             user=DB_SETTINGS['user'], passwd=DB_SETTINGS['password'],
             host=DB_SETTINGS['host'], port=DB_SETTINGS['port'])
-    _exercise_db(connection)
+    _exercise_db(connection, table_name)

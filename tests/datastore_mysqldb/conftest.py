@@ -35,4 +35,4 @@ def requires_data_collector(collector_available_fixture):
 
 @pytest.fixture(scope="session")
 def table_name():
-    return "datastore_mysql_%d" % os.getpid()
+    return str("datastore_mysqldb_%d" % os.getpid())

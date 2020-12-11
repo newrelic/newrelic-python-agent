@@ -2,13 +2,14 @@ import MySQLdb
 
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs, override_application_settings)
-from testing_support.settings import mysql_multiple_settings
+from testing_support.db_settings import mysql_settings
 from testing_support.util import instance_hostname
 
 from newrelic.api.background_task import background_task
 
-DB_MULTIPLE_SETTINGS = mysql_multiple_settings()
+DB_MULTIPLE_SETTINGS = mysql_settings()
 DB_SETTINGS = DB_MULTIPLE_SETTINGS[0]
+DB_NAMESPACE = DB_SETTINGS["namespace"]
 
 # Settings
 
@@ -25,10 +26,10 @@ _base_scoped_metrics = (
         ('Function/MySQLdb:Connect', 1),
         ('Function/MySQLdb.connections:Connection.__enter__', 1),
         ('Function/MySQLdb.connections:Connection.__exit__', 1),
-        ('Datastore/statement/MySQL/datastore_mysqldb/select', 1),
-        ('Datastore/statement/MySQL/datastore_mysqldb/insert', 1),
-        ('Datastore/statement/MySQL/datastore_mysqldb/update', 1),
-        ('Datastore/statement/MySQL/datastore_mysqldb/delete', 1),
+        ('Datastore/statement/MySQL/datastore_mysqldb_%s/select' % DB_NAMESPACE, 1),
+        ('Datastore/statement/MySQL/datastore_mysqldb_%s/insert' % DB_NAMESPACE, 1),
+        ('Datastore/statement/MySQL/datastore_mysqldb_%s/update' % DB_NAMESPACE, 1),
+        ('Datastore/statement/MySQL/datastore_mysqldb_%s/delete' % DB_NAMESPACE, 1),
         ('Datastore/operation/MySQL/drop', 1),
         ('Datastore/operation/MySQL/create', 1),
         ('Datastore/operation/MySQL/show', 1),
@@ -42,13 +43,13 @@ _base_rollup_metrics = (
         ('Datastore/MySQL/all', 12),
         ('Datastore/MySQL/allOther', 12),
         ('Datastore/operation/MySQL/select', 1),
-        ('Datastore/statement/MySQL/datastore_mysqldb/select', 1),
+        ('Datastore/statement/MySQL/datastore_mysqldb_%s/select' % DB_NAMESPACE, 1),
         ('Datastore/operation/MySQL/insert', 1),
-        ('Datastore/statement/MySQL/datastore_mysqldb/insert', 1),
+        ('Datastore/statement/MySQL/datastore_mysqldb_%s/insert' % DB_NAMESPACE, 1),
         ('Datastore/operation/MySQL/update', 1),
-        ('Datastore/statement/MySQL/datastore_mysqldb/update', 1),
+        ('Datastore/statement/MySQL/datastore_mysqldb_%s/update' % DB_NAMESPACE, 1),
         ('Datastore/operation/MySQL/delete', 1),
-        ('Datastore/statement/MySQL/datastore_mysqldb/delete', 1),
+        ('Datastore/statement/MySQL/datastore_mysqldb_%s/delete' % DB_NAMESPACE, 1),
         ('Datastore/operation/MySQL/show', 1),
         ('Datastore/operation/MySQL/drop', 1),
         ('Datastore/operation/MySQL/create', 1),
@@ -79,25 +80,25 @@ _disable_rollup_metrics.append(
 
 def _exercise_db(connection, table_name):
     with connection as cursor:
-        cursor.execute("""drop table if exists %s""" % table_name)
+        cursor.execute("""drop table if exists `%s`""" % table_name)
 
-        cursor.execute("""create table %s """
+        cursor.execute("""create table `%s` """
                 """(a integer, b real, c text)""" % table_name)
 
-        cursor.executemany("""insert into %s """
-                """values (%s, %s, %s)""", [(table_name, 1, 1.0, '1.0'),
-                (table_name, 2, 2.2, '2.2'), (table_name, 3, 3.3, '3.3')])
+        cursor.executemany("""insert into `%s` """ % table_name + 
+                """values (%s, %s, %s)""", [(1, 1.0, '1.0'),
+                (2, 2.2, '2.2'), (3, 3.3, '3.3')])
 
         cursor.execute("""select * from %s""" % table_name)
 
         for row in cursor: pass
 
-        cursor.execute("""update %s set a=%s, b=%s, """
-                """c=%s where a=%s""", (table_name, 4, 4.0, '4.0', 1))
+        cursor.execute("update `" + table_name + """` set a=%s, b=%s, """
+                """c=%s where a=%s""", (4, 4.0, '4.0', 1))
 
-        cursor.execute("""delete from %s where a=2""" % table_name)
+        cursor.execute("""delete from `%s` where a=2""" % table_name)
 
-        cursor.execute("""show authors""")
+        cursor.execute("""show grants""")
 
     connection.commit()
     connection.rollback()

@@ -2,12 +2,12 @@ import MySQLdb
 
 from testing_support.fixtures import (validate_tt_collector_json,
     override_application_settings)
-from testing_support.settings import mysql_multiple_settings
+from testing_support.db_settings import mysql_settings
 from testing_support.util import instance_hostname
 
 from newrelic.api.background_task import background_task
 
-DB_MULTIPLE_SETTINGS = mysql_multiple_settings()
+DB_MULTIPLE_SETTINGS = mysql_settings()
 DB_SETTINGS = DB_MULTIPLE_SETTINGS[0]
 
 

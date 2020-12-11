@@ -34,7 +34,7 @@ def test_mysqldb_instance_info(args, kwargs, expected):
     assert output == expected
 
 def test_env_var_default_tcp_port(monkeypatch):
-    monkeypatch.setenv('MYSQL_TCP_PORT', 1234)
+    monkeypatch.setenv('MYSQL_TCP_PORT', '1234')
     kwargs = {'host': '1.2.3.4'}
     expected = ('1.2.3.4', '1234', 'unknown')
 
@@ -43,7 +43,7 @@ def test_env_var_default_tcp_port(monkeypatch):
     assert output == expected
 
 def test_override_env_var_tcp_port(monkeypatch):
-    monkeypatch.setenv('MYSQL_TCP_PORT', 1234)
+    monkeypatch.setenv('MYSQL_TCP_PORT', '1234')
     kwargs = {'host': '1.2.3.4', 'port': 9876}
     expected = ('1.2.3.4', '9876', 'unknown')
 
@@ -103,7 +103,7 @@ def test_localhost_cnf(monkeypatch):
     assert output == expected
 
 def test_explicit_host_cnf(monkeypatch):
-    monkeypatch.setenv('MYSQL_TCP_PORT', 1234)
+    monkeypatch.setenv('MYSQL_TCP_PORT', '1234')
     kwargs = {'host': '1.2.3.4', 'read_default_group': 'foobar'}
     expected = ('1.2.3.4', 'unknown', 'unknown')
 

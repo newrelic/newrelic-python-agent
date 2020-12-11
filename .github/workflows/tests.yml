@@ -434,7 +434,7 @@ jobs:
         ports:
           - 8080:9200
           - 8081:9200
-        # Set health checks to wait until redis has started
+        # Set health checks to wait until elasticsearch has started
         options: >-
           --health-cmd "curl --silent --fail localhost:9200/_cluster/health || exit 1"
           --health-interval 10s

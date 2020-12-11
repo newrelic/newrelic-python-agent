@@ -31,6 +31,7 @@ jobs:
       matrix:
         test-directory: 
           - adapter_cheroot
+          - adapter_gunicorn
           - adapter_uvicorn
           - agent_features
           - agent_streaming

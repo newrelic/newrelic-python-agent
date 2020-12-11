@@ -330,6 +330,7 @@ jobs:
         test-directory: 
           - datastore_bmemcached
           - datastore_memcache
+          - datastore_pymemcache
 
     runs-on: ubuntu-latest
 

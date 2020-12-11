@@ -237,6 +237,7 @@ jobs:
       matrix:
         test-directory:
           - datastore_mysqldb
+          - datastore_oursql
 
     runs-on: ubuntu-latest
 

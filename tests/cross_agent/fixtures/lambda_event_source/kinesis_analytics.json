@@ -1,0 +1,11 @@
+{
+  "records": [
+    {
+      "recordId": "123456",
+      "data": "VGhpcyBpcyBhIHRlc3QgZnJvbSBraW5lc2lzIGFuYWx5dGljcw=="
+    }
+  ],
+  "streamArn": "arn:aws:kinesis:exampleStream",
+  "invocationId": "invocationIdExample",
+  "applicationArn": "arn:aws:kinesisanalytics:exampleApplication"
+}

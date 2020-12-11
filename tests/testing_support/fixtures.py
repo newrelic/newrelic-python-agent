@@ -1183,6 +1183,77 @@ def validate_transaction_error_trace_attributes(required_params={},
     return _validate_transaction_error_trace
 
 
+def validate_slow_sql_collector_json(required_params=set(),
+        forgone_params=set(), exact_params=None):
+    """Check that slow_sql json output is in accordance with agent specs.
+    """
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_slow_sql_collector_json(wrapped, instance, args, kwargs):
+        legal_param_keys = set([
+            'explain_plan',
+            'backtrace',
+            'host',
+            'port_path_or_id',
+            'database_name',
+            'parent.type',
+            'parent.app',
+            'parent.account',
+            'parent.transportType',
+            'parent.transportDuration',
+            'guid',
+            'traceId',
+            'priority',
+            'sampled',
+        ])
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            connections = SQLConnections()
+            slow_sql_list = instance.slow_sql_data(connections)
+
+            for slow_sql in slow_sql_list:
+                assert isinstance(slow_sql[0], six.string_types)  # txn_name
+                assert isinstance(slow_sql[1], six.string_types)  # txn_url
+                assert isinstance(slow_sql[2], int)               # sql_id
+                assert isinstance(slow_sql[3], six.string_types)  # sql
+                assert isinstance(slow_sql[4], six.string_types)  # metric_name
+                assert isinstance(slow_sql[5], int)               # count
+                assert isinstance(slow_sql[6], float)             # total
+                assert isinstance(slow_sql[7], float)             # min
+                assert isinstance(slow_sql[8], float)             # max
+                assert isinstance(slow_sql[9], six.string_types)  # params
+
+                params = slow_sql[9]
+                data = unpack_field(params)
+
+                # only legal keys should be reported
+                assert len(set(data.keys()) - legal_param_keys) == 0
+
+                # if host is reported, it cannot be localhost
+                if 'host' in data:
+                    assert data['host'] not in LOCALHOST_EQUIVALENTS
+
+                if required_params:
+                    for param in required_params:
+                        assert param in data
+
+                if forgone_params:
+                    for param in forgone_params:
+                        assert param not in data
+
+                if exact_params:
+                    for param, value in exact_params.items():
+                        assert param in data
+                        assert data[param] == value
+
+        return result
+
+    return _validate_slow_sql_collector_json
+
+
 def check_error_attributes(parameters, required_params={}, forgone_params={},
         is_transaction=True):
 
@@ -1805,6 +1876,51 @@ def validate_agent_attribute_types(required_attrs):
         return wrapped(*args, **kwargs)
 
     return _validate_agent_attribute_types
+
+
+def validate_database_trace_inputs(sql_parameters_type):
+
+    @transient_function_wrapper('newrelic.api.database_trace',
+            'DatabaseTrace.__init__')
+    @catch_background_exceptions
+    def _validate_database_trace_inputs(wrapped, instance, args, kwargs):
+        def _bind_params(sql, dbapi2_module=None,
+                connect_params=None, cursor_params=None, sql_parameters=None,
+                execute_params=None, host=None, port_path_or_id=None,
+                database_name=None):
+            return (sql, dbapi2_module, connect_params,
+                    cursor_params, sql_parameters, execute_params)
+
+        (sql, dbapi2_module, connect_params, cursor_params,
+            sql_parameters, execute_params) = _bind_params(*args, **kwargs)
+
+        assert hasattr(dbapi2_module, 'connect')
+
+        assert connect_params is None or isinstance(connect_params, tuple)
+
+        if connect_params is not None:
+            assert len(connect_params) == 2
+            assert isinstance(connect_params[0], tuple)
+            assert isinstance(connect_params[1], dict)
+
+        assert cursor_params is None or isinstance(cursor_params, tuple)
+
+        if cursor_params is not None:
+            assert len(cursor_params) == 2
+            assert isinstance(cursor_params[0], tuple)
+            assert isinstance(cursor_params[1], dict)
+
+        assert sql_parameters is None or isinstance(
+                sql_parameters, sql_parameters_type)
+
+        if execute_params is not None:
+            assert len(execute_params) == 2
+            assert isinstance(execute_params[0], tuple)
+            assert isinstance(execute_params[1], dict)
+
+        return wrapped(*args, **kwargs)
+
+    return _validate_database_trace_inputs
 
 
 def validate_transaction_event_sample_data(required_attrs,

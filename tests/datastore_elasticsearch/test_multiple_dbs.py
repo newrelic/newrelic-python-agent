@@ -69,8 +69,8 @@ if len(ES_MULTIPLE_SETTINGS) > 1:
 # Query
 
 def _exercise_es(es):
-    es.index('contacts', 'person',
-            {'name': 'Joe Tester', 'age': 25, 'title': 'QA Engineer'}, id=1)
+    es.index(index='contacts', doc_type='person',
+            body={'name': 'Joe Tester', 'age': 25, 'title': 'QA Engineer'}, id=1)
 
 # Test
 

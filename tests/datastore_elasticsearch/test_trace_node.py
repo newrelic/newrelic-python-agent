@@ -60,8 +60,8 @@ _tt_parenting = (
 # Query
 
 def _exercise_es(es):
-    es.index('contacts', 'person',
-            {'name': 'Joe Tester', 'age': 25, 'title': 'QA Master'}, id=1)
+    es.index(index='contacts', doc_type='person',
+            body={'name': 'Joe Tester', 'age': 25, 'title': 'QA Master'}, id=1)
 
 
 # Tests

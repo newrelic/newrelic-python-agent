@@ -11,12 +11,12 @@ ES_SETTINGS = elasticsearch_settings()[0]
 ES_URL = 'http://%s:%s' % (ES_SETTINGS['host'], ES_SETTINGS['port'])
 
 def _exercise_es(es):
-    es.index("contacts", "person",
-            {"name": "Joe Tester", "age": 25, "title": "QA Engineer"}, id=1)
-    es.index("contacts", "person",
-            {"name": "Jessica Coder", "age": 32, "title": "Programmer"}, id=2)
-    es.index("contacts", "person",
-            {"name": "Freddy Tester", "age": 29, "title": "Assistant"}, id=3)
+    es.index(index="contacts", doc_type="person",
+            body={"name": "Joe Tester", "age": 25, "title": "QA Engineer"}, id=1)
+    es.index(index="contacts", doc_type="person",
+            body={"name": "Jessica Coder", "age": 32, "title": "Programmer"}, id=2)
+    es.index(index="contacts", doc_type="person",
+            body={"name": "Freddy Tester", "age": 29, "title": "Assistant"}, id=3)
     es.indices.refresh('contacts')
 
 @validate_database_duration()

@@ -139,16 +139,16 @@ _disable_rollup_metrics.append(
 # Query
 
 def _exercise_es(es):
-    es.index("contacts", "person",
-            {"name": "Joe Tester", "age": 25, "title": "QA Engineer"}, id=1)
-    es.index("contacts", "person",
-            {"name": "Jessica Coder", "age": 32, "title": "Programmer"}, id=2)
-    es.index("contacts", "person",
-            {"name": "Freddy Tester", "age": 29, "title": "Assistant"}, id=3)
+    es.index(index="contacts", doc_type="person",
+            body={"name": "Joe Tester", "age": 25, "title": "QA Engineer"}, id=1)
+    es.index(index="contacts", doc_type="person",
+            body={"name": "Jessica Coder", "age": 32, "title": "Programmer"}, id=2)
+    es.index(index="contacts", doc_type="person",
+            body={"name": "Freddy Tester", "age": 29, "title": "Assistant"}, id=3)
     es.indices.refresh('contacts')
-    es.index("address", "employee", {"name": "Sherlock",
+    es.index(index="address", doc_type="employee", body={"name": "Sherlock",
         "address": "221B Baker Street, London"}, id=1)
-    es.index("address", "employee", {"name": "Bilbo",
+    es.index(index="address", doc_type="employee", body={"name": "Bilbo",
         "address": "Bag End, Bagshot row, Hobbiton, Shire"}, id=2)
     es.search(index='contacts', q='name:Joe')
     es.search(index='contacts', q='name:jessica')

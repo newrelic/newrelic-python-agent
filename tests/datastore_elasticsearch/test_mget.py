@@ -72,13 +72,13 @@ if len(ES_MULTIPLE_SETTINGS) > 1:
 
 def _exercise_es_multi(es):
     # set on db 1
-    es.index('contacts', 'person',
-            {'name': 'Joe Tester', 'age': 25, 'title': 'QA Engineer'},
+    es.index(index='contacts', doc_type='person',
+            body={'name': 'Joe Tester', 'age': 25, 'title': 'QA Engineer'},
             id=1)
 
     # set on db 2
-    es.index('contacts', 'person',
-            {'name': 'Jane Tester', 'age': 22, 'title': 'Senior QA Engineer'},
+    es.index(index='contacts', doc_type='person',
+            body={'name': 'Jane Tester', 'age': 22, 'title': 'Senior QA Engineer'},
             id=2)
 
     # ask db 1, will return info from db 1 and 2

@@ -36,7 +36,7 @@ def test_transport_perform_request_urllib3():
     app = application()
     with BackgroundTask(app, 'perform_request_urllib3') as transaction:
         transport = Transport([HOST], connection_class=Urllib3HttpConnection)
-        transport.perform_request('POST', METHOD, PARAMS, DATA)
+        transport.perform_request('POST', METHOD, params=PARAMS, body=DATA)
 
     expected = (ES_SETTINGS['host'], ES_SETTINGS['port'], None)
     assert transaction._nr_datastore_instance_info == expected
@@ -45,7 +45,7 @@ def test_transport_perform_request_requests():
     app = application()
     with BackgroundTask(app, 'perform_request_requests') as transaction:
         transport = Transport([HOST], connection_class=RequestsHttpConnection)
-        transport.perform_request('POST', METHOD, PARAMS, DATA)
+        transport.perform_request('POST', METHOD, params=PARAMS, body=DATA)
 
     expected = (ES_SETTINGS['host'], ES_SETTINGS['port'], None)
     assert transaction._nr_datastore_instance_info == expected

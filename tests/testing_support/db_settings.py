@@ -88,7 +88,7 @@ def memcached_settings():
 
     settings = [
         {
-            "host": "localhost",
+            "host": "127.0.0.1",
             "port": base_port + instance_num,
             "namespace": str(os.getpid()),
         }

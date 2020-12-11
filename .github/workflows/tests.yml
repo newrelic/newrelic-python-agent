@@ -31,6 +31,7 @@ jobs:
       matrix:
         test-directory: 
           - adapter_cheroot
+          - adapter_gevent
           - adapter_gunicorn
           - adapter_uvicorn
           - agent_features
@@ -38,11 +39,12 @@ jobs:
           - agent_unittests
           - application_celery
           - component_flask_rest
+          - cross_agent
           - framework_aiohttp
           - framework_bottle
+          - framework_cherrypy
           - framework_django
           - framework_falcon
-          - framework_cherrypy
           - framework_fastapi
           - framework_flask
           - framework_pyramid
@@ -430,6 +432,7 @@ jobs:
         test-directory: 
           - datastore_bmemcached
           - datastore_memcache
+          - datastore_pymemcache
 
     runs-on: ubuntu-latest
 
@@ -442,6 +445,103 @@ jobs:
         # Set health checks to wait until memcached has started
         options: >-
           --health-cmd "timeout 5 bash -c 'cat < /dev/null > /dev/udp/127.0.0.1/11211'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Get Date
+      id: get-date
+      run: |
+        echo "::set-output name=date::$(/bin/date -u "+%Y-%m-%d")"
+      shell: bash
+
+    - name: Cache Tox and Pip (Linux)
+      if: startsWith(runner.os, 'Linux')
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cache/pip
+        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
+        restore-keys: |
+          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
+          ${{ runner.os }}-${{ matrix.test-directory }}-
+
+    # Set up all versions of python
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 2.7
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.5
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.6
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.7
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: pypy3
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: pypy2
+        architecture: x64
+
+    - name: Install Dependencies
+      run: |
+        pip install -U pip
+        pip install -U wheel setuptools tox virtualenv!=20.0.24
+
+    - name: Test
+      run: |
+        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
+      env:
+        TOX_PARALLEL_NO_SPINNER: 1
+        PY_COLORS: 0
+
+  elasticsearch:
+
+    strategy:
+      matrix:
+        test-directory: 
+          - datastore_elasticsearch
+
+    runs-on: ubuntu-latest
+
+    services:
+      es01:
+        image: elasticsearch:1.4.4
+        env:
+          "discovery.type": "single-node"
+        ports:
+          - 8080:9200
+          - 8081:9200
+        # Set health checks to wait until elasticsearch has started
+        options: >-
+          --health-cmd "curl --silent --fail localhost:9200/_cluster/health || exit 1"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5

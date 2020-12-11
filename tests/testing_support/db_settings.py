@@ -125,8 +125,37 @@ def memcached_settings():
 
     settings = [
         {
-            "host": "localhost",
+            "host": "127.0.0.1",
             "port": base_port + instance_num,
+            "namespace": str(os.getpid()),
+        }
+        for instance_num in range(instances)
+    ]
+    return settings
+
+
+def elasticsearch_settings():
+    """Return a list of dict of settings for connecting to elasticsearch.
+
+    Will return the correct settings, depending on which of the environments it
+    is running in. It attempts to set variables in the following order, where
+    later environments override earlier ones.
+
+        1. Local
+        2. Github Actions
+    """
+
+    if "GITHUB_ACTIONS" in os.environ:
+        instances = 2
+        base_port = 8080
+    else:
+        instances = 1
+        base_port = 9200
+
+    settings = [
+        {
+            "host": "localhost",
+            "port": str(base_port + instance_num),
             "namespace": str(os.getpid()),
         }
         for instance_num in range(instances)

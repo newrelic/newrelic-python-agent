@@ -528,6 +528,7 @@ jobs:
       matrix:
         test-directory: 
           - datastore_elasticsearch
+          - datastore_pyelasticsearch
 
     runs-on: ubuntu-latest
 

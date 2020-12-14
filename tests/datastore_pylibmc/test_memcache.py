@@ -2,21 +2,18 @@ import os
 
 import pylibmc
 
+from testing_support.db_settings import memcached_settings
 from testing_support.fixtures import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import set_background_task
 
-def _e(key, default):
-    return os.environ.get(key, default)
 
-MEMCACHED_HOST = _e('TDDIUM_MEMCACHE_HOST', 'localhost')
-MEMCACHED_PORT = _e('TDDIUM_MEMCACHE_PORT', '11211')
-MEMCACHED_NAMESPACE = ''
+DB_SETTINGS = memcached_settings()[0]
 
-MEMCACHED_HOST = _e('MEMCACHED_PORT_11211_TCP_ADDR', MEMCACHED_HOST)
-MEMCACHED_PORT = _e('MEMCACHED_PORT_11211_TCP_PORT', MEMCACHED_PORT)
-MEMCACHED_NAMESPACE = _e('TDDIUM_MEMCACHE_NAMESPACE', MEMCACHED_NAMESPACE)
+MEMCACHED_HOST = DB_SETTINGS["host"]
+MEMCACHED_PORT = DB_SETTINGS["port"]
+MEMCACHED_NAMESPACE = DB_SETTINGS["namespace"]
 
 MEMCACHED_ADDR = '%s:%s' % (MEMCACHED_HOST, MEMCACHED_PORT)
 

@@ -40,6 +40,43 @@ def postgresql_settings():
     return settings
 
 
+def mysql_settings():
+    """Return a list of dict of settings for connecting to postgresql.
+
+    Will return the correct settings, depending on which of the environments it
+    is running in. It attempts to set variables in the following order, where
+    later environments override earlier ones.
+
+        1. Local
+        2. Github Actions
+    """
+
+    if "GITHUB_ACTIONS" in os.environ:
+        instances = 2
+
+        user = password = db = "python_agent"
+        base_port = 8080
+    else:
+        instances = 1
+
+        user = db = USER
+        password = ""
+        base_port = 3306
+
+    settings = [
+        {
+            "user": user,
+            "password": password,
+            "name": db,
+            "host": "127.0.0.1",
+            "port": base_port + instance_num,
+            "namespace": str(os.getpid()),
+        }
+        for instance_num in range(instances)
+    ]
+    return settings
+
+
 def redis_settings():
     """Return a list of dict of settings for connecting to redis.
 

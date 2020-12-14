@@ -7,11 +7,11 @@ from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_slow_sql_count,
     validate_stats_engine_explain_plan_output_is_none)
 
-from testing_support.settings import postgresql_settings
+from testing_support.db_settings import postgresql_settings
 
 from newrelic.api.background_task import background_task
 
-DB_SETTINGS = postgresql_settings()
+DB_SETTINGS = postgresql_settings()[0]
 
 _test_execute_via_cursor_scoped_metrics = [
         ('Function/psycopg2cffi:connect', 1),

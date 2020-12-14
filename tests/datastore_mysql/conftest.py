@@ -1,4 +1,5 @@
 import pytest
+import os
 
 from testing_support.fixtures import (code_coverage_fixture,
         collector_agent_registration_fixture, collector_available_fixture)
@@ -31,3 +32,7 @@ def session_initialization(code_coverage, collector_agent_registration):
 @pytest.fixture(scope='function')
 def requires_data_collector(collector_available_fixture):
     pass
+
+@pytest.fixture(scope="session")
+def table_name():
+    return str("datastore_mysql_%d" % os.getpid())

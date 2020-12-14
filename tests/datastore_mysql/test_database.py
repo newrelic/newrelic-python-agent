@@ -8,13 +8,14 @@ from newrelic.api.background_task import background_task
 
 DB_SETTINGS = mysql_settings()
 DB_SETTINGS = DB_SETTINGS[0]
+DB_NAMESPACE = DB_SETTINGS["namespace"]
 
 _test_execute_via_cursor_scoped_metrics = [
         ('Function/mysql.connector:connect', 1),
-        ('Datastore/statement/MySQL/datastore_mysql/select', 1),
-        ('Datastore/statement/MySQL/datastore_mysql/insert', 1),
-        ('Datastore/statement/MySQL/datastore_mysql/update', 1),
-        ('Datastore/statement/MySQL/datastore_mysql/delete', 1),
+        ('Datastore/statement/MySQL/datastore_mysql_%s/select' % DB_NAMESPACE, 1),
+        ('Datastore/statement/MySQL/datastore_mysql_%s/insert' % DB_NAMESPACE, 1),
+        ('Datastore/statement/MySQL/datastore_mysql_%s/update' % DB_NAMESPACE, 1),
+        ('Datastore/statement/MySQL/datastore_mysql_%s/delete' % DB_NAMESPACE, 1),
         ('Datastore/operation/MySQL/drop', 2),
         ('Datastore/operation/MySQL/create', 2),
         ('Datastore/statement/MySQL/hello/call', 1),
@@ -27,13 +28,13 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/MySQL/all', 13),
         ('Datastore/MySQL/allOther', 13),
         ('Datastore/operation/MySQL/select', 1),
-        ('Datastore/statement/MySQL/datastore_mysql/select', 1),
+        ('Datastore/statement/MySQL/datastore_mysql_%s/select' % DB_NAMESPACE, 1),
         ('Datastore/operation/MySQL/insert', 1),
-        ('Datastore/statement/MySQL/datastore_mysql/insert', 1),
+        ('Datastore/statement/MySQL/datastore_mysql_%s/insert' % DB_NAMESPACE, 1),
         ('Datastore/operation/MySQL/update', 1),
-        ('Datastore/statement/MySQL/datastore_mysql/update', 1),
+        ('Datastore/statement/MySQL/datastore_mysql_%s/update' % DB_NAMESPACE, 1),
         ('Datastore/operation/MySQL/delete', 1),
-        ('Datastore/statement/MySQL/datastore_mysql/delete', 1),
+        ('Datastore/statement/MySQL/datastore_mysql_%s/delete' % DB_NAMESPACE, 1),
         ('Datastore/statement/MySQL/hello/call', 1),
         ('Datastore/operation/MySQL/call', 1),
         ('Datastore/operation/MySQL/drop', 2),
@@ -47,7 +48,7 @@ _test_execute_via_cursor_rollup_metrics = [
         background_task=True)
 @validate_database_trace_inputs(sql_parameters_type=dict)
 @background_task()
-def test_execute_via_cursor():
+def test_execute_via_cursor(table_name):
 
     connection = mysql.connector.connect(db=DB_SETTINGS['name'],
             user=DB_SETTINGS['user'], passwd=DB_SETTINGS['password'],
@@ -55,24 +56,24 @@ def test_execute_via_cursor():
 
     cursor = connection.cursor()
 
-    cursor.execute("""drop table if exists datastore_mysql""")
+    cursor.execute("""drop table if exists `%s`""" % table_name)
 
-    cursor.execute("""create table datastore_mysql """
-            """(a integer, b real, c text)""")
+    cursor.execute("""create table %s """
+            """(a integer, b real, c text)""" % table_name)
 
-    cursor.executemany("""insert into datastore_mysql """
+    cursor.executemany("""insert into `%s` """ % table_name +
             """values (%(a)s, %(b)s, %(c)s)""", [dict(a=1, b=1.0, c='1.0'),
             dict(a=2, b=2.2, c='2.2'), dict(a=3, b=3.3, c='3.3')])
 
-    cursor.execute("""select * from datastore_mysql""")
+    cursor.execute("""select * from %s""" % table_name)
 
     for row in cursor: pass
 
-    cursor.execute("""update datastore_mysql set a=%(a)s, b=%(b)s, """
-            """c=%(c)s where a=%(old_a)s""", dict(a=4, b=4.0,
-            c='4.0', old_a=1))
+    cursor.execute("""update `%s` """ % table_name +
+            """set a=%(a)s, b=%(b)s, c=%(c)s where a=%(old_a)s""",
+            dict(a=4, b=4.0, c='4.0', old_a=1))
 
-    cursor.execute("""delete from datastore_mysql where a=2""")
+    cursor.execute("""delete from `%s` where a=2""" % table_name)
 
     cursor.execute("""drop procedure if exists hello""")
     cursor.execute("""CREATE PROCEDURE hello()
@@ -88,10 +89,10 @@ def test_execute_via_cursor():
 
 _test_connect_using_alias_scoped_metrics = [
         ('Function/mysql.connector:connect', 1),
-        ('Datastore/statement/MySQL/datastore_mysql/select', 1),
-        ('Datastore/statement/MySQL/datastore_mysql/insert', 1),
-        ('Datastore/statement/MySQL/datastore_mysql/update', 1),
-        ('Datastore/statement/MySQL/datastore_mysql/delete', 1),
+        ('Datastore/statement/MySQL/datastore_mysql_%s/select' % DB_NAMESPACE, 1),
+        ('Datastore/statement/MySQL/datastore_mysql_%s/insert' % DB_NAMESPACE, 1),
+        ('Datastore/statement/MySQL/datastore_mysql_%s/update' % DB_NAMESPACE, 1),
+        ('Datastore/statement/MySQL/datastore_mysql_%s/delete' % DB_NAMESPACE, 1),
         ('Datastore/operation/MySQL/drop', 2),
         ('Datastore/operation/MySQL/create', 2),
         ('Datastore/statement/MySQL/hello/call', 1),
@@ -104,13 +105,13 @@ _test_connect_using_alias_rollup_metrics = [
         ('Datastore/MySQL/all', 13),
         ('Datastore/MySQL/allOther', 13),
         ('Datastore/operation/MySQL/select', 1),
-        ('Datastore/statement/MySQL/datastore_mysql/select', 1),
+        ('Datastore/statement/MySQL/datastore_mysql_%s/select' % DB_NAMESPACE, 1),
         ('Datastore/operation/MySQL/insert', 1),
-        ('Datastore/statement/MySQL/datastore_mysql/insert', 1),
+        ('Datastore/statement/MySQL/datastore_mysql_%s/insert' % DB_NAMESPACE, 1),
         ('Datastore/operation/MySQL/update', 1),
-        ('Datastore/statement/MySQL/datastore_mysql/update', 1),
+        ('Datastore/statement/MySQL/datastore_mysql_%s/update' % DB_NAMESPACE, 1),
         ('Datastore/operation/MySQL/delete', 1),
-        ('Datastore/statement/MySQL/datastore_mysql/delete', 1),
+        ('Datastore/statement/MySQL/datastore_mysql_%s/delete' % DB_NAMESPACE, 1),
         ('Datastore/statement/MySQL/hello/call', 1),
         ('Datastore/operation/MySQL/call', 1),
         ('Datastore/operation/MySQL/drop', 2),
@@ -124,7 +125,7 @@ _test_connect_using_alias_rollup_metrics = [
         background_task=True)
 @validate_database_trace_inputs(sql_parameters_type=dict)
 @background_task()
-def test_connect_using_alias():
+def test_connect_using_alias(table_name):
 
     connection = mysql.connector.connect(db=DB_SETTINGS['name'],
             user=DB_SETTINGS['user'], passwd=DB_SETTINGS['password'],
@@ -132,24 +133,24 @@ def test_connect_using_alias():
 
     cursor = connection.cursor()
 
-    cursor.execute("""drop table if exists datastore_mysql""")
+    cursor.execute("""drop table if exists `%s`""" % table_name)
 
-    cursor.execute("""create table datastore_mysql """
-            """(a integer, b real, c text)""")
+    cursor.execute("""create table %s """
+            """(a integer, b real, c text)""" % table_name)
 
-    cursor.executemany("""insert into datastore_mysql """
+    cursor.executemany("""insert into `%s` """ % table_name +
             """values (%(a)s, %(b)s, %(c)s)""", [dict(a=1, b=1.0, c='1.0'),
             dict(a=2, b=2.2, c='2.2'), dict(a=3, b=3.3, c='3.3')])
 
-    cursor.execute("""select * from datastore_mysql""")
+    cursor.execute("""select * from %s""" % table_name)
 
     for row in cursor: pass
 
-    cursor.execute("""update datastore_mysql set a=%(a)s, b=%(b)s, """
-            """c=%(c)s where a=%(old_a)s""", dict(a=4, b=4.0,
-            c='4.0', old_a=1))
+    cursor.execute("""update `%s` """ % table_name +
+            """set a=%(a)s, b=%(b)s, c=%(c)s where a=%(old_a)s""",
+            dict(a=4, b=4.0, c='4.0', old_a=1))
 
-    cursor.execute("""delete from datastore_mysql where a=2""")
+    cursor.execute("""delete from `%s` where a=2""" % table_name)
 
     cursor.execute("""drop procedure if exists hello""")
     cursor.execute("""CREATE PROCEDURE hello()

@@ -17,10 +17,10 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Function/psycopg2cffi:connect', 1),
         ('Function/psycopg2cffi._impl.connection:Connection.__enter__', 1),
         ('Function/psycopg2cffi._impl.connection:Connection.__exit__', 1),
-        ('Datastore/statement/Postgres/datastore_psycopg2cffi/select', 1),
-        ('Datastore/statement/Postgres/datastore_psycopg2cffi/insert', 1),
-        ('Datastore/statement/Postgres/datastore_psycopg2cffi/update', 1),
-        ('Datastore/statement/Postgres/datastore_psycopg2cffi/delete', 1),
+        ('Datastore/statement/Postgres/%s/select' % DB_SETTINGS["table_name"], 1),
+        ('Datastore/statement/Postgres/%s/insert' % DB_SETTINGS["table_name"], 1),
+        ('Datastore/statement/Postgres/%s/update' % DB_SETTINGS["table_name"], 1),
+        ('Datastore/statement/Postgres/%s/delete' % DB_SETTINGS["table_name"], 1),
         ('Datastore/statement/Postgres/now/call', 1),
         ('Datastore/statement/Postgres/pg_sleep/call', 1),
         ('Datastore/operation/Postgres/drop', 1),
@@ -34,13 +34,13 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/Postgres/all', 13),
         ('Datastore/Postgres/allOther', 13),
         ('Datastore/operation/Postgres/select', 1),
-        ('Datastore/statement/Postgres/datastore_psycopg2cffi/select', 1),
+        ('Datastore/statement/Postgres/%s/select' % DB_SETTINGS["table_name"], 1),
         ('Datastore/operation/Postgres/insert', 1),
-        ('Datastore/statement/Postgres/datastore_psycopg2cffi/insert', 1),
+        ('Datastore/statement/Postgres/%s/insert' % DB_SETTINGS["table_name"], 1),
         ('Datastore/operation/Postgres/update', 1),
-        ('Datastore/statement/Postgres/datastore_psycopg2cffi/update', 1),
+        ('Datastore/statement/Postgres/%s/update' % DB_SETTINGS["table_name"], 1),
         ('Datastore/operation/Postgres/delete', 1),
-        ('Datastore/statement/Postgres/datastore_psycopg2cffi/delete', 1),
+        ('Datastore/statement/Postgres/%s/delete' % DB_SETTINGS["table_name"], 1),
         ('Datastore/operation/Postgres/drop', 1),
         ('Datastore/operation/Postgres/create', 1),
         ('Datastore/statement/Postgres/now/call', 1),
@@ -72,29 +72,29 @@ def test_execute_via_cursor():
             psycopg2cffi.extensions.UNICODE,
             cursor)
 
-        cursor.execute("""drop table if exists datastore_psycopg2cffi""")
+        cursor.execute("""drop table if exists %s""" % DB_SETTINGS["table_name"])
 
-        cursor.execute("""create table datastore_psycopg2cffi """
+        cursor.execute("""create table %s """ % DB_SETTINGS["table_name"] +
                 """(a integer, b real, c text)""")
 
-        cursor.executemany("""insert into datastore_psycopg2cffi """
+        cursor.executemany("""insert into %s """ % DB_SETTINGS["table_name"] +
                 """values (%s, %s, %s)""", [(1, 1.0, '1.0'),
                 (2, 2.2, '2.2'), (3, 3.3, '3.3')])
 
-        cursor.execute("""select * from datastore_psycopg2cffi""")
+        cursor.execute("""select * from %s""" % DB_SETTINGS["table_name"])
 
         for row in cursor:
             pass
 
-        cursor.execute("""update datastore_psycopg2cffi set a=%s, b=%s, """
+        cursor.execute("""update %s""" % DB_SETTINGS["table_name"] + """ set a=%s, b=%s, """
                 """c=%s where a=%s""", (4, 4.0, '4.0', 1))
 
-        cursor.execute("""delete from datastore_psycopg2cffi where a=2""")
+        cursor.execute("""delete from %s where a=2""" % DB_SETTINGS["table_name"])
 
         connection.commit()
 
         cursor.callproc('now')
-        cursor.callproc('pg_sleep', (0.25,))
+        cursor.callproc('pg_sleep', (0,))
 
         connection.rollback()
         connection.commit()
@@ -134,8 +134,8 @@ def test_rollback_on_exception():
 
 _test_async_mode_scoped_metrics = [
         ('Function/psycopg2cffi:connect', 1),
-        ('Datastore/statement/Postgres/datastore_psycopg2cffi/select', 1),
-        ('Datastore/statement/Postgres/datastore_psycopg2cffi/insert', 1),
+        ('Datastore/statement/Postgres/%s/select' % DB_SETTINGS["table_name"], 1),
+        ('Datastore/statement/Postgres/%s/insert' % DB_SETTINGS["table_name"], 1),
         ('Datastore/operation/Postgres/drop', 1),
         ('Datastore/operation/Postgres/create', 1)]
 
@@ -145,9 +145,9 @@ _test_async_mode_rollup_metrics = [
         ('Datastore/Postgres/all', 5),
         ('Datastore/Postgres/allOther', 5),
         ('Datastore/operation/Postgres/select', 1),
-        ('Datastore/statement/Postgres/datastore_psycopg2cffi/select', 1),
+        ('Datastore/statement/Postgres/%s/select' % DB_SETTINGS["table_name"], 1),
         ('Datastore/operation/Postgres/insert', 1),
-        ('Datastore/statement/Postgres/datastore_psycopg2cffi/insert', 1),
+        ('Datastore/statement/Postgres/%s/insert' % DB_SETTINGS["table_name"], 1),
         ('Datastore/operation/Postgres/drop', 1),
         ('Datastore/operation/Postgres/create', 1)]
 
@@ -180,18 +180,18 @@ def test_async_mode():
     wait(async_conn)
     async_cur = async_conn.cursor()
 
-    async_cur.execute("""drop table if exists datastore_psycopg2cffi""")
+    async_cur.execute("""drop table if exists %s""" % DB_SETTINGS["table_name"])
     wait(async_cur.connection)
 
-    async_cur.execute("""create table datastore_psycopg2cffi """
+    async_cur.execute("""create table %s """ % DB_SETTINGS["table_name"] + 
             """(a integer, b real, c text)""")
     wait(async_cur.connection)
 
-    async_cur.execute("""insert into datastore_psycopg2cffi """
+    async_cur.execute("""insert into %s """ % DB_SETTINGS["table_name"] + 
         """values (%s, %s, %s)""", (1, 1.0, '1.0'))
     wait(async_cur.connection)
 
-    async_cur.execute("""select * from datastore_psycopg2cffi""")
+    async_cur.execute("""select * from %s""" % DB_SETTINGS["table_name"])
     wait(async_cur.connection)
 
     for row in async_cur:

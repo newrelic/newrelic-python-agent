@@ -2055,6 +2055,22 @@ def validate_transaction_error_trace_count(num_errors):
     return _validate_transaction_error_trace_count
 
 
+def validate_transaction_slow_sql_count(num_slow_sql):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_transaction_slow_sql_count(wrapped, instance, args, kwargs):
+        result = wrapped(*args, **kwargs)
+        connections = SQLConnections()
+
+        with connections:
+            slow_sql_traces = instance.slow_sql_data(connections)
+            assert len(slow_sql_traces) == num_slow_sql
+
+        return result
+
+    return _validate_transaction_slow_sql_count
+
+
 def validate_stats_engine_explain_plan_output_is_none():
     """This fixture isn't useful by itself, because you need to generate
     explain plans, which doesn't normally occur during record_transaction().

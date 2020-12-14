@@ -3,11 +3,11 @@ from pyelasticsearch import ElasticSearch
 
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, validate_database_duration)
-from testing_support.settings import elasticsearch_settings
+from testing_support.db_settings import elasticsearch_settings
 
 from newrelic.api.background_task import background_task
 
-ES_SETTINGS = elasticsearch_settings()
+ES_SETTINGS = elasticsearch_settings()[0]
 ES_URL = 'http://%s:%s' % (ES_SETTINGS['host'], ES_SETTINGS['port'])
 
 def _exercise_es(es):

@@ -9,6 +9,7 @@ from newrelic.api.background_task import background_task
 DB_SETTINGS = mysql_settings()
 DB_SETTINGS = DB_SETTINGS[0]
 DB_NAMESPACE = DB_SETTINGS["namespace"]
+DB_PROCEDURE = "hello_" + DB_NAMESPACE
 
 _test_execute_via_cursor_scoped_metrics = [
         ('Function/mysql.connector:connect', 1),
@@ -18,7 +19,7 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/statement/MySQL/datastore_mysql_%s/delete' % DB_NAMESPACE, 1),
         ('Datastore/operation/MySQL/drop', 2),
         ('Datastore/operation/MySQL/create', 2),
-        ('Datastore/statement/MySQL/hello/call', 1),
+        ('Datastore/statement/MySQL/%s/call' % DB_PROCEDURE, 1),
         ('Datastore/operation/MySQL/commit', 2),
         ('Datastore/operation/MySQL/rollback', 1)]
 
@@ -35,7 +36,7 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/statement/MySQL/datastore_mysql_%s/update' % DB_NAMESPACE, 1),
         ('Datastore/operation/MySQL/delete', 1),
         ('Datastore/statement/MySQL/datastore_mysql_%s/delete' % DB_NAMESPACE, 1),
-        ('Datastore/statement/MySQL/hello/call', 1),
+        ('Datastore/statement/MySQL/%s/call' % DB_PROCEDURE, 1),
         ('Datastore/operation/MySQL/call', 1),
         ('Datastore/operation/MySQL/drop', 2),
         ('Datastore/operation/MySQL/create', 2),
@@ -75,13 +76,13 @@ def test_execute_via_cursor(table_name):
 
     cursor.execute("""delete from `%s` where a=2""" % table_name)
 
-    cursor.execute("""drop procedure if exists hello""")
-    cursor.execute("""CREATE PROCEDURE hello()
+    cursor.execute("""drop procedure if exists %s""" % DB_PROCEDURE)
+    cursor.execute("""CREATE PROCEDURE %s()
                       BEGIN
                         SELECT 'Hello World!';
-                      END""")
+                      END""" % DB_PROCEDURE)
 
-    cursor.callproc("hello")
+    cursor.callproc("%s" % DB_PROCEDURE)
 
     connection.commit()
     connection.rollback()
@@ -95,7 +96,7 @@ _test_connect_using_alias_scoped_metrics = [
         ('Datastore/statement/MySQL/datastore_mysql_%s/delete' % DB_NAMESPACE, 1),
         ('Datastore/operation/MySQL/drop', 2),
         ('Datastore/operation/MySQL/create', 2),
-        ('Datastore/statement/MySQL/hello/call', 1),
+        ('Datastore/statement/MySQL/%s/call' % DB_PROCEDURE, 1),
         ('Datastore/operation/MySQL/commit', 2),
         ('Datastore/operation/MySQL/rollback', 1)]
 
@@ -112,7 +113,7 @@ _test_connect_using_alias_rollup_metrics = [
         ('Datastore/statement/MySQL/datastore_mysql_%s/update' % DB_NAMESPACE, 1),
         ('Datastore/operation/MySQL/delete', 1),
         ('Datastore/statement/MySQL/datastore_mysql_%s/delete' % DB_NAMESPACE, 1),
-        ('Datastore/statement/MySQL/hello/call', 1),
+        ('Datastore/statement/MySQL/%s/call' % DB_PROCEDURE, 1),
         ('Datastore/operation/MySQL/call', 1),
         ('Datastore/operation/MySQL/drop', 2),
         ('Datastore/operation/MySQL/create', 2),
@@ -152,13 +153,13 @@ def test_connect_using_alias(table_name):
 
     cursor.execute("""delete from `%s` where a=2""" % table_name)
 
-    cursor.execute("""drop procedure if exists hello""")
-    cursor.execute("""CREATE PROCEDURE hello()
+    cursor.execute("""drop procedure if exists %s""" % DB_PROCEDURE)
+    cursor.execute("""CREATE PROCEDURE %s()
                       BEGIN
                         SELECT 'Hello World!';
-                      END""")
+                      END""" % DB_PROCEDURE)
 
-    cursor.callproc("hello")
+    cursor.callproc("%s" % DB_PROCEDURE)
 
     connection.commit()
     connection.rollback()

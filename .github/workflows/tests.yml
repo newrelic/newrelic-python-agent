@@ -238,6 +238,7 @@ jobs:
         test-directory:
           - datastore_mysql
           - datastore_mysqldb
+          - datastore_pymysql
 
     runs-on: ubuntu-latest
 

@@ -1,6 +1,7 @@
 from compat import basic_consume
 import pika
 import six
+import os
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction
@@ -14,8 +15,8 @@ from testing_support.fixtures import (override_application_settings,
 DB_SETTINGS = rabbitmq_settings()[0]
 
 _override_settings = {
-    'primary_application_id': '12345',
-    'account_id': '33',
+    'primary_application_id': '3896659',
+    'account_id': '332029',
     'trusted_account_key': '1',
     'cross_application_tracer.enabled': True,
     'distributed_tracing.enabled': True,
@@ -49,10 +50,10 @@ _test_distributed_tracing_basic_consume_rollup_metrics = [
     ('MessageBroker/RabbitMQ/Exchange/Consume/Named/Default', None),
     ('Supportability/DistributedTrace/AcceptPayload/Success', None),
     ('Supportability/TraceContext/Accept/Success', 1),
-    ('DurationByCaller/App/33/12345/AMQP/all', 1),
-    ('TransportDuration/App/33/12345/AMQP/all', 1),
-    ('DurationByCaller/App/33/12345/AMQP/allOther', 1),
-    ('TransportDuration/App/33/12345/AMQP/allOther', 1)
+    ('DurationByCaller/App/332029/3896659/AMQP/all', 1),
+    ('TransportDuration/App/332029/3896659/AMQP/all', 1),
+    ('DurationByCaller/App/332029/3896659/AMQP/allOther', 1),
+    ('TransportDuration/App/332029/3896659/AMQP/allOther', 1)
 
 ]
 
@@ -99,18 +100,19 @@ def test_basic_consume_distributed_tracing_headers():
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
         channel = connection.channel()
-        channel.queue_declare('TESTDT', durable=False)
+        queue_name = 'TESTDT-%s' % os.getpid()
+        channel.queue_declare(queue_name, durable=False)
 
         properties = pika.BasicProperties()
         properties.headers = {'Hello': 'World'}
 
         try:
-            basic_consume(channel, 'TESTDT', on_receive, auto_ack=False)
-            do_basic_publish(channel, 'TESTDT', properties=properties)
+            basic_consume(channel, queue_name, on_receive, auto_ack=False)
+            do_basic_publish(channel, queue_name, properties=properties)
             do_basic_consume(channel)
 
         finally:
-            channel.queue_delete('TESTDT')
+            channel.queue_delete(queue_name)
 
 
 _test_distributed_tracing_basic_get_metrics = [
@@ -147,16 +149,17 @@ def test_basic_get_no_distributed_tracing_headers():
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
         channel = connection.channel()
-        channel.queue_declare('TESTDT', durable=False)
+        queue_name = 'TESTDT-%s' % os.getpid()
+        channel.queue_declare(queue_name, durable=False)
 
         properties = pika.BasicProperties()
         properties.headers = {'Hello': 'World'}
 
         try:
-            do_basic_publish(channel, 'TESTDT', properties=properties)
-            do_basic_get(channel, 'TESTDT')
+            do_basic_publish(channel, queue_name, properties=properties)
+            do_basic_get(channel, queue_name)
         finally:
-            channel.queue_delete('TESTDT')
+            channel.queue_delete(queue_name)
 
 
 @override_application_settings(_override_settings)
@@ -164,7 +167,8 @@ def test_distributed_tracing_sends_produce_id():
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
         channel = connection.channel()
-        channel.queue_declare('TESTDT', durable=False)
+        queue_name = 'TESTDT-%s' % os.getpid()
+        channel.queue_declare(queue_name, durable=False)
 
         properties = pika.BasicProperties()
         properties.headers = {'Hello': 'World'}
@@ -175,7 +179,7 @@ def test_distributed_tracing_sends_produce_id():
                 with FunctionTrace('foo') as trace:
                     channel.basic_publish(
                         exchange='',
-                        routing_key='TESTDT',
+                        routing_key=queue_name,
                         body='Testing distributed_tracing 123',
                         properties=properties,
                     )
@@ -184,9 +188,9 @@ def test_distributed_tracing_sends_produce_id():
 
             trace = _publish()
 
-            raw_message = channel.basic_get('TESTDT')
+            raw_message = channel.basic_get(queue_name)
         finally:
-            channel.queue_delete('TESTDT')
+            channel.queue_delete(queue_name)
 
         properties = raw_message[1]
         payload = DistributedTracePayload.from_http_safe(

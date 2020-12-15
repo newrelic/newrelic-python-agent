@@ -3,6 +3,7 @@ import pika
 import six
 import random
 import string
+import os
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction
@@ -75,18 +76,19 @@ def test_basic_consume_cat_headers():
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
         channel = connection.channel()
-        channel.queue_declare('TESTCAT', durable=False)
+        queue_name = 'TESTCAT-%s' % os.getpid()
+        channel.queue_declare(queue_name, durable=False)
 
         properties = pika.BasicProperties()
         properties.headers = {'Hello': 'World'}
 
         try:
-            basic_consume(channel, 'TESTCAT', on_receive, auto_ack=False)
-            do_basic_publish(channel, 'TESTCAT', properties=properties)
+            basic_consume(channel, queue_name, on_receive, auto_ack=False)
+            do_basic_publish(channel, queue_name, properties=properties)
             do_basic_consume(channel)
 
         finally:
-            channel.queue_delete('TESTCAT')
+            channel.queue_delete(queue_name)
 
 
 _test_cat_basic_get_metrics = [
@@ -121,13 +123,14 @@ def test_basic_get_no_cat_headers():
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
         channel = connection.channel()
-        channel.queue_declare('TESTCAT', durable=False)
+        queue_name = 'TESTCAT-%s' % os.getpid()
+        channel.queue_declare(queue_name, durable=False)
 
         properties = pika.BasicProperties()
         properties.headers = {'Hello': 'World'}
 
         try:
-            do_basic_publish(channel, 'TESTCAT', properties=properties)
-            do_basic_get(channel, 'TESTCAT')
+            do_basic_publish(channel, queue_name, properties=properties)
+            do_basic_get(channel, queue_name)
         finally:
-            channel.queue_delete('TESTCAT')
+            channel.queue_delete(queue_name)

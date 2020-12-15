@@ -3,10 +3,8 @@ import pytest
 from newrelic.api.background_task import background_task
 from newrelic.core.database_utils import SQLConnections
 
-from testing_support.validators.validate_database_node import (
-        validate_database_node)
-from testing_support.validators.validate_sql_obfuscation import (
-        validate_sql_obfuscation)
+from testing_support.validators.validate_database_node import validate_database_node
+from testing_support.validators.validate_sql_obfuscation import validate_sql_obfuscation
 from utils import DB_SETTINGS
 
 
@@ -15,14 +13,18 @@ def psycopg2_cursor():
     import psycopg2
 
     connection = psycopg2.connect(
-            database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
-            password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port'])
+        database=DB_SETTINGS["name"],
+        user=DB_SETTINGS["user"],
+        password=DB_SETTINGS["password"],
+        host=DB_SETTINGS["host"],
+        port=DB_SETTINGS["port"],
+    )
 
     try:
         cursor = connection.cursor()
 
-        cursor.execute('create table if not exists a (b text, c text)')
+        cursor.execute("drop table if exists %s" % DB_SETTINGS["table_name"])
+        cursor.execute("create table %s (b text, c text)" % DB_SETTINGS["table_name"])
 
         yield cursor
 
@@ -31,15 +33,23 @@ def psycopg2_cursor():
 
 
 _quoting_style_tests = [
-    ("SELECT * FROM a WHERE b='2'", 'SELECT * FROM a WHERE b=?'),
-    ('SELECT * FROM a WHERE b=$func$2$func$', 'SELECT * FROM a WHERE b=?'),
-    ("SELECT * FROM a WHERE b=U&'2'", 'SELECT * FROM a WHERE b=U&?'),
+    (
+        "SELECT * FROM %s WHERE b='2'" % DB_SETTINGS["table_name"],
+        "SELECT * FROM %s WHERE b=?" % DB_SETTINGS["table_name"],
+    ),
+    (
+        "SELECT * FROM %s WHERE b=$func$2$func$" % DB_SETTINGS["table_name"],
+        "SELECT * FROM %s WHERE b=?" % DB_SETTINGS["table_name"],
+    ),
+    (
+        "SELECT * FROM %s WHERE b=U&'2'" % DB_SETTINGS["table_name"],
+        "SELECT * FROM %s WHERE b=U&?" % DB_SETTINGS["table_name"],
+    ),
 ]
 
 
-@pytest.mark.parametrize('sql,obfuscated', _quoting_style_tests)
+@pytest.mark.parametrize("sql,obfuscated", _quoting_style_tests)
 def test_quoting_styles(psycopg2_cursor, sql, obfuscated):
-
     @validate_sql_obfuscation([obfuscated])
     @background_task()
     def test():
@@ -49,17 +59,19 @@ def test_quoting_styles(psycopg2_cursor, sql, obfuscated):
 
 
 _parameter_tests = [
-    ("SELECT * FROM a where b=%s", "SELECT * FROM a where b=%s"),
+    (
+        "SELECT * FROM " + DB_SETTINGS["table_name"] + " where b=%s",
+        "SELECT * FROM " + DB_SETTINGS["table_name"] + " where b=%s",
+    ),
 ]
 
 
-@pytest.mark.parametrize('sql,obfuscated', _parameter_tests)
+@pytest.mark.parametrize("sql,obfuscated", _parameter_tests)
 def test_parameters(psycopg2_cursor, sql, obfuscated):
-
     @validate_sql_obfuscation([obfuscated])
     @background_task()
     def test():
-        psycopg2_cursor.execute(sql, ('hello',))
+        psycopg2_cursor.execute(sql, ("hello",))
 
     test()
 
@@ -71,7 +83,7 @@ def no_explain_plan(node):
 
 
 def any_length_explain_plan(node):
-    if node.statement.operation != 'select':
+    if node.statement.operation != "select":
         return
 
     sql_connections = SQLConnections()
@@ -80,33 +92,52 @@ def any_length_explain_plan(node):
 
 
 _test_explain_plans = [
-    ('SELECT (b, c) FROM a ; SELECT (b, c) FROM a', no_explain_plan),
-    ('SELECT (b, c) FROM a ; SELECT (b, c) FROM a;', no_explain_plan),
-    ("SELECT (b, c) FROM a WHERE b=';'", no_explain_plan),
-    (';SELECT (b, c) FROM a', no_explain_plan),
-    ('SELECT (b, c) FROM a', any_length_explain_plan),
-    ('SELECT (b, c) FROM a;', any_length_explain_plan),
-    ('SELECT (b, c) FROM a;;;;;;', any_length_explain_plan),
-    ('SELECT (b, c) FROM a;\n\n', any_length_explain_plan),
+    (
+        "SELECT (b, c) FROM  %s ; SELECT (b, c) FROM %s"
+        % (DB_SETTINGS["table_name"], DB_SETTINGS["table_name"]),
+        no_explain_plan,
+    ),
+    (
+        "SELECT (b, c) FROM  %s ; SELECT (b, c) FROM %s;"
+        % (DB_SETTINGS["table_name"], DB_SETTINGS["table_name"]),
+        no_explain_plan,
+    ),
+    ("SELECT (b, c) FROM  %s WHERE b=';'" % DB_SETTINGS["table_name"], no_explain_plan),
+    (";SELECT (b, c) FROM %s" % DB_SETTINGS["table_name"], no_explain_plan),
+    ("SELECT (b, c) FROM  %s" % DB_SETTINGS["table_name"], any_length_explain_plan),
+    ("SELECT (b, c) FROM  %s;" % DB_SETTINGS["table_name"], any_length_explain_plan),
+    (
+        "SELECT (b, c) FROM  %s;;;;;;" % DB_SETTINGS["table_name"],
+        any_length_explain_plan,
+    ),
+    (
+        "SELECT (b, c) FROM  %s;\n\n" % DB_SETTINGS["table_name"],
+        any_length_explain_plan,
+    ),
 ]
 
 
-@pytest.mark.parametrize('sql,validator', _test_explain_plans)
+@pytest.mark.parametrize("sql,validator", _test_explain_plans)
 def test_explain_plans(sql, validator):
-
     @validate_database_node(validator)
     @background_task()
     def test():
         import psycopg2
 
         connection = psycopg2.connect(
-                database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
-                password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-                port=DB_SETTINGS['port'])
+            database=DB_SETTINGS["name"],
+            user=DB_SETTINGS["user"],
+            password=DB_SETTINGS["password"],
+            host=DB_SETTINGS["host"],
+            port=DB_SETTINGS["port"],
+        )
 
         try:
             cursor = connection.cursor()
-            cursor.execute('create table if not exists a (b text, c text)')
+            cursor.execute("drop table if exists %s" % DB_SETTINGS["table_name"])
+            cursor.execute(
+                "create table %s (b text, c text)" % DB_SETTINGS["table_name"]
+            )
 
             cursor.execute(sql)
 

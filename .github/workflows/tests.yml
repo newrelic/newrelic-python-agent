@@ -40,6 +40,7 @@ jobs:
           - application_celery
           - component_flask_rest
           - cross_agent
+          - datastore_motor
           - framework_aiohttp
           - framework_bottle
           - framework_cherrypy
@@ -76,7 +77,8 @@ jobs:
 
     # Special case packages
     - name: Install libcurl-dev
-      if: ${{ matrix.test-directory == 'framework_tornado' }}
+      if: ${{ matrix.test-directory == 'framework_tornado' ||
+        matrix.test-directory == 'datastore_motor'}}
       run: |
         sudo apt-get update
         sudo apt-get install libcurl4-openssl-dev

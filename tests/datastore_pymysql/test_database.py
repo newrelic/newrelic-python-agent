@@ -41,8 +41,6 @@ def execute_db_calls_with_cursor(cursor):
 
 _test_execute_via_cursor_scoped_metrics = [
         ('Function/pymysql:Connect', 1),
-        ('Function/pymysql.connections:Connection.__enter__', 1),
-        ('Function/pymysql.connections:Connection.__exit__', 1),
         ('Datastore/statement/MySQL/%s/select' % TABLE_NAME, 1),
         ('Datastore/statement/MySQL/%s/insert' % TABLE_NAME, 1),
         ('Datastore/statement/MySQL/%s/update' % TABLE_NAME, 1),
@@ -50,14 +48,14 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/operation/MySQL/drop', 2),
         ('Datastore/operation/MySQL/create', 2),
         ('Datastore/statement/MySQL/%s/call' % PROCEDURE_NAME, 1),
-        ('Datastore/operation/MySQL/commit', 3),
+        ('Datastore/operation/MySQL/commit', 2),
         ('Datastore/operation/MySQL/rollback', 1)]
 
 _test_execute_via_cursor_rollup_metrics = [
-        ('Datastore/all', 14),
-        ('Datastore/allOther', 14),
-        ('Datastore/MySQL/all', 14),
-        ('Datastore/MySQL/allOther', 14),
+        ('Datastore/all', 13),
+        ('Datastore/allOther', 13),
+        ('Datastore/MySQL/all', 13),
+        ('Datastore/MySQL/allOther', 13),
         ('Datastore/statement/MySQL/%s/select' % TABLE_NAME, 1),
         ('Datastore/statement/MySQL/%s/insert' % TABLE_NAME, 1),
         ('Datastore/statement/MySQL/%s/update' % TABLE_NAME, 1),
@@ -70,7 +68,7 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/operation/MySQL/call', 1),
         ('Datastore/operation/MySQL/drop', 2),
         ('Datastore/operation/MySQL/create', 2),
-        ('Datastore/operation/MySQL/commit', 3),
+        ('Datastore/operation/MySQL/commit', 2),
         ('Datastore/operation/MySQL/rollback', 1)]
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
@@ -84,7 +82,7 @@ def test_execute_via_cursor():
             user=DB_SETTINGS['user'], passwd=DB_SETTINGS['password'],
             host=DB_SETTINGS['host'], port=DB_SETTINGS['port'])
 
-    with connection as cursor:
+    with connection.cursor() as cursor:
         execute_db_calls_with_cursor(cursor)
 
     connection.commit()
@@ -136,41 +134,11 @@ def test_execute_via_cursor_context_manager():
     connection = pymysql.connect(db=DB_SETTINGS['name'],
             user=DB_SETTINGS['user'], passwd=DB_SETTINGS['password'],
             host=DB_SETTINGS['host'], port=DB_SETTINGS['port'])
+    cursor = connection.cursor()
 
-    with connection.cursor() as cursor:
+    with cursor:
         execute_db_calls_with_cursor(cursor)
 
     connection.commit()
     connection.rollback()
     connection.commit()
-
-
-_test_rollback_on_exception_scoped_metrics = [
-        ('Function/pymysql:Connect', 1),
-        ('Function/pymysql.connections:Connection.__enter__', 1),
-        ('Function/pymysql.connections:Connection.__exit__', 1),
-        ('Datastore/operation/MySQL/rollback', 1)]
-
-_test_rollback_on_exception_rollup_metrics = [
-        ('Datastore/all', 2),
-        ('Datastore/allOther', 2),
-        ('Datastore/MySQL/all', 2),
-        ('Datastore/MySQL/allOther', 2),
-        ('Datastore/operation/MySQL/rollback', 1)]
-
-@validate_transaction_metrics('test_database:test_rollback_on_exception',
-        scoped_metrics=_test_rollback_on_exception_scoped_metrics,
-        rollup_metrics=_test_rollback_on_exception_rollup_metrics,
-        background_task=True)
-@validate_database_trace_inputs(sql_parameters_type=tuple)
-@background_task()
-def test_rollback_on_exception():
-    try:
-        connection = pymysql.connect(db=DB_SETTINGS['name'],
-                user=DB_SETTINGS['user'], passwd=DB_SETTINGS['password'],
-                host=DB_SETTINGS['host'], port=DB_SETTINGS['port'])
-
-        with connection as cursor:
-            raise RuntimeError('error')
-    except RuntimeError:
-        pass

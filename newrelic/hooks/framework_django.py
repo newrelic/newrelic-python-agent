@@ -19,6 +19,7 @@ import functools
 
 from newrelic.packages import six
 
+from newrelic.api.asgi_application import wrap_asgi_application
 from newrelic.api.application import register_application
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.error_trace import wrap_error_trace
@@ -429,22 +430,33 @@ def _bind_get_response(request, *args, **kwargs):
     return request
 
 
-def _nr_wrapper_BaseHandler_get_response_(wrapped, instance, args, kwargs):
-    response = wrapped(*args, **kwargs)
-
-    transaction = current_transaction()
-
-    if transaction is None:
-        return response
-
-    request = _bind_get_response(*args, **kwargs)
-
+def handle_response(request, response):
     if hasattr(request, '_nr_exc_info'):
         if not ignore_status_code(response.status_code):
             record_exception(*request._nr_exc_info)
         delattr(request, '_nr_exc_info')
 
     return response
+
+
+def _nr_wrapper_BaseHandler_get_response_(wrapped, instance, args, kwargs):
+    response = wrapped(*args, **kwargs)
+
+    if current_transaction() is None:
+        return response
+
+    request = _bind_get_response(*args, **kwargs)
+    return handle_response(request, response)
+
+
+async def _nr_wrapper_BaseHandler_get_response_async_(wrapped, instance, args, kwargs):
+    response = await wrapped(*args, **kwargs)
+
+    if current_transaction() is None:
+        return response
+
+    request = _bind_get_response(*args, **kwargs)
+    return handle_response(request, response)
 
 
 # Post import hooks for modules.
@@ -458,8 +470,14 @@ def instrument_django_core_handlers_base(module):
     wrap_post_function(module, 'BaseHandler.load_middleware',
             insert_and_wrap_middleware)
 
-    wrap_function_wrapper(module, 'BaseHandler.get_response',
-            _nr_wrapper_BaseHandler_get_response_)
+    if hasattr(module.BaseHandler, '_get_response') and hasattr(module.BaseHandler, '_get_response_async'):
+        wrap_function_wrapper(module, 'BaseHandler._get_response',
+                _nr_wrapper_BaseHandler_get_response_)
+        wrap_function_wrapper(module, 'BaseHandler._get_response_async',
+                _nr_wrapper_BaseHandler_get_response_async_)
+    else:
+        wrap_function_wrapper(module, 'BaseHandler.get_response',
+                _nr_wrapper_BaseHandler_get_response_)
 
 
 def instrument_django_gzip_middleware(module):
@@ -1222,3 +1240,12 @@ def instrument_django_core_handlers_exception(module):
         module.handle_uncaught_exception = (
                 wrap_handle_uncaught_exception(
                 module.handle_uncaught_exception))
+
+
+def instrument_django_core_handlers_asgi(module):
+    import django
+
+    framework = ('Django', django.get_version())
+
+    if hasattr(module, 'ASGIHandler'):
+        wrap_asgi_application(module, 'ASGIHandler.__call__', framework=framework)

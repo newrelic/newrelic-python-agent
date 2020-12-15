@@ -2046,6 +2046,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('django.core.handlers.base',
             'newrelic.hooks.framework_django',
             'instrument_django_core_handlers_base')
+    _process_module_definition('django.core.handlers.asgi',
+            'newrelic.hooks.framework_django',
+            'instrument_django_core_handlers_asgi')
     _process_module_definition('django.core.handlers.wsgi',
             'newrelic.hooks.framework_django',
             'instrument_django_core_handlers_wsgi')

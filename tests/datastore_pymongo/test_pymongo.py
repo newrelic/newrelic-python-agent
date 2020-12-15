@@ -4,11 +4,14 @@ import sqlite3
 
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, validate_database_duration)
-from testing_support.settings import mongodb_settings
+from testing_support.db_settings import mongodb_settings
 
 from newrelic.api.background_task import background_task
 
-MONGODB_HOST, MONGODB_PORT = mongodb_settings()
+
+DB_SETTINGS = mongodb_settings()[0]
+MONGODB_HOST = DB_SETTINGS["host"]
+MONGODB_PORT = DB_SETTINGS["port"]
 
 
 def _exercise_mongo(db):
@@ -209,8 +212,8 @@ def test_mongodb_and_sqlite_database_duration():
     conn = sqlite3.connect(":memory:")
     cur = conn.cursor()
 
-    cur.execute("CREATE TABLE blah (name text, quantity int)")
-    cur.execute("INSERT INTO blah VALUES ('Bob', 22)")
+    cur.execute("CREATE TABLE contacts (name text, age int)")
+    cur.execute("INSERT INTO contacts VALUES ('Bob', 22)")
 
     conn.commit()
     conn.close()

@@ -156,6 +156,7 @@ def mongodb_settings():
         {
             "host": "127.0.0.1",
             "port": base_port + instance_num,
+            "collection": "mongodb_collection_" + str(os.getpid())
         }
         for instance_num in range(instances)
     ]

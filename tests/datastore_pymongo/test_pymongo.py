@@ -12,45 +12,46 @@ from newrelic.api.background_task import background_task
 DB_SETTINGS = mongodb_settings()[0]
 MONGODB_HOST = DB_SETTINGS["host"]
 MONGODB_PORT = DB_SETTINGS["port"]
+MONGODB_COLLECTION = DB_SETTINGS["collection"]
 
 
 def _exercise_mongo(db):
-    db.my_collection.save({"x": 10})
-    db.my_collection.save({"x": 8})
-    db.my_collection.save({"x": 11})
-    db.my_collection.find_one()
+    db[MONGODB_COLLECTION].save({"x": 10})
+    db[MONGODB_COLLECTION].save({"x": 8})
+    db[MONGODB_COLLECTION].save({"x": 11})
+    db[MONGODB_COLLECTION].find_one()
 
-    for item in db.my_collection.find():
+    for item in db[MONGODB_COLLECTION].find():
         item["x"]
 
-    db.my_collection.create_index("x")
+    db[MONGODB_COLLECTION].create_index("x")
 
-    for item in db.my_collection.find().sort("x", pymongo.ASCENDING):
+    for item in db[MONGODB_COLLECTION].find().sort("x", pymongo.ASCENDING):
         item["x"]
 
-    [item["x"] for item in db.my_collection.find().limit(2).skip(1)]
+    [item["x"] for item in db[MONGODB_COLLECTION].find().limit(2).skip(1)]
 
     if pymongo.version_tuple >= (3, 0):
-        db.my_collection.initialize_unordered_bulk_op()
-        db.my_collection.initialize_ordered_bulk_op()
-        db.my_collection.bulk_write([pymongo.InsertOne({'x': 1})])
-        db.my_collection.insert_one({'x': 300})
-        db.my_collection.insert_many([{'x': 1} for i in range(20, 25)])
-        db.my_collection.replace_one({'x': 1}, {'x': 2})
-        db.my_collection.update_one({'x': 1}, {'$inc': {'x': 3}})
-        db.my_collection.update_many({'x': 1}, {'$inc': {'x': 3}})
-        db.my_collection.delete_one({'x': 4})
-        db.my_collection.delete_many({'x': 4})
-        db.my_collection.find_raw_batches()
-        db.my_collection.parallel_scan(1)
-        db.my_collection.create_indexes(
+        db[MONGODB_COLLECTION].initialize_unordered_bulk_op()
+        db[MONGODB_COLLECTION].initialize_ordered_bulk_op()
+        db[MONGODB_COLLECTION].bulk_write([pymongo.InsertOne({'x': 1})])
+        db[MONGODB_COLLECTION].insert_one({'x': 300})
+        db[MONGODB_COLLECTION].insert_many([{'x': 1} for i in range(20, 25)])
+        db[MONGODB_COLLECTION].replace_one({'x': 1}, {'x': 2})
+        db[MONGODB_COLLECTION].update_one({'x': 1}, {'$inc': {'x': 3}})
+        db[MONGODB_COLLECTION].update_many({'x': 1}, {'$inc': {'x': 3}})
+        db[MONGODB_COLLECTION].delete_one({'x': 4})
+        db[MONGODB_COLLECTION].delete_many({'x': 4})
+        db[MONGODB_COLLECTION].find_raw_batches()
+        db[MONGODB_COLLECTION].parallel_scan(1)
+        db[MONGODB_COLLECTION].create_indexes(
                 [pymongo.IndexModel([('x', pymongo.DESCENDING)])])
-        db.my_collection.list_indexes()
-        db.my_collection.aggregate([])
-        db.my_collection.aggregate_raw_batches([])
-        db.my_collection.find_one_and_delete({'x': 10})
-        db.my_collection.find_one_and_replace({'x': 300}, {'x': 301})
-        db.my_collection.find_one_and_update({'x': 301}, {'$inc': {'x': 300}})
+        db[MONGODB_COLLECTION].list_indexes()
+        db[MONGODB_COLLECTION].aggregate([])
+        db[MONGODB_COLLECTION].aggregate_raw_batches([])
+        db[MONGODB_COLLECTION].find_one_and_delete({'x': 10})
+        db[MONGODB_COLLECTION].find_one_and_replace({'x': 300}, {'x': 301})
+        db[MONGODB_COLLECTION].find_one_and_update({'x': 301}, {'$inc': {'x': 300}})
 
 
 # Common Metrics for tests that use _exercise_mongo().
@@ -60,10 +61,10 @@ if pymongo.version_tuple >= (3, 0):
     _all_count += 19
 
 _test_pymongo_scoped_metrics = [
-        ('Datastore/statement/MongoDB/my_collection/save', 3),
-        ('Datastore/statement/MongoDB/my_collection/create_index', 1),
-        ('Datastore/statement/MongoDB/my_collection/find', 3),
-        ('Datastore/statement/MongoDB/my_collection/find_one', 1)]
+        ('Datastore/statement/MongoDB/%s/save' % MONGODB_COLLECTION, 3),
+        ('Datastore/statement/MongoDB/%s/create_index' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/find' % MONGODB_COLLECTION, 3),
+        ('Datastore/statement/MongoDB/%s/find_one' % MONGODB_COLLECTION, 1)]
 
 _test_pymongo_rollup_metrics = [
         ('Datastore/all', _all_count),
@@ -74,33 +75,33 @@ _test_pymongo_rollup_metrics = [
         ('Datastore/operation/MongoDB/create_index', 1),
         ('Datastore/operation/MongoDB/find', 3),
         ('Datastore/operation/MongoDB/find_one', 1),
-        ('Datastore/statement/MongoDB/my_collection/save', 3),
-        ('Datastore/statement/MongoDB/my_collection/create_index', 1),
-        ('Datastore/statement/MongoDB/my_collection/find', 3),
-        ('Datastore/statement/MongoDB/my_collection/find_one', 1)]
+        ('Datastore/statement/MongoDB/%s/save' % MONGODB_COLLECTION, 3),
+        ('Datastore/statement/MongoDB/%s/create_index' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/find' % MONGODB_COLLECTION, 3),
+        ('Datastore/statement/MongoDB/%s/find_one' % MONGODB_COLLECTION, 1)]
 
 if pymongo.version_tuple >= (3, 0):
     _test_pymongo_scoped_metrics.extend([
-        (('Datastore/statement/MongoDB/my_collection'
+        (('Datastore/statement/MongoDB/%s' % MONGODB_COLLECTION +
                 '/initialize_unordered_bulk_op'), 1),
-        (('Datastore/statement/MongoDB/my_collection'
+        (('Datastore/statement/MongoDB/%s' % MONGODB_COLLECTION +
                 '/initialize_ordered_bulk_op'), 1),
-        ('Datastore/statement/MongoDB/my_collection/bulk_write', 1),
-        ('Datastore/statement/MongoDB/my_collection/insert_one', 1),
-        ('Datastore/statement/MongoDB/my_collection/insert_many', 1),
-        ('Datastore/statement/MongoDB/my_collection/replace_one', 1),
-        ('Datastore/statement/MongoDB/my_collection/update_one', 1),
-        ('Datastore/statement/MongoDB/my_collection/delete_one', 1),
-        ('Datastore/statement/MongoDB/my_collection/delete_many', 1),
-        ('Datastore/statement/MongoDB/my_collection/find_raw_batches', 1),
-        ('Datastore/statement/MongoDB/my_collection/parallel_scan', 1),
-        ('Datastore/statement/MongoDB/my_collection/create_indexes', 1),
-        ('Datastore/statement/MongoDB/my_collection/list_indexes', 1),
-        ('Datastore/statement/MongoDB/my_collection/aggregate', 1),
-        ('Datastore/statement/MongoDB/my_collection/aggregate_raw_batches', 1),
-        ('Datastore/statement/MongoDB/my_collection/find_one_and_delete', 1),
-        ('Datastore/statement/MongoDB/my_collection/find_one_and_replace', 1),
-        ('Datastore/statement/MongoDB/my_collection/find_one_and_update', 1),
+        ('Datastore/statement/MongoDB/%s/bulk_write' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/insert_one' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/insert_many' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/replace_one' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/update_one' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/delete_one' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/delete_many' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/find_raw_batches' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/parallel_scan' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/create_indexes' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/list_indexes' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/aggregate' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/aggregate_raw_batches' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/find_one_and_delete' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/find_one_and_replace' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/find_one_and_update' % MONGODB_COLLECTION, 1),
     ])
     _test_pymongo_rollup_metrics.extend([
         ('Datastore/operation/MongoDB/initialize_unordered_bulk_op', 1),
@@ -121,26 +122,26 @@ if pymongo.version_tuple >= (3, 0):
         ('Datastore/operation/MongoDB/find_one_and_delete', 1),
         ('Datastore/operation/MongoDB/find_one_and_replace', 1),
         ('Datastore/operation/MongoDB/find_one_and_update', 1),
-        (('Datastore/statement/MongoDB/my_collection'
+        (('Datastore/statement/MongoDB/%s' % MONGODB_COLLECTION +
                 '/initialize_unordered_bulk_op'), 1),
-        (('Datastore/statement/MongoDB/my_collection'
+        (('Datastore/statement/MongoDB/%s' % MONGODB_COLLECTION +
                 '/initialize_ordered_bulk_op'), 1),
-        ('Datastore/statement/MongoDB/my_collection/bulk_write', 1),
-        ('Datastore/statement/MongoDB/my_collection/insert_one', 1),
-        ('Datastore/statement/MongoDB/my_collection/insert_many', 1),
-        ('Datastore/statement/MongoDB/my_collection/replace_one', 1),
-        ('Datastore/statement/MongoDB/my_collection/update_one', 1),
-        ('Datastore/statement/MongoDB/my_collection/delete_one', 1),
-        ('Datastore/statement/MongoDB/my_collection/delete_many', 1),
-        ('Datastore/statement/MongoDB/my_collection/find_raw_batches', 1),
-        ('Datastore/statement/MongoDB/my_collection/parallel_scan', 1),
-        ('Datastore/statement/MongoDB/my_collection/create_indexes', 1),
-        ('Datastore/statement/MongoDB/my_collection/list_indexes', 1),
-        ('Datastore/statement/MongoDB/my_collection/aggregate', 1),
-        ('Datastore/statement/MongoDB/my_collection/aggregate_raw_batches', 1),
-        ('Datastore/statement/MongoDB/my_collection/find_one_and_delete', 1),
-        ('Datastore/statement/MongoDB/my_collection/find_one_and_replace', 1),
-        ('Datastore/statement/MongoDB/my_collection/find_one_and_update', 1),
+        ('Datastore/statement/MongoDB/%s/bulk_write' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/insert_one' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/insert_many' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/replace_one' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/update_one' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/delete_one' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/delete_many' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/find_raw_batches' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/parallel_scan' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/create_indexes' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/list_indexes' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/aggregate' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/aggregate_raw_batches' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/find_one_and_delete' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/find_one_and_replace' % MONGODB_COLLECTION, 1),
+        ('Datastore/statement/MongoDB/%s/find_one_and_update' % MONGODB_COLLECTION, 1),
     ])
 
 # Add Connection metric

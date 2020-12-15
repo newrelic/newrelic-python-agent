@@ -4,8 +4,9 @@ import psycopg2cffi.extras
 
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs, validate_transaction_errors,
-    validate_transaction_slow_sql_count,
     validate_stats_engine_explain_plan_output_is_none)
+from testing_support.validators.validate_transaction_slow_sql_count import \
+        validate_transaction_slow_sql_count
 
 from testing_support.db_settings import postgresql_settings
 

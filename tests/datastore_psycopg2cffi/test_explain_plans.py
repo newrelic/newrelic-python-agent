@@ -3,12 +3,12 @@ import psycopg2cffi.extensions
 import psycopg2cffi.extras
 import pytest
 
-from testing_support.fixtures import (
-    validate_transaction_slow_sql_count,
-    override_application_settings)
+from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_database_node import (
     validate_database_node,
 )
+from testing_support.validators.validate_transaction_slow_sql_count import \
+        validate_transaction_slow_sql_count
 from newrelic.api.background_task import background_task
 from newrelic.core.database_utils import SQLConnections
 

@@ -3,51 +3,53 @@ import pymysql
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs)
 
-from testing_support.settings import mysql_settings
+from testing_support.db_settings import mysql_settings
 
 from newrelic.api.background_task import background_task
 
-DB_SETTINGS = mysql_settings()
+DB_SETTINGS = mysql_settings()[0]
+TABLE_NAME = "datastore_pymysql_" + DB_SETTINGS["namespace"]
+PROCEDURE_NAME = "hello_" + DB_SETTINGS["namespace"]
 
 
 def execute_db_calls_with_cursor(cursor):
-    cursor.execute("""drop table if exists datastore_pymysql""")
+    cursor.execute("""drop table if exists %s""" % TABLE_NAME)
 
-    cursor.execute("""create table datastore_pymysql """
+    cursor.execute("""create table %s """ % TABLE_NAME +
            """(a integer, b real, c text)""")
 
-    cursor.executemany("""insert into datastore_pymysql """
+    cursor.executemany("""insert into %s """ % TABLE_NAME +
             """values (%s, %s, %s)""", [(1, 1.0, '1.0'),
             (2, 2.2, '2.2'), (3, 3.3, '3.3')])
 
-    cursor.execute("""select * from datastore_pymysql""")
+    cursor.execute("""select * from %s""" % TABLE_NAME)
 
     for row in cursor: pass
 
-    cursor.execute("""update datastore_pymysql set a=%s, b=%s, """
+    cursor.execute("""update %s""" % TABLE_NAME + """ set a=%s, b=%s, """
             """c=%s where a=%s""", (4, 4.0, '4.0', 1))
 
-    cursor.execute("""delete from datastore_pymysql where a=2""")
-    cursor.execute("""drop procedure if exists hello""")
-    cursor.execute("""CREATE PROCEDURE hello()
+    cursor.execute("""delete from %s where a=2""" % TABLE_NAME)
+    cursor.execute("""drop procedure if exists %s""" % PROCEDURE_NAME)
+    cursor.execute("""CREATE PROCEDURE %s()
                       BEGIN
                         SELECT 'Hello World!';
-                      END""")
+                      END""" % PROCEDURE_NAME)
 
-    cursor.callproc("hello")
+    cursor.callproc(PROCEDURE_NAME)
 
 
 _test_execute_via_cursor_scoped_metrics = [
         ('Function/pymysql:Connect', 1),
         ('Function/pymysql.connections:Connection.__enter__', 1),
         ('Function/pymysql.connections:Connection.__exit__', 1),
-        ('Datastore/statement/MySQL/datastore_pymysql/select', 1),
-        ('Datastore/statement/MySQL/datastore_pymysql/insert', 1),
-        ('Datastore/statement/MySQL/datastore_pymysql/update', 1),
-        ('Datastore/statement/MySQL/datastore_pymysql/delete', 1),
+        ('Datastore/statement/MySQL/%s/select' % TABLE_NAME, 1),
+        ('Datastore/statement/MySQL/%s/insert' % TABLE_NAME, 1),
+        ('Datastore/statement/MySQL/%s/update' % TABLE_NAME, 1),
+        ('Datastore/statement/MySQL/%s/delete' % TABLE_NAME, 1),
         ('Datastore/operation/MySQL/drop', 2),
         ('Datastore/operation/MySQL/create', 2),
-        ('Datastore/statement/MySQL/hello/call', 1),
+        ('Datastore/statement/MySQL/%s/call' % PROCEDURE_NAME, 1),
         ('Datastore/operation/MySQL/commit', 3),
         ('Datastore/operation/MySQL/rollback', 1)]
 
@@ -56,15 +58,15 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/allOther', 14),
         ('Datastore/MySQL/all', 14),
         ('Datastore/MySQL/allOther', 14),
+        ('Datastore/statement/MySQL/%s/select' % TABLE_NAME, 1),
+        ('Datastore/statement/MySQL/%s/insert' % TABLE_NAME, 1),
+        ('Datastore/statement/MySQL/%s/update' % TABLE_NAME, 1),
+        ('Datastore/statement/MySQL/%s/delete' % TABLE_NAME, 1),
         ('Datastore/operation/MySQL/select', 1),
-        ('Datastore/statement/MySQL/datastore_pymysql/select', 1),
         ('Datastore/operation/MySQL/insert', 1),
-        ('Datastore/statement/MySQL/datastore_pymysql/insert', 1),
         ('Datastore/operation/MySQL/update', 1),
-        ('Datastore/statement/MySQL/datastore_pymysql/update', 1),
         ('Datastore/operation/MySQL/delete', 1),
-        ('Datastore/statement/MySQL/datastore_pymysql/delete', 1),
-        ('Datastore/statement/MySQL/hello/call', 1),
+        ('Datastore/statement/MySQL/%s/call' % PROCEDURE_NAME, 1),
         ('Datastore/operation/MySQL/call', 1),
         ('Datastore/operation/MySQL/drop', 2),
         ('Datastore/operation/MySQL/create', 2),
@@ -92,13 +94,13 @@ def test_execute_via_cursor():
 
 _test_execute_via_cursor_context_mangaer_scoped_metrics = [
         ('Function/pymysql:Connect', 1),
-        ('Datastore/statement/MySQL/datastore_pymysql/select', 1),
-        ('Datastore/statement/MySQL/datastore_pymysql/insert', 1),
-        ('Datastore/statement/MySQL/datastore_pymysql/update', 1),
-        ('Datastore/statement/MySQL/datastore_pymysql/delete', 1),
+        ('Datastore/statement/MySQL/%s/select' % TABLE_NAME, 1),
+        ('Datastore/statement/MySQL/%s/insert' % TABLE_NAME, 1),
+        ('Datastore/statement/MySQL/%s/update' % TABLE_NAME, 1),
+        ('Datastore/statement/MySQL/%s/delete' % TABLE_NAME, 1),
         ('Datastore/operation/MySQL/drop', 2),
         ('Datastore/operation/MySQL/create', 2),
-        ('Datastore/statement/MySQL/hello/call', 1),
+        ('Datastore/statement/MySQL/%s/call' % PROCEDURE_NAME, 1),
         ('Datastore/operation/MySQL/commit', 2),
         ('Datastore/operation/MySQL/rollback', 1)]
 
@@ -107,15 +109,15 @@ _test_execute_via_cursor_context_mangaer_rollup_metrics = [
         ('Datastore/allOther', 13),
         ('Datastore/MySQL/all', 13),
         ('Datastore/MySQL/allOther', 13),
+        ('Datastore/statement/MySQL/%s/select' % TABLE_NAME, 1),
+        ('Datastore/statement/MySQL/%s/insert' % TABLE_NAME, 1),
+        ('Datastore/statement/MySQL/%s/update' % TABLE_NAME, 1),
+        ('Datastore/statement/MySQL/%s/delete' % TABLE_NAME, 1),
         ('Datastore/operation/MySQL/select', 1),
-        ('Datastore/statement/MySQL/datastore_pymysql/select', 1),
         ('Datastore/operation/MySQL/insert', 1),
-        ('Datastore/statement/MySQL/datastore_pymysql/insert', 1),
         ('Datastore/operation/MySQL/update', 1),
-        ('Datastore/statement/MySQL/datastore_pymysql/update', 1),
         ('Datastore/operation/MySQL/delete', 1),
-        ('Datastore/statement/MySQL/datastore_pymysql/delete', 1),
-        ('Datastore/statement/MySQL/hello/call', 1),
+        ('Datastore/statement/MySQL/%s/call' % PROCEDURE_NAME, 1),
         ('Datastore/operation/MySQL/call', 1),
         ('Datastore/operation/MySQL/drop', 2),
         ('Datastore/operation/MySQL/create', 2),

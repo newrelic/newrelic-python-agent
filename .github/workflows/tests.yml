@@ -545,6 +545,7 @@ jobs:
           - datastore_memcache
           - datastore_pylibmc
           - datastore_pymemcache
+          - datastore_umemcache
 
     runs-on: ubuntu-latest
 

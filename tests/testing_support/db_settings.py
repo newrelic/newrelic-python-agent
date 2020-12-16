@@ -34,6 +34,7 @@ def postgresql_settings():
             "name": db,
             "host": "localhost",
             "port": base_port + instance_num,
+            "table_name": "postgres_table_" + str(os.getpid()),
         }
         for instance_num in range(instances)
     ]

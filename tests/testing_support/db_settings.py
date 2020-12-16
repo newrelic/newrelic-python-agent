@@ -34,6 +34,7 @@ def postgresql_settings():
             "name": db,
             "host": "localhost",
             "port": base_port + instance_num,
+            "table_name": "postgres_table_" + str(os.getpid()),
         }
         for instance_num in range(instances)
     ]
@@ -191,6 +192,7 @@ def elasticsearch_settings():
     ]
     return settings
 
+
 def solr_settings():
     """Return a list of dict of settings for connecting to solr.
 
@@ -214,6 +216,30 @@ def solr_settings():
             "host": "127.0.0.1",
             "port": base_port + instance_num,
             "namespace": str(os.getpid()),
+        }
+        for instance_num in range(instances)
+    ]
+    return settings
+
+
+def rabbitmq_settings():
+    """Return a list of dict of settings for connecting to rabbitmq.
+
+    Will return the correct settings, depending on which of the environments it
+    is running in. It attempts to set variables in the following order, where
+    later environments override earlier ones.
+
+        1. Local
+        2. Github Actions
+    """
+
+    instances = 1
+    base_port = 5672
+
+    settings = [
+        {
+            "host": "localhost",
+            "port": base_port + instance_num,
         }
         for instance_num in range(instances)
     ]

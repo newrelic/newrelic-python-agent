@@ -137,22 +137,6 @@ def validate_cross_process_headers(wrapped, instance, args, kwargs):
     return result
 
 
-@function_wrapper
-def validate_messagebroker_headers(wrapped, instance, args, kwargs):
-    result = wrapped(*args, **kwargs)
-
-    transaction = current_transaction()
-    settings = transaction.settings
-
-    if settings.distributed_tracing.enabled:
-        validate_distributed_tracing_header()
-    else:
-        validate_outbound_headers(header_id='NewRelicID',
-                header_transaction='NewRelicTransaction')
-
-    return result
-
-
 def create_incoming_headers(transaction):
     settings = transaction.settings
     encoding_key = settings.encoding_key

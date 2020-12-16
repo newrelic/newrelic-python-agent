@@ -7,7 +7,8 @@ from newrelic.common.object_wrapper import transient_function_wrapper
 
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_tt_collector_json, override_application_settings)
-from testing_support.external_fixtures import validate_messagebroker_headers
+from testing_support.validators.validate_messagebroker_headers import (
+        validate_messagebroker_headers)
 from testing_support.db_settings import rabbitmq_settings
 
 

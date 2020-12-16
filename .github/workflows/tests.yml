@@ -155,7 +155,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres
+        image: postgres:9
         env:
           POSTGRES_PASSWORD: postgres
         ports:

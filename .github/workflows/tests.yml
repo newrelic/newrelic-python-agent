@@ -439,6 +439,7 @@ jobs:
       matrix:
         test-directory: 
           - datastore_pysolr
+          - datastore_solrpy
 
     runs-on: ubuntu-latest
 

@@ -51,7 +51,7 @@ _test_distributed_tracing_basic_consume_rollup_metrics = [
     ('Supportability/DistributedTrace/AcceptPayload/Success', None),
     ('Supportability/TraceContext/Accept/Success', 1),
     ('DurationByCaller/App/33/12345/AMQP/all', 1),
-    ('TransportDuration/App/33/123345/AMQP/all', 1),
+    ('TransportDuration/App/33/12345/AMQP/all', 1),
     ('DurationByCaller/App/33/12345/AMQP/allOther', 1),
     ('TransportDuration/App/33/12345/AMQP/allOther', 1)
 

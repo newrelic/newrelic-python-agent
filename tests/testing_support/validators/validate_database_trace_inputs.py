@@ -1,7 +1,7 @@
 
 from newrelic.common.object_wrapper import transient_function_wrapper
 
-from fixtures import catch_background_exceptions
+from testing_support.fixtures import catch_background_exceptions
 
 
 def validate_database_trace_inputs(sql_parameters_type):

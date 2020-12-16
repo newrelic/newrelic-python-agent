@@ -139,8 +139,9 @@ jobs:
 
     strategy:
       matrix:
-        test-directory:
+        test-directory: 
           - datastore_asyncpg
+          - datastore_psycopg2cffi
           - datastore_psycopg2
 
     runs-on: ubuntu-latest

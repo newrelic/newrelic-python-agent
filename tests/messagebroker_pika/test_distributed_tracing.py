@@ -15,8 +15,8 @@ from testing_support.fixtures import (override_application_settings,
 DB_SETTINGS = rabbitmq_settings()[0]
 
 _override_settings = {
-    'primary_application_id': '3896659',
-    'account_id': '332029',
+    'primary_application_id': '12345',
+    'account_id': '33',
     'trusted_account_key': '1',
     'cross_application_tracer.enabled': True,
     'distributed_tracing.enabled': True,
@@ -50,10 +50,10 @@ _test_distributed_tracing_basic_consume_rollup_metrics = [
     ('MessageBroker/RabbitMQ/Exchange/Consume/Named/Default', None),
     ('Supportability/DistributedTrace/AcceptPayload/Success', None),
     ('Supportability/TraceContext/Accept/Success', 1),
-    ('DurationByCaller/App/332029/3896659/AMQP/all', 1),
-    ('TransportDuration/App/332029/3896659/AMQP/all', 1),
-    ('DurationByCaller/App/332029/3896659/AMQP/allOther', 1),
-    ('TransportDuration/App/332029/3896659/AMQP/allOther', 1)
+    ('DurationByCaller/App/33/12345/AMQP/all', 1),
+    ('TransportDuration/App/33/123345/AMQP/all', 1),
+    ('DurationByCaller/App/33/12345/AMQP/allOther', 1),
+    ('TransportDuration/App/33/12345/AMQP/allOther', 1)
 
 ]
 

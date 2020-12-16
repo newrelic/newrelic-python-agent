@@ -73,12 +73,14 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
           ${{ runner.os }}-${{ matrix.test-directory }}-
+
     # Special case packages
     - name: Install libcurl-dev
       if: ${{ matrix.test-directory == 'framework_tornado' }}
       run: |
         sudo apt-get update
         sudo apt-get install libcurl4-openssl-dev
+
     # Set up all versions of python
     - uses: actions/setup-python@v2
       with:
@@ -125,6 +127,7 @@ jobs:
       run: |
         pip install -U pip
         pip install -U wheel setuptools tox virtualenv!=20.0.24
+
     - name: Test
       run: |
         tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
@@ -154,6 +157,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
     steps:
     - uses: actions/checkout@v2
 
@@ -173,6 +177,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
           ${{ runner.os }}-${{ matrix.test-directory }}-
+
     # Set up all versions of python
     - uses: actions/setup-python@v2
       with:
@@ -218,6 +223,7 @@ jobs:
       run: |
         pip install -U pip
         pip install -U wheel setuptools tox virtualenv!=20.0.24
+
     - name: Test
       run: |
         tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
@@ -346,6 +352,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
     steps:
     - uses: actions/checkout@v2
 
@@ -365,6 +372,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
           ${{ runner.os }}-${{ matrix.test-directory }}-
+
     # Set up all versions of python
     - uses: actions/setup-python@v2
       with:
@@ -410,6 +418,7 @@ jobs:
       run: |
         pip install -U pip
         pip install -U wheel setuptools tox virtualenv!=20.0.24
+
     - name: Test
       run: |
         tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
@@ -440,6 +449,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
     steps:
     - uses: actions/checkout@v2
 
@@ -459,6 +469,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
           ${{ runner.os }}-${{ matrix.test-directory }}-
+
     # Set up all versions of python
     - uses: actions/setup-python@v2
       with:
@@ -515,7 +526,8 @@ jobs:
 
     strategy:
       matrix:
-        test-directory: [messagebroker_pika]
+        test-directory:
+          - messagebroker_pika
 
     runs-on: ubuntu-latest
 
@@ -532,6 +544,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
     steps:
     - uses: actions/checkout@v2
 
@@ -551,6 +564,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
           ${{ runner.os }}-${{ matrix.test-directory }}-
+
     # Set up all versions of python
     - uses: actions/setup-python@v2
       with:

@@ -183,6 +183,7 @@ def create_incoming_headers(transaction):
 def validate_external_node_params(params=[], forgone_params=[]):
     """
     Validate the parameters on the external node.
+
     params: a list of tuples
     forgone_params: a flat list
     """

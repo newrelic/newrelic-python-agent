@@ -6,9 +6,11 @@ USER = pwd.getpwuid(os.getuid()).pw_name
 
 def postgresql_settings():
     """Return a list of dict of settings for connecting to postgresql.
+
     Will return the correct settings, depending on which of the environments it
     is running in. It attempts to set variables in the following order, where
     later environments override earlier ones.
+
         1. Local
         2. Github Actions
     """
@@ -77,9 +79,11 @@ def mysql_settings():
 
 def redis_settings():
     """Return a list of dict of settings for connecting to redis.
+
     Will return the correct settings, depending on which of the environments it
     is running in. It attempts to set variables in the following order, where
     later environments override earlier ones.
+
         1. Local
         2. Github Actions
     """
@@ -103,9 +107,11 @@ def redis_settings():
 
 def memcached_settings():
     """Return a list of dict of settings for connecting to memcached.
+
     Will return the correct settings, depending on which of the environments it
     is running in. It attempts to set variables in the following order, where
     later environments override earlier ones.
+
         1. Local
         2. Github Actions
     """
@@ -130,9 +136,11 @@ def memcached_settings():
 
 def elasticsearch_settings():
     """Return a list of dict of settings for connecting to elasticsearch.
+
     Will return the correct settings, depending on which of the environments it
     is running in. It attempts to set variables in the following order, where
     later environments override earlier ones.
+
         1. Local
         2. Github Actions
     """
@@ -156,9 +164,11 @@ def elasticsearch_settings():
 
 def rabbitmq_settings():
     """Return a list of dict of settings for connecting to rabbitmq.
+
     Will return the correct settings, depending on which of the environments it
     is running in. It attempts to set variables in the following order, where
     later environments override earlier ones.
+
         1. Local
         2. Github Actions
     """

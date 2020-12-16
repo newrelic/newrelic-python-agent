@@ -3,6 +3,7 @@ import functools
 import pika
 import pytest
 import six
+import os
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
@@ -62,8 +63,7 @@ _test_blocking_connection_basic_get_empty_metrics = [
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_blocking_connection_basic_get_empty():
-    QUEUE = 'test_blocking_empty'
-
+    QUEUE = 'test_blocking_empty-%s' % os.getpid()
     with pika.BlockingConnection(
             pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
         channel = connection.channel()

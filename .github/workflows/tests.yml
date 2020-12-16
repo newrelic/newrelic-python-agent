@@ -42,6 +42,7 @@ jobs:
           - cross_agent
           - datastore_sqlite
           - external_boto3
+          - external_botocore
           - framework_aiohttp
           - framework_bottle
           - framework_cherrypy

@@ -47,4 +47,3 @@ def validate_database_trace_inputs(sql_parameters_type):
         return wrapped(*args, **kwargs)
 
     return _validate_database_trace_inputs
-

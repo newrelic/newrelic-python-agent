@@ -40,6 +40,7 @@ jobs:
           - application_celery
           - component_flask_rest
           - cross_agent
+          - external_boto3
           - external_botocore
           - framework_aiohttp
           - framework_bottle

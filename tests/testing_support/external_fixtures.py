@@ -136,6 +136,7 @@ def validate_cross_process_headers(wrapped, instance, args, kwargs):
 
     return result
 
+
 def create_incoming_headers(transaction):
     settings = transaction.settings
     encoding_key = settings.encoding_key
@@ -339,4 +340,3 @@ def validate_distributed_tracing_header(header='newrelic'):
 
     # Verify that priority is a float
     assert isinstance(data['pr'], float)
-

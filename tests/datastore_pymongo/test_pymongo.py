@@ -3,8 +3,9 @@ import pytest
 import sqlite3
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors, validate_database_duration)
+    validate_transaction_errors)
 from testing_support.db_settings import mongodb_settings
+from testing_support.validators.validate_database_duration import validate_database_duration
 
 from newrelic.api.background_task import background_task
 

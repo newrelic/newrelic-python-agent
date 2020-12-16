@@ -4,8 +4,8 @@ from elasticsearch import Elasticsearch
 
 from newrelic.api.background_task import background_task
 
-from testing_support.fixtures import validate_database_duration
 from testing_support.db_settings import elasticsearch_settings
+from testing_support.validators.validate_database_duration import validate_database_duration
 
 ES_SETTINGS = elasticsearch_settings()[0]
 ES_URL = 'http://%s:%s' % (ES_SETTINGS['host'], ES_SETTINGS['port'])

@@ -1,8 +1,9 @@
 import psycopg2
 import pytest
 
-from testing_support.fixtures import (validate_slow_sql_collector_json,
-    override_application_settings)
+from testing_support.fixtures import override_application_settings
+from testing_support.validators.validate_slow_sql_collector_json import validate_slow_sql_collector_json
+
 from utils import DB_SETTINGS
 
 from newrelic.api.background_task import background_task

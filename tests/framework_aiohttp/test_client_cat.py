@@ -7,10 +7,12 @@ from newrelic.api.background_task import background_task
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import current_transaction
 
-from testing_support.external_fixtures import (create_incoming_headers,
-        validate_external_node_params, validate_cross_process_headers)
 from testing_support.fixtures import (override_application_settings,
         validate_transaction_metrics)
+from testing_support.validators.create_incoming_headers import create_incoming_headers
+from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
+from testing_support.validators.validate_external_node_params import validate_external_node_params
+
 
 version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
 

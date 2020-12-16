@@ -1,7 +1,8 @@
 import pymysql
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_database_trace_inputs)
+    )
+from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
 
 from testing_support.db_settings import mysql_settings
 

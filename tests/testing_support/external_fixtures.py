@@ -20,8 +20,13 @@ except ImportError:
 
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import transient_function_wrapper
-from newrelic.common.encoding_utils import json_encode, obfuscate
+from newrelic.common.encoding_utils import (json_encode, json_decode,
+    obfuscate, deobfuscate, DistributedTracePayload)
+from newrelic.common.object_wrapper import (transient_function_wrapper,
+        function_wrapper)
+
+OUTBOUND_TRACE_KEYS_REQUIRED = (
+        'ty', 'ac', 'ap', 'tr', 'pr', 'sa', 'ti')
 
 
 def create_incoming_headers(transaction):
@@ -47,6 +52,20 @@ def create_incoming_headers(transaction):
     assert isinstance(value, type(''))
 
     headers.append(('X-NewRelic-App-Data', value))
+
+    return headers
+
+
+@transient_function_wrapper(httplib.__name__, 'HTTPResponse.getheaders')
+def insert_incoming_headers(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    headers = list(wrapped(*args, **kwargs))
+
+    headers.extend(create_incoming_headers(transaction))
 
     return headers
 

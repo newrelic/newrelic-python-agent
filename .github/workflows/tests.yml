@@ -44,6 +44,7 @@ jobs:
           - external_boto3
           - external_botocore
           - external_feedparser
+          - external_http
           - external_httplib
           - external_httplib2
           - external_requests
@@ -546,6 +547,7 @@ jobs:
           - datastore_memcache
           - datastore_pylibmc
           - datastore_pymemcache
+          - datastore_umemcache
 
     runs-on: ubuntu-latest
 

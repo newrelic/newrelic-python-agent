@@ -27,9 +27,8 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 @pytest.fixture(scope='module')
 def grpc_app_server():
-    port = random.randint(50000, 50100)
-    with MockExternalgRPCServer(port=port) as server:
-        yield server, port
+    with MockExternalgRPCServer() as server:
+        yield server, server.port
 
 
 @pytest.fixture(scope='module')

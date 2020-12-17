@@ -26,6 +26,7 @@ def test_span_events(server, path):
     if path:
         uri += path
 
+    # Validate long uri gets truncated
     expected_uri = uri[:255]
 
     exact_intrinsics = {

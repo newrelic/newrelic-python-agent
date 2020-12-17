@@ -147,9 +147,9 @@ jobs:
       matrix:
         test-directory: 
           - datastore_asyncpg
-          - datastore_psycopg2cffi
-          - datastore_psycopg2
           - datastore_postgresql
+          - datastore_psycopg2
+          - datastore_psycopg2cffi
 
     runs-on: ubuntu-latest
 

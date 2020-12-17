@@ -11,8 +11,7 @@ from testing_support.fixtures import (override_application_settings,
         validate_transaction_metrics)
 from testing_support.validators.validate_span_events import (
         validate_span_events)
-from _test_common import (create_stub, create_request,
-        wait_for_transaction_completion)
+from _test_common import create_request, wait_for_transaction_completion
 
 
 _test_matrix = ('method_name,streaming_request', (
@@ -26,8 +25,7 @@ _test_matrix = ('method_name,streaming_request', (
 @override_application_settings({'distributed_tracing.enabled': True})
 @pytest.mark.parametrize(*_test_matrix)
 def test_inbound_distributed_trace(mock_grpc_server, method_name,
-        streaming_request):
-    stub = create_stub(mock_grpc_server)
+        streaming_request, stub):
     request = create_request(streaming_request)
 
     transaction = Transaction(application_instance())
@@ -69,8 +67,7 @@ _test_matrix = ('method_type,method_name', (
     (False, False),
 ))
 def test_outbound_distributed_trace(
-        mock_grpc_server, method_type, method_name, dt_enabled, dt_error):
-    stub = create_stub(mock_grpc_server)
+        mock_grpc_server, method_type, method_name, dt_enabled, dt_error, stub):
     request_type, response_type = method_type.split('_', 1)
     streaming_request = request_type == 'stream'
     streaming_response = response_type == 'stream'
@@ -148,8 +145,7 @@ def test_outbound_distributed_trace(
 
 @pytest.mark.parametrize(*_test_matrix)
 def test_outbound_payload_outside_transaction(
-        mock_grpc_server, method_type, method_name):
-    stub = create_stub(mock_grpc_server)
+        mock_grpc_server, method_type, method_name, stub):
     request_type, response_type = method_type.split('_', 1)
     streaming_request = request_type == 'stream'
     streaming_response = response_type == 'stream'

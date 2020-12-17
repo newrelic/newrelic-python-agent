@@ -1,8 +1,7 @@
 import six
 import grpc
 import pytest
-from _test_common import (create_stub, create_stub_and_channel, create_request,
-    wait_for_transaction_completion)
+from _test_common import create_request, wait_for_transaction_completion
 from newrelic.core.config import global_settings
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_transaction_event_attributes, override_application_settings,
@@ -31,9 +30,8 @@ _test_matrix = ["method_name,streaming_request", [
 
 
 @pytest.mark.parametrize(*_test_matrix)
-def test_simple(method_name, streaming_request, mock_grpc_server):
+def test_simple(method_name, streaming_request, mock_grpc_server, stub):
     port = mock_grpc_server
-    stub = create_stub(port)
     request = create_request(streaming_request)
     _transaction_name = \
         "sample_application:SampleApplicationServicer.{}".format(method_name)
@@ -67,9 +65,8 @@ def test_simple(method_name, streaming_request, mock_grpc_server):
 
 @pytest.mark.parametrize(*_test_matrix)
 def test_raises_response_status(method_name, streaming_request,
-        mock_grpc_server):
+        mock_grpc_server, stub):
     port = mock_grpc_server
-    stub = create_stub(port)
     request = create_request(streaming_request)
 
     method_name = method_name + 'Raises'
@@ -109,9 +106,8 @@ def test_raises_response_status(method_name, streaming_request,
 
 @pytest.mark.skipif(is_lt_grpc18, reason='abort added in 1.8.0')
 @pytest.mark.parametrize(*_test_matrix)
-def test_abort(method_name, streaming_request, mock_grpc_server):
+def test_abort(method_name, streaming_request, mock_grpc_server, stub):
     port = mock_grpc_server
-    stub = create_stub(port)
     request = create_request(streaming_request)
     method = getattr(stub, method_name + 'Abort')
 
@@ -131,9 +127,8 @@ def test_abort(method_name, streaming_request, mock_grpc_server):
 
 @pytest.mark.skipif(is_lt_grpc118, reason='abort_with_status added in 1.18.0')
 @pytest.mark.parametrize(*_test_matrix)
-def test_abort_with_status(method_name, streaming_request, mock_grpc_server):
+def test_abort_with_status(method_name, streaming_request, mock_grpc_server, stub):
     port = mock_grpc_server
-    stub = create_stub(port)
     request = create_request(streaming_request)
     method = getattr(stub, method_name + 'AbortWithStatus')
 
@@ -152,9 +147,9 @@ def test_abort_with_status(method_name, streaming_request, mock_grpc_server):
 
 
 @pytest.mark.skipif(is_lt_grpc118, reason='channel.close added in 1.18.0')
-def test_no_exception_client_close(mock_grpc_server):
+def test_no_exception_client_close(mock_grpc_server, stub_and_channel):
     port = mock_grpc_server
-    stub, channel = create_stub_and_channel(port)
+    stub, channel = stub_and_channel
     request = create_request(False, timesout=True)
 
     method = getattr(stub, 'DoUnaryUnary')
@@ -172,9 +167,8 @@ def test_no_exception_client_close(mock_grpc_server):
     _doit()
 
 
-def test_newrelic_disabled_no_transaction(mock_grpc_server):
+def test_newrelic_disabled_no_transaction(mock_grpc_server, stub):
     port = mock_grpc_server
-    stub = create_stub(port)
     request = create_request(False)
 
     method = getattr(stub, 'DoUnaryUnary')

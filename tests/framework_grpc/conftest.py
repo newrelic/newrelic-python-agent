@@ -1,4 +1,5 @@
 import gc
+import grpc
 import pytest
 import random
 
@@ -68,3 +69,20 @@ def gc_garbage_empty():
 
     # make sure that even python knows there isn't any garbage remaining
     assert not gc.garbage
+
+
+@pytest.fixture(scope="function")
+def stub(stub_and_channel):
+    return stub_and_channel[0]
+
+
+@pytest.fixture(scope="function")
+def stub_and_channel(mock_grpc_server):
+    port = mock_grpc_server
+    from sample_application.sample_application_pb2_grpc import (
+            SampleApplicationStub)
+
+    with grpc.insecure_channel('localhost:%s' % port) as channel:
+        stub = SampleApplicationStub(channel)
+        yield stub, channel
+

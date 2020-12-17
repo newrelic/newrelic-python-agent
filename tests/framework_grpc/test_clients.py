@@ -7,7 +7,7 @@ from newrelic.api.background_task import background_task
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_transaction_errors)
 
-from _test_common import create_stub, create_request, get_result
+from _test_common import create_request, get_result
 
 
 _test_matrix = [
@@ -47,7 +47,7 @@ _test_matrix = [
 
 @pytest.mark.parametrize(*_test_matrix)
 def test_client(service_method_type, service_method_method_name,
-        raises_exception, message_count, cancel, mock_grpc_server):
+        raises_exception, message_count, cancel, mock_grpc_server, stub):
 
     port = mock_grpc_server
 
@@ -88,8 +88,6 @@ def test_client(service_method_type, service_method_method_name,
             background_task=True)
     @background_task()
     def _test_client():
-        stub = create_stub(port)
-
         service_method_class = getattr(stub, service_method_class_name)
         service_method_method = getattr(service_method_class,
                 service_method_method_name)
@@ -155,7 +153,7 @@ _test_matrix = [
 
 @pytest.mark.parametrize(*_test_matrix)
 def test_future_timeout_error(service_method_type, service_method_method_name,
-        future_response, mock_grpc_server):
+        future_response, mock_grpc_server, stub):
     port = mock_grpc_server
 
     service_method_class_name = 'NoTxn%s' % (
@@ -188,8 +186,6 @@ def test_future_timeout_error(service_method_type, service_method_method_name,
             background_task=True)
     @background_task()
     def _test_future_timeout_error():
-        stub = create_stub(port)
-
         service_method_class = getattr(stub, service_method_class_name)
         service_method_method = getattr(service_method_class,
                 service_method_method_name)
@@ -215,7 +211,7 @@ _test_matrix = [
 
 @pytest.mark.parametrize(*_test_matrix)
 def test_repeated_result(service_method_type, service_method_method_name,
-        mock_grpc_server):
+        mock_grpc_server, stub):
     port = mock_grpc_server
 
     service_method_class_name = 'NoTxn%s' % (
@@ -248,8 +244,6 @@ def test_repeated_result(service_method_type, service_method_method_name,
             background_task=True)
     @background_task()
     def _test_repeated_result():
-        stub = create_stub(port)
-
         service_method_class = getattr(stub, service_method_class_name)
         service_method_method = getattr(service_method_class,
                 service_method_method_name)
@@ -275,7 +269,7 @@ _test_matrix = [
 
 @pytest.mark.parametrize(*_test_matrix)
 def test_future_cancel(service_method_type, service_method_method_name,
-        future_response, mock_grpc_server):
+        future_response, mock_grpc_server, stub):
     port = mock_grpc_server
 
     service_method_class_name = 'NoTxn%s' % (
@@ -308,8 +302,6 @@ def test_future_cancel(service_method_type, service_method_method_name,
             background_task=True)
     @background_task()
     def _test_future_cancel():
-        stub = create_stub(port)
-
         service_method_class = getattr(stub, service_method_class_name)
         service_method_method = getattr(service_method_class,
                 service_method_method_name)

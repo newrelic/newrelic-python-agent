@@ -4,18 +4,6 @@ import functools
 from newrelic.api.application import application_instance
 
 
-def create_stub(port):
-    return create_stub_and_channel(port)[0]
-
-
-def create_stub_and_channel(port):
-    from sample_application.sample_application_pb2_grpc import (
-            SampleApplicationStub)
-    channel = grpc.insecure_channel('localhost:%s' % port)
-    stub = SampleApplicationStub(channel)
-    return stub, channel
-
-
 def create_request(streaming_request, count=1, timesout=False):
     from sample_application.sample_application_pb2 import Message
 

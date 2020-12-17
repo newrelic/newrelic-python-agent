@@ -10,9 +10,9 @@ class SimpleResource(Resource):
     def obj_get(self, *args, **kwargs):
         pk = kwargs['pk']
         if pk == 'NotFound':
-            raise NotFound('Whatever it was you were looking for, it not here')
+            raise NotFound('Object not found.')
         elif pk == 'ObjectDoesNotExist':
-            raise ObjectDoesNotExist('It really does not exist')
+            raise ObjectDoesNotExist('Object does not exist.')
         elif pk == 'ZeroDivisionError':
             1 / 0
         else:

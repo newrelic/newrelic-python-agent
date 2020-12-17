@@ -43,6 +43,7 @@ jobs:
           - datastore_sqlite
           - external_boto3
           - external_botocore
+          - external_feedparser
           - external_httplib2
           - external_requests
           - framework_aiohttp
@@ -147,14 +148,15 @@ jobs:
       matrix:
         test-directory: 
           - datastore_asyncpg
-          - datastore_psycopg2cffi
+          - datastore_postgresql
           - datastore_psycopg2
+          - datastore_psycopg2cffi
 
     runs-on: ubuntu-latest
 
     services:
       postgres:
-        image: postgres
+        image: postgres:9
         env:
           POSTGRES_PASSWORD: postgres
         ports:

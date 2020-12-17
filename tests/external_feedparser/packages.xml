@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE rss PUBLIC "-//Netscape Communications//DTD RSS 0.91//EN" "http://www.rssboard.org/rss-0.91.dtd">
+<rss version="0.91">
+  <channel>
+    <title>PyPI newest packages</title>
+    <link>https://pypi.org/</link>
+    <description>Newest packages registered at the Python Package Index</description>
+    <language>en</language>
+    <item>
+      <title>my-pypi-package added to PyPI</title>
+      <link>https://pypi.org/project/my-pypi-package/</link>
+      <guid>https://pypi.org/project/my-pypi-package/</guid>
+      <description>my First Package</description>
+      <pubDate>Mon, 12 Aug 2019 16:38:59 GMT</pubDate>
+    </item>
+    <item>
+      <title>practice_lzz_1 added to PyPI</title>
+      <link>https://pypi.org/project/practice-lzz-1/</link>
+      <guid>https://pypi.org/project/practice-lzz-1/</guid>
+      <description>发布的第2个模块</description>
+      <pubDate>Mon, 12 Aug 2019 16:37:53 GMT</pubDate>
+    </item>
+    <item>
+      <title>support-ilens added to PyPI</title>
+      <link>https://pypi.org/project/support-ilens/</link>
+      <guid>https://pypi.org/project/support-ilens/</guid>
+      <description>Framework which can save Audit info</description>
+      <pubDate>Mon, 12 Aug 2019 16:12:58 GMT</pubDate>
+    </item>
+    <item>
+      <title>math1 added to PyPI</title>
+      <link>https://pypi.org/project/math1/</link>
+      <guid>https://pypi.org/project/math1/</guid>
+      <description>发布的第一个模块</description>
+      <pubDate>Mon, 12 Aug 2019 16:07:13 GMT</pubDate>
+    </item>
+    <item>
+      <title>supportilens added to PyPI</title>
+      <link>https://pypi.org/project/supportilens/</link>
+      <guid>https://pypi.org/project/supportilens/</guid>
+      <description>Framework which can save Audit info</description>
+      <pubDate>Mon, 12 Aug 2019 16:03:25 GMT</pubDate>
+    </item>
+    <item>
+      <title>iLensAuditsupport added to PyPI</title>
+      <link>https://pypi.org/project/ilensauditsupport/</link>
+      <guid>https://pypi.org/project/ilensauditsupport/</guid>
+      <description>Framework which can save Audit info</description>
+      <pubDate>Mon, 12 Aug 2019 16:01:36 GMT</pubDate>
+    </item>
+    <item>
+      <title>iLens-Audit-support added to PyPI</title>
+      <link>https://pypi.org/project/ilens-audit-support/</link>
+      <guid>https://pypi.org/project/ilens-audit-support/</guid>
+      <description>Framework which can save Audit info</description>
+      <pubDate>Mon, 12 Aug 2019 16:00:10 GMT</pubDate>
+    </item>
+    <item>
+      <title>iLensAudit-support added to PyPI</title>
+      <link>https://pypi.org/project/ilensaudit-support/</link>
+      <guid>https://pypi.org/project/ilensaudit-support/</guid>
+      <description>Framework which can save Audit info</description>
+      <pubDate>Mon, 12 Aug 2019 15:54:59 GMT</pubDate>
+    </item>
+    <item>
+      <title>wirepickle added to PyPI</title>
+      <link>https://pypi.org/project/wirepickle/</link>
+      <guid>https://pypi.org/project/wirepickle/</guid>
+      <description>Effortless Python RPC with ZeroMQ</description>
+      <pubDate>Mon, 12 Aug 2019 15:47:55 GMT</pubDate>
+    </item>
+    <item>
+      <title>openapi2omg added to PyPI</title>
+      <link>https://pypi.org/project/openapi2omg/</link>
+      <guid>https://pypi.org/project/openapi2omg/</guid>
+      <description>A tool to convert an OpenAPI spec to an OMG spec</description>
+      <pubDate>Mon, 12 Aug 2019 15:40:23 GMT</pubDate>
+    </item>
+    <item>
+      <title>bauh added to PyPI</title>
+      <link>https://pypi.org/project/bauh/</link>
+      <guid>https://pypi.org/project/bauh/</guid>
+      <description>Graphical user interface to manage Flatpak / Snap applications.</description>
+      <pubDate>Mon, 12 Aug 2019 15:33:51 GMT</pubDate>
+    </item>
+    <item>
+      <title>jupyterlab-nvdashboard added to PyPI</title>
+      <link>https://pypi.org/project/jupyterlab-nvdashboard/</link>
+      <guid>https://pypi.org/project/jupyterlab-nvdashboard/</guid>
+      <description>A JupyterLab extension for displaying dashboards of GPU usage.</description>
+      <pubDate>Mon, 12 Aug 2019 15:30:03 GMT</pubDate>
+    </item>
+    <item>
+      <title>pytiled-parser added to PyPI</title>
+      <link>https://pypi.org/project/pytiled-parser/</link>
+      <guid>https://pypi.org/project/pytiled-parser/</guid>
+      <description>Python Library for parsing Tiled Map Editor maps.</description>
+      <pubDate>Mon, 12 Aug 2019 15:26:18 GMT</pubDate>
+    </item>
+    <item>
+      <title>timerr added to PyPI</title>
+      <link>https://pypi.org/project/timerr/</link>
+      <guid>https://pypi.org/project/timerr/</guid>
+      <description>A basic timer that counts down from time entered</description>
+      <pubDate>Mon, 12 Aug 2019 15:08:59 GMT</pubDate>
+    </item>
+    <item>
+      <title>cimsim added to PyPI</title>
+      <link>https://pypi.org/project/cimsim/</link>
+      <guid>https://pypi.org/project/cimsim/</guid>
+      <description></description>
+      <pubDate>Mon, 12 Aug 2019 14:53:43 GMT</pubDate>
+    </item>
+    <item>
+      <title>opensitua-http added to PyPI</title>
+      <link>https://pypi.org/project/opensitua-http/</link>
+      <guid>https://pypi.org/project/opensitua-http/</guid>
+      <description>A core functions package</description>
+      <pubDate>Mon, 12 Aug 2019 14:49:53 GMT</pubDate>
+    </item>
+    <item>
+      <title>kiwi-databook-models added to PyPI</title>
+      <link>https://pypi.org/project/kiwi-databook-models/</link>
+      <guid>https://pypi.org/project/kiwi-databook-models/</guid>
+      <description>This is a dummy package.</description>
+      <pubDate>Mon, 12 Aug 2019 14:42:07 GMT</pubDate>
+    </item>
+    <item>
+      <title>example-pkg3 added to PyPI</title>
+      <link>https://pypi.org/project/example-pkg3/</link>
+      <guid>https://pypi.org/project/example-pkg3/</guid>
+      <description>A small example package</description>
+      <pubDate>Mon, 12 Aug 2019 14:35:47 GMT</pubDate>
+    </item>
+    <item>
+      <title>smart-preprocess added to PyPI</title>
+      <link>https://pypi.org/project/smart-preprocess/</link>
+      <guid>https://pypi.org/project/smart-preprocess/</guid>
+      <description>A package for denoising TEM video data.</description>
+      <pubDate>Mon, 12 Aug 2019 14:35:24 GMT</pubDate>
+    </item>
+    <item>
+      <title>emp-ide-online added to PyPI</title>
+      <link>https://pypi.org/project/emp-ide-online/</link>
+      <guid>https://pypi.org/project/emp-ide-online/</guid>
+      <description>maybe the best develop tools for micropython.</description>
+      <pubDate>Mon, 12 Aug 2019 14:26:05 GMT</pubDate>
+    </item>
+    <item>
+      <title>pypgatk added to PyPI</title>
+      <link>https://pypi.org/project/pypgatk/</link>
+      <guid>https://pypi.org/project/pypgatk/</guid>
+      <description>Python tools for proteogenomics</description>
+      <pubDate>Mon, 12 Aug 2019 14:24:53 GMT</pubDate>
+    </item>
+    <item>
+      <title>red-alien added to PyPI</title>
+      <link>https://pypi.org/project/red-alien/</link>
+      <guid>https://pypi.org/project/red-alien/</guid>
+      <description>A compiler/decompiler for the script system found in GBA pokemon games</description>
+      <pubDate>Mon, 12 Aug 2019 14:22:35 GMT</pubDate>
+    </item>
+    <item>
+      <title>pagemaker added to PyPI</title>
+      <link>https://pypi.org/project/pagemaker/</link>
+      <guid>https://pypi.org/project/pagemaker/</guid>
+      <description>Assemble web pages.</description>
+      <pubDate>Mon, 12 Aug 2019 14:13:44 GMT</pubDate>
+    </item>
+    <item>
+      <title>katena-chain-sdk-python-client added to PyPI</title>
+      <link>https://pypi.org/project/katena-chain-sdk-python-client/</link>
+      <guid>https://pypi.org/project/katena-chain-sdk-python-client/</guid>
+      <description>A SDK client for the Katena Chain by Transchain</description>
+      <pubDate>Mon, 12 Aug 2019 14:12:49 GMT</pubDate>
+    </item>
+    <item>
+      <title>apap added to PyPI</title>
+      <link>https://pypi.org/project/apap/</link>
+      <guid>https://pypi.org/project/apap/</guid>
+      <description>Declarative and handy RESTful client factory</description>
+      <pubDate>Mon, 12 Aug 2019 14:08:22 GMT</pubDate>
+    </item>
+    <item>
+      <title>cogment added to PyPI</title>
+      <link>https://pypi.org/project/cogment/</link>
+      <guid>https://pypi.org/project/cogment/</guid>
+      <description>AoM platform sdk</description>
+      <pubDate>Mon, 12 Aug 2019 13:16:20 GMT</pubDate>
+    </item>
+    <item>
+      <title>lisflood-utilities added to PyPI</title>
+      <link>https://pypi.org/project/lisflood-utilities/</link>
+      <guid>https://pypi.org/project/lisflood-utilities/</guid>
+      <description>A set of utilities for lisflood users. pcr2nc: Convert PCRaster files to netCDF; cutmaps: cut netCDF files</description>
+      <pubDate>Mon, 12 Aug 2019 13:14:46 GMT</pubDate>
+    </item>
+    <item>
+      <title>PytopiaAPI added to PyPI</title>
+      <link>https://pypi.org/project/pytopiaapi/</link>
+      <guid>https://pypi.org/project/pytopiaapi/</guid>
+      <description>A python API for Utopia Ecosystem</description>
+      <pubDate>Mon, 12 Aug 2019 13:14:07 GMT</pubDate>
+    </item>
+    <item>
+      <title>eTrace added to PyPI</title>
+      <link>https://pypi.org/project/etrace/</link>
+      <guid>https://pypi.org/project/etrace/</guid>
+      <description>Trace your email on internet</description>
+      <pubDate>Mon, 12 Aug 2019 12:55:13 GMT</pubDate>
+    </item>
+    <item>
+      <title>sndtrck added to PyPI</title>
+      <link>https://pypi.org/project/sndtrck/</link>
+      <guid>https://pypi.org/project/sndtrck/</guid>
+      <description>Sound manipulation and representation via partial-tracking</description>
+      <pubDate>Mon, 12 Aug 2019 12:49:16 GMT</pubDate>
+    </item>
+    <item>
+      <title>bi-distributions added to PyPI</title>
+      <link>https://pypi.org/project/bi-distributions/</link>
+      <guid>https://pypi.org/project/bi-distributions/</guid>
+      <description>Gaussian distributions</description>
+      <pubDate>Mon, 12 Aug 2019 12:47:23 GMT</pubDate>
+    </item>
+    <item>
+      <title>avapi added to PyPI</title>
+      <link>https://pypi.org/project/avapi/</link>
+      <guid>https://pypi.org/project/avapi/</guid>
+      <description>Get data from Alpha Vantage into python.</description>
+      <pubDate>Mon, 12 Aug 2019 12:46:53 GMT</pubDate>
+    </item>
+    <item>
+      <title>sndscribe added to PyPI</title>
+      <link>https://pypi.org/project/sndscribe/</link>
+      <guid>https://pypi.org/project/sndscribe/</guid>
+      <description>Translate the spectrum of an audio file into musical notation</description>
+      <pubDate>Mon, 12 Aug 2019 12:38:44 GMT</pubDate>
+    </item>
+    <item>
+      <title>pyshell-pybc2-new added to PyPI</title>
+      <link>https://pypi.org/project/pyshell-pybc2-new/</link>
+      <guid>https://pypi.org/project/pyshell-pybc2-new/</guid>
+      <description>This Package contains the commands of UNIX shell</description>
+      <pubDate>Mon, 12 Aug 2019 12:17:58 GMT</pubDate>
+    </item>
+    <item>
+      <title>spell_messenger_client added to PyPI</title>
+      <link>https://pypi.org/project/spell-messenger-client/</link>
+      <guid>https://pypi.org/project/spell-messenger-client/</guid>
+      <description>Spell messenger - Client package</description>
+      <pubDate>Mon, 12 Aug 2019 12:05:28 GMT</pubDate>
+    </item>
+    <item>
+      <title>spell_messenger_server added to PyPI</title>
+      <link>https://pypi.org/project/spell-messenger-server/</link>
+      <guid>https://pypi.org/project/spell-messenger-server/</guid>
+      <description>Spell messenger - Server package</description>
+      <pubDate>Mon, 12 Aug 2019 12:05:09 GMT</pubDate>
+    </item>
+    <item>
+      <title>luminati added to PyPI</title>
+      <link>https://pypi.org/project/luminati/</link>
+      <guid>https://pypi.org/project/luminati/</guid>
+      <description>Luminati proxy done easy</description>
+      <pubDate>Mon, 12 Aug 2019 12:02:08 GMT</pubDate>
+    </item>
+    <item>
+      <title>git-phoenix added to PyPI</title>
+      <link>https://pypi.org/project/git-phoenix/</link>
+      <guid>https://pypi.org/project/git-phoenix/</guid>
+      <description>phoenix</description>
+      <pubDate>Mon, 12 Aug 2019 12:00:32 GMT</pubDate>
+    </item>
+    <item>
+      <title>kerneloose added to PyPI</title>
+      <link>https://pypi.org/project/kerneloose/</link>
+      <guid>https://pypi.org/project/kerneloose/</guid>
+      <description>Kernel method for out-of-sample extension</description>
+      <pubDate>Mon, 12 Aug 2019 11:51:23 GMT</pubDate>
+    </item>
+  </channel>
+</rss>

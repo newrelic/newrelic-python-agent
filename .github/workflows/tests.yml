@@ -55,6 +55,7 @@ jobs:
           - framework_sanic
           - framework_starlette
           - framework_tornado
+          - template_mako
 
     runs-on: ubuntu-latest
 

@@ -44,6 +44,7 @@ jobs:
           - external_boto3
           - external_botocore
           - external_httplib2
+          - external_requests
           - framework_aiohttp
           - framework_bottle
           - framework_cherrypy

@@ -43,6 +43,7 @@ jobs:
           - datastore_sqlite
           - external_boto3
           - external_botocore
+          - external_feedparser
           - external_httplib2
           - framework_aiohttp
           - framework_bottle

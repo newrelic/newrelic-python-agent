@@ -6,9 +6,9 @@ from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, validate_tt_parenting,
     override_application_settings)
 from testing_support.external_fixtures import (cache_outgoing_headers,
-    validate_cross_process_headers, insert_incoming_headers,
-    validate_external_node_params)
-from testing_support.mock_external_http_server import MockExternalHTTPServer
+    insert_incoming_headers)
+from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
+from testing_support.validators.validate_external_node_params import validate_external_node_params
 
 from newrelic.api.background_task import background_task
 

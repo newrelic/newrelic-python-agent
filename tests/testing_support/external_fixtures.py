@@ -14,6 +14,7 @@
 
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.common.object_wrapper import transient_function_wrapper
+from newrelic.common.encoding_utils import json_encode, obfuscate
 
 
 def create_incoming_headers(transaction):

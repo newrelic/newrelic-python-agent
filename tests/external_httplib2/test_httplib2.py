@@ -3,9 +3,9 @@ import httplib2
 
 from testing_support.fixtures import (validate_transaction_metrics,
         override_application_settings)
-from testing_support.external_fixtures import (cache_outgoing_headers,
-    validate_cross_process_headers, insert_incoming_headers,
-    validate_external_node_params)
+from testing_support.external_fixtures import cache_outgoing_headers, insert_incoming_headers
+from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
+from testing_support.validators.validate_external_node_params import validate_external_node_params
 
 from newrelic.api.background_task import background_task
 

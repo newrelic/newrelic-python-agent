@@ -1,8 +1,8 @@
 import MySQLdb
 
-from testing_support.fixtures import (validate_slow_sql_collector_json,
-    override_application_settings)
+from testing_support.fixtures import override_application_settings
 from testing_support.db_settings import mysql_settings
+from testing_support.validators.validate_slow_sql_collector_json import validate_slow_sql_collector_json
 
 from newrelic.api.background_task import background_task
 

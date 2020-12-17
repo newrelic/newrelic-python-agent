@@ -4,7 +4,7 @@ from testing_support.fixtures import (code_coverage_fixture,
         collector_agent_registration_fixture, collector_available_fixture)
 
 _coverage_source = [
-    'newrelic.hooks.database_psycopg2',
+    'newrelic.hooks.database_postgresql',
     'newrelic.hooks.database_dbapi2',
 ]
 

@@ -204,7 +204,7 @@ def instrument_grpc__channel(module):
         wrap_function_wrapper(module, '_MultiThreadedRendezvous.result',
                 wrap_result)
         wrap_function_wrapper(module, '_MultiThreadedRendezvous._next',
-                wrap_result)
+                wrap_next)
     else:
         wrap_function_wrapper(module, '_Rendezvous.result',
                 wrap_result)

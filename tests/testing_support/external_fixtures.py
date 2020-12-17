@@ -12,6 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+try:
+    import http.client as httplib
+except ImportError:
+    import httplib
+
+
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.encoding_utils import (json_encode, json_decode,
@@ -340,3 +346,42 @@ def validate_distributed_tracing_header(header='newrelic'):
 
     # Verify that priority is a float
     assert isinstance(data['pr'], float)
+
+
+@transient_function_wrapper(httplib.__name__, 'HTTPConnection.putheader')
+def cache_outgoing_headers(wrapped, instance, args, kwargs):
+    def _bind_params(header, *values):
+        return header, values
+
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    header, values = _bind_params(*args, **kwargs)
+
+    try:
+        cache = transaction._test_request_headers
+    except AttributeError:
+        cache = transaction._test_request_headers = {}
+
+    try:
+        cache[header].extend(values)
+    except KeyError:
+        cache[header] = list(values)
+
+    return wrapped(*args, **kwargs)
+
+
+@transient_function_wrapper(httplib.__name__, 'HTTPResponse.getheaders')
+def insert_incoming_headers(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    headers = list(wrapped(*args, **kwargs))
+
+    headers.extend(create_incoming_headers(transaction))
+
+    return headers

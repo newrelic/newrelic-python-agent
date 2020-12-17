@@ -133,7 +133,7 @@ def test_empty_content_type():
     application = target_application()
     response = application.get('/empty_content_type')
 
-    # Make sure agent doesn't blow up, if content type is ''
+    # Make sure agent can handle content type of ''
 
     assert response.headers['Content-Type'] == ''
     response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])

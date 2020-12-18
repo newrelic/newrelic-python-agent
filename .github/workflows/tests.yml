@@ -40,6 +40,7 @@ jobs:
           - application_celery
           - component_flask_rest
           - component_tastypie
+          - coroutines_asyncio
           - cross_agent
           - datastore_sqlite
           - external_boto3

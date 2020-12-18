@@ -71,7 +71,7 @@ def test_http_request_connection_from_url_request(server, metrics):
             background_task=True)
     @background_task(name='test_urllib3:test_http_request_connection_from_url_request')
     def _test():
-        conn = urllib3.connection_from_url('localhost:%d' % server.port)
+        conn = urllib3.connection_from_url('http://localhost:%d' % server.port)
         conn.request('GET', '/')
 
     _test()
@@ -101,7 +101,7 @@ def test_https_request_connection_pool_urlopen(server, metrics):
             background_task=True)
     @background_task(name='test_urllib3:test_https_request_connection_pool_urlopen')
     def _test():
-        pool = urllib3.HTTPSConnectionPool('localhost:%d' % server.port)
+        pool = urllib3.HTTPSConnectionPool('localhost:%d' % server.port, retries=0)
         try:
             pool.urlopen('GET', '/')
         except Exception:
@@ -119,7 +119,7 @@ def test_https_request_connection_pool_request(server, metrics):
             background_task=True)
     @background_task(name='test_urllib3:test_https_request_connection_pool_request')
     def _test():
-        pool = urllib3.HTTPSConnectionPool('localhost:%d' % server.port)
+        pool = urllib3.HTTPSConnectionPool('localhost:%d' % server.port, retries=0)
         try:
             pool.request('GET', '/')
         except Exception:
@@ -146,7 +146,7 @@ def test_port_included(server):
             background_task=True)
     @background_task(name='test_urllib3:test_port_included')
     def _test():
-        conn = urllib3.connection_from_url('localhost:%d' % server.port)
+        conn = urllib3.connection_from_url('http://localhost:%d' % server.port)
         conn.request('GET', '/')
 
     _test()

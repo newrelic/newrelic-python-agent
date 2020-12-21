@@ -2323,16 +2323,8 @@ def code_coverage_fixture(source=['newrelic']):
 
         from coverage import coverage
 
-        env_directory = os.environ.get('TOX_ENVDIR', None)
-
-        if env_directory is not None:
-            coverage_directory = os.path.join(env_directory, 'htmlcov')
-            coverage_suffix = os.environ.get('TOX_ENV_NAME', None)
-            coverage_file = os.path.join("coverage", ".coverage")
-        else:
-            coverage_directory = 'htmlcov'
-            coverage_suffix = None
-            coverage_file = ".coverage"
+        coverage_directory = os.environ.get('TOX_ENVDIR', 'htmlcov')
+        coverage_suffix = os.environ.get('TOX_ENV_NAME', None)
 
         def finalize():
             cov.stop()
@@ -2340,7 +2332,7 @@ def code_coverage_fixture(source=['newrelic']):
 
         request.addfinalizer(finalize)
 
-        cov = coverage(source=source, branch=True, data_file=coverage_file, data_suffix=coverage_suffix)
+        cov = coverage(source=source, branch=True, data_suffix=coverage_suffix)
         cov.start()
 
     return _code_coverage_fixture

@@ -925,3 +925,98 @@ jobs:
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
+
+  gearman:
+
+    strategy:
+      matrix:
+        test-directory:
+          - application_gearman
+
+    runs-on: ubuntu-latest
+
+    services:
+      gearman:
+        image: artefactual/gearmand
+        ports:
+          - 8080:4730
+          - 8081:4730
+        # Set health checks to wait until gearman has started
+        options: >-
+          --health-cmd "(echo status ; sleep 0.1) | nc 127.0.0.1 4730 -w 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Get Date
+      id: get-date
+      run: |
+        echo "::set-output name=date::$(/bin/date -u "+%Y-%m-%d")"
+      shell: bash
+
+    - name: Cache Tox and Pip (Linux)
+      if: startsWith(runner.os, 'Linux')
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cache/pip
+        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
+        restore-keys: |
+          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
+          ${{ runner.os }}-${{ matrix.test-directory }}-
+
+    # Set up all versions of python
+    - uses: actions/setup-python@3b3f2de1b1f7c1270fc5b9c37a904fa785e9ae94
+      with:
+        python-version: 2.7
+        architecture: x64
+
+    - uses: actions/setup-python@3b3f2de1b1f7c1270fc5b9c37a904fa785e9ae94
+      with:
+        python-version: 3.5
+        architecture: x64
+
+    - uses: actions/setup-python@3b3f2de1b1f7c1270fc5b9c37a904fa785e9ae94
+      with:
+        python-version: 3.6
+        architecture: x64
+
+    - uses: actions/setup-python@3b3f2de1b1f7c1270fc5b9c37a904fa785e9ae94
+      with:
+        python-version: 3.7
+        architecture: x64
+
+    - uses: actions/setup-python@3b3f2de1b1f7c1270fc5b9c37a904fa785e9ae94
+      with:
+        python-version: 3.8
+        architecture: x64
+
+    - uses: actions/setup-python@3b3f2de1b1f7c1270fc5b9c37a904fa785e9ae94
+      with:
+        python-version: 3.9
+        architecture: x64
+
+    - uses: actions/setup-python@3b3f2de1b1f7c1270fc5b9c37a904fa785e9ae94
+      with:
+        python-version: pypy3
+        architecture: x64
+
+    - uses: actions/setup-python@3b3f2de1b1f7c1270fc5b9c37a904fa785e9ae94
+      with:
+        python-version: pypy2
+        architecture: x64
+
+    - name: Install Dependencies
+      run: |
+        pip install -U pip
+        pip install -U wheel setuptools tox virtualenv!=20.0.24
+
+    - name: Test
+      run: |
+        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
+      env:
+        TOX_PARALLEL_NO_SPINNER: 1
+        PY_COLORS: 0

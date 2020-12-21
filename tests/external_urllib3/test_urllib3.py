@@ -101,6 +101,7 @@ def test_https_request_connection_pool_urlopen(server, metrics):
             background_task=True)
     @background_task(name='test_urllib3:test_https_request_connection_pool_urlopen')
     def _test():
+        # Setting retries to 0 so that metrics are recorded only once
         pool = urllib3.HTTPSConnectionPool('localhost:%d' % server.port, retries=0)
         try:
             pool.urlopen('GET', '/')
@@ -119,6 +120,7 @@ def test_https_request_connection_pool_request(server, metrics):
             background_task=True)
     @background_task(name='test_urllib3:test_https_request_connection_pool_request')
     def _test():
+        # Setting retries to 0 so that metrics are recorded only once 
         pool = urllib3.HTTPSConnectionPool('localhost:%d' % server.port, retries=0)
         try:
             pool.request('GET', '/')

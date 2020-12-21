@@ -38,6 +38,7 @@ jobs:
           - agent_streaming
           - agent_unittests
           - application_celery
+          - component_djangorestframework
           - component_flask_rest
           - component_tastypie
           - cross_agent

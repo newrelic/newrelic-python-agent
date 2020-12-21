@@ -51,6 +51,7 @@ jobs:
           - external_httplib
           - external_httplib2
           - external_requests
+          - external_urllib3
           - framework_aiohttp
           - framework_bottle
           - framework_cherrypy

@@ -969,42 +969,42 @@ jobs:
           ${{ runner.os }}-${{ matrix.test-directory }}-
 
     # Set up all versions of python
-    - uses: actions/setup-python@3b3f2de1b1f7c1270fc5b9c37a904fa785e9ae94
+    - uses: actions/setup-python@v2
       with:
         python-version: 2.7
         architecture: x64
 
-    - uses: actions/setup-python@3b3f2de1b1f7c1270fc5b9c37a904fa785e9ae94
+    - uses: actions/setup-python@v2
       with:
         python-version: 3.5
         architecture: x64
 
-    - uses: actions/setup-python@3b3f2de1b1f7c1270fc5b9c37a904fa785e9ae94
+    - uses: actions/setup-python@v2
       with:
         python-version: 3.6
         architecture: x64
 
-    - uses: actions/setup-python@3b3f2de1b1f7c1270fc5b9c37a904fa785e9ae94
+    - uses: actions/setup-python@v2
       with:
         python-version: 3.7
         architecture: x64
 
-    - uses: actions/setup-python@3b3f2de1b1f7c1270fc5b9c37a904fa785e9ae94
+    - uses: actions/setup-python@v2
       with:
         python-version: 3.8
         architecture: x64
 
-    - uses: actions/setup-python@3b3f2de1b1f7c1270fc5b9c37a904fa785e9ae94
+    - uses: actions/setup-python@v2
       with:
         python-version: 3.9
         architecture: x64
 
-    - uses: actions/setup-python@3b3f2de1b1f7c1270fc5b9c37a904fa785e9ae94
+    - uses: actions/setup-python@v2
       with:
         python-version: pypy3
         architecture: x64
 
-    - uses: actions/setup-python@3b3f2de1b1f7c1270fc5b9c37a904fa785e9ae94
+    - uses: actions/setup-python@v2
       with:
         python-version: pypy2
         architecture: x64

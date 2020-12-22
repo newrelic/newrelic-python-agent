@@ -18,9 +18,6 @@ if hasattr(grpc, '__version__'):
 else:
     GRPC_VERSION = None
 
-is_lt_grpc118 = GRPC_VERSION is None or GRPC_VERSION < (1, 18)
-is_lt_grpc18 = GRPC_VERSION is None or GRPC_VERSION < (1, 8)
-
 _test_matrix = ["method_name,streaming_request", [
     ("DoUnaryUnary", False),
     ("DoUnaryStream", False),
@@ -104,7 +101,6 @@ def test_raises_response_status(method_name, streaming_request,
     _doit()
 
 
-@pytest.mark.skipif(is_lt_grpc18, reason='abort added in 1.8.0')
 @pytest.mark.parametrize(*_test_matrix)
 def test_abort(method_name, streaming_request, mock_grpc_server, stub):
     port = mock_grpc_server
@@ -125,7 +121,6 @@ def test_abort(method_name, streaming_request, mock_grpc_server, stub):
     _doit()
 
 
-@pytest.mark.skipif(is_lt_grpc118, reason='abort_with_status added in 1.18.0')
 @pytest.mark.parametrize(*_test_matrix)
 def test_abort_with_status(method_name, streaming_request, mock_grpc_server, stub):
     port = mock_grpc_server
@@ -146,7 +141,6 @@ def test_abort_with_status(method_name, streaming_request, mock_grpc_server, stu
     _doit()
 
 
-@pytest.mark.skipif(is_lt_grpc118, reason='channel.close added in 1.18.0')
 def test_no_exception_client_close(mock_grpc_server, stub_and_channel):
     port = mock_grpc_server
     stub, channel = stub_and_channel

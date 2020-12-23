@@ -19,8 +19,8 @@ import os
 
 python_version = sys.version_info[:2]
 
-assert python_version in ((2, 7),) or python_version >= (3, 5), \
-        'The New Relic Python agent only supports Python 2.7 and 3.5+.'
+assert python_version in ((2, 7),) or python_version >= (3, 6), \
+        'The New Relic Python agent only supports Python 2.7 and 3.6+.'
 
 with_setuptools = False
 
@@ -115,7 +115,6 @@ classifiers = [
         "Development Status :: 5 - Production/Stable",
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",

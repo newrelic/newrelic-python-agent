@@ -103,11 +103,6 @@ jobs:
 
     - uses: actions/setup-python@v2
       with:
-        python-version: 3.5
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
         python-version: 3.6
         architecture: x64
 
@@ -200,11 +195,6 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: 2.7
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.5
         architecture: x64
 
     - uses: actions/setup-python@v2
@@ -306,11 +296,6 @@ jobs:
 
     - uses: actions/setup-python@v2
       with:
-        python-version: 3.5
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
         python-version: 3.6
         architecture: x64
 
@@ -396,11 +381,6 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: 2.7
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.5
         architecture: x64
 
     - uses: actions/setup-python@v2
@@ -494,11 +474,6 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: 2.7
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.5
         architecture: x64
 
     - uses: actions/setup-python@v2
@@ -597,11 +572,6 @@ jobs:
 
     - uses: actions/setup-python@v2
       with:
-        python-version: 3.5
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
         python-version: 3.6
         architecture: x64
 
@@ -692,11 +662,6 @@ jobs:
 
     - uses: actions/setup-python@v2
       with:
-        python-version: 3.5
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
         python-version: 3.6
         architecture: x64
 
@@ -782,11 +747,6 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: 2.7
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.5
         architecture: x64
 
     - uses: actions/setup-python@v2
@@ -884,11 +844,6 @@ jobs:
 
     - uses: actions/setup-python@v2
       with:
-        python-version: 3.5
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
         python-version: 3.6
         architecture: x64
 
@@ -974,11 +929,6 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: 2.7
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.5
         architecture: x64
 
     - uses: actions/setup-python@v2

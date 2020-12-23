@@ -60,6 +60,24 @@ from newrelic.core.trace_cache import trace_cache
 
 _trace_cache = trace_cache()
 
+def _signature_repr(wrapper):
+    """ emulate use of deprecated inspect.formatargspec(...) with inspect.signature
+
+        Returns:
+            A string formatted like a python-source's function parameters "(foo='foo', bar=None)"
+            Note: strips the first parameter, assuming it is always 'self'
+    """
+    wrapper_signature = inspect.signature(wrapper)
+    method_parameters = list(wrapper_signature.parameters.values())[1:]  # strip (self) parameter
+    signature_repr = '({})'.format(
+        ', '.join(
+            '{p.name}={p.default}'.format(p=parameter)
+            for parameter in method_parameters
+        )
+    )
+    return signature_repr
+
+
 def shell_command(wrapped):
     args, varargs, keywords, defaults = _argspec(wrapped)
 
@@ -81,8 +99,7 @@ def shell_command(wrapped):
         return wrapped(self, *args, **kwargs)
 
     if wrapper.__name__.startswith('do_'):
-        prototype = wrapper.__name__[3:] + ' ' + inspect.formatargspec(
-                args[1:], varargs, keywords, defaults)
+        prototype = wrapper.__name__[3:] + ' ' + _signature_repr(wrapper)
         if hasattr(wrapper, '__doc__') and wrapper.__doc__ is not None:
             wrapper.__doc__ = '\n'.join((prototype,
                     wrapper.__doc__.lstrip('\n')))

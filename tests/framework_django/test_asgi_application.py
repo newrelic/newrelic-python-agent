@@ -63,10 +63,6 @@ _test_application_index_scoped_metrics = [
     ('Function/views:index', 1),
 ]
 
-if DJANGO_VERSION >= (1, 5):
-    _test_application_index_scoped_metrics.extend([
-            ('Function/django.http.response:HttpResponse.close', 1)])
-
 if DJANGO_VERSION < (1, 10):
     _test_application_index_scoped_metrics.extend(
         _test_django_pre_1_10_url_resolver_scoped_metrics)

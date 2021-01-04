@@ -2,10 +2,14 @@ import os
 import pytest
 import django
 
-from testing_support.asgi_testing import AsgiTest
 from testing_support.fixtures import validate_transaction_metrics
 
 DJANGO_VERSION = tuple(map(int, django.get_version().split('.')[:2]))
+
+if DJANGO_VERSION[0] < 3:
+    pytest.skip("support for asgi added in django 3", allow_module_level=True)
+
+from testing_support.asgi_testing import AsgiTest
 
 
 # The middleware scoped metrics are dependent on the MIDDLEWARE_CLASSES or

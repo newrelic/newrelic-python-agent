@@ -19,7 +19,6 @@ import functools
 
 from newrelic.packages import six
 
-from newrelic.api.asgi_application import wrap_asgi_application
 from newrelic.api.application import register_application
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.error_trace import wrap_error_trace
@@ -36,6 +35,9 @@ from newrelic.common.object_wrapper import (FunctionWrapper, wrap_in_function,
 from newrelic.common.object_names import callable_name
 from newrelic.config import extra_settings
 from newrelic.core.config import global_settings, ignore_status_code
+
+if six.PY3:
+    from newrelic.hooks.framework_django_py3 import _nr_wrapper_BaseHandler_get_response_async_
 
 _logger = logging.getLogger(__name__)
 
@@ -430,15 +432,6 @@ def _bind_get_response(request, *args, **kwargs):
     return request
 
 
-def handle_response(request, response):
-    if hasattr(request, '_nr_exc_info'):
-        if not ignore_status_code(response.status_code):
-            record_exception(*request._nr_exc_info)
-        delattr(request, '_nr_exc_info')
-
-    return response
-
-
 def _nr_wrapper_BaseHandler_get_response_(wrapped, instance, args, kwargs):
     response = wrapped(*args, **kwargs)
 
@@ -446,17 +439,13 @@ def _nr_wrapper_BaseHandler_get_response_(wrapped, instance, args, kwargs):
         return response
 
     request = _bind_get_response(*args, **kwargs)
-    return handle_response(request, response)
 
+    if hasattr(request, '_nr_exc_info'):
+        if not ignore_status_code(response.status_code):
+            record_exception(*request._nr_exc_info)
+        delattr(request, '_nr_exc_info')
 
-async def _nr_wrapper_BaseHandler_get_response_async_(wrapped, instance, args, kwargs):
-    response = await wrapped(*args, **kwargs)
-
-    if current_transaction() is None:
-        return response
-
-    request = _bind_get_response(*args, **kwargs)
-    return handle_response(request, response)
+    return response
 
 
 # Post import hooks for modules.
@@ -470,7 +459,7 @@ def instrument_django_core_handlers_base(module):
     wrap_post_function(module, 'BaseHandler.load_middleware',
             insert_and_wrap_middleware)
 
-    if hasattr(module.BaseHandler, '_get_response') and hasattr(module.BaseHandler, '_get_response_async'):
+    if six.PY3 and hasattr(module.BaseHandler, '_get_response') and hasattr(module.BaseHandler, '_get_response_async'):
         wrap_function_wrapper(module, 'BaseHandler._get_response',
                 _nr_wrapper_BaseHandler_get_response_)
         wrap_function_wrapper(module, 'BaseHandler._get_response_async',
@@ -1248,4 +1237,5 @@ def instrument_django_core_handlers_asgi(module):
     framework = ('Django', django.get_version())
 
     if hasattr(module, 'ASGIHandler'):
+        from newrelic.api.asgi_application import wrap_asgi_application
         wrap_asgi_application(module, 'ASGIHandler.__call__', framework=framework)

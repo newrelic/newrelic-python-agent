@@ -26,45 +26,12 @@ on:
 
 jobs:
   python:
+    env: 
+      TOTAL_GROUPS: 10
 
     strategy:
       matrix:
-        test-directory: 
-          - adapter_cheroot
-          - adapter_gevent
-          - adapter_gunicorn
-          - adapter_uvicorn
-          - agent_features
-          - agent_streaming
-          - agent_unittests
-          - application_celery
-          - component_djangorestframework
-          - component_flask_rest
-          - component_tastypie
-          - coroutines_asyncio
-          - cross_agent
-          - datastore_sqlite
-          - external_boto3
-          - external_botocore
-          - external_feedparser
-          - external_http
-          - external_httplib
-          - external_httplib2
-          - external_requests
-          - external_urllib3
-          - framework_aiohttp
-          - framework_bottle
-          - framework_cherrypy
-          - framework_django
-          - framework_falcon
-          - framework_fastapi
-          - framework_flask
-          - framework_grpc
-          - framework_pyramid
-          - framework_sanic
-          - framework_starlette
-          - framework_tornado
-          - template_mako
+        group-number: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
     runs-on: ubuntu-latest
 
@@ -139,20 +106,19 @@ jobs:
 
     - name: Test
       run: |
-        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
+        tox -vv -e $(tox -l | grep "^python\-" | ./.github/workflows/get-envs.py) -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
+        GROUP_NUMBER: ${{ matrix.group-number }}
 
   postgres:
+    env: 
+      TOTAL_GROUPS: 1
 
     strategy:
       matrix:
-        test-directory: 
-          - datastore_asyncpg
-          - datastore_postgresql
-          - datastore_psycopg2
-          - datastore_psycopg2cffi
+        group-number: [0]
 
     runs-on: ubuntu-latest
 
@@ -234,19 +200,18 @@ jobs:
 
     - name: Test
       run: |
-        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
+        tox -vv -e $(tox -l | grep "^postgres\-" | ./.github/workflows/get-envs.py) -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
 
   mysql:
+    env: 
+      TOTAL_GROUPS: 1
 
     strategy:
       matrix:
-        test-directory:
-          - datastore_mysql
-          - datastore_mysqldb
-          - datastore_pymysql
+        group-number: [0]
 
     runs-on: ubuntu-latest
 
@@ -331,16 +296,18 @@ jobs:
 
     - name: Test
       run: |
-        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
+        tox -vv -e $(tox -l | grep "^mysql\-" | ./.github/workflows/get-envs.py) -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
 
   redis:
+    env: 
+      TOTAL_GROUPS: 1
 
     strategy:
       matrix:
-        test-directory: [datastore_redis]
+        group-number: [0]
 
     runs-on: ubuntu-latest
 
@@ -420,18 +387,18 @@ jobs:
 
     - name: Test
       run: |
-        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
+        tox -vv -e $(tox -l | grep "^redis\-" | ./.github/workflows/get-envs.py) -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
 
   solr:
+    env: 
+      TOTAL_GROUPS: 1
 
     strategy:
       matrix:
-        test-directory: 
-          - datastore_pysolr
-          - datastore_solrpy
+        group-number: [0]
 
     runs-on: ubuntu-latest
 
@@ -513,21 +480,18 @@ jobs:
 
     - name: Test
       run: |
-        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
+        tox -vv -e $(tox -l | grep "^solr\-" | ./.github/workflows/get-envs.py) -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
 
   memcached:
+    env: 
+      TOTAL_GROUPS: 1
 
     strategy:
       matrix:
-        test-directory:
-          - datastore_bmemcached
-          - datastore_memcache
-          - datastore_pylibmc
-          - datastore_pymemcache
-          - datastore_umemcache
+        group-number: [0]
 
     runs-on: ubuntu-latest
 
@@ -606,17 +570,18 @@ jobs:
         pip install -U wheel setuptools tox virtualenv!=20.0.24
     - name: Test
       run: |
-        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
+        tox -vv -e $(tox -l | grep "^memcached\-" | ./.github/workflows/get-envs.py) -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
 
   rabbitmq:
+    env: 
+      TOTAL_GROUPS: 1
 
     strategy:
       matrix:
-        test-directory:
-          - messagebroker_pika
+        group-number: [0]
 
     runs-on: ubuntu-latest
 
@@ -696,17 +661,18 @@ jobs:
         pip install -U wheel setuptools tox virtualenv!=20.0.24
     - name: Test
       run: |
-        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
+        tox -vv -e $(tox -l | grep "^rabbitmq\-" | ./.github/workflows/get-envs.py) -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
 
   mongodb:
+    env: 
+      TOTAL_GROUPS: 1
 
     strategy:
       matrix:
-        test-directory:
-          - datastore_pymongo
+        group-number: [0]
 
     runs-on: ubuntu-latest
 
@@ -786,18 +752,18 @@ jobs:
 
     - name: Test
       run: |
-        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
+        tox -vv -e $(tox -l | grep "^mongodb\-" | ./.github/workflows/get-envs.py) -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
 
   elasticsearch:
+    env: 
+      TOTAL_GROUPS: 1
 
     strategy:
       matrix:
-        test-directory: 
-          - datastore_elasticsearch
-          - datastore_pyelasticsearch
+        group-number: [0]
 
     runs-on: ubuntu-latest
 
@@ -879,17 +845,18 @@ jobs:
 
     - name: Test
       run: |
-        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
+        tox -vv -e $(tox -l | grep "^elasticsearch\-" | ./.github/workflows/get-envs.py) -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
 
   gearman:
+    env: 
+      TOTAL_GROUPS: 1
 
     strategy:
       matrix:
-        test-directory:
-          - application_gearman
+        group-number: [0]
 
     runs-on: ubuntu-latest
 
@@ -968,7 +935,7 @@ jobs:
 
     - name: Test
       run: |
-        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
+        tox -vv -e $(tox -l | grep "^gearman\-" | ./.github/workflows/get-envs.py) -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0

@@ -55,13 +55,6 @@ jobs:
           ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
           ${{ runner.os }}-${{ matrix.test-directory }}-
 
-    # Special case packages
-    - name: Install libcurl-dev
-      if: ${{ matrix.test-directory == 'framework_tornado' }}
-      run: |
-        sudo apt-get update
-        sudo apt-get install libcurl4-openssl-dev
-
     # Set up all versions of python
     - uses: actions/setup-python@v2
       with:
@@ -104,13 +97,26 @@ jobs:
         pip install -U pip
         pip install -U wheel setuptools tox virtualenv!=20.0.24
 
+    - name: Get Environments
+      id: get-envs
+      run: |
+        echo "::set-output name=envs::$(tox -l | grep "^python\-" | ./.github/workflows/get-envs.py)"
+      env:
+        GROUP_NUMBER: ${{ matrix.group-number }}
+
+    # Special case packages
+    - name: Install libcurl-dev
+      if: ${{ contains(steps.get-envs.outputs.envs, 'framework_tornado') }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install libcurl4-openssl-dev
+
     - name: Test
       run: |
-        tox -vv -e $(tox -l | grep "^python\-" | ./.github/workflows/get-envs.py) -p auto
+        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
-        GROUP_NUMBER: ${{ matrix.group-number }}
 
   postgres:
     env: 

@@ -2,7 +2,7 @@
 import fileinput
 import os
 
-GROUP_NUMBER = int(os.environ["GROUP_NUMBER"])
+GROUP_NUMBER = int(os.environ["GROUP_NUMBER"]) - 1
 TOTAL_GROUPS = int(os.environ["TOTAL_GROUPS"])
 
 

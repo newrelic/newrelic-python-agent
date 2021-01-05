@@ -27,7 +27,7 @@ on:
 jobs:
   python:
     env: 
-      TOTAL_GROUPS: 10
+      TOTAL_GROUPS: 20
 
     strategy:
       matrix:

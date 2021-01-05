@@ -204,6 +204,7 @@ jobs:
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
+        GROUP_NUMBER: ${{ matrix.group-number }}
 
   mysql:
     env: 
@@ -300,6 +301,7 @@ jobs:
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
+        GROUP_NUMBER: ${{ matrix.group-number }}
 
   redis:
     env: 
@@ -391,6 +393,7 @@ jobs:
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
+        GROUP_NUMBER: ${{ matrix.group-number }}
 
   solr:
     env: 
@@ -484,6 +487,7 @@ jobs:
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
+        GROUP_NUMBER: ${{ matrix.group-number }}
 
   memcached:
     env: 
@@ -574,6 +578,7 @@ jobs:
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
+        GROUP_NUMBER: ${{ matrix.group-number }}
 
   rabbitmq:
     env: 
@@ -665,6 +670,7 @@ jobs:
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
+        GROUP_NUMBER: ${{ matrix.group-number }}
 
   mongodb:
     env: 
@@ -756,6 +762,7 @@ jobs:
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
+        GROUP_NUMBER: ${{ matrix.group-number }}
 
   elasticsearch:
     env: 
@@ -849,6 +856,7 @@ jobs:
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
+        GROUP_NUMBER: ${{ matrix.group-number }}
 
   gearman:
     env: 
@@ -939,3 +947,4 @@ jobs:
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
+        GROUP_NUMBER: ${{ matrix.group-number }}

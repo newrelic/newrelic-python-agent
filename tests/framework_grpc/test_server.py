@@ -15,6 +15,7 @@
 import six
 import grpc
 import pytest
+from conftest import create_stub_and_channel
 from _test_common import create_request, wait_for_transaction_completion
 from newrelic.core.config import global_settings
 from testing_support.fixtures import (validate_transaction_metrics,
@@ -155,24 +156,29 @@ def test_abort_with_status(method_name, streaming_request, mock_grpc_server, stu
     _doit()
 
 
-def test_no_exception_client_close(mock_grpc_server, stub_and_channel):
+def test_no_exception_client_close(mock_grpc_server):
     port = mock_grpc_server
-    stub, channel = stub_and_channel
-    request = create_request(False, timesout=True)
+    # We can't use the stub_and_channel fixture here as closing 
+    # that channel will cause any subsequent tests to fail.
+    # Instead we create a brand new channel to close.
+    stub, channel = create_stub_and_channel(port)
 
-    method = getattr(stub, 'DoUnaryUnary')
+    with channel:
+        request = create_request(False, timesout=True)
 
-    @validate_transaction_errors(errors=[])
-    @wait_for_transaction_completion
-    def _doit():
-        future_response = method.future(request)
-        channel.close()
-        with pytest.raises(grpc.RpcError) as error:
-            future_response.result()
+        method = getattr(stub, 'DoUnaryUnary')
 
-        assert error.value.code() == grpc.StatusCode.CANCELLED
+        @validate_transaction_errors(errors=[])
+        @wait_for_transaction_completion
+        def _doit():
+            future_response = method.future(request)
+            channel.close()
+            with pytest.raises(grpc.RpcError) as error:
+                future_response.result()
 
-    _doit()
+            assert error.value.code() == grpc.StatusCode.CANCELLED
+
+        _doit()
 
 
 def test_newrelic_disabled_no_transaction(mock_grpc_server, stub):

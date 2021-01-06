@@ -40,13 +40,13 @@ collector_agent_registration = collector_agent_registration_fixture(
         default_settings=_default_settings)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def grpc_app_server():
     with MockExternalgRPCServer() as server:
         yield server, server.port
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def mock_grpc_server(grpc_app_server):
     from sample_application.sample_application_pb2_grpc import (
             add_SampleApplicationServicer_to_server)
@@ -85,18 +85,25 @@ def gc_garbage_empty():
     assert not gc.garbage
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def stub(stub_and_channel):
     return stub_and_channel[0]
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def stub_and_channel(mock_grpc_server):
     port = mock_grpc_server
     from sample_application.sample_application_pb2_grpc import (
             SampleApplicationStub)
 
-    with grpc.insecure_channel('localhost:%s' % port) as channel:
-        stub = SampleApplicationStub(channel)
+    stub, channel = create_stub_and_channel(port)
+    with channel:
         yield stub, channel
 
+def create_stub_and_channel(port):
+    from sample_application.sample_application_pb2_grpc import (
+            SampleApplicationStub)
+
+    channel = grpc.insecure_channel('localhost:%s' % port)
+    stub = SampleApplicationStub(channel)
+    return stub, channel

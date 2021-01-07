@@ -27,11 +27,11 @@ on:
 jobs:
   python:
     env: 
-      TOTAL_GROUPS: 20
+      TOTAL_GROUPS: 15
 
     strategy:
       matrix:
-        group-number: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+        group-number: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
     runs-on: ubuntu-latest
 
@@ -103,13 +103,6 @@ jobs:
         echo "::set-output name=envs::$(tox -l | grep "^python\-" | ./.github/workflows/get-envs.py)"
       env:
         GROUP_NUMBER: ${{ matrix.group-number }}
-
-    # Special case packages
-    - name: Install libcurl-dev
-      if: ${{ contains(steps.get-envs.outputs.envs, 'framework_tornado') }}
-      run: |
-        sudo apt-get update
-        sudo apt-get install libcurl4-openssl-dev
 
     - name: Test
       run: |
@@ -197,16 +190,101 @@ jobs:
       env:
         GROUP_NUMBER: ${{ matrix.group-number }}
 
+    - name: Test
+      run: |
+        tox -vv -e ${{ steps.get-envs.outputs.envs }}
+      env:
+        TOX_PARALLEL_NO_SPINNER: 1
+        PY_COLORS: 0
+
+  libcurl:
+    env: 
+      TOTAL_GROUPS: 1
+
+    strategy:
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Get Date
+      id: get-date
+      run: |
+        echo "::set-output name=date::$(/bin/date -u "+%Y-%m-%d")"
+      shell: bash
+
+    - name: Cache Tox and Pip (Linux)
+      if: startsWith(runner.os, 'Linux')
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cache/pip
+        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
+        restore-keys: |
+          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
+          ${{ runner.os }}-${{ matrix.test-directory }}-
+
+    # Set up all versions of python
+    - uses: actions/setup-python@v2
+      with:
+        python-version: pypy3
+        architecture: x64
+
+    # Setup pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
+    - uses: actions/setup-python@v2
+      with:
+        python-version: pypy2
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 2.7
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.6
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.7
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+        architecture: x64
+
+    - name: Install Dependencies
+      run: |
+        pip install -U pip
+        pip install -U wheel setuptools tox virtualenv!=20.0.24
+
+    - name: Get Environments
+      id: get-envs
+      run: |
+        echo "::set-output name=envs::$(tox -l | grep "^libcurl\-" | ./.github/workflows/get-envs.py)"
+      env:
+        GROUP_NUMBER: ${{ matrix.group-number }}
+
     # Special case packages
     - name: Install libcurl-dev
-      if: ${{ contains(steps.get-envs.outputs.envs, 'framework_tornado') }}
       run: |
         sudo apt-get update
         sudo apt-get install libcurl4-openssl-dev
 
     - name: Test
       run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }}
+        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0

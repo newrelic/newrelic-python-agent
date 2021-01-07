@@ -27,11 +27,11 @@ on:
 jobs:
   python:
     env: 
-      TOTAL_GROUPS: 15
+      TOTAL_GROUPS: 20
 
     strategy:
       matrix:
-        group-number: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+        group-number: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
 
     runs-on: ubuntu-latest
 
@@ -269,18 +269,18 @@ jobs:
         pip install -U pip
         pip install -U wheel setuptools tox virtualenv!=20.0.24
 
+    # Special case packages
+    - name: Install libcurl-dev
+      run: |
+        sudo apt-get update
+        sudo apt-get install libcurl4-openssl-dev
+
     - name: Get Environments
       id: get-envs
       run: |
         echo "::set-output name=envs::$(tox -l | grep "^libcurl\-" | ./.github/workflows/get-envs.py)"
       env:
         GROUP_NUMBER: ${{ matrix.group-number }}
-
-    # Special case packages
-    - name: Install libcurl-dev
-      run: |
-        sudo apt-get update
-        sudo apt-get install libcurl4-openssl-dev
 
     - name: Test
       run: |
@@ -291,11 +291,11 @@ jobs:
 
   postgres:
     env: 
-      TOTAL_GROUPS: 1
+      TOTAL_GROUPS: 2
 
     strategy:
       matrix:
-        group-number: [1]
+        group-number: [1, 2]
 
     runs-on: ubuntu-latest
 
@@ -371,27 +371,32 @@ jobs:
         python-version: 3.9
         architecture: x64
 
-
     - name: Install Dependencies
       run: |
         pip install -U pip
         pip install -U wheel setuptools tox virtualenv!=20.0.24
 
+    - name: Get Environments
+      id: get-envs
+      run: |
+        echo "::set-output name=envs::$(tox -l | grep "^postgres\-" | ./.github/workflows/get-envs.py)"
+      env:
+        GROUP_NUMBER: ${{ matrix.group-number }}
+
     - name: Test
       run: |
-        tox -vv -e $(tox -l | grep "^postgres\-" | ./.github/workflows/get-envs.py) -p auto
+        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
-        GROUP_NUMBER: ${{ matrix.group-number }}
 
   mysql:
     env: 
-      TOTAL_GROUPS: 1
+      TOTAL_GROUPS: 2
 
     strategy:
       matrix:
-        group-number: [1]
+        group-number: [1, 2]
 
     runs-on: ubuntu-latest
 
@@ -470,19 +475,24 @@ jobs:
         python-version: 3.9
         architecture: x64
 
-
     - name: Install Dependencies
       run: |
         pip install -U pip
         pip install -U wheel setuptools tox virtualenv!=20.0.24
 
+    - name: Get Environments
+      id: get-envs
+      run: |
+        echo "::set-output name=envs::$(tox -l | grep "^mysql\-" | ./.github/workflows/get-envs.py)"
+      env:
+        GROUP_NUMBER: ${{ matrix.group-number }}
+
     - name: Test
       run: |
-        tox -vv -e $(tox -l | grep "^mysql\-" | ./.github/workflows/get-envs.py) -p auto
+        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
-        GROUP_NUMBER: ${{ matrix.group-number }}
 
   redis:
     env: 
@@ -564,19 +574,24 @@ jobs:
         python-version: 3.9
         architecture: x64
 
-
     - name: Install Dependencies
       run: |
         pip install -U pip
         pip install -U wheel setuptools tox virtualenv!=20.0.24
 
+    - name: Get Environments
+      id: get-envs
+      run: |
+        echo "::set-output name=envs::$(tox -l | grep "^redis\-" | ./.github/workflows/get-envs.py)"
+      env:
+        GROUP_NUMBER: ${{ matrix.group-number }}
+
     - name: Test
       run: |
-        tox -vv -e $(tox -l | grep "^redis\-" | ./.github/workflows/get-envs.py) -p auto
+        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
-        GROUP_NUMBER: ${{ matrix.group-number }}
 
   solr:
     env: 
@@ -660,27 +675,32 @@ jobs:
         python-version: 3.9
         architecture: x64
 
-
     - name: Install Dependencies
       run: |
         pip install -U pip
         pip install -U wheel setuptools tox virtualenv!=20.0.24
 
+    - name: Get Environments
+      id: get-envs
+      run: |
+        echo "::set-output name=envs::$(tox -l | grep "^solr\-" | ./.github/workflows/get-envs.py)"
+      env:
+        GROUP_NUMBER: ${{ matrix.group-number }}
+
     - name: Test
       run: |
-        tox -vv -e $(tox -l | grep "^solr\-" | ./.github/workflows/get-envs.py) -p auto
+        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
-        GROUP_NUMBER: ${{ matrix.group-number }}
 
   memcached:
     env: 
-      TOTAL_GROUPS: 1
+      TOTAL_GROUPS: 2
 
     strategy:
       matrix:
-        group-number: [1]
+        group-number: [1, 2]
 
     runs-on: ubuntu-latest
 
@@ -754,18 +774,24 @@ jobs:
         python-version: 3.9
         architecture: x64
 
-
     - name: Install Dependencies
       run: |
         pip install -U pip
         pip install -U wheel setuptools tox virtualenv!=20.0.24
+
+    - name: Get Environments
+      id: get-envs
+      run: |
+        echo "::set-output name=envs::$(tox -l | grep "^memcached\-" | ./.github/workflows/get-envs.py)"
+      env:
+        GROUP_NUMBER: ${{ matrix.group-number }}
+
     - name: Test
       run: |
-        tox -vv -e $(tox -l | grep "^memcached\-" | ./.github/workflows/get-envs.py) -p auto
+        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
-        GROUP_NUMBER: ${{ matrix.group-number }}
 
   rabbitmq:
     env: 
@@ -848,18 +874,24 @@ jobs:
         python-version: 3.9
         architecture: x64
 
-
     - name: Install Dependencies
       run: |
         pip install -U pip
         pip install -U wheel setuptools tox virtualenv!=20.0.24
+
+    - name: Get Environments
+      id: get-envs
+      run: |
+        echo "::set-output name=envs::$(tox -l | grep "^rabbitmq\-" | ./.github/workflows/get-envs.py)"
+      env:
+        GROUP_NUMBER: ${{ matrix.group-number }}
+
     - name: Test
       run: |
-        tox -vv -e $(tox -l | grep "^rabbitmq\-" | ./.github/workflows/get-envs.py) -p auto
+        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
-        GROUP_NUMBER: ${{ matrix.group-number }}
 
   mongodb:
     env: 
@@ -941,19 +973,24 @@ jobs:
         python-version: 3.9
         architecture: x64
 
-
     - name: Install Dependencies
       run: |
         pip install -U pip
         pip install -U wheel setuptools tox virtualenv!=20.0.24
 
+    - name: Get Environments
+      id: get-envs
+      run: |
+        echo "::set-output name=envs::$(tox -l | grep "^mongodb\-" | ./.github/workflows/get-envs.py)"
+      env:
+        GROUP_NUMBER: ${{ matrix.group-number }}
+
     - name: Test
       run: |
-        tox -vv -e $(tox -l | grep "^mongodb\-" | ./.github/workflows/get-envs.py) -p auto
+        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
-        GROUP_NUMBER: ${{ matrix.group-number }}
 
   elasticsearch:
     env: 
@@ -1037,19 +1074,24 @@ jobs:
         python-version: 3.9
         architecture: x64
 
-
     - name: Install Dependencies
       run: |
         pip install -U pip
         pip install -U wheel setuptools tox virtualenv!=20.0.24
 
+    - name: Get Environments
+      id: get-envs
+      run: |
+        echo "::set-output name=envs::$(tox -l | grep "^elasticsearch\-" | ./.github/workflows/get-envs.py)"
+      env:
+        GROUP_NUMBER: ${{ matrix.group-number }}
+
     - name: Test
       run: |
-        tox -vv -e $(tox -l | grep "^elasticsearch\-" | ./.github/workflows/get-envs.py) -p auto
+        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
-        GROUP_NUMBER: ${{ matrix.group-number }}
 
   gearman:
     env: 
@@ -1130,16 +1172,21 @@ jobs:
         python-version: 3.9
         architecture: x64
 
-
     - name: Install Dependencies
       run: |
         pip install -U pip
         pip install -U wheel setuptools tox virtualenv!=20.0.24
 
+    - name: Get Environments
+      id: get-envs
+      run: |
+        echo "::set-output name=envs::$(tox -l | grep "^gearman\-" | ./.github/workflows/get-envs.py)"
+      env:
+        GROUP_NUMBER: ${{ matrix.group-number }}
+
     - name: Test
       run: |
-        tox -vv -e $(tox -l | grep "^gearman\-" | ./.github/workflows/get-envs.py) -p auto
+        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
-        GROUP_NUMBER: ${{ matrix.group-number }}

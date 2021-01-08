@@ -36,14 +36,6 @@ _coverage_source = [
 code_coverage = code_coverage_fixture(source=_coverage_source)
 
 
-@pytest.fixture(scope='session')
-def session_initialization(code_coverage, collector_agent_registration):
-    pass
-
-@pytest.fixture(scope='function')
-def requires_data_collector(collector_available_fixture):
-    pass
-
 def create_handler(response):
     def handler(self):
         self.send_response(200)

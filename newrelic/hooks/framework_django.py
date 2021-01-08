@@ -35,9 +35,13 @@ from newrelic.common.object_wrapper import (FunctionWrapper, wrap_in_function,
 from newrelic.common.object_names import callable_name
 from newrelic.config import extra_settings
 from newrelic.core.config import global_settings, ignore_status_code
+from newrelic.common.coroutine import is_coroutine_function, is_asyncio_coroutine
 
 if six.PY3:
-    from newrelic.hooks.framework_django_py3 import _nr_wrapper_BaseHandler_get_response_async_
+    from newrelic.hooks.framework_django_py3 import (
+        _nr_wrapper_BaseHandler_get_response_async_,
+        _nr_wrap_converted_middleware_async_,
+    )
 
 _logger = logging.getLogger(__name__)
 
@@ -1216,6 +1220,8 @@ def _nr_wrapper_convert_exception_to_response_(wrapped, instance, args,
     converted_middleware = wrapped(*args, **kwargs)
     name = callable_name(original_middleware)
 
+    if is_coroutine_function(converted_middleware) or is_asyncio_coroutine(converted_middleware):
+        return _nr_wrap_converted_middleware_async_(converted_middleware, name)
     return _nr_wrap_converted_middleware_(converted_middleware, name)
 
 

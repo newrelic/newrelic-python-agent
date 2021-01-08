@@ -50,10 +50,10 @@ jobs:
       with:
         path: |
           ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
+        key: ${{ runner.os }}-${{ job.name }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
         restore-keys: |
-          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
-          ${{ runner.os }}-${{ matrix.test-directory }}-
+          ${{ runner.os }}-${{ job.name }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
+          ${{ runner.os }}-${{ job.name }}-
 
     # Set up all versions of python
     - uses: actions/setup-python@v2
@@ -136,10 +136,10 @@ jobs:
       with:
         path: |
           ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
+        key: ${{ runner.os }}-${{ job.name }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
         restore-keys: |
-          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
-          ${{ runner.os }}-${{ matrix.test-directory }}-
+          ${{ runner.os }}-${{ job.name }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
+          ${{ runner.os }}-${{ job.name }}-
 
     # Set up all versions of python
     - uses: actions/setup-python@v2
@@ -222,10 +222,10 @@ jobs:
       with:
         path: |
           ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
+        key: ${{ runner.os }}-${{ job.name }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
         restore-keys: |
-          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
-          ${{ runner.os }}-${{ matrix.test-directory }}-
+          ${{ runner.os }}-${{ job.name }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
+          ${{ runner.os }}-${{ job.name }}-
 
     # Set up all versions of python
     - uses: actions/setup-python@v2
@@ -329,10 +329,10 @@ jobs:
       with:
         path: |
           ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
+        key: ${{ runner.os }}-${{ job.name }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
         restore-keys: |
-          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
-          ${{ runner.os }}-${{ matrix.test-directory }}-
+          ${{ runner.os }}-${{ job.name }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
+          ${{ runner.os }}-${{ job.name }}-
 
     # Set up all versions of python
     - uses: actions/setup-python@v2
@@ -433,10 +433,10 @@ jobs:
       with:
         path: |
           ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
+        key: ${{ runner.os }}-${{ job.name }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
         restore-keys: |
-          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
-          ${{ runner.os }}-${{ matrix.test-directory }}-
+          ${{ runner.os }}-${{ job.name }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
+          ${{ runner.os }}-${{ job.name }}-
 
     # Set up all versions of python
     - uses: actions/setup-python@v2
@@ -532,10 +532,10 @@ jobs:
       with:
         path: |
           ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
+        key: ${{ runner.os }}-${{ job.name }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
         restore-keys: |
-          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
-          ${{ runner.os }}-${{ matrix.test-directory }}-
+          ${{ runner.os }}-${{ job.name }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
+          ${{ runner.os }}-${{ job.name }}-
 
     # Set up all versions of python
     - uses: actions/setup-python@v2
@@ -633,10 +633,10 @@ jobs:
       with:
         path: |
           ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
+        key: ${{ runner.os }}-${{ job.name }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
         restore-keys: |
-          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
-          ${{ runner.os }}-${{ matrix.test-directory }}-
+          ${{ runner.os }}-${{ job.name }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
+          ${{ runner.os }}-${{ job.name }}-
 
     # Set up all versions of python
     - uses: actions/setup-python@v2
@@ -732,10 +732,10 @@ jobs:
       with:
         path: |
           ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
+        key: ${{ runner.os }}-${{ job.name }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
         restore-keys: |
-          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
-          ${{ runner.os }}-${{ matrix.test-directory }}-
+          ${{ runner.os }}-${{ job.name }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
+          ${{ runner.os }}-${{ job.name }}-
 
     # Set up all versions of python
     - uses: actions/setup-python@v2
@@ -832,10 +832,10 @@ jobs:
       with:
         path: |
           ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
+        key: ${{ runner.os }}-${{ job.name }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
         restore-keys: |
-          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
-          ${{ runner.os }}-${{ matrix.test-directory }}-
+          ${{ runner.os }}-${{ job.name }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
+          ${{ runner.os }}-${{ job.name }}-
 
     # Set up all versions of python
     - uses: actions/setup-python@v2
@@ -931,10 +931,10 @@ jobs:
       with:
         path: |
           ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
+        key: ${{ runner.os }}-${{ job.name }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
         restore-keys: |
-          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
-          ${{ runner.os }}-${{ matrix.test-directory }}-
+          ${{ runner.os }}-${{ job.name }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
+          ${{ runner.os }}-${{ job.name }}-
 
     # Set up all versions of python
     - uses: actions/setup-python@v2
@@ -1032,10 +1032,10 @@ jobs:
       with:
         path: |
           ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
+        key: ${{ runner.os }}-${{ job.name }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
         restore-keys: |
-          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
-          ${{ runner.os }}-${{ matrix.test-directory }}-
+          ${{ runner.os }}-${{ job.name }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
+          ${{ runner.os }}-${{ job.name }}-
 
     # Set up all versions of python
     - uses: actions/setup-python@v2
@@ -1130,10 +1130,10 @@ jobs:
       with:
         path: |
           ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
+        key: ${{ runner.os }}-${{ job.name }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
         restore-keys: |
-          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
-          ${{ runner.os }}-${{ matrix.test-directory }}-
+          ${{ runner.os }}-${{ job.name }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
+          ${{ runner.os }}-${{ job.name }}-
 
     # Set up all versions of python
     - uses: actions/setup-python@v2

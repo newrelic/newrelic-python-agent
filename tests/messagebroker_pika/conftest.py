@@ -54,16 +54,6 @@ collector_agent_registration = collector_agent_registration_fixture(
         linked_applications=['Python Agent Test (messagebroker)'])
 
 
-@pytest.fixture(scope='session')
-def session_initialization(code_coverage, collector_agent_registration):
-    pass
-
-
-@pytest.fixture(scope='function')  # NOQA
-def requires_data_collector(collector_available_fixture):
-    pass
-
-
 @pytest.fixture()
 def producer():
     # put something into the queue so it can be consumed

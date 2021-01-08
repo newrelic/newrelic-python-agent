@@ -36,13 +36,3 @@ _default_settings = {
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (adapter_uvicorn)", default_settings=_default_settings
 )
-
-
-@pytest.fixture(scope="session")
-def session_initialization(code_coverage, collector_agent_registration):
-    pass
-
-
-@pytest.fixture(scope="function")
-def requires_data_collector(collector_available_fixture):
-    pass

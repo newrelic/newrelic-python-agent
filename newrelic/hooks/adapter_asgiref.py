@@ -10,15 +10,19 @@ class ContextOf(object):
     def __init__(self, trace_cache_id):
         self.trace_cache = trace_cache()
         self.trace = self.trace_cache._cache.get(trace_cache_id)
+        self.thread_id = None
+        self.restore = None
 
     def __enter__(self):
         if self.trace:
-            self.thread_id = self.trace_cache.thread_start(self.trace)
+            self.thread_id = self.trace_cache.current_thread_id()
+            self.restore = self.trace_cache._cache.get(self.thread_id)
+            self.trace_cache._cache[self.thread_id] = self.trace
         return self
 
     def __exit__(self, exc, value, tb):
-        if self.trace:
-            self.trace_cache.thread_stop(self.thread_id)
+        if self.restore:
+            self.trace_cache._cache[self.thread_id] = self.restore
 
 
 async def context_wrapper_async(awaitable, trace_cache_id):

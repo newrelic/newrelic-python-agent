@@ -2,6 +2,7 @@ import os
 import pytest
 import django
 
+from newrelic.common.encoding_utils import gzip_decompress
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, override_application_settings,
     override_generic_settings, override_ignore_status_codes)
@@ -26,7 +27,7 @@ scoped_metrics = [
 ]
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def application():
     from django.core.asgi import get_asgi_application
 
@@ -85,6 +86,8 @@ def test_asgi_class_based_view(application, url, view_name):
 @pytest.mark.parametrize('url', (
     '/html_insertion',
     '/html_insertion_content_length',
+    '/template_tags',
+    '/gzip_html_insertion',
 ))
 @override_application_settings({
     'browser_monitoring.enabled': True,
@@ -92,8 +95,46 @@ def test_asgi_class_based_view(application, url, view_name):
     'js_agent_loader': u'<!-- NREUM HEADER -->',
 })
 def test_asgi_html_insertion_success(application, url):
+    if 'gzip' in url:
+        headers = {'Accept-Encoding': 'gzip'}
+    else:
+        headers = None
+    response = application.get(url, headers=headers)
+    assert response.status == 200
+
+    if 'gzip' in url:
+        body = gzip_decompress(response.body).encode('utf-8')
+    else:
+        body = response.body
+
+    assert b'NREUM HEADER' in body
+    assert b'NREUM.info' in body
+    assert b'&lt;!-- NREUM HEADER --&gt' not in body
+
+
+@pytest.mark.parametrize('url', (
+    '/html_insertion_manual',
+    '/html_insertion_unnamed_attachment_header',
+    '/html_insertion_named_attachment_header',
+))
+@override_application_settings({
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': True,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+})
+def test_asgi_html_insertion_failed(application, url):
     response = application.get(url)
     assert response.status == 200
 
-    assert b'NREUM HEADER' in response.body
-    assert b'NREUM.info' in response.body
+    assert b'NREUM HEADER' not in response.body
+    assert b'NREUM.info' not in response.body
+
+
+@validate_transaction_metrics('views:template_tags',
+        scoped_metrics=[
+                ('Function/views:template_tags', 1),
+                ('Template/Render/main.html', 1),
+                ('Template/Render/results.html', 1)] + scoped_metrics)
+def test_asgi_template_render(application):
+    response = application.get('/template_tags')
+    assert response.status == 200

@@ -20,6 +20,7 @@ import random
 from testing_support.fixtures import (code_coverage_fixture,
         collector_agent_registration_fixture, collector_available_fixture)
 from testing_support.mock_external_grpc_server import MockExternalgRPCServer
+import newrelic.packages.six as six
 
 _coverage_source = [
     'newrelic.hooks.framework_grpc',
@@ -40,13 +41,13 @@ collector_agent_registration = collector_agent_registration_fixture(
         default_settings=_default_settings)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def grpc_app_server():
     with MockExternalgRPCServer() as server:
         yield server, server.port
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def mock_grpc_server(grpc_app_server):
     from sample_application.sample_application_pb2_grpc import (
             add_SampleApplicationServicer_to_server)
@@ -67,36 +68,48 @@ def requires_data_collector(collector_available_fixture):
     pass
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope='function', autouse=True)
 def gc_garbage_empty():
     yield
 
-    # garbage collect until everything is reachable
-    while gc.collect():
-        pass
+    # Python 2 fails to collect objects with finalizers that participate in a reference cycle.
+    # These assertions are made with that assumption in mind.
+    # If there's a failure on py2, it's applicable to py3 as well.
+    # If PY3 has a reference cycle (which it shouldn't), but PY2 does not, it will be GCed
+    if six.PY2:
+        # garbage collect until everything is reachable
+        while gc.collect():
+            pass
 
-    from grpc._channel import _Rendezvous
-    rendezvous_stored = sum(1 for o in gc.get_objects()
-            if hasattr(o, '__class__') and isinstance(o, _Rendezvous))
+        from grpc._channel import _Rendezvous
+        rendezvous_stored = sum(1 for o in gc.get_objects()
+                if hasattr(o, '__class__') and isinstance(o, _Rendezvous))
 
-    assert rendezvous_stored == 0
+        assert rendezvous_stored == 0
 
-    # make sure that even python knows there isn't any garbage remaining
-    assert not gc.garbage
+        # make sure that even python knows there isn't any garbage remaining
+        assert not gc.garbage
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def stub(stub_and_channel):
     return stub_and_channel[0]
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def stub_and_channel(mock_grpc_server):
     port = mock_grpc_server
     from sample_application.sample_application_pb2_grpc import (
             SampleApplicationStub)
 
-    with grpc.insecure_channel('localhost:%s' % port) as channel:
-        stub = SampleApplicationStub(channel)
+    stub, channel = create_stub_and_channel(port)
+    with channel:
         yield stub, channel
 
+def create_stub_and_channel(port):
+    from sample_application.sample_application_pb2_grpc import (
+            SampleApplicationStub)
+
+    channel = grpc.insecure_channel('localhost:%s' % port)
+    stub = SampleApplicationStub(channel)
+    return stub, channel

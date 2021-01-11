@@ -58,16 +58,6 @@ def mock_grpc_server(grpc_app_server):
     return port
 
 
-@pytest.fixture(scope='session')
-def session_initialization(code_coverage, collector_agent_registration):
-    pass
-
-
-@pytest.fixture(scope='function')
-def requires_data_collector(collector_available_fixture):
-    pass
-
-
 @pytest.fixture(scope='function', autouse=True)
 def gc_garbage_empty():
     yield

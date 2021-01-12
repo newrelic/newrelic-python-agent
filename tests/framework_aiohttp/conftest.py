@@ -114,7 +114,18 @@ def aiohttp_app(request):
 
 @pytest.fixture(scope='session')
 def mock_header_server():
-    with MockExternalHTTPHResponseHeadersServer() as _server:
+    def handler(self):
+        if self.command != 'GET':
+            self.send_response(501)
+            self.end_headers()
+            return
+
+        response = str(self.headers).encode('utf-8')
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(response)
+
+    with MockExternalHTTPHResponseHeadersServer(handler=handler) as _server:
         yield _server
 
 @pytest.fixture(scope="session")

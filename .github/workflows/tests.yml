@@ -26,74 +26,155 @@ on:
 
 jobs:
   python:
+    env: 
+      TOTAL_GROUPS: 20
 
     strategy:
       matrix:
-        test-directory: 
-          - adapter_cheroot
-          - adapter_gevent
-          - adapter_gunicorn
-          - adapter_uvicorn
-          - agent_features
-          - agent_streaming
-          - agent_unittests
-          - application_celery
-          - component_djangorestframework
-          - component_flask_rest
-          - component_tastypie
-          - coroutines_asyncio
-          - cross_agent
-          - datastore_sqlite
-          - external_boto3
-          - external_botocore
-          - external_feedparser
-          - external_http
-          - external_httplib
-          - external_httplib2
-          - external_requests
-          - external_urllib3
-          - framework_aiohttp
-          - framework_bottle
-          - framework_cherrypy
-          - framework_django
-          - framework_falcon
-          - framework_fastapi
-          - framework_flask
-          - framework_grpc
-          - framework_pyramid
-          - framework_sanic
-          - framework_starlette
-          - framework_tornado
-          - template_mako
+        group-number: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
 
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
 
-    - name: Get Date
-      id: get-date
-      run: |
-        echo "::set-output name=date::$(/bin/date -u "+%Y-%m-%d")"
-      shell: bash
-
-    - name: Cache Tox and Pip (Linux)
-      if: startsWith(runner.os, 'Linux')
-      uses: actions/cache@v2
+    # Set up all versions of python
+    - uses: actions/setup-python@v2
       with:
-        path: |
-          ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
-        restore-keys: |
-          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
-          ${{ runner.os }}-${{ matrix.test-directory }}-
+        python-version: 2.7
+        architecture: x64
 
-    # Special case packages
-    - name: Install libcurl-dev
-      if: ${{ matrix.test-directory == 'framework_tornado' }}
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.6
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.7
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: pypy3
+        architecture: x64
+
+    # Setup pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
+    - uses: actions/setup-python@v2
+      with:
+        python-version: pypy2
+        architecture: x64
+
+    - name: Install Dependencies
       run: |
-        sudo apt-get update
-        sudo apt-get install libcurl4-openssl-dev
+        pip install -U pip
+        pip install -U wheel setuptools tox virtualenv!=20.0.24
+
+    - name: Get Environments
+      id: get-envs
+      run: |
+        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+      env:
+        GROUP_NUMBER: ${{ matrix.group-number }}
+
+    - name: Test
+      run: |
+        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+      env:
+        TOX_PARALLEL_NO_SPINNER: 1
+        PY_COLORS: 0
+
+  grpc:
+    env: 
+      TOTAL_GROUPS: 1
+
+    strategy:
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    # Set up all versions of python
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 2.7
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.6
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.7
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: pypy3
+        architecture: x64
+
+    # Setup pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
+    - uses: actions/setup-python@v2
+      with:
+        python-version: pypy2
+        architecture: x64
+
+    - name: Install Dependencies
+      run: |
+        pip install -U pip
+        pip install -U wheel setuptools tox virtualenv!=20.0.24
+
+    - name: Get Environments
+      id: get-envs
+      run: |
+        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+      env:
+        GROUP_NUMBER: ${{ matrix.group-number }}
+
+    - name: Test
+      run: |
+        tox -vv -e ${{ steps.get-envs.outputs.envs }}
+      env:
+        TOX_PARALLEL_NO_SPINNER: 1
+        PY_COLORS: 0
+
+  libcurl:
+    env: 
+      TOTAL_GROUPS: 1
+
+    strategy:
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
 
     # Set up all versions of python
     - uses: actions/setup-python@v2
@@ -138,22 +219,33 @@ jobs:
         pip install -U pip
         pip install -U wheel setuptools tox virtualenv!=20.0.24
 
+    # Special case packages
+    - name: Install libcurl-dev
+      run: |
+        sudo apt-get update
+        sudo apt-get install libcurl4-openssl-dev
+
+    - name: Get Environments
+      id: get-envs
+      run: |
+        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+      env:
+        GROUP_NUMBER: ${{ matrix.group-number }}
+
     - name: Test
       run: |
-        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
+        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
 
   postgres:
+    env: 
+      TOTAL_GROUPS: 2
 
     strategy:
       matrix:
-        test-directory: 
-          - datastore_asyncpg
-          - datastore_postgresql
-          - datastore_psycopg2
-          - datastore_psycopg2cffi
+        group-number: [1, 2]
 
     runs-on: ubuntu-latest
 
@@ -175,23 +267,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Get Date
-      id: get-date
-      run: |
-        echo "::set-output name=date::$(/bin/date -u "+%Y-%m-%d")"
-      shell: bash
-
-    - name: Cache Tox and Pip (Linux)
-      if: startsWith(runner.os, 'Linux')
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
-        restore-keys: |
-          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
-          ${{ runner.os }}-${{ matrix.test-directory }}-
-
     # Set up all versions of python
     - uses: actions/setup-python@v2
       with:
@@ -235,21 +310,27 @@ jobs:
         pip install -U pip
         pip install -U wheel setuptools tox virtualenv!=20.0.24
 
+    - name: Get Environments
+      id: get-envs
+      run: |
+        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+      env:
+        GROUP_NUMBER: ${{ matrix.group-number }}
+
     - name: Test
       run: |
-        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
+        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
 
   mysql:
+    env: 
+      TOTAL_GROUPS: 2
 
     strategy:
       matrix:
-        test-directory:
-          - datastore_mysql
-          - datastore_mysqldb
-          - datastore_pymysql
+        group-number: [1, 2]
 
     runs-on: ubuntu-latest
 
@@ -274,23 +355,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Get Date
-      id: get-date
-      run: |
-        echo "::set-output name=date::$(/bin/date -u "+%Y-%m-%d")"
-      shell: bash
-
-    - name: Cache Tox and Pip (Linux)
-      if: startsWith(runner.os, 'Linux')
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
-        restore-keys: |
-          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
-          ${{ runner.os }}-${{ matrix.test-directory }}-
-
     # Set up all versions of python
     - uses: actions/setup-python@v2
       with:
@@ -334,18 +398,27 @@ jobs:
         pip install -U pip
         pip install -U wheel setuptools tox virtualenv!=20.0.24
 
+    - name: Get Environments
+      id: get-envs
+      run: |
+        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+      env:
+        GROUP_NUMBER: ${{ matrix.group-number }}
+
     - name: Test
       run: |
-        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
+        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
 
   redis:
+    env: 
+      TOTAL_GROUPS: 1
 
     strategy:
       matrix:
-        test-directory: [datastore_redis]
+        group-number: [1]
 
     runs-on: ubuntu-latest
 
@@ -365,23 +438,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Get Date
-      id: get-date
-      run: |
-        echo "::set-output name=date::$(/bin/date -u "+%Y-%m-%d")"
-      shell: bash
-
-    - name: Cache Tox and Pip (Linux)
-      if: startsWith(runner.os, 'Linux')
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
-        restore-keys: |
-          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
-          ${{ runner.os }}-${{ matrix.test-directory }}-
-
     # Set up all versions of python
     - uses: actions/setup-python@v2
       with:
@@ -425,20 +481,27 @@ jobs:
         pip install -U pip
         pip install -U wheel setuptools tox virtualenv!=20.0.24
 
+    - name: Get Environments
+      id: get-envs
+      run: |
+        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+      env:
+        GROUP_NUMBER: ${{ matrix.group-number }}
+
     - name: Test
       run: |
-        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
+        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
 
   solr:
+    env: 
+      TOTAL_GROUPS: 1
 
     strategy:
       matrix:
-        test-directory: 
-          - datastore_pysolr
-          - datastore_solrpy
+        group-number: [1]
 
     runs-on: ubuntu-latest
 
@@ -460,23 +523,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Get Date
-      id: get-date
-      run: |
-        echo "::set-output name=date::$(/bin/date -u "+%Y-%m-%d")"
-      shell: bash
-
-    - name: Cache Tox and Pip (Linux)
-      if: startsWith(runner.os, 'Linux')
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
-        restore-keys: |
-          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
-          ${{ runner.os }}-${{ matrix.test-directory }}-
-
     # Set up all versions of python
     - uses: actions/setup-python@v2
       with:
@@ -520,23 +566,27 @@ jobs:
         pip install -U pip
         pip install -U wheel setuptools tox virtualenv!=20.0.24
 
+    - name: Get Environments
+      id: get-envs
+      run: |
+        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+      env:
+        GROUP_NUMBER: ${{ matrix.group-number }}
+
     - name: Test
       run: |
-        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
+        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
 
   memcached:
+    env: 
+      TOTAL_GROUPS: 2
 
     strategy:
       matrix:
-        test-directory:
-          - datastore_bmemcached
-          - datastore_memcache
-          - datastore_pylibmc
-          - datastore_pymemcache
-          - datastore_umemcache
+        group-number: [1, 2]
 
     runs-on: ubuntu-latest
 
@@ -556,23 +606,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Get Date
-      id: get-date
-      run: |
-        echo "::set-output name=date::$(/bin/date -u "+%Y-%m-%d")"
-      shell: bash
-
-    - name: Cache Tox and Pip (Linux)
-      if: startsWith(runner.os, 'Linux')
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
-        restore-keys: |
-          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
-          ${{ runner.os }}-${{ matrix.test-directory }}-
-
     # Set up all versions of python
     - uses: actions/setup-python@v2
       with:
@@ -615,19 +648,28 @@ jobs:
       run: |
         pip install -U pip
         pip install -U wheel setuptools tox virtualenv!=20.0.24
+
+    - name: Get Environments
+      id: get-envs
+      run: |
+        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+      env:
+        GROUP_NUMBER: ${{ matrix.group-number }}
+
     - name: Test
       run: |
-        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
+        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
 
   rabbitmq:
+    env: 
+      TOTAL_GROUPS: 1
 
     strategy:
       matrix:
-        test-directory:
-          - messagebroker_pika
+        group-number: [1]
 
     runs-on: ubuntu-latest
 
@@ -648,23 +690,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Get Date
-      id: get-date
-      run: |
-        echo "::set-output name=date::$(/bin/date -u "+%Y-%m-%d")"
-      shell: bash
-
-    - name: Cache Tox and Pip (Linux)
-      if: startsWith(runner.os, 'Linux')
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
-        restore-keys: |
-          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
-          ${{ runner.os }}-${{ matrix.test-directory }}-
-
     # Set up all versions of python
     - uses: actions/setup-python@v2
       with:
@@ -707,19 +732,28 @@ jobs:
       run: |
         pip install -U pip
         pip install -U wheel setuptools tox virtualenv!=20.0.24
+
+    - name: Get Environments
+      id: get-envs
+      run: |
+        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+      env:
+        GROUP_NUMBER: ${{ matrix.group-number }}
+
     - name: Test
       run: |
-        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
+        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
 
   mongodb:
+    env: 
+      TOTAL_GROUPS: 1
 
     strategy:
       matrix:
-        test-directory:
-          - datastore_pymongo
+        group-number: [1]
 
     runs-on: ubuntu-latest
 
@@ -739,23 +773,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Get Date
-      id: get-date
-      run: |
-        echo "::set-output name=date::$(/bin/date -u "+%Y-%m-%d")"
-      shell: bash
-
-    - name: Cache Tox and Pip (Linux)
-      if: startsWith(runner.os, 'Linux')
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
-        restore-keys: |
-          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
-          ${{ runner.os }}-${{ matrix.test-directory }}-
-
     # Set up all versions of python
     - uses: actions/setup-python@v2
       with:
@@ -799,20 +816,27 @@ jobs:
         pip install -U pip
         pip install -U wheel setuptools tox virtualenv!=20.0.24
 
+    - name: Get Environments
+      id: get-envs
+      run: |
+        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+      env:
+        GROUP_NUMBER: ${{ matrix.group-number }}
+
     - name: Test
       run: |
-        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
+        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
 
   elasticsearch:
+    env: 
+      TOTAL_GROUPS: 1
 
     strategy:
       matrix:
-        test-directory: 
-          - datastore_elasticsearch
-          - datastore_pyelasticsearch
+        group-number: [1]
 
     runs-on: ubuntu-latest
 
@@ -834,23 +858,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Get Date
-      id: get-date
-      run: |
-        echo "::set-output name=date::$(/bin/date -u "+%Y-%m-%d")"
-      shell: bash
-
-    - name: Cache Tox and Pip (Linux)
-      if: startsWith(runner.os, 'Linux')
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
-        restore-keys: |
-          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
-          ${{ runner.os }}-${{ matrix.test-directory }}-
-
     # Set up all versions of python
     - uses: actions/setup-python@v2
       with:
@@ -894,19 +901,27 @@ jobs:
         pip install -U pip
         pip install -U wheel setuptools tox virtualenv!=20.0.24
 
+    - name: Get Environments
+      id: get-envs
+      run: |
+        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+      env:
+        GROUP_NUMBER: ${{ matrix.group-number }}
+
     - name: Test
       run: |
-        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
+        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
 
   gearman:
+    env: 
+      TOTAL_GROUPS: 1
 
     strategy:
       matrix:
-        test-directory:
-          - application_gearman
+        group-number: [1]
 
     runs-on: ubuntu-latest
 
@@ -925,23 +940,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Get Date
-      id: get-date
-      run: |
-        echo "::set-output name=date::$(/bin/date -u "+%Y-%m-%d")"
-      shell: bash
-
-    - name: Cache Tox and Pip (Linux)
-      if: startsWith(runner.os, 'Linux')
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-${{ steps.get-date.outputs.date }}
-        restore-keys: |
-          ${{ runner.os }}-${{ matrix.test-directory }}-${{ hashFiles('tests/${{ matrix.test-directory }}/tox.ini', 'tests/base_requirements.txt') }}-
-          ${{ runner.os }}-${{ matrix.test-directory }}-
-
     # Set up all versions of python
     - uses: actions/setup-python@v2
       with:
@@ -985,9 +983,16 @@ jobs:
         pip install -U pip
         pip install -U wheel setuptools tox virtualenv!=20.0.24
 
+    - name: Get Environments
+      id: get-envs
+      run: |
+        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+      env:
+        GROUP_NUMBER: ${{ matrix.group-number }}
+
     - name: Test
       run: |
-        tox -vv -p auto -c tests/${{ matrix.test-directory }}/tox.ini
+        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
       env:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0

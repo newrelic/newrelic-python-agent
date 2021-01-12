@@ -463,14 +463,12 @@ def instrument_django_core_handlers_base(module):
     wrap_post_function(module, 'BaseHandler.load_middleware',
             insert_and_wrap_middleware)
 
-    if six.PY3 and hasattr(module.BaseHandler, '_get_response') and hasattr(module.BaseHandler, '_get_response_async'):
-        wrap_function_wrapper(module, 'BaseHandler._get_response',
-                _nr_wrapper_BaseHandler_get_response_)
-        wrap_function_wrapper(module, 'BaseHandler._get_response_async',
+    if six.PY3 and hasattr(module.BaseHandler, 'get_response_async'):
+        wrap_function_wrapper(module, 'BaseHandler.get_response_async',
                 _nr_wrapper_BaseHandler_get_response_async_)
-    else:
-        wrap_function_wrapper(module, 'BaseHandler.get_response',
-                _nr_wrapper_BaseHandler_get_response_)
+
+    wrap_function_wrapper(module, 'BaseHandler.get_response',
+            _nr_wrapper_BaseHandler_get_response_)
 
 
 def instrument_django_gzip_middleware(module):

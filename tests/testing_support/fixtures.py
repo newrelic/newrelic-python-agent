@@ -2297,9 +2297,9 @@ def override_ignore_status_codes(status_codes):
     @function_wrapper
     def _override_ignore_status_codes(wrapped, instance, args, kwargs):
         try:
-            # This is a bit horrible as ignore_status_codes is only
-            # used direct from the global settings and not the
-            # application settings. We therefore need to patch the
+            # Ignore_status_codes is only used directly
+            # from the global settings and not the application
+            # settings. We therefore need to patch the
             # global settings directly.
 
             settings = global_settings()

@@ -205,7 +205,7 @@ _stack_trace_limit_truncated = _format_stack_trace_from_tuples([
 
 # Previous examples truncated at stack frame of test as can't easily
 # compare to frames above. This test collects all stack frames to make
-# sure doesn't blow up, but can't compare.
+# sure it can handle them, but can't compare.
 
 def test_trace_exception_full():
     try:
@@ -282,8 +282,8 @@ _stack_trace_current_skip = _format_stack_trace_from_tuples([
 ])
 
 # Previous examples truncated current stack as can't easily compare to
-# frames above. This test collects all stack frames to make sure doesn't
-# blow up, but can't compare.
+# frames above. This test collects all stack frames to make sure it can
+# handle them, but can't compare.
 
 def test_trace_current_full():
     actual = skip5(skip=0, limit=1000)

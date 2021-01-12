@@ -40,6 +40,8 @@ from newrelic.common.encoding_utils import obfuscate, json_encode
 from testing_support.fixtures import (override_application_settings,
         override_application_name, validate_tt_parameters,
         make_cross_agent_headers, validate_analytics_catmap_data)
+from testing_support.mock_external_http_server import (
+        MockExternalHTTPHResponseHeadersServer)
 
 ENCODING_KEY = '1234567890123456789012345678901234567890'
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -49,6 +51,12 @@ OUTBOUD_REQUESTS = {}
 _parameters_list = ["name", "appName", "transactionName", "transactionGuid",
         "inboundPayload", "outboundRequests", "expectedIntrinsicFields",
         "nonExpectedIntrinsicFields"]
+
+
+@pytest.fixture(scope='module')
+def server():
+    with MockExternalHTTPHResponseHeadersServer() as _server:
+        yield _server
 
 
 def load_tests():
@@ -104,7 +112,7 @@ def target_wsgi_application(environ, start_response):
         else:
             if 'X-NewRelic-Transaction' in generated_outbound_header:
                 status = '500 Outbound Headers Check Failed.'
-        r = urlopen('http://www.example.com')
+        r = urlopen(environ['server_url'])
         r.read(10)
 
     # Set the final transaction name.
@@ -132,7 +140,7 @@ target_application = webtest.TestApp(target_wsgi_application)
 @pytest.mark.parametrize('old_cat', (True, False))
 def test_cat_map(name, appName, transactionName, transactionGuid,
         inboundPayload, outboundRequests, expectedIntrinsicFields,
-        nonExpectedIntrinsicFields, old_cat):
+        nonExpectedIntrinsicFields, old_cat, server):
     global OUTBOUD_REQUESTS
     OUTBOUD_REQUESTS = outboundRequests or {}
 
@@ -180,7 +188,8 @@ def test_cat_map(name, appName, transactionName, transactionGuid,
         headers = make_cross_agent_headers(inboundPayload, ENCODING_KEY, '1#1')
         response = target_application.get('/', headers=headers,
                 extra_environ={'txn': txn_name, 'guid': guid,
-                    'old_cat': str(old_cat)})
+                    'old_cat': str(old_cat),
+                    'server_url': 'http://localhost:%d' % server.port})
 
         # Validation of analytic data happens in the decorator.
 

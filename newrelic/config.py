@@ -2168,6 +2168,10 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.framework_web2py',
             'instrument_gluon_http')
 
+    _process_module_definition('httpx._client',
+            'newrelic.hooks.external_httpx',
+            'instrument_httpx_client')
+
     _process_module_definition('gluon.contrib.feedparser',
             'newrelic.hooks.external_feedparser')
     _process_module_definition('gluon.contrib.memcache.memcache',

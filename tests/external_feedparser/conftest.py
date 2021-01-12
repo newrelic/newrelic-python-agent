@@ -43,7 +43,6 @@ def create_handler(response):
         self.wfile.write(response)
     return handler
 
-
 @pytest.fixture(scope="session")
 def server():
     with open("packages.xml", "rb") as f:

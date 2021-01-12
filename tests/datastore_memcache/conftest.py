@@ -43,14 +43,6 @@ collector_agent_registration = collector_agent_registration_fixture(
         linked_applications=['Python Agent Test (datastore)'])
 
 @pytest.fixture(scope='session')
-def session_initialization(code_coverage, collector_agent_registration):
-    pass
-
-@pytest.fixture(scope='function')
-def requires_data_collector(collector_available_fixture):
-    pass
-
-@pytest.fixture(scope='session')
 def memcached_multi():
     """Generate keys that will go onto different servers"""
     DB_SETTINGS = memcached_settings()

@@ -15,11 +15,8 @@
 import asyncio
 import pytest
 
-from testing_support.fixtures import (
-    code_coverage_fixture,
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+from testing_support.fixtures import (code_coverage_fixture,
+        collector_agent_registration_fixture, collector_available_fixture)
 from testing_support.mock_external_http_server import (
     MockExternalHTTPHResponseHeadersServer,
 )
@@ -42,16 +39,6 @@ _default_settings = {
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (external_httpx)", default_settings=_default_settings
 )
-
-
-@pytest.fixture(scope="session")
-def session_initialization(code_coverage, collector_agent_registration):
-    pass
-
-
-@pytest.fixture(scope="function")
-def requires_data_collector(collector_available_fixture):
-    pass
 
 
 @pytest.fixture(scope="session")

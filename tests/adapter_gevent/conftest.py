@@ -36,11 +36,3 @@ def target_application():
     import _application
     port = _application.setup_application()
     return webtest.TestApp('http://localhost:%d' % port)
-
-@pytest.fixture(scope='session')
-def session_initialization(collector_agent_registration):
-    pass
-
-@pytest.fixture(scope='function')
-def requires_data_collector(collector_available_fixture):
-    pass

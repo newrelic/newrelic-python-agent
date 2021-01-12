@@ -39,16 +39,6 @@ collector_agent_registration = collector_agent_registration_fixture(
         default_settings=_default_settings)
 
 
-@pytest.fixture(scope='session')
-def session_initialization(code_coverage, collector_agent_registration):
-    pass
-
-
-@pytest.fixture(scope='function')
-def requires_data_collector(collector_available_fixture):
-    pass
-
-
 def create_request_class(method, url, headers=None):
     _request = Request(
         method=method.upper(),

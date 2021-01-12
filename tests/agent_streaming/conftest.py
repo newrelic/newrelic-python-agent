@@ -65,16 +65,6 @@ def mock_grpc_server(grpc_app_server):
     return port
 
 
-@pytest.fixture(scope="session")
-def session_initialization(code_coverage, collector_agent_registration):
-    pass
-
-
-@pytest.fixture(scope="function")
-def requires_data_collector(collector_available_fixture):
-    pass
-
-
 class SetEventOnWait(CONDITION_CLS):
     def __init__(self, event, *args, **kwargs):
         super(SetEventOnWait, self).__init__(*args, **kwargs)

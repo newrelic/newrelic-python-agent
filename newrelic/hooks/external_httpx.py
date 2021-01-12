@@ -13,14 +13,23 @@
 # limitations under the License.
 
 from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.api.external_trace import ExternalTrace
+
+
+def bind_request(request, *args, **kwargs):
+    return request
 
 
 def sync_send_wrapper(wrapped, instance, args, kwargs):
-    raise NotImplementedError("TODO")
+    request = bind_request(*args, **kwargs)
+    with ExternalTrace('httpx', str(request.url), request.method):
+        return wrapped(*args, **kwargs)
 
 
 async def async_send_wrapper(wrapped, instance, args, kwargs):
-    raise NotImplementedError("TODO")
+    request = bind_request(*args, **kwargs)
+    with ExternalTrace('httpx', str(request.url), request.method):
+        return await wrapped(*args, **kwargs)
 
 
 def instrument_httpx_client(module):

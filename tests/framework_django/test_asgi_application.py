@@ -2,6 +2,7 @@ import os
 import pytest
 import django
 
+from newrelic.core.config import global_settings
 from newrelic.common.encoding_utils import gzip_decompress
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, override_application_settings,
@@ -147,4 +148,10 @@ def test_asgi_html_insertion_failed(application, url):
         rollup_metrics=rollup_metrics)
 def test_asgi_template_render(application):
     response = application.get('/template_tags')
+    assert response.status == 200
+
+
+@override_generic_settings(global_settings(), {'enabled': False})
+def test_asgi_nr_disabled(application):
+    response = application.get('/')
     assert response.status == 200

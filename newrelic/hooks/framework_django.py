@@ -35,6 +35,13 @@ from newrelic.common.object_wrapper import (FunctionWrapper, wrap_in_function,
 from newrelic.common.object_names import callable_name
 from newrelic.config import extra_settings
 from newrelic.core.config import global_settings, ignore_status_code
+from newrelic.common.coroutine import is_coroutine_function, is_asyncio_coroutine
+
+if six.PY3:
+    from newrelic.hooks.framework_django_py3 import (
+        _nr_wrapper_BaseHandler_get_response_async_,
+        _nr_wrap_converted_middleware_async_,
+    )
 
 _logger = logging.getLogger(__name__)
 
@@ -90,7 +97,7 @@ def should_add_browser_timing(response, transaction):
 
     # Need to be running within a valid web transaction.
 
-    if not transaction:
+    if not transaction or not transaction.enabled:
         return False
 
     # Only insert RUM JavaScript headers and footers if enabled
@@ -432,9 +439,7 @@ def _bind_get_response(request, *args, **kwargs):
 def _nr_wrapper_BaseHandler_get_response_(wrapped, instance, args, kwargs):
     response = wrapped(*args, **kwargs)
 
-    transaction = current_transaction()
-
-    if transaction is None:
+    if current_transaction() is None:
         return response
 
     request = _bind_get_response(*args, **kwargs)
@@ -457,6 +462,10 @@ def instrument_django_core_handlers_base(module):
 
     wrap_post_function(module, 'BaseHandler.load_middleware',
             insert_and_wrap_middleware)
+
+    if six.PY3 and hasattr(module.BaseHandler, 'get_response_async'):
+        wrap_function_wrapper(module, 'BaseHandler.get_response_async',
+                _nr_wrapper_BaseHandler_get_response_async_)
 
     wrap_function_wrapper(module, 'BaseHandler.get_response',
             _nr_wrapper_BaseHandler_get_response_)
@@ -1209,6 +1218,8 @@ def _nr_wrapper_convert_exception_to_response_(wrapped, instance, args,
     converted_middleware = wrapped(*args, **kwargs)
     name = callable_name(original_middleware)
 
+    if is_coroutine_function(converted_middleware) or is_asyncio_coroutine(converted_middleware):
+        return _nr_wrap_converted_middleware_async_(converted_middleware, name)
     return _nr_wrap_converted_middleware_(converted_middleware, name)
 
 
@@ -1222,3 +1233,13 @@ def instrument_django_core_handlers_exception(module):
         module.handle_uncaught_exception = (
                 wrap_handle_uncaught_exception(
                 module.handle_uncaught_exception))
+
+
+def instrument_django_core_handlers_asgi(module):
+    import django
+
+    framework = ('Django', django.get_version())
+
+    if hasattr(module, 'ASGIHandler'):
+        from newrelic.api.asgi_application import wrap_asgi_application
+        wrap_asgi_application(module, 'ASGIHandler.__call__', framework=framework)

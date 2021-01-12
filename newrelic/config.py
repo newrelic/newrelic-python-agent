@@ -2043,9 +2043,17 @@ def _process_module_builtin_defaults():
     _process_module_definition('asyncio.events',
             'newrelic.hooks.coroutines_asyncio',
             'instrument_asyncio_events')
+
+    _process_module_definition('asgiref.sync',
+            'newrelic.hooks.adapter_asgiref',
+            'instrument_asgiref_sync')
+
     _process_module_definition('django.core.handlers.base',
             'newrelic.hooks.framework_django',
             'instrument_django_core_handlers_base')
+    _process_module_definition('django.core.handlers.asgi',
+            'newrelic.hooks.framework_django',
+            'instrument_django_core_handlers_asgi')
     _process_module_definition('django.core.handlers.wsgi',
             'newrelic.hooks.framework_django',
             'instrument_django_core_handlers_wsgi')

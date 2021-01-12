@@ -26,6 +26,10 @@ scoped_metrics = [
     ('Function/django.urls.resolvers:URLResolver.resolve', 'present'),
 ]
 
+rollup_metrics = scoped_metrics + [
+    ('Python/Framework/Django/%s' % django.get_version(), 1),
+]
+
 
 @pytest.fixture
 def application():
@@ -36,14 +40,16 @@ def application():
 
 
 @validate_transaction_metrics('views:index',
-        scoped_metrics=[('Function/views:index', 1)] + scoped_metrics)
+        scoped_metrics=[('Function/views:index', 1)] + scoped_metrics,
+        rollup_metrics=rollup_metrics)
 def test_asgi_index(application):
     response = application.get('/')
     assert response.status == 200
 
 
 @validate_transaction_metrics('views:exception',
-        scoped_metrics=[('Function/views:exception', 1)] + scoped_metrics)
+        scoped_metrics=[('Function/views:exception', 1)] + scoped_metrics,
+        rollup_metrics=rollup_metrics)
 def test_asgi_exception(application):
     response = application.get('/exception')
     assert response.status == 500
@@ -52,7 +58,8 @@ def test_asgi_exception(application):
 @override_ignore_status_codes([410])
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:middleware_410',
-        scoped_metrics=[('Function/views:middleware_410', 1)] + scoped_metrics)
+        scoped_metrics=[('Function/views:middleware_410', 1)] + scoped_metrics,
+        rollup_metrics=rollup_metrics)
 def test_asgi_middleware_ignore_status_codes(application):
     response = application.get('/middleware_410')
     assert response.status == 410
@@ -61,7 +68,8 @@ def test_asgi_middleware_ignore_status_codes(application):
 @override_ignore_status_codes([403])
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:permission_denied',
-        scoped_metrics=[('Function/views:permission_denied', 1)] + scoped_metrics)
+        scoped_metrics=[('Function/views:permission_denied', 1)] + scoped_metrics,
+        rollup_metrics=rollup_metrics)
 def test_asgi_ignored_status_code(application):
     response = application.get('/permission_denied')
     assert response.status == 403
@@ -75,7 +83,8 @@ def test_asgi_class_based_view(application, url, view_name):
 
     @validate_transaction_errors(errors=[])
     @validate_transaction_metrics(view_name,
-            scoped_metrics=[('Function/' + view_name, 1)] + scoped_metrics)
+            scoped_metrics=[('Function/' + view_name, 1)] + scoped_metrics,
+            rollup_metrics=rollup_metrics)
     def _test():
         response = application.get(url)
         assert response.status == 200
@@ -134,7 +143,8 @@ def test_asgi_html_insertion_failed(application, url):
         scoped_metrics=[
                 ('Function/views:template_tags', 1),
                 ('Template/Render/main.html', 1),
-                ('Template/Render/results.html', 1)] + scoped_metrics)
+                ('Template/Render/results.html', 1)] + scoped_metrics,
+        rollup_metrics=rollup_metrics)
 def test_asgi_template_render(application):
     response = application.get('/template_tags')
     assert response.status == 200

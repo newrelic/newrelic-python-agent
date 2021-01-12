@@ -97,7 +97,7 @@ def should_add_browser_timing(response, transaction):
 
     # Need to be running within a valid web transaction.
 
-    if not transaction:
+    if not transaction or not transaction.enabled:
         return False
 
     # Only insert RUM JavaScript headers and footers if enabled

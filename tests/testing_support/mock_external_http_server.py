@@ -47,7 +47,15 @@ class MockExternalHTTPServer(threading.Thread):
         self.daemon = True
         handler = type('ResponseHandler',
                 (BaseHTTPServer.BaseHTTPRequestHandler, object,),
-                {'do_GET': handler})
+                {
+                    'do_GET': handler,
+                    'do_OPTIONS': handler,
+                    'do_HEAD': handler,
+                    'do_POST': handler,
+                    'do_PUT': handler,
+                    'do_PATCH': handler,
+                    'do_DELETE': handler,
+                })
 
         if port:
             self.httpd = BaseHTTPServer.HTTPServer(('localhost', port), handler)

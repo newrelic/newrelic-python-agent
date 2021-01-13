@@ -22,45 +22,29 @@ def bind_request(request, *args, **kwargs):
 
 
 def sync_send_wrapper(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
     request = bind_request(*args, **kwargs)
-    connection = instance
 
     with ExternalTrace("httpx", str(request.url), request.method) as tracer:
-        # Add the tracer to the connection object. The tracer will be
-        # used in getresponse() to add back into the external trace,
-        # after the trace has already completed, details from the
-        # response headers.
         if hasattr(tracer, "generate_request_headers"):
-            outgoing_headers = tracer.generate_request_headers(transaction)
+            outgoing_headers = tracer.generate_request_headers(tracer.transaction)
             for header_name, header_value in outgoing_headers:
                 # User headers should override our CAT headers
-                if not header_name in request.headers:
+                if header_name not in request.headers:
                     request.headers[header_name] = header_value
-
-            connection._nr_external_tracer = tracer
 
         return wrapped(*args, **kwargs)
 
 
 async def async_send_wrapper(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
     request = bind_request(*args, **kwargs)
-    connection = instance
 
     with ExternalTrace("httpx", str(request.url), request.method) as tracer:
-        # Add the tracer to the connection object. The tracer will be
-        # used in getresponse() to add back into the external trace,
-        # after the trace has already completed, details from the
-        # response headers.
         if hasattr(tracer, "generate_request_headers"):
-            outgoing_headers = tracer.generate_request_headers(transaction)
+            outgoing_headers = tracer.generate_request_headers(tracer.transaction)
             for header_name, header_value in outgoing_headers:
                 # User headers should override our CAT headers
-                if not header_name in request.headers:
+                if header_name not in request.headers:
                     request.headers[header_name] = header_value
-
-            connection._nr_external_tracer = tracer
 
         return await wrapped(*args, **kwargs)
 

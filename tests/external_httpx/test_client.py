@@ -116,7 +116,7 @@ def test_sync_cross_process_request(httpx, server, distributed_tracing, span_eve
         }
     )
     @validate_transaction_errors(errors=[])
-    @background_task()
+    @background_task(name="test_sync_cross_process_request")
     @validate_cross_process_headers
     def _test():
         transaction = current_transaction()
@@ -140,7 +140,7 @@ def test_sync_cross_process_request(httpx, server, distributed_tracing, span_eve
     ),
 )
 @validate_transaction_errors(errors=[])
-@background_task()
+@background_task(name="test_async_cross_process_request")
 @validate_cross_process_headers
 def test_async_cross_process_request(
     httpx, server, loop, distributed_tracing, span_events
@@ -171,22 +171,19 @@ def test_async_cross_process_request(
     }
 )
 @validate_transaction_errors(errors=[])
-@background_task()
+@background_task(name="test_sync_cross_process_override_headers")
 def test_sync_cross_process_override_headers(httpx, server, loop):
-    def _test():
-        transaction = current_transaction()
+    transaction = current_transaction()
 
-        with httpx.Client() as client:
-            response = client.get(
-                "http://localhost:%s" % server.port, headers={"newrelic": "1234"}
-            )
+    with httpx.Client() as client:
+        response = client.get(
+            "http://localhost:%s" % server.port, headers={"newrelic": "1234"}
+        )
 
-        transaction._test_request_headers = response.request.headers
+    transaction._test_request_headers = response.request.headers
 
-        assert response.status_code == 200
-        assert response.request.headers["newrelic"] == "1234"
-
-    _test()
+    assert response.status_code == 200
+    assert response.request.headers["newrelic"] == "1234"
 
 
 @override_application_settings(
@@ -196,7 +193,7 @@ def test_sync_cross_process_override_headers(httpx, server, loop):
     }
 )
 @validate_transaction_errors(errors=[])
-@background_task()
+@background_task(name="test_async_cross_process_override_headers")
 def test_async_cross_process_override_headers(httpx, server, loop):
     async def _test():
         async with httpx.AsyncClient() as client:

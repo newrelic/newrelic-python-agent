@@ -13,10 +13,13 @@
 # limitations under the License.
 
 import asyncio
-import pytest
 
-from testing_support.fixtures import (code_coverage_fixture,
-        collector_agent_registration_fixture, collector_available_fixture)
+import pytest
+from testing_support.fixtures import (
+    code_coverage_fixture,
+    collector_agent_registration_fixture,
+    collector_available_fixture,
+)
 from testing_support.mock_external_http_server import (
     MockExternalHTTPHResponseHeadersServer,
 )

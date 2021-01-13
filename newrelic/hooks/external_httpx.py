@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import current_transaction
+from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
 def bind_request(request, *args, **kwargs):
@@ -26,12 +26,12 @@ def sync_send_wrapper(wrapped, instance, args, kwargs):
     request = bind_request(*args, **kwargs)
     connection = instance
 
-    with ExternalTrace('httpx', str(request.url), request.method) as tracer:
+    with ExternalTrace("httpx", str(request.url), request.method) as tracer:
         # Add the tracer to the connection object. The tracer will be
         # used in getresponse() to add back into the external trace,
         # after the trace has already completed, details from the
         # response headers.
-        if hasattr(tracer, 'generate_request_headers'):
+        if hasattr(tracer, "generate_request_headers"):
             outgoing_headers = dict(tracer.generate_request_headers(transaction))
 
             # Preserve existing headers and add our outgoing headers
@@ -49,12 +49,12 @@ async def async_send_wrapper(wrapped, instance, args, kwargs):
     request = bind_request(*args, **kwargs)
     connection = instance
 
-    with ExternalTrace('httpx', str(request.url), request.method) as tracer:
+    with ExternalTrace("httpx", str(request.url), request.method) as tracer:
         # Add the tracer to the connection object. The tracer will be
         # used in getresponse() to add back into the external trace,
         # after the trace has already completed, details from the
         # response headers.
-        if hasattr(tracer, 'generate_request_headers'):
+        if hasattr(tracer, "generate_request_headers"):
             outgoing_headers = dict(tracer.generate_request_headers(transaction))
 
             # Preserve existing headers and add our outgoing headers

@@ -162,3 +162,51 @@ def test_async_cross_process_request(
     transaction._test_request_headers = response.request.headers
 
     assert response.status_code == 200
+
+
+@override_application_settings(
+    {
+        "distributed_tracing.enabled": True,
+        "span_events.enabled": True,
+    }
+)
+@validate_transaction_errors(errors=[])
+@background_task()
+def test_sync_cross_process_override_headers(httpx, server, loop):
+    def _test():
+        transaction = current_transaction()
+
+        with httpx.Client() as client:
+            response = client.get(
+                "http://localhost:%s" % server.port, headers={"newrelic": "1234"}
+            )
+
+        transaction._test_request_headers = response.request.headers
+
+        assert response.status_code == 200
+        assert response.request.headers["newrelic"] == "1234"
+
+    _test()
+
+
+@override_application_settings(
+    {
+        "distributed_tracing.enabled": True,
+        "span_events.enabled": True,
+    }
+)
+@validate_transaction_errors(errors=[])
+@background_task()
+def test_async_cross_process_override_headers(httpx, server, loop):
+    async def _test():
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                "http://localhost:%s" % server.port, headers={"newrelic": "1234"}
+            )
+
+        return response
+
+    response = loop.run_until_complete(_test())
+
+    assert response.status_code == 200
+    assert response.request.headers["newrelic"] == "1234"

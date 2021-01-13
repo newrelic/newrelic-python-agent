@@ -60,7 +60,7 @@ def test_base_web_transaction(use_bytes):
         'Content-Length': '0',
         'Content-Type': 'text/plain',
         'Host': 'localhost',
-        'Referer': 'http://example.com?q=1',
+        'Referer': 'http://example.com?q=1&boat=⛵',
         'User-Agent': 'potato',
         'X-Request-Start': str(time.time() - 0.2),
         'newRelic': 'invalid',

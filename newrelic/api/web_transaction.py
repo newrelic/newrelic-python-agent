@@ -126,6 +126,7 @@ def _parse_synthetics_header(header):
 
 
 def _remove_query_string(url):
+    url = ensure_str(url)
     out = urlparse.urlsplit(url)
     return urlparse.urlunsplit((out.scheme, out.netloc, out.path, '', ''))
 

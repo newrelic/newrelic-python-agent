@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright 2010 New Relic, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,6 +22,7 @@ from newrelic.api.web_transaction import WebTransaction
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_attributes)
 from testing_support.sample_applications import simple_app
+import newrelic.packages.six as six
 application = webtest.TestApp(simple_app)
 
 
@@ -71,7 +73,10 @@ def test_base_web_transaction(use_bytes):
 
         for name, value in request_headers.items():
             name = name.encode('utf-8')
-            value = value.encode('utf-8')
+            try:
+                value = value.encode('utf-8')
+            except UnicodeDecodeError:
+                assert six.PY2
             byte_headers[name] = value
 
         request_headers = byte_headers

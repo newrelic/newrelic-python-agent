@@ -14,6 +14,7 @@
 
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.api.external_trace import ExternalTrace
+from newrelic.api.transaction import current_transaction
 
 
 def bind_request(request, *args, **kwargs):
@@ -21,14 +22,48 @@ def bind_request(request, *args, **kwargs):
 
 
 def sync_send_wrapper(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
     request = bind_request(*args, **kwargs)
-    with ExternalTrace('httpx', str(request.url), request.method):
+    connection = instance
+
+    with ExternalTrace('httpx', str(request.url), request.method) as tracer:
+        # Add the tracer to the connection object. The tracer will be
+        # used in getresponse() to add back into the external trace,
+        # after the trace has already completed, details from the
+        # response headers.
+        if hasattr(tracer, 'generate_request_headers'):
+            outgoing_headers = dict(tracer.generate_request_headers(transaction))
+
+            # Preserve existing headers and add our outgoing headers
+            client_headers = request.headers
+            client_headers.update(outgoing_headers)
+            request.headers = client_headers
+
+            connection._nr_external_tracer = tracer
+
         return wrapped(*args, **kwargs)
 
 
 async def async_send_wrapper(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
     request = bind_request(*args, **kwargs)
-    with ExternalTrace('httpx', str(request.url), request.method):
+    connection = instance
+
+    with ExternalTrace('httpx', str(request.url), request.method) as tracer:
+        # Add the tracer to the connection object. The tracer will be
+        # used in getresponse() to add back into the external trace,
+        # after the trace has already completed, details from the
+        # response headers.
+        if hasattr(tracer, 'generate_request_headers'):
+            outgoing_headers = dict(tracer.generate_request_headers(transaction))
+
+            # Preserve existing headers and add our outgoing headers
+            client_headers = request.headers
+            client_headers.update(outgoing_headers)
+            request.headers = client_headers
+
+            connection._nr_external_tracer = tracer
+
         return await wrapped(*args, **kwargs)
 
 

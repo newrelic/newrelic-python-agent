@@ -32,12 +32,11 @@ def sync_send_wrapper(wrapped, instance, args, kwargs):
         # after the trace has already completed, details from the
         # response headers.
         if hasattr(tracer, "generate_request_headers"):
-            outgoing_headers = dict(tracer.generate_request_headers(transaction))
-
-            # Preserve existing headers and add our outgoing headers
-            client_headers = request.headers
-            client_headers.update(outgoing_headers)
-            request.headers = client_headers
+            outgoing_headers = tracer.generate_request_headers(transaction)
+            for header_name, header_value in outgoing_headers:
+                # User headers should override our CAT headers
+                if not header_name in request.headers:
+                    request.headers[header_name] = header_value
 
             connection._nr_external_tracer = tracer
 
@@ -55,12 +54,11 @@ async def async_send_wrapper(wrapped, instance, args, kwargs):
         # after the trace has already completed, details from the
         # response headers.
         if hasattr(tracer, "generate_request_headers"):
-            outgoing_headers = dict(tracer.generate_request_headers(transaction))
-
-            # Preserve existing headers and add our outgoing headers
-            client_headers = request.headers
-            client_headers.update(outgoing_headers)
-            request.headers = client_headers
+            outgoing_headers = tracer.generate_request_headers(transaction)
+            for header_name, header_value in outgoing_headers:
+                # User headers should override our CAT headers
+                if not header_name in request.headers:
+                    request.headers[header_name] = header_value
 
             connection._nr_external_tracer = tracer
 

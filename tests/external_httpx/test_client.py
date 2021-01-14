@@ -247,6 +247,7 @@ def test_async_cross_process_override_headers(httpx, server, loop):
     assert response.request.headers["newrelic"] == "1234"
 
 
+
 @pytest.mark.parametrize('cat_enabled', [True, False])
 @pytest.mark.parametrize('response_code', [200, 500])
 def test_sync_client_cat_response_processing(cat_enabled, response_code, server, httpx):
@@ -302,8 +303,6 @@ def test_async_client_cat_response_processing(cat_enabled, response_code, httpx,
         ('ExternalTransaction/localhost:%s/1#1/WebTransaction/'
                 'Function/app:beep' % server.port, 1 if cat_enabled else None),
     ]
-
-    expected_metrics = []
 
     @validate_transaction_metrics(
         'test_async_client_cat_response_processing',

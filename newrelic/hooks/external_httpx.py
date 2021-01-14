@@ -32,7 +32,11 @@ def sync_send_wrapper(wrapped, instance, args, kwargs):
                 if header_name not in request.headers:
                     request.headers[header_name] = header_value
 
-        return wrapped(*args, **kwargs)
+        response = wrapped(*args, **kwargs)
+        headers = dict(getattr(response, 'headers', None)).items()
+        tracer.process_response(getattr(response, 'status_code', None), headers)
+
+        return response
 
 
 async def async_send_wrapper(wrapped, instance, args, kwargs):
@@ -46,7 +50,11 @@ async def async_send_wrapper(wrapped, instance, args, kwargs):
                 if header_name not in request.headers:
                     request.headers[header_name] = header_value
 
-        return await wrapped(*args, **kwargs)
+        response = await wrapped(*args, **kwargs)
+        headers = dict(getattr(response, 'headers', None)).items()
+        tracer.process_response(getattr(response, 'status_code', None), headers)
+
+        return response
 
 
 def instrument_httpx_client(module):

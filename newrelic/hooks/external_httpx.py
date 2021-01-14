@@ -12,9 +12,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import abc
+
 from newrelic.api.external_trace import ExternalTrace
+from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
+
+
+def newrelic_event_hook(response):
+    tracer = current_trace()
+    headers = dict(getattr(response, "headers", None)).items()
+    tracer.process_response(getattr(response, "status_code", None), headers)
+
+
+def newrelic_first_gen(l):
+    yield newrelic_event_hook
+    while True:
+        try:
+            yield next(l)
+        except StopIteration:
+            break
+
+
+class NewRelicFirstList(list):
+    def __iter__(self):
+        l = super().__iter__()
+        return iter(newrelic_first_gen(l))
+
+
+class NewRelicFirstDict(dict):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__setitem__("response", self["response"])
+
+    def __setitem__(self, key, value):
+        if key == "response":
+            value = NewRelicFirstList(value)
+
+        super().__setitem__(key, value)
 
 
 def bind_request(request, *args, **kwargs):
@@ -33,8 +69,8 @@ def sync_send_wrapper(wrapped, instance, args, kwargs):
                     request.headers[header_name] = header_value
 
         response = wrapped(*args, **kwargs)
-        headers = dict(getattr(response, 'headers', None)).items()
-        tracer.process_response(getattr(response, 'status_code', None), headers)
+        headers = dict(getattr(response, "headers", None)).items()
+        tracer.process_response(getattr(response, "status_code", None), headers)
 
         return response
 
@@ -51,12 +87,34 @@ async def async_send_wrapper(wrapped, instance, args, kwargs):
                     request.headers[header_name] = header_value
 
         response = await wrapped(*args, **kwargs)
-        headers = dict(getattr(response, 'headers', None)).items()
-        tracer.process_response(getattr(response, 'status_code', None), headers)
+        headers = dict(getattr(response, "headers", None)).items()
+        tracer.process_response(getattr(response, "status_code", None), headers)
 
         return response
 
 
+def patch_response_hooks(wrapped, instance, args, kwargs):
+    result = wrapped(*args, **kwargs)
+    instance._event_hooks["response"] = NewRelicFirstList(
+        instance._event_hooks["response"]
+    )
+    return result
+
+
+@property
+def nr_first_event_hooks(self):
+    return getattr(self, "_nr_event_hooks")
+
+
+@nr_first_event_hooks.setter
+def nr_first_event_hooks(self, value):
+    value = NewRelicFirstDict(value)
+    self._nr_event_hooks = value
+
+
 def instrument_httpx_client(module):
+    module.Client._event_hooks = nr_first_event_hooks
+    module.AsyncClient._event_hooks = nr_first_event_hooks
+
     wrap_function_wrapper(module, "Client.send", sync_send_wrapper)
     wrap_function_wrapper(module, "AsyncClient.send", async_send_wrapper)

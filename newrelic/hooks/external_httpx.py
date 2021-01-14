@@ -26,8 +26,17 @@ def newrelic_event_hook(response):
     tracer.process_response(getattr(response, "status_code", None), headers)
 
 
-def newrelic_first_gen(l):
-    yield newrelic_event_hook
+async def newrelic_event_hook_async(response):
+    tracer = current_trace()
+    headers = dict(getattr(response, "headers", None)).items()
+    tracer.process_response(getattr(response, "status_code", None), headers)
+
+
+def newrelic_first_gen(l, is_async=False):
+    if is_async:
+        yield newrelic_event_hook_async
+    else:
+        yield newrelic_event_hook
     while True:
         try:
             yield next(l)
@@ -36,19 +45,24 @@ def newrelic_first_gen(l):
 
 
 class NewRelicFirstList(list):
+    def __init__(self, *args, is_async=False, **kwargs):
+        super(NewRelicFirstList, self).__init__(*args, **kwargs)
+        self.is_async = is_async
+
     def __iter__(self):
         l = super().__iter__()
-        return iter(newrelic_first_gen(l))
+        return iter(newrelic_first_gen(l, self.is_async))
 
 
 class NewRelicFirstDict(dict):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, is_async=False, **kwargs):
         super().__init__(*args, **kwargs)
+        self.is_async = is_async
         self.__setitem__("response", self["response"])
 
     def __setitem__(self, key, value):
         if key == "response":
-            value = NewRelicFirstList(value)
+            value = NewRelicFirstList(value, is_async=self.is_async)
 
         super().__setitem__(key, value)
 
@@ -108,13 +122,24 @@ def nr_first_event_hooks(self):
 
 @nr_first_event_hooks.setter
 def nr_first_event_hooks(self, value):
-    value = NewRelicFirstDict(value)
+    value = NewRelicFirstDict(value, is_async=False)
+    self._nr_event_hooks = value
+
+
+@property
+def nr_first_event_hooks_async(self):
+    return getattr(self, "_nr_event_hooks")
+
+
+@nr_first_event_hooks_async.setter
+def nr_first_event_hooks_async(self, value):
+    value = NewRelicFirstDict(value, is_async=True)
     self._nr_event_hooks = value
 
 
 def instrument_httpx_client(module):
     module.Client._event_hooks = nr_first_event_hooks
-    module.AsyncClient._event_hooks = nr_first_event_hooks
+    module.AsyncClient._event_hooks = nr_first_event_hooks_async
 
     wrap_function_wrapper(module, "Client.send", sync_send_wrapper)
     wrap_function_wrapper(module, "AsyncClient.send", async_send_wrapper)

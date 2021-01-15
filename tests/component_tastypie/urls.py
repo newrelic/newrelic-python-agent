@@ -15,7 +15,10 @@
 try:
     from django.conf.urls import url, include
 except ImportError:
-    from django.conf.urls.defaults import url, include
+    try:
+        from django.conf.urls.defaults import url, include
+    except ImportError:
+        from django.urls import re_path as url, include
 
 from tastypie.api import Api
 

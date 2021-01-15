@@ -107,14 +107,6 @@ async def async_send_wrapper(wrapped, instance, args, kwargs):
         return response
 
 
-def patch_response_hooks(wrapped, instance, args, kwargs):
-    result = wrapped(*args, **kwargs)
-    instance._event_hooks["response"] = NewRelicFirstList(
-        instance._event_hooks["response"]
-    )
-    return result
-
-
 @property
 def nr_first_event_hooks(self):
     return getattr(self, "_nr_event_hooks")

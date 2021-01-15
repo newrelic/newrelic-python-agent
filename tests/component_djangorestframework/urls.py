@@ -15,7 +15,10 @@
 try:
     from django.conf.urls.defaults import url
 except ImportError:
-    from django.conf.urls import url
+    try:
+        from django.conf.urls import url
+    except ImportError:
+        from django.urls import re_path as url
 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response

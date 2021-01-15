@@ -83,7 +83,7 @@ def sync_send_wrapper(wrapped, instance, args, kwargs):
                     request.headers[header_name] = header_value
 
         response = wrapped(*args, **kwargs)
-        headers = dict(getattr(response, "headers", None)).items()
+        headers = dict(getattr(response, "headers", ())).items()
         tracer.process_response(getattr(response, "status_code", None), headers)
 
         return response
@@ -101,7 +101,7 @@ async def async_send_wrapper(wrapped, instance, args, kwargs):
                     request.headers[header_name] = header_value
 
         response = await wrapped(*args, **kwargs)
-        headers = dict(getattr(response, "headers", None)).items()
+        headers = dict(getattr(response, "headers", ())).items()
         tracer.process_response(getattr(response, "status_code", None), headers)
 
         return response

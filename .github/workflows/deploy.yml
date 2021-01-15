@@ -37,9 +37,16 @@ jobs:
       run: |
         pip install -U pip
         pip install -U wheel setuptools twine
+    - name: Set up QEMU
+      id: qemu
+      uses: docker/setup-qemu-action@v1
     - name: Build Source Package
       run: python setup.py sdist
-    - name: Build Manylinux Wheels
+    - name: Build Manylinux aarch64 Wheels
+      uses: RalfG/python-wheels-manylinux-build@v0.3.3-manylinux2014_aarch64
+      with:
+        python-versions: 'cp36-cp36m cp37-cp37m cp38-cp38 cp39-cp39'
+    - name: Build Manylinux x86_64 Wheels
       uses: RalfG/python-wheels-manylinux-build@f7c9db24751e53d2d3c90edc2b04a9ffaa96cd01
       with:
         python-versions: 'cp27-cp27m cp36-cp36m cp37-cp37m cp38-cp38 cp39-cp39'

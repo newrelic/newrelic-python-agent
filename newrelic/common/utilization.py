@@ -17,6 +17,7 @@ import os
 import re
 import socket
 import string
+import sys
 import threading
 
 from newrelic.common.agent_http import InsecureHttpClient
@@ -301,3 +302,38 @@ class KubernetesUtilization(CommonUtilization):
             v = v.decode('utf-8')
 
         return {'kubernetes_service_host': v}
+
+
+class BootIdUtilization(CommonUtilization):
+    VENDOR_NAME = 'boot_id'
+    METADATA_URL = '/proc/sys/kernel/random/boot_id'
+
+    @classmethod
+    def fetch(cls):
+        if not sys.platform.startswith('linux'):
+            return
+
+        try:
+            with open(cls.METADATA_URL, 'rb') as f:
+                return f.readline().decode('ascii')
+        except:
+            # There are all sorts of exceptions that can occur here
+            # (i.e. permissions, non-existent file, etc)
+            cls.record_error(cls.METADATA_URL, 'File read error.')
+            pass
+
+    @staticmethod
+    def get_values(value):
+        return value
+
+    @classmethod
+    def sanitize(cls, value):
+        if value is None:
+            return
+
+        stripped = value.strip()
+
+        if len(stripped) != 36:
+            cls.record_error(cls.METADATA_URL, stripped)
+
+        return stripped[:128] or None

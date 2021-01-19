@@ -18,7 +18,7 @@ import pytest
 import sys
 import tempfile
 
-from newrelic.common.system_info import BootIdUtilization
+from newrelic.common.utilization import BootIdUtilization
 
 from testing_support.fixtures import validate_internal_metrics
 

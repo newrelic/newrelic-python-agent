@@ -41,7 +41,7 @@ from newrelic.common.encoding_utils import (unpack_field, json_encode,
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (transient_function_wrapper,
         function_wrapper, wrap_function_wrapper, ObjectProxy)
-from newrelic.common.system_info import LOCALHOST_EQUIVALENTS
+from newrelic.common.constants import LOCALHOST_EQUIVALENTS
 
 from newrelic.config import initialize
 

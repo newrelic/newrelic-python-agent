@@ -22,13 +22,13 @@ from newrelic.common.object_wrapper import wrap_function_wrapper
 
 def newrelic_event_hook(response):
     tracer = current_trace()
-    headers = dict(getattr(response, "headers", None)).items()
+    headers = dict(getattr(response, "headers", ())).items()
     tracer.process_response(getattr(response, "status_code", None), headers)
 
 
 async def newrelic_event_hook_async(response):
     tracer = current_trace()
-    headers = dict(getattr(response, "headers", None)).items()
+    headers = dict(getattr(response, "headers", ())).items()
     tracer.process_response(getattr(response, "status_code", None), headers)
 
 

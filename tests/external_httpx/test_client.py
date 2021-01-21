@@ -20,6 +20,7 @@ from testing_support.fixtures import (
     validate_transaction_errors,
     validate_transaction_metrics,
     validate_tt_segment_params,
+    override_generic_settings
 )
 from testing_support.mock_external_http_server import (
     MockExternalHTTPHResponseHeadersServer,
@@ -31,6 +32,8 @@ from testing_support.validators.validate_span_events import validate_span_events
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction
+from newrelic.api.time_trace import current_trace
+from newrelic.core.config import global_settings
 
 ENCODING_KEY = "1234567890123456789012345678901234567890"
 SCOPED_METRICS = []
@@ -438,3 +441,37 @@ def test_async_client_event_hook_exception(httpx, server, loop):
             # Don't crash if response isn't specified
             client.event_hooks = {"request": [empty_hook]}
             make_request(client, exc_expected=False)
+
+
+@override_generic_settings(global_settings(), {
+    'enabled': False,
+})
+def test_sync_nr_disabled(httpx, server):
+    global CAT_RESPONSE_CODE
+    CAT_RESPONSE_CODE = 200
+
+    with httpx.Client() as client:
+        trace = current_trace()
+        response = client.get("http://localhost:%s" % server.port)
+
+        assert response.status_code == 200
+        assert trace is None
+
+
+@override_generic_settings(global_settings(), {
+    'enabled': False,
+})
+def test_async_nr_disabled(httpx, server, loop):
+    global CAT_RESPONSE_CODE
+    CAT_RESPONSE_CODE = 200
+
+    async def _test():
+        async with httpx.AsyncClient() as client:
+            response = await client.get("http://localhost:%s" % server.port)
+
+        return response
+
+    trace = current_trace()
+    response = loop.run_until_complete(_test())
+    assert response.status_code == 200
+    assert trace is None

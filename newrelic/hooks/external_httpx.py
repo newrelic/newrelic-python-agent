@@ -15,21 +15,21 @@
 from collections import abc
 
 from newrelic.api.external_trace import ExternalTrace
-from newrelic.api.time_trace import current_trace
-from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
 def newrelic_event_hook(response):
-    tracer = current_trace()
-    headers = dict(getattr(response, "headers", ())).items()
-    tracer.process_response(getattr(response, "status_code", None), headers)
+    tracer = getattr(response.request, "_nr_trace", None)
+    if tracer is not None:
+        headers = dict(getattr(response, "headers", ())).items()
+        tracer.process_response(getattr(response, "status_code", None), headers)
 
 
 async def newrelic_event_hook_async(response):
-    tracer = current_trace()
-    headers = dict(getattr(response, "headers", ())).items()
-    tracer.process_response(getattr(response, "status_code", None), headers)
+    tracer = getattr(response.request, "_nr_trace", None)
+    if tracer is not None:
+        headers = dict(getattr(response, "headers", ())).items()
+        tracer.process_response(getattr(response, "status_code", None), headers)
 
 
 def newrelic_first_gen(l, is_async=False):
@@ -76,17 +76,14 @@ def sync_send_wrapper(wrapped, instance, args, kwargs):
 
     with ExternalTrace("httpx", str(request.url), request.method) as tracer:
         if hasattr(tracer, "generate_request_headers"):
+            request._nr_trace = tracer
             outgoing_headers = tracer.generate_request_headers(tracer.transaction)
             for header_name, header_value in outgoing_headers:
                 # User headers should override our CAT headers
                 if header_name not in request.headers:
                     request.headers[header_name] = header_value
 
-        response = wrapped(*args, **kwargs)
-        headers = dict(getattr(response, "headers", ())).items()
-        tracer.process_response(getattr(response, "status_code", None), headers)
-
-        return response
+        return wrapped(*args, **kwargs)
 
 
 async def async_send_wrapper(wrapped, instance, args, kwargs):
@@ -94,17 +91,14 @@ async def async_send_wrapper(wrapped, instance, args, kwargs):
 
     with ExternalTrace("httpx", str(request.url), request.method) as tracer:
         if hasattr(tracer, "generate_request_headers"):
+            request._nr_trace = tracer
             outgoing_headers = tracer.generate_request_headers(tracer.transaction)
             for header_name, header_value in outgoing_headers:
                 # User headers should override our CAT headers
                 if header_name not in request.headers:
                     request.headers[header_name] = header_value
 
-        response = await wrapped(*args, **kwargs)
-        headers = dict(getattr(response, "headers", ())).items()
-        tracer.process_response(getattr(response, "status_code", None), headers)
-
-        return response
+        return await wrapped(*args, **kwargs)
 
 
 @property

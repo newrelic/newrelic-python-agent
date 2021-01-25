@@ -16,7 +16,8 @@ import gc
 
 from newrelic.samplers.decorators import data_source_factory
 
-@data_source_factory(name='Garbage Collector Metrics')
+
+@data_source_factory(name="Garbage Collector Metrics")
 class _GCDataSource(object):
     def __init__(self, settings, environ):
         pass
@@ -28,19 +29,23 @@ class _GCDataSource(object):
         pass
 
     def __call__(self):
-        counts = gc.get_count()
-
-        yield ('GC/objects/all', {'count': sum(counts)})
-        for gen, count in enumerate(counts):
-            yield ('GC/objects/generation/%d' % (gen, ), {'count': count})
+        if hasattr(gc, "get_count"):
+            counts = gc.get_count()
+            yield ("GC/objects/all", {"count": sum(counts)})
+            for gen, count in enumerate(counts):
+                yield ("GC/objects/generation/%d" % (gen,), {"count": count})
 
         if hasattr(gc, "get_stats"):
             stats = gc.get_stats()
-            for stat_name in stats[0].keys():
-                count = sum(stat[stat_name] for stat in stats)
-                yield ('GC/stats/%s/all' % (stat_name, ), {'count': count})
-                for gen, stat in enumerate(stats):
-                    yield ('GC/stats/%s/generation/%d' % (stat_name, gen), {'count': stat[stat_name]})
+            if isinstance(stats, list):
+                for stat_name in stats[0].keys():
+                    count = sum(stat[stat_name] for stat in stats)
+                    yield ("GC/stats/%s/all" % (stat_name,), {"count": count})
+                    for gen, stat in enumerate(stats):
+                        yield (
+                            "GC/stats/%s/generation/%d" % (stat_name, gen),
+                            {"count": stat[stat_name]},
+                        )
 
 
 garbage_collector_data_source = _GCDataSource

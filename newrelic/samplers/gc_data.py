@@ -34,9 +34,11 @@ class _GCDataSource(object):
             total_time = time.time() - self.start_time
             self.gc_time_metrics.record_custom_metric(
                     'GC/time/all', total_time)
-            for gen in range(0, current_generation+1):
-                self.gc_time_metrics.record_custom_metric(
-                    'GC/time/generation/%d' % (gen, ), total_time)
+            for gen in range(0, 3):
+                if gen <= current_generation:
+                    self.gc_time_metrics.record_custom_metric(
+                        'GC/time/generation/%d' % (gen, ), total_time)
+
 
     def start(self):
         if hasattr(gc, 'callbacks'):
@@ -44,10 +46,15 @@ class _GCDataSource(object):
 
 
     def stop(self):
-        self.gc_time_metrics.reset_metric_stats()
-        self.start_time = 0.0
+        # The callback must be removed before resetting the metrics tables.
+        # If it isn't, it's possible to be interrupted by the gc and to have more
+        # metrics appear in the table that should be empty.
         if hasattr(gc, 'callbacks') and self.record_gc in gc.callbacks:
             gc.callbacks.remove(self.record_gc)
+
+        self.gc_time_metrics.reset_metric_stats()
+        self.start_time = 0.0
+
 
     def __call__(self):
         if hasattr(gc, "get_count"):
@@ -68,7 +75,15 @@ class _GCDataSource(object):
                             {"count": stat[stat_name]},
                         )
 
-        for metric in self.gc_time_metrics.metrics():
+        # In order to avoid a concurrency issue with getting interrupted by the
+        # garbage collector, we save a reference to the old metrics table, and overwrite
+        # self.gc_time_metrics with a new empty table via reset_metric_stats().
+        # This guards against losing data points, or having inconsistent data points
+        # reported between /all and the totals of /generation/%d metrics.
+        gc_time_metrics = self.gc_time_metrics.metrics()
+        self.gc_time_metrics.reset_metric_stats()
+        
+        for metric in gc_time_metrics:
             raw_metric = metric[1]
             yield metric[0], {
                 'count': raw_metric.call_count,
@@ -77,8 +92,6 @@ class _GCDataSource(object):
                 'max': raw_metric.max_call_time,
                 'sum_of_squares': raw_metric.sum_of_squares,
             }
-
-        self.gc_time_metrics.reset_metric_stats()
 
 
 garbage_collector_data_source = _GCDataSource

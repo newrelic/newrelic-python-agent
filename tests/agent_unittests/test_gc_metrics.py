@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import gc
+
 import pytest
 
 from newrelic.packages import six
@@ -55,6 +57,7 @@ else:
 
 
 def test_gc_metrics_collection(data_source):
+    gc.collect()
     metrics_table = dict(data_source() or ())
 
     for metric in EXPECTED_METRICS:

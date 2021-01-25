@@ -27,9 +27,22 @@ EXPECTED_METRICS = (
     "GC/objects/generation/0",
     "GC/objects/generation/1",
     "GC/objects/generation/2",
+    "GC/stats/collections/all",
+    "GC/stats/collections/generation/0",
+    "GC/stats/collections/generation/1",
+    "GC/stats/collections/generation/2",
+    "GC/stats/collected/all",
+    "GC/stats/collected/generation/0",
+    "GC/stats/collected/generation/1",
+    "GC/stats/collected/generation/2",
+    "GC/stats/uncollectable/all",
+    "GC/stats/uncollectable/generation/0",
+    "GC/stats/uncollectable/generation/1",
+    "GC/stats/uncollectable/generation/2",
 )
 
-def test_gc_data_source(data_source):
+
+def test_gc_metrics_collection(data_source):
     metrics_table = dict(data_source() or ())
 
     for metric in EXPECTED_METRICS:

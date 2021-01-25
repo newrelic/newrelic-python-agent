@@ -26,8 +26,7 @@ class _GCDataSource(object):
         self.start_time = 0.0
 
     def record_gc(self, phase, info):
-        # TODO: maybe use this
-        # generation = info['generation']
+        current_generation = info['generation']
 
         if phase == 'start':
             self.start_time = time.time()
@@ -35,6 +34,9 @@ class _GCDataSource(object):
             total_time = time.time() - self.start_time
             self.gc_time_metrics.record_custom_metric(
                     'GC/time/all', total_time)
+            for gen in range(0, current_generation+1):
+                self.gc_time_metrics.record_custom_metric(
+                    'GC/time/generation/%d' % (gen, ), total_time)
 
     def start(self):
         if hasattr(gc, 'callbacks'):
@@ -42,7 +44,6 @@ class _GCDataSource(object):
 
 
     def stop(self):
-
         self.gc_time_metrics.reset_metric_stats()
         self.start_time = 0.0
         if hasattr(gc, 'callbacks') and self.record_gc in gc.callbacks:

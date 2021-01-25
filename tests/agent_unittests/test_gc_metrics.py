@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import gc
+import platform
 
 import pytest
 
@@ -56,6 +57,12 @@ else:
     )
 
 
+@pytest.mark.xfail(
+    platform.python_implementation() == "PyPy",
+    reason="Not implemented on PyPy yet",
+    strict=True,
+    raises=AssertionError,
+)
 def test_gc_metrics_collection(data_source):
     gc.collect()
     metrics_table = dict(data_source() or ())

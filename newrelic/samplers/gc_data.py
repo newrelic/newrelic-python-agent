@@ -34,5 +34,13 @@ class _GCDataSource(object):
         for gen, count in enumerate(counts):
             yield ('GC/objects/generation/%d' % (gen, ), {'count': count})
 
+        if hasattr(gc, "get_stats"):
+            stats = gc.get_stats()
+            for stat_name in stats[0].keys():
+                count = sum(stat[stat_name] for stat in stats)
+                yield ('GC/stats/%s/all' % (stat_name, ), {'count': count})
+                for gen, stat in enumerate(stats):
+                    yield ('GC/stats/%s/generation/%d' % (stat_name, gen), {'count': stat[stat_name]})
+
 
 garbage_collector_data_source = _GCDataSource

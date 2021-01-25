@@ -19,7 +19,10 @@ from newrelic.samplers.gc_data import garbage_collector_data_source
 
 @pytest.fixture
 def data_source():
-    yield garbage_collector_data_source(settings=())["factory"](environ=())
+    sampler = garbage_collector_data_source(settings=())["factory"](environ=())
+    sampler.start()
+    yield sampler
+    sampler.stop()
 
 
 EXPECTED_METRICS = (

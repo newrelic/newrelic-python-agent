@@ -14,6 +14,7 @@
 
 import pytest
 
+from newrelic.packages import six
 from newrelic.samplers.gc_data import garbage_collector_data_source
 
 
@@ -25,24 +26,32 @@ def data_source():
     sampler.stop()
 
 
-EXPECTED_METRICS = (
-    "GC/objects/all",
-    "GC/objects/generation/0",
-    "GC/objects/generation/1",
-    "GC/objects/generation/2",
-    "GC/stats/collections/all",
-    "GC/stats/collections/generation/0",
-    "GC/stats/collections/generation/1",
-    "GC/stats/collections/generation/2",
-    "GC/stats/collected/all",
-    "GC/stats/collected/generation/0",
-    "GC/stats/collected/generation/1",
-    "GC/stats/collected/generation/2",
-    "GC/stats/uncollectable/all",
-    "GC/stats/uncollectable/generation/0",
-    "GC/stats/uncollectable/generation/1",
-    "GC/stats/uncollectable/generation/2",
-)
+if six.PY2:
+    EXPECTED_METRICS = (
+        "GC/objects/all",
+        "GC/objects/generation/0",
+        "GC/objects/generation/1",
+        "GC/objects/generation/2",
+    )
+else:
+    EXPECTED_METRICS = (
+        "GC/objects/all",
+        "GC/objects/generation/0",
+        "GC/objects/generation/1",
+        "GC/objects/generation/2",
+        "GC/stats/collections/all",
+        "GC/stats/collections/generation/0",
+        "GC/stats/collections/generation/1",
+        "GC/stats/collections/generation/2",
+        "GC/stats/collected/all",
+        "GC/stats/collected/generation/0",
+        "GC/stats/collected/generation/1",
+        "GC/stats/collected/generation/2",
+        "GC/stats/uncollectable/all",
+        "GC/stats/uncollectable/generation/0",
+        "GC/stats/uncollectable/generation/1",
+        "GC/stats/uncollectable/generation/2",
+    )
 
 
 def test_gc_metrics_collection(data_source):

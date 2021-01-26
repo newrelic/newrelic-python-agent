@@ -54,6 +54,10 @@ else:
         "GC/stats/uncollectable/generation/0",
         "GC/stats/uncollectable/generation/1",
         "GC/stats/uncollectable/generation/2",
+        "GC/time/all",
+        "GC/time/generation/0",
+        "GC/time/generation/1",
+        "GC/time/generation/2",
     )
 
 

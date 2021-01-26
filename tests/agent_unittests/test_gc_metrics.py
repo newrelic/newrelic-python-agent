@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import gc
 import platform
 
@@ -29,35 +30,37 @@ def data_source():
     sampler.stop()
 
 
+PID = os.getpid()
+
 if six.PY2:
     EXPECTED_METRICS = (
-        "GC/objects/all",
-        "GC/objects/0",
-        "GC/objects/1",
-        "GC/objects/2",
+        "GC/objects/%d/all" % PID,
+        "GC/objects/%d/0" % PID,
+        "GC/objects/%d/1" % PID,
+        "GC/objects/%d/2" % PID,
     )
 else:
     EXPECTED_METRICS = (
-        "GC/objects/all",
-        "GC/objects/0",
-        "GC/objects/1",
-        "GC/objects/2",
-        "GC/collections/all",
-        "GC/collections/0",
-        "GC/collections/1",
-        "GC/collections/2",
-        "GC/collected/all",
-        "GC/collected/0",
-        "GC/collected/1",
-        "GC/collected/2",
-        "GC/uncollectable/all",
-        "GC/uncollectable/0",
-        "GC/uncollectable/1",
-        "GC/uncollectable/2",
-        "GC/time/all",
-        "GC/time/0",
-        "GC/time/1",
-        "GC/time/2",
+        "GC/objects/%d/all" % PID,
+        "GC/objects/%d/0" % PID,
+        "GC/objects/%d/1" % PID,
+        "GC/objects/%d/2" % PID,
+        "GC/collections/%d/all" % PID,
+        "GC/collections/%d/0" % PID,
+        "GC/collections/%d/1" % PID,
+        "GC/collections/%d/2" % PID,
+        "GC/collected/%d/all" % PID,
+        "GC/collected/%d/0" % PID,
+        "GC/collected/%d/1" % PID,
+        "GC/collected/%d/2" % PID,
+        "GC/uncollectable/%d/all" % PID,
+        "GC/uncollectable/%d/0" % PID,
+        "GC/uncollectable/%d/1" % PID,
+        "GC/uncollectable/%d/2" % PID,
+        "GC/time/%d/all" % PID,
+        "GC/time/%d/0" % PID,
+        "GC/time/%d/1" % PID,
+        "GC/time/%d/2" % PID,
     )
 
 

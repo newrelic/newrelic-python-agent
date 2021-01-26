@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import gc
+import os
 import time
 from newrelic.samplers.decorators import data_source_factory
 from newrelic.core.stats_engine import CustomMetrics
@@ -25,6 +26,7 @@ class _GCDataSource(object):
         self.gc_time_metrics = CustomMetrics()
         self.start_time = 0.0
         self.previous_stats = {}
+        self.pid = os.getpid()
 
     def record_gc(self, phase, info):
         current_generation = info['generation']
@@ -34,14 +36,14 @@ class _GCDataSource(object):
         elif phase == 'stop':
             total_time = time.time() - self.start_time
             self.gc_time_metrics.record_custom_metric(
-                    'GC/time/all', total_time)
+                    'GC/time/%d/all' % self.pid, total_time)
             for gen in range(0, 3):
                 if gen <= current_generation:
                     self.gc_time_metrics.record_custom_metric(
-                        'GC/time/%d' % (gen, ), total_time)
+                        'GC/time/%d/%d' % (self.pid, gen), total_time)
                 else:
                     self.gc_time_metrics.record_custom_metric(
-                        'GC/time/%d' % (gen, ), 0)
+                        'GC/time/%d/%d' % (self.pid, gen), 0)
 
 
     def start(self):
@@ -63,9 +65,9 @@ class _GCDataSource(object):
     def __call__(self):
         if hasattr(gc, "get_count"):
             counts = gc.get_count()
-            yield ("GC/objects/all", {"count": sum(counts)})
+            yield ("GC/objects/%d/all" % self.pid, {"count": sum(counts)})
             for gen, count in enumerate(counts):
-                yield ("GC/objects/%d" % (gen, ), {"count": count})
+                yield ("GC/objects/%d/%d" % (self.pid, gen), {"count": count})
 
         if hasattr(gc, "get_stats"):
             stats_by_gen = gc.get_stats()
@@ -73,10 +75,10 @@ class _GCDataSource(object):
                 for stat_name in stats_by_gen[0].keys():
                     # Aggregate metrics for /all
                     count = sum(stats[stat_name] for stats in stats_by_gen)
-                    previous_value = self.previous_stats.get((stat_name, -1), 0)
-                    self.previous_stats[(stat_name, -1)] = count
+                    previous_value = self.previous_stats.get((stat_name, "all"), 0)
+                    self.previous_stats[(stat_name, "all")] = count
                     change_in_value = count - previous_value
-                    yield ("GC/%s/all" % (stat_name, ), {"count": count})
+                    yield ("GC/%s/%d/all" % (stat_name, self.pid), {"count": change_in_value})
 
                     # Breakdowns by generation
                     for gen, stats in enumerate(stats_by_gen):
@@ -85,7 +87,7 @@ class _GCDataSource(object):
                         change_in_value = stats[stat_name] - previous_value
 
                         yield (
-                            "GC/%s/%d" % (stat_name, gen),
+                            "GC/%s/%d/%d" % (stat_name, self.pid, gen),
                             {"count": change_in_value},
                         )
 

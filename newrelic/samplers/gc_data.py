@@ -24,6 +24,7 @@ class _GCDataSource(object):
     def __init__(self, settings, environ):
         self.gc_time_metrics = CustomMetrics()
         self.start_time = 0.0
+        self.previous_stats = {}
 
     def record_gc(self, phase, info):
         current_generation = info['generation']
@@ -37,7 +38,10 @@ class _GCDataSource(object):
             for gen in range(0, 3):
                 if gen <= current_generation:
                     self.gc_time_metrics.record_custom_metric(
-                        'GC/time/generation/%d' % (gen, ), total_time)
+                        'GC/time/%d' % (gen, ), total_time)
+                else:
+                    self.gc_time_metrics.record_custom_metric(
+                        'GC/time/%d' % (gen, ), 0)
 
 
     def start(self):
@@ -61,18 +65,28 @@ class _GCDataSource(object):
             counts = gc.get_count()
             yield ("GC/objects/all", {"count": sum(counts)})
             for gen, count in enumerate(counts):
-                yield ("GC/objects/generation/%d" % (gen,), {"count": count})
+                yield ("GC/objects/%d" % (gen, ), {"count": count})
 
         if hasattr(gc, "get_stats"):
-            stats = gc.get_stats()
-            if isinstance(stats, list):
-                for stat_name in stats[0].keys():
-                    count = sum(stat[stat_name] for stat in stats)
-                    yield ("GC/stats/%s/all" % (stat_name,), {"count": count})
-                    for gen, stat in enumerate(stats):
+            stats_by_gen = gc.get_stats()
+            if isinstance(stats_by_gen, list):
+                for stat_name in stats_by_gen[0].keys():
+                    # Aggregate metrics for /all
+                    count = sum(stats[stat_name] for stats in stats_by_gen)
+                    previous_value = self.previous_stats.get((stat_name, -1), 0)
+                    self.previous_stats[(stat_name, -1)] = count
+                    change_in_value = count - previous_value
+                    yield ("GC/%s/all" % (stat_name, ), {"count": count})
+
+                    # Breakdowns by generation
+                    for gen, stats in enumerate(stats_by_gen):
+                        previous_value = self.previous_stats.get((stat_name, gen), 0)
+                        self.previous_stats[(stat_name, gen)] = stats[stat_name]
+                        change_in_value = stats[stat_name] - previous_value
+
                         yield (
-                            "GC/stats/%s/generation/%d" % (stat_name, gen),
-                            {"count": stat[stat_name]},
+                            "GC/%s/%d" % (stat_name, gen),
+                            {"count": change_in_value},
                         )
 
         # In order to avoid a concurrency issue with getting interrupted by the

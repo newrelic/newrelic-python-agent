@@ -76,7 +76,7 @@ class _GCDataSource(object):
                     previous_value = self.previous_stats.get((stat_name, -1), 0)
                     self.previous_stats[(stat_name, -1)] = count
                     change_in_value = count - previous_value
-                    yield ("GC/stats/%s/all" % (stat_name, ), {"count": count})
+                    yield ("GC/%s/all" % (stat_name, ), {"count": count})
 
                     # Breakdowns by generation
                     for gen, stats in enumerate(stats_by_gen):
@@ -85,7 +85,7 @@ class _GCDataSource(object):
                         change_in_value = stats[stat_name] - previous_value
 
                         yield (
-                            "GC/stats/%s/%d" % (stat_name, gen),
+                            "GC/%s/%d" % (stat_name, gen),
                             {"count": change_in_value},
                         )
 

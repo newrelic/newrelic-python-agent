@@ -12,13 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import gc
+import os
 import platform
 import pytest
+from testing_support.fixtures import (
+    override_application_settings,
+    override_generic_settings,
+)
 
+from newrelic.core.config import global_settings
 from newrelic.packages import six
 from newrelic.samplers.gc_data import garbage_collector_data_source
+
+settings = global_settings()
 
 
 @pytest.fixture
@@ -69,6 +76,7 @@ else:
     strict=True,
     raises=AssertionError,
 )
+@override_generic_settings(settings, {"gc_profiler.enabled": True})
 def test_gc_metrics_collection(data_source):
     gc.collect()
     metrics_table = dict(data_source() or ())
@@ -76,9 +84,21 @@ def test_gc_metrics_collection(data_source):
     for metric in EXPECTED_METRICS:
         assert metric in metrics_table
 
-#Verify object count by type metrics are recorded
+    #Verify object count by type metrics are recorded
     obj_metric_count = 0
     for metric in metrics_table:
         if metric.startswith("GC/objects/"):
             obj_metric_count += 1
     assert obj_metric_count > 4
+
+@pytest.mark.skipif(
+    platform.python_implementation() == "PyPy",
+    reason="GC Metrics are always disabled on PyPy",
+)
+@pytest.mark.parametrize("enabled", (True, False))
+def test_gc_metrics_config(data_source, enabled):
+    @override_generic_settings(settings, {"gc_profiler.enabled": enabled})
+    def _test():
+        assert data_source.enabled == enabled
+
+    _test()

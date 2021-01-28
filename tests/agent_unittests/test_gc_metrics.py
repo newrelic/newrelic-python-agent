@@ -16,10 +16,7 @@ import gc
 import os
 import platform
 import pytest
-from testing_support.fixtures import (
-    override_application_settings,
-    override_generic_settings,
-)
+from testing_support.fixtures import override_generic_settings
 
 from newrelic.core.config import global_settings
 from newrelic.packages import six

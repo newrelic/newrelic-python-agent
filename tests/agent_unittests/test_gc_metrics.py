@@ -15,7 +15,6 @@
 import os
 import gc
 import platform
-
 import pytest
 
 from newrelic.packages import six
@@ -35,16 +34,16 @@ PID = os.getpid()
 if six.PY2:
     EXPECTED_METRICS = (
         "GC/objects/%d/all" % PID,
-        "GC/objects/%d/0" % PID,
-        "GC/objects/%d/1" % PID,
-        "GC/objects/%d/2" % PID,
+        "GC/objects/generation/%d/0" % PID,
+        "GC/objects/generation/%d/1" % PID,
+        "GC/objects/generation/%d/2" % PID,
     )
 else:
     EXPECTED_METRICS = (
         "GC/objects/%d/all" % PID,
-        "GC/objects/%d/0" % PID,
-        "GC/objects/%d/1" % PID,
-        "GC/objects/%d/2" % PID,
+        "GC/objects/generation/%d/0" % PID,
+        "GC/objects/generation/%d/1" % PID,
+        "GC/objects/generation/%d/2" % PID,
         "GC/collections/%d/all" % PID,
         "GC/collections/%d/0" % PID,
         "GC/collections/%d/1" % PID,
@@ -76,3 +75,10 @@ def test_gc_metrics_collection(data_source):
 
     for metric in EXPECTED_METRICS:
         assert metric in metrics_table
+
+#Verify object count by type metrics are recorded
+    obj_metric_count = 0
+    for metric in metrics_table:
+        if metric.startswith("GC/objects/"):
+            obj_metric_count += 1
+    assert obj_metric_count > 4

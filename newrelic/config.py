@@ -364,6 +364,8 @@ def _process_configuration(section):
                      'get', None)
     _process_setting(section, 'gc_profiler.enabled',
                      'getboolean', None)
+    _process_setting(section, 'gc_profiler.top_object_count_limit',
+                     'getint', None)
     _process_setting(section, 'thread_profiler.enabled',
                      'getboolean', None)
     _process_setting(section, 'transaction_tracer.enabled',

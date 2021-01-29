@@ -610,9 +610,11 @@ _settings.attributes.enabled = True
 _settings.attributes.exclude = []
 _settings.attributes.include = []
 
-_settings.gc_profiler.enabled = False
 _settings.thread_profiler.enabled = True
 _settings.cross_application_tracer.enabled = True
+
+_settings.gc_profiler.enabled = False
+_settings.gc_profiler.top_object_count_limit = 5
 
 _settings.transaction_events.enabled = True
 _settings.transaction_events.attributes.enabled = True

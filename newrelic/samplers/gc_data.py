@@ -40,6 +40,12 @@ class _GCDataSource(object):
             settings = application_settings() or global_settings()
             return settings.gc_profiler.enabled
 
+
+    @property
+    def top_object_count_limit(self):
+        settings = application_settings() or global_settings()
+        return settings.gc_profiler.top_object_count_limit
+
     def record_gc(self, phase, info):
         if not self.enabled:
             return
@@ -94,9 +100,10 @@ class _GCDataSource(object):
         # Record object count for top five types with highest count
         if hasattr(gc, "get_objects"):
             object_types = map(type, gc.get_objects())
-            highest_types = Counter(object_types).most_common(5)
-            for obj_type, count in highest_types:
-                yield ("GC/objects/%d/type/%s" % (self.pid, callable_name(obj_type)), {"count": count})
+            if self.top_object_count_limit > 0:
+                highest_types = Counter(object_types).most_common(self.top_object_count_limit)
+                for obj_type, count in highest_types:
+                    yield ("GC/objects/%d/type/%s" % (self.pid, callable_name(obj_type)), {"count": count})
 
         if hasattr(gc, "get_stats"):
             stats_by_gen = gc.get_stats()

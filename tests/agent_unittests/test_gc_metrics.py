@@ -15,6 +15,7 @@
 import gc
 import os
 import platform
+
 import pytest
 from testing_support.fixtures import override_generic_settings
 
@@ -75,7 +76,13 @@ else:
 )
 @pytest.mark.parametrize("top_object_count_limit", (1, 0))
 def test_gc_metrics_collection(data_source, top_object_count_limit):
-    @override_generic_settings(settings, {"gc_profiler.enabled": True, "gc_profiler.top_object_count_limit": top_object_count_limit})
+    @override_generic_settings(
+        settings,
+        {
+            "gc_profiler.enabled": True,
+            "gc_profiler.top_object_count_limit": top_object_count_limit,
+        },
+    )
     def _test():
         gc.collect()
         metrics_table = set(m[0] for m in (data_source() or ()))
@@ -83,7 +90,7 @@ def test_gc_metrics_collection(data_source, top_object_count_limit):
         for metric in EXPECTED_METRICS:
             assert metric in metrics_table
 
-        #Verify object count by type metrics are recorded
+        # Verify object count by type metrics are recorded
         obj_metric_count = 0
         for metric in metrics_table:
             if metric.startswith("GC/objects/"):
@@ -95,6 +102,7 @@ def test_gc_metrics_collection(data_source, top_object_count_limit):
             assert obj_metric_count == 4, metrics_table
 
     _test()
+
 
 @pytest.mark.skipif(
     platform.python_implementation() == "PyPy",

@@ -17,10 +17,11 @@ import os
 import platform
 import time
 from collections import Counter
+
 from newrelic.api.application import application_settings
+from newrelic.common.object_names import callable_name
 from newrelic.core.config import global_settings
 from newrelic.core.stats_engine import CustomMetrics
-from newrelic.common.object_names import callable_name
 from newrelic.samplers.decorators import data_source_factory
 
 
@@ -39,7 +40,6 @@ class _GCDataSource(object):
         else:
             settings = application_settings() or global_settings()
             return settings.gc_profiler.enabled
-
 
     @property
     def top_object_count_limit(self):
@@ -78,10 +78,7 @@ class _GCDataSource(object):
         # If it isn't, it's possible to be interrupted by the gc and to have more
         # metrics appear in the table that should be empty.
         if hasattr(gc, "callbacks") and self.record_gc in gc.callbacks:
-            try:
-                gc.callbacks.remove(self.record_gc)
-            except ValueError:
-                pass
+            gc.callbacks.remove(self.record_gc)
 
         self.gc_time_metrics.reset_metric_stats()
         self.start_time = 0.0
@@ -95,15 +92,23 @@ class _GCDataSource(object):
             counts = gc.get_count()
             yield ("GC/objects/%d/all" % self.pid, {"count": sum(counts)})
             for gen, count in enumerate(counts):
-                yield ("GC/objects/%d/generation/%d" % (self.pid, gen), {"count": count})
+                yield (
+                    "GC/objects/%d/generation/%d" % (self.pid, gen),
+                    {"count": count},
+                )
 
         # Record object count for top five types with highest count
         if hasattr(gc, "get_objects"):
             object_types = map(type, gc.get_objects())
             if self.top_object_count_limit > 0:
-                highest_types = Counter(object_types).most_common(self.top_object_count_limit)
+                highest_types = Counter(object_types).most_common(
+                    self.top_object_count_limit
+                )
                 for obj_type, count in highest_types:
-                    yield ("GC/objects/%d/type/%s" % (self.pid, callable_name(obj_type)), {"count": count})
+                    yield (
+                        "GC/objects/%d/type/%s" % (self.pid, callable_name(obj_type)),
+                        {"count": count},
+                    )
 
         if hasattr(gc, "get_stats"):
             stats_by_gen = gc.get_stats()

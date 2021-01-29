@@ -34,16 +34,16 @@ PID = os.getpid()
 if six.PY2:
     EXPECTED_METRICS = (
         "GC/objects/%d/all" % PID,
-        "GC/objects/generation/%d/0" % PID,
-        "GC/objects/generation/%d/1" % PID,
-        "GC/objects/generation/%d/2" % PID,
+        "GC/objects/%d/generation/0" % PID,
+        "GC/objects/%d/generation/1" % PID,
+        "GC/objects/%d/generation/2" % PID,
     )
 else:
     EXPECTED_METRICS = (
         "GC/objects/%d/all" % PID,
-        "GC/objects/generation/%d/0" % PID,
-        "GC/objects/generation/%d/1" % PID,
-        "GC/objects/generation/%d/2" % PID,
+        "GC/objects/%d/generation/0" % PID,
+        "GC/objects/%d/generation/1" % PID,
+        "GC/objects/%d/generation/2" % PID,
         "GC/collections/%d/all" % PID,
         "GC/collections/%d/0" % PID,
         "GC/collections/%d/1" % PID,

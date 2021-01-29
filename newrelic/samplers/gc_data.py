@@ -70,14 +70,14 @@ class _GCDataSource(object):
             counts = gc.get_count()
             yield ("GC/objects/%d/all" % self.pid, {"count": sum(counts)})
             for gen, count in enumerate(counts):
-                yield ("GC/objects/generation/%d/%d" % (self.pid, gen), {"count": count})
+                yield ("GC/objects/%d/generation/%d" % (self.pid, gen), {"count": count})
 
         # Record object count for top five types with highest count
         if hasattr(gc, "get_objects"):
             object_types = map(type, gc.get_objects())
             highest_types = Counter(object_types).most_common(5)
             for obj_type, count in highest_types:
-                yield ("GC/objects/type/%d/%s" % (self.pid, callable_name(obj_type)), {"count": count})
+                yield ("GC/objects/%d/type/%s" % (self.pid, callable_name(obj_type)), {"count": count})
 
         if hasattr(gc, "get_stats"):
             stats_by_gen = gc.get_stats()

@@ -15,8 +15,10 @@
 import gc
 import os
 import time
+from collections import Counter
 from newrelic.samplers.decorators import data_source_factory
 from newrelic.core.stats_engine import CustomMetrics
+from newrelic.common.object_names import callable_name
 
 
 
@@ -63,11 +65,19 @@ class _GCDataSource(object):
 
 
     def __call__(self):
+        # Record object count in total and per generation
         if hasattr(gc, "get_count"):
             counts = gc.get_count()
             yield ("GC/objects/%d/all" % self.pid, {"count": sum(counts)})
             for gen, count in enumerate(counts):
-                yield ("GC/objects/%d/%d" % (self.pid, gen), {"count": count})
+                yield ("GC/objects/%d/generation/%d" % (self.pid, gen), {"count": count})
+
+        # Record object count for top five types with highest count
+        if hasattr(gc, "get_objects"):
+            object_types = map(type, gc.get_objects())
+            highest_types = Counter(object_types).most_common(5)
+            for obj_type, count in highest_types:
+                yield ("GC/objects/%d/type/%s" % (self.pid, callable_name(obj_type)), {"count": count})
 
         if hasattr(gc, "get_stats"):
             stats_by_gen = gc.get_stats()

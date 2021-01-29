@@ -18,7 +18,6 @@ import platform
 import time
 from collections import Counter
 
-from newrelic.api.application import application_settings
 from newrelic.common.object_names import callable_name
 from newrelic.core.config import global_settings
 from newrelic.core.stats_engine import CustomMetrics
@@ -38,12 +37,12 @@ class _GCDataSource(object):
         if platform.python_implementation() == "PyPy":
             return False
         else:
-            settings = application_settings() or global_settings()
+            settings = global_settings()
             return settings.gc_profiler.enabled
 
     @property
     def top_object_count_limit(self):
-        settings = application_settings() or global_settings()
+        settings = global_settings()
         return settings.gc_profiler.top_object_count_limit
 
     def record_gc(self, phase, info):

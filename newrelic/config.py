@@ -362,6 +362,10 @@ def _process_configuration(section):
                      'get', _map_inc_excl_attributes)
     _process_setting(section, 'transaction_name.naming_scheme',
                      'get', None)
+    _process_setting(section, 'gc_profiler.enabled',
+                     'getboolean', None)
+    _process_setting(section, 'gc_profiler.top_object_count_limit',
+                     'getint', None)
     _process_setting(section, 'thread_profiler.enabled',
                      'getboolean', None)
     _process_setting(section, 'transaction_tracer.enabled',

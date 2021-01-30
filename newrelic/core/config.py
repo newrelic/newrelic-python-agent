@@ -109,6 +109,10 @@ class AttributesSettings(Settings):
     pass
 
 
+class GCProfilerSettings(Settings):
+    pass
+
+
 class ThreadProfilerSettings(Settings):
     pass
 
@@ -320,6 +324,7 @@ class EventHarvestConfigHarvestLimitSettings(Settings):
 
 _settings = TopLevelSettings()
 _settings.attributes = AttributesSettings()
+_settings.gc_profiler = GCProfilerSettings()
 _settings.thread_profiler = ThreadProfilerSettings()
 _settings.transaction_tracer = TransactionTracerSettings()
 _settings.transaction_tracer.attributes = TransactionTracerAttributesSettings()
@@ -607,6 +612,9 @@ _settings.attributes.include = []
 
 _settings.thread_profiler.enabled = True
 _settings.cross_application_tracer.enabled = True
+
+_settings.gc_profiler.enabled = False
+_settings.gc_profiler.top_object_count_limit = 5
 
 _settings.transaction_events.enabled = True
 _settings.transaction_events.attributes.enabled = True

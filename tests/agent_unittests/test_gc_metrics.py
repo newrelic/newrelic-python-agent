@@ -12,13 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import gc
+import os
 import platform
-import pytest
 
+import pytest
+from testing_support.fixtures import override_generic_settings
+
+from newrelic.core.config import global_settings
 from newrelic.packages import six
 from newrelic.samplers.gc_data import garbage_collector_data_source
+
+settings = global_settings()
 
 
 @pytest.fixture
@@ -69,16 +74,44 @@ else:
     strict=True,
     raises=AssertionError,
 )
-def test_gc_metrics_collection(data_source):
-    gc.collect()
-    metrics_table = dict(data_source() or ())
+@pytest.mark.parametrize("top_object_count_limit", (1, 0))
+def test_gc_metrics_collection(data_source, top_object_count_limit):
+    @override_generic_settings(
+        settings,
+        {
+            "gc_profiler.enabled": True,
+            "gc_profiler.top_object_count_limit": top_object_count_limit,
+        },
+    )
+    def _test():
+        gc.collect()
+        metrics_table = set(m[0] for m in (data_source() or ()))
 
-    for metric in EXPECTED_METRICS:
-        assert metric in metrics_table
+        for metric in EXPECTED_METRICS:
+            assert metric in metrics_table
 
-#Verify object count by type metrics are recorded
-    obj_metric_count = 0
-    for metric in metrics_table:
-        if metric.startswith("GC/objects/"):
-            obj_metric_count += 1
-    assert obj_metric_count > 4
+        # Verify object count by type metrics are recorded
+        obj_metric_count = 0
+        for metric in metrics_table:
+            if metric.startswith("GC/objects/"):
+                obj_metric_count += 1
+
+        if top_object_count_limit > 0:
+            assert obj_metric_count == 5, metrics_table
+        else:
+            assert obj_metric_count == 4, metrics_table
+
+    _test()
+
+
+@pytest.mark.skipif(
+    platform.python_implementation() == "PyPy",
+    reason="GC Metrics are always disabled on PyPy",
+)
+@pytest.mark.parametrize("enabled", (True, False))
+def test_gc_metrics_config(data_source, enabled):
+    @override_generic_settings(settings, {"gc_profiler.enabled": enabled})
+    def _test():
+        assert data_source.enabled == enabled
+
+    _test()

@@ -16,12 +16,16 @@
 memory usage.
 
 """
+import os
 
-from newrelic.common.system_info import physical_memory_used
+from newrelic.common.system_info import physical_memory_used, total_physical_memory
 
 from newrelic.samplers.decorators import data_source_generator
+
+PID = os.getpid()
 
 
 @data_source_generator(name='Memory Usage')
 def memory_usage_data_source():
-    yield ('Memory/Physical', physical_memory_used())
+    yield ('Memory/Physical/%d' % (PID), physical_memory_used())
+    yield ('Memory/Physical/Utilization/%d' % (PID), {"count": physical_memory_used()/total_physical_memory()})

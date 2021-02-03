@@ -28,4 +28,4 @@ PID = os.getpid()
 @data_source_generator(name='Memory Usage')
 def memory_usage_data_source():
     yield ('Memory/Physical/%d' % (PID), physical_memory_used())
-    yield ('Memory/Physical/Utilization/%d' % (PID), {"count": physical_memory_used()/total_physical_memory()})
+    yield ('Memory/Physical/Utilization/%d' % (PID), physical_memory_used()/total_physical_memory())

@@ -18,7 +18,6 @@ usage.
 """
 
 import os
-import time
 
 from newrelic.common.system_info import logical_processor_count
 from newrelic.common.stopwatch import start_timer
@@ -48,14 +47,25 @@ class _CPUUsageDataSource(object):
             return
 
         new_times = os.times()
-        user_time = new_times[0] - self._times[0]
-
         elapsed_time = self._timer.restart_timer()
-        utilization = user_time / (elapsed_time*logical_processor_count())
+        elapsed_cpu_time = elapsed_time*logical_processor_count()
+
+        user_time = new_times[0] - self._times[0]
+        user_utilization = user_time / elapsed_cpu_time
+
+        system_time = new_times[1] - self._times[1]
+        system_utilization = system_time / elapsed_cpu_time
+
+        total_time = sum(new_times[0:4]) - sum(self._times[0:4])
+        total_utilization = total_time / elapsed_cpu_time
 
         self._times = new_times
 
         yield ('CPU/User Time', user_time)
-        yield ('CPU/User/Utilization', utilization)
+        yield ('CPU/User/Utilization', user_utilization)
+        yield ('CPU/System Time', system_time)
+        yield ('CPU/System/Utilization', system_utilization)
+        yield ('CPU/Total Time', total_time)
+        yield ('CPU/Total/Utilization', total_utilization)
 
 cpu_usage_data_source = _CPUUsageDataSource

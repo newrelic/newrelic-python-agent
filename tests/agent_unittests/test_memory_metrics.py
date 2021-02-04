@@ -12,20 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module implements a data source for generating metrics about
-memory usage.
-
-"""
+import pytest
 import os
 
-from newrelic.common.system_info import physical_memory_used, total_physical_memory
+from newrelic.samplers.memory_usage import memory_usage_data_source
 
-from newrelic.samplers.decorators import data_source_generator
+@pytest.fixture
+def data_source():
+    sampler = memory_usage_data_source(settings=())["factory"](environ=())
+    yield sampler
 
 PID = os.getpid()
 
+EXPECTED_METRICS = (
+        "Memory/Physical/%d" % PID,
+        "Memory/Physical/Utilization/%d" % PID,
+)
 
-@data_source_generator(name='Memory Usage')
-def memory_usage_data_source():
-    yield ('Memory/Physical/%d' % (PID), physical_memory_used())
-    yield ('Memory/Physical/Utilization/%d' % (PID), physical_memory_used()/total_physical_memory())
+
+def test_gc_metrics_collection(data_source):
+    metrics_table = set(m[0] for m in (data_source() or ()))
+
+    for metric in EXPECTED_METRICS:
+        assert metric in metrics_table

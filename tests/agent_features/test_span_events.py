@@ -529,13 +529,13 @@ def test_span_custom_attribute_limit():
     txn_custom_attrs = []
     unexpected_txn_attrs = []
 
-    for i in range(64):
-        if i < 32:
+    for i in range(128):
+        if i < 64:
             span_custom_attrs.append('span_attr%i' % i)
         txn_custom_attrs.append('txn_attr%i' % i)
 
     unexpected_txn_attrs.extend(span_custom_attrs)
-    span_custom_attrs.extend(txn_custom_attrs[:32])
+    span_custom_attrs.extend(txn_custom_attrs[:64])
     expected_txn_attrs = {'user': txn_custom_attrs, 'agent': [],
                                    'intrinsic': []}
     expected_absent_txn_attrs = {'agent': [],
@@ -547,15 +547,15 @@ def test_span_custom_attribute_limit():
                                            expected_absent_txn_attrs)
     @validate_span_events(count=1,
                           expected_users=span_custom_attrs,
-                          unexpected_users=txn_custom_attrs[32:])
+                          unexpected_users=txn_custom_attrs[64:])
     @dt_enabled
     @background_task(name='test_span_attribute_limit')
     def _test():
         transaction = current_transaction()
 
-        for i in range(64):
+        for i in range(128):
             transaction.add_custom_parameter('txn_attr%i' % i, 'txnValue')
-            if i < 32:
+            if i < 64:
                 add_custom_span_attribute('span_attr%i' % i, 'spanValue')
     _test()
 

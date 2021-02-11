@@ -299,17 +299,17 @@ def test_custom_params_value_too_long():
     assert result
 
 
-_required_custom_params_too_many = [('key-63', 'value')]
-_forgone_custom_params_too_many = [('key-64', 'value')]
+_required_custom_params_too_many = [('key-127', 'value')]
+_forgone_custom_params_too_many = [('key-128', 'value')]
 
 
 @validate_custom_parameters(_required_custom_params_too_many,
         _forgone_custom_params_too_many)
 @background_task()
 def test_custom_param_too_many():
-    for i in range(65):
+    for i in range(129):
         result = add_custom_parameter('key-%02d' % i, 'value')
-        if i < 64:
+        if i < 128:
             assert result
         else:
             assert not result   # Last one fails
@@ -319,7 +319,7 @@ def test_custom_param_too_many():
         _forgone_custom_params_too_many)
 @background_task()
 def test_custom_params_too_many():
-    item_list = [('key-%02d' % i, 'value') for i in range(65)]
+    item_list = [('key-%02d' % i, 'value') for i in range(129)]
     result = add_custom_parameters(item_list)
     assert not result
 

@@ -225,7 +225,7 @@ class ASGIWebTransaction(WebTransaction):
         self.receive = receive
         self._send = send
         scheme = scope.get("scheme", "http")
-        if "server" in scope:
+        if "server" in scope and scope["server"] is not None:
             host, port = scope["server"] = tuple(scope["server"])
         else:
             host, port = None, None

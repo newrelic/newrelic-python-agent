@@ -21,8 +21,11 @@ being a unittest for the `process_response` method. Since this is a more end to
 end style test, it does not fit as a unittest.
 """
 
+import pytest
 import webtest
 
+from newrelic.api.background_task import background_task
+from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.wsgi_application import wsgi_application
 
 from testing_support.fixtures import (make_cross_agent_headers,
@@ -72,3 +75,28 @@ def test_cat_insertion_disabled_on_304():
     headers = make_cross_agent_headers(payload, ENCODING_KEY, '1#1')
     response = test_application.get('/304', headers=headers)
     assert 'X-NewRelic-App-Data' not in response.headers
+
+_override_settings = {
+    'cross_application_tracing.enabled': True,
+    'distributed_tracing.enabled': False,
+}
+@override_application_settings(_override_settings)
+@pytest.mark.parametrize('fips_enabled', (False, True))
+@background_task()
+def test_cat_fips_compliance(monkeypatch, fips_enabled):
+    # Set md5 to raise a ValueError to simulate FIPS compliance issues.
+    def md5_crash(*args, **kwargs):
+        raise ValueError()
+
+    if fips_enabled:
+        # monkeypatch.setattr("hashlib.md5", md5_crash)
+        import hashlib
+        monkeypatch.setattr(hashlib, "md5", md5_crash)
+
+    # Generate and send request using actual transaction api instead of fixture.
+    # Otherwise the proper code paths are not exercised.
+    with ExternalTrace("cat_test", "http://localhost/200") as tracer:
+        headers = tracer.generate_request_headers(tracer.transaction)
+    
+    expected = not fips_enabled  # Invert to make more human readable
+    assert ('X-NewRelic-Transaction' in dict(headers)) == expected

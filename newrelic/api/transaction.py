@@ -719,7 +719,16 @@ class Transaction(object):
         except Exception:
             seed = 0
 
-        path_hash = generate_path_hash(identifier, seed)
+        try: 
+            path_hash = generate_path_hash(identifier, seed)
+        except ValueError:
+            _logger.warning(
+                "Unable to generate cross application tracer headers. "
+                "MD5 hashing may not be available. (Is this system FIPS compliant?) "
+                "We recommend enabling distributed tracing instead. For details and a transition guide see "
+                "https://docs.newrelic.com/docs/agents/python-agent/configuration/python-agent-configuration#distributed-tracing-settings"
+            )
+            return None
 
         # Only store up to 10 alternate path hashes.
 

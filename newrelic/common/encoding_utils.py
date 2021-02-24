@@ -17,17 +17,17 @@ of data.
 
 """
 
-import random
-import itertools
-import types
 import base64
-import json
-import zlib
-import io
 import gzip
+import hashlib
+import io
+import itertools
+import json
+import random
 import re
+import types
+import zlib
 from collections import OrderedDict
-from hashlib import md5
 
 from newrelic.packages import six
 
@@ -265,7 +265,7 @@ def generate_path_hash(name, seed):
     if not isinstance(name, bytes):
         name = name.encode('UTF-8')
 
-    path_hash = (rotated ^ int(md5(name).hexdigest()[-8:], base=16))
+    path_hash = (rotated ^ int(hashlib.md5(name).hexdigest()[-8:], base=16))
     return '%08x' % path_hash
 
 

@@ -197,7 +197,7 @@ def test_cat_map(name, appName, transactionName, transactionGuid,
 
         content = response.html.html.body.p.string
 
-        # Validate actual body content as sansity check.
+        # Validate actual body content as sanity check.
 
         assert content == 'RESPONSE'
 

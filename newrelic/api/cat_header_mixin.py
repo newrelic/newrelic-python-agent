@@ -88,16 +88,21 @@ class CatHeaderMixin(object):
 
         elif settings.cross_application_tracer.enabled:
             transaction.is_part_of_cat = True
-            encoded_cross_process_id = obfuscate(settings.cross_process_id,
-                    settings.encoding_key)
-            nr_headers.append((cls.cat_id_key, encoded_cross_process_id))
+            path_hash = transaction.path_hash
+            if path_hash is None:
+                # Disable cat if path_hash fails to generate.
+                transaction.is_part_of_cat = False
+            else:
+                encoded_cross_process_id = obfuscate(settings.cross_process_id,
+                        settings.encoding_key)
+                nr_headers.append((cls.cat_id_key, encoded_cross_process_id))
 
-            transaction_data = [transaction.guid, transaction.record_tt,
-                    transaction.trip_id, transaction.path_hash]
-            encoded_transaction = obfuscate(json_encode(transaction_data),
-                    settings.encoding_key)
-            nr_headers.append(
-                    (cls.cat_transaction_key, encoded_transaction))
+                transaction_data = [transaction.guid, transaction.record_tt,
+                        transaction.trip_id, path_hash]
+                encoded_transaction = obfuscate(json_encode(transaction_data),
+                        settings.encoding_key)
+                nr_headers.append(
+                        (cls.cat_transaction_key, encoded_transaction))
 
         if transaction.synthetics_header:
             nr_headers.append(

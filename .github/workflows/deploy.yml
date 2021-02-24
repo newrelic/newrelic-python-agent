@@ -41,7 +41,7 @@ jobs:
     - name: Build Source Package
       run: python setup.py sdist
     - name: Build Manylinux Wheels
-      uses: RalfG/python-wheels-manylinux-build@f7c9db24751e53d2d3c90edc2b04a9ffaa96cd01
+      uses: RalfG/python-wheels-manylinux-build@f7c9db24751e53d2d3c90edc2b04a9ffaa96cd01-manylinux2010_x86_64:2021-02-06-3d322a5
       with:
         python-versions: 'cp27-cp27m cp36-cp36m cp37-cp37m cp38-cp38 cp39-cp39'
       env:

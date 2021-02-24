@@ -59,7 +59,7 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     - name: Upload Package to PyPI
       run: |
-        twine upload --non-interactive dist/*.tar.gz dist/*-manylinux*.whl
+        twine upload --repository testpypi --non-interactive dist/*.tar.gz dist/*-manylinux*.whl
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}

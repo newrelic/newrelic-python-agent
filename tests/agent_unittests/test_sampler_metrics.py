@@ -95,8 +95,8 @@ def test_gc_metrics_collection(gc_data_source, top_object_count_limit):
     @override_generic_settings(
         settings,
         {
-            "gc_profiler.enabled": True,
-            "gc_profiler.top_object_count_limit": top_object_count_limit,
+            "gc_runtime_metrics.enabled": True,
+            "gc_runtime_metrics.top_object_count_limit": top_object_count_limit,
         },
     )
     def _test():
@@ -126,7 +126,7 @@ def test_gc_metrics_collection(gc_data_source, top_object_count_limit):
 )
 @pytest.mark.parametrize("enabled", (True, False))
 def test_gc_metrics_config(gc_data_source, enabled):
-    @override_generic_settings(settings, {"gc_profiler.enabled": enabled})
+    @override_generic_settings(settings, {"gc_runtime_metrics.enabled": enabled})
     def _test():
         assert gc_data_source.enabled == enabled
 

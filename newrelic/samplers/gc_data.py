@@ -38,12 +38,12 @@ class _GCDataSource(object):
             return False
         else:
             settings = global_settings()
-            return settings.gc_profiler.enabled
+            return settings.gc_runtime_metrics.enabled
 
     @property
     def top_object_count_limit(self):
         settings = global_settings()
-        return settings.gc_profiler.top_object_count_limit
+        return settings.gc_runtime_metrics.top_object_count_limit
 
     def record_gc(self, phase, info):
         if not self.enabled:

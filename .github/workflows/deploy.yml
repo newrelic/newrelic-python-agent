@@ -40,10 +40,16 @@ jobs:
         pip install -U wheel setuptools twine
     - name: Build Source Package
       run: python setup.py sdist
-    - name: Build Manylinux Wheels
+    - name: Build Manylinux Wheels (py2)
+      uses: newrelic-forks/python-wheels-manylinux-build@v0.3.4-manylinux2010_x86_64-2021-02-06-3d322a5
+      with:
+        python-versions: 'cp27-cp27m'
+      env:
+        LD_LIBRARY_PATH: /opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib
+    - name: Build Manylinux Wheels (py3)
       uses: RalfG/python-wheels-manylinux-build@f7c9db24751e53d2d3c90edc2b04a9ffaa96cd01
       with:
-        python-versions: 'cp27-cp27m cp36-cp36m cp37-cp37m cp38-cp38 cp39-cp39'
+        python-versions: 'cp36-cp36m cp37-cp37m cp38-cp38 cp39-cp39'
       env:
         LD_LIBRARY_PATH: /opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib
     - name: Upload Package to S3

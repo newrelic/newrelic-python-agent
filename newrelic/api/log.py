@@ -60,7 +60,8 @@ class NewRelicContextFormatter(Formatter):
     def __init__(self, *args, **kwargs):
         super(NewRelicContextFormatter, self).__init__()
 
-    def format(self, record):
+    @classmethod
+    def log_record_to_dict(cls, record):
         output = {
             "timestamp": int(record.created * 1000),
             "message": record.getMessage(),
@@ -75,7 +76,7 @@ class NewRelicContextFormatter(Formatter):
         }
         output.update(get_linking_metadata())
 
-        DEFAULT_LOG_RECORD_KEYS = self.DEFAULT_LOG_RECORD_KEYS
+        DEFAULT_LOG_RECORD_KEYS = cls.DEFAULT_LOG_RECORD_KEYS
         if len(record.__dict__) > len(DEFAULT_LOG_RECORD_KEYS):
             for key in record.__dict__:
                 if key not in DEFAULT_LOG_RECORD_KEYS:
@@ -88,4 +89,8 @@ class NewRelicContextFormatter(Formatter):
 
         if record.exc_info:
             output.update(format_exc_info(record.exc_info))
-        return json.dumps(output)
+
+        return output
+
+    def format(self, record):
+        return json.dumps(self.log_record_to_dict(record))

@@ -228,14 +228,21 @@ def _nr_sanic_transaction_wrapper_(wrapped, instance, args, kwargs):
 
 
 def instrument_sanic_app(module):
-    wrap_function_wrapper(module, 'Sanic.handle_request',
-        _nr_sanic_transaction_wrapper_)
     wrap_function_wrapper(module, 'Sanic.__init__',
         _sanic_app_init)
-    wrap_function_wrapper(module, 'Sanic.register_middleware',
-        _nr_sanic_register_middleware_)
+    if hasattr(module.Sanic, 'handle_request'):
+        wrap_function_wrapper(module, 'Sanic.handle_request',
+            _nr_sanic_transaction_wrapper_)
+    if hasattr(module.Sanic, 'register_middleware'):
+        wrap_function_wrapper(module, 'Sanic.register_middleware',
+            _nr_sanic_register_middleware_)
 
 
 def instrument_sanic_response(module):
-    wrap_function_wrapper(module, 'BaseHTTPResponse._parse_headers',
-        _nr_sanic_response_parse_headers)
+    if hasattr(module.BaseHTTPResponse, 'get_headers'):
+        wrap_function_wrapper(module, 'BaseHTTPResponse.get_headers',
+            _nr_sanic_response_parse_headers)
+
+    if hasattr(module.BaseHTTPResponse, '_parse_headers'):
+        wrap_function_wrapper(module, 'BaseHTTPResponse._parse_headers',
+            _nr_sanic_response_parse_headers)

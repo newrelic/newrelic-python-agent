@@ -349,3 +349,20 @@ def test_unknown_route(app):
 def test_bad_method(app):
     response = app.fetch('post', '/')
     assert response.status == 405
+
+
+BLUEPRINT_METRICS = [
+    ("Function/_target_application:blueprint_middleware", 1),
+    ("Function/_target_application:blueprint_route", 1),
+]
+
+
+@validate_transaction_metrics(
+    "_target_application:blueprint_route",
+    scoped_metrics=BLUEPRINT_METRICS,
+    rollup_metrics=BLUEPRINT_METRICS + FRAMEWORK_METRICS,
+)
+@validate_transaction_errors(errors=[])
+def test_blueprint_middleware(app):
+    response = app.fetch("get", "/blueprint")
+    assert response.status == 200

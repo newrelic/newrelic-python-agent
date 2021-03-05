@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from sanic import Sanic
+from sanic import Sanic, Blueprint
 from sanic.exceptions import NotFound, SanicException, ServerError
 from sanic.handlers import ErrorHandler
 from sanic.response import json, stream
@@ -67,7 +67,9 @@ class CustomRouter(Router):
         return handler, args, kwargs, uri
 
 
+
 app = Sanic(name="Python Agent Test (framework_sanic)", error_handler=CustomErrorHandler(), router=CustomRouter())
+blueprint = Blueprint("testing_blueprint")
 
 
 @app.route('/')
@@ -94,6 +96,11 @@ async def not_found(request):
 @app.route('/zero')
 async def zero_division_error(request):
     1 / 0
+
+
+@blueprint.middleware('request')
+async def blueprint_middleware(request):
+    return None
 
 
 @app.middleware('request')
@@ -164,6 +171,15 @@ async def async_error(request):
     raise CustomExceptionAsync('something went wrong')
 
 
+@blueprint.route('/blueprint')
+async def blueprint_route(request):
+    async def streaming_fn(response):
+        response.write('foo')
+        response.write('bar')
+    return stream(streaming_fn)
+
+
+app.blueprint(blueprint)
 app.add_route(MethodView.as_view(), '/method_view')
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8000)

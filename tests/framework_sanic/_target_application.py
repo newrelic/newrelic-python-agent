@@ -67,7 +67,7 @@ class CustomRouter(Router):
         return handler, args, kwargs, uri
 
 
-app = Sanic(error_handler=CustomErrorHandler(), router=CustomRouter())
+app = Sanic(name="Python Agent Test (framework_sanic)", error_handler=CustomErrorHandler(), router=CustomRouter())
 
 
 @app.route('/')

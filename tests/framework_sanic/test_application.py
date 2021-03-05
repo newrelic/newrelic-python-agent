@@ -29,9 +29,12 @@ from testing_support.fixtures import (validate_transaction_metrics,
     function_not_called)
 
 
+MAJOR_VERSION = int(sanic.__version__.split(".")[0])
+MIDDLEWARE_COUNT = 1 if MAJOR_VERSION > 18 else 2
+
 BASE_METRICS = [
     ('Function/_target_application:index', 1),
-    ('Function/_target_application:request_middleware', 2),
+    ('Function/_target_application:request_middleware', MIDDLEWARE_COUNT),
 ]
 FRAMEWORK_METRICS = [
     ('Python/Framework/Sanic/%s' % sanic.__version__, 1),

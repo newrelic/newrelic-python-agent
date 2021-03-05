@@ -237,5 +237,5 @@ def instrument_sanic_app(module):
 
 
 def instrument_sanic_response(module):
-    wrap_function_wrapper(module, 'BaseHTTPResponse._parse_headers',
+    wrap_function_wrapper(module, 'BaseHTTPResponse.get_headers',
         _nr_sanic_response_parse_headers)

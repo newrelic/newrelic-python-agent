@@ -61,14 +61,21 @@ class CustomRouter(Router):
         if hasattr(base_get, '__wrapped__'):
             base_get = base_get.__wrapped__
 
-        handler, args, kwargs, uri = base_get(self, request)
+        # Either 4 or 6 items returned in tuple depending on version.
+        result = list(base_get(self, request))
         if request.path == '/server-error':
-            handler = None
-        return handler, args, kwargs, uri
+            result[0] = None  # Set handler to None
+
+        return tuple(result)
 
 
+app = Sanic(name="Python Agent Test (framework_sanic)", error_handler=CustomErrorHandler())
+try:
+    router = CustomRouter(app)
+except TypeError:
+    router = CustomRouter()
+app.router = router
 
-app = Sanic(name="Python Agent Test (framework_sanic)", error_handler=CustomErrorHandler(), router=CustomRouter())
 blueprint = Blueprint("testing_blueprint")
 
 

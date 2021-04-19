@@ -322,8 +322,8 @@ ERROR_HANDLER_METRICS = [
 def test_error_handler_transaction_naming(app):
     original_request_middleware = deque(app.app.request_middleware)
     original_response_middleware = deque(app.app.response_middleware)
-    app.app.request_middleware = []
-    app.app.response_middleware = []
+    app.app.request_middleware = deque()
+    app.app.response_middleware = deque()
 
     try:
         response = app.fetch('get', '/server-error')

@@ -148,13 +148,18 @@ def _sanic_app_init(wrapped, instance, args, kwargs):
         error_handler.add = _nr_sanic_error_handlers(
                 error_handler.add)
 
-    router = getattr(instance, 'router')
-    if hasattr(router, 'add'):
-        router.add = _nr_sanic_router_add(router.add)
-    if hasattr(router, 'get'):
+    return result
+
+
+def _sanic_router_init(wrapped, instance, args, kwargs):
+    result = wrapped(*args, **kwargs)
+
+    if hasattr(instance, 'add'):
+        instance.add = _nr_sanic_router_add(instance.add)
+    if hasattr(instance, 'get'):
         # Cache the callable_name on the router.get
-        callable_name(router.get)
-        router.get = _nr_sanic_router_get(router.get)
+        callable_name(instance.get)
+        instance.get = _nr_sanic_router_get(instance.get)
 
     return result
 
@@ -174,6 +179,24 @@ def _nr_sanic_response_parse_headers(wrapped, instance, args, kwargs):
             instance.headers[header_name] = header_value
 
     return wrapped(*args, **kwargs)
+
+
+def _nr_sanic_response_init(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    wrapped(*args, **kwargs)
+    if transaction is not None:
+        # instance is the response object
+        headers = dict(instance.headers)
+        headers.setdefault("content-type", instance.content_type)
+
+        cat_headers = transaction.process_response(str(instance.status),
+                headers.items())
+
+        for header_name, header_value in cat_headers:
+            if header_name not in headers:
+                # Set headers on the original object
+                instance.headers[header_name] = header_value
 
 
 def _nr_wrapper_middleware_(attach_to):
@@ -238,7 +261,20 @@ def instrument_sanic_app(module):
             _nr_sanic_register_middleware_)
 
 
+def instrument_sanic_router(module):
+    wrap_function_wrapper(module, 'Router.__init__',
+        _sanic_router_init)
+
+
 def instrument_sanic_response(module):
+    if hasattr(module, 'HTTPResponse'):
+        wrap_function_wrapper(module, 'HTTPResponse.__init__',
+            _nr_sanic_response_init)
+
+    if hasattr(module, 'StreamingHTTPResponse'):
+        wrap_function_wrapper(module, 'StreamingHTTPResponse.__init__',
+            _nr_sanic_response_init)
+
     if hasattr(module.BaseHTTPResponse, 'get_headers'):
         wrap_function_wrapper(module, 'BaseHTTPResponse.get_headers',
             _nr_sanic_response_parse_headers)

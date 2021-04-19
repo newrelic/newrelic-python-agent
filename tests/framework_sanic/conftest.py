@@ -39,6 +39,7 @@ collector_agent_registration = collector_agent_registration_fixture(
         default_settings=_default_settings)
 
 
+RESPONSES = list()
 
 
 def create_request_class(app, method, url, headers=None):
@@ -62,36 +63,40 @@ def create_request_class(app, method, url, headers=None):
     return _request
 
 
-def create_request_coroutine(app, method, url, headers=None, responses=None):
-    if responses is None:
-        responses = []
-
+def create_request_coroutine(app, method, url, headers=None):
     def write_callback(response):
         response.raw_headers = response.output()
         if b'write_response_error' in response.raw_headers:
             raise ValueError()
 
-        responses.append(response)
+        RESPONSES.append(response)
+
 
     async def stream_callback(response):
         response.raw_headers = response.get_headers()
-        responses.append(response)
+        RESPONSES.append(response)
 
     headers = headers or {}
-    coro = app.handle_request(
-        create_request_class(app, method, url, headers),
-        write_callback,
-        stream_callback,
-    )
+
+    try:
+        coro = app.handle_request(
+            create_request_class(app, method, url, headers),
+            write_callback,
+            stream_callback,
+        )
+    except TypeError:
+        coro = app.handle_request(
+            create_request_class(app, method, url, headers),
+        )
+        
     return coro
 
 
 def request(app, method, url, headers=None):
-    responses = []
-    coro = create_request_coroutine(app, method, url, headers, responses)
+    coro = create_request_coroutine(app, method, url, headers)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(coro)
-    return responses[0]
+    return RESPONSES.pop()
 
 
 class TestApplication(object):
@@ -106,3 +111,15 @@ class TestApplication(object):
 def app():
     from _target_application import app
     return TestApplication(app)
+
+
+@pytest.fixture(autouse=True)
+def capture_responses(monkeypatch):
+    import sanic
+
+    if hasattr(sanic.response.BaseHTTPResponse, "send"):
+        super_send = sanic.response.BaseHTTPResponse.send
+        async def mock_send(self, *args, **kwargs):
+            RESPONSES.append(self)
+            return await super_send(self, *args, **kwargs)
+        monkeypatch.setattr(sanic.response.BaseHTTPResponse, "send", mock_send)

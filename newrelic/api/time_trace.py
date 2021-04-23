@@ -67,6 +67,10 @@ class TimeTrace(object):
     def _is_leaf(self):
         return self.child_count == len(self.children)
 
+    def __str__(self):
+        name = getattr(self, "name", None)
+        return "<id:%d name:%s __str__:%s>" % (id(self), name, super(TimeTrace, self).__str__())
+
     def __enter__(self):
         self.parent = parent = self.parent or current_trace()
         if not parent:

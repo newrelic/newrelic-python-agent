@@ -347,7 +347,6 @@ class TraceCache(object):
                 "".join(traceback.format_stack()[:-1]),
             )
 
-            raise RuntimeError("not the current trace")
 
         del self._cache[thread_id]
         root._greenlet = None

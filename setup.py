@@ -145,7 +145,7 @@ kwargs = dict(
         zip_safe = False,
         classifiers = classifiers,
         packages = packages,
-        python_requires = '>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*',
+        python_requires = '>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*',
         package_data = {'newrelic': ['newrelic.ini',
                                      'version.txt',
                                      'packages/urllib3/LICENSE.txt',

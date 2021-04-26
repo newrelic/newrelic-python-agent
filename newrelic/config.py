@@ -2798,14 +2798,6 @@ def _setup_agent_console():
 def initialize(config_file=None, environment=None, ignore_errors=None,
             log_file=None, log_level=None):
 
-    version_info = sys.version_info[:2]
-    if version_info == (3, 5):
-        warnings.warn('A future version of the newrelic package will drop '
-                'support for Python 3.5. Please upgrade your version of '
-                'Python.',
-                DeprecationWarning,
-                stacklevel=2)
-
     if config_file is None:
         config_file = os.environ.get('NEW_RELIC_CONFIG_FILE', None)
 

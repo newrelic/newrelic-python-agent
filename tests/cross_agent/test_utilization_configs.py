@@ -23,7 +23,8 @@ import tempfile
 # methods in newrelic.core.data_collector and does not put them back!
 from testing_support.mock_http_client import create_client_cls
 from newrelic.core.agent_protocol import AgentProtocol
-from newrelic.common.utilization import (BootIdUtilization, CommonUtilization)
+from newrelic.common.system_info import BootIdUtilization
+from newrelic.common.utilization import (CommonUtilization)
 from newrelic.common.object_wrapper import (function_wrapper)
 import newrelic.core.config
 

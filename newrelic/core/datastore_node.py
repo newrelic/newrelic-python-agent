@@ -16,7 +16,7 @@ from collections import namedtuple
 
 import newrelic.core.trace_node
 
-from newrelic.common import constants, system_info
+from newrelic.common import system_info
 from newrelic.core.node_mixin import DatastoreNodeMixin
 from newrelic.core.metric import TimeMetric
 
@@ -30,7 +30,7 @@ class DatastoreNode(_DatastoreNode, DatastoreNodeMixin):
 
     @property
     def instance_hostname(self):
-        if self.host in constants.LOCALHOST_EQUIVALENTS:
+        if self.host in system_info.LOCALHOST_EQUIVALENTS:
             hostname = system_info.gethostname()
         else:
             hostname = self.host

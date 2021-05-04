@@ -31,6 +31,7 @@ from newrelic.samplers.data_sampler import DataSampler
 
 from newrelic.core.config import global_settings
 from newrelic.core.custom_event import create_custom_event
+from newrelic.core.data_collector import create_session
 from newrelic.network.exceptions import (ForceAgentRestart,
         ForceAgentDisconnect, DiscardDataForRequest, RetryDataForRequest,
         NetworkInterfaceException)
@@ -270,12 +271,6 @@ class Application(object):
         data collector if no current active session.
 
         """
-
-        # Defer these imports so that they are loaded on the connect thread
-        # instead of the main thread
-        #
-        # This speeds up startup since some of these imports are slow
-        from newrelic.core.data_collector import create_session
 
         if self._agent_shutdown:
             return

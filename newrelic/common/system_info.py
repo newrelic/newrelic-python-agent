@@ -18,12 +18,15 @@ system or for the specific process the code is running in.
 """
 
 import logging
+import multiprocessing
 import os
 import re
 import socket
 import subprocess
 import sys
 import threading
+
+from newrelic.common.utilization import CommonUtilization
 
 try:
     from subprocess import check_output as _execute_program
@@ -53,12 +56,21 @@ except ImportError:
 
 _logger = logging.getLogger(__name__)
 
+LOCALHOST_EQUIVALENTS = set([
+    'localhost',
+    '127.0.0.1',
+    '0.0.0.0',
+    '0:0:0:0:0:0:0:0',
+    '0:0:0:0:0:0:0:1',
+    '::1',
+    '::',
+])
+
 
 def logical_processor_count():
     """Returns the number of logical processors in the system.
 
     """
-    import multiprocessing
 
     # The multiprocessing module provides support for Windows,
     # BSD systems (including MacOS X) and systems which support
@@ -411,3 +423,38 @@ def getips():
                 s.close()
 
     return _nr_cached_ip_address
+
+
+class BootIdUtilization(CommonUtilization):
+    VENDOR_NAME = 'boot_id'
+    METADATA_URL = '/proc/sys/kernel/random/boot_id'
+
+    @classmethod
+    def fetch(cls):
+        if not sys.platform.startswith('linux'):
+            return
+
+        try:
+            with open(cls.METADATA_URL, 'rb') as f:
+                return f.readline().decode('ascii')
+        except:
+            # There are all sorts of exceptions that can occur here
+            # (i.e. permissions, non-existent file, etc)
+            cls.record_error(cls.METADATA_URL, 'File read error.')
+            pass
+
+    @staticmethod
+    def get_values(value):
+        return value
+
+    @classmethod
+    def sanitize(cls, value):
+        if value is None:
+            return
+
+        stripped = value.strip()
+
+        if len(stripped) != 36:
+            cls.record_error(cls.METADATA_URL, stripped)
+
+        return stripped[:128] or None

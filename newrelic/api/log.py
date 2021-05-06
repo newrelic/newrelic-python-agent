@@ -51,7 +51,7 @@ def format_exc_info(exc_info):
     return {
         "error.class": fullname,
         "error.message": message,
-        "error.expected": str(_is_expected_error(fullname, message)),
+        "error.expected": _is_expected_error(fullname, message),
     }
 
 

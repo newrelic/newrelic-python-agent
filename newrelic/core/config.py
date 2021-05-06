@@ -450,7 +450,7 @@ def _environ_as_mapping(name, default=''):
     return result
 
 
-def _parse_error_status_codes(value, target):
+def _parse_status_codes(value, target):
     items = value.split()
     for item in items:
         try:
@@ -653,7 +653,7 @@ _settings.error_collector.enabled = True
 _settings.error_collector.capture_events = True
 _settings.error_collector.capture_source = False
 _settings.error_collector.ignore_errors = []
-_settings.error_collector.ignore_status_codes = _parse_error_status_codes(
+_settings.error_collector.ignore_status_codes = _parse_status_codes(
         '100-102 200-208 226 300-308 404', set())
 _settings.error_collector.expected_classes = []
 _settings.error_collector.expected_status_codes = set()

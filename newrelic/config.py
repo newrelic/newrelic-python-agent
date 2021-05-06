@@ -189,12 +189,12 @@ def _map_console_listener_socket(s):
 
 
 def _merge_ignore_status_codes(s):
-    return newrelic.core.config._parse_error_status_codes(
+    return newrelic.core.config._parse_status_codes(
         s, _settings.error_collector.ignore_status_codes
     )
 
 def _merge_expected_status_codes(s):
-    return newrelic.core.config._parse_error_status_codes(
+    return newrelic.core.config._parse_status_codes(
         s, _settings.error_collector.expected_status_codes
     )
 

@@ -427,7 +427,7 @@ def test_other_transaction_error_parameters_hsm_enabled():
 
 _err_message = "Error! :("
 _intrinsic_attributes = {'error.class': callable_name(TestException),
-        'error.message': _err_message}
+        'error.message': _err_message, "error.expected": False}
 
 
 @reset_core_stats_engine()
@@ -444,7 +444,7 @@ def test_non_transaction_error_parameters_hsm_disabled():
 
 
 _intrinsic_attributes = {'error.class': callable_name(TestException),
-        'error.message': STRIP_EXCEPTION_MESSAGE}
+        'error.message': STRIP_EXCEPTION_MESSAGE, "error.expected": False}
 
 
 @reset_core_stats_engine()

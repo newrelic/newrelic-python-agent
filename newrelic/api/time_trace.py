@@ -312,7 +312,7 @@ class TimeTrace(object):
         self._add_agent_attribute("error.class", fullname)
         self._add_agent_attribute("error.message", message)
         self._add_agent_attribute(
-            "error.exepected", _is_expected_error(fullname, message)
+            "error.expected", _is_expected_error(fullname, message)
         )
         return fullname, message, tb
 

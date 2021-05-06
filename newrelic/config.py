@@ -189,8 +189,13 @@ def _map_console_listener_socket(s):
 
 
 def _merge_ignore_status_codes(s):
-    return newrelic.core.config._parse_ignore_status_codes(
+    return newrelic.core.config._parse_error_status_codes(
         s, _settings.error_collector.ignore_status_codes
+    )
+
+def _merge_expected_status_codes(s):
+    return newrelic.core.config._parse_error_status_codes(
+        s, _settings.error_collector.expected_status_codes
     )
 
 
@@ -401,6 +406,18 @@ def _process_configuration(section):
         "error_collector.ignore_status_codes",
         "get",
         _merge_ignore_status_codes,
+    )
+    _process_setting(
+        section, "error_collector.expected_classes", "get", _map_split_strings
+    )
+    _process_setting(
+        section, "error_collector.expected_messages", "get", _map_split_strings
+    )
+    _process_setting(
+        section,
+        "error_collector.expected_status_codes",
+        "get",
+        _merge_expected_status_codes,
     )
     _process_setting(section, "error_collector.attributes.enabled", "getboolean", None)
     _process_setting(
@@ -1814,10 +1831,11 @@ def _process_transaction_name_configuration():
 # Setup error trace wrapper defined in configuration file.
 
 
-def _error_trace_import_hook(object_path, ignore_errors):
+def _error_trace_import_hook(object_path, ignore_errors, expected_classes, expected_messages):
     def _instrument(target):
-        _logger.debug("wrap error-trace %s" % ((target, object_path, ignore_errors),))
+        _logger.debug("wrap error-trace %s" % ((target, object_path, ignore_errors, expected_classes, expected_messages),))
 
+        #TODO: add expected error parameters to wrap_error_trace
         try:
             newrelic.api.error_trace.wrap_error_trace(
                 target, object_path, ignore_errors
@@ -1850,15 +1868,24 @@ def _process_error_trace_configuration():
             (module, object_path) = function.split(":", 1)
 
             ignore_errors = []
+            expected_classes = []
+            expected_messages = []
 
             if _config_object.has_option(section, "ignore_errors"):
                 ignore_errors = _config_object.get(section, "ignore_errors").split()
 
+            if _config_object.has_option(section, "expected_classes"):
+                expected_classes = _config_object.get(section, "expected_classes").split()
+
+            if _config_object.has_option(section, "expected_messages"):
+                expected_messages = _config_object.get(section, "expected_messages").split()
+
+
             _logger.debug(
-                "register error-trace %s" % ((module, object_path, ignore_errors),)
+                "register error-trace %s" % ((module, object_path, ignore_errors, expected_classes, expected_messages),)
             )
 
-            hook = _error_trace_import_hook(object_path, ignore_errors)
+            hook = _error_trace_import_hook(object_path, ignore_errors, expected_classes, expected_messages)
             newrelic.api.import_hook.register_import_hook(module, hook)
         except Exception:
             _raise_configuration_error(section)

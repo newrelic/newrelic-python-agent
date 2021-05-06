@@ -65,4 +65,4 @@ class NewRelicContextFormatter(Formatter):
         return output
 
     def format(self, record):
-        return json.dumps(self.log_record_to_dict(record), default=str)
+        return json.dumps(self.log_record_to_dict(record), default=str, separators=(',', ':'))

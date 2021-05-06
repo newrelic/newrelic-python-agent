@@ -1948,6 +1948,8 @@ def validate_error_event_sample_data(required_attrs={},
                         'error.class'] == required_attrs['error.class']
                 assert intrinsics['error.message'].startswith(
                         required_attrs['error.message'])
+                assert intrinsics[
+                        'error.expected'] == required_attrs['error.expected']
                 assert intrinsics['nr.transactionGuid'] is not None
                 assert intrinsics['spanId'] is not None
 

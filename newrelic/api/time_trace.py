@@ -306,6 +306,7 @@ class TimeTrace(object):
         # Add error details as agent attributes to span event.
         self._add_agent_attribute('error.class', fullname)
         self._add_agent_attribute('error.message', message)
+        self._add_agent_attribute('error.exepected', _is_expected_error(fullname, message))
         return fullname, message, tb
 
     def record_exception(self, exc_info=None,
@@ -540,6 +541,15 @@ def get_linking_metadata():
             "entity.type": "SERVICE",
         }
 
+
+def _is_expected_error(fullname, message):
+    trace = current_trace()
+    settings = trace and trace.settings
+
+    if settings:
+        pass
+
+    return False
 
 def record_exception(exc=None, value=None, tb=None, params={},
         ignore_errors=[], application=None):

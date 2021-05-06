@@ -109,6 +109,7 @@ def test_newrelic_logger_error(log_buffer):
         u"process.name": u"MainProcess",
         u"error.class": u"test_logs_in_context.ExceptionForTest",
         u"error.message": u"",
+        u"error.expected": u"False",
     }
 
 

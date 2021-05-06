@@ -79,7 +79,7 @@ BROWSER_INTRINSIC_KEYS = ["beacon", "errorBeacon", "licenseKey",
 ABSENT_BROWSER_KEYS = ['request.method', 'request.headers.contentType',
         'request.headers.contentLength']
 
-ERROR_EVENT_INTRINSICS = ('type', 'error.class', 'error.message', 'timestamp',
+ERROR_EVENT_INTRINSICS = ('type', 'error.class', 'error.message', 'error.expected', 'timestamp',
         'transactionName', 'duration')
 ERROR_PARAMS = ['ohnoes', ]
 ERROR_USER_ATTRS = USER_ATTRS + ERROR_PARAMS
@@ -858,7 +858,7 @@ def test_browser_monitoring_disabled(normal_application):
 
 # Test outside transaction (error traces and events only).
 
-INTRSICS_NO_TRANS = ('type', 'error.class', 'error.message', 'timestamp',
+INTRSICS_NO_TRANS = ('type', 'error.class', 'error.message', 'error.expected', 'timestamp',
         'transactionName')
 
 

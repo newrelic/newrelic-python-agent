@@ -411,9 +411,6 @@ def _process_configuration(section):
         section, "error_collector.expected_classes", "get", _map_split_strings
     )
     _process_setting(
-        section, "error_collector.expected_messages", "get", _map_split_strings
-    )
-    _process_setting(
         section,
         "error_collector.expected_status_codes",
         "get",
@@ -1831,11 +1828,10 @@ def _process_transaction_name_configuration():
 # Setup error trace wrapper defined in configuration file.
 
 
-def _error_trace_import_hook(object_path, ignore_errors, expected_classes, expected_messages):
+def _error_trace_import_hook(object_path, ignore_errors, expected_classes):
     def _instrument(target):
-        _logger.debug("wrap error-trace %s" % ((target, object_path, ignore_errors, expected_classes, expected_messages),))
+        _logger.debug("wrap error-trace %s" % ((target, object_path, ignore_errors, expected_classes),))
 
-        #TODO: add expected error parameters to wrap_error_trace
         try:
             newrelic.api.error_trace.wrap_error_trace(
                 target, object_path, ignore_errors
@@ -1869,7 +1865,6 @@ def _process_error_trace_configuration():
 
             ignore_errors = []
             expected_classes = []
-            expected_messages = []
 
             if _config_object.has_option(section, "ignore_errors"):
                 ignore_errors = _config_object.get(section, "ignore_errors").split()
@@ -1877,15 +1872,11 @@ def _process_error_trace_configuration():
             if _config_object.has_option(section, "expected_classes"):
                 expected_classes = _config_object.get(section, "expected_classes").split()
 
-            if _config_object.has_option(section, "expected_messages"):
-                expected_messages = _config_object.get(section, "expected_messages").split()
-
-
             _logger.debug(
-                "register error-trace %s" % ((module, object_path, ignore_errors, expected_classes, expected_messages),)
+                "register error-trace %s" % ((module, object_path, ignore_errors, expected_classes),)
             )
 
-            hook = _error_trace_import_hook(object_path, ignore_errors, expected_classes, expected_messages)
+            hook = _error_trace_import_hook(object_path, ignore_errors, expected_classes)
             newrelic.api.import_hook.register_import_hook(module, hook)
         except Exception:
             _raise_configuration_error(section)

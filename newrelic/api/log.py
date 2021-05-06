@@ -57,12 +57,7 @@ class NewRelicContextFormatter(Formatter):
         if len(record.__dict__) > len(DEFAULT_LOG_RECORD_KEYS):
             for key in record.__dict__:
                 if key not in DEFAULT_LOG_RECORD_KEYS:
-                    try:
-                        value = str(getattr(record, key))
-                    except Exception:
-                        continue
-
-                    output["extra." + key] = value
+                    output['extra.' + key] = getattr(record, key)
 
         if record.exc_info:
             output.update(format_exc_info(record.exc_info))
@@ -70,4 +65,4 @@ class NewRelicContextFormatter(Formatter):
         return output
 
     def format(self, record):
-        return json.dumps(self.log_record_to_dict(record))
+        return json.dumps(self.log_record_to_dict(record), default=str)

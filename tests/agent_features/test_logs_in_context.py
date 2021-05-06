@@ -47,7 +47,20 @@ def log_buffer(caplog):
 
 
 def test_newrelic_logger_no_error(log_buffer):
-    _logger.info(u"Hello %s", u"World", extra={"foo": "bar"})
+    extra = {
+        "string": "foo",
+        "integer": 1,
+        "float": 1.23,
+        "null": None,
+        "array": [1, 2, 3],
+        "bool": True,
+        "non_serializable": {"set"},
+        "object": {
+            "first": "bar",
+            "second": "baz",
+        },
+    }
+    _logger.info(u"Hello %s", u"World", extra=extra)
 
     log_buffer.seek(0)
     message = json.load(log_buffer)
@@ -71,7 +84,17 @@ def test_newrelic_logger_no_error(log_buffer):
         u"logger.name": u"test_logs_in_context",
         u"thread.name": u"MainThread",
         u"process.name": u"MainProcess",
-        u"extra.foo": u"bar",
+        u"extra.string": u"foo",
+        u"extra.integer": 1,
+        u"extra.float": 1.23,
+        u"extra.null": None,
+        u"extra.array": [1, 2, 3],
+        u"extra.bool": True,
+        u"extra.non_serializable": u"set(['set'])" if six.PY2 else u"{'set'}",
+        u"extra.object": {
+            u"first": u"bar",
+            u"second": u"baz",
+        },
     }
 
 

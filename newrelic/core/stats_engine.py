@@ -41,6 +41,7 @@ from newrelic.core.metric import TimeMetric
 from newrelic.core.stack_trace import exception_stack
 
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
+from newrelic.api.time_trace import _is_expected_error
 from newrelic.common.encoding_utils import json_encode
 from newrelic.common.streaming_utils import StreamBuffer
 
@@ -733,6 +734,7 @@ class StatsEngine(object):
                 'type': 'TransactionError',
                 'error.class': error.type,
                 'error.message': error.message,
+                'error.expected': _is_expected_error(error.type, error.message),
                 'timestamp': int(1000.0 * error.start_time),
                 'transactionName': None,
         }

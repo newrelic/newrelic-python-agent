@@ -845,6 +845,8 @@ def validate_non_transaction_error_event(required_intrinsics={}, num_errors=1,
                         'error.class'] == required_intrinsics['error.class']
                 assert intrinsics['error.message'].startswith(
                         required_intrinsics['error.message'])
+                assert intrinsics[
+                        'error.expected'] == required_intrinsics['error.expected']
                 now = time.time()
                 assert isinstance(intrinsics['timestamp'], int)
                 assert intrinsics['timestamp'] <= 1000.0 * now
@@ -1834,6 +1836,7 @@ def validate_transaction_event_sample_data(required_attrs,
 
         assert 'error.class' not in intrinsics
         assert 'error.message' not in intrinsics
+        assert 'error.expected' not in intrinsics
         assert 'transactionName' not in intrinsics
 
         _validate_event_attributes(intrinsics,
@@ -1948,6 +1951,8 @@ def validate_error_event_sample_data(required_attrs={},
                         'error.class'] == required_attrs['error.class']
                 assert intrinsics['error.message'].startswith(
                         required_attrs['error.message'])
+                assert intrinsics[
+                        'error.expected'] == required_attrs['error.expected']
                 assert intrinsics['nr.transactionGuid'] is not None
                 assert intrinsics['spanId'] is not None
 

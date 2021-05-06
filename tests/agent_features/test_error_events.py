@@ -41,6 +41,7 @@ fully_featured_application = webtest.TestApp(fully_featured_app)
 _intrinsic_attributes = {
         'error.class': callable_name(ERROR),
         'error.message': ERR_MESSAGE,
+        'error.expected': False,
         'transactionName' : 'WebTransaction/Uri/',
         'port': 80,     # SERVER_PORT default value in webtest WSGI environ
 }
@@ -58,6 +59,7 @@ def test_transaction_error_event_no_extra_attributes():
 _intrinsic_attributes = {
         'error.class': callable_name(ERROR),
         'error.message': ERR_MESSAGE,
+        'error.expected': False,
         'transactionName' : 'WebTransaction/Uri/',
         'databaseCallCount': 2,
         'externalCallCount': 2,
@@ -80,6 +82,7 @@ def test_transaction_error_event_lotsa_attributes():
 _intrinsic_attributes = {
         'error.class': callable_name(ERROR),
         'error.message': ERR_MESSAGE,
+        'error.expected': False,
         'transactionName' : 'OtherTransaction/Uri/',
         'databaseCallCount': 2,
         'externalCallCount': 2,
@@ -100,6 +103,7 @@ def test_transaction_error_background_task():
 _intrinsic_attributes = {
         'error.class': callable_name(ERROR),
         'error.message': ERR_MESSAGE,
+        'error.expected': False,
         'transactionName' : 'WebTransaction/Uri/',
         'nr.referringTransactionGuid': 7,
 }
@@ -120,6 +124,7 @@ def test_transaction_error_cross_agent():
 _intrinsic_attributes = {
         'error.class': callable_name(ERROR),
         'error.message': ERR_MESSAGE,
+        'error.expected': False,
         'transactionName' : 'WebTransaction/Uri/',
         'nr.syntheticsResourceId' : SYNTHETICS_RESOURCE_ID,
         'nr.syntheticsJobId' : SYNTHETICS_JOB_ID,
@@ -144,6 +149,7 @@ def test_transaction_error_with_synthetics():
 _intrinsic_attributes = {
         'error.class': callable_name(ERROR),
         'error.message': ERR_MESSAGE,
+        'error.expected': False,
         'transactionName' : 'WebTransaction/Uri/'
 }
 
@@ -200,6 +206,7 @@ outside_error = ErrorEventOutsideTransactionError(ERR_MESSAGE)
 _intrinsic_attributes = {
         'error.class': callable_name(outside_error),
         'error.message': ERR_MESSAGE,
+        'error.expected': False,
 }
 
 @reset_core_stats_engine()

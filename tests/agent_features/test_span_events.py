@@ -716,6 +716,7 @@ def test_span_event_multiple_errors(trace_type, args):
     exact_agents = {
         'error.class': callable_name(error),
         'error.message': 'whoops',
+        "error.expected": False,
     }
 
     @override_application_settings(_settings)

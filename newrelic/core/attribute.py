@@ -69,6 +69,7 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set((
         'db.statement',
         'error.class',
         'error.message',
+        'error.expected',
         'peer.hostname',
         'peer.address',
 ))

@@ -22,6 +22,7 @@ from newrelic.core.trace_cache import trace_cache
 from newrelic.core.attribute import (
         process_user_attribute, MAX_NUM_USER_ATTRIBUTES)
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
+from newrelic.core.config import global_settings
 
 _logger = logging.getLogger(__name__)
 
@@ -255,7 +256,7 @@ class TimeTrace(object):
             if module:
                 names = ('%s:%s' % (module, name), '%s.%s' % (module, name))
             else:
-                names = (name)
+                names = (name,)
 
             for fullname in names:
                 if not callable(ignore_errors) and fullname in ignore_errors:
@@ -297,6 +298,10 @@ class TimeTrace(object):
                 except Exception:
                     message = '<unprintable %s object>' % type(value).__name__
 
+        # Check against ignore rules in settings
+        if _should_ignore_error(fullname, message):
+            return
+
         # Record a supportability metric if error attributes are being
         # overiden.
         if 'error.class' in self.agent_attributes:
@@ -304,8 +309,11 @@ class TimeTrace(object):
                     'Supportability/'
                     'SpanEvent/Errors/Dropped')
         # Add error details as agent attributes to span event.
-        self._add_agent_attribute('error.class', fullname)
-        self._add_agent_attribute('error.message', message)
+        self._add_agent_attribute("error.class", fullname)
+        self._add_agent_attribute("error.message", message)
+        self._add_agent_attribute(
+            "error.expected", _is_expected_error(fullname, message)
+        )
         return fullname, message, tb
 
     def record_exception(self, exc_info=None,
@@ -540,6 +548,45 @@ def get_linking_metadata():
             "entity.type": "SERVICE",
         }
 
+
+def _is_expected_error(fullname, message, status_code=None):
+    return _error_matches_rules(
+        "expected",
+        fullname,
+        message,
+        status_code=status_code,
+    )
+
+
+def _should_ignore_error(fullname, message, status_code=None):
+    return _error_matches_rules(
+        "ignore",
+        fullname,
+        message,
+        status_code=status_code,
+    )
+
+
+def _error_matches_rules(
+    rules_prefix,
+    fullname,
+    message=None,
+    status_code=None,
+    classes_rules=None,
+    status_codes_rules=None,
+):
+    trace = current_trace()
+    settings = trace and trace.settings
+    settings = settings or global_settings()  # Default to global settings
+
+    if not settings:
+        return False
+
+    # TODO Remove default None after settings are implemented
+    classes_rules = getattr(settings.error_collector, "%s_classes" % rules_prefix, None)
+    status_codes_rules = getattr(settings.error_collector, "%s_status_codes" % rules_prefix, None)
+
+    return False
 
 def record_exception(exc=None, value=None, tb=None, params={},
         ignore_errors=[], application=None):

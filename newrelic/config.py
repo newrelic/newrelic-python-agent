@@ -399,7 +399,7 @@ def _process_configuration(section):
     )
     _process_setting(section, "error_collector.capture_source", "getboolean", None)
     _process_setting(
-        section, "error_collector.ignore_errors", "get", _map_split_strings
+        section, "error_collector.ignore_classes", "get", _map_split_strings
     )
     _process_setting(
         section,
@@ -786,6 +786,10 @@ def translate_deprecated_settings(settings, cached_settings):
         (
             "custom_insights_events.max_samples_stored",
             "event_harvest_config.harvest_limits.custom_event_data",
+        ),
+        (
+            "error_collector.ignore_errors",
+            "error_collector.ignore_classes",
         ),
     ]
 
@@ -1828,13 +1832,13 @@ def _process_transaction_name_configuration():
 # Setup error trace wrapper defined in configuration file.
 
 
-def _error_trace_import_hook(object_path, ignore_errors, expected_classes):
+def _error_trace_import_hook(object_path, ignore_classes, expected_classes):
     def _instrument(target):
-        _logger.debug("wrap error-trace %s" % ((target, object_path, ignore_errors, expected_classes),))
+        _logger.debug("wrap error-trace %s" % ((target, object_path, ignore_classes, expected_classes),))
 
         try:
             newrelic.api.error_trace.wrap_error_trace(
-                target, object_path, ignore_errors
+                target, object_path, ignore_classes
             )
         except Exception:
             _raise_instrumentation_error("error-trace", locals())
@@ -1863,20 +1867,20 @@ def _process_error_trace_configuration():
             function = _config_object.get(section, "function")
             (module, object_path) = function.split(":", 1)
 
-            ignore_errors = []
+            ignore_classes = []
             expected_classes = []
 
-            if _config_object.has_option(section, "ignore_errors"):
-                ignore_errors = _config_object.get(section, "ignore_errors").split()
+            if _config_object.has_option(section, "ignore_classes"):
+                ignore_classes = _config_object.get(section, "ignore_classes").split()
 
             if _config_object.has_option(section, "expected_classes"):
                 expected_classes = _config_object.get(section, "expected_classes").split()
 
             _logger.debug(
-                "register error-trace %s" % ((module, object_path, ignore_errors, expected_classes),)
+                "register error-trace %s" % ((module, object_path, ignore_classes, expected_classes),)
             )
 
-            hook = _error_trace_import_hook(object_path, ignore_errors, expected_classes)
+            hook = _error_trace_import_hook(object_path, ignore_classes, expected_classes)
             newrelic.api.import_hook.register_import_hook(module, hook)
         except Exception:
             _raise_configuration_error(section)

@@ -1500,7 +1500,7 @@ class Transaction(object):
                     ignore_errors=ignore_errors)
 
     def _create_error_node(self, settings, fullname, message,
-                           custom_params, span_id, tb):
+                           expected, custom_params, span_id, tb):
         # Only remember up to limit of what can be caught for a
         # single transaction. This could be trimmed further
         # later if there are already recorded errors and would
@@ -1525,6 +1525,7 @@ class Transaction(object):
                 timestamp=time.time(),
                 type=fullname,
                 message=message,
+                expected=expected,
                 span_id=span_id,
                 stack_trace=exception_stack(tb),
                 custom_params=custom_params,

@@ -340,6 +340,7 @@ class TransactionNode(_TransactionNode):
                     path=self.path,
                     message=error.message,
                     type=error.type,
+                    expected=_is_expected_error(fullname=error.type, message=error.message),
                     parameters=params)
 
     def transaction_trace(self, stats, limit, connections):
@@ -511,7 +512,7 @@ class TransactionNode(_TransactionNode):
         intrinsics['type'] = "TransactionError"
         intrinsics['error.class'] = error.type
         intrinsics['error.message'] = error.message
-        intrinsics['error.expected'] = _is_expected_error(fullname=error.type, message=error.message)
+        intrinsics['error.expected'] = error.expected
         intrinsics['transactionName'] = self.path
         intrinsics['spanId'] = error.span_id
 

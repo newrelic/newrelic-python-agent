@@ -708,6 +708,7 @@ class StatsEngine(object):
                 path='Exception',
                 message=message,
                 type=fullname,
+                expected=_is_expected_error(fullname=fullname, message=message),
                 parameters=params)
 
         # Save this error as a trace and an event.
@@ -734,7 +735,7 @@ class StatsEngine(object):
                 'type': 'TransactionError',
                 'error.class': error.type,
                 'error.message': error.message,
-                'error.expected': _is_expected_error(fullname=error.type, message=error.message),
+                'error.expected': error.expected,
                 'timestamp': int(1000.0 * error.start_time),
                 'transactionName': None,
         }

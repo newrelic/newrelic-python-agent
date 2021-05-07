@@ -511,7 +511,7 @@ class TransactionNode(_TransactionNode):
         intrinsics['type'] = "TransactionError"
         intrinsics['error.class'] = error.type
         intrinsics['error.message'] = error.message
-        intrinsics['error.expected'] = _is_expected_error(error.type, error.message)
+        intrinsics['error.expected'] = _is_expected_error(fullname=error.type, message=error.message)
         intrinsics['transactionName'] = self.path
         intrinsics['spanId'] = error.span_id
 

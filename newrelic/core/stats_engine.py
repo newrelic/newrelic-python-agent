@@ -734,7 +734,7 @@ class StatsEngine(object):
                 'type': 'TransactionError',
                 'error.class': error.type,
                 'error.message': error.message,
-                'error.expected': _is_expected_error(error.type, error.message),
+                'error.expected': _is_expected_error(fullname=error.type, message=error.message),
                 'timestamp': int(1000.0 * error.start_time),
                 'transactionName': None,
         }

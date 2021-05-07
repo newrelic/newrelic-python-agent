@@ -312,7 +312,7 @@ class TimeTrace(object):
         self._add_agent_attribute("error.class", fullname)
         self._add_agent_attribute("error.message", message)
         self._add_agent_attribute(
-            "error.expected", _is_expected_error(fullname, message)
+            "error.expected", _is_expected_error(module=module, name=name, message=message)
         )
         return fullname, message, tb
 
@@ -549,31 +549,45 @@ def get_linking_metadata():
         }
 
 
-def _is_expected_error(fullname, message, status_code=None):
+def _is_expected_error(
+    module=None,
+    name=None,
+    message=None,
+    status_code=None,
+    fullname=None,
+):
     return _error_matches_rules(
         "expected",
-        fullname,
-        message,
+        module=module,
+        name=name,
+        message=message,
         status_code=status_code,
     )
 
 
-def _should_ignore_error(fullname, message, status_code=None):
+def _should_ignore_error(
+    module=None,
+    name=None,
+    message=None,
+    status_code=None,
+    fullname=None,
+):
     return _error_matches_rules(
         "ignore",
-        fullname,
-        message,
+        module=module,
+        name=name,
+        message=message,
         status_code=status_code,
     )
 
 
 def _error_matches_rules(
     rules_prefix,
-    fullname,
+    module=None,
+    name=None,
     message=None,
     status_code=None,
-    classes_rules=None,
-    status_codes_rules=None,
+    fullname=None,
 ):
     trace = current_trace()
     settings = trace and trace.settings
@@ -583,8 +597,10 @@ def _error_matches_rules(
         return False
 
     # TODO Remove default None after settings are implemented
-    classes_rules = getattr(settings.error_collector, "%s_classes" % rules_prefix, None)
-    status_codes_rules = getattr(settings.error_collector, "%s_status_codes" % rules_prefix, None)
+    classes_rules = getattr(settings.error_collector, "%s_classes" % rules_prefix)
+    status_codes_rules = getattr(
+        settings.error_collector, "%s_status_codes" % rules_prefix
+    )
 
     return False
 

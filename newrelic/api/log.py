@@ -25,7 +25,7 @@ def format_exc_info(exc_info):
     name = value.__class__.__name__
 
     if module:
-        fullname = "{}.{}".format(module, name)
+        fullname = "{}:{}".format(module, name)
     else:
         fullname = name
 
@@ -51,7 +51,7 @@ def format_exc_info(exc_info):
     return {
         "error.class": fullname,
         "error.message": message,
-        "error.expected": _is_expected_error(fullname, message),
+        "error.expected": _is_expected_error(module=module, name=name, message=message),
     }
 
 

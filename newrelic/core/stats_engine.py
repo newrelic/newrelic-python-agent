@@ -41,7 +41,7 @@ from newrelic.core.metric import TimeMetric
 from newrelic.core.stack_trace import exception_stack
 
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
-from newrelic.api.time_trace import _is_expected_error
+from newrelic.api.time_trace import is_expected_error
 from newrelic.common.encoding_utils import json_encode
 from newrelic.common.streaming_utils import StreamBuffer
 
@@ -708,7 +708,7 @@ class StatsEngine(object):
                 path='Exception',
                 message=message,
                 type=fullname,
-                expected=_is_expected_error(fullname=fullname, message=message),
+                expected=is_expected_error(fullname=fullname, message=message),
                 parameters=params)
 
         # Save this error as a trace and an event.

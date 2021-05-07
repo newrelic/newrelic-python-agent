@@ -279,11 +279,11 @@ class TimeTrace(object):
                     message = '<unprintable %s object>' % type(value).__name__
 
         # Check against ignore rules in settings
-        if should_ignore is None and _should_ignore_error(fullname=fullname, message=message):
+        if should_ignore is None and should_ignore_error(fullname=fullname, message=message):
             return
 
         # Check against expected rules in settings
-        expected = _is_expected_error(module=module, name=name, message=message)
+        expected = is_expected_error(module=module, name=name, message=message)
 
         # Record a supportability metric if error attributes are being
         # overiden.
@@ -532,14 +532,14 @@ def get_linking_metadata():
         }
 
 
-def _is_expected_error(
+def is_expected_error(
     module=None,
     name=None,
     message=None,
     status_code=None,
     fullname=None,
 ):
-    return _error_matches_rules(
+    return error_matches_rules(
         "expected",
         module=module,
         name=name,
@@ -549,14 +549,14 @@ def _is_expected_error(
     )
 
 
-def _should_ignore_error(
+def should_ignore_error(
     module=None,
     name=None,
     message=None,
     status_code=None,
     fullname=None,
 ):
-    return _error_matches_rules(
+    return error_matches_rules(
         "ignore",
         module=module,
         name=name,
@@ -566,7 +566,7 @@ def _should_ignore_error(
     )
 
 
-def _error_matches_rules(
+def error_matches_rules(
     rules_prefix,
     module=None,
     name=None,

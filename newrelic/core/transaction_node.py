@@ -23,7 +23,7 @@ from collections import namedtuple
 import newrelic.core.error_collector
 import newrelic.core.trace_node
 
-from newrelic.api.time_trace import _is_expected_error
+from newrelic.api.time_trace import is_expected_error
 
 from newrelic.core.metric import ApdexMetric, TimeMetric
 from newrelic.core.string_table import StringTable
@@ -340,7 +340,7 @@ class TransactionNode(_TransactionNode):
                     path=self.path,
                     message=error.message,
                     type=error.type,
-                    expected=_is_expected_error(fullname=error.type, message=error.message),
+                    expected=is_expected_error(fullname=error.type, message=error.message),
                     parameters=params)
 
     def transaction_trace(self, stats, limit, connections):

@@ -248,34 +248,10 @@ class TimeTrace(object):
         module = value.__class__.__module__
         name = value.__class__.__name__
 
-        if should_ignore is None:
-            # We need to check for module.name and module:name.
-            # Originally we used module.class but that was
-            # inconsistent with everything else which used
-            # module:name. So changed to use ':' as separator, but
-            # for backward compatibility need to support '.' as
-            # separator for time being. Check that with the ':'
-            # last as we will use that name as the exception type.
-
-            if module:
-                names = ('%s:%s' % (module, name), '%s.%s' % (module, name))
-            else:
-                names = (name,)
-
-            for fullname in names:
-                if not callable(ignore_errors) and fullname in ignore_errors:
-                    return
-
-                if fullname in settings.error_collector.ignore_classes:
-                    return
-
-            fullname = names[0]
-
+        if module:
+            fullname = '%s:%s' % (module, name)
         else:
-            if module:
-                fullname = '%s:%s' % (module, name)
-            else:
-                fullname = name
+            fullname = name
 
         # Check to see if we need to strip the message before recording it.
 
@@ -303,7 +279,7 @@ class TimeTrace(object):
                     message = '<unprintable %s object>' % type(value).__name__
 
         # Check against ignore rules in settings
-        if _should_ignore_error(fullname=fullname, message=message):
+        if should_ignore is None and _should_ignore_error(fullname=fullname, message=message):
             return
 
         # Check against expected rules in settings
@@ -625,6 +601,13 @@ def _error_matches_rules(
 
     # Check both possible types of fullname made from module and name
     if module is not None and name is not None:
+        # We need to check for module.name and module:name.
+        # Originally we used module.class but that was
+        # inconsistent with everything else which used
+        # module:name. So changed to use ':' as separator, but
+        # for backward compatibility need to support '.' as
+        # separator for time being. Check that with the ':'
+        # last as we will use that name as the exception type.
         names = ("%s:%s" % (module, name), "%s.%s" % (module, name))
         for fullname in names:
             if fullname in classes_rules:

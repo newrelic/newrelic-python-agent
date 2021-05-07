@@ -623,7 +623,7 @@ class StatsEngine(object):
             if not callable(ignore_errors) and fullname in ignore_errors:
                 return
 
-            if fullname in error_collector.ignore_errors:
+            if fullname in error_collector.ignore_classes:
                 return
 
             if module:

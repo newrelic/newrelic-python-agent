@@ -262,7 +262,7 @@ class TimeTrace(object):
                 if not callable(ignore_errors) and fullname in ignore_errors:
                     return
 
-                if fullname in settings.error_collector.ignore_errors:
+                if fullname in settings.error_collector.ignore_classes:
                     return
 
             fullname = names[0]

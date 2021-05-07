@@ -18,10 +18,14 @@ import time
 import sys
 import newrelic.packages.six as six
 import traceback
+
 from newrelic.core.trace_cache import trace_cache
 from newrelic.core.attribute import (
         process_user_attribute, MAX_NUM_USER_ATTRIBUTES)
+
+from newrelic.api.application import application_instance
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
+
 from newrelic.core.config import global_settings
 
 _logger = logging.getLogger(__name__)
@@ -299,8 +303,11 @@ class TimeTrace(object):
                     message = '<unprintable %s object>' % type(value).__name__
 
         # Check against ignore rules in settings
-        if _should_ignore_error(fullname, message):
+        if _should_ignore_error(fullname=fullname, message=message):
             return
+
+        # Check against expected rules in settings
+        expected = _is_expected_error(module=module, name=name, message=message)
 
         # Record a supportability metric if error attributes are being
         # overiden.
@@ -308,20 +315,20 @@ class TimeTrace(object):
             transaction._record_supportability(
                     'Supportability/'
                     'SpanEvent/Errors/Dropped')
+
         # Add error details as agent attributes to span event.
         self._add_agent_attribute("error.class", fullname)
         self._add_agent_attribute("error.message", message)
-        self._add_agent_attribute(
-            "error.expected", _is_expected_error(module=module, name=name, message=message)
-        )
-        return fullname, message, tb
+        self._add_agent_attribute("error.expected", expected)
+
+        return fullname, message, tb, expected
 
     def record_exception(self, exc_info=None,
                          params={}, ignore_errors=[]):
 
         recorded = self._observe_exception(exc_info, ignore_errors)
         if recorded:
-            fullname, message, tb = recorded
+            fullname, message, tb, expected = recorded
             transaction = self.transaction
             settings = transaction and transaction.settings
 
@@ -346,7 +353,7 @@ class TimeTrace(object):
                     custom_params = {}
 
             transaction._create_error_node(
-                    settings, fullname, message, custom_params, self.guid, tb)
+                    settings, fullname, message, expected, custom_params, self.guid, tb)
 
     def _add_agent_attribute(self, key, value):
         self.agent_attributes[key] = value
@@ -562,6 +569,7 @@ def _is_expected_error(
         name=name,
         message=message,
         status_code=status_code,
+        fullname=fullname,
     )
 
 
@@ -578,6 +586,7 @@ def _should_ignore_error(
         name=name,
         message=message,
         status_code=status_code,
+        fullname=fullname,
     )
 
 
@@ -591,7 +600,14 @@ def _error_matches_rules(
 ):
     trace = current_trace()
     settings = trace and trace.settings
-    settings = settings or global_settings()  # Default to global settings
+
+    if not settings:
+        # Retrieve application settings
+        application = application_instance()
+        settings = application and application.settings
+
+    # Default to global settings
+    settings = settings or global_settings()  
 
     if not settings:
         return False
@@ -614,7 +630,7 @@ def _error_matches_rules(
             if fullname in classes_rules:
                 return True
 
-    return False
+    return False    
 
 def record_exception(exc=None, value=None, tb=None, params={},
         ignore_errors=[], application=None):

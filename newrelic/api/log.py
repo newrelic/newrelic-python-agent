@@ -15,7 +15,8 @@
 import json
 import newrelic.packages.six as six
 from logging import Formatter, LogRecord
-from newrelic.api.time_trace import get_linking_metadata, _is_expected_error
+from newrelic.api.time_trace import get_linking_metadata
+from newrelic.core.config import is_expected_error
 
 
 def format_exc_info(exc_info):
@@ -25,7 +26,7 @@ def format_exc_info(exc_info):
     name = value.__class__.__name__
 
     if module:
-        fullname = "{}.{}".format(module, name)
+        fullname = "{}:{}".format(module, name)
     else:
         fullname = name
 
@@ -51,7 +52,7 @@ def format_exc_info(exc_info):
     return {
         "error.class": fullname,
         "error.message": message,
-        "error.expected": _is_expected_error(fullname, message),
+        "error.expected": is_expected_error(module=module, name=name, message=message),
     }
 
 

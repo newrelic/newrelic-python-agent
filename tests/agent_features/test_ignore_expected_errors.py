@@ -18,6 +18,7 @@ from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import record_exception
 from newrelic.api.transaction import current_transaction
+from newrelic.api.application import application_instance
 
 from newrelic.common.object_names import callable_name
 
@@ -26,6 +27,7 @@ from testing_support.fixtures import (
     override_application_settings,
     validate_error_event_sample_data,
     validate_transaction_metrics,
+    validate_transaction_error_event_count,
 )
 
 
@@ -36,18 +38,18 @@ _error_message = "Test error message."
 
 # Error classes settings
 expected_runtime_error_settings = {
-    "error_collector.expected_classes": _runtime_error_name
+    "error_collector.expected_classes": [_runtime_error_name]
 }
 ignore_runtime_error_settings = {
-    "error_collector.ignore_classes": _runtime_error_name
-}  # TODO Change this to the new setting
+    "error_collector.ignore_classes": [_runtime_error_name]
+}
 combined_runtime_error_settings = {}
 combined_runtime_error_settings.update(expected_runtime_error_settings)
 combined_runtime_error_settings.update(ignore_runtime_error_settings)
 
 # Status code settings
-expected_status_code_error_settings = {"error_collector.expected_status_codes": "429"}
-ignore_status_code_error_settings = {"error_collector.ignore_status_codes": "429"}
+expected_status_code_error_settings = {"error_collector.expected_status_codes": [429]}
+ignore_status_code_error_settings = {"error_collector.ignore_status_codes": [429]}
 combined_status_code_error_settings = {}
 combined_status_code_error_settings.update(expected_runtime_error_settings)
 combined_status_code_error_settings.update(ignore_runtime_error_settings)
@@ -65,10 +67,10 @@ _metrics_normal = [
     ("Errors/allOther", 1),
 ]
 
-parameter_matrix = [
+settings_matrix = [
     ({}, False, False),
     (ignore_runtime_error_settings, False, True),
-    # (expected_runtime_error_settings, True, False),  # TODO Enable this test after implementing logic
+    (expected_runtime_error_settings, True, False),
     (combined_runtime_error_settings, False, True),
 ]
 override_expected_matrix = (False, None)  # TODO Add true once functionality is in place
@@ -79,12 +81,17 @@ def exercise(override_expected=None):
         raise RuntimeError(_error_message)
     except RuntimeError:
         # TODO Switch to notice_error and pass expected=override_expected
-        record_exception()
+        if current_transaction() is not None:
+            # Record exception inside transaction
+            record_exception()
+        else:
+            # Record exception outside context of transaction
+            application_instance().record_exception()
 
 
-@pytest.mark.parametrize("settings,expected,ignore", parameter_matrix)
+@pytest.mark.parametrize("settings,expected,ignore", settings_matrix)
 @pytest.mark.parametrize("override_expected", override_expected_matrix)
-def test_classes_error_events(settings, expected, ignore, override_expected):
+def test_classes_error_event(settings, expected, ignore, override_expected):
     expected = override_expected or expected
 
     # Update attributes with parameters
@@ -94,7 +101,6 @@ def test_classes_error_events(settings, expected, ignore, override_expected):
     error_count = 1 if not ignore else 0
     errors = _test_record_exception if not ignore else []
 
-    @override_application_settings(settings)
     @validate_transaction_errors(errors=errors)
     @validate_error_event_sample_data(
         required_attrs=attributes,
@@ -102,13 +108,14 @@ def test_classes_error_events(settings, expected, ignore, override_expected):
         num_errors=error_count,
     )
     @background_task(name="test")
+    @override_application_settings(settings)
     def _test():
         exercise()
 
     _test()
 
 
-@pytest.mark.parametrize("settings,expected,ignore", parameter_matrix)
+@pytest.mark.parametrize("settings,expected,ignore", settings_matrix)
 @pytest.mark.parametrize("override_expected", override_expected_matrix)
 def test_classes_exception_metrics(settings, expected, ignore, override_expected):
     expected = override_expected or expected
@@ -117,6 +124,30 @@ def test_classes_exception_metrics(settings, expected, ignore, override_expected
     @override_application_settings(settings)
     @validate_transaction_metrics("test", background_task=True, rollup_metrics=metrics)
     @background_task(name="test")
+    def _test():
+        exercise()
+
+    _test()
+
+
+@pytest.mark.parametrize("settings,expected,ignore", settings_matrix)
+@pytest.mark.parametrize("override_expected", override_expected_matrix)
+def test_classes_error_event_outside_transaction(settings, expected, ignore, override_expected):
+    expected = override_expected or expected
+
+    # Update attributes with parameters
+    attributes = _intrinsic_attributes.copy()
+    attributes["error.expected"] = expected
+
+    error_count = 1 if not ignore else 0
+
+    @validate_transaction_error_event_count(num_errors=0)  # No transaction, should be 0
+    @validate_error_event_sample_data(
+        required_attrs=attributes,
+        required_user_attrs=False,
+        num_errors=error_count,
+    )
+    @override_application_settings(settings)
     def _test():
         exercise()
 

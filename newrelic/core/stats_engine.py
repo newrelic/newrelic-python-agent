@@ -41,7 +41,7 @@ from newrelic.core.metric import TimeMetric
 from newrelic.core.stack_trace import exception_stack
 
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
-from newrelic.api.time_trace import _is_expected_error
+from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.common.encoding_utils import json_encode
 from newrelic.common.streaming_utils import StreamBuffer
 
@@ -606,66 +606,10 @@ class StatsEngine(object):
         module = value.__class__.__module__
         name = value.__class__.__name__
 
-        if should_ignore is None:
-            # We need to check for module.name and module:name.
-            # Originally we used module.class but that was
-            # inconsistent with everything else which used
-            # module:name. So changed to use ':' as separator, but
-            # for backward compatibility need to support '.' as
-            # separator for time being. Check that with the ':'
-            # last as we will use that name as the exception type.
-
-            if module:
-                fullname = '%s.%s' % (module, name)
-            else:
-                fullname = name
-
-            if not callable(ignore_errors) and fullname in ignore_errors:
-                return
-
-            if fullname in error_collector.ignore_classes:
-                return
-
-            if module:
-                fullname = '%s:%s' % (module, name)
-            else:
-                fullname = name
-
-            if not callable(ignore_errors) and fullname in ignore_errors:
-                return
-
-            if fullname in error_collector.ignore_errors:
-                return
-
+        if module:
+            fullname = '%s:%s' % (module, name)
         else:
-            if module:
-                fullname = '%s:%s' % (module, name)
-            else:
-                fullname = name
-
-        # Only add params if High Security Mode is off.
-
-        if settings.high_security:
-            if params:
-                _logger.debug('Cannot add custom parameters in '
-                        'High Security Mode.')
-            attributes = []
-        else:
-            custom_params = {}
-
-            try:
-                for k, v in params.items():
-                    name, val = process_user_attribute(k, v)
-                    if name:
-                        custom_params[name] = val
-            except Exception:
-                _logger.debug('Parameters failed to validate for unknown '
-                        'reason. Dropping parameters for error: %r. Check '
-                        'traceback for clues.', fullname, exc_info=True)
-                custom_params = {}
-
-            attributes = create_user_attributes(custom_params,
-                    settings.attribute_filter)
+            fullname = name
 
         # Check to see if we need to strip the message before recording it.
 
@@ -690,6 +634,38 @@ class StatsEngine(object):
 
                 except Exception:
                     message = '<unprintable %s object>' % type(value).__name__
+
+        # Check against ignore_error rules
+        if should_ignore is None:
+            if not callable(ignore_errors) and fullname in ignore_errors:
+                return
+
+            if should_ignore_error(module=module, name=name, message=message):
+                return
+
+        # Only add params if High Security Mode is off.
+
+        if settings.high_security:
+            if params:
+                _logger.debug('Cannot add custom parameters in '
+                        'High Security Mode.')
+            attributes = []
+        else:
+            custom_params = {}
+
+            try:
+                for k, v in params.items():
+                    name, val = process_user_attribute(k, v)
+                    if name:
+                        custom_params[name] = val
+            except Exception:
+                _logger.debug('Parameters failed to validate for unknown '
+                        'reason. Dropping parameters for error: %r. Check '
+                        'traceback for clues.', fullname, exc_info=True)
+                custom_params = {}
+
+            attributes = create_user_attributes(custom_params,
+                    settings.attribute_filter)
 
         # Record the exception details.
 
@@ -730,11 +706,17 @@ class StatsEngine(object):
         # This method is for recording error events outside of transactions,
         # don't let the poorly named 'type' attribute fool you.
 
+        # Retrieve expected bool from error or interpret
+        if hasattr(error, "expected"):
+            expected = error.expected
+        else:
+            expected = is_expected_error(fullname=error.type, message=error.message)
+
         intrinsics = {
                 'type': 'TransactionError',
                 'error.class': error.type,
                 'error.message': error.message,
-                'error.expected': _is_expected_error(error.type, error.message),
+                'error.expected': expected,
                 'timestamp': int(1000.0 * error.start_time),
                 'transactionName': None,
         }

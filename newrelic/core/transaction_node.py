@@ -23,8 +23,6 @@ from collections import namedtuple
 import newrelic.core.error_collector
 import newrelic.core.trace_node
 
-from newrelic.api.time_trace import _is_expected_error
-
 from newrelic.core.metric import ApdexMetric, TimeMetric
 from newrelic.core.string_table import StringTable
 from newrelic.core.attribute import create_user_attributes
@@ -511,7 +509,7 @@ class TransactionNode(_TransactionNode):
         intrinsics['type'] = "TransactionError"
         intrinsics['error.class'] = error.type
         intrinsics['error.message'] = error.message
-        intrinsics['error.expected'] = _is_expected_error(error.type, error.message)
+        intrinsics['error.expected'] = error.expected
         intrinsics['transactionName'] = self.path
         intrinsics['spanId'] = error.span_id
 

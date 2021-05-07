@@ -52,6 +52,7 @@ def transaction_node(request):
             timestamp=0,
             type='foo:bar',
             message='oh no! your foo had a bar',
+            expected=False,
             span_id=None,
             stack_trace='',
             custom_params={},

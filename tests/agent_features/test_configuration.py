@@ -472,6 +472,10 @@ translate_settings_tests = [
         TSetting('event_harvest_config.harvest_limits.custom_event_data',
             1200, 1200)
     ),
+(
+        TSetting('error_collector.ignore_errors', "builtins:ValueError", []),
+        TSetting('error_collector.ignore_classes', "builtins:ValueError", [])
+    ),
 
 ]
 

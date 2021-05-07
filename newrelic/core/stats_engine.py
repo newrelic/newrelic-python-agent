@@ -607,33 +607,9 @@ class StatsEngine(object):
         name = value.__class__.__name__
 
         if module:
-            fullname = '%s.%s' % (module, name)
+            fullname = '%s:%s' % (module, name)
         else:
             fullname = name
-
-        # Only add params if High Security Mode is off.
-
-        if settings.high_security:
-            if params:
-                _logger.debug('Cannot add custom parameters in '
-                        'High Security Mode.')
-            attributes = []
-        else:
-            custom_params = {}
-
-            try:
-                for k, v in params.items():
-                    name, val = process_user_attribute(k, v)
-                    if name:
-                        custom_params[name] = val
-            except Exception:
-                _logger.debug('Parameters failed to validate for unknown '
-                        'reason. Dropping parameters for error: %r. Check '
-                        'traceback for clues.', fullname, exc_info=True)
-                custom_params = {}
-
-            attributes = create_user_attributes(custom_params,
-                    settings.attribute_filter)
 
         # Check to see if we need to strip the message before recording it.
 
@@ -664,8 +640,32 @@ class StatsEngine(object):
             if not callable(ignore_errors) and fullname in ignore_errors:
                 return
 
-            if should_ignore_error(fullname=fullname, message=message):
+            if should_ignore_error(module=module, name=name, message=message):
                 return
+
+        # Only add params if High Security Mode is off.
+
+        if settings.high_security:
+            if params:
+                _logger.debug('Cannot add custom parameters in '
+                        'High Security Mode.')
+            attributes = []
+        else:
+            custom_params = {}
+
+            try:
+                for k, v in params.items():
+                    name, val = process_user_attribute(k, v)
+                    if name:
+                        custom_params[name] = val
+            except Exception:
+                _logger.debug('Parameters failed to validate for unknown '
+                        'reason. Dropping parameters for error: %r. Check '
+                        'traceback for clues.', fullname, exc_info=True)
+                custom_params = {}
+
+            attributes = create_user_attributes(custom_params,
+                    settings.attribute_filter)
 
         # Record the exception details.
 
@@ -684,7 +684,6 @@ class StatsEngine(object):
                 path='Exception',
                 message=message,
                 type=fullname,
-                expected=is_expected_error(fullname=fullname, message=message),
                 parameters=params)
 
         # Save this error as a trace and an event.
@@ -707,11 +706,17 @@ class StatsEngine(object):
         # This method is for recording error events outside of transactions,
         # don't let the poorly named 'type' attribute fool you.
 
+        # Retrieve expected bool from error or interpret
+        if hasattr(error, "expected"):
+            expected = error.expected
+        else:
+            expected = is_expected_error(fullname=error.type, message=error.message)
+
         intrinsics = {
                 'type': 'TransactionError',
                 'error.class': error.type,
                 'error.message': error.message,
-                'error.expected': error.expected,
+                'error.expected': expected,
                 'timestamp': int(1000.0 * error.start_time),
                 'transactionName': None,
         }

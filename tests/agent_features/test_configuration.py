@@ -21,6 +21,7 @@ except ImportError:
     import urllib.parse as urlparse
 
 from newrelic.config import delete_setting, translate_deprecated_settings
+from newrelic.common.object_names import callable_name
 from newrelic.core.config import (global_settings_dump, flatten_settings,
     apply_config_setting, apply_server_side_settings, Settings,
     fetch_config_setting, global_settings)
@@ -473,8 +474,8 @@ translate_settings_tests = [
             1200, 1200)
     ),
 (
-        TSetting('error_collector.ignore_errors', "builtins:ValueError", []),
-        TSetting('error_collector.ignore_classes', "builtins:ValueError", [])
+        TSetting('error_collector.ignore_errors', callable_name(ValueError), []),
+        TSetting('error_collector.ignore_classes', callable_name(ValueError), [])
     ),
 
 ]

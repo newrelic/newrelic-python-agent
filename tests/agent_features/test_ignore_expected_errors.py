@@ -39,7 +39,7 @@ expected_runtime_error_settings = {
     "error_collector.expected_classes": _runtime_error_name
 }
 ignore_runtime_error_settings = {
-    "error_collector.ignore_errors": _runtime_error_name
+    "error_collector.ignore_classes": _runtime_error_name
 }  # TODO Change this to the new setting
 combined_runtime_error_settings = {}
 combined_runtime_error_settings.update(expected_runtime_error_settings)

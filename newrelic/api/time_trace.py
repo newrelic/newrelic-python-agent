@@ -19,14 +19,12 @@ import sys
 import newrelic.packages.six as six
 import traceback
 
+from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.trace_cache import trace_cache
 from newrelic.core.attribute import (
         process_user_attribute, MAX_NUM_USER_ATTRIBUTES)
 
-from newrelic.api.application import application_instance
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
-
-from newrelic.core.config import global_settings
 
 _logger = logging.getLogger(__name__)
 
@@ -531,89 +529,6 @@ def get_linking_metadata():
             "entity.type": "SERVICE",
         }
 
-
-def is_expected_error(
-    module=None,
-    name=None,
-    message=None,
-    status_code=None,
-    fullname=None,
-):
-    return error_matches_rules(
-        "expected",
-        module=module,
-        name=name,
-        message=message,
-        status_code=status_code,
-        fullname=fullname,
-    )
-
-
-def should_ignore_error(
-    module=None,
-    name=None,
-    message=None,
-    status_code=None,
-    fullname=None,
-):
-    return error_matches_rules(
-        "ignore",
-        module=module,
-        name=name,
-        message=message,
-        status_code=status_code,
-        fullname=fullname,
-    )
-
-
-def error_matches_rules(
-    rules_prefix,
-    module=None,
-    name=None,
-    message=None,
-    status_code=None,
-    fullname=None,
-):
-    trace = current_trace()
-    settings = trace and trace.settings
-
-    if not settings:
-        # Retrieve application settings
-        application = application_instance()
-        settings = application and application.settings
-
-    # Default to global settings
-    settings = settings or global_settings()  
-
-    if not settings:
-        return False
-
-    # TODO Remove default None after settings are implemented
-    classes_rules = getattr(settings.error_collector, "%s_classes" % rules_prefix, set())
-    status_codes_rules = getattr(
-        settings.error_collector, "%s_status_codes" % rules_prefix, set()
-    )
-
-    # Check passed fullname
-    if fullname is not None:
-        if fullname in classes_rules:
-            return True
-
-    # Check both possible types of fullname made from module and name
-    if module is not None and name is not None:
-        # We need to check for module.name and module:name.
-        # Originally we used module.class but that was
-        # inconsistent with everything else which used
-        # module:name. So changed to use ':' as separator, but
-        # for backward compatibility need to support '.' as
-        # separator for time being. Check that with the ':'
-        # last as we will use that name as the exception type.
-        names = ("%s:%s" % (module, name), "%s.%s" % (module, name))
-        for fullname in names:
-            if fullname in classes_rules:
-                return True
-
-    return False
 
 def record_exception(exc=None, value=None, tb=None, params={},
         ignore_errors=[], application=None):

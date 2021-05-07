@@ -15,7 +15,8 @@
 import json
 import newrelic.packages.six as six
 from logging import Formatter, LogRecord
-from newrelic.api.time_trace import get_linking_metadata, is_expected_error
+from newrelic.api.time_trace import get_linking_metadata
+from newrelic.core.config import is_expected_error
 
 
 def format_exc_info(exc_info):

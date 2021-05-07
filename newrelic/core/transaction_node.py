@@ -23,7 +23,7 @@ from collections import namedtuple
 import newrelic.core.error_collector
 import newrelic.core.trace_node
 
-from newrelic.api.time_trace import is_expected_error
+from newrelic.core.config import is_expected_error
 
 from newrelic.core.metric import ApdexMetric, TimeMetric
 from newrelic.core.string_table import StringTable

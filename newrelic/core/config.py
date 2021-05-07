@@ -1083,3 +1083,91 @@ def _remove_ignored_configs(server_settings):
 
 def ignore_status_code(status):
     return status in _settings.error_collector.ignore_status_codes
+
+
+def is_expected_error(
+    module=None,
+    name=None,
+    message=None,
+    status_code=None,
+    fullname=None,
+):
+    return error_matches_rules(
+        "expected",
+        module=module,
+        name=name,
+        message=message,
+        status_code=status_code,
+        fullname=fullname,
+    )
+
+
+def should_ignore_error(
+    module=None,
+    name=None,
+    message=None,
+    status_code=None,
+    fullname=None,
+):
+    return error_matches_rules(
+        "ignore",
+        module=module,
+        name=name,
+        message=message,
+        status_code=status_code,
+        fullname=fullname,
+    )
+
+
+def error_matches_rules(
+    rules_prefix,
+    module=None,
+    name=None,
+    message=None,
+    status_code=None,
+    fullname=None,
+):
+    # Delay imports to prevent lockups
+    from newrelic.api.application import application_instance
+    from newrelic.core.trace_cache import trace_cache
+
+    trace = trace_cache().current_trace()
+    settings = trace and trace.settings
+
+    if not settings:
+        # Retrieve application settings
+        application = application_instance()
+        settings = application and application.settings
+
+    # Default to global settings
+    settings = settings or global_settings()  
+
+    if not settings:
+        return False
+
+    # TODO Remove default None after settings are implemented
+    classes_rules = getattr(settings.error_collector, "%s_classes" % rules_prefix, set())
+    status_codes_rules = getattr(
+        settings.error_collector, "%s_status_codes" % rules_prefix, set()
+    )
+
+    # Check passed fullname
+    if fullname is not None:
+        if fullname in classes_rules:
+            return True
+
+    # Check both possible types of fullname made from module and name
+    if module is not None and name is not None:
+        # We need to check for module.name and module:name.
+        # Originally we used module.class but that was
+        # inconsistent with everything else which used
+        # module:name. So changed to use ':' as separator, but
+        # for backward compatibility need to support '.' as
+        # separator for time being. Check that with the ':'
+        # last as we will use that name as the exception type.
+        names = ("%s:%s" % (module, name), "%s.%s" % (module, name))
+        for fullname in names:
+            if fullname in classes_rules:
+                return True
+
+    return False

@@ -41,7 +41,7 @@ from newrelic.core.metric import TimeMetric
 from newrelic.core.stack_trace import exception_stack
 
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
-from newrelic.core.config import is_expected_error
+from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.common.encoding_utils import json_encode
 from newrelic.common.streaming_utils import StreamBuffer
 
@@ -606,42 +606,10 @@ class StatsEngine(object):
         module = value.__class__.__module__
         name = value.__class__.__name__
 
-        if should_ignore is None:
-            # We need to check for module.name and module:name.
-            # Originally we used module.class but that was
-            # inconsistent with everything else which used
-            # module:name. So changed to use ':' as separator, but
-            # for backward compatibility need to support '.' as
-            # separator for time being. Check that with the ':'
-            # last as we will use that name as the exception type.
-
-            if module:
-                fullname = '%s.%s' % (module, name)
-            else:
-                fullname = name
-
-            if not callable(ignore_errors) and fullname in ignore_errors:
-                return
-
-            if fullname in error_collector.ignore_classes:
-                return
-
-            if module:
-                fullname = '%s:%s' % (module, name)
-            else:
-                fullname = name
-
-            if not callable(ignore_errors) and fullname in ignore_errors:
-                return
-
-            if fullname in error_collector.ignore_errors:
-                return
-
+        if module:
+            fullname = '%s.%s' % (module, name)
         else:
-            if module:
-                fullname = '%s:%s' % (module, name)
-            else:
-                fullname = name
+            fullname = name
 
         # Only add params if High Security Mode is off.
 
@@ -690,6 +658,14 @@ class StatsEngine(object):
 
                 except Exception:
                     message = '<unprintable %s object>' % type(value).__name__
+
+        # Check against ignore_error rules
+        if should_ignore is None:
+            if not callable(ignore_errors) and fullname in ignore_errors:
+                return
+
+            if should_ignore_error(fullname=fullname, message=message):
+                return
 
         # Record the exception details.
 

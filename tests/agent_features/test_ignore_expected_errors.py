@@ -73,7 +73,7 @@ settings_matrix = [
     (expected_runtime_error_settings, True, False),
     (combined_runtime_error_settings, False, True),
 ]
-override_expected_matrix = (False, None)
+override_expected_matrix = (False, None)  # TODO Add true once functionality is in place
 
 
 def exercise(override_expected=None):

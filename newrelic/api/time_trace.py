@@ -630,7 +630,7 @@ def _error_matches_rules(
             if fullname in classes_rules:
                 return True
 
-    return False    
+    return False
 
 def record_exception(exc=None, value=None, tb=None, params={},
         ignore_errors=[], application=None):

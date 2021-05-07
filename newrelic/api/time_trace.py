@@ -597,10 +597,22 @@ def _error_matches_rules(
         return False
 
     # TODO Remove default None after settings are implemented
-    classes_rules = getattr(settings.error_collector, "%s_classes" % rules_prefix)
+    classes_rules = getattr(settings.error_collector, "%s_classes" % rules_prefix, set())
     status_codes_rules = getattr(
-        settings.error_collector, "%s_status_codes" % rules_prefix
+        settings.error_collector, "%s_status_codes" % rules_prefix, set()
     )
+
+    # Check passed fullname
+    if fullname is not None:
+        if fullname in classes_rules:
+            return True
+
+    # Check both possible types of fullname made from module and name
+    if module is not None and name is not None:
+        names = ("%s:%s" % (module, name), "%s.%s" % (module, name))
+        for fullname in names:
+            if fullname in classes_rules:
+                return True
 
     return False
 

@@ -399,6 +399,8 @@ class TimeTrace(object):
         # Check ignore_errors callables
         # We check these here separatly from the notice_error implementation
         # to preserve previous functionality in precedence
+        should_ignore = None
+        
         if hasattr(transaction, '_ignore_errors'):
             should_ignore = transaction._ignore_errors(exc, value, tb)
             if should_ignore:

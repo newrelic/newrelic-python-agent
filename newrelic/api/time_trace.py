@@ -192,7 +192,7 @@ class TimeTrace(object):
 
         self.user_attributes[key] = value
 
-    def _observe_exception(self, exc_info=None, ignore=None, expected=None):
+    def _observe_exception(self, exc_info=None, ignore=None, expected=None, status_code=None):
         # Bail out if the transaction is not active or
         # collection of errors not enabled.
 
@@ -295,7 +295,12 @@ class TimeTrace(object):
 
         # Default rule matching
         if should_ignore is None:
-            should_ignore = should_ignore_error(module=module, name=name, message=message)
+            should_ignore = should_ignore_error(
+                                module=module, 
+                                name=name, 
+                                message=message, 
+                                status_code=status_code,
+                            )
             if should_ignore:
                 return
 
@@ -314,7 +319,12 @@ class TimeTrace(object):
 
         # Default rule matching
         if is_expected is None:
-            is_expected = is_expected_error(module=module, name=name, message=message)
+            is_expected = is_expected_error(
+                                module=module, 
+                                name=name, 
+                                message=message, 
+                                status_code=status_code,
+                            )
 
         # Record a supportability metric if error attributes are being
         # overiden.
@@ -330,8 +340,13 @@ class TimeTrace(object):
 
         return fullname, message, tb, is_expected
 
-    def notice_error(self, error=None, attributes={}, expected=None, ignore=None):
-        recorded = self._observe_exception(error, ignore=ignore, expected=expected)
+    def notice_error(self, error=None, attributes={}, expected=None, ignore=None, status_code=None):
+        recorded = self._observe_exception(
+                        error, 
+                        ignore=ignore, 
+                        expected=expected, 
+                        status_code=status_code,
+                    )
         if recorded:
             fullname, message, tb, is_expected = recorded
             transaction = self.transaction
@@ -621,11 +636,23 @@ def record_exception(exc=None, value=None, tb=None, params={},
                     ignore_errors)
 
 
-def notice_error(error=None, attributes={}, expected=None, ignore=None, application=None):
+def notice_error(error=None, attributes={}, expected=None, ignore=None, application=None, status_code=None):
     if application is None:
         trace = current_trace()
         if trace:
-            trace.notice_error(error, attributes, expected, ignore)
+            trace.notice_error(
+                error=error,
+                attributes=attributes,
+                expected=expected,
+                ignore=ignore,
+                status_code=status_code,
+            )
     else:
         if application.enabled:
-            application.notice_error(error, attributes, expected, ignore)
+            application.notice_error(
+                error=error,
+                attributes=attributes,
+                expected=expected,
+                ignore=ignore,
+                status_code=status_code,
+            )

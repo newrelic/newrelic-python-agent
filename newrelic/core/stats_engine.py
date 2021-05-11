@@ -600,7 +600,7 @@ class StatsEngine(object):
 
         self.notice_error(error=(exc, value, tb), attributes=params, ignore=should_ignore)
 
-    def notice_error(self, error=None, attributes={}, expected=None, ignore=None):
+    def notice_error(self, error=None, attributes={}, expected=None, ignore=None, status_code=None):
         settings = self.__settings
 
         if not settings:
@@ -696,7 +696,12 @@ class StatsEngine(object):
 
         # Default rule matching
         if should_ignore is None:
-            should_ignore = should_ignore_error(module=module, name=name, message=message)
+            should_ignore = should_ignore_error(
+                                module=module, 
+                                name=name, 
+                                message=message, 
+                                status_code=status_code,
+                            )
             if should_ignore:
                 return
 
@@ -711,7 +716,12 @@ class StatsEngine(object):
 
         # Default rule matching
         if is_expected is None:
-            is_expected = is_expected_error(module=module, name=name, message=message)
+            is_expected = is_expected_error(
+                                module=module, 
+                                name=name, 
+                                message=message, 
+                                status_code=status_code,
+                            )
 
         # Only add attributes if High Security Mode is off.
 

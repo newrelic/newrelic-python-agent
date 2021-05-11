@@ -732,7 +732,7 @@ class Application(object):
             self._stats_engine.record_exception(exc, value, tb,
                     params, ignore_errors)
 
-    def notice_error(self, error=None, attributes={}, expected=None, ignore=None):
+    def notice_error(self, error=None, attributes={}, expected=None, ignore=None, status_code=None):
         """Record a global exception against the application independent
         of a specific transaction.
 
@@ -748,7 +748,13 @@ class Application(object):
             # count still so that short harvest is extended.
 
             self._global_events_account += 1
-            self._stats_engine.notice_error(error=error, attributes=attributes, expected=expected, ignore=ignore)
+            self._stats_engine.notice_error(
+                error=error,
+                attributes=attributes,
+                expected=expected,
+                ignore=ignore,
+                status_code=status_code,
+            )
 
     def record_custom_metric(self, name, value):
         """Record a custom metric against the application independent

@@ -513,12 +513,18 @@ class Agent(object):
 
         application.record_exception(exc, value, tb, params, ignore_errors)
 
-    def notice_error(self, app_name, error=None, attributes={}, expected=None, ignore=None):
+    def notice_error(self, app_name, error=None, attributes={}, expected=None, ignore=None, status_code=None):
         application = self._applications.get(app_name, None)
         if application is None or not application.active:
             return
 
-        application.notice_error(error=error, attributes=attributes, expected=expected, ignore=ignore)
+        application.notice_error(
+            error=error,
+            attributes=attributes,
+            expected=expected,
+            ignore=ignore,
+            status_code=status_code,
+        )
 
     def record_custom_metric(self, app_name, name, value):
         """Records a basic metric for the named application. If there has

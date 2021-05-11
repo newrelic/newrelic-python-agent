@@ -121,11 +121,18 @@ class Application(object):
         self._agent.record_exception(self._name, exc, value, tb, params,
                 ignore_errors)
 
-    def notice_error(self, error=None, attributes={}, expected=None, ignore=None):
+    def notice_error(self, error=None, attributes={}, expected=None, ignore=None, status_code=None):
         if not self.active:
             return
 
-        self._agent.notice_error(self._name, error=error, attributes=attributes, expected=expected, ignore=ignore)
+        self._agent.notice_error(
+            self._name,
+            error=error,
+            attributes=attributes,
+            expected=expected,
+            ignore=ignore,
+            status_code=status_code,
+        )
 
     def record_custom_metric(self, name, value):
         if self.active:

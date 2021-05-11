@@ -1083,50 +1083,36 @@ def _remove_ignored_configs(server_settings):
 
 
 def ignore_status_code(status):
+    """Legacy function kept here for compatibility."""
     return status in _settings.error_collector.ignore_status_codes
 
 
 def is_expected_error(
-    module=None,
-    name=None,
-    message=None,
+    exc_info,
     status_code=None,
-    fullname=None,
 ):
     return error_matches_rules(
         "expected",
-        module=module,
-        name=name,
-        message=message,
+        exc_info,
         status_code=status_code,
-        fullname=fullname,
     )
 
 
 def should_ignore_error(
-    module=None,
-    name=None,
-    message=None,
+    exc_info,
     status_code=None,
-    fullname=None,
 ):
     return error_matches_rules(
         "ignore",
-        module=module,
-        name=name,
-        message=message,
+        exc_info,
         status_code=status_code,
-        fullname=fullname,
     )
 
 
 def error_matches_rules(
     rules_prefix,
-    module=None,
-    name=None,
-    message=None,
+    exc_info,
     status_code=None,
-    fullname=None,
 ):
     # Delay imports to prevent lockups
     from newrelic.api.application import application_instance
@@ -1146,29 +1132,34 @@ def error_matches_rules(
     if not settings:
         return False
 
-    # TODO Remove default None after settings are implemented
-    classes_rules = getattr(settings.error_collector, "%s_classes" % rules_prefix, set())
-    status_codes_rules = getattr(
-        settings.error_collector, "%s_status_codes" % rules_prefix, set()
-    )
+    # Retrieve settings based on prefix
+    classes_rules = getattr(settings.error_collector, "%s_classes" % rules_prefix)
+    status_codes_rules = getattr(settings.error_collector, "%s_status_codes" % rules_prefix)
 
-    # Check passed fullname
-    if fullname is not None:
+    module, name, fullnames, message = parse_exc_info(exc_info)
+    fullname = fullnames[0]
+
+    # Check class names
+    for fullname in fullnames:
         if fullname in classes_rules:
             return True
 
-    # Check both possible types of fullname made from module and name
-    if module is not None and name is not None:
-        # We need to check for module.name and module:name.
-        # Originally we used module.class but that was
-        # inconsistent with everything else which used
-        # module:name. So changed to use ':' as separator, but
-        # for backward compatibility need to support '.' as
-        # separator for time being. Check that with the ':'
-        # last as we will use that name as the exception type.
-        names = ("%s:%s" % (module, name), "%s.%s" % (module, name))
-        for fullname in names:
-            if fullname in classes_rules:
+    # Check status_code
+    # For callables, call on exc_info to retrieve status_code.
+    # It's possible to return None, in which case no code is evaluated.
+    if callable(status_code):
+        status_code = status_code(*exc_info)
+    
+    # Match status_code if it exists
+    if status_code is not None:
+        try:
+            # Coerce into integer
+            status_code = int(status_code)
+        except:
+            _logger.error("Failed to coerce status code into integer. "
+                          "status_code: %s" % str(status_code))
+        else:
+            if status_code in status_codes_rules:
                 return True
 
     return False

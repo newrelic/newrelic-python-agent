@@ -27,7 +27,7 @@ def format_exc_info(exc_info):
     return {
         "error.class": fullname,
         "error.message": message,
-        "error.expected": is_expected_error(module=module, name=name, message=message),
+        "error.expected": is_expected_error(exc_info),
     }
 
 

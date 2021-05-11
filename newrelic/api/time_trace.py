@@ -226,7 +226,7 @@ class TimeTrace(object):
         if exc is None or value is None or tb is None:
             return
 
-        module, name, fullnames, message = parse_exc_info(exc_info)
+        module, name, fullnames, message = parse_exc_info((exc, value, tb))
         fullname = fullnames[0]
 
         # Check to see if we need to strip the message before recording it.
@@ -272,12 +272,7 @@ class TimeTrace(object):
 
         # Default rule matching
         if should_ignore is None:
-            should_ignore = should_ignore_error(
-                                module=module, 
-                                name=name, 
-                                message=message, 
-                                status_code=status_code,
-                            )
+            should_ignore = should_ignore_error((exc, value, tb), status_code=status_code)
             if should_ignore:
                 return
 
@@ -296,12 +291,7 @@ class TimeTrace(object):
 
         # Default rule matching
         if is_expected is None:
-            is_expected = is_expected_error(
-                                module=module, 
-                                name=name, 
-                                message=message, 
-                                status_code=status_code,
-                            )
+            is_expected = is_expected_error((exc, value, tb), status_code=status_code)
 
         # Record a supportability metric if error attributes are being
         # overiden.

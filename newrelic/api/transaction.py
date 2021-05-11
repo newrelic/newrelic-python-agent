@@ -1500,7 +1500,7 @@ class Transaction(object):
                     params=params,
                     ignore_errors=ignore_errors)
 
-    def notice_error(self, error=None, attributes={}, expected=None):
+    def notice_error(self, error=None, attributes={}, expected=None, ignore=None):
         settings = self._settings
 
         if not settings:
@@ -1514,7 +1514,7 @@ class Transaction(object):
 
         current_span = trace_cache().current_trace()
         if current_span:
-            current_span.notice_error(error=error, attributes=attributes, expected=expected)
+            current_span.notice_error(error=error, attributes=attributes, expected=expected, ignore=ignore)
 
     def _create_error_node(self, settings, fullname, message,
                            expected, custom_params, span_id, tb):

@@ -192,7 +192,7 @@ class TimeTrace(object):
 
         self.user_attributes[key] = value
 
-    def _observe_exception(self, exc_info=None, ignore_errors=[], expected=None):
+    def _observe_exception(self, exc_info=None, ignore=None, expected=None):
         # Bail out if the transaction is not active or
         # collection of errors not enabled.
 
@@ -224,25 +224,6 @@ class TimeTrace(object):
 
         if exc is None or value is None or tb is None:
             return
-
-        # Where ignore_errors is a callable it should return a
-        # tri-state variable with the following behavior.
-        #
-        #   True - Ignore the error.
-        #   False- Record the error.
-        #   None - Use the default ignore rules.
-
-        should_ignore = None
-
-        if hasattr(transaction, '_ignore_errors'):
-            should_ignore = transaction._ignore_errors(exc, value, tb)
-            if should_ignore:
-                return
-
-        if callable(ignore_errors):
-            should_ignore = ignore_errors(exc, value, tb)
-            if should_ignore:
-                return
 
         module = value.__class__.__module__
         name = value.__class__.__name__
@@ -277,13 +258,63 @@ class TimeTrace(object):
                 except Exception:
                     message = '<unprintable %s object>' % type(value).__name__
 
-        # Check against ignore rules in settings
-        if should_ignore is None and should_ignore_error(fullname=fullname, message=message):
-            return
+        # Where expected or ignore are a callable they should return a
+        # tri-state variable with the following behavior.
+        #
+        #   True - Ignore the error.
+        #   False- Record the error.
+        #   None - Use the default rules.
 
-        # Check against expected rules in settings
-        if expected is None:
-            expected = is_expected_error(module=module, name=name, message=message)
+        # Precedence: 
+        # 1. function parameter override as bool
+        # 2. function parameter callable
+        # 3. callable on transaction
+        # 4. default rule matching from settings
+
+        should_ignore = None
+        is_expected = None
+
+        # Check against ignore rules
+        # Boolean parameter (True/False only, not None)
+        if isinstance(ignore, bool):
+            should_ignore = ignore
+            if should_ignore:
+                return
+
+        # Callable parameter
+        if should_ignore is None and callable(ignore):
+            should_ignore = ignore(exc, value, tb)
+            if should_ignore:
+                return
+
+        # Callable on transaction
+        if should_ignore is None and hasattr(transaction, '_ignore_errors'):
+            should_ignore = transaction._ignore_errors(exc, value, tb)
+            if should_ignore:
+                return
+
+        # Default rule matching
+        if should_ignore is None:
+            should_ignore = should_ignore_error(module=module, name=name, message=message)
+            if should_ignore:
+                return
+
+        # Check against expected rules
+        # Boolean parameter (True/False only, not None)
+        if isinstance(expected, bool):
+            is_expected = expected
+
+        # Callable parameter
+        if is_expected is None and callable(expected):
+            is_expected = expected(exc, value, tb)
+
+        # Callable on transaction
+        if is_expected is None and hasattr(transaction, '_expected_errors'):
+            is_expected = transaction._expected_errors(exc, value, tb)
+
+        # Default rule matching
+        if is_expected is None:
+            is_expected = is_expected_error(module=module, name=name, message=message)
 
         # Record a supportability metric if error attributes are being
         # overiden.
@@ -295,14 +326,14 @@ class TimeTrace(object):
         # Add error details as agent attributes to span event.
         self._add_agent_attribute("error.class", fullname)
         self._add_agent_attribute("error.message", message)
-        self._add_agent_attribute("error.expected", expected)
+        self._add_agent_attribute("error.expected", is_expected)
 
-        return fullname, message, tb, expected
+        return fullname, message, tb, is_expected
 
     def notice_error(self, error=None, attributes={}, expected=None, ignore=None):
-        recorded = self._observe_exception(error, ignore_errors=[], expected=expected)
+        recorded = self._observe_exception(error, ignore=ignore, expected=expected)
         if recorded:
-            fullname, message, tb, expected = recorded
+            fullname, message, tb, is_expected = recorded
             transaction = self.transaction
             settings = transaction and transaction.settings
 
@@ -327,7 +358,7 @@ class TimeTrace(object):
                     custom_params = {}
 
             transaction._create_error_node(
-                    settings, fullname, message, expected, custom_params, self.guid, tb)
+                    settings, fullname, message, is_expected, custom_params, self.guid, tb)
 
 
     def record_exception(self, exc_info=None,
@@ -337,6 +368,8 @@ class TimeTrace(object):
             'The record_exception function is deprecated. Please use the '
             'new api named notice_error instead.'
         ), DeprecationWarning)
+
+        transaction = self.transaction
 
         # Pull from sys.exc_info if no exception is passed
         if not exc_info or None in exc_info:
@@ -349,13 +382,20 @@ class TimeTrace(object):
         exc, value, tb = exc_info
 
         # Check ignore_errors callables
+        # We check these here separatly from the notice_error implementation
+        # to preserve previous functionality in precedence
+        if hasattr(transaction, '_ignore_errors'):
+            should_ignore = transaction._ignore_errors(exc, value, tb)
+            if should_ignore:
+                return
+
         if callable(ignore_errors):
             should_ignore = ignore_errors(exc, value, tb)
             if should_ignore:
                 return
 
         # Check ignore_errors iterables
-        elif ignore_errors:
+        if should_ignore is None and not callable(ignore_errors):
             module = value.__class__.__module__
             name = value.__class__.__name__
 
@@ -364,7 +404,7 @@ class TimeTrace(object):
                 if fullname in ignore_errors:
                     return
 
-        self.notice_error(error=exc_info, attributes=params)
+        self.notice_error(error=exc_info, attributes=params, ignore=should_ignore)
 
     def _add_agent_attribute(self, key, value):
         self.agent_attributes[key] = value
@@ -581,11 +621,11 @@ def record_exception(exc=None, value=None, tb=None, params={},
                     ignore_errors)
 
 
-def notice_error(error=None, attributes={}, expected=None, application=None):
+def notice_error(error=None, attributes={}, expected=None, ignore=None, application=None):
     if application is None:
         trace = current_trace()
         if trace:
-            trace.notice_error(error, attributes, expected)
+            trace.notice_error(error, attributes, expected, ignore)
     else:
         if application.enabled:
-            application.notice_error(error, attributes, expected)
+            application.notice_error(error, attributes, expected, ignore)

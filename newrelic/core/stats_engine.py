@@ -581,13 +581,15 @@ class StatsEngine(object):
             return
 
         # Check ignore_errors callables
+        # We check these here separatly from the notice_error implementation
+        # to preserve previous functionality in precedence
         if callable(ignore_errors):
             should_ignore = ignore_errors(exc, value, tb)
             if should_ignore:
                 return
 
         # Check ignore_errors iterables
-        elif ignore_errors:
+        if should_ignore is None and not callable(ignore_errors):
             module = value.__class__.__module__
             name = value.__class__.__name__
 
@@ -596,9 +598,9 @@ class StatsEngine(object):
                 if fullname in ignore_errors:
                     return
 
-        self.notice_error(error=(exc, value, tb), attributes=params)
+        self.notice_error(error=(exc, value, tb), attributes=params, ignore=should_ignore)
 
-    def notice_error(self, error=None, attributes={}, expected=None):
+    def notice_error(self, error=None, attributes={}, expected=None, ignore=None):
         settings = self.__settings
 
         if not settings:
@@ -664,9 +666,52 @@ class StatsEngine(object):
                 except Exception:
                     message = '<unprintable %s object>' % type(value).__name__
 
-        # Check against ignore_error rules
-        if should_ignore_error(module=module, name=name, message=message):
-            return
+        # Where expected or ignore are a callable they should return a
+        # tri-state variable with the following behavior.
+        #
+        #   True - Ignore the error.
+        #   False- Record the error.
+        #   None - Use the default rules.
+
+        # Precedence: 
+        # 1. function parameter override as bool
+        # 2. function parameter callable
+        # 3. default rule matching from settings
+
+        should_ignore = None
+        is_expected = None
+
+        # Check against ignore rules
+        # Boolean parameter (True/False only, not None)
+        if isinstance(ignore, bool):
+            should_ignore = ignore
+            if should_ignore:
+                return
+
+        # Callable parameter
+        if should_ignore is None and callable(ignore):
+            should_ignore = ignore(exc, value, tb)
+            if should_ignore:
+                return
+
+        # Default rule matching
+        if should_ignore is None:
+            should_ignore = should_ignore_error(module=module, name=name, message=message)
+            if should_ignore:
+                return
+
+        # Check against expected rules
+        # Boolean parameter (True/False only, not None)
+        if isinstance(expected, bool):
+            is_expected = expected
+
+        # Callable parameter
+        if is_expected is None and callable(expected):
+            is_expected = expected(exc, value, tb)
+
+        # Default rule matching
+        if is_expected is None:
+            is_expected = is_expected_error(module=module, name=name, message=message)
 
         # Only add attributes if High Security Mode is off.
 
@@ -704,6 +749,11 @@ class StatsEngine(object):
             if attr.destinations & DST_ERROR_COLLECTOR:
                 attributes['userAttributes'][attr.name] = attr.value
 
+        # pass expected attribute in to ensure we capture overrides
+        attributes['intrinsics'] = {
+                'error.expected': is_expected,
+        }
+
         error_details = TracedError(
                 start_time=time.time(),
                 path='Exception',
@@ -714,7 +764,7 @@ class StatsEngine(object):
         # Save this error as a trace and an event.
 
         if error_collector.capture_events and settings.collect_error_events:
-            event = self._error_event(error_details, expected=expected)
+            event = self._error_event(error_details)
             self._error_events.add(event)
 
         if settings.collect_errors and (len(self.__transaction_errors) <
@@ -726,30 +776,22 @@ class StatsEngine(object):
         self.record_time_metric(TimeMetric(name='Errors/all', scope='',
                 duration=0.0, exclusive=None))
 
-    def _error_event(self, error, expected=None):
+    def _error_event(self, error):
 
         # This method is for recording error events outside of transactions,
         # don't let the poorly named 'type' attribute fool you.
 
-        # Retrieve expected bool from error or interpret
-        if expected is None:
-            if hasattr(error, "expected"):
-                expected = error.expected
-            else:
-                expected = is_expected_error(fullname=error.type, message=error.message)
-
-        intrinsics = {
+        error.parameters['intrinsics'].update({
                 'type': 'TransactionError',
                 'error.class': error.type,
                 'error.message': error.message,
-                'error.expected': expected,
                 'timestamp': int(1000.0 * error.start_time),
                 'transactionName': None,
-        }
+        })
 
         # Leave agent attributes field blank since not a transaction
 
-        error_event = [intrinsics, error.parameters['userAttributes'], {}]
+        error_event = [error.parameters['intrinsics'], error.parameters['userAttributes'], {}]
 
         return error_event
 

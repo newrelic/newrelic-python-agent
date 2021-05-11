@@ -406,3 +406,36 @@ def expand_builtin_exception_name(name):
 
 def _is_py3_method(target):
     return six.PY3 and inspect.ismethod(target)
+
+def parse_exc_info(exc_info):
+    """Parse exc_info and return commonly used strings."""
+    _, value, _ = exc_info
+
+    module = value.__class__.__module__
+    name = value.__class__.__name__
+
+    if module:
+        fullnames = ("%s:%s" % (module, name), "%s.%s" % (module, name))
+    else:
+        fullnames = (name,)
+
+    try:
+
+        # Favor unicode in exception messages.
+
+        message = six.text_type(value)
+
+    except Exception:
+        try:
+
+            # If exception cannot be represented in unicode, this means
+            # that it is a byte string encoded with an encoding
+            # that is not compatible with the default system encoding.
+            # So, just pass this byte string along.
+
+            message = str(value)
+
+        except Exception:
+            message = "<unprintable %s object>" % type(value).__name__
+
+    return (module, name, fullnames, message)

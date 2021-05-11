@@ -20,6 +20,7 @@ import newrelic.packages.six as six
 import traceback
 import warnings
 
+from newrelic.common.object_names import parse_exc_info
 from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.trace_cache import trace_cache
 from newrelic.core.attribute import (
@@ -225,38 +226,14 @@ class TimeTrace(object):
         if exc is None or value is None or tb is None:
             return
 
-        module = value.__class__.__module__
-        name = value.__class__.__name__
-
-        if module:
-            fullname = '%s:%s' % (module, name)
-        else:
-            fullname = name
+        module, name, fullnames, message = parse_exc_info(exc_info)
+        fullname = fullnames[0]
 
         # Check to see if we need to strip the message before recording it.
 
         if (settings.strip_exception_messages.enabled and
                 fullname not in settings.strip_exception_messages.whitelist):
             message = STRIP_EXCEPTION_MESSAGE
-        else:
-            try:
-
-                # Favor unicode in exception messages.
-
-                message = six.text_type(value)
-
-            except Exception:
-                try:
-
-                    # If exception cannot be represented in unicode, this means
-                    # that it is a byte string encoded with an encoding
-                    # that is not compatible with the default system encoding.
-                    # So, just pass this byte string along.
-
-                    message = str(value)
-
-                except Exception:
-                    message = '<unprintable %s object>' % type(value).__name__
 
         # Where expected or ignore are a callable they should return a
         # tri-state variable with the following behavior.
@@ -413,11 +390,8 @@ class TimeTrace(object):
 
         # Check ignore_errors iterables
         if should_ignore is None and not callable(ignore_errors):
-            module = value.__class__.__module__
-            name = value.__class__.__name__
-
-            names = ("%s:%s" % (module, name), "%s.%s" % (module, name))
-            for fullname in names:
+            _, _, fullnames, _ = parse_exc_info(exc_info)
+            for fullname in fullnames:
                 if fullname in ignore_errors:
                     return
 

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import json
+from newrelic.common.object_names import parse_exc_info
 import newrelic.packages.six as six
 from logging import Formatter, LogRecord
 from newrelic.api.time_trace import get_linking_metadata
@@ -20,34 +21,8 @@ from newrelic.core.config import is_expected_error
 
 
 def format_exc_info(exc_info):
-    _, value, tb = exc_info
-
-    module = value.__class__.__module__
-    name = value.__class__.__name__
-
-    if module:
-        fullname = "{}:{}".format(module, name)
-    else:
-        fullname = name
-
-    try:
-
-        # Favor unicode in exception messages.
-
-        message = six.text_type(value)
-
-    except Exception:
-        try:
-
-            # If exception cannot be represented in unicode, this means
-            # that it is a byte string encoded with an encoding
-            # that is not compatible with the default system encoding.
-            # So, just pass this byte string along.
-
-            message = str(value)
-
-        except Exception:
-            message = "<unprintable %s object>" % type(value).__name__
+    _, _, fullnames, message = parse_exc_info(exc_info)
+    fullname = fullnames[0]
 
     return {
         "error.class": fullname,

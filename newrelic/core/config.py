@@ -23,6 +23,7 @@ the global defaults or those from local agent configuration.
 
 """
 
+from newrelic.common.object_names import parse_exc_info
 import os
 import logging
 import copy

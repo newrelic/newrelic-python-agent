@@ -505,12 +505,20 @@ class Agent(object):
 
     def record_exception(self, app_name, exc=None, value=None, tb=None,
             params={}, ignore_errors=[]):
+        # Deprecated, but deprecation warning are handled by underlying function calls
 
         application = self._applications.get(app_name, None)
         if application is None or not application.active:
             return
 
         application.record_exception(exc, value, tb, params, ignore_errors)
+
+    def notice_error(self, app_name, error=None, attributes={}, expected=None):
+        application = self._applications.get(app_name, None)
+        if application is None or not application.active:
+            return
+
+        application.notice_error(error=error, attributes=attributes, expected=expected)
 
     def record_custom_metric(self, app_name, name, value):
         """Records a basic metric for the named application. If there has

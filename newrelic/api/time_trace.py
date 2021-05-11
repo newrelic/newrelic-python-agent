@@ -18,6 +18,7 @@ import time
 import sys
 import newrelic.packages.six as six
 import traceback
+import warnings
 
 from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.trace_cache import trace_cache
@@ -191,7 +192,7 @@ class TimeTrace(object):
 
         self.user_attributes[key] = value
 
-    def _observe_exception(self, exc_info=None, ignore_errors=[]):
+    def _observe_exception(self, exc_info=None, ignore_errors=[], expected=None):
         # Bail out if the transaction is not active or
         # collection of errors not enabled.
 
@@ -281,7 +282,8 @@ class TimeTrace(object):
             return
 
         # Check against expected rules in settings
-        expected = is_expected_error(module=module, name=name, message=message)
+        if expected is None:
+            expected = is_expected_error(module=module, name=name, message=message)
 
         # Record a supportability metric if error attributes are being
         # overiden.
@@ -297,10 +299,8 @@ class TimeTrace(object):
 
         return fullname, message, tb, expected
 
-    def record_exception(self, exc_info=None,
-                         params={}, ignore_errors=[]):
-
-        recorded = self._observe_exception(exc_info, ignore_errors)
+    def notice_error(self, error=None, attributes={}, expected=None, ignore=None):
+        recorded = self._observe_exception(error, ignore_errors=[], expected=expected)
         if recorded:
             fullname, message, tb, expected = recorded
             transaction = self.transaction
@@ -311,12 +311,12 @@ class TimeTrace(object):
             custom_params = {}
 
             if settings.high_security:
-                if params:
+                if attributes:
                     _logger.debug('Cannot add custom parameters in '
                             'High Security Mode.')
             else:
                 try:
-                    for k, v in params.items():
+                    for k, v in attributes.items():
                         name, val = process_user_attribute(k, v)
                         if name:
                             custom_params[name] = val
@@ -328,6 +328,43 @@ class TimeTrace(object):
 
             transaction._create_error_node(
                     settings, fullname, message, expected, custom_params, self.guid, tb)
+
+
+    def record_exception(self, exc_info=None,
+                         params={}, ignore_errors=[]):
+        # Deprecation Warning
+        warnings.warn((
+            'The record_exception function is deprecated. Please use the '
+            'new api named notice_error instead.'
+        ), DeprecationWarning)
+
+        # Pull from sys.exc_info if no exception is passed
+        if not exc_info or None in exc_info:
+            exc_info = sys.exc_info()
+
+        # If no exception to report, exit
+        if not exc_info or None in exc_info:
+            return
+
+        exc, value, tb = exc_info
+
+        # Check ignore_errors callables
+        if callable(ignore_errors):
+            should_ignore = ignore_errors(exc, value, tb)
+            if should_ignore:
+                return
+
+        # Check ignore_errors iterables
+        elif ignore_errors:
+            module = value.__class__.__module__
+            name = value.__class__.__name__
+
+            names = ("%s:%s" % (module, name), "%s.%s" % (module, name))
+            for fullname in names:
+                if fullname in ignore_errors:
+                    return
+
+        self.notice_error(error=exc_info, attributes=params)
 
     def _add_agent_attribute(self, key, value):
         self.agent_attributes[key] = value
@@ -532,6 +569,7 @@ def get_linking_metadata():
 
 def record_exception(exc=None, value=None, tb=None, params={},
         ignore_errors=[], application=None):
+    # Deprecated, but deprecation warning are handled by underlying function calls
     if application is None:
         trace = current_trace()
         if trace:
@@ -541,3 +579,13 @@ def record_exception(exc=None, value=None, tb=None, params={},
         if application.enabled:
             application.record_exception(exc, value, tb, params,
                     ignore_errors)
+
+
+def notice_error(error=None, attributes={}, expected=None, application=None):
+    if application is None:
+        trace = current_trace()
+        if trace:
+            trace.notice_error(error, attributes, expected)
+    else:
+        if application.enabled:
+            application.notice_error(error, attributes, expected)

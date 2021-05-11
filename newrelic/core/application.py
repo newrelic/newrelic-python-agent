@@ -713,7 +713,26 @@ class Application(object):
 
     def record_exception(self, exc=None, value=None, tb=None, params={},
             ignore_errors=[]):
+        """Record a global exception against the application independent
+        of a specific transaction.
 
+        Deprecated, but deprecation warning are handled by underlying function calls
+        """
+
+        if not self._active_session:
+            return
+
+        with self._stats_lock:
+            # It may still actually be rejected if no exception
+            # supplied or if was in the ignored list. For now
+            # always attempt anyway and also increment the events
+            # count still so that short harvest is extended.
+
+            self._global_events_account += 1
+            self._stats_engine.record_exception(exc, value, tb,
+                    params, ignore_errors)
+
+    def notice_error(self, error=None, attributes={}, expected=None):
         """Record a global exception against the application independent
         of a specific transaction.
 
@@ -729,8 +748,7 @@ class Application(object):
             # count still so that short harvest is extended.
 
             self._global_events_account += 1
-            self._stats_engine.record_exception(exc, value, tb,
-                    params, ignore_errors)
+            self._stats_engine.notice_error(error=error, attributes=attributes, expected=expected)
 
     def record_custom_metric(self, name, value):
         """Record a custom metric against the application independent

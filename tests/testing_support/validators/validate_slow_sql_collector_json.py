@@ -15,7 +15,7 @@
 
 from newrelic.common.encoding_utils import unpack_field
 from newrelic.common.object_wrapper import transient_function_wrapper
-from newrelic.common.constants import LOCALHOST_EQUIVALENTS
+from newrelic.common.system_info import LOCALHOST_EQUIVALENTS
 from newrelic.core.database_utils import SQLConnections
 from newrelic.packages import six
 

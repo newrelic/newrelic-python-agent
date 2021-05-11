@@ -27,7 +27,6 @@ from newrelic.common.encoding_utils import (
 from newrelic.common.utilization import (
     AWSUtilization,
     AzureUtilization,
-    BootIdUtilization,
     DockerUtilization,
     GCPUtilization,
     KubernetesUtilization,
@@ -303,7 +302,7 @@ class AgentProtocol(object):
         if ip_address:
             utilization_settings["ip_address"] = ip_address
 
-        boot_id = BootIdUtilization.detect()
+        boot_id = system_info.BootIdUtilization.detect()
         if boot_id:
             utilization_settings["boot_id"] = boot_id
 

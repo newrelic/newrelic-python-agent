@@ -56,9 +56,6 @@ class NoIteratorDict(object):
     def __getitem__(self, *args, **kwargs):
         return self.d.__getitem__(*args, **kwargs)
 
-    def __setitem__(self, *args, **kwargs):
-        return self.d.__setitem__(*args, **kwargs)
-
     def __contains__(self, *args, **kwargs):
         return self.d.__contains__(*args, **kwargs)
 

@@ -91,7 +91,7 @@ def exercise(override_expected=None, status_code=None):
 
 @pytest.mark.parametrize("settings,expected,ignore", settings_matrix)
 @pytest.mark.parametrize("override_expected", override_expected_matrix)
-def test_classes_error_event(settings, expected, ignore, override_expected):
+def test_classes_error_event_inside_transaction(settings, expected, ignore, override_expected):
     expected = override_expected if override_expected is not None else expected
 
     # Update attributes with parameters
@@ -178,7 +178,41 @@ status_code_matrix = [None, 429, retrieve_status_code]
 @pytest.mark.parametrize("settings,expected,ignore", settings_matrix)
 @pytest.mark.parametrize("override_expected", override_expected_matrix)
 @pytest.mark.parametrize("status_code", status_code_matrix)
-def test_status_codes(settings, expected, ignore, override_expected, status_code):
+def test_status_codes_inside_transaction(settings, expected, ignore, override_expected, status_code):
+    expected = override_expected if override_expected is not None else expected
+    
+    if status_code is None:
+        # Override all settings
+        ignore = False
+        expected = False
+
+    # Update attributes with parameters
+    attributes = _intrinsic_attributes.copy()
+    attributes["error.expected"] = expected
+
+    error_count = 1 if not ignore else 0
+    errors = _test_record_exception if not ignore else []
+
+    @validate_transaction_errors(errors=errors)
+    @validate_error_event_sample_data(
+        required_attrs=attributes,
+        required_user_attrs=False,
+        num_errors=error_count,
+    )
+    @background_task(name="test")
+    @override_application_settings(settings)
+    def _test():
+        try:
+            raise TeapotError("I'm a teapot.")
+        except:
+            notice_error(expected=override_expected, status_code=status_code)
+
+    _test()
+
+@pytest.mark.parametrize("settings,expected,ignore", settings_matrix)
+@pytest.mark.parametrize("override_expected", override_expected_matrix)
+@pytest.mark.parametrize("status_code", status_code_matrix)
+def test_status_codes_outside_transaction(settings, expected, ignore, override_expected, status_code):
     expected = override_expected if override_expected is not None else expected
     
     if status_code is None:

@@ -20,21 +20,31 @@ from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
 
 class ErrorTrace(object):
-    def __init__(self, ignore_errors=[], ignore=None, expected=None, status_code=None, **kwargs):
-        parent = None
-        if kwargs:
-            if len(kwargs) > 1:
-                raise TypeError("Invalid keyword arguments:", kwargs)
-            parent = kwargs["parent"]
-
+    def __init__(
+        self,
+        ignore_errors=[],
+        ignore=None,
+        expected=None,
+        status_code=None,
+        parent=None,
+    ):
         if parent is None:
             parent = current_trace()
 
         self._transaction = parent and parent.transaction
         self._ignore_errors = ignore_errors
-        self._ignore = ignore
+        self._ignore = ignore if ignore is not None else ignore_errors
         self._expected = expected
         self._status_code = status_code
+
+        if self._ignore_errors:
+            warnings.warn(
+                (
+                    "The ignore_errors argument is deprecated. Please use the "
+                    "new ignore argument instead."
+                ),
+                DeprecationWarning,
+            )
 
     def __enter__(self):
         return self
@@ -46,31 +56,17 @@ class ErrorTrace(object):
         if self._transaction is None:
             return
 
-        final_ignore = None
-
-        if self._ignore_errors:
-            warnings.warn((
-                'The ignore_errors argument is deprecated. Please use the '
-                'new ignore argument instead.'
-            ), DeprecationWarning)
-            if self._ignore:
-                final_ignore = self._ignore
-            else:
-                final_ignore = self._ignore_errors
-
-        if not self._ignore_errors and self._ignore:
-            final_ignore = self._ignore
-
-
         notice_error(
             error=(exc, value, tb),
-            ignore=final_ignore,
+            ignore=self._ignore,
             expected=self._expected,
             status_code=self._status_code,
         )
 
 
-def ErrorTraceWrapper(wrapped, ignore_errors=[], ignore=None, expected=None, status_code=None):
+def ErrorTraceWrapper(
+    wrapped, ignore_errors=[], ignore=None, expected=None, status_code=None
+):
     def wrapper(wrapped, instance, args, kwargs):
         parent = current_trace()
 
@@ -85,9 +81,25 @@ def ErrorTraceWrapper(wrapped, ignore_errors=[], ignore=None, expected=None, sta
 
 def error_trace(ignore_errors=[], ignore=None, expected=None, status_code=None):
     return functools.partial(
-        ErrorTraceWrapper, ignore_errors=ignore_errors, ignore=ignore, expected=expected, status_code=status_code
+        ErrorTraceWrapper,
+        ignore_errors=ignore_errors,
+        ignore=ignore,
+        expected=expected,
+        status_code=status_code,
     )
 
 
-def wrap_error_trace(module, object_path, ignore_errors=[], ignore=None, expected=None, status_code=None):
-    wrap_object(module, object_path, ErrorTraceWrapper, (ignore_errors, ignore, expected, status_code, ))
+def wrap_error_trace(
+    module, object_path, ignore_errors=[], ignore=None, expected=None, status_code=None
+):
+    wrap_object(
+        module,
+        object_path,
+        ErrorTraceWrapper,
+        (
+            ignore_errors,
+            ignore,
+            expected,
+            status_code,
+        ),
+    )

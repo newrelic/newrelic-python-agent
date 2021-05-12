@@ -573,32 +573,7 @@ class StatsEngine(object):
             'new api named notice_error instead.'
         ), DeprecationWarning)
 
-        # Pull from sys.exc_info if no exception is passed
-        if None in (exc, value, tb):
-            exc, value, tb = sys.exc_info()
-
-        # If no exception to report, exit
-        if None in (exc, value, tb):
-            return
-
-        # Check ignore_errors callables
-        # We check these here separatly from the notice_error implementation
-        # to preserve previous functionality in precedence
-        should_ignore = None
-
-        if callable(ignore_errors):
-            should_ignore = ignore_errors(exc, value, tb)
-            if should_ignore:
-                return
-
-        # Check ignore_errors iterables
-        if should_ignore is None and not callable(ignore_errors):
-            _, _, fullnames, _ = parse_exc_info((exc, value, tb))
-            for fullname in fullnames:
-                if fullname in ignore_errors:
-                    return
-
-        self.notice_error(error=(exc, value, tb), attributes=params, ignore=should_ignore)
+        self.notice_error(error=(exc, value, tb), attributes=params, ignore=ignore_errors)
 
     def notice_error(self, error=None, attributes={}, expected=None, ignore=None, status_code=None):
         settings = self.__settings

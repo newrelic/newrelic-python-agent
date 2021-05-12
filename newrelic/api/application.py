@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import threading
+import warnings
 
 import newrelic.core.config
 import newrelic.core.agent
@@ -113,13 +114,13 @@ class Application(object):
 
     def record_exception(self, exc=None, value=None, tb=None, params={},
             ignore_errors=[]):
-        # Deprecated, but deprecation warning are handled by underlying function calls
+        # Deprecation Warning
+        warnings.warn((
+            'The record_exception function is deprecated. Please use the '
+            'new api named notice_error instead.'
+        ), DeprecationWarning)
 
-        if not self.active:
-            return
-
-        self._agent.record_exception(self._name, exc, value, tb, params,
-                ignore_errors)
+        self.notice_error(error=(exc, value, tb), attributes=params, ignore=ignore_errors)
 
     def notice_error(self, error=None, attributes={}, expected=None, ignore=None, status_code=None):
         if not self.active:

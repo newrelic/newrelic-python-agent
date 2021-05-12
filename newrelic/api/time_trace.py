@@ -357,49 +357,14 @@ class TimeTrace(object):
                     settings, fullname, message, is_expected, custom_params, self.guid, tb)
 
 
-    def record_exception(self, exc_info=None,
-                         params={}, ignore_errors=[]):
+    def record_exception(self, exc_info=None, params={}, ignore_errors=[]):
         # Deprecation Warning
         warnings.warn((
             'The record_exception function is deprecated. Please use the '
             'new api named notice_error instead.'
         ), DeprecationWarning)
 
-        transaction = self.transaction
-
-        # Pull from sys.exc_info if no exception is passed
-        if not exc_info or None in exc_info:
-            exc_info = sys.exc_info()
-
-        # If no exception to report, exit
-        if not exc_info or None in exc_info:
-            return
-
-        exc, value, tb = exc_info
-
-        # Check ignore_errors callables
-        # We check these here separatly from the notice_error implementation
-        # to preserve previous functionality in precedence
-        should_ignore = None
-        
-        if hasattr(transaction, '_ignore_errors'):
-            should_ignore = transaction._ignore_errors(exc, value, tb)
-            if should_ignore:
-                return
-
-        if callable(ignore_errors):
-            should_ignore = ignore_errors(exc, value, tb)
-            if should_ignore:
-                return
-
-        # Check ignore_errors iterables
-        if should_ignore is None and not callable(ignore_errors):
-            _, _, fullnames, _ = parse_exc_info(exc_info)
-            for fullname in fullnames:
-                if fullname in ignore_errors:
-                    return
-
-        self.notice_error(error=exc_info, attributes=params, ignore=should_ignore)
+        self.notice_error(error=exc_info, attributes=params, ignore=ignore_errors)
 
     def _add_agent_attribute(self, key, value):
         self.agent_attributes[key] = value
@@ -604,19 +569,16 @@ def get_linking_metadata():
 
 def record_exception(exc=None, value=None, tb=None, params={},
         ignore_errors=[], application=None):
-    # Deprecated, but deprecation warning are handled by underlying function calls
-    if application is None:
-        trace = current_trace()
-        if trace:
-            trace.record_exception((exc, value, tb), params,
-                    ignore_errors)
-    else:
-        if application.enabled:
-            application.record_exception(exc, value, tb, params,
-                    ignore_errors)
+        # Deprecation Warning
+        warnings.warn((
+            'The record_exception function is deprecated. Please use the '
+            'new api named notice_error instead.'
+        ), DeprecationWarning)
+
+        notice_error(error=(exc, value, tb), attributes=params, ignore=ignore_errors, application=application)
 
 
-def notice_error(error=None, attributes={}, expected=None, ignore=None, application=None, status_code=None):
+def notice_error(error=None, attributes={}, expected=None, ignore=None, status_code=None, application=None):
     if application is None:
         trace = current_trace()
         if trace:

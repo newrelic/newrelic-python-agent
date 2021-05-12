@@ -48,13 +48,13 @@ combined_runtime_error_settings.update(expected_runtime_error_settings)
 combined_runtime_error_settings.update(ignore_runtime_error_settings)
 
 # Status code settings
-expected_status_code_settings = {"error_collector.expected_status_codes": [429]}
-ignore_status_code_settings = {"error_collector.ignore_status_codes": [429]}
+expected_status_code_settings = {"error_collector.expected_status_codes": [418]}
+ignore_status_code_settings = {"error_collector.ignore_status_codes": [418]}
 combined_status_code_settings = {}
 combined_status_code_settings.update(expected_runtime_error_settings)
 combined_status_code_settings.update(ignore_runtime_error_settings)
 
-_test_record_exception = [(_runtime_error_name, _error_message)]
+_test_runtime_error = [(_runtime_error_name, _error_message)]
 _intrinsic_attributes = {
     "error.class": _runtime_error_name,
     "error.message": _error_message,
@@ -99,7 +99,7 @@ def test_classes_error_event_inside_transaction(settings, expected, ignore, over
     attributes["error.expected"] = expected
 
     error_count = 1 if not ignore else 0
-    errors = _test_record_exception if not ignore else []
+    errors = _test_runtime_error if not ignore else []
 
     @validate_transaction_errors(errors=errors)
     @validate_error_event_sample_data(
@@ -159,9 +159,10 @@ def test_classes_exception_metrics(settings, expected, ignore, override_expected
 # =============== Test ignored/expected status codes ===============
 
 class TeapotError(RuntimeError):
-    status_code = 429
+    status_code = 418
 
 _teapot_error_name = callable_name(TeapotError)
+_test_teapot_error = [(_teapot_error_name, _error_message)]
 
 def retrieve_status_code(exc, value, tb):
     return value.status_code
@@ -173,7 +174,7 @@ settings_matrix = [
     (combined_status_code_settings, False, True),
 ]
 
-status_code_matrix = [None, 429, retrieve_status_code]
+status_code_matrix = [None, 418, retrieve_status_code]
 
 @pytest.mark.parametrize("settings,expected,ignore", settings_matrix)
 @pytest.mark.parametrize("override_expected", override_expected_matrix)
@@ -191,7 +192,7 @@ def test_status_codes_inside_transaction(settings, expected, ignore, override_ex
     attributes["error.expected"] = expected
 
     error_count = 1 if not ignore else 0
-    errors = _test_record_exception if not ignore else []
+    errors = _test_teapot_error if not ignore else []
 
     @validate_transaction_errors(errors=errors)
     @validate_error_event_sample_data(
@@ -203,7 +204,7 @@ def test_status_codes_inside_transaction(settings, expected, ignore, override_ex
     @override_application_settings(settings)
     def _test():
         try:
-            raise TeapotError("I'm a teapot.")
+            raise TeapotError(_error_message)
         except:
             notice_error(expected=override_expected, status_code=status_code)
 
@@ -235,7 +236,7 @@ def test_status_codes_outside_transaction(settings, expected, ignore, override_e
     @override_application_settings(settings)
     def _test():
         try:
-            raise TeapotError("I'm a teapot.")
+            raise TeapotError(_error_message)
         except:
             notice_error(expected=override_expected, status_code=status_code)
 
@@ -270,7 +271,7 @@ def test_mixed_ignore_expected_settings_inside_transaction(settings, expected, i
     attributes["error.expected"] = expected
 
     error_count = 1 if not ignore else 0
-    errors = _test_record_exception if not ignore else []
+    errors = _test_runtime_error if not ignore else []
 
     @validate_transaction_errors(errors=errors)
     @validate_error_event_sample_data(
@@ -281,7 +282,7 @@ def test_mixed_ignore_expected_settings_inside_transaction(settings, expected, i
     @background_task(name="test")
     @override_application_settings(settings)
     def _test():
-        exercise(override_expected=override_expected, status_code=429)
+        exercise(override_expected=override_expected, status_code=418)
 
     _test()
 

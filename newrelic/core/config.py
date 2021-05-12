@@ -1133,8 +1133,8 @@ def error_matches_rules(
         return False
 
     # Retrieve settings based on prefix
-    classes_rules = getattr(settings.error_collector, "%s_classes" % rules_prefix)
-    status_codes_rules = getattr(settings.error_collector, "%s_status_codes" % rules_prefix)
+    classes_rules = getattr(settings.error_collector, "%s_classes" % rules_prefix, set())
+    status_codes_rules = getattr(settings.error_collector, "%s_status_codes" % rules_prefix, set())
 
     module, name, fullnames, message = parse_exc_info(exc_info)
     fullname = fullnames[0]

@@ -624,17 +624,7 @@ class StatsEngine(object):
 
         exc, value, tb = error
 
-        # If no exception details provided, use current exception.
-
-        if exc is None and value is None and tb is None:
-            exc, value, tb = sys.exc_info()
-
-        # Has to be an error to be logged.
-
-        if exc is None or value is None or tb is None:
-            return
-
-        module, name, fullnames, message = parse_exc_info((exc, value, tb))
+        module, name, fullnames, message = parse_exc_info(error)
         fullname = fullnames[0]
 
         # Check to see if we need to strip the message before recording it.
@@ -653,7 +643,8 @@ class StatsEngine(object):
         # Precedence: 
         # 1. function parameter override as bool
         # 2. function parameter callable
-        # 3. default rule matching from settings
+        # 3. function parameter iterable of class names
+        # 4. default rule matching from settings
 
         should_ignore = None
         is_expected = None
@@ -671,9 +662,17 @@ class StatsEngine(object):
             if should_ignore:
                 return
 
+        # List of class names
+        if should_ignore is None and ignore is not None and not callable(ignore):
+            # Do not set should_ignore to False
+            # This should cascade into default settings rule matching
+            for name in fullnames:
+                if name in ignore:
+                    return
+
         # Default rule matching
         if should_ignore is None:
-            should_ignore = should_ignore_error((exc, value, tb), status_code=status_code)
+            should_ignore = should_ignore_error(error, status_code=status_code)
             if should_ignore:
                 return
 
@@ -686,9 +685,18 @@ class StatsEngine(object):
         if is_expected is None and callable(expected):
             is_expected = expected(exc, value, tb)
 
+
+        # List of class names
+        if is_expected is None and expected is not None and not callable(expected):
+            # Do not set is_expected to False
+            # This should cascade into default settings rule matching
+            for name in fullnames:
+                if name in expected:
+                    is_expected = True
+
         # Default rule matching
         if is_expected is None:
-            is_expected = is_expected_error((exc, value, tb), status_code=status_code)
+            is_expected = is_expected_error(error, status_code=status_code)
 
         # Only add attributes if High Security Mode is off.
 

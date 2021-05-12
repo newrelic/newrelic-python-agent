@@ -216,15 +216,15 @@ class TimeTrace(object):
 
         # If no exception details provided, use current exception.
 
-        if exc_info and None not in exc_info:
-            exc, value, tb = exc_info
-        else:
-            exc, value, tb = sys.exc_info()
+        # Pull from sys.exc_info if no exception is passed
+        if not exc_info or None in exc_info:
+            exc_info = sys.exc_info()
 
-        # Has to be an error to be logged.
-
-        if exc is None or value is None or tb is None:
+        # If no exception to report, exit
+        if not exc_info or None in exc_info:
             return
+
+        exc, value, tb = exc_info
 
         module, name, fullnames, message = parse_exc_info((exc, value, tb))
         fullname = fullnames[0]
@@ -246,7 +246,8 @@ class TimeTrace(object):
         # 1. function parameter override as bool
         # 2. function parameter callable
         # 3. callable on transaction
-        # 4. default rule matching from settings
+        # 4. function parameter iterable of class names
+        # 5. default rule matching from settings
 
         should_ignore = None
         is_expected = None
@@ -270,9 +271,17 @@ class TimeTrace(object):
             if should_ignore:
                 return
 
+        # List of class names
+        if should_ignore is None and ignore is not None and not callable(ignore):
+            # Do not set should_ignore to False
+            # This should cascade into default settings rule matching
+            for name in fullnames:
+                if name in ignore:
+                    return
+
         # Default rule matching
         if should_ignore is None:
-            should_ignore = should_ignore_error((exc, value, tb), status_code=status_code)
+            should_ignore = should_ignore_error(exc_info, status_code=status_code)
             if should_ignore:
                 return
 
@@ -285,13 +294,18 @@ class TimeTrace(object):
         if is_expected is None and callable(expected):
             is_expected = expected(exc, value, tb)
 
-        # Callable on transaction
-        if is_expected is None and hasattr(transaction, '_expected_errors'):
-            is_expected = transaction._expected_errors(exc, value, tb)
+
+        # List of class names
+        if is_expected is None and expected is not None and not callable(expected):
+            # Do not set is_expected to False
+            # This should cascade into default settings rule matching
+            for name in fullnames:
+                if name in expected:
+                    is_expected = True
 
         # Default rule matching
         if is_expected is None:
-            is_expected = is_expected_error((exc, value, tb), status_code=status_code)
+            is_expected = is_expected_error(exc_info, status_code=status_code)
 
         # Record a supportability metric if error attributes are being
         # overiden.

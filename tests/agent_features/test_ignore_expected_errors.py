@@ -67,6 +67,9 @@ _metrics_normal = [
     ("Errors/allOther", 1),
 ]
 
+
+# =============== Test ignored/expected classes within transaction ===============
+
 settings_matrix = [
     ({}, False, False),
     (ignore_runtime_error_settings, False, True),
@@ -74,7 +77,6 @@ settings_matrix = [
     (combined_runtime_error_settings, False, True),
 ]
 override_expected_matrix = (True, False, None)
-
 
 def exercise(override_expected=None):
     try:
@@ -86,7 +88,6 @@ def exercise(override_expected=None):
         else:
             # Record exception outside context of transaction
             application_instance().notice_error(expected=override_expected)
-
 
 @pytest.mark.parametrize("settings,expected,ignore", settings_matrix)
 @pytest.mark.parametrize("override_expected", override_expected_matrix)
@@ -113,22 +114,7 @@ def test_classes_error_event(settings, expected, ignore, override_expected):
 
     _test()
 
-
-@pytest.mark.skip()
-@pytest.mark.parametrize("settings,expected,ignore", settings_matrix)
-@pytest.mark.parametrize("override_expected", override_expected_matrix)
-def test_classes_exception_metrics(settings, expected, ignore, override_expected):
-    expected = override_expected or expected
-    metrics = _metrics_normal if not (expected or ignore) else []
-
-    @override_application_settings(settings)
-    @validate_transaction_metrics("test", background_task=True, rollup_metrics=metrics)
-    @background_task(name="test")
-    def _test():
-        exercise(override_expected)
-
-    _test()
-
+# =============== Test ignored/expected classes outside transaction ===============
 
 @pytest.mark.parametrize("settings,expected,ignore", settings_matrix)
 @pytest.mark.parametrize("override_expected", override_expected_matrix)
@@ -150,5 +136,71 @@ def test_classes_error_event_outside_transaction(settings, expected, ignore, ove
     @override_application_settings(settings)
     def _test():
         exercise(override_expected)
+
+    _test()
+
+# =============== Test metrics not incremented ===============
+
+@pytest.mark.skip()
+@pytest.mark.parametrize("settings,expected,ignore", settings_matrix)
+@pytest.mark.parametrize("override_expected", override_expected_matrix)
+def test_classes_exception_metrics(settings, expected, ignore, override_expected):
+    expected = override_expected or expected
+    metrics = _metrics_normal if not (expected or ignore) else []
+
+    @override_application_settings(settings)
+    @validate_transaction_metrics("test", background_task=True, rollup_metrics=metrics)
+    @background_task(name="test")
+    def _test():
+        exercise(override_expected)
+
+    _test()
+
+# =============== Test ignored/expected status codes ===============
+
+class TeapotError(RuntimeError):
+    status_code = 429
+
+def retrieve_status_code(exc, value, tb):
+    return value.status_code
+
+settings_matrix = [
+    ({}, False, False),
+    (ignore_status_code_error_settings, False, True),
+    (expected_status_code_error_settings, True, False),
+    (combined_status_code_error_settings, False, True),
+]
+
+status_code_matrix = [None, 429, retrieve_status_code]
+
+@pytest.mark.parametrize("settings,expected,ignore", settings_matrix)
+@pytest.mark.parametrize("override_expected", override_expected_matrix)
+@pytest.mark.parametrize("status_code", status_code_matrix)
+def test_status_codes(settings, expected, ignore, override_expected, status_code):
+    expected = override_expected if override_expected is not None else expected
+    
+    if status_code is None:
+        # Override all settings
+        ignore = False
+        expected = False
+
+    # Update attributes with parameters
+    attributes = _intrinsic_attributes.copy()
+    attributes["error.expected"] = expected
+
+    error_count = 1 if not ignore else 0
+
+    @validate_transaction_error_event_count(num_errors=0)  # No transaction, should be 0
+    @validate_error_event_sample_data(
+        required_attrs=attributes,
+        required_user_attrs=False,
+        num_errors=error_count,
+    )
+    @override_application_settings(settings)
+    def _test():
+        try:
+            raise TeapotError("I'm a teapot.")
+        except:
+            notice_error(expected=override_expected, status_code=status_code)
 
     _test()

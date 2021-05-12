@@ -1838,7 +1838,7 @@ def _error_trace_import_hook(object_path, ignore, expected):
 
         try:
             newrelic.api.error_trace.wrap_error_trace(
-                target, object_path, ignore
+                target, object_path, ignore, expected, None
             )
         except Exception:
             _raise_instrumentation_error("error-trace", locals())
@@ -1880,7 +1880,7 @@ def _process_error_trace_configuration():
                 "register error-trace %s" % ((module, object_path, ignore_classes, expected_classes),)
             )
 
-            hook = _error_trace_import_hook(object_path, ignore_classes, expected_classes, None)
+            hook = _error_trace_import_hook(object_path, ignore_classes, expected_classes)
             newrelic.api.import_hook.register_import_hook(module, hook)
         except Exception:
             _raise_configuration_error(section)

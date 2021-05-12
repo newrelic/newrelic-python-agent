@@ -24,6 +24,7 @@ import copy
 import logging
 import operator
 import random
+import warnings
 import zlib
 import time
 import sys
@@ -565,7 +566,43 @@ class StatsEngine(object):
 
     def record_exception(self, exc=None, value=None, tb=None, params={},
             ignore_errors=[]):
+        # Deprecation Warning
+        warnings.warn((
+            'The record_exception function is deprecated. Please use the '
+            'new api named notice_error instead.'
+        ), DeprecationWarning)
 
+        # Pull from sys.exc_info if no exception is passed
+        if None in (exc, value, tb):
+            exc, value, tb = sys.exc_info()
+
+        # If no exception to report, exit
+        if None in (exc, value, tb):
+            return
+
+        # Check ignore_errors callables
+        # We check these here separatly from the notice_error implementation
+        # to preserve previous functionality in precedence
+        should_ignore = None
+
+        if callable(ignore_errors):
+            should_ignore = ignore_errors(exc, value, tb)
+            if should_ignore:
+                return
+
+        # Check ignore_errors iterables
+        if should_ignore is None and not callable(ignore_errors):
+            module = value.__class__.__module__
+            name = value.__class__.__name__
+
+            names = ("%s:%s" % (module, name), "%s.%s" % (module, name))
+            for fullname in names:
+                if fullname in ignore_errors:
+                    return
+
+        self.notice_error(error=(exc, value, tb), attributes=params, ignore=should_ignore)
+
+    def notice_error(self, error=None, attributes={}, expected=None, ignore=None, status_code=None):
         settings = self.__settings
 
         if not settings:
@@ -579,6 +616,16 @@ class StatsEngine(object):
         if not settings.collect_errors and not settings.collect_error_events:
             return
 
+        # Pull from sys.exc_info if no exception is passed
+        if not error or None in error:
+            error = sys.exc_info()
+
+        # If no exception to report, exit
+        if not error or None in error:
+            return
+
+        exc, value, tb = error
+
         # If no exception details provided, use current exception.
 
         if exc is None and value is None and tb is None:
@@ -588,20 +635,6 @@ class StatsEngine(object):
 
         if exc is None or value is None or tb is None:
             return
-
-        # Where ignore_errors is a callable it should return a
-        # tri-state variable with the following behavior.
-        #
-        #   True - Ignore the error.
-        #   False- Record the error.
-        #   None - Use the default ignore rules.
-
-        should_ignore = None
-
-        if callable(ignore_errors):
-            should_ignore = ignore_errors(exc, value, tb)
-            if should_ignore:
-                return
 
         module = value.__class__.__module__
         name = value.__class__.__name__
@@ -635,56 +668,110 @@ class StatsEngine(object):
                 except Exception:
                     message = '<unprintable %s object>' % type(value).__name__
 
-        # Check against ignore_error rules
+        # Where expected or ignore are a callable they should return a
+        # tri-state variable with the following behavior.
+        #
+        #   True - Ignore the error.
+        #   False- Record the error.
+        #   None - Use the default rules.
+
+        # Precedence: 
+        # 1. function parameter override as bool
+        # 2. function parameter callable
+        # 3. default rule matching from settings
+
+        should_ignore = None
+        is_expected = None
+
+        # Check against ignore rules
+        # Boolean parameter (True/False only, not None)
+        if isinstance(ignore, bool):
+            should_ignore = ignore
+            if should_ignore:
+                return
+
+        # Callable parameter
+        if should_ignore is None and callable(ignore):
+            should_ignore = ignore(exc, value, tb)
+            if should_ignore:
+                return
+
+        # Default rule matching
         if should_ignore is None:
-            if not callable(ignore_errors) and fullname in ignore_errors:
+            should_ignore = should_ignore_error(
+                                module=module, 
+                                name=name, 
+                                message=message, 
+                                status_code=status_code,
+                            )
+            if should_ignore:
                 return
 
-            if should_ignore_error(module=module, name=name, message=message):
-                return
+        # Check against expected rules
+        # Boolean parameter (True/False only, not None)
+        if isinstance(expected, bool):
+            is_expected = expected
 
-        # Only add params if High Security Mode is off.
+        # Callable parameter
+        if is_expected is None and callable(expected):
+            is_expected = expected(exc, value, tb)
+
+        # Default rule matching
+        if is_expected is None:
+            is_expected = is_expected_error(
+                                module=module, 
+                                name=name, 
+                                message=message, 
+                                status_code=status_code,
+                            )
+
+        # Only add attributes if High Security Mode is off.
 
         if settings.high_security:
-            if params:
+            if attributes:
                 _logger.debug('Cannot add custom parameters in '
                         'High Security Mode.')
-            attributes = []
+            user_attributes = []
         else:
-            custom_params = {}
+            custom_attributes = {}
 
             try:
-                for k, v in params.items():
+                for k, v in attributes.items():
                     name, val = process_user_attribute(k, v)
                     if name:
-                        custom_params[name] = val
+                        custom_attributes[name] = val
             except Exception:
                 _logger.debug('Parameters failed to validate for unknown '
                         'reason. Dropping parameters for error: %r. Check '
                         'traceback for clues.', fullname, exc_info=True)
-                custom_params = {}
+                custom_attributes = {}
 
-            attributes = create_user_attributes(custom_params,
+            user_attributes = create_user_attributes(custom_attributes,
                     settings.attribute_filter)
 
         # Record the exception details.
 
-        params = {}
+        attributes = {}
 
-        params["stack_trace"] = exception_stack(tb)
+        attributes["stack_trace"] = exception_stack(tb)
 
-        # filter custom error specific params using attribute filter (user)
-        params['userAttributes'] = {}
-        for attr in attributes:
+        # filter custom error specific attributes using attribute filter (user)
+        attributes['userAttributes'] = {}
+        for attr in user_attributes:
             if attr.destinations & DST_ERROR_COLLECTOR:
-                params['userAttributes'][attr.name] = attr.value
+                attributes['userAttributes'][attr.name] = attr.value
+
+        # pass expected attribute in to ensure we capture overrides
+        attributes['intrinsics'] = {
+                'error.expected': is_expected,
+        }
 
         error_details = TracedError(
                 start_time=time.time(),
                 path='Exception',
                 message=message,
                 type=fullname,
-                parameters=params)
+                parameters=attributes)
 
         # Save this error as a trace and an event.
 
@@ -706,24 +793,17 @@ class StatsEngine(object):
         # This method is for recording error events outside of transactions,
         # don't let the poorly named 'type' attribute fool you.
 
-        # Retrieve expected bool from error or interpret
-        if hasattr(error, "expected"):
-            expected = error.expected
-        else:
-            expected = is_expected_error(fullname=error.type, message=error.message)
-
-        intrinsics = {
+        error.parameters['intrinsics'].update({
                 'type': 'TransactionError',
                 'error.class': error.type,
                 'error.message': error.message,
-                'error.expected': expected,
                 'timestamp': int(1000.0 * error.start_time),
                 'transactionName': None,
-        }
+        })
 
         # Leave agent attributes field blank since not a transaction
 
-        error_event = [intrinsics, error.parameters['userAttributes'], {}]
+        error_event = [error.parameters['intrinsics'], error.parameters['userAttributes'], {}]
 
         return error_event
 

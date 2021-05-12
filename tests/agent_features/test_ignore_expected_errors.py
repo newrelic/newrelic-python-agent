@@ -16,7 +16,7 @@ import pytest
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.time_trace import record_exception
+from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import current_transaction
 from newrelic.api.application import application_instance
 
@@ -73,26 +73,25 @@ settings_matrix = [
     (expected_runtime_error_settings, True, False),
     (combined_runtime_error_settings, False, True),
 ]
-override_expected_matrix = (False, None)  # TODO Add true once functionality is in place
+override_expected_matrix = (True, False, None)
 
 
 def exercise(override_expected=None):
     try:
         raise RuntimeError(_error_message)
     except RuntimeError:
-        # TODO Switch to notice_error and pass expected=override_expected
         if current_transaction() is not None:
             # Record exception inside transaction
-            record_exception()
+            notice_error(expected=override_expected)
         else:
             # Record exception outside context of transaction
-            application_instance().record_exception()
+            application_instance().notice_error(expected=override_expected)
 
 
 @pytest.mark.parametrize("settings,expected,ignore", settings_matrix)
 @pytest.mark.parametrize("override_expected", override_expected_matrix)
 def test_classes_error_event(settings, expected, ignore, override_expected):
-    expected = override_expected or expected
+    expected = override_expected if override_expected is not None else expected
 
     # Update attributes with parameters
     attributes = _intrinsic_attributes.copy()
@@ -110,11 +109,12 @@ def test_classes_error_event(settings, expected, ignore, override_expected):
     @background_task(name="test")
     @override_application_settings(settings)
     def _test():
-        exercise()
+        exercise(override_expected)
 
     _test()
 
 
+@pytest.mark.skip()
 @pytest.mark.parametrize("settings,expected,ignore", settings_matrix)
 @pytest.mark.parametrize("override_expected", override_expected_matrix)
 def test_classes_exception_metrics(settings, expected, ignore, override_expected):
@@ -125,7 +125,7 @@ def test_classes_exception_metrics(settings, expected, ignore, override_expected
     @validate_transaction_metrics("test", background_task=True, rollup_metrics=metrics)
     @background_task(name="test")
     def _test():
-        exercise()
+        exercise(override_expected)
 
     _test()
 
@@ -133,7 +133,7 @@ def test_classes_exception_metrics(settings, expected, ignore, override_expected
 @pytest.mark.parametrize("settings,expected,ignore", settings_matrix)
 @pytest.mark.parametrize("override_expected", override_expected_matrix)
 def test_classes_error_event_outside_transaction(settings, expected, ignore, override_expected):
-    expected = override_expected or expected
+    expected = override_expected if override_expected is not None else expected
 
     # Update attributes with parameters
     attributes = _intrinsic_attributes.copy()
@@ -149,6 +149,6 @@ def test_classes_error_event_outside_transaction(settings, expected, ignore, ove
     )
     @override_application_settings(settings)
     def _test():
-        exercise()
+        exercise(override_expected)
 
     _test()

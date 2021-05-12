@@ -1481,6 +1481,7 @@ class Transaction(object):
 
     def record_exception(self, exc=None, value=None, tb=None,
                          params={}, ignore_errors=[]):
+        # Deprecated, but deprecation warning are handled by underlying function calls
         settings = self._settings
 
         if not settings:
@@ -1498,6 +1499,28 @@ class Transaction(object):
                     (exc, value, tb),
                     params=params,
                     ignore_errors=ignore_errors)
+
+    def notice_error(self, error=None, attributes={}, expected=None, ignore=None, status_code=None):
+        settings = self._settings
+
+        if not settings:
+            return
+
+        if not settings.error_collector.enabled:
+            return
+
+        if not settings.collect_errors and not settings.collect_error_events:
+            return
+
+        current_span = trace_cache().current_trace()
+        if current_span:
+            current_span.notice_error(
+                error=error,
+                attributes=attributes,
+                expected=expected,
+                ignore=ignore,
+                status_code=status_code,
+            )
 
     def _create_error_node(self, settings, fullname, message,
                            expected, custom_params, span_id, tb):

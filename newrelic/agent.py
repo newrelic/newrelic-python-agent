@@ -38,7 +38,8 @@ from newrelic.api.time_trace import (
         current_trace as __current_trace,
         get_linking_metadata as __get_linking_metadata,
         add_custom_span_attribute as __add_custom_span_attribute,
-        record_exception as __record_exception)
+        record_exception as __record_exception,
+        notice_error as __notice_error)
 
 from newrelic.api.transaction import (
         current_transaction as __current_transaction,
@@ -242,6 +243,8 @@ add_framework_info = __wrap_api_call(__add_framework_info,
         'add_framework_info')
 record_exception = __wrap_api_call(__record_exception,
         'record_exception')
+notice_error = __wrap_api_call(__notice_error,
+        'notice_error')
 get_browser_timing_header = __wrap_api_call(__get_browser_timing_header,
         'get_browser_timing_header')
 get_browser_timing_footer = __wrap_api_call(__get_browser_timing_footer,

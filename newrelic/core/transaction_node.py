@@ -311,7 +311,7 @@ class TransactionNode(_TransactionNode):
             params = {}
             params["stack_trace"] = error.stack_trace
 
-            intrinsics = {'spanId': error.span_id}
+            intrinsics = {'spanId': error.span_id, 'error.expected': error.expected}
             intrinsics.update(self.trace_intrinsics)
             params['intrinsics'] = intrinsics
 

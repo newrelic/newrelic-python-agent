@@ -345,7 +345,7 @@ def _nr_request_wrapper(wrapped, instance, args, kwargs):
             response = yield from coro
             return response
 
-        # Patch in should_ignore to all record_exception calls
+        # Patch in should_ignore to all notice_error calls
         transaction._ignore_errors = should_ignore
 
         import aiohttp

@@ -22,7 +22,7 @@ import newrelic.api.error_trace
 import newrelic.api.object_wrapper
 import newrelic.api.import_hook
 
-from newrelic.api.time_trace import record_exception
+from newrelic.api.time_trace import notice_error
 
 def name_controller(self, environ, start_response):
     action = environ['pylons.routes_dict']['action']
@@ -52,7 +52,7 @@ class capture_error(object):
             except webob_exc.HTTPException:
                 raise
             except:  # Catch all
-                record_exception()
+                notice_error()
                 raise
         else:
             return self.__wrapped(*args, **kwargs)

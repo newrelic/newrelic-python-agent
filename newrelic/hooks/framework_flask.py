@@ -20,18 +20,17 @@ from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.api.function_trace import (FunctionTrace, wrap_function_trace,
         FunctionTraceWrapper)
 from newrelic.api.transaction import current_transaction
-from newrelic.api.time_trace import record_exception
+from newrelic.api.time_trace import notice_error
 
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
         function_wrapper)
 from newrelic.common.object_names import callable_name
-from newrelic.core.config import ignore_status_code
 
 def framework_details():
     import flask
     return ('Flask', getattr(flask, '__version__', None))
 
-def should_ignore(exc, value, tb):
+def status_code(exc, value, tb):
     from werkzeug.exceptions import HTTPException
 
     # Werkzeug HTTPException can be raised internally by Flask or in
@@ -39,8 +38,7 @@ def should_ignore(exc, value, tb):
     # HTTP status code.
 
     if isinstance(value, HTTPException):
-        if ignore_status_code(value.code):
-            return True
+        return value.code
 
 @function_wrapper
 def _nr_wrapper_handler_(wrapped, instance, args, kwargs):
@@ -114,7 +112,7 @@ def _nr_wrapper_Flask_handle_exception_(wrapped, instance, args, kwargs):
     # context of the except clause of the try block. We can therefore
     # rely on grabbing current exception details so we have access to
     # the addition stack trace information.
-    record_exception(ignore_errors=should_ignore)
+    notice_error(status_code=status_code)
 
     name = callable_name(wrapped)
 

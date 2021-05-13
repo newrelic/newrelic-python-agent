@@ -39,7 +39,7 @@
 
 from newrelic.api.function_trace import FunctionTrace, wrap_function_trace
 from newrelic.api.transaction import current_transaction
-from newrelic.api.time_trace import record_exception
+from newrelic.api.time_trace import notice_error
 from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (ObjectProxy, function_wrapper,
@@ -122,7 +122,7 @@ def wrapper_Dispatcher_find_handler(wrapped, instance, args, kwargs):
     except:  # Catch all
         # Can end up here when a custom _cp_dispatch() method is
         # used and that raises an exception.
-        record_exception()
+        notice_error()
         raise
 
     if obj:
@@ -173,7 +173,7 @@ def wrapper_RoutesDispatcher_find_handler(wrapped, instance, args, kwargs):
 
     except:  # Catch all
         # Can end up here when the URL was invalid in some way.
-        record_exception()
+        notice_error()
         raise
 
     if handler:

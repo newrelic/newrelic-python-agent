@@ -1,4 +1,4 @@
-from newrelic.api.time_trace import record_exception
+from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import current_transaction
 from newrelic.core.config import ignore_status_code
 from newrelic.common.object_wrapper import function_wrapper
@@ -20,7 +20,7 @@ async def _nr_wrapper_BaseHandler_get_response_async_(
 
     if hasattr(request, '_nr_exc_info'):
         if not ignore_status_code(response.status_code):
-            record_exception(*request._nr_exc_info)
+            notice_error(request._nr_exc_info)
         delattr(request, '_nr_exc_info')
 
     return response

@@ -26,7 +26,7 @@ from newrelic.api.function_trace import (FunctionTrace, wrap_function_trace,
         FunctionTraceWrapper)
 from newrelic.api.html_insertion import insert_html_snippet
 from newrelic.api.transaction import current_transaction
-from newrelic.api.time_trace import record_exception
+from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction_name import wrap_transaction_name
 from newrelic.api.wsgi_application import WSGIApplicationWrapper
 
@@ -446,7 +446,7 @@ def _nr_wrapper_BaseHandler_get_response_(wrapped, instance, args, kwargs):
 
     if hasattr(request, '_nr_exc_info'):
         if not ignore_status_code(response.status_code):
-            record_exception(*request._nr_exc_info)
+            notice_error(request._nr_exc_info)
         delattr(request, '_nr_exc_info')
 
     return response
@@ -496,13 +496,13 @@ def wrap_handle_uncaught_exception(middleware):
 
         def _wrapped(request, resolver, exc_info):
             transaction.set_transaction_name(name, priority=1)
-            record_exception(*exc_info)
+            notice_error(exc_info)
 
             try:
                 return wrapped(request, resolver, exc_info)
 
             except:  # Catch all
-                record_exception()
+                notice_error()
                 raise
 
         with FunctionTrace(name=name):
@@ -569,7 +569,7 @@ def wrap_view_handler(wrapped, priority=3):
                     # prior to reporting
                     args[0]._nr_exc_info = exc_info
                 except:
-                    record_exception(*exc_info)
+                    notice_error(exc_info)
                 raise
 
     result = FunctionWrapper(wrapped, wrapper)

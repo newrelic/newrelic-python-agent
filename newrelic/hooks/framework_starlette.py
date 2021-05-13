@@ -19,7 +19,7 @@ from newrelic.api.function_trace import FunctionTraceWrapper, wrap_function_trac
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper, function_wrapper, FunctionWrapper
 from newrelic.core.trace_cache import trace_cache
-from newrelic.api.time_trace import record_exception
+from newrelic.api.time_trace import notice_error
 from newrelic.core.config import ignore_status_code
 from newrelic.common.coroutine import is_coroutine_function
 from newrelic.api.transaction import current_transaction
@@ -147,7 +147,7 @@ def record_response_error(response, value):
     if ignore_status_code(status_code):
         value._nr_ignored = True
     else:
-        record_exception(exc, value, tb)
+        notice_error((exc, value, tb))
 
 
 async def wrap_exception_handler_async(coro, exc):

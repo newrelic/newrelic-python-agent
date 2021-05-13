@@ -26,26 +26,23 @@ from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (wrap_out_function,
         function_wrapper, ObjectProxy, wrap_object_attribute,
         wrap_function_wrapper)
-from newrelic.core.config import ignore_status_code
 
 module_bottle = None
 
-def should_ignore(exc, value, tb):
+def status_code(exc, value, tb):
     # The HTTPError class derives from HTTPResponse and so we do not
     # need to check for it seperately as isinstance() will pick it up.
 
     if isinstance(value, module_bottle.HTTPResponse):
         if hasattr(value, 'status_code'):
-            if ignore_status_code(value.status_code):
-                return True
+            return value.status_code
         elif hasattr(value, 'status'):
-            if ignore_status_code(value.status):
-                return True
+            return value.status
         elif hasattr(value, 'http_status_code'):
-            if ignore_status_code(value.http_status_code):
-                return True
+            return value.http_status_code
 
-    elif hasattr(module_bottle, 'RouteReset'):
+def should_ignore(exc, value, tb):
+    if hasattr(module_bottle, 'RouteReset'):
         if isinstance(value, module_bottle.RouteReset):
             return True
 
@@ -75,7 +72,7 @@ def callback_wrapper(wrapped, instance, args, kwargs):
             # return it instead. This doesn't always seem to be the case
             # though when plugins are used, although that may depend on
             # the specific bottle version being used.
-            trace.record_exception(ignore_errors=should_ignore)
+            trace.notice_error(status_code=status_code, ignore=should_ignore)
             raise
 
 def output_wrapper_Bottle_match(result):

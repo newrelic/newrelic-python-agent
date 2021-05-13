@@ -206,7 +206,7 @@ def instrument_cherrypy__cpdispatch(module):
     wrap_function_wrapper(module, 'RoutesDispatcher.find_handler',
             wrapper_RoutesDispatcher_find_handler)
     wrap_error_trace(module, 'PageHandler.__call__',
-            ignore_errors=should_ignore)
+            ignore=should_ignore)
 
 
 def instrument_cherrypy__cpwsgi(module):

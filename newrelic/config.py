@@ -1832,13 +1832,13 @@ def _process_transaction_name_configuration():
 # Setup error trace wrapper defined in configuration file.
 
 
-def _error_trace_import_hook(object_path, ignore_classes, expected_classes):
+def _error_trace_import_hook(object_path, ignore, expected):
     def _instrument(target):
-        _logger.debug("wrap error-trace %s" % ((target, object_path, ignore_classes, expected_classes),))
+        _logger.debug("wrap error-trace %s" % ((target, object_path, ignore, expected),))
 
         try:
             newrelic.api.error_trace.wrap_error_trace(
-                target, object_path, ignore_classes
+                target, object_path, ignore, expected, None
             )
         except Exception:
             _raise_instrumentation_error("error-trace", locals())

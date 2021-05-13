@@ -32,12 +32,11 @@ class ErrorTrace(object):
             parent = current_trace()
 
         self._transaction = parent and parent.transaction
-        self._ignore_errors = ignore_errors
         self._ignore = ignore if ignore is not None else ignore_errors
         self._expected = expected
         self._status_code = status_code
 
-        if self._ignore_errors:
+        if ignore_errors:
             warnings.warn(
                 (
                     "The ignore_errors argument is deprecated. Please use the "

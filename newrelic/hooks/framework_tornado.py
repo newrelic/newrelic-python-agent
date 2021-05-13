@@ -150,7 +150,7 @@ def wrap_finish(wrapped, instance, args, kwargs):
                 trace_cache().record_event_loop_wait(start_time, time.time())
                 transaction._async_start_time = None
             notice_error(
-                    *sys.exc_info(),
+                    sys.exc_info(),
                     status_code=status_code)
             transaction.__exit__(None, None, None)
             instance._nr_transaction = None

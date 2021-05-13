@@ -199,8 +199,6 @@ extra_settings = __wrap_api_call(__extra_settings,
         'extra_settings')
 global_settings = __wrap_api_call(__global_settings,
         'global_settings')
-ignore_status_code = __wrap_api_call(__ignore_status_code,
-        'ignore_status_code')
 shutdown_agent = __wrap_api_call(__shutdown_agent,
         'shutdown_agent')
 register_data_source = __wrap_api_call(__register_data_source,

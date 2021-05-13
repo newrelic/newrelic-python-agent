@@ -34,7 +34,7 @@ from newrelic.common.object_wrapper import (FunctionWrapper, wrap_in_function,
         wrap_post_function, wrap_function_wrapper, function_wrapper)
 from newrelic.common.object_names import callable_name
 from newrelic.config import extra_settings
-from newrelic.core.config import global_settings, ignore_status_code
+from newrelic.core.config import global_settings, should_ignore_error
 from newrelic.common.coroutine import is_coroutine_function, is_asyncio_coroutine
 
 if six.PY3:
@@ -445,7 +445,7 @@ def _nr_wrapper_BaseHandler_get_response_(wrapped, instance, args, kwargs):
     request = _bind_get_response(*args, **kwargs)
 
     if hasattr(request, '_nr_exc_info'):
-        if not ignore_status_code(response.status_code):
+        if not should_ignore_error(request._nr_exc_info, response.status_code):
             notice_error(request._nr_exc_info)
         delattr(request, '_nr_exc_info')
 

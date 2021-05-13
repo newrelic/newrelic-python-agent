@@ -44,7 +44,6 @@ from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (ObjectProxy, function_wrapper,
         wrap_function_wrapper)
-from newrelic.core.config import ignore_status_code
 from newrelic.api.error_trace import wrap_error_trace
 
 
@@ -53,7 +52,7 @@ def framework_details():
     return ('CherryPy', getattr(cherrypy, '__version__', None))
 
 
-def should_ignore(exc, value, tb):
+def status_code(exc, value, tb):
     from cherrypy import HTTPError, HTTPRedirect
 
     # Ignore certain exceptions based on HTTP status codes.
@@ -64,12 +63,10 @@ def should_ignore(exc, value, tb):
         # HTTPError("10 Bad error")), value will not have a code attr.
         # In both of those cases, we fall back to value.status
         code = getattr(value, 'code', value.status)
+        return code
 
-        if ignore_status_code(code):
-            return True
-
-    # Ignore certain exceptions based on their name.
-
+# Ignore certain exceptions based on their name.
+def should_ignore(exc, value, tb):
     module = value.__class__.__module__
     name = value.__class__.__name__
     fullname = '%s:%s' % (module, name)
@@ -206,7 +203,7 @@ def instrument_cherrypy__cpdispatch(module):
     wrap_function_wrapper(module, 'RoutesDispatcher.find_handler',
             wrapper_RoutesDispatcher_find_handler)
     wrap_error_trace(module, 'PageHandler.__call__',
-            ignore=should_ignore)
+            ignore=should_ignore, status_code=status_code)
 
 
 def instrument_cherrypy__cpwsgi(module):

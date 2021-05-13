@@ -15,9 +15,8 @@
 from newrelic.config import (
         initialize as __initialize,
         extra_settings as __extra_settings)
-from newrelic.core.config import (
-        global_settings as __global_settings,
-        ignore_status_code as __ignore_status_code)
+
+from newrelic.core.config import global_settings as __global_settings
 
 from newrelic.core.agent import (
         shutdown_agent as __shutdown_agent,

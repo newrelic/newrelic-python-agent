@@ -19,16 +19,13 @@ from newrelic.api.object_wrapper import ObjectWrapper, callable_name
 from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import notice_error
 from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.core.config import ignore_status_code
-from newrelic.core.config import should_ignore_error
 
 
 def _nr_wrap_handle_exception(wrapped, instance, args, kwargs):
 
     response = wrapped(*args, **kwargs)
 
-    if not ignore_status_code(response.status_code):
-        notice_error()
+    notice_error(status_code=response.status_code)
 
     return response
 

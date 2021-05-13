@@ -20,7 +20,7 @@ from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper, function_wrapper, FunctionWrapper
 from newrelic.core.trace_cache import trace_cache
 from newrelic.api.time_trace import notice_error
-from newrelic.core.config import ignore_status_code
+from newrelic.core.config import should_ignore_error
 from newrelic.common.coroutine import is_coroutine_function
 from newrelic.api.transaction import current_transaction
 
@@ -144,7 +144,7 @@ def record_response_error(response, value):
     status_code = getattr(response, "status_code", None)
     exc = getattr(value, "__class__", None)
     tb = getattr(value, "__traceback__", None)
-    if ignore_status_code(status_code):
+    if should_ignore_error((exc, value, tb), status_code):
         value._nr_ignored = True
     else:
         notice_error((exc, value, tb))

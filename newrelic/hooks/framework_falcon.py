@@ -19,7 +19,7 @@ from newrelic.common.object_wrapper import (wrap_function_wrapper,
 from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import notice_error
 from newrelic.api.wsgi_application import wrap_wsgi_application
-from newrelic.core.config import ignore_status_code
+from newrelic.core.config import should_ignore_error
 from newrelic.api.function_trace import function_trace
 
 
@@ -47,7 +47,7 @@ def build_wrap_handle_exception(bind_handle_exception):
             try:
                 resp = bind_handle_exception(*args, **kwargs)
                 response_code = int(resp.status.split()[0])
-                if ignore_status_code(response_code):
+                if should_ignore_error(exc_info, response_code):
                     return result
                 notice_error(exc_info)
             except:

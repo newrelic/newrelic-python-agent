@@ -21,7 +21,7 @@ from newrelic.api.time_trace import notice_error
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
     function_wrapper)
 from newrelic.common.object_names import callable_name
-from newrelic.core.config import ignore_status_code
+from newrelic.core.config import should_ignore_error
 
 
 def _bind_add(uri, methods, handler, *args, **kwargs):
@@ -127,7 +127,7 @@ def error_response(wrapped, instance, args, kwargs):
     else:
         # response can be a response object or a coroutine
         if hasattr(response, 'status'):
-            if not ignore_status_code(response.status):
+            if not should_ignore_error(exc_info, response.status):
                 notice_error(exc_info)
         else:
             notice_error(exc_info)

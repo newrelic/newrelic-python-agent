@@ -2313,7 +2313,12 @@ def override_ignore_status_codes(status_codes):
             # settings. We therefore need to patch the
             # global settings directly.
 
-            settings = global_settings()
+            application = application_instance()
+            settings = application and application.settings
+
+            if not settings:
+                settings = global_settings()
+
             original = settings.error_collector.ignore_status_codes
             settings.error_collector.ignore_status_codes = status_codes
             return wrapped(*args, **kwargs)

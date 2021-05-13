@@ -1008,6 +1008,10 @@ def apply_server_side_settings(server_side_config={}, settings=_settings):
         if value == 'apdex_f':
             agent_config['transaction_tracer.transaction_threshold'] = None
 
+    if "error_collector.ignore_errors" in agent_config:
+        # Remap to newer config key
+        agent_config["error_collector.ignore_classes"] = agent_config.pop("error_collector.ignore_errors")
+
     # Overlay with agent server side configuration settings.
 
     for (name, value) in agent_config.items():

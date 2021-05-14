@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.time_trace import record_exception
+from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import add_custom_parameter, current_transaction
 from newrelic.api.asgi_application import ASGIApplicationWrapper
 
@@ -102,7 +102,7 @@ async def normal_asgi_application(scope, receive, send):
     try:
         raise ValueError("Transaction had bad value")
     except ValueError:
-        record_exception(params={"ohnoes": "param-value"})
+        notice_error(attributes={"ohnoes": "param-value"})
 
     await send(
         {"type": "http.response.start", "status": 200, "headers": response_headers}

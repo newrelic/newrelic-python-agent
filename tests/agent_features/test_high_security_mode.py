@@ -19,7 +19,7 @@ import webtest
 
 from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import background_task
-from newrelic.api.time_trace import record_exception
+from newrelic.api.time_trace import notice_error
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
@@ -409,7 +409,7 @@ def test_other_transaction_error_parameters_hsm_disabled():
     try:
         raise TestException('test message')
     except Exception:
-        record_exception(params={'key-2': 'value-2'})
+        notice_error(attributes={'key-2': 'value-2'})
 
 
 @override_application_settings(_test_transaction_settings_hsm_enabled)
@@ -422,7 +422,7 @@ def test_other_transaction_error_parameters_hsm_enabled():
     try:
         raise TestException('test message')
     except Exception:
-        record_exception(params={'key-2': 'value-2'})
+        notice_error(attributes={'key-2': 'value-2'})
 
 
 _err_message = "Error! :("
@@ -440,7 +440,7 @@ def test_non_transaction_error_parameters_hsm_disabled():
         raise TestException(_err_message)
     except Exception:
         app = application()
-        record_exception(params={'key-1': 'value-1'}, application=app)
+        notice_error(attributes={'key-1': 'value-1'}, application=app)
 
 
 _intrinsic_attributes = {'error.class': callable_name(TestException),
@@ -457,7 +457,7 @@ def test_non_transaction_error_parameters_hsm_enabled():
         raise TestException(_err_message)
     except Exception:
         app = application()
-        record_exception(params={'key-1': 'value-1'}, application=app)
+        notice_error(attributes={'key-1': 'value-1'}, application=app)
 
 
 @wsgi_application()

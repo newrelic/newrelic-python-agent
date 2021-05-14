@@ -66,14 +66,14 @@ def test_priority_used_in_transaction_error_events(first_transaction_saved):
             try:
                 raise ValueError('OOPS')
             except ValueError:
-                txn.record_exception()
+                txn.notice_error()
 
         with BackgroundTask(application(), name='T2') as txn:
             txn._priority = second_priority
             try:
                 raise ValueError('OOPS')
             except ValueError:
-                txn.record_exception()
+                txn.notice_error()
 
         # Stats engine
         stats_engine = core_application_stats_engine()

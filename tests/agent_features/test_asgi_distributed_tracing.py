@@ -200,6 +200,6 @@ def test_distributed_tracing_metrics(web_transaction, gen_error, has_parent):
                 try:
                     1 / 0
                 except ZeroDivisionError:
-                    transaction.record_exception()
+                    transaction.notice_error()
 
     _test()

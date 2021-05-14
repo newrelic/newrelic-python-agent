@@ -18,7 +18,7 @@ import pytest
 
 from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import background_task
-from newrelic.api.time_trace import record_exception
+from newrelic.api.time_trace import notice_error
 
 from testing_support.fixtures import (validate_transaction_exception_message,
         set_default_encoding, validate_application_exception_message,
@@ -44,7 +44,7 @@ def test_py2_transaction_exception_message_unicode():
     try:
         raise ValueError(UNICODE_MESSAGE)
     except ValueError:
-        record_exception()
+        notice_error()
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
 @set_default_encoding('ascii')
@@ -56,7 +56,7 @@ def test_py2_transaction_exception_message_unicode_english():
     try:
         raise ValueError(UNICODE_ENGLISH)
     except ValueError:
-        record_exception()
+        notice_error()
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
 @set_default_encoding('ascii')
@@ -67,7 +67,7 @@ def test_py2_transaction_exception_message_bytes_english():
     try:
         raise ValueError(BYTES_ENGLISH)
     except ValueError:
-        record_exception()
+        notice_error()
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
 @set_default_encoding('ascii')
@@ -81,7 +81,7 @@ def test_py2_transaction_exception_message_bytes_non_english():
     try:
         raise ValueError(BYTES_UTF8_ENCODED)
     except ValueError:
-        record_exception()
+        notice_error()
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
 @set_default_encoding('ascii')
@@ -99,7 +99,7 @@ def test_py2_transaction_exception_message_bytes_implicit_encoding_non_english()
 
         raise ValueError('I💜🐍')
     except ValueError:
-        record_exception()
+        notice_error()
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
 @set_default_encoding('utf-8')
@@ -112,7 +112,7 @@ def test_py2_transaction_exception_message_unicode_utf8_encoding():
     try:
         raise ValueError(UNICODE_MESSAGE)
     except ValueError:
-        record_exception()
+        notice_error()
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
 @set_default_encoding('utf-8')
@@ -129,7 +129,7 @@ def test_py2_transaction_exception_message_bytes_utf8_encoding_non_english():
 
         raise ValueError('I💜🐍')
     except ValueError:
-        record_exception()
+        notice_error()
 
 # ---------------- Python 3
 
@@ -142,7 +142,7 @@ def test_py3_transaction_exception_message_bytes_non_english_unicode():
     try:
         raise ValueError(UNICODE_MESSAGE)
     except ValueError:
-        record_exception()
+        notice_error()
 
 @pytest.mark.skipif(six.PY2, reason="Testing Python 3 string behavior")
 @validate_transaction_exception_message(UNICODE_ENGLISH)
@@ -153,7 +153,7 @@ def test_py3_transaction_exception_message_unicode_english():
     try:
         raise ValueError(UNICODE_ENGLISH)
     except ValueError:
-        record_exception()
+        notice_error()
 
 @pytest.mark.skipif(six.PY2, reason="Testing Python 3 string behavior")
 @validate_transaction_exception_message(INCORRECTLY_DECODED_BYTES_PY3)
@@ -169,7 +169,7 @@ def test_py3_transaction_exception_message_bytes_non_english():
     try:
         raise ValueError(BYTES_UTF8_ENCODED)
     except ValueError:
-        record_exception()
+        notice_error()
 
 # =================== Exception messages outside transaction ====================
 
@@ -186,7 +186,7 @@ def test_py2_application_exception_message_unicode():
         raise ValueError(UNICODE_MESSAGE)
     except ValueError:
         app = application()
-        record_exception(application=app)
+        notice_error(application=app)
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
 @reset_core_stats_engine()
@@ -199,7 +199,7 @@ def test_py2_application_exception_message_unicode_english():
         raise ValueError(UNICODE_ENGLISH)
     except ValueError:
         app = application()
-        record_exception(application=app)
+        notice_error(application=app)
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
 @reset_core_stats_engine()
@@ -211,7 +211,7 @@ def test_py2_application_exception_message_bytes_english():
         raise ValueError(BYTES_ENGLISH)
     except ValueError:
         app = application()
-        record_exception(application=app)
+        notice_error(application=app)
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
 @reset_core_stats_engine()
@@ -226,7 +226,7 @@ def test_py2_application_exception_message_bytes_non_english():
         raise ValueError(BYTES_UTF8_ENCODED)
     except ValueError:
         app = application()
-        record_exception(application=app)
+        notice_error(application=app)
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
 @reset_core_stats_engine()
@@ -245,7 +245,7 @@ def test_py2_application_exception_message_bytes_implicit_encoding_non_english()
         raise ValueError('I💜🐍')
     except ValueError:
         app = application()
-        record_exception(application=app)
+        notice_error(application=app)
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
 @reset_core_stats_engine()
@@ -259,7 +259,7 @@ def test_py2_application_exception_message_unicode_utf8_encoding():
         raise ValueError(UNICODE_MESSAGE)
     except ValueError:
         app = application()
-        record_exception(application=app)
+        notice_error(application=app)
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
 @reset_core_stats_engine()
@@ -277,7 +277,7 @@ def test_py2_application_exception_message_bytes_utf8_encoding_non_english():
         raise ValueError('I💜🐍')
     except ValueError:
         app = application()
-        record_exception(application=app)
+        notice_error(application=app)
 
 # ---------------- Python 3
 
@@ -291,7 +291,7 @@ def test_py3_application_exception_message_bytes_non_english_unicode():
         raise ValueError(UNICODE_MESSAGE)
     except ValueError:
         app = application()
-        record_exception(application=app)
+        notice_error(application=app)
 
 @pytest.mark.skipif(six.PY2, reason="Testing Python 3 string behavior")
 @reset_core_stats_engine()
@@ -303,7 +303,7 @@ def test_py3_application_exception_message_unicode_english():
         raise ValueError(UNICODE_ENGLISH)
     except ValueError:
         app = application()
-        record_exception(application=app)
+        notice_error(application=app)
 
 @pytest.mark.skipif(six.PY2, reason="Testing Python 3 string behavior")
 @reset_core_stats_engine()
@@ -320,4 +320,4 @@ def test_py3_application_exception_message_bytes_non_english():
         raise ValueError(BYTES_UTF8_ENCODED)
     except ValueError:
         app = application()
-        record_exception(application=app)
+        notice_error(application=app)

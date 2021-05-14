@@ -17,7 +17,7 @@ import sys
 
 from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import (current_trace,
-        add_custom_span_attribute, record_exception)
+        add_custom_span_attribute, notice_error, record_exception)
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 
@@ -735,14 +735,14 @@ def test_span_event_multiple_errors(trace_type, args):
             try:
                 raise RuntimeError("whoaa")
             except:
-                record_exception()
+                notice_error()
             try:
                 raise RuntimeError("whoo")
             except:
-                record_exception()
+                notice_error()
             try:
                 raise ValueError("whoops")
             except:
-                record_exception()
+                notice_error()
 
     _test()

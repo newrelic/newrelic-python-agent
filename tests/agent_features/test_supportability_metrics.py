@@ -80,6 +80,24 @@ def test_record_exception():
 
 
 _unscoped_metrics = [
+        ('Supportability/api/notice_error', 1),
+        ('Supportability/api/background_task', None),
+]
+
+
+@validate_transaction_metrics(
+        'test_supportability_metrics:test_notice_error',
+        custom_metrics=_unscoped_metrics,
+        background_task=True)
+@newrelic.agent.background_task()
+def test_notice_error():
+    try:
+        1 / 0
+    except ZeroDivisionError:
+        newrelic.agent.notice_error(sys.exc_info())
+
+
+_unscoped_metrics = [
         ('Supportability/api/end_of_transaction', 1),
         ('Supportability/api/function_trace', None),
         ('Supportability/api/background_task', None),

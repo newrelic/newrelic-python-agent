@@ -131,7 +131,7 @@ def target_wsgi_application(environ, start_response):
         try:
             raise ValueError("oops")
         except:
-            transaction.record_exception()
+            transaction.notice_error()
 
     if '.inbound_headers' in environ:
         transaction.accept_distributed_trace_headers(

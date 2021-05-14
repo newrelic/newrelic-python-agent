@@ -401,7 +401,7 @@ class Transaction(object):
         # Record error if one was registered.
 
         if exc is not None and value is not None and tb is not None:
-            root.record_exception((exc, value, tb))
+            root.notice_error((exc, value, tb))
 
         # Record the end time for transaction and then
         # calculate the duration.

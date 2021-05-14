@@ -195,7 +195,7 @@ def test_distributed_trace_attributes(span_events, accept_payload):
         try:
             raise ValueError('cookies')
         except ValueError:
-            txn.record_exception()
+            txn.notice_error()
 
     _test()
 
@@ -220,7 +220,7 @@ def test_distributed_trace_attrs_omitted():
     try:
         raise ValueError('cookies')
     except ValueError:
-        txn.record_exception()
+        txn.notice_error()
 
 
 # test our distributed_trace metrics by creating a transaction and then forcing
@@ -284,7 +284,7 @@ def test_distributed_tracing_metrics(web_transaction, gen_error, has_parent):
                 try:
                     1 / 0
                 except ZeroDivisionError:
-                    transaction.record_exception()
+                    transaction.notice_error()
 
     _test()
 

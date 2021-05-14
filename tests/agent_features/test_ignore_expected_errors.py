@@ -23,11 +23,13 @@ from newrelic.api.application import application_instance
 from newrelic.common.object_names import callable_name
 
 from testing_support.fixtures import (
+    reset_core_stats_engine,
     validate_transaction_errors,
     override_application_settings,
     validate_error_event_sample_data,
     validate_transaction_metrics,
     validate_transaction_error_event_count,
+    validate_error_event_attributes_outside_transaction,
 )
 
 
@@ -79,22 +81,22 @@ classes_settings_matrix = [
 override_expected_matrix = (True, False, None)
 
 
-def exercise(override_expected=None, override_ignore=None, status_code=None):
+def exercise(expected=None, ignore=None, status_code=None):
     try:
         raise RuntimeError(_error_message)
     except RuntimeError:
         if current_transaction() is not None:
             # Record exception inside transaction
             notice_error(
-                expected=override_expected,
-                ignore=override_ignore,
+                expected=expected,
+                ignore=ignore,
                 status_code=status_code,
             )
         else:
             # Record exception outside context of transaction
             application_instance().notice_error(
-                expected=override_expected,
-                ignore=override_ignore,
+                expected=expected,
+                ignore=ignore,
                 status_code=status_code,
             )
 
@@ -140,13 +142,13 @@ def test_classes_error_event_outside_transaction(
     # Update attributes with parameters
     attributes = _intrinsic_attributes.copy()
     attributes["error.expected"] = expected
+    attributes["transactionName"] = None
 
     error_count = 1 if not ignore else 0
 
-    @validate_transaction_error_event_count(num_errors=0)  # No transaction, should be 0
-    @validate_error_event_sample_data(
-        required_attrs=attributes,
-        required_user_attrs=False,
+    @reset_core_stats_engine()
+    @validate_error_event_attributes_outside_transaction(
+        exact_attrs={"intrinsic": attributes, "agent": {}, "user": {}},
         num_errors=error_count,
     )
     @override_application_settings(settings)
@@ -255,13 +257,13 @@ def test_status_codes_outside_transaction(
     attributes = _intrinsic_attributes.copy()
     attributes["error.expected"] = expected
     attributes["error.class"] = _teapot_error_name
+    attributes["transactionName"] = None
 
     error_count = 1 if not ignore else 0
 
-    @validate_transaction_error_event_count(num_errors=0)  # No transaction, should be 0
-    @validate_error_event_sample_data(
-        required_attrs=attributes,
-        required_user_attrs=False,
+    @reset_core_stats_engine()
+    @validate_error_event_attributes_outside_transaction(
+        exact_attrs={"intrinsic": attributes, "agent": {}, "user": {}},
         num_errors=error_count,
     )
     @override_application_settings(settings)
@@ -334,17 +336,82 @@ def test_mixed_ignore_expected_settings_outside_transaction(
     # Update attributes with parameters
     attributes = _intrinsic_attributes.copy()
     attributes["error.expected"] = expected
+    attributes["transactionName"] = None
 
     error_count = 1 if not ignore else 0
 
-    @validate_transaction_error_event_count(num_errors=0)  # No transaction, should be 0
-    @validate_error_event_sample_data(
-        required_attrs=attributes,
-        required_user_attrs=False,
+    @reset_core_stats_engine()
+    @validate_error_event_attributes_outside_transaction(
+        exact_attrs={"intrinsic": attributes, "agent": {}, "user": {}},
         num_errors=error_count,
     )
     @override_application_settings(settings)
     def _test():
         exercise(override_expected, override_ignore)
+
+    _test()
+
+
+# =============== Test multiple override types ===============
+
+override_matrix = (
+    (True, True),
+    (False, False),
+    (lambda e, v, t: True, True),
+    (lambda e, v, t: False, False),
+    ([_runtime_error_name], True),
+    ([], False),
+    (None, False),
+)
+
+
+@pytest.mark.parametrize("override,result", override_matrix)
+@pytest.mark.parametrize("parameter", ("ignore", "expected"))
+def test_overrides_inside_transaction(override, result, parameter):
+    ignore = result if parameter == "ignore" else False
+    expected = result if parameter == "expected" else False
+    kwargs = {parameter: override}
+
+    # Update attributes with parameters
+    attributes = _intrinsic_attributes.copy()
+    attributes["error.expected"] = expected
+
+    error_count = 1 if not ignore else 0
+    errors = _test_runtime_error if not ignore else []
+
+    @validate_transaction_errors(errors=errors)
+    @validate_error_event_sample_data(
+        required_attrs=attributes,
+        required_user_attrs=False,
+        num_errors=error_count,
+    )
+    @background_task(name="test")
+    def _test():
+        exercise(**kwargs)
+
+    _test()
+
+
+@pytest.mark.parametrize("override,result", override_matrix)
+@pytest.mark.parametrize("parameter", ("ignore", "expected"))
+def test_overrides_outside_transaction(override, result, parameter):
+    ignore = result if parameter == "ignore" else False
+    expected = result if parameter == "expected" else False
+    kwargs = {parameter: override}
+
+    # Update attributes with parameters
+    attributes = _intrinsic_attributes.copy()
+    attributes["error.expected"] = expected
+    attributes["transactionName"] = None
+
+    error_count = 1 if not ignore else 0
+
+    @reset_core_stats_engine()
+    @validate_error_event_attributes_outside_transaction(
+        exact_attrs={"intrinsic": attributes, "agent": {}, "user": {}},
+        num_errors=error_count,
+    )
+    def _test():
+        exercise(**kwargs)
 
     _test()

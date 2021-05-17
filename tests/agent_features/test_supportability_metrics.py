@@ -62,7 +62,7 @@ def test_uses_api_twice():
 
 
 _unscoped_metrics = [
-        ('Supportability/api/r', 1),
+        ('Supportability/api/notice_error', 1),
         ('Supportability/api/background_task', None),
 ]
 

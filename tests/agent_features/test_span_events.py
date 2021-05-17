@@ -17,7 +17,7 @@ import sys
 
 from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import (current_trace,
-        add_custom_span_attribute, notice_error, record_exception)
+        add_custom_span_attribute, notice_error)
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 
@@ -573,7 +573,7 @@ _span_event_metrics = [("Supportability/SpanEvent/Errors/Dropped", None)]
     (SolrTrace, ('lib', 'command')),
     (FakeTrace, ()),
 ))
-def test_span_event_error_attributes_record_exception(trace_type, args):
+def test_span_event_error_attributes_notice_error(trace_type, args):
 
     _settings = {
         'distributed_tracing.enabled': True,
@@ -589,13 +589,13 @@ def test_span_event_error_attributes_record_exception(trace_type, args):
 
     @override_application_settings(_settings)
     @validate_transaction_metrics(
-            'test_span_event_error_attributes_record_exception',
+            'test_span_event_error_attributes_notice_error',
             background_task=True,
             rollup_metrics=_span_event_metrics)
     @validate_span_events(
         count=1,
         exact_agents=exact_agents,)
-    @background_task(name='test_span_event_error_attributes_record_exception')
+    @background_task(name='test_span_event_error_attributes_notice_error')
     def _test():
         transaction = current_transaction()
         transaction._sampled = True
@@ -604,7 +604,7 @@ def test_span_event_error_attributes_record_exception(trace_type, args):
             try:
                 raise ValueError("whoops")
             except:
-                record_exception()
+                notice_error()
 
     _test()
 
@@ -627,7 +627,7 @@ def test_span_event_error_attributes_observed(trace_type, args):
         'error.message': 'whoops',
     }
 
-    # Verify errors are not recorded since record_exception is not called
+    # Verify errors are not recorded since notice_error is not called
     rollups = [('Errors/all', None)] + _span_event_metrics
 
     @dt_enabled
@@ -662,14 +662,14 @@ def test_span_event_error_attributes_observed(trace_type, args):
 @dt_enabled
 @validate_span_events(count=1,
         exact_agents={'error.class': ERROR_NAME, 'error.message': 'whoops'})
-@background_task(name='test_span_event_record_exception_overrides_observed')
+@background_task(name='test_span_event_notice_error_overrides_observed')
 def test_span_event_record_exception_overrides_observed(trace_type, args):
     try:
         with trace_type(*args):
             try:
                 raise ERROR
             except:
-                record_exception()
+                notice_error()
                 raise ValueError
     except ValueError:
         pass
@@ -695,7 +695,7 @@ def test_span_event_errors_disabled(trace_type, args):
         try:
             raise ValueError("whoops")
         except:
-            record_exception()
+            notice_error()
 
 
 _metrics = [("Supportability/SpanEvent/Errors/Dropped", 2)]

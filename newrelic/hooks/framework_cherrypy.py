@@ -65,17 +65,6 @@ def status_code(exc, value, tb):
         code = getattr(value, 'code', value.status)
         return code
 
-# Ignore certain exceptions based on their name.
-def should_ignore(exc, value, tb):
-    module = value.__class__.__module__
-    name = value.__class__.__name__
-    fullname = '%s:%s' % (module, name)
-
-    ignore_exceptions = ('cherrypy._cperror:InternalRedirect',)
-
-    if fullname in ignore_exceptions:
-        return True
-
 
 @function_wrapper
 def handler_wrapper(wrapped, instance, args, kwargs):
@@ -203,7 +192,7 @@ def instrument_cherrypy__cpdispatch(module):
     wrap_function_wrapper(module, 'RoutesDispatcher.find_handler',
             wrapper_RoutesDispatcher_find_handler)
     wrap_error_trace(module, 'PageHandler.__call__',
-            ignore=should_ignore, status_code=status_code)
+            ignore=['cherrypy._cperror:InternalRedirect'], status_code=status_code)
 
 
 def instrument_cherrypy__cpwsgi(module):

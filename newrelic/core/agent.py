@@ -511,7 +511,7 @@ class Agent(object):
             'new api named notice_error instead.'
         ), DeprecationWarning)
 
-        self.notice_error(error=(exc, value, tb), attributes=params, ignore=ignore_errors)
+        self.notice_error(app_name, error=(exc, value, tb), attributes=params, ignore=ignore_errors)
 
     def notice_error(self, app_name, error=None, attributes={}, expected=None, ignore=None, status_code=None):
         application = self._applications.get(app_name, None)

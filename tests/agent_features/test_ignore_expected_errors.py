@@ -347,7 +347,7 @@ def test_mixed_ignore_expected_settings_outside_transaction(
     )
     @override_application_settings(settings)
     def _test():
-        exercise(override_expected, override_ignore)
+        exercise(override_expected, override_ignore, status_code=418)
 
     _test()
 

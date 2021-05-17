@@ -663,7 +663,7 @@ def test_span_event_error_attributes_observed(trace_type, args):
 @validate_span_events(count=1,
         exact_agents={'error.class': ERROR_NAME, 'error.message': 'whoops'})
 @background_task(name='test_span_event_notice_error_overrides_observed')
-def test_span_event_record_exception_overrides_observed(trace_type, args):
+def test_span_event_notice_error_overrides_observed(trace_type, args):
     try:
         with trace_type(*args):
             try:

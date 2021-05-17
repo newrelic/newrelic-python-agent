@@ -62,28 +62,9 @@ def test_uses_api_twice():
 
 
 _unscoped_metrics = [
-        ('Supportability/api/record_exception', 1),
+        ('Supportability/api/r', 1),
         ('Supportability/api/background_task', None),
 ]
-
-
-@validate_transaction_metrics(
-        'test_supportability_metrics:test_record_exception',
-        custom_metrics=_unscoped_metrics,
-        background_task=True)
-@newrelic.agent.background_task()
-def test_record_exception():
-    try:
-        1 / 0
-    except ZeroDivisionError:
-        newrelic.agent.record_exception(sys.exc_info())
-
-
-_unscoped_metrics = [
-        ('Supportability/api/notice_error', 1),
-        ('Supportability/api/background_task', None),
-]
-
 
 @validate_transaction_metrics(
         'test_supportability_metrics:test_notice_error',

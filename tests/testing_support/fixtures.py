@@ -2387,7 +2387,7 @@ def core_application_stats_engine_error(error_type, app_name=None):
     and return the first error with the type of error_type. If none found,
     return None.
 
-    Useful for verifying that application.record_exception() works, since
+    Useful for verifying that application.notice_error() works, since
     the error is saved outside of a transaction. Must use a unique error
     type per test in a single test file, so that it returns the error you
     expect. (If you have 2 tests that record the same type of exception, then
@@ -2404,7 +2404,7 @@ def core_application_stats_engine_error(error_type, app_name=None):
 def error_is_saved(error, app_name=None):
     """Return True, if an error of a particular type has already been saved.
 
-    Before calling application.record_exception() in a test, it's good to
+    Before calling application.notice_error() in a test, it's good to
     check if that type of error has already been saved, so you know that
     there will only be a single example of a type of Error in error_data()
     when you verify that the exception was recorded correctly.
@@ -2416,7 +2416,7 @@ def error_is_saved(error, app_name=None):
             raise ErrorOne('error one message')
         except ErrorOne:
             application_instance = application()
-            application_instance.record_exception()
+            application_instance.notice_error()
 
         my_error = core_application_stats_engine_error(_error_one_name)
         assert my_error.message == 'error one message'

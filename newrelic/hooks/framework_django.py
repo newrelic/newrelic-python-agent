@@ -34,7 +34,7 @@ from newrelic.common.object_wrapper import (FunctionWrapper, wrap_in_function,
         wrap_post_function, wrap_function_wrapper, function_wrapper)
 from newrelic.common.object_names import callable_name
 from newrelic.config import extra_settings
-from newrelic.core.config import global_settings, should_ignore_error
+from newrelic.core.config import global_settings
 from newrelic.common.coroutine import is_coroutine_function, is_asyncio_coroutine
 
 if six.PY3:

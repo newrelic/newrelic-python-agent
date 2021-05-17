@@ -21,7 +21,6 @@ from newrelic.api.time_trace import notice_error
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
     function_wrapper)
 from newrelic.common.object_names import callable_name
-from newrelic.core.config import should_ignore_error
 
 
 def _bind_add(uri, methods, handler, *args, **kwargs):

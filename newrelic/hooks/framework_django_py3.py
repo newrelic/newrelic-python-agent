@@ -1,6 +1,5 @@
 from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import current_transaction
-from newrelic.core.config import should_ignore_error
 from newrelic.common.object_wrapper import function_wrapper
 from newrelic.api.function_trace import FunctionTrace
 

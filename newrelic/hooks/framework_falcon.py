@@ -19,7 +19,6 @@ from newrelic.common.object_wrapper import (wrap_function_wrapper,
 from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import notice_error
 from newrelic.api.wsgi_application import wrap_wsgi_application
-from newrelic.core.config import should_ignore_error
 from newrelic.api.function_trace import function_trace
 
 

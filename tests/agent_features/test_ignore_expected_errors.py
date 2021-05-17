@@ -23,8 +23,8 @@ from newrelic.api.application import application_instance
 from newrelic.common.object_names import callable_name
 
 from testing_support.fixtures import (
-    reset_core_stats_engine,
     override_application_settings,
+    reset_core_stats_engine,
     validate_error_event_attributes_outside_transaction,
     validate_error_event_sample_data,
     validate_transaction_error_trace_attributes,
@@ -167,6 +167,11 @@ error_trace_settings_matrix = [
 ]
 override_expected_matrix = (True, False, None)
 
+error_trace_attributes = {
+    "intrinsic": ("error.expected",),
+    "agent": [],
+    "user": [],
+}
 
 @pytest.mark.parametrize("settings,expected", error_trace_settings_matrix)
 @pytest.mark.parametrize("override_expected", override_expected_matrix)
@@ -174,13 +179,6 @@ def test_error_trace_attributes_inside_transaction(
     settings, expected, override_expected
 ):
     expected = override_expected if override_expected is not None else expected
-
-    # Set attributes from parameters
-    error_trace_attributes = {
-        "intrinsic": {"error.expected": expected},
-        "agent": {},
-        "user": {},
-    }
 
     @validate_transaction_error_trace_attributes(error_trace_attributes)
     @background_task(name="test")
@@ -198,14 +196,7 @@ def test_error_trace_attributes_outside_transaction(
 ):
     expected = override_expected if override_expected is not None else expected
 
-    # Set attributes from parameters
-    error_trace_attributes = {
-        "intrinsic": {"error.expected": expected},
-        "agent": {},
-        "user": {},
-    }
-
-    @validate_transaction_error_trace_attributes(error_trace_attributes)
+    @validate_error_event_attributes_outside_transaction(_runtime_error_name, error_trace_attributes)
     @override_application_settings(settings)
     def _test():
         exercise(override_expected)

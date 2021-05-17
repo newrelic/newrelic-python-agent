@@ -39,12 +39,11 @@
 
 from newrelic.api.function_trace import FunctionTrace, wrap_function_trace
 from newrelic.api.transaction import current_transaction
-from newrelic.api.time_trace import record_exception
+from newrelic.api.time_trace import notice_error
 from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (ObjectProxy, function_wrapper,
         wrap_function_wrapper)
-from newrelic.core.config import ignore_status_code
 from newrelic.api.error_trace import wrap_error_trace
 
 
@@ -53,7 +52,7 @@ def framework_details():
     return ('CherryPy', getattr(cherrypy, '__version__', None))
 
 
-def should_ignore(exc, value, tb):
+def status_code(exc, value, tb):
     from cherrypy import HTTPError, HTTPRedirect
 
     # Ignore certain exceptions based on HTTP status codes.
@@ -64,20 +63,7 @@ def should_ignore(exc, value, tb):
         # HTTPError("10 Bad error")), value will not have a code attr.
         # In both of those cases, we fall back to value.status
         code = getattr(value, 'code', value.status)
-
-        if ignore_status_code(code):
-            return True
-
-    # Ignore certain exceptions based on their name.
-
-    module = value.__class__.__module__
-    name = value.__class__.__name__
-    fullname = '%s:%s' % (module, name)
-
-    ignore_exceptions = ('cherrypy._cperror:InternalRedirect',)
-
-    if fullname in ignore_exceptions:
-        return True
+        return code
 
 
 @function_wrapper
@@ -122,7 +108,7 @@ def wrapper_Dispatcher_find_handler(wrapped, instance, args, kwargs):
     except:  # Catch all
         # Can end up here when a custom _cp_dispatch() method is
         # used and that raises an exception.
-        record_exception()
+        notice_error()
         raise
 
     if obj:
@@ -173,7 +159,7 @@ def wrapper_RoutesDispatcher_find_handler(wrapped, instance, args, kwargs):
 
     except:  # Catch all
         # Can end up here when the URL was invalid in some way.
-        record_exception()
+        notice_error()
         raise
 
     if handler:
@@ -206,7 +192,7 @@ def instrument_cherrypy__cpdispatch(module):
     wrap_function_wrapper(module, 'RoutesDispatcher.find_handler',
             wrapper_RoutesDispatcher_find_handler)
     wrap_error_trace(module, 'PageHandler.__call__',
-            ignore=should_ignore)
+            ignore=['cherrypy._cperror:InternalRedirect'], status_code=status_code)
 
 
 def instrument_cherrypy__cpwsgi(module):

@@ -156,7 +156,7 @@ def wrapper_callback_function(wrapped, instance, args, kwargs):
         try:
             return wrapped(*args, **kwargs)
         except:  # Catch all
-            trace.record_exception()
+            trace.notice_error()
             raise
 
 def wrapper_GearmanWorker_register_task(wrapped, instance, args, kwargs):

@@ -23,7 +23,8 @@ from newrelic.common.async_wrapper import is_coroutine_callable, async_wrapper
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
         function_wrapper, ObjectProxy)
-from newrelic.core.config import ignore_status_code
+from newrelic.core.config import should_ignore_error
+
 
 
 SUPPORTED_METHODS = ('connect', 'head', 'get', 'delete', 'options', 'patch',
@@ -51,7 +52,7 @@ def should_ignore(exc, value, tb):
 
     if isinstance(value, web.HTTPException):
         status_code = value.status_code
-        return ignore_status_code(status_code)
+        return should_ignore_error((exc, value, tb), status_code)
 
 
 def _nr_process_response_proxy(response, transaction):
@@ -345,7 +346,7 @@ def _nr_request_wrapper(wrapped, instance, args, kwargs):
             response = yield from coro
             return response
 
-        # Patch in should_ignore to all record_exception calls
+        # Patch in should_ignore to all notice_error calls
         transaction._ignore_errors = should_ignore
 
         import aiohttp

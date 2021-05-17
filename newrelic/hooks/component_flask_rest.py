@@ -13,12 +13,11 @@
 # limitations under the License.
 
 from newrelic.api.transaction import current_transaction
-from newrelic.api.time_trace import record_exception
-from newrelic.core.config import ignore_status_code
+from newrelic.api.time_trace import notice_error
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
-def should_ignore(exc, value, tb):
+def status_code(exc, value, tb):
     from werkzeug.exceptions import HTTPException
 
     # Werkzeug HTTPException can be raised internally by Flask or in
@@ -26,8 +25,7 @@ def should_ignore(exc, value, tb):
     # HTTP status code.
 
     if isinstance(value, HTTPException):
-        if ignore_status_code(value.code):
-            return True
+        return value.code
 
 
 def _nr_wrap_Api_handle_error_(wrapped, instance, args, kwargs):
@@ -36,7 +34,7 @@ def _nr_wrap_Api_handle_error_(wrapped, instance, args, kwargs):
     # flask's exception handler and we will capture it there.
     resp = wrapped(*args, **kwargs)
 
-    record_exception(ignore_errors=should_ignore)
+    notice_error(status_code=status_code)
 
     return resp
 

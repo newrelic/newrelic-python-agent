@@ -50,7 +50,6 @@ from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (FunctionWrapper, wrap_out_function,
         wrap_function_wrapper)
-from newrelic.core.config import ignore_status_code
 
 
 def instrument_pyramid_router(module):
@@ -66,16 +65,16 @@ def instrument_pyramid_router(module):
         module, 'Router.__call__', framework=('Pyramid', pyramid_version))
 
 
-def should_ignore(exc, value, tb):
+def status_code(exc, value, tb):
     from pyramid.httpexceptions import HTTPException
-    from pyramid.exceptions import PredicateMismatch
-
     # Ignore certain exceptions based on HTTP status codes.
 
     if isinstance(value, HTTPException):
-        if ignore_status_code(value.code):
-            return True
+        return value.code
 
+
+def should_ignore(exc, value, tb):
+    from pyramid.exceptions import PredicateMismatch
     # Always ignore PredicateMismatch as it is raised by views to force
     # subsequent views to be consulted when multi views are being used.
     # It isn't therefore strictly an error as such as a subsequent view
@@ -106,7 +105,7 @@ def view_handler_wrapper(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
 
         except:  # Catch all
-            trace.record_exception(ignore_errors=should_ignore)
+            trace.notice_error(ignore=should_ignore, status_code=status_code)
             raise
 
 

@@ -26,7 +26,7 @@ from newrelic.api.function_trace import (FunctionTrace, wrap_function_trace,
         FunctionTraceWrapper)
 from newrelic.api.html_insertion import insert_html_snippet
 from newrelic.api.transaction import current_transaction
-from newrelic.api.time_trace import record_exception
+from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction_name import wrap_transaction_name
 from newrelic.api.wsgi_application import WSGIApplicationWrapper
 
@@ -34,7 +34,7 @@ from newrelic.common.object_wrapper import (FunctionWrapper, wrap_in_function,
         wrap_post_function, wrap_function_wrapper, function_wrapper)
 from newrelic.common.object_names import callable_name
 from newrelic.config import extra_settings
-from newrelic.core.config import global_settings, ignore_status_code
+from newrelic.core.config import global_settings
 from newrelic.common.coroutine import is_coroutine_function, is_asyncio_coroutine
 
 if six.PY3:
@@ -445,8 +445,7 @@ def _nr_wrapper_BaseHandler_get_response_(wrapped, instance, args, kwargs):
     request = _bind_get_response(*args, **kwargs)
 
     if hasattr(request, '_nr_exc_info'):
-        if not ignore_status_code(response.status_code):
-            record_exception(*request._nr_exc_info)
+        notice_error(error=request._nr_exc_info, status_code=response.status_code)
         delattr(request, '_nr_exc_info')
 
     return response
@@ -496,13 +495,13 @@ def wrap_handle_uncaught_exception(middleware):
 
         def _wrapped(request, resolver, exc_info):
             transaction.set_transaction_name(name, priority=1)
-            record_exception(*exc_info)
+            notice_error(exc_info)
 
             try:
                 return wrapped(request, resolver, exc_info)
 
             except:  # Catch all
-                record_exception()
+                notice_error()
                 raise
 
         with FunctionTrace(name=name):
@@ -569,7 +568,7 @@ def wrap_view_handler(wrapped, priority=3):
                     # prior to reporting
                     args[0]._nr_exc_info = exc_info
                 except:
-                    record_exception(*exc_info)
+                    notice_error(exc_info)
                 raise
 
     result = FunctionWrapper(wrapped, wrapper)

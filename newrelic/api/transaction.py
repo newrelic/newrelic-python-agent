@@ -1479,26 +1479,14 @@ class Transaction(object):
         self._group = group
         self._name = name
 
-    def record_exception(self, exc=None, value=None, tb=None,
-                         params={}, ignore_errors=[]):
-        # Deprecated, but deprecation warning are handled by underlying function calls
-        settings = self._settings
+    def record_exception(self, exc=None, value=None, tb=None, params={}, ignore_errors=[]):
+        # Deprecation Warning
+        warnings.warn((
+            'The record_exception function is deprecated. Please use the '
+            'new api named notice_error instead.'
+        ), DeprecationWarning)
 
-        if not settings:
-            return
-
-        if not settings.error_collector.enabled:
-            return
-
-        if not settings.collect_errors and not settings.collect_error_events:
-            return
-
-        current_span = trace_cache().current_trace()
-        if current_span:
-            current_span.record_exception(
-                    (exc, value, tb),
-                    params=params,
-                    ignore_errors=ignore_errors)
+        self.notice_error(error=(exc, value, tb), attributes=params, ignore=ignore_errors)
 
     def notice_error(self, error=None, attributes={}, expected=None, ignore=None, status_code=None):
         settings = self._settings

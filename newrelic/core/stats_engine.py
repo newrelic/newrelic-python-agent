@@ -573,32 +573,7 @@ class StatsEngine(object):
             'new api named notice_error instead.'
         ), DeprecationWarning)
 
-        # Pull from sys.exc_info if no exception is passed
-        if None in (exc, value, tb):
-            exc, value, tb = sys.exc_info()
-
-        # If no exception to report, exit
-        if None in (exc, value, tb):
-            return
-
-        # Check ignore_errors callables
-        # We check these here separatly from the notice_error implementation
-        # to preserve previous functionality in precedence
-        should_ignore = None
-
-        if callable(ignore_errors):
-            should_ignore = ignore_errors(exc, value, tb)
-            if should_ignore:
-                return
-
-        # Check ignore_errors iterables
-        if should_ignore is None and not callable(ignore_errors):
-            _, _, fullnames, _ = parse_exc_info((exc, value, tb))
-            for fullname in fullnames:
-                if fullname in ignore_errors:
-                    return
-
-        self.notice_error(error=(exc, value, tb), attributes=params, ignore=should_ignore)
+        self.notice_error(error=(exc, value, tb), attributes=params, ignore=ignore_errors)
 
     def notice_error(self, error=None, attributes={}, expected=None, ignore=None, status_code=None):
         settings = self.__settings
@@ -624,17 +599,7 @@ class StatsEngine(object):
 
         exc, value, tb = error
 
-        # If no exception details provided, use current exception.
-
-        if exc is None and value is None and tb is None:
-            exc, value, tb = sys.exc_info()
-
-        # Has to be an error to be logged.
-
-        if exc is None or value is None or tb is None:
-            return
-
-        module, name, fullnames, message = parse_exc_info((exc, value, tb))
+        module, name, fullnames, message = parse_exc_info(error)
         fullname = fullnames[0]
 
         # Check to see if we need to strip the message before recording it.
@@ -653,7 +618,8 @@ class StatsEngine(object):
         # Precedence: 
         # 1. function parameter override as bool
         # 2. function parameter callable
-        # 3. default rule matching from settings
+        # 3. function parameter iterable of class names
+        # 4. default rule matching from settings
 
         should_ignore = None
         is_expected = None
@@ -671,9 +637,17 @@ class StatsEngine(object):
             if should_ignore:
                 return
 
+        # List of class names
+        if should_ignore is None and ignore is not None and not callable(ignore):
+            # Do not set should_ignore to False
+            # This should cascade into default settings rule matching
+            for name in fullnames:
+                if name in ignore:
+                    return
+
         # Default rule matching
         if should_ignore is None:
-            should_ignore = should_ignore_error((exc, value, tb), status_code=status_code)
+            should_ignore = should_ignore_error(error, status_code=status_code)
             if should_ignore:
                 return
 
@@ -686,9 +660,18 @@ class StatsEngine(object):
         if is_expected is None and callable(expected):
             is_expected = expected(exc, value, tb)
 
+
+        # List of class names
+        if is_expected is None and expected is not None and not callable(expected):
+            # Do not set is_expected to False
+            # This should cascade into default settings rule matching
+            for name in fullnames:
+                if name in expected:
+                    is_expected = True
+
         # Default rule matching
         if is_expected is None:
-            is_expected = is_expected_error((exc, value, tb), status_code=status_code)
+            is_expected = is_expected_error(error, status_code=status_code)
 
         # Only add attributes if High Security Mode is off.
 

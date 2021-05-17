@@ -1607,7 +1607,7 @@ def validate_error_event_attributes(required_params={}, forgone_params={},
 def validate_error_trace_attributes_outside_transaction(err_name,
         required_params={}, forgone_params={}):
     @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_exception')
+            'StatsEngine.notice_error')
     def _validate_error_trace_attributes_outside_transaction(wrapped, instance,
             args, kwargs):
         try:
@@ -1626,9 +1626,9 @@ def validate_error_trace_attributes_outside_transaction(err_name,
 
 
 def validate_error_event_attributes_outside_transaction(required_params={},
-        forgone_params={}):
+        forgone_params={}, exact_attrs=None, num_errors=None):
     @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_exception')
+            'StatsEngine.notice_error')
     def _validate_error_event_attributes_outside_transaction(wrapped, instance,
             args, kwargs):
 
@@ -1637,9 +1637,15 @@ def validate_error_event_attributes_outside_transaction(required_params={},
         except:
             raise
         else:
-            event_data = instance.error_events
+            event_data = [event for event in instance.error_events]
 
-            check_event_attributes(event_data, required_params, forgone_params)
+            if num_errors is not None:
+                exc_message = "Expected: %d, Got: %d. Verify StatsEngine is being reset before using this validator." % (num_errors, len(event_data))
+                assert num_errors == len(event_data), exc_message
+                    
+
+            for event in event_data:
+                check_event_attributes([event], required_params, forgone_params, exact_attrs=exact_attrs)
 
         return result
 
@@ -2071,7 +2077,7 @@ def validate_application_exception_message(expected_message):
     """Test exception message encoding/decoding for a single error"""
 
     @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_exception')
+            'StatsEngine.notice_error')
     def _validate_application_exception_message(wrapped, instance, args,
             kwargs):
 

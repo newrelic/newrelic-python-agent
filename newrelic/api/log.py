@@ -65,4 +65,11 @@ class NewRelicContextFormatter(Formatter):
         return output
 
     def format(self, record):
-        return json.dumps(self.log_record_to_dict(record), default=str, separators=(',', ':'))
+        def safe_str(object, *args, **kwargs):
+            """Convert object to str, catching any errors raised."""
+            try:
+                return str(object, *args, **kwargs)
+            except:
+                return "<unprintable %s object>" % type(object).__name__
+
+        return json.dumps(self.log_record_to_dict(record), default=safe_str, separators=(',', ':'))

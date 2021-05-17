@@ -127,8 +127,7 @@ def error_response(wrapped, instance, args, kwargs):
     else:
         # response can be a response object or a coroutine
         if hasattr(response, 'status'):
-            if not should_ignore_error(exc_info, response.status):
-                notice_error(exc_info)
+            notice_error(error=exc_info, status_code=response.status)
         else:
             notice_error(exc_info)
     finally:

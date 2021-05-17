@@ -19,8 +19,7 @@ async def _nr_wrapper_BaseHandler_get_response_async_(
     request = _bind_get_response(*args, **kwargs)
 
     if hasattr(request, '_nr_exc_info'):
-        if not should_ignore_error(request._nr_exc_info, response.status_code):
-            notice_error(request._nr_exc_info)
+        notice_error(error=request._nr_exc_info, status_code=response.status_code)
         delattr(request, '_nr_exc_info')
 
     return response

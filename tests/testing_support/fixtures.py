@@ -2308,10 +2308,10 @@ def override_ignore_status_codes(status_codes):
     @function_wrapper
     def _override_ignore_status_codes(wrapped, instance, args, kwargs):
         try:
-            # Ignore_status_codes is only used directly
-            # from the global settings and not the application
-            # settings. We therefore need to patch the
-            # global settings directly.
+            # Updates can be made to ignored status codes in server
+            # side configs. Changes will be applied to application
+            # settings so we first check there and if they don't
+            # exist, we default to global settings
 
             application = application_instance()
             settings = application and application.settings

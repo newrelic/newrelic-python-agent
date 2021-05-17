@@ -47,9 +47,7 @@ def build_wrap_handle_exception(bind_handle_exception):
             try:
                 resp = bind_handle_exception(*args, **kwargs)
                 response_code = int(resp.status.split()[0])
-                if should_ignore_error(exc_info, response_code):
-                    return result
-                notice_error(exc_info)
+                notice_error(error=exc_info, status_code=response_code)
             except:
                 notice_error(exc_info)
             finally:

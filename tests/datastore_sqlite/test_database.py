@@ -29,7 +29,7 @@ DATABASE_NAME = ':memory:'
 _test_execute_via_cursor_scoped_metrics = [
         ('Function/_sqlite3:connect', 1),
         ('Datastore/statement/SQLite/datastore_sqlite/select', 1),
-        ('Datastore/statement/SQLite/datastore_sqlite/insert', 1),
+        ('Datastore/statement/SQLite/datastore_sqlite/insert', 2),
         ('Datastore/statement/SQLite/datastore_sqlite/update', 1),
         ('Datastore/statement/SQLite/datastore_sqlite/delete', 1),
         ('Datastore/operation/SQLite/drop', 1),
@@ -38,14 +38,14 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/operation/SQLite/rollback', 1)]
 
 _test_execute_via_cursor_rollup_metrics = [
-        ('Datastore/all', 11),
-        ('Datastore/allOther', 11),
-        ('Datastore/SQLite/all', 11),
-        ('Datastore/SQLite/allOther', 11),
+        ('Datastore/all', 12),
+        ('Datastore/allOther', 12),
+        ('Datastore/SQLite/all', 12),
+        ('Datastore/SQLite/allOther', 12),
         ('Datastore/operation/SQLite/select', 1),
         ('Datastore/statement/SQLite/datastore_sqlite/select', 1),
-        ('Datastore/operation/SQLite/insert', 1),
-        ('Datastore/statement/SQLite/datastore_sqlite/insert', 1),
+        ('Datastore/operation/SQLite/insert', 2),
+        ('Datastore/statement/SQLite/datastore_sqlite/insert', 2),
         ('Datastore/operation/SQLite/update', 1),
         ('Datastore/statement/SQLite/datastore_sqlite/update', 1),
         ('Datastore/operation/SQLite/delete', 1),
@@ -83,9 +83,14 @@ def test_execute_via_cursor():
         cursor.executemany("""insert into datastore_sqlite values (?, ?, ?)""",
                 [(1, 1.0, '1.0'), (2, 2.2, '2.2'), (3, 3.3, '3.3')])
 
+        test_data = [(4, 4.0, '4.0'), (5, 5.5, '5.5'), (6, 6.6, '6.6')]
+
+        cursor.executemany("""insert into datastore_sqlite values (?, ?, ?)""",
+                           ((value) for value in test_data))
+
         cursor.execute("""select * from datastore_sqlite""")
 
-        for row in cursor: pass
+        assert len(list(cursor)) == 6
 
         cursor.execute("""update datastore_sqlite set a=?, b=?, """
                 """c=? where a=?""", (4, 4.0, '4.0', 1))
@@ -100,7 +105,7 @@ def test_execute_via_cursor():
 _test_execute_via_connection_scoped_metrics = [
         ('Function/_sqlite3:connect', 1),
         ('Datastore/statement/SQLite/datastore_sqlite/select', 1),
-        ('Datastore/statement/SQLite/datastore_sqlite/insert', 1),
+        ('Datastore/statement/SQLite/datastore_sqlite/insert', 2),
         ('Datastore/statement/SQLite/datastore_sqlite/update', 1),
         ('Datastore/statement/SQLite/datastore_sqlite/delete', 1),
         ('Datastore/operation/SQLite/drop', 1),
@@ -109,14 +114,14 @@ _test_execute_via_connection_scoped_metrics = [
         ('Datastore/operation/SQLite/rollback', 1)]
 
 _test_execute_via_connection_rollup_metrics = [
-        ('Datastore/all', 11),
-        ('Datastore/allOther', 11),
-        ('Datastore/SQLite/all', 11),
-        ('Datastore/SQLite/allOther', 11),
+        ('Datastore/all', 12),
+        ('Datastore/allOther', 12),
+        ('Datastore/SQLite/all', 12),
+        ('Datastore/SQLite/allOther', 12),
         ('Datastore/operation/SQLite/select', 1),
         ('Datastore/statement/SQLite/datastore_sqlite/select', 1),
-        ('Datastore/operation/SQLite/insert', 1),
-        ('Datastore/statement/SQLite/datastore_sqlite/insert', 1),
+        ('Datastore/operation/SQLite/insert', 2),
+        ('Datastore/statement/SQLite/datastore_sqlite/insert', 2),
         ('Datastore/operation/SQLite/update', 1),
         ('Datastore/statement/SQLite/datastore_sqlite/update', 1),
         ('Datastore/operation/SQLite/delete', 1),
@@ -157,7 +162,14 @@ def test_execute_via_connection():
                 """(?, ?, ?)""", [(1, 1.0, '1.0'), (2, 2.2, '2.2'),
                 (3, 3.3, '3.3')])
 
-        connection.execute("""select * from datastore_sqlite""")
+        test_data = [(4, 4.0, '4.0'), (5, 5.5, '5.5'), (6, 6.6, '6.6')]
+
+        connection.executemany("""insert into datastore_sqlite values (?, ?, ?)""",
+                           ((value) for value in test_data))
+
+        cursor = connection.execute("""select * from datastore_sqlite""")
+
+        assert len(list(cursor)) == 6
 
         connection.execute("""update datastore_sqlite set a=?, b=?, """
                 """c=? where a=?""", (4, 4.0, '4.0', 1))

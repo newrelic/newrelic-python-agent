@@ -30,7 +30,6 @@ class CursorWrapper(ObjectProxy):
         self._nr_cursor_params = cursor_params
 
     def execute(self, sql, parameters=DEFAULT, *args, **kwargs):
-        transaction = current_transaction()
         if parameters is not DEFAULT:
             with DatabaseTrace(sql, self._nr_dbapi2_module,
                     self._nr_connect_params, self._nr_cursor_params,
@@ -44,8 +43,8 @@ class CursorWrapper(ObjectProxy):
                 return self.__wrapped__.execute(sql, **kwargs)
 
     def executemany(self, sql, seq_of_parameters):
-        transaction = current_transaction()
         try:
+            seq_of_parameters = list(seq_of_parameters)
             parameters = seq_of_parameters[0]
         except (TypeError, IndexError):
             parameters = DEFAULT
@@ -60,7 +59,6 @@ class CursorWrapper(ObjectProxy):
                 return self.__wrapped__.executemany(sql, seq_of_parameters)
 
     def callproc(self, procname, parameters=DEFAULT):
-        transaction = current_transaction()
         with DatabaseTrace('CALL %s' % procname,
                 self._nr_dbapi2_module, self._nr_connect_params):
             if parameters is not DEFAULT:
@@ -83,13 +81,11 @@ class ConnectionWrapper(ObjectProxy):
                 self._nr_connect_params, (args, kwargs))
 
     def commit(self):
-        transaction = current_transaction()
         with DatabaseTrace('COMMIT', self._nr_dbapi2_module,
                 self._nr_connect_params):
             return self.__wrapped__.commit()
 
     def rollback(self):
-        transaction = current_transaction()
         with DatabaseTrace('ROLLBACK', self._nr_dbapi2_module,
                 self._nr_connect_params):
             return self.__wrapped__.rollback()
@@ -103,10 +99,6 @@ class ConnectionFactory(ObjectProxy):
         self._nr_dbapi2_module = dbapi2_module
 
     def __call__(self, *args, **kwargs):
-        transaction = current_transaction()
-
-        settings = global_settings()
-
         rollup = []
         rollup.append('Datastore/all')
         rollup.append('Datastore/%s/all' %

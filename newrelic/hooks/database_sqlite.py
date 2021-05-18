@@ -73,9 +73,20 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
                 return self.__wrapped__.execute(sql)
 
     def executemany(self, sql, seq_of_parameters):
-        with DatabaseTrace(sql, self._nr_dbapi2_module,
-                self._nr_connect_params, None, list(seq_of_parameters)[0]):
-            return self.__wrapped__.executemany(sql, seq_of_parameters)
+        try:
+            seq_of_parameters = list(seq_of_parameters)
+            parameters = seq_of_parameters[0]
+        except (TypeError, IndexError):
+            parameters = DEFAULT
+        if parameters is not DEFAULT:
+            with DatabaseTrace(sql, self._nr_dbapi2_module,
+                    self._nr_connect_params, None,
+                    parameters):
+                return self.__wrapped__.executemany(sql, seq_of_parameters)
+        else:
+            with DatabaseTrace(sql, self._nr_dbapi2_module,
+                    self._nr_connect_params, None):
+                return self.__wrapped__.executemany(sql, seq_of_parameters)
 
     def executescript(self, sql_script):
         with DatabaseTrace(sql_script, self._nr_dbapi2_module,

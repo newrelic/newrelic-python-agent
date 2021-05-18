@@ -18,7 +18,7 @@ import webtest
 from newrelic.api.application import application_instance as application
 from newrelic.api.message_transaction import message_transaction
 from newrelic.api.transaction import add_custom_parameter
-from newrelic.api.time_trace import record_exception
+from newrelic.api.time_trace import notice_error
 from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.object_names import callable_name
 
@@ -102,7 +102,7 @@ def normal_wsgi_application(environ, start_response):
     try:
         raise ValueError('Transaction had bad value')
     except ValueError:
-        record_exception(params={ERROR_PARAMS[0]: 'param-value'})
+        notice_error(attributes={ERROR_PARAMS[0]: 'param-value'})
 
     return [output]
 
@@ -886,8 +886,8 @@ def test_error_outside_transaction():
         raise OutsideWithParamsError("Error outside transaction")
     except OutsideWithParamsError:
         application_instance = application()
-        application_instance.record_exception(
-                params={'test_key': 'test_value'})
+        application_instance.notice_error(
+                attributes={'test_key': 'test_value'})
 
 
 class OutsideNoParamsError(Exception):
@@ -919,8 +919,8 @@ def test_error_outside_transaction_excluded_user_param():
         raise OutsideNoParamsError("Error outside transaction")
     except OutsideNoParamsError:
         application_instance = application()
-        application_instance.record_exception(
-                params={'test_key': 'test_value'})
+        application_instance.notice_error(
+                attributes={'test_key': 'test_value'})
 
 
 # Test routing key agent attribute.

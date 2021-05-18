@@ -19,7 +19,7 @@ import functools
 
 from newrelic.api.application import application_instance
 from newrelic.api.transaction import current_transaction
-from newrelic.api.time_trace import record_exception
+from newrelic.api.time_trace import notice_error
 from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.html_insertion import insert_html_snippet, verify_body_exists
@@ -57,7 +57,7 @@ class _WSGIApplicationIterable(object):
             raise
 
         except:  # Catch all
-            record_exception()
+            notice_error()
             raise
 
         finally:

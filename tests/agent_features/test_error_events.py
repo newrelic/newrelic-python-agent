@@ -18,7 +18,7 @@ import webtest
 
 from newrelic.api.application import (application_instance as application,
         application_settings)
-from newrelic.api.time_trace import record_exception
+from newrelic.api.time_trace import notice_error
 from newrelic.common.object_names import callable_name
 
 from testing_support.fixtures import (validate_error_event_sample_data,
@@ -216,7 +216,7 @@ def test_error_event_outside_transaction():
         raise outside_error
     except ErrorEventOutsideTransactionError:
         app = application()
-        record_exception(*sys.exc_info(), application=app)
+        notice_error(sys.exc_info(), application=app)
 
 _err_params = {'key': 'value'}
 
@@ -228,7 +228,7 @@ def test_error_event_with_params_outside_transaction():
         raise outside_error
     except ErrorEventOutsideTransactionError:
         app = application()
-        record_exception(*sys.exc_info(), params=_err_params,
+        notice_error(sys.exc_info(), attributes=_err_params,
                 application=app)
 
 @reset_core_stats_engine()
@@ -239,7 +239,7 @@ def test_multiple_error_events_outside_transaction():
         try:
             raise ErrorEventOutsideTransactionError(ERR_MESSAGE+str(i))
         except ErrorEventOutsideTransactionError:
-            record_exception(*sys.exc_info(), application=app)
+            notice_error(sys.exc_info(), application=app)
 
 @reset_core_stats_engine()
 @override_application_settings({'error_collector.enabled' : False})
@@ -249,7 +249,7 @@ def test_error_event_outside_transaction_error_collector_disabled():
         raise outside_error
     except ErrorEventOutsideTransactionError:
         app = application()
-        record_exception(*sys.exc_info(), application=app)
+        notice_error(sys.exc_info(), application=app)
 
 @reset_core_stats_engine()
 @override_application_settings({'error_collector.capture_events' : False})
@@ -259,7 +259,7 @@ def test_error_event_outside_transaction_capture_events_disabled():
         raise outside_error
     except ErrorEventOutsideTransactionError:
         app = application()
-        record_exception(*sys.exc_info(), application=app)
+        notice_error(sys.exc_info(), application=app)
 
 @reset_core_stats_engine()
 @override_application_settings({'collect_error_events' : False})
@@ -269,4 +269,4 @@ def test_error_event_outside_transaction_collect_error_events_false():
         raise outside_error
     except ErrorEventOutsideTransactionError:
         app = application()
-        record_exception(*sys.exc_info(), application=app)
+        notice_error(sys.exc_info(), application=app)

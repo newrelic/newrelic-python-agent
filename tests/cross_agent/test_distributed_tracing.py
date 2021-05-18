@@ -106,7 +106,7 @@ def target_wsgi_application(environ, start_response):
         try:
             1 / 0
         except ZeroDivisionError:
-            txn.record_exception()
+            txn.notice_error()
 
     extra_inbound_payloads = test_settings['extra_inbound_payloads']
     for payload, expected_result in extra_inbound_payloads:

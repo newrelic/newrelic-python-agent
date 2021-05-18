@@ -26,7 +26,7 @@ def _run_validation_test():
     from newrelic.api.external_trace import external_trace
     from newrelic.api.function_trace import function_trace
     from newrelic.api.transaction import add_custom_parameter
-    from newrelic.api.time_trace import record_exception
+    from newrelic.api.time_trace import notice_error
     from newrelic.api.wsgi_application import wsgi_application
 
     @external_trace(library='test',
@@ -58,7 +58,7 @@ def _run_validation_test():
         try:
             _function5()
         except:
-            record_exception(params=(params or {
+            notice_error(attributes=(params or {
                     'err-key-2': 2, 'err-key-3': 3.0}),
                     application=application)
 

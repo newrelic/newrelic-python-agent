@@ -19,7 +19,7 @@ except ImportError:
 
 import sqlite3 as db
 
-from newrelic.api.time_trace import record_exception
+from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import (add_custom_parameter,
         get_browser_timing_header, get_browser_timing_footer,
         record_custom_event)
@@ -96,9 +96,9 @@ def fully_featured_app(environ, start_response):
                 raise ValueError(environ['err_message'] + str(i))
             except ValueError:
                 if use_user_attrs:
-                    record_exception(params=_err_param)
+                    notice_error(attributes=_err_param)
                 else:
-                    record_exception()
+                    notice_error()
 
     text = '<html><head>%s</head><body><p>RESPONSE</p>%s</body></html>'
 

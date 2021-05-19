@@ -209,23 +209,30 @@ class TransactionNode(_TransactionNode):
         # Generate Error metrics
 
         if self.errors:
-            # Generate overall rollup metric indicating if errors present.
-            yield TimeMetric(
+            if False in (error.expected for error in self.errors):
+                # Generate overall rollup metric indicating if errors present.
+                yield TimeMetric(
                     name='Errors/all',
                     scope='',
                     duration=0.0,
                     exclusive=None)
 
-            # Generate individual error metric for transaction.
-            yield TimeMetric(
+                # Generate individual error metric for transaction.
+                yield TimeMetric(
                     name='Errors/%s' % self.path,
                     scope='',
                     duration=0.0,
                     exclusive=None)
 
-            # Generate rollup metric for WebTransaction errors.
-            yield TimeMetric(
+                # Generate rollup metric for WebTransaction errors.
+                yield TimeMetric(
                     name='Errors/all%s' % metric_suffix,
+                    scope='',
+                    duration=0.0,
+                    exclusive=None)
+            else:
+                yield TimeMetric(
+                    name='ErrorsExpected/all',
                     scope='',
                     duration=0.0,
                     exclusive=None)
@@ -260,7 +267,7 @@ class TransactionNode(_TransactionNode):
         tolerating = 0
         frustrating = 0
 
-        if self.errors:
+        if self.errors and False in (error.expected for error in self.errors):
             frustrating = 1
         else:
             if self.duration <= self.apdex_t:
@@ -397,7 +404,7 @@ class TransactionNode(_TransactionNode):
         if self.type != 'WebTransaction':
             return None
 
-        if self.errors:
+        if self.errors and False in (error.expected for error in self.errors):
             return 'F'
         else:
             if self.duration <= self.apdex_t:

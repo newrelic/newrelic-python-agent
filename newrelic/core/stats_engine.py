@@ -732,8 +732,13 @@ class StatsEngine(object):
             self.__transaction_errors.append(error_details)
 
         # Regardless of whether we record the trace or the event we still
-        # want to increment the metric Errors/all
-        self.record_time_metric(TimeMetric(name='Errors/all', scope='',
+        # want to increment the metric Errors/all unless the error was marked
+        # as expected
+        if is_expected:
+            self.record_time_metric(TimeMetric(name='ErrorsExpected/all', scope='',
+                duration=0.0, exclusive=None))
+        else:
+            self.record_time_metric(TimeMetric(name='Errors/all', scope='',
                 duration=0.0, exclusive=None))
 
     def _error_event(self, error):

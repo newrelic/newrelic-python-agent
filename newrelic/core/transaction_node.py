@@ -405,15 +405,16 @@ class TransactionNode(_TransactionNode):
         if self.type != 'WebTransaction':
             return None
 
-        if self.errors and False in (error.expected for error in self.errors):
-            return 'F'
-        else:
-            if self.duration <= self.apdex_t:
-                return 'S'
-            elif self.duration <= 4 * self.apdex_t:
-                return 'T'
-            else:
+        if self.errors:
+            if False in (error.expected for error in self.errors):
                 return 'F'
+            else:
+                if self.duration <= self.apdex_t:
+                    return 'S'
+                elif self.duration <= 4 * self.apdex_t:
+                    return 'T'
+                else:
+                    return 'F'
 
     def transaction_event(self, stats_table):
         # Create the transaction event, which is a list of attributes.

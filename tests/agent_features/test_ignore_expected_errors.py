@@ -195,18 +195,40 @@ def test_error_trace_attributes_outside_transaction(
 # =============== Test metrics not incremented ===============
 
 
-@pytest.mark.skip()
-@pytest.mark.parametrize("settings,expected,ignore", classes_settings_matrix)
-@pytest.mark.parametrize("override_expected", override_expected_matrix)
-def test_classes_exception_metrics(settings, expected, ignore, override_expected):
-    expected = override_expected or expected
-    metrics = _metrics_normal if not (expected or ignore) else []
+@pytest.mark.parametrize("expected", override_expected_matrix)
+def test_error_metrics_inside_transaction(expected):
+    normal_metrics_count = None if expected else 1
+    expected_metrics_count = 1 if expected else None
+    metrics_payload = [
+        ("Errors/all", normal_metrics_count),
+        ("Errors/OtherTransaction/Function/test", normal_metrics_count),
+        ("Errors/allOther", normal_metrics_count),
+        ("ErrorsExpected/all", expected_metrics_count),
+    ]
 
-    @override_application_settings(settings)
-    @validate_transaction_metrics("test", background_task=True, rollup_metrics=metrics)
+    @validate_transaction_metrics(
+        "test", background_task=True, rollup_metrics=metrics_payload
+    )
     @background_task(name="test")
     def _test():
-        exercise(override_expected)
+        exercise(expected)
+
+    _test()
+
+
+@pytest.mark.parametrize("expected", override_expected_matrix)
+def test_error_metrics_outside_transaction(expected):
+    normal_metrics_count = None if expected else 1
+    expected_metrics_count = 1 if expected else None
+    metrics_payload = [
+        ("Errors/all", normal_metrics_count),
+        ("ErrorsExpected/all", expected_metrics_count),
+    ]
+
+    @reset_core_stats_engine()
+    @validate_time_metrics_outside_transaction(metrics_payload)
+    def _test():
+        exercise(expected)
 
     _test()
 

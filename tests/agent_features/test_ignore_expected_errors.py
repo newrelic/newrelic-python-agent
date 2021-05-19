@@ -23,13 +23,14 @@ from newrelic.api.application import application_instance
 from newrelic.common.object_names import callable_name
 
 from testing_support.fixtures import (
-    reset_core_stats_engine,
-    validate_transaction_errors,
     override_application_settings,
-    validate_error_event_sample_data,
-    validate_transaction_metrics,
-    validate_transaction_error_event_count,
+    reset_core_stats_engine,
     validate_error_event_attributes_outside_transaction,
+    validate_error_event_sample_data,
+    validate_error_trace_attributes_outside_transaction,
+    validate_transaction_error_trace_attributes,
+    validate_transaction_errors,
+    validate_transaction_metrics,
 )
 
 
@@ -150,6 +151,70 @@ def test_classes_error_event_outside_transaction(
     @validate_error_event_attributes_outside_transaction(
         exact_attrs={"intrinsic": attributes, "agent": {}, "user": {}},
         num_errors=error_count,
+    )
+    @override_application_settings(settings)
+    def _test():
+        exercise(override_expected)
+
+    _test()
+
+
+# =============== Test error trace attributes ===============
+
+
+error_trace_settings_matrix = [
+    ({}, False),
+    (expected_runtime_error_settings, True),
+]
+override_expected_matrix = (True, False, None)
+
+
+@pytest.mark.parametrize("settings,expected", error_trace_settings_matrix)
+@pytest.mark.parametrize("override_expected", override_expected_matrix)
+def test_error_trace_attributes_inside_transaction(
+    settings, expected, override_expected
+):
+    expected = override_expected if override_expected is not None else expected
+
+    error_trace_attributes = {
+        "intrinsic": {
+            "error.expected": expected,
+        },
+        "agent": {},
+        "user": {},
+    }
+
+    @validate_transaction_error_trace_attributes(exact_attrs=error_trace_attributes)
+    @background_task(name="test")
+    @override_application_settings(settings)
+    def _test():
+        exercise(override_expected)
+
+    _test()
+
+
+@pytest.mark.parametrize("settings,expected", error_trace_settings_matrix)
+@pytest.mark.parametrize("override_expected", override_expected_matrix)
+def test_error_trace_attributes_outside_transaction(
+    settings, expected, override_expected
+):
+    expected = override_expected if override_expected is not None else expected
+
+    error_trace_attributes = {
+        "intrinsic": {
+            "error.class": _runtime_error_name,
+            "error.message": _error_message,
+            "error.expected": expected,
+            "transactionName": None,
+        },
+        "agent": {},
+        "user": {},
+    }
+
+    @reset_core_stats_engine()
+    @validate_error_trace_attributes_outside_transaction(
+        _runtime_error_name,
+        exact_attrs=error_trace_attributes
     )
     @override_application_settings(settings)
     def _test():
@@ -415,4 +480,3 @@ def test_overrides_outside_transaction(override, result, parameter):
         exercise(**kwargs)
 
     _test()
-

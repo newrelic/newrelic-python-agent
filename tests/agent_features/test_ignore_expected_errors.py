@@ -13,26 +13,23 @@
 # limitations under the License.
 
 import pytest
-
-from newrelic.api.background_task import background_task
-from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.time_trace import notice_error
-from newrelic.api.transaction import current_transaction
-from newrelic.api.application import application_instance
-
-from newrelic.common.object_names import callable_name
-
 from testing_support.fixtures import (
     override_application_settings,
     reset_core_stats_engine,
     validate_error_event_attributes_outside_transaction,
     validate_error_event_sample_data,
     validate_error_trace_attributes_outside_transaction,
+    validate_time_metrics_outside_transaction,
     validate_transaction_error_trace_attributes,
     validate_transaction_errors,
     validate_transaction_metrics,
 )
 
+from newrelic.api.application import application_instance
+from newrelic.api.background_task import background_task
+from newrelic.api.time_trace import notice_error
+from newrelic.api.transaction import current_transaction
+from newrelic.common.object_names import callable_name
 
 _runtime_error_name = callable_name(RuntimeError)
 _error_message = "Test error message."
@@ -46,16 +43,10 @@ expected_runtime_error_settings = {
 ignore_runtime_error_settings = {
     "error_collector.ignore_classes": [_runtime_error_name]
 }
-combined_runtime_error_settings = {}
-combined_runtime_error_settings.update(expected_runtime_error_settings)
-combined_runtime_error_settings.update(ignore_runtime_error_settings)
 
 # Status code settings
 expected_status_code_settings = {"error_collector.expected_status_codes": [418]}
 ignore_status_code_settings = {"error_collector.ignore_status_codes": [418]}
-combined_status_code_settings = {}
-combined_status_code_settings.update(expected_status_code_settings)
-combined_status_code_settings.update(ignore_status_code_settings)
 
 _test_runtime_error = [(_runtime_error_name, _error_message)]
 _intrinsic_attributes = {
@@ -64,51 +55,35 @@ _intrinsic_attributes = {
     "error.expected": False,
     "transactionName": "OtherTransaction/Function/test",
 }
-_metrics_normal = [
-    ("Errors/all", 1),
-    ("Errors/OtherTransaction/Function/test", 1),
-    ("Errors/allOther", 1),
-]
 
-
-# =============== Test ignored/expected classes within transaction ===============
+# =============== Test ignored/expected classes ===============
 
 classes_settings_matrix = [
     ({}, False, False),
     (ignore_runtime_error_settings, False, True),
     (expected_runtime_error_settings, True, False),
-    (combined_runtime_error_settings, False, True),
 ]
 override_expected_matrix = (True, False, None)
 
 
-def exercise(expected=None, ignore=None, status_code=None):
+def exercise(expected=None, ignore=None, status_code=None, application=None):
     try:
         raise RuntimeError(_error_message)
     except RuntimeError:
-        if current_transaction() is not None:
+        if current_transaction() is None:
             # Record exception inside transaction
-            notice_error(
-                expected=expected,
-                ignore=ignore,
-                status_code=status_code,
-            )
-        else:
-            # Record exception outside context of transaction
-            application_instance().notice_error(
-                expected=expected,
-                ignore=ignore,
-                status_code=status_code,
-            )
+            application = application or application_instance()
+
+        notice_error(
+            expected=expected,
+            ignore=ignore,
+            status_code=status_code,
+            application=application,
+        )
 
 
 @pytest.mark.parametrize("settings,expected,ignore", classes_settings_matrix)
-@pytest.mark.parametrize("override_expected", override_expected_matrix)
-def test_classes_error_event_inside_transaction(
-    settings, expected, ignore, override_expected
-):
-    expected = override_expected if override_expected is not None else expected
-
+def test_classes_error_event_inside_transaction(settings, expected, ignore):
     # Update attributes with parameters
     attributes = _intrinsic_attributes.copy()
     attributes["error.expected"] = expected
@@ -125,21 +100,13 @@ def test_classes_error_event_inside_transaction(
     @background_task(name="test")
     @override_application_settings(settings)
     def _test():
-        exercise(override_expected)
+        exercise()
 
     _test()
 
 
-# =============== Test ignored/expected classes outside transaction ===============
-
-
 @pytest.mark.parametrize("settings,expected,ignore", classes_settings_matrix)
-@pytest.mark.parametrize("override_expected", override_expected_matrix)
-def test_classes_error_event_outside_transaction(
-    settings, expected, ignore, override_expected
-):
-    expected = override_expected if override_expected is not None else expected
-
+def test_classes_error_event_outside_transaction(settings, expected, ignore):
     # Update attributes with parameters
     attributes = _intrinsic_attributes.copy()
     attributes["error.expected"] = expected
@@ -154,12 +121,15 @@ def test_classes_error_event_outside_transaction(
     )
     @override_application_settings(settings)
     def _test():
-        exercise(override_expected)
+        exercise()
 
     _test()
 
 
 # =============== Test error trace attributes ===============
+# Override testing is required to ensure the proper handling of
+# overrides. First attempt at implementation did not correctly handle this
+# and resulted in discrepancies between error events and traced errors.
 
 
 error_trace_settings_matrix = [
@@ -213,8 +183,7 @@ def test_error_trace_attributes_outside_transaction(
 
     @reset_core_stats_engine()
     @validate_error_trace_attributes_outside_transaction(
-        _runtime_error_name,
-        exact_attrs=error_trace_attributes
+        _runtime_error_name, exact_attrs=error_trace_attributes
     )
     @override_application_settings(settings)
     def _test():
@@ -261,24 +230,18 @@ status_codes_settings_matrix = [
     ({}, False, False),
     (ignore_status_code_settings, False, True),
     (expected_status_code_settings, True, False),
-    (combined_status_code_settings, False, True),
 ]
 
 status_code_matrix = [None, 418, retrieve_status_code]
 
 
 @pytest.mark.parametrize("settings,expected,ignore", status_codes_settings_matrix)
-@pytest.mark.parametrize("override_expected", override_expected_matrix)
 @pytest.mark.parametrize("status_code", status_code_matrix)
-def test_status_codes_inside_transaction(
-    settings, expected, ignore, override_expected, status_code
-):
+def test_status_codes_inside_transaction(settings, expected, ignore, status_code):
     if status_code is None:
         # Override all settings
         ignore = False
         expected = False
-
-    expected = override_expected if override_expected is not None else expected
 
     # Update attributes with parameters
     attributes = _intrinsic_attributes.copy()
@@ -300,23 +263,18 @@ def test_status_codes_inside_transaction(
         try:
             raise TeapotError(_error_message)
         except:
-            notice_error(expected=override_expected, status_code=status_code)
+            notice_error(status_code=status_code)
 
     _test()
 
 
 @pytest.mark.parametrize("settings,expected,ignore", status_codes_settings_matrix)
-@pytest.mark.parametrize("override_expected", override_expected_matrix)
 @pytest.mark.parametrize("status_code", status_code_matrix)
-def test_status_codes_outside_transaction(
-    settings, expected, ignore, override_expected, status_code
-):
+def test_status_codes_outside_transaction(settings, expected, ignore, status_code):
     if status_code is None:
         # Override all settings
         ignore = False
         expected = False
-
-    expected = override_expected if override_expected is not None else expected
 
     # Update attributes with parameters
     attributes = _intrinsic_attributes.copy()
@@ -336,24 +294,33 @@ def test_status_codes_outside_transaction(
         try:
             raise TeapotError(_error_message)
         except:
-            notice_error(expected=override_expected, status_code=status_code)
+            notice_error(status_code=status_code)
 
     _test()
 
 
 # =============== Test mixed ignored and expected settings ===============
 
+# Aggregate settings
 ignore_status_code_expected_class_settings = {}
 ignore_status_code_expected_class_settings.update(ignore_status_code_settings)
 ignore_status_code_expected_class_settings.update(expected_runtime_error_settings)
 expected_status_code_ignore_class_settings = {}
 expected_status_code_ignore_class_settings.update(expected_status_code_settings)
 expected_status_code_ignore_class_settings.update(ignore_runtime_error_settings)
+combined_runtime_error_settings = {}
+combined_runtime_error_settings.update(expected_runtime_error_settings)
+combined_runtime_error_settings.update(ignore_runtime_error_settings)
+combined_status_code_settings = {}
+combined_status_code_settings.update(expected_status_code_settings)
+combined_status_code_settings.update(ignore_status_code_settings)
 
 mixed_settings_matrix = [
     ({}, False, False),
     (ignore_status_code_expected_class_settings, True, True),
     (expected_status_code_ignore_class_settings, True, True),
+    (combined_runtime_error_settings, True, True),
+    (combined_status_code_settings, True, True),
 ]
 override_expected_matrix = (True, False, None)
 override_ignore_matrix = (True, False, None)

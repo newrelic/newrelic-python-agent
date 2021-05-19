@@ -1158,7 +1158,7 @@ def validate_transaction_trace_attributes(required_params={},
 
 
 def validate_transaction_error_trace_attributes(required_params={},
-        forgone_params={}):
+        forgone_params={}, exact_attrs={}):
     """Check the error trace for attributes, expect only one error to be
     present in the transaction.
     """
@@ -1178,7 +1178,7 @@ def validate_transaction_error_trace_attributes(required_params={},
             traced_error = error_data[0]
 
             check_error_attributes(traced_error.parameters, required_params,
-                    forgone_params, is_transaction=True)
+                    forgone_params, exact_attrs, is_transaction=True)
 
         return result
 
@@ -1186,7 +1186,7 @@ def validate_transaction_error_trace_attributes(required_params={},
 
 
 def check_error_attributes(parameters, required_params={}, forgone_params={},
-        is_transaction=True):
+        exact_attrs={}, is_transaction=True):
 
     parameter_fields = ['userAttributes']
     if is_transaction:
@@ -1202,10 +1202,10 @@ def check_error_attributes(parameters, required_params={}, forgone_params={},
     assert 'request_params' not in parameters
     assert 'request_uri' not in parameters
 
-    check_attributes(parameters, required_params, forgone_params)
+    check_attributes(parameters, required_params, forgone_params, exact_attrs)
 
 
-def check_attributes(parameters, required_params={}, forgone_params={}):
+def check_attributes(parameters, required_params={}, forgone_params={}, exact_attrs={}):
     if required_params:
         for param in required_params['agent']:
             assert param in parameters['agentAttributes']
@@ -1222,6 +1222,17 @@ def check_attributes(parameters, required_params={}, forgone_params={}):
 
         for param in forgone_params['user']:
             assert param not in parameters['userAttributes']
+
+    if exact_attrs:
+        for param, value in exact_attrs['agent'].items():
+            assert parameters['agentAttributes'][param] == value, (
+                    (param, value), parameters['agentAttributes'])
+        for param, value in exact_attrs['user'].items():
+            assert parameters['userAttributes'][param] == value, (
+                    (param, value), parameters['userAttributes'])
+        for param, value in exact_attrs['intrinsic'].items():
+            assert parameters['intrinsics'][param] == value, (
+                    (param, value), parameters['intrinsics'])
 
 
 def validate_error_trace_collector_json():
@@ -1605,7 +1616,7 @@ def validate_error_event_attributes(required_params={}, forgone_params={},
 
 
 def validate_error_trace_attributes_outside_transaction(err_name,
-        required_params={}, forgone_params={}):
+        required_params={}, forgone_params={}, exact_attrs={}):
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.notice_error')
     def _validate_error_trace_attributes_outside_transaction(wrapped, instance,
@@ -1618,7 +1629,7 @@ def validate_error_trace_attributes_outside_transaction(err_name,
             target_error = core_application_stats_engine_error(err_name)
 
             check_error_attributes(target_error.parameters, required_params,
-                    forgone_params, is_transaction=False)
+                    forgone_params, exact_attrs, is_transaction=False)
 
         return result
 

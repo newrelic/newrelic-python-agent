@@ -270,13 +270,13 @@ class TransactionNode(_TransactionNode):
         if self.errors:
             if False in (error.expected for error in self.errors):
                 frustrating = 1
+        else:
+            if self.duration <= self.apdex_t:
+                satisfying = 1
+            elif self.duration <= 4 * self.apdex_t:
+                tolerating = 1
             else:
-                if self.duration <= self.apdex_t:
-                    satisfying = 1
-                elif self.duration <= 4 * self.apdex_t:
-                    tolerating = 1
-                else:
-                    frustrating = 1
+                frustrating = 1
 
         # Generate the full apdex metric.
 
@@ -408,13 +408,13 @@ class TransactionNode(_TransactionNode):
         if self.errors:
             if False in (error.expected for error in self.errors):
                 return 'F'
+        else:
+            if self.duration <= self.apdex_t:
+                return 'S'
+            elif self.duration <= 4 * self.apdex_t:
+                return 'T'
             else:
-                if self.duration <= self.apdex_t:
-                    return 'S'
-                elif self.duration <= 4 * self.apdex_t:
-                    return 'T'
-                else:
-                    return 'F'
+                return 'F'
 
     def transaction_event(self, stats_table):
         # Create the transaction event, which is a list of attributes.

@@ -27,6 +27,7 @@ from testing_support.fixtures import (
     reset_core_stats_engine,
     validate_error_event_attributes_outside_transaction,
     validate_error_event_sample_data,
+    validate_error_trace_attributes_outside_transaction,
     validate_transaction_error_trace_attributes,
     validate_transaction_errors,
     validate_transaction_metrics,
@@ -167,11 +168,6 @@ error_trace_settings_matrix = [
 ]
 override_expected_matrix = (True, False, None)
 
-error_trace_attributes = {
-    "intrinsic": ("error.expected",),
-    "agent": [],
-    "user": [],
-}
 
 @pytest.mark.parametrize("settings,expected", error_trace_settings_matrix)
 @pytest.mark.parametrize("override_expected", override_expected_matrix)
@@ -180,7 +176,15 @@ def test_error_trace_attributes_inside_transaction(
 ):
     expected = override_expected if override_expected is not None else expected
 
-    @validate_transaction_error_trace_attributes(error_trace_attributes)
+    error_trace_attributes = {
+        "intrinsic": {
+            "error.expected": expected,
+        },
+        "agent": {},
+        "user": {},
+    }
+
+    @validate_transaction_error_trace_attributes(exact_attrs=error_trace_attributes)
     @background_task(name="test")
     @override_application_settings(settings)
     def _test():
@@ -196,7 +200,22 @@ def test_error_trace_attributes_outside_transaction(
 ):
     expected = override_expected if override_expected is not None else expected
 
-    @validate_error_event_attributes_outside_transaction(_runtime_error_name, error_trace_attributes)
+    error_trace_attributes = {
+        "intrinsic": {
+            "error.class": _runtime_error_name,
+            "error.message": _error_message,
+            "error.expected": expected,
+            "transactionName": None,
+        },
+        "agent": {},
+        "user": {},
+    }
+
+    @reset_core_stats_engine()
+    @validate_error_trace_attributes_outside_transaction(
+        _runtime_error_name,
+        exact_attrs=error_trace_attributes
+    )
     @override_application_settings(settings)
     def _test():
         exercise(override_expected)
@@ -461,4 +480,3 @@ def test_overrides_outside_transaction(override, result, parameter):
         exercise(**kwargs)
 
     _test()
-

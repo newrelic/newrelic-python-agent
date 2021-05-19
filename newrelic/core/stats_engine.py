@@ -734,7 +734,7 @@ class StatsEngine(object):
         # Regardless of whether we record the trace or the event we still
         # want to increment the metric Errors/all unless the error was marked
         # as expected
-        if self._error_event(error_details)[0].get("error.expected"):
+        if is_expected:
             self.record_time_metric(TimeMetric(name='ErrorsExpected/all', scope='',
                 duration=0.0, exclusive=None))
         else:

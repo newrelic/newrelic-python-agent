@@ -267,9 +267,8 @@ class TransactionNode(_TransactionNode):
         tolerating = 0
         frustrating = 0
 
-        if self.errors:
-            if False in (error.expected for error in self.errors):
-                frustrating = 1
+        if self.errors and False in (error.expected for error in self.errors):
+            frustrating = 1
         else:
             if self.duration <= self.apdex_t:
                 satisfying = 1
@@ -405,9 +404,8 @@ class TransactionNode(_TransactionNode):
         if self.type != 'WebTransaction':
             return None
 
-        if self.errors:
-            if False in (error.expected for error in self.errors):
-                return 'F'
+        if self.errors and False in (error.expected for error in self.errors):
+            return 'F'
         else:
             if self.duration <= self.apdex_t:
                 return 'S'

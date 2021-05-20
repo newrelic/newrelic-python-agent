@@ -29,8 +29,9 @@ def test_nested_context_managers():
 def test_sentinel_exited_complete_root_exception():
     """
     This test forces a transaction to exit while it still has an active trace
-    It verifies that the sentinel.exited property is set to true if an exception
-    is raised in complete_root()
+    this causes an exception to be raised in TraceCache complete_root(). It
+    verifies that the sentinel.exited property is set to true if an exception
+    is raised in complete_root(), and that the exception is caught.
     """
 
     txn = None

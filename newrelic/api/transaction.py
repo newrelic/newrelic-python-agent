@@ -396,7 +396,11 @@ class Transaction(object):
                 _logger.exception('Runtime instrumentation error. Attempt to '
                         'drop the trace but where none is active. '
                         'Report this issue to New Relic support.'),
-                raise
+                return
+        except Exception:
+            _logger.exception('Runtime instrumentation error. Exception '
+                    'occurred during exit. Report this issue to New Relic support.')
+            return
 
         # Record error if one was registered.
 

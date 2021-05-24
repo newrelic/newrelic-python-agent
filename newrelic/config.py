@@ -399,6 +399,9 @@ def _process_configuration(section):
     )
     _process_setting(section, "error_collector.capture_source", "getboolean", None)
     _process_setting(
+        section, "error_collector.ignore_errors", "get", _map_split_strings
+    )
+    _process_setting(
         section, "error_collector.ignore_classes", "get", _map_split_strings
     )
     _process_setting(
@@ -794,7 +797,6 @@ def translate_deprecated_settings(settings, cached_settings):
     ]
 
     for (old_key, new_key) in deprecated_settings_map:
-
         if old_key in cached:
             _logger.info(
                 "Deprecated setting found: %r. Please use new " "setting: %r.",
@@ -1872,6 +1874,13 @@ def _process_error_trace_configuration():
 
             if _config_object.has_option(section, "ignore_classes"):
                 ignore_classes = _config_object.get(section, "ignore_classes").split()
+
+            if _config_object.has_option(section, "ignore_errors"):
+                if _config_object.has_option(section, "ignore_classes"):
+                    _logger.info("Ignoring deprecated setting: ignore_errors. Please use new setting: ignore_classes.")
+                else:
+                    _logger.info("Deprecated setting found: ignore_errors. Please use new setting: ignore_classes.")
+                    ignore_classes = _config_object.get(section, "ignore_errors").split()
 
             if _config_object.has_option(section, "expected_classes"):
                 expected_classes = _config_object.get(section, "expected_classes").split()

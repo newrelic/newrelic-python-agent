@@ -653,6 +653,7 @@ _settings.transaction_tracer.attributes.include = []
 _settings.error_collector.enabled = True
 _settings.error_collector.capture_events = True
 _settings.error_collector.capture_source = False
+_settings.error_collector.ignore_errors = []
 _settings.error_collector.ignore_classes = []
 _settings.error_collector.ignore_status_codes = _parse_status_codes(
         '100-102 200-208 226 300-308 404', set())

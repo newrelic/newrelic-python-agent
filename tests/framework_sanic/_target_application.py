@@ -61,10 +61,10 @@ class CustomRouter(Router):
         if hasattr(base_get, '__wrapped__'):
             base_get = base_get.__wrapped__
 
-        handler, args, kwargs, uri = base_get(self, request)
+        get_results = list(base_get(self, request))
         if request.path == '/server-error':
-            handler = None
-        return handler, args, kwargs, uri
+            get_results[0] = None
+        return get_results
 
 
 app = Sanic(error_handler=CustomErrorHandler(), router=CustomRouter())

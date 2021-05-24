@@ -157,7 +157,7 @@ def _sanic_app_init(wrapped, instance, args, kwargs):
     return result
 
 
-def _nr_sanic_response_parse_headers(wrapped, instance, args, kwargs):
+def _nr_sanic_response_get_headers(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
     transaction = current_transaction()
 
@@ -172,7 +172,24 @@ def _nr_sanic_response_parse_headers(wrapped, instance, args, kwargs):
         if header_name not in instance.headers:
             instance.headers[header_name] = header_value
 
-    return result
+    return wrapped(*args, **kwargs)
+
+
+def _nr_sanic_response_parse_headers(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    # instance is the response object
+    cat_headers = transaction.process_response(str(instance.status),
+            instance.headers.items())
+
+    for header_name, header_value in cat_headers:
+        if header_name not in instance.headers:
+            instance.headers[header_name] = header_value
+
+    return wrapped(*args, **kwargs)
 
 
 def _nr_wrapper_middleware_(attach_to):
@@ -236,12 +253,12 @@ def instrument_sanic_app(module):
 
 
 def instrument_sanic_response(module):
-    if hasattr(module.BaseHTTPResponse, 'get_headers'):
-        wrap_function_wrapper(module, 'BaseHTTPResponse.get_headers',
-            _nr_sanic_response_parse_headers)
-    elif hasattr(module.BaseHTTPResponse, '_parse_headers'):
-        wrap_function_wrapper(module, 'BaseHTTPResponse._parse_headers',
-            _nr_sanic_response_parse_headers)
-    else:
+    if hasattr(module.BaseHTTPResponse, 'send'):
         wrap_function_wrapper(module, 'BaseHTTPResponse.send',
+            _nr_sanic_response_parse_headers)
+    elif hasattr(module.BaseHTTPResponse, 'get_headers'):
+        wrap_function_wrapper(module, 'BaseHTTPResponse.get_headers',
+            _nr_sanic_response_get_headers)
+    else:
+        wrap_function_wrapper(module, 'BaseHTTPResponse._parse_headers',
             _nr_sanic_response_parse_headers)

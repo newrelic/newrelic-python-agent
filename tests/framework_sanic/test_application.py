@@ -31,7 +31,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
 
 BASE_METRICS = [
     ('Function/_target_application:index', 1),
-    ('Function/_target_application:request_middleware', 2),
+    ('Function/_target_application:request_middleware', 1 if int(sanic.__version__.split('.', 1)[0]) > 18 else 2),
 ]
 FRAMEWORK_METRICS = [
     ('Python/Framework/Sanic/%s' % sanic.__version__, 1),

@@ -39,14 +39,24 @@ collector_agent_registration = collector_agent_registration_fixture(
         default_settings=_default_settings)
 
 
-def create_request_class(method, url, headers=None):
-    _request = Request(
-        method=method.upper(),
-        url_bytes=url.encode('utf-8'),
-        headers=headers,
-        version='1.0',
-        transport=None,
-    )
+def create_request_class(app, method, url, headers=None):
+    try:
+        _request = Request(
+            method=method.upper(),
+            url_bytes=url.encode('utf-8'),
+            headers=headers,
+            version='1.0',
+            transport=None,
+        )
+    except TypeError:
+        _request = Request(
+            app=app,
+            method=method.upper(),
+            url_bytes=url.encode('utf-8'),
+            headers=headers,
+            version='1.0',
+            transport=None,
+        )
     return _request
 
 
@@ -67,7 +77,7 @@ def create_request_coroutine(app, method, url, headers=None, responses=None):
 
     headers = headers or {}
     coro = app.handle_request(
-        create_request_class(method, url, headers),
+        create_request_class(app, method, url, headers),
         write_callback,
         stream_callback,
     )

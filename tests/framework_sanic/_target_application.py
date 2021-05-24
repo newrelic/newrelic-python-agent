@@ -60,14 +60,15 @@ class CustomRouter(Router):
         base_add = Router.add
         if hasattr(base_add, '__wrapped__'):
             base_add = base_add.__wrapped__
-        return base_add(self, *args, **kwargs)
+        return base_add.__get__(self, Router)(*args, **kwargs)
 
     def get(self, request):
         base_get = Router.get
         if hasattr(base_get, '__wrapped__'):
             base_get = base_get.__wrapped__
 
-        get_results = list(base_get(self, request))
+        bound_get = base_get.__get__(self, Router)
+        get_results = list(bound_get(request))
         if request.path == '/server-error':
             get_results[0] = None
         return get_results

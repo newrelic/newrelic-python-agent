@@ -50,6 +50,12 @@ class CustomErrorHandler(ErrorHandler):
 
 
 class CustomRouter(Router):
+    def __init__(self):
+        try:
+            super().__init__(app=None)
+        except TypeError:
+            super().__init__()
+
     def add(self, *args, **kwargs):
         base_add = Router.add
         if hasattr(base_add, '__wrapped__'):
@@ -67,7 +73,9 @@ class CustomRouter(Router):
         return get_results
 
 
-app = Sanic(error_handler=CustomErrorHandler(), router=CustomRouter())
+router = CustomRouter()
+app = Sanic(name="test app", error_handler=CustomErrorHandler(), router=router)
+router.app = app
 
 
 @app.route('/')

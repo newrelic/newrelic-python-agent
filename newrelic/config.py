@@ -797,6 +797,7 @@ def translate_deprecated_settings(settings, cached_settings):
     ]
 
     for (old_key, new_key) in deprecated_settings_map:
+
         if old_key in cached:
             _logger.info(
                 "Deprecated setting found: %r. Please use new " "setting: %r.",

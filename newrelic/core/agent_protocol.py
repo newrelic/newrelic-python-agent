@@ -114,7 +114,7 @@ class AgentProtocol(object):
                 "Disconnection of the agent has been requested by the data "
                 "collector for the application where the agent run was "
                 "%(agent_run_id)s. Please contact New Relic support for "
-                "further information."
+                "further information. content=%(content)s"
             ),
         ),
         429: (
@@ -248,7 +248,7 @@ class AgentProtocol(object):
                     "params": {
                         k: v for k, v in params.items() if k in self.PARAMS_ALLOWLIST
                     },
-                    "content": payload,
+                    "content": data,
                     "agent_run_id": self._run_token,
                 },
             )

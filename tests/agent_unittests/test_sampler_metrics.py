@@ -153,6 +153,7 @@ def test_cpu_metrics_collection(cpu_data_source):
 EXPECTED_MEMORY_METRICS = (
     "Memory/Physical",
     "Memory/Physical/%d" % PID,
+    "Memory/Physical/Utilization",
     "Memory/Physical/Utilization/%d" % PID,
 )
 

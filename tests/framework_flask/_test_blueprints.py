@@ -21,8 +21,16 @@ from werkzeug.routing import Rule
 # Blueprints are only available in 0.7.0 onwards.
 
 blueprint = Blueprint('blueprint', __name__)
+parent = Blueprint('parent', __name__, url_prefix='/parent')
+child = Blueprint('child', __name__, url_prefix='/child')
+
+parent.register_blueprint(child)
 
 application = Flask(__name__)
+
+@child.route('/nested')
+def nested_page():
+    return 'PARENT NESTED RESPONSE'
 
 @blueprint.route('/index')
 def index_page():
@@ -61,6 +69,7 @@ def teardown_app_request(exc):
     pass
 
 application.register_blueprint(blueprint)
+application.register_blueprint(parent)
 
 application.url_map.add(Rule('/endpoint', endpoint='endpoint'))
 

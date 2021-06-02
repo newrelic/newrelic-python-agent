@@ -98,3 +98,31 @@ def test_blueprints_endpoint():
     application = target_application()
     response = application.get('/endpoint')
     response.mustcontain('BLUEPRINT ENDPOINT RESPONSE')
+
+
+_test_blueprints_nested_scoped_metrics = [
+        ('Function/flask.app:Flask.wsgi_app', 1),
+        ('Python/WSGI/Application', 1),
+        ('Python/WSGI/Response', 1),
+        ('Python/WSGI/Finalize', 1),
+        ('Function/_test_blueprints:nested_page', 1),
+        ('Function/flask.app:Flask.preprocess_request', 1),
+        ('Function/_test_blueprints:before_app_request', 1),
+        ('Function/_test_blueprints:before_request', 1),
+        ('Function/flask.app:Flask.process_response', 1),
+        ('Function/_test_blueprints:after_request', 1),
+        ('Function/_test_blueprints:after_app_request', 1),
+        ('Function/flask.app:Flask.do_teardown_request', 1),
+        ('Function/_test_blueprints:teardown_app_request', 1),
+        ('Function/_test_blueprints:teardown_request', 1),
+        ('Function/flask.app:Flask.do_teardown_appcontext', 1),
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
+
+@requires_blueprint
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics('_test_blueprints:nested_page')
+def test_blueprints_nested():
+        application = target_application()
+        response = application.get('/parent/child/nested')
+        response.mustcontain('PARENT NESTED RESPONSE')
+        

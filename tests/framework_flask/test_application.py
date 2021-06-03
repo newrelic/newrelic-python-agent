@@ -87,7 +87,6 @@ if is_dev_version or (is_gt_flask060 and flask_version >= (0, 9)):
         ('FunctionNode', []),
     )
 
-
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_application:index_page',
         scoped_metrics=_test_application_index_scoped_metrics)
@@ -97,6 +96,22 @@ def test_application_index():
     response = application.get('/index')
     response.mustcontain('INDEX RESPONSE')
 
+_test_application_async_scoped_metrics = [
+        ('Function/flask.app:Flask.wsgi_app', 1),
+        ('Python/WSGI/Application', 1),
+        ('Python/WSGI/Response', 1),
+        ('Python/WSGI/Finalize', 1),
+        ('Function/_test_application:async_page', 1),
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
+
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics('_test_application:async_page',
+        scoped_metrics=_test_application_async_scoped_metrics)
+@validate_tt_parenting(_test_application_index_tt_parenting)
+def test_application_async():
+    application = target_application()
+    response = application.get('/async')
+    response.mustcontain('ASYNC RESPONSE')
 
 _test_application_endpoint_scoped_metrics = [
         ('Function/flask.app:Flask.wsgi_app', 1),

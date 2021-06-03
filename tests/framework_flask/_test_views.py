@@ -30,9 +30,22 @@ class TestMethodView(flask.views.MethodView):
     def post(self):
         return 'METHODVIEW POST RESPONSE'
 
+class TestAsyncView(flask.views.View):
+    async def dispatch_request(self):
+        return 'ASYNC VIEW RESPONSE'
+
+class TestAsyncMethodView(flask.views.MethodView):
+    async def get(self):
+        breakpoint()
+        return 'ASYNC METHODVIEW GET RESPONSE'
+
 app.add_url_rule('/view',
         view_func=TestView.as_view('test_view'))
+app.add_url_rule('/async_view',
+        view_func=TestAsyncView.as_view('test_async_view'))
 app.add_url_rule('/methodview',
         view_func=TestMethodView.as_view('test_methodview'))
+app.add_url_rule('/async_methodview',
+        view_func=TestAsyncMethodView.as_view('test_async_methodview'))
 
 _test_application = webtest.TestApp(app)

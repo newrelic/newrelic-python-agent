@@ -38,6 +38,11 @@ if is_gt_flask060:
     def endpoint_page():
         return 'ENDPOINT RESPONSE'
 
+@application.route('/async')
+async def async_page():
+    breakpoint()
+    return 'ASYNC RESPONSE'
+
 @application.route('/error')
 def error_page():
     raise RuntimeError('RUNTIME ERROR')

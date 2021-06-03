@@ -19,21 +19,13 @@ from testing_support.fixtures import (validate_transaction_metrics,
 
 from newrelic.packages import six
 
-try:
-    # The __version__ attribute was only added in 0.7.0.
-    # Flask team does not use semantic versioning during development.
-    from flask import __version__ as flask_version
-    is_gt_flask080 = 'dev' in flask_version or tuple(
-            map(int, flask_version.split('.')))[:2] > (0, 8)
-except ImportError:
-    is_gt_flask080 = False
+from flask import __version__ as flask_version
 
-# Technically parts of blueprints support is available in older
-# versions, but just check with latest versions. The instrumentation
-# always checks for presence of required functions before patching.
+is_flask_v2 = int(flask_version.split('.')[0]) >= 2
 
-requires_blueprint = pytest.mark.skipif(not is_gt_flask080,
-        reason="The blueprint mechanism is not supported.")
+# Nested blueprints are only supported in v2 of Flask, so we skip the nested test on older versions
+nested_blueprints_supported = pytest.mark.skipif(not is_flask_v2,
+        reason="The nested blueprint mechanism is not supported.")
 
 def target_application():
     # We need to delay Flask application creation because of ordering
@@ -66,7 +58,6 @@ _test_blueprints_index_scoped_metrics = [
         ('Function/flask.app:Flask.do_teardown_appcontext', 1),
         ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
 
-@requires_blueprint
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_blueprints:index_page',
         scoped_metrics=_test_blueprints_index_scoped_metrics)
@@ -90,7 +81,6 @@ _test_blueprints_endpoint_scoped_metrics = [
         ('Function/flask.app:Flask.do_teardown_appcontext', 1),
         ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
 
-@requires_blueprint
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_blueprints:endpoint_page',
         scoped_metrics=_test_blueprints_endpoint_scoped_metrics)
@@ -118,11 +108,10 @@ _test_blueprints_nested_scoped_metrics = [
         ('Function/flask.app:Flask.do_teardown_appcontext', 1),
         ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
 
-@requires_blueprint
+@nested_blueprints_supported
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_blueprints:nested_page')
 def test_blueprints_nested():
         application = target_application()
         response = application.get('/parent/child/nested')
         response.mustcontain('PARENT NESTED RESPONSE')
-        

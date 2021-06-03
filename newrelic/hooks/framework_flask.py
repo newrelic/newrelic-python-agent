@@ -147,6 +147,16 @@ def _nr_wrapper_Flask__register_error_handler_(wrapped, instance, args, kwargs):
 
     return wrapped(key, code_or_exception, f)
 
+def _nr_wrapper_Flask_register_error_handler_(wrapped, instance, args, kwargs):
+    def _bind_params(code_or_exception, f):
+        return code_or_exception, f
+
+    code_or_exception, f = _bind_params(*args, **kwargs)
+
+    f = _nr_wrapper_error_handler_(f)
+
+    return wrapped(code_or_exception, f)
+
 def _nr_wrapper_Flask_try_trigger_before_first_request_functions_(
         wrapped, instance, args, kwargs):
 
@@ -257,10 +267,15 @@ def instrument_flask_app(module):
 
     # The _register_error_handler() method was only introduced in
     # Flask version 0.7.0.
-
     if hasattr(module.Flask, '_register_error_handler'):
         wrap_function_wrapper(module, 'Flask._register_error_handler',
                 _nr_wrapper_Flask__register_error_handler_)
+
+    # The method changed name to register_error_handler() in
+    # Flask version 2.0.0.
+    elif hasattr(module.Flask, 'register_error_handler'):
+        wrap_function_wrapper(module, 'Flask.register_error_handler',
+                _nr_wrapper_Flask_register_error_handler_)
 
     # Different before/after methods were added in different versions.
     # Check for the presence of everything before patching.
@@ -295,6 +310,14 @@ def instrument_flask_app(module):
 def instrument_flask_templating(module):
     wrap_function_trace(module, 'render_template')
     wrap_function_trace(module, 'render_template_string')
+
+# def instrument_flask_scaffold(module):
+#     # The _register_error_handler() method was moved to the scaffold class
+#     # in Flask version 2.0.0.
+#     if hasattr(module.Scaffold, '_register_error_handler'):
+#         wrap_function_wrapper(module, 'Flask._register_error_handler',
+#                 _nr_wrapper_Flask__register_error_handler_)
+
 
 def _nr_wrapper_Blueprint_endpoint_(wrapped, instance, args, kwargs):
     return _nr_wrapper_endpoint_(wrapped(*args, **kwargs))

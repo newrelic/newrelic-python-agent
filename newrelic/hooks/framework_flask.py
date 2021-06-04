@@ -354,14 +354,6 @@ def instrument_flask_templating(module):
     wrap_function_trace(module, "render_template_string")
 
 
-# def instrument_flask_scaffold(module):
-#     # The _register_error_handler() method was moved to the scaffold class
-#     # in Flask version 2.0.0.
-#     if hasattr(module.Scaffold, '_register_error_handler'):
-#         wrap_function_wrapper(module, 'Flask._register_error_handler',
-#                 _nr_wrapper_Flask__register_error_handler_)
-
-
 def _nr_wrapper_Blueprint_endpoint_(wrapped, instance, args, kwargs):
     return _nr_wrapper_endpoint_(wrapped(*args, **kwargs))
 

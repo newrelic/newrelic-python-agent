@@ -17,6 +17,8 @@ import pytest
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, override_application_settings)
 
+from conftest import skip_if_flask_1 as async_view_support
+
 try:
     import flask.views
     has_view_support = True
@@ -61,7 +63,9 @@ def test_class_based_view():
     response = application.get('/view')
     response.mustcontain('VIEW RESPONSE')
 
+@pytest.mark.xfail(reason="Currently broken in flask.")
 @skip_if_no_view_support
+@async_view_support
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_views:test_async_view',
         scoped_metrics=scoped_metrics)
@@ -81,18 +85,20 @@ def test_get_method_view():
 
 @skip_if_no_view_support
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics('_test_views:test_async_methodview',
-        scoped_metrics=scoped_metrics)
-def test_get_method_async_view():
-    application = target_application()
-    response = application.get('/async_methodview')
-    response.mustcontain('ASYNC METHODVIEW GET RESPONSE')
-
-@skip_if_no_view_support
-@validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_views:test_methodview',
         scoped_metrics=scoped_metrics)
 def test_post_method_view():
     application = target_application()
     response = application.post('/methodview')
     response.mustcontain('METHODVIEW POST RESPONSE')
+
+@pytest.mark.xfail(reason="Currently broken in flask.")
+@skip_if_no_view_support
+@async_view_support
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics('_test_views:test_async_methodview',
+        scoped_metrics=scoped_metrics)
+def test_get_method_async_view():
+    application = target_application()
+    response = application.get('/async_methodview')
+    response.mustcontain('ASYNC METHODVIEW GET RESPONSE')

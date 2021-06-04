@@ -20,6 +20,8 @@ from testing_support.fixtures import (validate_transaction_metrics,
 
 from newrelic.packages import six
 
+from conftest import skip_if_flask_1 as async_handler_support
+
 try:
     # The __version__ attribute was only added in 0.7.0.
     # Flask team does not use semantic versioning during development.
@@ -104,6 +106,7 @@ _test_application_async_scoped_metrics = [
         ('Function/_test_application:async_page', 1),
         ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
 
+@async_handler_support
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_application:async_page',
         scoped_metrics=_test_application_async_scoped_metrics)

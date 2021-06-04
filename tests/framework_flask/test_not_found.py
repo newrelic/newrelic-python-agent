@@ -17,16 +17,6 @@ import pytest
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors)
 
-try:
-    # The __version__ attribute was only added in 0.7.0.
-    from flask import __version__ as flask_version
-    is_gt_flask060 = True
-except ImportError:
-    is_gt_flask060 = False
-
-requires_error_handler = pytest.mark.skipif(not is_gt_flask060,
-        reason="The error handler decorator is not supported.")
-
 def target_application():
     # We need to delay Flask application creation because of ordering
     # issues whereby the agent needs to be initialised before Flask is
@@ -47,17 +37,13 @@ _test_error_handler_not_found_scoped_metrics = [
         ('Python/WSGI/Finalize', 1),
         ('Function/_test_not_found:page_not_found', 1),
         ('Function/flask.app:Flask.handle_http_exception', 1),
-        ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1),
+        ('Function/flask.app:Flask.handle_user_exception', 1)]
 
-if is_gt_flask060:
-    _test_error_handler_not_found_scoped_metrics.extend([
-            ('Function/flask.app:Flask.handle_user_exception', 1)])
 
-@requires_error_handler
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_not_found:page_not_found',
         scoped_metrics=_test_error_handler_not_found_scoped_metrics)
-@pytest.mark.xfail(reason="Waiting on exception handling work to be complete")
 def test_error_handler_not_found():
     application = target_application()
     response = application.get('/missing', status=404)

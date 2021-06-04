@@ -62,15 +62,21 @@ class CustomRouter(Router):
             base_add = base_add.__wrapped__
         return base_add.__get__(self, Router)(*args, **kwargs)
 
-    def get(self, request):
+    def get(self, *args):
         base_get = Router.get
         if hasattr(base_get, '__wrapped__'):
             base_get = base_get.__wrapped__
 
+        if len(args) == 1:
+            path = args[0].path
+        else:
+            path = args[0]
+
         bound_get = base_get.__get__(self, Router)
-        get_results = list(bound_get(request))
-        if request.path == '/server-error':
-            get_results[0] = None
+        get_results = list(bound_get(*args))
+        if path == '/server-error':
+            from sanic.exceptions import ServerError
+            raise ServerError("Server Error")
         return get_results
 
 
@@ -174,5 +180,9 @@ async def async_error(request):
 
 
 app.add_route(MethodView.as_view(), '/method_view')
+
+if not getattr(router, "finalized", True):
+    router.finalize()
+
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8000)

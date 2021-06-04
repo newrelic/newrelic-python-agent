@@ -29,6 +29,9 @@ from testing_support.fixtures import (validate_transaction_metrics,
     function_not_called)
 
 
+sanic_21 = int(sanic.__version__.split('.', 1)[0]) >= 21
+
+
 BASE_METRICS = [
     ('Function/_target_application:index', 1),
     ('Function/_target_application:request_middleware', 1 if int(sanic.__version__.split('.', 1)[0]) > 18 else 2),
@@ -108,8 +111,10 @@ def test_inbound_distributed_trace(app):
     response = app.fetch('get', '/', headers=dict(dt_headers))
     assert response.status == 200
 
-
-@pytest.mark.parametrize('endpoint', ('error', 'write_response_error'))
+_params = ["error"]
+if not sanic_21:
+    _params.append('write_response_error')
+@pytest.mark.parametrize('endpoint', _params)
 def test_recorded_error(app, endpoint):
     ERROR_METRICS = [
         ('Function/_target_application:%s' % endpoint, 1),
@@ -304,45 +309,56 @@ def test_returning_middleware(app, middleware, attach_to, metric_name,
         app.app.response_middleware = original_response_middleware
 
 
-ERROR_HANDLER_METRICS = [
-    ('Function/_target_application:handle_server_error', 1),
-]
+def error_middleware(*args, **kwargs):
+    raise ValueError("1 != 0")
 
 
-@validate_transaction_metrics(
-        '_target_application:handle_server_error',
-        scoped_metrics=ERROR_HANDLER_METRICS,
-        rollup_metrics=ERROR_HANDLER_METRICS,
-)
-@validate_base_transaction_event_attr
-@validate_transaction_errors(errors=['sanic.exceptions:ServerError'])
-def test_error_handler_transaction_naming(app):
+def test_errors_in_middleware(app):
+    metrics = [('Function/test_application:error_middleware', 1)]
+
+    @validate_transaction_metrics(
+            'test_application:error_middleware',
+            scoped_metrics=metrics,
+            rollup_metrics=metrics,
+    )
+    @validate_base_transaction_event_attr
+    @validate_transaction_errors(errors=['builtins:ValueError'])
+    def _test():
+        response = app.fetch('get', '/')
+        assert response.status == 500
+
     original_request_middleware = deque(app.app.request_middleware)
     original_response_middleware = deque(app.app.response_middleware)
-    app.app.request_middleware = deque([])
-    app.app.response_middleware = deque([])
+    app.app.register_middleware(error_middleware, "request")
 
     try:
-        response = app.fetch('get', '/server-error')
-        assert response.status == 500
+        _test()
     finally:
         app.app.request_middleware = original_request_middleware
         app.app.response_middleware = original_response_middleware
 
 
-@validate_transaction_metrics(
-        '_target_application:CustomRouter.get'
-)
 def test_unknown_route(app):
-    response = app.fetch('get', '/what-route')
-    assert response.status == 404
+    import sanic
+    sanic_version = [int(x) for x in sanic.__version__.split(".")]
+    _tx_name = "_target_application:CustomRouter.get" if sanic_version[0] < 21 else "_target_application:request_middleware"
+    
+    @validate_transaction_metrics(_tx_name)
+    def _test():
+        response = app.fetch('get', '/what-route')
+        assert response.status == 404
+    
+    _test()    
 
-
-@validate_transaction_metrics(
-        '_target_application:CustomRouter.get'
-)
-@override_ignore_status_codes([405])
-@validate_transaction_errors(errors=[])
 def test_bad_method(app):
-    response = app.fetch('post', '/')
-    assert response.status == 405
+    import sanic
+    sanic_version = [int(x) for x in sanic.__version__.split(".")]
+    _tx_name = "_target_application:CustomRouter.get" if sanic_version[0] < 21 else "_target_application:request_middleware"
+
+    @validate_transaction_metrics(_tx_name)
+    @override_ignore_status_codes([405])
+    @validate_transaction_errors(errors=[])
+    def _test():
+        response = app.fetch('post', '/')
+        assert response.status == 405
+    _test()

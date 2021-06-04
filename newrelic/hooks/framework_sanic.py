@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import sys
+from inspect import isawaitable, iscoroutinefunction
 
 from newrelic.api.web_transaction import web_transaction
 from newrelic.api.transaction import current_transaction
@@ -158,6 +159,7 @@ def _sanic_app_init(wrapped, instance, args, kwargs):
 
 
 def _nr_sanic_response_get_headers(wrapped, instance, args, kwargs):
+    # We call the wrapped function twice to allow the function to mutate the headers
     result = wrapped(*args, **kwargs)
     transaction = current_transaction()
 
@@ -174,6 +176,25 @@ def _nr_sanic_response_get_headers(wrapped, instance, args, kwargs):
 
     return wrapped(*args, **kwargs)
 
+
+async def _nr_sanic_response_send(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    result = wrapped(*args, **kwargs)
+    if isawaitable(result):
+        await result
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    # instance is the response object
+    cat_headers = transaction.process_response(str(instance.status),
+            instance.headers.items())
+
+    for header_name, header_value in cat_headers:
+        if header_name not in instance.headers:
+            instance.headers[header_name] = header_value
+
+    return result
 
 def _nr_sanic_response_parse_headers(wrapped, instance, args, kwargs):
     transaction = current_transaction()
@@ -255,10 +276,11 @@ def instrument_sanic_app(module):
 def instrument_sanic_response(module):
     if hasattr(module.BaseHTTPResponse, 'send'):
         wrap_function_wrapper(module, 'BaseHTTPResponse.send',
-            _nr_sanic_response_parse_headers)
-    elif hasattr(module.BaseHTTPResponse, 'get_headers'):
-        wrap_function_wrapper(module, 'BaseHTTPResponse.get_headers',
-            _nr_sanic_response_get_headers)
+            _nr_sanic_response_send)
     else:
-        wrap_function_wrapper(module, 'BaseHTTPResponse._parse_headers',
-            _nr_sanic_response_parse_headers)
+        if hasattr(module.BaseHTTPResponse, 'get_headers'):
+            wrap_function_wrapper(module, 'BaseHTTPResponse.get_headers',
+                _nr_sanic_response_get_headers)
+        if hasattr(module.BaseHTTPResponse, '_parse_headers'):
+            wrap_function_wrapper(module, 'BaseHTTPResponse._parse_headers',
+                _nr_sanic_response_parse_headers)

@@ -38,6 +38,16 @@ DT_METRICS = [
 BASE_ATTRS = ['response.status', 'response.headers.contentType',
         'response.headers.contentLength']
 
+def raw_headers(response):
+    try:
+        # Manually encode into bytes
+        return " ".join("%s: %s" % (k, v) for k, v in response.processed_headers).encode()
+    except AttributeError:
+        try:
+            return response.get_headers()
+        except AttributeError:
+            return response.output()
+
 
 @validate_transaction_metrics(
     '_target_application:index',
@@ -71,13 +81,6 @@ _custom_settings = {
         'cross_application_tracer.enabled': True,
         'distributed_tracing.enabled': False,
 }
-
-
-def _get_cat_response_header(raw_response):
-    match = re.search(r'X-NewRelic-App-Data: (.*)\r',
-            raw_response.decode('utf-8'))
-    if match:
-        return match.group(1).strip()
 
 
 @pytest.mark.parametrize(
@@ -119,19 +122,17 @@ def test_cat_response_headers(app, inbound_payload, expected_intrinsics,
         cat_headers = make_cross_agent_headers(inbound_payload, ENCODING_KEY,
                 cat_id)
         response = app.fetch('get', url, headers=dict(cat_headers))
-
         if expected_intrinsics:
             # test valid CAT response header
-            assert b'X-NewRelic-App-Data' in response.raw_headers
-            cat_response_header = _get_cat_response_header(
-                    response.raw_headers)
+            assert b'X-NewRelic-App-Data' in raw_headers(response)
+            cat_response_header = response.headers.get("X-NewRelic-App-Data", None)
 
             app_data = json.loads(deobfuscate(cat_response_header,
                     ENCODING_KEY))
             assert app_data[0] == cat_id
             assert app_data[1] == ('WebTransaction/Function/%s' % metric_name)
         else:
-            assert b'X-NewRelic-App-Data' not in response.raw_headers
+            assert b'X-NewRelic-App-Data' not in raw_headers(response)
 
     _test()
 
@@ -148,4 +149,4 @@ def test_cat_response_custom_header(app):
     response = app.fetch('get', '/custom-header/%s/%s' % (
                 'X-NewRelic-App-Data', custom_header_value),
             headers=dict(cat_headers))
-    assert custom_header_value in response.raw_headers, response.raw_headers
+    assert custom_header_value in raw_headers(response), raw_headers(response)

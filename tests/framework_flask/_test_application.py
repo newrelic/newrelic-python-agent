@@ -20,25 +20,17 @@ from werkzeug.routing import Rule
 
 from conftest import is_flask_v2 as async_handler_support
 
-try:
-    # The __version__ attribute was only added in 0.7.0.
-    from flask import __version__ as flask_version
-    is_gt_flask060 = True
-except ImportError:
-    is_gt_flask060 = False
-
 application = Flask(__name__)
 
 @application.route('/index')
 def index_page():
     return 'INDEX RESPONSE'
 
-if is_gt_flask060:
-    application.url_map.add(Rule('/endpoint', endpoint='endpoint'))
+application.url_map.add(Rule('/endpoint', endpoint='endpoint'))
 
-    @application.endpoint('endpoint')
-    def endpoint_page():
-        return 'ENDPOINT RESPONSE'
+@application.endpoint('endpoint')
+def endpoint_page():
+    return 'ENDPOINT RESPONSE'
 
 # Async handlers only supported in Flask >2.0.0
 if async_handler_support:

@@ -17,7 +17,7 @@ import pytest
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, override_application_settings)
 
-from conftest import skip_if_flask_1 as async_view_support
+from conftest import is_flask_v2, skip_if_flask_1 as async_view_support
 
 
 scoped_metrics = [
@@ -42,7 +42,10 @@ def target_application():
     # functions are different between Python 2 and 3, with the latter
     # showing <local> scope in path.
 
-    from _test_views import _test_application
+    if not is_flask_v2:
+        from _test_views import _test_application
+    else:
+        from _test_views_async import _test_application
     return _test_application
 
 @validate_transaction_errors(errors=[])
@@ -56,7 +59,7 @@ def test_class_based_view():
 @pytest.mark.xfail(reason="Currently broken in flask.")
 @async_view_support
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics('_test_views:test_async_view',
+@validate_transaction_metrics('_test_views_async:test_async_view',
         scoped_metrics=scoped_metrics)
 def test_class_based_async_view():
     application = target_application()
@@ -82,7 +85,7 @@ def test_post_method_view():
 @pytest.mark.xfail(reason="Currently broken in flask.")
 @async_view_support
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics('_test_views:test_async_methodview',
+@validate_transaction_metrics('_test_views_async:test_async_methodview',
         scoped_metrics=scoped_metrics)
 def test_get_method_async_view():
     application = target_application()

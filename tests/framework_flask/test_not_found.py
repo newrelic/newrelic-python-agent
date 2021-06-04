@@ -57,6 +57,7 @@ if is_gt_flask060:
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_not_found:page_not_found',
         scoped_metrics=_test_error_handler_not_found_scoped_metrics)
+@pytest.mark.xfail(reason="Waiting on exception handling work to be complete")
 def test_error_handler_not_found():
     application = target_application()
     response = application.get('/missing', status=404)

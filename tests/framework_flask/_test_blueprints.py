@@ -60,7 +60,23 @@ def teardown_request(exc):
 def teardown_app_request(exc):
     pass
 
+
+from flask import __version__ as flask_version
+is_flask_v2 = int(flask_version.split('.')[0]) >= 2
+# Support for nested blueprints was added in Flask 2.0
+if is_flask_v2:
+    parent = Blueprint('parent', __name__, url_prefix='/parent')
+    child = Blueprint('child', __name__, url_prefix='/child')
+
+    parent.register_blueprint(child)
+
+    @child.route('/nested')
+    def nested_page():
+        return 'PARENT NESTED RESPONSE'
+    application.register_blueprint(parent)
+
 application.register_blueprint(blueprint)
+
 
 application.url_map.add(Rule('/endpoint', endpoint='endpoint'))
 

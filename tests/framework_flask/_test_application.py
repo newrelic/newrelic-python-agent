@@ -18,12 +18,7 @@ from flask import Flask, render_template_string, render_template, abort
 from werkzeug.exceptions import NotFound
 from werkzeug.routing import Rule
 
-try:
-    # The __version__ attribute was only added in 0.7.0.
-    from flask import __version__ as flask_version
-    is_gt_flask060 = True
-except ImportError:
-    is_gt_flask060 = False
+from conftest import is_flask_v2 as async_handler_support
 
 application = Flask(__name__)
 
@@ -31,12 +26,17 @@ application = Flask(__name__)
 def index_page():
     return 'INDEX RESPONSE'
 
-if is_gt_flask060:
-    application.url_map.add(Rule('/endpoint', endpoint='endpoint'))
+application.url_map.add(Rule('/endpoint', endpoint='endpoint'))
 
-    @application.endpoint('endpoint')
-    def endpoint_page():
-        return 'ENDPOINT RESPONSE'
+@application.endpoint('endpoint')
+def endpoint_page():
+    return 'ENDPOINT RESPONSE'
+
+# Async handlers only supported in Flask >2.0.0
+if async_handler_support:
+    @application.route('/async')
+    async def async_page():
+        return 'ASYNC RESPONSE'
 
 @application.route('/error')
 def error_page():

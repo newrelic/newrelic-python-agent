@@ -17,14 +17,20 @@ import pytest
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, override_application_settings)
 
-try:
-    import flask.views
-    has_view_support = True
-except ImportError:
-    has_view_support = False
+from conftest import skip_if_flask_1 as async_view_support
 
-skip_if_no_view_support = pytest.mark.skipif(not has_view_support,
-        reason='This flask version does hot support class based views.')
+
+scoped_metrics = [
+        ('Function/flask.app:Flask.wsgi_app', 1),
+        ('Python/WSGI/Application', 1),
+        ('Python/WSGI/Response', 1),
+        ('Python/WSGI/Finalize', 1),
+        ('Function/flask.app:Flask.preprocess_request', 1),
+        ('Function/flask.app:Flask.process_response', 1),
+        ('Function/flask.app:Flask.do_teardown_request', 1),
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1),
+]
+
 
 def target_application():
     # We need to delay Flask application creation because of ordering
@@ -39,62 +45,46 @@ def target_application():
     from _test_views import _test_application
     return _test_application
 
-_test_class_based_view_scoped_metrics = [
-        ('Function/flask.app:Flask.wsgi_app', 1),
-        ('Python/WSGI/Application', 1),
-        ('Python/WSGI/Response', 1),
-        ('Python/WSGI/Finalize', 1),
-        ('Function/flask.app:Flask.preprocess_request', 1),
-        ('Function/flask.app:Flask.process_response', 1),
-        ('Function/flask.app:Flask.do_teardown_request', 1),
-        ('Function/werkzeug.wsgi:ClosingIterator.close', 1),
-]
-
-@skip_if_no_view_support
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_views:test_view',
-        scoped_metrics=_test_class_based_view_scoped_metrics)
+        scoped_metrics=scoped_metrics)
 def test_class_based_view():
     application = target_application()
     response = application.get('/view')
     response.mustcontain('VIEW RESPONSE')
 
-_test_get_method_view_scoped_metrics = [
-        ('Function/flask.app:Flask.wsgi_app', 1),
-        ('Python/WSGI/Application', 1),
-        ('Python/WSGI/Response', 1),
-        ('Python/WSGI/Finalize', 1),
-        ('Function/flask.app:Flask.preprocess_request', 1),
-        ('Function/flask.app:Flask.process_response', 1),
-        ('Function/flask.app:Flask.do_teardown_request', 1),
-        ('Function/werkzeug.wsgi:ClosingIterator.close', 1),
-]
+@pytest.mark.xfail(reason="Currently broken in flask.")
+@async_view_support
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics('_test_views:test_async_view',
+        scoped_metrics=scoped_metrics)
+def test_class_based_async_view():
+    application = target_application()
+    response = application.get('/async_view')
+    response.mustcontain('ASYNC VIEW RESPONSE')
 
-@skip_if_no_view_support
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_views:test_methodview',
-        scoped_metrics=_test_get_method_view_scoped_metrics)
+        scoped_metrics=scoped_metrics)
 def test_get_method_view():
     application = target_application()
     response = application.get('/methodview')
     response.mustcontain('METHODVIEW GET RESPONSE')
 
-_test_post_method_view_scoped_metrics = [
-        ('Function/flask.app:Flask.wsgi_app', 1),
-        ('Python/WSGI/Application', 1),
-        ('Python/WSGI/Response', 1),
-        ('Python/WSGI/Finalize', 1),
-        ('Function/flask.app:Flask.preprocess_request', 1),
-        ('Function/flask.app:Flask.process_response', 1),
-        ('Function/flask.app:Flask.do_teardown_request', 1),
-        ('Function/werkzeug.wsgi:ClosingIterator.close', 1),
-]
-
-@skip_if_no_view_support
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_views:test_methodview',
-        scoped_metrics=_test_post_method_view_scoped_metrics)
+        scoped_metrics=scoped_metrics)
 def test_post_method_view():
     application = target_application()
     response = application.post('/methodview')
     response.mustcontain('METHODVIEW POST RESPONSE')
+
+@pytest.mark.xfail(reason="Currently broken in flask.")
+@async_view_support
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics('_test_views:test_async_methodview',
+        scoped_metrics=scoped_metrics)
+def test_get_method_async_view():
+    application = target_application()
+    response = application.get('/async_methodview')
+    response.mustcontain('ASYNC METHODVIEW GET RESPONSE')

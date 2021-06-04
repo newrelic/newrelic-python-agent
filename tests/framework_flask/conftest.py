@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pytest
+from flask import __version__ as flask_version
 
 from testing_support.fixtures import (code_coverage_fixture,
         collector_agent_registration_fixture, collector_available_fixture)
@@ -35,3 +36,8 @@ _default_settings = {
 collector_agent_registration = collector_agent_registration_fixture(
         app_name='Python Agent Test (framework_flask)',
         default_settings=_default_settings)
+
+
+is_flask_v2 = int(flask_version.split('.')[0]) >= 2
+skip_if_flask_1 = pytest.mark.skipif(not is_flask_v2,
+        reason="Not introduced until Flask >2.0.0.")

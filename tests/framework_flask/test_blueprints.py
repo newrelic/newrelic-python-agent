@@ -18,14 +18,8 @@ from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, override_application_settings)
 
 from newrelic.packages import six
+from conftest import skip_if_flask_1 as nested_blueprints_supported
 
-from flask import __version__ as flask_version
-
-is_flask_v2 = int(flask_version.split('.')[0]) >= 2
-
-# Nested blueprints are only supported in v2 of Flask, so we skip the nested test on older versions
-nested_blueprints_supported = pytest.mark.skipif(not is_flask_v2,
-        reason="The nested blueprint mechanism is not supported.")
 
 def target_application():
     # We need to delay Flask application creation because of ordering

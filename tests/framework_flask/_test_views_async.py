@@ -17,10 +17,10 @@ import flask.views
 
 from _test_views import app
 
-from conftest import is_flask_v2
+from conftest import async_handler_support
 
 # Async view support added in flask v2
-if is_flask_v2:
+if async_handler_support:
     class TestAsyncView(flask.views.View):
         async def dispatch_request(self):
             return "ASYNC VIEW RESPONSE"

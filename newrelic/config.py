@@ -2377,6 +2377,13 @@ def _process_module_builtin_defaults():
         "gluon.contrib.memcache.memcache", "newrelic.hooks.memcache_memcache"
     )
 
+
+    _process_module_definition(
+        "graphql.execution.execute",
+        "newrelic.hooks.framework_graphql_core",
+        "instrument_graphql_execute",
+    )
+
     _process_module_definition(
         "grpc._channel", "newrelic.hooks.framework_grpc", "instrument_grpc__channel"
     )

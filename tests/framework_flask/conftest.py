@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import platform
+
 import pytest
+from flask import __version__ as flask_version
 
 from testing_support.fixtures import (code_coverage_fixture,
         collector_agent_registration_fixture, collector_available_fixture)
@@ -35,3 +38,12 @@ _default_settings = {
 collector_agent_registration = collector_agent_registration_fixture(
         app_name='Python Agent Test (framework_flask)',
         default_settings=_default_settings)
+
+
+is_flask_v2 = int(flask_version.split('.')[0]) >= 2
+is_pypy = platform.python_implementation() == "PyPy"
+async_handler_support = is_flask_v2 and not is_pypy
+skip_if_not_async_handler_support = pytest.mark.skipif(
+    not async_handler_support,
+    reason="Requires async handler support. (Flask >=v2.0.0)",
+)

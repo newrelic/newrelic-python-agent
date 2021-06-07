@@ -20,6 +20,8 @@ from testing_support.fixtures import (validate_transaction_metrics,
 
 from newrelic.packages import six
 
+from conftest import async_handler_support, skip_if_not_async_handler_support
+
 try:
     # The __version__ attribute was only added in 0.7.0.
     # Flask team does not use semantic versioning during development.
@@ -48,7 +50,10 @@ def target_application():
     # functions are different between Python 2 and 3, with the latter
     # showing <local> scope in path.
 
-    from _test_application import _test_application
+    if not async_handler_support:
+        from _test_application import _test_application
+    else:
+        from _test_application_async import _test_application
     return _test_application
 
 
@@ -87,7 +92,6 @@ if is_dev_version or (is_gt_flask060 and flask_version >= (0, 9)):
         ('FunctionNode', []),
     )
 
-
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_application:index_page',
         scoped_metrics=_test_application_index_scoped_metrics)
@@ -97,6 +101,23 @@ def test_application_index():
     response = application.get('/index')
     response.mustcontain('INDEX RESPONSE')
 
+_test_application_async_scoped_metrics = [
+        ('Function/flask.app:Flask.wsgi_app', 1),
+        ('Python/WSGI/Application', 1),
+        ('Python/WSGI/Response', 1),
+        ('Python/WSGI/Finalize', 1),
+        ('Function/_test_application_async:async_page', 1),
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
+
+@skip_if_not_async_handler_support
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics('_test_application_async:async_page',
+        scoped_metrics=_test_application_async_scoped_metrics)
+@validate_tt_parenting(_test_application_index_tt_parenting)
+def test_application_async():
+    application = target_application()
+    response = application.get('/async')
+    response.mustcontain('ASYNC RESPONSE')
 
 _test_application_endpoint_scoped_metrics = [
         ('Function/flask.app:Flask.wsgi_app', 1),
@@ -107,7 +128,6 @@ _test_application_endpoint_scoped_metrics = [
         ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
 
 
-@requires_endpoint_decorator
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_application:endpoint_page',
         scoped_metrics=_test_application_endpoint_scoped_metrics)
@@ -124,11 +144,10 @@ _test_application_error_scoped_metrics = [
         ('Python/WSGI/Finalize', 1),
         ('Function/_test_application:error_page', 1),
         ('Function/flask.app:Flask.handle_exception', 1),
-        ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1),
+        ('Function/flask.app:Flask.handle_user_exception', 1),
+        ('Function/flask.app:Flask.handle_user_exception', 1)]
 
-if is_gt_flask060:
-    _test_application_error_scoped_metrics.extend([
-            ('Function/flask.app:Flask.handle_user_exception', 1)])
 
 if six.PY3:
     _test_application_error_errors = ['builtins:RuntimeError']
@@ -151,11 +170,8 @@ _test_application_abort_404_scoped_metrics = [
         ('Python/WSGI/Finalize', 1),
         ('Function/_test_application:abort_404_page', 1),
         ('Function/flask.app:Flask.handle_http_exception', 1),
-        ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
-
-if is_gt_flask060:
-    _test_application_abort_404_scoped_metrics.extend([
-            ('Function/flask.app:Flask.handle_user_exception', 1)])
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1),
+        ('Function/flask.app:Flask.handle_user_exception', 1)]
 
 
 @validate_transaction_errors(errors=[])
@@ -173,11 +189,8 @@ _test_application_exception_404_scoped_metrics = [
         ('Python/WSGI/Finalize', 1),
         ('Function/_test_application:exception_404_page', 1),
         ('Function/flask.app:Flask.handle_http_exception', 1),
-        ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
-
-if is_gt_flask060:
-    _test_application_exception_404_scoped_metrics.extend([
-            ('Function/flask.app:Flask.handle_user_exception', 1)])
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1),
+        ('Function/flask.app:Flask.handle_user_exception', 1)]
 
 
 @validate_transaction_errors(errors=[])
@@ -194,11 +207,8 @@ _test_application_not_found_scoped_metrics = [
         ('Python/WSGI/Response', 1),
         ('Python/WSGI/Finalize', 1),
         ('Function/flask.app:Flask.handle_http_exception', 1),
-        ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
-
-if is_gt_flask060:
-    _test_application_not_found_scoped_metrics.extend([
-            ('Function/flask.app:Flask.handle_user_exception', 1)])
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1),
+        ('Function/flask.app:Flask.handle_user_exception', 1)]
 
 
 @validate_transaction_errors(errors=[])
@@ -235,11 +245,8 @@ _test_application_render_template_not_found_scoped_metrics = [
         ('Python/WSGI/Finalize', 1),
         ('Function/_test_application:template_not_found', 1),
         ('Function/flask.app:Flask.handle_exception', 1),
-        ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
-
-if is_gt_flask060:
-    _test_application_render_template_not_found_scoped_metrics.extend([
-            ('Function/flask.app:Flask.handle_user_exception', 1)])
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1),
+        ('Function/flask.app:Flask.handle_user_exception', 1)]
 
 
 @validate_transaction_errors(errors=['jinja2.exceptions:TemplateNotFound'])

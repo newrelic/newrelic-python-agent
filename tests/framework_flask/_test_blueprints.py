@@ -18,6 +18,8 @@ from flask import Flask
 from flask import Blueprint
 from werkzeug.routing import Rule
 
+from conftest import is_flask_v2 as nested_blueprint_support
+
 # Blueprints are only available in 0.7.0 onwards.
 
 blueprint = Blueprint('blueprint', __name__)
@@ -60,7 +62,20 @@ def teardown_request(exc):
 def teardown_app_request(exc):
     pass
 
+# Support for nested blueprints was added in Flask 2.0
+if nested_blueprint_support:
+    parent = Blueprint('parent', __name__, url_prefix='/parent')
+    child = Blueprint('child', __name__, url_prefix='/child')
+
+    parent.register_blueprint(child)
+
+    @child.route('/nested')
+    def nested_page():
+        return 'PARENT NESTED RESPONSE'
+    application.register_blueprint(parent)
+
 application.register_blueprint(blueprint)
+
 
 application.url_map.add(Rule('/endpoint', endpoint='endpoint'))
 

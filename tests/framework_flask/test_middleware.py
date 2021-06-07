@@ -17,24 +17,6 @@ import pytest
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, override_application_settings)
 
-try:
-    # The __version__ attribute was only added in 0.7.0.
-    # Flask team does not use semantic versioning during development.
-    from flask import __version__ as flask_version
-    is_gt_flask080 = 'dev' in flask_version or tuple(
-            map(int, flask_version.split('.')))[:2] > (0, 8)
-except ValueError:
-    is_gt_flask080 = True
-except ImportError:
-    is_gt_flask080 = False
-
-# Technically parts of before/after support is available in older
-# versions, but just check with latest versions. The instrumentation
-# always checks for presence of required functions before patching.
-
-requires_before_after = pytest.mark.skipif(not is_gt_flask080,
-    reason="Not all before/after methods are supported.")
-
 def target_application():
     # We need to delay Flask application creation because of ordering
     # issues whereby the agent needs to be initialised before Flask is
@@ -66,7 +48,6 @@ _test_application_app_middleware_scoped_metrics = [
         ('Function/_test_middleware:teardown_appcontext', 1),
         ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
 
-@requires_before_after
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_middleware:index_page',
         scoped_metrics=_test_application_app_middleware_scoped_metrics)

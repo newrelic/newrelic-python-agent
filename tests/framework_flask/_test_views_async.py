@@ -13,26 +13,26 @@
 # limitations under the License.
 
 import webtest
-
-import flask
 import flask.views
 
-app = flask.Flask(__name__)
+from _test_views import app
 
-class TestView(flask.views.View):
-    def dispatch_request(self):
-        return 'VIEW RESPONSE'
+from conftest import is_flask_v2
 
-class TestMethodView(flask.views.MethodView):
-    def get(self):
-        return 'METHODVIEW GET RESPONSE'
+# Async view support added in flask v2
+if is_flask_v2:
+    class TestAsyncView(flask.views.View):
+        async def dispatch_request(self):
+            return "ASYNC VIEW RESPONSE"
 
-    def post(self):
-        return 'METHODVIEW POST RESPONSE'
+    class TestAsyncMethodView(flask.views.MethodView):
+        async def get(self):
+            return "ASYNC METHODVIEW GET RESPONSE"
 
-app.add_url_rule('/view',
-        view_func=TestView.as_view('test_view'))
-app.add_url_rule('/methodview',
-        view_func=TestMethodView.as_view('test_methodview'))
+    app.add_url_rule("/async_view", view_func=TestAsyncView.as_view("test_async_view"))
+    app.add_url_rule(
+        "/async_methodview",
+        view_func=TestAsyncMethodView.as_view("test_async_methodview"),
+    )
 
 _test_application = webtest.TestApp(app)

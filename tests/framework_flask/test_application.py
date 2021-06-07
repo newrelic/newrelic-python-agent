@@ -20,7 +20,25 @@ from testing_support.fixtures import (validate_transaction_metrics,
 
 from newrelic.packages import six
 
-from conftest import skip_if_flask_1 as async_handler_support
+from conftest import is_flask_v2, skip_if_flask_1 as async_handler_support
+
+try:
+    # The __version__ attribute was only added in 0.7.0.
+    # Flask team does not use semantic versioning during development.
+    from flask import __version__ as flask_version
+    flask_version = tuple([int(v) for v in flask_version.split('.')])
+    is_gt_flask060 = True
+    is_dev_version = False
+except ValueError:
+    is_gt_flask060 = True
+    is_dev_version = True
+except ImportError:
+    is_gt_flask060 = False
+    is_dev_version = False
+
+requires_endpoint_decorator = pytest.mark.skipif(not is_gt_flask060,
+        reason="The endpoint decorator is not supported.")
+
 
 def target_application():
     # We need to delay Flask application creation because of ordering
@@ -32,7 +50,10 @@ def target_application():
     # functions are different between Python 2 and 3, with the latter
     # showing <local> scope in path.
 
-    from _test_application import _test_application
+    if not is_flask_v2:
+        from _test_application import _test_application
+    else:
+        from _test_application_async import _test_application
     return _test_application
 
 
@@ -51,7 +72,8 @@ _test_application_index_tt_parenting = (
                 ('FunctionNode', []),
                 ('FunctionNode', []),
                 ('FunctionNode', []),
-                ('FunctionNode', []),
+                # some flask versions have more FunctionNodes here, as appended
+                # below
             ]),
         ]),
         ('FunctionNode', []),
@@ -61,6 +83,14 @@ _test_application_index_tt_parenting = (
     ]
 )
 
+if is_dev_version or (is_gt_flask060 and flask_version >= (0, 7)):
+    _test_application_index_tt_parenting[1][0][1][0][1].append(
+        ('FunctionNode', []),
+    )
+if is_dev_version or (is_gt_flask060 and flask_version >= (0, 9)):
+    _test_application_index_tt_parenting[1][0][1][0][1].append(
+        ('FunctionNode', []),
+    )
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_application:index_page',
@@ -76,12 +106,12 @@ _test_application_async_scoped_metrics = [
         ('Python/WSGI/Application', 1),
         ('Python/WSGI/Response', 1),
         ('Python/WSGI/Finalize', 1),
-        ('Function/_test_application:async_page', 1),
+        ('Function/_test_application_async:async_page', 1),
         ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
 
 @async_handler_support
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics('_test_application:async_page',
+@validate_transaction_metrics('_test_application_async:async_page',
         scoped_metrics=_test_application_async_scoped_metrics)
 @validate_tt_parenting(_test_application_index_tt_parenting)
 def test_application_async():

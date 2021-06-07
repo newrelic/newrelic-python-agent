@@ -18,8 +18,6 @@ from flask import Flask, render_template_string, render_template, abort
 from werkzeug.exceptions import NotFound
 from werkzeug.routing import Rule
 
-from conftest import is_flask_v2 as async_handler_support
-
 application = Flask(__name__)
 
 @application.route('/index')
@@ -31,12 +29,6 @@ application.url_map.add(Rule('/endpoint', endpoint='endpoint'))
 @application.endpoint('endpoint')
 def endpoint_page():
     return 'ENDPOINT RESPONSE'
-
-# Async handlers only supported in Flask >2.0.0
-if async_handler_support:
-    @application.route('/async')
-    async def async_page():
-        return 'ASYNC RESPONSE'
 
 @application.route('/error')
 def error_page():

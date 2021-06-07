@@ -18,7 +18,7 @@ from flask import Flask
 from flask import Blueprint
 from werkzeug.routing import Rule
 
-from conftest import is_flask_v2
+from conftest import is_flask_v2 as nested_blueprint_support
 
 # Blueprints are only available in 0.7.0 onwards.
 
@@ -63,7 +63,7 @@ def teardown_app_request(exc):
     pass
 
 # Support for nested blueprints was added in Flask 2.0
-if is_flask_v2:
+if nested_blueprint_support:
     parent = Blueprint('parent', __name__, url_prefix='/parent')
     child = Blueprint('child', __name__, url_prefix='/child')
 

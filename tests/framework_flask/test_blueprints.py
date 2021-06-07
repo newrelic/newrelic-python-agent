@@ -18,7 +18,11 @@ from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, override_application_settings)
 
 from newrelic.packages import six
-from conftest import skip_if_flask_1 as nested_blueprints_supported
+
+from conftest import is_flask_v2 as nested_blueprint_support
+
+skip_if_not_nested_blueprint_support = pytest.mark.skipif(not nested_blueprint_support,
+        reason="Requires nested blueprint support. (Flask >=v2.0.0)")
 
 
 def target_application():
@@ -102,7 +106,7 @@ _test_blueprints_nested_scoped_metrics = [
         ('Function/flask.app:Flask.do_teardown_appcontext', 1),
         ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
 
-@nested_blueprints_supported
+@skip_if_not_nested_blueprint_support
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_blueprints:nested_page')
 def test_blueprints_nested():

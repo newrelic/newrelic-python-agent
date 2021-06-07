@@ -20,7 +20,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
 
 from newrelic.packages import six
 
-from conftest import is_flask_v2, skip_if_flask_1 as async_handler_support
+from conftest import async_handler_support, skip_if_not_async_handler_support
 
 try:
     # The __version__ attribute was only added in 0.7.0.
@@ -50,7 +50,7 @@ def target_application():
     # functions are different between Python 2 and 3, with the latter
     # showing <local> scope in path.
 
-    if not is_flask_v2:
+    if not async_handler_support:
         from _test_application import _test_application
     else:
         from _test_application_async import _test_application
@@ -109,7 +109,7 @@ _test_application_async_scoped_metrics = [
         ('Function/_test_application_async:async_page', 1),
         ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
 
-@async_handler_support
+@skip_if_not_async_handler_support
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_application_async:async_page',
         scoped_metrics=_test_application_async_scoped_metrics)

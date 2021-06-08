@@ -79,6 +79,15 @@ def populate_metrics(server, request):
     SCOPED_METRICS.append(("External/localhost:%d/httpx/%s" % (server.port, method), 2))
 
 
+def exercise_sync_client(server, client, method):
+    with client as client:
+        resolved_method = getattr(client, method)
+        resolved_method("http://localhost:%s" % server.port)
+        response = resolved_method("http://localhost:%s" % server.port)
+
+    return response
+
+
 @pytest.mark.parametrize(
     "method",
     (
@@ -102,12 +111,18 @@ def test_sync_client(httpx, server, method):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = 200
 
-    with httpx.Client() as client:
-        resolved_method = getattr(client, method)
-        resolved_method("http://localhost:%s" % server.port)
-        response = resolved_method("http://localhost:%s" % server.port)
+    assert exercise_sync_client(server, httpx.Client(), method).status_code == 200
 
-    assert response.status_code == 200
+
+async def exercise_async_client(server, client, method):
+    async with client as client:
+        resolved_method = getattr(client, method)
+        responses = await asyncio.gather(
+            resolved_method("http://localhost:%s" % server.port),
+            resolved_method("http://localhost:%s" % server.port),
+        )
+
+    return responses
 
 
 @pytest.mark.parametrize(
@@ -133,17 +148,7 @@ def test_async_client(httpx, server, loop, method):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = 200
 
-    async def test_async_client():
-        async with httpx.AsyncClient() as client:
-            resolved_method = getattr(client, method)
-            responses = await asyncio.gather(
-                resolved_method("http://localhost:%s" % server.port),
-                resolved_method("http://localhost:%s" % server.port),
-            )
-
-        return responses
-
-    responses = loop.run_until_complete(test_async_client())
+    responses = loop.run_until_complete(exercise_async_client(server, httpx.AsyncClient(), method))
     assert all(response.status_code == 200 for response in responses)
 
 
@@ -475,3 +480,35 @@ def test_async_nr_disabled(httpx, server, loop):
     response = loop.run_until_complete(_test())
     assert response.status_code == 200
     assert trace is None
+
+
+@pytest.mark.parametrize('client', (
+    'Client',
+    'AsyncClient',
+))
+def test_invalid_import_order_client(monkeypatch, httpx, server, loop, client):
+    global CAT_RESPONSE_CODE
+    CAT_RESPONSE_CODE = 200
+
+    if 'Async' in client:
+        is_async = True
+    else:
+        is_async = False
+
+    client = getattr(httpx, client)
+
+    # Force the client class into the state as if instrumentation had not run
+    monkeypatch.setattr(client, '_event_hooks', None)
+
+    # Instantiate a client
+    client = client()
+
+    # Remove monkeypatching of _event_hooks to restore instrumentation
+    monkeypatch.undo()
+
+    if is_async:
+        responses = loop.run_until_complete(exercise_async_client(server, client, "get"))
+        assert all(response.status_code == 200 for response in responses)
+    else:
+        response = exercise_sync_client(server, client, "get")
+        assert response.status_code == 200

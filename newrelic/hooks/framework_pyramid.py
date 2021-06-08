@@ -98,7 +98,11 @@ def view_handler_wrapper(wrapped, instance, args, kwargs):
 
     name = callable_name(view_callable)
 
-    transaction.set_transaction_name(name)
+    # set exception views to priority=1 so they won't take precedence over
+    # the original view callable
+    transaction.set_transaction_name(
+        name,
+        priority=1 if args and isinstance(args[0], Exception) else 2)
 
     with FunctionTrace(name) as trace:
         try:
@@ -157,7 +161,7 @@ def default_view_mapper_wrapper(wrapped, instance, args, kwargs):
                     inst = getattr(request, '__view__', None)
                     if inst is not None:
                         name = callable_name(getattr(inst, attr))
-                        transaction.set_transaction_name(name, priority=1)
+                        transaction.set_transaction_name(name, priority=2)
                         tracer.name = name
                 else:
                     inst = getattr(request, '__view__', None)
@@ -165,7 +169,7 @@ def default_view_mapper_wrapper(wrapped, instance, args, kwargs):
                         method = getattr(inst, '__call__')
                         if method:
                             name = callable_name(method)
-                            transaction.set_transaction_name(name, priority=1)
+                            transaction.set_transaction_name(name, priority=2)
                             tracer.name = name
 
     return _wrapper

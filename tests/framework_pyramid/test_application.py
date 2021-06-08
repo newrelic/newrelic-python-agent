@@ -80,7 +80,7 @@ _test_not_found_as_exception_response_scoped_metrics = [
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
-    'pyramid.httpexceptions:default_exceptionresponse_view',
+    '_test_application:not_found_exception_response',
     scoped_metrics=_test_not_found_as_exception_response_scoped_metrics)
 def test_not_found_as_exception_response():
     application = target_application()
@@ -98,7 +98,7 @@ _test_not_found_raises_NotFound_scoped_metrics = [
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
-    'pyramid.httpexceptions:default_exceptionresponse_view',
+    '_test_application:raise_not_found',
     scoped_metrics=_test_not_found_raises_NotFound_scoped_metrics)
 def test_application_not_found_raises_NotFound():
     application = target_application()
@@ -154,7 +154,7 @@ _test_redirect_scoped_metrics = [
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
-    'pyramid.httpexceptions:default_exceptionresponse_view',
+    '_test_application:redirect',
     scoped_metrics=_test_redirect_scoped_metrics)
 def test_application_redirect():
     application = target_application()

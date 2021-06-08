@@ -103,7 +103,12 @@ async def async_send_wrapper(wrapped, instance, args, kwargs):
 
 @property
 def nr_first_event_hooks(self):
-    return getattr(self, "_nr_event_hooks")
+    if not hasattr(self, "_nr_event_hooks"):
+        # This branch should only be hit if agent initialize is called after
+        # the initialization of the http client
+        self._event_hooks = vars(self)["_event_hooks"]
+        del vars(self)["_event_hooks"]
+    return self._nr_event_hooks
 
 
 @nr_first_event_hooks.setter
@@ -114,7 +119,12 @@ def nr_first_event_hooks(self, value):
 
 @property
 def nr_first_event_hooks_async(self):
-    return getattr(self, "_nr_event_hooks")
+    if not hasattr(self, "_nr_event_hooks"):
+        # This branch should only be hit if agent initialize is called after
+        # the initialization of the http client
+        self._event_hooks = vars(self)["_event_hooks"]
+        del vars(self)["_event_hooks"]
+    return self._nr_event_hooks
 
 
 @nr_first_event_hooks_async.setter

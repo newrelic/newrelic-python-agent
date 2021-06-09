@@ -14,7 +14,7 @@
 
 import pytest
 
-from newrelic.core.config import global_settings
+from newrelic.api.background_task import background_task
 
 from testing_support.fixtures import validate_transaction_metrics
 
@@ -30,6 +30,7 @@ _test_basic_metrics = (
     'graphql.execution.execute:execute',
     rollup_metrics=_test_basic_metrics,
 )
+@background_task()
 def test_basic(app):
     from graphql import graphql_sync
 

@@ -13,24 +13,22 @@
 # limitations under the License.
 
 from newrelic.api.function_trace import FunctionTrace
-import sys
+from newrelic.api.error_trace import ErrorTrace
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import (wrap_function_wrapper,
-        function_wrapper)
+from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.api.transaction import current_transaction
-from newrelic.api.time_trace import notice_error
-from newrelic.api.wsgi_application import wrap_wsgi_application
-from newrelic.api.function_trace import function_trace
 
-from newrelic.api.web_transaction import WebTransaction, WebTransactionWrapper
-from newrelic.api.application import application_instance
 
 def wrap_execute(wrapped, instance, args, kwargs):
-    name = "GraphQL"
-    return WebTransactionWrapper(wrapped, application=application_instance(name))(*args, **kwargs)
+    transaction = current_transaction()
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    transaction.set_transaction_name(callable_name(wrapped), priority=1)
+    with FunctionTrace(callable_name(wrapped)):
+        with ErrorTrace():
+            return wrapped(*args, **kwargs)
 
 
 def instrument_graphql_execute(module):
-    wrap_function_wrapper(module, 'execute',
-            wrap_execute)
-
+    wrap_function_wrapper(module, 'execute', wrap_execute)

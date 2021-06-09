@@ -2377,7 +2377,6 @@ def _process_module_builtin_defaults():
         "gluon.contrib.memcache.memcache", "newrelic.hooks.memcache_memcache"
     )
 
-
     _process_module_definition(
         "graphql.execution.execute",
         "newrelic.hooks.framework_graphql_core",
@@ -3159,7 +3158,6 @@ def initialize(
     log_file=None,
     log_level=None,
 ):
-
     if config_file is None:
         config_file = os.environ.get("NEW_RELIC_CONFIG_FILE", None)
 

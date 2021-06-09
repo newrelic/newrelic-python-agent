@@ -22,18 +22,12 @@ from newrelic.api.time_trace import notice_error
 from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.api.function_trace import function_trace
 
-from newrelic.api.web_transaction import WebTransaction
+from newrelic.api.web_transaction import WebTransaction, WebTransactionWrapper
 from newrelic.api.application import application_instance
 
 def wrap_execute(wrapped, instance, args, kwargs):
     name = "GraphQL"
-    with WebTransaction(
-        application=application_instance(name),
-        name=name,
-    ) as transaction:
-        with FunctionTrace(callable_name(wrapped)):
-            breakpoint()
-            return wrapped(*args, **kwargs)
+    return WebTransactionWrapper(wrapped, application=application_instance(name))(*args, **kwargs)
 
 
 def instrument_graphql_execute(module):

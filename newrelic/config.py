@@ -2382,6 +2382,16 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.framework_graphql_core",
         "instrument_graphql_execute",
     )
+    _process_module_definition(
+        "graphql.execution.utils",
+        "newrelic.hooks.framework_graphql_core",
+        "instrument_graphql_execution_utils",
+    )
+    _process_module_definition(
+        "graphql.execution.middleware",
+        "newrelic.hooks.framework_graphql_core",
+        "instrument_graphql_execution_middleware",
+    )
 
     _process_module_definition(
         "grpc._channel", "newrelic.hooks.framework_grpc", "instrument_grpc__channel"

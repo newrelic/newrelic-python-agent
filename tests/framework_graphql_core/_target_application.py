@@ -12,10 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from graphql import GraphQLSchema, GraphQLObjectType, GraphQLField, GraphQLString, graphql_sync
+from graphql import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 
-query = GraphQLObjectType(
-    name="Hello", fields={"hello": GraphQLField(GraphQLString, resolve=lambda r, i: "Hello!")}
-)
+
+def resolve_hello(root, info):
+    return "Hello!"
+
+
+try:
+    hello_field = GraphQLField(GraphQLString, resolver=resolve_hello)
+except TypeError:
+    hello_field = GraphQLField(GraphQLString, resolve=resolve_hello)
+
+query = GraphQLObjectType(name="Hello", fields={"hello": hello_field})
 
 _target_application = GraphQLSchema(query=query)

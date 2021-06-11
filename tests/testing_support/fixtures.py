@@ -397,11 +397,11 @@ def validate_transaction_metrics(name, group='Function',
         transaction_scope_name = 'OtherTransaction/%s/%s' % (group, name)
     else:
         unscoped_metrics = [
-            'HttpDispatcher',
             'WebTransaction',
             'WebTransaction/%s/%s' % (group, name),
             'WebTransactionTotalTime',
             'WebTransactionTotalTime/%s/%s' % (group, name),
+            'HttpDispatcher',
         ]
         transaction_scope_name = 'WebTransaction/%s/%s' % (group, name)
 
@@ -1727,7 +1727,7 @@ def validate_error_event_attributes_outside_transaction(required_params={},
             if num_errors is not None:
                 exc_message = "Expected: %d, Got: %d. Verify StatsEngine is being reset before using this validator." % (num_errors, len(event_data))
                 assert num_errors == len(event_data), exc_message
-                    
+
 
             for event in event_data:
                 check_event_attributes([event], required_params, forgone_params, exact_attrs=exact_attrs)

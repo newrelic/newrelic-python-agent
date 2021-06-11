@@ -39,7 +39,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def app():
     from _target_application import _target_application
 

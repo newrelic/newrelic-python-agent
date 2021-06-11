@@ -17,15 +17,13 @@ from testing_support.fixtures import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
-_test_basic_metrics = (
-    ("OtherTransaction/all", 1),
-    ("OtherTransaction/Function/_target_application:resolve_hello", 1),
-    ("Function/_target_application:resolve_hello", 1),
-    ("Function/graphql.execution.execute:execute", 1),
-)
+@pytest.fixture(scope="session")
+def is_graphql_2():
+    from graphql import __version__ as version
+    major_version = int(version.split(".")[0])
+    return major_version == 2
 
-
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def graphql_run():
     try:
         from graphql import graphql_sync as graphql
@@ -40,32 +38,50 @@ def example_middleware(next, root, info, **args):
     return return_value
 
 
-@validate_transaction_metrics(
-    "_target_application:resolve_hello",
-    rollup_metrics=_test_basic_metrics,
-    background_task=True,
-)
-@background_task()
-def test_basic(app, graphql_run):
-    response = graphql_run(app, "{ hello }")
-    assert "Hello!" in str(response.data)
+def test_basic(app, graphql_run, is_graphql_2):
+    _test_basic_metrics = [
+        ("OtherTransaction/all", 1),
+        ("OtherTransaction/Function/_target_application:resolve_hello", 1),
+        ("Function/_target_application:resolve_hello", 1),
+    ]
+    if is_graphql_2:
+        _test_basic_metrics.append(("Function/graphql.execution.executor:execute", 1))
+    else:  # GraphQL 3+
+        _test_basic_metrics.append(("Function/graphql.execution.execute:execute", 1))
+
+    @validate_transaction_metrics(
+        "_target_application:resolve_hello",
+        rollup_metrics=_test_basic_metrics,
+        background_task=True,
+    )
+    @background_task()
+    def _test():
+        response = graphql_run(app, "{ hello }")
+        assert not response.errors
+        assert "Hello!" in str(response.data)
+    _test()
 
 
-_test_middleware_metrics = (
-    ("OtherTransaction/all", 1),
-    ("OtherTransaction/Function/_target_application:resolve_hello", 1),
-    ("Function/_target_application:resolve_hello", 1),
-    ("Function/test_application:example_middleware", 2),  # 2?????
-    ("Function/graphql.execution.execute:execute", 1),
-)
+def test_middleware(app, graphql_run, is_graphql_2):
+    _test_middleware_metrics = [
+        ("OtherTransaction/all", 1),
+        ("OtherTransaction/Function/_target_application:resolve_hello", 1),
+        ("Function/_target_application:resolve_hello", 1),
+        ("Function/test_application:example_middleware", "present"),  # 2?????
+    ]
+    if is_graphql_2:
+        _test_middleware_metrics.append(("Function/graphql.execution.executor:execute", 1))
+    else:  # GraphQL 3+
+        _test_middleware_metrics.append(("Function/graphql.execution.execute:execute", 1))
 
-
-@validate_transaction_metrics(
-    "_target_application:resolve_hello",
-    rollup_metrics=_test_middleware_metrics,
-    background_task=True,
-)
-@background_task()
-def test_middleware(app, graphql_run):
-    response = graphql_run(app, "{ hello }", middleware=[example_middleware])
-    assert "Hello!" in str(response.data)
+    @validate_transaction_metrics(
+        "_target_application:resolve_hello",
+        rollup_metrics=_test_middleware_metrics,
+        background_task=True,
+    )
+    @background_task()
+    def _test():
+        response = graphql_run(app, "{ hello }", middleware=[example_middleware])
+        assert not response.errors
+        assert "Hello!" in str(response.data)
+    _test()

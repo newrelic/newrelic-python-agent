@@ -13,26 +13,59 @@
 # limitations under the License.
 
 import pytest
+from testing_support.fixtures import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
-from testing_support.fixtures import validate_transaction_metrics
-
-
 _test_basic_metrics = (
-    ('WebTransaction', 1),
-    ('WebTransaction/Function/graphql.execution.execute:execute', 1),
-    ('WebTransactionTotalTime', 1),
-    ('WebTransactionTotalTime/Function/graphql.execution.execute:execute', 1),
+    ("OtherTransaction/all", 1),
+    ("OtherTransaction/Function/_target_application:resolve_hello", 1),
+    ("Function/_target_application:resolve_hello", 1),
+    ("Function/graphql.execution.execute:execute", 1),
 )
+
+
+@pytest.fixture()
+def graphql_run():
+    try:
+        from graphql import graphql_sync as graphql
+    except ImportError:
+        from graphql import graphql
+
+    return graphql
+
+
+def example_middleware(next, root, info, **args):
+    return_value = next(root, info, **args)
+    return return_value
+
 
 @validate_transaction_metrics(
-    'graphql.execution.execute:execute',
+    "_target_application:resolve_hello",
     rollup_metrics=_test_basic_metrics,
+    background_task=True,
 )
 @background_task()
-def test_basic(app):
-    from graphql import graphql_sync
+def test_basic(app, graphql_run):
+    response = graphql_run(app, "{ hello }")
+    assert "Hello!" in str(response.data)
 
-    response = graphql_sync(app, '{ hello }')
+
+_test_middleware_metrics = (
+    ("OtherTransaction/all", 1),
+    ("OtherTransaction/Function/_target_application:resolve_hello", 1),
+    ("Function/_target_application:resolve_hello", 1),
+    ("Function/test_application:example_middleware", 2),  # 2?????
+    ("Function/graphql.execution.execute:execute", 1),
+)
+
+
+@validate_transaction_metrics(
+    "_target_application:resolve_hello",
+    rollup_metrics=_test_middleware_metrics,
+    background_task=True,
+)
+@background_task()
+def test_middleware(app, graphql_run):
+    response = graphql_run(app, "{ hello }", middleware=[example_middleware])
     assert "Hello!" in str(response.data)

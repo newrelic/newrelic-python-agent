@@ -19,11 +19,19 @@ def resolve_hello(root, info):
     return "Hello!"
 
 
+def resolve_error(root, info):
+    raise RuntimeError("Runtime Error!")
+
+
 try:
     hello_field = GraphQLField(GraphQLString, resolver=resolve_hello)
+    error_field = GraphQLField(GraphQLString, resolver=resolve_error)
 except TypeError:
     hello_field = GraphQLField(GraphQLString, resolve=resolve_hello)
+    error_field = GraphQLField(GraphQLString, resolve=resolve_error)
 
-query = GraphQLObjectType(name="Hello", fields={"hello": hello_field})
+query = GraphQLObjectType(
+    name="Query", fields={"hello": hello_field, "error": error_field}
+)
 
 _target_application = GraphQLSchema(query=query)

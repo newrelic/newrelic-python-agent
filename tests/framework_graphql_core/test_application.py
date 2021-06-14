@@ -13,9 +13,10 @@
 # limitations under the License.
 
 import pytest
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.fixtures import validate_transaction_metrics, validate_transaction_errors
 
 from newrelic.api.background_task import background_task
+from newrelic.common.object_names import callable_name
 
 @pytest.fixture(scope="session")
 def is_graphql_2():
@@ -36,6 +37,12 @@ def graphql_run():
 def example_middleware(next, root, info, **args):
     return_value = next(root, info, **args)
     return return_value
+
+def error_middleware(next, root, info, **args):
+    raise RuntimeError("Runtime Error!")
+
+_runtime_error_name = callable_name(RuntimeError)
+_test_runtime_error = [(_runtime_error_name, "Runtime Error!")]
 
 
 def test_basic(app, graphql_run, is_graphql_2):
@@ -84,4 +91,32 @@ def test_middleware(app, graphql_run, is_graphql_2):
         response = graphql_run(app, "{ hello }", middleware=[example_middleware])
         assert not response.errors
         assert "Hello!" in str(response.data)
+    _test()
+
+
+def test_exception_in_middleware(app, graphql_run):
+    @validate_transaction_errors(errors=_test_runtime_error)
+    @background_task()
+    def _test():
+        response = graphql_run(app, "{ hello }", middleware=[error_middleware])
+        assert response.errors
+
+    _test()
+
+def test_exception_in_resolver(app, graphql_run):
+    @validate_transaction_errors(errors=_test_runtime_error)
+    @background_task()
+    def _test():
+        response = graphql_run(app, "{ error }")
+        assert response.errors
+
+    _test()
+
+def test_exception_in_validation(app, graphql_run):
+    @validate_transaction_errors(errors=_test_runtime_error)
+    @background_task()
+    def _test():
+        response = graphql_run(app, "{ missing_field }")
+        assert response.errors
+
     _test()

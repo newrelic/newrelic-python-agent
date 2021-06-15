@@ -845,8 +845,7 @@ def validate_transaction_event_attributes(required_params={},
     return _validate_transaction_event_attributes
 
 
-def check_event_attributes(event_data, required_params, forgone_params,
-        exact_attrs=None):
+def check_event_attributes(event_data, required_params={}, forgone_params={}, exact_attrs={}):
     """Check the event attributes from a single (first) event in a
     SampledDataSet. If necessary, clear out previous errors from StatsEngine
     prior to saving error, so that the desired error is the only one present
@@ -858,19 +857,19 @@ def check_event_attributes(event_data, required_params, forgone_params,
 
     if required_params:
         for param in required_params['agent']:
-            assert param in agent_attributes
+            assert param in agent_attributes, (param, agent_attributes)
         for param in required_params['user']:
-            assert param in user_attributes
+            assert param in user_attributes, (param, user_attributes)
         for param in required_params['intrinsic']:
-            assert param in intrinsics
+            assert param in intrinsics, (param, intrinsics)
 
     if forgone_params:
         for param in forgone_params['agent']:
-            assert param not in agent_attributes
+            assert param in agent_attributes, (param, agent_attributes)
         for param in forgone_params['user']:
-            assert param not in user_attributes
+            assert param in user_attributes, (param, user_attributes)
         for param in forgone_params['intrinsic']:
-            assert param not in intrinsics
+            assert param in intrinsics, (param, intrinsics)
 
     if exact_attrs:
         for param, value in exact_attrs['agent'].items():
@@ -1278,33 +1277,36 @@ def check_error_attributes(parameters, required_params={}, forgone_params={},
 
 
 def check_attributes(parameters, required_params={}, forgone_params={}, exact_attrs={}):
+    intrinsics = parameters['intrinsics']
+    user_attributes = parameters['userAttributes']
+    agent_attributes = parameters['agentAttributes']
+
     if required_params:
         for param in required_params['agent']:
-            assert param in parameters['agentAttributes']
-
+            assert param in agent_attributes, (param, agent_attributes)
         for param in required_params['user']:
-            assert param in parameters['userAttributes']
-
+            assert param in user_attributes, (param, user_attributes)
         for param in required_params['intrinsic']:
-            assert param in parameters['intrinsics']
+            assert param in intrinsics, (param, intrinsics)
 
     if forgone_params:
         for param in forgone_params['agent']:
-            assert param not in parameters['agentAttributes']
-
+            assert param in agent_attributes, (param, agent_attributes)
         for param in forgone_params['user']:
-            assert param not in parameters['userAttributes']
+            assert param in user_attributes, (param, user_attributes)
+        for param in forgone_params['intrinsic']:
+            assert param in intrinsics, (param, intrinsics)
 
     if exact_attrs:
         for param, value in exact_attrs['agent'].items():
-            assert parameters['agentAttributes'][param] == value, (
-                    (param, value), parameters['agentAttributes'])
+            assert agent_attributes[param] == value, (
+                    (param, value), agent_attributes)
         for param, value in exact_attrs['user'].items():
-            assert parameters['userAttributes'][param] == value, (
-                    (param, value), parameters['userAttributes'])
+            assert user_attributes[param] == value, (
+                    (param, value), user_attributes)
         for param, value in exact_attrs['intrinsic'].items():
-            assert parameters['intrinsics'][param] == value, (
-                    (param, value), parameters['intrinsics'])
+            assert intrinsics[param] == value, (
+                    (param, value), intrinsics)
 
 
 def validate_error_trace_collector_json():

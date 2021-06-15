@@ -93,8 +93,17 @@ def wrap_request(wrapped, instance, args, kwargs):
 def wrap_background_method(wrapped, instance, args, kwargs):
     func = getattr(instance, "func", None)
     if func:
-        instance.func = BackgroundTaskWrapper(func)
+        instance.func = wrap_background_task(func)
     return wrapped(*args, **kwargs)
+
+
+@function_wrapper
+def wrap_background_task(wrapped, instance, args, kwargs):
+    transaction = current_transaction(active_only=False)
+    if not transaction:
+        return BackgroundTaskWrapper(wrapped)(*args, **kwargs)
+    else:
+        return FunctionTraceWrapper(wrapped)(*args, **kwargs)
 
 
 async def middleware_wrapper(wrapped, instance, args, kwargs):

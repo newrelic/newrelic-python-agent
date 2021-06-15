@@ -38,10 +38,3 @@ collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (framework_starlette)",
     default_settings=_default_settings,
 )
-
-
-@pytest.fixture(scope="session")
-def target_application():
-    import _target_application
-
-    return _target_application.target_application

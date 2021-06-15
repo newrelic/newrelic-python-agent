@@ -17,19 +17,19 @@ from newrelic.common.object_wrapper import (transient_function_wrapper,
 
 
 def validate_transaction_count(count):
-    _count = []
+    _transactions = []
 
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
     def _increment_count(wrapped, instance, args, kwargs):
-        _count.append(True)
+        _transactions.append(getattr(args[0], "name", True))
         return wrapped(*args, **kwargs)
 
     @function_wrapper
     def _validate_transaction_count(wrapped, instance, args, kwargs):
         _new_wrapped = _increment_count(wrapped)
         result = _new_wrapped(*args, **kwargs)
-        assert len(_count) == count
+        assert count == len(_transactions), (count, len(_transactions), _transactions)
 
         return result
 

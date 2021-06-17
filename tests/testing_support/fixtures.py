@@ -865,11 +865,11 @@ def check_event_attributes(event_data, required_params={}, forgone_params={}, ex
 
     if forgone_params:
         for param in forgone_params['agent']:
-            assert param in agent_attributes, (param, agent_attributes)
+            assert param not in agent_attributes, (param, agent_attributes)
         for param in forgone_params['user']:
-            assert param in user_attributes, (param, user_attributes)
+            assert param not in user_attributes, (param, user_attributes)
         for param in forgone_params['intrinsic']:
-            assert param in intrinsics, (param, intrinsics)
+            assert param not in intrinsics, (param, intrinsics)
 
     if exact_attrs:
         for param, value in exact_attrs['agent'].items():
@@ -1277,9 +1277,9 @@ def check_error_attributes(parameters, required_params={}, forgone_params={},
 
 
 def check_attributes(parameters, required_params={}, forgone_params={}, exact_attrs={}):
-    intrinsics = parameters['intrinsics']
-    user_attributes = parameters['userAttributes']
-    agent_attributes = parameters['agentAttributes']
+    intrinsics = parameters.get('intrinsics', {})
+    user_attributes = parameters.get('userAttributes', {})
+    agent_attributes = parameters.get('agentAttributes', {})
 
     if required_params:
         for param in required_params['agent']:
@@ -1291,11 +1291,11 @@ def check_attributes(parameters, required_params={}, forgone_params={}, exact_at
 
     if forgone_params:
         for param in forgone_params['agent']:
-            assert param in agent_attributes, (param, agent_attributes)
+            assert param not in agent_attributes, (param, agent_attributes)
         for param in forgone_params['user']:
-            assert param in user_attributes, (param, user_attributes)
+            assert param not in user_attributes, (param, user_attributes)
         for param in forgone_params['intrinsic']:
-            assert param in intrinsics, (param, intrinsics)
+            assert param not in intrinsics, (param, intrinsics)
 
     if exact_attrs:
         for param, value in exact_attrs['agent'].items():

@@ -26,7 +26,7 @@ class ASGIStyleMiddleware:
 
     async def __call__(self, scope, receive, send):
         response = await self.app(scope, receive, send)
-        return response 
+        return response
 
 
 class BaseHTTPStyleMiddleware(BaseHTTPMiddleware):
@@ -41,16 +41,20 @@ async def run_async_bg_task(request):
     tasks.add_task(async_bg_task)
     return PlainTextResponse("Hello, world!", background=tasks)
 
+
 async def run_sync_bg_task(request):
     tasks = BackgroundTasks()
     tasks.add_task(sync_bg_task)
     return PlainTextResponse("Hello, world!", background=tasks)
 
+
 async def async_bg_task():
     pass
 
+
 async def sync_bg_task():
     pass
+
 
 routes = [
     Route("/async", run_async_bg_task),

@@ -14,11 +14,12 @@
 
 import pytest
 
+from newrelic.common.object_wrapper import transient_function_wrapper
+
 from testing_support.fixtures import (code_coverage_fixture,
         collector_agent_registration_fixture, collector_available_fixture)
 
 import asyncio
-from sanic.request import Request
 
 _coverage_source = [
     'newrelic.hooks.framework_sanic',
@@ -39,47 +40,82 @@ collector_agent_registration = collector_agent_registration_fixture(
         default_settings=_default_settings)
 
 
-def create_request_class(method, url, headers=None):
-    _request = Request(
-        method=method.upper(),
-        url_bytes=url.encode('utf-8'),
-        headers=headers,
-        version='1.0',
-        transport=None,
-    )
+RESPONSES = []
+
+def create_request_class(app, method, url, headers=None, loop=None):
+    from sanic.request import Request
+    try:
+        _request = Request(
+            method=method.upper(),
+            url_bytes=url.encode('utf-8'),
+            headers=headers,
+            version='1.0',
+            transport=None,
+        )
+    except TypeError:
+        _request = Request(
+            app=app,
+            method=method.upper(),
+            url_bytes=url.encode('utf-8'),
+            headers=headers,
+            version='1.0',
+            transport=None,
+        )
+
+    try:
+        # Manually initialize HTTP protocol
+        from sanic.http import Http, Stage
+        from sanic.server import HttpProtocol
+
+        class MockProtocol(HttpProtocol):
+            async def send(*args, **kwargs):
+                return
+
+        proto = MockProtocol(loop=loop, app=app)
+        proto.recv_buffer = bytearray()
+        http = Http(proto)
+        http.stage = Stage.HANDLER
+        http.response_func = http.http1_response_header
+        _request.stream = http
+        pass
+    except ImportError:
+        pass
+
     return _request
 
 
-def create_request_coroutine(app, method, url, headers=None, responses=None):
-    if responses is None:
-        responses = []
-
-    def write_callback(response):
-        response.raw_headers = response.output()
-        if b'write_response_error' in response.raw_headers:
-            raise ValueError()
-
-        responses.append(response)
-
-    async def stream_callback(response):
-        response.raw_headers = response.get_headers()
-        responses.append(response)
-
+def create_request_coroutine(app, method, url, headers=None, loop=None):
     headers = headers or {}
-    coro = app.handle_request(
-        create_request_class(method, url, headers),
-        write_callback,
-        stream_callback,
-    )
+    try:
+        coro = app.handle_request(create_request_class(app, method, url, headers, loop=loop))
+    except TypeError:
+        def write_callback(response):
+            response.raw_headers = response.output()
+            if b'write_response_error' in response.raw_headers:
+                raise ValueError("write_response_error")
+
+            if response not in RESPONSES:
+                RESPONSES.append(response)
+
+        async def stream_callback(response):
+            response.raw_headers = response.get_headers()
+            if response not in RESPONSES:
+                RESPONSES.append(response)
+
+        coro = app.handle_request(
+            create_request_class(app, method, url, headers, loop=loop),
+            write_callback,
+            stream_callback,
+        )
+
     return coro
 
 
 def request(app, method, url, headers=None):
-    responses = []
-    coro = create_request_coroutine(app, method, url, headers, responses)
     loop = asyncio.get_event_loop()
+    coro = create_request_coroutine(app, method, url, headers, loop)
     loop.run_until_complete(coro)
-    return responses[0]
+    return RESPONSES.pop()
 
 
 class TestApplication(object):
@@ -94,3 +130,19 @@ class TestApplication(object):
 def app():
     from _target_application import app
     return TestApplication(app)
+
+@pytest.fixture(autouse=True)
+def capture_requests(monkeypatch):
+    from sanic.response import BaseHTTPResponse
+    original = BaseHTTPResponse.__init__
+
+    def capture(*args, **kwargs):
+        original(*args, **kwargs)
+        response = args[0]
+        if getattr(response, "status", None) is None:
+            response.status = 200
+
+        if response not in RESPONSES:
+            RESPONSES.append(response)
+
+    monkeypatch.setattr(BaseHTTPResponse, "__init__", capture)

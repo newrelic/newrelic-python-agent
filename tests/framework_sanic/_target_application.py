@@ -50,24 +50,39 @@ class CustomErrorHandler(ErrorHandler):
 
 
 class CustomRouter(Router):
+    def __init__(self):
+        try:
+            super().__init__(app=None)
+        except TypeError:
+            super().__init__()
+
     def add(self, *args, **kwargs):
         base_add = Router.add
         if hasattr(base_add, '__wrapped__'):
             base_add = base_add.__wrapped__
-        return base_add(self, *args, **kwargs)
+        return base_add.__get__(self, Router)(*args, **kwargs)
 
-    def get(self, request):
+    def get(self, *args):
         base_get = Router.get
         if hasattr(base_get, '__wrapped__'):
             base_get = base_get.__wrapped__
 
-        handler, args, kwargs, uri = base_get(self, request)
-        if request.path == '/server-error':
-            handler = None
-        return handler, args, kwargs, uri
+        if len(args) == 1:
+            path = args[0].path
+        else:
+            path = args[0]
+
+        bound_get = base_get.__get__(self, Router)
+        get_results = list(bound_get(*args))
+        if path == '/server-error':
+            from sanic.exceptions import ServerError
+            raise ServerError("Server Error")
+        return get_results
 
 
-app = Sanic(error_handler=CustomErrorHandler(), router=CustomRouter())
+router = CustomRouter()
+app = Sanic(name="test app", error_handler=CustomErrorHandler(), router=router)
+router.app = app
 
 
 @app.route('/')
@@ -165,5 +180,9 @@ async def async_error(request):
 
 
 app.add_route(MethodView.as_view(), '/method_view')
+
+if not getattr(router, "finalized", True):
+    router.finalize()
+
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8000)

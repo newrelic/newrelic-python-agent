@@ -52,6 +52,19 @@ if hasattr(inspect, 'getfullargspec'):
 else:
     _argspec = _argspec_py2
 
+try:
+    from inspect import signature
+    from collections import OrderedDict
+    def doc_signature(func):
+        sig = signature(func)
+        sig._parameters = OrderedDict(list(sig._parameters.items())[1:])
+        return str(sig)
+except ImportError:
+    from inspect import formatargspec
+    def doc_signature(func):
+        args, varargs, keywords, defaults = _argspec(func)
+        return formatargspec(args[1:], varargs, keywords, defaults)
+
 from newrelic.core.agent import agent_instance
 from newrelic.core.config import global_settings, flatten_settings
 from newrelic.api.transaction import Transaction
@@ -81,8 +94,8 @@ def shell_command(wrapped):
         return wrapped(self, *args, **kwargs)
 
     if wrapper.__name__.startswith('do_'):
-        prototype = wrapper.__name__[3:] + ' ' + inspect.formatargspec(
-                args[1:], varargs, keywords, defaults)
+        prototype = wrapper.__name__[3:] + ' ' + doc_signature(wrapped)
+
         if hasattr(wrapper, '__doc__') and wrapper.__doc__ is not None:
             wrapper.__doc__ = '\n'.join((prototype,
                     wrapper.__doc__.lstrip('\n')))

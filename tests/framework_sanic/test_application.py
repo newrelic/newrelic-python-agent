@@ -338,6 +338,23 @@ def test_errors_in_middleware(app):
         app.app.response_middleware = original_response_middleware
 
 
+BLUEPRINT_METRICS = [
+    ("Function/_target_application:blueprint_middleware", 1),
+    ("Function/_target_application:blueprint_route", 1),
+]
+
+
+@validate_transaction_metrics(
+    "_target_application:blueprint_route",
+    scoped_metrics=BLUEPRINT_METRICS,
+    rollup_metrics=BLUEPRINT_METRICS + FRAMEWORK_METRICS,
+)
+@validate_transaction_errors(errors=[])
+def test_blueprint_middleware(app):
+    response = app.fetch('get', '/blueprint')
+    assert response.status == 200
+
+
 def test_unknown_route(app):
     import sanic
     sanic_version = [int(x) for x in sanic.__version__.split(".")]

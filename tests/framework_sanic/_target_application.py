@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from sanic import Sanic
+from sanic import Sanic, Blueprint
 from sanic.exceptions import NotFound, SanicException, ServerError
 from sanic.handlers import ErrorHandler
 from sanic.response import json, stream
 from sanic.router import Router
 from sanic.views import HTTPMethodView
-from sanic.websocket import WebSocketProtocol
 
 
 class MethodView(HTTPMethodView):
@@ -83,7 +82,7 @@ class CustomRouter(Router):
 router = CustomRouter()
 app = Sanic(name="test app", error_handler=CustomErrorHandler(), router=router)
 router.app = app
-
+blueprint = Blueprint("test_bp")
 
 @app.route('/')
 async def index(request):
@@ -115,6 +114,10 @@ async def zero_division_error(request):
 async def request_middleware(request):
     return None
 
+
+@blueprint.middleware('request')
+async def blueprint_middleware(request):
+    return None
 
 # register the middleware a second time, testing that the `request_middleware`
 # function is not getting double wrapped
@@ -179,6 +182,14 @@ async def async_error(request):
     raise CustomExceptionAsync('something went wrong')
 
 
+@blueprint.route('/blueprint')
+async def blueprint_route(request):
+    async def streaming_fn(response):
+        response.write('foo')
+    return stream(streaming_fn)
+
+
+app.blueprint(blueprint)
 app.add_route(MethodView.as_view(), '/method_view')
 
 if not getattr(router, "finalized", True):

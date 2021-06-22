@@ -271,6 +271,9 @@ def instrument_sanic_app(module):
         _sanic_app_init)
     wrap_function_wrapper(module, 'Sanic.register_middleware',
         _nr_sanic_register_middleware_)
+    if hasattr(module.Sanic, 'register_named_middleware'):
+        wrap_function_wrapper(module, 'Sanic.register_named_middleware',
+            _nr_sanic_register_middleware_)
 
 
 def instrument_sanic_response(module):

@@ -20,7 +20,7 @@ from testing_support.fixtures import (
 )
 
 _coverage_source = [
-    "newrelic.hooks.framework_graphql_core",
+    "newrelic.hooks.framework_graphql",
 ]
 
 code_coverage = code_coverage_fixture(source=_coverage_source)
@@ -34,7 +34,7 @@ _default_settings = {
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-    app_name="Python Agent Test (framework_graphql_core)",
+    app_name="Python Agent Test (framework_graphql)",
     default_settings=_default_settings,
 )
 

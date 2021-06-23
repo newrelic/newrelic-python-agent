@@ -14,12 +14,13 @@
 
 from starlette.applications import Starlette
 from starlette.background import BackgroundTasks
+from starlette.exceptions import HTTPException
 from starlette.responses import PlainTextResponse
 from starlette.routing import Route
-from starlette.exceptions import HTTPException
 from testing_support.asgi_testing import AsgiTest
-from newrelic.api.transaction import current_transaction
+
 from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 
 try:
@@ -101,6 +102,7 @@ async def bg_task_async():
 def bg_task_non_async():
     pass
 
+
 routes = [
     Route("/index", index),
     Route("/418", teapot),
@@ -130,7 +132,11 @@ async def middleware_decorator(request, call_next):
 # Generating target applications
 app_name_map = {
     "no_error_handler": (True, False, {}),
-    "async_error_handler_no_middleware": (False, False, {Exception: async_error_handler}),
+    "async_error_handler_no_middleware": (
+        False,
+        False,
+        {Exception: async_error_handler},
+    ),
     "non_async_error_handler_no_middleware": (False, False, {}),
     "no_middleware": (False, False, {}),
     "debug_no_middleware": (False, True, {}),
@@ -145,12 +151,21 @@ for app_name, flags in app_name_map.items():
 
     # Instantiate app
     if not middleware_on:
-        app = Starlette(debug=debug, routes=routes, exception_handlers=exception_handlers)
+        app = Starlette(
+            debug=debug, routes=routes, exception_handlers=exception_handlers
+        )
     else:
         if Middleware:
-            app = Starlette(debug=debug, routes=routes, middleware=[Middleware(middleware_factory)], exception_handlers=exception_handlers)
+            app = Starlette(
+                debug=debug,
+                routes=routes,
+                middleware=[Middleware(middleware_factory)],
+                exception_handlers=exception_handlers,
+            )
         else:
-            app = Starlette(debug=debug, routes=routes, exception_handlers=exception_handlers)
+            app = Starlette(
+                debug=debug, routes=routes, exception_handlers=exception_handlers
+            )
             # in earlier versions of starlette, middleware is not a legal argument on the Starlette application class
             # In order to keep the counts the same, we add the middleware twice using the add_middleware interface
             app.add_middleware(middleware_factory)

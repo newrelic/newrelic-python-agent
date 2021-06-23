@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-
 from testing_support.fixtures import (
     code_coverage_fixture,
     collector_agent_registration_fixture,
@@ -38,10 +36,3 @@ collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (framework_starlette)",
     default_settings=_default_settings,
 )
-
-
-@pytest.fixture(scope="session")
-def target_application():
-    import _target_application
-
-    return _target_application.target_application

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from newrelic.api.time_trace import notice_error
 from newrelic.api.error_trace import ErrorTrace
 from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
 from newrelic.api.transaction import current_transaction
@@ -23,7 +24,6 @@ def wrap_execute(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if transaction is None:
         return wrapped(*args, **kwargs)
-
     
     transaction.set_transaction_name(callable_name(wrapped), priority=1)
     with FunctionTrace(callable_name(wrapped)):
@@ -109,6 +109,24 @@ def wrap_resolver(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
 
 
+def wrap_error_handler(wrapped, instance, args, kwargs):
+    notice_error()
+    return wrapped(*args, **kwargs)
+
+
+def wrap_validate(wrapped, instance, args, kwargs):
+    errors = wrapped(*args, **kwargs)
+
+    # Raise errors and immediately catch them so we can record them
+    for error in errors:
+        try:
+            raise error
+        except:
+            notice_error()
+
+    return errors
+
+
 def instrument_graphql_execute(module):
     if hasattr(module, "execute"):
         wrap_function_wrapper(module, "execute", wrap_execute)
@@ -119,13 +137,11 @@ def instrument_graphql_execute(module):
             module, "ExecutionContext.__init__", wrap_executor_context_init
         )
 
-
 def instrument_graphql_execution_utils(module):
     if hasattr(module, "ExecutionContext"):
         wrap_function_wrapper(
             module, "ExecutionContext.__init__", wrap_executor_context_init
         )
-
 
 def instrument_graphql_execution_middleware(module):
     if hasattr(module, "get_middleware_resolvers"):
@@ -136,3 +152,12 @@ def instrument_graphql_execution_middleware(module):
         wrap_function_wrapper(
             module, "MiddlewareManager.get_field_resolver", wrap_get_field_resolver
         )
+
+
+def instrument_graphql_error_located_error(module):
+    if hasattr(module, "located_error"):
+        wrap_function_wrapper(module, "located_error", wrap_error_handler)
+
+
+def instrument_graphql_validate(module):
+    wrap_function_wrapper(module, "validate", wrap_validate)

@@ -103,17 +103,19 @@ def test_exception_in_middleware(app, graphql_run):
 
     _test()
 
-def test_exception_in_resolver(app, graphql_run):
+@pytest.mark.parametrize("field", ("error", "error_non_null"))
+def test_exception_in_resolver(app, graphql_run, field):
     @validate_transaction_errors(errors=_test_runtime_error)
     @background_task()
     def _test():
-        response = graphql_run(app, "{ error }")
+        response = graphql_run(app, "{ %s }" % field)
         assert response.errors
 
     _test()
 
 def test_exception_in_validation(app, graphql_run):
-    @validate_transaction_errors(errors=_test_runtime_error)
+    from graphql.error import GraphQLError
+    @validate_transaction_errors(errors=[callable_name(GraphQLError)])
     @background_task()
     def _test():
         response = graphql_run(app, "{ missing_field }")

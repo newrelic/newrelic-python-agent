@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from graphql import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
+from graphql import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString, GraphQLNonNull
 
 
 def resolve_hello(root, info):
@@ -26,12 +26,14 @@ def resolve_error(root, info):
 try:
     hello_field = GraphQLField(GraphQLString, resolver=resolve_hello)
     error_field = GraphQLField(GraphQLString, resolver=resolve_error)
+    error_non_null_field = GraphQLField(GraphQLNonNull(GraphQLString), resolver=resolve_error)
 except TypeError:
     hello_field = GraphQLField(GraphQLString, resolve=resolve_hello)
     error_field = GraphQLField(GraphQLString, resolve=resolve_error)
+    error_non_null_field = GraphQLField(GraphQLNonNull(GraphQLString), resolve=resolve_error)
 
 query = GraphQLObjectType(
-    name="Query", fields={"hello": hello_field, "error": error_field}
+    name="Query", fields={"hello": hello_field, "error": error_field, "error_non_null": error_non_null_field}
 )
 
 _target_application = GraphQLSchema(query=query)

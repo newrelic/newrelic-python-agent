@@ -14,6 +14,8 @@
 
 import pytest
 import starlette
+
+from newrelic.common.object_names import callable_name
 from testing_support.fixtures import (
     override_ignore_status_codes,
     validate_transaction_errors,
@@ -88,17 +90,31 @@ def test_application_nonexistent_route(target_application, app_name, transaction
 
 
 @pytest.mark.parametrize("app_name", ("no_error_handler",))
-@validate_transaction_metrics(
-    "_test_application:middleware_factory.<locals>.middleware",
-    scoped_metrics=[
-        ("Function/_test_application:middleware_factory.<locals>.middleware", 1)
-    ],
-    rollup_metrics=[FRAMEWORK_METRIC],
-)
 def test_exception_in_middleware(target_application, app_name):
     app = target_application[app_name]
-    with pytest.raises(ValueError):
-        app.get("/crash_me_now")
+
+    # Starlette >=0.15 raises an exception group instead of reraising the ValueError
+    from starlette import __version__ as version
+    version = tuple(int(v) for v in version.split("."))
+
+    if version >= (0, 15, 0):
+        from anyio._backends._asyncio import ExceptionGroup
+        exc_type = ExceptionGroup
+    else:
+        exc_type = ValueError
+
+    @validate_transaction_metrics(
+        "_test_application:middleware_factory.<locals>.middleware",
+        scoped_metrics=[
+            ("Function/_test_application:middleware_factory.<locals>.middleware", 1)
+        ],
+        rollup_metrics=[FRAMEWORK_METRIC],
+    )
+    @validate_transaction_errors(errors=[callable_name(exc_type)])
+    def _test():
+        with pytest.raises(exc_type):  # Later versions of starlette
+            app.get("/crash_me_now")
+    _test()
 
 
 @pytest.mark.parametrize(

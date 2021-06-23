@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+
 import pytest
 import starlette
 
@@ -93,11 +95,12 @@ def test_application_nonexistent_route(target_application, app_name, transaction
 def test_exception_in_middleware(target_application, app_name):
     app = target_application[app_name]
 
-    # Starlette >=0.15 raises an exception group instead of reraising the ValueError
     from starlette import __version__ as version
-    version = tuple(int(v) for v in version.split("."))
+    starlette_version = tuple(int(v) for v in version.split("."))
 
-    if version >= (0, 15, 0):
+    # Starlette >=0.15 raises an exception group instead of reraising the ValueError
+    # This only occurs on Python versions >=3.8
+    if sys.version_info[0:2] > (3, 7) and starlette_version >= (0, 15, 0):
         from anyio._backends._asyncio import ExceptionGroup
         exc_type = ExceptionGroup
     else:

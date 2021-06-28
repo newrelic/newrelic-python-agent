@@ -141,8 +141,7 @@ class GraphQLTrace(TimeTrace):
         )
 
 
-def GraphQLTraceWrapper(wrapped, dbapi2_module=None):
-
+def GraphQLTraceWrapper(wrapped):
     def _nr_graphql_trace_wrapper_(wrapped, instance, args, kwargs):
         wrapper = async_wrapper(wrapped)
         if not wrapper:
@@ -152,15 +151,7 @@ def GraphQLTraceWrapper(wrapped, dbapi2_module=None):
         else:
             parent = None
 
-        if callable(sql):
-            if instance is not None:
-                _sql = sql(instance, *args, **kwargs)
-            else:
-                _sql = sql(*args, **kwargs)
-        else:
-            _sql = sql
-
-        trace = GraphQLTrace(_sql, dbapi2_module, parent=parent)
+        trace = GraphQLTrace(parent=parent)
 
         if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)
@@ -171,11 +162,8 @@ def GraphQLTraceWrapper(wrapped, dbapi2_module=None):
     return FunctionWrapper(wrapped, _nr_graphql_trace_wrapper_)
 
 
-def graphql_trace(sql, dbapi2_module=None):
-    return functools.partial(GraphQLTraceWrapper, sql=sql,
-            dbapi2_module=dbapi2_module)
+def graphql_trace():
+    return functools.partial(GraphQLTraceWrapper)
 
-
-def wrap_graphql_trace(module, object_path, sql, dbapi2_module=None):
-    wrap_object(module, object_path, GraphQLTraceWrapper,
-            (sql, dbapi2_module))
+def wrap_graphql_trace(module, object_path):
+    wrap_object(module, object_path, GraphQLTraceWrapper)

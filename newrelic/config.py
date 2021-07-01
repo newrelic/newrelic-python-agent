@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import fnmatch
 import os
 import sys
 import logging
@@ -1267,19 +1268,47 @@ def _process_module_configuration():
             _raise_configuration_error(section)
 
 
+def _module_function_glob(module, object_path):
+    """Match functions and class methods in a module to file globbing syntax."""
+    if not any([c in object_path for c in {"*", "?", "["}]):  # Identify globbing patterns
+        return (object_path,)  # Returned value must be iterable
+    else:
+        # Gather module functions
+        try:
+            available_functions = {k: v for k, v in module.__dict__.items() if callable(v) and not isinstance(v, type)}
+        except Exception:
+            # Default to empty dict if no functions available
+            available_functions = dict()
+
+        # Gather module classes and methods
+        try:
+            available_classes = {k: v for k, v in module.__dict__.items() if isinstance(v, type)}
+            for cls in available_classes:
+                try:
+                    # Skip adding individual class's methods on failure
+                    available_functions.update({"%s.%s" % (cls, k): v for k, v in available_classes.get(cls).__dict__.items() if callable(v) and not isinstance(v, type)})
+                except Exception:
+                    pass
+        except Exception:
+            # Skip adding all class methods on failure
+            pass
+
+        return fnmatch.filter(available_functions, object_path)
+
+
 # Setup wsgi application wrapper defined in configuration file.
 
 
 def _wsgi_application_import_hook(object_path, application):
     def _instrument(target):
-        _logger.debug(
-            "wrap wsgi-application %s" % ((target, object_path, application),)
-        )
-
         try:
-            newrelic.api.wsgi_application.wrap_wsgi_application(
-                target, object_path, application
-            )
+            for func in _module_function_glob(target, object_path):
+                _logger.debug(
+                    "wrap wsgi-application %s" % ((target, func, application),)
+                )
+                newrelic.api.wsgi_application.wrap_wsgi_application(
+                    target, func, application
+                )
         except Exception:
             _raise_instrumentation_error("wsgi-application", locals())
 
@@ -1327,15 +1356,15 @@ def _process_wsgi_application_configuration():
 
 def _background_task_import_hook(object_path, application, name, group):
     def _instrument(target):
-        _logger.debug(
-            "wrap background-task %s"
-            % ((target, object_path, application, name, group),)
-        )
-
         try:
-            newrelic.api.background_task.wrap_background_task(
-                target, object_path, application, name, group
-            )
+            for func in _module_function_glob(target, object_path):
+                _logger.debug(
+                    "wrap background-task %s"
+                    % ((target, func, application, name, group),)
+                )
+                newrelic.api.background_task.wrap_background_task(
+                    target, func, application, name, group
+                )
         except Exception:
             _raise_instrumentation_error("background-task", locals())
 
@@ -1394,10 +1423,10 @@ def _process_background_task_configuration():
 
 def _database_trace_import_hook(object_path, sql):
     def _instrument(target):
-        _logger.debug("wrap database-trace %s" % ((target, object_path, sql),))
-
         try:
-            newrelic.api.database_trace.wrap_database_trace(target, object_path, sql)
+            for func in _module_function_glob(target, object_path):
+                _logger.debug("wrap database-trace %s" % ((target, func, sql),))
+                newrelic.api.database_trace.wrap_database_trace(target, func, sql)
         except Exception:
             _raise_instrumentation_error("database-trace", locals())
 
@@ -1444,14 +1473,14 @@ def _process_database_trace_configuration():
 
 def _external_trace_import_hook(object_path, library, url, method):
     def _instrument(target):
-        _logger.debug(
-            "wrap external-trace %s" % ((target, object_path, library, url, method),)
-        )
-
         try:
-            newrelic.api.external_trace.wrap_external_trace(
-                target, object_path, library, url, method
-            )
+            for func in _module_function_glob(target, object_path):
+                _logger.debug(
+                    "wrap external-trace %s" % ((target, func, library, url, method),)
+                )
+                newrelic.api.external_trace.wrap_external_trace(
+                    target, func, library, url, method
+                )
         except Exception:
             _raise_instrumentation_error("external-trace", locals())
 
@@ -1512,15 +1541,15 @@ def _function_trace_import_hook(
     object_path, name, group, label, params, terminal, rollup
 ):
     def _instrument(target):
-        _logger.debug(
-            "wrap function-trace %s"
-            % ((target, object_path, name, group, label, params, terminal, rollup),)
-        )
-
         try:
-            newrelic.api.function_trace.wrap_function_trace(
-                target, object_path, name, group, label, params, terminal, rollup
-            )
+            for func in _module_function_glob(target, object_path):
+                _logger.debug(
+                    "wrap function-trace %s"
+                    % ((target, func, name, group, label, params, terminal, rollup),)
+                )
+                newrelic.api.function_trace.wrap_function_trace(
+                    target, func, name, group, label, params, terminal, rollup
+                )
         except Exception:
             _raise_instrumentation_error("function-trace", locals())
 
@@ -1588,12 +1617,12 @@ def _process_function_trace_configuration():
 
 def _generator_trace_import_hook(object_path, name, group):
     def _instrument(target):
-        _logger.debug("wrap generator-trace %s" % ((target, object_path, name, group),))
-
         try:
-            newrelic.api.generator_trace.wrap_generator_trace(
-                target, object_path, name, group
-            )
+            for func in _module_function_glob(target, object_path):
+                _logger.debug("wrap generator-trace %s" % ((target, func, name, group),))
+                newrelic.api.generator_trace.wrap_generator_trace(
+                    target, func, name, group
+                )
         except Exception:
             _raise_instrumentation_error("generator-trace", locals())
 
@@ -1648,14 +1677,14 @@ def _process_generator_trace_configuration():
 
 def _profile_trace_import_hook(object_path, name, group, depth):
     def _instrument(target):
-        _logger.debug(
-            "wrap profile-trace %s" % ((target, object_path, name, group, depth),)
-        )
-
         try:
-            newrelic.api.profile_trace.wrap_profile_trace(
-                target, object_path, name, group, depth=depth
-            )
+            for func in _module_function_glob(target, object_path):
+                _logger.debug(
+                    "wrap profile-trace %s" % ((target, func, name, group, depth),)
+                )
+                newrelic.api.profile_trace.wrap_profile_trace(
+                    target, func, name, group, depth=depth
+                )
         except Exception:
             _raise_instrumentation_error("profile-trace", locals())
 
@@ -1714,12 +1743,12 @@ def _process_profile_trace_configuration():
 
 def _memcache_trace_import_hook(object_path, command):
     def _instrument(target):
-        _logger.debug("wrap memcache-trace %s" % ((target, object_path, command),))
-
         try:
-            newrelic.api.memcache_trace.wrap_memcache_trace(
-                target, object_path, command
-            )
+            for func in _module_function_glob(target, object_path):
+                _logger.debug("wrap memcache-trace %s" % ((target, func, command),))
+                newrelic.api.memcache_trace.wrap_memcache_trace(
+                    target, func, command
+                )
         except Exception:
             _raise_instrumentation_error("memcache-trace", locals())
 
@@ -1768,14 +1797,14 @@ def _process_memcache_trace_configuration():
 
 def _transaction_name_import_hook(object_path, name, group, priority):
     def _instrument(target):
-        _logger.debug(
-            "wrap transaction-name %s" % ((target, object_path, name, group, priority),)
-        )
-
         try:
-            newrelic.api.transaction_name.wrap_transaction_name(
-                target, object_path, name, group, priority
-            )
+            for func in _module_function_glob(target, object_path):
+                _logger.debug(
+                    "wrap transaction-name %s" % ((target, func, name, group, priority),)
+                )
+                newrelic.api.transaction_name.wrap_transaction_name(
+                    target, func, name, group, priority
+                )
         except Exception:
             _raise_instrumentation_error("transaction-name", locals())
 
@@ -1837,12 +1866,12 @@ def _process_transaction_name_configuration():
 
 def _error_trace_import_hook(object_path, ignore, expected):
     def _instrument(target):
-        _logger.debug("wrap error-trace %s" % ((target, object_path, ignore, expected),))
-
         try:
-            newrelic.api.error_trace.wrap_error_trace(
-                target, object_path, ignore, expected, None
-            )
+            for func in _module_function_glob(target, object_path):
+                _logger.debug("wrap error-trace %s" % ((target, func, ignore, expected),))
+                newrelic.api.error_trace.wrap_error_trace(
+                    target, func, ignore, expected, None
+                )
         except Exception:
             _raise_instrumentation_error("error-trace", locals())
 
@@ -2009,15 +2038,15 @@ def _setup_data_source():
 
 def _function_profile_import_hook(object_path, filename, delay, checkpoint):
     def _instrument(target):
-        _logger.debug(
-            "wrap function-profile %s"
-            % ((target, object_path, filename, delay, checkpoint),)
-        )
-
         try:
-            newrelic.api.function_profile.wrap_function_profile(
-                target, object_path, filename, delay, checkpoint
-            )
+            for func in _module_function_glob(target, object_path):
+                _logger.debug(
+                    "wrap function-profile %s"
+                    % ((target, func, filename, delay, checkpoint),)
+                )
+                newrelic.api.function_profile.wrap_function_profile(
+                    target, func, filename, delay, checkpoint
+                )
         except Exception:
             _raise_instrumentation_error("function-profile", locals())
 

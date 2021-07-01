@@ -18,6 +18,8 @@ import newrelic.api.import_hook as import_hook
 import newrelic.packages.six as six
 import pytest
 
+from newrelic.config import _module_function_glob
+
 # a dummy hook just to be able to register hooks for modules
 def hook(*args, **kwargs):
     pass
@@ -59,3 +61,19 @@ def test_import_hook_finder(monkeypatch):
     # Finding a module that exists, and is registered, finds that module.
     module = finder.find_module("newrelic.api")
     assert module is not None
+
+
+@pytest.mark.parametrize("input,expected", [
+    ("*", {"run", "A.run", "B.run"}),
+    ("r*", {"run"}),
+    ("*.run", {"A.run", "B.run"}),
+    ("A.*", {"A.run"}),
+    ("[A,B].run", {"A.run", "B.run"}),
+    ("B.r?n", {"B.run"}),
+])
+def test_module_function_globbing(input, expected):
+    """This asserts the behavior of filename style globbing on modules."""
+    import _test_import_hook as module
+    
+    result = set(_module_function_glob(module, input))
+    assert result == expected, (result, expected)

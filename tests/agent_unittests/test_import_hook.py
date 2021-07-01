@@ -65,11 +65,13 @@ def test_import_hook_finder(monkeypatch):
 
 @pytest.mark.parametrize("input,expected", [
     ("*", {"run", "A.run", "B.run"}),
+    ("NotFound.*", set()),
     ("r*", {"run"}),
     ("*.run", {"A.run", "B.run"}),
     ("A.*", {"A.run"}),
     ("[A,B].run", {"A.run", "B.run"}),
     ("B.r?n", {"B.run"}),
+    ("*.RUN", set()),  # Check for case insensitivity issues
 ])
 def test_module_function_globbing(input, expected):
     """This asserts the behavior of filename style globbing on modules."""

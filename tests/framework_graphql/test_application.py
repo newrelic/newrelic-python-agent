@@ -85,8 +85,9 @@ def test_middleware(app, graphql_run, is_graphql_2):
     _test_middleware_metrics = [
         ("OtherTransaction/all", 1),
         ("OtherTransaction/Function/_target_application:resolve_hello", 1),
-        # ("Function/_target_application:resolve_hello", 1),
-        # ("Function/test_application:example_middleware", "present"),  # 2?????
+        #("Function/_target_application:resolve_hello", 1),
+        #("Function/test_application:example_middleware", "present"),  # 2?????
+
     ]
     if is_graphql_2:
         _test_middleware_metrics.append(
@@ -162,6 +163,8 @@ def test_field_resolver_metrics_and_attrs(app, graphql_run):
         "graphql.field.parentType": "Query",
         "graphql.field.path": "hello",
     }
+    field_resolver_metrics = [('GraphQL/resolve/GraphQL/hello', 1)]
+
 
     @validate_transaction_metrics(
         "_target_application:resolve_hello",

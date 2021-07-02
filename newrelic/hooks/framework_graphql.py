@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.time_trace import notice_error
+from newrelic.api.time_trace import notice_error, current_trace
 from newrelic.api.error_trace import ErrorTrace, ErrorTraceWrapper
 from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
-from newrelic.api.graphql_trace import GraphQLResolverTrace
+from newrelic.api.graphql_trace import GraphQLResolverTrace, GraphQLTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name, parse_exc_info
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
@@ -49,7 +49,7 @@ def wrap_execute(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
     
     transaction.set_transaction_name(callable_name(wrapped), priority=1)
-    with FunctionTrace(callable_name(wrapped)):
+    with GraphQLTrace():
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             return wrapped(*args, **kwargs)
 
@@ -69,6 +69,28 @@ def wrap_executor_context_init(wrapped, instance, args, kwargs):
             instance.field_resolver._nr_wrapped = True
 
     return result
+
+
+def bind_operation(operation, root_value):
+    return operation
+
+
+def wrap_execute_operation(wrapped, instance, args, kwargs):
+    trace = current_trace()
+
+    if trace:
+        operation = bind_operation(*args, **kwargs)
+        if operation.name and operation.name.value:
+            trace._add_agent_attribute("graphql.operation.name", operation.name.value)
+        if operation.operation and operation.operation.name:
+            trace._add_agent_attribute("graphql.operation.type", operation.operation.name.lower())
+        fields = operation.selection_set.selections
+        for field in fields:
+            # Logic for deepest path should go here
+            trace._add_agent_attribute("graphql.operation.deepestPath", field.name.value)
+            break
+
+    return wrapped(*args, **kwargs)
 
 
 def bind_get_middleware_resolvers(middlewares):
@@ -199,10 +221,15 @@ def instrument_graphql_execute(module):
             wrap_function_wrapper(
                 module, "ExecutionContext.resolve_field", wrap_resolve_field
             )
+        if hasattr(module.ExecutionContext, "execute_operation"):
+            wrap_function_wrapper(
+                module, "ExecutionContext.execute_operation", wrap_execute_operation
+            )
+
     if hasattr(module, "resolve_field"):
         wrap_function_wrapper(module, "resolve_field", wrap_resolve_field)
 
-
+        
 def instrument_graphql_execution_utils(module):
     if hasattr(module, "ExecutionContext"):
         wrap_function_wrapper(

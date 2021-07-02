@@ -13,12 +13,7 @@
 # limitations under the License.
 
 import pytest
-from testing_support.fixtures import (
-    validate_transaction_metrics,
-    validate_transaction_errors,
-    override_application_settings,
-    dt_enabled,
-)
+from testing_support.fixtures import validate_transaction_metrics, validate_transaction_errors, dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 
 from newrelic.api.background_task import background_task
@@ -54,6 +49,11 @@ def error_middleware(next, root, info, **args):
 
 _runtime_error_name = callable_name(RuntimeError)
 _test_runtime_error = [(_runtime_error_name, "Runtime Error!")]
+_expected_attributes = {
+    "graphql.operation.name": "MyQuery",
+    "graphql.operation.type": "query",
+    "graphql.operation.deepestPath": "hello"
+}
 
 
 def test_basic(app, graphql_run, is_graphql_2):
@@ -72,9 +72,11 @@ def test_basic(app, graphql_run, is_graphql_2):
         rollup_metrics=_test_basic_metrics,
         background_task=True,
     )
+    @validate_span_events(exact_agents=_expected_attributes)
+    @dt_enabled
     @background_task()
     def _test():
-        response = graphql_run(app, "{ hello }")
+        response = graphql_run(app, "query MyQuery{ hello }")
         assert not response.errors
         assert "Hello!" in str(response.data)
 

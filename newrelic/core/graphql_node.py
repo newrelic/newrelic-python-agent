@@ -47,13 +47,17 @@ class GraphQLNode(_GraphQLNode, GenericNodeMixin):
 
         field_name = self.field_name
         product = self.product
-        operation = self.operation or 'other'
+
+        operation_type = self.agent_attributes.get("graphql.operation.type", "<unknown>")
+        operation_name = self.agent_attributes.get("graphql.operation.name", "<anonymous>")
+        deepest_path = self.agent_attributes.get("graphql.operation.deepestPath", "<unknown>")
 
         # Determine the scoped metric
-        operation_metric_name = 'GraphQL/operation/%s/%s' % (product,
-                operation)
 
         field_resolver_metric_name = 'GraphQL/resolve/%s/%s' % (product, field_name)
+
+        operation_metric_name = 'GraphQL/operation/%s/%s/%s/%s' % (product,
+                operation_type, operation_name, deepest_path)
 
         scoped_metric_name = operation_metric_name
 

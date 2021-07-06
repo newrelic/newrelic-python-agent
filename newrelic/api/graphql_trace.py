@@ -75,6 +75,7 @@ class GraphQLResolverTrace(TimeTrace):
             user_attributes=self.user_attributes,
         )
 
+
 def GraphQLTraceWrapper(wrapped):
     def _nr_graphql_trace_wrapper_(wrapped, instance, args, kwargs):
         wrapper = async_wrapper(wrapped)

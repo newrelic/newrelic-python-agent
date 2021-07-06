@@ -122,3 +122,14 @@ def test_exception_in_validation(app, graphql_run):
         assert response.errors
 
     _test()
+
+@pytest.mark.parametrize("query", ["{ library(index: 0) { name, book { name } } }"])
+def test_deepest_path(app, graphql_run, query):
+    # Requires validators after logic is implemented
+    # Currently this test only validates that the nested library field functions
+    @background_task()
+    def _test():
+        response = graphql_run(app, query)
+        assert not response.errors
+
+    _test()

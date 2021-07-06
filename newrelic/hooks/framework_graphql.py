@@ -13,11 +13,33 @@
 # limitations under the License.
 
 from newrelic.api.time_trace import notice_error
-from newrelic.api.error_trace import ErrorTrace
+from newrelic.api.error_trace import ErrorTrace, ErrorTraceWrapper
 from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_names import callable_name
+from newrelic.common.object_names import callable_name, parse_exc_info
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
+
+
+def ignore_graphql_duplicate_exception(exc, val, tb):
+    from graphql.error import GraphQLError
+
+    if isinstance(val, GraphQLError):
+        transaction = current_transaction()
+
+        # Check that we have not recorded this exception
+        # previously for this transaction due to multiple
+        # error traces triggering. This happens if an exception
+        # is reraised by GraphQL as a new GraphQLError type
+        # after the original exception has already been recorded.
+
+        if transaction and hasattr(val, "original_error"):
+            _, _, fullnames, message = parse_exc_info((None, val.original_error, None))
+            fullname = fullnames[0]
+            for error in transaction._errors:
+                if error.type == fullname and error.message == message:
+                    return True
+
+    return None  # Follow original exception matching rules
 
 
 def wrap_execute(wrapped, instance, args, kwargs):
@@ -27,7 +49,7 @@ def wrap_execute(wrapped, instance, args, kwargs):
     
     transaction.set_transaction_name(callable_name(wrapped), priority=1)
     with FunctionTrace(callable_name(wrapped)):
-        with ErrorTrace():
+        with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             return wrapped(*args, **kwargs)
 
 
@@ -54,7 +76,7 @@ def bind_get_middleware_resolvers(middlewares):
 
 def wrap_get_middleware_resolvers(wrapped, instance, args, kwargs):
     middlewares = bind_get_middleware_resolvers(*args, **kwargs)
-    middlewares = [FunctionTraceWrapper(m) if not hasattr(m, "_nr_wrapped") else m for m in middlewares]
+    middlewares = [FunctionTraceWrapper(ErrorTraceWrapper(m, ignore=ignore_graphql_duplicate_exception)) if not hasattr(m, "_nr_wrapped") else m for m in middlewares]
     for m in middlewares:
         m._nr_wrapped = True
 
@@ -105,12 +127,12 @@ def wrap_resolver(wrapped, instance, args, kwargs):
 
     transaction.set_transaction_name(callable_name(wrapped), priority=2)
     with FunctionTrace(callable_name(wrapped)):
-        with ErrorTrace():
+        with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             return wrapped(*args, **kwargs)
 
 
 def wrap_error_handler(wrapped, instance, args, kwargs):
-    notice_error()
+    notice_error(ignore=ignore_graphql_duplicate_exception)
     return wrapped(*args, **kwargs)
 
 
@@ -122,7 +144,7 @@ def wrap_validate(wrapped, instance, args, kwargs):
         try:
             raise error
         except:
-            notice_error()
+            notice_error(ignore=ignore_graphql_duplicate_exception)
 
     return errors
 

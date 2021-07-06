@@ -60,12 +60,13 @@ def test_basic(app, graphql_run, is_graphql_2):
     _test_basic_metrics = [
         ("OtherTransaction/all", 1),
         ("OtherTransaction/Function/_target_application:resolve_hello", 1),
-        # ("Function/_target_application:resolve_hello", 1),
+        ("GraphQL/operation/GraphQL/query/MyQuery/hello", 1),
+        ("GraphQL/all", 1),
+        ("GraphQL/allOther", 1),
+        ("GraphQL/GraphQL/all", 1),
+        ("GraphQL/GraphQL/allOther", 1),
+        #("Function/_target_application:resolve_hello", 1),
     ]
-    if is_graphql_2:
-        _test_basic_metrics.append(("Function/graphql.execution.executor:execute", 1))
-    else:  # GraphQL 3+
-        _test_basic_metrics.append(("Function/graphql.execution.execute:execute", 1))
 
     @validate_transaction_metrics(
         "_target_application:resolve_hello",

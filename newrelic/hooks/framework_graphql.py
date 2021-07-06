@@ -19,6 +19,7 @@ from newrelic.api.graphql_trace import GraphQLResolverTrace, GraphQLTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name, parse_exc_info
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
+from collections import deque
 
 
 def ignore_graphql_duplicate_exception(exc, val, tb):
@@ -71,7 +72,10 @@ def wrap_executor_context_init(wrapped, instance, args, kwargs):
     return result
 
 
-def bind_operation(operation, root_value):
+def bind_operation_v3(operation, root_value):
+    return operation
+
+def bind_operation_v2(exe_context, operation, root_value):
     return operation
 
 
@@ -79,18 +83,63 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
     trace = current_trace()
 
     if trace:
-        operation = bind_operation(*args, **kwargs)
-        if operation.name and operation.name.value:
-            trace._add_agent_attribute("graphql.operation.name", operation.name.value)
-        if operation.operation and operation.operation.name:
-            trace._add_agent_attribute("graphql.operation.type", operation.operation.name.lower())
-        fields = operation.selection_set.selections
-        for field in fields:
-            # Logic for deepest path should go here
-            trace._add_agent_attribute("graphql.operation.deepestPath", field.name.value)
-            break
+        try:
+            operation = bind_operation_v3(*args, **kwargs)
+        except TypeError:
+            operation = bind_operation_v2(*args, **kwargs)
+
+        operation_name = operation.name
+        if hasattr(operation_name, "value"):
+            operation_name = operation_name.value
+        if operation_name:
+            trace._add_agent_attribute("graphql.operation.name", operation_name)
+
+        operation_type = operation.operation
+        if hasattr(operation_type, "name"):
+            operation_type = operation_type.name
+        if operation_type:
+            trace._add_agent_attribute("graphql.operation.type", operation_type.lower())
+
+        if operation.selection_set is not None:
+            fields = operation.selection_set.selections
+            deepest_path = traverse_deepest_path(fields)
+
+            if deepest_path is None:
+                deepest_path_str = "<unknown>"
+            else:
+                deepest_path_str = ".".join(deepest_path)
+            trace._add_agent_attribute("graphql.operation.deepestPath", deepest_path_str)
 
     return wrapped(*args, **kwargs)
+
+
+def traverse_deepest_path(fields):
+    from graphql import GraphQLScalarType
+
+    inputs = deque(((field, deque(), 0) for field in fields))
+    deepest_path_len = 0
+    deepest_path = None
+
+    while inputs:
+        field, current_path, current_path_len = inputs.pop()
+
+        field_name = field.name
+        if hasattr(field_name, "value"):
+            field_name = field_name.value
+
+        current_path.append(field_name)
+        current_path_len += 1
+
+        if field.selection_set is None or len(field.selection_set.selections) == 0:
+            if deepest_path_len < current_path_len:
+                deepest_path = current_path
+                deepest_path_len = current_path_len
+        else:
+            for inner_field in field.selection_set.selections:
+                if not isinstance(inner_field, GraphQLScalarType):
+                    inputs.append((inner_field, current_path, current_path_len))
+
+    return deepest_path
 
 
 def bind_get_middleware_resolvers(middlewares):
@@ -229,7 +278,11 @@ def instrument_graphql_execute(module):
     if hasattr(module, "resolve_field"):
         wrap_function_wrapper(module, "resolve_field", wrap_resolve_field)
 
-        
+    if hasattr(module, "execute_operation"):
+        wrap_function_wrapper(
+            module, "execute_operation", wrap_execute_operation
+        )
+
 def instrument_graphql_execution_utils(module):
     if hasattr(module, "ExecutionContext"):
         wrap_function_wrapper(

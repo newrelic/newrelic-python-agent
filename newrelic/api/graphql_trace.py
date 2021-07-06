@@ -18,8 +18,7 @@ import logging
 from newrelic.common.async_wrapper import async_wrapper
 from newrelic.api.time_trace import TimeTrace, current_trace
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
-from newrelic.core.graphql_node import GraphQLNode
-from newrelic.core.stack_trace import current_stack
+from newrelic.core.graphql_node import GraphQLOperationNode, GraphQLResolverNode
 
 _logger = logging.getLogger(__name__)
 
@@ -38,7 +37,7 @@ class GraphQLTrace(TimeTrace):
 
 
     def create_node(self):
-        return GraphQLNode(
+        return GraphQLOperationNode(
             children=self.children,
             start_time=self.start_time,
             end_time=self.end_time,
@@ -47,6 +46,9 @@ class GraphQLTrace(TimeTrace):
             guid=self.guid,
             agent_attributes=self.agent_attributes,
             user_attributes=self.user_attributes,
+            operation_name=self.agent_attributes.get("graphql.operation.name", None),
+            operation_type=self.agent_attributes.get("graphql.operation.type", None),
+            deepest_path=self.agent_attributes.get("graphql.operation.deepestPath", None),
         )
 
 
@@ -63,7 +65,7 @@ class GraphQLResolverTrace(TimeTrace):
 
 
     def create_node(self):
-        return GraphQLNode(
+        return GraphQLResolverNode(
             field_name=self.field_name,
             children=self.children,
             start_time=self.start_time,

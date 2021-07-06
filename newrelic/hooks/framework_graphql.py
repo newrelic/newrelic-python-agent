@@ -44,6 +44,28 @@ def ignore_graphql_duplicate_exception(exc, val, tb):
     return None  # Follow original exception matching rules
 
 
+def ignore_graphql_duplicate_exception(exc, val, tb):
+    from graphql.error import GraphQLError
+
+    if isinstance(val, GraphQLError):
+        transaction = current_transaction()
+
+        # Check that we have not recorded this exception
+        # previously for this transaction due to multiple
+        # error traces triggering. This happens if an exception
+        # is reraised by GraphQL as a new GraphQLError type
+        # after the original exception has already been recorded.
+
+        if transaction and hasattr(val, "original_error"):
+            _, _, fullnames, message = parse_exc_info((None, val.original_error, None))
+            fullname = fullnames[0]
+            for error in transaction._errors:
+                if error.type == fullname and error.message == message:
+                    return True
+
+    return None  # Follow original exception matching rules
+
+
 def wrap_execute(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if transaction is None:

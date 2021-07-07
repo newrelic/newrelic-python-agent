@@ -54,23 +54,25 @@ _expected_attributes = {
     "graphql.operation.type": "query",
     "graphql.operation.deepestPath": "hello"
 }
+_graphql_base_rollup_metrics = [
+    ("OtherTransaction/all", 1),
+    ("GraphQL/all", 1),
+    ("GraphQL/allOther", 1),
+    ("GraphQL/GraphQL/all", 1),
+    ("GraphQL/GraphQL/allOther", 1),
+]
 
 
 def test_basic(app, graphql_run, is_graphql_2):
     _test_basic_metrics = [
-        ("OtherTransaction/all", 1),
         ("OtherTransaction/Function/_target_application:resolve_hello", 1),
         ("GraphQL/operation/GraphQL/query/MyQuery/hello", 1),
-        ("GraphQL/all", 1),
-        ("GraphQL/allOther", 1),
-        ("GraphQL/GraphQL/all", 1),
-        ("GraphQL/GraphQL/allOther", 1),
         #("Function/_target_application:resolve_hello", 1),
     ]
 
     @validate_transaction_metrics(
         "_target_application:resolve_hello",
-        rollup_metrics=_test_basic_metrics,
+        rollup_metrics=_test_basic_metrics + _graphql_base_rollup_metrics,
         background_task=True,
     )
     @validate_span_events(exact_agents=_expected_attributes)
@@ -86,7 +88,6 @@ def test_basic(app, graphql_run, is_graphql_2):
 
 def test_middleware(app, graphql_run, is_graphql_2):
     _test_middleware_metrics = [
-        ("OtherTransaction/all", 1),
         ("OtherTransaction/Function/_target_application:resolve_hello", 1),
         #("Function/_target_application:resolve_hello", 1),
         #("Function/test_application:example_middleware", "present"),  # 2?????
@@ -94,7 +95,7 @@ def test_middleware(app, graphql_run, is_graphql_2):
 
     @validate_transaction_metrics(
         "_target_application:resolve_hello",
-        rollup_metrics=_test_middleware_metrics,
+        rollup_metrics=_test_middleware_metrics + _graphql_base_rollup_metrics,
         background_task=True,
     )
     @background_task()
@@ -157,13 +158,12 @@ def test_field_resolver_metrics_and_attrs(app, graphql_run):
         "graphql.field.parentType": "Query",
         "graphql.field.path": "hello",
     }
-    field_resolver_metrics = [('GraphQL/resolve/GraphQL/hello', 1)]
 
 
     @validate_transaction_metrics(
         "_target_application:resolve_hello",
-        rollup_metrics=field_resolver_metrics,
         scoped_metrics=field_resolver_metrics,
+        rollup_metrics=field_resolver_metrics + _graphql_base_rollup_metrics,
         background_task=True,
     )
     @validate_span_events(exact_agents=graphql_attrs)

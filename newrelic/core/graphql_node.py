@@ -22,24 +22,18 @@ from newrelic.core.node_mixin import GenericNodeMixin
 
 
 _GraphQLOperationNode = namedtuple('_GraphQLNode',
-        ['operation_type', 'operation_name', 'deepest_path', 
-        'children', 'start_time', 'end_time', 'duration', 'exclusive', 
-        'guid', 'agent_attributes', 'user_attributes'])
+    ['operation_type', 'operation_name', 'deepest_path', 
+    'children', 'start_time', 'end_time', 'duration', 'exclusive', 
+    'guid', 'agent_attributes', 'user_attributes'])
 
 _GraphQLResolverNode = namedtuple('_GraphQLNode',
-        ['field_name', 'children', 'start_time', 'end_time', 'duration', 
-        'exclusive', 'guid', 'agent_attributes', 'user_attributes'])
+    ['field_name', 'children', 'start_time', 'end_time', 'duration', 
+    'exclusive', 'guid', 'agent_attributes', 'user_attributes'])
 
 class GraphQLNodeMixin(GenericNodeMixin):
-
     @property
     def product(self):
         return "GraphQL"
-
-    @property
-    def operation(self):
-        return "select"
-
 
     def trace_node(self, stats, root, connections):
         name = root.string_table.cache(self.name)
@@ -51,6 +45,13 @@ class GraphQLNodeMixin(GenericNodeMixin):
 
         children = []
 
+        # Now for the children
+
+        for child in self.children:
+            if root.trace_node_count > root.trace_node_limit:
+                break
+            children.append(child.trace_node(stats, root, connections))
+
         # Agent attributes
         params = self.get_trace_segment_params(root.settings)
 
@@ -58,22 +59,15 @@ class GraphQLNodeMixin(GenericNodeMixin):
                 end_time=end_time, name=name, params=params, children=children,
                 label=None)
 
+class GraphQLResolverNode(_GraphQLResolverNode, GraphQLNodeMixin):
     @property
     def name(self):
+        field_name = self.field_name or "<unknown>"
         product = self.product
-        target = "test"
-        operation = self.operation or 'other'
 
-        if target:
-            name = 'GraphQL/statement/%s/%s/%s' % (product, target,
-                    operation)
-        else:
-            name = 'GraphQL/operation/%s/%s' % (product, operation)
+        name = 'GraphQL/resolve/%s/%s' % (product, field_name)
 
         return name
-
-
-class GraphQLResolverNode(_GraphQLResolverNode ,GraphQLNodeMixin):
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
@@ -93,8 +87,26 @@ class GraphQLResolverNode(_GraphQLResolverNode ,GraphQLNodeMixin):
         yield TimeMetric(name=field_resolver_metric_name, scope='', duration=self.duration,
                          exclusive=self.exclusive)
 
+        # Now for the children
 
-class GraphQLOperationNode(_GraphQLOperationNode ,GraphQLNodeMixin):
+        for child in self.children:
+            for metric in child.time_metrics(stats, root, self):
+                yield metric
+
+
+class GraphQLOperationNode(_GraphQLOperationNode, GraphQLNodeMixin):
+    @property
+    def name(self):
+        operation_type = self.operation_type or "<unknown>"
+        operation_name = self.operation_name or "<anonymous>"
+        deepest_path = self.deepest_path or "<unknown>"
+        product = self.product
+
+        name = 'GraphQL/operation/%s/%s/%s/%s' % (product, operation_type,
+                operation_name, deepest_path)
+
+        return name
+
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
         database node as well as all the child nodes.
@@ -141,3 +153,9 @@ class GraphQLOperationNode(_GraphQLOperationNode ,GraphQLNodeMixin):
 
         yield TimeMetric(name=operation_metric_name, scope='',
                 duration=self.duration, exclusive=self.exclusive)
+
+        # Now for the children
+
+        for child in self.children:
+            for metric in child.time_metrics(stats, root, self):
+                yield metric

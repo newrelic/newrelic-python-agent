@@ -15,7 +15,7 @@
 from newrelic.api.time_trace import notice_error, current_trace
 from newrelic.api.error_trace import ErrorTrace, ErrorTraceWrapper
 from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
-from newrelic.api.graphql_trace import GraphQLResolverTrace, GraphQLTrace
+from newrelic.api.graphql_trace import GraphQLResolverTrace, GraphQLOperationTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name, parse_exc_info
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
@@ -72,7 +72,7 @@ def wrap_execute(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
     
     transaction.set_transaction_name(callable_name(wrapped), priority=1)
-    with GraphQLTrace():
+    with GraphQLOperationTrace():
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             return wrapped(*args, **kwargs)
 

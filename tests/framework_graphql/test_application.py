@@ -90,16 +90,7 @@ def test_middleware(app, graphql_run, is_graphql_2):
         ("OtherTransaction/Function/_target_application:resolve_hello", 1),
         #("Function/_target_application:resolve_hello", 1),
         #("Function/test_application:example_middleware", "present"),  # 2?????
-
     ]
-    if is_graphql_2:
-        _test_middleware_metrics.append(
-            ("Function/graphql.execution.executor:execute", 1)
-        )
-    else:  # GraphQL 3+
-        _test_middleware_metrics.append(
-            ("Function/graphql.execution.execute:execute", 1)
-        )
 
     @validate_transaction_metrics(
         "_target_application:resolve_hello",

@@ -15,6 +15,7 @@
 from newrelic.api.time_trace import notice_error
 from newrelic.api.error_trace import ErrorTrace, ErrorTraceWrapper
 from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
+from newrelic.api.graphql_trace import GraphQLResolverTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name, parse_exc_info
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
@@ -149,6 +150,42 @@ def wrap_validate(wrapped, instance, args, kwargs):
     return errors
 
 
+def bind_resolve_field_v3(parent_type, source, field_nodes, path):
+    return parent_type, field_nodes, path
+
+
+def bind_resolve_field_v2(exe_context, parent_type, source, field_asts, parent_info, field_path):
+    return parent_type, field_asts, field_path
+
+
+def wrap_resolve_field(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    from graphql import __version__ as version
+    version = tuple(int(v) for v in version.split("."))
+
+    if version <= (3, 0, 0):
+        bind_resolve_field = bind_resolve_field_v2
+    else:
+        bind_resolve_field = bind_resolve_field_v3
+
+    parent_type, field_asts, field_path = bind_resolve_field(*args, **kwargs)
+
+    field_name = field_asts[0].name.value
+
+    with GraphQLResolverTrace(field_name) as trace:
+        trace._add_agent_attribute("graphql.field.name", field_name)
+        trace._add_agent_attribute("graphql.field.parentType", parent_type.name)
+        if isinstance(field_path, list):
+            trace._add_agent_attribute("graphql.field.path", field_path[0])
+        else:
+            trace._add_agent_attribute("graphql.field.path", field_path.key)
+
+        return wrapped(*args, **kwargs)
+
+
 def instrument_graphql_execute(module):
     if hasattr(module, "execute"):
         wrap_function_wrapper(module, "execute", wrap_execute)
@@ -158,12 +195,20 @@ def instrument_graphql_execute(module):
         wrap_function_wrapper(
             module, "ExecutionContext.__init__", wrap_executor_context_init
         )
+        if hasattr(module.ExecutionContext, "resolve_field"):
+            wrap_function_wrapper(
+                module, "ExecutionContext.resolve_field", wrap_resolve_field
+            )
+    if hasattr(module, "resolve_field"):
+        wrap_function_wrapper(module, "resolve_field", wrap_resolve_field)
+
 
 def instrument_graphql_execution_utils(module):
     if hasattr(module, "ExecutionContext"):
         wrap_function_wrapper(
             module, "ExecutionContext.__init__", wrap_executor_context_init
         )
+
 
 def instrument_graphql_execution_middleware(module):
     if hasattr(module, "get_middleware_resolvers"):

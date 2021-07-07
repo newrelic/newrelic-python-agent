@@ -13,16 +13,25 @@
 # limitations under the License.
 
 import pytest
-from testing_support.fixtures import validate_transaction_metrics, validate_transaction_errors
+from testing_support.fixtures import (
+    validate_transaction_metrics,
+    validate_transaction_errors,
+    override_application_settings,
+    dt_enabled,
+)
+from testing_support.validators.validate_span_events import validate_span_events
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 
+
 @pytest.fixture(scope="session")
 def is_graphql_2():
     from graphql import __version__ as version
+
     major_version = int(version.split(".")[0])
     return major_version == 2
+
 
 @pytest.fixture(scope="session")
 def graphql_run():
@@ -38,8 +47,10 @@ def example_middleware(next, root, info, **args):
     return_value = next(root, info, **args)
     return return_value
 
+
 def error_middleware(next, root, info, **args):
     raise RuntimeError("Runtime Error!")
+
 
 _runtime_error_name = callable_name(RuntimeError)
 _test_runtime_error = [(_runtime_error_name, "Runtime Error!")]
@@ -49,7 +60,7 @@ def test_basic(app, graphql_run, is_graphql_2):
     _test_basic_metrics = [
         ("OtherTransaction/all", 1),
         ("OtherTransaction/Function/_target_application:resolve_hello", 1),
-        ("Function/_target_application:resolve_hello", 1),
+        # ("Function/_target_application:resolve_hello", 1),
     ]
     if is_graphql_2:
         _test_basic_metrics.append(("Function/graphql.execution.executor:execute", 1))
@@ -66,6 +77,7 @@ def test_basic(app, graphql_run, is_graphql_2):
         response = graphql_run(app, "{ hello }")
         assert not response.errors
         assert "Hello!" in str(response.data)
+
     _test()
 
 
@@ -73,13 +85,18 @@ def test_middleware(app, graphql_run, is_graphql_2):
     _test_middleware_metrics = [
         ("OtherTransaction/all", 1),
         ("OtherTransaction/Function/_target_application:resolve_hello", 1),
-        ("Function/_target_application:resolve_hello", 1),
-        ("Function/test_application:example_middleware", "present"),  # 2?????
+        #("Function/_target_application:resolve_hello", 1),
+        #("Function/test_application:example_middleware", "present"),  # 2?????
+
     ]
     if is_graphql_2:
-        _test_middleware_metrics.append(("Function/graphql.execution.executor:execute", 1))
+        _test_middleware_metrics.append(
+            ("Function/graphql.execution.executor:execute", 1)
+        )
     else:  # GraphQL 3+
-        _test_middleware_metrics.append(("Function/graphql.execution.execute:execute", 1))
+        _test_middleware_metrics.append(
+            ("Function/graphql.execution.execute:execute", 1)
+        )
 
     @validate_transaction_metrics(
         "_target_application:resolve_hello",
@@ -91,6 +108,7 @@ def test_middleware(app, graphql_run, is_graphql_2):
         response = graphql_run(app, "{ hello }", middleware=[example_middleware])
         assert not response.errors
         assert "Hello!" in str(response.data)
+
     _test()
 
 
@@ -103,6 +121,7 @@ def test_exception_in_middleware(app, graphql_run):
 
     _test()
 
+
 @pytest.mark.parametrize("field", ("error", "error_non_null"))
 def test_exception_in_resolver(app, graphql_run, field):
     @validate_transaction_errors(errors=_test_runtime_error)
@@ -113,8 +132,10 @@ def test_exception_in_resolver(app, graphql_run, field):
 
     _test()
 
+
 def test_exception_in_validation(app, graphql_run):
     from graphql.error import GraphQLError
+
     @validate_transaction_errors(errors=[callable_name(GraphQLError)])
     @background_task()
     def _test():
@@ -122,6 +143,7 @@ def test_exception_in_validation(app, graphql_run):
         assert response.errors
 
     _test()
+
 
 @pytest.mark.parametrize("query", ["{ library(index: 0) { name, book { name } } }"])
 def test_deepest_path(app, graphql_run, query):
@@ -131,5 +153,30 @@ def test_deepest_path(app, graphql_run, query):
     def _test():
         response = graphql_run(app, query)
         assert not response.errors
+
+
+@dt_enabled
+def test_field_resolver_metrics_and_attrs(app, graphql_run):
+    field_resolver_metrics = [("GraphQL/resolve/GraphQL/hello", 1)]
+    graphql_attrs = {
+        "graphql.field.name": "hello",
+        "graphql.field.parentType": "Query",
+        "graphql.field.path": "hello",
+    }
+    field_resolver_metrics = [('GraphQL/resolve/GraphQL/hello', 1)]
+
+
+    @validate_transaction_metrics(
+        "_target_application:resolve_hello",
+        rollup_metrics=field_resolver_metrics,
+        scoped_metrics=field_resolver_metrics,
+        background_task=True,
+    )
+    @validate_span_events(exact_agents=graphql_attrs)
+    @background_task()
+    def _test():
+        response = graphql_run(app, "{ hello }")
+        assert not response.errors
+        assert "Hello!" in str(response.data)
 
     _test()

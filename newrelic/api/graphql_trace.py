@@ -36,100 +36,35 @@ class GraphQLTrace(TimeTrace):
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, dict())
 
-    # def finalize_data(self, transaction, exc=None, value=None, tb=None):
-    #     self.stack_trace = None
-
-    #     connect_params = None
-    #     cursor_params = None
-    #     sql_parameters = None
-    #     execute_params = None
-    #     host = None
-    #     port_path_or_id = None
-    #     database_name = None
-
-    #     settings = transaction.settings
-    #     tt = settings.transaction_tracer
-    #     agent_limits = settings.agent_limits
-    #     ds_tracer = settings.datastore_tracer
-
-    #     # Check settings, so that we only call instance_info when needed.
-
-    #     instance_enabled = ds_tracer.instance_reporting.enabled
-    #     db_name_enabled = ds_tracer.database_name_reporting.enabled
-
-    #     if instance_enabled or db_name_enabled:
-
-    #         if (self.dbapi2_module and
-    #                 self.connect_params and
-    #                 self.dbapi2_module._nr_datastore_instance_feature_flag and
-    #                 self.dbapi2_module._nr_instance_info is not None):
-
-    #             instance_info = self.dbapi2_module._nr_instance_info(
-    #                     *self.connect_params)
-
-    #             if instance_enabled:
-    #                 host, port_path_or_id, _ = instance_info
-
-    #             if db_name_enabled:
-    #                 _, _, database_name = instance_info
-
-    #         else:
-    #             if instance_enabled:
-    #                 host = self.host
-    #                 port_path_or_id = self.port_path_or_id
-
-    #             if db_name_enabled:
-    #                 database_name = self.database_name
-
-    #     if (tt.enabled and settings.collect_traces and
-    #             tt.record_sql != 'off'):
-    #         if self.duration >= tt.stack_trace_threshold:
-    #             if (transaction._stack_trace_count <
-    #                     agent_limits.slow_sql_stack_trace):
-    #                 self.stack_trace = [transaction._intern_string(x) for
-    #                                     x in current_stack(skip=2)]
-    #                 transaction._stack_trace_count += 1
-
-    #         if self.is_async_mode and tt.explain_enabled:
-    #             self._log_async_warning()
-    #         else:
-    #             # Only remember all the params for the calls if know
-    #             # there is a chance we will need to do an explain
-    #             # plan. We never allow an explain plan to be done if
-    #             # an exception occurred in doing the query in case
-    #             # doing the explain plan with the same inputs could
-    #             # cause further problems.
-
-    #             if (exc is None and
-    #                     not self.is_async_mode and
-    #                     tt.explain_enabled and
-    #                     self.duration >= tt.explain_threshold and
-    #                     self.connect_params is not None):
-    #                 if (transaction._explain_plan_count <
-    #                        agent_limits.sql_explain_plans):
-    #                     connect_params = self.connect_params
-    #                     cursor_params = self.cursor_params
-    #                     sql_parameters = self.sql_parameters
-    #                     execute_params = self.execute_params
-    #                     transaction._explain_plan_count += 1
-
-    #     self.sql_format = tt.record_sql
-
-    #     self.connect_params = connect_params
-    #     self.cursor_params = cursor_params
-    #     self.sql_parameters = sql_parameters
-    #     self.execute_params = execute_params
-    #     self.host = host
-    #     self.port_path_or_id = port_path_or_id
-    #     self.database_name = database_name
-
-    def terminal_node(self):
-        return True
 
     def create_node(self):
         return GraphQLNode(
-            # library=self.library,
-            # command=self.command,
+            children=self.children,
+            start_time=self.start_time,
+            end_time=self.end_time,
+            duration=self.duration,
+            exclusive=self.exclusive,
+            guid=self.guid,
+            agent_attributes=self.agent_attributes,
+            user_attributes=self.user_attributes,
+        )
+
+
+class GraphQLResolverTrace(TimeTrace):
+    def __init__(self, field_name=None, **kwargs):
+        parent = None
+        if kwargs:
+            if len(kwargs) > 1:
+                raise TypeError("Invalid keyword arguments:", kwargs)
+            parent = kwargs['parent']
+        super(GraphQLResolverTrace, self).__init__(parent)
+
+        self.field_name = field_name
+
+
+    def create_node(self):
+        return GraphQLNode(
+            field_name=self.field_name,
             children=self.children,
             start_time=self.start_time,
             end_time=self.end_time,

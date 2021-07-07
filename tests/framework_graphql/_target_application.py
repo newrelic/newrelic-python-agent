@@ -12,7 +12,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from graphql import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString, GraphQLNonNull
+from graphql import (
+    GraphQLArgument,
+    GraphQLField,
+    GraphQLInt,
+    GraphQLList,
+    GraphQLNonNull,
+    GraphQLObjectType,
+    GraphQLSchema,
+    GraphQLString,
+)
+
+libraries = [
+    {
+        "name": "NYC Public Library",
+        "book": [{"name": "A", "author": "B"}, {"name": "C", "author": "D"}],
+    },
+    {"name": "Portland Public Library", "book": [{"name": "E", "author": "F"}]},
+]
+
+
+def resolve_library(parent, info, index):
+    return libraries[index]
+
+
+Book = GraphQLObjectType(
+    "Book",
+    {
+        "name": GraphQLField(GraphQLString),
+        "author": GraphQLField(GraphQLString),
+    },
+)
+
+Library = GraphQLObjectType(
+    "Library",
+    {
+        "name": GraphQLField(GraphQLString),
+        "book": GraphQLField(GraphQLList(Book)),
+    },
+)
 
 
 def resolve_hello(root, info):
@@ -25,15 +63,35 @@ def resolve_error(root, info):
 
 try:
     hello_field = GraphQLField(GraphQLString, resolver=resolve_hello)
+    library_field = GraphQLField(
+        Library,
+        resolver=resolve_library,
+        args={"index": GraphQLArgument(GraphQLNonNull(GraphQLInt))},
+    )
     error_field = GraphQLField(GraphQLString, resolver=resolve_error)
-    error_non_null_field = GraphQLField(GraphQLNonNull(GraphQLString), resolver=resolve_error)
+    error_non_null_field = GraphQLField(
+        GraphQLNonNull(GraphQLString), resolver=resolve_error
+    )
 except TypeError:
     hello_field = GraphQLField(GraphQLString, resolve=resolve_hello)
+    library_field = GraphQLField(
+        Library,
+        resolve=resolve_library,
+        args={"index": GraphQLArgument(GraphQLNonNull(GraphQLInt))},
+    )
     error_field = GraphQLField(GraphQLString, resolve=resolve_error)
-    error_non_null_field = GraphQLField(GraphQLNonNull(GraphQLString), resolve=resolve_error)
+    error_non_null_field = GraphQLField(
+        GraphQLNonNull(GraphQLString), resolve=resolve_error
+    )
 
 query = GraphQLObjectType(
-    name="Query", fields={"hello": hello_field, "error": error_field, "error_non_null": error_non_null_field}
+    name="Query",
+    fields={
+        "hello": hello_field,
+        "error": error_field,
+        "error_non_null": error_non_null_field,
+        "library": library_field,
+    },
 )
 
 _target_application = GraphQLSchema(query=query)

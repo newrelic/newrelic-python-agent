@@ -20,6 +20,7 @@ from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name, parse_exc_info
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from collections import deque
+from copy import copy
 
 
 def ignore_graphql_duplicate_exception(exc, val, tb):
@@ -152,7 +153,7 @@ def traverse_deepest_path(fields):
                 deepest_path_len = current_path_len
         else:
             for inner_field in field.selection_set.selections:
-                inputs.append((inner_field, current_path.copy(), current_path_len))
+                inputs.append((inner_field, copy(current_path), current_path_len))
 
     return deepest_path
 

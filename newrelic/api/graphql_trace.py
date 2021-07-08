@@ -28,8 +28,20 @@ class GraphQLOperationTrace(TimeTrace):
             parent = kwargs['parent']
         super(GraphQLOperationTrace, self).__init__(parent)
 
+        self.operation_name = None
+        self.operation_type = None
+        self.deepest_path = None
+
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, dict())
+
+    def finalize_data(self, *args, **kwargs):
+        self._add_agent_attribute("graphql.operation.type", self.operation_type)
+        self._add_agent_attribute("graphql.operation.name", self.operation_name)
+        self._add_agent_attribute("graphql.operation.deepestPath", self.deepest_path)
+
+        return super(GraphQLOperationTrace, self).finalize_data(*args, **kwargs)
+
 
     def create_node(self):
         return GraphQLOperationNode(
@@ -41,9 +53,9 @@ class GraphQLOperationTrace(TimeTrace):
             guid=self.guid,
             agent_attributes=self.agent_attributes,
             user_attributes=self.user_attributes,
-            operation_name=self.agent_attributes.get("graphql.operation.name", None),
-            operation_type=self.agent_attributes.get("graphql.operation.type", None),
-            deepest_path=self.agent_attributes.get("graphql.operation.deepestPath", None),
+            operation_name=self.operation_name,
+            operation_type=self.operation_type,
+            deepest_path=self.deepest_path,
         )
 
 
@@ -79,6 +91,13 @@ class GraphQLResolverTrace(GraphQLOperationTrace):
     def __init__(self, field_name=None, **kwargs):
         super(GraphQLResolverTrace, self).__init__(**kwargs)
         self.field_name = field_name
+
+
+    def finalize_data(self, *args, **kwargs):
+        self._add_agent_attribute("graphql.field.name", self.field_name)
+
+        return super(GraphQLResolverTrace, self).finalize_data(*args, **kwargs)
+
 
     def create_node(self):
         return GraphQLResolverNode(

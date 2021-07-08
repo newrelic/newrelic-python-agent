@@ -113,24 +113,20 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
         operation_name = operation.name
         if hasattr(operation_name, "value"):
             operation_name = operation_name.value
-        if operation_name:
-            trace._add_agent_attribute("graphql.operation.name", operation_name)
+        trace.operation_name = operation_name
 
         operation_type = operation.operation
         if hasattr(operation_type, "name"):
             operation_type = operation_type.name
-        if operation_type:
-            trace._add_agent_attribute("graphql.operation.type", operation_type.lower())
+        trace.operation_type = operation_type.lower()
 
         if operation.selection_set is not None:
             fields = operation.selection_set.selections
-            deepest_path = traverse_deepest_path(fields)
-
-            if deepest_path is None:
-                deepest_path_str = "<unknown>"
-            else:
-                deepest_path_str = ".".join(deepest_path)
-            trace._add_agent_attribute("graphql.operation.deepestPath", deepest_path_str)
+            try:
+                deepest_path = traverse_deepest_path(fields)
+            except:
+                deepest_path = []
+            trace.deepest_path = ".".join(deepest_path)
 
     return wrapped(*args, **kwargs)
 
@@ -269,7 +265,6 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
     field_name = field_asts[0].name.value
 
     with GraphQLResolverTrace(field_name) as trace:
-        trace._add_agent_attribute("graphql.field.name", field_name)
         trace._add_agent_attribute("graphql.field.parentType", parent_type.name)
         if isinstance(field_path, list):
             trace._add_agent_attribute("graphql.field.path", field_path[0])

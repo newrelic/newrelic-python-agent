@@ -63,6 +63,7 @@ _graphql_base_rollup_metrics = [
 ]
 
 
+@dt_enabled
 def test_basic(app, graphql_run, is_graphql_2):
     _test_basic_metrics = [
         ("OtherTransaction/Function/_target_application:resolve_hello", 1),
@@ -76,7 +77,6 @@ def test_basic(app, graphql_run, is_graphql_2):
         background_task=True,
     )
     @validate_span_events(exact_agents=_expected_attributes)
-    @dt_enabled
     @background_task()
     def _test():
         response = graphql_run(app, "query MyQuery{ hello }")
@@ -140,14 +140,29 @@ def test_exception_in_validation(app, graphql_run):
     _test()
 
 
-@pytest.mark.parametrize("query", ["{ library(index: 0) { name, book { name } } }"])
-def test_deepest_path(app, graphql_run, query):
-    # Requires validators after logic is implemented
-    # Currently this test only validates that the nested library field functions
+@pytest.mark.parametrize("query,operation_attrs", [("query MyQuery { library(index: 0) { name, book { name } } }", {})])
+@dt_enabled
+def test_operation_metrics_and_attrs(app, graphql_run, query, operation_attrs):    
+    operation_metrics = [("GraphQL/operation/GraphQL/query/MyQuery/library.book.name", 1)]
+    operation_attrs = {
+        "graphql.operation.type": "query",
+        "graphql.operation.name": "MyQuery",
+        "graphql.operation.deepestPath": "library.book.name",
+    }
+
+    @validate_transaction_metrics(
+        "graphql.execution.execute:default_field_resolver",
+        scoped_metrics=operation_metrics,
+        rollup_metrics=operation_metrics + _graphql_base_rollup_metrics,
+        background_task=True,
+    )
+    @validate_span_events(exact_agents=operation_attrs)
     @background_task()
     def _test():
         response = graphql_run(app, query)
         assert not response.errors
+    
+    _test()
 
 
 @dt_enabled
@@ -158,7 +173,6 @@ def test_field_resolver_metrics_and_attrs(app, graphql_run):
         "graphql.field.parentType": "Query",
         "graphql.field.path": "hello",
     }
-
 
     @validate_transaction_metrics(
         "_target_application:resolve_hello",

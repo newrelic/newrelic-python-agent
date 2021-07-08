@@ -132,7 +132,7 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
 
 
 def traverse_deepest_path(fields):
-    from graphql import GraphQLScalarType
+    from graphql import is_scalar_type
 
     inputs = deque(((field, deque(), 0) for field in fields))
     deepest_path_len = 0
@@ -154,8 +154,8 @@ def traverse_deepest_path(fields):
                 deepest_path_len = current_path_len
         else:
             for inner_field in field.selection_set.selections:
-                if not isinstance(inner_field, GraphQLScalarType):
-                    inputs.append((inner_field, current_path, current_path_len))
+                if not is_scalar_type(inner_field):
+                    inputs.append((inner_field, current_path.copy(), current_path_len))
 
     return deepest_path
 

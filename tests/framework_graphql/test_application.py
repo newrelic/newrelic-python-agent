@@ -142,7 +142,7 @@ def test_exception_in_validation(app, graphql_run):
 
 @pytest.mark.parametrize("query,operation_attrs", [("query MyQuery { library(index: 0) { name, book { name } } }", {})])
 @dt_enabled
-def test_operation_metrics_and_attrs(app, graphql_run, query, operation_attrs):    
+def test_operation_metrics_and_attrs(app, graphql_run, query, operation_attrs, is_graphql_2):    
     operation_metrics = [("GraphQL/operation/GraphQL/query/MyQuery/library.book.name", 1)]
     operation_attrs = {
         "graphql.operation.type": "query",
@@ -150,8 +150,13 @@ def test_operation_metrics_and_attrs(app, graphql_run, query, operation_attrs):
         "graphql.operation.deepestPath": "library.book.name",
     }
 
+    if is_graphql_2:
+        txn_name = "graphql.execution.utils:default_resolve_fn"
+    else:
+        txn_name = "graphql.execution.execute:default_field_resolver"
+
     @validate_transaction_metrics(
-        "graphql.execution.execute:default_field_resolver",
+        txn_name,
         scoped_metrics=operation_metrics,
         rollup_metrics=operation_metrics + _graphql_base_rollup_metrics,
         background_task=True,

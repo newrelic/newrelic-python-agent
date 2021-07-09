@@ -74,7 +74,11 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set((
         'peer.address',
         'graphql.field.name',
         'graphql.field.parentType',
-        'graphql.field.path'
+        'graphql.field.path',
+        'graphql.operation.name',
+        'graphql.operation.type',
+        'graphql.operation.deepestPath',
+        'graphql.operation.query',
 ))
 
 MAX_NUM_USER_ATTRIBUTES = 128

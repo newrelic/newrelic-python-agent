@@ -14,51 +14,116 @@
 
 from collections import namedtuple
 
-import newrelic.core.attribute as attribute
 import newrelic.core.trace_node
 
-from newrelic.common import system_info
 from newrelic.core.metric import TimeMetric
 
 from newrelic.core.node_mixin import GenericNodeMixin
 
 
-_GraphQLNode = namedtuple('_GraphQLNode',
-        ['field_name', 'children', 'start_time', 'end_time',
-        'duration', 'exclusive', 'guid', 'agent_attributes',
-        'user_attributes'])
+_GraphQLOperationNode = namedtuple('_GraphQLNode',
+    ['operation_type', 'operation_name', 'deepest_path', 
+    'children', 'start_time', 'end_time', 'duration', 'exclusive', 
+    'guid', 'agent_attributes', 'user_attributes'])
 
+_GraphQLResolverNode = namedtuple('_GraphQLNode',
+    ['field_name', 'children', 'start_time', 'end_time', 'duration', 
+    'exclusive', 'guid', 'agent_attributes', 'user_attributes'])
 
-class GraphQLNode(_GraphQLNode, GenericNodeMixin):
-
+class GraphQLNodeMixin(GenericNodeMixin):
     @property
     def product(self):
         return "GraphQL"
 
-    @property
-    def operation(self):
-        return "select"
+    def trace_node(self, stats, root, connections):
+        name = root.string_table.cache(self.name)
 
+        start_time = newrelic.core.trace_node.node_start_time(root, self)
+        end_time = newrelic.core.trace_node.node_end_time(root, self)
+
+        root.trace_node_count += 1
+
+        children = []
+
+        # Now for the children
+
+        for child in self.children:
+            if root.trace_node_count > root.trace_node_limit:
+                break
+            children.append(child.trace_node(stats, root, connections))
+
+        # Agent attributes
+        params = self.get_trace_segment_params(root.settings)
+
+        return newrelic.core.trace_node.TraceNode(start_time=start_time,
+                end_time=end_time, name=name, params=params, children=children,
+                label=None)
+
+class GraphQLResolverNode(_GraphQLResolverNode, GraphQLNodeMixin):
+    @property
+    def name(self):
+        field_name = self.field_name or "<unknown>"
+        product = self.product
+
+        name = 'GraphQL/resolve/%s/%s' % (product, field_name)
+
+        return name
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
         database node as well as all the child nodes.
         """
 
-        field_name = self.field_name
+        field_name = self.field_name or "<unknown>"
         product = self.product
-        operation = self.operation or 'other'
 
         # Determine the scoped metric
-        operation_metric_name = 'GraphQL/operation/%s/%s' % (product,
-                operation)
 
         field_resolver_metric_name = 'GraphQL/resolve/%s/%s' % (product, field_name)
 
-        scoped_metric_name = operation_metric_name
-
         yield TimeMetric(name=field_resolver_metric_name, scope=root.path, duration=self.duration,
                          exclusive=self.exclusive)
+
+        yield TimeMetric(name=field_resolver_metric_name, scope='', duration=self.duration,
+                         exclusive=self.exclusive)
+
+        # Now for the children
+
+        for child in self.children:
+            for metric in child.time_metrics(stats, root, self):
+                yield metric
+
+
+class GraphQLOperationNode(_GraphQLOperationNode, GraphQLNodeMixin):
+    @property
+    def name(self):
+        operation_type = self.operation_type or "<unknown>"
+        operation_name = self.operation_name or "<anonymous>"
+        deepest_path = self.deepest_path or "<unknown>"
+        product = self.product
+
+        name = 'GraphQL/operation/%s/%s/%s/%s' % (product, operation_type,
+                operation_name, deepest_path)
+
+        return name
+
+    def time_metrics(self, stats, root, parent):
+        """Return a generator yielding the timed metrics for this
+        database node as well as all the child nodes.
+
+        """
+
+        operation_type = self.operation_type or "<unknown>"
+        operation_name = self.operation_name or "<anonymous>"
+        deepest_path = self.deepest_path or "<unknown>"
+        product = self.product
+
+        # Determine the scoped metric
+
+        operation_metric_name = 'GraphQL/operation/%s/%s/%s/%s' % (product,
+                operation_type, operation_name, deepest_path)
+
+        scoped_metric_name = operation_metric_name
 
         yield TimeMetric(name=scoped_metric_name, scope=root.path,
                     duration=self.duration, exclusive=self.exclusive)
@@ -89,37 +154,8 @@ class GraphQLNode(_GraphQLNode, GenericNodeMixin):
         yield TimeMetric(name=operation_metric_name, scope='',
                 duration=self.duration, exclusive=self.exclusive)
 
-        yield TimeMetric(name=field_resolver_metric_name, scope='', duration=self.duration,
-                         exclusive=self.exclusive)
+        # Now for the children
 
-
-    def trace_node(self, stats, root, connections):
-        name = root.string_table.cache(self.name)
-
-        start_time = newrelic.core.trace_node.node_start_time(root, self)
-        end_time = newrelic.core.trace_node.node_end_time(root, self)
-
-        root.trace_node_count += 1
-
-        children = []
-
-        # Agent attributes
-        params = self.get_trace_segment_params(root.settings)
-
-        return newrelic.core.trace_node.TraceNode(start_time=start_time,
-                end_time=end_time, name=name, params=params, children=children,
-                label=None)
-
-    @property
-    def name(self):
-        product = self.product
-        target = "test"
-        operation = self.operation or 'other'
-
-        if target:
-            name = 'GraphQL/statement/%s/%s/%s' % (product, target,
-                    operation)
-        else:
-            name = 'GraphQL/operation/%s/%s' % (product, operation)
-
-        return name
+        for child in self.children:
+            for metric in child.time_metrics(stats, root, self):
+                yield metric

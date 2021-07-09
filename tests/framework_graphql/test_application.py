@@ -13,12 +13,7 @@
 # limitations under the License.
 
 import pytest
-from testing_support.fixtures import (
-    validate_transaction_metrics,
-    validate_transaction_errors,
-    override_application_settings,
-    dt_enabled,
-)
+from testing_support.fixtures import validate_transaction_metrics, validate_transaction_errors, dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 
 from newrelic.api.background_task import background_task
@@ -54,27 +49,37 @@ def error_middleware(next, root, info, **args):
 
 _runtime_error_name = callable_name(RuntimeError)
 _test_runtime_error = [(_runtime_error_name, "Runtime Error!")]
+_expected_attributes = {
+    "graphql.operation.name": "MyQuery",
+    "graphql.operation.type": "query",
+    "graphql.operation.deepestPath": "hello"
+}
+_graphql_base_rollup_metrics = [
+    ("OtherTransaction/all", 1),
+    ("GraphQL/all", 1),
+    ("GraphQL/allOther", 1),
+    ("GraphQL/GraphQL/all", 1),
+    ("GraphQL/GraphQL/allOther", 1),
+]
 
 
+@dt_enabled
 def test_basic(app, graphql_run, is_graphql_2):
     _test_basic_metrics = [
-        ("OtherTransaction/all", 1),
         ("OtherTransaction/Function/_target_application:resolve_hello", 1),
-        # ("Function/_target_application:resolve_hello", 1),
+        ("GraphQL/operation/GraphQL/query/MyQuery/hello", 1),
+        #("Function/_target_application:resolve_hello", 1),
     ]
-    if is_graphql_2:
-        _test_basic_metrics.append(("Function/graphql.execution.executor:execute", 1))
-    else:  # GraphQL 3+
-        _test_basic_metrics.append(("Function/graphql.execution.execute:execute", 1))
 
     @validate_transaction_metrics(
         "_target_application:resolve_hello",
-        rollup_metrics=_test_basic_metrics,
+        rollup_metrics=_test_basic_metrics + _graphql_base_rollup_metrics,
         background_task=True,
     )
+    @validate_span_events(exact_agents=_expected_attributes)
     @background_task()
     def _test():
-        response = graphql_run(app, "{ hello }")
+        response = graphql_run(app, "query MyQuery{ hello }")
         assert not response.errors
         assert "Hello!" in str(response.data)
 
@@ -83,24 +88,14 @@ def test_basic(app, graphql_run, is_graphql_2):
 
 def test_middleware(app, graphql_run, is_graphql_2):
     _test_middleware_metrics = [
-        ("OtherTransaction/all", 1),
         ("OtherTransaction/Function/_target_application:resolve_hello", 1),
         #("Function/_target_application:resolve_hello", 1),
         #("Function/test_application:example_middleware", "present"),  # 2?????
-
     ]
-    if is_graphql_2:
-        _test_middleware_metrics.append(
-            ("Function/graphql.execution.executor:execute", 1)
-        )
-    else:  # GraphQL 3+
-        _test_middleware_metrics.append(
-            ("Function/graphql.execution.execute:execute", 1)
-        )
 
     @validate_transaction_metrics(
         "_target_application:resolve_hello",
-        rollup_metrics=_test_middleware_metrics,
+        rollup_metrics=_test_middleware_metrics + _graphql_base_rollup_metrics,
         background_task=True,
     )
     @background_task()
@@ -145,14 +140,34 @@ def test_exception_in_validation(app, graphql_run):
     _test()
 
 
-@pytest.mark.parametrize("query", ["{ library(index: 0) { name, book { name } } }"])
-def test_deepest_path(app, graphql_run, query):
-    # Requires validators after logic is implemented
-    # Currently this test only validates that the nested library field functions
+@pytest.mark.parametrize("query,operation_attrs", [("query MyQuery { library(index: 0) { name, book { name } } }", {})])
+@dt_enabled
+def test_operation_metrics_and_attrs(app, graphql_run, query, operation_attrs, is_graphql_2):    
+    operation_metrics = [("GraphQL/operation/GraphQL/query/MyQuery/library.book.name", 1)]
+    operation_attrs = {
+        "graphql.operation.type": "query",
+        "graphql.operation.name": "MyQuery",
+        "graphql.operation.deepestPath": "library.book.name",
+    }
+
+    if is_graphql_2:
+        txn_name = "graphql.execution.utils:default_resolve_fn"
+    else:
+        txn_name = "graphql.execution.execute:default_field_resolver"
+
+    @validate_transaction_metrics(
+        txn_name,
+        scoped_metrics=operation_metrics,
+        rollup_metrics=operation_metrics + _graphql_base_rollup_metrics,
+        background_task=True,
+    )
+    @validate_span_events(exact_agents=operation_attrs)
     @background_task()
     def _test():
         response = graphql_run(app, query)
         assert not response.errors
+    
+    _test()
 
 
 @dt_enabled
@@ -163,13 +178,11 @@ def test_field_resolver_metrics_and_attrs(app, graphql_run):
         "graphql.field.parentType": "Query",
         "graphql.field.path": "hello",
     }
-    field_resolver_metrics = [('GraphQL/resolve/GraphQL/hello', 1)]
-
 
     @validate_transaction_metrics(
         "_target_application:resolve_hello",
-        rollup_metrics=field_resolver_metrics,
         scoped_metrics=field_resolver_metrics,
+        rollup_metrics=field_resolver_metrics + _graphql_base_rollup_metrics,
         background_task=True,
     )
     @validate_span_events(exact_agents=graphql_attrs)

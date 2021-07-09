@@ -12,13 +12,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.time_trace import notice_error
+from newrelic.api.time_trace import notice_error, current_trace
 from newrelic.api.error_trace import ErrorTrace, ErrorTraceWrapper
 from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
-from newrelic.api.graphql_trace import GraphQLResolverTrace
+from newrelic.api.graphql_trace import GraphQLResolverTrace, GraphQLOperationTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name, parse_exc_info
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
+from collections import deque
+from copy import copy
+
+
+def ignore_graphql_duplicate_exception(exc, val, tb):
+    from graphql.error import GraphQLError
+
+    if isinstance(val, GraphQLError):
+        transaction = current_transaction()
+
+        # Check that we have not recorded this exception
+        # previously for this transaction due to multiple
+        # error traces triggering. This happens if an exception
+        # is reraised by GraphQL as a new GraphQLError type
+        # after the original exception has already been recorded.
+
+        if transaction and hasattr(val, "original_error"):
+            _, _, fullnames, message = parse_exc_info((None, val.original_error, None))
+            fullname = fullnames[0]
+            for error in transaction._errors:
+                if error.type == fullname and error.message == message:
+                    return True
+
+    return None  # Follow original exception matching rules
 
 
 def ignore_graphql_duplicate_exception(exc, val, tb):
@@ -49,7 +73,7 @@ def wrap_execute(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
     
     transaction.set_transaction_name(callable_name(wrapped), priority=1)
-    with FunctionTrace(callable_name(wrapped)):
+    with GraphQLOperationTrace():
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             return wrapped(*args, **kwargs)
 
@@ -69,6 +93,69 @@ def wrap_executor_context_init(wrapped, instance, args, kwargs):
             instance.field_resolver._nr_wrapped = True
 
     return result
+
+
+def bind_operation_v3(operation, root_value):
+    return operation
+
+def bind_operation_v2(exe_context, operation, root_value):
+    return operation
+
+
+def wrap_execute_operation(wrapped, instance, args, kwargs):
+    trace = current_trace()
+
+    if trace:
+        try:
+            operation = bind_operation_v3(*args, **kwargs)
+        except TypeError:
+            operation = bind_operation_v2(*args, **kwargs)
+
+        operation_name = operation.name
+        if hasattr(operation_name, "value"):
+            operation_name = operation_name.value
+        trace.operation_name = operation_name
+
+        operation_type = operation.operation
+        if hasattr(operation_type, "name"):
+            operation_type = operation_type.name
+        trace.operation_type = operation_type.lower()
+
+        if operation.selection_set is not None:
+            fields = operation.selection_set.selections
+            try:
+                deepest_path = traverse_deepest_path(fields)
+            except:
+                deepest_path = []
+            trace.deepest_path = ".".join(deepest_path)
+
+    return wrapped(*args, **kwargs)
+
+
+def traverse_deepest_path(fields):
+    inputs = deque(((field, deque(), 0) for field in fields))
+    deepest_path_len = 0
+    deepest_path = None
+
+    while inputs:
+        field, current_path, current_path_len = inputs.pop()
+
+        field_name = field.name
+        if hasattr(field_name, "value"):
+            field_name = field_name.value
+
+        current_path.append(field_name)
+        current_path_len += 1
+
+        if field.selection_set is None or len(field.selection_set.selections) == 0:
+            if deepest_path_len < current_path_len:
+                deepest_path = current_path
+                deepest_path_len = current_path_len
+        else:
+            for inner_field in field.selection_set.selections:
+                inputs.append((inner_field, copy(current_path), current_path_len))
+
+    return deepest_path
 
 
 def bind_get_middleware_resolvers(middlewares):
@@ -176,7 +263,6 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
     field_name = field_asts[0].name.value
 
     with GraphQLResolverTrace(field_name) as trace:
-        trace._add_agent_attribute("graphql.field.name", field_name)
         trace._add_agent_attribute("graphql.field.parentType", parent_type.name)
         if isinstance(field_path, list):
             trace._add_agent_attribute("graphql.field.path", field_path[0])
@@ -199,9 +285,18 @@ def instrument_graphql_execute(module):
             wrap_function_wrapper(
                 module, "ExecutionContext.resolve_field", wrap_resolve_field
             )
+        if hasattr(module.ExecutionContext, "execute_operation"):
+            wrap_function_wrapper(
+                module, "ExecutionContext.execute_operation", wrap_execute_operation
+            )
+
     if hasattr(module, "resolve_field"):
         wrap_function_wrapper(module, "resolve_field", wrap_resolve_field)
 
+    if hasattr(module, "execute_operation"):
+        wrap_function_wrapper(
+            module, "execute_operation", wrap_execute_operation
+        )
 
 def instrument_graphql_execution_utils(module):
     if hasattr(module, "ExecutionContext"):

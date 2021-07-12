@@ -13,8 +13,11 @@
 # limitations under the License.
 
 import pytest
-import sys
-from testing_support.fixtures import validate_transaction_metrics, validate_transaction_errors, dt_enabled
+from testing_support.fixtures import (
+    dt_enabled,
+    validate_transaction_errors,
+    validate_transaction_metrics,
+)
 from testing_support.validators.validate_span_events import validate_span_events
 
 from newrelic.api.background_task import background_task
@@ -121,8 +124,8 @@ def test_basic(app, graphql_run):
 def test_middleware(app, graphql_run, is_graphql_2):
     _test_middleware_metrics = [
         ("OtherTransaction/Function/_target_application:resolve_hello", 1),
-        #("Function/_target_application:resolve_hello", 1),
-        #("Function/test_application:example_middleware", "present"),  # 2?????
+        # ("Function/_target_application:resolve_hello", 1),
+        # ("Function/test_application:example_middleware", "present"),  # 2?????
     ]
 
     @validate_transaction_metrics(
@@ -172,10 +175,17 @@ def test_exception_in_validation(app, graphql_run):
     _test()
 
 
-@pytest.mark.parametrize("query,operation_attrs", [("query MyQuery { library(index: 0) { name, book { name } } }", {})])
+@pytest.mark.parametrize(
+    "query,operation_attrs",
+    [("query MyQuery { library(index: 0) { name, book { name } } }", {})],
+)
 @dt_enabled
-def test_operation_metrics_and_attrs(app, graphql_run, query, operation_attrs, is_graphql_2):    
-    operation_metrics = [("GraphQL/operation/GraphQL/query/MyQuery/library.book.name", 1)]
+def test_operation_metrics_and_attrs(
+    app, graphql_run, query, operation_attrs, is_graphql_2
+):
+    operation_metrics = [
+        ("GraphQL/operation/GraphQL/query/MyQuery/library.book.name", 1)
+    ]
     operation_attrs = {
         "graphql.operation.type": "query",
         "graphql.operation.name": "MyQuery",
@@ -198,7 +208,7 @@ def test_operation_metrics_and_attrs(app, graphql_run, query, operation_attrs, i
     def _test():
         response = graphql_run(app, query)
         assert not response.errors
-    
+
     _test()
 
 

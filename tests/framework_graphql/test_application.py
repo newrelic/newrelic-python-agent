@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pytest
+import sys
 from testing_support.fixtures import validate_transaction_metrics, validate_transaction_errors, dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 
@@ -49,11 +50,6 @@ def error_middleware(next, root, info, **args):
 
 _runtime_error_name = callable_name(RuntimeError)
 _test_runtime_error = [(_runtime_error_name, "Runtime Error!")]
-_expected_attributes = {
-    "graphql.operation.name": "MyQuery",
-    "graphql.operation.type": "query",
-    "graphql.operation.deepestPath": "hello"
-}
 _graphql_base_rollup_metrics = [
     ("OtherTransaction/all", 1),
     ("GraphQL/all", 1),
@@ -64,25 +60,61 @@ _graphql_base_rollup_metrics = [
 
 
 @dt_enabled
-def test_basic(app, graphql_run, is_graphql_2):
-    _test_basic_metrics = [
-        ("OtherTransaction/Function/_target_application:resolve_hello", 1),
-        ("GraphQL/operation/GraphQL/query/MyQuery/hello", 1),
-        #("Function/_target_application:resolve_hello", 1),
+def test_basic(app, graphql_run):
+    _test_mutation_scoped_metrics = [
+        ("GraphQL/resolve/GraphQL/storage", 1),
+        ("GraphQL/resolve/GraphQL/storage_add", 1),
+        ("GraphQL/operation/GraphQL/query/<anonymous>/storage", 1),
+        ("GraphQL/operation/GraphQL/mutation/<anonymous>/storage_add", 1),
     ]
+    _test_mutation_unscoped_metrics = [
+        ("OtherTransaction/all", 1),
+        ("GraphQL/all", 2),
+        ("GraphQL/GraphQL/all", 2),
+        ("GraphQL/allOther", 2),
+        ("GraphQL/GraphQL/allOther", 2),
+    ] + _test_mutation_scoped_metrics
 
+    _expected_mutation_operation_attributes = {
+        "graphql.operation.type": "mutation",
+        "graphql.operation.name": "<anonymous>",
+        "graphql.operation.deepestPath": "storage_add",
+    }
+    _expected_mutation_resolver_attributes = {
+        "graphql.field.name": "storage_add",
+        "graphql.field.parentType": "Mutation",
+        "graphql.field.path": "storage_add",
+    }
+    _expected_query_operation_attributes = {
+        "graphql.operation.type": "query",
+        "graphql.operation.name": "<anonymous>",
+        "graphql.operation.deepestPath": "storage",
+    }
+    _expected_query_resolver_attributes = {
+        "graphql.field.name": "storage",
+        "graphql.field.parentType": "Query",
+        "graphql.field.path": "storage",
+    }
     @validate_transaction_metrics(
-        "_target_application:resolve_hello",
-        rollup_metrics=_test_basic_metrics + _graphql_base_rollup_metrics,
+        "_target_application:resolve_storage",
+        scoped_metrics=_test_mutation_scoped_metrics,
+        rollup_metrics=_test_mutation_unscoped_metrics,
         background_task=True,
     )
-    @validate_span_events(exact_agents=_expected_attributes)
+    @validate_span_events(exact_agents=_expected_mutation_operation_attributes)
+    @validate_span_events(exact_agents=_expected_mutation_resolver_attributes)
+    @validate_span_events(exact_agents=_expected_query_operation_attributes)
+    @validate_span_events(exact_agents=_expected_query_resolver_attributes)
     @background_task()
     def _test():
-        response = graphql_run(app, "query MyQuery{ hello }")
+        response = graphql_run(app, 'mutation { storage_add(string: "abc") }')
         assert not response.errors
-        assert "Hello!" in str(response.data)
+        response = graphql_run(app, "query { storage }")
+        assert not response.errors
 
+        # These are separate assertions because pypy stores 'abc' as a unicode string while other Python versions do not
+        assert "storage" in str(response.data)
+        assert "abc" in str(response.data)
     _test()
 
 
@@ -193,3 +225,4 @@ def test_field_resolver_metrics_and_attrs(app, graphql_run):
         assert "Hello!" in str(response.data)
 
     _test()
+

@@ -268,11 +268,14 @@ _test_queries = [
 
 @dt_enabled
 @pytest.mark.parametrize("query,obfuscated", _test_queries)
-def test_query_obfuscation(app, graphql_run, query, obfuscated):
+def test_query_obfuscation(app, graphql_run, is_graphql_2, query, obfuscated):
     graphql_attrs = {"graphql.operation.query": obfuscated}
 
     if callable(query):
         query = query()
+        if is_graphql_2:
+            # Revert to query strings for graphql2
+            query = query.body
 
     @validate_span_events(exact_agents=graphql_attrs)
     @background_task()

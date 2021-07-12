@@ -49,7 +49,6 @@ class GraphQLOperationTrace(TimeTrace):
 
         return super(GraphQLOperationTrace, self).finalize_data(*args, **kwargs)
 
-
     def create_node(self):
         return GraphQLOperationNode(
             children=self.children,
@@ -95,15 +94,18 @@ def wrap_graphql_operation_trace(module, object_path):
     wrap_object(module, object_path, GraphQLOperationTraceWrapper)
 
 
-class GraphQLResolverTrace(GraphQLOperationTrace):
+class GraphQLResolverTrace(TimeTrace):
     def __init__(self, field_name=None, **kwargs):
         super(GraphQLResolverTrace, self).__init__(**kwargs)
         self.field_name = field_name
 
+    def __repr__(self):
+        return '<%s %s>' % (self.__class__.__name__, dict())
 
     def finalize_data(self, *args, **kwargs):
         self._add_agent_attribute("graphql.field.name", self.field_name)
 
+        return super(GraphQLResolverTrace, self).finalize_data(*args, **kwargs)
 
     def create_node(self):
         return GraphQLResolverNode(

@@ -36,9 +36,9 @@ class GraphQLOperationTrace(TimeTrace):
         return '<%s %s>' % (self.__class__.__name__, dict())
 
     def finalize_data(self, *args, **kwargs):
-        self._add_agent_attribute("graphql.operation.type", self.operation_type)
-        self._add_agent_attribute("graphql.operation.name", self.operation_name)
-        self._add_agent_attribute("graphql.operation.deepestPath", self.deepest_path)
+        self._add_agent_attribute("graphql.operation.type", self.operation_type or "<unknown>")
+        self._add_agent_attribute("graphql.operation.name", self.operation_name or "<anonymous>")
+        self._add_agent_attribute("graphql.operation.deepestPath", self.deepest_path or "<unknown>")
 
         return super(GraphQLOperationTrace, self).finalize_data(*args, **kwargs)
 

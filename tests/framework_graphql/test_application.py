@@ -59,7 +59,7 @@ _graphql_base_rollup_metrics = [
 
 
 @dt_enabled
-def test_basic(app, graphql_run, is_graphql_2):
+def test_basic(app, graphql_run):
     _test_mutation_scoped_metrics = [
         ("GraphQL/resolve/GraphQL/storage", 1),
         ("GraphQL/resolve/GraphQL/storage_add", 1),
@@ -110,7 +110,11 @@ def test_basic(app, graphql_run, is_graphql_2):
         assert not response.errors
         response = graphql_run(app, "query { storage }")
         assert not response.errors
-        if is_graphql_2:
+
+        from graphql import __version__ as version
+        version = tuple(int(v) for v in version.split("."))
+
+        if version < (2, 3):
             assert str(response.data) == "OrderedDict([('storage', ['abc'])])"
         else:
             assert str(response.data) == "{'storage': ['abc']}"

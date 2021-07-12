@@ -31,9 +31,18 @@ libraries = [
     {"name": "Portland Public Library", "book": [{"name": "E", "author": "F"}]},
 ]
 
+storage = []
+
 
 def resolve_library(parent, info, index):
     return libraries[index]
+
+def resolve_storage_add(parent, info, string):
+    storage.append(string)
+    return string
+
+def resolve_storage(parent, info):
+    return storage
 
 
 Book = GraphQLObjectType(
@@ -52,6 +61,8 @@ Library = GraphQLObjectType(
     },
 )
 
+Storage = GraphQLList(GraphQLString)
+
 
 def resolve_hello(root, info):
     return "Hello!"
@@ -68,6 +79,15 @@ try:
         resolver=resolve_library,
         args={"index": GraphQLArgument(GraphQLNonNull(GraphQLInt))},
     )
+    storage_field = GraphQLField(
+        Storage,
+        resolver=resolve_storage,
+    )
+    storage_add_field = GraphQLField(
+        Storage,
+        resolver=resolve_storage_add,
+        args={"string": GraphQLArgument(GraphQLNonNull(GraphQLString))},
+    )
     error_field = GraphQLField(GraphQLString, resolver=resolve_error)
     error_non_null_field = GraphQLField(
         GraphQLNonNull(GraphQLString), resolver=resolve_error
@@ -79,6 +99,15 @@ except TypeError:
         resolve=resolve_library,
         args={"index": GraphQLArgument(GraphQLNonNull(GraphQLInt))},
     )
+    storage_field = GraphQLField(
+        Storage,
+        resolve=resolve_storage,
+    )
+    storage_add_field = GraphQLField(
+        GraphQLString,
+        resolve=resolve_storage_add,
+        args={"string": GraphQLArgument(GraphQLNonNull(GraphQLString))},
+    )
     error_field = GraphQLField(GraphQLString, resolve=resolve_error)
     error_non_null_field = GraphQLField(
         GraphQLNonNull(GraphQLString), resolve=resolve_error
@@ -88,10 +117,18 @@ query = GraphQLObjectType(
     name="Query",
     fields={
         "hello": hello_field,
+        "storage": storage_field,
         "error": error_field,
         "error_non_null": error_non_null_field,
         "library": library_field,
     },
 )
 
-_target_application = GraphQLSchema(query=query)
+mutation = GraphQLObjectType(
+    name="Mutation",
+    fields={
+        "storage_add": storage_add_field,
+    },
+)
+
+_target_application = GraphQLSchema(query=query, mutation=mutation)

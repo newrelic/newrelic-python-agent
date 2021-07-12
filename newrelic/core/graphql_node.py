@@ -22,7 +22,7 @@ from newrelic.core.node_mixin import GenericNodeMixin
 
 
 _GraphQLOperationNode = namedtuple('_GraphQLNode',
-    ['operation_type', 'operation_name', 'deepest_path', 
+    ['operation_type', 'operation_name', 'deepest_path', 'query',
     'children', 'start_time', 'end_time', 'duration', 'exclusive', 
     'guid', 'agent_attributes', 'user_attributes'])
 

@@ -14,8 +14,9 @@
 
 import functools
 
-from newrelic.common.async_wrapper import async_wrapper
 from newrelic.api.time_trace import TimeTrace, current_trace
+from newrelic.api.transaction import current_transaction
+from newrelic.common.async_wrapper import async_wrapper
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.graphql_node import GraphQLOperationNode, GraphQLResolverNode
 
@@ -31,6 +32,7 @@ class GraphQLOperationTrace(TimeTrace):
         self.operation_name = None
         self.operation_type = None
         self.deepest_path = None
+        self.query = None
 
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, dict())
@@ -39,6 +41,11 @@ class GraphQLOperationTrace(TimeTrace):
         self._add_agent_attribute("graphql.operation.type", self.operation_type or "<unknown>")
         self._add_agent_attribute("graphql.operation.name", self.operation_name or "<anonymous>")
         self._add_agent_attribute("graphql.operation.deepestPath", self.deepest_path or "<unknown>")
+
+        transaction = current_transaction()
+        self.query = query = getattr(transaction, "graphql_query", None)
+        obfuscated = query.obfuscated if query is not None else None
+        self._add_agent_attribute("graphql.operation.query", obfuscated)
 
         return super(GraphQLOperationTrace, self).finalize_data(*args, **kwargs)
 
@@ -56,6 +63,7 @@ class GraphQLOperationTrace(TimeTrace):
             operation_name=self.operation_name,
             operation_type=self.operation_type,
             deepest_path=self.deepest_path,
+            query=self.query,
         )
 
 
@@ -95,8 +103,6 @@ class GraphQLResolverTrace(GraphQLOperationTrace):
 
     def finalize_data(self, *args, **kwargs):
         self._add_agent_attribute("graphql.field.name", self.field_name)
-
-        return super(GraphQLResolverTrace, self).finalize_data(*args, **kwargs)
 
 
     def create_node(self):

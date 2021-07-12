@@ -19,8 +19,14 @@ from newrelic.api.graphql_trace import GraphQLResolverTrace, GraphQLOperationTra
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name, parse_exc_info
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
+from newrelic.core.graphql_utils import graphql_statement
 from collections import deque
 from copy import copy
+
+
+def graphql_version():
+    from graphql import __version__ as version
+    return tuple(int(v) for v in version.split("."))
 
 
 def ignore_graphql_duplicate_exception(exc, val, tb):
@@ -71,7 +77,7 @@ def wrap_execute(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if transaction is None:
         return wrapped(*args, **kwargs)
-    
+
     transaction.set_transaction_name(callable_name(wrapped), priority=1)
     with GraphQLOperationTrace():
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
@@ -250,10 +256,7 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    from graphql import __version__ as version
-    version = tuple(int(v) for v in version.split("."))
-
-    if version <= (3, 0, 0):
+    if graphql_version() <= (3, 0, 0):
         bind_resolve_field = bind_resolve_field_v2
     else:
         bind_resolve_field = bind_resolve_field_v3
@@ -270,6 +273,45 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
             trace._add_agent_attribute("graphql.field.path", field_path.key)
 
         return wrapped(*args, **kwargs)
+
+
+def bind_graphql_impl_query(schema, source, *args, **kwargs):
+    return source
+
+
+def bind_execute_graphql_query(
+    schema,
+    request_string="",
+    root=None,
+    context=None,
+    variables=None,
+    operation_name=None,
+    middleware=None,
+    backend=None,
+    **execute_options):
+
+    return request_string
+
+
+def wrap_graphql_impl(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
+    if graphql_version() <= (3, 0, 0):
+        bind_query = bind_execute_graphql_query
+    else:
+        bind_query = bind_graphql_impl_query
+
+    query = bind_query(*args, **kwargs)
+    if hasattr(query, "body"):
+        query = query.body
+    # Store query on transaction, not trace as multiple operations 
+    # can occur in a single transaction based off a single query
+    transaction.graphql_query = graphql_statement(query)
+
+    return wrapped(*args, **kwargs)
 
 
 def instrument_graphql_execute(module):
@@ -323,3 +365,9 @@ def instrument_graphql_error_located_error(module):
 
 def instrument_graphql_validate(module):
     wrap_function_wrapper(module, "validate", wrap_validate)
+
+def instrument_graphql(module):
+    if hasattr(module, "graphql_impl"):
+        wrap_function_wrapper(module, "graphql_impl", wrap_graphql_impl)
+    if hasattr(module, "execute_graphql"):
+        wrap_function_wrapper(module, "execute_graphql", wrap_graphql_impl)

@@ -42,6 +42,18 @@ def graphql_run():
     return graphql
 
 
+def to_graphql_source(query):
+    def delay_import():
+        try:
+            from graphql import Source
+        except ImportError:
+            # Fallback if Source is not implemented
+            return query
+        return Source(query)
+
+    return delay_import
+
+
 def example_middleware(next, root, info, **args):
     return_value = next(root, info, **args)
     return return_value
@@ -236,3 +248,37 @@ def test_field_resolver_metrics_and_attrs(app, graphql_run):
 
     _test()
 
+
+_test_queries = [
+    ("{ hello }", "{ hello }"),  # Basic query extraction
+    ("{ error }", "{ error }"),  # Extract query on field error
+    # ("{ missing_field { error } }", "{ missing_field { error } }"),  # Extract query on parsing errors
+    (to_graphql_source("{ hello }"), "{ hello }"),  # Extract query from Source objects
+    ("{ library(index: 0) { name } }", "{ library(index: ?) { name } }"),  # Integers
+    ('{ echo(echo: "123") }', "{ echo(echo: ?) }"),  # Strings with numerics
+    ('{ echo(echo: "test") }', "{ echo(echo: ?) }"),  # Strings
+    ('{ TestEcho: echo(echo: "test") }', "{ TestEcho: echo(echo: ?) }"),  # Aliases
+    ('{ TestEcho: echo(echo: "test") }', "{ TestEcho: echo(echo: ?) }"),  # Variables
+    (  # Fragments
+        '{ ...MyFragment } fragment MyFragment on Query { echo(echo: "test") }',
+        "{ ...MyFragment } fragment MyFragment on Query { echo(echo: ?) }",
+    ),
+]
+
+
+@dt_enabled
+@pytest.mark.parametrize("query,obfuscated", _test_queries)
+def test_query_obfuscation(app, graphql_run, query, obfuscated):
+    graphql_attrs = {"graphql.operation.query": obfuscated}
+
+    if callable(query):
+        query = query()
+
+    @validate_span_events(exact_agents=graphql_attrs)
+    @background_task()
+    def _test():
+        response = graphql_run(app, query)
+        if not isinstance(query, str) or "error" not in query:
+            assert not response.errors
+
+    _test()

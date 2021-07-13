@@ -330,6 +330,7 @@ def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_clas
     _test()
 
 
+
 @dt_enabled
 def test_operation_metrics_and_attrs(app, graphql_run):
     operation_metrics = [("GraphQL/operation/GraphQL/query/MyQuery/library.book.name", 1)]

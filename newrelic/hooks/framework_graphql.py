@@ -160,7 +160,6 @@ def wrap_middleware(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
 
 
-
 def bind_get_field_resolver(field_resolver):
     return field_resolver
 
@@ -339,9 +338,6 @@ def instrument_graphql_execute(module):
         wrap_function_wrapper(
             module, "execute_operation", wrap_execute_operation
         )
-
-def instrument_graphql_execution_utils(module):
-    pass
 
 
 def instrument_graphql_execution_middleware(module):

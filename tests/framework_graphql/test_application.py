@@ -52,6 +52,14 @@ def to_graphql_source(query):
         except ImportError:
             # Fallback if Source is not implemented
             return query
+
+        from graphql import __version__ as version
+
+        # For graphql2, Source objects aren't acceptable input
+        major_version = int(version.split(".")[0])
+        if major_version == 2:
+            return query
+
         return Source(query)
 
     return delay_import
@@ -281,9 +289,6 @@ def test_query_obfuscation(app, graphql_run, is_graphql_2, query, obfuscated):
 
     if callable(query):
         query = query()
-        if is_graphql_2:
-            # Revert to query strings for graphql2
-            query = query.body
 
     @validate_span_events(exact_agents=graphql_attrs)
     @background_task()
@@ -300,4 +305,3 @@ def test_query_obfuscation(app, graphql_run, is_graphql_2, query, obfuscated):
 def test_ignored_introspection_transactions(app, graphql_run):
     response = graphql_run(app, "{ __schema { types { name } } }")
     assert not response.errors
-    breakpoint()

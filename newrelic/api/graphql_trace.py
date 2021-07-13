@@ -32,22 +32,39 @@ class GraphQLOperationTrace(TimeTrace):
         self.operation_name = None
         self.operation_type = None
         self.deepest_path = None
-        self.query = None
+        self.graphql = None
+        self.graphql_format = None
+        self.statement = None
 
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, dict())
 
-    def finalize_data(self, *args, **kwargs):
+    @property
+    def formatted(self):
+        if not self.statement:
+            return "<unknown>"
+
+        transaction = current_transaction()
+
+        # Record SQL settings
+        settings = transaction.settings
+        tt = settings.transaction_tracer
+        self.graphql_format = tt.record_sql
+
+        return self.statement.formatted(self.graphql_format)
+
+    def finalize_data(self, transaction, exc=None, value=None, tb=None):
+        # Add attributes
         self._add_agent_attribute("graphql.operation.type", self.operation_type or "<unknown>")
         self._add_agent_attribute("graphql.operation.name", self.operation_name or "<anonymous>")
         self._add_agent_attribute("graphql.operation.deepestPath", self.deepest_path or "<unknown>")
 
-        transaction = current_transaction()
-        self.query = query = getattr(transaction, "graphql_query", None)
-        obfuscated = query.obfuscated if query is not None else None
-        self._add_agent_attribute("graphql.operation.query", obfuscated)
+        # Attach formatted graphql
+        limit = transaction.settings.agent_limits.sql_query_length_maximum
+        self.graphql = graphql = self.formatted[:limit]
+        self._add_agent_attribute("graphql.operation.query", graphql)
 
-        return super(GraphQLOperationTrace, self).finalize_data(*args, **kwargs)
+        return super(GraphQLOperationTrace, self).finalize_data(transaction, exc=None, value=None, tb=None)
 
     def create_node(self):
         return GraphQLOperationNode(
@@ -62,7 +79,7 @@ class GraphQLOperationTrace(TimeTrace):
             operation_name=self.operation_name,
             operation_type=self.operation_type,
             deepest_path=self.deepest_path,
-            query=self.query,
+            graphql=self.graphql,
         )
 
 

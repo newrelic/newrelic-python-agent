@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.time_trace import notice_error, current_trace
 from newrelic.api.error_trace import ErrorTrace, ErrorTraceWrapper
 from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
 from newrelic.api.graphql_trace import GraphQLResolverTrace, GraphQLOperationTrace
+from newrelic.api.time_trace import notice_error, current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name, parse_exc_info
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
@@ -71,17 +71,6 @@ def ignore_graphql_duplicate_exception(exc, val, tb):
                     return True
 
     return None  # Follow original exception matching rules
-
-
-def wrap_execute(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
-    if transaction is None:
-        return wrapped(*args, **kwargs)
-
-    transaction.set_transaction_name(callable_name(wrapped), priority=1)
-    with GraphQLOperationTrace():
-        with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
-            return wrapped(*args, **kwargs)
 
 
 def wrap_executor_context_init(wrapped, instance, args, kwargs):
@@ -307,16 +296,14 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
     query = bind_query(*args, **kwargs)
     if hasattr(query, "body"):
         query = query.body
-    # Store query on transaction, not trace as multiple operations 
-    # can occur in a single transaction based off a single query
-    transaction.graphql_query = graphql_statement(query)
 
-    return wrapped(*args, **kwargs)
+    with GraphQLOperationTrace() as trace:
+        trace.statement = graphql_statement(query)
+        with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
+            return wrapped(*args, **kwargs)
 
 
 def instrument_graphql_execute(module):
-    if hasattr(module, "execute"):
-        wrap_function_wrapper(module, "execute", wrap_execute)
     if hasattr(module, "get_field_def"):
         wrap_function_wrapper(module, "get_field_def", wrap_get_field_def)
     if hasattr(module, "ExecutionContext"):

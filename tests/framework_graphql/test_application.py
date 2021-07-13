@@ -13,8 +13,11 @@
 # limitations under the License.
 
 import pytest
-import sys
-from testing_support.fixtures import validate_transaction_metrics, validate_transaction_errors, dt_enabled
+from testing_support.fixtures import (
+    dt_enabled,
+    validate_transaction_errors,
+    validate_transaction_metrics,
+)
 from testing_support.validators.validate_span_events import validate_span_events
 
 from newrelic.api.background_task import background_task
@@ -37,6 +40,18 @@ def graphql_run():
         from graphql import graphql
 
     return graphql
+
+
+def to_graphql_source(query):
+    def delay_import():
+        try:
+            from graphql import Source
+        except ImportError:
+            # Fallback if Source is not implemented
+            return query
+        return Source(query)
+
+    return delay_import
 
 
 def example_middleware(next, root, info, **args):
@@ -121,8 +136,8 @@ def test_basic(app, graphql_run):
 def test_middleware(app, graphql_run, is_graphql_2):
     _test_middleware_metrics = [
         ("OtherTransaction/Function/_target_application:resolve_hello", 1),
-        #("Function/_target_application:resolve_hello", 1),
-        #("Function/test_application:example_middleware", "present"),  # 2?????
+        # ("Function/_target_application:resolve_hello", 1),
+        # ("Function/test_application:example_middleware", "present"),  # 2?????
     ]
 
     @validate_transaction_metrics(
@@ -172,10 +187,17 @@ def test_exception_in_validation(app, graphql_run):
     _test()
 
 
-@pytest.mark.parametrize("query,operation_attrs", [("query MyQuery { library(index: 0) { name, book { name } } }", {})])
+@pytest.mark.parametrize(
+    "query,operation_attrs",
+    [("query MyQuery { library(index: 0) { name, book { name } } }", {})],
+)
 @dt_enabled
-def test_operation_metrics_and_attrs(app, graphql_run, query, operation_attrs, is_graphql_2):    
-    operation_metrics = [("GraphQL/operation/GraphQL/query/MyQuery/library.book.name", 1)]
+def test_operation_metrics_and_attrs(
+    app, graphql_run, query, operation_attrs, is_graphql_2
+):
+    operation_metrics = [
+        ("GraphQL/operation/GraphQL/query/MyQuery/library.book.name", 1)
+    ]
     operation_attrs = {
         "graphql.operation.type": "query",
         "graphql.operation.name": "MyQuery",
@@ -198,7 +220,7 @@ def test_operation_metrics_and_attrs(app, graphql_run, query, operation_attrs, i
     def _test():
         response = graphql_run(app, query)
         assert not response.errors
-    
+
     _test()
 
 
@@ -226,3 +248,40 @@ def test_field_resolver_metrics_and_attrs(app, graphql_run):
 
     _test()
 
+
+_test_queries = [
+    ("{ hello }", "{ hello }"),  # Basic query extraction
+    ("{ error }", "{ error }"),  # Extract query on field error
+    # ("{ missing_field { error } }", "{ missing_field { error } }"),  # Extract query on parsing errors
+    (to_graphql_source("{ hello }"), "{ hello }"),  # Extract query from Source objects
+    ("{ library(index: 0) { name } }", "{ library(index: ?) { name } }"),  # Integers
+    ('{ echo(echo: "123") }', "{ echo(echo: ?) }"),  # Strings with numerics
+    ('{ echo(echo: "test") }', "{ echo(echo: ?) }"),  # Strings
+    ('{ TestEcho: echo(echo: "test") }', "{ TestEcho: echo(echo: ?) }"),  # Aliases
+    ('{ TestEcho: echo(echo: "test") }', "{ TestEcho: echo(echo: ?) }"),  # Variables
+    (  # Fragments
+        '{ ...MyFragment } fragment MyFragment on Query { echo(echo: "test") }',
+        "{ ...MyFragment } fragment MyFragment on Query { echo(echo: ?) }",
+    ),
+]
+
+
+@dt_enabled
+@pytest.mark.parametrize("query,obfuscated", _test_queries)
+def test_query_obfuscation(app, graphql_run, is_graphql_2, query, obfuscated):
+    graphql_attrs = {"graphql.operation.query": obfuscated}
+
+    if callable(query):
+        query = query()
+        if is_graphql_2:
+            # Revert to query strings for graphql2
+            query = query.body
+
+    @validate_span_events(exact_agents=graphql_attrs)
+    @background_task()
+    def _test():
+        response = graphql_run(app, query)
+        if not isinstance(query, str) or "error" not in query:
+            assert not response.errors
+
+    _test()

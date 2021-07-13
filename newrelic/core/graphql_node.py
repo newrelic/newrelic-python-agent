@@ -17,14 +17,13 @@ from collections import namedtuple
 import newrelic.core.trace_node
 
 from newrelic.core.metric import TimeMetric
-
 from newrelic.core.node_mixin import GenericNodeMixin
 
 
 _GraphQLOperationNode = namedtuple('_GraphQLNode',
-    ['operation_type', 'operation_name', 'deepest_path', 
-    'children', 'start_time', 'end_time', 'duration', 'exclusive', 
-    'guid', 'agent_attributes', 'user_attributes'])
+    ['operation_type', 'operation_name', 'deepest_path', 'graphql', 
+    'children', 'start_time', 'end_time', 'duration', 'exclusive', 'guid',
+    'agent_attributes', 'user_attributes'])
 
 _GraphQLResolverNode = namedtuple('_GraphQLNode',
     ['field_name', 'children', 'start_time', 'end_time', 'duration', 

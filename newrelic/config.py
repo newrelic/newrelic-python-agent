@@ -2378,6 +2378,11 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "graphql.graphql",
+        "newrelic.hooks.framework_graphql",
+        "instrument_graphql",
+    )
+    _process_module_definition(
         "graphql.execution.execute",
         "newrelic.hooks.framework_graphql",
         "instrument_graphql_execute",

@@ -55,17 +55,6 @@ def ignore_graphql_duplicate_exception(exc, val, tb):
     return None  # Follow original exception matching rules
 
 
-# def wrap_execute(wrapped, instance, args, kwargs):
-#     transaction = current_transaction()
-#     if transaction is None:
-#         return wrapped(*args, **kwargs)
-    
-#     transaction.set_transaction_name(callable_name(wrapped), priority=1)
-#     with GraphQLOperationTrace():
-#         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
-#             return wrapped(*args, **kwargs)
-
-
 def bind_operation_v3(operation, root_value):
     return operation
 
@@ -333,8 +322,6 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
 
 
 def instrument_graphql_execute(module):
-    # if hasattr(module, "execute"):
-    #     wrap_function_wrapper(module, "execute", wrap_execute)
     if hasattr(module, "ExecutionContext"):
         if hasattr(module.ExecutionContext, "resolve_field"):
             wrap_function_wrapper(

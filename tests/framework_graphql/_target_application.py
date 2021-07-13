@@ -68,6 +68,10 @@ def resolve_hello(root, info):
     return "Hello!"
 
 
+def resolve_echo(root, info, echo):
+    return echo
+
+
 def resolve_error(root, info):
     raise RuntimeError("Runtime Error!")
 
@@ -78,6 +82,11 @@ try:
         Library,
         resolver=resolve_library,
         args={"index": GraphQLArgument(GraphQLNonNull(GraphQLInt))},
+    )
+    echo_field = GraphQLField(
+        GraphQLString,
+        resolver=resolve_echo,
+        args={"echo": GraphQLArgument(GraphQLNonNull(GraphQLString))},
     )
     storage_field = GraphQLField(
         Storage,
@@ -99,6 +108,11 @@ except TypeError:
         resolve=resolve_library,
         args={"index": GraphQLArgument(GraphQLNonNull(GraphQLInt))},
     )
+    echo_field = GraphQLField(
+        GraphQLString,
+        resolve=resolve_echo,
+        args={"echo": GraphQLArgument(GraphQLNonNull(GraphQLString))},
+    )
     storage_field = GraphQLField(
         Storage,
         resolve=resolve_storage,
@@ -117,10 +131,11 @@ query = GraphQLObjectType(
     name="Query",
     fields={
         "hello": hello_field,
+        "library": library_field,
+        "echo": echo_field,
         "storage": storage_field,
         "error": error_field,
         "error_non_null": error_non_null_field,
-        "library": library_field,
     },
 )
 

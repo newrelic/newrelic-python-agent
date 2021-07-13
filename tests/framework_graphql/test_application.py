@@ -116,7 +116,7 @@ def test_basic(app, graphql_run):
         "graphql.field.path": "storage",
     }
     @validate_transaction_metrics(
-        "query/MyQuery/hello",
+        "query/<anonymous>/storage",
         "GraphQL",
         scoped_metrics=_test_mutation_scoped_metrics,
         rollup_metrics=_test_mutation_unscoped_metrics + FRAMEWORK_METRICS,

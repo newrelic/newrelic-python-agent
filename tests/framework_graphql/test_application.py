@@ -116,7 +116,8 @@ def test_basic(app, graphql_run):
         "graphql.field.path": "storage",
     }
     @validate_transaction_metrics(
-        "_target_application:resolve_storage",
+        "query/MyQuery/hello",
+        "GraphQL",
         scoped_metrics=_test_mutation_scoped_metrics,
         rollup_metrics=_test_mutation_unscoped_metrics + FRAMEWORK_METRICS,
         background_task=True,
@@ -140,13 +141,14 @@ def test_basic(app, graphql_run):
 
 def test_middleware(app, graphql_run, is_graphql_2):
     _test_middleware_metrics = [
-        ("OtherTransaction/Function/_target_application:resolve_hello", 1),
-        # ("Function/_target_application:resolve_hello", 1),
-        # ("Function/test_application:example_middleware", "present"),  # 2?????
+        ("GraphQL/operation/GraphQL/query/<anonymous>/hello", 1),
+        ("GraphQL/resolve/GraphQL/hello", 1),
+        ("Function/test_application:example_middleware", 1),
     ]
 
     @validate_transaction_metrics(
-        "_target_application:resolve_hello",
+        "query/<anonymous>/hello",
+        "GraphQL",
         rollup_metrics=_test_middleware_metrics + _graphql_base_rollup_metrics,
         background_task=True,
     )
@@ -192,34 +194,28 @@ def test_exception_in_validation(app, graphql_run):
     _test()
 
 
-@pytest.mark.parametrize(
-    "query,operation_attrs",
-    [("query MyQuery { library(index: 0) { name, book { name } } }", {})],
-)
+@pytest.mark.parametrize("query,attrs", [("query MyQuery { library(index: 0) { name, book { name } } }", {})])
 @dt_enabled
-def test_operation_metrics_and_attrs(
-    app, graphql_run, query, operation_attrs, is_graphql_2
-):
-    operation_metrics = [
-        ("GraphQL/operation/GraphQL/query/MyQuery/library.book.name", 1)
-    ]
+def test_operation_metrics_and_attrs(app, graphql_run, query, attrs):    
+    operation_metrics = [("GraphQL/operation/GraphQL/query/MyQuery/library.book.name", 1)]
     operation_attrs = {
         "graphql.operation.type": "query",
         "graphql.operation.name": "MyQuery",
         "graphql.operation.deepestPath": "library.book.name",
     }
-
-    if is_graphql_2:
-        txn_name = "graphql.execution.utils:default_resolve_fn"
-    else:
-        txn_name = "graphql.execution.execute:default_field_resolver"
+    operation_attrs.update(attrs)
 
     @validate_transaction_metrics(
-        txn_name,
+        "query/MyQuery/library.book.name",
+        "GraphQL",
         scoped_metrics=operation_metrics,
         rollup_metrics=operation_metrics + _graphql_base_rollup_metrics,
         background_task=True,
     )
+    # Span count 7: Transaction, Operation, and 5 Resolvers
+    # library, library.name, library.book
+    # library.book.name for each book resolved (in this case 2)
+    @validate_span_events(count=7)
     @validate_span_events(exact_agents=operation_attrs)
     @background_task()
     def _test():
@@ -239,11 +235,14 @@ def test_field_resolver_metrics_and_attrs(app, graphql_run):
     }
 
     @validate_transaction_metrics(
-        "_target_application:resolve_hello",
+        "query/<anonymous>/hello",
+        "GraphQL",
         scoped_metrics=field_resolver_metrics,
         rollup_metrics=field_resolver_metrics + _graphql_base_rollup_metrics,
         background_task=True,
     )
+    # Span count 3: Transaction, Operation, and 1 Resolver
+    @validate_span_events(count=3)
     @validate_span_events(exact_agents=graphql_attrs)
     @background_task()
     def _test():

@@ -76,6 +76,11 @@ _graphql_base_rollup_metrics = [
 
 @dt_enabled
 def test_basic(app, graphql_run):
+    from graphql import __version__ as version
+    
+    FRAMEWORK_METRICS = [
+        ('Python/Framework/GraphQL/%s' % version, 1),
+    ]
     _test_mutation_scoped_metrics = [
         ("GraphQL/resolve/GraphQL/storage", 1),
         ("GraphQL/resolve/GraphQL/storage_add", 1),
@@ -113,7 +118,7 @@ def test_basic(app, graphql_run):
     @validate_transaction_metrics(
         "_target_application:resolve_storage",
         scoped_metrics=_test_mutation_scoped_metrics,
-        rollup_metrics=_test_mutation_unscoped_metrics,
+        rollup_metrics=_test_mutation_unscoped_metrics + FRAMEWORK_METRICS,
         background_task=True,
     )
     @validate_span_events(exact_agents=_expected_mutation_operation_attributes)

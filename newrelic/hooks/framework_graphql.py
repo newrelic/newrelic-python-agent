@@ -16,12 +16,16 @@ from newrelic.api.error_trace import ErrorTrace, ErrorTraceWrapper
 from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
 from newrelic.api.graphql_trace import GraphQLResolverTrace, GraphQLOperationTrace
 from newrelic.api.time_trace import notice_error, current_trace
-from newrelic.api.transaction import current_transaction
+from newrelic.api.transaction import current_transaction, ignore_transaction
 from newrelic.common.object_names import callable_name, parse_exc_info
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.core.graphql_utils import graphql_statement
 from collections import deque
 from copy import copy
+
+
+GRAPHQL_IGNORED_FIELDS = frozenset(("id", "__typename"))
+GRAPHQL_INTROSPECTION_FIELDS = frozenset(("__schema", "__type"))
 
 
 def graphql_version():
@@ -95,7 +99,7 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
 def traverse_deepest_path(fields):
     inputs = deque(((field, deque(), 0) for field in fields))
     deepest_path_len = 0
-    deepest_path = None
+    deepest_path = []
 
     while inputs:
         field, current_path, current_path_len = inputs.pop()
@@ -104,16 +108,23 @@ def traverse_deepest_path(fields):
         if hasattr(field_name, "value"):
             field_name = field_name.value
 
-        current_path.append(field_name)
-        current_path_len += 1
+        if field_name in GRAPHQL_INTROSPECTION_FIELDS:
+            # If an introspection query is identified, ignore the transaction completely.
+            # This matches the logic used in Apollo server for identifying introspection queries.
+            ignore_transaction()
+            return []
+        elif field_name not in GRAPHQL_IGNORED_FIELDS:
+            # Only add to the current path for non-ignored values.
+            current_path.append(field_name)
+            current_path_len += 1
 
-        if field.selection_set is None or len(field.selection_set.selections) == 0:
-            if deepest_path_len < current_path_len:
-                deepest_path = current_path
-                deepest_path_len = current_path_len
-        else:
-            for inner_field in field.selection_set.selections:
-                inputs.append((inner_field, copy(current_path), current_path_len))
+            if field.selection_set is None or len(field.selection_set.selections) == 0:
+                if deepest_path_len < current_path_len:
+                    deepest_path = current_path
+                    deepest_path_len = current_path_len
+            else:
+                for inner_field in field.selection_set.selections:
+                    inputs.append((inner_field, copy(current_path), current_path_len))
 
     return deepest_path
 
@@ -129,10 +140,6 @@ def wrap_get_middleware_resolvers(wrapped, instance, args, kwargs):
         m._nr_wrapped = True
 
     return wrapped(middlewares)
-
-
-def bind_get_field_resolver(field_resolver):
-    return field_resolver
 
 
 def wrap_error_handler(wrapped, instance, args, kwargs):
@@ -249,9 +256,6 @@ def instrument_graphql_execute(module):
             module, "execute_operation", wrap_execute_operation
         )
 
-def instrument_graphql_execution_utils(module):
-    pass
-
 
 def instrument_graphql_execution_middleware(module):
     if hasattr(module, "get_middleware_resolvers"):
@@ -267,6 +271,7 @@ def instrument_graphql_error_located_error(module):
 
 def instrument_graphql_validate(module):
     wrap_function_wrapper(module, "validate", wrap_validate)
+
 
 def instrument_graphql(module):
     if hasattr(module, "graphql_impl"):

@@ -19,6 +19,9 @@ from testing_support.fixtures import (
     validate_transaction_metrics,
 )
 from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.validators.validate_transaction_count import (
+    validate_transaction_count,
+)
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
@@ -139,6 +142,7 @@ def test_basic(app, graphql_run):
     _test()
 
 
+@dt_enabled
 def test_middleware(app, graphql_run, is_graphql_2):
     _test_middleware_metrics = [
         ("GraphQL/operation/GraphQL/query/<anonymous>/hello", 1),
@@ -149,9 +153,12 @@ def test_middleware(app, graphql_run, is_graphql_2):
     @validate_transaction_metrics(
         "query/<anonymous>/hello",
         "GraphQL",
+        scoped_metrics=_test_middleware_metrics,
         rollup_metrics=_test_middleware_metrics + _graphql_base_rollup_metrics,
         background_task=True,
     )
+    # Span count 4: Transaction, Operation, Middleware, and 1 Resolver
+    @validate_span_events(count=4)
     @background_task()
     def _test():
         response = graphql_run(app, "{ hello }", middleware=[example_middleware])
@@ -194,16 +201,14 @@ def test_exception_in_validation(app, graphql_run):
     _test()
 
 
-@pytest.mark.parametrize("query,attrs", [("query MyQuery { library(index: 0) { name, book { name } } }", {})])
 @dt_enabled
-def test_operation_metrics_and_attrs(app, graphql_run, query, attrs):    
+def test_operation_metrics_and_attrs(app, graphql_run):
     operation_metrics = [("GraphQL/operation/GraphQL/query/MyQuery/library.book.name", 1)]
     operation_attrs = {
         "graphql.operation.type": "query",
         "graphql.operation.name": "MyQuery",
         "graphql.operation.deepestPath": "library.book.name",
     }
-    operation_attrs.update(attrs)
 
     @validate_transaction_metrics(
         "query/MyQuery/library.book.name",
@@ -212,14 +217,14 @@ def test_operation_metrics_and_attrs(app, graphql_run, query, attrs):
         rollup_metrics=operation_metrics + _graphql_base_rollup_metrics,
         background_task=True,
     )
-    # Span count 7: Transaction, Operation, and 5 Resolvers
+    # Span count 7: Transaction, Operation, and 7 Resolvers
     # library, library.name, library.book
-    # library.book.name for each book resolved (in this case 2)
-    @validate_span_events(count=7)
+    # library.book.name and library.book.id for each book resolved (in this case 2)
+    @validate_span_events(count=9)
     @validate_span_events(exact_agents=operation_attrs)
     @background_task()
     def _test():
-        response = graphql_run(app, query)
+        response = graphql_run(app, "query MyQuery { library(index: 0) { name, book { id, name } } }")
         assert not response.errors
 
     _test()
@@ -256,7 +261,6 @@ def test_field_resolver_metrics_and_attrs(app, graphql_run):
 _test_queries = [
     ("{ hello }", "{ hello }"),  # Basic query extraction
     ("{ error }", "{ error }"),  # Extract query on field error
-    # ("{ missing_field { error } }", "{ missing_field { error } }"),  # Extract query on parsing errors
     (to_graphql_source("{ hello }"), "{ hello }"),  # Extract query from Source objects
     ("{ library(index: 0) { name } }", "{ library(index: ?) { name } }"),  # Integers
     ('{ echo(echo: "123") }', "{ echo(echo: ?) }"),  # Strings with numerics
@@ -289,3 +293,11 @@ def test_query_obfuscation(app, graphql_run, is_graphql_2, query, obfuscated):
             assert not response.errors
 
     _test()
+
+
+@validate_transaction_count(0)
+@background_task()
+def test_ignored_introspection_transactions(app, graphql_run):
+    response = graphql_run(app, "{ __schema { types { name } } }")
+    assert not response.errors
+    breakpoint()

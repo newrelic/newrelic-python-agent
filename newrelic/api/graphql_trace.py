@@ -44,7 +44,7 @@ class GraphQLOperationTrace(TimeTrace):
         if not self.statement:
             return "<unknown>"
 
-        transaction = current_transaction()
+        transaction = current_transaction(active_only=False)
 
         # Record SQL settings
         settings = transaction.settings

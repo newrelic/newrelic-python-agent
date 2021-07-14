@@ -309,7 +309,6 @@ def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_clas
     _expected_exception_operation_attributes = {
         "graphql.operation.type": "<unknown>",
         "graphql.operation.name": "<anonymous>",
-        "graphql.operation.deepestPath": "<unknown>",
         "graphql.operation.query": query,
     }
 

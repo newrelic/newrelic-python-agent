@@ -55,6 +55,23 @@ def ignore_graphql_duplicate_exception(exc, val, tb):
     return None  # Follow original exception matching rules
 
 
+def wrap_executor_context_init(wrapped, instance, args, kwargs):
+    result = wrapped(*args, **kwargs)
+
+    # Executors are arbitrary and swappable, but expose the same execute api
+    executor = getattr(instance, "executor", None)
+    if executor is not None:
+        if hasattr(executor, "execute"):
+            executor.execute = wrap_executor_execute(executor.execute)
+
+    if hasattr(instance, "field_resolver"):
+        if not hasattr(instance.field_resolver, "_nr_wrapped"):
+            instance.field_resolver = wrap_resolver(instance.field_resolver)
+            instance.field_resolver._nr_wrapped = True
+
+    return result
+
+
 def bind_operation_v3(operation, root_value):
     return operation
 
@@ -200,6 +217,7 @@ def wrap_resolver(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if transaction is None:
         return wrapped(*args, **kwargs)
+
     transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=13)
     with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
         return wrapped(*args, **kwargs)
@@ -321,7 +339,12 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
 
 
 def instrument_graphql_execute(module):
+    if hasattr(module, "get_field_def"):
+        wrap_function_wrapper(module, "get_field_def", wrap_get_field_def)
     if hasattr(module, "ExecutionContext"):
+        wrap_function_wrapper(
+            module, "ExecutionContext.__init__", wrap_executor_context_init
+        )
         if hasattr(module.ExecutionContext, "resolve_field"):
             wrap_function_wrapper(
                 module, "ExecutionContext.resolve_field", wrap_resolve_field
@@ -339,11 +362,21 @@ def instrument_graphql_execute(module):
             module, "execute_operation", wrap_execute_operation
         )
 
+def instrument_graphql_execution_utils(module):
+    if hasattr(module, "ExecutionContext"):
+        wrap_function_wrapper(
+            module, "ExecutionContext.__init__", wrap_executor_context_init
+        )
+
 
 def instrument_graphql_execution_middleware(module):
     if hasattr(module, "get_middleware_resolvers"):
         wrap_function_wrapper(
             module, "get_middleware_resolvers", wrap_get_middleware_resolvers
+        )
+    if hasattr(module, "MiddlewareManager"):
+        wrap_function_wrapper(
+            module, "MiddlewareManager.get_field_resolver", wrap_get_field_resolver
         )
 
 

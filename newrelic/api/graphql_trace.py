@@ -29,9 +29,9 @@ class GraphQLOperationTrace(TimeTrace):
             parent = kwargs['parent']
         super(GraphQLOperationTrace, self).__init__(parent)
 
-        self.operation_name = None
-        self.operation_type = None
-        self.deepest_path = None
+        self.operation_name = "<anonymous>"
+        self.operation_type = "<unknown>"
+        self.deepest_path = "<unknown>"
         self.graphql = None
         self.graphql_format = None
         self.statement = None

@@ -269,19 +269,35 @@ def test_exception_in_resolver(app, graphql_run, field):
 
 
 @dt_enabled
-@pytest.mark.parametrize("query", ["query MyQuery { missing_field }", "{ missing_field "])
-def test_exception_in_validation(app, graphql_run, query):
-    from graphql.error import GraphQLError
+@pytest.mark.parametrize("query,exc_class", [
+    ("query MyQuery { missing_field }", "GraphQLError"),
+    ("{ syntax_error ", "graphql.error.syntax_error:GraphQLSyntaxError"),
+])
+def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_class):
+    if "syntax" in query:
+        txn_name = "graphql.language.parser:parse"
+    else:
+        if is_graphql_2:
+            txn_name = "graphql.validation.validation:validate"
+        else:
+            txn_name = "graphql.validation.validate:validate"
+
+    # Import path differs between versions
+    if exc_class == "GraphQLError":
+        from graphql.error import GraphQLError
+        exc_class = callable_name(GraphQLError)
 
     # Metrics
+    # _test_exception_scoped_metrics = [
+    #     ('GraphQL/operation/GraphQL/query/MyQuery/missing_field', 1),
+    #     ('GraphQL/resolve/GraphQL/missing_field', 1),
+    # ]
     _test_exception_scoped_metrics = [
-        ('GraphQL/operation/GraphQL/query/MyQuery/missing_field', 1),
-        ('GraphQL/resolve/GraphQL/missing_field', 1),
     ]
     _test_exception_rollup_metrics = [
         ('Errors/all', 1),
         ('Errors/allOther', 1),
-        ('Errors/OtherTransaction/Function/_target_application:resolve_error', 1),
+        ('Errors/OtherTransaction/Function/%s' % txn_name, 1),
     ] + _test_exception_scoped_metrics
 
     # Attributes
@@ -293,13 +309,13 @@ def test_exception_in_validation(app, graphql_run, query):
     }
 
     @validate_transaction_metrics(
-        "_target_application:resolve_error",
+        txn_name,
         scoped_metrics=_test_exception_scoped_metrics,
         rollup_metrics=_test_exception_rollup_metrics + _graphql_base_rollup_metrics,
         background_task=True,
     )
     @validate_span_events(exact_agents=_expected_exception_operation_attributes)
-    @validate_transaction_errors(errors=[callable_name(GraphQLError)])
+    @validate_transaction_errors(errors=[exc_class])
     @background_task()
     def _test():
         response = graphql_run(app, query)

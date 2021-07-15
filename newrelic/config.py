@@ -2398,6 +2398,11 @@ def _process_module_builtin_defaults():
         "instrument_graphql_execution_middleware",
     )
     _process_module_definition(
+        "graphql.execution.utils",
+        "newrelic.hooks.framework_graphql",
+        "instrument_graphql_execution_utils",
+    )
+    _process_module_definition(
         "graphql.error.located_error",
         "newrelic.hooks.framework_graphql",
         "instrument_graphql_error_located_error",

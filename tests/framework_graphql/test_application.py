@@ -294,11 +294,8 @@ def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_clas
         from graphql.error import GraphQLError
         exc_class = callable_name(GraphQLError)
 
-    # Metrics
-    # We don't expect field resolver metrics in this case if there was an error validating the query
     _test_exception_scoped_metrics = [
-         ('GraphQL/operation/GraphQL/<unknown>/<anonymous>/<unknown>', 1),
-     ]
+    ]
     _test_exception_rollup_metrics = [
         ('Errors/all', 1),
         ('Errors/allOther', 1),

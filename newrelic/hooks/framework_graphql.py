@@ -109,7 +109,6 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
             deepest_path = []
         trace.deepest_path = deepest_path = ".".join(deepest_path) or "<unknown>"
 
-
     transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=11)
 
     result = wrapped(*args, **kwargs)
@@ -334,7 +333,7 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
         trace.statement = graphql_statement(query)
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             result = wrapped(*args, **kwargs)
-            #transaction.set_transaction_name(transaction_name, "GraphQL", priority=14)
+            # transaction.set_transaction_name(transaction_name, "GraphQL", priority=14)
             return result
 
 

@@ -91,22 +91,20 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
     except TypeError:
         operation = bind_operation_v2(*args, **kwargs)
 
-    operation_name = operation.name
-    if hasattr(operation_name, "value"):
-        operation_name = operation_name.value
+    operation_name = get_node_value(operation, "name")
     trace.operation_name = operation_name = operation_name or "<anonymous>"
 
-    operation_type = operation.operation
-    if hasattr(operation_type, "name"):
-        operation_type = operation_type.name.lower()
+    operation_type = get_node_value(operation, "operation", "name").lower()
     trace.operation_type = operation_type = operation_type or "<unknown>"
 
     if operation.selection_set is not None:
         fields = operation.selection_set.selections
-        try:
-            deepest_path = traverse_deepest_path(fields)
-        except:
-            deepest_path = []
+        # Ignore transactions for introspection queries
+        for field in fields:
+            if get_node_value(field, "name") in GRAPHQL_INTROSPECTION_FIELDS:
+                ignore_transaction()
+                
+        deepest_path = traverse_deepest_unique_path(fields)
         trace.deepest_path = deepest_path = ".".join(deepest_path) or "<unknown>"
 
     transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=11)
@@ -118,38 +116,61 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
     return result
 
 
-def traverse_deepest_path(fields):
-    inputs = deque(((field, deque(), 0) for field in fields))
-    deepest_path_len = 0
-    deepest_path = []
+def get_node_value(field, attr, subattr="value"):
+    field_name = getattr(field, attr, None)
+    if hasattr(field_name, subattr):
+        field_name = getattr(field_name, subattr)
+    return field_name
 
-    while inputs:
-        field, current_path, current_path_len = inputs.pop()
 
-        field_name = field.name
-        if hasattr(field_name, "value"):
-            field_name = field_name.value
+def is_fragment(field):
+    # Resolve version specific imports
+    try:
+        from graphql.language.ast import FragmentSpread, InlineFragment
+    except ImportError:
+        from graphql import FragmentSpreadNode as FragmentSpread, InlineFragmentNode as InlineFragment
 
-        if field_name in GRAPHQL_INTROSPECTION_FIELDS:
-            # If an introspection query is identified, ignore the transaction completely.
-            # This matches the logic used in Apollo server for identifying introspection queries.
-            ignore_transaction()
-            return []
-        elif field_name not in GRAPHQL_IGNORED_FIELDS:
-            # Only add to the current path for non-ignored values.
-            current_path.append(field_name)
-            current_path_len += 1
+    _fragment_types = (InlineFragment, FragmentSpread)
 
-            if field.selection_set is None or len(field.selection_set.selections) == 0:
-                if deepest_path_len < current_path_len:
-                    deepest_path = current_path
-                    deepest_path_len = current_path_len
-            else:
-                for inner_field in field.selection_set.selections:
-                    inputs.append((inner_field, copy(current_path), current_path_len))
+    return isinstance(field, _fragment_types)
+
+def is_named_fragment(field):
+    # Resolve version specific imports
+    try:
+        from graphql.language.ast import NamedType
+    except ImportError:
+        from graphql import NamedTypeNode as NamedType
+
+    return is_fragment(field) and getattr(field, "type_condition", None) is not None and isinstance(field.type_condition, NamedType)
+
+
+def traverse_deepest_unique_path(fields):
+    deepest_path = deque()
+    
+    while fields is not None and len(fields) > 0:
+        fields = [f for f in fields if get_node_value(f, "name") not in GRAPHQL_IGNORED_FIELDS]
+        if len(fields) != 1:  # Either selections is empty, or non-unique
+            return deepest_path
+        field = fields[0]
+
+        field_name = get_node_value(field, "name")
+
+        if is_named_fragment(field):
+            name = get_node_value(field.type_condition, "name")
+            if name:
+                deepest_path.append("%s<%s>" % (deepest_path.pop(), name))
+        elif is_fragment(field):
+            break
+        else:
+            if field_name:
+                deepest_path.append(field_name)
+
+        if field.selection_set is None:
+            break
+        else:
+            fields = field.selection_set.selections
 
     return deepest_path
-
 
 def bind_get_middleware_resolvers(middlewares):
     return middlewares

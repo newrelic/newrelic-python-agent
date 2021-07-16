@@ -57,7 +57,6 @@ class GraphQLOperationTrace(TimeTrace):
         # Add attributes
         self._add_agent_attribute("graphql.operation.type", self.operation_type)
         self._add_agent_attribute("graphql.operation.name", self.operation_name)
-        self._add_agent_attribute("graphql.operation.deepestPath", self.deepest_path)
 
         # Attach formatted graphql
         limit = transaction.settings.agent_limits.sql_query_length_maximum

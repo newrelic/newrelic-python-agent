@@ -123,7 +123,6 @@ def test_basic(app, graphql_run):
     _expected_mutation_operation_attributes = {
         "graphql.operation.type": "mutation",
         "graphql.operation.name": "<anonymous>",
-        "graphql.operation.deepestPath": "storage_add",
     }
     _expected_mutation_resolver_attributes = {
         "graphql.field.name": "storage_add",
@@ -133,7 +132,6 @@ def test_basic(app, graphql_run):
     _expected_query_operation_attributes = {
         "graphql.operation.type": "query",
         "graphql.operation.name": "<anonymous>",
-        "graphql.operation.deepestPath": "storage",
     }
     _expected_query_resolver_attributes = {
         "graphql.field.name": "storage",
@@ -188,7 +186,6 @@ def test_basic_async(app, graphql_run_async):
     _expected_mutation_operation_attributes = {
         "graphql.operation.type": "mutation",
         "graphql.operation.name": "<anonymous>",
-        "graphql.operation.deepestPath": "storage_add",
     }
     _expected_mutation_resolver_attributes = {
         "graphql.field.name": "storage_add",
@@ -198,7 +195,6 @@ def test_basic_async(app, graphql_run_async):
     _expected_query_operation_attributes = {
         "graphql.operation.type": "query",
         "graphql.operation.name": "<anonymous>",
-        "graphql.operation.deepestPath": "storage",
     }
     _expected_query_resolver_attributes = {
         "graphql.field.name": "storage",
@@ -286,7 +282,6 @@ def test_exception_in_middleware(app, graphql_run):
     _expected_exception_operation_attributes = {
         "graphql.operation.type": "query",
         "graphql.operation.name": "MyQuery",
-        "graphql.operation.deepestPath": field,
         "graphql.operation.query": query,
     }
 
@@ -332,7 +327,6 @@ def test_exception_in_resolver(app, graphql_run, field):
     _expected_exception_operation_attributes = {
         "graphql.operation.type": "query",
         "graphql.operation.name": "MyQuery",
-        "graphql.operation.deepestPath": field,
         "graphql.operation.query": query,
     }
 
@@ -389,7 +383,6 @@ def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_clas
     _expected_exception_operation_attributes = {
         "graphql.operation.type": "<unknown>",
         "graphql.operation.name": "<anonymous>",
-        "graphql.operation.deepestPath": "<unknown>",
         "graphql.operation.query": query,
     }
 
@@ -415,7 +408,6 @@ def test_operation_metrics_and_attrs(app, graphql_run):
     operation_attrs = {
         "graphql.operation.type": "query",
         "graphql.operation.name": "MyQuery",
-        "graphql.operation.deepestPath": "library.book.name",
     }
 
     @validate_transaction_metrics(
@@ -484,7 +476,7 @@ _test_queries = [
 
 @dt_enabled
 @pytest.mark.parametrize("query,obfuscated", _test_queries)
-def test_query_obfuscation(app, graphql_run, is_graphql_2, query, obfuscated):
+def test_query_obfuscation(app, graphql_run, query, obfuscated):
     graphql_attrs = {"graphql.operation.query": obfuscated}
 
     if callable(query):
@@ -495,6 +487,42 @@ def test_query_obfuscation(app, graphql_run, is_graphql_2, query, obfuscated):
     def _test():
         response = graphql_run(app, query)
         if not isinstance(query, str) or "error" not in query:
+            assert not response.errors
+
+    _test()
+
+
+_test_queries = [
+    ("{ hello }", "hello"),  # Basic query
+    ("{ error }", "error"),  # Extract deepest path on field error
+    ('{ echo(echo: "test") }', "echo"),  # Fields with arguments
+    ("{ library(index: 0) { name, book { name, author } } }", "library"),  # Complex Example, 1 level
+    ("{ library(index: 0) { book { name, author } } }", "library.book"),  # Complex Example, 2 levels
+    ("{ library(index: 0) { id, book { name } } }", "library.book.name"),  # Filtering
+    ('{ TestEcho: echo(echo: "test") }', "echo"),  # Aliases
+    ('{ search(contains: "A") { __typename ... on Book { name } } }', "search<Book>.name"),  # InlineFragment
+
+    # Currently incorrect behavior
+    ('{ hello, echo(echo: "test") }', "<unknown>"),  # Multiple root selections. (need to decide on final behavior)
+    (  # FragmentSpread
+        '{ library(index: 0) { book { ...MyFragment } } } fragment MyFragment on Book { name }',
+        "library.book",  # Should be library.book.name
+    ),
+]
+
+
+@dt_enabled
+@pytest.mark.parametrize("query,expected_path", _test_queries)
+def test_deepest_unique_path(app, graphql_run, query, expected_path):
+    @validate_transaction_metrics(
+        "query/<anonymous>/%s" % expected_path,
+        "GraphQL",
+        background_task=True,
+    )
+    @background_task()
+    def _test():
+        response = graphql_run(app, query)
+        if "error" not in query:
             assert not response.errors
 
     _test()

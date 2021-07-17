@@ -274,7 +274,7 @@ def test_exception_in_middleware(app, graphql_run):
     _test_exception_rollup_metrics = [
         ('Errors/all', 1),
         ('Errors/allOther', 1),
-        ('Errors/OtherTransaction/Function/test_application:error_middleware', 1),
+        ('Errors/OtherTransaction/GraphQL/query/MyQuery/%s' % field, 1),
     ] + _test_exception_scoped_metrics
 
     # Attributes
@@ -291,7 +291,8 @@ def test_exception_in_middleware(app, graphql_run):
     }
 
     @validate_transaction_metrics(
-        "test_application:error_middleware",
+        "query/MyQuery/hello",
+        "GraphQL",
         scoped_metrics=_test_exception_scoped_metrics,
         rollup_metrics=_test_exception_rollup_metrics + _graphql_base_rollup_metrics,
         background_task=True,
@@ -320,7 +321,7 @@ def test_exception_in_resolver(app, graphql_run, field):
     _test_exception_rollup_metrics = [
         ('Errors/all', 1),
         ('Errors/allOther', 1),
-        ('Errors/OtherTransaction/Function/_target_application:resolve_error', 1),
+        ('Errors/OtherTransaction/GraphQL/query/MyQuery/%s' % field, 1),
     ] + _test_exception_scoped_metrics
 
     # Attributes
@@ -337,7 +338,8 @@ def test_exception_in_resolver(app, graphql_run, field):
     }
 
     @validate_transaction_metrics(
-        "_target_application:resolve_error",
+        "query/MyQuery/%s" % field,
+        "GraphQL",
         scoped_metrics=_test_exception_scoped_metrics,
         rollup_metrics=_test_exception_rollup_metrics + _graphql_base_rollup_metrics,
         background_task=True,
@@ -373,16 +375,14 @@ def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_clas
         exc_class = callable_name(GraphQLError)
 
     # Metrics
-    # _test_exception_scoped_metrics = [
-    #     ('GraphQL/operation/GraphQL/query/MyQuery/missing_field', 1),
-    #     ('GraphQL/resolve/GraphQL/missing_field', 1),
-    # ]
+    # We don't expect field resolver metrics in this case if there was an error validating the query
     _test_exception_scoped_metrics = [
-    ]
+         ('GraphQL/operation/GraphQL/<unknown>/<anonymous>/<unknown>', 1),
+     ]
     _test_exception_rollup_metrics = [
         ('Errors/all', 1),
         ('Errors/allOther', 1),
-        ('Errors/OtherTransaction/Function/%s' % txn_name, 1),
+        ('Errors/OtherTransaction/GraphQL/%s' % txn_name, 1),
     ] + _test_exception_scoped_metrics
 
     # Attributes
@@ -395,6 +395,7 @@ def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_clas
 
     @validate_transaction_metrics(
         txn_name,
+        "GraphQL",
         scoped_metrics=_test_exception_scoped_metrics,
         rollup_metrics=_test_exception_rollup_metrics + _graphql_base_rollup_metrics,
         background_task=True,

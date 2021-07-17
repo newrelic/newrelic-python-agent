@@ -109,10 +109,12 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
             deepest_path = []
         trace.deepest_path = deepest_path = ".".join(deepest_path) or "<unknown>"
 
-    transaction.set_transaction_name(callable_name(wrapped), priority=11)
+    transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=11)
 
     result = wrapped(*args, **kwargs)
     transaction_name = "%s/%s/%s" % (operation_type, operation_name, deepest_path)
+    #breakpoint()
+    transaction.set_transaction_name(transaction_name, "GraphQL", priority=14)
 
     return result
 
@@ -169,7 +171,7 @@ def wrap_middleware(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     name = callable_name(wrapped)
-    transaction.set_transaction_name(name, priority=12)
+    transaction.set_transaction_name(name, 'GraphQL', priority=12)
     with FunctionTrace(name):
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             return wrapped(*args, **kwargs)
@@ -217,7 +219,7 @@ def wrap_resolver(wrapped, instance, args, kwargs):
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    transaction.set_transaction_name(callable_name(wrapped), priority=13)
+    transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=13)
     with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
         return wrapped(*args, **kwargs)
 
@@ -232,7 +234,7 @@ def wrap_validate(wrapped, instance, args, kwargs):
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    transaction.set_transaction_name(callable_name(wrapped), priority=10)
+    transaction.set_transaction_name(callable_name(wrapped),"GraphQL", priority=10)
 
     # Run and collect errors
     errors = wrapped(*args, **kwargs)
@@ -250,8 +252,8 @@ def wrap_parse(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if transaction is None:
         return wrapped(*args, **kwargs)
-
-    transaction.set_transaction_name(callable_name(wrapped), priority=10)
+    #breakpoint()
+    transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=10)
 
     with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
         return wrapped(*args, **kwargs)
@@ -328,13 +330,13 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
     if hasattr(query, "body"):
         query = query.body
 
-    transaction.set_transaction_name(callable_name(wrapped), priority=10)
+    transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=10)
 
     with GraphQLOperationTrace() as trace:
         trace.statement = graphql_statement(query)
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             result = wrapped(*args, **kwargs)
-            # transaction.set_transaction_name(transaction_name, "GraphQL", priority=14)
+            #transaction.set_transaction_name(transaction_name, "GraphQL", priority=14)
             return result
 
 

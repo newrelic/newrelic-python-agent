@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pytest
+import six
 from testing_support.fixtures import (
     code_coverage_fixture,
     collector_agent_registration_fixture,
@@ -44,3 +45,9 @@ def app():
     from _target_application import _target_application
 
     return _target_application
+
+
+if six.PY2:
+    collect_ignore = [
+        'test_application_async.py'
+    ]

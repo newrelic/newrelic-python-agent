@@ -49,7 +49,7 @@ def ignore_graphql_duplicate_exception(exc, val, tb):
             _, _, fullnames, message = parse_exc_info((None, val.original_error, None))
             fullname = fullnames[0]
             for error in transaction._errors:
-                if error.type == fullname and error.message == message:
+                if error.message == message:
                     return True
 
     return None  # Follow original exception matching rules
@@ -113,7 +113,6 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
 
     result = wrapped(*args, **kwargs)
     transaction_name = "%s/%s/%s" % (operation_type, operation_name, deepest_path)
-    #breakpoint()
     transaction.set_transaction_name(transaction_name, "GraphQL", priority=14)
 
     return result
@@ -218,7 +217,6 @@ def wrap_resolver(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if transaction is None:
         return wrapped(*args, **kwargs)
-    #breakpoint()
     transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=13)
     with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
         return wrapped(*args, **kwargs)

@@ -310,8 +310,13 @@ def test_exception_in_middleware(app, graphql_run):
 
 @pytest.mark.parametrize("field", ("error", "error_non_null"))
 @dt_enabled
-def test_exception_in_resolver(app, graphql_run, field):
+def test_exception_in_resolver(app, graphql_run, is_graphql_2, field):
     query = "query MyQuery { %s }" % field
+
+    if is_graphql_2 and field == "error_non_null":
+        txn_name = "_target_application:resolve_error"
+    else:
+        txn_name = "query/MyQuery/%s" % field
     
     # Metrics
     _test_exception_scoped_metrics = [
@@ -321,7 +326,7 @@ def test_exception_in_resolver(app, graphql_run, field):
     _test_exception_rollup_metrics = [
         ('Errors/all', 1),
         ('Errors/allOther', 1),
-        ('Errors/OtherTransaction/GraphQL/query/MyQuery/%s' % field, 1),
+        ('Errors/OtherTransaction/GraphQL/%s' % txn_name, 1),
     ] + _test_exception_scoped_metrics
 
     # Attributes
@@ -338,7 +343,7 @@ def test_exception_in_resolver(app, graphql_run, field):
     }
 
     @validate_transaction_metrics(
-        "query/MyQuery/%s" % field,
+        txn_name,
         "GraphQL",
         scoped_metrics=_test_exception_scoped_metrics,
         rollup_metrics=_test_exception_rollup_metrics + _graphql_base_rollup_metrics,

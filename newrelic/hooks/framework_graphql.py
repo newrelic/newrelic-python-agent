@@ -218,7 +218,7 @@ def wrap_resolver(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if transaction is None:
         return wrapped(*args, **kwargs)
-
+    #breakpoint()
     transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=13)
     with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
         return wrapped(*args, **kwargs)
@@ -252,7 +252,6 @@ def wrap_parse(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if transaction is None:
         return wrapped(*args, **kwargs)
-    #breakpoint()
     transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=10)
 
     with ErrorTrace(ignore=ignore_graphql_duplicate_exception):

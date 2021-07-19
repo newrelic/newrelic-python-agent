@@ -96,9 +96,9 @@ class GraphQLResolverNode(_GraphQLResolverNode, GraphQLNodeMixin):
 class GraphQLOperationNode(_GraphQLOperationNode, GraphQLNodeMixin):
     @property
     def name(self):
-        operation_type = self.operation_type or "<unknown>"
-        operation_name = self.operation_name or "<anonymous>"
-        deepest_path = self.deepest_path or "<unknown>"
+        operation_type = self.operation_type
+        operation_name = self.operation_name
+        deepest_path = self.deepest_path
         product = self.product
 
         name = 'GraphQL/operation/%s/%s/%s/%s' % (product, operation_type,
@@ -112,9 +112,9 @@ class GraphQLOperationNode(_GraphQLOperationNode, GraphQLNodeMixin):
 
         """
 
-        operation_type = self.operation_type or "<unknown>"
-        operation_name = self.operation_name or "<anonymous>"
-        deepest_path = self.deepest_path or "<unknown>"
+        operation_type = self.operation_type
+        operation_name = self.operation_name
+        deepest_path = self.deepest_path
         product = self.product
 
         # Determine the scoped metric

@@ -25,10 +25,11 @@ from graphql import (
 
 libraries = [
     {
+        "id": 1,
         "name": "NYC Public Library",
-        "book": [{"name": "A", "author": "B"}, {"name": "C", "author": "D"}],
+        "book": [{"name": "A", "author": "B", "id": 1}, {"name": "C", "author": "D", "id": 2}],
     },
-    {"name": "Portland Public Library", "book": [{"name": "E", "author": "F"}]},
+    {"id": 2, "name": "Portland Public Library", "book": [{"name": "E", "author": "F", "id": 1}]},
 ]
 
 storage = []
@@ -48,6 +49,7 @@ def resolve_storage(parent, info):
 Book = GraphQLObjectType(
     "Book",
     {
+        "id": GraphQLField(GraphQLInt),
         "name": GraphQLField(GraphQLString),
         "author": GraphQLField(GraphQLString),
     },
@@ -56,6 +58,7 @@ Book = GraphQLObjectType(
 Library = GraphQLObjectType(
     "Library",
     {
+        "id": GraphQLField(GraphQLInt),
         "name": GraphQLField(GraphQLString),
         "book": GraphQLField(GraphQLList(Book)),
     },

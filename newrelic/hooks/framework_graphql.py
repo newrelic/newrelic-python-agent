@@ -12,16 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.error_trace import ErrorTrace, ErrorTraceWrapper
-from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
+from newrelic.api.error_trace import ErrorTrace
+from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.graphql_trace import GraphQLResolverTrace, GraphQLOperationTrace
 from newrelic.api.time_trace import notice_error, current_trace
-from newrelic.api.transaction import current_transaction
+from newrelic.api.transaction import current_transaction, ignore_transaction
 from newrelic.common.object_names import callable_name, parse_exc_info
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.core.graphql_utils import graphql_statement
 from collections import deque
 from copy import copy
+
+
+GRAPHQL_IGNORED_FIELDS = frozenset(("id", "__typename"))
+GRAPHQL_INTROSPECTION_FIELDS = frozenset(("__schema", "__type"))
 
 
 def graphql_version():
@@ -45,7 +49,7 @@ def ignore_graphql_duplicate_exception(exc, val, tb):
             _, _, fullnames, message = parse_exc_info((None, val.original_error, None))
             fullname = fullnames[0]
             for error in transaction._errors:
-                if error.type == fullname and error.message == message:
+                if error.message == message:
                     return True
 
     return None  # Follow original exception matching rules
@@ -76,39 +80,48 @@ def bind_operation_v2(exe_context, operation, root_value):
 
 
 def wrap_execute_operation(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
     trace = current_trace()
 
-    if trace:
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
+    try:
+        operation = bind_operation_v3(*args, **kwargs)
+    except TypeError:
+        operation = bind_operation_v2(*args, **kwargs)
+
+    operation_name = operation.name
+    if hasattr(operation_name, "value"):
+        operation_name = operation_name.value
+    trace.operation_name = operation_name = operation_name or "<anonymous>"
+
+    operation_type = operation.operation
+    if hasattr(operation_type, "name"):
+        operation_type = operation_type.name.lower()
+    trace.operation_type = operation_type = operation_type or "<unknown>"
+
+    if operation.selection_set is not None:
+        fields = operation.selection_set.selections
         try:
-            operation = bind_operation_v3(*args, **kwargs)
-        except TypeError:
-            operation = bind_operation_v2(*args, **kwargs)
+            deepest_path = traverse_deepest_path(fields)
+        except:
+            deepest_path = []
+        trace.deepest_path = deepest_path = ".".join(deepest_path) or "<unknown>"
 
-        operation_name = operation.name
-        if hasattr(operation_name, "value"):
-            operation_name = operation_name.value
-        trace.operation_name = operation_name
+    transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=11)
 
-        operation_type = operation.operation
-        if hasattr(operation_type, "name"):
-            operation_type = operation_type.name
-        trace.operation_type = operation_type.lower()
+    result = wrapped(*args, **kwargs)
+    transaction_name = "%s/%s/%s" % (operation_type, operation_name, deepest_path)
+    transaction.set_transaction_name(transaction_name, "GraphQL", priority=14)
 
-        if operation.selection_set is not None:
-            fields = operation.selection_set.selections
-            try:
-                deepest_path = traverse_deepest_path(fields)
-            except:
-                deepest_path = []
-            trace.deepest_path = ".".join(deepest_path)
-
-    return wrapped(*args, **kwargs)
+    return result
 
 
 def traverse_deepest_path(fields):
     inputs = deque(((field, deque(), 0) for field in fields))
     deepest_path_len = 0
-    deepest_path = None
+    deepest_path = []
 
     while inputs:
         field, current_path, current_path_len = inputs.pop()
@@ -117,16 +130,23 @@ def traverse_deepest_path(fields):
         if hasattr(field_name, "value"):
             field_name = field_name.value
 
-        current_path.append(field_name)
-        current_path_len += 1
+        if field_name in GRAPHQL_INTROSPECTION_FIELDS:
+            # If an introspection query is identified, ignore the transaction completely.
+            # This matches the logic used in Apollo server for identifying introspection queries.
+            ignore_transaction()
+            return []
+        elif field_name not in GRAPHQL_IGNORED_FIELDS:
+            # Only add to the current path for non-ignored values.
+            current_path.append(field_name)
+            current_path_len += 1
 
-        if field.selection_set is None or len(field.selection_set.selections) == 0:
-            if deepest_path_len < current_path_len:
-                deepest_path = current_path
-                deepest_path_len = current_path_len
-        else:
-            for inner_field in field.selection_set.selections:
-                inputs.append((inner_field, copy(current_path), current_path_len))
+            if field.selection_set is None or len(field.selection_set.selections) == 0:
+                if deepest_path_len < current_path_len:
+                    deepest_path = current_path
+                    deepest_path_len = current_path_len
+            else:
+                for inner_field in field.selection_set.selections:
+                    inputs.append((inner_field, copy(current_path), current_path_len))
 
     return deepest_path
 
@@ -137,11 +157,24 @@ def bind_get_middleware_resolvers(middlewares):
 
 def wrap_get_middleware_resolvers(wrapped, instance, args, kwargs):
     middlewares = bind_get_middleware_resolvers(*args, **kwargs)
-    middlewares = [FunctionTraceWrapper(ErrorTraceWrapper(m, ignore=ignore_graphql_duplicate_exception)) if not hasattr(m, "_nr_wrapped") else m for m in middlewares]
+    middlewares = [wrap_middleware(m) if not hasattr(m, "_nr_wrapped") else m for m in middlewares]
     for m in middlewares:
         m._nr_wrapped = True
 
     return wrapped(middlewares)
+
+@function_wrapper
+def wrap_middleware(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    name = callable_name(wrapped)
+    transaction.set_transaction_name(name, 'GraphQL', priority=12)
+    with FunctionTrace(name):
+        with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
+            return wrapped(*args, **kwargs)
+
 
 
 def bind_get_field_resolver(field_resolver):
@@ -182,14 +215,11 @@ def wrap_executor_execute(wrapped, instance, args, kwargs):
 @function_wrapper
 def wrap_resolver(wrapped, instance, args, kwargs):
     transaction = current_transaction()
-    # Prevent double wrapping using _nr_wrapped attr
     if transaction is None:
         return wrapped(*args, **kwargs)
-
-    transaction.set_transaction_name(callable_name(wrapped), priority=2)
-    with FunctionTrace(callable_name(wrapped)):
-        with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
-            return wrapped(*args, **kwargs)
+    transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=13)
+    with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
+        return wrapped(*args, **kwargs)
 
 
 def wrap_error_handler(wrapped, instance, args, kwargs):
@@ -198,6 +228,13 @@ def wrap_error_handler(wrapped, instance, args, kwargs):
 
 
 def wrap_validate(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    transaction.set_transaction_name(callable_name(wrapped),"GraphQL", priority=10)
+
+    # Run and collect errors
     errors = wrapped(*args, **kwargs)
 
     # Raise errors and immediately catch them so we can record them
@@ -208,6 +245,15 @@ def wrap_validate(wrapped, instance, args, kwargs):
             notice_error(ignore=ignore_graphql_duplicate_exception)
 
     return errors
+
+def wrap_parse(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+    transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=10)
+
+    with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
+        return wrapped(*args, **kwargs)
 
 
 def bind_resolve_field_v3(parent_type, source, field_nodes, path):
@@ -233,13 +279,14 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
     field_name = field_asts[0].name.value
 
     with GraphQLResolverTrace(field_name) as trace:
-        trace._add_agent_attribute("graphql.field.parentType", parent_type.name)
-        if isinstance(field_path, list):
-            trace._add_agent_attribute("graphql.field.path", field_path[0])
-        else:
-            trace._add_agent_attribute("graphql.field.path", field_path.key)
+        with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
+            trace._add_agent_attribute("graphql.field.parentType", parent_type.name)
+            if isinstance(field_path, list):
+                trace._add_agent_attribute("graphql.field.path", field_path[0])
+            else:
+                trace._add_agent_attribute("graphql.field.path", field_path.key)
 
-        return wrapped(*args, **kwargs)
+            return wrapped(*args, **kwargs)
 
 
 def bind_graphql_impl_query(schema, source, *args, **kwargs):
@@ -280,10 +327,14 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
     if hasattr(query, "body"):
         query = query.body
 
+    transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=10)
+
     with GraphQLOperationTrace() as trace:
         trace.statement = graphql_statement(query)
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
-            return wrapped(*args, **kwargs)
+            result = wrapped(*args, **kwargs)
+            #transaction.set_transaction_name(transaction_name, "GraphQL", priority=14)
+            return result
 
 
 def instrument_graphql_execute(module):
@@ -336,8 +387,13 @@ def instrument_graphql_error_located_error(module):
 def instrument_graphql_validate(module):
     wrap_function_wrapper(module, "validate", wrap_validate)
 
+
 def instrument_graphql(module):
     if hasattr(module, "graphql_impl"):
         wrap_function_wrapper(module, "graphql_impl", wrap_graphql_impl)
     if hasattr(module, "execute_graphql"):
         wrap_function_wrapper(module, "execute_graphql", wrap_graphql_impl)
+
+
+def instrument_graphql_parser(module):
+    wrap_function_wrapper(module, "parse", wrap_parse)

@@ -19,6 +19,9 @@ from testing_support.fixtures import (
     validate_transaction_metrics,
 )
 from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.validators.validate_transaction_count import (
+    validate_transaction_count,
+)
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
@@ -49,6 +52,14 @@ def to_graphql_source(query):
         except ImportError:
             # Fallback if Source is not implemented
             return query
+
+        from graphql import __version__ as version
+
+        # For graphql2, Source objects aren't acceptable input
+        major_version = int(version.split(".")[0])
+        if major_version == 2:
+            return query
+
         return Source(query)
 
     return delay_import
@@ -116,7 +127,8 @@ def test_basic(app, graphql_run):
         "graphql.field.path": "storage",
     }
     @validate_transaction_metrics(
-        "_target_application:resolve_storage",
+        "query/<anonymous>/storage",
+        "GraphQL",
         scoped_metrics=_test_mutation_scoped_metrics,
         rollup_metrics=_test_mutation_unscoped_metrics + FRAMEWORK_METRICS,
         background_task=True,
@@ -138,18 +150,23 @@ def test_basic(app, graphql_run):
     _test()
 
 
+@dt_enabled
 def test_middleware(app, graphql_run, is_graphql_2):
     _test_middleware_metrics = [
-        ("OtherTransaction/Function/_target_application:resolve_hello", 1),
-        # ("Function/_target_application:resolve_hello", 1),
-        # ("Function/test_application:example_middleware", "present"),  # 2?????
+        ("GraphQL/operation/GraphQL/query/<anonymous>/hello", 1),
+        ("GraphQL/resolve/GraphQL/hello", 1),
+        ("Function/test_application:example_middleware", 1),
     ]
 
     @validate_transaction_metrics(
-        "_target_application:resolve_hello",
+        "query/<anonymous>/hello",
+        "GraphQL",
+        scoped_metrics=_test_middleware_metrics,
         rollup_metrics=_test_middleware_metrics + _graphql_base_rollup_metrics,
         background_task=True,
     )
+    # Span count 4: Transaction, Operation, Middleware, and 1 Resolver
+    @validate_span_events(count=4)
     @background_task()
     def _test():
         response = graphql_run(app, "{ hello }", middleware=[example_middleware])
@@ -159,71 +176,184 @@ def test_middleware(app, graphql_run, is_graphql_2):
     _test()
 
 
+@dt_enabled
 def test_exception_in_middleware(app, graphql_run):
+    query = "query MyQuery { hello }"
+    field = "hello"
+    
+    # Metrics
+    _test_exception_scoped_metrics = [
+        ('GraphQL/operation/GraphQL/query/MyQuery/%s' % field, 1),
+        ('GraphQL/resolve/GraphQL/%s' % field, 1),
+    ]
+    _test_exception_rollup_metrics = [
+        ('Errors/all', 1),
+        ('Errors/allOther', 1),
+        ('Errors/OtherTransaction/GraphQL/query/MyQuery/%s' % field, 1),
+    ] + _test_exception_scoped_metrics
+
+    # Attributes
+    _expected_exception_resolver_attributes = {
+        "graphql.field.name": field,
+        "graphql.field.parentType": "Query",
+        "graphql.field.path": field,
+    }
+    _expected_exception_operation_attributes = {
+        "graphql.operation.type": "query",
+        "graphql.operation.name": "MyQuery",
+        "graphql.operation.deepestPath": field,
+        "graphql.operation.query": query,
+    }
+
+    @validate_transaction_metrics(
+        "query/MyQuery/hello",
+        "GraphQL",
+        scoped_metrics=_test_exception_scoped_metrics,
+        rollup_metrics=_test_exception_rollup_metrics + _graphql_base_rollup_metrics,
+        background_task=True,
+    )
+    @validate_span_events(exact_agents=_expected_exception_operation_attributes)
+    @validate_span_events(exact_agents=_expected_exception_resolver_attributes)
     @validate_transaction_errors(errors=_test_runtime_error)
     @background_task()
     def _test():
-        response = graphql_run(app, "{ hello }", middleware=[error_middleware])
+        response = graphql_run(app, query, middleware=[error_middleware])
         assert response.errors
 
     _test()
 
 
 @pytest.mark.parametrize("field", ("error", "error_non_null"))
-def test_exception_in_resolver(app, graphql_run, field):
+@dt_enabled
+def test_exception_in_resolver(app, graphql_run, is_graphql_2, field):
+    query = "query MyQuery { %s }" % field
+
+    if is_graphql_2 and field == "error_non_null":
+        txn_name = "_target_application:resolve_error"
+    else:
+        txn_name = "query/MyQuery/%s" % field
+    
+    # Metrics
+    _test_exception_scoped_metrics = [
+        ('GraphQL/operation/GraphQL/query/MyQuery/%s' % field, 1),
+        ('GraphQL/resolve/GraphQL/%s' % field, 1),
+    ]
+    _test_exception_rollup_metrics = [
+        ('Errors/all', 1),
+        ('Errors/allOther', 1),
+        ('Errors/OtherTransaction/GraphQL/%s' % txn_name, 1),
+    ] + _test_exception_scoped_metrics
+
+    # Attributes
+    _expected_exception_resolver_attributes = {
+        "graphql.field.name": field,
+        "graphql.field.parentType": "Query",
+        "graphql.field.path": field,
+    }
+    _expected_exception_operation_attributes = {
+        "graphql.operation.type": "query",
+        "graphql.operation.name": "MyQuery",
+        "graphql.operation.deepestPath": field,
+        "graphql.operation.query": query,
+    }
+
+    @validate_transaction_metrics(
+        txn_name,
+        "GraphQL",
+        scoped_metrics=_test_exception_scoped_metrics,
+        rollup_metrics=_test_exception_rollup_metrics + _graphql_base_rollup_metrics,
+        background_task=True,
+    )
+    @validate_span_events(exact_agents=_expected_exception_operation_attributes)
+    @validate_span_events(exact_agents=_expected_exception_resolver_attributes)
     @validate_transaction_errors(errors=_test_runtime_error)
     @background_task()
     def _test():
-        response = graphql_run(app, "{ %s }" % field)
+        response = graphql_run(app, query)
         assert response.errors
 
     _test()
 
 
-def test_exception_in_validation(app, graphql_run):
-    from graphql.error import GraphQLError
+@dt_enabled
+@pytest.mark.parametrize("query,exc_class", [
+    ("query MyQuery { missing_field }", "GraphQLError"),
+    ("{ syntax_error ", "graphql.error.syntax_error:GraphQLSyntaxError"),
+])
+def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_class):
+    if "syntax" in query:
+        txn_name = "graphql.language.parser:parse"
+    else:
+        if is_graphql_2:
+            txn_name = "graphql.validation.validation:validate"
+        else:
+            txn_name = "graphql.validation.validate:validate"
 
-    @validate_transaction_errors(errors=[callable_name(GraphQLError)])
+    # Import path differs between versions
+    if exc_class == "GraphQLError":
+        from graphql.error import GraphQLError
+        exc_class = callable_name(GraphQLError)
+
+    # Metrics
+    # We don't expect field resolver metrics in this case if there was an error validating the query
+    _test_exception_scoped_metrics = [
+         ('GraphQL/operation/GraphQL/<unknown>/<anonymous>/<unknown>', 1),
+     ]
+    _test_exception_rollup_metrics = [
+        ('Errors/all', 1),
+        ('Errors/allOther', 1),
+        ('Errors/OtherTransaction/GraphQL/%s' % txn_name, 1),
+    ] + _test_exception_scoped_metrics
+
+    # Attributes
+    _expected_exception_operation_attributes = {
+        "graphql.operation.type": "<unknown>",
+        "graphql.operation.name": "<anonymous>",
+        "graphql.operation.deepestPath": "<unknown>",
+        "graphql.operation.query": query,
+    }
+
+    @validate_transaction_metrics(
+        txn_name,
+        "GraphQL",
+        scoped_metrics=_test_exception_scoped_metrics,
+        rollup_metrics=_test_exception_rollup_metrics + _graphql_base_rollup_metrics,
+        background_task=True,
+    )
+    @validate_span_events(exact_agents=_expected_exception_operation_attributes)
+    @validate_transaction_errors(errors=[exc_class])
     @background_task()
     def _test():
-        response = graphql_run(app, "{ missing_field }")
+        response = graphql_run(app, query)
         assert response.errors
 
     _test()
 
 
-@pytest.mark.parametrize(
-    "query,operation_attrs",
-    [("query MyQuery { library(index: 0) { name, book { name } } }", {})],
-)
 @dt_enabled
-def test_operation_metrics_and_attrs(
-    app, graphql_run, query, operation_attrs, is_graphql_2
-):
-    operation_metrics = [
-        ("GraphQL/operation/GraphQL/query/MyQuery/library.book.name", 1)
-    ]
+def test_operation_metrics_and_attrs(app, graphql_run):
+    operation_metrics = [("GraphQL/operation/GraphQL/query/MyQuery/library.book.name", 1)]
     operation_attrs = {
         "graphql.operation.type": "query",
         "graphql.operation.name": "MyQuery",
         "graphql.operation.deepestPath": "library.book.name",
     }
 
-    if is_graphql_2:
-        txn_name = "graphql.execution.utils:default_resolve_fn"
-    else:
-        txn_name = "graphql.execution.execute:default_field_resolver"
-
     @validate_transaction_metrics(
-        txn_name,
+        "query/MyQuery/library.book.name",
+        "GraphQL",
         scoped_metrics=operation_metrics,
         rollup_metrics=operation_metrics + _graphql_base_rollup_metrics,
         background_task=True,
     )
+    # Span count 7: Transaction, Operation, and 7 Resolvers
+    # library, library.name, library.book
+    # library.book.name and library.book.id for each book resolved (in this case 2)
+    @validate_span_events(count=9)
     @validate_span_events(exact_agents=operation_attrs)
     @background_task()
     def _test():
-        response = graphql_run(app, query)
+        response = graphql_run(app, "query MyQuery { library(index: 0) { name, book { id, name } } }")
         assert not response.errors
 
     _test()
@@ -239,11 +369,14 @@ def test_field_resolver_metrics_and_attrs(app, graphql_run):
     }
 
     @validate_transaction_metrics(
-        "_target_application:resolve_hello",
+        "query/<anonymous>/hello",
+        "GraphQL",
         scoped_metrics=field_resolver_metrics,
         rollup_metrics=field_resolver_metrics + _graphql_base_rollup_metrics,
         background_task=True,
     )
+    # Span count 3: Transaction, Operation, and 1 Resolver
+    @validate_span_events(count=3)
     @validate_span_events(exact_agents=graphql_attrs)
     @background_task()
     def _test():
@@ -257,7 +390,6 @@ def test_field_resolver_metrics_and_attrs(app, graphql_run):
 _test_queries = [
     ("{ hello }", "{ hello }"),  # Basic query extraction
     ("{ error }", "{ error }"),  # Extract query on field error
-    # ("{ missing_field { error } }", "{ missing_field { error } }"),  # Extract query on parsing errors
     (to_graphql_source("{ hello }"), "{ hello }"),  # Extract query from Source objects
     ("{ library(index: 0) { name } }", "{ library(index: ?) { name } }"),  # Integers
     ('{ echo(echo: "123") }', "{ echo(echo: ?) }"),  # Strings with numerics
@@ -278,9 +410,6 @@ def test_query_obfuscation(app, graphql_run, is_graphql_2, query, obfuscated):
 
     if callable(query):
         query = query()
-        if is_graphql_2:
-            # Revert to query strings for graphql2
-            query = query.body
 
     @validate_span_events(exact_agents=graphql_attrs)
     @background_task()
@@ -290,3 +419,10 @@ def test_query_obfuscation(app, graphql_run, is_graphql_2, query, obfuscated):
             assert not response.errors
 
     _test()
+
+
+@validate_transaction_count(0)
+@background_task()
+def test_ignored_introspection_transactions(app, graphql_run):
+    response = graphql_run(app, "{ __schema { types { name } } }")
+    assert not response.errors

@@ -2408,6 +2408,11 @@ def _process_module_builtin_defaults():
         "instrument_graphql_error_located_error",
     )
     _process_module_definition(
+        "graphql.language.parser",
+        "newrelic.hooks.framework_graphql",
+        "instrument_graphql_parser",
+    )
+    _process_module_definition(
         "graphql.validation.validate",
         "newrelic.hooks.framework_graphql",
         "instrument_graphql_validate",

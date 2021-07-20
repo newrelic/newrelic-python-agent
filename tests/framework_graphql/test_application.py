@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
 import pytest
 from testing_support.fixtures import (
     dt_enabled,
@@ -43,6 +44,19 @@ def graphql_run():
         from graphql import graphql
 
     return graphql
+
+
+@pytest.fixture(scope="session")
+def graphql_run_async():
+    from graphql import graphql, __version__ as version
+
+    major_version = int(version.split(".")[0])
+    if major_version == 2:
+        def graphql_run(*args, **kwargs):
+            return graphql(*args, return_promise=True, **kwargs)
+        return graphql_run
+    else:
+        return graphql
 
 
 def to_graphql_source(query):
@@ -291,6 +305,7 @@ def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_clas
         exc_class = callable_name(GraphQLError)
 
     _test_exception_scoped_metrics = [
+    #    ('GraphQL/operation/GraphQL/<unknown>/<anonymous>/<unknown>', 1),
     ]
     _test_exception_rollup_metrics = [
         ('Errors/all', 1),

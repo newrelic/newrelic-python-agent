@@ -69,6 +69,7 @@ def wrap_executor_context_init(wrapped, instance, args, kwargs):
             instance.field_resolver = wrap_resolver(instance.field_resolver)
             instance.field_resolver._nr_wrapped = True
 
+
     return result
 
 
@@ -103,14 +104,13 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
         for field in fields:
             if get_node_value(field, "name") in GRAPHQL_INTROSPECTION_FIELDS:
                 ignore_transaction()
-                
+
         deepest_path = traverse_deepest_unique_path(fields)
-        trace.deepest_path = deepest_path = ".".join(deepest_path) or "<unknown>"
+        trace.deepest_path = deepest_path = ".".join(deepest_path) or ""
 
     transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=11)
-
     result = wrapped(*args, **kwargs)
-    transaction_name = "%s/%s/%s" % (operation_type, operation_name, deepest_path)
+    transaction_name = "%s/%s/%s" % (operation_type, operation_name, deepest_path) if deepest_path else "%s/%s" % (operation_type, operation_name)
     transaction.set_transaction_name(transaction_name, "GraphQL", priority=14)
 
     return result
@@ -146,7 +146,7 @@ def is_named_fragment(field):
 
 def traverse_deepest_unique_path(fields):
     deepest_path = deque()
-    
+
     while fields is not None and len(fields) > 0:
         fields = [f for f in fields if get_node_value(f, "name") not in GRAPHQL_IGNORED_FIELDS]
         if len(fields) != 1:  # Either selections is empty, or non-unique
@@ -154,7 +154,6 @@ def traverse_deepest_unique_path(fields):
         field = fields[0]
 
         field_name = get_node_value(field, "name")
-
         if is_named_fragment(field):
             name = get_node_value(field.type_condition, "name")
             if name:

@@ -46,19 +46,6 @@ def graphql_run():
     return graphql
 
 
-@pytest.fixture(scope="session")
-def graphql_run_async():
-    from graphql import graphql, __version__ as version
-
-    major_version = int(version.split(".")[0])
-    if major_version == 2:
-        def graphql_run(*args, **kwargs):
-            return graphql(*args, return_promise=True, **kwargs)
-        return graphql_run
-    else:
-        return graphql
-
-
 def to_graphql_source(query):
     def delay_import():
         try:
@@ -339,14 +326,14 @@ def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_clas
 
 @dt_enabled
 def test_operation_metrics_and_attrs(app, graphql_run):
-    operation_metrics = [("GraphQL/operation/GraphQL/query/MyQuery/library.book.name", 1)]
+    operation_metrics = [("GraphQL/operation/GraphQL/query/MyQuery/library", 1)]
     operation_attrs = {
         "graphql.operation.type": "query",
         "graphql.operation.name": "MyQuery",
     }
 
     @validate_transaction_metrics(
-        "query/MyQuery/library.book.name",
+        "query/MyQuery/library",
         "GraphQL",
         scoped_metrics=operation_metrics,
         rollup_metrics=operation_metrics + _graphql_base_rollup_metrics,
@@ -428,21 +415,21 @@ def test_query_obfuscation(app, graphql_run, query, obfuscated):
 
 
 _test_queries = [
-    ("{ hello }", "hello"),  # Basic query
-    ("{ error }", "error"),  # Extract deepest path on field error
-    ('{ echo(echo: "test") }', "echo"),  # Fields with arguments
-    ("{ library(index: 0) { name, book { name, author } } }", "library"),  # Complex Example, 1 level
-    ("{ library(index: 0) { book { name, author } } }", "library.book"),  # Complex Example, 2 levels
-    ("{ library(index: 0) { id, book { name } } }", "library.book.name"),  # Filtering
-    ('{ TestEcho: echo(echo: "test") }', "echo"),  # Aliases
-    ('{ search(contains: "A") { __typename ... on Book { name } } }', "search<Book>.name"),  # InlineFragment
+    ("{ hello }", "/hello"),  # Basic query
+    ("{ error }", "/error"),  # Extract deepest path on field error
+    ('{ echo(echo: "test") }', "/echo"),  # Fields with arguments
+    ("{ library(index: 0) { name, book { name, author } } }", "/library"),  # Complex Example, 1 level
+    ("{ library(index: 0) { book { name, author } } }", "/library.book"),  # Complex Example, 2 levels
+    ("{ library(index: 0) { id, book { name } } }", "/library.book.name"),  # Filtering
+    ('{ TestEcho: echo(echo: "test") }', "/echo"),  # Aliases
+    ('{ search(contains: "A") { __typename ... on Book { name } } }', "/search<Book>.name"),  # InlineFragment
 
     # Currently incorrect behavior
-    ('{ hello, echo(echo: "test") }', "<unknown>"),  # Multiple root selections. (need to decide on final behavior)
-    (  # FragmentSpread
-        '{ library(index: 0) { book { ...MyFragment } } } fragment MyFragment on Book { name }',
-        "library.book",  # Should be library.book.name
-    ),
+    ('{ hello echo(echo: "test") }', ""),  # Multiple root selections. (need to decide on final behavior)
+    #(  # FragmentSpread
+    #   '{ library(index: 0) { book { ...MyFragment } } } fragment MyFragment on Book { name }',
+    #    "/library.book",  # Should be library.book.name
+    #),
 ]
 
 
@@ -450,7 +437,7 @@ _test_queries = [
 @pytest.mark.parametrize("query,expected_path", _test_queries)
 def test_deepest_unique_path(app, graphql_run, query, expected_path):
     @validate_transaction_metrics(
-        "query/<anonymous>/%s" % expected_path,
+        "query/<anonymous>%s" % expected_path,
         "GraphQL",
         background_task=True,
     )

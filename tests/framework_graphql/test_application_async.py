@@ -44,7 +44,6 @@ def test_basic_async(app, graphql_run_async):
     _expected_mutation_operation_attributes = {
         "graphql.operation.type": "mutation",
         "graphql.operation.name": "<anonymous>",
-        "graphql.operation.deepestPath": "storage_add",
     }
     _expected_mutation_resolver_attributes = {
         "graphql.field.name": "storage_add",
@@ -54,7 +53,6 @@ def test_basic_async(app, graphql_run_async):
     _expected_query_operation_attributes = {
         "graphql.operation.type": "query",
         "graphql.operation.name": "<anonymous>",
-        "graphql.operation.deepestPath": "storage",
     }
     _expected_query_resolver_attributes = {
         "graphql.field.name": "storage",

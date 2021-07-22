@@ -77,7 +77,6 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set((
         'graphql.field.path',
         'graphql.operation.name',
         'graphql.operation.type',
-        'graphql.operation.deepestPath',
         'graphql.operation.query',
 ))
 

@@ -24,27 +24,41 @@ from graphql import (
     GraphQLUnionType,
 )
 
+authors = [
+    {
+        "first_name": "New",
+        "last_name": "Relic",
+    },
+    {
+        "first_name": "Bob",
+        "last_name": "Smith",
+    },
+    {
+        "first_name": "Leslie",
+        "last_name": "Jones",
+    },
+]
 
 books = [
     {
         "id": 1,
         "name": 'Python Agent: The Book',
         "isbn": 'a-fake-isbn',
-        "author": 'Sentient Bits',
+        "author": authors[0],
         "branch": 'riverside'
     },
     {
         "id": 2,
         "name": 'Ollies for O11y: A Sk8er\'s Guide to Observability',
         "isbn": 'a-second-fake-isbn',
-        "author": 'Faux Hawk',
+        "author": authors[1],
         "branch": 'downtown'
     },
     {
         "id": 3,
         "name": '[Redacted]',
         "isbn": 'a-third-fake-isbn',
-        "author": 'Closed Telemetry',
+        "author": authors[2],
         "branch": 'riverside'
     },
 ]
@@ -97,6 +111,13 @@ def resolve_search(parent, info, contains):
     search_magazines = [m for m in magazines if contains in m["name"]]
     return search_books + search_magazines
 
+Author = GraphQLObjectType(
+    "Author",
+    {
+        "first_name": GraphQLField(GraphQLString), 
+        "last_name": GraphQLField(GraphQLString),
+    }, 
+)
 
 Book = GraphQLObjectType(
     "Book",
@@ -104,7 +125,7 @@ Book = GraphQLObjectType(
         "id": GraphQLField(GraphQLInt),
         "name": GraphQLField(GraphQLString),
         "isbn": GraphQLField(GraphQLString),
-        "author": GraphQLField(GraphQLString),
+        "author": GraphQLField(GraphQLList(Author)),
         "branch": GraphQLField(GraphQLString),
     },
 )
@@ -126,7 +147,7 @@ Library = GraphQLObjectType(
         "id": GraphQLField(GraphQLInt),
         "name": GraphQLField(GraphQLString),
         "book": GraphQLField(GraphQLList(Book)),
-        "magazine": GraphQLField(GraphQLList(Book)),
+        "magazine": GraphQLField(GraphQLList(Magazine)),
     },
 )
 

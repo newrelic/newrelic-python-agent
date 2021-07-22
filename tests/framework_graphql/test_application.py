@@ -417,18 +417,25 @@ _test_queries = [
     ("{ hello }", "/hello"),  # Basic query
     ("{ error }", "/error"),  # Extract deepest path on field error
     ('{ echo(echo: "test") }', "/echo"),  # Fields with arguments
-    ("{ library(index: 0) { name, book { name, author } } }", "/library"),  # Complex Example, 1 level
-    ("{ library(index: 0) { book { name, author } } }", "/library.book"),  # Complex Example, 2 levels
+    ("{ library(index: 0) { name, book { isbn branch } } }", "/library"),  # Complex Example, 1 level
+    ("{ library(index: 0) { book { author { first_name }} } }", "/library.book.author.first_name"),  # Complex Example, 2 levels
     ("{ library(index: 0) { id, book { name } } }", "/library.book.name"),  # Filtering
     ('{ TestEcho: echo(echo: "test") }', "/echo"),  # Aliases
     ('{ search(contains: "A") { __typename ... on Book { name } } }', "/search<Book>.name"),  # InlineFragment
-
-    # Currently incorrect behavior
     ('{ hello echo(echo: "test") }', ""),  # Multiple root selections. (need to decide on final behavior)
-    #(  # FragmentSpread
-    #   '{ library(index: 0) { book { ...MyFragment } } } fragment MyFragment on Book { name }',
-    #    "/library.book",  # Should be library.book.name
-    #),
+    # FragmentSpread
+    (
+       '{ library(index: 0) { book { ...MyFragment } } } fragment MyFragment on Book { name id }', # Fragment filtering
+        "/library.book.name",
+    ),
+    (
+       '{ library(index: 0) { book { ...MyFragment } } } fragment MyFragment on Book { author { first_name } }',
+        "/library.book.author.first_name",
+    ),
+    (
+       '{ library(index: 0) { book { ...MyFragment } magazine { ...MagFragment } } } fragment MyFragment on Book { author { first_name } } fragment MagFragment on Magazine { name }',
+        "/library",
+    ),
 ]
 
 

@@ -8,24 +8,28 @@ from testing_support.fixtures import (
 from testing_support.validators.validate_span_events import validate_span_events
 from newrelic.api.background_task import background_task
 
+
 @pytest.fixture(scope="session")
 def graphql_run_async():
     from graphql import graphql, __version__ as version
 
     major_version = int(version.split(".")[0])
     if major_version == 2:
+
         def graphql_run(*args, **kwargs):
             return graphql(*args, return_promise=True, **kwargs)
+
         return graphql_run
     else:
         return graphql
+
 
 @dt_enabled
 def test_basic_async(app, graphql_run_async):
     from graphql import __version__ as version
 
     FRAMEWORK_METRICS = [
-        ('Python/Framework/GraphQL/%s' % version, 1),
+        ("Python/Framework/GraphQL/%s" % version, 1),
     ]
     _test_mutation_scoped_metrics = [
         ("GraphQL/resolve/GraphQL/storage", 1),
@@ -59,6 +63,7 @@ def test_basic_async(app, graphql_run_async):
         "graphql.field.parentType": "Query",
         "graphql.field.path": "storage",
     }
+
     @validate_transaction_metrics(
         "query/<anonymous>/storage",
         "GraphQL",
@@ -73,7 +78,9 @@ def test_basic_async(app, graphql_run_async):
     @background_task()
     def _test():
         async def coro():
-            response = await graphql_run_async(app, 'mutation { storage_add(string: "abc") }')
+            response = await graphql_run_async(
+                app, 'mutation { storage_add(string: "abc") }'
+            )
             assert not response.errors
             response = await graphql_run_async(app, "query { storage }")
             assert not response.errors

@@ -88,9 +88,9 @@ _graphql_base_rollup_metrics = [
 @dt_enabled
 def test_basic(app, graphql_run):
     from graphql import __version__ as version
-    
+
     FRAMEWORK_METRICS = [
-        ('Python/Framework/GraphQL/%s' % version, 1),
+        ("Python/Framework/GraphQL/%s" % version, 1),
     ]
     _test_mutation_scoped_metrics = [
         ("GraphQL/resolve/GraphQL/storage", 1),
@@ -124,6 +124,7 @@ def test_basic(app, graphql_run):
         "graphql.field.parentType": "Query",
         "graphql.field.path": "storage",
     }
+
     @validate_transaction_metrics(
         "query/<anonymous>/storage",
         "GraphQL",
@@ -145,6 +146,7 @@ def test_basic(app, graphql_run):
         # These are separate assertions because pypy stores 'abc' as a unicode string while other Python versions do not
         assert "storage" in str(response.data)
         assert "abc" in str(response.data)
+
     _test()
 
 
@@ -178,16 +180,16 @@ def test_middleware(app, graphql_run, is_graphql_2):
 def test_exception_in_middleware(app, graphql_run):
     query = "query MyQuery { hello }"
     field = "hello"
-    
+
     # Metrics
     _test_exception_scoped_metrics = [
-        ('GraphQL/operation/GraphQL/query/MyQuery/%s' % field, 1),
-        ('GraphQL/resolve/GraphQL/%s' % field, 1),
+        ("GraphQL/operation/GraphQL/query/MyQuery/%s" % field, 1),
+        ("GraphQL/resolve/GraphQL/%s" % field, 1),
     ]
     _test_exception_rollup_metrics = [
-        ('Errors/all', 1),
-        ('Errors/allOther', 1),
-        ('Errors/OtherTransaction/GraphQL/query/MyQuery/%s' % field, 1),
+        ("Errors/all", 1),
+        ("Errors/allOther", 1),
+        ("Errors/OtherTransaction/GraphQL/query/MyQuery/%s" % field, 1),
     ] + _test_exception_scoped_metrics
 
     # Attributes
@@ -229,16 +231,16 @@ def test_exception_in_resolver(app, graphql_run, is_graphql_2, field):
         txn_name = "_target_application:resolve_error"
     else:
         txn_name = "query/MyQuery/%s" % field
-    
+
     # Metrics
     _test_exception_scoped_metrics = [
-        ('GraphQL/operation/GraphQL/query/MyQuery/%s' % field, 1),
-        ('GraphQL/resolve/GraphQL/%s' % field, 1),
+        ("GraphQL/operation/GraphQL/query/MyQuery/%s" % field, 1),
+        ("GraphQL/resolve/GraphQL/%s" % field, 1),
     ]
     _test_exception_rollup_metrics = [
-        ('Errors/all', 1),
-        ('Errors/allOther', 1),
-        ('Errors/OtherTransaction/GraphQL/%s' % txn_name, 1),
+        ("Errors/all", 1),
+        ("Errors/allOther", 1),
+        ("Errors/OtherTransaction/GraphQL/%s" % txn_name, 1),
     ] + _test_exception_scoped_metrics
 
     # Attributes
@@ -272,10 +274,13 @@ def test_exception_in_resolver(app, graphql_run, is_graphql_2, field):
 
 
 @dt_enabled
-@pytest.mark.parametrize("query,exc_class", [
-    ("query MyQuery { missing_field }", "GraphQLError"),
-    ("{ syntax_error ", "graphql.error.syntax_error:GraphQLSyntaxError"),
-])
+@pytest.mark.parametrize(
+    "query,exc_class",
+    [
+        ("query MyQuery { missing_field }", "GraphQLError"),
+        ("{ syntax_error ", "graphql.error.syntax_error:GraphQLSyntaxError"),
+    ],
+)
 def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_class):
     if "syntax" in query:
         txn_name = "graphql.language.parser:parse"
@@ -288,15 +293,16 @@ def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_clas
     # Import path differs between versions
     if exc_class == "GraphQLError":
         from graphql.error import GraphQLError
+
         exc_class = callable_name(GraphQLError)
 
     _test_exception_scoped_metrics = [
-    #    ('GraphQL/operation/GraphQL/<unknown>/<anonymous>/<unknown>', 1),
+        #    ('GraphQL/operation/GraphQL/<unknown>/<anonymous>/<unknown>', 1),
     ]
     _test_exception_rollup_metrics = [
-        ('Errors/all', 1),
-        ('Errors/allOther', 1),
-        ('Errors/OtherTransaction/GraphQL/%s' % txn_name, 1),
+        ("Errors/all", 1),
+        ("Errors/allOther", 1),
+        ("Errors/OtherTransaction/GraphQL/%s" % txn_name, 1),
     ] + _test_exception_scoped_metrics
 
     # Attributes
@@ -345,7 +351,9 @@ def test_operation_metrics_and_attrs(app, graphql_run):
     @validate_span_events(exact_agents=operation_attrs)
     @background_task()
     def _test():
-        response = graphql_run(app, "query MyQuery { library(index: 0) { name, book { id, name } } }")
+        response = graphql_run(
+            app, "query MyQuery { library(index: 0) { name, book { id, name } } }"
+        )
         assert not response.errors
 
     _test()
@@ -417,18 +425,37 @@ _test_queries = [
     ("{ hello }", "/hello"),  # Basic query
     ("{ error }", "/error"),  # Extract deepest path on field error
     ('{ echo(echo: "test") }', "/echo"),  # Fields with arguments
-    ("{ library(index: 0) { name, book { name, author } } }", "/library"),  # Complex Example, 1 level
-    ("{ library(index: 0) { book { name, author } } }", "/library.book"),  # Complex Example, 2 levels
+    (
+        "{ library(index: 0) { name, book { isbn branch } } }",
+        "/library",
+    ),  # Complex Example, 1 level
+    (
+        "{ library(index: 0) { book { author { first_name }} } }",
+        "/library.book.author.first_name",
+    ),  # Complex Example, 2 levels
     ("{ library(index: 0) { id, book { name } } }", "/library.book.name"),  # Filtering
     ('{ TestEcho: echo(echo: "test") }', "/echo"),  # Aliases
-    ('{ search(contains: "A") { __typename ... on Book { name } } }', "/search<Book>.name"),  # InlineFragment
-
-    # Currently incorrect behavior
-    ('{ hello echo(echo: "test") }', ""),  # Multiple root selections. (need to decide on final behavior)
-    #(  # FragmentSpread
-    #   '{ library(index: 0) { book { ...MyFragment } } } fragment MyFragment on Book { name }',
-    #    "/library.book",  # Should be library.book.name
-    #),
+    (
+        '{ search(contains: "A") { __typename ... on Book { name } } }',
+        "/search<Book>.name",
+    ),  # InlineFragment
+    (
+        '{ hello echo(echo: "test") }',
+        "",
+    ),  # Multiple root selections. (need to decide on final behavior)
+    # FragmentSpread
+    (
+        "{ library(index: 0) { book { ...MyFragment } } } fragment MyFragment on Book { name id }",  # Fragment filtering
+        "/library.book.name",
+    ),
+    (
+        "{ library(index: 0) { book { ...MyFragment } } } fragment MyFragment on Book { author { first_name } }",
+        "/library.book.author.first_name",
+    ),
+    (
+        "{ library(index: 0) { book { ...MyFragment } magazine { ...MagFragment } } } fragment MyFragment on Book { author { first_name } } fragment MagFragment on Magazine { name }",
+        "/library",
+    ),
 ]
 
 

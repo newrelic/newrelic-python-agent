@@ -30,6 +30,7 @@ GRAPHQL_INTROSPECTION_FIELDS = frozenset(("__schema", "__type"))
 
 def graphql_version():
     from graphql import __version__ as version
+
     return tuple(int(v) for v in version.split("."))
 
 
@@ -106,15 +107,21 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
                 ignore_transaction()
 
         if graphql_version() <= (3, 0, 0):
-            fragments = args[0].fragments # In v2, args[0] is the ExecutionContext object
+            fragments = args[
+                0
+            ].fragments  # In v2, args[0] is the ExecutionContext object
         else:
-            fragments = instance.fragments # instance is the ExecutionContext object
+            fragments = instance.fragments  # instance is the ExecutionContext object
         deepest_path = traverse_deepest_unique_path(fields, fragments)
         trace.deepest_path = deepest_path = ".".join(deepest_path) or ""
 
     transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=11)
     result = wrapped(*args, **kwargs)
-    transaction_name = "%s/%s/%s" % (operation_type, operation_name, deepest_path) if deepest_path else "%s/%s" % (operation_type, operation_name)
+    transaction_name = (
+        "%s/%s/%s" % (operation_type, operation_name, deepest_path)
+        if deepest_path
+        else "%s/%s" % (operation_type, operation_name)
+    )
     transaction.set_transaction_name(transaction_name, "GraphQL", priority=14)
 
     return result
@@ -125,6 +132,7 @@ def get_node_value(field, attr, subattr="value"):
     if hasattr(field_name, subattr):
         field_name = getattr(field_name, subattr)
     return field_name
+
 
 def is_fragment_spread_node(field):
     # Resolve version specific imports
@@ -141,7 +149,10 @@ def is_fragment(field):
     try:
         from graphql.language.ast import FragmentSpread, InlineFragment
     except ImportError:
-        from graphql import FragmentSpreadNode as FragmentSpread, InlineFragmentNode as InlineFragment
+        from graphql import (
+            FragmentSpreadNode as FragmentSpread,
+            InlineFragmentNode as InlineFragment,
+        )
 
     _fragment_types = (InlineFragment, FragmentSpread)
 
@@ -155,11 +166,17 @@ def is_named_fragment(field):
     except ImportError:
         from graphql import NamedTypeNode as NamedType
 
-    return is_fragment(field) and getattr(field, "type_condition", None) is not None and isinstance(field.type_condition, NamedType)
+    return (
+        is_fragment(field)
+        and getattr(field, "type_condition", None) is not None
+        and isinstance(field.type_condition, NamedType)
+    )
 
 
 def filter_ignored_fields(fields):
-    filtered_fields = [f for f in fields if get_node_value(f, "name") not in GRAPHQL_IGNORED_FIELDS]
+    filtered_fields = [
+        f for f in fields if get_node_value(f, "name") not in GRAPHQL_IGNORED_FIELDS
+    ]
     return filtered_fields
 
 
@@ -177,16 +194,18 @@ def traverse_deepest_unique_path(fields, fragments):
             name = get_node_value(field.type_condition, "name")
             if name:
                 deepest_path.append("%s<%s>" % (deepest_path.pop(), name))
-        
+
         elif is_fragment(field):
             if len(list(fragments.values())) != 1:
                 return deepest_path
-            
+
             # list(fragments.values())[0] 's index is OK because the previous line
             # ensures that there is only one field in the list
-            full_fragment_selection_set = list(fragments.values())[0].selection_set.selections
+            full_fragment_selection_set = list(fragments.values())[
+                0
+            ].selection_set.selections
             fragment_selection_set = filter_ignored_fields(full_fragment_selection_set)
-            
+
             if len(fragment_selection_set) != 1:
                 return deepest_path
             else:
@@ -197,15 +216,12 @@ def traverse_deepest_unique_path(fields, fragments):
             if field_name:
                 deepest_path.append(field_name)
 
-
         if is_fragment_spread_node(field):
-            field = fragment_selection_set[0]        
+            field = fragment_selection_set[0]
         if field.selection_set is None:
             break
         else:
             fields = field.selection_set.selections
-
-
 
     return deepest_path
 
@@ -216,7 +232,9 @@ def bind_get_middleware_resolvers(middlewares):
 
 def wrap_get_middleware_resolvers(wrapped, instance, args, kwargs):
     middlewares = bind_get_middleware_resolvers(*args, **kwargs)
-    middlewares = [wrap_middleware(m) if not hasattr(m, "_nr_wrapped") else m for m in middlewares]
+    middlewares = [
+        wrap_middleware(m) if not hasattr(m, "_nr_wrapped") else m for m in middlewares
+    ]
     for m in middlewares:
         m._nr_wrapped = True
 
@@ -230,7 +248,7 @@ def wrap_middleware(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     name = callable_name(wrapped)
-    transaction.set_transaction_name(name, 'GraphQL', priority=12)
+    transaction.set_transaction_name(name, "GraphQL", priority=12)
     with FunctionTrace(name):
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             return wrapped(*args, **kwargs)
@@ -293,7 +311,7 @@ def wrap_validate(wrapped, instance, args, kwargs):
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    transaction.set_transaction_name(callable_name(wrapped),"GraphQL", priority=10)
+    transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=10)
 
     # Run and collect errors
     errors = wrapped(*args, **kwargs)
@@ -322,7 +340,9 @@ def bind_resolve_field_v3(parent_type, source, field_nodes, path):
     return parent_type, field_nodes, path
 
 
-def bind_resolve_field_v2(exe_context, parent_type, source, field_asts, parent_info, field_path):
+def bind_resolve_field_v2(
+    exe_context, parent_type, source, field_asts, parent_info, field_path
+):
     return parent_type, field_asts, field_path
 
 
@@ -364,7 +384,8 @@ def bind_execute_graphql_query(
     operation_name=None,
     middleware=None,
     backend=None,
-    **execute_options):
+    **execute_options
+):
 
     return request_string
 
@@ -376,9 +397,9 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     version = graphql_version()
-    framework_version = '.'.join(map(str, version))
+    framework_version = ".".join(map(str, version))
 
-    transaction.add_framework_info(name='GraphQL', version=framework_version)
+    transaction.add_framework_info(name="GraphQL", version=framework_version)
 
     if graphql_version() <= (3, 0, 0):
         bind_query = bind_execute_graphql_query
@@ -419,9 +440,7 @@ def instrument_graphql_execute(module):
         wrap_function_wrapper(module, "resolve_field", wrap_resolve_field)
 
     if hasattr(module, "execute_operation"):
-        wrap_function_wrapper(
-            module, "execute_operation", wrap_execute_operation
-        )
+        wrap_function_wrapper(module, "execute_operation", wrap_execute_operation)
 
 
 def instrument_graphql_execution_utils(module):

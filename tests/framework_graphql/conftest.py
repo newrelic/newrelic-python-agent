@@ -48,6 +48,4 @@ def app():
 
 
 if six.PY2:
-    collect_ignore = [
-        'test_application_async.py'
-    ]
+    collect_ignore = ["test_application_async.py"]

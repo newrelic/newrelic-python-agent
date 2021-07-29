@@ -353,7 +353,7 @@ def test_operation_metrics_and_attrs(app, graphql_run):
     @background_task()
     def _test():
         response = graphql_run(
-            app, "query MyQuery { library(index: 0) { name, book { id, name } } }"
+            app, "query MyQuery { library(index: 0) { branch, book { id, name } } }"
         )
         assert not response.errors
 
@@ -393,7 +393,7 @@ _test_queries = [
     ("{ hello }", "{ hello }"),  # Basic query extraction
     ("{ error }", "{ error }"),  # Extract query on field error
     (to_graphql_source("{ hello }"), "{ hello }"),  # Extract query from Source objects
-    ("{ library(index: 0) { name } }", "{ library(index: ?) { name } }"),  # Integers
+    ("{ library(index: 0) { name } }", "{ library(index: ?) { branch } }"),  # Integers
     ('{ echo(echo: "123") }', "{ echo(echo: ?) }"),  # Strings with numerics
     ('{ echo(echo: "test") }', "{ echo(echo: ?) }"),  # Strings
     ('{ TestEcho: echo(echo: "test") }', "{ TestEcho: echo(echo: ?) }"),  # Aliases
@@ -428,7 +428,7 @@ _test_queries = [
     ("{ error }", "/error"),  # Extract deepest path on field error
     ('{ echo(echo: "test") }', "/echo"),  # Fields with arguments
     (
-        "{ library(index: 0) { name, book { isbn branch } } }",
+        "{ library(index: 0) { branch, book { isbn branch } } }",
         "/library",
     ),  # Complex Example, 1 level
     (

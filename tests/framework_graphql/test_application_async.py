@@ -2,7 +2,6 @@ import asyncio
 import pytest
 from testing_support.fixtures import (
     dt_enabled,
-    validate_transaction_errors,
     validate_transaction_metrics,
 )
 from testing_support.validators.validate_span_events import validate_span_events
@@ -27,7 +26,7 @@ def graphql_run_async():
 
 
 @dt_enabled
-def test_basic_async(app, graphql_run_async, is_graphql_2):
+def test_query_and_mutation_async(app, graphql_run_async, is_graphql_2):
     from graphql import __version__ as version
 
     FRAMEWORK_METRICS = [

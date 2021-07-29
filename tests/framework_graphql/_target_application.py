@@ -137,7 +137,7 @@ Library = GraphQLObjectType(
     "Library",
     {
         "id": GraphQLField(GraphQLInt),
-        "name": GraphQLField(GraphQLString),
+        "branch": GraphQLField(GraphQLString),
         "book": GraphQLField(GraphQLList(Book)),
         "magazine": GraphQLField(GraphQLList(Magazine)),
     },

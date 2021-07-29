@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import six
 import pytest
 from testing_support.fixtures import (
     dt_enabled,
@@ -37,13 +38,10 @@ def is_graphql_2():
 
 @pytest.fixture(scope="session")
 def graphql_run():
-    try:
-        from graphql import graphql_sync as graphql
-    except ImportError:
-        from graphql import graphql
-
-    return graphql
-
+    """Wrapper function to simulate framework_graphql test behavior."""
+    def execute(schema, *args, **kwargs):
+        return schema.execute(*args, **kwargs)
+    return execute
 
 def to_graphql_source(query):
     def delay_import():
@@ -107,7 +105,7 @@ def test_basic(app, graphql_run):
 
 
 @dt_enabled
-def test_query_and_mutation(app, graphql_run, is_graphql_2):
+def test_basic(app, graphql_run):
     from graphql import __version__ as version
 
     FRAMEWORK_METRICS = [
@@ -117,7 +115,7 @@ def test_query_and_mutation(app, graphql_run, is_graphql_2):
         ("GraphQL/resolve/GraphQL/storage", 1),
         ("GraphQL/resolve/GraphQL/storage_add", 1),
         ("GraphQL/operation/GraphQL/query/<anonymous>/storage", 1),
-        ("GraphQL/operation/GraphQL/mutation/<anonymous>/storage_add", 1),
+        ("GraphQL/operation/GraphQL/mutation/<anonymous>/storage_add.string", 1),
     ]
     _test_mutation_unscoped_metrics = [
         ("OtherTransaction/all", 1),
@@ -135,7 +133,7 @@ def test_query_and_mutation(app, graphql_run, is_graphql_2):
         "graphql.field.name": "storage_add",
         "graphql.field.parentType": "Mutation",
         "graphql.field.path": "storage_add",
-        "graphql.field.returnType": "[String]" if is_graphql_2 else "String",
+        "graphql.field.returnType": "StorageAdd",
     }
     _expected_query_operation_attributes = {
         "graphql.operation.type": "query",
@@ -161,7 +159,7 @@ def test_query_and_mutation(app, graphql_run, is_graphql_2):
     @validate_span_events(exact_agents=_expected_query_resolver_attributes)
     @background_task()
     def _test():
-        response = graphql_run(app, 'mutation { storage_add(string: "abc") }')
+        response = graphql_run(app, 'mutation { storage_add(string: "abc") { string } }')
         assert not response.errors
         response = graphql_run(app, "query { storage }")
         assert not response.errors
@@ -251,7 +249,10 @@ def test_exception_in_middleware(app, graphql_run):
 def test_exception_in_resolver(app, graphql_run, field):
     query = "query MyQuery { %s }" % field
 
-    txn_name = "_target_application:resolve_error"
+    if six.PY2:
+        txn_name = "_target_application:resolve_error"
+    else:
+        txn_name = "_target_application:Query.resolve_error"
 
     # Metrics
     _test_exception_scoped_metrics = [
@@ -486,7 +487,10 @@ _test_queries = [
 @pytest.mark.parametrize("query,expected_path", _test_queries)
 def test_deepest_unique_path(app, graphql_run, query, expected_path):
     if expected_path == "/error":
-        txn_name = "_target_application:resolve_error"
+        if six.PY2:
+            txn_name = "_target_application:resolve_error"
+        else:
+            txn_name = "_target_application:Query.resolve_error"
     else:
         txn_name = "query/<anonymous>%s" % expected_path
 

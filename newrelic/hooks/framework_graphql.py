@@ -21,7 +21,6 @@ from newrelic.common.object_names import callable_name, parse_exc_info
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.core.graphql_utils import graphql_statement
 from collections import deque
-from copy import copy
 
 
 GRAPHQL_IGNORED_FIELDS = frozenset(("id", "__typename"))
@@ -426,7 +425,6 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
         trace.statement = graphql_statement(query)
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             result = wrapped(*args, **kwargs)
-            # transaction.set_transaction_name(transaction_name, "GraphQL", priority=14)
             return result
 
 

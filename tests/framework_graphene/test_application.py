@@ -83,17 +83,25 @@ _graphql_base_rollup_metrics = [
 ]
 
 
+def test_basic(app, graphql_run):
+    from graphql import __version__ as version
 
-@validate_transaction_metrics(
-    "query/<anonymous>/hello",
-    "GraphQL",
-    rollup_metrics=[("GraphQL/all", 1)],
-    background_task=True,
-)
-@background_task()
-def test_most_basic(app, graphql_run):
-    response = graphql_run(app, '{ hello }')
-    assert not response.errors
+    FRAMEWORK_METRICS = [
+        ("Python/Framework/GraphQL/%s" % version, 1),
+    ]
+
+    @validate_transaction_metrics(
+        "query/<anonymous>/hello",
+        "GraphQL",
+        rollup_metrics=_graphql_base_rollup_metrics + FRAMEWORK_METRICS,
+        background_task=True,
+    )
+    @background_task()
+    def _test():
+        response = graphql_run(app, '{ hello }')
+        assert not response.errors
+    
+    _test()
 
 
 @dt_enabled

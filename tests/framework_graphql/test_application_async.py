@@ -27,7 +27,7 @@ def graphql_run_async():
 
 
 @dt_enabled
-def test_basic_async(app, graphql_run_async, is_graphql_2):
+def test_query_and_mutation_async(app, graphql_run_async, is_graphql_2):
     from graphql import __version__ as version
 
     FRAMEWORK_METRICS = [

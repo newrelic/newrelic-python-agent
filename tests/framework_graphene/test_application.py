@@ -124,6 +124,7 @@ def test_basic(app, graphql_run):
         "graphql.field.name": "storage_add",
         "graphql.field.parentType": "Mutation",
         "graphql.field.path": "storage_add",
+        "graphql.field.returnType": "StorageAdd",
     }
     _expected_query_operation_attributes = {
         "graphql.operation.type": "query",
@@ -133,6 +134,7 @@ def test_basic(app, graphql_run):
         "graphql.field.name": "storage",
         "graphql.field.parentType": "Query",
         "graphql.field.path": "storage",
+        "graphql.field.returnType": "[String]",
     }
 
     @validate_transaction_metrics(
@@ -199,7 +201,7 @@ def test_exception_in_middleware(app, graphql_run):
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
         ("Errors/allOther", 1),
-        ("Errors/OtherTransaction/GraphQL/query/MyQuery/%s" % field, 1),
+        ("Errors/OtherTransaction/GraphQL/test_application:error_middleware", 1),
     ] + _test_exception_scoped_metrics
 
     # Attributes
@@ -207,6 +209,7 @@ def test_exception_in_middleware(app, graphql_run):
         "graphql.field.name": field,
         "graphql.field.parentType": "Query",
         "graphql.field.path": field,
+        "graphql.field.returnType": "String",
     }
     _expected_exception_operation_attributes = {
         "graphql.operation.type": "query",
@@ -215,7 +218,7 @@ def test_exception_in_middleware(app, graphql_run):
     }
 
     @validate_transaction_metrics(
-        "query/MyQuery/hello",
+        "test_application:error_middleware",
         "GraphQL",
         scoped_metrics=_test_exception_scoped_metrics,
         rollup_metrics=_test_exception_rollup_metrics + _graphql_base_rollup_metrics,
@@ -234,13 +237,10 @@ def test_exception_in_middleware(app, graphql_run):
 
 @pytest.mark.parametrize("field", ("error", "error_non_null"))
 @dt_enabled
-def test_exception_in_resolver(app, graphql_run, is_graphql_2, field):
+def test_exception_in_resolver(app, graphql_run, field):
     query = "query MyQuery { %s }" % field
 
-    if is_graphql_2 and field == "error_non_null":
-        txn_name = "_target_application:Query.resolve_error"
-    else:
-        txn_name = "query/MyQuery/%s" % field
+    txn_name = "_target_application:Query.resolve_error"
 
     # Metrics
     _test_exception_scoped_metrics = [
@@ -258,6 +258,7 @@ def test_exception_in_resolver(app, graphql_run, is_graphql_2, field):
         "graphql.field.name": field,
         "graphql.field.parentType": "Query",
         "graphql.field.path": field,
+        "graphql.field.returnType": "String!" if "non_null" in field else "String",
     }
     _expected_exception_operation_attributes = {
         "graphql.operation.type": "query",
@@ -376,6 +377,7 @@ def test_field_resolver_metrics_and_attrs(app, graphql_run):
         "graphql.field.name": "hello",
         "graphql.field.parentType": "Query",
         "graphql.field.path": "hello",
+        "graphql.field.returnType": "String",
     }
 
     @validate_transaction_metrics(
@@ -472,8 +474,13 @@ _test_queries = [
 @dt_enabled
 @pytest.mark.parametrize("query,expected_path", _test_queries)
 def test_deepest_unique_path(app, graphql_run, query, expected_path):
+    if expected_path == "/error":
+        txn_name = "_target_application:Query.resolve_error"
+    else:
+        txn_name = "query/<anonymous>%s" % expected_path
+
     @validate_transaction_metrics(
-        "query/<anonymous>%s" % expected_path,
+        txn_name,
         "GraphQL",
         background_task=True,
     )

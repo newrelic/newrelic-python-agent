@@ -509,7 +509,7 @@ jobs:
 
     services:
       solr:
-        image: bitnami/solr:8
+        image: bitnami/solr:8.8.2
         env:
           SOLR_CORE: collection
         ports:

@@ -425,7 +425,6 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
         trace.statement = graphql_statement(query)
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             result = wrapped(*args, **kwargs)
-            # transaction.set_transaction_name(transaction_name, "GraphQL", priority=14)
             return result
 
 

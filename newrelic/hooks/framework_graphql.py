@@ -47,10 +47,14 @@ def ignore_graphql_duplicate_exception(exc, val, tb):
         # after the original exception has already been recorded.
 
         if transaction and hasattr(val, "original_error"):
-            _, _, fullnames, message = parse_exc_info((None, val.original_error, None))
+            while hasattr(val, "original_error"):
+                # Unpack lowest level original error
+                val = val.original_error
+
+            _, _, fullnames, message = parse_exc_info((None, val, None))
             fullname = fullnames[0]
             for error in transaction._errors:
-                if error.message == message:
+                if error.type == fullname and error.message == message:
                     return True
 
     return None  # Follow original exception matching rules
@@ -93,6 +97,11 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
     except TypeError:
         operation = bind_operation_v2(*args, **kwargs)
 
+    if graphql_version() < (3, 0, 0):
+        execution_context = args[0]
+    else:
+        execution_context = instance
+
     operation_name = get_node_value(operation, "name")
     trace.operation_name = operation_name = operation_name or "<anonymous>"
 
@@ -106,12 +115,7 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
             if get_node_value(field, "name") in GRAPHQL_INTROSPECTION_FIELDS:
                 ignore_transaction()
 
-        if graphql_version() <= (3, 0, 0):
-            fragments = args[
-                0
-            ].fragments  # In v2, args[0] is the ExecutionContext object
-        else:
-            fragments = instance.fragments  # instance is the ExecutionContext object
+        fragments = execution_context.fragments
         deepest_path = traverse_deepest_unique_path(fields, fragments)
         trace.deepest_path = deepest_path = ".".join(deepest_path) or ""
 
@@ -122,7 +126,9 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
         if deepest_path
         else "%s/%s" % (operation_type, operation_name)
     )
-    transaction.set_transaction_name(transaction_name, "GraphQL", priority=14)
+
+    if not execution_context.errors:
+        transaction.set_transaction_name(transaction_name, "GraphQL", priority=14)
 
     return result
 
@@ -359,10 +365,14 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
     parent_type, field_asts, field_path = bind_resolve_field(*args, **kwargs)
 
     field_name = field_asts[0].name.value
+    field_def = parent_type.fields.get(field_name)
+    field_return_type = str(field_def.type) if field_def else "<unknown>"
 
     with GraphQLResolverTrace(field_name) as trace:
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             trace._add_agent_attribute("graphql.field.parentType", parent_type.name)
+            trace._add_agent_attribute("graphql.field.returnType", field_return_type)
+
             if isinstance(field_path, list):
                 trace._add_agent_attribute("graphql.field.path", field_path[0])
             else:

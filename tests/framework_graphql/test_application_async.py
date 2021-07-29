@@ -8,6 +8,8 @@ from testing_support.fixtures import (
 from testing_support.validators.validate_span_events import validate_span_events
 from newrelic.api.background_task import background_task
 
+from test_application import is_graphql_2
+
 
 @pytest.fixture(scope="session")
 def graphql_run_async():
@@ -25,7 +27,7 @@ def graphql_run_async():
 
 
 @dt_enabled
-def test_basic_async(app, graphql_run_async):
+def test_basic_async(app, graphql_run_async, is_graphql_2):
     from graphql import __version__ as version
 
     FRAMEWORK_METRICS = [
@@ -53,6 +55,7 @@ def test_basic_async(app, graphql_run_async):
         "graphql.field.name": "storage_add",
         "graphql.field.parentType": "Mutation",
         "graphql.field.path": "storage_add",
+        "graphql.field.returnType": "[String]" if is_graphql_2 else "String",
     }
     _expected_query_operation_attributes = {
         "graphql.operation.type": "query",
@@ -62,6 +65,7 @@ def test_basic_async(app, graphql_run_async):
         "graphql.field.name": "storage",
         "graphql.field.parentType": "Query",
         "graphql.field.path": "storage",
+        "graphql.field.returnType": "[String]",
     }
 
     @validate_transaction_metrics(

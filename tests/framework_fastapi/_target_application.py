@@ -13,8 +13,12 @@
 # limitations under the License.
 
 from fastapi import FastAPI
-from testing_support.asgi_testing import AsgiTest
+from graphene import ObjectType, String, Schema
+from graphql.execution.executors.asyncio import AsyncioExecutor
+from starlette.graphql import GraphQLApp
+
 from newrelic.api.transaction import current_transaction
+from testing_support.asgi_testing import AsgiTest
 
 app = FastAPI()
 
@@ -30,5 +34,14 @@ async def non_sync():
     assert current_transaction() is not None
     return {}
 
+
+class Query(ObjectType):
+    hello = String()
+
+    def resolve_hello(self, info):
+        return "Hello!"
+
+
+app.add_route("/graphql", GraphQLApp(executor_class=AsyncioExecutor, schema=Schema(query=Query)))
 
 target_application = AsgiTest(app)

@@ -16,71 +16,12 @@ from graphene import (
     Field,
     String,
     Schema,
-    Mutation,
+    Mutation as GrapheneMutation,
     Int,
     List,
     NonNull,
     Union,
 )
-
-authors = [
-    {
-        "first_name": "New",
-        "last_name": "Relic",
-    },
-    {
-        "first_name": "Bob",
-        "last_name": "Smith",
-    },
-    {
-        "first_name": "Leslie",
-        "last_name": "Jones",
-    },
-]
-
-books = [
-    {
-        "id": 1,
-        "name": "Python Agent: The Book",
-        "isbn": "a-fake-isbn",
-        "author": authors[0],
-        "branch": "riverside",
-    },
-    {
-        "id": 2,
-        "name": "Ollies for O11y: A Sk8er's Guide to Observability",
-        "isbn": "a-second-fake-isbn",
-        "author": authors[1],
-        "branch": "downtown",
-    },
-    {
-        "id": 3,
-        "name": "[Redacted]",
-        "isbn": "a-third-fake-isbn",
-        "author": authors[2],
-        "branch": "riverside",
-    },
-]
-
-magazines = [
-    {"id": 1, "name": "Reli Updates Weekly", "issue": 1, "branch": "riverside"},
-    {"id": 2, "name": "Reli Updates Weekly", "issue": 2, "branch": "downtown"},
-    {"id": 3, "name": "Node Weekly", "issue": 1, "branch": "riverside"},
-]
-
-
-libraries = ["riverside", "downtown"]
-libraries = [
-    {
-        "id": i + 1,
-        "branch": branch,
-        "magazine": [m for m in magazines if m["branch"] == branch],
-        "book": [b for b in books if b["branch"] == branch],
-    }
-    for i, branch in enumerate(libraries)
-]
-
-storage = []
 
 
 class Author(ObjectType):
@@ -92,7 +33,7 @@ class Book(ObjectType):
     id = Int()
     name = String()
     isbn = String()
-    author = Field(List(Author))
+    author = Field(Author)
     branch = String()
 
 
@@ -118,6 +59,79 @@ class Library(ObjectType):
 Storage = List(String)
 
 
+
+authors = [
+    Author(
+        first_name="New",
+        last_name="Relic",
+    ),
+    Author(
+        first_name="Bob",
+        last_name="Smith",
+    ),
+    Author(
+        first_name="Leslie",
+        last_name="Jones",
+    ),
+]
+
+books = [
+    Book(
+        id=1,
+        name="Python Agent: The Book",
+        isbn="a-fake-isbn",
+        author=authors[0],
+        branch="riverside",
+    ),
+    Book(
+        id=2,
+        name="Ollies for O11y: A Sk8er's Guide to Observability",
+        isbn="a-second-fake-isbn",
+        author=authors[1],
+        branch="downtown",
+    ),
+    Book(
+        id=3,
+        name="[Redacted]",
+        isbn="a-third-fake-isbn",
+        author=authors[2],
+        branch="riverside",
+    ),
+]
+
+magazines = [
+    Magazine(id=1, name="Reli Updates Weekly", issue=1, branch="riverside"),
+    Magazine(id=2, name="Reli Updates Weekly", issue=2, branch="downtown"),
+    Magazine(id=3, name="Node Weekly", issue=1, branch="riverside"),
+]
+
+
+libraries = ["riverside", "downtown"]
+libraries = [
+    Library(
+        id=i + 1,
+        branch=branch,
+        magazine=[m for m in magazines if m.branch == branch],
+        book=[b for b in books if b.branch == branch],
+    )
+    for i, branch in enumerate(libraries)
+]
+
+storage = []
+
+
+
+class StorageAdd(GrapheneMutation):
+    class Arguments:
+        string = String(required=True)
+
+    string = String()
+
+    def mutate(parent, info, string):
+        storage.append(string)
+        return String(string=string)
+
+
 class Query(ObjectType):
     library = Field(Library, index=Int(required=True))
     hello = String()
@@ -134,8 +148,8 @@ class Query(ObjectType):
         return storage
 
     def resolve_search(parent, info, contains):
-        search_books = [b for b in books if contains in b["name"]]
-        search_magazines = [m for m in magazines if contains in m["name"]]
+        search_books = [b for b in books if contains in b.name]
+        search_magazines = [m for m in magazines if contains in m.name]
         return search_books + search_magazines
 
     def resolve_hello(root, info):
@@ -151,11 +165,6 @@ class Query(ObjectType):
 
 
 class Mutation(ObjectType):
-    storage_add = Field(String, name="storage_add", string=String())
+    storage_add = StorageAdd.Field()
 
-    def resolve_storage_add(parent, info, string):
-        storage.append(string)
-        return String(string=string)
-
-
-_target_application = Schema(query=Query, mutation=Mutation)
+_target_application = Schema(query=Query, mutation=Mutation, auto_camelcase=False)

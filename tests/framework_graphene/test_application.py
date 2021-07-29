@@ -37,7 +37,10 @@ def is_graphql_2():
 
 @pytest.fixture(scope="session")
 def graphql_run():
-    return lambda s,q: s.execute(q)
+    """Wrapper function to simulate framework_graphql test behavior."""
+    def execute(schema, *args, **kwargs):
+        return schema.execute(*args, **kwargs)
+    return execute
 
 def to_graphql_source(query):
     def delay_import():
@@ -103,7 +106,7 @@ def test_basic(app, graphql_run):
         ("GraphQL/resolve/GraphQL/storage", 1),
         ("GraphQL/resolve/GraphQL/storage_add", 1),
         ("GraphQL/operation/GraphQL/query/<anonymous>/storage", 1),
-        ("GraphQL/operation/GraphQL/mutation/<anonymous>/storage_add", 1),
+        ("GraphQL/operation/GraphQL/mutation/<anonymous>/storage_add.string", 1),
     ]
     _test_mutation_unscoped_metrics = [
         ("OtherTransaction/all", 1),
@@ -145,7 +148,7 @@ def test_basic(app, graphql_run):
     @validate_span_events(exact_agents=_expected_query_resolver_attributes)
     @background_task()
     def _test():
-        response = graphql_run(app, 'mutation { storage_add(string: "abc") }')
+        response = graphql_run(app, 'mutation { storage_add(string: "abc") { string } }')
         assert not response.errors
         response = graphql_run(app, "query { storage }")
         assert not response.errors
@@ -235,7 +238,7 @@ def test_exception_in_resolver(app, graphql_run, is_graphql_2, field):
     query = "query MyQuery { %s }" % field
 
     if is_graphql_2 and field == "error_non_null":
-        txn_name = "_target_application:resolve_error"
+        txn_name = "_target_application:Query.resolve_error"
     else:
         txn_name = "query/MyQuery/%s" % field
 
@@ -359,7 +362,7 @@ def test_operation_metrics_and_attrs(app, graphql_run):
     @background_task()
     def _test():
         response = graphql_run(
-            app, "query MyQuery { library(index: 0) { name, book { id, name } } }"
+            app, "query MyQuery { library(index: 0) { branch, book { id, name } } }"
         )
         assert not response.errors
 
@@ -398,7 +401,7 @@ _test_queries = [
     ("{ hello }", "{ hello }"),  # Basic query extraction
     ("{ error }", "{ error }"),  # Extract query on field error
     (to_graphql_source("{ hello }"), "{ hello }"),  # Extract query from Source objects
-    ("{ library(index: 0) { name } }", "{ library(index: ?) { name } }"),  # Integers
+    ("{ library(index: 0) { branch } }", "{ library(index: ?) { branch } }"),  # Integers
     ('{ echo(echo: "123") }', "{ echo(echo: ?) }"),  # Strings with numerics
     ('{ echo(echo: "test") }', "{ echo(echo: ?) }"),  # Strings
     ('{ TestEcho: echo(echo: "test") }', "{ TestEcho: echo(echo: ?) }"),  # Aliases
@@ -433,7 +436,7 @@ _test_queries = [
     ("{ error }", "/error"),  # Extract deepest path on field error
     ('{ echo(echo: "test") }', "/echo"),  # Fields with arguments
     (
-        "{ library(index: 0) { name, book { isbn branch } } }",
+        "{ library(index: 0) { branch, book { isbn branch } } }",
         "/library",
     ),  # Complex Example, 1 level
     (

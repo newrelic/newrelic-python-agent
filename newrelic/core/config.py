@@ -252,6 +252,15 @@ class EventLoopVisibilitySettings(Settings):
 
 class InfiniteTracingSettings(Settings):
     _trace_observer_host = None
+    _otlp_enabled = False
+
+    @property
+    def otlp_enabled(self):
+        return self._otlp_enabled
+    
+    @otlp_enabled.setter
+    def otlp_enabled(self, value):
+        self._otlp_enabled = value
 
     @property
     def enabled(self):

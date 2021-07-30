@@ -610,6 +610,7 @@ def _process_configuration(section):
     )
     _process_setting(section, "infinite_tracing.trace_observer_host", "get", None)
     _process_setting(section, "infinite_tracing.trace_observer_port", "getint", None)
+    _process_setting(section, "infinite_tracing.otlp_enabled", "getboolean", None)
     _process_setting(section, "infinite_tracing.span_queue_size", "getint", None)
 
 

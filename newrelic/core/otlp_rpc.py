@@ -59,9 +59,9 @@ class OtlpRpc(object):
                                 version=version,
                             ),
                             spans=spans,
-                        )
+                        ),
                     ),
-                )
+                ),
             )
         )
         return self.rpc(request)

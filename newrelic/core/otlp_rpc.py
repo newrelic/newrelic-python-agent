@@ -2,24 +2,21 @@ from newrelic import version
 
 try:
     import grpc
-    from newrelic.core.otlp_common_pb2 import AnyValue, InstrumentationLibrary, KeyValue
+    from newrelic.core.otlp_common_pb2 import (AnyValue,
+                                               InstrumentationLibrary,
+                                               KeyValue)
     from newrelic.core.otlp_resource_pb2 import Resource
-    from newrelic.core.otlp_service_pb2 import (
-        ExportTraceServiceRequest,
-        ExportTraceServiceResponse,
-    )
-    from newrelic.core.otlp_trace_pb2 import (
-        InstrumentationLibrarySpans,
-        ResourceSpans,
-        Span,
-    )
+    from newrelic.core.otlp_service_pb2 import (ExportTraceServiceRequest,
+                                                ExportTraceServiceResponse)
+    from newrelic.core.otlp_trace_pb2 import (InstrumentationLibrarySpans,
+                                              ResourceSpans, Span)
 
 except ImportError:
     grpc = None
 
 
 class OtlpRpc(object):
-    PATH = "/opentelemetry.proto.collector.trace.v1/Export"
+    PATH = "/opentelemetry.proto.collector.trace.v1.TraceService/Export"
 
     def __init__(self, endpoint, entity_guid, ssl=True):
         if ssl:

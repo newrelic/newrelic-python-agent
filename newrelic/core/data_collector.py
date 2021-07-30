@@ -28,6 +28,7 @@ from newrelic.common.agent_http import (
 from newrelic.core.agent_protocol import AgentProtocol, ServerlessModeProtocol
 from newrelic.core.agent_streaming import StreamingRpc
 from newrelic.core.config import global_settings
+from newrelic.core.otlp_rpc import OtlpRpc
 
 _logger = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ class Session(object):
             app_name, linked_applications, environment, settings, client_cls=self.CLIENT
         )
         self._rpc = None
+        self._otlp_rpc = None
 
     @property
     def configuration(self):
@@ -52,6 +54,17 @@ class Session(object):
 
     def close_connection(self):
         self._protocol.close_connection()
+    
+    def connect_otlp_rpc(self):
+        host = self.configuration.infinite_tracing.trace_observer_host
+        if not host:
+            return
+
+        port = self.configuration.infinite_tracing.trace_observer_port
+        ssl = self.configuration.infinite_tracing.ssl
+        endpoint = "{}:{}".format(host, port)
+
+        self._otlp_rpc = OtlpRpc(endpoint, self.configuration.entity_guid, ssl)
 
     def connect_span_stream(self, span_iterator, record_metric):
         if not self._rpc:
@@ -129,9 +142,7 @@ class Session(object):
         return self._protocol.send("metric_data", payload)
 
     def get_agent_commands(self):
-        """Receive agent commands from the data collector.
-
-        """
+        """Receive agent commands from the data collector."""
 
         payload = (self.agent_run_id,)
         return self._protocol.send("get_agent_commands", payload)
@@ -174,8 +185,7 @@ class Session(object):
         return self._protocol.send("agent_command_results", payload)
 
     def send_profile_data(self, profile_data):
-        """Called to submit Profile Data.
-        """
+        """Called to submit Profile Data."""
 
         payload = (self.agent_run_id, profile_data)
         return self._protocol.send("profile_data", payload)

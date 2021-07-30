@@ -17,35 +17,37 @@
 """
 
 from __future__ import print_function
+
+import imp
 import logging
+import os
 import sys
 import threading
 import time
-import os
 import traceback
-import imp
 import warnings
-
 from functools import partial
 
-from newrelic.samplers.data_sampler import DataSampler
-
+from newrelic.common.object_names import callable_name
+from newrelic.core.adaptive_sampler import AdaptiveSampler
 from newrelic.core.config import global_settings
 from newrelic.core.custom_event import create_custom_event
 from newrelic.core.data_collector import create_session
-from newrelic.network.exceptions import (ForceAgentRestart,
-        ForceAgentDisconnect, DiscardDataForRequest, RetryDataForRequest,
-        NetworkInterfaceException)
-from newrelic.core.environment import environment_settings
-from newrelic.core.rules_engine import RulesEngine, SegmentCollapseEngine
-from newrelic.core.stats_engine import StatsEngine, CustomMetrics
-from newrelic.core.internal_metrics import (InternalTrace,
-        InternalTraceContext, internal_metric, internal_count_metric)
-from newrelic.core.profile_sessions import profile_session_manager
-
 from newrelic.core.database_utils import SQLConnections
-from newrelic.common.object_names import callable_name
-from newrelic.core.adaptive_sampler import AdaptiveSampler
+from newrelic.core.environment import environment_settings
+from newrelic.core.internal_metrics import (InternalTrace,
+                                            InternalTraceContext,
+                                            internal_count_metric,
+                                            internal_metric)
+from newrelic.core.profile_sessions import profile_session_manager
+from newrelic.core.rules_engine import RulesEngine, SegmentCollapseEngine
+from newrelic.core.stats_engine import CustomMetrics, StatsEngine
+from newrelic.network.exceptions import (DiscardDataForRequest,
+                                         ForceAgentDisconnect,
+                                         ForceAgentRestart,
+                                         NetworkInterfaceException,
+                                         RetryDataForRequest)
+from newrelic.samplers.data_sampler import DataSampler
 
 _logger = logging.getLogger(__name__)
 
@@ -479,8 +481,11 @@ class Application(object):
                     configuration.sampling_target,
                     sampling_target_period)
 
-        active_session.connect_span_stream(self._stats_engine.span_stream,
-            self.record_custom_metric)
+        if configuration.infinite_tracing.otlp_enabled:
+            active_session.connect_otlp_rpc()
+        else:
+            active_session.connect_span_stream(self._stats_engine.span_stream,
+                self.record_custom_metric)
 
         with self._stats_custom_lock:
             self._stats_custom_engine.reset_stats(configuration)
@@ -846,7 +851,8 @@ class Application(object):
                     # don't unnecessarily lock out another thread.
 
                     stats = self._stats_engine.create_workarea()
-                    stats.record_transaction(data)
+                    infinite_spans = stats.record_transaction(data)
+                    self._active_session._otlp_rpc.send_spans(infinite_spans)
 
                 except Exception:
                     _logger.exception('The generation of transaction data has '

@@ -25,9 +25,11 @@ import newrelic.core.error_collector
 import newrelic.core.trace_node
 from newrelic.common.streaming_utils import SpanProtoAttrs
 from newrelic.core.attribute import create_user_attributes
-from newrelic.core.attribute_filter import (DST_ERROR_COLLECTOR,
-                                            DST_TRANSACTION_EVENTS,
-                                            DST_TRANSACTION_TRACER)
+from newrelic.core.attribute_filter import (
+    DST_ERROR_COLLECTOR,
+    DST_TRANSACTION_EVENTS,
+    DST_TRANSACTION_TRACER,
+)
 from newrelic.core.metric import ApdexMetric, TimeMetric
 from newrelic.core.string_table import StringTable
 
@@ -657,7 +659,7 @@ class TransactionNode(_TransactionNode):
     def otlp_span_protos(self, settings):
         for i_attrs, u_attrs, a_attrs in self.span_events(settings):
             trace_id = int(i_attrs["traceId"], 16)
-            trace_id = struct.pack("!QQ", trace_id >> 64, trace_id & (1 << 64 - 1))
+            trace_id = struct.pack("!QQ", trace_id >> 64, trace_id & ((1 << 64) - 1))
 
             span_id = int(i_attrs["guid"], 16)
             span_id = struct.pack("!Q", span_id)
@@ -679,7 +681,7 @@ class TransactionNode(_TransactionNode):
                 else "SPAN_KIND_INTERNAL",
                 start_time_unix_nano=start_time_ns,
                 end_time_unix_nano=end_time_ns,
-                attributes=None, # TODO: convert u_attrs to attributes
+                attributes=None,  # TODO: convert u_attrs to attributes
                 status=Status(
                     code="STATUS_CODE_OK"
                     if "error.class" not in a_attrs

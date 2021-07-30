@@ -24,28 +24,25 @@ import copy
 import logging
 import operator
 import random
+import sys
+import time
 import warnings
 import zlib
-import time
-import sys
-from heapq import heapreplace, heapify
+from heapq import heapify, heapreplace
 
 import newrelic.packages.six as six
-
+from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
+from newrelic.common.encoding_utils import json_encode
+from newrelic.common.object_names import parse_exc_info
+from newrelic.common.streaming_utils import StreamBuffer
+from newrelic.core.attribute import (create_user_attributes,
+                                     process_user_attribute)
 from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR
-from newrelic.core.attribute import create_user_attributes
-
-from newrelic.core.attribute import process_user_attribute
+from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.database_utils import explain_plan
 from newrelic.core.error_collector import TracedError
 from newrelic.core.metric import TimeMetric
 from newrelic.core.stack_trace import exception_stack
-
-from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
-from newrelic.core.config import is_expected_error, should_ignore_error
-from newrelic.common.encoding_utils import json_encode
-from newrelic.common.object_names import parse_exc_info
-from newrelic.common.streaming_utils import StreamBuffer
 
 _logger = logging.getLogger(__name__)
 
@@ -999,8 +996,11 @@ class StatsEngine(object):
         if (settings.distributed_tracing.enabled and
                 settings.span_events.enabled and settings.collect_span_events):
             if settings.infinite_tracing.enabled:
-                for event in transaction.span_protos(settings):
-                    self._span_stream.put(event)
+                if settings.infinite_tracing.otlp_enabled:
+                    return list(transaction.otlp_span_protos(settings))
+                else:
+                    for event in transaction.span_protos(settings):
+                        self._span_stream.put(event)
             elif transaction.sampled:
                 for event in transaction.span_events(self.__settings):
                     self._span_events.add(event, priority=transaction.priority)

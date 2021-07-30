@@ -852,7 +852,7 @@ class Application(object):
 
                     stats = self._stats_engine.create_workarea()
                     infinite_spans = stats.record_transaction(data)
-                    self._active_session._otlp_rpc.send_spans(infinite_spans)
+                    self._active_session.send_otlp_spans(infinite_spans)
 
                 except Exception:
                     _logger.exception('The generation of transaction data has '

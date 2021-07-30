@@ -54,7 +54,7 @@ class Session(object):
 
     def close_connection(self):
         self._protocol.close_connection()
-    
+
     def connect_otlp_rpc(self):
         host = self.configuration.infinite_tracing.trace_observer_host
         if not host:
@@ -64,7 +64,12 @@ class Session(object):
         ssl = self.configuration.infinite_tracing.ssl
         endpoint = "{}:{}".format(host, port)
 
-        self._otlp_rpc = OtlpRpc(endpoint, self.configuration.entity_guid, ssl)
+        self._otlp_rpc = OtlpRpc(
+            endpoint,
+            self.configuration.entity_guid,
+            self.configuration.agent_run_id,
+            ssl,
+        )
 
     def connect_span_stream(self, span_iterator, record_metric):
         if not self._rpc:
@@ -96,6 +101,9 @@ class Session(object):
     def shutdown_span_stream(self):
         if self._rpc:
             self._rpc.close()
+
+    def send_otlp_spans(self, otlp_spans):
+        self._otlp_rpc.send_spans(otlp_spans)
 
     def send_transaction_traces(self, transaction_traces):
         """Called to submit transaction traces. The transaction traces

@@ -2,14 +2,17 @@ from newrelic import version
 
 try:
     import grpc
-    from newrelic.core.otlp_common_pb2 import (AnyValue,
-                                               InstrumentationLibrary,
-                                               KeyValue)
+    from newrelic.core.otlp_common_pb2 import AnyValue, InstrumentationLibrary, KeyValue
     from newrelic.core.otlp_resource_pb2 import Resource
-    from newrelic.core.otlp_service_pb2 import (ExportTraceServiceRequest,
-                                                ExportTraceServiceResponse)
-    from newrelic.core.otlp_trace_pb2 import (InstrumentationLibrarySpans,
-                                              ResourceSpans, Span)
+    from newrelic.core.otlp_service_pb2 import (
+        ExportTraceServiceRequest,
+        ExportTraceServiceResponse,
+    )
+    from newrelic.core.otlp_trace_pb2 import (
+        InstrumentationLibrarySpans,
+        ResourceSpans,
+        Span,
+    )
 
 except ImportError:
     grpc = None
@@ -18,13 +21,22 @@ except ImportError:
 class OtlpRpc(object):
     PATH = "/opentelemetry.proto.collector.trace.v1.TraceService/Export"
 
-    def __init__(self, endpoint, entity_guid, ssl=True):
+    def __init__(self, endpoint, entity_guid, agent_run_id, ssl=True):
         if ssl:
             credentials = grpc.ssl_channel_credentials()
             channel = grpc.secure_channel(endpoint, credentials)
         else:
             channel = grpc.insecure_channel(endpoint)
-        self.entity_guid = entity_guid
+        self.resource_attributes = [
+            KeyValue(
+                key="entity.guid",
+                value=AnyValue(string_value=entity_guid),
+            ),
+            KeyValue(
+                key="agent_run_id",
+                value=AnyValue(string_value=agent_run_id),
+            ),
+        ]
         self.channel = channel
         self.rpc = self.channel.unary_unary(
             self.PATH,
@@ -37,12 +49,7 @@ class OtlpRpc(object):
             resource_spans=[
                 ResourceSpans(
                     resource=Resource(
-                        attributes=[
-                            KeyValue(
-                                key="entity.guid",
-                                value=AnyValue(string_value=self.entity_guid),
-                            )
-                        ],
+                        attributes=self.resource_attributes,
                         dropped_attributes_count=0,
                     ),
                     instrumentation_library_spans=[

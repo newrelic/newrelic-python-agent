@@ -27,7 +27,7 @@ class OtlpRpc(object):
             channel = grpc.secure_channel(endpoint, credentials)
         else:
             channel = grpc.insecure_channel(endpoint)
-        self.resource_attributes = [
+        self.resource_attributes = (
             KeyValue(
                 key="entity.guid",
                 value=AnyValue(string_value=entity_guid),
@@ -36,7 +36,7 @@ class OtlpRpc(object):
                 key="agent_run_id",
                 value=AnyValue(string_value=agent_run_id),
             ),
-        ]
+        )
         self.channel = channel
         self.rpc = self.channel.unary_unary(
             self.PATH,
@@ -46,13 +46,13 @@ class OtlpRpc(object):
 
     def send_spans(self, spans):
         request = ExportTraceServiceRequest(
-            resource_spans=[
+            resource_spans=(
                 ResourceSpans(
                     resource=Resource(
                         attributes=self.resource_attributes,
                         dropped_attributes_count=0,
                     ),
-                    instrumentation_library_spans=[
+                    instrumentation_library_spans=(
                         InstrumentationLibrarySpans(
                             instrumentation_library=InstrumentationLibrary(
                                 name="newrelic-python-agent",
@@ -60,9 +60,9 @@ class OtlpRpc(object):
                             ),
                             spans=spans,
                         )
-                    ],
+                    ),
                 )
-            ]
+            )
         )
         return self.rpc(request)
 

@@ -21,8 +21,7 @@ ENABLE_LINTERS: # If you use ENABLE_LINTERS variable, all other linters will be 
   - YAML_PRETTIER
   - YAML_V8R
   - YAML_YAMLLINT
-
-# IGNORE_GITIGNORED_FILES: true  # Currently broken
+# IGNORE_GITIGNORED_FILES: true # Currently broken
 EXCLUDED_DIRECTORIES:
   - "__pycache__"
   - ".eggs"

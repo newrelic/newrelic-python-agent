@@ -103,7 +103,8 @@ class Session(object):
             self._rpc.close()
 
     def send_otlp_spans(self, otlp_spans):
-        self._otlp_rpc.send_spans(otlp_spans)
+        if self._otlp_rpc:
+            self._otlp_rpc.send_spans(otlp_spans)
 
     def send_transaction_traces(self, transaction_traces):
         """Called to submit transaction traces. The transaction traces

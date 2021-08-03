@@ -94,7 +94,10 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
     try:
         operation = bind_operation_v3(*args, **kwargs)
     except TypeError:
-        operation = bind_operation_v2(*args, **kwargs)
+        try:
+            operation = bind_operation_v2(*args, **kwargs)
+        except TypeError:
+            return wrapped(*args, **kwargs)
 
     if graphql_version() < (3, 0, 0):
         execution_context = args[0]
@@ -236,7 +239,11 @@ def bind_get_middleware_resolvers(middlewares):
 
 
 def wrap_get_middleware_resolvers(wrapped, instance, args, kwargs):
-    middlewares = bind_get_middleware_resolvers(*args, **kwargs)
+    try:
+        middlewares = bind_get_middleware_resolvers(*args, **kwargs)
+    except TypeError:
+        return wrapped(*args, **kwargs)
+
     middlewares = [
         wrap_middleware(m) if not hasattr(m, "_nr_wrapped") else m for m in middlewares
     ]
@@ -264,7 +271,11 @@ def bind_get_field_resolver(field_resolver):
 
 
 def wrap_get_field_resolver(wrapped, instance, args, kwargs):
-    resolver = bind_get_field_resolver(*args, **kwargs)
+    try:
+        resolver = bind_get_field_resolver(*args, **kwargs)
+    except TypeError:
+        return wrapped(*args, **kwargs)
+
     if not hasattr(resolver, "_nr_wrapped"):
         resolver = wrap_resolver(resolver)
         resolver._nr_wrapped = True
@@ -361,7 +372,10 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
     else:
         bind_resolve_field = bind_resolve_field_v3
 
-    parent_type, field_asts, field_path = bind_resolve_field(*args, **kwargs)
+    try:
+        parent_type, field_asts, field_path = bind_resolve_field(*args, **kwargs)
+    except TypeError:
+        return wrapped(*args, **kwargs)
 
     field_name = field_asts[0].name.value
     field_def = parent_type.fields.get(field_name)
@@ -415,7 +429,11 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
     else:
         bind_query = bind_graphql_impl_query
 
-    query = bind_query(*args, **kwargs)
+    try:
+        query = bind_query(*args, **kwargs)
+    except TypeError:
+        return wrapped(*args, **kwargs)
+
     if hasattr(query, "body"):
         query = query.body
 

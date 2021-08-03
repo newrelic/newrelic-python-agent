@@ -832,7 +832,7 @@ jobs:
         TOX_PARALLEL_NO_SPINNER: 1
         PY_COLORS: 0
 
-  elasticsearch:
+  elasticsearchserver01:
     env: 
       TOTAL_GROUPS: 1
 
@@ -845,6 +845,91 @@ jobs:
     services:
       es01:
         image: elasticsearch:1.4.4
+        env:
+          "discovery.type": "single-node"
+        ports:
+          - 8080:9200
+          - 8081:9200
+        # Set health checks to wait until elasticsearch has started
+        options: >-
+          --health-cmd "curl --silent --fail localhost:9200/_cluster/health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v2
+
+    # Set up all versions of python
+    - uses: actions/setup-python@v2
+      with:
+        python-version: pypy3
+        architecture: x64
+
+    # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
+    - uses: actions/setup-python@v2
+      with:
+        python-version: pypy2
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 2.7
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.6
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.7
+        architecture: x64
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+        architecture: x64
+
+    # Set up python 3.9 last to ensure tox runs CPython
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+        architecture: x64
+
+    - name: Install Dependencies
+      run: |
+        pip install -U pip
+        pip install -U wheel setuptools tox virtualenv!=20.0.24
+
+    - name: Get Environments
+      id: get-envs
+      run: |
+        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+      env:
+        GROUP_NUMBER: ${{ matrix.group-number }}
+
+    - name: Test
+      run: |
+        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+      env:
+        TOX_PARALLEL_NO_SPINNER: 1
+        PY_COLORS: 0
+
+  elasticsearchserver07:
+    env: 
+      TOTAL_GROUPS: 1
+
+    strategy:
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-latest
+
+    services:
+      es01:
+        image: elasticsearch:7.13.2
         env:
           "discovery.type": "single-node"
         ports:

@@ -1,0 +1,53 @@
+# Configuration file for Mega-Linter
+# See all available variables at https://nvuillam.github.io/mega-linter/configuration/ and in linters documentation
+
+APPLY_FIXES: none # all, none, or list of linter keys
+DEFAULT_BRANCH: main # Usually master or main
+SHOW_ELAPSED_TIME: true
+FILEIO_REPORTER: false
+PRINT_ALPACA: false
+VALIDATE_ALL_CODEBASE: false
+ENABLE_LINTERS: # If you use ENABLE_LINTERS variable, all other linters will be disabled by default
+  - MARKDOWN_MARKDOWN_LINK_CHECK
+  - MARKDOWN_MARKDOWNLINT
+  - PYTHON_BANDIT
+  - PYTHON_BLACK
+  - PYTHON_FLAKE8
+  - PYTHON_ISORT
+  - PYTHON_PYLINT
+  - RST_RST_LINT
+  - RST_RSTCHECK
+  - RST_RSTFMT
+  - YAML_PRETTIER
+  - YAML_V8R
+  - YAML_YAMLLINT
+# IGNORE_GITIGNORED_FILES: true # Currently broken
+EXCLUDED_DIRECTORIES:
+  - "__pycache__"
+  - ".eggs"
+  - ".env"
+  - ".mypy_cache"
+  - ".nox"
+  - ".pytest_cache"
+  - ".pytype"
+  - ".tox"
+  - ".venv"
+  - "build"
+  - "cover"
+  - "cython_debug"
+  - "develop-eggs"
+  - "dist"
+  - "downloads"
+  - "eggs"
+  - "env"
+  - "htmlcov"
+  - "lib"
+  - "lib64"
+  - "parts"
+  - "report"
+  - "sdist"
+  - "python-wheels"
+  - "target"
+  - "var"
+  - "venv"
+  - "wheels"

@@ -11,17 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from graphene import (
-    ObjectType,
-    Field,
-    String,
-    Schema,
-    Mutation as GrapheneMutation,
-    Int,
-    List,
-    NonNull,
-    Union,
-)
+from graphene import Field, Int, List
+from graphene import Mutation as GrapheneMutation
+from graphene import NonNull, ObjectType, Schema, String, Union
 
 
 class Author(ObjectType):
@@ -57,7 +49,6 @@ class Library(ObjectType):
 
 
 Storage = List(String)
-
 
 
 authors = [
@@ -120,14 +111,13 @@ libraries = [
 storage = []
 
 
-
 class StorageAdd(GrapheneMutation):
     class Arguments:
         string = String(required=True)
 
     string = String()
 
-    def mutate(parent, info, string):
+    def mutate(self, info, string):
         storage.append(string)
         return String(string=string)
 
@@ -140,25 +130,25 @@ class Query(ObjectType):
     storage = Storage
     error = String()
 
-    def resolve_library(parent, info, index):
+    def resolve_library(self, info, index):
         # returns an object that represents a Person
         return libraries[index]
 
-    def resolve_storage(parent, info):
+    def resolve_storage(self, info):
         return storage
 
-    def resolve_search(parent, info, contains):
+    def resolve_search(self, info, contains):
         search_books = [b for b in books if contains in b.name]
         search_magazines = [m for m in magazines if contains in m.name]
         return search_books + search_magazines
 
-    def resolve_hello(root, info):
+    def resolve_hello(self, info):
         return "Hello!"
 
-    def resolve_echo(root, info, echo):
+    def resolve_echo(self, info, echo):
         return echo
 
-    def resolve_error(root, info):
+    def resolve_error(self, info):
         raise RuntimeError("Runtime Error!")
 
     error_non_null = Field(NonNull(String), resolver=resolve_error)
@@ -166,5 +156,6 @@ class Query(ObjectType):
 
 class Mutation(ObjectType):
     storage_add = StorageAdd.Field()
+
 
 _target_application = Schema(query=Query, mutation=Mutation, auto_camelcase=False)

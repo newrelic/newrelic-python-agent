@@ -116,4 +116,4 @@ _urllib3_logger = logging.getLogger(
 _urllib3_logger.addFilter(Urllib3ConnectionFilter())
 
 # Also ignore any urllib3 warning messages
-warnings.filterwarnings("ignore", module='newrelic\.packages\.urllib3')
+warnings.filterwarnings("ignore", module=r"newrelic\.packages\.urllib3")

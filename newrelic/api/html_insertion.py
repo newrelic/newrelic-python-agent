@@ -14,20 +14,20 @@
 
 import re
 
-_head_re = re.compile(b'<head[^>]*>', re.IGNORECASE)
+_head_re = re.compile(r'<head[^>]*>', re.IGNORECASE)
 
-_xua_meta_re = re.compile(b"""<\s*meta[^>]+http-equiv\s*=\s*['"]"""
-    b"""x-ua-compatible['"][^>]*>""", re.IGNORECASE)
+_xua_meta_re = re.compile(r"""<\s*meta[^>]+http-equiv\s*=\s*['"]"""
+    r"""x-ua-compatible['"][^>]*>""", re.IGNORECASE)
 
-_charset_meta_re = re.compile(b"""<\s*meta[^>]+charset\s*=[^>]*>""",
+_charset_meta_re = re.compile(r"""<\s*meta[^>]+charset\s*=[^>]*>""",
     re.IGNORECASE)
 
-_attachment_meta_re = re.compile(b"""<\s*meta[^>]+http-equiv\s*=\s*['"]"""
-    b"""content-disposition['"][^>]*content\s*=\s*(?P<quote>['"])"""
-    b"""\s*attachment(\s*;[^>]*)?(?P=quote)[^>]*>""",
+_attachment_meta_re = re.compile(r"""<\s*meta[^>]+http-equiv\s*=\s*['"]"""
+    r"""content-disposition['"][^>]*content\s*=\s*(?P<quote>['"])"""
+    r"""\s*attachment(\s*;[^>]*)?(?P=quote)[^>]*>""",
     re.IGNORECASE)
 
-_body_re = re.compile(b'<body[^>]*>', re.IGNORECASE)
+_body_re = re.compile(r'<body[^>]*>', re.IGNORECASE)
 
 def insert_html_snippet(data, html_to_be_inserted, search_limit=64*1024):
     # First determine if we have a body tag. If we don't we

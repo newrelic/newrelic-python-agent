@@ -612,7 +612,7 @@ _settings.attributes.exclude = []
 _settings.attributes.include = []
 
 _settings.thread_profiler.enabled = True
-_settings.cross_application_tracer.enabled = True
+_settings.cross_application_tracer.enabled = False # Previously True
 
 _settings.gc_runtime_metrics.enabled = False
 _settings.gc_runtime_metrics.top_object_count_limit = 5
@@ -625,7 +625,7 @@ _settings.transaction_events.attributes.include = []
 _settings.custom_insights_events.enabled = True
 
 _settings.distributed_tracing.enabled = _environ_as_bool(
-        'NEW_RELIC_DISTRIBUTED_TRACING_ENABLED', default=False)
+        'NEW_RELIC_DISTRIBUTED_TRACING_ENABLED', default=True) #Previously False
 _settings.distributed_tracing.exclude_newrelic_header = False
 _settings.span_events.enabled = _environ_as_bool(
         'NEW_RELIC_SPAN_EVENTS_ENABLED', default=True)

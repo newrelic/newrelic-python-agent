@@ -108,7 +108,7 @@ def wrapper_Dispatcher_find_handler(wrapped, instance, args, kwargs):
     except:  # Catch all
         # Can end up here when a custom _cp_dispatch() method is
         # used and that raises an exception.
-        notice_error()
+        notice_error(status_code=status_code)
         raise
 
     if obj:
@@ -159,7 +159,7 @@ def wrapper_RoutesDispatcher_find_handler(wrapped, instance, args, kwargs):
 
     except:  # Catch all
         # Can end up here when the URL was invalid in some way.
-        notice_error()
+        notice_error(status_code=status_code)
         raise
 
     if handler:

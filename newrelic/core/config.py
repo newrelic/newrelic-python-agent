@@ -1022,6 +1022,15 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     harvest_limits = event_harvest_config.get("harvest_limits", ())
     apply_config_setting(settings_snapshot, "event_harvest_config.whitelist", frozenset(harvest_limits))
 
+    # Override span event harvest config
+    span_event_harvest_config = server_side_config.get('span_event_harvest_config', {})
+    span_event_harvest_limit = span_event_harvest_config.get("harvest_limit", None)
+    if span_event_harvest_limit is not None:
+        apply_config_setting(
+                settings_snapshot,
+                'event_harvest_config.harvest_limits.span_event_data',
+                span_event_harvest_limit)
+
     # This will be removed at some future point
     # Special case for account_id which will be sent instead of
     # cross_process_id in the future

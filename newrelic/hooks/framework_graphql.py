@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import deque
+
 from newrelic.api.error_trace import ErrorTrace
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.graphql_trace import GraphQLResolverTrace, GraphQLOperationTrace
-from newrelic.api.time_trace import notice_error, current_trace
+from newrelic.api.graphql_trace import GraphQLOperationTrace, GraphQLResolverTrace
+from newrelic.api.time_trace import current_trace, notice_error
 from newrelic.api.transaction import current_transaction, ignore_transaction
 from newrelic.common.object_names import callable_name, parse_exc_info
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.core.graphql_utils import graphql_statement
-from collections import deque
-
 
 GRAPHQL_IGNORED_FIELDS = frozenset(("id", "__typename"))
 GRAPHQL_INTROSPECTION_FIELDS = frozenset(("__schema", "__type"))
@@ -158,10 +158,8 @@ def is_fragment(field):
     try:
         from graphql.language.ast import FragmentSpread, InlineFragment
     except ImportError:
-        from graphql import (
-            FragmentSpreadNode as FragmentSpread,
-            InlineFragmentNode as InlineFragment,
-        )
+        from graphql import FragmentSpreadNode as FragmentSpread
+        from graphql import InlineFragmentNode as InlineFragment
 
     _fragment_types = (InlineFragment, FragmentSpread)
 
@@ -183,9 +181,7 @@ def is_named_fragment(field):
 
 
 def filter_ignored_fields(fields):
-    filtered_fields = [
-        f for f in fields if get_node_value(f, "name") not in GRAPHQL_IGNORED_FIELDS
-    ]
+    filtered_fields = [f for f in fields if get_node_value(f, "name") not in GRAPHQL_IGNORED_FIELDS]
     return filtered_fields
 
 
@@ -210,9 +206,7 @@ def traverse_deepest_unique_path(fields, fragments):
 
             # list(fragments.values())[0] 's index is OK because the previous line
             # ensures that there is only one field in the list
-            full_fragment_selection_set = list(fragments.values())[
-                0
-            ].selection_set.selections
+            full_fragment_selection_set = list(fragments.values())[0].selection_set.selections
             fragment_selection_set = filter_ignored_fields(full_fragment_selection_set)
 
             if len(fragment_selection_set) != 1:
@@ -245,9 +239,7 @@ def wrap_get_middleware_resolvers(wrapped, instance, args, kwargs):
     except TypeError:
         return wrapped(*args, **kwargs)
 
-    middlewares = [
-        wrap_middleware(m) if not hasattr(m, "_nr_wrapped") else m for m in middlewares
-    ]
+    middlewares = [wrap_middleware(m) if not hasattr(m, "_nr_wrapped") else m for m in middlewares]
     for m in middlewares:
         m._nr_wrapped = True
 
@@ -357,9 +349,7 @@ def bind_resolve_field_v3(parent_type, source, field_nodes, path):
     return parent_type, field_nodes, path
 
 
-def bind_resolve_field_v2(
-    exe_context, parent_type, source, field_asts, parent_info, field_path
-):
+def bind_resolve_field_v2(exe_context, parent_type, source, field_asts, parent_info, field_path):
     return parent_type, field_asts, field_path
 
 
@@ -452,17 +442,11 @@ def instrument_graphql_execute(module):
     if hasattr(module, "get_field_def"):
         wrap_function_wrapper(module, "get_field_def", wrap_get_field_def)
     if hasattr(module, "ExecutionContext"):
-        wrap_function_wrapper(
-            module, "ExecutionContext.__init__", wrap_executor_context_init
-        )
+        wrap_function_wrapper(module, "ExecutionContext.__init__", wrap_executor_context_init)
         if hasattr(module.ExecutionContext, "resolve_field"):
-            wrap_function_wrapper(
-                module, "ExecutionContext.resolve_field", wrap_resolve_field
-            )
+            wrap_function_wrapper(module, "ExecutionContext.resolve_field", wrap_resolve_field)
         if hasattr(module.ExecutionContext, "execute_operation"):
-            wrap_function_wrapper(
-                module, "ExecutionContext.execute_operation", wrap_execute_operation
-            )
+            wrap_function_wrapper(module, "ExecutionContext.execute_operation", wrap_execute_operation)
 
     if hasattr(module, "resolve_field"):
         wrap_function_wrapper(module, "resolve_field", wrap_resolve_field)
@@ -473,20 +457,14 @@ def instrument_graphql_execute(module):
 
 def instrument_graphql_execution_utils(module):
     if hasattr(module, "ExecutionContext"):
-        wrap_function_wrapper(
-            module, "ExecutionContext.__init__", wrap_executor_context_init
-        )
+        wrap_function_wrapper(module, "ExecutionContext.__init__", wrap_executor_context_init)
 
 
 def instrument_graphql_execution_middleware(module):
     if hasattr(module, "get_middleware_resolvers"):
-        wrap_function_wrapper(
-            module, "get_middleware_resolvers", wrap_get_middleware_resolvers
-        )
+        wrap_function_wrapper(module, "get_middleware_resolvers", wrap_get_middleware_resolvers)
     if hasattr(module, "MiddlewareManager"):
-        wrap_function_wrapper(
-            module, "MiddlewareManager.get_field_resolver", wrap_get_field_resolver
-        )
+        wrap_function_wrapper(module, "MiddlewareManager.get_field_resolver", wrap_get_field_resolver)
 
 
 def instrument_graphql_error_located_error(module):

@@ -42,14 +42,14 @@ from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import notice_error
 from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import (ObjectProxy, function_wrapper,
-        wrap_function_wrapper)
+from newrelic.common.object_wrapper import ObjectProxy, function_wrapper, wrap_function_wrapper
 from newrelic.api.error_trace import wrap_error_trace
 
 
 def framework_details():
     import cherrypy
-    return ('CherryPy', getattr(cherrypy, '__version__', None))
+
+    return ("CherryPy", getattr(cherrypy, "__version__", None))
 
 
 def status_code(exc, value, tb):
@@ -62,8 +62,10 @@ def status_code(exc, value, tb):
         # In the case of an HTTPError that is malformed (e.g.
         # HTTPError("10 Bad error")), value will not have a code attr.
         # In both of those cases, we fall back to value.status
-        code = getattr(value, 'code', value.status)
+        code = getattr(value, "code", value.status)
         return code
+
+    return None
 
 
 @function_wrapper
@@ -84,14 +86,13 @@ def handler_wrapper(wrapped, instance, args, kwargs):
 
 
 class ResourceProxy(ObjectProxy):
-
     def __getattr__(self, name):
         # Methods on the wrapped object corresponding to the HTTP
         # method will always be upper case. Wrap the method when
         # returned with the handler wrapper.
 
         attr = super(ResourceProxy, self).__getattr__(name)
-        return name.isupper() and handler_wrapper(attr) or attr
+        return handler_wrapper(attr) if name.isupper() else attr
 
 
 def wrapper_Dispatcher_find_handler(wrapped, instance, args, kwargs):
@@ -112,7 +113,7 @@ def wrapper_Dispatcher_find_handler(wrapped, instance, args, kwargs):
         raise
 
     if obj:
-        if instance.__class__.__name__ == 'MethodDispatcher':
+        if instance.__class__.__name__ == "MethodDispatcher":
             # We initially name the web transaction as if the
             # corresponding method for the HTTP method will not
             # be found and the request will not be allowed. This
@@ -120,7 +121,7 @@ def wrapper_Dispatcher_find_handler(wrapped, instance, args, kwargs):
             # when the subsequent wrapper around the handler is
             # executed.
 
-            transaction.set_transaction_name('405', group='StatusCode')
+            transaction.set_transaction_name("405", group="StatusCode")
 
             # We have to use a custom object proxy here in order
             # to intercept accesses made by the dispatcher on the
@@ -141,7 +142,7 @@ def wrapper_Dispatcher_find_handler(wrapped, instance, args, kwargs):
         # No handler could be found so name the web transaction
         # after the 404 status code.
 
-        transaction.set_transaction_name('404', group='StatusCode')
+        transaction.set_transaction_name("404", group="StatusCode")
 
     return obj, vpath
 
@@ -172,34 +173,31 @@ def wrapper_RoutesDispatcher_find_handler(wrapped, instance, args, kwargs):
         # No handler could be found so name the web transaction
         # after the 404 status code.
 
-        transaction.set_transaction_name('404', group='StatusCode')
+        transaction.set_transaction_name("404", group="StatusCode")
 
     return handler
 
 
 def instrument_cherrypy__cpreqbody(module):
-    wrap_function_trace(module, 'process_multipart')
-    wrap_function_trace(module, 'process_multipart_form_data')
+    wrap_function_trace(module, "process_multipart")
+    wrap_function_trace(module, "process_multipart_form_data")
 
 
 def instrument_cherrypy__cprequest(module):
-    wrap_function_trace(module, 'Request.handle_error')
+    wrap_function_trace(module, "Request.handle_error")
 
 
 def instrument_cherrypy__cpdispatch(module):
-    wrap_function_wrapper(module, 'Dispatcher.find_handler',
-            wrapper_Dispatcher_find_handler)
-    wrap_function_wrapper(module, 'RoutesDispatcher.find_handler',
-            wrapper_RoutesDispatcher_find_handler)
-    wrap_error_trace(module, 'PageHandler.__call__',
-            ignore=['cherrypy._cperror:InternalRedirect'], status_code=status_code)
+    wrap_function_wrapper(module, "Dispatcher.find_handler", wrapper_Dispatcher_find_handler)
+    wrap_function_wrapper(module, "RoutesDispatcher.find_handler", wrapper_RoutesDispatcher_find_handler)
+    wrap_error_trace(
+        module, "PageHandler.__call__", ignore=["cherrypy._cperror:InternalRedirect"], status_code=status_code
+    )
 
 
 def instrument_cherrypy__cpwsgi(module):
-    wrap_wsgi_application(module, 'CPWSGIApp.__call__',
-            framework=framework_details())
+    wrap_wsgi_application(module, "CPWSGIApp.__call__", framework=framework_details())
 
 
 def instrument_cherrypy__cptree(module):
-    wrap_wsgi_application(module, 'Application.__call__',
-            framework=framework_details())
+    wrap_wsgi_application(module, "Application.__call__", framework=framework_details())

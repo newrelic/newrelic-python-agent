@@ -21,6 +21,14 @@ ENABLE_LINTERS: # If you use ENABLE_LINTERS variable, all other linters will be 
   - YAML_PRETTIER
   - YAML_V8R
   - YAML_YAMLLINT
+
+PYTHON_FLAKE8_CONFIG_FILE: setup.cfg
+PYTHON_BLACK_CONFIG_FILE: pyproject.toml
+PYTHON_PYLINT_CONFIG_FILE: pyproject.toml
+PYTHON_ISORT_CONFIG_FILE: pyproject.toml
+
+PYTHON_PYLINT_ARGUMENTS: "--fail-under=0 --fail-on=E"
+
 # IGNORE_GITIGNORED_FILES: true # Currently broken
 EXCLUDED_DIRECTORIES:
   - "__pycache__"

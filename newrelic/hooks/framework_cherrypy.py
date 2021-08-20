@@ -37,13 +37,17 @@
 # * We don't handle any sub dispatching that may be occurring due to the
 #   use of XMLRPCDispatcher.
 
+from newrelic.api.error_trace import wrap_error_trace
 from newrelic.api.function_trace import FunctionTrace, wrap_function_trace
-from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import notice_error
+from newrelic.api.transaction import current_transaction
 from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import ObjectProxy, function_wrapper, wrap_function_wrapper
-from newrelic.api.error_trace import wrap_error_trace
+from newrelic.common.object_wrapper import (
+    ObjectProxy,
+    function_wrapper,
+    wrap_function_wrapper,
+)
 
 
 def framework_details():

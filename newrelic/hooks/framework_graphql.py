@@ -30,7 +30,8 @@ GRAPHQL_INTROSPECTION_FIELDS = frozenset(("__schema", "__type"))
 def graphql_version():
     from graphql import __version__ as version
 
-    return tuple(int(v) for v in version.split("."))
+    # Take first two values in version to avoid ValueErrors with pre-releases (ex: 3.2.0a0)
+    return tuple(int(v) for v in version.split(".")[:2])
 
 
 def ignore_graphql_duplicate_exception(exc, val, tb):
@@ -99,7 +100,7 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
         except TypeError:
             return wrapped(*args, **kwargs)
 
-    if graphql_version() < (3, 0, 0):
+    if graphql_version() < (3, 0):
         execution_context = args[0]
     else:
         execution_context = instance
@@ -367,7 +368,7 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    if graphql_version() <= (3, 0, 0):
+    if graphql_version() < (3, 0):
         bind_resolve_field = bind_resolve_field_v2
     else:
         bind_resolve_field = bind_resolve_field_v3
@@ -419,12 +420,13 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    version = graphql_version()
-    framework_version = ".".join(map(str, version))
+    from graphql import __version__ as version
+
+    version = tuple(v for v in version.split("."))
+    framework_version = ".".join(version)
 
     transaction.add_framework_info(name="GraphQL", version=framework_version)
-
-    if graphql_version() <= (3, 0, 0):
+    if graphql_version() < (3, 0):
         bind_query = bind_execute_graphql_query
     else:
         bind_query = bind_graphql_impl_query

@@ -1,6 +1,6 @@
 |header|
 
-.. |header| image:: https://github.com/newrelic/opensource-website/raw/master/src/images/categories/Community_Plus.png
+.. |header| image:: https://github.com/newrelic/opensource-website/raw/main/src/images/categories/Community_Plus.png
     :target: https://opensource.newrelic.com/oss-category/#community-plus
 
 New Relic Python Agent
@@ -109,8 +109,8 @@ We define "Personal Data" as any information relating to an identified or identi
 
 Please review `New Relic's General Data Privacy Notice <https://newrelic.com/termsandconditions/privacy>`_ for more information.
 
-Roadmap
--------
+Product Roadmap
+---------------
 
 See our `roadmap <./ROADMAP.md>`_, to learn more about our product vision, understand our plans, and provide us valuable feedback.
 

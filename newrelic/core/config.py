@@ -625,8 +625,8 @@ _settings.transaction_events.attributes.include = []
 _settings.custom_insights_events.enabled = True
 
 _settings.distributed_tracing.enabled = _environ_as_bool(
-        'NEW_RELIC_DISTRIBUTED_TRACING_ENABLED', default=True)  # Previously False
-_settings.distributed_tracing.exclude_newrelic_header = False
+        'NEW_RELIC_DISTRIBUTED_TRACING_ENABLED', default=False)
+_settings.distributed_tracing.exclude_newrelic_header = True    # Previously False
 _settings.span_events.enabled = _environ_as_bool(
         'NEW_RELIC_SPAN_EVENTS_ENABLED', default=True)
 _settings.span_events.attributes.enabled = True

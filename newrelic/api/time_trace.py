@@ -19,7 +19,6 @@ import time
 import traceback
 import warnings
 
-import newrelic.packages.six as six
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.common.object_names import parse_exc_info
 from newrelic.core.attribute import MAX_NUM_USER_ATTRIBUTES, process_user_attribute

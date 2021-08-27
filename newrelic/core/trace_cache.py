@@ -16,12 +16,12 @@
 
 """
 
-import sys
-import random
-import threading
-import weakref
-import traceback
 import logging
+import random
+import sys
+import threading
+import traceback
+import weakref
 
 try:
     import thread
@@ -284,7 +284,8 @@ class TraceCache(object):
             _logger.error(
                 "Runtime instrumentation error. An active "
                 "trace already exists in the cache on thread_id %s. Report "
-                "this issue to New Relic support.\n ", current_thread_id
+                "this issue to New Relic support.\n ",
+                current_thread_id,
             )
             return None
 

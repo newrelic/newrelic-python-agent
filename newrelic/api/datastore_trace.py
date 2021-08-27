@@ -14,8 +14,8 @@
 
 import functools
 
-from newrelic.common.async_wrapper import async_wrapper
 from newrelic.api.time_trace import TimeTrace, current_trace
+from newrelic.common.async_wrapper import async_wrapper
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.datastore_node import DatastoreNode
 
@@ -55,13 +55,12 @@ class DatastoreTrace(TimeTrace):
 
     """
 
-    def __init__(self, product, target, operation,
-            host=None, port_path_or_id=None, database_name=None, **kwargs):
+    def __init__(self, product, target, operation, host=None, port_path_or_id=None, database_name=None, **kwargs):
         parent = None
         if kwargs:
             if len(kwargs) > 1:
                 raise TypeError("Invalid keyword arguments:", kwargs)
-            parent = kwargs['parent']
+            parent = kwargs["parent"]
         super(DatastoreTrace, self).__init__(parent)
 
         self.instance_reporting_enabled = False
@@ -85,16 +84,16 @@ class DatastoreTrace(TimeTrace):
             self.operation = transaction._intern_string(self.operation)
 
             datastore_tracer_settings = transaction.settings.datastore_tracer
-            self.instance_reporting_enabled = \
-                    datastore_tracer_settings.instance_reporting.enabled
-            self.database_name_enabled = \
-                    datastore_tracer_settings.database_name_reporting.enabled
+            self.instance_reporting_enabled = datastore_tracer_settings.instance_reporting.enabled
+            self.database_name_enabled = datastore_tracer_settings.database_name_reporting.enabled
         return result
 
     def __repr__(self):
-        return '<%s object at 0x%x %s>' % (self.__class__.__name__, id(self), dict(
-                product=self.product, target=self.target,
-                operation=self.operation))
+        return "<%s object at 0x%x %s>" % (
+            self.__class__.__name__,
+            id(self),
+            dict(product=self.product, target=self.target, operation=self.operation),
+        )
 
     def finalize_data(self, transaction, exc=None, value=None, tb=None):
         if not self.instance_reporting_enabled:
@@ -109,20 +108,21 @@ class DatastoreTrace(TimeTrace):
 
     def create_node(self):
         return DatastoreNode(
-                product=self.product,
-                target=self.target,
-                operation=self.operation,
-                children=self.children,
-                start_time=self.start_time,
-                end_time=self.end_time,
-                duration=self.duration,
-                exclusive=self.exclusive,
-                host=self.host,
-                port_path_or_id=self.port_path_or_id,
-                database_name=self.database_name,
-                guid=self.guid,
-                agent_attributes=self.agent_attributes,
-                user_attributes=self.user_attributes,)
+            product=self.product,
+            target=self.target,
+            operation=self.operation,
+            children=self.children,
+            start_time=self.start_time,
+            end_time=self.end_time,
+            duration=self.duration,
+            exclusive=self.exclusive,
+            host=self.host,
+            port_path_or_id=self.port_path_or_id,
+            database_name=self.database_name,
+            guid=self.guid,
+            agent_attributes=self.agent_attributes,
+            user_attributes=self.user_attributes,
+        )
 
 
 def DatastoreTraceWrapper(wrapped, product, target, operation):
@@ -224,8 +224,7 @@ def datastore_trace(product, target, operation):
         ...     time.sleep(*args, **kwargs)
 
     """
-    return functools.partial(DatastoreTraceWrapper, product=product,
-            target=target, operation=operation)
+    return functools.partial(DatastoreTraceWrapper, product=product, target=target, operation=operation)
 
 
 def wrap_datastore_trace(module, object_path, product, target, operation):
@@ -257,5 +256,4 @@ def wrap_datastore_trace(module, object_path, product, target, operation):
         ...        'sleep')
 
     """
-    wrap_object(module, object_path, DatastoreTraceWrapper,
-            (product, target, operation))
+    wrap_object(module, object_path, DatastoreTraceWrapper, (product, target, operation))

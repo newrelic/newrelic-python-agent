@@ -37,7 +37,11 @@ class GraphQLOperationTrace(TimeTrace):
         self.statement = None
 
     def __repr__(self):
-        return '<%s %s>' % (self.__class__.__name__, dict())
+        return '<%s object at 0x%x %s>' % (self.__class__.__name__, id(self), dict(
+            operation_name=self.operation_name,
+            operation_type=self.operation_type,
+            deepest_path=self.deepest_path,
+            graphql=self.graphql))
 
     @property
     def formatted(self):
@@ -116,7 +120,7 @@ class GraphQLResolverTrace(TimeTrace):
         self.field_name = field_name
 
     def __repr__(self):
-        return '<%s %s>' % (self.__class__.__name__, dict())
+        return '<%s object at 0x%x %s>' % (self.__class__.__name__, id(self), dict(field_name=self.field_name))
 
     def finalize_data(self, *args, **kwargs):
         self._add_agent_attribute("graphql.field.name", self.field_name)

@@ -64,9 +64,6 @@ class TimeTrace(object):
     def _is_leaf(self):
         return self.child_count == len(self.children)
 
-    def __str__(self):
-        return repr(self)
-
     def __repr__(self):
         return "<%s object at 0x%x %s>" % (self.__class__.__name__, id(self), dict(name=getattr(self, "name", None)))
 

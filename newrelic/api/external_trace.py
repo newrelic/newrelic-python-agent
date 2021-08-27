@@ -37,7 +37,7 @@ class ExternalTrace(CatHeaderMixin, TimeTrace):
         self.params = {}
 
     def __repr__(self):
-        return '<%s %s>' % (self.__class__.__name__, dict(
+        return '<%s object at 0x%x %s>' % (self.__class__.__name__, id(self), dict(
                 library=self.library, url=self.url, method=self.method))
 
     def process_response(self, status_code, headers):

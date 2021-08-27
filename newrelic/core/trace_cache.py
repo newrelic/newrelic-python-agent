@@ -100,11 +100,8 @@ class TraceCache(object):
     def __init__(self):
         self._cache = weakref.WeakValueDictionary()
 
-    def __str__(self):
-        return "<newrelic.core.trace_cache.TraceCache object at 0x%x %s>" % (id(self), str(dict(self._cache.items())))
-
     def __repr__(self):
-        return str(self)
+        return "<%s object at 0x%x %s>" % (self.__class__.__name__, id(self), str(dict(self._cache.items())))
 
     def current_thread_id(self):
         """Returns the thread ID for the caller.

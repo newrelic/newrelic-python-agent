@@ -32,7 +32,7 @@ class SolrTrace(newrelic.api.time_trace.TimeTrace):
         self.command = command
 
     def __repr__(self):
-        return '<%s %s>' % (self.__class__.__name__, dict(
+        return '<%s object at 0x%x %s>' % (self.__class__.__name__, id(self), dict(
                 library=self.library, command=self.command))
 
     def terminal_node(self):

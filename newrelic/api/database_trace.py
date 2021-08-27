@@ -81,7 +81,7 @@ class DatabaseTrace(TimeTrace):
         return result
 
     def __repr__(self):
-        return '<%s %s>' % (self.__class__.__name__, dict(
+        return '<%s object at 0x%x %s>' % (self.__class__.__name__, id(self), dict(
                 sql=self.sql, dbapi2_module=self.dbapi2_module))
 
     @property

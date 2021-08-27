@@ -26,6 +26,7 @@ import logging
 import threading
 import warnings
 
+
 _lock = threading.Lock()
 
 class _NullHandler(logging.Handler):
@@ -34,7 +35,7 @@ class _NullHandler(logging.Handler):
 
 _agent_logger = logging.getLogger('newrelic')
 _agent_logger.addHandler(_NullHandler())
-_agent_logger.propagate(False)
+_agent_logger.propagate = False
 
 _LOG_FORMAT = '%(asctime)s (%(process)d/%(threadName)s) ' \
               '%(name)s %(levelname)s - %(message)s'

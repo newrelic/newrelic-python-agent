@@ -68,11 +68,10 @@ class TimeTrace(object):
         return self.child_count == len(self.children)
 
     def __str__(self):
-        name = getattr(self, "name", None)
-        return "<id:%d name:%s __str__:%s>" % (id(self), name, super(TimeTrace, self).__str__())
+        return repr(self)
 
     def __repr__(self):
-        return str(self)
+        return '<%s object at 0x%x %s>' % (self.__class__.__name__, id(self), dict(name=getattr(self, "name", None)))
 
     def __enter__(self):
         self.parent = parent = self.parent or current_trace()

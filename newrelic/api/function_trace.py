@@ -57,8 +57,8 @@ class FunctionTrace(TimeTrace):
         return result
 
     def __repr__(self):
-        return '<%s %s>' % (self.__class__.__name__, dict(
-                name=self.name, group=self.group, label=self.label,
+        return '<%s object at 0x%x %s>' % (self.__class__.__name__, 
+        id(self), dict(name=self.name, group=self.group, label=self.label,
                 params=self.params, terminal=self.terminal,
                 rollup=self.rollup))
 

@@ -20,9 +20,8 @@ to fallback to using stdout or stderr.
 
 """
 
-import os
-import sys
 import logging
+import sys
 import threading
 import warnings
 

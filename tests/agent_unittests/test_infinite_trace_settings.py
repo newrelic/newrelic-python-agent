@@ -14,6 +14,8 @@
 
 import pytest
 
+from testing_support.fixtures import newrelic_caplog as caplog
+
 INI_FILE_EMPTY = b"""
 [newrelic]
 """
@@ -43,7 +45,8 @@ def test_infinite_tracing_host(ini, env,
     assert settings.infinite_tracing.trace_observer_host == expected_host
 
     if log:
-        assert sum(1 for record in caplog.get_records("setup") if record.levelname == log) == 1
+        records = caplog.get_records("setup")
+        assert sum(1 for record in records if record.levelname == log) == 1
     else:
         assert not caplog.get_records("setup")
 

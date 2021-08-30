@@ -28,6 +28,7 @@ from testing_support.fixtures import (
     override_application_settings,
     function_not_called,
     validate_transaction_errors,
+    newrelic_caplog as caplog,
 )
 from newrelic.api.asgi_application import asgi_application, ASGIApplicationWrapper
 from testing_support.asgi_testing import AsgiTest

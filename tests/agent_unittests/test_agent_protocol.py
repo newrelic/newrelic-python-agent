@@ -42,6 +42,8 @@ from newrelic.network.exceptions import (
     RetryDataForRequest,
 )
 
+from testing_support.fixtures import newrelic_caplog as caplog
+
 Request = namedtuple("Request", ("method", "path", "params", "headers", "payload"))
 
 

@@ -22,6 +22,8 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.agent import get_linking_metadata
 import newrelic.packages.six as six
 
+from testing_support.fixtures import newrelic_caplog as caplog
+
 if six.PY2:
     from io import BytesIO as Buffer
 else:

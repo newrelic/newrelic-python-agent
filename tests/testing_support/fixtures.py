@@ -2678,3 +2678,10 @@ class TerminatingPopen(subprocess.Popen):
             self.stdin.close()
 
         self.terminate()
+
+@pytest.fixture()
+def newrelic_caplog(caplog):
+    logger = logging.getLogger("newrelic")
+    logger.propagate = True
+
+    yield caplog

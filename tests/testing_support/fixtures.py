@@ -17,63 +17,72 @@ import json
 import logging
 import os
 import pwd
-import pytest
 import subprocess
 import sys
 import threading
 import time
+
+import pytest
 
 try:
     from Queue import Queue
 except ImportError:
     from queue import Queue
 
-from newrelic.packages import six
+from testing_support.sample_applications import (
+    error_user_params_added,
+    user_attributes_added,
+)
 
 from newrelic.admin.record_deploy import record_deploy
-from newrelic.api.application import (register_application,
-        application_instance, application_settings, application_instance as
-        application)
-
+from newrelic.api.application import application_instance
+from newrelic.api.application import application_instance as application
+from newrelic.api.application import application_settings, register_application
 from newrelic.common import certs
-from newrelic.common.encoding_utils import (unpack_field, json_encode,
-        deobfuscate, json_decode, obfuscate)
+from newrelic.common.agent_http import DeveloperModeClient
+from newrelic.common.encoding_utils import (
+    deobfuscate,
+    json_decode,
+    json_encode,
+    obfuscate,
+    unpack_field,
+)
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import (transient_function_wrapper,
-        function_wrapper, wrap_function_wrapper, ObjectProxy)
+from newrelic.common.object_wrapper import (
+    ObjectProxy,
+    function_wrapper,
+    transient_function_wrapper,
+    wrap_function_wrapper,
+)
 from newrelic.common.system_info import LOCALHOST_EQUIVALENTS
-
 from newrelic.config import initialize
-
 from newrelic.core.agent import shutdown_agent
 from newrelic.core.attribute import create_attributes
-from newrelic.core.attribute_filter import (AttributeFilter,
-        DST_ERROR_COLLECTOR, DST_TRANSACTION_TRACER)
-from newrelic.core.config import (apply_config_setting, flatten_settings,
-        global_settings)
-from newrelic.common.agent_http import DeveloperModeClient
+from newrelic.core.attribute_filter import (
+    DST_ERROR_COLLECTOR,
+    DST_TRANSACTION_TRACER,
+    AttributeFilter,
+)
+from newrelic.core.config import apply_config_setting, flatten_settings, global_settings
 from newrelic.core.database_utils import SQLConnections
 from newrelic.core.internal_metrics import InternalTraceContext
 from newrelic.core.stats_engine import CustomMetrics
-
 from newrelic.network.exceptions import RetryDataForRequest
+from newrelic.packages import six
 
-from testing_support.sample_applications import (user_attributes_added,
-        error_user_params_added)
-
-_logger = logging.getLogger('newrelic.tests')
+_logger = logging.getLogger("newrelic.tests")
 
 
 def _environ_as_bool(name, default=False):
     flag = os.environ.get(name, default)
     if default is None or default:
         try:
-            flag = not flag.lower() in ['off', 'false', '0']
+            flag = not flag.lower() in ["off", "false", "0"]
         except AttributeError:
             pass
     else:
         try:
-            flag = flag.lower() in ['on', 'true', '1']
+            flag = flag.lower() in ["on", "true", "1"]
         except AttributeError:
             pass
     return flag
@@ -81,29 +90,27 @@ def _environ_as_bool(name, default=False):
 
 def _lookup_string_table(name, string_table, default=None):
     try:
-        index = int(name.lstrip('`'))
+        index = int(name.lstrip("`"))
         return string_table[index]
     except ValueError:
         return default
 
 
-if _environ_as_bool('NEW_RELIC_HIGH_SECURITY'):
-    DeveloperModeClient.RESPONSES['connect']['high_security'] = True
+if _environ_as_bool("NEW_RELIC_HIGH_SECURITY"):
+    DeveloperModeClient.RESPONSES["connect"]["high_security"] = True
 
 
 def initialize_agent(app_name=None, default_settings={}):
     settings = global_settings()
 
-    settings.app_name = 'Python Agent Test'
+    settings.app_name = "Python Agent Test"
 
-    if 'NEW_RELIC_LICENSE_KEY' not in os.environ:
+    if "NEW_RELIC_LICENSE_KEY" not in os.environ:
         settings.developer_mode = True
         settings.license_key = "DEVELOPERMODELICENSEKEY"
 
-    settings.startup_timeout = float(os.environ.get(
-            'NEW_RELIC_STARTUP_TIMEOUT', 20.0))
-    settings.shutdown_timeout = float(os.environ.get(
-            'NEW_RELIC_SHUTDOWN_TIMEOUT', 20.0))
+    settings.startup_timeout = float(os.environ.get("NEW_RELIC_STARTUP_TIMEOUT", 20.0))
+    settings.shutdown_timeout = float(os.environ.get("NEW_RELIC_SHUTDOWN_TIMEOUT", 20.0))
 
     # Disable the harvest thread during testing so that harvest is explicitly
     # called on test shutdown
@@ -115,15 +122,15 @@ def initialize_agent(app_name=None, default_settings={}):
     for name, value in default_settings.items():
         apply_config_setting(settings, name, value)
 
-    env_directory = os.environ.get('TOX_ENVDIR', None)
+    env_directory = os.environ.get("TOX_ENVDIR", None)
 
     if env_directory is not None:
-        log_directory = os.path.join(env_directory, 'log')
+        log_directory = os.path.join(env_directory, "log")
     else:
-        log_directory = '.'
+        log_directory = "."
 
-    log_file = os.path.join(log_directory, 'python-agent-test.log')
-    if 'GITHUB_ACTIONS' in os.environ:
+    log_file = os.path.join(log_directory, "python-agent-test.log")
+    if "GITHUB_ACTIONS" in os.environ:
         log_level = logging.DEBUG
     else:
         log_level = logging.INFO
@@ -138,7 +145,7 @@ def initialize_agent(app_name=None, default_settings={}):
             if len(logging.root.handlers) != 0:
                 return
 
-            if record.name.startswith('newrelic.packages'):
+            if record.name.startswith("newrelic.packages"):
                 return
 
             if record.levelno < logging.WARNING:
@@ -146,9 +153,9 @@ def initialize_agent(app_name=None, default_settings={}):
 
             return logging.StreamHandler.emit(self, record)
 
-    _stdout_logger = logging.getLogger('newrelic')
+    _stdout_logger = logging.getLogger("newrelic")
     _stdout_handler = FilteredStreamHandler(sys.stderr)
-    _stdout_format = '%(levelname)s - %(message)s'
+    _stdout_format = "%(levelname)s - %(message)s"
     _stdout_formatter = logging.Formatter(_stdout_format)
     _stdout_handler.setFormatter(_stdout_formatter)
     _stdout_logger.addHandler(_stdout_handler)
@@ -179,12 +186,12 @@ def capture_harvest_errors():
             return name
 
         metric_name = _bind_params(*args, **kwargs)
-        if (metric_name.startswith(
-                'Supportability/Python/Harvest/Exception') and
-                not metric_name.endswith('DiscardDataForRequest') and
-                not metric_name.endswith('RetryDataForRequest') and
-                not metric_name.endswith(('newrelic.packages.urllib3.'
-                        'exceptions:ClosedPoolError'))):
+        if (
+            metric_name.startswith("Supportability/Python/Harvest/Exception")
+            and not metric_name.endswith("DiscardDataForRequest")
+            and not metric_name.endswith("RetryDataForRequest")
+            and not metric_name.endswith(("newrelic.packages.urllib3." "exceptions:ClosedPoolError"))
+        ):
             exc_info = sys.exc_info()
             queue.put(exc_info)
 
@@ -192,38 +199,33 @@ def capture_harvest_errors():
 
     # Capture all unhandled exceptions from the harvest thread
 
-    wrap_function_wrapper('newrelic.core.agent', 'Agent._harvest_loop',
-            wrap_harvest_loop)
+    wrap_function_wrapper("newrelic.core.agent", "Agent._harvest_loop", wrap_harvest_loop)
 
     # Treat custom exception metrics as unhandled errors
 
-    wrap_function_wrapper('newrelic.core.stats_engine',
-            'CustomMetrics.record_custom_metric', wrap_record_custom_metric)
+    wrap_function_wrapper("newrelic.core.stats_engine", "CustomMetrics.record_custom_metric", wrap_record_custom_metric)
 
     # Re-raise exceptions in the main thread
 
-    wrap_function_wrapper('newrelic.core.agent', 'Agent.shutdown_agent',
-            wrap_shutdown_agent)
+    wrap_function_wrapper("newrelic.core.agent", "Agent.shutdown_agent", wrap_shutdown_agent)
 
 
-def collector_agent_registration_fixture(app_name=None, default_settings={},
-        linked_applications=[], should_initialize_agent=True):
-    @pytest.fixture(scope='session')
+def collector_agent_registration_fixture(
+    app_name=None, default_settings={}, linked_applications=[], should_initialize_agent=True
+):
+    @pytest.fixture(scope="session")
     def _collector_agent_registration_fixture(request):
 
         if should_initialize_agent:
-            initialize_agent(
-                    app_name=app_name, default_settings=default_settings)
+            initialize_agent(app_name=app_name, default_settings=default_settings)
 
         settings = global_settings()
 
         # Determine if should be using an internal fake local
         # collector for the test.
 
-        use_fake_collector = _environ_as_bool(
-                'NEW_RELIC_FAKE_COLLECTOR', False)
-        use_developer_mode = _environ_as_bool(
-                'NEW_RELIC_DEVELOPER_MODE', use_fake_collector)
+        use_fake_collector = _environ_as_bool("NEW_RELIC_FAKE_COLLECTOR", False)
+        use_developer_mode = _environ_as_bool("NEW_RELIC_DEVELOPER_MODE", use_fake_collector)
 
         # Catch exceptions in the harvest thread and reraise them in the main
         # thread. This way the tests will reveal any unhandled exceptions in
@@ -248,13 +250,12 @@ def collector_agent_registration_fixture(app_name=None, default_settings={},
         api_host = settings.host
 
         if api_host is None:
-            api_host = 'api.newrelic.com'
-        elif api_host == 'staging-collector.newrelic.com':
-            api_host = 'staging-api.newrelic.com'
+            api_host = "api.newrelic.com"
+        elif api_host == "staging-collector.newrelic.com":
+            api_host = "staging-api.newrelic.com"
 
         if not use_fake_collector and not use_developer_mode:
-            description = os.path.basename(
-                    os.path.normpath(sys.prefix))
+            description = os.path.basename(os.path.normpath(sys.prefix))
             try:
                 _logger.debug("Record deployment marker host: %s" % api_host)
                 record_deploy(
@@ -275,7 +276,6 @@ def collector_agent_registration_fixture(app_name=None, default_settings={},
                 _logger.exception("Unable to record deployment marker.")
                 pass
 
-
         def finalize():
             shutdown_agent()
 
@@ -286,7 +286,7 @@ def collector_agent_registration_fixture(app_name=None, default_settings={},
     return _collector_agent_registration_fixture
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def collector_available_fixture(request):
     application = application_instance()
     active = application.active
@@ -296,7 +296,7 @@ def collector_available_fixture(request):
 def raise_background_exceptions(timeout=5.0):
     @function_wrapper
     def _raise_background_exceptions(wrapped, instance, args, kwargs):
-        if getattr(raise_background_exceptions, 'enabled', None) is None:
+        if getattr(raise_background_exceptions, "enabled", None) is None:
             raise_background_exceptions.event = threading.Event()
         else:
             assert raise_background_exceptions.count == 0
@@ -331,7 +331,7 @@ def raise_background_exceptions(timeout=5.0):
             exc_info = raise_background_exceptions.exception
             raise_background_exceptions.exception = None
 
-            assert done, 'Timeout waiting for background task to finish.'
+            assert done, "Timeout waiting for background task to finish."
 
             if exc_info is not None:
                 six.reraise(*exc_info)
@@ -354,7 +354,7 @@ def wait_for_background_threads(timeout=5.0):
 
 @function_wrapper
 def catch_background_exceptions(wrapped, instance, args, kwargs):
-    if not getattr(raise_background_exceptions, 'enabled', False):
+    if not getattr(raise_background_exceptions, "enabled", False):
         return wrapped(*args, **kwargs)
 
     raise_background_exceptions.count += 1
@@ -373,37 +373,36 @@ def catch_background_exceptions(wrapped, instance, args, kwargs):
 def make_cross_agent_headers(payload, encoding_key, cat_id):
     value = obfuscate(json_encode(payload), encoding_key)
     id_value = obfuscate(cat_id, encoding_key)
-    return {'X-NewRelic-Transaction': value, 'X-NewRelic-ID': id_value}
+    return {"X-NewRelic-Transaction": value, "X-NewRelic-ID": id_value}
 
 
-def make_synthetics_header(account_id, resource_id, job_id, monitor_id,
-            encoding_key, version=1):
+def make_synthetics_header(account_id, resource_id, job_id, monitor_id, encoding_key, version=1):
     value = [version, account_id, resource_id, job_id, monitor_id]
     value = obfuscate(json_encode(value), encoding_key)
-    return {'X-NewRelic-Synthetics': value}
+    return {"X-NewRelic-Synthetics": value}
 
 
-def validate_transaction_metrics(name, group='Function',
-        background_task=False, scoped_metrics=[], rollup_metrics=[],
-        custom_metrics=[], index=-1):
+def validate_transaction_metrics(
+    name, group="Function", background_task=False, scoped_metrics=[], rollup_metrics=[], custom_metrics=[], index=-1
+):
 
     if background_task:
         unscoped_metrics = [
-            'OtherTransaction/all',
-            'OtherTransaction/%s/%s' % (group, name),
-            'OtherTransactionTotalTime',
-            'OtherTransactionTotalTime/%s/%s' % (group, name),
+            "OtherTransaction/all",
+            "OtherTransaction/%s/%s" % (group, name),
+            "OtherTransactionTotalTime",
+            "OtherTransactionTotalTime/%s/%s" % (group, name),
         ]
-        transaction_scope_name = 'OtherTransaction/%s/%s' % (group, name)
+        transaction_scope_name = "OtherTransaction/%s/%s" % (group, name)
     else:
         unscoped_metrics = [
-            'WebTransaction',
-            'WebTransaction/%s/%s' % (group, name),
-            'WebTransactionTotalTime',
-            'WebTransactionTotalTime/%s/%s' % (group, name),
-            'HttpDispatcher',
+            "WebTransaction",
+            "WebTransaction/%s/%s" % (group, name),
+            "WebTransactionTotalTime",
+            "WebTransactionTotalTime/%s/%s" % (group, name),
+            "HttpDispatcher",
         ]
-        transaction_scope_name = 'WebTransaction/%s/%s' % (group, name)
+        transaction_scope_name = "WebTransaction/%s/%s" % (group, name)
 
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
@@ -411,8 +410,7 @@ def validate_transaction_metrics(name, group='Function',
         record_transaction_called = []
         recorded_metrics = []
 
-        @transient_function_wrapper('newrelic.core.stats_engine',
-                'StatsEngine.record_transaction')
+        @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
         @catch_background_exceptions
         def _validate_transaction_metrics(wrapped, instance, args, kwargs):
             record_transaction_called.append(True)
@@ -436,18 +434,18 @@ def validate_transaction_metrics(name, group='Function',
             metric = metrics.get(key)
 
             def _metrics_table():
-                out = ['']
-                out.append('Expected: {0}: {1}'.format(key, count))
+                out = [""]
+                out.append("Expected: {0}: {1}".format(key, count))
                 for metric_key, metric_value in metrics.items():
-                    out.append('{0}: {1}'.format(metric_key, metric_value[0]))
-                return '\n'.join(out)
+                    out.append("{0}: {1}".format(metric_key, metric_value[0]))
+                return "\n".join(out)
 
             def _metric_details():
-                return 'metric=%r, count=%r' % (key, metric.call_count)
+                return "metric=%r, count=%r" % (key, metric.call_count)
 
             if count is not None:
                 assert metric is not None, _metrics_table()
-                if count == 'present':
+                if count == "present":
                     assert metric.call_count > 0, _metric_details()
                 else:
                     assert metric.call_count == count, _metric_details()
@@ -469,22 +467,21 @@ def validate_transaction_metrics(name, group='Function',
         recorded_metrics[:] = []
 
         for unscoped_metric in unscoped_metrics:
-            _validate(metrics, unscoped_metric, '', 1)
+            _validate(metrics, unscoped_metric, "", 1)
 
         for scoped_name, scoped_count in scoped_metrics:
-            _validate(metrics, scoped_name, transaction_scope_name,
-                    scoped_count)
+            _validate(metrics, scoped_name, transaction_scope_name, scoped_count)
 
         for rollup_name, rollup_count in rollup_metrics:
-            _validate(metrics, rollup_name, '', rollup_count)
+            _validate(metrics, rollup_name, "", rollup_count)
 
         for custom_name, custom_count in custom_metrics:
-            _validate(metrics, custom_name, '', custom_count)
+            _validate(metrics, custom_name, "", custom_count)
 
         custom_metric_names = set([name for name, _ in custom_metrics])
         for name, _ in metrics:
             if name not in custom_metric_names:
-                assert not name.startswith('Supportability/api/'), name
+                assert not name.startswith("Supportability/api/"), name
 
         return val
 
@@ -498,8 +495,7 @@ def validate_time_metrics_outside_transaction(time_metrics=[], index=-1):
         record_time_metric_called = []
         recorded_metrics = []
 
-        @transient_function_wrapper('newrelic.core.stats_engine',
-                'StatsEngine.record_time_metric')
+        @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_time_metric")
         @catch_background_exceptions
         def _validate_transaction_metrics(wrapped, instance, args, kwargs):
             record_time_metric_called.append(True)
@@ -519,22 +515,22 @@ def validate_time_metrics_outside_transaction(time_metrics=[], index=-1):
             return result
 
         def _validate(metrics, name, count):
-            key = (name, '')
+            key = (name, "")
             metric = metrics.get(key)
 
             def _metrics_table():
-                out = ['']
-                out.append('Expected: {0}: {1}'.format(key, count))
+                out = [""]
+                out.append("Expected: {0}: {1}".format(key, count))
                 for metric_key, metric_value in metrics.items():
-                    out.append('{0}: {1}'.format(metric_key, metric_value[0]))
-                return '\n'.join(out)
+                    out.append("{0}: {1}".format(metric_key, metric_value[0]))
+                return "\n".join(out)
 
             def _metric_details():
-                return 'metric=%r, count=%r' % (key, metric.call_count)
+                return "metric=%r, count=%r" % (key, metric.call_count)
 
             if count is not None:
                 assert metric is not None, _metrics_table()
-                if count == 'present':
+                if count == "present":
                     assert metric.call_count > 0, _metric_details()
                 else:
                     assert metric.call_count == count, _metric_details()
@@ -564,8 +560,7 @@ def validate_time_metrics_outside_transaction(time_metrics=[], index=-1):
 
 
 def capture_transaction_metrics(metrics_list, full_metrics=None):
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     @catch_background_exceptions
     def _capture_transaction_metrics(wrapped, instance, args, kwargs):
         try:
@@ -598,14 +593,14 @@ def validate_internal_metrics(metrics=[]):
             metric = captured_metrics.get(name)
 
             def _metrics_table():
-                return 'metric=%r, metrics=%r' % (name, captured_metrics)
+                return "metric=%r, metrics=%r" % (name, captured_metrics)
 
             def _metric_details():
-                return 'metric=%r, count=%r' % (name, metric.call_count)
+                return "metric=%r, count=%r" % (name, metric.call_count)
 
             if count is not None and count > 0:
                 assert metric is not None, _metrics_table()
-                if count == 'present':
+                if count == "present":
                     assert metric.call_count > 0, _metric_details()
                 else:
                     assert metric.call_count == count, _metric_details()
@@ -621,13 +616,11 @@ def validate_internal_metrics(metrics=[]):
     return _validate_wrapper
 
 
-def validate_transaction_errors(errors=[], required_params=[],
-        forgone_params=[]):
+def validate_transaction_errors(errors=[], required_params=[], forgone_params=[]):
 
     captured_errors = []
 
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     @catch_background_exceptions
     def _capture_transaction_errors(wrapped, instance, args, kwargs):
         def _bind_params(transaction, *args, **kwargs):
@@ -653,34 +646,31 @@ def validate_transaction_errors(errors=[], required_params=[],
             captured = []
 
         if errors and isinstance(errors[0], (tuple, list)):
-            compare_to = sorted([(e.type, e.message)
-                    for e in captured])
+            compare_to = sorted([(e.type, e.message) for e in captured])
         else:
             compare_to = sorted([e.type for e in captured])
 
-        assert expected == compare_to, (
-                'expected=%r, captured=%r, errors=%r' % (
-                expected, compare_to, captured))
+        assert expected == compare_to, "expected=%r, captured=%r, errors=%r" % (expected, compare_to, captured)
 
         for e in captured:
             assert e.span_id
             for name, value in required_params:
-                assert name in e.custom_params, ('name=%r, '
-                        'params=%r' % (name, e.custom_params))
-                assert e.custom_params[name] == value, ('name=%r, value=%r, '
-                        'params=%r' % (name, value, e.custom_params))
+                assert name in e.custom_params, "name=%r, " "params=%r" % (name, e.custom_params)
+                assert e.custom_params[name] == value, "name=%r, value=%r, " "params=%r" % (
+                    name,
+                    value,
+                    e.custom_params,
+                )
 
             for name, value in forgone_params:
-                assert name not in e.custom_params, ('name=%r, '
-                        'params=%r' % (name, e.custom_params))
+                assert name not in e.custom_params, "name=%r, " "params=%r" % (name, e.custom_params)
 
         return output
 
     return _validate_transaction_errors
 
 
-def validate_application_errors(errors=[], required_params=[],
-        forgone_params=[]):
+def validate_application_errors(errors=[], required_params=[], forgone_params=[]):
     @function_wrapper
     def _validate_application_errors(wrapped, instace, args, kwargs):
 
@@ -695,23 +685,21 @@ def validate_application_errors(errors=[], required_params=[],
             app_errors = stats.error_data()
 
             expected = sorted(errors)
-            captured = sorted([(e.type, e.message)
-                    for e in stats.error_data()])
+            captured = sorted([(e.type, e.message) for e in stats.error_data()])
 
-            assert expected == captured, ('expected=%r, captured=%r, '
-                    'errors=%r' % (expected, captured, app_errors))
+            assert expected == captured, "expected=%r, captured=%r, " "errors=%r" % (expected, captured, app_errors)
 
             for e in app_errors:
                 for name, value in required_params:
-                    assert name in e.parameters['userAttributes'], ('name=%r, '
-                            'params=%r' % (name, e.parameters))
-                    assert e.parameters['userAttributes'][name] == value, (
-                            'name=%r, value=%r, params=%r' %
-                            (name, value, e.parameters))
+                    assert name in e.parameters["userAttributes"], "name=%r, " "params=%r" % (name, e.parameters)
+                    assert e.parameters["userAttributes"][name] == value, "name=%r, value=%r, params=%r" % (
+                        name,
+                        value,
+                        e.parameters,
+                    )
 
                 for name, value in forgone_params:
-                    assert name not in e.parameters['userAttributes'], (
-                            'name=%r, params=%r' % (name, e.parameters))
+                    assert name not in e.parameters["userAttributes"], "name=%r, params=%r" % (name, e.parameters)
 
         return result
 
@@ -719,9 +707,7 @@ def validate_application_errors(errors=[], required_params=[],
 
 
 def validate_custom_parameters(required_params=[], forgone_params=[]):
-
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     @catch_background_exceptions
     def _validate_custom_parameters(wrapped, instance, args, kwargs):
         def _bind_params(transaction, *args, **kwargs):
@@ -738,28 +724,22 @@ def validate_custom_parameters(required_params=[], forgone_params=[]):
             attrs[attr.name] = attr.value
 
         for name, value in required_params:
-            assert name in attrs, ('name=%r, '
-                    'params=%r' % (name, attrs))
-            assert attrs[name] == value, (
-                    'name=%r, value=%r, params=%r' % (name, value,
-                    attrs))
+            assert name in attrs, "name=%r, " "params=%r" % (name, attrs)
+            assert attrs[name] == value, "name=%r, value=%r, params=%r" % (name, value, attrs)
 
         for name, value in forgone_params:
-            assert name not in attrs, ('name=%r, '
-                    'params=%r' % (name, attrs))
+            assert name not in attrs, "name=%r, " "params=%r" % (name, attrs)
 
         return wrapped(*args, **kwargs)
 
     return _validate_custom_parameters
 
 
-def validate_synthetics_event(required_attrs=[], forgone_attrs=[],
-        should_exist=True):
+def validate_synthetics_event(required_attrs=[], forgone_attrs=[], should_exist=True):
 
     failed = []
 
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_synthetics_event(wrapped, instance, args, kwargs):
         result = wrapped(*args, **kwargs)
 
@@ -781,18 +761,14 @@ def validate_synthetics_event(required_attrs=[], forgone_attrs=[],
 
                 flat_event = _flatten(event)
 
-                assert 'nr.guid' in flat_event, ('name=%r, event=%r' %
-                            ('nr.guid', flat_event))
+                assert "nr.guid" in flat_event, "name=%r, event=%r" % ("nr.guid", flat_event)
 
                 for name, value in required_attrs:
-                    assert name in flat_event, ('name=%r, event=%r' %
-                            (name, flat_event))
-                    assert flat_event[name] == value, ('name=%r, value=%r,'
-                            'event=%r' % (name, value, flat_event))
+                    assert name in flat_event, "name=%r, event=%r" % (name, flat_event)
+                    assert flat_event[name] == value, "name=%r, value=%r," "event=%r" % (name, value, flat_event)
 
                 for name, value in forgone_attrs:
-                    assert name not in flat_event, ('name=%r, value=%r,'
-                        ' event=%r' % (name, value, flat_event))
+                    assert name not in flat_event, "name=%r, value=%r," " event=%r" % (name, value, flat_event)
         except Exception as e:
             failed.append(e)
 
@@ -810,13 +786,11 @@ def validate_synthetics_event(required_attrs=[], forgone_attrs=[],
     return wrapper
 
 
-def validate_transaction_event_attributes(required_params={},
-        forgone_params={}, exact_attrs={}, index=-1):
+def validate_transaction_event_attributes(required_params={}, forgone_params={}, exact_attrs={}, index=-1):
 
     captured_events = []
 
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _capture_transaction_events(wrapped, instance, args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
@@ -828,8 +802,7 @@ def validate_transaction_event_attributes(required_params={},
             return result
 
     @function_wrapper
-    def _validate_transaction_event_attributes(wrapped, instance, args,
-            kwargs):
+    def _validate_transaction_event_attributes(wrapped, instance, args, kwargs):
         _new_wrapper = _capture_transaction_events(wrapped)
         result = _new_wrapper(*args, **kwargs)
 
@@ -837,8 +810,7 @@ def validate_transaction_event_attributes(required_params={},
         event_data = captured_events[index]
         captured_events[:] = []
 
-        check_event_attributes(event_data, required_params, forgone_params,
-                exact_attrs)
+        check_event_attributes(event_data, required_params, forgone_params, exact_attrs)
 
         return result
 
@@ -852,42 +824,38 @@ def check_event_attributes(event_data, required_params={}, forgone_params={}, ex
     in the data set.
     """
 
-    intrinsics, user_attributes, agent_attributes = next(iter(
-            event_data))
+    intrinsics, user_attributes, agent_attributes = next(iter(event_data))
 
     if required_params:
-        for param in required_params['agent']:
+        for param in required_params["agent"]:
             assert param in agent_attributes, (param, agent_attributes)
-        for param in required_params['user']:
+        for param in required_params["user"]:
             assert param in user_attributes, (param, user_attributes)
-        for param in required_params['intrinsic']:
+        for param in required_params["intrinsic"]:
             assert param in intrinsics, (param, intrinsics)
 
     if forgone_params:
-        for param in forgone_params['agent']:
+        for param in forgone_params["agent"]:
             assert param not in agent_attributes, (param, agent_attributes)
-        for param in forgone_params['user']:
+        for param in forgone_params["user"]:
             assert param not in user_attributes, (param, user_attributes)
-        for param in forgone_params['intrinsic']:
+        for param in forgone_params["intrinsic"]:
             assert param not in intrinsics, (param, intrinsics)
 
     if exact_attrs:
-        for param, value in exact_attrs['agent'].items():
-            assert agent_attributes[param] == value, (
-                    (param, value), agent_attributes)
-        for param, value in exact_attrs['user'].items():
-            assert user_attributes[param] == value, (
-                    (param, value), user_attributes)
-        for param, value in exact_attrs['intrinsic'].items():
-            assert intrinsics[param] == value, (
-                    (param, value), intrinsics)
+        for param, value in exact_attrs["agent"].items():
+            assert agent_attributes[param] == value, ((param, value), agent_attributes)
+        for param, value in exact_attrs["user"].items():
+            assert user_attributes[param] == value, ((param, value), user_attributes)
+        for param, value in exact_attrs["intrinsic"].items():
+            assert intrinsics[param] == value, ((param, value), intrinsics)
 
 
-def validate_non_transaction_error_event(required_intrinsics={}, num_errors=1,
-            required_user={}, forgone_user=[]):
+def validate_non_transaction_error_event(required_intrinsics={}, num_errors=1, required_user={}, forgone_user=[]):
     """Validate error event data for a single error occurring outside of a
     transaction.
     """
+
     @function_wrapper
     def _validate_non_transaction_error_event(wrapped, instace, args, kwargs):
 
@@ -910,24 +878,19 @@ def validate_non_transaction_error_event(required_intrinsics={}, num_errors=1,
                 # intrinsic attributes that can be included in an error event
                 # recorded outside of a transaction
 
-                assert intrinsics['type'] == 'TransactionError'
-                assert intrinsics['transactionName'] is None
-                assert intrinsics[
-                        'error.class'] == required_intrinsics['error.class']
-                assert intrinsics['error.message'].startswith(
-                        required_intrinsics['error.message'])
-                assert intrinsics[
-                        'error.expected'] == required_intrinsics['error.expected']
+                assert intrinsics["type"] == "TransactionError"
+                assert intrinsics["transactionName"] is None
+                assert intrinsics["error.class"] == required_intrinsics["error.class"]
+                assert intrinsics["error.message"].startswith(required_intrinsics["error.message"])
+                assert intrinsics["error.expected"] == required_intrinsics["error.expected"]
                 now = time.time()
-                assert isinstance(intrinsics['timestamp'], int)
-                assert intrinsics['timestamp'] <= 1000.0 * now
+                assert isinstance(intrinsics["timestamp"], int)
+                assert intrinsics["timestamp"] <= 1000.0 * now
 
                 user_params = event[1]
                 for name, value in required_user.items():
-                    assert name in user_params, ('name=%r, params=%r' % (name,
-                            user_params))
-                    assert user_params[name] == value, ('name=%r, value=%r, '
-                            'params=%r' % (name, value, user_params))
+                    assert name in user_params, "name=%r, params=%r" % (name, user_params)
+                    assert user_params[name] == value, "name=%r, value=%r, " "params=%r" % (name, value, user_params)
 
                 for param in forgone_user:
                     assert param not in user_params
@@ -939,11 +902,11 @@ def validate_non_transaction_error_event(required_intrinsics={}, num_errors=1,
 
 def validate_application_error_trace_count(num_errors):
     """Validate error event data for a single error occurring outside of a
-        transaction.
+    transaction.
     """
+
     @function_wrapper
-    def _validate_application_error_trace_count(wrapped, instace, args,
-            kwargs):
+    def _validate_application_error_trace_count(wrapped, instace, args, kwargs):
 
         try:
             result = wrapped(*args, **kwargs)
@@ -961,11 +924,11 @@ def validate_application_error_trace_count(num_errors):
 
 def validate_application_error_event_count(num_errors):
     """Validate error event data for a single error occurring outside of a
-        transaction.
+    transaction.
     """
+
     @function_wrapper
-    def _validate_application_error_event_count(wrapped, instace, args,
-            kwargs):
+    def _validate_application_error_event_count(wrapped, instace, args, kwargs):
 
         try:
             result = wrapped(*args, **kwargs)
@@ -981,12 +944,9 @@ def validate_application_error_event_count(num_errors):
     return _validate_application_error_event_count
 
 
-def validate_synthetics_transaction_trace(required_params={},
-        forgone_params={}, should_exist=True):
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
-    def _validate_synthetics_transaction_trace(wrapped, instance, args,
-            kwargs):
+def validate_synthetics_transaction_trace(required_params={}, forgone_params={}, should_exist=True):
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+    def _validate_synthetics_transaction_trace(wrapped, instance, args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
         except:
@@ -1002,49 +962,53 @@ def validate_synthetics_transaction_trace(required_params={},
             # Check that synthetics resource id is in TT header
 
             header = trace_data[0]
-            header_key = 'synthetics_resource_id'
+            header_key = "synthetics_resource_id"
 
             if should_exist:
                 assert header_key in required_params
-                assert header[9] == required_params[header_key], ('name=%r, '
-                            'header=%r' % (header_key, header))
+                assert header[9] == required_params[header_key], "name=%r, " "header=%r" % (header_key, header)
             else:
                 assert header[9] is None
 
             # Check that synthetics ids are in TT custom params
 
             pack_data = unpack_field(trace_data[0][4])
-            tt_intrinsics = pack_data[0][4]['intrinsics']
+            tt_intrinsics = pack_data[0][4]["intrinsics"]
 
             for name in required_params:
-                assert name in tt_intrinsics, ('name=%r, '
-                        'intrinsics=%r' % (name, tt_intrinsics))
-                assert tt_intrinsics[name] == required_params[name], (
-                        'name=%r, value=%r, intrinsics=%r' %
-                        (name, required_params[name], tt_intrinsics))
+                assert name in tt_intrinsics, "name=%r, " "intrinsics=%r" % (name, tt_intrinsics)
+                assert tt_intrinsics[name] == required_params[name], "name=%r, value=%r, intrinsics=%r" % (
+                    name,
+                    required_params[name],
+                    tt_intrinsics,
+                )
 
             for name in forgone_params:
-                assert name not in tt_intrinsics, ('name=%r, '
-                        'intrinsics=%r' % (name, tt_intrinsics))
+                assert name not in tt_intrinsics, "name=%r, " "intrinsics=%r" % (name, tt_intrinsics)
 
         return result
 
     return _validate_synthetics_transaction_trace
 
 
-def validate_tt_collector_json(required_params={},
-        forgone_params={}, should_exist=True, datastore_params={},
-        datastore_forgone_params={}, message_broker_params={},
-        message_broker_forgone_params=[], exclude_request_uri=False):
-    '''make assertions based off the cross-agent spec on transaction traces'''
+def validate_tt_collector_json(
+    required_params={},
+    forgone_params={},
+    should_exist=True,
+    datastore_params={},
+    datastore_forgone_params={},
+    message_broker_params={},
+    message_broker_forgone_params=[],
+    exclude_request_uri=False,
+):
+    """make assertions based off the cross-agent spec on transaction traces"""
 
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
 
         traces_recorded = []
 
-        @transient_function_wrapper('newrelic.core.stats_engine',
-                'StatsEngine.record_transaction')
+        @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
         def _validate_tt_collector_json(wrapped, instance, args, kwargs):
 
             result = wrapped(*args, **kwargs)
@@ -1063,13 +1027,13 @@ def validate_tt_collector_json(required_params={},
             assert isinstance(trace[1], float)  # duration (ms)
             assert trace[0] > 0  # absolute time (ms)
             assert isinstance(trace[2], six.string_types)  # transaction name
-            if trace[2].startswith('WebTransaction'):
+            if trace[2].startswith("WebTransaction"):
                 if exclude_request_uri:
                     assert trace[3] is None  # request url
                 else:
                     assert isinstance(trace[3], six.string_types)
                     # query parameters should not be captured
-                    assert '?' not in trace[3]
+                    assert "?" not in trace[3]
 
             # trace details -- python agent always uses condensed trace array
 
@@ -1090,7 +1054,7 @@ def validate_tt_collector_json(required_params={},
             root_node = trace_details[3]
             assert isinstance(root_node[0], float)  # entry timestamp
             assert isinstance(root_node[1], float)  # exit timestamp
-            assert root_node[2] == 'ROOT'
+            assert root_node[2] == "ROOT"
             assert isinstance(root_node[3], dict)
             assert len(root_node[3]) == 0  # spec shows empty (for root)
             children = root_node[4]
@@ -1122,12 +1086,11 @@ def validate_tt_collector_json(required_params={},
                 # We should always report exclusive_duration_millis on a
                 # segment. This allows us to override exclusive time
                 # calculations on APM.
-                assert 'exclusive_duration_millis' in params
-                assert type(params['exclusive_duration_millis']) is float
+                assert "exclusive_duration_millis" in params
+                assert type(params["exclusive_duration_millis"]) is float
 
-                segment_name = _lookup_string_table(node[2], string_table,
-                        default=node[2])
-                if segment_name.startswith('Datastore'):
+                segment_name = _lookup_string_table(node[2], string_table, default=node[2])
+                if segment_name.startswith("Datastore"):
                     for key in datastore_params:
                         assert key in params, key
                         assert params[key] == datastore_params[key]
@@ -1135,10 +1098,10 @@ def validate_tt_collector_json(required_params={},
                         assert key not in params, key
 
                     # if host is reported, it cannot be localhost
-                    if 'host' in params:
-                        assert params['host'] not in LOCALHOST_EQUIVALENTS
+                    if "host" in params:
+                        assert params["host"] not in LOCALHOST_EQUIVALENTS
 
-                elif segment_name.startswith('MessageBroker'):
+                elif segment_name.startswith("MessageBroker"):
                     for key in message_broker_params:
                         assert key in params, key
                         assert params[key] == message_broker_params[key]
@@ -1149,9 +1112,9 @@ def validate_tt_collector_json(required_params={},
 
             attributes = trace_details[4]
 
-            assert 'intrinsics' in attributes
-            assert 'userAttributes' in attributes
-            assert 'agentAttributes' in attributes
+            assert "intrinsics" in attributes
+            assert "userAttributes" in attributes
+            assert "agentAttributes" in attributes
 
             assert isinstance(trace[5], six.string_types)  # GUID
             assert trace[6] is None  # reserved for future use
@@ -1179,15 +1142,12 @@ def validate_tt_collector_json(required_params={},
     return _validate_wrapper
 
 
-def validate_transaction_trace_attributes(required_params={},
-        forgone_params={}, should_exist=True, url=None, index=-1):
+def validate_transaction_trace_attributes(required_params={}, forgone_params={}, should_exist=True, url=None, index=-1):
 
     trace_data = []
 
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
-    def _validate_transaction_trace_attributes(wrapped, instance, args,
-            kwargs):
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+    def _validate_transaction_trace_attributes(wrapped, instance, args, kwargs):
 
         result = wrapped(*args, **kwargs)
 
@@ -1217,9 +1177,9 @@ def validate_transaction_trace_attributes(required_params={},
         assert len(pack_data[0]) == 5
         parameters = pack_data[0][4]
 
-        assert 'intrinsics' in parameters
-        assert 'userAttributes' in parameters
-        assert 'agentAttributes' in parameters
+        assert "intrinsics" in parameters
+        assert "userAttributes" in parameters
+        assert "agentAttributes" in parameters
 
         check_attributes(parameters, required_params, forgone_params)
 
@@ -1228,13 +1188,12 @@ def validate_transaction_trace_attributes(required_params={},
     return wrapper
 
 
-def validate_transaction_error_trace_attributes(required_params={},
-        forgone_params={}, exact_attrs={}):
+def validate_transaction_error_trace_attributes(required_params={}, forgone_params={}, exact_attrs={}):
     """Check the error trace for attributes, expect only one error to be
     present in the transaction.
     """
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
+
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_transaction_error_trace(wrapped, instance, args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
@@ -1248,70 +1207,65 @@ def validate_transaction_error_trace_attributes(required_params={},
             assert len(error_data) == 1
             traced_error = error_data[0]
 
-            check_error_attributes(traced_error.parameters, required_params,
-                    forgone_params, exact_attrs, is_transaction=True)
+            check_error_attributes(
+                traced_error.parameters, required_params, forgone_params, exact_attrs, is_transaction=True
+            )
 
         return result
 
     return _validate_transaction_error_trace
 
 
-def check_error_attributes(parameters, required_params={}, forgone_params={},
-        exact_attrs={}, is_transaction=True):
+def check_error_attributes(parameters, required_params={}, forgone_params={}, exact_attrs={}, is_transaction=True):
 
-    parameter_fields = ['userAttributes']
+    parameter_fields = ["userAttributes"]
     if is_transaction:
-        parameter_fields.extend(['stack_trace', 'agentAttributes',
-                'intrinsics'])
+        parameter_fields.extend(["stack_trace", "agentAttributes", "intrinsics"])
 
     for field in parameter_fields:
         assert field in parameters
 
     # we can remove this after agent attributes transition is all over
-    assert 'parameter_groups' not in parameters
-    assert 'custom_params' not in parameters
-    assert 'request_params' not in parameters
-    assert 'request_uri' not in parameters
+    assert "parameter_groups" not in parameters
+    assert "custom_params" not in parameters
+    assert "request_params" not in parameters
+    assert "request_uri" not in parameters
 
     check_attributes(parameters, required_params, forgone_params, exact_attrs)
 
 
 def check_attributes(parameters, required_params={}, forgone_params={}, exact_attrs={}):
-    intrinsics = parameters.get('intrinsics', {})
-    user_attributes = parameters.get('userAttributes', {})
-    agent_attributes = parameters.get('agentAttributes', {})
+    intrinsics = parameters.get("intrinsics", {})
+    user_attributes = parameters.get("userAttributes", {})
+    agent_attributes = parameters.get("agentAttributes", {})
 
     if required_params:
-        for param in required_params['agent']:
+        for param in required_params["agent"]:
             assert param in agent_attributes, (param, agent_attributes)
-        for param in required_params['user']:
+        for param in required_params["user"]:
             assert param in user_attributes, (param, user_attributes)
-        for param in required_params['intrinsic']:
+        for param in required_params["intrinsic"]:
             assert param in intrinsics, (param, intrinsics)
 
     if forgone_params:
-        for param in forgone_params['agent']:
+        for param in forgone_params["agent"]:
             assert param not in agent_attributes, (param, agent_attributes)
-        for param in forgone_params['user']:
+        for param in forgone_params["user"]:
             assert param not in user_attributes, (param, user_attributes)
-        for param in forgone_params['intrinsic']:
+        for param in forgone_params["intrinsic"]:
             assert param not in intrinsics, (param, intrinsics)
 
     if exact_attrs:
-        for param, value in exact_attrs['agent'].items():
-            assert agent_attributes[param] == value, (
-                    (param, value), agent_attributes)
-        for param, value in exact_attrs['user'].items():
-            assert user_attributes[param] == value, (
-                    (param, value), user_attributes)
-        for param, value in exact_attrs['intrinsic'].items():
-            assert intrinsics[param] == value, (
-                    (param, value), intrinsics)
+        for param, value in exact_attrs["agent"].items():
+            assert agent_attributes[param] == value, ((param, value), agent_attributes)
+        for param, value in exact_attrs["user"].items():
+            assert user_attributes[param] == value, ((param, value), user_attributes)
+        for param, value in exact_attrs["intrinsic"].items():
+            assert intrinsics[param] == value, ((param, value), intrinsics)
 
 
 def validate_error_trace_collector_json():
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_error_trace_collector_json(wrapped, instance, args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
@@ -1337,13 +1291,12 @@ def validate_error_trace_collector_json():
             assert isinstance(err[3], six.string_types)  # exception name
             parameters = err[4]
 
-            parameter_fields = ['userAttributes', 'stack_trace',
-                    'agentAttributes', 'intrinsics']
+            parameter_fields = ["userAttributes", "stack_trace", "agentAttributes", "intrinsics"]
 
             for field in parameter_fields:
                 assert field in parameters
 
-            assert 'request_uri' not in parameters
+            assert "request_uri" not in parameters
 
         return result
 
@@ -1354,8 +1307,8 @@ def validate_error_event_collector_json(num_errors=1):
     """Validate the format, types and number of errors of the data we
     send to the collector for harvest.
     """
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
+
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_error_event_collector_json(wrapped, instance, args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
@@ -1381,8 +1334,8 @@ def validate_error_event_collector_json(num_errors=1):
             harvest_config = instance.settings.event_harvest_config
             reservoir_size = harvest_config.harvest_limits.error_event_data
 
-            assert sampling_info['reservoir_size'] == reservoir_size
-            assert sampling_info['events_seen'] == num_errors
+            assert sampling_info["reservoir_size"] == reservoir_size
+            assert sampling_info["events_seen"] == num_errors
 
             error_events = decoded_json[2]
 
@@ -1402,10 +1355,8 @@ def validate_error_event_collector_json(num_errors=1):
 
 
 def validate_transaction_event_collector_json():
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
-    def _validate_transaction_event_collector_json(wrapped, instance, args,
-            kwargs):
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+    def _validate_transaction_event_collector_json(wrapped, instance, args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
         except:
@@ -1444,8 +1395,7 @@ def validate_transaction_event_collector_json():
 def validate_custom_event_collector_json(num_events=1):
     """Validate the format, types and number of custom events."""
 
-    @transient_function_wrapper('newrelic.core.application',
-            'Application.record_transaction')
+    @transient_function_wrapper("newrelic.core.application", "Application.record_transaction")
     def _validate_custom_event_collector_json(wrapped, instance, args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
@@ -1473,11 +1423,10 @@ def validate_custom_event_collector_json(num_events=1):
             assert decoded_agent_run_id == agent_run_id
             assert decoded_sampling_info == sampling_info
 
-            max_setting = \
-                settings.event_harvest_config.harvest_limits.custom_event_data
-            assert decoded_sampling_info['reservoir_size'] == max_setting
+            max_setting = settings.event_harvest_config.harvest_limits.custom_event_data
+            assert decoded_sampling_info["reservoir_size"] == max_setting
 
-            assert decoded_sampling_info['events_seen'] == num_events
+            assert decoded_sampling_info["events_seen"] == num_events
             assert len(decoded_events) == num_events
 
             for (intrinsics, attributes) in decoded_events:
@@ -1490,8 +1439,7 @@ def validate_custom_event_collector_json(num_events=1):
 
 
 def validate_tt_parameters(required_params={}, forgone_params={}):
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_tt_parameters(wrapped, instance, args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
@@ -1505,30 +1453,28 @@ def validate_tt_parameters(required_params={}, forgone_params={}):
             connections = SQLConnections()
             trace_data = instance.transaction_trace_data(connections)
             pack_data = unpack_field(trace_data[0][4])
-            tt_intrinsics = pack_data[0][4]['intrinsics']
+            tt_intrinsics = pack_data[0][4]["intrinsics"]
 
             for name in required_params:
-                assert name in tt_intrinsics, ('name=%r, '
-                        'intrinsics=%r' % (name, tt_intrinsics))
-                assert tt_intrinsics[name] == required_params[name], (
-                        'name=%r, value=%r, intrinsics=%r' %
-                        (name, required_params[name], tt_intrinsics))
+                assert name in tt_intrinsics, "name=%r, " "intrinsics=%r" % (name, tt_intrinsics)
+                assert tt_intrinsics[name] == required_params[name], "name=%r, value=%r, intrinsics=%r" % (
+                    name,
+                    required_params[name],
+                    tt_intrinsics,
+                )
 
             for name in forgone_params:
-                assert name not in tt_intrinsics, ('name=%r, '
-                        'intrinsics=%r' % (name, tt_intrinsics))
+                assert name not in tt_intrinsics, "name=%r, " "intrinsics=%r" % (name, tt_intrinsics)
 
         return result
 
     return _validate_tt_parameters
 
 
-def validate_tt_segment_params(forgone_params=(), present_params=(),
-        exact_params={}):
+def validate_tt_segment_params(forgone_params=(), present_params=(), exact_params={}):
     recorded_traces = []
 
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _extract_trace(wrapped, instance, args, kwargs):
         result = wrapped(*args, **kwargs)
 
@@ -1564,7 +1510,7 @@ def validate_tt_segment_params(forgone_params=(), present_params=(),
 
             # Translate from the string cache
             for key, value in segment_params.items():
-                if hasattr(value, 'startswith') and value.startswith('`'):
+                if hasattr(value, "startswith") and value.startswith("`"):
                     try:
                         index = int(value[1:])
                         value = pack_data[1][index]
@@ -1586,7 +1532,7 @@ def validate_tt_segment_params(forgone_params=(), present_params=(),
         assert recorded_params_set.issuperset(present_params_set)
 
         # Verify that all forgone params are omitted
-        recorded_forgone_params = (recorded_params_set & set(forgone_params))
+        recorded_forgone_params = recorded_params_set & set(forgone_params)
         assert not recorded_forgone_params
 
         # Verify that all exact params are correct
@@ -1599,8 +1545,7 @@ def validate_tt_segment_params(forgone_params=(), present_params=(),
 
 
 def validate_browser_attributes(required_params={}, forgone_params={}):
-    @transient_function_wrapper('newrelic.api.web_transaction',
-            'WSGIWebTransaction.browser_timing_footer')
+    @transient_function_wrapper("newrelic.api.web_transaction", "WSGIWebTransaction.browser_timing_footer")
     def _validate_browser_attributes(wrapped, instance, args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
@@ -1609,18 +1554,17 @@ def validate_browser_attributes(required_params={}, forgone_params={}):
 
         # pick out attributes from footer string_types
 
-        footer_data = result.split('NREUM.info=')[1]
-        footer_data = footer_data.split('</script>')[0]
+        footer_data = result.split("NREUM.info=")[1]
+        footer_data = footer_data.split("</script>")[0]
         footer_data = json.loads(footer_data)
 
-        if 'intrinsic' in required_params:
-            for attr in required_params['intrinsic']:
+        if "intrinsic" in required_params:
+            for attr in required_params["intrinsic"]:
                 assert attr in footer_data
 
-        if 'atts' in footer_data:
+        if "atts" in footer_data:
             obfuscation_key = instance._settings.license_key[:13]
-            attributes = json_decode(deobfuscate(footer_data['atts'],
-                    obfuscation_key))
+            attributes = json_decode(deobfuscate(footer_data["atts"], obfuscation_key))
         else:
 
             # if there are no user or agent attributes, there will be no dict
@@ -1628,33 +1572,32 @@ def validate_browser_attributes(required_params={}, forgone_params={}):
 
             attributes = None
 
-        if 'user' in required_params:
-            for attr in required_params['user']:
-                assert attr in attributes['u']
+        if "user" in required_params:
+            for attr in required_params["user"]:
+                assert attr in attributes["u"]
 
-        if 'agent' in required_params:
-            for attr in required_params['agent']:
-                assert attr in attributes['a']
+        if "agent" in required_params:
+            for attr in required_params["agent"]:
+                assert attr in attributes["a"]
 
-        if 'user' in forgone_params:
+        if "user" in forgone_params:
             if attributes:
-                if 'u' in attributes:
-                    for attr in forgone_params['user']:
-                        assert attr not in attributes['u']
+                if "u" in attributes:
+                    for attr in forgone_params["user"]:
+                        assert attr not in attributes["u"]
 
-        if 'agent' in forgone_params:
+        if "agent" in forgone_params:
             if attributes:
-                if 'a' in attributes:
-                    for attr in forgone_params['agent']:
-                        assert attr not in attributes['a']
+                if "a" in attributes:
+                    for attr in forgone_params["agent"]:
+                        assert attr not in attributes["a"]
 
         return result
 
     return _validate_browser_attributes
 
 
-def validate_error_event_attributes(required_params={}, forgone_params={},
-        exact_attrs={}):
+def validate_error_event_attributes(required_params={}, forgone_params={}, exact_attrs={}):
     """Check the error event for attributes, expect only one error to be
     present in the transaction.
     """
@@ -1662,9 +1605,7 @@ def validate_error_event_attributes(required_params={}, forgone_params={},
 
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
-
-        @transient_function_wrapper('newrelic.core.stats_engine',
-                'StatsEngine.record_transaction')
+        @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
         def _validate_error_event_attributes(wrapped, instance, args, kwargs):
             try:
                 result = wrapped(*args, **kwargs)
@@ -1676,8 +1617,7 @@ def validate_error_event_attributes(required_params={}, forgone_params={},
                 for sample in event_data:
                     error_data_samples.append(sample)
 
-                check_event_attributes(event_data, required_params,
-                        forgone_params, exact_attrs)
+                check_event_attributes(event_data, required_params, forgone_params, exact_attrs)
 
             return result
 
@@ -1689,12 +1629,11 @@ def validate_error_event_attributes(required_params={}, forgone_params={},
     return _validate_wrapper
 
 
-def validate_error_trace_attributes_outside_transaction(err_name,
-        required_params={}, forgone_params={}, exact_attrs={}):
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.notice_error')
-    def _validate_error_trace_attributes_outside_transaction(wrapped, instance,
-            args, kwargs):
+def validate_error_trace_attributes_outside_transaction(
+    err_name, required_params={}, forgone_params={}, exact_attrs={}
+):
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.notice_error")
+    def _validate_error_trace_attributes_outside_transaction(wrapped, instance, args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
         except:
@@ -1702,20 +1641,20 @@ def validate_error_trace_attributes_outside_transaction(err_name,
         else:
             target_error = core_application_stats_engine_error(err_name)
 
-            check_error_attributes(target_error.parameters, required_params,
-                    forgone_params, exact_attrs, is_transaction=False)
+            check_error_attributes(
+                target_error.parameters, required_params, forgone_params, exact_attrs, is_transaction=False
+            )
 
         return result
 
     return _validate_error_trace_attributes_outside_transaction
 
 
-def validate_error_event_attributes_outside_transaction(required_params={},
-        forgone_params={}, exact_attrs=None, num_errors=None):
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.notice_error')
-    def _validate_error_event_attributes_outside_transaction(wrapped, instance,
-            args, kwargs):
+def validate_error_event_attributes_outside_transaction(
+    required_params={}, forgone_params={}, exact_attrs=None, num_errors=None
+):
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.notice_error")
+    def _validate_error_event_attributes_outside_transaction(wrapped, instance, args, kwargs):
 
         try:
             result = wrapped(*args, **kwargs)
@@ -1725,9 +1664,11 @@ def validate_error_event_attributes_outside_transaction(required_params={},
             event_data = [event for event in instance.error_events]
 
             if num_errors is not None:
-                exc_message = "Expected: %d, Got: %d. Verify StatsEngine is being reset before using this validator." % (num_errors, len(event_data))
+                exc_message = (
+                    "Expected: %d, Got: %d. Verify StatsEngine is being reset before using this validator."
+                    % (num_errors, len(event_data))
+                )
                 assert num_errors == len(event_data), exc_message
-
 
             for event in event_data:
                 check_event_attributes([event], required_params, forgone_params, exact_attrs=exact_attrs)
@@ -1738,8 +1679,7 @@ def validate_error_event_attributes_outside_transaction(required_params={},
 
 
 def validate_request_params_omitted():
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_request_params(wrapped, instance, args, kwargs):
         def _bind_params(transaction, *args, **kwargs):
             return transaction
@@ -1747,34 +1687,32 @@ def validate_request_params_omitted():
         transaction = _bind_params(*args, **kwargs)
 
         for attr in transaction.agent_attributes:
-            assert not attr.name.startswith('request.parameters')
+            assert not attr.name.startswith("request.parameters")
 
         return wrapped(*args, **kwargs)
 
     return _validate_request_params
 
 
-def validate_attributes(attr_type, required_attr_names=[],
-        forgone_attr_names=[]):
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
+def validate_attributes(attr_type, required_attr_names=[], forgone_attr_names=[]):
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_attributes(wrapped, instance, args, kwargs):
         def _bind_params(transaction, *args, **kwargs):
             return transaction
 
         transaction = _bind_params(*args, **kwargs)
 
-        if attr_type == 'intrinsic':
+        if attr_type == "intrinsic":
             attributes = transaction.trace_intrinsics
             attribute_names = attributes.keys()
-        elif attr_type == 'agent':
+        elif attr_type == "agent":
             attributes = transaction.agent_attributes
             attribute_names = [a.name for a in attributes]
             # validate that all agent attributes are included on the RootNode
             root_attribute_names = transaction.root.agent_attributes.keys()
             for name in attribute_names:
                 assert name in root_attribute_names, name
-        elif attr_type == 'user':
+        elif attr_type == "user":
             attributes = transaction.user_attributes
             attribute_names = [a.name for a in attributes]
 
@@ -1783,20 +1721,17 @@ def validate_attributes(attr_type, required_attr_names=[],
             for name in attribute_names:
                 assert name in root_attribute_names, name
         for name in required_attr_names:
-            assert name in attribute_names, ('name=%r,'
-                    'attributes=%r' % (name, attributes))
+            assert name in attribute_names, "name=%r," "attributes=%r" % (name, attributes)
 
         for name in forgone_attr_names:
-            assert name not in attribute_names, ('name=%r,'
-                    ' attributes=%r' % (name, attributes))
+            assert name not in attribute_names, "name=%r," " attributes=%r" % (name, attributes)
 
         return wrapped(*args, **kwargs)
 
     return _validate_attributes
 
 
-def validate_attributes_complete(attr_type, required_attrs=[],
-        forgone_attrs=[]):
+def validate_attributes_complete(attr_type, required_attrs=[], forgone_attrs=[]):
 
     # This differs from `validate_attributes` in that all fields of
     # Attribute must match (name, value, and destinations), not just
@@ -1817,8 +1752,7 @@ def validate_attributes_complete(attr_type, required_attrs=[],
     #
     # The 'intrinsics' come from `transaction.trace_intrinsics`.
 
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_attributes_complete(wrapped, instance, args, kwargs):
         def _bind_params(transaction, *args, **kwargs):
             return transaction
@@ -1826,39 +1760,33 @@ def validate_attributes_complete(attr_type, required_attrs=[],
         transaction = _bind_params(*args, **kwargs)
         attribute_filter = transaction.settings.attribute_filter
 
-        if attr_type == 'intrinsic':
+        if attr_type == "intrinsic":
 
             # Intrinsics are stored as a dict, so for consistency's sake
             # in this test, we convert them to Attributes.
 
             items = transaction.trace_intrinsics
-            attributes = create_attributes(items,
-                    DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER,
-                    attribute_filter)
+            attributes = create_attributes(items, DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER, attribute_filter)
 
-        elif attr_type == 'agent':
+        elif attr_type == "agent":
             attributes = transaction.agent_attributes
 
-        elif attr_type == 'user':
+        elif attr_type == "user":
             attributes = transaction.user_attributes
 
         def _find_match(a, attributes):
             # Match by name and value. Ignore destination.
-            return next((match for match in attributes if
-                    match.name == a.name and
-                    match.value == a.value), None)
+            return next((match for match in attributes if match.name == a.name and match.value == a.value), None)
 
         # Check that there is a name/value match, and that the destinations
         # for the matched attribute include the ones in required.
 
         for required in required_attrs:
             match = _find_match(required, attributes)
-            assert match, ('required=%r, attributes=%r' % (required,
-                    attributes))
+            assert match, "required=%r, attributes=%r" % (required, attributes)
 
             result_dest = required.destinations & match.destinations
-            assert result_dest == required.destinations, ('required=%r, '
-                    'attributes=%r' % (required, attributes))
+            assert result_dest == required.destinations, "required=%r, " "attributes=%r" % (required, attributes)
 
         # Check that the name and value are NOT going to ANY of the
         # destinations provided as forgone, either because there is no
@@ -1870,8 +1798,7 @@ def validate_attributes_complete(attr_type, required_attrs=[],
 
             if match:
                 result_dest = forgone.destinations & match.destinations
-                assert result_dest == 0, ('forgone=%r, attributes=%r' %
-                        (forgone, attributes))
+                assert result_dest == 0, "forgone=%r, attributes=%r" % (forgone, attributes)
 
         return wrapped(*args, **kwargs)
 
@@ -1879,8 +1806,7 @@ def validate_attributes_complete(attr_type, required_attrs=[],
 
 
 def validate_agent_attribute_types(required_attrs):
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_agent_attribute_types(wrapped, instance, args, kwargs):
         def _bind_params(transaction, *args, **kwargs):
             return transaction
@@ -1900,16 +1826,14 @@ def validate_agent_attribute_types(required_attrs):
     return _validate_agent_attribute_types
 
 
-def validate_transaction_event_sample_data(required_attrs,
-        required_user_attrs=True):
+def validate_transaction_event_sample_data(required_attrs, required_user_attrs=True):
     """This test depends on values in the test application from
     agent_features/test_analytics.py, and is only meant to be run as a
     validation with those tests.
     """
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'SampledDataSet.add')
-    def _validate_transaction_event_sample_data(wrapped, instance, args,
-            kwargs):
+
+    @transient_function_wrapper("newrelic.core.stats_engine", "SampledDataSet.add")
+    def _validate_transaction_event_sample_data(wrapped, instance, args, kwargs):
         def _bind_params(sample, *args, **kwargs):
             return sample
 
@@ -1920,21 +1844,22 @@ def validate_transaction_event_sample_data(required_attrs,
 
         intrinsics, user_attributes, agent_attributes = sample
 
-        assert intrinsics['type'] == 'Transaction'
-        assert intrinsics['name'] == required_attrs['name']
+        assert intrinsics["type"] == "Transaction"
+        assert intrinsics["name"] == required_attrs["name"]
 
         # check that error event intrinsics haven't bled in
 
-        assert 'error.class' not in intrinsics
-        assert 'error.message' not in intrinsics
-        assert 'error.expected' not in intrinsics
-        assert 'transactionName' not in intrinsics
+        assert "error.class" not in intrinsics
+        assert "error.message" not in intrinsics
+        assert "error.expected" not in intrinsics
+        assert "transactionName" not in intrinsics
 
-        _validate_event_attributes(intrinsics,
-                                   user_attributes,
-                                   required_attrs,
-                                   required_user_attrs,
-                                   )
+        _validate_event_attributes(
+            intrinsics,
+            user_attributes,
+            required_attrs,
+            required_user_attrs,
+        )
 
         return wrapped(*args, **kwargs)
 
@@ -1945,8 +1870,8 @@ def validate_transaction_error_event_count(num_errors=1):
     """Validate that the correct number of error events are saved to StatsEngine
     after a transaction
     """
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
+
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_error_event_on_stats_engine(wrapped, instance, args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
@@ -1963,10 +1888,8 @@ def validate_transaction_error_event_count(num_errors=1):
 
 
 def validate_transaction_error_trace_count(num_errors):
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
-    def _validate_transaction_error_trace_count(wrapped, instance, args,
-            kwargs):
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+    def _validate_transaction_error_trace_count(wrapped, instance, args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
         except:
@@ -1989,8 +1912,8 @@ def validate_stats_engine_explain_plan_output_is_none():
     newrelic.core.stats_engine.explain_plan.
 
     """
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'explain_plan')
+
+    @transient_function_wrapper("newrelic.core.stats_engine", "explain_plan")
     def _validate_explain_plan_output_is_none(wrapped, instance, args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
@@ -2004,14 +1927,13 @@ def validate_stats_engine_explain_plan_output_is_none():
     return _validate_explain_plan_output_is_none
 
 
-def validate_error_event_sample_data(required_attrs={},
-        required_user_attrs=True, num_errors=1):
+def validate_error_event_sample_data(required_attrs={}, required_user_attrs=True, num_errors=1):
     """Validate the data collected for error_events. This test depends on values
     in the test application from agent_features/test_analytics.py, and is only
     meant to be run as a validation with those tests.
     """
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
+
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_error_event_sample_data(wrapped, instance, args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
@@ -2035,26 +1957,19 @@ def validate_error_event_sample_data(required_attrs={},
 
                 # These intrinsics should always be present
 
-                assert intrinsics['type'] == 'TransactionError'
-                assert (intrinsics['transactionName'] ==
-                        required_attrs['transactionName'])
-                assert intrinsics[
-                        'error.class'] == required_attrs['error.class']
-                assert intrinsics['error.message'].startswith(
-                        required_attrs['error.message'])
-                assert intrinsics[
-                        'error.expected'] == required_attrs['error.expected']
-                assert intrinsics['nr.transactionGuid'] is not None
-                assert intrinsics['spanId'] is not None
+                assert intrinsics["type"] == "TransactionError"
+                assert intrinsics["transactionName"] == required_attrs["transactionName"]
+                assert intrinsics["error.class"] == required_attrs["error.class"]
+                assert intrinsics["error.message"].startswith(required_attrs["error.message"])
+                assert intrinsics["error.expected"] == required_attrs["error.expected"]
+                assert intrinsics["nr.transactionGuid"] is not None
+                assert intrinsics["spanId"] is not None
 
                 # check that transaction event intrinsics haven't bled in
 
-                assert 'name' not in intrinsics
+                assert "name" not in intrinsics
 
-                _validate_event_attributes(intrinsics,
-                                           user_attributes,
-                                           required_attrs,
-                                           required_user_attrs)
+                _validate_event_attributes(intrinsics, user_attributes, required_attrs, required_user_attrs)
                 if required_user_attrs:
                     error_user_params = error_user_params_added()
                     for param, value in error_user_params.items():
@@ -2065,15 +1980,14 @@ def validate_error_event_sample_data(required_attrs={},
     return _validate_error_event_sample_data
 
 
-def _validate_event_attributes(intrinsics, user_attributes,
-            required_intrinsics, required_user):
+def _validate_event_attributes(intrinsics, user_attributes, required_intrinsics, required_user):
 
     now = time.time()
-    assert isinstance(intrinsics['timestamp'], int)
-    assert intrinsics['timestamp'] <= 1000.0 * now
-    assert intrinsics['duration'] >= 0.0
+    assert isinstance(intrinsics["timestamp"], int)
+    assert intrinsics["timestamp"] <= 1000.0 * now
+    assert intrinsics["duration"] >= 0.0
 
-    assert 'memcacheDuration' not in intrinsics
+    assert "memcacheDuration" not in intrinsics
 
     if required_user:
         required_user_attributes = user_attributes_added()
@@ -2082,52 +1996,50 @@ def _validate_event_attributes(intrinsics, user_attributes,
     else:
         assert user_attributes == {}
 
-    if 'databaseCallCount' in required_intrinsics:
-        assert intrinsics['databaseDuration'] > 0
-        call_count = required_intrinsics['databaseCallCount']
-        assert intrinsics['databaseCallCount'] == call_count
+    if "databaseCallCount" in required_intrinsics:
+        assert intrinsics["databaseDuration"] > 0
+        call_count = required_intrinsics["databaseCallCount"]
+        assert intrinsics["databaseCallCount"] == call_count
     else:
-        assert 'databaseDuration' not in intrinsics
-        assert 'databaseCallCount' not in intrinsics
+        assert "databaseDuration" not in intrinsics
+        assert "databaseCallCount" not in intrinsics
 
-    if 'externalCallCount' in required_intrinsics:
-        assert intrinsics['externalDuration'] > 0
-        call_count = required_intrinsics['externalCallCount']
-        assert intrinsics['externalCallCount'] == call_count
+    if "externalCallCount" in required_intrinsics:
+        assert intrinsics["externalDuration"] > 0
+        call_count = required_intrinsics["externalCallCount"]
+        assert intrinsics["externalCallCount"] == call_count
     else:
-        assert 'externalDuration' not in intrinsics
-        assert 'externalCallCount' not in intrinsics
+        assert "externalDuration" not in intrinsics
+        assert "externalCallCount" not in intrinsics
 
-    if intrinsics.get('queueDuration', False):
-        assert intrinsics['queueDuration'] > 0
+    if intrinsics.get("queueDuration", False):
+        assert intrinsics["queueDuration"] > 0
     else:
-        assert 'queueDuration' not in intrinsics
+        assert "queueDuration" not in intrinsics
 
-    if 'nr.referringTransactionGuid' in required_intrinsics:
-        guid = required_intrinsics['nr.referringTransactionGuid']
-        assert intrinsics['nr.referringTransactionGuid'] == guid
+    if "nr.referringTransactionGuid" in required_intrinsics:
+        guid = required_intrinsics["nr.referringTransactionGuid"]
+        assert intrinsics["nr.referringTransactionGuid"] == guid
     else:
-        assert 'nr.referringTransactionGuid' not in intrinsics
+        assert "nr.referringTransactionGuid" not in intrinsics
 
-    if 'nr.syntheticsResourceId' in required_intrinsics:
-        res_id = required_intrinsics['nr.syntheticsResourceId']
-        job_id = required_intrinsics['nr.syntheticsJobId']
-        monitor_id = required_intrinsics['nr.syntheticsMonitorId']
-        assert intrinsics['nr.syntheticsResourceId'] == res_id
-        assert intrinsics['nr.syntheticsJobId'] == job_id
-        assert intrinsics['nr.syntheticsMonitorId'] == monitor_id
+    if "nr.syntheticsResourceId" in required_intrinsics:
+        res_id = required_intrinsics["nr.syntheticsResourceId"]
+        job_id = required_intrinsics["nr.syntheticsJobId"]
+        monitor_id = required_intrinsics["nr.syntheticsMonitorId"]
+        assert intrinsics["nr.syntheticsResourceId"] == res_id
+        assert intrinsics["nr.syntheticsJobId"] == job_id
+        assert intrinsics["nr.syntheticsMonitorId"] == monitor_id
 
-    if 'port' in required_intrinsics:
-        assert intrinsics['port'] == required_intrinsics['port']
+    if "port" in required_intrinsics:
+        assert intrinsics["port"] == required_intrinsics["port"]
 
 
 def validate_transaction_exception_message(expected_message):
     """Test exception message encoding/decoding for a single error"""
 
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
-    def _validate_transaction_exception_message(wrapped, instance, args,
-            kwargs):
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+    def _validate_transaction_exception_message(wrapped, instance, args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
         except:
@@ -2161,10 +2073,8 @@ def validate_transaction_exception_message(expected_message):
 def validate_application_exception_message(expected_message):
     """Test exception message encoding/decoding for a single error"""
 
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.notice_error')
-    def _validate_application_exception_message(wrapped, instance, args,
-            kwargs):
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.notice_error")
+    def _validate_application_exception_message(wrapped, instance, args, kwargs):
 
         try:
             result = wrapped(*args, **kwargs)
@@ -2201,20 +2111,19 @@ def _validate_custom_event(recorded_event, required_event):
 
     intrinsics = recorded_event[0]
 
-    assert intrinsics['type'] == required_event[0]['type']
+    assert intrinsics["type"] == required_event[0]["type"]
 
     now = time.time()
-    assert isinstance(intrinsics['timestamp'], int)
-    assert intrinsics['timestamp'] <= 1000.0 * now
-    assert intrinsics['timestamp'] >= 1000.0 * required_event[0]['timestamp']
+    assert isinstance(intrinsics["timestamp"], int)
+    assert intrinsics["timestamp"] <= 1000.0 * now
+    assert intrinsics["timestamp"] >= 1000.0 * required_event[0]["timestamp"]
 
     assert recorded_event[1].items() == required_event[1].items()
 
 
 def validate_custom_event_in_application_stats_engine(required_event):
     @function_wrapper
-    def _validate_custom_event_in_application_stats_engine(wrapped, instance,
-            args, kwargs):
+    def _validate_custom_event_in_application_stats_engine(wrapped, instance, args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
         except:
@@ -2243,18 +2152,21 @@ def validate_custom_event_count(count):
             assert stats.custom_events.num_samples == count
 
         return result
+
     return _validate_custom_event_count
 
 
 def _validate_node_parenting(node, expected_node):
-    assert node.exclusive >= 0, 'node.exclusive = %s' % node.exclusive
+    assert node.exclusive >= 0, "node.exclusive = %s" % node.exclusive
 
     expected_children = expected_node[1]
 
     def len_error():
-        return ('len(node.children)=%s, len(expected_children)=%s, '
-                'node.children=%s') % (
-                len(node.children), len(expected_children), node.children)
+        return ("len(node.children)=%s, len(expected_children)=%s, " "node.children=%s") % (
+            len(node.children),
+            len(expected_children),
+            node.children,
+        )
 
     assert len(node.children) == len(expected_children), len_error()
 
@@ -2281,16 +2193,18 @@ def validate_tt_parenting(expected_parenting):
             ]),
         ])
     """
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
+
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_tt_parenting(wrapped, instance, args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
         except:
             raise
         finally:
+
             def _bind_params(transaction, *args, **kwargs):
                 return transaction
+
             transaction = _bind_params(*args, **kwargs)
             _validate_node_parenting(transaction.root, expected_parenting)
 
@@ -2308,8 +2222,7 @@ def override_application_name(app_name):
         def name(self):
             return app_name
 
-    @transient_function_wrapper('newrelic.api.transaction',
-            'Transaction.__init__')
+    @transient_function_wrapper("newrelic.api.transaction", "Transaction.__init__")
     def _override_application_name(wrapped, instance, args, kwargs):
         def _bind_params(application, *args, **kwargs):
             return application, args, kwargs
@@ -2325,13 +2238,12 @@ def override_application_name(app_name):
 
 @function_wrapper
 def dt_enabled(wrapped, instance, args, kwargs):
-    @transient_function_wrapper('newrelic.core.adaptive_sampler',
-            'AdaptiveSampler.compute_sampled')
+    @transient_function_wrapper("newrelic.core.adaptive_sampler", "AdaptiveSampler.compute_sampled")
     def force_sampled(wrapped, instance, args, kwargs):
         wrapped(*args, **kwargs)
         return True
 
-    settings = {'distributed_tracing.enabled': True}
+    settings = {"distributed_tracing.enabled": True}
     wrapped = override_application_settings(settings)(wrapped)
     wrapped = force_sampled(wrapped)
 
@@ -2413,19 +2325,19 @@ def override_ignore_status_codes(status_codes):
     return _override_ignore_status_codes
 
 
-def code_coverage_fixture(source=['newrelic']):
-    @pytest.fixture(scope='session')
+def code_coverage_fixture(source=["newrelic"]):
+    @pytest.fixture(scope="session")
     def _code_coverage_fixture(request):
         if not source:
             return
 
-        if os.environ.get('GITHUB_ACTIONS') is not None:
+        if os.environ.get("GITHUB_ACTIONS") is not None:
             return
 
         from coverage import coverage
 
-        coverage_directory = os.environ.get('TOX_ENVDIR', 'htmlcov')
-        coverage_suffix = os.environ.get('TOX_ENV_NAME', None)
+        coverage_directory = os.environ.get("TOX_ENVDIR", "htmlcov")
+        coverage_suffix = os.environ.get("TOX_ENV_NAME", None)
 
         def finalize():
             cov.stop()
@@ -2440,7 +2352,6 @@ def code_coverage_fixture(source=['newrelic']):
 
 
 def reset_core_stats_engine():
-
     @function_wrapper
     def _reset_core_stats_engine(wrapped, instance, args, kwargs):
         stats = core_application_stats_engine()
@@ -2571,13 +2482,11 @@ def function_not_called(module, name):
     return wrapper
 
 
-def validate_analytics_catmap_data(name, expected_attributes=(),
-        non_expected_attributes=()):
+def validate_analytics_catmap_data(name, expected_attributes=(), non_expected_attributes=()):
 
     samples = []
 
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'SampledDataSet.add')
+    @transient_function_wrapper("newrelic.core.stats_engine", "SampledDataSet.add")
     def _capture_samples(wrapped, instance, args, kwargs):
         def _bind_params(sample, *args, **kwargs):
             return sample
@@ -2592,7 +2501,7 @@ def validate_analytics_catmap_data(name, expected_attributes=(),
 
         result = _new_wrapped(*args, **kwargs)
 
-        _samples = [s for s in samples if s[0]['type'] == 'Transaction']
+        _samples = [s for s in samples if s[0]["type"] == "Transaction"]
         assert _samples, "No Transaction events captured."
         for sample in _samples:
             assert isinstance(sample, list)
@@ -2600,10 +2509,10 @@ def validate_analytics_catmap_data(name, expected_attributes=(),
 
             intrinsics, user_attributes, agent_attributes = sample
 
-            assert intrinsics['type'] == 'Transaction'
-            assert intrinsics['name'] == name
-            assert intrinsics['timestamp'] >= 0.0
-            assert intrinsics['duration'] >= 0.0
+            assert intrinsics["type"] == "Transaction"
+            assert intrinsics["name"] == name
+            assert intrinsics["timestamp"] >= 0.0
+            assert intrinsics["duration"] >= 0.0
 
             for key, value in expected_attributes.items():
                 assert intrinsics[key] == value
@@ -2617,8 +2526,7 @@ def validate_analytics_catmap_data(name, expected_attributes=(),
 
 
 def count_transactions(count_list):
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _increment_count(wrapped, instance, args, kwargs):
         count_list.append(True)
         return wrapped(*args, **kwargs)
@@ -2630,8 +2538,7 @@ def failing_endpoint(endpoint, raises=RetryDataForRequest, call_number=1):
 
     called_list = []
 
-    @transient_function_wrapper('newrelic.core.agent_protocol',
-            'AgentProtocol.send')
+    @transient_function_wrapper("newrelic.core.agent_protocol", "AgentProtocol.send")
     def send_request_wrapper(wrapped, instance, args, kwargs):
         def _bind_params(method, *args, **kwargs):
             return method
@@ -2650,6 +2557,7 @@ def failing_endpoint(endpoint, raises=RetryDataForRequest, call_number=1):
 
 class Environ(object):
     """Context manager for setting environment variables temporarily."""
+
     def __init__(self, **kwargs):
         self._original_environ = os.environ
         self._environ_dict = kwargs
@@ -2664,8 +2572,8 @@ class Environ(object):
 
 
 class TerminatingPopen(subprocess.Popen):
-    """Context manager will terminate process when exiting, instead of waiting.
-    """
+    """Context manager will terminate process when exiting, instead of waiting."""
+
     def __enter__(self):
         return self
 
@@ -2678,6 +2586,7 @@ class TerminatingPopen(subprocess.Popen):
             self.stdin.close()
 
         self.terminate()
+
 
 @pytest.fixture()
 def newrelic_caplog(caplog):

@@ -14,15 +14,15 @@
 
 import json
 import logging
-import pytest
 
-from newrelic.api.log import NewRelicContextFormatter
+import pytest
+from testing_support.fixtures import newrelic_caplog as caplog
+
+import newrelic.packages.six as six
+from newrelic.agent import get_linking_metadata
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.agent import get_linking_metadata
-import newrelic.packages.six as six
-
-from testing_support.fixtures import newrelic_caplog as caplog
+from newrelic.api.log import NewRelicContextFormatter
 
 if six.PY2:
     from io import BytesIO as Buffer

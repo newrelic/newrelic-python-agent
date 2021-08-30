@@ -13,7 +13,10 @@
 # limitations under the License.
 
 import collections
+import logging
 import threading
+
+_logger = logging.getLogger(__name__)
 
 try:
     from newrelic.core.infinite_tracing_pb2 import AttributeValue
@@ -22,9 +25,9 @@ except:
 
 
 class StreamBuffer(object):
-
     def __init__(self, maxlen):
         self._queue = collections.deque(maxlen=maxlen)
+        self._pending = collections.deque(maxlen=maxlen)
         self._notify = self.condition()
         self._shutdown = False
         self._seen = 0
@@ -33,6 +36,21 @@ class StreamBuffer(object):
     @staticmethod
     def condition(*args, **kwargs):
         return threading.Condition(*args, **kwargs)
+
+    def restart(self):
+        with self._notify:
+            _logger.info(
+                "Restarting stream buffer with %d pending spans. Will retransmit these spans!", len(self._pending)
+            )
+            self._pending.reverse()
+            self._queue.extendleft(self._pending)
+            self._pending.clear()
+
+    def commit(self, n):
+        with self._notify:
+            while self._pending and n > 0:
+                self._pending.popleft()
+                n -= 1
 
     def shutdown(self):
         with self._notify:
@@ -70,7 +88,9 @@ class StreamBuffer(object):
                 raise StopIteration
 
             try:
-                return self._queue.popleft()
+                to_send = self._queue.popleft()
+                self._pending.append(to_send)
+                return to_send
             except IndexError:
                 pass
 
@@ -90,10 +110,8 @@ class SpanProtoAttrs(dict):
         if args:
             arg = args[0]
             if len(args) > 1:
-                raise TypeError(
-                        "SpanProtoAttrs expected at most 1 argument, got %d",
-                        len(args))
-            elif hasattr(arg, 'keys'):
+                raise TypeError("SpanProtoAttrs expected at most 1 argument, got %d", len(args))
+            elif hasattr(arg, "keys"):
                 for k in arg:
                     self[k] = arg[k]
             else:
@@ -104,8 +122,7 @@ class SpanProtoAttrs(dict):
             self[k] = kwargs[k]
 
     def __setitem__(self, key, value):
-        super(SpanProtoAttrs, self).__setitem__(key,
-                SpanProtoAttrs.get_attribute_value(value))
+        super(SpanProtoAttrs, self).__setitem__(key, SpanProtoAttrs.get_attribute_value(value))
 
     def copy(self):
         copy = SpanProtoAttrs()

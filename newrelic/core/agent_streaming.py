@@ -17,7 +17,8 @@ import threading
 
 try:
     import grpc
-    from newrelic.core.infinite_tracing_pb2 import Span, RecordStatus
+
+    from newrelic.core.infinite_tracing_pb2 import RecordStatus, Span
 except ImportError:
     grpc = None
 
@@ -48,9 +49,7 @@ class StreamingRpc(object):
         )
         self.response_processing_thread.daemon = True
         self.notify = self.condition()
-        self.rpc = self.channel.stream_stream(
-            self.PATH, Span.SerializeToString, RecordStatus.FromString
-        )
+        self.rpc = self.channel.stream_stream(self.PATH, Span.SerializeToString, RecordStatus.FromString)
         self.record_metric = record_metric
 
     @staticmethod
@@ -113,9 +112,7 @@ class StreamingRpc(object):
                             break
 
                         _logger.warning(
-                            "Streaming RPC closed. "
-                            "Will attempt to reconnect in 15 seconds. "
-                            "Code: %s Details: %s",
+                            "Streaming RPC closed. " "Will attempt to reconnect in 15 seconds. " "Code: %s Details: %s",
                             code,
                             details,
                         )
@@ -124,14 +121,14 @@ class StreamingRpc(object):
                 if not self.channel:
                     break
 
-                response_iterator = self.rpc(
-                    self.request_iterator, metadata=self.metadata
-                )
+                self.request_iterator.restart()
+                response_iterator = self.rpc(self.request_iterator, metadata=self.metadata)
                 _logger.info("Streaming RPC connect completed.")
 
             try:
                 for response in response_iterator:
                     _logger.debug("Stream response: %s", response)
+                    self.request_iterator.commit(response.messages_seen)
             except Exception:
                 pass
 

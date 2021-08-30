@@ -20,7 +20,8 @@ from testing_support.fixtures import (
     validate_transaction_errors,
     validate_transaction_metrics,
     validate_tt_segment_params,
-    override_generic_settings
+    override_generic_settings,
+    dt_enabled,
 )
 from testing_support.mock_external_http_server import (
     MockExternalHTTPHResponseHeadersServer,
@@ -161,10 +162,14 @@ def test_async_client(httpx, server, loop, method):
     ),
 )
 def test_sync_cross_process_request(httpx, server, distributed_tracing, span_events):
+    global CAT_RESPONSE_CODE
+    CAT_RESPONSE_CODE = 200
+    
     @override_application_settings(
         {
             "distributed_tracing.enabled": distributed_tracing,
             "span_events.enabled": span_events,
+            "cross_application_tracer.enabled": not distributed_tracing,
         }
     )
     @validate_transaction_errors(errors=[])
@@ -197,6 +202,9 @@ def test_sync_cross_process_request(httpx, server, distributed_tracing, span_eve
 def test_async_cross_process_request(
     httpx, server, loop, distributed_tracing, span_events
 ):
+    global CAT_RESPONSE_CODE
+    CAT_RESPONSE_CODE = 200
+
     @override_application_settings(
         {
             "distributed_tracing.enabled": distributed_tracing,
@@ -220,11 +228,15 @@ def test_async_cross_process_request(
     {
         "distributed_tracing.enabled": True,
         "span_events.enabled": True,
+        "cross_application_tracer.enabled": True,
     }
 )
 @validate_transaction_errors(errors=[])
 @background_task(name="test_sync_cross_process_override_headers")
 def test_sync_cross_process_override_headers(httpx, server, loop):
+    global CAT_RESPONSE_CODE
+    CAT_RESPONSE_CODE = 200
+
     transaction = current_transaction()
 
     with httpx.Client() as client:
@@ -247,6 +259,9 @@ def test_sync_cross_process_override_headers(httpx, server, loop):
 @validate_transaction_errors(errors=[])
 @background_task(name="test_async_cross_process_override_headers")
 def test_async_cross_process_override_headers(httpx, server, loop):
+    global CAT_RESPONSE_CODE
+    CAT_RESPONSE_CODE = 200
+
     async def _test():
         async with httpx.AsyncClient() as client:
             response = await client.get(
@@ -345,10 +360,7 @@ def test_async_client_cat_response_processing(
 
     _test()
 
-
-@override_application_settings(
-    {"distributed_tracing.enabled": True, "span_events.enabled": True}
-)
+@dt_enabled
 def test_sync_client_event_hook_exception(httpx, server):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = 500

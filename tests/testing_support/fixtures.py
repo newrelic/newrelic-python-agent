@@ -2333,6 +2333,14 @@ def dt_enabled(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)  # pylint: disable=E1102
 
 
+@function_wrapper
+def cat_enabled(wrapped, instance, args, kwargs):
+    settings = {'cross_application_tracer.enabled': True, 'distributed_tracing.enabled': False}
+    wrapped = override_application_settings(settings)(wrapped)
+
+    return wrapped(*args, **kwargs)
+
+
 def override_application_settings(overrides):
     @function_wrapper
     def _override_application_settings(wrapped, instance, args, kwargs):

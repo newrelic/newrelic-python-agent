@@ -19,7 +19,7 @@ except ImportError:
     import httplib
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    override_application_settings, validate_tt_segment_params)
+    override_application_settings, validate_tt_segment_params, cat_enabled)
 from testing_support.validators.validate_span_events import (
     validate_span_events)
 from testing_support.validators.validate_cross_process_headers import (
@@ -146,6 +146,7 @@ def test_httplib_cross_process_request(server, distributed_tracing, span_events)
 
     _test = override_application_settings({
         'distributed_tracing.enabled': distributed_tracing,
+        'cross_application_tracer.enabled': not distributed_tracing,
         'span_events.enabled': span_events,
     })(_test)
 
@@ -158,6 +159,7 @@ _test_httplib_cross_process_response_external_node_params = [
         ('transaction_guid', '0123456789012345')]
 
 
+@cat_enabled
 @insert_incoming_headers
 def test_httplib_cross_process_response(server):
     scoped = [
@@ -188,6 +190,7 @@ def test_httplib_cross_process_response(server):
     _test()
 
 
+@cat_enabled
 def test_httplib_multiple_requests_cross_process_response(server):
     connection = httplib.HTTPConnection('localhost', server.port)
 

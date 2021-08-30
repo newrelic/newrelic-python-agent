@@ -68,7 +68,6 @@ test_matrix = (
 
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_client_async_await(local_server_info, method, exc_expected):
-
     @validate_transaction_metrics(
         'fetch_multiple',
         background_task=True,

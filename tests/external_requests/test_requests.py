@@ -18,7 +18,7 @@ import requests.exceptions
 
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, validate_tt_parenting,
-    override_application_settings)
+    override_application_settings, cat_enabled)
 from testing_support.external_fixtures import (cache_outgoing_headers,
     insert_incoming_headers)
 from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
@@ -173,12 +173,14 @@ def test_requests_cross_process_request(distributed_tracing, span_events, server
 
     _test = override_application_settings({
         'distributed_tracing.enabled': distributed_tracing,
+        'cross_application_tracer.enabled': not distributed_tracing,
         'span_events.enabled': span_events,
     })(_test)
 
     _test()
 
 
+@cat_enabled
 def test_requests_cross_process_response(server):
     _test_requests_cross_process_response_scoped_metrics = [
             ('ExternalTransaction/localhost:%d/1#2/test' % server.port, 1)]

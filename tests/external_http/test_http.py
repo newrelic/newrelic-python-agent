@@ -15,7 +15,7 @@
 import pytest
 import six
 
-from testing_support.fixtures import (validate_transaction_metrics,
+from testing_support.fixtures import (cat_enabled, validate_transaction_metrics,
         override_application_settings)
 from testing_support.external_fixtures import (cache_outgoing_headers,
     insert_incoming_headers)
@@ -104,12 +104,14 @@ def test_http_cross_process_request(distributed_tracing, span_events, server):
 
     _test = override_application_settings({
         'distributed_tracing.enabled': distributed_tracing,
+        'cross_application_tracer.enabled': not distributed_tracing,
         'span_events.enabled': span_events,
     })(_test)
 
     _test()
 
 
+@cat_enabled
 def test_http_cross_process_response(server):
     _test_http_cross_process_response_scoped_metrics = [
             ('ExternalTransaction/localhost:%s/1#2/test' % server.port, 1)]

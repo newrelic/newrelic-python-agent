@@ -20,7 +20,7 @@ try:
 except:
     import urllib
 
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.fixtures import validate_transaction_metrics, cat_enabled
 from testing_support.external_fixtures import (cache_outgoing_headers,
     insert_incoming_headers)
 from testing_support.validators.validate_external_node_params import (
@@ -129,6 +129,7 @@ def test_urlopener_cross_process_request(server):
     opener.open('http://localhost:%d/' % server.port)
 
 
+@cat_enabled
 def test_urlopener_cross_process_response(server):
     _test_urlopener_cross_process_response_scoped_metrics = [
             ('ExternalTransaction/localhost:%d/1#2/test' % server.port, 1)]
@@ -198,6 +199,7 @@ def test_urlretrieve_cross_process_request(server):
     urllib.urlretrieve('http://localhost:%d/' % server.port)
 
 
+@cat_enabled
 def test_urlretrieve_cross_process_response(server):
     _test_urlretrieve_cross_process_response_scoped_metrics = [
             ('ExternalTransaction/localhost:%d/1#2/test' % server.port, 1)]

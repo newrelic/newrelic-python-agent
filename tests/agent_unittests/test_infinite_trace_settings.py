@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import pytest
-from testing_support.fixtures import newrelic_caplog as caplog
 
 INI_FILE_EMPTY = b"""
 [newrelic]

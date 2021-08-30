@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import inspect
 import logging
 import os
 import ssl
@@ -20,19 +19,13 @@ import tempfile
 from collections import namedtuple
 
 import pytest
-from testing_support.fixtures import newrelic_caplog as caplog
 
-import newrelic.packages.six as six
 from newrelic.common import certs, system_info
 from newrelic.common.agent_http import DeveloperModeClient
 from newrelic.common.encoding_utils import json_decode, serverless_payload_decode
 from newrelic.common.utilization import CommonUtilization
 from newrelic.core.agent_protocol import AgentProtocol, ServerlessModeProtocol
-from newrelic.core.config import (
-    finalize_application_settings,
-    flatten_settings,
-    global_settings,
-)
+from newrelic.core.config import finalize_application_settings, global_settings
 from newrelic.core.internal_metrics import InternalTraceContext
 from newrelic.core.stats_engine import CustomMetrics
 from newrelic.network.exceptions import (
@@ -42,6 +35,7 @@ from newrelic.network.exceptions import (
     NetworkInterfaceException,
     RetryDataForRequest,
 )
+from newrelic.packages import six
 
 Request = namedtuple("Request", ("method", "path", "params", "headers", "payload"))
 
@@ -303,7 +297,7 @@ def connect_payload_asserts(
     with_kubernetes=True,
 ):
     payload_data = payload[0]
-    assert type(payload_data["agent_version"]) is type(u"")
+    assert isinstance(payload_data["agent_version"], type(u""))
     assert payload_data["app_name"] == PAYLOAD_APP_NAME
     assert payload_data["display_host"] == DISPLAY_NAME
     assert payload_data["environment"] == ENVIRONMENT
@@ -494,7 +488,7 @@ def test_connect(with_aws, with_pcf, with_gcp, with_azure, with_docker, with_kub
 def test_connect_metadata(monkeypatch):
     monkeypatch.setenv("NEW_RELIC_METADATA_FOOBAR", "foobar")
     monkeypatch.setenv("_NEW_RELIC_METADATA_WRONG", "wrong")
-    protocol = AgentProtocol.connect(
+    AgentProtocol.connect(
         APP_NAME,
         LINKED_APPS,
         ENVIRONMENT,

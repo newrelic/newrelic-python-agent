@@ -14,7 +14,6 @@
 
 import logging
 
-from testing_support.fixtures import newrelic_caplog as caplog
 from testing_support.fixtures import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task

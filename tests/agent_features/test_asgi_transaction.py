@@ -17,8 +17,6 @@ import logging
 
 import pytest
 from testing_support.asgi_testing import AsgiTest
-from testing_support.fixtures import function_not_called
-from testing_support.fixtures import newrelic_caplog as caplog
 from testing_support.fixtures import (
     override_application_settings,
     validate_transaction_errors,

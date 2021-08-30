@@ -16,7 +16,6 @@ import copy
 import json
 import logging
 import os
-import pwd
 import subprocess
 import sys
 import threading
@@ -35,10 +34,11 @@ from testing_support.sample_applications import (
 )
 
 from newrelic.admin.record_deploy import record_deploy
-from newrelic.api.application import application_instance
-from newrelic.api.application import application_instance as application
-from newrelic.api.application import application_settings, register_application
-from newrelic.common import certs
+from newrelic.api.application import (
+    application_instance,
+    application_settings,
+    register_application,
+)
 from newrelic.common.agent_http import DeveloperModeClient
 from newrelic.common.encoding_utils import (
     deobfuscate,
@@ -100,7 +100,8 @@ if _environ_as_bool("NEW_RELIC_HIGH_SECURITY"):
     DeveloperModeClient.RESPONSES["connect"]["high_security"] = True
 
 
-def initialize_agent(app_name=None, default_settings={}):
+def initialize_agent(app_name=None, default_settings=None):
+    default_settings = default_settings or {}
     settings = global_settings()
 
     settings.app_name = "Python Agent Test"
@@ -151,7 +152,7 @@ def initialize_agent(app_name=None, default_settings={}):
             if record.levelno < logging.WARNING:
                 return
 
-            return logging.StreamHandler.emit(self, record)
+            logging.StreamHandler.emit(self, record)
 
     _stdout_logger = logging.getLogger("newrelic")
     _stdout_handler = FilteredStreamHandler(sys.stderr)
@@ -211,8 +212,11 @@ def capture_harvest_errors():
 
 
 def collector_agent_registration_fixture(
-    app_name=None, default_settings={}, linked_applications=[], should_initialize_agent=True
+    app_name=None, default_settings=None, linked_applications=None, should_initialize_agent=True
 ):
+    default_settings = default_settings or {}
+    linked_applications = linked_applications or []
+
     @pytest.fixture(scope="session")
     def _collector_agent_registration_fixture(request):
 
@@ -257,7 +261,7 @@ def collector_agent_registration_fixture(
         if not use_fake_collector and not use_developer_mode:
             description = os.path.basename(os.path.normpath(sys.prefix))
             try:
-                _logger.debug("Record deployment marker host: %s" % api_host)
+                _logger.debug("Record deployment marker host: %s", api_host)
                 record_deploy(
                     host=api_host,
                     api_key=settings.api_key,
@@ -274,7 +278,6 @@ def collector_agent_registration_fixture(
                 )
             except Exception:
                 _logger.exception("Unable to record deployment marker.")
-                pass
 
         def finalize():
             shutdown_agent()
@@ -383,8 +386,17 @@ def make_synthetics_header(account_id, resource_id, job_id, monitor_id, encoding
 
 
 def validate_transaction_metrics(
-    name, group="Function", background_task=False, scoped_metrics=[], rollup_metrics=[], custom_metrics=[], index=-1
+    name,
+    group="Function",
+    background_task=False,
+    scoped_metrics=None,
+    rollup_metrics=None,
+    custom_metrics=None,
+    index=-1,
 ):
+    scoped_metrics = scoped_metrics or []
+    rollup_metrics = rollup_metrics or []
+    custom_metrics = custom_metrics or []
 
     if background_task:
         unscoped_metrics = [
@@ -478,7 +490,7 @@ def validate_transaction_metrics(
         for custom_name, custom_count in custom_metrics:
             _validate(metrics, custom_name, "", custom_count)
 
-        custom_metric_names = set([name for name, _ in custom_metrics])
+        custom_metric_names = {name for name, _ in custom_metrics}
         for name, _ in metrics:
             if name not in custom_metric_names:
                 assert not name.startswith("Supportability/api/"), name
@@ -488,7 +500,9 @@ def validate_transaction_metrics(
     return _validate_wrapper
 
 
-def validate_time_metrics_outside_transaction(time_metrics=[], index=-1):
+def validate_time_metrics_outside_transaction(time_metrics=None, index=-1):
+    time_metrics = time_metrics or []
+
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
 
@@ -580,7 +594,9 @@ def capture_transaction_metrics(metrics_list, full_metrics=None):
     return _capture_transaction_metrics
 
 
-def validate_internal_metrics(metrics=[]):
+def validate_internal_metrics(metrics=None):
+    metrics = metrics or []
+
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
 
@@ -616,8 +632,10 @@ def validate_internal_metrics(metrics=[]):
     return _validate_wrapper
 
 
-def validate_transaction_errors(errors=[], required_params=[], forgone_params=[]):
-
+def validate_transaction_errors(errors=None, required_params=None, forgone_params=None):
+    errors = errors or []
+    required_params = required_params or []
+    forgone_params = forgone_params or []
     captured_errors = []
 
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
@@ -670,7 +688,11 @@ def validate_transaction_errors(errors=[], required_params=[], forgone_params=[]
     return _validate_transaction_errors
 
 
-def validate_application_errors(errors=[], required_params=[], forgone_params=[]):
+def validate_application_errors(errors=None, required_params=None, forgone_params=None):
+    errors = errors or []
+    required_params = required_params or []
+    forgone_params = forgone_params or []
+
     @function_wrapper
     def _validate_application_errors(wrapped, instace, args, kwargs):
 
@@ -706,7 +728,10 @@ def validate_application_errors(errors=[], required_params=[], forgone_params=[]
     return _validate_application_errors
 
 
-def validate_custom_parameters(required_params=[], forgone_params=[]):
+def validate_custom_parameters(required_params=None, forgone_params=None):
+    required_params = required_params or []
+    forgone_params = forgone_params or []
+
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     @catch_background_exceptions
     def _validate_custom_parameters(wrapped, instance, args, kwargs):
@@ -735,8 +760,9 @@ def validate_custom_parameters(required_params=[], forgone_params=[]):
     return _validate_custom_parameters
 
 
-def validate_synthetics_event(required_attrs=[], forgone_attrs=[], should_exist=True):
-
+def validate_synthetics_event(required_attrs=None, forgone_attrs=None, should_exist=True):
+    required_attrs = required_attrs or []
+    forgone_attrs = forgone_attrs or []
     failed = []
 
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
@@ -786,7 +812,10 @@ def validate_synthetics_event(required_attrs=[], forgone_attrs=[], should_exist=
     return wrapper
 
 
-def validate_transaction_event_attributes(required_params={}, forgone_params={}, exact_attrs={}, index=-1):
+def validate_transaction_event_attributes(required_params=None, forgone_params=None, exact_attrs=None, index=-1):
+    required_params = required_params or {}
+    forgone_params = forgone_params or {}
+    exact_attrs = exact_attrs or {}
 
     captured_events = []
 
@@ -817,12 +846,15 @@ def validate_transaction_event_attributes(required_params={}, forgone_params={},
     return _validate_transaction_event_attributes
 
 
-def check_event_attributes(event_data, required_params={}, forgone_params={}, exact_attrs={}):
+def check_event_attributes(event_data, required_params=None, forgone_params=None, exact_attrs=None):
     """Check the event attributes from a single (first) event in a
     SampledDataSet. If necessary, clear out previous errors from StatsEngine
     prior to saving error, so that the desired error is the only one present
     in the data set.
     """
+    required_params = required_params or {}
+    forgone_params = forgone_params or {}
+    exact_attrs = exact_attrs or {}
 
     intrinsics, user_attributes, agent_attributes = next(iter(event_data))
 
@@ -851,10 +883,13 @@ def check_event_attributes(event_data, required_params={}, forgone_params={}, ex
             assert intrinsics[param] == value, ((param, value), intrinsics)
 
 
-def validate_non_transaction_error_event(required_intrinsics={}, num_errors=1, required_user={}, forgone_user=[]):
+def validate_non_transaction_error_event(required_intrinsics=None, num_errors=1, required_user=None, forgone_user=None):
     """Validate error event data for a single error occurring outside of a
     transaction.
     """
+    required_intrinsics = required_intrinsics or {}
+    required_user = required_user or {}
+    forgone_user = forgone_user or []
 
     @function_wrapper
     def _validate_non_transaction_error_event(wrapped, instace, args, kwargs):
@@ -944,7 +979,10 @@ def validate_application_error_event_count(num_errors):
     return _validate_application_error_event_count
 
 
-def validate_synthetics_transaction_trace(required_params={}, forgone_params={}, should_exist=True):
+def validate_synthetics_transaction_trace(required_params=None, forgone_params=None, should_exist=True):
+    required_params = required_params or {}
+    forgone_params = forgone_params or {}
+
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_synthetics_transaction_trace(wrapped, instance, args, kwargs):
         try:
@@ -992,16 +1030,22 @@ def validate_synthetics_transaction_trace(required_params={}, forgone_params={},
 
 
 def validate_tt_collector_json(
-    required_params={},
-    forgone_params={},
+    required_params=None,
+    forgone_params=None,
     should_exist=True,
-    datastore_params={},
-    datastore_forgone_params={},
-    message_broker_params={},
-    message_broker_forgone_params=[],
+    datastore_params=None,
+    datastore_forgone_params=None,
+    message_broker_params=None,
+    message_broker_forgone_params=None,
     exclude_request_uri=False,
 ):
     """make assertions based off the cross-agent spec on transaction traces"""
+    required_params = required_params or {}
+    forgone_params = forgone_params or {}
+    datastore_params = datastore_params or {}
+    datastore_forgone_params = datastore_forgone_params or {}
+    message_broker_params = message_broker_params or {}
+    message_broker_forgone_params = message_broker_forgone_params or []
 
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
@@ -1087,7 +1131,7 @@ def validate_tt_collector_json(
                 # segment. This allows us to override exclusive time
                 # calculations on APM.
                 assert "exclusive_duration_millis" in params
-                assert type(params["exclusive_duration_millis"]) is float
+                assert isinstance(params["exclusive_duration_millis"], float)
 
                 segment_name = _lookup_string_table(node[2], string_table, default=node[2])
                 if segment_name.startswith("Datastore"):
@@ -1142,7 +1186,11 @@ def validate_tt_collector_json(
     return _validate_wrapper
 
 
-def validate_transaction_trace_attributes(required_params={}, forgone_params={}, should_exist=True, url=None, index=-1):
+def validate_transaction_trace_attributes(
+    required_params=None, forgone_params=None, should_exist=True, url=None, index=-1
+):
+    required_params = required_params or {}
+    forgone_params = forgone_params or {}
 
     trace_data = []
 
@@ -1188,10 +1236,13 @@ def validate_transaction_trace_attributes(required_params={}, forgone_params={},
     return wrapper
 
 
-def validate_transaction_error_trace_attributes(required_params={}, forgone_params={}, exact_attrs={}):
+def validate_transaction_error_trace_attributes(required_params=None, forgone_params=None, exact_attrs=None):
     """Check the error trace for attributes, expect only one error to be
     present in the transaction.
     """
+    required_params = required_params or {}
+    forgone_params = forgone_params or {}
+    exact_attrs = exact_attrs or {}
 
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_transaction_error_trace(wrapped, instance, args, kwargs):
@@ -1216,7 +1267,12 @@ def validate_transaction_error_trace_attributes(required_params={}, forgone_para
     return _validate_transaction_error_trace
 
 
-def check_error_attributes(parameters, required_params={}, forgone_params={}, exact_attrs={}, is_transaction=True):
+def check_error_attributes(
+    parameters, required_params=None, forgone_params=None, exact_attrs=None, is_transaction=True
+):
+    required_params = required_params or {}
+    forgone_params = forgone_params or {}
+    exact_attrs = exact_attrs or {}
 
     parameter_fields = ["userAttributes"]
     if is_transaction:
@@ -1234,7 +1290,11 @@ def check_error_attributes(parameters, required_params={}, forgone_params={}, ex
     check_attributes(parameters, required_params, forgone_params, exact_attrs)
 
 
-def check_attributes(parameters, required_params={}, forgone_params={}, exact_attrs={}):
+def check_attributes(parameters, required_params=None, forgone_params=None, exact_attrs=None):
+    required_params = required_params or {}
+    forgone_params = forgone_params or {}
+    exact_attrs = exact_attrs or {}
+
     intrinsics = parameters.get("intrinsics", {})
     user_attributes = parameters.get("userAttributes", {})
     agent_attributes = parameters.get("agentAttributes", {})
@@ -1438,7 +1498,10 @@ def validate_custom_event_collector_json(num_events=1):
     return _validate_custom_event_collector_json
 
 
-def validate_tt_parameters(required_params={}, forgone_params={}):
+def validate_tt_parameters(required_params=None, forgone_params=None):
+    required_params = required_params or {}
+    forgone_params = forgone_params or {}
+
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_tt_parameters(wrapped, instance, args, kwargs):
         try:
@@ -1471,7 +1534,8 @@ def validate_tt_parameters(required_params={}, forgone_params={}):
     return _validate_tt_parameters
 
 
-def validate_tt_segment_params(forgone_params=(), present_params=(), exact_params={}):
+def validate_tt_segment_params(forgone_params=(), present_params=(), exact_params=None):
+    exact_params = exact_params or {}
     recorded_traces = []
 
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
@@ -1544,7 +1608,10 @@ def validate_tt_segment_params(forgone_params=(), present_params=(), exact_param
     return validator
 
 
-def validate_browser_attributes(required_params={}, forgone_params={}):
+def validate_browser_attributes(required_params=None, forgone_params=None):
+    required_params = required_params or {}
+    forgone_params = forgone_params or {}
+
     @transient_function_wrapper("newrelic.api.web_transaction", "WSGIWebTransaction.browser_timing_footer")
     def _validate_browser_attributes(wrapped, instance, args, kwargs):
         try:
@@ -1597,10 +1664,13 @@ def validate_browser_attributes(required_params={}, forgone_params={}):
     return _validate_browser_attributes
 
 
-def validate_error_event_attributes(required_params={}, forgone_params={}, exact_attrs={}):
+def validate_error_event_attributes(required_params=None, forgone_params=None, exact_attrs=None):
     """Check the error event for attributes, expect only one error to be
     present in the transaction.
     """
+    required_params = required_params or {}
+    forgone_params = forgone_params or {}
+    exact_attrs = exact_attrs or {}
     error_data_samples = []
 
     @function_wrapper
@@ -1630,8 +1700,12 @@ def validate_error_event_attributes(required_params={}, forgone_params={}, exact
 
 
 def validate_error_trace_attributes_outside_transaction(
-    err_name, required_params={}, forgone_params={}, exact_attrs={}
+    err_name, required_params=None, forgone_params=None, exact_attrs=None
 ):
+    required_params = required_params or {}
+    forgone_params = forgone_params or {}
+    exact_attrs = exact_attrs or {}
+
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.notice_error")
     def _validate_error_trace_attributes_outside_transaction(wrapped, instance, args, kwargs):
         try:
@@ -1651,8 +1725,11 @@ def validate_error_trace_attributes_outside_transaction(
 
 
 def validate_error_event_attributes_outside_transaction(
-    required_params={}, forgone_params={}, exact_attrs=None, num_errors=None
+    required_params=None, forgone_params=None, exact_attrs=None, num_errors=None
 ):
+    required_params = required_params or {}
+    forgone_params = forgone_params or {}
+
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.notice_error")
     def _validate_error_event_attributes_outside_transaction(wrapped, instance, args, kwargs):
 
@@ -1661,7 +1738,7 @@ def validate_error_event_attributes_outside_transaction(
         except:
             raise
         else:
-            event_data = [event for event in instance.error_events]
+            event_data = list(instance.error_events)
 
             if num_errors is not None:
                 exc_message = (
@@ -1694,7 +1771,10 @@ def validate_request_params_omitted():
     return _validate_request_params
 
 
-def validate_attributes(attr_type, required_attr_names=[], forgone_attr_names=[]):
+def validate_attributes(attr_type, required_attr_names=None, forgone_attr_names=None):
+    required_attr_names = required_attr_names or []
+    forgone_attr_names = forgone_attr_names or []
+
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_attributes(wrapped, instance, args, kwargs):
         def _bind_params(transaction, *args, **kwargs):
@@ -1731,7 +1811,7 @@ def validate_attributes(attr_type, required_attr_names=[], forgone_attr_names=[]
     return _validate_attributes
 
 
-def validate_attributes_complete(attr_type, required_attrs=[], forgone_attrs=[]):
+def validate_attributes_complete(attr_type, required_attrs=None, forgone_attrs=None):
 
     # This differs from `validate_attributes` in that all fields of
     # Attribute must match (name, value, and destinations), not just
@@ -1751,6 +1831,9 @@ def validate_attributes_complete(attr_type, required_attrs=[], forgone_attrs=[])
     # Note:
     #
     # The 'intrinsics' come from `transaction.trace_intrinsics`.
+
+    required_attrs = required_attrs or []
+    forgone_attrs = forgone_attrs or []
 
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_attributes_complete(wrapped, instance, args, kwargs):
@@ -1842,7 +1925,7 @@ def validate_transaction_event_sample_data(required_attrs, required_user_attrs=T
         assert isinstance(sample, list)
         assert len(sample) == 3
 
-        intrinsics, user_attributes, agent_attributes = sample
+        intrinsics, user_attributes, _ = sample
 
         assert intrinsics["type"] == "Transaction"
         assert intrinsics["name"] == required_attrs["name"]
@@ -1878,7 +1961,6 @@ def validate_transaction_error_event_count(num_errors=1):
         except:
             raise
         else:
-
             error_events = list(instance.error_events)
             assert len(error_events) == num_errors
 
@@ -1927,11 +2009,12 @@ def validate_stats_engine_explain_plan_output_is_none():
     return _validate_explain_plan_output_is_none
 
 
-def validate_error_event_sample_data(required_attrs={}, required_user_attrs=True, num_errors=1):
+def validate_error_event_sample_data(required_attrs=None, required_user_attrs=True, num_errors=1):
     """Validate the data collected for error_events. This test depends on values
     in the test application from agent_features/test_analytics.py, and is only
     meant to be run as a validation with those tests.
     """
+    required_attrs = required_attrs or {}
 
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_error_event_sample_data(wrapped, instance, args, kwargs):
@@ -1953,7 +2036,7 @@ def validate_error_event_sample_data(required_attrs={}, required_user_attrs=True
                 assert isinstance(sample, list)
                 assert len(sample) == 3
 
-                intrinsics, user_attributes, agent_attributes = sample
+                intrinsics, user_attributes, _ = sample
 
                 # These intrinsics should always be present
 
@@ -2247,7 +2330,7 @@ def dt_enabled(wrapped, instance, args, kwargs):
     wrapped = override_application_settings(settings)(wrapped)
     wrapped = force_sampled(wrapped)
 
-    return wrapped(*args, **kwargs)
+    return wrapped(*args, **kwargs)  # pylint: disable=E1102
 
 
 def override_application_settings(overrides):
@@ -2325,7 +2408,9 @@ def override_ignore_status_codes(status_codes):
     return _override_ignore_status_codes
 
 
-def code_coverage_fixture(source=["newrelic"]):
+def code_coverage_fixture(source=None):
+    source = source if source is not None else ["newrelic"]
+
     @pytest.fixture(scope="session")
     def _code_coverage_fixture(request):
         if not source:
@@ -2370,7 +2455,7 @@ def core_application_stats_engine(app_name=None):
 
     """
 
-    api_application = application(app_name)
+    api_application = application_instance(app_name)
     api_name = api_application.name
     core_application = api_application._agent.application(api_name)
     return core_application._stats_engine
@@ -2442,16 +2527,16 @@ def set_default_encoding(encoding):
         # behaves when different sys encodings are used. For more information,
         # see this Stack Overflow post: http://bit.ly/1xBNxRc
 
-        six.moves.reload_module(sys)
+        six.moves.reload_module(sys)  # pylint: disable=E1101
         original_encoding = sys.getdefaultencoding()
-        sys.setdefaultencoding(encoding)
+        sys.setdefaultencoding(encoding)  # pylint: disable=E1101
 
         try:
             result = wrapped(*args, **kwargs)
         except:
             raise
         finally:
-            sys.setdefaultencoding(original_encoding)
+            sys.setdefaultencoding(original_encoding)  # pylint: disable=E1101
 
         return result
 
@@ -2507,7 +2592,7 @@ def validate_analytics_catmap_data(name, expected_attributes=(), non_expected_at
             assert isinstance(sample, list)
             assert len(sample) == 3
 
-            intrinsics, user_attributes, agent_attributes = sample
+            intrinsics, _, _ = sample
 
             assert intrinsics["type"] == "Transaction"
             assert intrinsics["name"] == name
@@ -2566,7 +2651,7 @@ class Environ(object):
         for key, val in self._environ_dict.items():
             os.environ[key] = str(val)
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, type, value, traceback):  # pylint: disable=redefined-builtin
         os.environ.clear()
         os.environ = self._original_environ
 
@@ -2577,7 +2662,7 @@ class TerminatingPopen(subprocess.Popen):
     def __enter__(self):
         return self
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, type, value, traceback):  # pylint: disable=redefined-builtin,arguments-differ
         if self.stdout:
             self.stdout.close()
         if self.stderr:

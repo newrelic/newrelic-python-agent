@@ -28,7 +28,7 @@ PYTHON_PYLINT_CONFIG_FILE: pyproject.toml
 PYTHON_ISORT_CONFIG_FILE: pyproject.toml
 
 # Bandit's next release supports pyproject.toml. Until then, add config by cli option
-PYTHON_BANDIT_ARGUMENTS: --skip=B110
+PYTHON_BANDIT_ARGUMENTS: --skip=B110,B101,B404
 PYTHON_PYLINT_ARGUMENTS: "--fail-under=0 --fail-on=E"
 
 # IGNORE_GITIGNORED_FILES: true # Currently broken

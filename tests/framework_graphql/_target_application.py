@@ -117,7 +117,7 @@ Book = GraphQLObjectType(
         "id": GraphQLField(GraphQLInt),
         "name": GraphQLField(GraphQLString),
         "isbn": GraphQLField(GraphQLString),
-        "author": GraphQLField(GraphQLList(Author)),
+        "author": GraphQLField(Author),
         "branch": GraphQLField(GraphQLString),
     },
 )
@@ -166,9 +166,7 @@ try:
         args={"index": GraphQLArgument(GraphQLNonNull(GraphQLInt))},
     )
     search_field = GraphQLField(
-        GraphQLList(
-            GraphQLUnionType("Item", (Book, Magazine), resolve_type=resolve_search)
-        ),
+        GraphQLList(GraphQLUnionType("Item", (Book, Magazine), resolve_type=resolve_search)),
         args={"contains": GraphQLArgument(GraphQLNonNull(GraphQLString))},
     )
     echo_field = GraphQLField(
@@ -186,9 +184,7 @@ try:
         args={"string": GraphQLArgument(GraphQLNonNull(GraphQLString))},
     )
     error_field = GraphQLField(GraphQLString, resolver=resolve_error)
-    error_non_null_field = GraphQLField(
-        GraphQLNonNull(GraphQLString), resolver=resolve_error
-    )
+    error_non_null_field = GraphQLField(GraphQLNonNull(GraphQLString), resolver=resolve_error)
 except TypeError:
     hello_field = GraphQLField(GraphQLString, resolve=resolve_hello)
     library_field = GraphQLField(
@@ -197,9 +193,7 @@ except TypeError:
         args={"index": GraphQLArgument(GraphQLNonNull(GraphQLInt))},
     )
     search_field = GraphQLField(
-        GraphQLList(
-            GraphQLUnionType("Item", (Book, Magazine), resolve_type=resolve_search)
-        ),
+        GraphQLList(GraphQLUnionType("Item", (Book, Magazine), resolve_type=resolve_search)),
         args={"contains": GraphQLArgument(GraphQLNonNull(GraphQLString))},
     )
     echo_field = GraphQLField(
@@ -217,9 +211,7 @@ except TypeError:
         args={"string": GraphQLArgument(GraphQLNonNull(GraphQLString))},
     )
     error_field = GraphQLField(GraphQLString, resolve=resolve_error)
-    error_non_null_field = GraphQLField(
-        GraphQLNonNull(GraphQLString), resolve=resolve_error
-    )
+    error_non_null_field = GraphQLField(GraphQLNonNull(GraphQLString), resolve=resolve_error)
 
 query = GraphQLObjectType(
     name="Query",

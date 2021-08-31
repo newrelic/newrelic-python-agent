@@ -117,7 +117,7 @@ Book = GraphQLObjectType(
         "id": GraphQLField(GraphQLInt),
         "name": GraphQLField(GraphQLString),
         "isbn": GraphQLField(GraphQLString),
-        "author": GraphQLField(GraphQLList(Author)),
+        "author": GraphQLField(Author),
         "branch": GraphQLField(GraphQLString),
     },
 )

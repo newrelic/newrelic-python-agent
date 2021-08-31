@@ -25,6 +25,7 @@ on:
       - main
       - feature/*
       - feature-*
+      - develop-*
 
 jobs:
   python:

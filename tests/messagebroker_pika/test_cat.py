@@ -34,8 +34,6 @@ _override_settings = {
     'encoding_key': ENCODING_KEY,
     'trusted_account_ids': [1],
     'browser_monitoring.enabled': False,
-    'cross_application_tracer.enabled': True,
-    'distributed_tracing.enabled': False,
 }
 
 

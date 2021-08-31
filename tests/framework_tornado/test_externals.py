@@ -25,7 +25,7 @@ from testing_support.validators.validate_distributed_tracing_header import valid
 from testing_support.validators.validate_outbound_headers import validate_outbound_headers
 
 from testing_support.fixtures import (validate_transaction_metrics,
-        override_application_settings, cat_enabled)
+        override_application_settings)
 from testing_support.mock_external_http_server import (
         MockExternalHTTPHResponseHeadersServer,
         MockExternalHTTPServer)

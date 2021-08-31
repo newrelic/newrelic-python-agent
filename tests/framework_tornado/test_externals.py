@@ -25,7 +25,7 @@ from testing_support.validators.validate_distributed_tracing_header import valid
 from testing_support.validators.validate_outbound_headers import validate_outbound_headers
 
 from testing_support.fixtures import (validate_transaction_metrics,
-        override_application_settings)
+        override_application_settings, cat_enabled)
 from testing_support.mock_external_http_server import (
         MockExternalHTTPHResponseHeadersServer,
         MockExternalHTTPServer)
@@ -42,6 +42,7 @@ def external():
         yield external
 
 
+@cat_enabled
 @background_task(name='make_request')
 def make_request(port, req_type, client_cls, count=1, raise_error=True,
         as_kwargs=True, **kwargs):
@@ -128,19 +129,26 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True,
     ('CustomAsyncHTTPClient', False),
     ('HTTPClient', True),
 ])
-@pytest.mark.parametrize('cat_enabled,user_header', [
-    (True, None),
-    (True, 'X-NewRelic-ID'),
-    (True, 'X-NewRelic-Transaction'),
-    (False, None),
+@pytest.mark.parametrize('cat_enabled,user_header,span_events,distributed_tracing', [
+    (True, None, False, False),
+    (True, 'X-NewRelic-ID', False, False),
+    (True, 'X-NewRelic-Transaction', False, False),
+    (False, None, True, True),
+    (False, None, False, True),
 ])
+#@pytest.mark.parametrize('cat_enabled,user_header', [
+#    (True, None),
+#    (True, 'X-NewRelic-ID'),
+#    (True, 'X-NewRelic-Transaction'),
+#    (False, None),
+#])
 @pytest.mark.parametrize('request_type', ['uri', 'class'])
 @pytest.mark.parametrize('num_requests', [1, 2])
-@pytest.mark.parametrize('distributed_tracing,span_events', (
-    (True, True),
-    (True, False),
-    (False, False),
-))
+#@pytest.mark.parametrize('distributed_tracing,span_events', (
+#    (True, True),
+#    (True, False),
+#    (False, False),
+#))
 def test_httpclient(cat_enabled, request_type, client_class, user_header,
         num_requests, distributed_tracing, span_events, external, as_kwargs):
 
@@ -153,6 +161,7 @@ def test_httpclient(cat_enabled, request_type, client_class, user_header,
     @override_application_settings({
         'distributed_tracing.enabled': distributed_tracing,
         'span_events.enabled': span_events,
+        'cross_application_tracer.enabled': not distributed_tracing,
     })
     @validate_transaction_metrics(
         'test_externals:test_httpclient',
@@ -261,6 +270,7 @@ def test_client_cat_response_processing(cat_enabled, request_type,
                 'Function/app:beep' % port, 1 if cat_enabled else None),
     ]
 
+    @cat_enabled
     @validate_transaction_metrics(
         'make_request',
         background_task=True,

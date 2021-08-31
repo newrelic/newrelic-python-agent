@@ -14,13 +14,14 @@
 
 import json
 import logging
+
 import pytest
 
-from newrelic.api.log import NewRelicContextFormatter
+from newrelic.agent import get_linking_metadata
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.agent import get_linking_metadata
-import newrelic.packages.six as six
+from newrelic.api.log import NewRelicContextFormatter
+from newrelic.packages import six
 
 if six.PY2:
     from io import BytesIO as Buffer
@@ -80,11 +81,11 @@ def test_newrelic_logger_no_error(log_buffer):
     filename = message.pop("file.name")
     line_number = message.pop("line.number")
 
-    assert type(timestamp) is int
-    assert type(thread_id) is int
-    assert type(process_id) is int
+    assert isinstance(timestamp, int)
+    assert isinstance(thread_id, int)
+    assert isinstance(process_id, int)
     assert filename.endswith("/test_logs_in_context.py")
-    assert type(line_number) is int
+    assert isinstance(line_number, int)
 
     assert message == {
         u"entity.type": u"SERVICE",
@@ -127,11 +128,11 @@ def test_newrelic_logger_error(log_buffer):
     filename = message.pop("file.name")
     line_number = message.pop("line.number")
 
-    assert type(timestamp) is int
-    assert type(thread_id) is int
-    assert type(process_id) is int
+    assert isinstance(timestamp, int)
+    assert isinstance(thread_id, int)
+    assert isinstance(process_id, int)
     assert filename.endswith("/test_logs_in_context.py")
-    assert type(line_number) is int
+    assert isinstance(line_number, int)
 
     assert message == {
         u"entity.type": u"SERVICE",

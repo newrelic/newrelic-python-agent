@@ -14,23 +14,24 @@
 
 import asyncio
 import logging
+
 import pytest
-from testing_support.sample_asgi_applications import (
-    simple_app_v2_raw,
-    simple_app_v3_raw,
-    simple_app_v2,
-    simple_app_v3,
-    AppWithDescriptor,
-    simple_app_v2_init_exc,
-)
-from testing_support.fixtures import (
-    validate_transaction_metrics,
-    override_application_settings,
-    function_not_called,
-    validate_transaction_errors,
-)
-from newrelic.api.asgi_application import asgi_application, ASGIApplicationWrapper
 from testing_support.asgi_testing import AsgiTest
+from testing_support.fixtures import (
+    override_application_settings,
+    validate_transaction_errors,
+    validate_transaction_metrics,
+)
+from testing_support.sample_asgi_applications import (
+    AppWithDescriptor,
+    simple_app_v2,
+    simple_app_v2_init_exc,
+    simple_app_v2_raw,
+    simple_app_v3,
+    simple_app_v3_raw,
+)
+
+from newrelic.api.asgi_application import ASGIApplicationWrapper, asgi_application
 
 # Setup test apps from sample_asgi_applications.py
 simple_app_v2_original = AsgiTest(simple_app_v2_raw)
@@ -89,9 +90,7 @@ def test_double_callable_raw():
 
 
 # Test asgi_application decorator with parameters passed in on a single callable
-@pytest.mark.parametrize(
-    "name, group", ((None, "group"), ("name", "group"), ("", "group"))
-)
+@pytest.mark.parametrize("name, group", ((None, "group"), ("name", "group"), ("", "group")))
 def test_asgi_application_decorator_single_callable(name, group):
     if name:
         expected_name = name
@@ -126,9 +125,7 @@ def test_asgi_application_decorator_no_params_double_callable():
 
 
 # Test for presence of framework info based on whether framework is specified
-@validate_transaction_metrics(
-    name="test", custom_metrics=[("Python/Framework/framework/v1", 1)]
-)
+@validate_transaction_metrics(name="test", custom_metrics=[("Python/Framework/framework/v1", 1)])
 def test_framework_metrics():
     asgi_decorator = asgi_application(name="test", framework=("framework", "v1"))
     decorated_application = asgi_decorator(simple_app_v2_raw)
@@ -177,9 +174,7 @@ def test_non_http_scope_v2():
         loop.run_until_complete(_test())
 
 
-@pytest.mark.parametrize(
-    "app", (simple_app_v3_wrapped, simple_app_v2_wrapped, simple_app_v2_init_exc)
-)
+@pytest.mark.parametrize("app", (simple_app_v3_wrapped, simple_app_v2_wrapped, simple_app_v2_init_exc))
 @validate_transaction_errors(errors=["builtins:ValueError"])
 def test_exception_capture(app):
     with pytest.raises(ValueError):

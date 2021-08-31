@@ -42,6 +42,7 @@ def external():
         yield external
 
 
+@cat_enabled
 @background_task(name='make_request')
 def make_request(port, req_type, client_cls, count=1, raise_error=True,
         as_kwargs=True, **kwargs):
@@ -135,6 +136,12 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True,
     (False, None, True, True),
     (False, None, False, True),
 ])
+#@pytest.mark.parametrize('cat_enabled,user_header', [
+#    (True, None),
+#    (True, 'X-NewRelic-ID'),
+#    (True, 'X-NewRelic-Transaction'),
+#    (False, None),
+#])
 @pytest.mark.parametrize('request_type', ['uri', 'class'])
 @pytest.mark.parametrize('num_requests', [1, 2])
 def test_httpclient(cat_enabled, request_type, client_class, user_header,
@@ -256,6 +263,7 @@ def test_client_cat_response_processing(cat_enabled, request_type,
                 'Function/app:beep' % port, 1 if cat_enabled else None),
     ]
 
+    @cat_enabled
     @validate_transaction_metrics(
         'make_request',
         background_task=True,

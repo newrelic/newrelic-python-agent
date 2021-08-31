@@ -52,7 +52,7 @@ def task(loop, method, exc_expected, url):
         assert isinstance(text_list[1],
                 _expected_error_class), text_list[1].__class__
     else:
-        assert text_list[0] == text_list[1], text_list
+        assert text_list[0].split('traceparent')[0] == text_list[1].split('traceparent')[0], text_list
 
 
 test_matrix = (
@@ -219,7 +219,7 @@ def test_await_request_async_await(local_server_info, method, exc_expected):
             assert isinstance(text_list[1],
                     _expected_error_class), text_list[1].__class__
         else:
-            assert text_list[0] == text_list[1], text_list
+            assert text_list[0].split('traceparent')[0] == text_list[1].split('traceparent')[0], text_list
 
     task_test()
 
@@ -289,7 +289,7 @@ def test_create_task_async_await(local_server_info, method, exc_expected):
             assert isinstance(result[1],
                     _expected_error_class), result[1].__class__
         else:
-            assert result[0] == result[1]
+            assert result[0].split('traceparent')[0] == result[1].split('traceparent')[0]
 
     task_test()
 

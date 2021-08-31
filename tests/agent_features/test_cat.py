@@ -29,7 +29,7 @@ from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.wsgi_application import wsgi_application
 
 from testing_support.fixtures import (make_cross_agent_headers,
-        override_application_settings)
+        override_application_settings, cat_enabled)
 
 ENCODING_KEY = '1234567890123456789012345678901234567890'
 
@@ -62,7 +62,7 @@ _override_settings = {
 
 payload = ['b854df4feb2b1f06', False, '7e249074f277923d', '5d2957be']
 
-
+@cat_enabled
 @override_application_settings(_override_settings)
 def test_cat_disabled_browser_monitoring():
     headers = make_cross_agent_headers(payload, ENCODING_KEY, '1#1')
@@ -80,6 +80,7 @@ _override_settings = {
     'cross_application_tracing.enabled': True,
     'distributed_tracing.enabled': False,
 }
+@cat_enabled
 @override_application_settings(_override_settings)
 @pytest.mark.parametrize('fips_enabled', (False, True))
 @background_task()

@@ -24,7 +24,7 @@ from newrelic.api.transaction import current_transaction
 
 from testing_support.db_settings import rabbitmq_settings
 from testing_support.fixtures import (override_application_settings,
-        validate_transaction_metrics)
+        validate_transaction_metrics, cat_enabled)
 
 DB_SETTINGS = rabbitmq_settings()[0]
 
@@ -34,8 +34,6 @@ _override_settings = {
     'encoding_key': ENCODING_KEY,
     'trusted_account_ids': [1],
     'browser_monitoring.enabled': False,
-    'cross_application_tracer.enabled': True,
-    'distributed_tracing.enabled': False,
 }
 
 
@@ -74,7 +72,7 @@ else:
 def do_basic_consume(channel):
     channel.start_consuming()
 
-
+@cat_enabled
 @override_application_settings(_override_settings)
 def test_basic_consume_cat_headers():
     def on_receive(ch, method, properties, msg):

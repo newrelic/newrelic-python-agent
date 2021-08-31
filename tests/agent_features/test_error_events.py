@@ -24,7 +24,7 @@ from newrelic.common.object_names import callable_name
 from testing_support.fixtures import (validate_error_event_sample_data,
         validate_non_transaction_error_event, override_application_settings,
         make_cross_agent_headers, make_synthetics_header,
-        reset_core_stats_engine, validate_transaction_error_event_count)
+        reset_core_stats_engine, validate_transaction_error_event_count, cat_enabled)
 from testing_support.sample_applications import fully_featured_app
 
 
@@ -107,7 +107,7 @@ _intrinsic_attributes = {
         'transactionName' : 'WebTransaction/Uri/',
         'nr.referringTransactionGuid': 7,
 }
-
+@cat_enabled
 @validate_error_event_sample_data(required_attrs=_intrinsic_attributes,
         required_user_attrs=True)
 def test_transaction_error_cross_agent():

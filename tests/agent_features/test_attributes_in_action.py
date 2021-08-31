@@ -28,7 +28,7 @@ from testing_support.fixtures import (validate_transaction_trace_attributes,
         validate_browser_attributes, validate_error_event_attributes,
         validate_error_trace_attributes_outside_transaction,
         validate_error_event_attributes_outside_transaction,
-        reset_core_stats_engine, validate_attributes, dt_enabled)
+        reset_core_stats_engine, validate_attributes, dt_enabled, cat_enabled)
 
 from testing_support.validators.validate_span_events import (
         validate_span_events)
@@ -131,7 +131,7 @@ _expected_attributes_event = {'agent': TRACE_ERROR_AGENT_KEYS,
 _expected_absent_attributes = {'agent': REQ_PARAMS, 'user': [],
         'intrinsic': DISTRIBUTED_TRACE_ATTRS}
 
-
+@cat_enabled
 @validate_error_event_attributes(_expected_attributes_event,
         _expected_absent_attributes)
 @validate_transaction_error_trace_attributes(_expected_attributes,
@@ -143,7 +143,7 @@ def test_error_in_transaction_default_settings(normal_application):
 _expected_attributes = {'agent': TRACE_ERROR_AGENT_KEYS, 'user': USER_ATTRS,
         'intrinsic': ['trip_id']}
 
-
+@cat_enabled
 @validate_transaction_trace_attributes(_expected_attributes,
         _expected_absent_attributes)
 @override_application_settings({})

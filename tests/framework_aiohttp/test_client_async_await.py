@@ -19,7 +19,7 @@ from yarl import URL
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.fixtures import validate_transaction_metrics, cat_enabled
 
 version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
 
@@ -52,7 +52,7 @@ def task(loop, method, exc_expected, url):
         assert isinstance(text_list[1],
                 _expected_error_class), text_list[1].__class__
     else:
-        assert text_list[0].split('traceparent')[0] == text_list[1].split('traceparent')[0], text_list
+        assert text_list[0] == text_list[1], text_list
 
 
 test_matrix = (
@@ -65,7 +65,7 @@ test_matrix = (
     ('delete', True),
 )
 
-
+@cat_enabled
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
 def test_client_async_await(local_server_info, method, exc_expected):
     @validate_transaction_metrics(
@@ -85,6 +85,7 @@ def test_client_async_await(local_server_info, method, exc_expected):
     task_test()
 
 
+@cat_enabled
 def test_client_yarl_async_await(local_server_info):
     method = 'get'
 
@@ -106,6 +107,7 @@ def test_client_yarl_async_await(local_server_info):
 
 
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
+@cat_enabled
 def test_client_no_txn_async_await(local_server_info, method, exc_expected):
 
     def task_test():
@@ -183,6 +185,7 @@ def test_client_close_async_await(local_server_info, method, exc_expected):
 
 
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
+@cat_enabled
 def test_await_request_async_await(local_server_info, method, exc_expected):
 
     async def request_with_await():
@@ -216,7 +219,7 @@ def test_await_request_async_await(local_server_info, method, exc_expected):
             assert isinstance(text_list[1],
                     _expected_error_class), text_list[1].__class__
         else:
-            assert text_list[0].split('traceparent')[0] == text_list[1].split('traceparent')[0], text_list
+            assert text_list[0] == text_list[1], text_list
 
     task_test()
 
@@ -249,6 +252,7 @@ def test_ws_connect_async_await(local_server_info, method, exc_expected):
 
 
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
+@cat_enabled
 def test_create_task_async_await(local_server_info, method, exc_expected):
 
     # `loop.create_task` returns a Task object which uses the coroutine's
@@ -285,12 +289,13 @@ def test_create_task_async_await(local_server_info, method, exc_expected):
             assert isinstance(result[1],
                     _expected_error_class), result[1].__class__
         else:
-            assert result[0].split('traceparent')[0] == result[1].split('traceparent')[0]
+            assert result[0] == result[1]
 
     task_test()
 
 
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
+@cat_enabled
 def test_terminal_parent_async_await(local_server_info, method, exc_expected):
     """
     This test injects a terminal node into a simple background task workflow.

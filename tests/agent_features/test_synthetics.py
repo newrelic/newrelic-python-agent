@@ -23,7 +23,7 @@ from newrelic.core.agent import agent_instance
 
 from testing_support.fixtures import (validate_synthetics_event,
         validate_synthetics_transaction_trace, override_application_settings,
-        make_synthetics_header)
+        make_synthetics_header, cat_enabled)
 from testing_support.external_fixtures import (
         validate_synthetics_external_trace_header)
 
@@ -101,6 +101,7 @@ _test_valid_synthetics_tt_required = {
         'synthetics_job_id': SYNTHETICS_JOB_ID,
         'synthetics_monitor_id': SYNTHETICS_MONITOR_ID}
 
+@cat_enabled
 @validate_synthetics_transaction_trace(_test_valid_synthetics_tt_required)
 @override_application_settings(_override_settings)
 def test_valid_synthetics_in_transaction_trace():
@@ -128,6 +129,7 @@ def test_synthetics_disabled():
 _external_synthetics_header = ('X-NewRelic-Synthetics',
         _make_synthetics_header()['X-NewRelic-Synthetics'])
 
+@cat_enabled
 @validate_synthetics_external_trace_header(
         required_header=_external_synthetics_header, should_exist=True)
 @override_application_settings(_override_settings)
@@ -135,7 +137,7 @@ def test_valid_synthetics_external_trace_header():
     headers = _make_synthetics_header()
     response = target_application.get('/', headers=headers)
 
-
+@cat_enabled
 @validate_synthetics_external_trace_header(
         required_header=_external_synthetics_header, should_exist=True)
 @override_application_settings(_override_settings)

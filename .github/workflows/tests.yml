@@ -21,11 +21,6 @@ on:
     tags-ignore:
       - '**'
   pull_request:
-    branches:
-      - main
-      - feature/*
-      - feature-*
-      - develop-*
 
 jobs:
   python:

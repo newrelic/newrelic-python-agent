@@ -135,19 +135,8 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True,
     (False, None, True, True),
     (False, None, False, True),
 ])
-#@pytest.mark.parametrize('cat_enabled,user_header', [
-#    (True, None),
-#    (True, 'X-NewRelic-ID'),
-#    (True, 'X-NewRelic-Transaction'),
-#    (False, None),
-#])
 @pytest.mark.parametrize('request_type', ['uri', 'class'])
 @pytest.mark.parametrize('num_requests', [1, 2])
-#@pytest.mark.parametrize('distributed_tracing,span_events', (
-#    (True, True),
-#    (True, False),
-#    (False, False),
-#))
 def test_httpclient(cat_enabled, request_type, client_class, user_header,
         num_requests, distributed_tracing, span_events, external, as_kwargs):
 

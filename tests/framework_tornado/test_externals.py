@@ -42,7 +42,6 @@ def external():
         yield external
 
 
-@cat_enabled
 @background_task(name='make_request')
 def make_request(port, req_type, client_cls, count=1, raise_error=True,
         as_kwargs=True, **kwargs):
@@ -215,7 +214,6 @@ def test_httpclient(cat_enabled, request_type, client_class, user_header,
 
 CAT_RESPONSE_CODE = None
 
-
 def cat_response_handler(self):
     global CAT_RESPONSE_CODE
     # payload
@@ -240,7 +238,6 @@ def cat_response_server():
     with external:
         yield external
 
-
 @pytest.mark.parametrize('client_class',
         ['AsyncHTTPClient', 'CurlAsyncHTTPClient', 'HTTPClient'])
 @pytest.mark.parametrize('cat_enabled', [True, False])
@@ -260,7 +257,7 @@ def test_client_cat_response_processing(cat_enabled, request_type,
         'encoding_key': ENCODING_KEY,
         'trusted_account_ids': [1],
         'cross_application_tracer.enabled': cat_enabled,
-        'distributed_tracing.enabled': False,
+        'distributed_tracing.enabled': not cat_enabled,
         'transaction_tracer.transaction_threshold': 0.0,
     }
 
@@ -270,7 +267,6 @@ def test_client_cat_response_processing(cat_enabled, request_type,
                 'Function/app:beep' % port, 1 if cat_enabled else None),
     ]
 
-    @cat_enabled
     @validate_transaction_metrics(
         'make_request',
         background_task=True,

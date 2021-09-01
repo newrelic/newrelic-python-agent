@@ -14,29 +14,27 @@
 
 import functools
 
-from newrelic.common.async_wrapper import async_wrapper
 from newrelic.api.cat_header_mixin import CatHeaderMixin
 from newrelic.api.time_trace import TimeTrace, current_trace
+from newrelic.common.async_wrapper import async_wrapper
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.message_node import MessageNode
 
 
 class MessageTrace(CatHeaderMixin, TimeTrace):
 
-    cat_id_key = 'NewRelicID'
-    cat_transaction_key = 'NewRelicTransaction'
-    cat_appdata_key = 'NewRelicAppData'
-    cat_synthetics_key = 'NewRelicSynthetics'
+    cat_id_key = "NewRelicID"
+    cat_transaction_key = "NewRelicTransaction"
+    cat_appdata_key = "NewRelicAppData"
+    cat_synthetics_key = "NewRelicSynthetics"
 
-    def __init__(self, library, operation,
-            destination_type, destination_name,
-            params=None, **kwargs):
+    def __init__(self, library, operation, destination_type, destination_name, params=None, **kwargs):
 
         parent = None
         if kwargs:
             if len(kwargs) > 1:
                 raise TypeError("Invalid keyword arguments:", kwargs)
-            parent = kwargs['parent']
+            parent = kwargs["parent"]
         super(MessageTrace, self).__init__(parent)
 
         self.library = library
@@ -56,38 +54,43 @@ class MessageTrace(CatHeaderMixin, TimeTrace):
 
         # Only record parameters when not high security mode and only
         # when enabled in settings.
-        if not (self.should_record_segment_params and self.settings and
-                self.settings.message_tracer.segment_parameters_enabled):
+        if not (
+            self.should_record_segment_params
+            and self.settings
+            and self.settings.message_tracer.segment_parameters_enabled
+        ):
             self.params = None
         return result
 
     def __repr__(self):
-        return '<%s %s>' % (self.__class__.__name__, dict(
-                library=self.library, operation=self.operation))
+        return "<%s object at 0x%x %s>" % (
+            self.__class__.__name__,
+            id(self),
+            dict(library=self.library, operation=self.operation),
+        )
 
     def terminal_node(self):
         return True
 
     def create_node(self):
         return MessageNode(
-                library=self.library,
-                operation=self.operation,
-                children=self.children,
-                start_time=self.start_time,
-                end_time=self.end_time,
-                duration=self.duration,
-                exclusive=self.exclusive,
-                destination_name=self.destination_name,
-                destination_type=self.destination_type,
-                params=self.params,
-                guid=self.guid,
-                agent_attributes=self.agent_attributes,
-                user_attributes=self.user_attributes)
+            library=self.library,
+            operation=self.operation,
+            children=self.children,
+            start_time=self.start_time,
+            end_time=self.end_time,
+            duration=self.duration,
+            exclusive=self.exclusive,
+            destination_name=self.destination_name,
+            destination_type=self.destination_type,
+            params=self.params,
+            guid=self.guid,
+            agent_attributes=self.agent_attributes,
+            user_attributes=self.user_attributes,
+        )
 
 
-def MessageTraceWrapper(wrapped, library, operation, destination_type,
-        destination_name, params={}):
-
+def MessageTraceWrapper(wrapped, library, operation, destination_type, destination_name, params={}):
     def _nr_message_trace_wrapper_(wrapped, instance, args, kwargs):
         wrapper = async_wrapper(wrapped)
         if not wrapper:
@@ -129,8 +132,7 @@ def MessageTraceWrapper(wrapped, library, operation, destination_type,
         else:
             _destination_name = destination_name
 
-        trace = MessageTrace(_library, _operation,
-                _destination_type, _destination_name, params={}, parent=parent)
+        trace = MessageTrace(_library, _operation, _destination_type, _destination_name, params={}, parent=parent)
 
         if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)
@@ -141,14 +143,18 @@ def MessageTraceWrapper(wrapped, library, operation, destination_type,
     return FunctionWrapper(wrapped, _nr_message_trace_wrapper_)
 
 
-def message_trace(library, operation, destination_type, destination_name,
-        params={}):
-    return functools.partial(MessageTraceWrapper, library=library,
-            operation=operation, destination_type=destination_type,
-            destination_name=destination_name, params=params)
+def message_trace(library, operation, destination_type, destination_name, params={}):
+    return functools.partial(
+        MessageTraceWrapper,
+        library=library,
+        operation=operation,
+        destination_type=destination_type,
+        destination_name=destination_name,
+        params=params,
+    )
 
 
-def wrap_message_trace(module, object_path, library, operation,
-        destination_type, destination_name, params={}):
-    wrap_object(module, object_path, MessageTraceWrapper,
-            (library, operation, destination_type, destination_name, params))
+def wrap_message_trace(module, object_path, library, operation, destination_type, destination_name, params={}):
+    wrap_object(
+        module, object_path, MessageTraceWrapper, (library, operation, destination_type, destination_name, params)
+    )

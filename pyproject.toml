@@ -13,3 +13,6 @@ max-line-length = "120"
 
 [tool.pylint.basic]
 good-names = "exc,val,tb"
+
+[tool.bandit]
+skips = ["B110"]

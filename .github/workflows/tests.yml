@@ -19,86 +19,103 @@ on:
     branches:
       - main
     tags-ignore:
-      - '**'
+      - "**"
   pull_request:
-    branches:
-      - main
-      - feature/*
-      - feature-*
-      - develop-*
 
 jobs:
   python:
-    env: 
+    env:
       TOTAL_GROUPS: 20
 
     strategy:
       matrix:
-        group-number: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+        group-number:
+          [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+          ]
 
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
+      # Set up all versions of python
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 2.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.6
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy3
+          architecture: x64
 
-    # Setup pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
+      # Setup pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy2
+          architecture: x64
 
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - name: Install Dependencies
+        run: |
+          pip install -U pip
+          pip install -U wheel setuptools tox virtualenv!=20.0.24
 
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
   grpc:
-    env: 
+    env:
       TOTAL_GROUPS: 1
 
     strategy:
@@ -108,66 +125,66 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
+      # Set up all versions of python
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 2.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.6
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy3
+          architecture: x64
 
-    # Setup pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
+      # Setup pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy2
+          architecture: x64
 
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - name: Install Dependencies
+        run: |
+          pip install -U pip
+          pip install -U wheel setuptools tox virtualenv!=20.0.24
 
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }}
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }}
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
   libcurl:
-    env: 
+    env:
       TOTAL_GROUPS: 1
 
     strategy:
@@ -177,73 +194,73 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
+      # Set up all versions of python
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy3
+          architecture: x64
 
-    # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
+      # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy2
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 2.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.6
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+          architecture: x64
 
-    # Set up python 3.9 last to ensure tox runs CPython
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
+      # Set up python 3.9 last to ensure tox runs CPython
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+          architecture: x64
 
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - name: Install Dependencies
+        run: |
+          pip install -U pip
+          pip install -U wheel setuptools tox virtualenv!=20.0.24
 
-    # Special case packages
-    - name: Install libcurl-dev
-      run: |
-        sudo apt-get update
-        sudo apt-get install libcurl4-openssl-dev
+      # Special case packages
+      - name: Install libcurl-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install libcurl4-openssl-dev
 
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
   postgres:
-    env: 
+    env:
       TOTAL_GROUPS: 2
 
     strategy:
@@ -268,67 +285,67 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
+      # Set up all versions of python
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy3
+          architecture: x64
 
-    # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
+      # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy2
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 2.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.6
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+          architecture: x64
 
-    # Set up python 3.9 last to ensure tox runs CPython
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
+      # Set up python 3.9 last to ensure tox runs CPython
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+          architecture: x64
 
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - name: Install Dependencies
+        run: |
+          pip install -U pip
+          pip install -U wheel setuptools tox virtualenv!=20.0.24
 
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
   mysql:
-    env: 
+    env:
       TOTAL_GROUPS: 2
 
     strategy:
@@ -356,67 +373,67 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
+      # Set up all versions of python
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy3
+          architecture: x64
 
-    # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
+      # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy2
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 2.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.6
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+          architecture: x64
 
-    # Set up python 3.9 last to ensure tox runs CPython
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
+      # Set up python 3.9 last to ensure tox runs CPython
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+          architecture: x64
 
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - name: Install Dependencies
+        run: |
+          pip install -U pip
+          pip install -U wheel setuptools tox virtualenv!=20.0.24
 
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
   redis:
-    env: 
+    env:
       TOTAL_GROUPS: 1
 
     strategy:
@@ -439,67 +456,67 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
+      # Set up all versions of python
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy3
+          architecture: x64
 
-    # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
+      # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy2
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 2.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.6
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+          architecture: x64
 
-    # Set up python 3.9 last to ensure tox runs CPython
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
+      # Set up python 3.9 last to ensure tox runs CPython
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+          architecture: x64
 
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - name: Install Dependencies
+        run: |
+          pip install -U pip
+          pip install -U wheel setuptools tox virtualenv!=20.0.24
 
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
   solr:
-    env: 
+    env:
       TOTAL_GROUPS: 1
 
     strategy:
@@ -524,67 +541,67 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
+      # Set up all versions of python
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy3
+          architecture: x64
 
-    # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
+      # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy2
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 2.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.6
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+          architecture: x64
 
-    # Set up python 3.9 last to ensure tox runs CPython
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
+      # Set up python 3.9 last to ensure tox runs CPython
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+          architecture: x64
 
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - name: Install Dependencies
+        run: |
+          pip install -U pip
+          pip install -U wheel setuptools tox virtualenv!=20.0.24
 
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
   memcached:
-    env: 
+    env:
       TOTAL_GROUPS: 2
 
     strategy:
@@ -607,67 +624,67 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
+      # Set up all versions of python
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy3
+          architecture: x64
 
-    # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
+      # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy2
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 2.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.6
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+          architecture: x64
 
-    # Set up python 3.9 last to ensure tox runs CPython
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
+      # Set up python 3.9 last to ensure tox runs CPython
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+          architecture: x64
 
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - name: Install Dependencies
+        run: |
+          pip install -U pip
+          pip install -U wheel setuptools tox virtualenv!=20.0.24
 
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
   rabbitmq:
-    env: 
+    env:
       TOTAL_GROUPS: 1
 
     strategy:
@@ -691,67 +708,67 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
+      # Set up all versions of python
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy3
+          architecture: x64
 
-    # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
+      # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy2
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 2.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.6
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+          architecture: x64
 
-    # Set up python 3.9 last to ensure tox runs CPython
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
+      # Set up python 3.9 last to ensure tox runs CPython
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+          architecture: x64
 
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - name: Install Dependencies
+        run: |
+          pip install -U pip
+          pip install -U wheel setuptools tox virtualenv!=20.0.24
 
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
   mongodb:
-    env: 
+    env:
       TOTAL_GROUPS: 1
 
     strategy:
@@ -774,67 +791,67 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
+      # Set up all versions of python
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy3
+          architecture: x64
 
-    # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
+      # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy2
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 2.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.6
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+          architecture: x64
 
-    # Set up python 3.9 last to ensure tox runs CPython
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
+      # Set up python 3.9 last to ensure tox runs CPython
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+          architecture: x64
 
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - name: Install Dependencies
+        run: |
+          pip install -U pip
+          pip install -U wheel setuptools tox virtualenv!=20.0.24
 
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
   elasticsearchserver01:
-    env: 
+    env:
       TOTAL_GROUPS: 1
 
     strategy:
@@ -859,67 +876,67 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
+      # Set up all versions of python
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy3
+          architecture: x64
 
-    # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
+      # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy2
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 2.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.6
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+          architecture: x64
 
-    # Set up python 3.9 last to ensure tox runs CPython
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
+      # Set up python 3.9 last to ensure tox runs CPython
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+          architecture: x64
 
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - name: Install Dependencies
+        run: |
+          pip install -U pip
+          pip install -U wheel setuptools tox virtualenv!=20.0.24
 
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
   elasticsearchserver07:
-    env: 
+    env:
       TOTAL_GROUPS: 1
 
     strategy:
@@ -944,67 +961,67 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
+      # Set up all versions of python
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy3
+          architecture: x64
 
-    # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
+      # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy2
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 2.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.6
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+          architecture: x64
 
-    # Set up python 3.9 last to ensure tox runs CPython
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
+      # Set up python 3.9 last to ensure tox runs CPython
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+          architecture: x64
 
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - name: Install Dependencies
+        run: |
+          pip install -U pip
+          pip install -U wheel setuptools tox virtualenv!=20.0.24
 
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
   gearman:
-    env: 
+    env:
       TOTAL_GROUPS: 1
 
     strategy:
@@ -1026,61 +1043,61 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
+      # Set up all versions of python
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy3
+          architecture: x64
 
-    # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
+      # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
+      - uses: actions/setup-python@v2
+        with:
+          python-version: pypy2
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 2.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.6
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+          architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+          architecture: x64
 
-    # Set up python 3.9 last to ensure tox runs CPython
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
+      # Set up python 3.9 last to ensure tox runs CPython
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+          architecture: x64
 
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - name: Install Dependencies
+        run: |
+          pip install -U pip
+          pip install -U wheel setuptools tox virtualenv!=20.0.24
 
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0

@@ -13,15 +13,16 @@
 # limitations under the License.
 
 import asyncio
+
 import aiohttp
 import pytest
+from testing_support.fixtures import cat_enabled, validate_transaction_metrics
 from yarl import URL
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace
-from testing_support.fixtures import validate_transaction_metrics, cat_enabled
 
-version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
+version_info = tuple(int(_) for _ in aiohttp.__version__.split(".")[:2])
 
 
 async def fetch(method, url):
@@ -32,7 +33,7 @@ async def fetch(method, url):
             return await response.text()
 
 
-@background_task(name='fetch_multiple')
+@background_task(name="fetch_multiple")
 async def fetch_multiple(method, url):
     coros = [fetch(method, url) for _ in range(2)]
     return await asyncio.gather(*coros, return_exceptions=True)
@@ -47,29 +48,28 @@ else:
 def task(loop, method, exc_expected, url):
     text_list = loop.run_until_complete(fetch_multiple(method, url))
     if exc_expected:
-        assert isinstance(text_list[0],
-                _expected_error_class), text_list[0].__class__
-        assert isinstance(text_list[1],
-                _expected_error_class), text_list[1].__class__
+        assert isinstance(text_list[0], _expected_error_class), text_list[0].__class__
+        assert isinstance(text_list[1], _expected_error_class), text_list[1].__class__
     else:
         assert text_list[0] == text_list[1], text_list
 
 
 test_matrix = (
-    ('get', False),
-    ('post', True),
-    ('options', True),
-    ('head', True),
-    ('put', True),
-    ('patch', True),
-    ('delete', True),
+    ("get", False),
+    ("post", True),
+    ("options", True),
+    ("head", True),
+    ("put", True),
+    ("patch", True),
+    ("delete", True),
 )
 
+
 @cat_enabled
-@pytest.mark.parametrize('method,exc_expected', test_matrix)
+@pytest.mark.parametrize("method,exc_expected", test_matrix)
 def test_client_async_await(local_server_info, method, exc_expected):
     @validate_transaction_metrics(
-        'fetch_multiple',
+        "fetch_multiple",
         background_task=True,
         scoped_metrics=[
             (local_server_info.base_metric + method.upper(), 2),
@@ -87,10 +87,10 @@ def test_client_async_await(local_server_info, method, exc_expected):
 
 @cat_enabled
 def test_client_yarl_async_await(local_server_info):
-    method = 'get'
+    method = "get"
 
     @validate_transaction_metrics(
-        'fetch_multiple',
+        "fetch_multiple",
         background_task=True,
         scoped_metrics=[
             (local_server_info.base_metric + method.upper(), 2),
@@ -106,10 +106,9 @@ def test_client_yarl_async_await(local_server_info):
     task_test()
 
 
-@pytest.mark.parametrize('method,exc_expected', test_matrix)
+@pytest.mark.parametrize("method,exc_expected", test_matrix)
 @cat_enabled
 def test_client_no_txn_async_await(local_server_info, method, exc_expected):
-
     def task_test():
         loop = asyncio.get_event_loop()
         task(loop, method, exc_expected, local_server_info.url)
@@ -117,13 +116,12 @@ def test_client_no_txn_async_await(local_server_info, method, exc_expected):
     task_test()
 
 
-@pytest.mark.parametrize('method,exc_expected', test_matrix)
+@pytest.mark.parametrize("method,exc_expected", test_matrix)
 def test_client_throw_async_await(local_server_info, method, exc_expected):
-
     class ThrowerException(ValueError):
         pass
 
-    @background_task(name='test_client_throw_async_await')
+    @background_task(name="test_client_throw_async_await")
     async def self_driving_thrower():
         async with aiohttp.ClientSession() as session:
             coro = session._request(method.upper(), local_server_info.url)
@@ -135,7 +133,7 @@ def test_client_throw_async_await(local_server_info, method, exc_expected):
             coro.throw(ThrowerException())
 
     @validate_transaction_metrics(
-        'test_client_throw_async_await',
+        "test_client_throw_async_await",
         background_task=True,
         scoped_metrics=[
             (local_server_info.base_metric + method.upper(), 1),
@@ -153,10 +151,9 @@ def test_client_throw_async_await(local_server_info, method, exc_expected):
     task_test()
 
 
-@pytest.mark.parametrize('method,exc_expected', test_matrix)
+@pytest.mark.parametrize("method,exc_expected", test_matrix)
 def test_client_close_async_await(local_server_info, method, exc_expected):
-
-    @background_task(name='test_client_close_async_await')
+    @background_task(name="test_client_close_async_await")
     async def self_driving_closer():
         async with aiohttp.ClientSession() as session:
             coro = session._request(method.upper(), local_server_info.url)
@@ -168,7 +165,7 @@ def test_client_close_async_await(local_server_info, method, exc_expected):
             coro.close()
 
     @validate_transaction_metrics(
-        'test_client_close_async_await',
+        "test_client_close_async_await",
         background_task=True,
         scoped_metrics=[
             (local_server_info.base_metric + method.upper(), 1),
@@ -184,10 +181,9 @@ def test_client_close_async_await(local_server_info, method, exc_expected):
     task_test()
 
 
-@pytest.mark.parametrize('method,exc_expected', test_matrix)
+@pytest.mark.parametrize("method,exc_expected", test_matrix)
 @cat_enabled
 def test_await_request_async_await(local_server_info, method, exc_expected):
-
     async def request_with_await():
         async with aiohttp.ClientSession() as session:
             coro = session._request(method.upper(), local_server_info.url)
@@ -198,7 +194,7 @@ def test_await_request_async_await(local_server_info, method, exc_expected):
             return await result.text()
 
     @validate_transaction_metrics(
-        'test_await_request_async_await',
+        "test_await_request_async_await",
         background_task=True,
         scoped_metrics=[
             (local_server_info.base_metric + method.upper(), 2),
@@ -207,17 +203,15 @@ def test_await_request_async_await(local_server_info, method, exc_expected):
             (local_server_info.base_metric + method.upper(), 2),
         ],
     )
-    @background_task(name='test_await_request_async_await')
+    @background_task(name="test_await_request_async_await")
     def task_test():
         loop = asyncio.get_event_loop()
         coros = [request_with_await() for _ in range(2)]
         future = asyncio.gather(*coros, return_exceptions=True)
         text_list = loop.run_until_complete(future)
         if exc_expected:
-            assert isinstance(text_list[0],
-                    _expected_error_class), text_list[0].__class__
-            assert isinstance(text_list[1],
-                    _expected_error_class), text_list[1].__class__
+            assert isinstance(text_list[0], _expected_error_class), text_list[0].__class__
+            assert isinstance(text_list[1], _expected_error_class), text_list[1].__class__
         else:
             assert text_list[0] == text_list[1], text_list
 
@@ -227,21 +221,20 @@ def test_await_request_async_await(local_server_info, method, exc_expected):
 test_ws_matrix = (
     # the 127.0.0.1 server does not accept websocket requests, hence an
     # exception is expected but a metric will still be created
-    ('ws_connect', True),
+    ("ws_connect", True),
 )
 
 
-@pytest.mark.parametrize('method,exc_expected', test_ws_matrix)
+@pytest.mark.parametrize("method,exc_expected", test_ws_matrix)
 def test_ws_connect_async_await(local_server_info, method, exc_expected):
-
     @validate_transaction_metrics(
-        'fetch_multiple',
+        "fetch_multiple",
         background_task=True,
         scoped_metrics=[
-            (local_server_info.base_metric + 'GET', 2),
+            (local_server_info.base_metric + "GET", 2),
         ],
         rollup_metrics=[
-            (local_server_info.base_metric + 'GET', 2),
+            (local_server_info.base_metric + "GET", 2),
         ],
     )
     def task_test():
@@ -251,7 +244,7 @@ def test_ws_connect_async_await(local_server_info, method, exc_expected):
     task_test()
 
 
-@pytest.mark.parametrize('method,exc_expected', test_matrix)
+@pytest.mark.parametrize("method,exc_expected", test_matrix)
 @cat_enabled
 def test_create_task_async_await(local_server_info, method, exc_expected):
 
@@ -265,13 +258,13 @@ def test_create_task_async_await(local_server_info, method, exc_expected):
             resp.raise_for_status()
             return await resp.text()
 
-    @background_task(name='test_create_task_async_await')
+    @background_task(name="test_create_task_async_await")
     async def fetch_multiple(loop):
         coros = [fetch_task(loop) for _ in range(2)]
         return await asyncio.gather(*coros, return_exceptions=True)
 
     @validate_transaction_metrics(
-        'test_create_task_async_await',
+        "test_create_task_async_await",
         background_task=True,
         scoped_metrics=[
             (local_server_info.base_metric + method.upper(), 2),
@@ -284,17 +277,15 @@ def test_create_task_async_await(local_server_info, method, exc_expected):
         loop = asyncio.get_event_loop()
         result = loop.run_until_complete(fetch_multiple(loop))
         if exc_expected:
-            assert isinstance(result[0],
-                    _expected_error_class), result[0].__class__
-            assert isinstance(result[1],
-                    _expected_error_class), result[1].__class__
+            assert isinstance(result[0], _expected_error_class), result[0].__class__
+            assert isinstance(result[1], _expected_error_class), result[1].__class__
         else:
             assert result[0] == result[1]
 
     task_test()
 
 
-@pytest.mark.parametrize('method,exc_expected', test_matrix)
+@pytest.mark.parametrize("method,exc_expected", test_matrix)
 @cat_enabled
 def test_terminal_parent_async_await(local_server_info, method, exc_expected):
     """

@@ -20,13 +20,14 @@ from newrelic.common.async_wrapper import async_wrapper
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.graphql_node import GraphQLOperationNode, GraphQLResolverNode
 
+
 class GraphQLOperationTrace(TimeTrace):
     def __init__(self, **kwargs):
         parent = None
         if kwargs:
             if len(kwargs) > 1:
                 raise TypeError("Invalid keyword arguments:", kwargs)
-            parent = kwargs['parent']
+            parent = kwargs["parent"]
         super(GraphQLOperationTrace, self).__init__(parent)
 
         self.operation_name = "<anonymous>"
@@ -37,7 +38,16 @@ class GraphQLOperationTrace(TimeTrace):
         self.statement = None
 
     def __repr__(self):
-        return '<%s %s>' % (self.__class__.__name__, dict())
+        return "<%s object at 0x%x %s>" % (
+            self.__class__.__name__,
+            id(self),
+            dict(
+                operation_name=self.operation_name,
+                operation_type=self.operation_type,
+                deepest_path=self.deepest_path,
+                graphql=self.graphql,
+            ),
+        )
 
     @property
     def formatted(self):
@@ -106,6 +116,7 @@ def GraphQLOperationTraceWrapper(wrapped):
 def graphql_operation_trace():
     return functools.partial(GraphQLOperationTraceWrapper)
 
+
 def wrap_graphql_operation_trace(module, object_path):
     wrap_object(module, object_path, GraphQLOperationTraceWrapper)
 
@@ -116,7 +127,7 @@ class GraphQLResolverTrace(TimeTrace):
         self.field_name = field_name
 
     def __repr__(self):
-        return '<%s %s>' % (self.__class__.__name__, dict())
+        return "<%s object at 0x%x %s>" % (self.__class__.__name__, id(self), dict(field_name=self.field_name))
 
     def finalize_data(self, *args, **kwargs):
         self._add_agent_attribute("graphql.field.name", self.field_name)
@@ -160,6 +171,7 @@ def GraphQLResolverTraceWrapper(wrapped):
 
 def graphql_resolver_trace():
     return functools.partial(GraphQLResolverTraceWrapper)
+
 
 def wrap_graphql_resolver_trace(module, object_path):
     wrap_object(module, object_path, GraphQLResolverTraceWrapper)

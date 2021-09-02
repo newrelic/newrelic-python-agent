@@ -14,25 +14,21 @@
 
 import logging
 import random
-import time
 import sys
-import newrelic.packages.six as six
+import time
 import traceback
 import warnings
 
+from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.common.object_names import parse_exc_info
+from newrelic.core.attribute import MAX_NUM_USER_ATTRIBUTES, process_user_attribute
 from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.trace_cache import trace_cache
-from newrelic.core.attribute import (
-        process_user_attribute, MAX_NUM_USER_ATTRIBUTES)
-
-from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 
 _logger = logging.getLogger(__name__)
 
 
 class TimeTrace(object):
-
     def __init__(self, parent=None):
         self.parent = parent
         self.root = None
@@ -47,11 +43,11 @@ class TimeTrace(object):
         self.exited = False
         self.is_async = False
         self.has_async_children = False
-        self.min_child_start_time = float('inf')
+        self.min_child_start_time = float("inf")
         self.exc_data = (None, None, None)
         self.should_record_segment_params = False
         # 16-digit random hex. Padded with zeros in the front.
-        self.guid = '%016x' % random.getrandbits(64)
+        self.guid = "%016x" % random.getrandbits(64)
         self.agent_attributes = {}
         self.user_attributes = {}
 
@@ -67,12 +63,8 @@ class TimeTrace(object):
     def _is_leaf(self):
         return self.child_count == len(self.children)
 
-    def __str__(self):
-        name = getattr(self, "name", None)
-        return "<id:%d name:%s __str__:%s>" % (id(self), name, super(TimeTrace, self).__str__())
-
     def __repr__(self):
-        return str(self)
+        return "<%s object at 0x%x %s>" % (self.__class__.__name__, id(self), dict(name=getattr(self, "name", None)))
 
     def __enter__(self):
         self.parent = parent = self.parent or current_trace()
@@ -101,8 +93,7 @@ class TimeTrace(object):
         parent.increment_child_count()
 
         self.root = parent.root
-        self.should_record_segment_params = (
-                transaction.should_record_segment_params)
+        self.should_record_segment_params = transaction.should_record_segment_params
 
         # Record start time.
 
@@ -130,10 +121,13 @@ class TimeTrace(object):
         # __exit__() is called before __enter__().
 
         if not self.activated:
-            _logger.error('Runtime instrumentation error. The __exit__() '
-                    'method of %r was called prior to __enter__() being '
-                    'called. Report this issue to New Relic support.\n%s',
-                    self, ''.join(traceback.format_stack()[:-1]))
+            _logger.error(
+                "Runtime instrumentation error. The __exit__() "
+                "method of %r was called prior to __enter__() being "
+                "called. Report this issue to New Relic support.\n%s",
+                self,
+                "".join(traceback.format_stack()[:-1]),
+            )
 
             return
 
@@ -190,12 +184,11 @@ class TimeTrace(object):
             return
 
         if settings.high_security:
-            _logger.debug('Cannot add custom parameter in High Security Mode.')
+            _logger.debug("Cannot add custom parameter in High Security Mode.")
             return
 
         if len(self.user_attributes) >= MAX_NUM_USER_ATTRIBUTES:
-            _logger.debug('Maximum number of custom attributes already '
-                    'added. Dropping attribute: %r=%r', key, value)
+            _logger.debug("Maximum number of custom attributes already added. Dropping attribute: %r=%r", key, value)
             return
 
         self.user_attributes[key] = value
@@ -215,10 +208,11 @@ class TimeTrace(object):
 
         # At least one destination for error events must be enabled
         if not (
-                settings.collect_traces or
-                settings.collect_span_events or
-                settings.collect_errors or
-                settings.collect_error_events):
+            settings.collect_traces
+            or settings.collect_span_events
+            or settings.collect_errors
+            or settings.collect_error_events
+        ):
             return
 
         # If no exception details provided, use current exception.
@@ -238,8 +232,7 @@ class TimeTrace(object):
 
         # Check to see if we need to strip the message before recording it.
 
-        if (settings.strip_exception_messages.enabled and
-                fullname not in settings.strip_exception_messages.whitelist):
+        if settings.strip_exception_messages.enabled and fullname not in settings.strip_exception_messages.whitelist:
             message = STRIP_EXCEPTION_MESSAGE
 
         # Where expected or ignore are a callable they should return a
@@ -249,7 +242,7 @@ class TimeTrace(object):
         #   False- Record the error.
         #   None - Use the default rules.
 
-        # Precedence: 
+        # Precedence:
         # 1. function parameter override as bool
         # 2. function parameter callable
         # 3. callable on transaction
@@ -273,7 +266,7 @@ class TimeTrace(object):
                 return
 
         # Callable on transaction
-        if should_ignore is None and hasattr(transaction, '_ignore_errors'):
+        if should_ignore is None and hasattr(transaction, "_ignore_errors"):
             should_ignore = transaction._ignore_errors(exc, value, tb)
             if should_ignore:
                 return
@@ -301,7 +294,6 @@ class TimeTrace(object):
         if is_expected is None and callable(expected):
             is_expected = expected(exc, value, tb)
 
-
         # List of class names
         if is_expected is None and expected is not None and not callable(expected):
             # Do not set is_expected to False
@@ -316,10 +308,8 @@ class TimeTrace(object):
 
         # Record a supportability metric if error attributes are being
         # overiden.
-        if 'error.class' in self.agent_attributes:
-            transaction._record_supportability(
-                    'Supportability/'
-                    'SpanEvent/Errors/Dropped')
+        if "error.class" in self.agent_attributes:
+            transaction._record_supportability("Supportability/SpanEvent/Errors/Dropped")
 
         # Add error details as agent attributes to span event.
         self._add_agent_attribute("error.class", fullname)
@@ -330,11 +320,11 @@ class TimeTrace(object):
 
     def notice_error(self, error=None, attributes={}, expected=None, ignore=None, status_code=None):
         recorded = self._observe_exception(
-                        error, 
-                        ignore=ignore, 
-                        expected=expected, 
-                        status_code=status_code,
-                    )
+            error,
+            ignore=ignore,
+            expected=expected,
+            status_code=status_code,
+        )
         if recorded:
             fullname, message, tb, is_expected = recorded
             transaction = self.transaction
@@ -346,8 +336,7 @@ class TimeTrace(object):
 
             if settings.high_security:
                 if attributes:
-                    _logger.debug('Cannot add custom parameters in '
-                            'High Security Mode.')
+                    _logger.debug("Cannot add custom parameters in High Security Mode.")
             else:
                 try:
                     for k, v in attributes.items():
@@ -355,21 +344,23 @@ class TimeTrace(object):
                         if name:
                             custom_params[name] = val
                 except Exception:
-                    _logger.debug('Parameters failed to validate for unknown '
-                            'reason. Dropping parameters for error: %r. Check '
-                            'traceback for clues.', fullname, exc_info=True)
+                    _logger.debug(
+                        "Parameters failed to validate for unknown "
+                        "reason. Dropping parameters for error: %r. Check "
+                        "traceback for clues.",
+                        fullname,
+                        exc_info=True,
+                    )
                     custom_params = {}
 
-            transaction._create_error_node(
-                    settings, fullname, message, is_expected, custom_params, self.guid, tb)
-
+            transaction._create_error_node(settings, fullname, message, is_expected, custom_params, self.guid, tb)
 
     def record_exception(self, exc_info=None, params={}, ignore_errors=[]):
         # Deprecation Warning
-        warnings.warn((
-            'The record_exception function is deprecated. Please use the '
-            'new api named notice_error instead.'
-        ), DeprecationWarning)
+        warnings.warn(
+            ("The record_exception function is deprecated. Please use the new api named notice_error instead."),
+            DeprecationWarning,
+        )
 
         self.notice_error(error=exc_info, attributes=params, ignore=ignore_errors)
 
@@ -400,10 +391,13 @@ class TimeTrace(object):
     def _complete_trace(self):
         # transaction already completed, this is an error
         if self.parent is None:
-            _logger.error('Runtime instrumentation error. The transaction '
-                    'already completed meaning a child called complete trace '
-                    'after the trace had been finalized. Trace: %r \n%s',
-                    self, ''.join(traceback.format_stack()[:-1]))
+            _logger.error(
+                "Runtime instrumentation error. The transaction "
+                "already completed meaning a child called complete trace "
+                "after the trace had been finalized. Trace: %r \n%s",
+                self,
+                "".join(traceback.format_stack()[:-1]),
+            )
 
             return
 
@@ -428,7 +422,7 @@ class TimeTrace(object):
 
         # Observe errors on the span only if record_exception hasn't been
         # called already
-        if exc_data[0] and 'error.class' not in self.agent_attributes:
+        if exc_data[0] and "error.class" not in self.agent_attributes:
             self._observe_exception(exc_data)
 
         # Wipe out root reference as well
@@ -473,16 +467,14 @@ class TimeTrace(object):
     def terminal_node(self):
         return False
 
-    def update_async_exclusive_time(self, min_child_start_time,
-            exclusive_duration):
+    def update_async_exclusive_time(self, min_child_start_time, exclusive_duration):
         # if exited and the child started after, there's no overlap on the
         # exclusive time
         if self.exited and (self.end_time < min_child_start_time):
             exclusive_delta = 0.0
         # else there is overlap and we need to compute it
         elif self.exited:
-            exclusive_delta = (self.end_time -
-                    min_child_start_time)
+            exclusive_delta = self.end_time - min_child_start_time
 
             # we don't want to double count the partial exclusive time
             # attributed to this trace, so we should reset the child start time
@@ -500,27 +492,24 @@ class TimeTrace(object):
 
         if self.parent and exclusive_duration_remaining > 0.0:
             # call parent exclusive duration delta
-            self.parent.update_async_exclusive_time(min_child_start_time,
-                    exclusive_duration_remaining)
+            self.parent.update_async_exclusive_time(min_child_start_time, exclusive_duration_remaining)
 
     def process_child(self, node, is_async):
         self.children.append(node)
         if is_async:
 
             # record the lowest start time
-            self.min_child_start_time = min(self.min_child_start_time,
-                    node.start_time)
+            self.min_child_start_time = min(self.min_child_start_time, node.start_time)
 
             # if there are no children running, finalize exclusive time
             if self.child_count == len(self.children):
 
                 exclusive_duration = node.end_time - self.min_child_start_time
 
-                self.update_async_exclusive_time(self.min_child_start_time,
-                        exclusive_duration)
+                self.update_async_exclusive_time(self.min_child_start_time, exclusive_duration)
 
                 # reset time range tracking
-                self.min_child_start_time = float('inf')
+                self.min_child_start_time = float("inf")
         else:
             self.exclusive -= node.duration
 
@@ -574,15 +563,14 @@ def get_linking_metadata():
         }
 
 
-def record_exception(exc=None, value=None, tb=None, params={},
-        ignore_errors=[], application=None):
-        # Deprecation Warning
-        warnings.warn((
-            'The record_exception function is deprecated. Please use the '
-            'new api named notice_error instead.'
-        ), DeprecationWarning)
+def record_exception(exc=None, value=None, tb=None, params={}, ignore_errors=[], application=None):
+    # Deprecation Warning
+    warnings.warn(
+        ("The record_exception function is deprecated. Please use the new api named notice_error instead."),
+        DeprecationWarning,
+    )
 
-        notice_error(error=(exc, value, tb), attributes=params, ignore=ignore_errors, application=application)
+    notice_error(error=(exc, value, tb), attributes=params, ignore=ignore_errors, application=application)
 
 
 def notice_error(error=None, attributes={}, expected=None, ignore=None, status_code=None, application=None):

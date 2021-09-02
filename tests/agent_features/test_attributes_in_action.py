@@ -155,8 +155,7 @@ if normal_asgi_application:
 def normal_application(request):
     if request.param is normal_wsgi_application:
         return webtest.TestApp(normal_wsgi_application)
-    else:
-        return AsgiTest(normal_asgi_application)
+    return AsgiTest(normal_asgi_application)
 
 
 # Tests for checking the presence and format of agent attributes.

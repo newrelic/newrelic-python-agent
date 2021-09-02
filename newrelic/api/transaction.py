@@ -13,59 +13,72 @@
 # limitations under the License.
 
 from __future__ import print_function
+
+import logging
 import os
+import random
 import re
 import sys
-import time
 import threading
-import logging
-import random
+import time
 import warnings
 import weakref
-
 from collections import OrderedDict
 
-import newrelic.packages.six as six
-
-import newrelic.core.transaction_node
-import newrelic.core.root_node
 import newrelic.core.database_node
 import newrelic.core.error_node
-
-from newrelic.core.stats_engine import CustomMetrics, SampledDataSet
-from newrelic.core.trace_cache import (trace_cache,
-        TraceCacheNoActiveTraceError,
-        TraceCacheActiveTraceError)
-from newrelic.core.thread_utilization import utilization_tracker
-
-from newrelic.core.attribute import (create_attributes,
-        create_agent_attributes, create_user_attributes,
-        process_user_attribute, MAX_NUM_USER_ATTRIBUTES)
-from newrelic.core.attribute_filter import (DST_NONE, DST_ERROR_COLLECTOR,
-        DST_TRANSACTION_TRACER)
+import newrelic.core.root_node
+import newrelic.core.transaction_node
+import newrelic.packages.six as six
+from newrelic.api.time_trace import TimeTrace
+from newrelic.common.encoding_utils import (
+    DistributedTracePayload,
+    NrTraceState,
+    W3CTraceParent,
+    W3CTraceState,
+    base64_decode,
+    convert_to_cat_metadata_value,
+    deobfuscate,
+    ensure_str,
+    generate_path_hash,
+    json_decode,
+    json_encode,
+    obfuscate,
+)
+from newrelic.core.attribute import (
+    MAX_NUM_USER_ATTRIBUTES,
+    create_agent_attributes,
+    create_attributes,
+    create_user_attributes,
+    process_user_attribute,
+)
+from newrelic.core.attribute_filter import (
+    DST_ERROR_COLLECTOR,
+    DST_NONE,
+    DST_TRANSACTION_TRACER,
+)
 from newrelic.core.config import DEFAULT_RESERVOIR_SIZE
 from newrelic.core.custom_event import create_custom_event
 from newrelic.core.stack_trace import exception_stack
-from newrelic.common.encoding_utils import (generate_path_hash, obfuscate,
-        deobfuscate, json_encode, json_decode, base64_decode,
-        convert_to_cat_metadata_value, DistributedTracePayload, ensure_str,
-        W3CTraceParent, W3CTraceState, NrTraceState)
-
-from newrelic.api.time_trace import TimeTrace
+from newrelic.core.stats_engine import CustomMetrics, SampledDataSet
+from newrelic.core.thread_utilization import utilization_tracker
+from newrelic.core.trace_cache import (
+    TraceCacheActiveTraceError,
+    TraceCacheNoActiveTraceError,
+    trace_cache,
+)
 
 _logger = logging.getLogger(__name__)
 
-DISTRIBUTED_TRACE_KEYS_REQUIRED = ('ty', 'ac', 'ap', 'tr', 'ti')
-DISTRIBUTED_TRACE_TRANSPORT_TYPES = set((
-    'HTTP', 'HTTPS', 'Kafka', 'JMS',
-    'IronMQ', 'AMQP', 'Queue', 'Other'))
-DELIMITER_FORMAT_RE = re.compile('[ \t]*,[ \t]*')
+DISTRIBUTED_TRACE_KEYS_REQUIRED = ("ty", "ac", "ap", "tr", "ti")
+DISTRIBUTED_TRACE_TRANSPORT_TYPES = set(("HTTP", "HTTPS", "Kafka", "JMS", "IronMQ", "AMQP", "Queue", "Other"))
+DELIMITER_FORMAT_RE = re.compile("[ \t]*,[ \t]*")
 ACCEPTED_DISTRIBUTED_TRACE = 1
 CREATED_DISTRIBUTED_TRACE = 2
 PARENT_TYPE = {
-    '0': 'App',
-    '1': 'Browser',
-    '2': 'Mobile',
+    "0": "App",
+    "1": "Browser",
+    "2": "Mobile",
 }
 
 
@@ -87,9 +100,11 @@ class Sentinel(TimeTrace):
         """
         for key, value in transaction_params.items():
             if len(self.user_attributes) >= MAX_NUM_USER_ATTRIBUTES:
-                _logger.debug('Maximum number of custom attributes already '
-                              'added to span. Some transaction attributes may '
-                              'not be included.')
+                _logger.debug(
+                    "Maximum number of custom attributes already "
+                    "added to span. Some transaction attributes may "
+                    "not be included."
+                )
                 break
             if key not in self.user_attributes:
                 self.user_attributes[key] = value
@@ -135,7 +150,7 @@ class CachedPath(object):
         if transaction:
             return transaction.path
 
-        return 'Unknown'
+        return "Unknown"
 
 
 class Transaction(object):
@@ -244,7 +259,7 @@ class Transaction(object):
 
         self.rum_token = None
 
-        trace_id = '%032x' % random.getrandbits(128)
+        trace_id = "%032x" % random.getrandbits(128)
 
         # 16-digit random hex. Padded with zeros in the front.
         self.guid = trace_id[:16]
@@ -262,7 +277,7 @@ class Transaction(object):
         self.parent_account = None
         self.parent_transport_type = None
         self.parent_transport_duration = None
-        self.tracestate = ''
+        self.tracestate = ""
         self._priority = None
         self._sampled = None
 
@@ -310,7 +325,7 @@ class Transaction(object):
 
     def __enter__(self):
 
-        assert(self._state == self.STATE_PENDING)
+        assert self._state == self.STATE_PENDING
 
         # Bail out if the transaction is not enabled.
 
@@ -348,15 +363,12 @@ class Transaction(object):
         # For now we only do this if we know it is an
         # actual thread and not a greenlet.
 
-        if (not hasattr(sys, '_current_frames') or
-                self.thread_id in sys._current_frames()):
+        if not hasattr(sys, "_current_frames") or self.thread_id in sys._current_frames():
             thread_instance = threading.currentThread()
-            self._utilization_tracker = utilization_tracker(
-                    self.application.name)
+            self._utilization_tracker = utilization_tracker(self.application.name)
             if self._utilization_tracker:
                 self._utilization_tracker.enter_transaction(thread_instance)
-                self._thread_utilization_start = \
-                        self._utilization_tracker.utilization_count()
+                self._thread_utilization_start = self._utilization_tracker.utilization_count()
 
         # Mark transaction as active and update state
         # used to validate correct usage of class.
@@ -393,13 +405,17 @@ class Transaction(object):
             #
             # https://bugs.python.org/issue40312
             if not self._dead:
-                _logger.exception('Runtime instrumentation error. Attempt to '
-                        'drop the trace but where none is active. '
-                        'Report this issue to New Relic support.'),
+                _logger.exception(
+                    "Runtime instrumentation error. Attempt to "
+                    "drop the trace but where none is active. "
+                    "Report this issue to New Relic support."
+                ),
                 return
         except Exception:
-            _logger.exception('Runtime instrumentation error. Exception '
-                    'occurred during exit. Report this issue to New Relic support.')
+            _logger.exception(
+                "Runtime instrumentation error. Exception "
+                "occurred during exit. Report this issue to New Relic support."
+            )
             return
 
         # Record error if one was registered.
@@ -431,8 +447,7 @@ class Transaction(object):
             self._cpu_user_time_end = os.times()[0]
 
         if duration and self._cpu_user_time_end:
-            self._cpu_user_time_value = (self._cpu_user_time_end -
-                    self._cpu_user_time_start)
+            self._cpu_user_time_value = self._cpu_user_time_end - self._cpu_user_time_start
 
         # Calculate thread utilisation factor. Note that even if
         # we are tracking thread utilization we skip calculation
@@ -449,11 +464,10 @@ class Transaction(object):
             self._utilization_tracker.exit_transaction()
             if self._thread_utilization_start is not None and duration > 0.0:
                 if not self._thread_utilization_end:
-                    self._thread_utilization_end = (
-                            self._utilization_tracker.utilization_count())
+                    self._thread_utilization_end = self._utilization_tracker.utilization_count()
                 self._thread_utilization_value = (
-                        self._thread_utilization_end -
-                        self._thread_utilization_start) / duration
+                    self._thread_utilization_end - self._thread_utilization_start
+                ) / duration
 
         self._freeze_path()
 
@@ -478,18 +492,18 @@ class Transaction(object):
         exclusive = duration + root.exclusive
 
         root_node = newrelic.core.root_node.RootNode(
-                name=self.name_for_metric,
-                children=tuple(root.children),
-                start_time=self.start_time,
-                end_time=self.end_time,
-                exclusive=exclusive,
-                duration=duration,
-                guid=root.guid,
-                agent_attributes=root_agent_attributes,
-                user_attributes=root.user_attributes,
-                path=self.path,
-                trusted_parent_span=self.trusted_parent_span,
-                tracing_vendors=self.tracing_vendors,
+            name=self.name_for_metric,
+            children=tuple(root.children),
+            start_time=self.start_time,
+            end_time=self.end_time,
+            exclusive=exclusive,
+            duration=duration,
+            guid=root.guid,
+            agent_attributes=root_agent_attributes,
+            user_attributes=root.user_attributes,
+            path=self.path,
+            trusted_parent_span=self.trusted_parent_span,
+            tracing_vendors=self.tracing_vendors,
         )
 
         # Add transaction exclusive time to total exclusive time
@@ -497,19 +511,17 @@ class Transaction(object):
         self.total_time += exclusive
 
         if self.client_cross_process_id is not None:
-            metric_name = 'ClientApplication/%s/all' % (
-                    self.client_cross_process_id)
+            metric_name = "ClientApplication/%s/all" % (self.client_cross_process_id)
             self.record_custom_metric(metric_name, duration)
 
         # Record supportability metrics for api calls
 
         for key, value in six.iteritems(self._transaction_metrics):
-            self.record_custom_metric(key, {'count': value})
+            self.record_custom_metric(key, {"count": value})
 
         if self._frameworks:
             for framework, version in self._frameworks:
-                self.record_custom_metric('Python/Framework/%s/%s' %
-                    (framework, version), 1)
+                self.record_custom_metric("Python/Framework/%s/%s" % (framework, version), 1)
 
         if self._settings.distributed_tracing.enabled:
             # Sampled and priority need to be computed at the end of the
@@ -520,60 +532,60 @@ class Transaction(object):
         agent_attributes = self.agent_attributes
         agent_attributes.extend(self.filter_request_parameters(request_params))
         node = newrelic.core.transaction_node.TransactionNode(
-                settings=self._settings,
-                path=self.path,
-                type=self.type,
-                group=self.group_for_metric,
-                base_name=self._name,
-                name_for_metric=self.name_for_metric,
-                port=self._port,
-                request_uri=self._request_uri,
-                queue_start=self.queue_start,
-                start_time=self.start_time,
-                end_time=self.end_time,
-                last_byte_time=self.last_byte_time,
-                total_time=self.total_time,
-                response_time=response_time,
-                duration=duration,
-                exclusive=exclusive,
-                errors=tuple(self._errors),
-                slow_sql=tuple(self._slow_sql),
-                custom_events=self._custom_events,
-                apdex_t=self.apdex,
-                suppress_apdex=self.suppress_apdex,
-                custom_metrics=self._custom_metrics,
-                guid=self.guid,
-                cpu_time=self._cpu_user_time_value,
-                suppress_transaction_trace=self.suppress_transaction_trace,
-                client_cross_process_id=self.client_cross_process_id,
-                referring_transaction_guid=self.referring_transaction_guid,
-                record_tt=self.record_tt,
-                synthetics_resource_id=self.synthetics_resource_id,
-                synthetics_job_id=self.synthetics_job_id,
-                synthetics_monitor_id=self.synthetics_monitor_id,
-                synthetics_header=self.synthetics_header,
-                is_part_of_cat=self.is_part_of_cat,
-                trip_id=self.trip_id,
-                path_hash=self.path_hash,
-                referring_path_hash=self._referring_path_hash,
-                alternate_path_hashes=self.alternate_path_hashes,
-                trace_intrinsics=self.trace_intrinsics,
-                distributed_trace_intrinsics=self.distributed_trace_intrinsics,
-                agent_attributes=agent_attributes,
-                user_attributes=self.user_attributes,
-                priority=self.priority,
-                sampled=self.sampled,
-                parent_span=self.parent_span,
-                parent_transport_duration=self.parent_transport_duration,
-                parent_type=self.parent_type,
-                parent_account=self.parent_account,
-                parent_app=self.parent_app,
-                parent_tx=self.parent_tx,
-                parent_transport_type=self.parent_transport_type,
-                root_span_guid=root.guid,
-                trace_id=self.trace_id,
-                loop_time=self._loop_time,
-                root=root_node,
+            settings=self._settings,
+            path=self.path,
+            type=self.type,
+            group=self.group_for_metric,
+            base_name=self._name,
+            name_for_metric=self.name_for_metric,
+            port=self._port,
+            request_uri=self._request_uri,
+            queue_start=self.queue_start,
+            start_time=self.start_time,
+            end_time=self.end_time,
+            last_byte_time=self.last_byte_time,
+            total_time=self.total_time,
+            response_time=response_time,
+            duration=duration,
+            exclusive=exclusive,
+            errors=tuple(self._errors),
+            slow_sql=tuple(self._slow_sql),
+            custom_events=self._custom_events,
+            apdex_t=self.apdex,
+            suppress_apdex=self.suppress_apdex,
+            custom_metrics=self._custom_metrics,
+            guid=self.guid,
+            cpu_time=self._cpu_user_time_value,
+            suppress_transaction_trace=self.suppress_transaction_trace,
+            client_cross_process_id=self.client_cross_process_id,
+            referring_transaction_guid=self.referring_transaction_guid,
+            record_tt=self.record_tt,
+            synthetics_resource_id=self.synthetics_resource_id,
+            synthetics_job_id=self.synthetics_job_id,
+            synthetics_monitor_id=self.synthetics_monitor_id,
+            synthetics_header=self.synthetics_header,
+            is_part_of_cat=self.is_part_of_cat,
+            trip_id=self.trip_id,
+            path_hash=self.path_hash,
+            referring_path_hash=self._referring_path_hash,
+            alternate_path_hashes=self.alternate_path_hashes,
+            trace_intrinsics=self.trace_intrinsics,
+            distributed_trace_intrinsics=self.distributed_trace_intrinsics,
+            agent_attributes=agent_attributes,
+            user_attributes=self.user_attributes,
+            priority=self.priority,
+            sampled=self.sampled,
+            parent_span=self.parent_span,
+            parent_transport_duration=self.parent_transport_duration,
+            parent_type=self.parent_type,
+            parent_account=self.parent_account,
+            parent_app=self.parent_app,
+            parent_tx=self.parent_tx,
+            parent_transport_type=self.parent_transport_type,
+            root_span_guid=root.guid,
+            trace_id=self.trace_id,
+            loop_time=self._loop_time,
+            root=root_node,
         )
 
         # Clear settings as we are all done and don't need it
@@ -620,9 +632,9 @@ class Transaction(object):
     @property
     def type(self):
         if self.background_task:
-            transaction_type = 'OtherTransaction'
+            transaction_type = "OtherTransaction"
         else:
-            transaction_type = 'WebTransaction'
+            transaction_type = "WebTransaction"
         return transaction_type
 
     @property
@@ -641,7 +653,7 @@ class Transaction(object):
         transaction_name = self._name
 
         if transaction_name is None:
-            transaction_name = '<undefined>'
+            transaction_name = "<undefined>"
 
         # Stripping the leading slash on the request URL held by
         # transaction_name when type is 'Uri' is to keep compatibility
@@ -649,11 +661,10 @@ class Transaction(object):
         # slash it not deleted for other category groups as the
         # leading slash may be significant in that situation.
 
-        if (group in ('Uri', 'NormalizedUri') and
-                transaction_name.startswith('/')):
-            name = '%s%s' % (group, transaction_name)
+        if group in ("Uri", "NormalizedUri") and transaction_name.startswith("/"):
+            name = "%s%s" % (group, transaction_name)
         else:
-            name = '%s/%s' % (group, transaction_name)
+            name = "%s/%s" % (group, transaction_name)
 
         return name
 
@@ -663,9 +674,9 @@ class Transaction(object):
 
         if _group is None:
             if self.background_task:
-                _group = 'Python'
+                _group = "Python"
             else:
-                _group = 'Uri'
+                _group = "Uri"
 
         return _group
 
@@ -674,7 +685,7 @@ class Transaction(object):
         if self._frozen_path:
             return self._frozen_path
 
-        return '%s/%s' % (self.type, self.name_for_metric)
+        return "%s/%s" % (self.type, self.name_for_metric)
 
     @property
     def trip_id(self):
@@ -690,8 +701,7 @@ class Transaction(object):
         hash.
 
         """
-        return sorted(set(self._alternate_path_hashes.values()) -
-                set([self.path_hash]))
+        return sorted(set(self._alternate_path_hashes.values()) - set([self.path_hash]))
 
     @property
     def path_hash(self):
@@ -707,7 +717,7 @@ class Transaction(object):
         if not self.is_part_of_cat:
             return None
 
-        identifier = '%s;%s' % (self.application.name, self.path)
+        identifier = "%s;%s" % (self.application.name, self.path)
 
         # Check if identifier is already part of the _alternate_path_hashes and
         # return the value if available.
@@ -719,11 +729,11 @@ class Transaction(object):
         # seed.
 
         try:
-            seed = int((self._referring_path_hash or '0'), base=16)
+            seed = int((self._referring_path_hash or "0"), base=16)
         except Exception:
             seed = 0
 
-        try: 
+        try:
             path_hash = generate_path_hash(identifier, seed)
         except ValueError:
             _logger.warning(
@@ -771,8 +781,7 @@ class Transaction(object):
     @property
     def should_record_segment_params(self):
         # Only record parameters when it is safe to do so
-        return (self.settings and
-                not self.settings.high_security)
+        return self.settings and not self.settings.high_security
 
     @property
     def trace_intrinsics(self):
@@ -780,24 +789,23 @@ class Transaction(object):
         i_attrs = {}
 
         if self.referring_transaction_guid:
-            i_attrs['referring_transaction_guid'] = \
-                    self.referring_transaction_guid
+            i_attrs["referring_transaction_guid"] = self.referring_transaction_guid
         if self.client_cross_process_id:
-            i_attrs['client_cross_process_id'] = self.client_cross_process_id
+            i_attrs["client_cross_process_id"] = self.client_cross_process_id
         if self.trip_id:
-            i_attrs['trip_id'] = self.trip_id
+            i_attrs["trip_id"] = self.trip_id
         if self.path_hash:
-            i_attrs['path_hash'] = self.path_hash
+            i_attrs["path_hash"] = self.path_hash
         if self.synthetics_resource_id:
-            i_attrs['synthetics_resource_id'] = self.synthetics_resource_id
+            i_attrs["synthetics_resource_id"] = self.synthetics_resource_id
         if self.synthetics_job_id:
-            i_attrs['synthetics_job_id'] = self.synthetics_job_id
+            i_attrs["synthetics_job_id"] = self.synthetics_job_id
         if self.synthetics_monitor_id:
-            i_attrs['synthetics_monitor_id'] = self.synthetics_monitor_id
+            i_attrs["synthetics_monitor_id"] = self.synthetics_monitor_id
         if self.total_time:
-            i_attrs['totalTime'] = self.total_time
+            i_attrs["totalTime"] = self.total_time
         if self._loop_time:
-            i_attrs['eventLoopTime'] = self._loop_time
+            i_attrs["eventLoopTime"] = self._loop_time
 
         # Add in special CPU time value for UI to display CPU burn.
 
@@ -820,29 +828,28 @@ class Transaction(object):
         if not self._settings.distributed_tracing.enabled:
             return i_attrs
 
-        i_attrs['guid'] = self.guid
-        i_attrs['sampled'] = self.sampled
-        i_attrs['priority'] = self.priority
-        i_attrs['traceId'] = self.trace_id
+        i_attrs["guid"] = self.guid
+        i_attrs["sampled"] = self.sampled
+        i_attrs["priority"] = self.priority
+        i_attrs["traceId"] = self.trace_id
 
         if not self._distributed_trace_state:
             return i_attrs
 
         if self.parent_type:
-            i_attrs['parent.type'] = self.parent_type
+            i_attrs["parent.type"] = self.parent_type
         if self.parent_account:
-            i_attrs['parent.account'] = self.parent_account
+            i_attrs["parent.account"] = self.parent_account
         if self.parent_app:
-            i_attrs['parent.app'] = self.parent_app
+            i_attrs["parent.app"] = self.parent_app
         if self.parent_transport_type:
-            i_attrs['parent.transportType'] = self.parent_transport_type
+            i_attrs["parent.transportType"] = self.parent_transport_type
         if self.parent_transport_duration:
-            i_attrs['parent.transportDuration'] = \
-                    self.parent_transport_duration
+            i_attrs["parent.transportDuration"] = self.parent_transport_duration
         if self.trusted_parent_span:
-            i_attrs['trustedParentId'] = self.trusted_parent_span
+            i_attrs["trustedParentId"] = self.trusted_parent_span
         if self.tracing_vendors:
-            i_attrs['tracingVendors'] = self.tracing_vendors
+            i_attrs["tracingVendors"] = self.tracing_vendors
 
         return i_attrs
 
@@ -878,12 +885,11 @@ class Transaction(object):
         attributes_request = []
 
         if self.capture_params is None:
-            attributes_request = create_attributes(params,
-                    DST_NONE, self.attribute_filter)
+            attributes_request = create_attributes(params, DST_NONE, self.attribute_filter)
         elif self.capture_params:
-            attributes_request = create_attributes(params,
-                    DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER,
-                    self.attribute_filter)
+            attributes_request = create_attributes(
+                params, DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER, self.attribute_filter
+            )
         return attributes_request
 
     @property
@@ -895,11 +901,10 @@ class Transaction(object):
                 r_attrs = {}
 
                 for k, v in self._request_params.items():
-                    new_key = 'request.parameters.%s' % k
+                    new_key = "request.parameters.%s" % k
                     new_val = ",".join(v)
 
-                    final_key, final_val = process_user_attribute(new_key,
-                            new_val)
+                    final_key, final_val = process_user_attribute(new_key, new_val)
 
                     if final_key:
                         r_attrs[final_key] = final_val
@@ -912,30 +917,27 @@ class Transaction(object):
 
     @property
     def agent_attributes(self):
-        agent_attributes = create_agent_attributes(self._agent_attributes,
-                self.attribute_filter)
+        agent_attributes = create_agent_attributes(self._agent_attributes, self.attribute_filter)
         return agent_attributes
 
     def _update_agent_attributes(self):
         a_attrs = self._agent_attributes
 
         if self._settings.process_host.display_name:
-            a_attrs['host.displayName'] = \
-                    self._settings.process_host.display_name
+            a_attrs["host.displayName"] = self._settings.process_host.display_name
         if self._thread_utilization_value:
-            a_attrs['thread.concurrency'] = self._thread_utilization_value
+            a_attrs["thread.concurrency"] = self._thread_utilization_value
         if self.queue_wait != 0:
-            a_attrs['webfrontend.queue.seconds'] = self.queue_wait
+            a_attrs["webfrontend.queue.seconds"] = self.queue_wait
 
     @property
     def user_attributes(self):
-        return create_user_attributes(self._custom_params,
-                self.attribute_filter)
+        return create_user_attributes(self._custom_params, self.attribute_filter)
 
     def _compute_sampled_and_priority(self):
         if self._priority is None:
             # truncate priority field to 6 digits past the decimal
-            self._priority = float('%.6f' % random.random())
+            self._priority = float("%.6f" % random.random())
 
         if self._sampled is None:
             self._sampled = self._application.compute_sampled()
@@ -946,25 +948,23 @@ class Transaction(object):
         if self._frozen_path is None:
             self._name_priority = None
 
-            if self._group == 'Uri' and self._name != '/':
+            if self._group == "Uri" and self._name != "/":
                 # Apply URL normalization rules. We would only have raw
                 # URLs where we were not specifically naming the web
                 # transactions for a specific web framework to be a code
                 # handler or otherwise.
 
-                name, ignore = self._application.normalize_name(
-                        self._name, 'url')
+                name, ignore = self._application.normalize_name(self._name, "url")
 
                 if self._name != name:
-                    self._group = 'NormalizedUri'
+                    self._group = "NormalizedUri"
                     self._name = name
 
                 self.ignore_transaction = self.ignore_transaction or ignore
 
             # Apply transaction rules on the full transaction name.
 
-            path, ignore = self._application.normalize_name(
-                    self.path, 'transaction')
+            path, ignore = self._application.normalize_name(self.path, "transaction")
 
             self.ignore_transaction = self.ignore_transaction or ignore
 
@@ -972,8 +972,7 @@ class Transaction(object):
             # transaction name. The path is frozen at this point and cannot be
             # further changed.
 
-            self._frozen_path, ignore = self._application.normalize_name(
-                    path, 'segment')
+            self._frozen_path, ignore = self._application.normalize_name(path, "segment")
 
             self.ignore_transaction = self.ignore_transaction or ignore
 
@@ -982,8 +981,7 @@ class Transaction(object):
             # default apdex from settings. The path used at this point
             # is the frozen path.
 
-            self.apdex = (self._settings.web_transactions_apdex.get(
-                self.path) or self._settings.apdex_t)
+            self.apdex = self._settings.web_transactions_apdex.get(self.path) or self._settings.apdex_t
 
     def _record_supportability(self, metric_name):
         m = self._transaction_metrics.get(metric_name, 0)
@@ -991,8 +989,8 @@ class Transaction(object):
 
     def _create_distributed_trace_data_with_guid(self, guid):
         data = self._create_distributed_trace_data()
-        if guid and data and 'id' in data:
-            data['id'] = guid
+        if guid and data and "id" in data:
+            data["id"] = guid
         return data
 
     def _create_distributed_trace_data(self):
@@ -1004,15 +1002,12 @@ class Transaction(object):
         trusted_account_key = settings.trusted_account_key
         application_id = settings.primary_application_id
 
-        if not (account_id and
-                application_id and
-                trusted_account_key and
-                settings.distributed_tracing.enabled):
+        if not (account_id and application_id and trusted_account_key and settings.distributed_tracing.enabled):
             return
 
         self._compute_sampled_and_priority()
         data = dict(
-            ty='App',
+            ty="App",
             ac=account_id,
             ap=application_id,
             tr=self.trace_id,
@@ -1023,13 +1018,11 @@ class Transaction(object):
         )
 
         if account_id != trusted_account_key:
-            data['tk'] = trusted_account_key
+            data["tk"] = trusted_account_key
 
         current_span = trace_cache().current_trace()
-        if (settings.span_events.enabled and
-                settings.collect_span_events and
-                current_span):
-            data['id'] = current_span.guid
+        if settings.span_events.enabled and settings.collect_span_events and current_span:
+            data["id"] = current_span.guid
 
         self._distributed_trace_state |= CREATED_DISTRIBUTED_TRACE
 
@@ -1045,18 +1038,19 @@ class Transaction(object):
                 d=data,
             )
         except:
-            self._record_supportability('Supportability/DistributedTrace/'
-                    'CreatePayload/Exception')
+            self._record_supportability("Supportability/DistributedTrace/" "CreatePayload/Exception")
         else:
-            self._record_supportability('Supportability/DistributedTrace/'
-                    'CreatePayload/Success')
+            self._record_supportability("Supportability/DistributedTrace/" "CreatePayload/Success")
             return payload
 
     def create_distributed_trace_payload(self):
-        warnings.warn((
-            'The create_distributed_trace_payload API has been deprecated. '
-            'Please use the insert_distributed_trace_headers API.'
-        ), DeprecationWarning)
+        warnings.warn(
+            (
+                "The create_distributed_trace_payload API has been deprecated. "
+                "Please use the insert_distributed_trace_headers API."
+            ),
+            DeprecationWarning,
+        )
         return self._create_distributed_trace_payload()
 
     def _generate_distributed_trace_headers(self, data=None):
@@ -1069,32 +1063,25 @@ class Transaction(object):
 
                 tracestate = NrTraceState(data).text()
                 if self.tracestate:
-                    tracestate += ',' + self.tracestate
+                    tracestate += "," + self.tracestate
                 yield ("tracestate", tracestate)
 
-                self._record_supportability(
-                        'Supportability/TraceContext/'
-                        'Create/Success')
+                self._record_supportability("Supportability/TraceContext/" "Create/Success")
 
-                if (not self._settings.
-                        distributed_tracing.exclude_newrelic_header):
+                if not self._settings.distributed_tracing.exclude_newrelic_header:
                     # Insert New Relic dt headers for backwards compatibility
                     payload = DistributedTracePayload(
                         v=DistributedTracePayload.version,
                         d=data,
                     )
-                    yield ('newrelic', payload.http_safe())
-                    self._record_supportability(
-                            'Supportability/DistributedTrace/'
-                            'CreatePayload/Success')
+                    yield ("newrelic", payload.http_safe())
+                    self._record_supportability("Supportability/DistributedTrace/" "CreatePayload/Success")
 
         except:
-            self._record_supportability('Supportability/TraceContext/'
-                    'Create/Exception')
+            self._record_supportability("Supportability/TraceContext/" "Create/Exception")
 
             if not self._settings.distributed_tracing.exclude_newrelic_header:
-                self._record_supportability('Supportability/DistributedTrace/'
-                        'CreatePayload/Exception')
+                self._record_supportability("Supportability/DistributedTrace/" "CreatePayload/Exception")
 
     def insert_distributed_trace_headers(self, headers):
         headers.extend(self._generate_distributed_trace_headers())
@@ -1104,126 +1091,119 @@ class Transaction(object):
             return False
 
         settings = self._settings
-        if not (settings.distributed_tracing.enabled and
-                settings.trusted_account_key):
+        if not (settings.distributed_tracing.enabled and settings.trusted_account_key):
             return False
 
         if self._distributed_trace_state:
             if self._distributed_trace_state & ACCEPTED_DISTRIBUTED_TRACE:
-                self._record_supportability('Supportability/DistributedTrace/'
-                        'AcceptPayload/Ignored/Multiple')
+                self._record_supportability("Supportability/DistributedTrace/" "AcceptPayload/Ignored/Multiple")
             else:
-                self._record_supportability('Supportability/DistributedTrace/'
-                        'AcceptPayload/Ignored/CreateBeforeAccept')
+                self._record_supportability(
+                    "Supportability/DistributedTrace/" "AcceptPayload/Ignored/CreateBeforeAccept"
+                )
             return False
 
         return True
 
-    def _accept_distributed_trace_payload(
-            self, payload, transport_type='HTTP'):
+    def _accept_distributed_trace_payload(self, payload, transport_type="HTTP"):
         if not payload:
-            self._record_supportability('Supportability/DistributedTrace/'
-                    'AcceptPayload/Ignored/Null')
+            self._record_supportability("Supportability/DistributedTrace/" "AcceptPayload/Ignored/Null")
             return False
 
         payload = DistributedTracePayload.decode(payload)
         if not payload:
-            self._record_supportability('Supportability/DistributedTrace/'
-                    'AcceptPayload/ParseException')
+            self._record_supportability("Supportability/DistributedTrace/" "AcceptPayload/ParseException")
             return False
 
         try:
-            version = payload.get('v')
+            version = payload.get("v")
             major_version = version and int(version[0])
 
             if major_version is None:
-                self._record_supportability('Supportability/DistributedTrace/'
-                        'AcceptPayload/ParseException')
+                self._record_supportability("Supportability/DistributedTrace/" "AcceptPayload/ParseException")
                 return False
 
             if major_version > DistributedTracePayload.version[0]:
-                self._record_supportability('Supportability/DistributedTrace/'
-                        'AcceptPayload/Ignored/MajorVersion')
+                self._record_supportability("Supportability/DistributedTrace/" "AcceptPayload/Ignored/MajorVersion")
                 return False
 
-            data = payload.get('d', {})
+            data = payload.get("d", {})
             if not all(k in data for k in DISTRIBUTED_TRACE_KEYS_REQUIRED):
-                self._record_supportability('Supportability/DistributedTrace/'
-                        'AcceptPayload/ParseException')
+                self._record_supportability("Supportability/DistributedTrace/" "AcceptPayload/ParseException")
                 return False
 
             # Must have either id or tx
-            if not any(k in data for k in ('id', 'tx')):
-                self._record_supportability('Supportability/DistributedTrace/'
-                                            'AcceptPayload/ParseException')
+            if not any(k in data for k in ("id", "tx")):
+                self._record_supportability("Supportability/DistributedTrace/" "AcceptPayload/ParseException")
                 return False
 
             settings = self._settings
-            account_id = data.get('ac')
+            account_id = data.get("ac")
 
             # If trust key doesn't exist in the payload, use account_id
-            received_trust_key = data.get('tk', account_id)
+            received_trust_key = data.get("tk", account_id)
             if settings.trusted_account_key != received_trust_key:
-                self._record_supportability('Supportability/DistributedTrace/'
-                        'AcceptPayload/Ignored/UntrustedAccount')
+                self._record_supportability("Supportability/DistributedTrace/" "AcceptPayload/Ignored/UntrustedAccount")
                 if settings.debug.log_untrusted_distributed_trace_keys:
-                    _logger.debug('Received untrusted key in distributed '
-                            'trace payload. received_trust_key=%r',
-                            received_trust_key)
+                    _logger.debug(
+                        "Received untrusted key in distributed " "trace payload. received_trust_key=%r",
+                        received_trust_key,
+                    )
                 return False
 
             try:
-                data['ti'] = int(data['ti'])
+                data["ti"] = int(data["ti"])
             except:
                 return False
 
-            if 'pr' in data:
+            if "pr" in data:
                 try:
-                    data['pr'] = float(data['pr'])
+                    data["pr"] = float(data["pr"])
                 except:
-                    data['pr'] = None
+                    data["pr"] = None
 
             self._accept_distributed_trace_data(data, transport_type)
-            self._record_supportability('Supportability/DistributedTrace/'
-                    'AcceptPayload/Success')
+            self._record_supportability("Supportability/DistributedTrace/" "AcceptPayload/Success")
             return True
 
         except:
-            self._record_supportability('Supportability/DistributedTrace/'
-                    'AcceptPayload/Exception')
+            self._record_supportability("Supportability/DistributedTrace/" "AcceptPayload/Exception")
             return False
 
     def accept_distributed_trace_payload(self, *args, **kwargs):
-        warnings.warn((
-            'The accept_distributed_trace_payload API has been deprecated. '
-            'Please use the accept_distributed_trace_headers API.'
-        ), DeprecationWarning)
+        warnings.warn(
+            (
+                "The accept_distributed_trace_payload API has been deprecated. "
+                "Please use the accept_distributed_trace_headers API."
+            ),
+            DeprecationWarning,
+        )
         if not self._can_accept_distributed_trace_headers():
             return False
         return self._accept_distributed_trace_payload(*args, **kwargs)
 
     def _accept_distributed_trace_data(self, data, transport_type):
         if transport_type not in DISTRIBUTED_TRACE_TRANSPORT_TYPES:
-            transport_type = 'Unknown'
+            transport_type = "Unknown"
 
         self.parent_transport_type = transport_type
 
-        self.parent_type = data.get('ty')
+        self.parent_type = data.get("ty")
 
-        self.parent_span = data.get('id')
-        self.parent_tx = data.get('tx')
-        self.parent_app = data.get('ap')
-        self.parent_account = data.get('ac')
+        self.parent_span = data.get("id")
+        self.parent_tx = data.get("tx")
+        self.parent_app = data.get("ap")
+        self.parent_account = data.get("ac")
 
-        self._trace_id = data.get('tr')
+        self._trace_id = data.get("tr")
 
-        priority = data.get('pr')
+        priority = data.get("pr")
         if priority is not None:
             self._priority = priority
-            self._sampled = data.get('sa')
+            self._sampled = data.get("sa")
 
-        if 'ti' in data:
-            transport_start = data['ti'] / 1000.0
+        if "ti" in data:
+            transport_start = data["ti"] / 1000.0
 
             # If starting in the future, transport duration should be set to 0
             now = time.time()
@@ -1234,26 +1214,26 @@ class Transaction(object):
 
         self._distributed_trace_state = ACCEPTED_DISTRIBUTED_TRACE
 
-    def accept_distributed_trace_headers(self, headers, transport_type='HTTP'):
+    def accept_distributed_trace_headers(self, headers, transport_type="HTTP"):
         if not self._can_accept_distributed_trace_headers():
             return False
 
         try:
-            traceparent = headers.get('traceparent', '')
-            tracestate = headers.get('tracestate', '')
-            distributed_header = headers.get('newrelic', '')
+            traceparent = headers.get("traceparent", "")
+            tracestate = headers.get("tracestate", "")
+            distributed_header = headers.get("newrelic", "")
         except Exception:
-            traceparent = ''
-            tracestate = ''
-            distributed_header = ''
+            traceparent = ""
+            tracestate = ""
+            distributed_header = ""
 
             for k, v in headers:
                 k = ensure_str(k)
-                if k == 'traceparent':
+                if k == "traceparent":
                     traceparent = v
-                elif k == 'tracestate':
+                elif k == "tracestate":
                     tracestate = v
-                elif k == 'newrelic':
+                elif k == "newrelic":
                     distributed_header = v
 
         if traceparent:
@@ -1264,24 +1244,20 @@ class Transaction(object):
                 data = None
 
             if not data:
-                self._record_supportability('Supportability/TraceContext/'
-                        'TraceParent/Parse/Exception')
+                self._record_supportability("Supportability/TraceContext/" "TraceParent/Parse/Exception")
                 return False
 
-            self._record_supportability('Supportability/TraceContext/'
-                                    'TraceParent/Accept/Success')
+            self._record_supportability("Supportability/TraceContext/" "TraceParent/Accept/Success")
             if tracestate:
                 tracestate = ensure_str(tracestate)
                 try:
                     vendors = W3CTraceState.decode(tracestate)
                     tk = self._settings.trusted_account_key
-                    payload = vendors.pop(tk + '@nr', '')
-                    self.tracing_vendors = ','.join(vendors.keys())
+                    payload = vendors.pop(tk + "@nr", "")
+                    self.tracing_vendors = ",".join(vendors.keys())
                     self.tracestate = vendors.text(limit=31)
                 except:
-                    self._record_supportability(
-                            'Supportability/TraceContext/'
-                            'TraceState/Parse/Exception')
+                    self._record_supportability("Supportability/TraceContext/" "TraceState/Parse/Exception")
                 else:
                     # Remove trusted new relic header if available and parse
                     if payload:
@@ -1290,47 +1266,39 @@ class Transaction(object):
                         except:
                             tracestate_data = None
                         if tracestate_data:
-                            self.trusted_parent_span = \
-                                tracestate_data.pop('id', None)
+                            self.trusted_parent_span = tracestate_data.pop("id", None)
                             data.update(tracestate_data)
                         else:
-                            self._record_supportability(
-                                    'Supportability/TraceContext/'
-                                    'TraceState/InvalidNrEntry')
+                            self._record_supportability("Supportability/TraceContext/" "TraceState/InvalidNrEntry")
                     else:
-                        self._record_supportability(
-                                'Supportability/TraceContext/'
-                                'TraceState/NoNrEntry')
+                        self._record_supportability("Supportability/TraceContext/" "TraceState/NoNrEntry")
 
             self._accept_distributed_trace_data(data, transport_type)
-            self._record_supportability(
-                    'Supportability/TraceContext/'
-                    'Accept/Success')
+            self._record_supportability("Supportability/TraceContext/" "Accept/Success")
             return True
         elif distributed_header:
             distributed_header = ensure_str(distributed_header)
-            return self._accept_distributed_trace_payload(
-                    distributed_header,
-                    transport_type)
+            return self._accept_distributed_trace_payload(distributed_header, transport_type)
 
-    def _process_incoming_cat_headers(self, encoded_cross_process_id,
-            encoded_txn_header):
+    def _process_incoming_cat_headers(self, encoded_cross_process_id, encoded_txn_header):
         settings = self._settings
 
         if not self.enabled:
             return
 
-        if not (settings.cross_application_tracer.enabled and
-                settings.cross_process_id and settings.trusted_account_ids and
-                settings.encoding_key):
+        if not (
+            settings.cross_application_tracer.enabled
+            and settings.cross_process_id
+            and settings.trusted_account_ids
+            and settings.encoding_key
+        ):
             return
 
         if encoded_cross_process_id is None:
             return
 
         try:
-            client_cross_process_id = deobfuscate(
-                    encoded_cross_process_id, settings.encoding_key)
+            client_cross_process_id = deobfuscate(encoded_cross_process_id, settings.encoding_key)
 
             # The cross process ID consists of the client
             # account ID and the ID of the specific application
@@ -1341,8 +1309,7 @@ class Transaction(object):
             # account IDs as integers, so save the client ones
             # away as integers here so easier to compare later.
 
-            client_account_id, client_application_id = \
-                    map(int, client_cross_process_id.split('#'))
+            client_account_id, client_application_id = map(int, client_cross_process_id.split("#"))
 
             if client_account_id not in settings.trusted_account_ids:
                 return
@@ -1351,9 +1318,7 @@ class Transaction(object):
             self.client_account_id = client_account_id
             self.client_application_id = client_application_id
 
-            txn_header = json_decode(deobfuscate(
-                    encoded_txn_header,
-                    settings.encoding_key))
+            txn_header = json_decode(deobfuscate(encoded_txn_header, settings.encoding_key))
 
             if txn_header:
                 self.is_part_of_cat = True
@@ -1365,8 +1330,7 @@ class Transaction(object):
                 # record_tt to False by a later request if it was
                 # set to True by an earlier request.
 
-                self.record_tt = (self.record_tt or
-                        txn_header[1])
+                self.record_tt = self.record_tt or txn_header[1]
 
                 if isinstance(txn_header[2], six.string_types):
                     self._trip_id = txn_header[2]
@@ -1411,12 +1375,18 @@ class Transaction(object):
 
             read_length = read_length if read_length is not None else -1
 
-            payload = (self._settings.cross_process_id, self.path, queue_time,
-                    duration, read_length, self.guid, self.record_tt)
+            payload = (
+                self._settings.cross_process_id,
+                self.path,
+                queue_time,
+                duration,
+                read_length,
+                self.guid,
+                self.record_tt,
+            )
             app_data = json_encode(payload)
 
-            nr_headers.append(('X-NewRelic-App-Data', obfuscate(
-                    app_data, self._settings.encoding_key)))
+            nr_headers.append(("X-NewRelic-App-Data", obfuscate(app_data, self._settings.encoding_key)))
 
         return nr_headers
 
@@ -1436,10 +1406,9 @@ class Transaction(object):
         nr_headers = json_decode(payload)
         # TODO: All the external CAT APIs really need to
         # be refactored into the transaction class.
-        encoded_cross_process_id = nr_headers.get('X-NewRelic-ID')
-        encoded_txn_header = nr_headers.get('X-NewRelic-Transaction')
-        return self._process_incoming_cat_headers(encoded_cross_process_id,
-                encoded_txn_header)
+        encoded_cross_process_id = nr_headers.get("X-NewRelic-ID")
+        encoded_txn_header = nr_headers.get("X-NewRelic-Transaction")
+        return self._process_incoming_cat_headers(encoded_cross_process_id, encoded_txn_header)
 
     def set_transaction_name(self, name, group=None, priority=None):
 
@@ -1469,30 +1438,30 @@ class Transaction(object):
         # problems with illegal characters.
 
         if isinstance(name, bytes):
-            name = name.decode('Latin-1')
+            name = name.decode("Latin-1")
 
         # Handle incorrect groupings and leading slashes. This will
         # cause an empty segment which we want to avoid. In that case
         # insert back in Function as the leading segment.
 
-        group = group or 'Function'
+        group = group or "Function"
 
-        if group.startswith('/'):
-            group = 'Function' + group
+        if group.startswith("/"):
+            group = "Function" + group
 
         self._group = group
         self._name = name
 
-    def record_exception(self, exc=None, value=None, tb=None, params={}, ignore_errors=[]):
+    def record_exception(self, exc=None, value=None, tb=None, params=None, ignore_errors=None):
         # Deprecation Warning
-        warnings.warn((
-            'The record_exception function is deprecated. Please use the '
-            'new api named notice_error instead.'
-        ), DeprecationWarning)
+        warnings.warn(
+            ("The record_exception function is deprecated. Please use the " "new api named notice_error instead."),
+            DeprecationWarning,
+        )
 
         self.notice_error(error=(exc, value, tb), attributes=params, ignore=ignore_errors)
 
-    def notice_error(self, error=None, attributes={}, expected=None, ignore=None, status_code=None):
+    def notice_error(self, error=None, attributes=None, expected=None, ignore=None, status_code=None):
         settings = self._settings
 
         if not settings:
@@ -1514,8 +1483,7 @@ class Transaction(object):
                 status_code=status_code,
             )
 
-    def _create_error_node(self, settings, fullname, message,
-                           expected, custom_params, span_id, tb):
+    def _create_error_node(self, settings, fullname, message, expected, custom_params, span_id, tb):
         # Only remember up to limit of what can be caught for a
         # single transaction. This could be trimmed further
         # later if there are already recorded errors and would
@@ -1537,16 +1505,17 @@ class Transaction(object):
                 return
 
         node = newrelic.core.error_node.ErrorNode(
-                timestamp=time.time(),
-                type=fullname,
-                message=message,
-                expected=expected,
-                span_id=span_id,
-                stack_trace=exception_stack(tb),
-                custom_params=custom_params,
-                file_name=None,
-                line_number=None,
-                source=None)
+            timestamp=time.time(),
+            type=fullname,
+            message=message,
+            expected=expected,
+            span_id=span_id,
+            stack_trace=exception_stack(tb),
+            custom_params=custom_params,
+            file_name=None,
+            line_number=None,
+            source=None,
+        )
 
         # TODO Errors are recorded in time order. If
         # there are two exceptions of same type and
@@ -1590,10 +1559,9 @@ class Transaction(object):
             settings = self._settings
             if not settings.collect_traces:
                 return
-            if (not settings.slow_sql.enabled and
-                    not settings.transaction_tracer.explain_enabled):
+            if not settings.slow_sql.enabled and not settings.transaction_tracer.explain_enabled:
                 return
-            if settings.transaction_tracer.record_sql == 'off':
+            if settings.transaction_tracer.record_sql == "off":
                 return
             if node.duration < settings.transaction_tracer.explain_threshold:
                 return
@@ -1615,8 +1583,7 @@ class Transaction(object):
         if self._utilization_tracker:
             if self._thread_utilization_start:
                 if not self._thread_utilization_end:
-                    self._thread_utilization_end = (
-                            self._utilization_tracker.utilization_count())
+                    self._thread_utilization_end = self._utilization_tracker.utilization_count()
 
         self._cpu_user_time_end = os.times()[0]
 
@@ -1625,12 +1592,13 @@ class Transaction(object):
             return False
 
         if self._settings.high_security:
-            _logger.debug('Cannot add custom parameter in High Security Mode.')
+            _logger.debug("Cannot add custom parameter in High Security Mode.")
             return False
 
         if len(self._custom_params) >= MAX_NUM_USER_ATTRIBUTES:
-            _logger.debug('Maximum number of custom attributes already '
-                    'added. Dropping attribute: %r=%r', name, value)
+            _logger.debug(
+                "Maximum number of custom attributes already " "added. Dropping attribute: %r=%r", name, value
+            )
             return False
 
         key, val = process_user_attribute(name, value)
@@ -1657,23 +1625,22 @@ class Transaction(object):
     def dump(self, file):
         """Dumps details about the transaction to the file object."""
 
-        print('Application: %s' % (self.application.name), file=file)
-        print('Time Started: %s' % (
-                time.asctime(time.localtime(self.start_time))), file=file)
-        print('Thread Id: %r' % (self.thread_id), file=file)
-        print('Current Status: %d' % (self._state), file=file)
-        print('Recording Enabled: %s' % (self.enabled), file=file)
-        print('Ignore Transaction: %s' % (self.ignore_transaction), file=file)
-        print('Transaction Dead: %s' % (self._dead), file=file)
-        print('Transaction Stopped: %s' % (self.stopped), file=file)
-        print('Background Task: %s' % (self.background_task), file=file)
-        print('Request URI: %s' % (self._request_uri), file=file)
-        print('Transaction Group: %s' % (self._group), file=file)
-        print('Transaction Name: %s' % (self._name), file=file)
-        print('Name Priority: %r' % (self._name_priority), file=file)
-        print('Frozen Path: %s' % (self._frozen_path), file=file)
-        print('AutoRUM Disabled: %s' % (self.autorum_disabled), file=file)
-        print('Supress Apdex: %s' % (self.suppress_apdex), file=file)
+        print("Application: %s" % (self.application.name), file=file)
+        print("Time Started: %s" % (time.asctime(time.localtime(self.start_time))), file=file)
+        print("Thread Id: %r" % (self.thread_id), file=file)
+        print("Current Status: %d" % (self._state), file=file)
+        print("Recording Enabled: %s" % (self.enabled), file=file)
+        print("Ignore Transaction: %s" % (self.ignore_transaction), file=file)
+        print("Transaction Dead: %s" % (self._dead), file=file)
+        print("Transaction Stopped: %s" % (self.stopped), file=file)
+        print("Background Task: %s" % (self.background_task), file=file)
+        print("Request URI: %s" % (self._request_uri), file=file)
+        print("Transaction Group: %s" % (self._group), file=file)
+        print("Transaction Name: %s" % (self._name), file=file)
+        print("Name Priority: %r" % (self._name_priority), file=file)
+        print("Frozen Path: %s" % (self._frozen_path), file=file)
+        print("AutoRUM Disabled: %s" % (self.autorum_disabled), file=file)
+        print("Supress Apdex: %s" % (self.suppress_apdex), file=file)
 
 
 def current_transaction(active_only=True):
@@ -1747,16 +1714,16 @@ def add_framework_info(name, version=None):
 
 def get_browser_timing_header():
     transaction = current_transaction()
-    if transaction and hasattr(transaction, 'browser_timing_header'):
+    if transaction and hasattr(transaction, "browser_timing_header"):
         return transaction.browser_timing_header()
-    return ''
+    return ""
 
 
 def get_browser_timing_footer():
     transaction = current_transaction()
-    if transaction and hasattr(transaction, 'browser_timing_footer'):
+    if transaction and hasattr(transaction, "browser_timing_footer"):
         return transaction.browser_timing_footer()
-    return ''
+    return ""
 
 
 def disable_browser_autorum(flag=True):
@@ -1777,11 +1744,15 @@ def record_custom_metric(name, value, application=None):
         if transaction:
             transaction.record_custom_metric(name, value)
         else:
-            _logger.debug('record_custom_metric has been called but no '
-                'transaction was running. As a result, the following metric '
-                'has not been recorded. Name: %r Value: %r. To correct this '
-                'problem, supply an application object as a parameter to this '
-                'record_custom_metrics call.', name, value)
+            _logger.debug(
+                "record_custom_metric has been called but no "
+                "transaction was running. As a result, the following metric "
+                "has not been recorded. Name: %r Value: %r. To correct this "
+                "problem, supply an application object as a parameter to this "
+                "record_custom_metrics call.",
+                name,
+                value,
+            )
     elif application.enabled:
         application.record_custom_metric(name, value)
 
@@ -1792,11 +1763,14 @@ def record_custom_metrics(metrics, application=None):
         if transaction:
             transaction.record_custom_metrics(metrics)
         else:
-            _logger.debug('record_custom_metrics has been called but no '
-                'transaction was running. As a result, the following metrics '
-                'have not been recorded: %r. To correct this problem, '
-                'supply an application object as a parameter to this '
-                'record_custom_metric call.', list(metrics))
+            _logger.debug(
+                "record_custom_metrics has been called but no "
+                "transaction was running. As a result, the following metrics "
+                "have not been recorded: %r. To correct this problem, "
+                "supply an application object as a parameter to this "
+                "record_custom_metric call.",
+                list(metrics),
+            )
     elif application.enabled:
         application.record_custom_metrics(metrics)
 
@@ -1816,29 +1790,30 @@ def record_custom_event(event_type, params, application=None):
         if transaction:
             transaction.record_custom_event(event_type, params)
         else:
-            _logger.debug('record_custom_event has been called but no '
-                'transaction was running. As a result, the following event '
-                'has not been recorded. event_type: %r params: %r. To correct '
-                'this problem, supply an application object as a parameter to '
-                'this record_custom_event call.', event_type, params)
+            _logger.debug(
+                "record_custom_event has been called but no "
+                "transaction was running. As a result, the following event "
+                "has not been recorded. event_type: %r params: %r. To correct "
+                "this problem, supply an application object as a parameter to "
+                "this record_custom_event call.",
+                event_type,
+                params,
+            )
     elif application.enabled:
         application.record_custom_event(event_type, params)
 
 
-def accept_distributed_trace_payload(payload, transport_type='HTTP'):
+def accept_distributed_trace_payload(payload, transport_type="HTTP"):
     transaction = current_transaction()
     if transaction:
-        return transaction.accept_distributed_trace_payload(payload,
-                transport_type)
+        return transaction.accept_distributed_trace_payload(payload, transport_type)
     return False
 
 
-def accept_distributed_trace_headers(headers, transport_type='HTTP'):
+def accept_distributed_trace_headers(headers, transport_type="HTTP"):
     transaction = current_transaction()
     if transaction:
-        return transaction.accept_distributed_trace_headers(
-                headers,
-                transport_type)
+        return transaction.accept_distributed_trace_headers(headers, transport_type)
 
 
 def create_distributed_trace_payload():

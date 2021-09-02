@@ -189,7 +189,7 @@ def DatastoreTraceWrapper(wrapped, product, target, operation):
 
         trace = DatastoreTrace(_product, _target, _operation, parent=parent)
 
-        if wrapper:
+        if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:

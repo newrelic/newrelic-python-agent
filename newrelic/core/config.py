@@ -41,7 +41,9 @@ except ImportError:
 try:
     import grpc
 
-    from newrelic.core.infinite_tracing_pb2 import Span as _  # NOQA
+    from newrelic.core.infinite_tracing_pb2 import (
+        Span as _,  # NOQA # pylint: disable=W0611,C0412
+    )
 except ImportError:
     grpc = None
 
@@ -102,8 +104,7 @@ class TopLevelSettings(Settings):
     def host(self):
         if self._host:
             return self._host
-        else:
-            return default_host(self.license_key)
+        return default_host(self.license_key)
 
     @host.setter
     def host(self, value):
@@ -969,7 +970,7 @@ def fetch_config_setting(settings_object, name):
     return target
 
 
-def apply_server_side_settings(server_side_config={}, settings=_settings):
+def apply_server_side_settings(server_side_config=None, settings=_settings):
     """Create a snapshot of the global default settings and overlay it
     with any server side configuration settings. Any local settings
     overrides to take precedence over server side configuration settings
@@ -982,6 +983,7 @@ def apply_server_side_settings(server_side_config={}, settings=_settings):
     >>> settings_snapshot = apply_server_side_settings(server_config)
 
     """
+    server_side_config = server_side_config if server_side_config is not None else {}
 
     settings_snapshot = copy.deepcopy(settings)
 
@@ -1047,8 +1049,9 @@ def apply_server_side_settings(server_side_config={}, settings=_settings):
     return settings_snapshot
 
 
-def finalize_application_settings(server_side_config={}, settings=_settings):
+def finalize_application_settings(server_side_config=None, settings=_settings):
     """Overlay server-side settings and add attribute filter."""
+    server_side_config = server_side_config if server_side_config is not None else {}
 
     # Remove values from server_config that should not overwrite the
     # ones set locally

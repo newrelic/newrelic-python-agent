@@ -24,37 +24,35 @@ import copy
 import logging
 import operator
 import random
+import sys
+import time
 import warnings
 import zlib
-import time
-import sys
-from heapq import heapreplace, heapify
+from heapq import heapify, heapreplace
 
 import newrelic.packages.six as six
-
+from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
+from newrelic.common.encoding_utils import json_encode
+from newrelic.common.object_names import parse_exc_info
+from newrelic.common.streaming_utils import StreamBuffer
+from newrelic.core.attribute import create_user_attributes, process_user_attribute
 from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR
-from newrelic.core.attribute import create_user_attributes
-
-from newrelic.core.attribute import process_user_attribute
+from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.database_utils import explain_plan
 from newrelic.core.error_collector import TracedError
 from newrelic.core.metric import TimeMetric
 from newrelic.core.stack_trace import exception_stack
 
-from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
-from newrelic.core.config import is_expected_error, should_ignore_error
-from newrelic.common.encoding_utils import json_encode
-from newrelic.common.object_names import parse_exc_info
-from newrelic.common.streaming_utils import StreamBuffer
-
 _logger = logging.getLogger(__name__)
 
 EVENT_HARVEST_METHODS = {
-    'analytic_event_data': ('reset_transaction_events',
-                            'reset_synthetics_events',),
-    'span_event_data': ('reset_span_events',),
-    'custom_event_data': ('reset_custom_events',),
-    'error_event_data': ('reset_error_events',),
+    "analytic_event_data": (
+        "reset_transaction_events",
+        "reset_synthetics_events",
+    ),
+    "span_event_data": ("reset_span_events",),
+    "custom_event_data": ("reset_custom_events",),
+    "error_event_data": ("reset_error_events",),
 }
 
 
@@ -64,9 +62,7 @@ def c2t(count=0, total=0.0, min=0.0, max=0.0, sum_of_squares=0.0):
 
 class ApdexStats(list):
 
-    """Bucket for accumulating apdex metrics.
-
-    """
+    """Bucket for accumulating apdex metrics."""
 
     # Is based on a list of length 6 as all metrics are sent to the core
     # application as that and list as base class means it encodes direct
@@ -75,8 +71,7 @@ class ApdexStats(list):
     # be the apdex_t value in use at the time.
 
     def __init__(self, satisfying=0, tolerating=0, frustrating=0, apdex_t=0.0):
-        super(ApdexStats, self).__init__([satisfying, tolerating,
-                frustrating, apdex_t, apdex_t, 0])
+        super(ApdexStats, self).__init__([satisfying, tolerating, frustrating, apdex_t, apdex_t, 0])
 
     satisfying = property(operator.itemgetter(0))
     tolerating = property(operator.itemgetter(1))
@@ -89,8 +84,7 @@ class ApdexStats(list):
         self[1] += other[1]
         self[2] += other[2]
 
-        self[3] = ((self[0] or self[1] or self[2]) and
-                min(self[3], other[3]) or other[3])
+        self[3] = (self[0] or self[1] or self[2]) and min(self[3], other[3]) or other[3]
         self[4] = max(self[4], other[3])
 
     def merge_apdex_metric(self, metric):
@@ -100,29 +94,32 @@ class ApdexStats(list):
         self[1] += metric.tolerating
         self[2] += metric.frustrating
 
-        self[3] = ((self[0] or self[1] or self[2]) and
-                min(self[3], metric.apdex_t) or metric.apdex_t)
+        self[3] = (self[0] or self[1] or self[2]) and min(self[3], metric.apdex_t) or metric.apdex_t
         self[4] = max(self[4], metric.apdex_t)
 
 
 class TimeStats(list):
 
-    """Bucket for accumulating time and value metrics.
-
-    """
+    """Bucket for accumulating time and value metrics."""
 
     # Is based on a list of length 6 as all metrics are sent to the core
     # application as that and list as base class means it encodes direct
     # to JSON as we need it.
 
-    def __init__(self, call_count=0, total_call_time=0.0,
-                total_exclusive_call_time=0.0, min_call_time=0.0,
-                max_call_time=0.0, sum_of_squares=0.0):
+    def __init__(
+        self,
+        call_count=0,
+        total_call_time=0.0,
+        total_exclusive_call_time=0.0,
+        min_call_time=0.0,
+        max_call_time=0.0,
+        sum_of_squares=0.0,
+    ):
         if total_exclusive_call_time is None:
             total_exclusive_call_time = total_call_time
-        super(TimeStats, self).__init__([call_count, total_call_time,
-                total_exclusive_call_time, min_call_time,
-                max_call_time, sum_of_squares])
+        super(TimeStats, self).__init__(
+            [call_count, total_call_time, total_exclusive_call_time, min_call_time, max_call_time, sum_of_squares]
+        )
 
     call_count = property(operator.itemgetter(0))
     total_call_time = property(operator.itemgetter(1))
@@ -174,7 +171,6 @@ class TimeStats(list):
 
 
 class CountStats(TimeStats):
-
     def merge_stats(self, other):
         self[0] += other[0]
 
@@ -184,9 +180,7 @@ class CountStats(TimeStats):
 
 class CustomMetrics(object):
 
-    """Table for collection a set of value metrics.
-
-    """
+    """Table for collection a set of value metrics."""
 
     def __init__(self):
         self.__stats_table = {}
@@ -200,12 +194,12 @@ class CustomMetrics(object):
 
         """
         if isinstance(value, dict):
-            if len(value) == 1 and 'count' in value:
-                new_stats = CountStats(call_count=value['count'])
+            if len(value) == 1 and "count" in value:
+                new_stats = CountStats(call_count=value["count"])
             else:
                 new_stats = TimeStats(*c2t(**value))
         else:
-            new_stats = TimeStats(1, value, value, value, value, value**2)
+            new_stats = TimeStats(1, value, value, value, value, value ** 2)
 
         stats = self.__stats_table.get(name)
         if stats is None:
@@ -231,7 +225,6 @@ class CustomMetrics(object):
 
 
 class SlowSqlStats(list):
-
     def __init__(self):
         super(SlowSqlStats, self).__init__([0, 0, 0, 0, None])
 
@@ -282,8 +275,10 @@ class SampledDataSet(object):
         self.num_seen = 0
 
         if capacity <= 0:
+
             def add(*args, **kwargs):
                 self.num_seen += 1
+
             self.add = add
 
     @property
@@ -296,10 +291,7 @@ class SampledDataSet(object):
 
     @property
     def sampling_info(self):
-        return {
-            'reservoir_size': self.capacity,
-            'events_seen': self.num_seen
-        }
+        return {"reservoir_size": self.capacity, "events_seen": self.num_seen}
 
     def __iter__(self):
         return self.samples
@@ -315,13 +307,12 @@ class SampledDataSet(object):
             # priority sample in the queue
             if priority > self.pq[0][0]:
                 return True
-            else:
-                return False
+            return False
 
         # Always sample if under capacity
         return True
 
-    def add(self, sample, priority=None):
+    def add(self, sample, priority=None):  # pylint: disable=E0202
         self.num_seen += 1
 
         if priority is None:
@@ -350,7 +341,6 @@ class SampledDataSet(object):
 
 
 class LimitedDataSet(list):
-
     def __init__(self, capacity=200):
         super(LimitedDataSet, self).__init__()
 
@@ -358,8 +348,10 @@ class LimitedDataSet(list):
         self.num_seen = 0
 
         if capacity <= 0:
+
             def add(*args, **kwargs):
                 self.num_seen += 1
+
             self.add = add
 
     @property
@@ -372,10 +364,7 @@ class LimitedDataSet(list):
 
     @property
     def sampling_info(self):
-        return {
-            'reservoir_size': self.capacity,
-            'events_seen': self.num_seen
-        }
+        return {"reservoir_size": self.capacity, "events_seen": self.num_seen}
 
     def should_sample(self):
         return self.num_seen < self.capacity
@@ -384,7 +373,7 @@ class LimitedDataSet(list):
         self.clear()
         self.num_seen = 0
 
-    def add(self, sample):
+    def add(self, sample):  # pylint: disable=E0202
         if self.should_sample():
             self.append(sample)
         self.num_seen += 1
@@ -503,7 +492,7 @@ class StatsEngine(object):
         # not make a difference to the data collector which treats None
         # as an empty string anyway.
 
-        key = (metric.name, '')
+        key = (metric.name, "")
         stats = self.__stats_table.get(key)
         if stats is None:
             stats = ApdexStats(apdex_t=metric.apdex_t)
@@ -537,15 +526,17 @@ class StatsEngine(object):
         # Scope is forced to be empty string if None as
         # scope of None is reserved for apdex metrics.
 
-        key = (metric.name, metric.scope or '')
+        key = (metric.name, metric.scope or "")
         stats = self.__stats_table.get(key)
         if stats is None:
-            stats = TimeStats(call_count=1,
-                    total_call_time=metric.duration,
-                    total_exclusive_call_time=metric.exclusive,
-                    min_call_time=metric.duration,
-                    max_call_time=metric.duration,
-                    sum_of_squares=metric.duration ** 2)
+            stats = TimeStats(
+                call_count=1,
+                total_call_time=metric.duration,
+                total_exclusive_call_time=metric.exclusive,
+                min_call_time=metric.duration,
+                max_call_time=metric.duration,
+                sum_of_squares=metric.duration ** 2,
+            )
             self.__stats_table[key] = stats
         else:
             stats.merge_time_metric(metric)
@@ -565,17 +556,17 @@ class StatsEngine(object):
         for metric in metrics:
             self.record_time_metric(metric)
 
-    def record_exception(self, exc=None, value=None, tb=None, params={},
-            ignore_errors=[]):
+    def record_exception(self, exc=None, value=None, tb=None, params=None, ignore_errors=None):
         # Deprecation Warning
-        warnings.warn((
-            'The record_exception function is deprecated. Please use the '
-            'new api named notice_error instead.'
-        ), DeprecationWarning)
+        warnings.warn(
+            ("The record_exception function is deprecated. Please use the " "new api named notice_error instead."),
+            DeprecationWarning,
+        )
 
         self.notice_error(error=(exc, value, tb), attributes=params, ignore=ignore_errors)
 
-    def notice_error(self, error=None, attributes={}, expected=None, ignore=None, status_code=None):
+    def notice_error(self, error=None, attributes=None, expected=None, ignore=None, status_code=None):
+        attributes = attributes if attributes is not None else {}
         settings = self.__settings
 
         if not settings:
@@ -604,8 +595,7 @@ class StatsEngine(object):
 
         # Check to see if we need to strip the message before recording it.
 
-        if (settings.strip_exception_messages.enabled and
-                fullname not in settings.strip_exception_messages.whitelist):
+        if settings.strip_exception_messages.enabled and fullname not in settings.strip_exception_messages.whitelist:
             message = STRIP_EXCEPTION_MESSAGE
 
         # Where expected or ignore are a callable they should return a
@@ -615,7 +605,7 @@ class StatsEngine(object):
         #   False- Record the error.
         #   None - Use the default rules.
 
-        # Precedence: 
+        # Precedence:
         # 1. function parameter override as bool
         # 2. function parameter callable
         # 3. function parameter iterable of class names
@@ -660,7 +650,6 @@ class StatsEngine(object):
         if is_expected is None and callable(expected):
             is_expected = expected(exc, value, tb)
 
-
         # List of class names
         if is_expected is None and expected is not None and not callable(expected):
             # Do not set is_expected to False
@@ -677,8 +666,7 @@ class StatsEngine(object):
 
         if settings.high_security:
             if attributes:
-                _logger.debug('Cannot add custom parameters in '
-                        'High Security Mode.')
+                _logger.debug("Cannot add custom parameters in " "High Security Mode.")
             user_attributes = []
         else:
             custom_attributes = {}
@@ -689,13 +677,16 @@ class StatsEngine(object):
                     if name:
                         custom_attributes[name] = val
             except Exception:
-                _logger.debug('Parameters failed to validate for unknown '
-                        'reason. Dropping parameters for error: %r. Check '
-                        'traceback for clues.', fullname, exc_info=True)
+                _logger.debug(
+                    "Parameters failed to validate for unknown "
+                    "reason. Dropping parameters for error: %r. Check "
+                    "traceback for clues.",
+                    fullname,
+                    exc_info=True,
+                )
                 custom_attributes = {}
 
-            user_attributes = create_user_attributes(custom_attributes,
-                    settings.attribute_filter)
+            user_attributes = create_user_attributes(custom_attributes, settings.attribute_filter)
 
         # Record the exception details.
 
@@ -704,22 +695,19 @@ class StatsEngine(object):
         attributes["stack_trace"] = exception_stack(tb)
 
         # filter custom error specific attributes using attribute filter (user)
-        attributes['userAttributes'] = {}
+        attributes["userAttributes"] = {}
         for attr in user_attributes:
             if attr.destinations & DST_ERROR_COLLECTOR:
-                attributes['userAttributes'][attr.name] = attr.value
+                attributes["userAttributes"][attr.name] = attr.value
 
         # pass expected attribute in to ensure we capture overrides
-        attributes['intrinsics'] = {
-                'error.expected': is_expected,
+        attributes["intrinsics"] = {
+            "error.expected": is_expected,
         }
 
         error_details = TracedError(
-                start_time=time.time(),
-                path='Exception',
-                message=message,
-                type=fullname,
-                parameters=attributes)
+            start_time=time.time(), path="Exception", message=message, type=fullname, parameters=attributes
+        )
 
         # Save this error as a trace and an event.
 
@@ -727,36 +715,35 @@ class StatsEngine(object):
             event = self._error_event(error_details)
             self._error_events.add(event)
 
-        if settings.collect_errors and (len(self.__transaction_errors) <
-                settings.agent_limits.errors_per_harvest):
+        if settings.collect_errors and (len(self.__transaction_errors) < settings.agent_limits.errors_per_harvest):
             self.__transaction_errors.append(error_details)
 
         # Regardless of whether we record the trace or the event we still
         # want to increment the metric Errors/all unless the error was marked
         # as expected
         if is_expected:
-            self.record_time_metric(TimeMetric(name='ErrorsExpected/all', scope='',
-                duration=0.0, exclusive=None))
+            self.record_time_metric(TimeMetric(name="ErrorsExpected/all", scope="", duration=0.0, exclusive=None))
         else:
-            self.record_time_metric(TimeMetric(name='Errors/all', scope='',
-                duration=0.0, exclusive=None))
+            self.record_time_metric(TimeMetric(name="Errors/all", scope="", duration=0.0, exclusive=None))
 
     def _error_event(self, error):
 
         # This method is for recording error events outside of transactions,
         # don't let the poorly named 'type' attribute fool you.
 
-        error.parameters['intrinsics'].update({
-                'type': 'TransactionError',
-                'error.class': error.type,
-                'error.message': error.message,
-                'timestamp': int(1000.0 * error.start_time),
-                'transactionName': None,
-        })
+        error.parameters["intrinsics"].update(
+            {
+                "type": "TransactionError",
+                "error.class": error.type,
+                "error.message": error.message,
+                "timestamp": int(1000.0 * error.start_time),
+                "transactionName": None,
+            }
+        )
 
         # Leave agent attributes field blank since not a transaction
 
-        error_event = [error.parameters['intrinsics'], error.parameters['userAttributes'], {}]
+        error_event = [error.parameters["intrinsics"], error.parameters["userAttributes"], {}]
 
         return error_event
 
@@ -767,8 +754,7 @@ class StatsEngine(object):
         if not settings:
             return
 
-        if (settings.collect_custom_events and
-                settings.custom_insights_events.enabled):
+        if settings.collect_custom_events and settings.custom_insights_events.enabled:
             self._custom_events.add(event)
 
     def record_custom_metric(self, name, value):
@@ -776,15 +762,15 @@ class StatsEngine(object):
         from prior value metrics with the same name.
 
         """
-        key = (name, '')
+        key = (name, "")
 
         if isinstance(value, dict):
-            if len(value) == 1 and 'count' in value:
-                new_stats = CountStats(call_count=value['count'])
+            if len(value) == 1 and "count" in value:
+                new_stats = CountStats(call_count=value["count"])
             else:
                 new_stats = TimeStats(*c2t(**value))
         else:
-            new_stats = TimeStats(1, value, value, value, value, value**2)
+            new_stats = TimeStats(1, value, value, value, value, value ** 2)
 
         stats = self.__stats_table.get(key)
         if stats is None:
@@ -859,16 +845,12 @@ class StatsEngine(object):
             if self.__slow_transaction:
                 if self.__slow_transaction.path != name:
                     if self.__slow_transaction_old_duration:
-                        self.__slow_transaction_map[
-                                self.__slow_transaction.path] = (
-                                self.__slow_transaction_old_duration)
+                        self.__slow_transaction_map[self.__slow_transaction.path] = self.__slow_transaction_old_duration
                     else:
-                        del self.__slow_transaction_map[
-                                self.__slow_transaction.path]
+                        del self.__slow_transaction_map[self.__slow_transaction.path]
 
             if name in self.__slow_transaction_map:
-                self.__slow_transaction_old_duration = (
-                        self.__slow_transaction_map[name])
+                self.__slow_transaction_old_duration = self.__slow_transaction_map[name]
             else:
                 self.__slow_transaction_old_duration = None
 
@@ -928,17 +910,16 @@ class StatsEngine(object):
 
         error_collector = settings.error_collector
 
-        if (error_collector.enabled and settings.collect_errors and
-                len(self.__transaction_errors) <
-                settings.agent_limits.errors_per_harvest):
+        if (
+            error_collector.enabled
+            and settings.collect_errors
+            and len(self.__transaction_errors) < settings.agent_limits.errors_per_harvest
+        ):
             self.__transaction_errors.extend(transaction.error_details())
 
-            self.__transaction_errors = self.__transaction_errors[:
-                    settings.agent_limits.errors_per_harvest]
+            self.__transaction_errors = self.__transaction_errors[: settings.agent_limits.errors_per_harvest]
 
-        if (error_collector.capture_events and
-                error_collector.enabled and
-                settings.collect_error_events):
+        if error_collector.capture_events and error_collector.enabled and settings.collect_error_events:
             events = transaction.error_events(self.__stats_table)
             for event in events:
                 self._error_events.add(event, priority=transaction.priority)
@@ -958,8 +939,7 @@ class StatsEngine(object):
 
         transaction_tracer = settings.transaction_tracer
 
-        if (not transaction.suppress_transaction_trace and
-                transaction_tracer.enabled and settings.collect_traces):
+        if not transaction.suppress_transaction_trace and transaction_tracer.enabled and settings.collect_traces:
 
             # Transactions saved for Synthetics transactions
             # do not depend on the transaction threshold.
@@ -982,22 +962,19 @@ class StatsEngine(object):
             event = transaction.transaction_event(self.__stats_table)
             self._synthetics_events.add(event)
 
-        elif (settings.collect_analytics_events and
-                settings.transaction_events.enabled):
+        elif settings.collect_analytics_events and settings.transaction_events.enabled:
 
             event = transaction.transaction_event(self.__stats_table)
             self._transaction_events.add(event, priority=transaction.priority)
 
         # Merge in custom events
 
-        if (settings.collect_custom_events and
-                settings.custom_insights_events.enabled):
+        if settings.collect_custom_events and settings.custom_insights_events.enabled:
             self.custom_events.merge(transaction.custom_events)
 
         # Merge in span events
 
-        if (settings.distributed_tracing.enabled and
-                settings.span_events.enabled and settings.collect_span_events):
+        if settings.distributed_tracing.enabled and settings.span_events.enabled and settings.collect_span_events:
             if settings.infinite_tracing.enabled:
                 for event in transaction.span_protos(settings):
                     self._span_stream.put(event)
@@ -1028,9 +1005,11 @@ class StatsEngine(object):
         # metrics with same names after the renaming.
 
         if self.__settings.debug.log_raw_metric_data:
-            _logger.info('Raw metric data for harvest of %r is %r.',
-                    self.__settings.app_name,
-                    list(six.iteritems(self.__stats_table)))
+            _logger.info(
+                "Raw metric data for harvest of %r is %r.",
+                self.__settings.app_name,
+                list(six.iteritems(self.__stats_table)),
+            )
 
         if normalizer is not None:
             for key, value in six.iteritems(self.__stats_table):
@@ -1044,9 +1023,11 @@ class StatsEngine(object):
             normalized_stats = self.__stats_table
 
         if self.__settings.debug.log_normalized_metric_data:
-            _logger.info('Normalized metric data for harvest of %r is %r.',
-                    self.__settings.app_name,
-                    list(six.iteritems(normalized_stats)))
+            _logger.info(
+                "Normalized metric data for harvest of %r is %r.",
+                self.__settings.app_name,
+                list(six.iteritems(normalized_stats)),
+            )
 
         for key, value in six.iteritems(normalized_stats):
             key = dict(name=key[0], scope=key[1])
@@ -1055,9 +1036,7 @@ class StatsEngine(object):
         return result
 
     def metric_data_count(self):
-        """Returns a count of the number of unique metrics.
-
-        """
+        """Returns a count of the number of unique metrics."""
 
         if not self.__settings:
             return 0
@@ -1077,7 +1056,7 @@ class StatsEngine(object):
 
     def slow_sql_data(self, connections):
 
-        _logger.debug('Generating slow SQL data.')
+        _logger.debug("Generating slow SQL data.")
 
         if not self.__settings:
             return []
@@ -1090,8 +1069,7 @@ class StatsEngine(object):
 
         maximum = self.__settings.agent_limits.slow_sql_data
 
-        slow_sql_nodes = sorted(six.itervalues(self.__sql_stats_table),
-                key=lambda x: x.max_call_time)[-maximum:]
+        slow_sql_nodes = sorted(six.itervalues(self.__sql_stats_table), key=lambda x: x.max_call_time)[-maximum:]
 
         result = []
 
@@ -1102,40 +1080,41 @@ class StatsEngine(object):
             params = slow_sql_node.params or {}
 
             if slow_sql_node.stack_trace:
-                params['backtrace'] = slow_sql_node.stack_trace
+                params["backtrace"] = slow_sql_node.stack_trace
 
-            explain_plan_data = explain_plan(connections,
-                    slow_sql_node.statement,
-                    slow_sql_node.connect_params,
-                    slow_sql_node.cursor_params,
-                    slow_sql_node.sql_parameters,
-                    slow_sql_node.execute_params,
-                    slow_sql_node.sql_format)
+            explain_plan_data = explain_plan(
+                connections,
+                slow_sql_node.statement,
+                slow_sql_node.connect_params,
+                slow_sql_node.cursor_params,
+                slow_sql_node.sql_parameters,
+                slow_sql_node.execute_params,
+                slow_sql_node.sql_format,
+            )
 
             if explain_plan_data:
-                params['explain_plan'] = explain_plan_data
+                params["explain_plan"] = explain_plan_data
 
             # Only send datastore instance params if not empty.
 
             if slow_sql_node.host:
-                params['host'] = slow_sql_node.host
+                params["host"] = slow_sql_node.host
 
             if slow_sql_node.port_path_or_id:
-                params['port_path_or_id'] = slow_sql_node.port_path_or_id
+                params["port_path_or_id"] = slow_sql_node.port_path_or_id
 
             if slow_sql_node.database_name:
-                params['database_name'] = slow_sql_node.database_name
+                params["database_name"] = slow_sql_node.database_name
 
             json_data = json_encode(params)
 
             level = self.__settings.agent_limits.data_compression_level
             level = level or zlib.Z_DEFAULT_COMPRESSION
 
-            params_data = base64.standard_b64encode(
-                    zlib.compress(six.b(json_data), level))
+            params_data = base64.standard_b64encode(zlib.compress(six.b(json_data), level))
 
             if six.PY3:
-                params_data = params_data.decode('Latin-1')
+                params_data = params_data.decode("Latin-1")
 
             # Limit the length of any SQL that is reported back.
 
@@ -1143,16 +1122,18 @@ class StatsEngine(object):
 
             sql = slow_sql_node.formatted[:limit]
 
-            data = [slow_sql_node.path,
-                    slow_sql_node.request_uri,
-                    slow_sql_node.identifier,
-                    sql,
-                    slow_sql_node.metric,
-                    stats_node.call_count,
-                    stats_node.total_call_time * 1000,
-                    stats_node.min_call_time * 1000,
-                    stats_node.max_call_time * 1000,
-                    params_data]
+            data = [
+                slow_sql_node.path,
+                slow_sql_node.request_uri,
+                slow_sql_node.identifier,
+                sql,
+                slow_sql_node.metric,
+                stats_node.call_count,
+                stats_node.total_call_time * 1000,
+                stats_node.min_call_time * 1000,
+                stats_node.max_call_time * 1000,
+                params_data,
+            ]
 
             result.append(data)
 
@@ -1164,7 +1145,7 @@ class StatsEngine(object):
 
         """
 
-        _logger.debug('Generating transaction trace data.')
+        _logger.debug("Generating transaction trace data.")
 
         if not self.__settings:
             return []
@@ -1208,13 +1189,14 @@ class StatsEngine(object):
                     # not be one which would not be included in the
                     # transaction trace because limit was reached.
 
-                    if (node.node_count < maximum_nodes and
-                            node.connect_params and node.statement.operation in
-                            node.statement.database.explain_stmts):
+                    if (
+                        node.node_count < maximum_nodes
+                        and node.connect_params
+                        and node.statement.operation in node.statement.database.explain_stmts
+                    ):
                         database_nodes.append(node)
 
-            database_nodes = sorted(database_nodes,
-                    key=lambda x: x.duration)[-explain_plan_limit:]
+            database_nodes = sorted(database_nodes, key=lambda x: x.duration)[-explain_plan_limit:]
 
             for node in database_nodes:
                 node.generate_explain_plan = True
@@ -1231,15 +1213,12 @@ class StatsEngine(object):
         trace_data = []
 
         for trace in traces:
-            transaction_trace = trace.transaction_trace(
-                    self, maximum_nodes, connections)
+            transaction_trace = trace.transaction_trace(self, maximum_nodes, connections)
 
-            data = [transaction_trace,
-                    list(trace.string_table.values())]
+            data = [transaction_trace, list(trace.string_table.values())]
 
             if self.__settings.debug.log_transaction_trace_payload:
-                _logger.debug('Encoding slow transaction data where '
-                              'payload=%r.', data)
+                _logger.debug("Encoding slow transaction data where " "payload=%r.", data)
 
             json_data = json_encode(data)
 
@@ -1251,21 +1230,20 @@ class StatsEngine(object):
             pack_data = base64.standard_b64encode(zlib_data)
 
             if six.PY3:
-                pack_data = pack_data.decode('Latin-1')
+                pack_data = pack_data.decode("Latin-1")
 
             root = transaction_trace.root
 
-            if trace.record_tt:
-                force_persist = True
-            else:
-                force_persist = False
+            force_persist = bool(trace.record_tt)  # Check if exists
 
             if trace.include_transaction_trace_request_uri:
                 request_uri = trace.request_uri
             else:
                 request_uri = None
 
-            trace_data.append([transaction_trace.start_time,
+            trace_data.append(
+                [
+                    transaction_trace.start_time,
                     root.end_time - root.start_time,
                     trace.path,
                     request_uri,
@@ -1274,7 +1252,9 @@ class StatsEngine(object):
                     None,
                     force_persist,
                     None,
-                    trace.synthetics_resource_id, ])
+                    trace.synthetics_resource_id,
+                ]
+            )
 
         return trace_data
 
@@ -1298,15 +1278,12 @@ class StatsEngine(object):
 
         maximum = self.__settings.agent_limits.transaction_traces_nodes
 
-        transaction_trace = self.__slow_transaction.transaction_trace(
-                self, maximum)
+        transaction_trace = self.__slow_transaction.transaction_trace(self, maximum)
 
-        data = [transaction_trace,
-                list(self.__slow_transaction.string_table.values())]
+        data = [transaction_trace, list(self.__slow_transaction.string_table.values())]
 
         if self.__settings.debug.log_transaction_trace_payload:
-            _logger.debug('Encoding slow transaction data where '
-                    'payload=%r.', data)
+            _logger.debug("Encoding slow transaction data where " "payload=%r.", data)
 
         json_data = json_encode(data)
 
@@ -1318,15 +1295,19 @@ class StatsEngine(object):
         pack_data = base64.standard_b64encode(zlib_data)
 
         if six.PY3:
-            pack_data = pack_data.decode('Latin-1')
+            pack_data = pack_data.decode("Latin-1")
 
         root = transaction_trace.root
 
-        trace_data = [[root.start_time,
+        trace_data = [
+            [
+                root.start_time,
                 root.end_time - root.start_time,
                 self.__slow_transaction.path,
                 self.__slow_transaction.request_uri,
-                pack_data]]
+                pack_data,
+            ]
+        ]
 
         return trace_data
 
@@ -1356,8 +1337,7 @@ class StatsEngine(object):
         self.reset_synthetics_events()
         # streams are never reset after instantiation
         if reset_stream:
-            self._span_stream = StreamBuffer(
-                settings.infinite_tracing.span_queue_size)
+            self._span_stream = StreamBuffer(settings.infinite_tracing.span_queue_size)
 
     def reset_metric_stats(self):
         """Resets the accumulated statistics back to initial state for
@@ -1375,32 +1355,26 @@ class StatsEngine(object):
 
         if self.__settings is not None:
             self._transaction_events = SampledDataSet(
-                    self.__settings.event_harvest_config.
-                    harvest_limits.analytic_event_data)
+                self.__settings.event_harvest_config.harvest_limits.analytic_event_data
+            )
         else:
             self._transaction_events = SampledDataSet()
 
     def reset_error_events(self):
         if self.__settings is not None:
-            self._error_events = SampledDataSet(
-                    self.__settings.event_harvest_config.
-                    harvest_limits.error_event_data)
+            self._error_events = SampledDataSet(self.__settings.event_harvest_config.harvest_limits.error_event_data)
         else:
             self._error_events = SampledDataSet()
 
     def reset_custom_events(self):
         if self.__settings is not None:
-            self._custom_events = SampledDataSet(
-                    self.__settings.event_harvest_config.
-                    harvest_limits.custom_event_data)
+            self._custom_events = SampledDataSet(self.__settings.event_harvest_config.harvest_limits.custom_event_data)
         else:
             self._custom_events = SampledDataSet()
 
     def reset_span_events(self):
         if self.__settings is not None:
-            self._span_events = SampledDataSet(
-                    self.__settings.event_harvest_config.
-                    harvest_limits.span_event_data)
+            self._span_events = SampledDataSet(self.__settings.event_harvest_config.harvest_limits.span_event_data)
         else:
             self._span_events = SampledDataSet()
 
@@ -1410,8 +1384,7 @@ class StatsEngine(object):
 
         """
         if self.__settings is not None:
-            self._synthetics_events = LimitedDataSet(
-                    self.__settings.agent_limits.synthetics_events)
+            self._synthetics_events = LimitedDataSet(self.__settings.agent_limits.synthetics_events)
         else:
             self._synthetics_events = LimitedDataSet()
 
@@ -1484,8 +1457,7 @@ class StatsEngine(object):
             whitelist_stats, other_stats = snapshot, self
             self.reset_non_event_types()
 
-        event_harvest_whitelist = \
-                self.__settings.event_harvest_config.whitelist
+        event_harvest_whitelist = self.__settings.event_harvest_config.whitelist
 
         # Iterate through harvest types. If they are in the list of types to
         # harvest reset them on stats_engine otherwise remove them from the
@@ -1540,9 +1512,11 @@ class StatsEngine(object):
         if not self.__settings:
             return
 
-        _logger.debug('Performing rollback of data into '
-                'subsequent harvest period. Metric data and transaction events'
-                'will be preserved and rolled into next harvest')
+        _logger.debug(
+            "Performing rollback of data into "
+            "subsequent harvest period. Metric data and transaction events"
+            "will be preserved and rolled into next harvest"
+        )
 
         self.merge_metric_stats(snapshot)
         self._merge_transaction_events(snapshot, rollback=True)
@@ -1656,8 +1630,7 @@ class StatsEngine(object):
         # Limit number of Synthetics transactions
 
         maximum = self.__settings.agent_limits.synthetics_transactions
-        self.__synthetics_transactions.extend(
-                snapshot.__synthetics_transactions)
+        self.__synthetics_transactions.extend(snapshot.__synthetics_transactions)
         synthetics_slice = self.__synthetics_transactions[:maximum]
         self.__synthetics_transactions = synthetics_slice
 
@@ -1680,7 +1653,7 @@ class StatsEngine(object):
             return
 
         for name, other in metrics:
-            key = (name, '')
+            key = (name, "")
             stats = self.__stats_table.get(key)
             if not stats:
                 self.__stats_table[key] = other

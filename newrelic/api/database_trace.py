@@ -258,7 +258,7 @@ def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None):
 
         trace = DatabaseTrace(_sql, dbapi2_module, parent=parent)
 
-        if wrapper:
+        if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:

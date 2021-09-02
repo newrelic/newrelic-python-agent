@@ -71,7 +71,7 @@ def MemcacheTraceWrapper(wrapped, command):
 
         trace = MemcacheTrace(_command, parent=parent)
 
-        if wrapper:
+        if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:

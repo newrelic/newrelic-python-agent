@@ -16,6 +16,7 @@ from ariadne import UnionType, QueryType, load_schema_from_path, make_executable
 
 import os
 
+from ariadne.asgi import GraphQL
 
 schema_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "schema.graphql")
 type_defs = load_schema_from_path(schema_file)
@@ -132,19 +133,4 @@ def resolve_error(self, info):
 _target_application = make_executable_schema(type_defs, query, mutation, item)
 
 
-from ariadne.asgi import GraphQL
-
-app = GraphQL(_target_application, debug=True)
-
-if __name__ == "__main__":
-    import json
-    from ariadne import graphql_sync
-    schema = _target_application
-    app = schema
-    query = "{ hello }"
-    query = json.dumps({"operationName": None, "query": query, "variables": {}})
-
-    r = graphql_sync(schema, query)
-
-
-    breakpoint()
+_target_asgi_application = GraphQL(_target_application)

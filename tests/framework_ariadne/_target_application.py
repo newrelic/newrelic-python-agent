@@ -12,10 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ariadne import UnionType, QueryType, load_schema_from_path, make_executable_schema, MutationType
-
 import os
 
+from ariadne import (
+    MutationType,
+    QueryType,
+    UnionType,
+    load_schema_from_path,
+    make_executable_schema,
+)
 from ariadne.asgi import GraphQL
 
 schema_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "schema.graphql")
@@ -83,12 +88,16 @@ storage = []
 
 
 mutation = MutationType()
+
+
 @mutation.field("storage_add")
 def mutate(self, info, string):
     storage.append(string)
     return {"string": string}
 
+
 item = UnionType("Item")
+
 
 @item.type_resolver
 def resolve_type(obj, *args):
@@ -102,13 +111,16 @@ def resolve_type(obj, *args):
 
 query = QueryType()
 
+
 @query.field("library")
 def resolve_library(self, info, index):
     return libraries[index]
 
+
 @query.field("storage")
 def resolve_storage(self, info):
     return storage
+
 
 @query.field("search")
 def resolve_search(self, info, contains):
@@ -116,13 +128,16 @@ def resolve_search(self, info, contains):
     search_magazines = [m for m in magazines if contains in m["name"]]
     return search_books + search_magazines
 
+
 @query.field("hello")
 def resolve_hello(self, info):
     return "Hello!"
 
+
 @query.field("echo")
 def resolve_echo(self, info, echo):
     return echo
+
 
 @query.field("error_non_null")
 @query.field("error")

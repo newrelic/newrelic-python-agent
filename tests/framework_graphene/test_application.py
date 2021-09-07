@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import six
 import pytest
+import six
 from testing_support.fixtures import (
     dt_enabled,
     validate_transaction_errors,
@@ -39,9 +39,12 @@ def is_graphql_2():
 @pytest.fixture(scope="session")
 def graphql_run():
     """Wrapper function to simulate framework_graphql test behavior."""
+
     def execute(schema, *args, **kwargs):
         return schema.execute(*args, **kwargs)
+
     return execute
+
 
 def to_graphql_source(query):
     def delay_import():
@@ -100,9 +103,9 @@ def test_basic(app, graphql_run):
     )
     @background_task()
     def _test():
-        response = graphql_run(app, '{ hello }')
+        response = graphql_run(app, "{ hello }")
         assert not response.errors
-    
+
     _test()
 
 
@@ -376,9 +379,7 @@ def test_operation_metrics_and_attrs(app, graphql_run):
     @validate_span_events(exact_agents=operation_attrs)
     @background_task()
     def _test():
-        response = graphql_run(
-            app, "query MyQuery { library(index: 0) { branch, book { id, name } } }"
-        )
+        response = graphql_run(app, "query MyQuery { library(index: 0) { branch, book { id, name } } }")
         assert not response.errors
 
     _test()

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ariadne import ObjectType, QueryType, load_schema_from_path, make_executable_schema, MutationType
+from ariadne import UnionType, QueryType, load_schema_from_path, make_executable_schema, MutationType
 
 import os
 
@@ -87,6 +87,17 @@ def mutate(self, info, string):
     storage.append(string)
     return {"string": string}
 
+item = UnionType("Item")
+
+@item.type_resolver
+def resolve_type(obj, *args):
+    if "isbn" in obj:
+        return "Book"
+    elif "issue" in obj:
+        return "Magazine"
+
+    return None
+
 
 query = QueryType()
 
@@ -118,7 +129,7 @@ def resolve_error(self, info):
     raise RuntimeError("Runtime Error!")
 
 
-_target_application = make_executable_schema(type_defs, query, mutation)
+_target_application = make_executable_schema(type_defs, query, mutation, item)
 
 
 from ariadne.asgi import GraphQL

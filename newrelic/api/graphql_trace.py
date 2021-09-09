@@ -104,7 +104,7 @@ def GraphQLOperationTraceWrapper(wrapped):
 
         trace = GraphQLOperationTrace(parent=parent)
 
-        if wrapper:
+        if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:
@@ -160,7 +160,7 @@ def GraphQLResolverTraceWrapper(wrapped):
 
         trace = GraphQLResolverTrace(parent=parent)
 
-        if wrapper:
+        if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:

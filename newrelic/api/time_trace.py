@@ -318,7 +318,9 @@ class TimeTrace(object):
 
         return fullname, message, tb, is_expected
 
-    def notice_error(self, error=None, attributes={}, expected=None, ignore=None, status_code=None):
+    def notice_error(self, error=None, attributes=None, expected=None, ignore=None, status_code=None):
+        attributes = attributes if attributes is not None else {}
+
         recorded = self._observe_exception(
             error,
             ignore=ignore,
@@ -355,7 +357,7 @@ class TimeTrace(object):
 
             transaction._create_error_node(settings, fullname, message, is_expected, custom_params, self.guid, tb)
 
-    def record_exception(self, exc_info=None, params={}, ignore_errors=[]):
+    def record_exception(self, exc_info=None, params=None, ignore_errors=None):
         # Deprecation Warning
         warnings.warn(
             ("The record_exception function is deprecated. Please use the new api named notice_error instead."),
@@ -563,7 +565,7 @@ def get_linking_metadata():
         }
 
 
-def record_exception(exc=None, value=None, tb=None, params={}, ignore_errors=[], application=None):
+def record_exception(exc=None, value=None, tb=None, params=None, ignore_errors=None, application=None):
     # Deprecation Warning
     warnings.warn(
         ("The record_exception function is deprecated. Please use the new api named notice_error instead."),
@@ -573,7 +575,7 @@ def record_exception(exc=None, value=None, tb=None, params={}, ignore_errors=[],
     notice_error(error=(exc, value, tb), attributes=params, ignore=ignore_errors, application=application)
 
 
-def notice_error(error=None, attributes={}, expected=None, ignore=None, status_code=None, application=None):
+def notice_error(error=None, attributes=None, expected=None, ignore=None, status_code=None, application=None):
     if application is None:
         trace = current_trace()
         if trace:

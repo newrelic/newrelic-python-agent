@@ -17,48 +17,53 @@
 """
 
 from __future__ import print_function
+
+import imp
 import logging
+import os
 import sys
 import threading
 import time
-import os
 import traceback
-import imp
 import warnings
-
 from functools import partial
 
-from newrelic.samplers.data_sampler import DataSampler
-
+from newrelic.common.object_names import callable_name
+from newrelic.core.adaptive_sampler import AdaptiveSampler
 from newrelic.core.config import global_settings
 from newrelic.core.custom_event import create_custom_event
 from newrelic.core.data_collector import create_session
-from newrelic.network.exceptions import (ForceAgentRestart,
-        ForceAgentDisconnect, DiscardDataForRequest, RetryDataForRequest,
-        NetworkInterfaceException)
-from newrelic.core.environment import environment_settings
-from newrelic.core.rules_engine import RulesEngine, SegmentCollapseEngine
-from newrelic.core.stats_engine import StatsEngine, CustomMetrics
-from newrelic.core.internal_metrics import (InternalTrace,
-        InternalTraceContext, internal_metric, internal_count_metric)
-from newrelic.core.profile_sessions import profile_session_manager
-
 from newrelic.core.database_utils import SQLConnections
-from newrelic.common.object_names import callable_name
-from newrelic.core.adaptive_sampler import AdaptiveSampler
+from newrelic.core.environment import environment_settings
+from newrelic.core.internal_metrics import (
+    InternalTrace,
+    InternalTraceContext,
+    internal_count_metric,
+    internal_metric,
+)
+from newrelic.core.profile_sessions import profile_session_manager
+from newrelic.core.rules_engine import RulesEngine, SegmentCollapseEngine
+from newrelic.core.stats_engine import CustomMetrics, StatsEngine
+from newrelic.network.exceptions import (
+    DiscardDataForRequest,
+    ForceAgentDisconnect,
+    ForceAgentRestart,
+    NetworkInterfaceException,
+    RetryDataForRequest,
+)
+from newrelic.samplers.data_sampler import DataSampler
 
 _logger = logging.getLogger(__name__)
 
 
 class Application(object):
 
-    """Class which maintains recorded data for a single application.
-
-    """
+    """Class which maintains recorded data for a single application."""
 
     def __init__(self, app_name, linked_applications=[]):
-        _logger.debug('Initializing application with name %r and '
-                'linked applications of %r.', app_name, linked_applications)
+        _logger.debug(
+            "Initializing application with name %r and " "linked applications of %r.", app_name, linked_applications
+        )
 
         self._creation_time = time.time()
 
@@ -107,10 +112,12 @@ class Application(object):
         # avoid a race condition in setting it later. Otherwise we have
         # to use unnecessary locking to protect access.
 
-        self._rules_engine = {'url': RulesEngine([]),
-                'transaction': RulesEngine([]),
-                'metric': RulesEngine([]),
-                'segment': SegmentCollapseEngine([])}
+        self._rules_engine = {
+            "url": RulesEngine([]),
+            "transaction": RulesEngine([]),
+            "metric": RulesEngine([]),
+            "segment": SegmentCollapseEngine([]),
+        }
 
         self._data_samplers = []
 
@@ -149,48 +156,28 @@ class Application(object):
     def dump(self, file):
         """Dumps details about the application to the file object."""
 
-        print('Time Created: %s' % (
-                time.asctime(time.localtime(self._creation_time))), file=file)
-        print('Linked Applications: %r' % (
-                self._linked_applications), file=file)
-        print('Registration PID: %s' % (
-                self._process_id), file=file)
-        print('Harvest Count: %d' % (
-                self._harvest_count), file=file)
-        print('Agent Restart: %d' % (
-                self._agent_restart), file=file)
-        print('Forced Shutdown: %s' % (
-                self._agent_shutdown), file=file)
+        print("Time Created: %s" % (time.asctime(time.localtime(self._creation_time))), file=file)
+        print("Linked Applications: %r" % (self._linked_applications), file=file)
+        print("Registration PID: %s" % (self._process_id), file=file)
+        print("Harvest Count: %d" % (self._harvest_count), file=file)
+        print("Agent Restart: %d" % (self._agent_restart), file=file)
+        print("Forced Shutdown: %s" % (self._agent_shutdown), file=file)
 
         active_session = self._active_session
 
         if active_session:
-            print('Collector URL: %s' % (
-                    active_session.collector_url), file=file)
-            print('Agent Run ID: %s' % (
-                    active_session.agent_run_id), file=file)
-            print('URL Normalization Rules: %r' % (
-                    self._rules_engine['url'].rules), file=file)
-            print('Metric Normalization Rules: %r' % (
-                    self._rules_engine['metric'].rules), file=file)
-            print('Transaction Normalization Rules: %r' % (
-                    self._rules_engine['transaction'].rules), file=file)
-            print('Transaction Segment Whitelist Rules: %r' % (
-                    self._rules_engine['segment'].rules), file=file)
-            print('Harvest Period Start: %s' % (
-                    time.asctime(time.localtime(self._period_start))),
-                    file=file)
-            print('Transaction Count: %d' % (
-                    self._transaction_count), file=file)
-            print('Last Transaction: %s' % (
-                    time.asctime(time.localtime(self._last_transaction))),
-                    file=file)
-            print('Global Events Count: %d' % (
-                    self._global_events_account), file=file)
-            print('Harvest Metrics Count: %d' % (
-                    self._stats_engine.metrics_count()), file=file)
-            print('Harvest Discard Count: %d' % (
-                    self._discard_count), file=file)
+            print("Collector URL: %s" % (active_session.collector_url), file=file)
+            print("Agent Run ID: %s" % (active_session.agent_run_id), file=file)
+            print("URL Normalization Rules: %r" % (self._rules_engine["url"].rules), file=file)
+            print("Metric Normalization Rules: %r" % (self._rules_engine["metric"].rules), file=file)
+            print("Transaction Normalization Rules: %r" % (self._rules_engine["transaction"].rules), file=file)
+            print("Transaction Segment Whitelist Rules: %r" % (self._rules_engine["segment"].rules), file=file)
+            print("Harvest Period Start: %s" % (time.asctime(time.localtime(self._period_start))), file=file)
+            print("Transaction Count: %d" % (self._transaction_count), file=file)
+            print("Last Transaction: %s" % (time.asctime(time.localtime(self._last_transaction))), file=file)
+            print("Global Events Count: %d" % (self._global_events_account), file=file)
+            print("Harvest Metrics Count: %d" % (self._stats_engine.metrics_count()), file=file)
+            print("Harvest Discard Count: %d" % (self._discard_count), file=file)
 
     def activate_session(self, activate_agent=None, timeout=0.0):
         """Creates a background thread to initiate registration of the
@@ -233,9 +220,9 @@ class Application(object):
         if timeout >= deadlock_timeout:
             self._detect_deadlock = True
 
-        thread = threading.Thread(target=self.connect_to_data_collector,
-                name='NR-Activate-Session/%s' % self.name,
-                args=(activate_agent,))
+        thread = threading.Thread(
+            target=self.connect_to_data_collector, name="NR-Activate-Session/%s" % self.name, args=(activate_agent,)
+        )
         thread.setDaemon(True)
         thread.start()
 
@@ -246,23 +233,28 @@ class Application(object):
             self._deadlock_event.wait(deadlock_timeout)
 
             if not self._deadlock_event.isSet():
-                _logger.warning('Detected potential deadlock while waiting '
-                        'for activation of session for application %r. '
-                        'Returning after %0.2f seconds rather than waiting. '
-                        'If this problem occurs on every process restart, '
-                        'see the API documentation for proper usage of '
-                        'the newrelic.agent.register_application() function '
-                        'or if necessary report this problem to New Relic '
-                        'support for further investigation.', self._app_name,
-                        deadlock_timeout)
+                _logger.warning(
+                    "Detected potential deadlock while waiting "
+                    "for activation of session for application %r. "
+                    "Returning after %0.2f seconds rather than waiting. "
+                    "If this problem occurs on every process restart, "
+                    "see the API documentation for proper usage of "
+                    "the newrelic.agent.register_application() function "
+                    "or if necessary report this problem to New Relic "
+                    "support for further investigation.",
+                    self._app_name,
+                    deadlock_timeout,
+                )
                 return False
 
         self._connected_event.wait(timeout)
 
         if not self._connected_event.isSet():
-            _logger.debug('Timeout waiting for activation of session for '
-                    'application %r where timeout was %.02f seconds.',
-                    self._app_name, timeout)
+            _logger.debug(
+                "Timeout waiting for activation of session for " "application %r where timeout was %.02f seconds.",
+                self._app_name,
+                timeout,
+            )
             return False
 
         return True
@@ -324,9 +316,14 @@ class Application(object):
 
         active_session = None
 
-        retries = [(15, False, False), (15, False, False),
-                   (30, False, False), (60, True, False),
-                   (120, False, False), (300, False, True), ]
+        retries = [
+            (15, False, False),
+            (15, False, False),
+            (30, False, False),
+            (60, True, False),
+            (120, False, False),
+            (300, False, True),
+        ]
 
         connect_attempts = 0
         settings = global_settings()
@@ -344,16 +341,18 @@ class Application(object):
 
             with InternalTraceContext(internal_metrics):
                 try:
-                    active_session = create_session(None, self._app_name,
-                            self.linked_applications, environment_settings())
+                    active_session = create_session(
+                        None, self._app_name, self.linked_applications, environment_settings()
+                    )
                 except ForceAgentDisconnect:
                     # Any disconnect exception means we should stop trying to connect
                     _logger.error(
-                            'The New Relic service has requested that the agent '
-                            'stop attempting to connect. The agent will no longer '
-                            'attempt a connection with New Relic. Your application '
-                            'must be manually restarted in order to connect to New '
-                            'Relic.')
+                        "The New Relic service has requested that the agent "
+                        "stop attempting to connect. The agent will no longer "
+                        "attempt a connection with New Relic. Your application "
+                        "must be manually restarted in order to connect to New "
+                        "Relic."
+                    )
                     return
                 except NetworkInterfaceException:
                     active_session = None
@@ -366,10 +365,11 @@ class Application(object):
 
                     if not self._agent_shutdown and not self._pending_shutdown:
                         _logger.exception(
-                                'Unexpected exception when registering '
-                                'agent with the data collector. If this problem '
-                                'persists, please report this problem to New Relic '
-                                'support for further investigation.')
+                            "Unexpected exception when registering "
+                            "agent with the data collector. If this problem "
+                            "persists, please report this problem to New Relic "
+                            "support for further investigation."
+                        )
                     return
 
             # We were successful, but first need to make sure we do
@@ -384,32 +384,34 @@ class Application(object):
 
                 try:
                     if settings.debug.log_normalization_rules:
-                        _logger.info('The URL normalization rules for '
-                                '%r are %r.', self._app_name,
-                                    configuration.url_rules)
-                        _logger.info('The metric normalization rules '
-                                'for %r are %r.', self._app_name,
-                                    configuration.metric_name_rules)
-                        _logger.info('The transaction normalization '
-                                'rules for %r are %r.', self._app_name,
-                                    configuration.transaction_name_rules)
+                        _logger.info(
+                            "The URL normalization rules for " "%r are %r.", self._app_name, configuration.url_rules
+                        )
+                        _logger.info(
+                            "The metric normalization rules " "for %r are %r.",
+                            self._app_name,
+                            configuration.metric_name_rules,
+                        )
+                        _logger.info(
+                            "The transaction normalization " "rules for %r are %r.",
+                            self._app_name,
+                            configuration.transaction_name_rules,
+                        )
 
-                    self._rules_engine['url'] = RulesEngine(
-                            configuration.url_rules)
-                    self._rules_engine['metric'] = RulesEngine(
-                            configuration.metric_name_rules)
-                    self._rules_engine['transaction'] = RulesEngine(
-                            configuration.transaction_name_rules)
-                    self._rules_engine['segment'] = SegmentCollapseEngine(
-                            configuration.transaction_segment_terms)
+                    self._rules_engine["url"] = RulesEngine(configuration.url_rules)
+                    self._rules_engine["metric"] = RulesEngine(configuration.metric_name_rules)
+                    self._rules_engine["transaction"] = RulesEngine(configuration.transaction_name_rules)
+                    self._rules_engine["segment"] = SegmentCollapseEngine(configuration.transaction_segment_terms)
 
                 except Exception:
-                    _logger.exception('The agent normalization rules '
-                            'received from the data collector could not '
-                            'be compiled properly by the agent due to a '
-                            'syntactical error or other problem. Please '
-                            'report this to New Relic support for '
-                            'investigation.')
+                    _logger.exception(
+                        "The agent normalization rules "
+                        "received from the data collector could not "
+                        "be compiled properly by the agent due to a "
+                        "syntactical error or other problem. Please "
+                        "report this to New Relic support for "
+                        "investigation."
+                    )
 
                     # For good measure, in this situation we explicitly
                     # shutdown the session as then the data collector
@@ -434,29 +436,37 @@ class Application(object):
                     timeout, warning, error = retries.pop(0)
 
                     if warning:
-                        _logger.warning('Registration of the application '
-                                '%r with the data collector failed after '
-                                'multiple attempts. Check the prior log '
-                                'entries and remedy any issue as '
-                                'necessary, or if the problem persists, '
-                                'report this problem to New Relic '
-                                'support for further investigation.',
-                                self._app_name)
+                        _logger.warning(
+                            "Registration of the application "
+                            "%r with the data collector failed after "
+                            "multiple attempts. Check the prior log "
+                            "entries and remedy any issue as "
+                            "necessary, or if the problem persists, "
+                            "report this problem to New Relic "
+                            "support for further investigation.",
+                            self._app_name,
+                        )
 
                     elif error:
-                        _logger.error('Registration of the application '
-                                '%r with the data collector failed after '
-                                'further additional attempts. Please '
-                                'report this problem to New Relic support '
-                                'for further investigation.',
-                                self._app_name)
+                        _logger.error(
+                            "Registration of the application "
+                            "%r with the data collector failed after "
+                            "further additional attempts. Please "
+                            "report this problem to New Relic support "
+                            "for further investigation.",
+                            self._app_name,
+                        )
 
                 else:
                     timeout = 300
 
-                _logger.debug('Retrying registration of the application '
-                        '%r with the data collector after a further %d '
-                        'seconds.', self._app_name, timeout)
+                _logger.debug(
+                    "Retrying registration of the application "
+                    "%r with the data collector after a further %d "
+                    "seconds.",
+                    self._app_name,
+                    timeout,
+                )
 
                 time.sleep(timeout)
 
@@ -466,21 +476,15 @@ class Application(object):
         configuration = active_session.configuration
 
         with self._stats_lock:
-            self._stats_engine.reset_stats(
-                    configuration,
-                    reset_stream=True)
+            self._stats_engine.reset_stats(configuration, reset_stream=True)
 
             if configuration.serverless_mode.enabled:
                 sampling_target_period = 60.0
             else:
-                sampling_target_period = \
-                    configuration.sampling_target_period_in_seconds
-            self.adaptive_sampler = AdaptiveSampler(
-                    configuration.sampling_target,
-                    sampling_target_period)
+                sampling_target_period = configuration.sampling_target_period_in_seconds
+            self.adaptive_sampler = AdaptiveSampler(configuration.sampling_target, sampling_target_period)
 
-        active_session.connect_span_stream(self._stats_engine.span_stream,
-            self.record_custom_metric)
+        active_session.connect_span_stream(self._stats_engine.span_stream, self.record_custom_metric)
 
         with self._stats_custom_lock:
             self._stats_custom_engine.reset_stats(configuration)
@@ -507,15 +511,12 @@ class Application(object):
         # merging the internal metrics.
 
         with InternalTraceContext(internal_metrics):
-            internal_metric('Supportability/Python/Application/'
-                    'Registration/Duration',
-                    self._period_start - connect_start)
-            internal_metric('Supportability/Python/Application/'
-                    'Registration/Attempts',
-                    connect_attempts)
+            internal_metric(
+                "Supportability/Python/Application/" "Registration/Duration", self._period_start - connect_start
+            )
+            internal_metric("Supportability/Python/Application/" "Registration/Attempts", connect_attempts)
 
-        self._stats_engine.merge_custom_metrics(
-                internal_metrics.metrics())
+        self._stats_engine.merge_custom_metrics(internal_metrics.metrics())
 
         # Update the active session in this object. This will the
         # recording of transactions to start.
@@ -562,25 +563,31 @@ class Application(object):
         # been activated prior to the process being forked.
 
         if self._process_id and process_id != self._process_id:
-            _logger.warning('Attempt to reactivate application or record '
-                    'transactions in a process different to where the '
-                    'agent was already registered for application %r. No '
-                    'data will be reported for this process with pid of '
-                    '%d. Registration of the agent for this application '
-                    'occurred in process with pid %d. If no data at all '
-                    'is being reported for your application, then please '
-                    'report this problem to New Relic support for further '
-                    'investigation.', self._app_name, process_id,
-                    self._process_id)
+            _logger.warning(
+                "Attempt to reactivate application or record "
+                "transactions in a process different to where the "
+                "agent was already registered for application %r. No "
+                "data will be reported for this process with pid of "
+                "%d. Registration of the agent for this application "
+                "occurred in process with pid %d. If no data at all "
+                "is being reported for your application, then please "
+                "report this problem to New Relic support for further "
+                "investigation.",
+                self._app_name,
+                process_id,
+                self._process_id,
+            )
 
             settings = global_settings()
 
             if settings.debug.log_agent_initialization:
-                _logger.info('Process validation check was triggered '
-                        'from: %r', ''.join(traceback.format_stack()[:-1]))
+                _logger.info(
+                    "Process validation check was triggered " "from: %r", "".join(traceback.format_stack()[:-1])
+                )
             else:
-                _logger.debug('Process validation check was triggered '
-                        'from: %r', ''.join(traceback.format_stack()[:-1]))
+                _logger.debug(
+                    "Process validation check was triggered " "from: %r", "".join(traceback.format_stack()[:-1])
+                )
 
             # We now zero out the process ID so we know we have already
             # generated a warning message.
@@ -610,11 +617,14 @@ class Application(object):
             # generated. We could perhaps instead flag that the
             # transaction be ignored and thus not reported.
 
-            _logger.exception('The application of the normalization '
-                    'rules for %r has failed. This can indicate '
-                    'a problem with the agent rules supplied by the '
-                    'data collector. Please report this problem to New '
-                    'Relic support for further investigation.', name)
+            _logger.exception(
+                "The application of the normalization "
+                "rules for %r has failed. This can indicate "
+                "a problem with the agent rules supplied by the "
+                "data collector. Please report this problem to New "
+                "Relic support for further investigation.",
+                name,
+            )
 
             return name, False
 
@@ -624,12 +634,17 @@ class Application(object):
 
         """
 
-        _logger.debug('Register data source %r against application where '
-                'application=%r, name=%r, settings=%r and properties=%r.',
-                source, self._app_name, name, settings, properties)
+        _logger.debug(
+            "Register data source %r against application where "
+            "application=%r, name=%r, settings=%r and properties=%r.",
+            source,
+            self._app_name,
+            name,
+            settings,
+            properties,
+        )
 
-        self._data_samplers.append(DataSampler(self._app_name, source,
-                name, settings, **properties))
+        self._data_samplers.append(DataSampler(self._app_name, source, name, settings, **properties))
 
     def start_data_samplers(self):
         """Starts any data samplers. This will be called when the
@@ -638,23 +653,24 @@ class Application(object):
 
         """
         with self._data_samplers_lock:
-            _logger.debug('Starting data samplers for application %r.',
-                    self._app_name)
+            _logger.debug("Starting data samplers for application %r.", self._app_name)
 
             for data_sampler in self._data_samplers:
                 try:
-                    _logger.debug('Starting data sampler for %r in '
-                            'application %r.', data_sampler.name,
-                            self._app_name)
+                    _logger.debug(
+                        "Starting data sampler for %r in " "application %r.", data_sampler.name, self._app_name
+                    )
 
                     data_sampler.start()
                 except Exception:
-                    _logger.exception('Unexpected exception when starting '
-                            'data source %r. Custom metrics from this data '
-                            'source may not be subsequently available. If '
-                            'this problem persists, please report this '
-                            'problem to the provider of the data source.',
-                            data_sampler.name)
+                    _logger.exception(
+                        "Unexpected exception when starting "
+                        "data source %r. Custom metrics from this data "
+                        "source may not be subsequently available. If "
+                        "this problem persists, please report this "
+                        "problem to the provider of the data source.",
+                        data_sampler.name,
+                    )
 
             self._data_samplers_started = True
 
@@ -666,23 +682,24 @@ class Application(object):
         """
 
         with self._data_samplers_lock:
-            _logger.debug('Stopping data samplers for application %r.',
-                    self._app_name)
+            _logger.debug("Stopping data samplers for application %r.", self._app_name)
 
             for data_sampler in self._data_samplers:
                 try:
-                    _logger.debug('Stopping data sampler for %r in '
-                            'application %r.', data_sampler.name,
-                            self._app_name)
+                    _logger.debug(
+                        "Stopping data sampler for %r in " "application %r.", data_sampler.name, self._app_name
+                    )
 
                     data_sampler.stop()
                 except Exception:
-                    _logger.exception('Unexpected exception when stopping '
-                            'data source %r Custom metrics from this data '
-                            'source may not be subsequently available. If '
-                            'this problem persists, please report this '
-                            'problem to the provider of the data source.',
-                            data_sampler.name)
+                    _logger.exception(
+                        "Unexpected exception when stopping "
+                        "data source %r Custom metrics from this data "
+                        "source may not be subsequently available. If "
+                        "this problem persists, please report this "
+                        "problem to the provider of the data source.",
+                        data_sampler.name,
+                    )
 
     def remove_data_source(self, name):
         with self._data_samplers_lock:
@@ -696,9 +713,9 @@ class Application(object):
                 data_sampler = data_sampler[0]
 
                 try:
-                    _logger.debug('Removing/Stopping data sampler for %r in '
-                             'application %r.', data_sampler.name,
-                             self._app_name)
+                    _logger.debug(
+                        "Removing/Stopping data sampler for %r in " "application %r.", data_sampler.name, self._app_name
+                    )
 
                     data_sampler.stop()
 
@@ -706,26 +723,26 @@ class Application(object):
 
                     # If sampler has not started yet, it may throw an error.
 
-                    _logger.debug('Exception when stopping '
-                             'data source %r when attempting to remove it.',
-                             data_sampler.name)
+                    _logger.debug(
+                        "Exception when stopping " "data source %r when attempting to remove it.", data_sampler.name
+                    )
 
                 self._data_samplers.remove(data_sampler)
 
-    def record_exception(self, exc=None, value=None, tb=None, params={}, ignore_errors=[]):
+    def record_exception(self, exc=None, value=None, tb=None, params=None, ignore_errors=None):
         """Record a global exception against the application independent
         of a specific transaction.
 
         """
         # Deprecation Warning
-        warnings.warn((
-            'The record_exception function is deprecated. Please use the '
-            'new api named notice_error instead.'
-        ), DeprecationWarning)
+        warnings.warn(
+            ("The record_exception function is deprecated. Please use the " "new api named notice_error instead."),
+            DeprecationWarning,
+        )
 
         self.notice_error(error=(exc, value, tb), attributes=params, ignore=ignore_errors)
 
-    def notice_error(self, error=None, attributes={}, expected=None, ignore=None, status_code=None):
+    def notice_error(self, error=None, attributes=None, expected=None, ignore=None, status_code=None):
         """Record a global exception against the application independent
         of a specific transaction.
 
@@ -823,11 +840,14 @@ class Application(object):
         # agent runs due to a server side configuration change.
 
         if settings.agent_run_id != data.settings.agent_run_id:
-            _logger.debug('Discard transaction for application %r as '
-                    'runs over multiple agent runs. Initial agent run ID '
-                    'is %r and the current agent run ID is %r.',
-                    self._app_name, data.settings.agent_run_id,
-                    settings.agent_run_id)
+            _logger.debug(
+                "Discard transaction for application %r as "
+                "runs over multiple agent runs. Initial agent run ID "
+                "is %r and the current agent run ID is %r.",
+                self._app_name,
+                data.settings.agent_run_id,
+                settings.agent_run_id,
+            )
             return
 
         # Do checks to see whether trying to record a transaction in a
@@ -838,7 +858,7 @@ class Application(object):
         internal_metrics = CustomMetrics()
 
         with InternalTraceContext(internal_metrics):
-            with InternalTrace('Supportability/Python/RecordTransaction/Calls/record'):
+            with InternalTrace("Supportability/Python/RecordTransaction/Calls/record"):
                 try:
                     # We accumulate stats into a workarea and only then merge it
                     # into the main one under a thread lock. Do this to ensure
@@ -849,11 +869,13 @@ class Application(object):
                     stats.record_transaction(data)
 
                 except Exception:
-                    _logger.exception('The generation of transaction data has '
-                            'failed. This would indicate some sort of internal '
-                            'implementation issue with the agent. Please report '
-                            'this problem to New Relic support for further '
-                            'investigation.')
+                    _logger.exception(
+                        "The generation of transaction data has "
+                        "failed. This would indicate some sort of internal "
+                        "implementation issue with the agent. Please report "
+                        "this problem to New Relic support for further "
+                        "investigation."
+                    )
 
                     if settings.debug.record_transaction_failure:
                         raise
@@ -871,15 +893,16 @@ class Application(object):
                     # anything else after this point. If we do then that
                     # data will not be recorded.
 
-                    self._stats_engine.merge_custom_metrics(
-                            internal_metrics.metrics())
+                    self._stats_engine.merge_custom_metrics(internal_metrics.metrics())
 
                 except Exception:
-                    _logger.exception('The merging of transaction data has '
-                            'failed. This would indicate some sort of '
-                            'internal implementation issue with the agent. '
-                            'Please report this problem to New Relic support '
-                            'for further investigation.')
+                    _logger.exception(
+                        "The merging of transaction data has "
+                        "failed. This would indicate some sort of "
+                        "internal implementation issue with the agent. "
+                        "Please report this problem to New Relic support "
+                        "for further investigation."
+                    )
 
                     if settings.debug.record_transaction_failure:
                         raise
@@ -891,27 +914,32 @@ class Application(object):
         """
 
         if not self._active_session.configuration.thread_profiler.enabled:
-            _logger.warning('A thread profiling session was requested '
-                    'for %r but thread profiling is disabled by the current '
-                    'agent configuration. Enable "thread_profiler.enabled" '
-                    'in the agent configuration.', self._app_name)
-            return {command_id: {'error': 'The profiler service is disabled'}}
+            _logger.warning(
+                "A thread profiling session was requested "
+                "for %r but thread profiling is disabled by the current "
+                'agent configuration. Enable "thread_profiler.enabled" '
+                "in the agent configuration.",
+                self._app_name,
+            )
+            return {command_id: {"error": "The profiler service is disabled"}}
 
-        profile_id = kwargs['profile_id']
-        sample_period = kwargs['sample_period']
-        duration_s = kwargs['duration']
-        profile_agent_code = kwargs['profile_agent_code']
+        profile_id = kwargs["profile_id"]
+        sample_period = kwargs["sample_period"]
+        duration_s = kwargs["duration"]
+        profile_agent_code = kwargs["profile_agent_code"]
 
         stop_time_s = self._period_start + duration_s
 
-        if not hasattr(sys, '_current_frames'):
-            _logger.warning('A thread profiling session was requested for '
-                    '%r but thread profiling is not supported for the '
-                    'Python interpreter being used. Contact New Relic '
-                    'support for additional information about supported '
-                    'platforms for the thread profiling feature.',
-                    self._app_name)
-            return {command_id: {'error': 'Profiler not supported'}}
+        if not hasattr(sys, "_current_frames"):
+            _logger.warning(
+                "A thread profiling session was requested for "
+                "%r but thread profiling is not supported for the "
+                "Python interpreter being used. Contact New Relic "
+                "support for additional information about supported "
+                "platforms for the thread profiling feature.",
+                self._app_name,
+            )
+            return {command_id: {"error": "Profiler not supported"}}
 
         # ProfilerManager will only allow one generic thread profiler to be
         # active at any given time. So if a user has multiple applications and
@@ -920,20 +948,23 @@ class Application(object):
         # threads in the process and not just those handling transactions
         # related to the specific application.
 
-        success = self.profile_manager.start_profile_session(self._app_name,
-                profile_id, stop_time_s, sample_period, profile_agent_code)
+        success = self.profile_manager.start_profile_session(
+            self._app_name, profile_id, stop_time_s, sample_period, profile_agent_code
+        )
 
         if not success:
-            _logger.warning('A thread profiling session was requested for '
-                    '%r but a thread profiling session is already in '
-                    'progress. Ignoring the subsequent request. '
-                    'If this keeps occurring on a regular basis, please '
-                    'report this problem to New Relic support for further '
-                    'investigation.', self._app_name)
-            return {command_id: {'error': 'Profiler already running'}}
+            _logger.warning(
+                "A thread profiling session was requested for "
+                "%r but a thread profiling session is already in "
+                "progress. Ignoring the subsequent request. "
+                "If this keeps occurring on a regular basis, please "
+                "report this problem to New Relic support for further "
+                "investigation.",
+                self._app_name,
+            )
+            return {command_id: {"error": "Profiler already running"}}
 
-        _logger.info('Starting thread profiling session for %r.',
-                self._app_name)
+        _logger.info("Starting thread profiling session for %r.", self._app_name)
 
         return {command_id: {}}
 
@@ -946,27 +977,31 @@ class Application(object):
         fps = self.profile_manager.full_profile_session
 
         if fps is None:
-            _logger.warning('A request was received to stop a thread '
-                    'profiling session for %r, but a thread profiling '
-                    'session is not running. If this keeps occurring on '
-                    'a regular basis, please report this problem to New '
-                    'Relic support for further investigation.',
-                    self._app_name)
-            return {command_id: {'error': 'Profiler not running.'}}
+            _logger.warning(
+                "A request was received to stop a thread "
+                "profiling session for %r, but a thread profiling "
+                "session is not running. If this keeps occurring on "
+                "a regular basis, please report this problem to New "
+                "Relic support for further investigation.",
+                self._app_name,
+            )
+            return {command_id: {"error": "Profiler not running."}}
 
-        elif kwargs['profile_id'] != fps.profile_id:
-            _logger.warning('A request was received to stop a thread '
-                    'profiling session for %r, but the ID %r for '
-                    'the current thread profiling session does not '
-                    'match the provided ID of %r. If this keeps occurring on '
-                    'a regular basis, please report this problem to New '
-                    'Relic support for further investigation.',
-                    self._app_name, fps.profile_id,
-                    kwargs['profile_id'])
-            return {command_id: {'error': 'Profiler not running.'}}
+        elif kwargs["profile_id"] != fps.profile_id:
+            _logger.warning(
+                "A request was received to stop a thread "
+                "profiling session for %r, but the ID %r for "
+                "the current thread profiling session does not "
+                "match the provided ID of %r. If this keeps occurring on "
+                "a regular basis, please report this problem to New "
+                "Relic support for further investigation.",
+                self._app_name,
+                fps.profile_id,
+                kwargs["profile_id"],
+            )
+            return {command_id: {"error": "Profiler not running."}}
 
-        _logger.info('Stopping thread profiler session for %r.',
-                self._app_name)
+        _logger.info("Stopping thread profiler session for %r.", self._app_name)
 
         # To ensure that the thread profiling session stops, we wait for
         # its completion. If we don't need to send back the data from
@@ -990,17 +1025,16 @@ class Application(object):
             self._pending_shutdown = True
 
         if not self._active_session or not self._harvest_enabled:
-            _logger.debug('Cannot perform a data harvest for %r as '
-                    'there is no active session.', self._app_name)
+            _logger.debug("Cannot perform a data harvest for %r as " "there is no active session.", self._app_name)
 
             return
 
         internal_metrics = CustomMetrics()
 
-        call_metric = 'flexible' if flexible else 'default'
+        call_metric = "flexible" if flexible else "default"
 
         with InternalTraceContext(internal_metrics):
-            with InternalTrace('Supportability/Python/Harvest/Calls/' + call_metric):
+            with InternalTrace("Supportability/Python/Harvest/Calls/" + call_metric):
 
                 self._harvest_count += 1
 
@@ -1013,7 +1047,7 @@ class Application(object):
                 # this point onwards will be accumulated in a fresh
                 # bucket.
 
-                _logger.debug('Snapshotting for harvest[%s] of %r.', call_metric, self._app_name)
+                _logger.debug("Snapshotting for harvest[%s] of %r.", call_metric, self._app_name)
 
                 configuration = self._active_session.configuration
                 transaction_count = self._transaction_count
@@ -1030,8 +1064,7 @@ class Application(object):
                         global_events_account = self._global_events_account
                         self._global_events_account = 0
 
-                        stats_custom = \
-                                self._stats_custom_engine.harvest_snapshot()
+                        stats_custom = self._stats_custom_engine.harvest_snapshot()
 
                     # stats_custom should only contain metric stats, no
                     # transactions
@@ -1050,8 +1083,7 @@ class Application(object):
                     # data sampler, then should perhaps deregister it if it
                     # keeps having problems.
 
-                    _logger.debug('Fetching metrics from data sources for '
-                            'harvest of %r.', self._app_name)
+                    _logger.debug("Fetching metrics from data sources for " "harvest of %r.", self._app_name)
 
                     for data_sampler in self._data_samplers:
                         try:
@@ -1060,43 +1092,46 @@ class Application(object):
                                     name, value = sample
                                     stats.record_custom_metric(name, value)
                                 except Exception:
-                                    _logger.exception('The merging of custom '
-                                            'metric sample %r from data '
-                                            'source %r has failed. Validate '
-                                            'the format of the sample. If '
-                                            'this issue persists then please '
-                                            'report this problem to the data '
-                                            'source provider or New Relic '
-                                            'support for further '
-                                            'investigation.', sample,
-                                            data_sampler.name)
+                                    _logger.exception(
+                                        "The merging of custom "
+                                        "metric sample %r from data "
+                                        "source %r has failed. Validate "
+                                        "the format of the sample. If "
+                                        "this issue persists then please "
+                                        "report this problem to the data "
+                                        "source provider or New Relic "
+                                        "support for further "
+                                        "investigation.",
+                                        sample,
+                                        data_sampler.name,
+                                    )
                                     break
 
                         except Exception:
-                            _logger.exception('The merging of custom metric '
-                                    'samples from data source %r has failed. '
-                                    'Validate that the data source is '
-                                    'producing samples correctly. If this '
-                                    'issue persists then please report this '
-                                    'problem to the data source provider or '
-                                    'New Relic support for further '
-                                    'investigation.', data_sampler.name)
+                            _logger.exception(
+                                "The merging of custom metric "
+                                "samples from data source %r has failed. "
+                                "Validate that the data source is "
+                                "producing samples correctly. If this "
+                                "issue persists then please report this "
+                                "problem to the data source provider or "
+                                "New Relic support for further "
+                                "investigation.",
+                                data_sampler.name,
+                            )
 
                     # Add a metric we can use to track how many harvest
                     # periods have occurred.
 
-                    stats.record_custom_metric('Instance/Reporting', 0)
+                    stats.record_custom_metric("Instance/Reporting", 0)
 
                     # If an import order issue was detected, send a metric for
                     # each uninstrumented module
 
                     if self._uninstrumented:
                         for uninstrumented in self._uninstrumented:
-                            internal_count_metric(
-                                    'Supportability/Python/Uninstrumented', 1)
-                            internal_count_metric(
-                                    'Supportability/Uninstrumented/'
-                                    '%s' % uninstrumented, 1)
+                            internal_count_metric("Supportability/Python/Uninstrumented", 1)
+                            internal_count_metric("Supportability/Uninstrumented/" "%s" % uninstrumented, 1)
 
                 # Create our time stamp as to when this reporting period
                 # ends and start reporting the data.
@@ -1116,8 +1151,7 @@ class Application(object):
 
                 if shutdown and (transaction_count or global_events_account):
                     if period_end - self._period_start < 1.0:
-                        _logger.debug('Stretching harvest duration for '
-                                'forced harvest on shutdown.')
+                        _logger.debug("Stretching harvest duration for " "forced harvest on shutdown.")
                         period_end = self._period_start + 1.001
 
                 try:
@@ -1130,44 +1164,43 @@ class Application(object):
                     synthetics_events = stats.synthetics_events
                     if synthetics_events:
                         if synthetics_events.num_samples:
-                            _logger.debug('Sending synthetics event data for '
-                                    'harvest of %r.', self._app_name)
+                            _logger.debug("Sending synthetics event data for " "harvest of %r.", self._app_name)
 
                             self._active_session.send_transaction_events(
-                                    synthetics_events.sampling_info,
-                                    synthetics_events)
+                                synthetics_events.sampling_info, synthetics_events
+                            )
 
                         stats.reset_synthetics_events()
 
-                    if (configuration.collect_analytics_events and
-                            configuration.transaction_events.enabled):
+                    if configuration.collect_analytics_events and configuration.transaction_events.enabled:
 
                         transaction_events = stats.transaction_events
 
                         if transaction_events:
                             # As per spec
-                            internal_metric('Supportability/Python/'
-                                    'RequestSampler/requests',
-                                    transaction_events.num_seen)
-                            internal_metric('Supportability/Python/'
-                                    'RequestSampler/samples',
-                                    transaction_events.num_samples)
+                            internal_metric(
+                                "Supportability/Python/" "RequestSampler/requests", transaction_events.num_seen
+                            )
+                            internal_metric(
+                                "Supportability/Python/" "RequestSampler/samples", transaction_events.num_samples
+                            )
 
                             if transaction_events.num_samples:
-                                _logger.debug('Sending analytics event data '
-                                        'for harvest of %r.', self._app_name)
+                                _logger.debug("Sending analytics event data " "for harvest of %r.", self._app_name)
 
                                 self._active_session.send_transaction_events(
-                                        transaction_events.sampling_info,
-                                        transaction_events)
+                                    transaction_events.sampling_info, transaction_events
+                                )
 
                             stats.reset_transaction_events()
 
                     # Send span events
 
-                    if (configuration.span_events.enabled and
-                            configuration.collect_span_events and
-                            configuration.distributed_tracing.enabled):
+                    if (
+                        configuration.span_events.enabled
+                        and configuration.collect_span_events
+                        and configuration.distributed_tracing.enabled
+                    ):
                         if configuration.infinite_tracing.enabled:
                             span_stream = stats.span_stream
                             # Only merge stats as part of default harvest
@@ -1175,44 +1208,34 @@ class Application(object):
                                 spans_seen, spans_dropped = span_stream.stats()
                                 spans_sent = spans_seen - spans_dropped
 
-                                internal_count_metric(
-                                        'Supportability/InfiniteTracing/Span/Seen',
-                                        spans_seen)
-                                internal_count_metric(
-                                        'Supportability/InfiniteTracing/Span/Sent',
-                                        spans_sent)
+                                internal_count_metric("Supportability/InfiniteTracing/Span/Seen", spans_seen)
+                                internal_count_metric("Supportability/InfiniteTracing/Span/Sent", spans_sent)
                         else:
                             spans = stats.span_events
                             if spans:
                                 if spans.num_samples > 0:
                                     span_samples = list(spans)
 
-                                    _logger.debug(
-                                            'Sending span event data '
-                                            'for harvest of %r.',
-                                            self._app_name)
+                                    _logger.debug("Sending span event data " "for harvest of %r.", self._app_name)
 
-                                    self._active_session.send_span_events(
-                                        spans.sampling_info, span_samples)
+                                    self._active_session.send_span_events(spans.sampling_info, span_samples)
                                     span_samples = None
 
                                 # As per spec
                                 spans_seen = spans.num_seen
                                 spans_sampled = spans.num_samples
-                                internal_count_metric(
-                                        'Supportability/SpanEvent/'
-                                        'TotalEventsSeen', spans_seen)
-                                internal_count_metric(
-                                        'Supportability/SpanEvent/'
-                                        'TotalEventsSent', spans_sampled)
+                                internal_count_metric("Supportability/SpanEvent/" "TotalEventsSeen", spans_seen)
+                                internal_count_metric("Supportability/SpanEvent/" "TotalEventsSent", spans_sampled)
 
                                 stats.reset_span_events()
 
                     # Send error events
 
-                    if (configuration.collect_error_events and
-                            configuration.error_collector.capture_events and
-                            configuration.error_collector.enabled):
+                    if (
+                        configuration.collect_error_events
+                        and configuration.error_collector.capture_events
+                        and configuration.error_collector.enabled
+                    ):
 
                         error_events = stats.error_events
                         if error_events:
@@ -1220,28 +1243,23 @@ class Application(object):
                             if num_error_samples > 0:
                                 error_event_samples = list(error_events)
 
-                                _logger.debug('Sending error event data '
-                                        'for harvest of %r.', self._app_name)
+                                _logger.debug("Sending error event data " "for harvest of %r.", self._app_name)
 
                                 samp_info = error_events.sampling_info
-                                self._active_session.send_error_events(
-                                        samp_info,
-                                        error_event_samples)
+                                self._active_session.send_error_events(samp_info, error_event_samples)
                                 error_event_samples = None
 
                             # As per spec
-                            internal_count_metric('Supportability/Events/'
-                                    'TransactionError/Seen',
-                                    error_events.num_seen)
-                            internal_count_metric('Supportability/Events/'
-                                    'TransactionError/Sent', num_error_samples)
+                            internal_count_metric(
+                                "Supportability/Events/" "TransactionError/Seen", error_events.num_seen
+                            )
+                            internal_count_metric("Supportability/Events/" "TransactionError/Sent", num_error_samples)
 
                             stats.reset_error_events()
 
                     # Send custom events
 
-                    if (configuration.collect_custom_events and
-                            configuration.custom_insights_events.enabled):
+                    if configuration.collect_custom_events and configuration.custom_insights_events.enabled:
 
                         customs = stats.custom_events
 
@@ -1249,18 +1267,14 @@ class Application(object):
                             if customs.num_samples > 0:
                                 custom_samples = list(customs)
 
-                                _logger.debug('Sending custom event data '
-                                        'for harvest of %r.', self._app_name)
+                                _logger.debug("Sending custom event data " "for harvest of %r.", self._app_name)
 
-                                self._active_session.send_custom_events(
-                                        customs.sampling_info, custom_samples)
+                                self._active_session.send_custom_events(customs.sampling_info, custom_samples)
                                 custom_samples = None
 
                             # As per spec
-                            internal_count_metric('Supportability/Events/'
-                                    'Customer/Seen', customs.num_seen)
-                            internal_count_metric('Supportability/Events/'
-                                    'Customer/Sent', customs.num_samples)
+                            internal_count_metric("Supportability/Events/" "Customer/Seen", customs.num_seen)
+                            internal_count_metric("Supportability/Events/" "Customer/Sent", customs.num_samples)
 
                             stats.reset_custom_events()
 
@@ -1270,56 +1284,39 @@ class Application(object):
                         error_data = stats.error_data()
 
                         if error_data:
-                            _logger.debug('Sending error data for harvest '
-                                    'of %r.', self._app_name)
+                            _logger.debug("Sending error data for harvest " "of %r.", self._app_name)
 
                             self._active_session.send_errors(error_data)
 
                     if not flexible:
                         if configuration.collect_traces:
-                            connections = SQLConnections(
-                                    configuration.agent_limits
-                                    .max_sql_connections)
+                            connections = SQLConnections(configuration.agent_limits.max_sql_connections)
 
                             with connections:
                                 if configuration.slow_sql.enabled:
-                                    _logger.debug('Processing slow SQL data '
-                                            'for harvest of %r.',
-                                            self._app_name)
+                                    _logger.debug("Processing slow SQL data " "for harvest of %r.", self._app_name)
 
-                                    slow_sql_data = stats.slow_sql_data(
-                                            connections)
+                                    slow_sql_data = stats.slow_sql_data(connections)
 
                                     if slow_sql_data:
-                                        _logger.debug(
-                                                'Sending slow SQL data for '
-                                                'harvest of %r.',
-                                                self._app_name)
+                                        _logger.debug("Sending slow SQL data for " "harvest of %r.", self._app_name)
 
-                                        self._active_session.send_sql_traces(
-                                                slow_sql_data)
+                                        self._active_session.send_sql_traces(slow_sql_data)
 
-                                slow_transaction_data = (
-                                        stats.transaction_trace_data(
-                                        connections))
+                                slow_transaction_data = stats.transaction_trace_data(connections)
 
                                 if slow_transaction_data:
-                                    _logger.debug('Sending slow transaction '
-                                            'data for harvest of %r.',
-                                            self._app_name)
+                                    _logger.debug("Sending slow transaction " "data for harvest of %r.", self._app_name)
 
-                                    self._active_session \
-                                    .send_transaction_traces(
-                                            slow_transaction_data)
+                                    self._active_session.send_transaction_traces(slow_transaction_data)
 
                         # Create a metric_normalizer based on normalize_name
                         # If metric rename rules are empty, set normalizer
                         # to None and the stats engine will skip steps as
                         # appropriate.
 
-                        if self._rules_engine['metric'].rules:
-                            metric_normalizer = partial(self.normalize_name,
-                                    rule_type='metric')
+                        if self._rules_engine["metric"].rules:
+                            metric_normalizer = partial(self.normalize_name, rule_type="metric")
                         else:
                             metric_normalizer = None
 
@@ -1332,20 +1329,16 @@ class Application(object):
                         # Pass the metric_normalizer to stats.metric_data to
                         # do metric renaming.
 
-                        _logger.debug('Normalizing metrics for harvest of %r.',
-                                self._app_name)
+                        _logger.debug("Normalizing metrics for harvest of %r.", self._app_name)
 
                         metric_data = stats.metric_data(metric_normalizer)
 
-                        _logger.debug('Sending metric data for harvest of %r.',
-                                self._app_name)
+                        _logger.debug("Sending metric data for harvest of %r.", self._app_name)
 
                         # Send metrics
-                        self._active_session.send_metric_data(
-                                self._period_start, period_end, metric_data)
+                        self._active_session.send_metric_data(self._period_start, period_end, metric_data)
 
-                        _logger.debug('Done sending data for harvest of '
-                                '%r.', self._app_name)
+                        _logger.debug("Done sending data for harvest of " "%r.", self._app_name)
 
                         stats.reset_metric_stats()
 
@@ -1362,8 +1355,7 @@ class Application(object):
                         # Fetch agent commands sent from the data collector
                         # and process them.
 
-                        _logger.debug('Process agent commands during '
-                                'harvest of %r.', self._app_name)
+                        _logger.debug("Process agent commands during " "harvest of %r.", self._app_name)
                         self.process_agent_commands()
 
                         # Send the accumulated profile data back to the data
@@ -1374,14 +1366,13 @@ class Application(object):
                         # results last ensures we send back that data from
                         # the stopped profiling session immediately.
 
-                        _logger.debug('Send profiling data for harvest of '
-                                '%r.', self._app_name)
+                        _logger.debug("Send profiling data for harvest of " "%r.", self._app_name)
 
                         self.report_profile_data()
 
                         # in serverless mode finalize after flexible and
                         # default harvests have executed.
-                        _logger.debug('Finalizing data.')
+                        _logger.debug("Finalizing data.")
                         self._active_session.finalize()
 
                     # If this is a final forced harvest for the process
@@ -1431,8 +1422,7 @@ class Application(object):
 
                     exc_type = sys.exc_info()[0]
 
-                    internal_metric('Supportability/Python/Harvest/'
-                            'Exception/%s' % callable_name(exc_type), 1)
+                    internal_metric("Supportability/Python/Harvest/" "Exception/%s" % callable_name(exc_type), 1)
 
                     if self._period_start != period_end:
                         self._stats_engine.rollback(stats)
@@ -1445,8 +1435,7 @@ class Application(object):
 
                     exc_type = sys.exc_info()[0]
 
-                    internal_metric('Supportability/Python/Harvest/'
-                            'Exception/%s' % callable_name(exc_type), 1)
+                    internal_metric("Supportability/Python/Harvest/" "Exception/%s" % callable_name(exc_type), 1)
 
                     self._discard_count += 1
 
@@ -1456,18 +1445,18 @@ class Application(object):
 
                     exc_type = sys.exc_info()[0]
 
-                    internal_metric('Supportability/Python/Harvest/'
-                            'Exception/%s' % callable_name(exc_type), 1)
+                    internal_metric("Supportability/Python/Harvest/" "Exception/%s" % callable_name(exc_type), 1)
 
-                    _logger.exception('Unexpected exception when attempting '
-                            'to harvest the metric data and send it to the '
-                            'data collector. Please report this problem to '
-                            'New Relic support for further investigation.')
+                    _logger.exception(
+                        "Unexpected exception when attempting "
+                        "to harvest the metric data and send it to the "
+                        "data collector. Please report this problem to "
+                        "New Relic support for further investigation."
+                    )
 
                 duration = time.time() - start
 
-                _logger.debug('Completed harvest[%s] for %r in %.2f seconds.',
-                        call_metric, self._app_name, duration)
+                _logger.debug("Completed harvest[%s] for %r in %.2f seconds.", call_metric, self._app_name, duration)
 
                 # Force close the socket connection which has been
                 # created for this harvest if session still exists.
@@ -1485,14 +1474,11 @@ class Application(object):
             self._stats_engine.merge_custom_metrics(internal_metrics.metrics())
 
     def report_profile_data(self):
-        """Report back any profile data.
-
-        """
+        """Report back any profile data."""
 
         for profile_data in self.profile_manager.profile_data(self._app_name):
             if profile_data:
-                _logger.debug('Reporting thread profiling session data '
-                        'for %r.', self._app_name)
+                _logger.debug("Reporting thread profiling session data " "for %r.", self._app_name)
                 self._active_session.send_profile_data(profile_data)
 
     def internal_agent_shutdown(self, restart=False):
@@ -1548,9 +1534,7 @@ class Application(object):
             self._agent_shutdown = True
 
     def process_agent_commands(self):
-        """Fetches agents commands from data collector and process them.
-
-        """
+        """Fetches agents commands from data collector and process them."""
 
         # We use a lock around this as this will be called just after
         # having registered the agent, as well as during the normal
@@ -1561,7 +1545,7 @@ class Application(object):
         with self._agent_commands_lock:
             # Get agent commands from the data collector.
 
-            _logger.debug('Process agent commands for %r.', self._app_name)
+            _logger.debug("Process agent commands for %r.", self._app_name)
 
             agent_commands = self._active_session.get_agent_commands()
 
@@ -1574,25 +1558,24 @@ class Application(object):
 
             for command in agent_commands:
                 cmd_id = command[0]
-                cmd_name = command[1]['name']
-                cmd_args = command[1]['arguments']
+                cmd_name = command[1]["name"]
+                cmd_args = command[1]["arguments"]
 
                 # An agent command is mapped to a method of this class. If
                 # we don't know about a specific agent command we just
                 # ignore it.
 
-                func_name = 'cmd_%s' % cmd_name
+                func_name = "cmd_%s" % cmd_name
 
                 cmd_handler = getattr(self, func_name, None)
 
                 if cmd_handler is None:
-                    _logger.debug('Received unknown agent command '
-                            '%r from the data collector for %r.',
-                            cmd_name, self._app_name)
+                    _logger.debug(
+                        "Received unknown agent command " "%r from the data collector for %r.", cmd_name, self._app_name
+                    )
                     continue
 
-                _logger.debug('Process agent command %r from the data '
-                        'collector for %r.', cmd_name, self._app_name)
+                _logger.debug("Process agent command %r from the data " "collector for %r.", cmd_name, self._app_name)
 
                 cmd_res = cmd_handler(cmd_id, **cmd_args)
 

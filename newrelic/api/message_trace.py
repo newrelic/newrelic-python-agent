@@ -134,7 +134,7 @@ def MessageTraceWrapper(wrapped, library, operation, destination_type, destinati
 
         trace = MessageTrace(_library, _operation, _destination_type, _destination_name, params={}, parent=parent)
 
-        if wrapper:
+        if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:

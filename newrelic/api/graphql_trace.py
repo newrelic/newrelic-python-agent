@@ -91,6 +91,16 @@ class GraphQLOperationTrace(TimeTrace):
             graphql=self.graphql,
         )
 
+    def set_transaction_name(self, priority=None):
+        transaction = current_transaction()
+        if transaction:
+            name = (
+                "%s/%s/%s" % (self.operation_type, self.operation_name, self.deepest_path)
+                if self.deepest_path
+                else "%s/%s" % (self.operation_type, self.operation_name)
+            )
+            transaction.set_transaction_name(name, "GraphQL", priority=priority)
+
 
 def GraphQLOperationTraceWrapper(wrapped):
     def _nr_graphql_trace_wrapper_(wrapped, instance, args, kwargs):

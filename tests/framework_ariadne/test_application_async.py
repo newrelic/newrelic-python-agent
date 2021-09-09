@@ -32,7 +32,7 @@ def test_query_and_mutation_async(app, graphql_run_async, is_graphql_2):
         ("GraphQL/resolve/GraphQL/storage", 1),
         ("GraphQL/resolve/GraphQL/storage_add", 1),
         ("GraphQL/operation/GraphQL/query/<anonymous>/storage", 1),
-        ("GraphQL/operation/GraphQL/mutation/<anonymous>/storage_add", 1),
+        ("GraphQL/operation/GraphQL/mutation/<anonymous>/storage_add.string", 1),
     ]
     _test_mutation_unscoped_metrics = [
         ("OtherTransaction/all", 1),
@@ -50,7 +50,7 @@ def test_query_and_mutation_async(app, graphql_run_async, is_graphql_2):
         "graphql.field.name": "storage_add",
         "graphql.field.parentType": "Mutation",
         "graphql.field.path": "storage_add",
-        "graphql.field.returnType": "[String]" if is_graphql_2 else "String",
+        "graphql.field.returnType": "StorageAdd",
     }
     _expected_query_operation_attributes = {
         "graphql.operation.type": "query",
@@ -77,16 +77,16 @@ def test_query_and_mutation_async(app, graphql_run_async, is_graphql_2):
     @background_task()
     def _test():
         async def coro():
-            response = await graphql_run_async(
-                app, 'mutation { storage_add(string: "abc") }'
+            ok, response = await graphql_run_async(
+                app, 'mutation { storage_add(string: "abc") { string } }'
             )
-            assert not response.errors
-            response = await graphql_run_async(app, "query { storage }")
-            assert not response.errors
+            assert ok and not response.get("errors")
+            ok, response = await graphql_run_async(app, "query { storage }")
+            assert ok and not response.get("errors")
 
             # These are separate assertions because pypy stores 'abc' as a unicode string while other Python versions do not
-            assert "storage" in str(response.data)
-            assert "abc" in str(response.data)
+            assert "storage" in str(response.get("data"))
+            assert "abc" in str(response.get("data"))
 
         loop = asyncio.get_event_loop()
         loop.run_until_complete(coro())

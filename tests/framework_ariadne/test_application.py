@@ -169,8 +169,8 @@ def test_query_and_mutation(app, graphql_run):
         assert ok and not response.get("errors")
 
         # These are separate assertions because pypy stores 'abc' as a unicode string while other Python versions do not
-        assert "storage" in str(response.data)
-        assert "abc" in str(response.data)
+        assert "storage" in str(response["data"])
+        assert "abc" in str(response["data"])
 
     _test()
 
@@ -194,9 +194,10 @@ def test_middleware(app, graphql_run, is_graphql_2):
     @validate_span_events(count=4)
     @background_task()
     def _test():
-        ok, response = graphql_run(app, "{ hello }", middleware=[example_middleware])
+        from graphql import MiddlewareManager
+        ok, response = graphql_run(app, "{ hello }", middleware=MiddlewareManager(example_middleware))
         assert ok and not response.get("errors")
-        assert "Hello!" in str(response.data)
+        assert "Hello!" in str(response["data"])
 
     _test()
 
@@ -242,8 +243,9 @@ def test_exception_in_middleware(app, graphql_run):
     @validate_transaction_errors(errors=_test_runtime_error)
     @background_task()
     def _test():
-        ok, response = graphql_run(app, query, middleware=[error_middleware])
-        assert response.errors
+        from graphql import MiddlewareManager
+        ok, response = graphql_run(app, query, middleware=MiddlewareManager(error_middleware))
+        assert response["errors"]
 
     _test()
 
@@ -252,11 +254,7 @@ def test_exception_in_middleware(app, graphql_run):
 @dt_enabled
 def test_exception_in_resolver(app, graphql_run, field):
     query = "query MyQuery { %s }" % field
-
-    if six.PY2:
-        txn_name = "_target_application:resolve_error"
-    else:
-        txn_name = "_target_application:Query.resolve_error"
+    txn_name = "_target_application:resolve_error"
 
     # Metrics
     _test_exception_scoped_metrics = [
@@ -295,7 +293,7 @@ def test_exception_in_resolver(app, graphql_run, field):
     @background_task()
     def _test():
         ok, response = graphql_run(app, query)
-        assert response.errors
+        assert response["errors"]
 
     _test()
 
@@ -351,7 +349,7 @@ def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_clas
     @background_task()
     def _test():
         ok, response = graphql_run(app, query)
-        assert response.errors
+        assert response["errors"]
 
     _test()
 
@@ -408,7 +406,7 @@ def test_field_resolver_metrics_and_attrs(app, graphql_run):
     def _test():
         ok, response = graphql_run(app, "{ hello }")
         assert ok and not response.get("errors")
-        assert "Hello!" in str(response.data)
+        assert "Hello!" in str(response["data"])
 
     _test()
 
@@ -416,7 +414,6 @@ def test_field_resolver_metrics_and_attrs(app, graphql_run):
 _test_queries = [
     ("{ hello }", "{ hello }"),  # Basic query extraction
     ("{ error }", "{ error }"),  # Extract query on field error
-    (to_graphql_source("{ hello }"), "{ hello }"),  # Extract query from Source objects
     ("{ library(index: 0) { branch } }", "{ library(index: ?) { branch } }"),  # Integers
     ('{ echo(echo: "123") }', "{ echo(echo: ?) }"),  # Strings with numerics
     ('{ echo(echo: "test") }', "{ echo(echo: ?) }"),  # Strings
@@ -433,9 +430,6 @@ _test_queries = [
 @pytest.mark.parametrize("query,obfuscated", _test_queries)
 def test_query_obfuscation(app, graphql_run, query, obfuscated):
     graphql_attrs = {"graphql.operation.query": obfuscated}
-
-    if callable(query):
-        query = query()
 
     @validate_span_events(exact_agents=graphql_attrs)
     @background_task()
@@ -489,10 +483,7 @@ _test_queries = [
 @pytest.mark.parametrize("query,expected_path", _test_queries)
 def test_deepest_unique_path(app, graphql_run, query, expected_path):
     if expected_path == "/error":
-        if six.PY2:
-            txn_name = "_target_application:resolve_error"
-        else:
-            txn_name = "_target_application:Query.resolve_error"
+        txn_name = "_target_application:resolve_error"
     else:
         txn_name = "query/<anonymous>%s" % expected_path
 

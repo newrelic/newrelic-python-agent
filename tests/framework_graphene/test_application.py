@@ -89,8 +89,6 @@ _graphql_base_rollup_metrics = [
 def test_basic(app, graphql_run):
     from graphql import __version__ as version
 
-    breakpoint()
-
     FRAMEWORK_METRICS = [
         ("Python/Framework/GraphQL/%s" % version, 1),
     ]

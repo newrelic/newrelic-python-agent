@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import logging
-
 from collections import deque
 
 from newrelic.api.error_trace import ErrorTrace
@@ -38,6 +37,7 @@ def framework_version():
     global VERSION
     if VERSION is None:
         from graphql import __version__ as version
+
         VERSION = version
 
     return VERSION
@@ -110,7 +110,9 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     if not isinstance(trace, GraphQLOperationTrace):
-        _logger.warning("Runtime instrumentation warning. GraphQL operation found without active GraphQLOperationTrace.")
+        _logger.warning(
+            "Runtime instrumentation warning. GraphQL operation found without active GraphQLOperationTrace."
+        )
         breakpoint()
         return wrapped(*args, **kwargs)
 

@@ -13,19 +13,22 @@
 # limitations under the License.
 
 from inspect import isawaitable
+
 from newrelic.api.error_trace import ErrorTrace
-from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.graphql_trace import GraphQLOperationTrace, GraphQLResolverTrace
-from newrelic.api.time_trace import current_trace, notice_error
-from newrelic.api.transaction import current_transaction, ignore_transaction
-from newrelic.common.object_names import callable_name, parse_exc_info
-from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
+from newrelic.api.graphql_trace import GraphQLOperationTrace
+from newrelic.api.transaction import current_transaction
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.core.graphql_utils import graphql_statement
+from newrelic.hooks.framework_graphql import (
+    framework_version as graphql_framework_version,
+)
 from newrelic.hooks.framework_graphql import ignore_graphql_duplicate_exception
-from newrelic.hooks.framework_graphql import framework_version as graphql_framework_version
+
 
 def bind_graphql(schema, data, *args, **kwargs):
     return data
+
 
 def wrap_graphql_sync(wrapped, instance, args, kwargs):
     transaction = current_transaction()

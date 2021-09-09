@@ -91,7 +91,6 @@ class GraphQLOperationTrace(TimeTrace):
             graphql=self.graphql,
         )
 
-
     def set_transaction_name(self, priority=None):
         transaction = current_transaction()
         if transaction:

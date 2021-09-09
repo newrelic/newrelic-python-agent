@@ -24,6 +24,7 @@ def test_query_and_mutation_async(app, graphql_run_async):
     from graphql import __version__ as version
 
     FRAMEWORK_METRICS = [
+        ("Python/Framework/Ariadne/None", 1),
         ("Python/Framework/GraphQL/%s" % version, 1),
     ]
     _test_mutation_scoped_metrics = [

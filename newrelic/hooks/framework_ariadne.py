@@ -14,6 +14,8 @@
 
 from inspect import isawaitable
 
+from newrelic.api.asgi_application import wrap_asgi_application
+from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.api.error_trace import ErrorTrace
 from newrelic.api.graphql_trace import GraphQLOperationTrace
 from newrelic.api.transaction import current_transaction
@@ -24,6 +26,11 @@ from newrelic.hooks.framework_graphql import (
     framework_version as graphql_framework_version,
 )
 from newrelic.hooks.framework_graphql import ignore_graphql_duplicate_exception
+
+def framework_details():
+    import ariadne
+
+    return ("Ariadne", getattr(ariadne, "__version__", None))
 
 
 def bind_graphql(schema, data, *args, **kwargs):
@@ -41,7 +48,8 @@ def wrap_graphql_sync(wrapped, instance, args, kwargs):
     except TypeError:
         return wrapped(*args, **kwargs)
 
-    transaction.add_framework_info(name="ariadne")  # No version info available on ariadne
+    framework = framework_details()
+    transaction.add_framework_info(name=framework[0], version=framework[1])  # No version info available on ariadne
     transaction.add_framework_info(name="GraphQL", version=graphql_framework_version())
 
     query = data["query"]
@@ -60,14 +68,21 @@ async def wrap_graphql(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
     if not transaction:
-        return wrapped(*args, **kwargs)
+        result = wrapped(*args, **kwargs)
+        if isawaitable(result):
+            result = await result
+        return result
 
     try:
         data = bind_graphql(*args, **kwargs)
     except TypeError:
-        return wrapped(*args, **kwargs)
+        result = wrapped(*args, **kwargs)
+        if isawaitable(result):
+            result = await result
+        return result
 
-    transaction.add_framework_info(name="ariadne")  # No version info available on ariadne
+    framework = framework_details()
+    transaction.add_framework_info(name=framework[0], version=framework[1])  # No version info available on ariadne
     transaction.add_framework_info(name="GraphQL", version=graphql_framework_version())
 
     query = data["query"]
@@ -91,3 +106,13 @@ def instrument_ariadne_execute(module):
 
     if hasattr(module, "graphql_sync"):
         wrap_function_wrapper(module, "graphql_sync", wrap_graphql_sync)
+
+
+def instrument_ariadne_asgi(module):
+    if hasattr(module, "GraphQL"):
+        wrap_asgi_application(module, "GraphQL.__call__", framework=framework_details())
+
+
+def instrument_ariadne_wsgi(module):
+    if hasattr(module, "GraphQL"):
+        wrap_wsgi_application(module, "GraphQL.__call__", framework=framework_details())

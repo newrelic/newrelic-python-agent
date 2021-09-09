@@ -21,7 +21,8 @@ from ariadne import (
     load_schema_from_path,
     make_executable_schema,
 )
-from ariadne.asgi import GraphQL
+from ariadne.asgi import GraphQL as GraphQLASGI
+from ariadne.wsgi import GraphQL as GraphQLWSGI
 
 schema_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "schema.graphql")
 type_defs = load_schema_from_path(schema_file)
@@ -146,6 +147,5 @@ def resolve_error(self, info):
 
 
 _target_application = make_executable_schema(type_defs, query, mutation, item)
-
-
-_target_asgi_application = GraphQL(_target_application)
+_target_asgi_application = GraphQLASGI(_target_application)
+_target_wsgi_application = GraphQLWSGI(_target_application)

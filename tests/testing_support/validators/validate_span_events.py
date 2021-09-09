@@ -28,7 +28,7 @@ except:
 def validate_span_events(count=1,
         exact_intrinsics={}, expected_intrinsics=[], unexpected_intrinsics=[],
         exact_agents={}, expected_agents=[], unexpected_agents=[],
-        exact_users={}, expected_users=[], unexpected_users=[]):
+        exact_users={}, expected_users=[], unexpected_users=[], index=-1):
 
     # Used for validating a single span event.
     #
@@ -74,7 +74,7 @@ def validate_span_events(count=1,
         _new_wrapper = capture_span_events(wrapped)
         val = _new_wrapper(*args, **kwargs)
         assert record_transaction_called
-        captured_events = recorded_span_events.pop()
+        captured_events = recorded_span_events.pop(index)
 
         mismatches = []
         matching_span_events = 0

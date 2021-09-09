@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import pytest
-import six
 from testing_support.fixtures import (
     dt_enabled,
     validate_transaction_errors,
@@ -42,6 +41,7 @@ def graphql_run():
 
     def execute(schema, query, *args, **kwargs):
         from ariadne import graphql_sync
+
         return graphql_sync(schema, {"query": query}, *args, **kwargs)
 
     return execute
@@ -195,6 +195,7 @@ def test_middleware(app, graphql_run, is_graphql_2):
     @background_task()
     def _test():
         from graphql import MiddlewareManager
+
         ok, response = graphql_run(app, "{ hello }", middleware=MiddlewareManager(example_middleware))
         assert ok and not response.get("errors")
         assert "Hello!" in str(response["data"])
@@ -244,6 +245,7 @@ def test_exception_in_middleware(app, graphql_run):
     @background_task()
     def _test():
         from graphql import MiddlewareManager
+
         ok, response = graphql_run(app, query, middleware=MiddlewareManager(error_middleware))
         assert response["errors"]
 

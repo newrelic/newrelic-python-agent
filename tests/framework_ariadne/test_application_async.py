@@ -1,13 +1,10 @@
 import asyncio
-import pytest
-from testing_support.fixtures import (
-    dt_enabled,
-    validate_transaction_metrics,
-)
-from testing_support.validators.validate_span_events import validate_span_events
-from newrelic.api.background_task import background_task
 
-from test_application import is_graphql_2
+import pytest
+from testing_support.fixtures import dt_enabled, validate_transaction_metrics
+from testing_support.validators.validate_span_events import validate_span_events
+
+from newrelic.api.background_task import background_task
 
 
 @pytest.fixture(scope="session")
@@ -16,13 +13,14 @@ def graphql_run_async():
 
     def execute(schema, query, *args, **kwargs):
         from ariadne import graphql
+
         return graphql(schema, {"query": query}, *args, **kwargs)
 
     return execute
 
 
 @dt_enabled
-def test_query_and_mutation_async(app, graphql_run_async, is_graphql_2):
+def test_query_and_mutation_async(app, graphql_run_async):
     from graphql import __version__ as version
 
     FRAMEWORK_METRICS = [
@@ -77,9 +75,7 @@ def test_query_and_mutation_async(app, graphql_run_async, is_graphql_2):
     @background_task()
     def _test():
         async def coro():
-            ok, response = await graphql_run_async(
-                app, 'mutation { storage_add(string: "abc") { string } }'
-            )
+            ok, response = await graphql_run_async(app, 'mutation { storage_add(string: "abc") { string } }')
             assert ok and not response.get("errors")
             ok, response = await graphql_run_async(app, "query { storage }")
             assert ok and not response.get("errors")

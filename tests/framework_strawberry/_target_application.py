@@ -47,7 +47,7 @@ class Magazine:
 class Library:
     id : int
     branch : str
-    magazine : Magazine
+    magazine : list[Magazine]
     book : list[Book]
 
 
@@ -117,6 +117,10 @@ def resolve_hello():
     return "Hello!"
 
 
+async def resolve_hello_async():
+    return "Hello!"
+
+
 def resolve_echo(echo: str):
     return echo
 
@@ -148,6 +152,7 @@ def resolve_search(contains: str):
 class Query():
     library: Library = field(resolver=resolve_library)
     hello: str = field(resolver=resolve_hello)
+    hello_async: str = field(resolver=resolve_hello_async)
     search: list[union("Item", (Book, Magazine))] = field(resolver=resolve_search)
     echo: str = field(resolver=resolve_echo)
     storage: Storage = field(resolver=resolve_storage)

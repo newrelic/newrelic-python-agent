@@ -15,8 +15,9 @@
 import strawberry.type
 import strawberry.mutation
 from strawberry import field
-#from strawberry import mutation
-from strawberry import object_type, schema, union
+from strawberry import object_type, Schema, union
+from strawberry.schema.config import StrawberryConfig
+from strawberry.asgi import GraphQL
 
 
 @strawberry.type
@@ -47,7 +48,7 @@ class Library:
     id : int
     branch : str
     magazine : Magazine
-    book : Book
+    book : list[Book]
 
 
 Storage = list[str]
@@ -138,34 +139,22 @@ def resolve_error():
 
 
 def resolve_search(contains: str):
-    search_books = [b for b in books if contains in b["name"]]
-    search_magazines = [m for m in magazines if contains in m["name"]]
+    search_books = [b for b in books if contains in b.name]
+    search_magazines = [m for m in magazines if contains in m.name]
     return search_books + search_magazines
-
-
-
-@strawberry.type
-class StorageAdd():
-
-    string = str
-    @strawberry.mutation
-    def mutate(self, string: str) -> str:
-        storage.append(string)
-        return str(string=string)
 
 
 @strawberry.type
 class Query():
-    combined: union("UnionMedia", types=(Book, Magazine))
-    library: list[Library] = field(resolver=resolve_library)
+    library: Library = field(resolver=resolve_library)
     hello: str = field(resolver=resolve_hello)
-    search: list[Library] = field(resolver=resolve_search)
+    search: list[union("Item", (Book, Magazine))] = field(resolver=resolve_search)
     echo: str = field(resolver=resolve_echo)
     storage: Storage = field(resolver=resolve_storage)
     error: str = field(resolver=resolve_error)
+    error_non_null: str = field(resolver=resolve_error)
 
     def resolve_library(self, info, index):
-        # returns an object that represents a Person
         return libraries[index]
 
     def resolve_storage(self, info):
@@ -185,13 +174,15 @@ class Query():
     def resolve_error(self, info) -> str:
         raise RuntimeError("Runtime Error!")
 
-    error_non_null = field(resolver=resolve_error)
 
 
 @strawberry.type
-class Mutation(StorageAdd):
-    storage_add = StorageAdd.mutate()
-    #storage_add : str = StorageAdd.field(resolve_storage_add)
+class Mutation():
+    @strawberry.mutation
+    def storage_add(self, string: str) -> str:
+        storage.append(string)
+        return str(string)
 
 
-_target_application = schema(query=Query, mutation=Mutation)
+_target_application = Schema(query=Query, mutation=Mutation, config=StrawberryConfig(auto_camel_case=False))
+_target_asgi_application = GraphQL(_target_application)

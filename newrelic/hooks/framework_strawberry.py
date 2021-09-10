@@ -65,12 +65,12 @@ async def wrap_execute(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
     if not transaction:
-            return await wrapped(*args, **kwargs)
+        return await wrapped(*args, **kwargs)
 
     try:
         query = bind_execute(*args, **kwargs)
     except TypeError:
-            return await wrapped(*args, **kwargs)
+        return await wrapped(*args, **kwargs)
 
     transaction.add_framework_info(name="Strawberry")
     transaction.add_framework_info(name="GraphQL", version=graphql_framework_version())

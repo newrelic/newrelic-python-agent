@@ -2218,9 +2218,19 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "ariadne.asgi",
+        "newrelic.hooks.framework_ariadne",
+        "instrument_ariadne_asgi",
+    )
+    _process_module_definition(
         "ariadne.graphql",
         "newrelic.hooks.framework_ariadne",
         "instrument_ariadne_execute",
+    )
+    _process_module_definition(
+        "ariadne.wsgi",
+        "newrelic.hooks.framework_ariadne",
+        "instrument_ariadne_wsgi",
     )
 
     _process_module_definition("grpc._channel", "newrelic.hooks.framework_grpc", "instrument_grpc__channel")

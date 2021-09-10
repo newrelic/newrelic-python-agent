@@ -91,6 +91,7 @@ def test_basic(app, graphql_run):
     from graphql import __version__ as version
 
     FRAMEWORK_METRICS = [
+        ("Python/Framework/Ariadne/None", 1),
         ("Python/Framework/GraphQL/%s" % version, 1),
     ]
 
@@ -113,6 +114,7 @@ def test_query_and_mutation(app, graphql_run):
     from graphql import __version__ as version
 
     FRAMEWORK_METRICS = [
+        ("Python/Framework/Ariadne/None", 1),
         ("Python/Framework/GraphQL/%s" % version, 1),
     ]
     _test_mutation_scoped_metrics = [

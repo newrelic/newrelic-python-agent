@@ -131,7 +131,6 @@ class Query(ObjectType):
     error = String()
 
     def resolve_library(self, info, index):
-        # returns an object that represents a Person
         return libraries[index]
 
     def resolve_storage(self, info):

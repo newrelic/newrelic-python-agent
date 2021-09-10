@@ -43,5 +43,6 @@ class Query(ObjectType):
 
 
 app.add_route("/graphql", GraphQLApp(executor_class=AsyncioExecutor, schema=Schema(query=Query)))
+app.add_route("/graphql_sync", GraphQLApp(schema=Schema(query=Query)))
 
 target_application = AsgiTest(app)

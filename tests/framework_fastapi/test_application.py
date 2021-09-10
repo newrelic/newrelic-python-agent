@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import pytest
 from testing_support.fixtures import dt_enabled, validate_transaction_metrics
 from testing_support.validators.validate_span_events import validate_span_events
@@ -32,7 +33,8 @@ def test_application(app, endpoint, transaction_name):
 
 
 @dt_enabled
-def test_graphql_endpoint(app):
+@pytest.mark.parametrize("endpoint", ("/graphql", "/graphql_sync"))
+def test_graphql_endpoint(app, endpoint):
     from graphql import __version__ as version
 
     FRAMEWORK_METRICS = [
@@ -70,7 +72,7 @@ def test_graphql_endpoint(app):
         rollup_metrics=_test_unscoped_metrics + FRAMEWORK_METRICS,
     )
     def _test():
-        response = app.make_request("POST", "/graphql", params="query=%7B%20hello%20%7D")
+        response = app.make_request("POST", endpoint, body=json.dumps({"query": "{ hello }"}), headers={"Content-Type": "application/json"})
         assert response.status == 200
         assert "Hello!" in response.body.decode("utf-8")
 

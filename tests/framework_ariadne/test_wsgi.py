@@ -1,5 +1,5 @@
-import webtest
 import pytest
+import webtest
 from testing_support.fixtures import dt_enabled, validate_transaction_metrics
 from testing_support.validators.validate_span_events import validate_span_events
 
@@ -8,12 +8,14 @@ from testing_support.validators.validate_span_events import validate_span_events
 def graphql_wsgi_run():
     """Wrapper function to simulate framework_graphql test behavior."""
     from _target_application import _target_wsgi_application
+
     app = webtest.TestApp(_target_wsgi_application)
 
     def execute(query):
         return app.post_json("/", {"query": query})
 
     return execute
+
 
 @dt_enabled
 def test_query_and_mutation_wsgi(graphql_wsgi_run):
@@ -74,7 +76,7 @@ def test_query_and_mutation_wsgi(graphql_wsgi_run):
         "GraphQL",
         scoped_metrics=_test_mutation_scoped_metrics,
         rollup_metrics=_test_mutation_unscoped_metrics + FRAMEWORK_METRICS,
-        index=-2
+        index=-2,
     )
     @validate_span_events(exact_agents=_expected_mutation_operation_attributes, index=-2)
     @validate_span_events(exact_agents=_expected_mutation_resolver_attributes, index=-2)

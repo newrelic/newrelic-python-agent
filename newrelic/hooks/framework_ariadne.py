@@ -15,10 +15,10 @@
 from inspect import isawaitable
 
 from newrelic.api.asgi_application import wrap_asgi_application
-from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.api.error_trace import ErrorTrace
 from newrelic.api.graphql_trace import GraphQLOperationTrace
 from newrelic.api.transaction import current_transaction
+from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.core.graphql_utils import graphql_statement
@@ -26,6 +26,7 @@ from newrelic.hooks.framework_graphql import (
     framework_version as graphql_framework_version,
 )
 from newrelic.hooks.framework_graphql import ignore_graphql_duplicate_exception
+
 
 def framework_details():
     import ariadne

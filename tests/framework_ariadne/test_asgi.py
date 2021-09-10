@@ -1,20 +1,25 @@
-import pytest
 import json
+
+import pytest
+from testing_support.asgi_testing import AsgiTest
 from testing_support.fixtures import dt_enabled, validate_transaction_metrics
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.asgi_testing import AsgiTest
 
 
 @pytest.fixture(scope="session")
 def graphql_asgi_run():
     """Wrapper function to simulate framework_graphql test behavior."""
     from _target_application import _target_asgi_application
+
     app = AsgiTest(_target_asgi_application)
 
     def execute(query):
-        return app.make_request("POST", "/", headers={"Content-Type": "application/json"}, body=json.dumps({"query": query}))
+        return app.make_request(
+            "POST", "/", headers={"Content-Type": "application/json"}, body=json.dumps({"query": query})
+        )
 
     return execute
+
 
 @dt_enabled
 def test_query_and_mutation_asgi(graphql_asgi_run):
@@ -74,7 +79,7 @@ def test_query_and_mutation_asgi(graphql_asgi_run):
         "GraphQL",
         scoped_metrics=_test_mutation_scoped_metrics,
         rollup_metrics=_test_mutation_unscoped_metrics + FRAMEWORK_METRICS,
-        index=-2
+        index=-2,
     )
     @validate_span_events(exact_agents=_expected_mutation_operation_attributes, index=-2)
     @validate_span_events(exact_agents=_expected_mutation_resolver_attributes, index=-2)

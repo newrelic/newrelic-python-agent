@@ -72,7 +72,8 @@ async def wrap_execute(wrapped, instance, args, kwargs):
     except TypeError:
         return await wrapped(*args, **kwargs)
 
-    transaction.add_framework_info(name="Strawberry")
+    framework = framework_details()
+    transaction.add_framework_info(name=framework[0], version=framework[1])
     transaction.add_framework_info(name="GraphQL", version=graphql_framework_version())
 
     if hasattr(query, "body"):

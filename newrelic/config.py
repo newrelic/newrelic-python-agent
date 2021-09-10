@@ -2455,7 +2455,7 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "strawberry.asgi.__init__",
+        "strawberry.asgi",
         "newrelic.hooks.framework_strawberry",
         "instrument_strawberry_asgi",
     )

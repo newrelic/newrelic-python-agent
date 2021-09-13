@@ -16,6 +16,7 @@ from newrelic.api.asgi_application import wrap_asgi_application
 from newrelic.api.error_trace import ErrorTrace
 from newrelic.api.graphql_trace import GraphQLOperationTrace
 from newrelic.api.transaction import current_transaction
+from newrelic.api.transaction_name import TransactionNameWrapper
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.core.graphql_utils import graphql_statement
@@ -87,6 +88,22 @@ async def wrap_execute(wrapped, instance, args, kwargs):
             return await wrapped(*args, **kwargs)
 
 
+def bind_from_resolver(field, *args, **kwargs):
+    return field
+
+
+def wrap_from_resolver(wrapped, instance, args, kwargs):
+    result = wrapped(*args, **kwargs)
+    field = bind_from_resolver(*args, **kwargs)
+
+    if hasattr(field, "base_resolver"):
+        if hasattr(field.base_resolver, "wrapped_func"):
+            resolver_name = callable_name(field.base_resolver.wrapped_func)
+            result = TransactionNameWrapper(result, resolver_name, "GraphQL", priority=13)
+
+    return result
+
+
 def instrument_strawberry_schema(module):
     if hasattr(module, "Schema"):
         if hasattr(module.Schema, "execute"):
@@ -98,3 +115,9 @@ def instrument_strawberry_schema(module):
 def instrument_strawberry_asgi(module):
     if hasattr(module, "GraphQL"):
         wrap_asgi_application(module, "GraphQL.__call__", framework=framework_details())
+
+
+def instrument_strawberry_schema_converter(module):
+    if hasattr(module, "GraphQLCoreConverter"):
+        if hasattr(module.GraphQLCoreConverter, "from_resolver"):
+            wrap_function_wrapper(module, "GraphQLCoreConverter.from_resolver", wrap_from_resolver)

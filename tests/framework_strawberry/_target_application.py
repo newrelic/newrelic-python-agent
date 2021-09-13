@@ -18,6 +18,7 @@ from strawberry import field
 from strawberry import object_type, Schema, union
 from strawberry.schema.config import StrawberryConfig
 from strawberry.asgi import GraphQL
+from strawberry.types.types import Optional
 
 
 @strawberry.type
@@ -156,7 +157,7 @@ class Query():
     search: list[union("Item", (Book, Magazine))] = field(resolver=resolve_search)
     echo: str = field(resolver=resolve_echo)
     storage: Storage = field(resolver=resolve_storage)
-    error: str = field(resolver=resolve_error)
+    error: Optional[str] = field(resolver=resolve_error)
     error_non_null: str = field(resolver=resolve_error)
 
     def resolve_library(self, info, index):

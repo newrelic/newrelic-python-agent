@@ -176,88 +176,12 @@ def test_query_and_mutation(app, graphql_run):
     _test()
 
 
-@dt_enabled
-@pytest.mark.skip()
-def test_middleware(app, graphql_run, is_graphql_2):
-    _test_middleware_metrics = [
-        ("GraphQL/operation/GraphQL/query/<anonymous>/hello", 1),
-        ("GraphQL/resolve/GraphQL/hello", 1),
-        ("Function/test_application:example_middleware", 1),
-    ]
-
-    @validate_transaction_metrics(
-        "query/<anonymous>/hello",
-        "GraphQL",
-        scoped_metrics=_test_middleware_metrics,
-        rollup_metrics=_test_middleware_metrics + _graphql_base_rollup_metrics,
-        background_task=True,
-    )
-    # Span count 4: Transaction, Operation, Middleware, and 1 Resolver
-    @validate_span_events(count=4)
-    @background_task()
-    def _test():
-        response = graphql_run(app, "{ hello }", middleware=[example_middleware])
-        assert not response.errors
-        assert "Hello!" in str(response.data)
-
-    _test()
-
-
-@dt_enabled
-@pytest.mark.skip()
-def test_exception_in_middleware(app, graphql_run):
-    query = "query MyQuery { hello }"
-    field = "hello"
-
-    # Metrics
-    _test_exception_scoped_metrics = [
-        ("GraphQL/operation/GraphQL/query/MyQuery/%s" % field, 1),
-        ("GraphQL/resolve/GraphQL/%s" % field, 1),
-    ]
-    _test_exception_rollup_metrics = [
-        ("Errors/all", 1),
-        ("Errors/allOther", 1),
-        ("Errors/OtherTransaction/GraphQL/test_application:error_middleware", 1),
-    ] + _test_exception_scoped_metrics
-
-    # Attributes
-    _expected_exception_resolver_attributes = {
-        "graphql.field.name": field,
-        "graphql.field.parentType": "Query",
-        "graphql.field.path": field,
-        "graphql.field.returnType": "String",
-    }
-    _expected_exception_operation_attributes = {
-        "graphql.operation.type": "query",
-        "graphql.operation.name": "MyQuery",
-        "graphql.operation.query": query,
-    }
-
-    @validate_transaction_metrics(
-        "test_application:error_middleware",
-        "GraphQL",
-        scoped_metrics=_test_exception_scoped_metrics,
-        rollup_metrics=_test_exception_rollup_metrics + _graphql_base_rollup_metrics,
-        background_task=True,
-    )
-    @validate_span_events(exact_agents=_expected_exception_operation_attributes)
-    @validate_span_events(exact_agents=_expected_exception_resolver_attributes)
-    @validate_transaction_errors(errors=_test_runtime_error)
-    @background_task()
-    def _test():
-        response = graphql_run(app, query, middleware=[error_middleware])
-        assert response.errors
-
-    _test()
-
-
 @pytest.mark.parametrize("field", ("error", "error_non_null"))
 @dt_enabled
 def test_exception_in_resolver(app, graphql_run, field):
     query = "query MyQuery { %s }" % field
 
-    # txn_name = "_target_application:Query.resolve_error"
-    txn_name = "strawberry.schema.schema_converter:GraphQLCoreConverter.from_resolver.<locals>._resolver"  # TODO Fix this
+    txn_name = "_target_application:resolve_error"
 
     # Metrics
     _test_exception_scoped_metrics = [
@@ -275,8 +199,7 @@ def test_exception_in_resolver(app, graphql_run, field):
         "graphql.field.name": field,
         "graphql.field.parentType": "Query",
         "graphql.field.path": field,
-        "graphql.field.returnType": "String!",  # TODO Make nullable error
-        # "graphql.field.returnType": "String!" if "non_null" in field else "String",
+        "graphql.field.returnType": "String!" if "non_null" in field else "String",
     }
     _expected_exception_operation_attributes = {
         "graphql.operation.type": "query",
@@ -493,8 +416,7 @@ _test_queries = [
 @pytest.mark.parametrize("query,expected_path", _test_queries)
 def test_deepest_unique_path(app, graphql_run, query, expected_path):
     if expected_path == "/error":
-        # txn_name = "_target_application:Query.resolve_error"  # TODO Fix this
-        txn_name = "strawberry.schema.schema_converter:GraphQLCoreConverter.from_resolver.<locals>._resolver"
+        txn_name = "_target_application:resolve_error"
     else:
         txn_name = "query/<anonymous>%s" % expected_path
 

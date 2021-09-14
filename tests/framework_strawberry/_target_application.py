@@ -12,44 +12,48 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import strawberry.type
+from typing import Union
+
 import strawberry.mutation
-from strawberry import field
-from strawberry import object_type, Schema, union
-from strawberry.schema.config import StrawberryConfig
+import strawberry.type
+from strawberry import Schema, field, union
 from strawberry.asgi import GraphQL
+from strawberry.schema.config import StrawberryConfig
 from strawberry.types.types import Optional
 
 
 @strawberry.type
 class Author:
-    first_name : str
-    last_name : str
+    first_name: str
+    last_name: str
 
 
 @strawberry.type
 class Book:
-    id : int
-    name : str
-    isbn : str
-    author : Author
-    branch : str
+    id: int
+    name: str
+    isbn: str
+    author: Author
+    branch: str
 
 
 @strawberry.type
 class Magazine:
-    id : int
-    name : str
-    issue : int
-    branch : str
+    id: int
+    name: str
+    issue: int
+    branch: str
 
 
 @strawberry.type
 class Library:
-    id : int
-    branch : str
-    magazine : list[Magazine]
-    book : list[Book]
+    id: int
+    branch: str
+    magazine: list[Magazine]
+    book: list[Book]
+
+
+Item = Union[Book, Magazine]
 
 
 Storage = list[str]
@@ -114,6 +118,7 @@ libraries = [
 
 storage = []
 
+
 def resolve_hello():
     return "Hello!"
 
@@ -150,11 +155,11 @@ def resolve_search(contains: str):
 
 
 @strawberry.type
-class Query():
+class Query:
     library: Library = field(resolver=resolve_library)
     hello: str = field(resolver=resolve_hello)
     hello_async: str = field(resolver=resolve_hello_async)
-    search: list[union("Item", (Book, Magazine))] = field(resolver=resolve_search)
+    search: list[Item] = field(resolver=resolve_search)
     echo: str = field(resolver=resolve_echo)
     storage: Storage = field(resolver=resolve_storage)
     error: Optional[str] = field(resolver=resolve_error)
@@ -181,9 +186,8 @@ class Query():
         raise RuntimeError("Runtime Error!")
 
 
-
 @strawberry.type
-class Mutation():
+class Mutation:
     @strawberry.mutation
     def storage_add(self, string: str) -> str:
         storage.append(string)

@@ -15,7 +15,10 @@ def graphql_asgi_run():
 
     def execute(query):
         return app.make_request(
-            "POST", "/", headers={"Content-Type": "application/json"}, body=json.dumps({"query": query})
+            "POST",
+            "/",
+            headers={"Content-Type": "application/json"},
+            body=json.dumps({"query": query}),
         )
 
     return execute
@@ -24,6 +27,7 @@ def graphql_asgi_run():
 @dt_enabled
 def test_query_and_mutation_asgi(graphql_asgi_run):
     from graphql import __version__ as version
+
     from newrelic.hooks.framework_strawberry import framework_details
 
     FRAMEWORK_METRICS = [

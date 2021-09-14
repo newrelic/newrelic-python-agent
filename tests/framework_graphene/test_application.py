@@ -66,12 +66,12 @@ def to_graphql_source(query):
     return delay_import
 
 
-def example_middleware(next, root, info, **args):
+def example_middleware(next, root, info, **args):  #pylint: disable=W0622
     return_value = next(root, info, **args)
     return return_value
 
 
-def error_middleware(next, root, info, **args):
+def error_middleware(next, root, info, **args):  #pylint: disable=W0622
     raise RuntimeError("Runtime Error!")
 
 

@@ -67,12 +67,12 @@ def to_graphql_source(query):
     return delay_import
 
 
-def example_middleware(next, root, info, **args):
+def example_middleware(next, root, info, **args):  # pylint: disable=W0622
     return_value = next(root, info, **args)
     return return_value
 
 
-def error_middleware(next, root, info, **args):
+def error_middleware(next, root, info, **args):  # pylint: disable=W0622
     raise RuntimeError("Runtime Error!")
 
 
@@ -249,7 +249,7 @@ def test_exception_in_middleware(app, graphql_run):
         from graphql import MiddlewareManager
 
         ok, response = graphql_run(app, query, middleware=MiddlewareManager(error_middleware))
-        assert response["errors"]
+        assert not ok and response["errors"]
 
     _test()
 
@@ -297,7 +297,7 @@ def test_exception_in_resolver(app, graphql_run, field):
     @background_task()
     def _test():
         ok, response = graphql_run(app, query)
-        assert response["errors"]
+        assert not ok and response["errors"]
 
     _test()
 
@@ -353,7 +353,7 @@ def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_clas
     @background_task()
     def _test():
         ok, response = graphql_run(app, query)
-        assert response["errors"]
+        assert not ok and response["errors"]
 
     _test()
 

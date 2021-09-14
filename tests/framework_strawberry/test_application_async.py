@@ -10,8 +10,10 @@ from newrelic.api.background_task import background_task
 @pytest.fixture(scope="session")
 def graphql_run_async():
     """Wrapper function to simulate framework_graphql test behavior."""
+
     def execute(schema, *args, **kwargs):
         return schema.execute(*args, **kwargs)
+
     return execute
 
 
@@ -40,7 +42,7 @@ def test_basic(app, graphql_run_async):
     @background_task()
     def _test():
         async def coro():
-            response = await graphql_run_async(app, '{ hello_async }')
+            response = await graphql_run_async(app, "{ hello_async }")
             assert not response.errors
 
         loop = asyncio.get_event_loop()
@@ -52,6 +54,7 @@ def test_basic(app, graphql_run_async):
 @dt_enabled
 def test_query_and_mutation_async(app, graphql_run_async):
     from graphql import __version__ as version
+
     from newrelic.hooks.framework_strawberry import framework_details
 
     FRAMEWORK_METRICS = [

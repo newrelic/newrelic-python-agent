@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import six
 import pytest
 from testing_support.fixtures import (
     dt_enabled,
@@ -39,8 +38,10 @@ def is_graphql_2():
 @pytest.fixture(scope="session")
 def graphql_run():
     """Wrapper function to simulate framework_graphql test behavior."""
+
     def execute(schema, *args, **kwargs):
         return schema.execute_sync(*args, **kwargs)
+
     return execute
 
 
@@ -64,12 +65,12 @@ def to_graphql_source(query):
     return delay_import
 
 
-def example_middleware(next, root, info, **args):
+def example_middleware(next, root, info, **args):  #pylint: disable=W0622
     return_value = next(root, info, **args)
     return return_value
 
 
-def error_middleware(next, root, info, **args):
+def error_middleware(next, root, info, **args):  #pylint: disable=W0622
     raise RuntimeError("Runtime Error!")
 
 
@@ -86,6 +87,7 @@ _graphql_base_rollup_metrics = [
 
 def test_basic(app, graphql_run):
     from graphql import __version__ as version
+
     from newrelic.hooks.framework_strawberry import framework_details
 
     FRAMEWORK_METRICS = [
@@ -101,15 +103,16 @@ def test_basic(app, graphql_run):
     )
     @background_task()
     def _test():
-        response = graphql_run(app, '{ hello }')
+        response = graphql_run(app, "{ hello }")
         assert not response.errors
-    
+
     _test()
 
 
 @dt_enabled
 def test_query_and_mutation(app, graphql_run):
     from graphql import __version__ as version
+
     from newrelic.hooks.framework_strawberry import framework_details
 
     FRAMEWORK_METRICS = [
@@ -303,9 +306,7 @@ def test_operation_metrics_and_attrs(app, graphql_run):
     @validate_span_events(exact_agents=operation_attrs)
     @background_task()
     def _test():
-        response = graphql_run(
-            app, "query MyQuery { library(index: 0) { branch, book { id, name } } }"
-        )
+        response = graphql_run(app, "query MyQuery { library(index: 0) { branch, book { id, name } } }")
         assert not response.errors
 
     _test()
@@ -344,7 +345,10 @@ _test_queries = [
     ("{ hello }", "{ hello }"),  # Basic query extraction
     ("{ error }", "{ error }"),  # Extract query on field error
     (to_graphql_source("{ hello }"), "{ hello }"),  # Extract query from Source objects
-    ("{ library(index: 0) { branch } }", "{ library(index: ?) { branch } }"),  # Integers
+    (
+        "{ library(index: 0) { branch } }",
+        "{ library(index: ?) { branch } }",
+    ),  # Integers
     ('{ echo(echo: "123") }', "{ echo(echo: ?) }"),  # Strings with numerics
     ('{ echo(echo: "test") }', "{ echo(echo: ?) }"),  # Strings
     ('{ TestEcho: echo(echo: "test") }', "{ TestEcho: echo(echo: ?) }"),  # Aliases

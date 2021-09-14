@@ -25,6 +25,7 @@ from newrelic.common.object_wrapper import (
     wrap_function_wrapper,
 )
 from newrelic.core.config import should_ignore_error
+from newrelic.core.context import context_wrapper, current_thread_id
 from newrelic.core.trace_cache import trace_cache
 
 
@@ -204,6 +205,23 @@ def error_middleware_wrapper(wrapped, instance, args, kwargs):
     return FunctionTraceWrapper(wrapped)(*args, **kwargs)
 
 
+def bind_run_in_threadpool(func, *args, **kwargs):
+    return func, args, kwargs
+
+
+async def wrap_run_in_threadpool(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    trace = current_trace()
+
+    if not transaction or not trace:
+        return await wrapped(*args, **kwargs)
+
+    func, args, kwargs = bind_run_in_threadpool(*args, **kwargs)
+    func = context_wrapper(func, current_thread_id())
+
+    return await wrapped(func, *args, **kwargs)
+
+
 def instrument_starlette_applications(module):
     framework = framework_details()
     version_info = tuple(int(v) for v in framework[1].split(".", 3)[:3])
@@ -256,3 +274,7 @@ def instrument_starlette_exceptions(module):
 
 def instrument_starlette_background_task(module):
     wrap_function_wrapper(module, "BackgroundTask.__call__", wrap_background_method)
+
+
+def instrument_starlette_concurrency(module):
+    wrap_function_wrapper(module, "run_in_threadpool", wrap_run_in_threadpool)

@@ -94,12 +94,16 @@ def bind_from_resolver(field, *args, **kwargs):
 
 def wrap_from_resolver(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
-    field = bind_from_resolver(*args, **kwargs)
 
-    if hasattr(field, "base_resolver"):
-        if hasattr(field.base_resolver, "wrapped_func"):
-            resolver_name = callable_name(field.base_resolver.wrapped_func)
-            result = TransactionNameWrapper(result, resolver_name, "GraphQL", priority=13)
+    try:
+        field = bind_from_resolver(*args, **kwargs)    
+    except TypeError:
+        pass
+    else:
+        if hasattr(field, "base_resolver"):
+            if hasattr(field.base_resolver, "wrapped_func"):
+                resolver_name = callable_name(field.base_resolver.wrapped_func)
+                result = TransactionNameWrapper(result, resolver_name, "GraphQL", priority=13)
 
     return result
 

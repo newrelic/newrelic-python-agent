@@ -53,7 +53,7 @@ except ImportError:
 
 DEFAULT_RESERVOIR_SIZE = 1200
 ERROR_EVENT_RESERVOIR_SIZE = 100
-SPAN_EVENT_RESERVOIR_SIZE = 1000
+SPAN_EVENT_RESERVOIR_SIZE = 2000
 
 # settings that should be completely ignored if set server side
 IGNORED_SERVER_SIDE_SETTINGS = [

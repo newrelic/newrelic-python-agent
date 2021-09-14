@@ -104,7 +104,7 @@ item = UnionType("Item")
 def resolve_type(obj, *args):
     if "isbn" in obj:
         return "Book"
-    elif "issue" in obj:
+    elif "issue" in obj:  # pylint: disable=R1705
         return "Magazine"
 
     return None

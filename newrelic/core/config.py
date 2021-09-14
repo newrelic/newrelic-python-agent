@@ -707,10 +707,21 @@ _settings.infinite_tracing.trace_observer_port = _environ_as_int("NEW_RELIC_INFI
 _settings.infinite_tracing.ssl = True
 _settings.infinite_tracing.span_queue_size = _environ_as_int("NEW_RELIC_INFINITE_TRACING_SPAN_QUEUE_SIZE", 10000)
 
-_settings.event_harvest_config.harvest_limits.analytic_event_data = DEFAULT_RESERVOIR_SIZE
-_settings.event_harvest_config.harvest_limits.custom_event_data = DEFAULT_RESERVOIR_SIZE
-_settings.event_harvest_config.harvest_limits.span_event_data = SPAN_EVENT_RESERVOIR_SIZE
-_settings.event_harvest_config.harvest_limits.error_event_data = ERROR_EVENT_RESERVOIR_SIZE
+_settings.event_harvest_config.harvest_limits.analytic_event_data = _environ_as_int(
+    "NEW_RELIC_ANALYTICS_EVENTS_MAX_SAMPLES_STORED", DEFAULT_RESERVOIR_SIZE
+)
+
+_settings.event_harvest_config.harvest_limits.custom_event_data = _environ_as_int(
+    "NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_SAMPLES_STORED", DEFAULT_RESERVOIR_SIZE
+)
+
+_settings.event_harvest_config.harvest_limits.span_event_data = _environ_as_int(
+    "NEW_RELIC_SPAN_EVENTS_MAX_SAMPLES_STORED", SPAN_EVENT_RESERVOIR_SIZE
+)
+
+_settings.event_harvest_config.harvest_limits.error_event_data = _environ_as_int(
+    "NEW_RELIC_ERROR_COLLECTOR_MAX_EVENT_SAMPLES_STORED", ERROR_EVENT_RESERVOIR_SIZE
+)
 
 _settings.console.listener_socket = None
 _settings.console.allow_interpreter_cmd = False

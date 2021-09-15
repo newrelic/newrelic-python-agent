@@ -2454,6 +2454,24 @@ def _process_module_builtin_defaults():
         "instrument_starlette_background_task",
     )
 
+    _process_module_definition(
+        "strawberry.asgi",
+        "newrelic.hooks.framework_strawberry",
+        "instrument_strawberry_asgi",
+    )
+
+    _process_module_definition(
+        "strawberry.schema.schema",
+        "newrelic.hooks.framework_strawberry",
+        "instrument_strawberry_schema",
+    )
+
+    _process_module_definition(
+        "strawberry.schema.schema_converter",
+        "newrelic.hooks.framework_strawberry",
+        "instrument_strawberry_schema_converter",
+    )
+
     _process_module_definition("uvicorn.config", "newrelic.hooks.adapter_uvicorn", "instrument_uvicorn_config")
 
     _process_module_definition("sanic.app", "newrelic.hooks.framework_sanic", "instrument_sanic_app")

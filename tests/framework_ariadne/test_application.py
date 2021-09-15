@@ -248,8 +248,8 @@ def test_exception_in_middleware(app, graphql_run):
     def _test():
         from graphql import MiddlewareManager
 
-        ok, response = graphql_run(app, query, middleware=MiddlewareManager(error_middleware))
-        assert not ok and response["errors"]
+        _, response = graphql_run(app, query, middleware=MiddlewareManager(error_middleware))
+        assert response["errors"]
 
     _test()
 
@@ -296,8 +296,8 @@ def test_exception_in_resolver(app, graphql_run, field):
     @validate_transaction_errors(errors=_test_runtime_error)
     @background_task()
     def _test():
-        ok, response = graphql_run(app, query)
-        assert not ok and response["errors"]
+        _, response = graphql_run(app, query)
+        assert response["errors"]
 
     _test()
 
@@ -352,8 +352,8 @@ def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_clas
     @validate_transaction_errors(errors=[exc_class])
     @background_task()
     def _test():
-        ok, response = graphql_run(app, query)
-        assert not ok and response["errors"]
+        _, response = graphql_run(app, query)
+        assert response["errors"]
 
     _test()
 

@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Union
+from typing import List, Union
 
 import strawberry.mutation
 import strawberry.type
-from strawberry import Schema, field, union
+from strawberry import Schema, field
 from strawberry.asgi import GraphQL
 from strawberry.schema.config import StrawberryConfig
 from strawberry.types.types import Optional
@@ -49,14 +49,12 @@ class Magazine:
 class Library:
     id: int
     branch: str
-    magazine: list[Magazine]
-    book: list[Book]
+    magazine: List[Magazine]
+    book: List[Book]
 
 
 Item = Union[Book, Magazine]
-
-
-Storage = list[str]
+Storage = List[str]
 
 
 authors = [
@@ -159,7 +157,7 @@ class Query:
     library: Library = field(resolver=resolve_library)
     hello: str = field(resolver=resolve_hello)
     hello_async: str = field(resolver=resolve_hello_async)
-    search: list[Item] = field(resolver=resolve_search)
+    search: List[Item] = field(resolver=resolve_search)
     echo: str = field(resolver=resolve_echo)
     storage: Storage = field(resolver=resolve_storage)
     error: Optional[str] = field(resolver=resolve_error)

@@ -26,20 +26,20 @@ def test_query_and_mutation_wsgi(graphql_wsgi_run):
         ("Python/Framework/GraphQL/%s" % version, 1),
     ]
     _test_mutation_scoped_metrics = [
-        ("GraphQL/resolve/GraphQL/storage_add", 1),
-        ("GraphQL/operation/GraphQL/mutation/<anonymous>/storage_add.string", 1),
+        ("GraphQL/resolve/Ariadne/storage_add", 1),
+        ("GraphQL/operation/Ariadne/mutation/<anonymous>/storage_add.string", 1),
     ]
     _test_query_scoped_metrics = [
-        ("GraphQL/resolve/GraphQL/storage", 1),
-        ("GraphQL/operation/GraphQL/query/<anonymous>/storage", 1),
+        ("GraphQL/resolve/Ariadne/storage", 1),
+        ("GraphQL/operation/Ariadne/query/<anonymous>/storage", 1),
     ]
     _test_unscoped_metrics = [
         ("WebTransaction", 1),
         ("Python/WSGI/Response", 1),
         ("GraphQL/all", 1),
-        ("GraphQL/GraphQL/all", 1),
+        ("GraphQL/Ariadne/all", 1),
         ("GraphQL/allWeb", 1),
-        ("GraphQL/GraphQL/allWeb", 1),
+        ("GraphQL/Ariadne/allWeb", 1),
     ]
     _test_mutation_unscoped_metrics = _test_unscoped_metrics + _test_mutation_scoped_metrics
     _test_query_unscoped_metrics = _test_unscoped_metrics + _test_query_scoped_metrics

@@ -21,15 +21,18 @@ _graphql_base_rollup_metrics = [
     ("OtherTransaction/all", 1),
     ("GraphQL/all", 1),
     ("GraphQL/allOther", 1),
-    ("GraphQL/GraphQL/all", 1),
-    ("GraphQL/GraphQL/allOther", 1),
+    ("GraphQL/Strawberry/all", 1),
+    ("GraphQL/Strawberry/allOther", 1),
 ]
 
 
 def test_basic(app, graphql_run_async):
     from graphql import __version__ as version
 
+    from newrelic.hooks.framework_strawberry import framework_details
+
     FRAMEWORK_METRICS = [
+        ("Python/Framework/Strawberry/%s" % framework_details()[1], 1),
         ("Python/Framework/GraphQL/%s" % version, 1),
     ]
 
@@ -62,17 +65,17 @@ def test_query_and_mutation_async(app, graphql_run_async):
         ("Python/Framework/GraphQL/%s" % version, 1),
     ]
     _test_mutation_scoped_metrics = [
-        ("GraphQL/resolve/GraphQL/storage", 1),
-        ("GraphQL/resolve/GraphQL/storage_add", 1),
-        ("GraphQL/operation/GraphQL/query/<anonymous>/storage", 1),
-        ("GraphQL/operation/GraphQL/mutation/<anonymous>/storage_add", 1),
+        ("GraphQL/resolve/Strawberry/storage", 1),
+        ("GraphQL/resolve/Strawberry/storage_add", 1),
+        ("GraphQL/operation/Strawberry/query/<anonymous>/storage", 1),
+        ("GraphQL/operation/Strawberry/mutation/<anonymous>/storage_add", 1),
     ]
     _test_mutation_unscoped_metrics = [
         ("OtherTransaction/all", 1),
         ("GraphQL/all", 2),
-        ("GraphQL/GraphQL/all", 2),
+        ("GraphQL/Strawberry/all", 2),
         ("GraphQL/allOther", 2),
-        ("GraphQL/GraphQL/allOther", 2),
+        ("GraphQL/Strawberry/allOther", 2),
     ] + _test_mutation_scoped_metrics
 
     _expected_mutation_operation_attributes = {

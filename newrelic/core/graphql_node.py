@@ -23,17 +23,13 @@ from newrelic.core.node_mixin import GenericNodeMixin
 _GraphQLOperationNode = namedtuple('_GraphQLNode',
     ['operation_type', 'operation_name', 'deepest_path', 'graphql', 
     'children', 'start_time', 'end_time', 'duration', 'exclusive', 'guid',
-    'agent_attributes', 'user_attributes'])
+    'agent_attributes', 'user_attributes', 'product'])
 
 _GraphQLResolverNode = namedtuple('_GraphQLNode',
     ['field_name', 'children', 'start_time', 'end_time', 'duration', 
-    'exclusive', 'guid', 'agent_attributes', 'user_attributes'])
+    'exclusive', 'guid', 'agent_attributes', 'user_attributes', 'product'])
 
 class GraphQLNodeMixin(GenericNodeMixin):
-    @property
-    def product(self):
-        return "GraphQL"
-
     def trace_node(self, stats, root, connections):
         name = root.string_table.cache(self.name)
 

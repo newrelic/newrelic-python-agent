@@ -35,19 +35,19 @@ def test_query_and_mutation_asgi(graphql_asgi_run):
         ("Python/Framework/GraphQL/%s" % version, 1),
     ]
     _test_mutation_scoped_metrics = [
-        ("GraphQL/resolve/GraphQL/storage_add", 1),
-        ("GraphQL/operation/GraphQL/mutation/<anonymous>/storage_add", 1),
+        ("GraphQL/resolve/Strawberry/storage_add", 1),
+        ("GraphQL/operation/Strawberry/mutation/<anonymous>/storage_add", 1),
     ]
     _test_query_scoped_metrics = [
-        ("GraphQL/resolve/GraphQL/storage", 1),
-        ("GraphQL/operation/GraphQL/query/<anonymous>/storage", 1),
+        ("GraphQL/resolve/Strawberry/storage", 1),
+        ("GraphQL/operation/Strawberry/query/<anonymous>/storage", 1),
     ]
     _test_unscoped_metrics = [
         ("WebTransaction", 1),
         ("GraphQL/all", 1),
-        ("GraphQL/GraphQL/all", 1),
+        ("GraphQL/Strawberry/all", 1),
         ("GraphQL/allWeb", 1),
-        ("GraphQL/GraphQL/allWeb", 1),
+        ("GraphQL/Strawberry/allWeb", 1),
     ]
     _test_mutation_unscoped_metrics = _test_unscoped_metrics + _test_mutation_scoped_metrics
     _test_query_unscoped_metrics = _test_unscoped_metrics + _test_query_scoped_metrics

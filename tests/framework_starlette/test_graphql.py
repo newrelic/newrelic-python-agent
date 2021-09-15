@@ -27,19 +27,21 @@ def target_application():
 @pytest.mark.parametrize("endpoint", ("/async", "/sync"))
 def test_graphql_metrics_and_attrs(target_application, endpoint):
     from graphql import __version__ as version
+    from newrelic.hooks.framework_graphql import graphene_framework_details
 
     FRAMEWORK_METRICS = [
+        ("Python/Framework/Graphene/%s" % graphene_framework_details()[1], 1),
         ("Python/Framework/GraphQL/%s" % version, 1),
     ]
     _test_scoped_metrics = [
-        ("GraphQL/resolve/GraphQL/hello", 1),
-        ("GraphQL/operation/GraphQL/query/<anonymous>/hello", 1),
+        ("GraphQL/resolve/Graphene/hello", 1),
+        ("GraphQL/operation/Graphene/query/<anonymous>/hello", 1),
     ]
     _test_unscoped_metrics = [
         ("GraphQL/all", 1),
-        ("GraphQL/GraphQL/all", 1),
+        ("GraphQL/Graphene/all", 1),
         ("GraphQL/allWeb", 1),
-        ("GraphQL/GraphQL/allWeb", 1),
+        ("GraphQL/Graphene/allWeb", 1),
     ] + _test_scoped_metrics
 
     _expected_query_operation_attributes = {

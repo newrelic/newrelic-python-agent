@@ -113,7 +113,6 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
         _logger.warning(
             "Runtime instrumentation warning. GraphQL operation found without active GraphQLOperationTrace."
         )
-        breakpoint()
         return wrapped(*args, **kwargs)
 
     try:

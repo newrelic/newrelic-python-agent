@@ -36,6 +36,7 @@ class GraphQLOperationTrace(TimeTrace):
         self.graphql = None
         self.graphql_format = None
         self.statement = None
+        self.product = "GraphQL"
 
     def __repr__(self):
         return "<%s object at 0x%x %s>" % (
@@ -89,6 +90,7 @@ class GraphQLOperationTrace(TimeTrace):
             operation_type=self.operation_type,
             deepest_path=self.deepest_path,
             graphql=self.graphql,
+            product=self.product,
         )
 
     def set_transaction_name(self, priority=None):

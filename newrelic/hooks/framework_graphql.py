@@ -362,11 +362,18 @@ def wrap_parse(wrapped, instance, args, kwargs):
 
 
 def bind_resolve_field_v3(parent_type, source, field_nodes, path):
+    breakpoint()
     return parent_type, field_nodes, path
 
 
 def bind_resolve_field_v2(exe_context, parent_type, source, field_asts, parent_info, field_path):
     return parent_type, field_asts, field_path
+
+
+def graphene_framework_details():
+    import graphene
+
+    return ("Graphene", getattr(graphene, "__version__", None))
 
 
 def wrap_resolve_field(wrapped, instance, args, kwargs):
@@ -402,7 +409,7 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
 
 
 def bind_graphql_impl_query(schema, source, *args, **kwargs):
-    return source
+    return schema, source
 
 
 def bind_execute_graphql_query(
@@ -416,8 +423,7 @@ def bind_execute_graphql_query(
     backend=None,
     **execute_options
 ):
-
-    return request_string
+    return schema, request_string
 
 
 def wrap_graphql_impl(wrapped, instance, args, kwargs):
@@ -433,9 +439,15 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
         bind_query = bind_graphql_impl_query
 
     try:
-        query = bind_query(*args, **kwargs)
+        schema, query = bind_query(*args, **kwargs)
     except TypeError:
         return wrapped(*args, **kwargs)
+
+    is_graphene = "graphene" in str(type(schema))
+
+    if is_graphene:
+        framework = graphene_framework_details()
+        transaction.add_framework_info(name=framework[0], version=framework[1])
 
     if hasattr(query, "body"):
         query = query.body
@@ -444,6 +456,8 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
 
     with GraphQLOperationTrace() as trace:
         trace.statement = graphql_statement(query)
+        if is_graphene: # ex: "<class 'graphene.types.schema.Schema'>"
+            trace.product = "Graphene"
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             result = wrapped(*args, **kwargs)
             return result

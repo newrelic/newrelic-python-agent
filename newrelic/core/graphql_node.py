@@ -23,7 +23,7 @@ from newrelic.core.node_mixin import GenericNodeMixin
 _GraphQLOperationNode = namedtuple('_GraphQLNode',
     ['operation_type', 'operation_name', 'deepest_path', 'graphql', 
     'children', 'start_time', 'end_time', 'duration', 'exclusive', 'guid',
-    'agent_attributes', 'user_attributes'])
+    'agent_attributes', 'user_attributes', 'product'])
 
 _GraphQLResolverNode = namedtuple('_GraphQLNode',
     ['field_name', 'children', 'start_time', 'end_time', 'duration', 
@@ -32,7 +32,7 @@ _GraphQLResolverNode = namedtuple('_GraphQLNode',
 class GraphQLNodeMixin(GenericNodeMixin):
     @property
     def product(self):
-        return "GraphQL"
+        return self.product
 
     def trace_node(self, stats, root, connections):
         name = root.string_table.cache(self.name)
@@ -62,7 +62,7 @@ class GraphQLResolverNode(_GraphQLResolverNode, GraphQLNodeMixin):
     @property
     def name(self):
         field_name = self.field_name or "<unknown>"
-        product = self.product
+        product = "GraphQL"
 
         name = 'GraphQL/resolve/%s/%s' % (product, field_name)
 
@@ -74,7 +74,7 @@ class GraphQLResolverNode(_GraphQLResolverNode, GraphQLNodeMixin):
         """
 
         field_name = self.field_name or "<unknown>"
-        product = self.product
+        product = "GraphQL"
 
         # Determine the scoped metric
 

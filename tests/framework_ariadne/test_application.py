@@ -82,8 +82,8 @@ _graphql_base_rollup_metrics = [
     ("OtherTransaction/all", 1),
     ("GraphQL/all", 1),
     ("GraphQL/allOther", 1),
-    ("GraphQL/GraphQL/all", 1),
-    ("GraphQL/GraphQL/allOther", 1),
+    ("GraphQL/Ariadne/all", 1),
+    ("GraphQL/Ariadne/allOther", 1),
 ]
 
 
@@ -120,15 +120,15 @@ def test_query_and_mutation(app, graphql_run):
     _test_mutation_scoped_metrics = [
         ("GraphQL/resolve/GraphQL/storage", 1),
         ("GraphQL/resolve/GraphQL/storage_add", 1),
-        ("GraphQL/operation/GraphQL/query/<anonymous>/storage", 1),
-        ("GraphQL/operation/GraphQL/mutation/<anonymous>/storage_add.string", 1),
+        ("GraphQL/operation/Ariadne/query/<anonymous>/storage", 1),
+        ("GraphQL/operation/Ariadne/mutation/<anonymous>/storage_add.string", 1),
     ]
     _test_mutation_unscoped_metrics = [
         ("OtherTransaction/all", 1),
         ("GraphQL/all", 2),
-        ("GraphQL/GraphQL/all", 2),
+        ("GraphQL/Ariadne/all", 2),
         ("GraphQL/allOther", 2),
-        ("GraphQL/GraphQL/allOther", 2),
+        ("GraphQL/Ariadne/allOther", 2),
     ] + _test_mutation_scoped_metrics
 
     _expected_mutation_operation_attributes = {
@@ -180,7 +180,7 @@ def test_query_and_mutation(app, graphql_run):
 @dt_enabled
 def test_middleware(app, graphql_run, is_graphql_2):
     _test_middleware_metrics = [
-        ("GraphQL/operation/GraphQL/query/<anonymous>/hello", 1),
+        ("GraphQL/operation/Ariadne/query/<anonymous>/hello", 1),
         ("GraphQL/resolve/GraphQL/hello", 1),
         ("Function/test_application:example_middleware", 1),
     ]
@@ -212,7 +212,7 @@ def test_exception_in_middleware(app, graphql_run):
 
     # Metrics
     _test_exception_scoped_metrics = [
-        ("GraphQL/operation/GraphQL/query/MyQuery/%s" % field, 1),
+        ("GraphQL/operation/Ariadne/query/MyQuery/%s" % field, 1),
         ("GraphQL/resolve/GraphQL/%s" % field, 1),
     ]
     _test_exception_rollup_metrics = [
@@ -262,7 +262,7 @@ def test_exception_in_resolver(app, graphql_run, field):
 
     # Metrics
     _test_exception_scoped_metrics = [
-        ("GraphQL/operation/GraphQL/query/MyQuery/%s" % field, 1),
+        ("GraphQL/operation/Ariadne/query/MyQuery/%s" % field, 1),
         ("GraphQL/resolve/GraphQL/%s" % field, 1),
     ]
     _test_exception_rollup_metrics = [
@@ -326,7 +326,7 @@ def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_clas
         exc_class = callable_name(GraphQLError)
 
     _test_exception_scoped_metrics = [
-        #    ('GraphQL/operation/GraphQL/<unknown>/<anonymous>/<unknown>', 1),
+            ('GraphQL/operation/GraphQL/<unknown>/<anonymous>/<unknown>', 1),
     ]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
@@ -360,7 +360,7 @@ def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_clas
 
 @dt_enabled
 def test_operation_metrics_and_attrs(app, graphql_run):
-    operation_metrics = [("GraphQL/operation/GraphQL/query/MyQuery/library", 1)]
+    operation_metrics = [("GraphQL/operation/Ariadne/query/MyQuery/library", 1)]
     operation_attrs = {
         "graphql.operation.type": "query",
         "graphql.operation.name": "MyQuery",

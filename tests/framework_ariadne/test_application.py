@@ -181,7 +181,7 @@ def test_query_and_mutation(app, graphql_run):
 def test_middleware(app, graphql_run, is_graphql_2):
     _test_middleware_metrics = [
         ("GraphQL/operation/Ariadne/query/<anonymous>/hello", 1),
-        ("GraphQL/resolve/Strawberry/hello", 1),
+        ("GraphQL/resolve/Ariadne/hello", 1),
         ("Function/test_application:example_middleware", 1),
     ]
 
@@ -213,7 +213,7 @@ def test_exception_in_middleware(app, graphql_run):
     # Metrics
     _test_exception_scoped_metrics = [
         ("GraphQL/operation/Ariadne/query/MyQuery/%s" % field, 1),
-        ("GraphQL/resolve/Strawberry/%s" % field, 1),
+        ("GraphQL/resolve/Ariadne/%s" % field, 1),
     ]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),

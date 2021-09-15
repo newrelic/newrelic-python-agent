@@ -30,11 +30,11 @@ def test_query_and_mutation_asgi(graphql_asgi_run):
         ("Python/Framework/GraphQL/%s" % version, 1),
     ]
     _test_mutation_scoped_metrics = [
-        ("GraphQL/resolve/GraphQL/storage_add", 1),
+        ("GraphQL/resolve/Ariadne/storage_add", 1),
         ("GraphQL/operation/Ariadne/mutation/<anonymous>/storage_add.string", 1),
     ]
     _test_query_scoped_metrics = [
-        ("GraphQL/resolve/GraphQL/storage", 1),
+        ("GraphQL/resolve/Ariadne/storage", 1),
         ("GraphQL/operation/Ariadne/query/<anonymous>/storage", 1),
     ]
     _test_unscoped_metrics = [

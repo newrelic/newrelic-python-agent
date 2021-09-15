@@ -120,8 +120,8 @@ def test_query_and_mutation(app, graphql_run):
         ("Python/Framework/GraphQL/%s" % version, 1),
     ]
     _test_mutation_scoped_metrics = [
-        ("GraphQL/resolve/GraphQL/storage", 1),
-        ("GraphQL/resolve/GraphQL/storage_add", 1),
+        ("GraphQL/resolve/Strawberry/storage", 1),
+        ("GraphQL/resolve/Strawberry/storage_add", 1),
         ("GraphQL/operation/Strawberry/query/<anonymous>/storage", 1),
         ("GraphQL/operation/Strawberry/mutation/<anonymous>/storage_add", 1),
     ]
@@ -189,7 +189,7 @@ def test_exception_in_resolver(app, graphql_run, field):
     # Metrics
     _test_exception_scoped_metrics = [
         ("GraphQL/operation/Strawberry/query/MyQuery/%s" % field, 1),
-        ("GraphQL/resolve/GraphQL/%s" % field, 1),
+        ("GraphQL/resolve/Strawberry/%s" % field, 1),
     ]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
@@ -314,7 +314,7 @@ def test_operation_metrics_and_attrs(app, graphql_run):
 
 @dt_enabled
 def test_field_resolver_metrics_and_attrs(app, graphql_run):
-    field_resolver_metrics = [("GraphQL/resolve/GraphQL/hello", 1)]
+    field_resolver_metrics = [("GraphQL/resolve/Strawberry/hello", 1)]
     graphql_attrs = {
         "graphql.field.name": "hello",
         "graphql.field.parentType": "Query",

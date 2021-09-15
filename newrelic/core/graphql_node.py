@@ -27,7 +27,7 @@ _GraphQLOperationNode = namedtuple('_GraphQLNode',
 
 _GraphQLResolverNode = namedtuple('_GraphQLNode',
     ['field_name', 'children', 'start_time', 'end_time', 'duration', 
-    'exclusive', 'guid', 'agent_attributes', 'user_attributes'])
+    'exclusive', 'guid', 'agent_attributes', 'user_attributes', 'product'])
 
 class GraphQLNodeMixin(GenericNodeMixin):
     @property
@@ -62,7 +62,7 @@ class GraphQLResolverNode(_GraphQLResolverNode, GraphQLNodeMixin):
     @property
     def name(self):
         field_name = self.field_name or "<unknown>"
-        product = "GraphQL"
+        product = self.product
 
         name = 'GraphQL/resolve/%s/%s' % (product, field_name)
 
@@ -74,7 +74,7 @@ class GraphQLResolverNode(_GraphQLResolverNode, GraphQLNodeMixin):
         """
 
         field_name = self.field_name or "<unknown>"
-        product = "GraphQL"
+        product = self.product
 
         # Determine the scoped metric
 

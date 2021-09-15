@@ -118,8 +118,8 @@ def test_query_and_mutation(app, graphql_run):
         ("Python/Framework/GraphQL/%s" % version, 1),
     ]
     _test_mutation_scoped_metrics = [
-        ("GraphQL/resolve/GraphQL/storage", 1),
-        ("GraphQL/resolve/GraphQL/storage_add", 1),
+        ("GraphQL/resolve/Graphene/storage", 1),
+        ("GraphQL/resolve/Graphene/storage_add", 1),
         ("GraphQL/operation/Graphene/query/<anonymous>/storage", 1),
         ("GraphQL/operation/Graphene/mutation/<anonymous>/storage_add.string", 1),
     ]
@@ -181,7 +181,7 @@ def test_query_and_mutation(app, graphql_run):
 def test_middleware(app, graphql_run, is_graphql_2):
     _test_middleware_metrics = [
         ("GraphQL/operation/Graphene/query/<anonymous>/hello", 1),
-        ("GraphQL/resolve/GraphQL/hello", 1),
+        ("GraphQL/resolve/Graphene/hello", 1),
         ("Function/test_application:example_middleware", 1),
     ]
 
@@ -211,7 +211,7 @@ def test_exception_in_middleware(app, graphql_run):
     # Metrics
     _test_exception_scoped_metrics = [
         ("GraphQL/operation/Graphene/query/MyQuery/%s" % field, 1),
-        ("GraphQL/resolve/GraphQL/%s" % field, 1),
+        ("GraphQL/resolve/Graphene/%s" % field, 1),
     ]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
@@ -263,7 +263,7 @@ def test_exception_in_resolver(app, graphql_run, field):
     # Metrics
     _test_exception_scoped_metrics = [
         ("GraphQL/operation/Graphene/query/MyQuery/%s" % field, 1),
-        ("GraphQL/resolve/GraphQL/%s" % field, 1),
+        ("GraphQL/resolve/Graphene/%s" % field, 1),
     ]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
@@ -388,7 +388,7 @@ def test_operation_metrics_and_attrs(app, graphql_run):
 
 @dt_enabled
 def test_field_resolver_metrics_and_attrs(app, graphql_run):
-    field_resolver_metrics = [("GraphQL/resolve/GraphQL/hello", 1)]
+    field_resolver_metrics = [("GraphQL/resolve/Graphene/hello", 1)]
     graphql_attrs = {
         "graphql.field.name": "hello",
         "graphql.field.parentType": "Query",

@@ -442,12 +442,6 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
     except TypeError:
         return wrapped(*args, **kwargs)
 
-    is_graphene = "graphene" in str(type(schema))
-
-    if is_graphene:
-        framework = graphene_framework_details()
-        transaction.add_framework_info(name=framework[0], version=framework[1])
-
     if hasattr(query, "body"):
         query = query.body
 
@@ -455,8 +449,17 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
 
     with GraphQLOperationTrace() as trace:
         trace.statement = graphql_statement(query)
-        if is_graphene: # ex: "<class 'graphene.types.schema.Schema'>"
-            trace.product = "Graphene"
+
+        # Handle Graphene Schemas
+        try:
+            from graphene.types.schema import Schema as GrapheneSchema
+            if isinstance(schema, GrapheneSchema):
+                trace.product = "Graphene"
+                framework = graphene_framework_details()
+                transaction.add_framework_info(name=framework[0], version=framework[1])
+        except ImportError:
+            pass
+
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             result = wrapped(*args, **kwargs)
             return result

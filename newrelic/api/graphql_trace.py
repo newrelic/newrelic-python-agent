@@ -137,9 +137,30 @@ class GraphQLResolverTrace(TimeTrace):
     def __init__(self, field_name=None, **kwargs):
         super(GraphQLResolverTrace, self).__init__(**kwargs)
         self.field_name = field_name
+        self._product = None
 
     def __repr__(self):
         return "<%s object at 0x%x %s>" % (self.__class__.__name__, id(self), dict(field_name=self.field_name))
+
+    def __enter__(self):
+        super(GraphQLResolverTrace, self).__enter__()
+        _ = self.product  # Cache product value
+        return self
+
+    @property
+    def product(self):
+        if not self._product:
+            # Find GraphQLOperationTrace to obtain stored product info
+            parent = self  # init to self for loop start
+            while parent is not None and not isinstance(parent, GraphQLOperationTrace):
+                parent = getattr(parent, "parent", None)
+
+            if parent is not None:
+                self._product = getattr(parent, "product", "GraphQL")
+            else:
+                self._product = "GraphQL"
+
+        return self._product
 
     def finalize_data(self, *args, **kwargs):
         self._add_agent_attribute("graphql.field.name", self.field_name)
@@ -157,6 +178,7 @@ class GraphQLResolverTrace(TimeTrace):
             guid=self.guid,
             agent_attributes=self.agent_attributes,
             user_attributes=self.user_attributes,
+            product=self.product,
         )
 
 

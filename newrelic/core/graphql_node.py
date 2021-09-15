@@ -30,10 +30,6 @@ _GraphQLResolverNode = namedtuple('_GraphQLNode',
     'exclusive', 'guid', 'agent_attributes', 'user_attributes', 'product'])
 
 class GraphQLNodeMixin(GenericNodeMixin):
-    @property
-    def product(self):
-        return self.product
-
     def trace_node(self, stats, root, connections):
         name = root.string_table.cache(self.name)
 

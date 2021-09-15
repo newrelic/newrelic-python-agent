@@ -12,24 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from fastapi import FastAPI
-
-from newrelic.api.transaction import current_transaction
+from starlette.applications import Starlette
+from starlette.routing import Route
 from testing_support.asgi_testing import AsgiTest
 
-app = FastAPI()
+from graphene import ObjectType, String, Schema
+from graphql.execution.executors.asyncio import AsyncioExecutor
+from starlette.graphql import GraphQLApp
 
 
-@app.get("/sync")
-def sync():
-    assert current_transaction() is not None
-    return {}
+class Query(ObjectType):
+    hello = String()
+
+    def resolve_hello(self, info):
+        return "Hello!"
 
 
-@app.get("/async")
-async def non_sync():
-    assert current_transaction() is not None
-    return {}
+routes = [
+    Route("/async", GraphQLApp(executor_class=AsyncioExecutor, schema=Schema(query=Query))),
+    Route("/sync", GraphQLApp(schema=Schema(query=Query))),
+]
 
-
+app = Starlette(routes=routes)
 target_application = AsgiTest(app)

@@ -2453,6 +2453,11 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.framework_starlette",
         "instrument_starlette_background_task",
     )
+    _process_module_definition(
+        "starlette.concurrency",
+        "newrelic.hooks.framework_starlette",
+        "instrument_starlette_concurrency",
+    )
 
     _process_module_definition(
         "strawberry.asgi",

@@ -362,7 +362,6 @@ def wrap_parse(wrapped, instance, args, kwargs):
 
 
 def bind_resolve_field_v3(parent_type, source, field_nodes, path):
-    breakpoint()
     return parent_type, field_nodes, path
 
 

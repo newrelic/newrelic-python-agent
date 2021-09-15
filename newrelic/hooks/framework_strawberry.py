@@ -57,6 +57,7 @@ def wrap_execute_sync(wrapped, instance, args, kwargs):
     transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=10)
 
     with GraphQLOperationTrace() as trace:
+        trace.product = "Strawberry"
         trace.statement = graphql_statement(query)
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             return wrapped(*args, **kwargs)
@@ -83,6 +84,7 @@ async def wrap_execute(wrapped, instance, args, kwargs):
     transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=10)
 
     with GraphQLOperationTrace() as trace:
+        trace.product = "Strawberry"
         trace.statement = graphql_statement(query)
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             return await wrapped(*args, **kwargs)

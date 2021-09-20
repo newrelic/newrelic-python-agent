@@ -95,7 +95,7 @@ def wrap_next(_wrapped, _instance, _args, _kwargs):
 
     try:
         return _wrapped(*_args, **_kwargs)
-    except Exception:
+    except Exception as e:
         delattr(_instance, '_nr_args')
         _nr_start_time = getattr(_instance, '_nr_start_time', 0.0)
         _nr_guid = getattr(_instance, '_nr_guid', None)
@@ -103,7 +103,9 @@ def wrap_next(_wrapped, _instance, _args, _kwargs):
         with ExternalTrace(*_nr_args) as t:
             t.start_time = _nr_start_time or t.start_time
             t.guid = _nr_guid or t.guid
-            raise
+            if not isinstance(e, StopIteration):
+                raise
+        raise
 
 
 def wrap_result(_wrapped, _instance, _args, _kwargs):

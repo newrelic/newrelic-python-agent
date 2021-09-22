@@ -66,8 +66,7 @@ def get_event_loop(task):
     get_loop = getattr(task, "get_loop", None)
     if get_loop:
         return get_loop()
-    else:
-        return getattr(task, "_loop", None)
+    return getattr(task, "_loop", None)
 
 
 class cached_module(object):

@@ -191,7 +191,7 @@ def capture_harvest_errors():
             metric_name.startswith("Supportability/Python/Harvest/Exception")
             and not metric_name.endswith("DiscardDataForRequest")
             and not metric_name.endswith("RetryDataForRequest")
-            and not metric_name.endswith(("newrelic.packages.urllib3." "exceptions:ClosedPoolError"))
+            and not metric_name.endswith(("newrelic.packages.urllib3.exceptions:ClosedPoolError"))
         ):
             exc_info = sys.exc_info()
             queue.put(exc_info)
@@ -673,15 +673,15 @@ def validate_transaction_errors(errors=None, required_params=None, forgone_param
         for e in captured:
             assert e.span_id
             for name, value in required_params:
-                assert name in e.custom_params, "name=%r, " "params=%r" % (name, e.custom_params)
-                assert e.custom_params[name] == value, "name=%r, value=%r, " "params=%r" % (
+                assert name in e.custom_params, "name=%r, params=%r" % (name, e.custom_params)
+                assert e.custom_params[name] == value, "name=%r, value=%r, params=%r" % (
                     name,
                     value,
                     e.custom_params,
                 )
 
             for name, value in forgone_params:
-                assert name not in e.custom_params, "name=%r, " "params=%r" % (name, e.custom_params)
+                assert name not in e.custom_params, "name=%r, params=%r" % (name, e.custom_params)
 
         return output
 
@@ -709,11 +709,11 @@ def validate_application_errors(errors=None, required_params=None, forgone_param
             expected = sorted(errors)
             captured = sorted([(e.type, e.message) for e in stats.error_data()])
 
-            assert expected == captured, "expected=%r, captured=%r, " "errors=%r" % (expected, captured, app_errors)
+            assert expected == captured, "expected=%r, captured=%r, errors=%r" % (expected, captured, app_errors)
 
             for e in app_errors:
                 for name, value in required_params:
-                    assert name in e.parameters["userAttributes"], "name=%r, " "params=%r" % (name, e.parameters)
+                    assert name in e.parameters["userAttributes"], "name=%r, params=%r" % (name, e.parameters)
                     assert e.parameters["userAttributes"][name] == value, "name=%r, value=%r, params=%r" % (
                         name,
                         value,
@@ -749,11 +749,11 @@ def validate_custom_parameters(required_params=None, forgone_params=None):
             attrs[attr.name] = attr.value
 
         for name, value in required_params:
-            assert name in attrs, "name=%r, " "params=%r" % (name, attrs)
+            assert name in attrs, "name=%r, params=%r" % (name, attrs)
             assert attrs[name] == value, "name=%r, value=%r, params=%r" % (name, value, attrs)
 
         for name, value in forgone_params:
-            assert name not in attrs, "name=%r, " "params=%r" % (name, attrs)
+            assert name not in attrs, "name=%r, params=%r" % (name, attrs)
 
         return wrapped(*args, **kwargs)
 
@@ -791,10 +791,10 @@ def validate_synthetics_event(required_attrs=None, forgone_attrs=None, should_ex
 
                 for name, value in required_attrs:
                     assert name in flat_event, "name=%r, event=%r" % (name, flat_event)
-                    assert flat_event[name] == value, "name=%r, value=%r," "event=%r" % (name, value, flat_event)
+                    assert flat_event[name] == value, "name=%r, value=%r, event=%r" % (name, value, flat_event)
 
                 for name, value in forgone_attrs:
-                    assert name not in flat_event, "name=%r, value=%r," " event=%r" % (name, value, flat_event)
+                    assert name not in flat_event, "name=%r, value=%r, event=%r" % (name, value, flat_event)
         except Exception as e:
             failed.append(e)
 
@@ -925,7 +925,7 @@ def validate_non_transaction_error_event(required_intrinsics=None, num_errors=1,
                 user_params = event[1]
                 for name, value in required_user.items():
                     assert name in user_params, "name=%r, params=%r" % (name, user_params)
-                    assert user_params[name] == value, "name=%r, value=%r, " "params=%r" % (name, value, user_params)
+                    assert user_params[name] == value, "name=%r, value=%r, params=%r" % (name, value, user_params)
 
                 for param in forgone_user:
                     assert param not in user_params
@@ -1004,7 +1004,7 @@ def validate_synthetics_transaction_trace(required_params=None, forgone_params=N
 
             if should_exist:
                 assert header_key in required_params
-                assert header[9] == required_params[header_key], "name=%r, " "header=%r" % (header_key, header)
+                assert header[9] == required_params[header_key], "name=%r, header=%r" % (header_key, header)
             else:
                 assert header[9] is None
 
@@ -1014,7 +1014,7 @@ def validate_synthetics_transaction_trace(required_params=None, forgone_params=N
             tt_intrinsics = pack_data[0][4]["intrinsics"]
 
             for name in required_params:
-                assert name in tt_intrinsics, "name=%r, " "intrinsics=%r" % (name, tt_intrinsics)
+                assert name in tt_intrinsics, "name=%r, intrinsics=%r" % (name, tt_intrinsics)
                 assert tt_intrinsics[name] == required_params[name], "name=%r, value=%r, intrinsics=%r" % (
                     name,
                     required_params[name],
@@ -1022,7 +1022,7 @@ def validate_synthetics_transaction_trace(required_params=None, forgone_params=N
                 )
 
             for name in forgone_params:
-                assert name not in tt_intrinsics, "name=%r, " "intrinsics=%r" % (name, tt_intrinsics)
+                assert name not in tt_intrinsics, "name=%r, intrinsics=%r" % (name, tt_intrinsics)
 
         return result
 
@@ -1519,7 +1519,7 @@ def validate_tt_parameters(required_params=None, forgone_params=None):
             tt_intrinsics = pack_data[0][4]["intrinsics"]
 
             for name in required_params:
-                assert name in tt_intrinsics, "name=%r, " "intrinsics=%r" % (name, tt_intrinsics)
+                assert name in tt_intrinsics, "name=%r, intrinsics=%r" % (name, tt_intrinsics)
                 assert tt_intrinsics[name] == required_params[name], "name=%r, value=%r, intrinsics=%r" % (
                     name,
                     required_params[name],
@@ -1527,7 +1527,7 @@ def validate_tt_parameters(required_params=None, forgone_params=None):
                 )
 
             for name in forgone_params:
-                assert name not in tt_intrinsics, "name=%r, " "intrinsics=%r" % (name, tt_intrinsics)
+                assert name not in tt_intrinsics, "name=%r, intrinsics=%r" % (name, tt_intrinsics)
 
         return result
 
@@ -1801,10 +1801,10 @@ def validate_attributes(attr_type, required_attr_names=None, forgone_attr_names=
             for name in attribute_names:
                 assert name in root_attribute_names, name
         for name in required_attr_names:
-            assert name in attribute_names, "name=%r," "attributes=%r" % (name, attributes)
+            assert name in attribute_names, "name=%r, attributes=%r" % (name, attributes)
 
         for name in forgone_attr_names:
-            assert name not in attribute_names, "name=%r," " attributes=%r" % (name, attributes)
+            assert name not in attribute_names, "name=%r, attributes=%r" % (name, attributes)
 
         return wrapped(*args, **kwargs)
 
@@ -1869,7 +1869,7 @@ def validate_attributes_complete(attr_type, required_attrs=None, forgone_attrs=N
             assert match, "required=%r, attributes=%r" % (required, attributes)
 
             result_dest = required.destinations & match.destinations
-            assert result_dest == required.destinations, "required=%r, " "attributes=%r" % (required, attributes)
+            assert result_dest == required.destinations, "required=%r, attributes=%r" % (required, attributes)
 
         # Check that the name and value are NOT going to ANY of the
         # destinations provided as forgone, either because there is no
@@ -2245,7 +2245,7 @@ def _validate_node_parenting(node, expected_node):
     expected_children = expected_node[1]
 
     def len_error():
-        return ("len(node.children)=%s, len(expected_children)=%s, " "node.children=%s") % (
+        return ("len(node.children)=%s, len(expected_children)=%s, node.children=%s") % (
             len(node.children),
             len(expected_children),
             node.children,
@@ -2331,6 +2331,14 @@ def dt_enabled(wrapped, instance, args, kwargs):
     wrapped = force_sampled(wrapped)
 
     return wrapped(*args, **kwargs)  # pylint: disable=E1102
+
+
+@function_wrapper
+def cat_enabled(wrapped, instance, args, kwargs):
+    settings = {"cross_application_tracer.enabled": True, "distributed_tracing.enabled": False}
+    wrapped = override_application_settings(settings)(wrapped)
+
+    return wrapped(*args, **kwargs)
 
 
 def override_application_settings(overrides):

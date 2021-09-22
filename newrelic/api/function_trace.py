@@ -46,7 +46,7 @@ class FunctionTrace(TimeTrace):
         self.params = params
 
         self.terminal = terminal
-        self.rollup = terminal and rollup or None
+        self.rollup = rollup if terminal else None
 
     def __enter__(self):
         result = TimeTrace.__enter__(self)
@@ -140,7 +140,7 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None, params=None
 
         trace = FunctionTrace(_name, _group, _label, _params, terminal, rollup, parent=parent)
 
-        if wrapper:
+        if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:
@@ -159,7 +159,7 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None, params=None
 
         trace = FunctionTrace(_name, group, label, params, terminal, rollup, parent=parent)
 
-        if wrapper:
+        if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:

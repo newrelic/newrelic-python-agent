@@ -11,44 +11,50 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from graphene import Field, Int, List
-from graphene import Mutation as GrapheneMutation
-from graphene import NonNull, ObjectType, Schema, String, Union
+
+from typing import List, Union
+
+import strawberry.mutation
+import strawberry.type
+from strawberry import Schema, field
+from strawberry.asgi import GraphQL
+from strawberry.schema.config import StrawberryConfig
+from strawberry.types.types import Optional
 
 
-class Author(ObjectType):
-    first_name = String()
-    last_name = String()
+@strawberry.type
+class Author:
+    first_name: str
+    last_name: str
 
 
-class Book(ObjectType):
-    id = Int()
-    name = String()
-    isbn = String()
-    author = Field(Author)
-    branch = String()
+@strawberry.type
+class Book:
+    id: int
+    name: str
+    isbn: str
+    author: Author
+    branch: str
 
 
-class Magazine(ObjectType):
-    id = Int()
-    name = String()
-    issue = Int()
-    branch = String()
+@strawberry.type
+class Magazine:
+    id: int
+    name: str
+    issue: int
+    branch: str
 
 
-class Item(Union):
-    class Meta:
-        types = (Book, Magazine)
+@strawberry.type
+class Library:
+    id: int
+    branch: str
+    magazine: List[Magazine]
+    book: List[Book]
 
 
-class Library(ObjectType):
-    id = Int()
-    branch = String()
-    magazine = Field(List(Magazine))
-    book = Field(List(Book))
-
-
-Storage = List(String)
+Item = Union[Book, Magazine]
+Storage = List[str]
 
 
 authors = [
@@ -92,7 +98,7 @@ books = [
 
 magazines = [
     Magazine(id=1, name="Reli Updates Weekly", issue=1, branch="riverside"),
-    Magazine(id=2, name="Reli Updates Weekly", issue=2, branch="downtown"),
+    Magazine(id=2, name="Reli: The Forgotten Years", issue=2, branch="downtown"),
     Magazine(id=3, name="Node Weekly", issue=1, branch="riverside"),
 ]
 
@@ -111,24 +117,51 @@ libraries = [
 storage = []
 
 
-class StorageAdd(GrapheneMutation):
-    class Arguments:
-        string = String(required=True)
-
-    string = String()
-
-    def mutate(self, info, string):
-        storage.append(string)
-        return String(string=string)
+def resolve_hello():
+    return "Hello!"
 
 
-class Query(ObjectType):
-    library = Field(Library, index=Int(required=True))
-    hello = String()
-    search = Field(List(Item), contains=String(required=True))
-    echo = Field(String, echo=String(required=True))
-    storage = Storage
-    error = String()
+async def resolve_hello_async():
+    return "Hello!"
+
+
+def resolve_echo(echo: str):
+    return echo
+
+
+def resolve_library(index: int):
+    return libraries[index]
+
+
+def resolve_storage_add(string: str):
+    storage.add(string)
+    return storage
+
+
+def resolve_storage():
+    return storage
+
+
+def resolve_error():
+    raise RuntimeError("Runtime Error!")
+
+
+def resolve_search(contains: str):
+    search_books = [b for b in books if contains in b.name]
+    search_magazines = [m for m in magazines if contains in m.name]
+    return search_books + search_magazines
+
+
+@strawberry.type
+class Query:
+    library: Library = field(resolver=resolve_library)
+    hello: str = field(resolver=resolve_hello)
+    hello_async: str = field(resolver=resolve_hello_async)
+    search: List[Item] = field(resolver=resolve_search)
+    echo: str = field(resolver=resolve_echo)
+    storage: Storage = field(resolver=resolve_storage)
+    error: Optional[str] = field(resolver=resolve_error)
+    error_non_null: str = field(resolver=resolve_error)
 
     def resolve_library(self, info, index):
         return libraries[index]
@@ -147,14 +180,17 @@ class Query(ObjectType):
     def resolve_echo(self, info, echo):
         return echo
 
-    def resolve_error(self, info):
+    def resolve_error(self, info) -> str:
         raise RuntimeError("Runtime Error!")
 
-    error_non_null = Field(NonNull(String), resolver=resolve_error)
+
+@strawberry.type
+class Mutation:
+    @strawberry.mutation
+    def storage_add(self, string: str) -> str:
+        storage.append(string)
+        return str(string)
 
 
-class Mutation(ObjectType):
-    storage_add = StorageAdd.Field()
-
-
-_target_application = Schema(query=Query, mutation=Mutation, auto_camelcase=False)
+_target_application = Schema(query=Query, mutation=Mutation, config=StrawberryConfig(auto_camel_case=False))
+_target_asgi_application = GraphQL(_target_application)

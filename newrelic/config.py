@@ -17,7 +17,6 @@ import logging
 import os
 import sys
 import traceback
-import warnings
 
 try:
     import ConfigParser
@@ -1298,7 +1297,7 @@ def _process_background_task_configuration():
 
             if name and name.startswith("lambda "):
                 vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                name = eval(name, vars)
+                name = eval(name, vars)  # nosec
 
             _logger.debug("register background-task %s" % ((module, object_path, application, name, group),))
 
@@ -1348,7 +1347,7 @@ def _process_database_trace_configuration():
 
             if sql.startswith("lambda "):
                 vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                sql = eval(sql, vars)
+                sql = eval(sql, vars)  # nosec
 
             _logger.debug("register database-trace %s" % ((module, object_path, sql),))
 
@@ -1403,11 +1402,11 @@ def _process_external_trace_configuration():
 
             if url.startswith("lambda "):
                 vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                url = eval(url, vars)
+                url = eval(url, vars)  # nosec
 
             if method and method.startswith("lambda "):
                 vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                method = eval(method, vars)
+                method = eval(method, vars)  # nosec
 
             _logger.debug("register external-trace %s" % ((module, object_path, library, url, method),))
 
@@ -1475,7 +1474,7 @@ def _process_function_trace_configuration():
 
             if name and name.startswith("lambda "):
                 vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                name = eval(name, vars)
+                name = eval(name, vars)  # nosec
 
             _logger.debug(
                 "register function-trace %s" % ((module, object_path, name, group, label, params, terminal, rollup),)
@@ -1533,7 +1532,7 @@ def _process_generator_trace_configuration():
 
             if name and name.startswith("lambda "):
                 vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                name = eval(name, vars)
+                name = eval(name, vars)  # nosec
 
             _logger.debug("register generator-trace %s" % ((module, object_path, name, group),))
 
@@ -1592,7 +1591,7 @@ def _process_profile_trace_configuration():
 
             if name and name.startswith("lambda "):
                 vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                name = eval(name, vars)
+                name = eval(name, vars)  # nosec
 
             _logger.debug("register profile-trace %s" % ((module, object_path, name, group, depth),))
 
@@ -1642,7 +1641,7 @@ def _process_memcache_trace_configuration():
 
             if command.startswith("lambda "):
                 vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                command = eval(command, vars)
+                command = eval(command, vars)  # nosec
 
             _logger.debug("register memcache-trace %s", (module, object_path, command))
 
@@ -1702,7 +1701,7 @@ def _process_transaction_name_configuration():
 
             if name and name.startswith("lambda "):
                 vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                name = eval(name, vars)
+                name = eval(name, vars)  # nosec
 
             _logger.debug("register transaction-name %s" % ((module, object_path, name, group, priority),))
 
@@ -2223,6 +2222,22 @@ def _process_module_builtin_defaults():
         "instrument_graphql_validate",
     )
 
+    _process_module_definition(
+        "ariadne.asgi",
+        "newrelic.hooks.framework_ariadne",
+        "instrument_ariadne_asgi",
+    )
+    _process_module_definition(
+        "ariadne.graphql",
+        "newrelic.hooks.framework_ariadne",
+        "instrument_ariadne_execute",
+    )
+    _process_module_definition(
+        "ariadne.wsgi",
+        "newrelic.hooks.framework_ariadne",
+        "instrument_ariadne_wsgi",
+    )
+
     _process_module_definition("grpc._channel", "newrelic.hooks.framework_grpc", "instrument_grpc__channel")
     _process_module_definition("grpc._server", "newrelic.hooks.framework_grpc", "instrument_grpc_server")
 
@@ -2442,6 +2457,29 @@ def _process_module_builtin_defaults():
         "starlette.background",
         "newrelic.hooks.framework_starlette",
         "instrument_starlette_background_task",
+    )
+    _process_module_definition(
+        "starlette.concurrency",
+        "newrelic.hooks.framework_starlette",
+        "instrument_starlette_concurrency",
+    )
+
+    _process_module_definition(
+        "strawberry.asgi",
+        "newrelic.hooks.framework_strawberry",
+        "instrument_strawberry_asgi",
+    )
+
+    _process_module_definition(
+        "strawberry.schema.schema",
+        "newrelic.hooks.framework_strawberry",
+        "instrument_strawberry_schema",
+    )
+
+    _process_module_definition(
+        "strawberry.schema.schema_converter",
+        "newrelic.hooks.framework_strawberry",
+        "instrument_strawberry_schema_converter",
     )
 
     _process_module_definition("uvicorn.config", "newrelic.hooks.adapter_uvicorn", "instrument_uvicorn_config")

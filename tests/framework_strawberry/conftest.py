@@ -35,7 +35,7 @@ _default_settings = {
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-    app_name="Python Agent Test (framework_graphene)",
+    app_name="Python Agent Test (framework_strawberry)",
     default_settings=_default_settings,
 )
 

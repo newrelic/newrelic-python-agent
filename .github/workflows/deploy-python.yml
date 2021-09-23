@@ -53,7 +53,6 @@ jobs:
           CIBW_ARCHS: x86_64
           CIBW_ENVIRONMENT: "LD_LIBRARY_PATH=/opt/rh/=vtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
           CIBW_TEST_REQUIRES: beautifulsoup4
-          CIBW_TEST_COMMAND: "pip install -r {package}/tests/base_requirements.txt && export PYTHONPATH={package}/tests && NEW_RELIC_APDEX_T=1000 pytest -vx {package}/tests/agent_features/ && pytest -vx {package}/tests/agent_unittests/"
 
       - name: Build Manylinux Wheels (Python 3)
         uses: pypa/cibuildwheel@v2.0.1
@@ -63,7 +62,6 @@ jobs:
           CIBW_ARCHS: x86_64 aarch64
           CIBW_ENVIRONMENT: "LD_LIBRARY_PATH=/opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
           CIBW_TEST_REQUIRES: beautifulsoup4
-          CIBW_TEST_COMMAND: "pip install -r {package}/tests/base_requirements.txt && export PYTHONPATH={package}/tests && NEW_RELIC_APDEX_T=1000 pytest -vx {package}/tests/agent_features/ && pytest -vx {package}/tests/agent_unittests/"
 
       - name: Upload Package to S3
         run: |

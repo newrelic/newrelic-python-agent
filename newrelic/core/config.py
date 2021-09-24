@@ -1106,14 +1106,12 @@ def is_expected_error(
     settings=None,
 ):
     """Check if an error is expected based on rules matching. Default is False when settings lookup fails."""
-    expected = error_matches_rules(
+    return error_matches_rules(
         "expected",
         exc_info,
         status_code=status_code,
         settings=settings,
     )
-
-    return expected if expected is not None else False
 
 
 def should_ignore_error(
@@ -1122,14 +1120,12 @@ def should_ignore_error(
     settings=None,
 ):
     """Check if an error should be ignored based on rules matching. Default is True when settings lookup fails."""
-    ignored = error_matches_rules(
+    return error_matches_rules(
         "ignore",
         exc_info,
         status_code=status_code,
         settings=settings,
     )
-
-    return ignored if ignored is not None else True
 
 
 def error_matches_rules(
@@ -1154,7 +1150,7 @@ def error_matches_rules(
         settings = trace and trace.settings
 
     if not settings:
-        return None  # Default to be filled in by calling methods
+        return None  # Unable to find rules to match with
 
     # Retrieve settings based on prefix
     classes_rules = getattr(settings.error_collector, "%s_classes" % rules_prefix, set())

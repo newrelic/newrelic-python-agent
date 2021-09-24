@@ -193,7 +193,6 @@ class ErrorOne(Exception):
 _error_one_name = callable_name(ErrorOne)
 
 @override_application_settings(_strip_message_disabled_settings)
-@background_task()
 def test_notice_error_strip_message_disabled_outside_transaction():
     settings = application_settings()
     assert not settings.strip_exception_messages.enabled
@@ -233,7 +232,6 @@ class ErrorTwo(Exception):
 _error_two_name = callable_name(ErrorTwo)
 
 @override_application_settings(_strip_message_enabled_settings)
-@background_task()
 def test_notice_error_strip_message_enabled_outside_transaction():
     settings = application_settings()
     assert settings.strip_exception_messages.enabled
@@ -281,7 +279,6 @@ _strip_message_in_whitelist_settings_outside_transaction = {
 
 @override_application_settings(
         _strip_message_in_whitelist_settings_outside_transaction)
-@background_task()
 def test_notice_error_strip_message_in_whitelist_outside_transaction():
     settings = application_settings()
     assert settings.strip_exception_messages.enabled
@@ -330,7 +327,6 @@ _strip_message_not_in_whitelist_settings_outside_transaction = {
 
 @override_application_settings(
         _strip_message_not_in_whitelist_settings_outside_transaction)
-@background_task()
 def test_notice_error_strip_message_not_in_whitelist_outside_transaction():
     settings = application_settings()
     assert settings.strip_exception_messages.enabled

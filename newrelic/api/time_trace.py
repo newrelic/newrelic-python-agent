@@ -281,7 +281,7 @@ class TimeTrace(object):
 
         # Default rule matching
         if should_ignore is None:
-            should_ignore = should_ignore_error(exc_info, status_code=status_code)
+            should_ignore = should_ignore_error(exc_info, status_code=status_code, settings=settings)
             if should_ignore:
                 return
 
@@ -304,7 +304,7 @@ class TimeTrace(object):
 
         # Default rule matching
         if is_expected is None:
-            is_expected = is_expected_error(exc_info, status_code=status_code)
+            is_expected = is_expected_error(exc_info, status_code=status_code, settings=settings)
 
         # Record a supportability metric if error attributes are being
         # overiden.

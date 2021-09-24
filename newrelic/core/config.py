@@ -1103,53 +1103,64 @@ def ignore_status_code(status):
 def is_expected_error(
     exc_info,
     status_code=None,
+    settings=None,
 ):
-    return error_matches_rules(
+    """Check if an error is expected based on rules matching. Default is False when settings lookup fails."""
+    expected = error_matches_rules(
         "expected",
         exc_info,
         status_code=status_code,
+        settings=settings,
     )
+
+    return expected if expected is not None else False
 
 
 def should_ignore_error(
     exc_info,
     status_code=None,
+    settings=None,
 ):
-    return error_matches_rules(
+    """Check if an error should be ignored based on rules matching. Default is True when settings lookup fails."""
+    ignored = error_matches_rules(
         "ignore",
         exc_info,
         status_code=status_code,
+        settings=settings,
     )
+
+    return ignored if ignored is not None else True
 
 
 def error_matches_rules(
     rules_prefix,
     exc_info,
     status_code=None,
+    settings=None,
 ):
+    """
+    Attempt to match exception to rules based on prefix.
+
+    rules_prefix is one of [ignore, expected]
+    exc_info is an exception tuple of (exc, val, tb)
+    status_code is an optional value or callable taking in exc_info that returns an int-like object
+    origin is either the current application or trace.
+    """
     # Delay imports to prevent lockups
-    from newrelic.api.application import application_instance
     from newrelic.core.trace_cache import trace_cache
 
-    trace = trace_cache().current_trace()
-    settings = trace and trace.settings
+    if not settings:  # Pull from active trace if no settings provided
+        trace = trace_cache().current_trace()
+        settings = trace and trace.settings
 
     if not settings:
-        # Retrieve application settings
-        application = application_instance()
-        settings = application and application.settings
-
-    # Default to global settings
-    settings = settings or global_settings()
-
-    if not settings:
-        return False
+        return None  # Default to be filled in by calling methods
 
     # Retrieve settings based on prefix
     classes_rules = getattr(settings.error_collector, "%s_classes" % rules_prefix, set())
     status_codes_rules = getattr(settings.error_collector, "%s_status_codes" % rules_prefix, set())
 
-    module, name, fullnames, message = parse_exc_info(exc_info)
+    _, _, fullnames, _ = parse_exc_info(exc_info)
     fullname = fullnames[0]
 
     # Check class names

@@ -637,7 +637,7 @@ class StatsEngine(object):
 
         # Default rule matching
         if should_ignore is None:
-            should_ignore = should_ignore_error(error, status_code=status_code)
+            should_ignore = should_ignore_error(error, status_code=status_code, settings=settings)
             if should_ignore:
                 return
 
@@ -660,7 +660,7 @@ class StatsEngine(object):
 
         # Default rule matching
         if is_expected is None:
-            is_expected = is_expected_error(error, status_code=status_code)
+            is_expected = is_expected_error(error, status_code=status_code, settings=settings)
 
         # Only add attributes if High Security Mode is off.
 

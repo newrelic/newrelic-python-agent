@@ -17,11 +17,11 @@ import grpc
 import socket
 
 
-# This defines an external grpc server test apps can use for testing.
+# This defines an external grpc server test apps can use for testing grpc aio.
 #
 # Example:
 #
-#   with MockExternalgRPCServer(port=PORT) as server:
+#   with MockExternalgRPCAIOServer(port=PORT) as server:
 #       add_SampleApplicationServicer_to_server(SampleApplicationServicer(),
 #               server)
 #       ... test stuff ...

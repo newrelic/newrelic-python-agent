@@ -364,7 +364,11 @@ class Transaction(object):
         # actual thread and not a greenlet.
 
         if not hasattr(sys, "_current_frames") or self.thread_id in sys._current_frames():
-            thread_instance = threading.currentThread()
+            try:
+                thread_instance = threading.current_thread()
+            except TypeError:
+                thread_instance = threading.currentThread()
+
             self._utilization_tracker = utilization_tracker(self.application.name)
             if self._utilization_tracker:
                 self._utilization_tracker.enter_transaction(thread_instance)

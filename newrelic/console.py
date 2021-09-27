@@ -462,7 +462,7 @@ class ConnectionManager(object):
         self.__thread = threading.Thread(target=self.__thread_run,
             name='NR-Console-Manager')
 
-        self.__thread.setDaemon(True)
+        self.__thread.daemon = True
         self.__thread.start()
 
     def __socket_cleanup(self, path):
@@ -641,10 +641,10 @@ class ClientShell(cmd.Cmd):
                     break
 
         thread1 = threading.Thread(target=write)
-        thread1.setDaemon(True)
+        thread1.daemon = True
 
         thread2 = threading.Thread(target=read)
-        thread2.setDaemon(True)
+        thread2.daemon = True
 
         thread1.start()
         thread2.start()

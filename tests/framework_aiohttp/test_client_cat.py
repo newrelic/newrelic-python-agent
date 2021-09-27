@@ -71,7 +71,7 @@ def fetch(url, headers=None, raise_for_status=False, connector=None):
 @pytest.mark.parametrize('cat_enabled', (True, False))
 @pytest.mark.parametrize('distributed_tracing', (True, False))
 @pytest.mark.parametrize('span_events', (True, False))
-def test_outbound_cross_process_headers(cat_enabled, distributed_tracing,
+def test_outbound_cross_process_headers(event_loop, cat_enabled, distributed_tracing,
         span_events, mock_header_server):
 
     @background_task(name='test_outbound_cross_process_headers')
@@ -107,8 +107,7 @@ def test_outbound_cross_process_headers(cat_enabled, distributed_tracing,
         'span_events.enabled': span_events,
     })
     def test():
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(_test())
+        event_loop.run_until_complete(_test())
 
     test()
 
@@ -121,11 +120,10 @@ _customer_headers_tests = [
 
 
 @pytest.mark.parametrize('customer_headers', _customer_headers_tests)
-def test_outbound_cross_process_headers_custom_headers(customer_headers,
+def test_outbound_cross_process_headers_custom_headers(event_loop, customer_headers,
         mock_header_server):
 
-    loop = asyncio.get_event_loop()
-    headers = loop.run_until_complete(
+    headers = event_loop.run_until_complete(
             background_task()(fetch)(
             'http://127.0.0.1:%d' % mock_header_server.port,
             customer_headers.copy()))
@@ -135,17 +133,15 @@ def test_outbound_cross_process_headers_custom_headers(customer_headers,
         assert headers.get(expected_header) == expected_value
 
 
-def test_outbound_cross_process_headers_no_txn(mock_header_server):
-
-    loop = asyncio.get_event_loop()
-    headers = loop.run_until_complete(fetch(
+def test_outbound_cross_process_headers_no_txn(event_loop, mock_header_server):
+    headers = event_loop.run_until_complete(fetch(
             'http://127.0.0.1:%d' % mock_header_server.port))
 
     assert not headers.get(ExternalTrace.cat_id_key)
     assert not headers.get(ExternalTrace.cat_transaction_key)
 
 
-def test_outbound_cross_process_headers_exception(mock_header_server):
+def test_outbound_cross_process_headers_exception(event_loop, mock_header_server):
 
     @background_task(name='test_outbound_cross_process_headers_exception')
     @asyncio.coroutine
@@ -163,8 +159,7 @@ def test_outbound_cross_process_headers_exception(mock_header_server):
         finally:
             transaction.guid = guid
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(test())
+    event_loop.run_until_complete(test())
 
 
 class PoorResolvingConnector(aiohttp.TCPConnector):
@@ -184,7 +179,7 @@ class PoorResolvingConnector(aiohttp.TCPConnector):
 @pytest.mark.parametrize('raise_for_status', [True, False])
 @pytest.mark.parametrize('connector_class',
         [None, PoorResolvingConnector])  # None will use default
-def test_process_incoming_headers(cat_enabled, response_code,
+def test_process_incoming_headers(event_loop, cat_enabled, response_code,
         raise_for_status, connector_class, mock_external_http_server):
 
     # It was discovered via packnsend that the `throw` method of the `_request`
@@ -248,7 +243,6 @@ def test_process_incoming_headers(cat_enabled, response_code,
             forgone_params=([] if cat_enabled else
                 _test_cross_process_response_external_node_forgone_params))
     def test():
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(_test())
+        event_loop.run_until_complete(_test())
 
     test()

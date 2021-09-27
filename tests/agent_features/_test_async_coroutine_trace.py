@@ -43,7 +43,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
     (functools.partial(memcache_trace, 'cmd'),
             'Memcache/cmd'),
 ])
-def test_awaitable_timing(trace, metric):
+def test_awaitable_timing(event_loop, trace, metric):
 
     @trace()
     async def coro():
@@ -63,8 +63,7 @@ def test_awaitable_timing(trace, metric):
             scoped_metrics=[(metric, 1)],
             rollup_metrics=[(metric, 1)])
     def _test():
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(parent())
+        event_loop.run_until_complete(parent())
 
     _test()
 
@@ -90,7 +89,7 @@ def test_awaitable_timing(trace, metric):
 @pytest.mark.parametrize('yield_from', [True, False])
 @pytest.mark.parametrize('use_await', [True, False])
 @pytest.mark.parametrize('coro_decorator_first', [True, False])
-def test_asyncio_decorator_timing(trace, metric, yield_from,
+def test_asyncio_decorator_timing(event_loop, trace, metric, yield_from,
         use_await, coro_decorator_first):
 
     if yield_from:
@@ -125,8 +124,7 @@ def test_asyncio_decorator_timing(trace, metric, yield_from,
             scoped_metrics=[(metric, 1)],
             rollup_metrics=[(metric, 1)])
     def _test():
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(parent())
+        event_loop.run_until_complete(parent())
 
     _test()
 

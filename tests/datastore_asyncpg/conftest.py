@@ -15,6 +15,8 @@
 from testing_support.fixtures import (code_coverage_fixture,  # noqa
         collector_agent_registration_fixture, collector_available_fixture)
 
+from testing_support.fixture.event_loop import event_loop
+
 _default_settings = {
     'transaction_tracer.explain_threshold': 0.0,
     'transaction_tracer.transaction_threshold': 0.0,
@@ -32,3 +34,4 @@ _coverage_source = [
 ]
 
 code_coverage = code_coverage_fixture(source=_coverage_source)
+

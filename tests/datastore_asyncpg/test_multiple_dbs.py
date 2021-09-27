@@ -154,9 +154,8 @@ async def _exercise_db():
     background_task=True,
 )
 @background_task()
-def test_multiple_databases_enable_instance():
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(_exercise_db())
+def test_multiple_databases_enable_instance(event_loop):
+    event_loop.run_until_complete(_exercise_db())
 
 
 @pytest.mark.skipif(
@@ -171,6 +170,5 @@ def test_multiple_databases_enable_instance():
     background_task=True,
 )
 @background_task()
-def test_multiple_databases_disable_instance():
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(_exercise_db())
+def test_multiple_databases_disable_instance(event_loop):
+    event_loop.run_until_complete(_exercise_db())

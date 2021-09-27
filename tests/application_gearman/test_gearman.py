@@ -33,7 +33,12 @@ GEARMAND_ADDR = '%s:%s' % (GEARMAND_HOST, GEARMAND_PORT)
 class GearmanWorker(gearman.GearmanWorker):
 
     def after_poll(self, any_activity):
-        return not worker_event.isSet()
+        try:
+            worker_event_set = worker_event.is_set()
+        except TypeError:
+            worker_event_set = worker_event.isSet()
+
+        return not worker_event_set
 
 def setup_module(module):
     global worker_thread

@@ -16,10 +16,8 @@ import asyncio
 
 from newrelic.api.transaction import current_transaction
 
-loop = asyncio.get_event_loop()
 
-
-def native_coroutine_test(transaction, nr_enabled=True, does_hang=False,
+def native_coroutine_test(event_loop, transaction, nr_enabled=True, does_hang=False,
         call_exit=False, runtime_error=False):
     @transaction
     async def task():
@@ -35,7 +33,7 @@ def native_coroutine_test(transaction, nr_enabled=True, does_hang=False,
 
         try:
             if does_hang:
-                await loop.create_future()
+                await event_loop.create_future()
             else:
                 await asyncio.sleep(0.0)
         except GeneratorExit:

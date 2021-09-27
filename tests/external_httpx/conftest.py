@@ -21,6 +21,8 @@ from testing_support.fixtures import (
     collector_available_fixture,
 )
 
+from testing_support.fixture.event_loop import event_loop as loop
+
 _coverage_source = [
     "newrelic.api.external_trace",
     "newrelic.hooks.external_httpx",
@@ -47,7 +49,3 @@ def httpx():
 
     return httpx
 
-
-@pytest.fixture(scope="session")
-def loop():
-    return asyncio.get_event_loop()

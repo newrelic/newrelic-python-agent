@@ -24,7 +24,7 @@ class WsgiProxy(object):
         self.iterable = []
 
     def __call__(self, environ, start_response):
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
         instance = self.asgi({'type': 'http'})
         loop.run_until_complete(instance(self.receive, self.send))
         start_response('200 OK', [])

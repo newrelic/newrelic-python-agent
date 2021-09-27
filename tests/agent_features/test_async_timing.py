@@ -59,12 +59,10 @@ def parent(calls):
 
 
 @validate_total_time_value_greater_than(0.2)
-def test_total_time_sync():
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(parent(1))
+def test_total_time_sync(event_loop):
+    event_loop.run_until_complete(parent(1))
 
 
 @validate_total_time_value_greater_than(0.3, concurrent=True)
-def test_total_time_async():
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(parent(2))
+def test_total_time_async(event_loop):
+    event_loop.run_until_complete(parent(2))

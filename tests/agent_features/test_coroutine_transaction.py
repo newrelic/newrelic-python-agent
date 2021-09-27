@@ -31,12 +31,10 @@ else:
     native_coroutine_test = None
 
 settings = global_settings()
-loop = asyncio.get_event_loop()
 
 
-def coroutine_test(transaction, nr_enabled=True, does_hang=False,
+def coroutine_test(event_loop, transaction, nr_enabled=True, does_hang=False,
         call_exit=False, runtime_error=False):
-    loop = asyncio.get_event_loop()
 
     @transaction
     @asyncio.coroutine
@@ -85,20 +83,19 @@ if native_coroutine_test:
         (True, False),
         (True, True),
 ))
-def test_async_coroutine_send(num_coroutines, create_test_task, transaction,
+def test_async_coroutine_send(event_loop, num_coroutines, create_test_task, transaction,
         metric, call_exit, nr_enabled):
     metrics = []
 
-    tasks = [create_test_task(
+    tasks = [create_test_task(event_loop, 
             transaction, nr_enabled=nr_enabled, call_exit=call_exit)
             for _ in range(num_coroutines)]
 
     @override_generic_settings(settings, {'enabled': nr_enabled})
     @capture_transaction_metrics(metrics)
     def _test_async_coroutine_send():
-        loop = asyncio.get_event_loop()
         driver = asyncio.gather(*[t() for t in tasks])
-        loop.run_until_complete(driver)
+        event_loop.run_until_complete(driver)
 
     _test_async_coroutine_send()
 
@@ -115,18 +112,17 @@ def test_async_coroutine_send(num_coroutines, create_test_task, transaction,
     (message_transaction('lib', 'dest_type', 'dest_name'),
             'OtherTransaction/Message/lib/dest_type/Named/dest_name'),
 ])
-def test_async_coroutine_send_disabled(num_coroutines, create_test_task,
+def test_async_coroutine_send_disabled(event_loop, num_coroutines, create_test_task,
         transaction, metric):
     metrics = []
 
-    tasks = [create_test_task(transaction, call_exit=True)
+    tasks = [create_test_task(event_loop, transaction, call_exit=True)
         for _ in range(num_coroutines)]
 
     @capture_transaction_metrics(metrics)
     def _test_async_coroutine_send():
-        loop = asyncio.get_event_loop()
         driver = asyncio.gather(*[t() for t in tasks])
-        loop.run_until_complete(driver)
+        event_loop.run_until_complete(driver)
 
     _test_async_coroutine_send()
 
@@ -141,11 +137,11 @@ def test_async_coroutine_send_disabled(num_coroutines, create_test_task,
             'OtherTransaction/Message/lib/dest_type/Named/dest_name'),
 ])
 @validate_transaction_errors([])
-def test_async_coroutine_throw_cancel(num_coroutines, create_test_task,
+def test_async_coroutine_throw_cancel(event_loop, num_coroutines, create_test_task,
         transaction, metric):
     metrics = []
 
-    tasks = [create_test_task(transaction)
+    tasks = [create_test_task(event_loop, transaction)
         for _ in range(num_coroutines)]
 
     @asyncio.coroutine
@@ -158,8 +154,7 @@ def test_async_coroutine_throw_cancel(num_coroutines, create_test_task,
 
     @capture_transaction_metrics(metrics)
     def _test_async_coroutine_throw_cancel():
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(task_c())
+        event_loop.run_until_complete(task_c())
 
     _test_async_coroutine_throw_cancel()
 
@@ -174,11 +169,11 @@ def test_async_coroutine_throw_cancel(num_coroutines, create_test_task,
             'OtherTransaction/Message/lib/dest_type/Named/dest_name'),
 ])
 @validate_transaction_errors(['builtins:ValueError'])
-def test_async_coroutine_throw_error(num_coroutines, create_test_task,
+def test_async_coroutine_throw_error(event_loop, num_coroutines, create_test_task,
         transaction, metric):
     metrics = []
 
-    tasks = [create_test_task(transaction)
+    tasks = [create_test_task(event_loop, transaction)
         for _ in range(num_coroutines)]
 
     @asyncio.coroutine
@@ -191,8 +186,7 @@ def test_async_coroutine_throw_error(num_coroutines, create_test_task,
 
     @capture_transaction_metrics(metrics)
     def _test_async_coroutine_throw_error():
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(task_c())
+        event_loop.run_until_complete(task_c())
 
     _test_async_coroutine_throw_error()
 
@@ -209,11 +203,11 @@ def test_async_coroutine_throw_error(num_coroutines, create_test_task,
             'OtherTransaction/Message/lib/dest_type/Named/dest_name'),
 ])
 @pytest.mark.parametrize('start_coroutines', (False, True))
-def test_async_coroutine_close(num_coroutines, create_test_task, transaction,
+def test_async_coroutine_close(event_loop, num_coroutines, create_test_task, transaction,
         metric, start_coroutines):
     metrics = []
 
-    tasks = [create_test_task(transaction)
+    tasks = [create_test_task(event_loop, transaction)
         for _ in range(num_coroutines)]
 
     @asyncio.coroutine
@@ -229,8 +223,7 @@ def test_async_coroutine_close(num_coroutines, create_test_task, transaction,
 
     @capture_transaction_metrics(metrics)
     def _test_async_coroutine_close():
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(task_c())
+        event_loop.run_until_complete(task_c())
 
     _test_async_coroutine_close()
 
@@ -248,11 +241,11 @@ def test_async_coroutine_close(num_coroutines, create_test_task, transaction,
             'OtherTransaction/Message/lib/dest_type/Named/dest_name'),
 ])
 @validate_transaction_errors(['builtins:RuntimeError'])
-def test_async_coroutine_close_raises_error(num_coroutines, create_test_task,
+def test_async_coroutine_close_raises_error(event_loop, num_coroutines, create_test_task,
         transaction, metric):
     metrics = []
 
-    tasks = [create_test_task(transaction, runtime_error=True)
+    tasks = [create_test_task(event_loop, transaction, runtime_error=True)
             for _ in range(num_coroutines)]
 
     @asyncio.coroutine
@@ -269,8 +262,7 @@ def test_async_coroutine_close_raises_error(num_coroutines, create_test_task,
 
     @capture_transaction_metrics(metrics)
     def _test_async_coroutine_close_raises_error():
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(task_c())
+        event_loop.run_until_complete(task_c())
 
     _test_async_coroutine_close_raises_error()
 
@@ -284,8 +276,7 @@ def test_async_coroutine_close_raises_error(num_coroutines, create_test_task,
         lambda name: (['lib', 'dest_type', name], {})),
     (background_task, 'OtherTransaction/Function/%s',
         lambda name: ([], {'name': name}))])
-def test_deferred_async_background_task(transaction, metric, arguments):
-    loop = asyncio.get_event_loop()
+def test_deferred_async_background_task(event_loop, transaction, metric, arguments):
     deferred_metric = (metric % 'deferred', '')
 
     args, kwargs = arguments("deferred")
@@ -303,7 +294,7 @@ def test_deferred_async_background_task(transaction, metric, arguments):
     @asyncio.coroutine
     def parent_task():
         yield from asyncio.sleep(0)
-        return loop.create_task(child_task())
+        return event_loop.create_task(child_task())
 
     @asyncio.coroutine
     def test_runner():
@@ -314,7 +305,7 @@ def test_deferred_async_background_task(transaction, metric, arguments):
 
     @capture_transaction_metrics(metrics)
     def _test():
-        loop.run_until_complete(test_runner())
+        event_loop.run_until_complete(test_runner())
 
     _test()
 
@@ -329,8 +320,7 @@ def test_deferred_async_background_task(transaction, metric, arguments):
     (background_task, 'OtherTransaction/Function/%s',
         lambda name: ([], {'name': name}))])
 def test_child_transaction_when_parent_is_running(
-        transaction, metric, arguments):
-    loop = asyncio.get_event_loop()
+        event_loop, transaction, metric, arguments):
     deferred_metric = (metric % 'deferred', '')
 
     args, kwargs = arguments("deferred")
@@ -347,13 +337,13 @@ def test_child_transaction_when_parent_is_running(
     @transaction(*args, **kwargs)
     @asyncio.coroutine
     def parent_task():
-        yield from loop.create_task(child_task())
+        yield from event_loop.create_task(child_task())
 
     metrics = []
 
     @capture_transaction_metrics(metrics)
     def _test():
-        loop.run_until_complete(parent_task())
+        event_loop.run_until_complete(parent_task())
 
     _test()
 
@@ -367,8 +357,7 @@ def test_child_transaction_when_parent_is_running(
         lambda name: (['lib', 'dest_type', name], {})),
     (background_task, 'OtherTransaction/Function/%s',
         lambda name: ([], {'name': name}))])
-def test_nested_coroutine_inside_sync(transaction, metric, arguments):
-    loop = asyncio.get_event_loop()
+def test_nested_coroutine_inside_sync(event_loop, transaction, metric, arguments):
     child_metric = (metric % 'child', '')
 
     args, kwargs = arguments("child")
@@ -386,7 +375,7 @@ def test_nested_coroutine_inside_sync(transaction, metric, arguments):
     @capture_transaction_metrics(metrics)
     @transaction(*args, **kwargs)
     def parent():
-        loop.run_until_complete(child_task())
+        event_loop.run_until_complete(child_task())
 
     parent()
 
@@ -400,8 +389,7 @@ def test_nested_coroutine_inside_sync(transaction, metric, arguments):
         lambda name: (['lib', 'dest_type', name], {})),
     (background_task, 'OtherTransaction/Function/%s',
         lambda name: ([], {'name': name}))])
-def test_nested_coroutine_task_already_active(transaction, metric, arguments):
-    loop = asyncio.get_event_loop()
+def test_nested_coroutine_task_already_active(event_loop, transaction, metric, arguments):
     deferred_metric = (metric % 'deferred', '')
 
     args, kwargs = arguments("deferred")
@@ -422,13 +410,13 @@ def test_nested_coroutine_task_already_active(transaction, metric, arguments):
     @transaction(*args, **kwargs)
     @asyncio.coroutine
     def parent_task():
-        yield from loop.create_task(child_trace())
+        yield from event_loop.create_task(child_trace())
 
     metrics = []
 
     @capture_transaction_metrics(metrics)
     def _test():
-        loop.run_until_complete(parent_task())
+        event_loop.run_until_complete(parent_task())
 
     _test()
 

@@ -42,6 +42,8 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 RESPONSES = []
 
+loop = None
+
 def create_request_class(app, method, url, headers=None, loop=None):
     from sanic.request import Request
     try:
@@ -112,7 +114,10 @@ def create_request_coroutine(app, method, url, headers=None, loop=None):
 
 
 def request(app, method, url, headers=None):
-    loop = asyncio.get_event_loop()
+    global loop
+    if loop is None:
+        loop = asyncio.new_event_loop()
+
     coro = create_request_coroutine(app, method, url, headers, loop)
     loop.run_until_complete(coro)
     return RESPONSES.pop()

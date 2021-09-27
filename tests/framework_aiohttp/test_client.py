@@ -71,7 +71,7 @@ test_matrix = (
 
 @skipif_aiohttp3
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
-def test_client_yield_from(local_server_info, method, exc_expected):
+def test_client_yield_from(event_loop, local_server_info, method, exc_expected):
     @validate_transaction_metrics(
         'fetch_multiple',
         background_task=True,
@@ -83,14 +83,13 @@ def test_client_yield_from(local_server_info, method, exc_expected):
         ],
     )
     def task_test():
-        loop = asyncio.get_event_loop()
-        task(loop, method, exc_expected, local_server_info.url)
+        task(event_loop, method, exc_expected, local_server_info.url)
 
     task_test()
 
 
 @skipif_aiohttp3
-def test_client_yarl_yield_from(local_server_info):
+def test_client_yarl_yield_from(event_loop, local_server_info):
     method = 'get'
 
     @validate_transaction_metrics(
@@ -104,26 +103,24 @@ def test_client_yarl_yield_from(local_server_info):
         ],
     )
     def task_test():
-        loop = asyncio.get_event_loop()
-        task(loop, method, False, URL(local_server_info.url))
+        task(event_loop, method, False, URL(local_server_info.url))
 
     task_test()
 
 
 @skipif_aiohttp3
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
-def test_client_no_txn_yield_from(local_server_info, method, exc_expected):
+def test_client_no_txn_yield_from(event_loop, local_server_info, method, exc_expected):
 
     def task_test():
-        loop = asyncio.get_event_loop()
-        task(loop, method, exc_expected, local_server_info.url)
+        task(event_loop, method, exc_expected, local_server_info.url)
 
     task_test()
 
 
 @skipif_aiohttp3
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
-def test_client_throw_yield_from(local_server_info, method, exc_expected):
+def test_client_throw_yield_from(event_loop, local_server_info, method, exc_expected):
 
     class ThrowerException(ValueError):
         pass
@@ -151,17 +148,16 @@ def test_client_throw_yield_from(local_server_info, method, exc_expected):
         ],
     )
     def task_test():
-        loop = asyncio.get_event_loop()
 
         with pytest.raises(ThrowerException):
-            loop.run_until_complete(self_driving_thrower())
+            event_loop.run_until_complete(self_driving_thrower())
 
     task_test()
 
 
 @skipif_aiohttp3
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
-def test_client_close_yield_from(local_server_info, method, exc_expected):
+def test_client_close_yield_from(event_loop, local_server_info, method, exc_expected):
 
     @background_task(name='test_client_close_yield_from')
     @asyncio.coroutine
@@ -186,8 +182,7 @@ def test_client_close_yield_from(local_server_info, method, exc_expected):
         ],
     )
     def task_test():
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self_driving_closer())
+        event_loop.run_until_complete(self_driving_closer())
 
     task_test()
 
@@ -201,7 +196,7 @@ test_ws_matrix = (
 
 @skipif_aiohttp3
 @pytest.mark.parametrize('method,exc_expected', test_ws_matrix)
-def test_ws_connect_yield_from(local_server_info, method, exc_expected):
+def test_ws_connect_yield_from(event_loop, local_server_info, method, exc_expected):
 
     @validate_transaction_metrics(
         'fetch_multiple',
@@ -214,15 +209,14 @@ def test_ws_connect_yield_from(local_server_info, method, exc_expected):
         ],
     )
     def task_test():
-        loop = asyncio.get_event_loop()
-        task(loop, method, exc_expected, local_server_info.url)
+        task(event_loop, method, exc_expected, local_server_info.url)
 
     task_test()
 
 
 @skipif_aiohttp3
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
-def test_create_task_yield_from(local_server_info, method, exc_expected):
+def test_create_task_yield_from(event_loop, local_server_info, method, exc_expected):
 
     # `loop.create_task` returns a Task object which uses the coroutine's
     # `send` method, not `__next__`
@@ -252,8 +246,7 @@ def test_create_task_yield_from(local_server_info, method, exc_expected):
         ],
     )
     def task_test():
-        loop = asyncio.get_event_loop()
-        result = loop.run_until_complete(fetch_multiple(loop))
+        result = event_loop.run_until_complete(fetch_multiple(event_loop))
         if exc_expected:
             assert isinstance(result[0], _expected_error_class)
             assert isinstance(result[1], _expected_error_class)
@@ -265,7 +258,7 @@ def test_create_task_yield_from(local_server_info, method, exc_expected):
 
 @skipif_aiohttp3
 @pytest.mark.parametrize('method,exc_expected', test_matrix)
-def test_terminal_node_yield_from(local_server_info, method, exc_expected):
+def test_terminal_node_yield_from(event_loop, local_server_info, method, exc_expected):
     """
     This test injects a terminal node into a simple background task workflow.
     It was added to validate a bug where our coro.send() wrapper would fail
@@ -273,11 +266,9 @@ def test_terminal_node_yield_from(local_server_info, method, exc_expected):
     """
 
     def task_test():
-        loop = asyncio.get_event_loop()
-
         @function_trace(terminal=True)
         def execute_task():
-            task(loop, method, exc_expected, local_server_info.url)
+            task(event_loop, method, exc_expected, local_server_info.url)
 
         execute_task()
 

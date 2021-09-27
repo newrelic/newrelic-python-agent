@@ -19,6 +19,8 @@ from testing_support.fixtures import (
         code_coverage_fixture,
         collector_agent_registration_fixture)
 
+from testing_support.fixture.event_loop import event_loop
+
 _coverage_source = [
     'newrelic.hooks.coroutines_asyncio',
 ]

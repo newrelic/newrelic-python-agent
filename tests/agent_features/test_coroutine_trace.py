@@ -88,7 +88,7 @@ def test_coroutine_timing(trace, metric):
         scoped_metrics=[('Function/child', 2)],
         rollup_metrics=[('Function/child', 2)])
 @background_task(name='test_coroutine_siblings')
-def test_coroutine_siblings():
+def test_coroutine_siblings(event_loop):
     # The expected segment map looks like this
     # parent
     # | child
@@ -126,8 +126,7 @@ def test_coroutine_siblings():
     def parent():
         yield from asyncio.ensure_future(middle())
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(parent())
+    event_loop.run_until_complete(parent())
 
 
 class MyException(Exception):
@@ -436,7 +435,7 @@ def test_incomplete_coroutine(nr_transaction):
     _test()
 
 
-def test_trace_outlives_transaction():
+def test_trace_outlives_transaction(event_loop):
     task = []
     running, finish = asyncio.Event(), asyncio.Event()
 
@@ -451,8 +450,6 @@ def test_trace_outlives_transaction():
         task.append(asyncio.ensure_future(_coro()))
         yield from running.wait()
 
-    loop = asyncio.get_event_loop()
-
     @validate_transaction_metrics(
         'test_trace_outlives_transaction',
         background_task=True,
@@ -460,11 +457,11 @@ def test_trace_outlives_transaction():
     )
     @background_task(name='test_trace_outlives_transaction')
     def _test():
-        loop.run_until_complete(parent())
+        event_loop.run_until_complete(parent())
 
     _test()
     finish.set()
-    loop.run_until_complete(task.pop())
+    event_loop.run_until_complete(task.pop())
 
 
 if sys.version_info >= (3, 5):

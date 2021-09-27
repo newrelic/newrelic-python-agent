@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
 import asyncio
 from collections import namedtuple
 from aiohttp.test_utils import (AioHTTPTestCase,
@@ -21,6 +20,7 @@ from aiohttp.test_utils import (AioHTTPTestCase,
 from _target_application import make_app
 import pytest
 
+from testing_support.fixture.event_loop import event_loop
 from testing_support.fixtures import (code_coverage_fixture,
         collector_agent_registration_fixture, collector_available_fixture)
 from testing_support.mock_external_http_server import (

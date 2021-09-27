@@ -155,23 +155,21 @@ def test_multiple_calls_to_asgi_wrapper(caplog):
     assert not caplog.records
 
 
-def test_non_http_scope_v3():
+def test_non_http_scope_v3(event_loop):
     async def _test():
         await simple_app_v3({"type": "cookies"}, None, None)
 
-    loop = asyncio.get_event_loop()
     with pytest.raises(ValueError):
-        loop.run_until_complete(_test())
+        event_loop.run_until_complete(_test())
 
 
-def test_non_http_scope_v2():
+def test_non_http_scope_v2(event_loop):
     async def _test():
         call_me = simple_app_v2({"type": "cookies"})
         await call_me(None, None)
 
-    loop = asyncio.get_event_loop()
     with pytest.raises(ValueError):
-        loop.run_until_complete(_test())
+        event_loop.run_until_complete(_test())
 
 
 @pytest.mark.parametrize("app", (simple_app_v3_wrapped, simple_app_v2_wrapped, simple_app_v2_init_exc))

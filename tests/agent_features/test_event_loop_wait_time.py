@@ -67,6 +67,7 @@ def wait_for_loop(ready, done, times=1):
     (False, False),
 ))
 def test_record_event_loop_wait(
+        event_loop,
         blocking_transaction_active,
         event_loop_visibility_enabled):
     import asyncio
@@ -123,7 +124,7 @@ def test_record_event_loop_wait(
         index=index,
     )
     def _test():
-        asyncio.get_event_loop().run_until_complete(future)
+        event_loop.run_until_complete(future)
 
     _test()
 
@@ -152,12 +153,20 @@ def test_record_event_loop_wait_outside_task():
 def test_blocking_task_on_different_loop():
     loops = [asyncio.new_event_loop() for _ in range(2)]
 
-    waiter_events = [asyncio.Event(loop=loops[0]) for _ in range(2)]
-    waiter = wait_for_loop(*waiter_events, times=1)
+    try:
+        waiter_events = [asyncio.Event(loop=loops[0]) for _ in range(2)]
+        waiter = wait_for_loop(*waiter_events, times=1)
 
-    blocker_events = [asyncio.Event(loop=loops[1]) for _ in range(2)]
-    blocker = block_loop(*blocker_events,
-            blocking_transaction_active=False, times=1)
+        blocker_events = [asyncio.Event(loop=loops[1]) for _ in range(2)]
+        blocker = block_loop(*blocker_events,
+                blocking_transaction_active=False, times=1)
+    except TypeError:
+        waiter_events = [asyncio.Event() for _ in range(2)]
+        waiter = wait_for_loop(*waiter_events, times=1)
+
+        blocker_events = [asyncio.Event() for _ in range(2)]
+        blocker = block_loop(*blocker_events,
+                blocking_transaction_active=False, times=1)
 
     waiter_task = loops[0].create_task(waiter)
     blocker_task = loops[1].create_task(blocker)
@@ -174,9 +183,8 @@ def test_blocking_task_on_different_loop():
     loops[0].run_until_complete(waiter_task)
 
 
-def test_record_event_loop_wait_on_different_task():
+def test_record_event_loop_wait_on_different_task(event_loop):
     import asyncio
-    loop = asyncio.get_event_loop()
 
     async def recorder(ready, wait):
         ready.set()
@@ -186,10 +194,10 @@ def test_record_event_loop_wait_on_different_task():
     @background_task(name="test_record_event_loop_wait_on_different_task")
     async def transaction():
         coroutine_start, transaction_exit = asyncio.Event(), asyncio.Event()
-        task = loop.create_task(recorder(coroutine_start, transaction_exit))
+        task = event_loop.create_task(recorder(coroutine_start, transaction_exit))
         await coroutine_start.wait()
         current_transaction().__exit__(None, None, None)
         transaction_exit.set()
         await task
 
-    loop.run_until_complete(transaction())
+    event_loop.run_until_complete(transaction())

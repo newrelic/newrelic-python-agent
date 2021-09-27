@@ -83,7 +83,7 @@ def port(app):
     def server_run():
         def on_tick_sync():
             if not ready.is_set():
-                loops.append(asyncio.get_event_loop())
+                loops.append(asyncio.new_event_loop())
                 ready.set()
 
         async def on_tick():

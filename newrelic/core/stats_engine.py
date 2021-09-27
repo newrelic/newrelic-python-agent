@@ -316,7 +316,7 @@ class SampledDataSet(object):
         self.num_seen += 1
 
         if priority is None:
-            priority = random.random()
+            priority = random.random()  # nosec
 
         entry = (priority, self.num_seen, sample)
         if self.num_seen == self.capacity:

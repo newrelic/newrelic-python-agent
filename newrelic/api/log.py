@@ -14,7 +14,6 @@
 
 import json
 from newrelic.common.object_names import parse_exc_info
-import newrelic.packages.six as six
 from logging import Formatter, LogRecord
 from newrelic.api.time_trace import get_linking_metadata
 from newrelic.core.config import is_expected_error
@@ -24,11 +23,16 @@ def format_exc_info(exc_info):
     _, _, fullnames, message = parse_exc_info(exc_info)
     fullname = fullnames[0]
 
-    return {
+    formatted = {
         "error.class": fullname,
         "error.message": message,
-        "error.expected": is_expected_error(exc_info),
     }
+
+    expected = is_expected_error(exc_info)
+    if expected is not None:
+        formatted["error.expected"] = expected
+
+    return formatted
 
 
 class NewRelicContextFormatter(Formatter):

@@ -155,7 +155,7 @@ def test_newrelic_logger_error_inside_transaction(log_buffer):
 
     for k, v in expected.items():
         assert message.pop(k) == v
-    
+
     assert set(message.keys()) == set(expected_extra_txn_keys)
 
 

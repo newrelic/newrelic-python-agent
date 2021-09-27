@@ -1157,7 +1157,9 @@ def error_matches_rules(
 
             if not settings:
                 # Unable to find rules to match with
-                _logger.error("Failed to retrieve exception rules: No settings supplied, or found on transaction or trace.")
+                _logger.error(
+                    "Failed to retrieve exception rules: No settings supplied, or found on transaction or trace."
+                )
                 return None
 
     # Retrieve settings based on prefix

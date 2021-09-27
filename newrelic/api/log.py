@@ -13,9 +13,10 @@
 # limitations under the License.
 
 import json
-from newrelic.common.object_names import parse_exc_info
 from logging import Formatter, LogRecord
+
 from newrelic.api.time_trace import get_linking_metadata
+from newrelic.common.object_names import parse_exc_info
 from newrelic.core.config import is_expected_error
 
 
@@ -61,7 +62,7 @@ class NewRelicContextFormatter(Formatter):
         if len(record.__dict__) > len(DEFAULT_LOG_RECORD_KEYS):
             for key in record.__dict__:
                 if key not in DEFAULT_LOG_RECORD_KEYS:
-                    output['extra.' + key] = getattr(record, key)
+                    output["extra." + key] = getattr(record, key)
 
         if record.exc_info:
             output.update(format_exc_info(record.exc_info))
@@ -76,4 +77,4 @@ class NewRelicContextFormatter(Formatter):
             except:
                 return "<unprintable %s object>" % type(object).__name__
 
-        return json.dumps(self.log_record_to_dict(record), default=safe_str, separators=(',', ':'))
+        return json.dumps(self.log_record_to_dict(record), default=safe_str, separators=(",", ":"))

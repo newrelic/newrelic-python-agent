@@ -584,9 +584,9 @@ class StatsEngine(object):
         if not error or None in error:
             error = sys.exc_info()
 
-        # If no exception to report, exit
-        if not error or None in error:
-            return
+            # If no exception to report, exit
+            if not error or None in error:
+                return
 
         exc, value, tb = error
 

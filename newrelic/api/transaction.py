@@ -390,6 +390,11 @@ class Transaction(object):
         if not self._settings:
             return
 
+        # Record error if one was registered.
+
+        if exc is not None and value is not None and tb is not None:
+            self.root_span.notice_error((exc, value, tb))
+
         self._state = self.STATE_STOPPED
 
         # Force the root span out of the cache if it's there
@@ -417,11 +422,6 @@ class Transaction(object):
                 "occurred during exit. Report this issue to New Relic support."
             )
             return
-
-        # Record error if one was registered.
-
-        if exc is not None and value is not None and tb is not None:
-            root.notice_error((exc, value, tb))
 
         # Record the end time for transaction and then
         # calculate the duration.

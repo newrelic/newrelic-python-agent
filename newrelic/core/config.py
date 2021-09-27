@@ -1144,12 +1144,21 @@ def error_matches_rules(
     # Delay imports to prevent lockups
     from newrelic.core.trace_cache import trace_cache
 
-    if not settings:  # Pull from active trace if no settings provided
-        trace = trace_cache().current_trace()
-        settings = trace and trace.settings
-
     if not settings:
-        return None  # Unable to find rules to match with
+        # Pull from current transaction if no settings provided
+        tc = trace_cache()
+        transaction = tc.current_transaction()
+        settings = transaction and transaction.settings
+
+        if not settings:
+            # Pull from active trace if no settings on transaction
+            trace = tc.current_trace()
+            settings = trace and trace.settings
+
+            if not settings:
+                # Unable to find rules to match with
+                _logger.error("Failed to retrieve exception rules: No settings supplied, or found on transaction or trace.")
+                return None
 
     # Retrieve settings based on prefix
     classes_rules = getattr(settings.error_collector, "%s_classes" % rules_prefix, set())

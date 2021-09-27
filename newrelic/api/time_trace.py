@@ -221,9 +221,9 @@ class TimeTrace(object):
         if not exc_info or None in exc_info:
             exc_info = sys.exc_info()
 
-        # If no exception to report, exit
-        if not exc_info or None in exc_info:
-            return
+            # If no exception to report, exit
+            if not exc_info or None in exc_info:
+                return
 
         exc, value, tb = exc_info
 

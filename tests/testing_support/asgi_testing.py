@@ -49,9 +49,7 @@ class AsgiTest(object):
         scope = self.generate_input(method, path, params, headers, body)
 
         try:
-            awaitable = self.asgi_application(
-                scope, self.input_queue.get, self.output_queue.put
-            )
+            awaitable = self.asgi_application(scope, self.input_queue.get, self.output_queue.put)
         except TypeError:
             instance = self.asgi_application(scope)
             awaitable = instance(self.input_queue.get, self.output_queue.put)

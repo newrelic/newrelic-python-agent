@@ -26,9 +26,8 @@ import shlex
 import socket
 import sys
 import threading
-import traceback
-import os
 import time
+import traceback
 
 try:
     import ConfigParser
@@ -40,45 +39,54 @@ try:
 except ImportError:
     import builtins as __builtin__
 
+
 def _argspec_py2(func):
     return inspect.getargspec(func)
+
 
 def _argspec_py3(func):
     a = inspect.getfullargspec(func)
     return (a.args, a.varargs, a.varkw, a.defaults)
 
-if hasattr(inspect, 'getfullargspec'):
+
+if hasattr(inspect, "getfullargspec"):
     _argspec = _argspec_py3
 else:
     _argspec = _argspec_py2
 
 try:
-    from inspect import signature
     from collections import OrderedDict
+    from inspect import signature
+
     def doc_signature(func):
         sig = signature(func)
         sig._parameters = OrderedDict(list(sig._parameters.items())[1:])
         return str(sig)
+
+
 except ImportError:
     from inspect import formatargspec
+
     def doc_signature(func):
         args, varargs, keywords, defaults = _argspec(func)
         return formatargspec(args[1:], varargs, keywords, defaults)
 
-from newrelic.core.agent import agent_instance
-from newrelic.core.config import global_settings, flatten_settings
-from newrelic.api.transaction import Transaction
+
 from newrelic.api.object_wrapper import ObjectWrapper
+from newrelic.api.transaction import Transaction
+from newrelic.core.agent import agent_instance
+from newrelic.core.config import flatten_settings, global_settings
 from newrelic.core.trace_cache import trace_cache
 
 _trace_cache = trace_cache()
+
 
 def shell_command(wrapped):
     args, varargs, keywords, defaults = _argspec(wrapped)
 
     parser = optparse.OptionParser()
     for name in args[1:]:
-        parser.add_option('--%s' % name, dest=name)
+        parser.add_option("--%s" % name, dest=name)
 
     @functools.wraps(wrapped)
     def wrapper(self, line):
@@ -93,48 +101,51 @@ def shell_command(wrapped):
 
         return wrapped(self, *args, **kwargs)
 
-    if wrapper.__name__.startswith('do_'):
-        prototype = wrapper.__name__[3:] + ' ' + doc_signature(wrapped)
+    if wrapper.__name__.startswith("do_"):
+        prototype = wrapper.__name__[3:] + " " + doc_signature(wrapped)
 
-        if hasattr(wrapper, '__doc__') and wrapper.__doc__ is not None:
-            wrapper.__doc__ = '\n'.join((prototype,
-                    wrapper.__doc__.lstrip('\n')))
+        if hasattr(wrapper, "__doc__") and wrapper.__doc__ is not None:
+            wrapper.__doc__ = "\n".join((prototype, wrapper.__doc__.lstrip("\n")))
 
     return wrapper
 
+
 _consoles = threading.local()
+
 
 def acquire_console(shell):
     _consoles.active = shell
 
+
 def release_console():
     del _consoles.active
+
 
 def setquit():
     """Define new built-ins 'quit' and 'exit'.
     These are simply strings that display a hint on how to exit.
 
     """
-    if os.sep == ':':
-        eof = 'Cmd-Q'
-    elif os.sep == '\\':
-        eof = 'Ctrl-Z plus Return'
+    if os.sep == ":":
+        eof = "Cmd-Q"
+    elif os.sep == "\\":
+        eof = "Ctrl-Z plus Return"
     else:
-        eof = 'Ctrl-D (i.e. EOF)'
+        eof = "Ctrl-D (i.e. EOF)"
 
     class Quitter(object):
         def __init__(self, name):
             self.name = name
 
         def __repr__(self):
-            return 'Use %s() or %s to exit' % (self.name, eof)
+            return "Use %s() or %s to exit" % (self.name, eof)
 
         def __call__(self, code=None):
             # If executed with our interactive console, only raise the
             # SystemExit exception but don't close sys.stdout as we are
             # not the owner of it.
 
-            if hasattr(_consoles, 'active'):
+            if hasattr(_consoles, "active"):
                 raise SystemExit(code)
 
             # Shells like IDLE catch the SystemExit, but listen when their
@@ -146,11 +157,11 @@ def setquit():
                 pass
             raise SystemExit(code)
 
-    __builtin__.quit = Quitter('quit')
-    __builtin__.exit = Quitter('exit')
+    __builtin__.quit = Quitter("quit")
+    __builtin__.exit = Quitter("exit")
+
 
 class OutputWrapper(ObjectWrapper):
-
     def flush(self):
         try:
             shell = _consoles.active
@@ -172,14 +183,15 @@ class OutputWrapper(ObjectWrapper):
         except Exception:
             return self._nr_next_object.writelines(data)
 
+
 def intercept_console():
     setquit()
 
     sys.stdout = OutputWrapper(sys.stdout, None, None)
     sys.stderr = OutputWrapper(sys.stderr, None, None)
 
-class EmbeddedConsole(code.InteractiveConsole):
 
+class EmbeddedConsole(code.InteractiveConsole):
     def write(self, data):
         self.stdout.write(data)
         self.stdout.flush()
@@ -188,8 +200,9 @@ class EmbeddedConsole(code.InteractiveConsole):
         self.stdout.write(prompt)
         self.stdout.flush()
         line = self.stdin.readline()
-        line = line.rstrip('\r\n')
+        line = line.rstrip("\r\n")
         return line
+
 
 class ConsoleShell(cmd.Cmd):
 
@@ -197,25 +210,27 @@ class ConsoleShell(cmd.Cmd):
 
     def __init__(self):
         cmd.Cmd.__init__(self)
-        self.do_prompt('on')
+        self.do_prompt("on")
 
     def emptyline(self):
         pass
 
     def help_help(self):
-        print("""help (command)
+        print(
+            """help (command)
         Output list of commands or help details for named command.""",
-        file=self.stdout)
+            file=self.stdout,
+        )
 
     @shell_command
     def do_prompt(self, flag=None):
         """
         Enable or disable the console prompt."""
 
-        if flag == 'on':
-            self.prompt = '(newrelic:%d) ' % os.getpid()
-        elif flag == 'off':
-            self.prompt = ''
+        if flag == "on":
+            self.prompt = "(newrelic:%d) " % os.getpid()
+        elif flag == "off":
+            self.prompt = ""
 
     @shell_command
     def do_exit(self):
@@ -252,7 +267,7 @@ class ConsoleShell(cmd.Cmd):
 
         for name, module in sorted(sys.modules.items()):
             if module is not None:
-                file = getattr(module, '__file__', None)
+                file = getattr(module, "__file__", None)
                 print("%s - %s" % (name, file), file=self.stdout)
 
     @shell_command
@@ -282,7 +297,7 @@ class ConsoleShell(cmd.Cmd):
         """
         Displays the configure arguments used to build Python."""
 
-        args = ''
+        args = ""
 
         try:
             # This may fail if using package Python and the
@@ -290,7 +305,7 @@ class ConsoleShell(cmd.Cmd):
 
             import distutils.sysconfig
 
-            args = distutils.sysconfig.get_config_var('CONFIG_ARGS')
+            args = distutils.sysconfig.get_config_var("CONFIG_ARGS")
 
         except Exception:
             pass
@@ -312,7 +327,7 @@ class ConsoleShell(cmd.Cmd):
             config = flatten_settings(config)
             keys = sorted(config.keys())
             for key in keys:
-                print('%s = %r' % (key, config[key]), file=self.stdout)
+                print("%s = %r" % (key, config[key]), file=self.stdout)
 
     @shell_command
     def do_agent_status(self):
@@ -329,8 +344,7 @@ class ConsoleShell(cmd.Cmd):
         Displays a list of the applications.
         """
 
-        print(repr(sorted(
-              agent_instance().applications.keys())), file=self.stdout)
+        print(repr(sorted(agent_instance().applications.keys())), file=self.stdout)
 
     @shell_command
     def do_application_status(self, name=None):
@@ -363,24 +377,23 @@ class ConsoleShell(cmd.Cmd):
             result = results[key]
             if result is None:
                 if key[0] not in sys.modules:
-                    print('%s: PENDING' % (key,), file=self.stdout)
+                    print("%s: PENDING" % (key,), file=self.stdout)
                 else:
-                    print('%s: IMPORTED' % (key,), file=self.stdout)
+                    print("%s: IMPORTED" % (key,), file=self.stdout)
             elif not result:
-                print('%s: INSTRUMENTED' % (key,), file=self.stdout)
+                print("%s: INSTRUMENTED" % (key,), file=self.stdout)
             else:
-                print('%s: FAILED' % (key,), file=self.stdout)
+                print("%s: FAILED" % (key,), file=self.stdout)
                 for line in result:
-                    print(line, end='', file=self.stdout)
+                    print(line, end="", file=self.stdout)
 
     @shell_command
     def do_transactions(self):
-        """
-        """
+        """ """
 
         for item in _trace_cache.active_threads():
             transaction, thread_id, thread_type, frame = item
-            print('THREAD', item, file=self.stdout)
+            print("THREAD", item, file=self.stdout)
             if transaction is not None:
                 transaction.dump(self.stdout)
             print(file=self.stdout)
@@ -397,14 +410,13 @@ class ConsoleShell(cmd.Cmd):
         _settings = global_settings()
 
         if not _settings.console.allow_interpreter_cmd:
-            print('Sorry, the embedded Python ' \
-                    'interpreter is disabled.', file=self.stdout)
+            print("Sorry, the embedded Python " "interpreter is disabled.", file=self.stdout)
             return
 
         locals = {}
 
-        locals['stdin'] = self.stdin
-        locals['stdout'] = self.stdout
+        locals["stdin"] = self.stdin
+        locals["stdout"] = self.stdout
 
         console = EmbeddedConsole(locals)
 
@@ -433,34 +445,31 @@ class ConsoleShell(cmd.Cmd):
         all = []
         for threadId, stack in sys._current_frames().items():
             block = []
-            block.append('# ThreadID: %s' % threadId)
+            block.append("# ThreadID: %s" % threadId)
             thr = threading._active.get(threadId)
             if thr:
-                block.append('# Type: %s' % type(thr).__name__)
-                block.append('# Name: %s' % thr.name)
-            for filename, lineno, name, line in traceback.extract_stack(
-                stack):
-                block.append('File: \'%s\', line %d, in %s' % (filename,
-                        lineno, name))
+                block.append("# Type: %s" % type(thr).__name__)
+                block.append("# Name: %s" % thr.name)
+            for filename, lineno, name, line in traceback.extract_stack(stack):
+                block.append("File: '%s', line %d, in %s" % (filename, lineno, name))
                 if line:
-                    block.append('  %s' % (line.strip()))
-            all.append('\n'.join(block))
+                    block.append("  %s" % (line.strip()))
+            all.append("\n".join(block))
 
-        print('\n\n'.join(all), file=self.stdout)
+        print("\n\n".join(all), file=self.stdout)
+
 
 class ConnectionManager(object):
-
     def __init__(self, listener_socket):
         self.__listener_socket = listener_socket
         self.__console_initialized = False
 
         if not os.path.isabs(self.__listener_socket):
-            host, port = self.__listener_socket.split(':')
+            host, port = self.__listener_socket.split(":")
             port = int(port)
             self.__listener_socket = (host, port)
 
-        self.__thread = threading.Thread(target=self.__thread_run,
-            name='NR-Console-Manager')
+        self.__thread = threading.Thread(target=self.__thread_run, name="NR-Console-Manager")
 
         self.__thread.daemon = True
         self.__thread.start()
@@ -499,8 +508,8 @@ class ConnectionManager(object):
 
             shell = ConsoleShell()
 
-            shell.stdin = client.makefile('r')
-            shell.stdout = client.makefile('w')
+            shell.stdin = client.makefile("r")
+            shell.stdout = client.makefile("w")
 
             while True:
                 try:
@@ -508,10 +517,9 @@ class ConnectionManager(object):
 
                 except Exception:
                     shell.stdout.flush()
-                    print('Unexpected exception.', file=shell.stdout)
+                    print("Unexpected exception.", file=shell.stdout)
                     exc_info = sys.exc_info()
-                    traceback.print_exception(exc_info[0], exc_info[1],
-                            exc_info[2], file=shell.stdout)
+                    traceback.print_exception(exc_info[0], exc_info[1], exc_info[2], file=shell.stdout)
                     exc_info = None
 
                 else:
@@ -524,9 +532,10 @@ class ConnectionManager(object):
 
             client.close()
 
+
 class ClientShell(cmd.Cmd):
 
-    prompt = '(newrelic) '
+    prompt = "(newrelic) "
 
     def __init__(self, config_file, stdin=None, stdout=None, log=None):
         cmd.Cmd.__init__(self, stdin=stdin, stdout=stdout)
@@ -536,17 +545,14 @@ class ClientShell(cmd.Cmd):
         self.__log_object = log
 
         if not self.__config_object.read([config_file]):
-            raise RuntimeError('Unable to open configuration file %s.' %
-                               config_file)
+            raise RuntimeError("Unable to open configuration file %s." % config_file)
 
-        listener_socket = self.__config_object.get('newrelic',
-                'console.listener_socket') % {'pid': '*'}
+        listener_socket = self.__config_object.get("newrelic", "console.listener_socket") % {"pid": "*"}
 
         if os.path.isabs(listener_socket):
-            self.__servers = [(socket.AF_UNIX, path) for path in
-                             sorted(glob.glob(listener_socket))]
+            self.__servers = [(socket.AF_UNIX, path) for path in sorted(glob.glob(listener_socket))]
         else:
-            host, port = listener_socket.split(':')
+            host, port = listener_socket.split(":")
             port = int(port)
 
             self.__servers = [(socket.AF_INET, (host, port))]
@@ -555,9 +561,11 @@ class ClientShell(cmd.Cmd):
         pass
 
     def help_help(self):
-        print("""help (command)
+        print(
+            """help (command)
         Output list of commands or help details for named command.""",
-        file=self.stdout)
+            file=self.stdout,
+        )
 
     def do_exit(self, line):
         """exit
@@ -570,7 +578,7 @@ class ClientShell(cmd.Cmd):
         Display a list of the servers which can be connected to."""
 
         for i in range(len(self.__servers)):
-            print('%s: %s' % (i+1, self.__servers[i]), file=self.stdout)
+            print("%s: %s" % (i + 1, self.__servers[i]), file=self.stdout)
 
     def do_connect(self, line):
         """connect [index]
@@ -579,16 +587,15 @@ class ClientShell(cmd.Cmd):
         be supplied."""
 
         if len(self.__servers) == 0:
-            print('No servers to connect to.', file=self.stdout)
+            print("No servers to connect to.", file=self.stdout)
             return
 
         if not line:
             if len(self.__servers) != 1:
-                print('Multiple servers, which should be used?',
-                        file=self.stdout)
+                print("Multiple servers, which should be used?", file=self.stdout)
                 return
             else:
-                line = '1'
+                line = "1"
 
         try:
             selection = int(line)
@@ -596,14 +603,14 @@ class ClientShell(cmd.Cmd):
             selection = None
 
         if selection is None:
-            print('Server selection not an integer.', file=self.stdout)
+            print("Server selection not an integer.", file=self.stdout)
             return
 
         if selection <= 0 or selection > len(self.__servers):
-            print('Invalid server selected.', file=self.stdout)
+            print("Invalid server selected.", file=self.stdout)
             return
 
-        server = self.__servers[selection-1]
+        server = self.__servers[selection - 1]
 
         client = socket.socket(server[0], socket.SOCK_STREAM)
         client.connect(server[1])
@@ -620,14 +627,14 @@ class ClientShell(cmd.Cmd):
                     if self.__log_object:
                         self.__log_object.write(c)
 
-                    client.sendall(c.encode('utf-8'))
+                    client.sendall(c.encode("utf-8"))
                 except Exception:
                     break
 
         def read():
             while 1:
                 try:
-                    c = client.recv(1).decode('utf-8')
+                    c = client.recv(1).decode("utf-8")
 
                     if not c:
                         break
@@ -653,6 +660,7 @@ class ClientShell(cmd.Cmd):
 
         return True
 
+
 def main():
     if len(sys.argv) == 1:
         print("Usage: newrelic-console config_file")
@@ -661,5 +669,6 @@ def main():
     shell = ClientShell(sys.argv[1])
     shell.cmdloop()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

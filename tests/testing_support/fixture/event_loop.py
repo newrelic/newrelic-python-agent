@@ -6,9 +6,11 @@ from newrelic.packages import six
 if six.PY2:
     event_loop = None
 else:
+
     @pytest.fixture(scope="session")
     def event_loop():
         from asyncio import new_event_loop, set_event_loop
+
         loop = new_event_loop()
         set_event_loop(loop)
         yield loop

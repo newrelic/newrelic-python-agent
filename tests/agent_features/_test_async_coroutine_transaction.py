@@ -17,8 +17,9 @@ import asyncio
 from newrelic.api.transaction import current_transaction
 
 
-def native_coroutine_test(event_loop, transaction, nr_enabled=True, does_hang=False,
-        call_exit=False, runtime_error=False):
+def native_coroutine_test(
+    event_loop, transaction, nr_enabled=True, does_hang=False, call_exit=False, runtime_error=False
+):
     @transaction
     async def task():
         txn = current_transaction()

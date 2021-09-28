@@ -12,22 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import logging
-import time
-import threading
-import zlib
 import base64
+import logging
+import os
+import threading
+import time
+import zlib
+from collections import defaultdict, deque
 
-from collections import deque, defaultdict
-
-import newrelic.packages.six as six
 import newrelic
-
+import newrelic.packages.six as six
+from newrelic.common.encoding_utils import json_encode
 from newrelic.core.config import global_settings
 from newrelic.core.trace_cache import trace_cache
-
-from newrelic.common.encoding_utils import json_encode
 
 try:
     from sys import intern
@@ -36,7 +33,7 @@ except ImportError:
 
 _logger = logging.getLogger(__name__)
 
-AGENT_PACKAGE_DIRECTORY = os.path.dirname(newrelic.__file__) + '/'
+AGENT_PACKAGE_DIRECTORY = os.path.dirname(newrelic.__file__) + "/"
 
 
 class SessionState(object):
@@ -45,8 +42,7 @@ class SessionState(object):
 
 
 def format_stack_trace(frame, thread_category):
-    """Formats the frame obj into a list of stack trace tuples.
-    """
+    """Formats the frame obj into a list of stack trace tuples."""
 
     stack_trace = deque()
 
@@ -74,8 +70,7 @@ def format_stack_trace(frame, thread_category):
         # though as we still need to seem them in that case so can
         # debug what the agent itself is doing.
 
-        if (thread_category != 'AGENT' and
-                filename.startswith(AGENT_PACKAGE_DIRECTORY)):
+        if thread_category != "AGENT" and filename.startswith(AGENT_PACKAGE_DIRECTORY):
             continue
 
         if not stack_trace:
@@ -102,12 +97,11 @@ def collect_stack_traces(include_nr_threads=False):
     python threads.
 
     """
-    for (txn, thread_id, thread_category, frame) in \
-            trace_cache().active_threads():
+    for (txn, thread_id, thread_category, frame) in trace_cache().active_threads():
 
         # Skip NR Threads unless explicitly requested.
 
-        if (thread_category == 'AGENT') and (not include_nr_threads):
+        if (thread_category == "AGENT") and (not include_nr_threads):
             continue
 
         stack_trace = format_stack_trace(frame, thread_category)
@@ -128,6 +122,7 @@ class ProfileSessionManager(object):
     instantiate directly from this class. Instead use profile_session_manager()
 
     """
+
     _lock = threading.Lock()
     _instance = None
 
@@ -155,8 +150,7 @@ class ProfileSessionManager(object):
         self.profile_agent_code = False
         self.sample_period_s = 0.1
 
-    def start_profile_session(self, app_name, profile_id, stop_time,
-            sample_period_s=0.1, profile_agent_code=False):
+    def start_profile_session(self, app_name, profile_id, stop_time, sample_period_s=0.1, profile_agent_code=False):
         """Start a new profiler session. If a full_profiler is already
         running, do nothing and return false.
 
@@ -187,8 +181,7 @@ class ProfileSessionManager(object):
             # if a background thread doesn't already exist.
 
             if not self._profiler_thread_running:
-                self._profiler_thread = threading.Thread(
-                        target=self._profiler_loop, name='NR-Profiler-Thread')
+                self._profiler_thread = threading.Thread(target=self._profiler_loop, name="NR-Profiler-Thread")
                 self._profiler_thread.daemon = True
 
                 self._profiler_thread.start()
@@ -208,12 +201,10 @@ class ProfileSessionManager(object):
         # harvest thread is starting/stopping new sessions.
 
         with self._lock:
-            if ((self.full_profile_session is not None) and (app_name ==
-                    self.full_profile_app)):
+            if (self.full_profile_session is not None) and (app_name == self.full_profile_app):
                 self.full_profile_session.state = SessionState.FINISHED
                 self.full_profile_session.actual_stop_time_s = time.time()
-                self.finished_sessions[app_name].append(
-                        self.full_profile_session)
+                self.finished_sessions[app_name].append(self.full_profile_session)
                 self.full_profile_session = None
                 self.full_profile_app = None
 
@@ -229,11 +220,14 @@ class ProfileSessionManager(object):
         """
         with self._lock:
             for session in self.finished_sessions[app_name]:
-                _logger.debug('Reporting final thread profiling data for '
-                        '%d transactions over a period of %.2f seconds '
-                        'and %d samples.', session.transaction_count,
-                        time.time() - session.start_time_s,
-                        session.sample_count)
+                _logger.debug(
+                    "Reporting final thread profiling data for "
+                    "%d transactions over a period of %.2f seconds "
+                    "and %d samples.",
+                    session.transaction_count,
+                    time.time() - session.start_time_s,
+                    session.sample_count,
+                )
 
                 yield session.profile_data()
 
@@ -251,15 +245,13 @@ class ProfileSessionManager(object):
 
         while True:
 
-            for category, stack in collect_stack_traces(
-                    self.profile_agent_code):
+            for category, stack in collect_stack_traces(self.profile_agent_code):
 
                 # Merge the stack_trace to the call tree only for
                 # full_profile_session.
 
                 if self.full_profile_session:
-                    self.full_profile_session.update_call_tree(category,
-                            stack)
+                    self.full_profile_session.update_call_tree(category, stack)
 
             self.update_profile_sessions()
 
@@ -281,12 +273,10 @@ class ProfileSessionManager(object):
             self.full_profile_session.sample_count += 1
             if time.time() >= self.full_profile_session.stop_time_s:
                 self.stop_profile_session(self.full_profile_app)
-                _logger.info('Finished thread profiling session.')
+                _logger.info("Finished thread profiling session.")
 
     def shutdown(self, app_name):
-        """Stop all profile sessions running on the given app_name.
-
-        """
+        """Stop all profile sessions running on the given app_name."""
 
         # Check if we need to stop the full profiler.
 
@@ -306,8 +296,7 @@ class ProfileSession(object):
         self.reset_profile_data()
 
     def reset_profile_data(self):
-        self.call_buckets = {'REQUEST': {}, 'AGENT': {}, 'BACKGROUND': {},
-                'OTHER': {}}
+        self.call_buckets = {"REQUEST": {}, "AGENT": {}, "BACKGROUND": {}, "OTHER": {}}
         self._node_list = []
         self.start_time_s = time.time()
         self.sample_count = 0
@@ -381,8 +370,7 @@ class ProfileSession(object):
         # categories in UI, the duplicates only appear as one after the
         # UI merges them.
 
-        self._node_list.sort(key=lambda x: (x.call_count, -x.depth),
-                reverse=True)
+        self._node_list.sort(key=lambda x: (x.call_count, -x.depth), reverse=True)
 
         for node in self._node_list[limit:]:
             node.ignore = True
@@ -419,23 +407,30 @@ class ProfileSession(object):
         # this point to cut its size.
 
         if settings.debug.log_thread_profile_payload:
-            _logger.debug('Encoding thread profile data where '
-                    'payload=%r.', flat_tree)
+            _logger.debug("Encoding thread profile data where " "payload=%r.", flat_tree)
 
         json_call_tree = json_encode(flat_tree)
 
         level = settings.agent_limits.data_compression_level
         level = level or zlib.Z_DEFAULT_COMPRESSION
 
-        encoded_tree = base64.standard_b64encode(
-                zlib.compress(six.b(json_call_tree), level))
+        encoded_tree = base64.standard_b64encode(zlib.compress(six.b(json_call_tree), level))
 
         if six.PY3:
-            encoded_tree = encoded_tree.decode('Latin-1')
+            encoded_tree = encoded_tree.decode("Latin-1")
 
-        profile = [[self.profile_id, self.start_time_s * 1000,
-            (self.actual_stop_time_s or time.time()) * 1000, self.sample_count,
-            encoded_tree, thread_count, 0, None]]
+        profile = [
+            [
+                self.profile_id,
+                self.start_time_s * 1000,
+                (self.actual_stop_time_s or time.time()) * 1000,
+                self.sample_count,
+                encoded_tree,
+                thread_count,
+                0,
+                None,
+            ]
+        ]
 
         # Reset the data structures to default.
 
@@ -461,14 +456,11 @@ class CallTree(object):
         # are labeled with an @ sign in the second element of the tuple.
 
         if func_line == exec_line:
-            method_data = (filename, '@%s#%s' % (func_name, func_line),
-                    exec_line)
+            method_data = (filename, "@%s#%s" % (func_name, func_line), exec_line)
         else:
-            method_data = (filename, '%s#%s' % (func_name, func_line),
-                    exec_line)
+            method_data = (filename, "%s#%s" % (func_name, func_line), exec_line)
 
-        return [method_data, self.call_count, 0,
-                [x.flatten() for x in self.children.values() if not x.ignore]]
+        return [method_data, self.call_count, 0, [x.flatten() for x in self.children.values() if not x.ignore]]
 
 
 def profile_session_manager():

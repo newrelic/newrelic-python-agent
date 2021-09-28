@@ -565,7 +565,7 @@ class Agent(object):
             return self._harvest_shutdown.is_set()
         except TypeError:
             return self._harvest_shutdown.isSet()
-                
+
     def _harvest_flexible(self, shutdown=False):
         if not self._harvest_shutdown_is_set():
             event_harvest_config = self.global_settings().event_harvest_config

@@ -410,7 +410,7 @@ class ConsoleShell(cmd.Cmd):
         _settings = global_settings()
 
         if not _settings.console.allow_interpreter_cmd:
-            print("Sorry, the embedded Python " "interpreter is disabled.", file=self.stdout)
+            print("Sorry, the embedded Python interpreter is disabled.", file=self.stdout)
             return
 
         locals = {}

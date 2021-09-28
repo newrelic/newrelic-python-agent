@@ -407,7 +407,7 @@ class ProfileSession(object):
         # this point to cut its size.
 
         if settings.debug.log_thread_profile_payload:
-            _logger.debug("Encoding thread profile data where " "payload=%r.", flat_tree)
+            _logger.debug("Encoding thread profile data where payload=%r.", flat_tree)
 
         json_call_tree = json_encode(flat_tree)
 

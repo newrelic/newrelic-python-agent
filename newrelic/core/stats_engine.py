@@ -559,7 +559,7 @@ class StatsEngine(object):
     def record_exception(self, exc=None, value=None, tb=None, params=None, ignore_errors=None):
         # Deprecation Warning
         warnings.warn(
-            ("The record_exception function is deprecated. Please use the " "new api named notice_error instead."),
+            ("The record_exception function is deprecated. Please use the new api named notice_error instead."),
             DeprecationWarning,
         )
 
@@ -666,7 +666,7 @@ class StatsEngine(object):
 
         if settings.high_security:
             if attributes:
-                _logger.debug("Cannot add custom parameters in " "High Security Mode.")
+                _logger.debug("Cannot add custom parameters in High Security Mode.")
             user_attributes = []
         else:
             custom_attributes = {}
@@ -1218,7 +1218,7 @@ class StatsEngine(object):
             data = [transaction_trace, list(trace.string_table.values())]
 
             if self.__settings.debug.log_transaction_trace_payload:
-                _logger.debug("Encoding slow transaction data where " "payload=%r.", data)
+                _logger.debug("Encoding slow transaction data where payload=%r.", data)
 
             json_data = json_encode(data)
 
@@ -1283,7 +1283,7 @@ class StatsEngine(object):
         data = [transaction_trace, list(self.__slow_transaction.string_table.values())]
 
         if self.__settings.debug.log_transaction_trace_payload:
-            _logger.debug("Encoding slow transaction data where " "payload=%r.", data)
+            _logger.debug("Encoding slow transaction data where payload=%r.", data)
 
         json_data = json_encode(data)
 

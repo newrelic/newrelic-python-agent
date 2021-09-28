@@ -1042,9 +1042,9 @@ class Transaction(object):
                 d=data,
             )
         except:
-            self._record_supportability("Supportability/DistributedTrace/" "CreatePayload/Exception")
+            self._record_supportability("Supportability/DistributedTrace/CreatePayload/Exception")
         else:
-            self._record_supportability("Supportability/DistributedTrace/" "CreatePayload/Success")
+            self._record_supportability("Supportability/DistributedTrace/CreatePayload/Success")
             return payload
 
     def create_distributed_trace_payload(self):
@@ -1070,7 +1070,7 @@ class Transaction(object):
                     tracestate += "," + self.tracestate
                 yield ("tracestate", tracestate)
 
-                self._record_supportability("Supportability/TraceContext/" "Create/Success")
+                self._record_supportability("Supportability/TraceContext/Create/Success")
 
                 if not self._settings.distributed_tracing.exclude_newrelic_header:
                     # Insert New Relic dt headers for backwards compatibility
@@ -1079,13 +1079,13 @@ class Transaction(object):
                         d=data,
                     )
                     yield ("newrelic", payload.http_safe())
-                    self._record_supportability("Supportability/DistributedTrace/" "CreatePayload/Success")
+                    self._record_supportability("Supportability/DistributedTrace/CreatePayload/Success")
 
         except:
-            self._record_supportability("Supportability/TraceContext/" "Create/Exception")
+            self._record_supportability("Supportability/TraceContext/Create/Exception")
 
             if not self._settings.distributed_tracing.exclude_newrelic_header:
-                self._record_supportability("Supportability/DistributedTrace/" "CreatePayload/Exception")
+                self._record_supportability("Supportability/DistributedTrace/CreatePayload/Exception")
 
     def insert_distributed_trace_headers(self, headers):
         headers.extend(self._generate_distributed_trace_headers())
@@ -1100,23 +1100,21 @@ class Transaction(object):
 
         if self._distributed_trace_state:
             if self._distributed_trace_state & ACCEPTED_DISTRIBUTED_TRACE:
-                self._record_supportability("Supportability/DistributedTrace/" "AcceptPayload/Ignored/Multiple")
+                self._record_supportability("Supportability/DistributedTrace/AcceptPayload/Ignored/Multiple")
             else:
-                self._record_supportability(
-                    "Supportability/DistributedTrace/" "AcceptPayload/Ignored/CreateBeforeAccept"
-                )
+                self._record_supportability("Supportability/DistributedTrace/AcceptPayload/Ignored/CreateBeforeAccept")
             return False
 
         return True
 
     def _accept_distributed_trace_payload(self, payload, transport_type="HTTP"):
         if not payload:
-            self._record_supportability("Supportability/DistributedTrace/" "AcceptPayload/Ignored/Null")
+            self._record_supportability("Supportability/DistributedTrace/AcceptPayload/Ignored/Null")
             return False
 
         payload = DistributedTracePayload.decode(payload)
         if not payload:
-            self._record_supportability("Supportability/DistributedTrace/" "AcceptPayload/ParseException")
+            self._record_supportability("Supportability/DistributedTrace/AcceptPayload/ParseException")
             return False
 
         try:
@@ -1124,21 +1122,21 @@ class Transaction(object):
             major_version = version and int(version[0])
 
             if major_version is None:
-                self._record_supportability("Supportability/DistributedTrace/" "AcceptPayload/ParseException")
+                self._record_supportability("Supportability/DistributedTrace/AcceptPayload/ParseException")
                 return False
 
             if major_version > DistributedTracePayload.version[0]:
-                self._record_supportability("Supportability/DistributedTrace/" "AcceptPayload/Ignored/MajorVersion")
+                self._record_supportability("Supportability/DistributedTrace/AcceptPayload/Ignored/MajorVersion")
                 return False
 
             data = payload.get("d", {})
             if not all(k in data for k in DISTRIBUTED_TRACE_KEYS_REQUIRED):
-                self._record_supportability("Supportability/DistributedTrace/" "AcceptPayload/ParseException")
+                self._record_supportability("Supportability/DistributedTrace/AcceptPayload/ParseException")
                 return False
 
             # Must have either id or tx
             if not any(k in data for k in ("id", "tx")):
-                self._record_supportability("Supportability/DistributedTrace/" "AcceptPayload/ParseException")
+                self._record_supportability("Supportability/DistributedTrace/AcceptPayload/ParseException")
                 return False
 
             settings = self._settings
@@ -1147,10 +1145,10 @@ class Transaction(object):
             # If trust key doesn't exist in the payload, use account_id
             received_trust_key = data.get("tk", account_id)
             if settings.trusted_account_key != received_trust_key:
-                self._record_supportability("Supportability/DistributedTrace/" "AcceptPayload/Ignored/UntrustedAccount")
+                self._record_supportability("Supportability/DistributedTrace/AcceptPayload/Ignored/UntrustedAccount")
                 if settings.debug.log_untrusted_distributed_trace_keys:
                     _logger.debug(
-                        "Received untrusted key in distributed " "trace payload. received_trust_key=%r",
+                        "Received untrusted key in distributed trace payload. received_trust_key=%r",
                         received_trust_key,
                     )
                 return False
@@ -1167,11 +1165,11 @@ class Transaction(object):
                     data["pr"] = None
 
             self._accept_distributed_trace_data(data, transport_type)
-            self._record_supportability("Supportability/DistributedTrace/" "AcceptPayload/Success")
+            self._record_supportability("Supportability/DistributedTrace/AcceptPayload/Success")
             return True
 
         except:
-            self._record_supportability("Supportability/DistributedTrace/" "AcceptPayload/Exception")
+            self._record_supportability("Supportability/DistributedTrace/AcceptPayload/Exception")
             return False
 
     def accept_distributed_trace_payload(self, *args, **kwargs):
@@ -1248,10 +1246,10 @@ class Transaction(object):
                 data = None
 
             if not data:
-                self._record_supportability("Supportability/TraceContext/" "TraceParent/Parse/Exception")
+                self._record_supportability("Supportability/TraceContext/TraceParent/Parse/Exception")
                 return False
 
-            self._record_supportability("Supportability/TraceContext/" "TraceParent/Accept/Success")
+            self._record_supportability("Supportability/TraceContext/TraceParent/Accept/Success")
             if tracestate:
                 tracestate = ensure_str(tracestate)
                 try:
@@ -1261,7 +1259,7 @@ class Transaction(object):
                     self.tracing_vendors = ",".join(vendors.keys())
                     self.tracestate = vendors.text(limit=31)
                 except:
-                    self._record_supportability("Supportability/TraceContext/" "TraceState/Parse/Exception")
+                    self._record_supportability("Supportability/TraceContext/TraceState/Parse/Exception")
                 else:
                     # Remove trusted new relic header if available and parse
                     if payload:
@@ -1273,12 +1271,12 @@ class Transaction(object):
                             self.trusted_parent_span = tracestate_data.pop("id", None)
                             data.update(tracestate_data)
                         else:
-                            self._record_supportability("Supportability/TraceContext/" "TraceState/InvalidNrEntry")
+                            self._record_supportability("Supportability/TraceContext/TraceState/InvalidNrEntry")
                     else:
-                        self._record_supportability("Supportability/TraceContext/" "TraceState/NoNrEntry")
+                        self._record_supportability("Supportability/TraceContext/TraceState/NoNrEntry")
 
             self._accept_distributed_trace_data(data, transport_type)
-            self._record_supportability("Supportability/TraceContext/" "Accept/Success")
+            self._record_supportability("Supportability/TraceContext/Accept/Success")
             return True
         elif distributed_header:
             distributed_header = ensure_str(distributed_header)
@@ -1459,7 +1457,7 @@ class Transaction(object):
     def record_exception(self, exc=None, value=None, tb=None, params=None, ignore_errors=None):
         # Deprecation Warning
         warnings.warn(
-            ("The record_exception function is deprecated. Please use the " "new api named notice_error instead."),
+            ("The record_exception function is deprecated. Please use the new api named notice_error instead."),
             DeprecationWarning,
         )
 
@@ -1600,9 +1598,7 @@ class Transaction(object):
             return False
 
         if len(self._custom_params) >= MAX_NUM_USER_ATTRIBUTES:
-            _logger.debug(
-                "Maximum number of custom attributes already " "added. Dropping attribute: %r=%r", name, value
-            )
+            _logger.debug("Maximum number of custom attributes already added. Dropping attribute: %r=%r", name, value)
             return False
 
         key, val = process_user_attribute(name, value)

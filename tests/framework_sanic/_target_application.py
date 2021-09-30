@@ -78,9 +78,13 @@ class CustomRouter(Router):
             raise ServerError("Server Error")
         return get_results
 
+try:
+    error_handler = CustomErrorHandler(fallback="text")
+except TypeError:
+    error_handler = CustomErrorHandler()
 
 router = CustomRouter()
-app = Sanic(name="test app", error_handler=CustomErrorHandler(), router=router)
+app = Sanic(name="test app", error_handler=error_handler, router=router)
 router.app = app
 blueprint = Blueprint("test_bp")
 

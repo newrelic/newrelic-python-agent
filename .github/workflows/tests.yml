@@ -86,6 +86,11 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
+            python-version: 3.10
+            architecture: x64
+
+      - uses: actions/setup-python@v2
+        with:
           python-version: pypy3
           architecture: x64
 
@@ -152,6 +157,11 @@ jobs:
         with:
           python-version: 3.9
           architecture: x64
+
+      - uses: actions/setup-python@v2
+        with:
+            python-version: 3.10
+            architecture: x64
 
       - uses: actions/setup-python@v2
         with:
@@ -233,6 +243,11 @@ jobs:
         with:
           python-version: 3.9
           architecture: x64
+
+      - uses: actions/setup-python@v2
+        with:
+            python-version: 3.10
+            architecture: x64
 
       - name: Install Dependencies
         run: |
@@ -325,6 +340,11 @@ jobs:
           python-version: 3.9
           architecture: x64
 
+      - uses: actions/setup-python@v2
+        with:
+            python-version: 3.10
+            architecture: x64
+
       - name: Install Dependencies
         run: |
           pip install -U pip
@@ -413,6 +433,11 @@ jobs:
           python-version: 3.9
           architecture: x64
 
+      - uses: actions/setup-python@v2
+        with:
+            python-version: 3.10
+            architecture: x64
+
       - name: Install Dependencies
         run: |
           pip install -U pip
@@ -495,6 +520,11 @@ jobs:
         with:
           python-version: 3.9
           architecture: x64
+
+      - uses: actions/setup-python@v2
+        with:
+            python-version: 3.10
+            architecture: x64
 
       - name: Install Dependencies
         run: |
@@ -581,6 +611,11 @@ jobs:
           python-version: 3.9
           architecture: x64
 
+      - uses: actions/setup-python@v2
+        with:
+            python-version: 3.10
+            architecture: x64
+
       - name: Install Dependencies
         run: |
           pip install -U pip
@@ -663,6 +698,11 @@ jobs:
         with:
           python-version: 3.9
           architecture: x64
+
+      - uses: actions/setup-python@v2
+        with:
+            python-version: 3.10
+            architecture: x64
 
       - name: Install Dependencies
         run: |
@@ -748,6 +788,11 @@ jobs:
           python-version: 3.9
           architecture: x64
 
+      - uses: actions/setup-python@v2
+        with:
+            python-version: 3.10
+            architecture: x64
+
       - name: Install Dependencies
         run: |
           pip install -U pip
@@ -830,6 +875,11 @@ jobs:
         with:
           python-version: 3.9
           architecture: x64
+
+      - uses: actions/setup-python@v2
+        with:
+            python-version: 3.10
+            architecture: x64
 
       - name: Install Dependencies
         run: |
@@ -916,6 +966,11 @@ jobs:
           python-version: 3.9
           architecture: x64
 
+      - uses: actions/setup-python@v2
+        with:
+            python-version: 3.10
+            architecture: x64
+
       - name: Install Dependencies
         run: |
           pip install -U pip
@@ -1001,6 +1056,11 @@ jobs:
           python-version: 3.9
           architecture: x64
 
+      - uses: actions/setup-python@v2
+        with:
+            python-version: 3.10
+            architecture: x64
+
       - name: Install Dependencies
         run: |
           pip install -U pip
@@ -1082,6 +1142,11 @@ jobs:
         with:
           python-version: 3.9
           architecture: x64
+
+      - uses: actions/setup-python@v2
+        with:
+            python-version: 3.10
+            architecture: x64
 
       - name: Install Dependencies
         run: |

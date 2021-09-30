@@ -1,0 +1,58 @@
+// Copyright 2010 New Relic, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+service SampleApplication {
+    rpc DoUnaryUnary(Message) returns (Message) {}
+    rpc DoUnaryStream(Message) returns (stream Message) {}
+    rpc DoStreamUnary(stream Message) returns (Message) {}
+    rpc DoStreamStream(stream Message) returns (stream Message) {}
+
+    rpc DtNoTxnUnaryUnary(Message) returns (Message) {}
+    rpc DtNoTxnUnaryStream(Message) returns (stream Message) {}
+    rpc DtNoTxnStreamUnary(stream Message) returns (Message) {}
+    rpc DtNoTxnStreamStream(stream Message) returns (stream Message) {}
+
+    rpc DoUnaryUnaryRaises(Message) returns (Message) {}
+    rpc DoUnaryStreamRaises(Message) returns (stream Message) {}
+    rpc DoStreamUnaryRaises(stream Message) returns (Message) {}
+    rpc DoStreamStreamRaises(stream Message) returns (stream Message) {}
+
+    rpc NoTxnUnaryUnaryRaises(Message) returns (Message) {}
+    rpc NoTxnUnaryStreamRaises(Message) returns (stream Message) {}
+    rpc NoTxnStreamUnaryRaises(stream Message) returns (Message) {}
+    rpc NoTxnStreamStreamRaises(stream Message) returns (stream Message) {}
+
+    rpc NoTxnUnaryUnary(Message) returns (Message) {}
+    rpc NoTxnUnaryStream(Message) returns (stream Message) {}
+    rpc NoTxnStreamUnary(stream Message) returns (Message) {}
+    rpc NoTxnStreamStream(stream Message) returns (stream Message) {}
+
+    rpc DoUnaryUnaryAbort(Message) returns (Message) {}
+    rpc DoUnaryStreamAbort(Message) returns (stream Message) {}
+    rpc DoStreamUnaryAbort(stream Message) returns (Message) {}
+    rpc DoStreamStreamAbort(stream Message) returns (stream Message) {}
+
+    rpc DoUnaryUnaryAbortWithStatus(Message) returns (Message) {}
+    rpc DoUnaryStreamAbortWithStatus(Message) returns (stream Message) {}
+    rpc DoStreamUnaryAbortWithStatus(stream Message) returns (Message) {}
+    rpc DoStreamStreamAbortWithStatus(stream Message) returns (stream Message) {}
+}
+
+message Message {
+    string text = 1;
+    int32 count = 2;
+    bool timesout = 3;
+}

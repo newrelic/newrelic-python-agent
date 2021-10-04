@@ -169,7 +169,10 @@ class Application(object):
         active_session = self._active_session
 
         if active_session:
-            print("Collector URL: %s" % (active_session.collector_url), file=file)
+            try:
+                print("Collector URL: %s" % (active_session._protocol.client._host), file=file)
+            except AttributeError:
+                pass
             print("Agent Run ID: %s" % (active_session.agent_run_id), file=file)
             print("URL Normalization Rules: %r" % (self._rules_engine["url"].rules), file=file)
             print("Metric Normalization Rules: %r" % (self._rules_engine["metric"].rules), file=file)

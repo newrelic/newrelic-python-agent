@@ -93,12 +93,13 @@ try:
 except ImportError:
     pass
 else:
-    log_message("sitecustomize = %r", module_spec)
+    if module_spec is not None:  # Import error not raised in importlib
+        log_message("sitecustomize = %r", module_spec)
 
-    if PY2:
-        imp.load_module("sitecustomize", *module_spec)
-    else:
-        module_spec.loader.load_module("sitecustomize")
+        if PY2:
+            imp.load_module("sitecustomize", *module_spec)
+        else:
+            module_spec.loader.load_module("sitecustomize")
 
 # Because the PYTHONPATH environment variable has been amended and the
 # bootstrap directory added, if a Python application creates a sub

@@ -159,16 +159,14 @@ def test_blocking_task_on_different_loop():
 
     try:
         waiter_events = [asyncio.Event(loop=loops[0]) for _ in range(2)]
-        waiter = wait_for_loop(*waiter_events, times=1)
-
         blocker_events = [asyncio.Event(loop=loops[1]) for _ in range(2)]
-        blocker = block_loop(*blocker_events, blocking_transaction_active=False, times=1)
     except TypeError:
         waiter_events = [asyncio.Event() for _ in range(2)]
-        waiter = wait_for_loop(*waiter_events, times=1)
-
         blocker_events = [asyncio.Event() for _ in range(2)]
-        blocker = block_loop(*blocker_events, blocking_transaction_active=False, times=1)
+
+    waiter = wait_for_loop(*waiter_events, times=1)
+    blocker = block_loop(*blocker_events,
+            blocking_transaction_active=False, times=1)
 
     waiter_task = loops[0].create_task(waiter)
     blocker_task = loops[1].create_task(blocker)

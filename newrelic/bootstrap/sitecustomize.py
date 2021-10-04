@@ -20,6 +20,9 @@ import sys
 
 import time
 
+# Avoiding additional imports by defining PY2 manually
+PY2 = sys.version_info[0] == 2
+
 startup_debug = os.environ.get('NEW_RELIC_STARTUP_DEBUG',
         'off').lower() in ('on', 'true', '1')
 
@@ -68,8 +71,6 @@ for name in sorted(os.environ.keys()):
 # imp module to find the module, excluding the bootstrap directory from
 # the search, and then load what was found.
 
-import imp
-
 boot_directory = os.path.dirname(__file__)
 root_directory = os.path.dirname(os.path.dirname(boot_directory))
 
@@ -82,13 +83,22 @@ if boot_directory in path:
     del path[path.index(boot_directory)]
 
 try:
-    (file, pathname, description) = imp.find_module('sitecustomize', path)
+    if PY2:
+        import imp
+        module_spec = imp.find_module('sitecustomize', path)
+    else:
+        from importlib.machinery import PathFinder
+        module_spec = PathFinder.find_spec("sitecustomize", path=path)
+
 except ImportError:
     pass
 else:
-    log_message('sitecustomize = %r', (file, pathname, description))
+    log_message('sitecustomize = %r', module_spec)
 
-    imp.load_module('sitecustomize', file, pathname, description)
+    if PY2:
+        imp.load_module('sitecustomize', *module_spec)
+    else:
+        module_spec.loader.load_module('sitecustomize')
 
 # Because the PYTHONPATH environment variable has been amended and the
 # bootstrap directory added, if a Python application creates a sub

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import imp
+import newrelic.packages.six as six
 import logging
 import sys
 
@@ -45,7 +45,9 @@ _uninstrumented_modules = set()
 
 
 def register_import_hook(name, callable):
-    imp.acquire_lock()
+    if six.PY2:
+        import imp
+        imp.acquire_lock()
 
     try:
         hooks = _import_hooks.get(name, None)
@@ -102,7 +104,8 @@ def register_import_hook(name, callable):
             _import_hooks[name].append(callable)
 
     finally:
-        imp.release_lock()
+        if six.PY2:
+            imp.release_lock()
 
 
 def _notify_import_hooks(name, module):

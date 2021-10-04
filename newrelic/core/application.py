@@ -41,7 +41,6 @@ from newrelic.core.internal_metrics import (
     internal_count_metric,
     internal_metric,
 )
-import newrelic.packages.six as six
 from newrelic.core.profile_sessions import profile_session_manager
 from newrelic.core.rules_engine import RulesEngine, SegmentCollapseEngine
 from newrelic.core.stats_engine import CustomMetrics, StatsEngine
@@ -52,6 +51,7 @@ from newrelic.network.exceptions import (
     NetworkInterfaceException,
     RetryDataForRequest,
 )
+from newrelic.packages import six
 from newrelic.samplers.data_sampler import DataSampler
 
 _logger = logging.getLogger(__name__)
@@ -61,7 +61,7 @@ class Application(object):
 
     """Class which maintains recorded data for a single application."""
 
-    def __init__(self, app_name, linked_applications=[]):
+    def __init__(self, app_name, linked_applications=None):
         _logger.debug(
             "Initializing application with name %r and " "linked applications of %r.", app_name, linked_applications
         )
@@ -69,7 +69,10 @@ class Application(object):
         self._creation_time = time.time()
 
         self._app_name = app_name
-        self._linked_applications = sorted(set(linked_applications))
+        if linked_applications is not None:
+            self._linked_applications = sorted(set(linked_applications))
+        else:
+            self._linked_applications = set()
 
         self._process_id = None
 
@@ -130,7 +133,7 @@ class Application(object):
 
         self.profile_manager = profile_session_manager()
 
-        self._uninstrumented = None
+        self._uninstrumented = []
 
     @property
     def name(self):
@@ -306,6 +309,7 @@ class Application(object):
         if self._detect_deadlock:
             if six.PY2:
                 import imp
+
                 imp.acquire_lock()
                 self._deadlock_event.set()
                 imp.release_lock()

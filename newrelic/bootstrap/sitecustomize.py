@@ -14,53 +14,51 @@
 
 import os
 import sys
+import time
 
 # Define some debug logging routines to help sort out things when this
 # all doesn't work as expected.
 
-import time
 
 # Avoiding additional imports by defining PY2 manually
 PY2 = sys.version_info[0] == 2
 
-startup_debug = os.environ.get('NEW_RELIC_STARTUP_DEBUG',
-        'off').lower() in ('on', 'true', '1')
+startup_debug = os.environ.get("NEW_RELIC_STARTUP_DEBUG", "off").lower() in ("on", "true", "1")
 
 
 def log_message(text, *args, **kwargs):
-    critical = kwargs.get('critical', False)
+    critical = kwargs.get("critical", False)
     if startup_debug or critical:
         text = text % args
-        timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        sys.stdout.write('NEWRELIC: %s (%d) - %s\n' % (timestamp,
-                os.getpid(), text))
+        timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        sys.stdout.write("NEWRELIC: %s (%d) - %s\n" % (timestamp, os.getpid(), text))
         sys.stdout.flush()
 
 
-log_message('New Relic Bootstrap (%s)', __file__)
+log_message("New Relic Bootstrap (%s)", __file__)
 
-log_message('working_directory = %r', os.getcwd())
+log_message("working_directory = %r", os.getcwd())
 
-log_message('sys.prefix = %r', os.path.normpath(sys.prefix))
+log_message("sys.prefix = %r", os.path.normpath(sys.prefix))
 
 try:
-    log_message('sys.real_prefix = %r', sys.real_prefix)
+    log_message("sys.real_prefix = %r", sys.real_prefix)
 except AttributeError:
     pass
 
-log_message('sys.version_info = %r', sys.version_info)
-log_message('sys.executable = %r', sys.executable)
+log_message("sys.version_info = %r", sys.version_info)
+log_message("sys.executable = %r", sys.executable)
 
-if hasattr(sys, 'flags'):
-    log_message('sys.flags = %r', sys.flags)
+if hasattr(sys, "flags"):
+    log_message("sys.flags = %r", sys.flags)
 
-log_message('sys.path = %r', sys.path)
+log_message("sys.path = %r", sys.path)
 
 for name in sorted(os.environ.keys()):
-    if name.startswith('NEW_RELIC_') or name.startswith('PYTHON'):
-        if name == 'NEW_RELIC_LICENSE_KEY':
+    if name.startswith("NEW_RELIC_") or name.startswith("PYTHON"):
+        if name == "NEW_RELIC_LICENSE_KEY":
             continue
-        log_message('%s = %r', name, os.environ.get(name))
+        log_message("%s = %r", name, os.environ.get(name))
 
 # We need to import the original sitecustomize.py file if it exists. We
 # can't just try and import the existing one as we will pick up
@@ -74,8 +72,8 @@ for name in sorted(os.environ.keys()):
 boot_directory = os.path.dirname(__file__)
 root_directory = os.path.dirname(os.path.dirname(boot_directory))
 
-log_message('root_directory = %r', root_directory)
-log_message('boot_directory = %r', boot_directory)
+log_message("root_directory = %r", root_directory)
+log_message("boot_directory = %r", boot_directory)
 
 path = list(sys.path)
 
@@ -85,20 +83,22 @@ if boot_directory in path:
 try:
     if PY2:
         import imp
-        module_spec = imp.find_module('sitecustomize', path)
+
+        module_spec = imp.find_module("sitecustomize", path)
     else:
         from importlib.machinery import PathFinder
+
         module_spec = PathFinder.find_spec("sitecustomize", path=path)
 
 except ImportError:
     pass
 else:
-    log_message('sitecustomize = %r', module_spec)
+    log_message("sitecustomize = %r", module_spec)
 
     if PY2:
-        imp.load_module('sitecustomize', *module_spec)
+        imp.load_module("sitecustomize", *module_spec)
     else:
-        module_spec.loader.load_module('sitecustomize')
+        module_spec.loader.load_module("sitecustomize")
 
 # Because the PYTHONPATH environment variable has been amended and the
 # bootstrap directory added, if a Python application creates a sub
@@ -109,17 +109,17 @@ else:
 # in the same Python installation as the original newrelic-admin script
 # which was run and only continue if we are.
 
-expected_python_prefix = os.environ.get('NEW_RELIC_PYTHON_PREFIX')
+expected_python_prefix = os.environ.get("NEW_RELIC_PYTHON_PREFIX")
 actual_python_prefix = os.path.realpath(os.path.normpath(sys.prefix))
 
-expected_python_version = os.environ.get('NEW_RELIC_PYTHON_VERSION')
-actual_python_version = '.'.join(map(str, sys.version_info[:2]))
+expected_python_version = os.environ.get("NEW_RELIC_PYTHON_VERSION")
+actual_python_version = ".".join(map(str, sys.version_info[:2]))
 
 python_prefix_matches = expected_python_prefix == actual_python_prefix
 python_version_matches = expected_python_version == actual_python_version
 
-log_message('python_prefix_matches = %r', python_prefix_matches)
-log_message('python_version_matches = %r', python_version_matches)
+log_message("python_prefix_matches = %r", python_prefix_matches)
+log_message("python_version_matches = %r", python_version_matches)
 
 if python_prefix_matches and python_version_matches:
     # We also need to skip agent initialisation if neither the license
@@ -128,12 +128,12 @@ if python_prefix_matches and python_version_matches:
     # the wrapper script, and which controls whether the agent is
     # actually run based on the presence of the environment variables.
 
-    license_key = os.environ.get('NEW_RELIC_LICENSE_KEY', None)
+    license_key = os.environ.get("NEW_RELIC_LICENSE_KEY", None)
 
-    config_file = os.environ.get('NEW_RELIC_CONFIG_FILE', None)
-    environment = os.environ.get('NEW_RELIC_ENVIRONMENT', None)
+    config_file = os.environ.get("NEW_RELIC_CONFIG_FILE", None)
+    environment = os.environ.get("NEW_RELIC_ENVIRONMENT", None)
 
-    log_message('initialize_agent = %r', bool(license_key or config_file))
+    log_message("initialize_agent = %r", bool(license_key or config_file))
 
     if license_key or config_file:
         # When installed as an egg with buildout, the root directory for
@@ -152,7 +152,7 @@ if python_prefix_matches and python_version_matches:
 
         import newrelic.config
 
-        log_message('agent_version = %r', newrelic.version)
+        log_message("agent_version = %r", newrelic.version)
 
         if do_insert_path:
             try:
@@ -164,9 +164,16 @@ if python_prefix_matches and python_version_matches:
 
         newrelic.config.initialize(config_file, environment)
 else:
-    log_message("""New Relic could not start because the newrelic-admin script was called from a Python installation that is different from the Python installation that is currently running. To fix this problem, call the newrelic-admin script from the Python installation that is currently running (details below).
+    log_message(
+        """New Relic could not start because the newrelic-admin script was called from a Python installation that is different from the Python installation that is currently running. To fix this problem, call the newrelic-admin script from the Python installation that is currently running (details below).
 
 newrelic-admin Python directory: %r
 current Python directory: %r
 newrelic-admin Python version: %r
-current Python version: %r""", expected_python_prefix, actual_python_prefix, expected_python_version, actual_python_version, critical=True)
+current Python version: %r""",
+        expected_python_prefix,
+        actual_python_prefix,
+        expected_python_version,
+        actual_python_version,
+        critical=True,
+    )

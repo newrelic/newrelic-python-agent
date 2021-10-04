@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import newrelic.packages.six as six
 import logging
 import sys
+
+from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
 
@@ -26,27 +27,43 @@ except ImportError:
 _import_hooks = {}
 
 _ok_modules = (
-        # These modules are imported by the newrelic package and/or do not do
-        # nested imports, so they're ok to import before newrelic.
-        'urllib', 'urllib2', 'httplib', 'http.client', 'urllib.request',
-        'newrelic.agent', 'asyncio','asyncio.events',
-
-        # These modules should not be added to the _uninstrumented_modules set
-        # because they have been deemed okay to import before initialization by
-        # the customer.
-        'gunicorn.app.base', 'wsgiref.simple_server', 'gevent.wsgi',
-        'gevent.pywsgi', 'cheroot.wsgi', 'cherrypy.wsgiserver',
-        'flup.server.cgi', 'flup.server.ajp_base', 'flup.server.fcgi_base',
-        'flup.server.scgi_base', 'meinheld.server', 'paste.httpserver',
-        'waitress.server', 'gevent.monkey', 'asyncio.base_events',
+    # These modules are imported by the newrelic package and/or do not do
+    # nested imports, so they're ok to import before newrelic.
+    "urllib",
+    "urllib2",
+    "httplib",
+    "http.client",
+    "urllib.request",
+    "newrelic.agent",
+    "asyncio",
+    "asyncio.events",
+    # These modules should not be added to the _uninstrumented_modules set
+    # because they have been deemed okay to import before initialization by
+    # the customer.
+    "gunicorn.app.base",
+    "wsgiref.simple_server",
+    "gevent.wsgi",
+    "gevent.pywsgi",
+    "cheroot.wsgi",
+    "cherrypy.wsgiserver",
+    "flup.server.cgi",
+    "flup.server.ajp_base",
+    "flup.server.fcgi_base",
+    "flup.server.scgi_base",
+    "meinheld.server",
+    "paste.httpserver",
+    "waitress.server",
+    "gevent.monkey",
+    "asyncio.base_events",
 )
 
 _uninstrumented_modules = set()
 
 
-def register_import_hook(name, callable):
+def register_import_hook(name, callable):  # pylint: disable=redefined-builtin
     if six.PY2:
         import imp
+
         imp.acquire_lock()
 
     try:
@@ -68,11 +85,14 @@ def register_import_hook(name, callable):
                 # immediately.
 
                 if module.__name__ not in _ok_modules:
-                    _logger.debug('Module %s has been imported before the '
-                            'newrelic.agent.initialize call. Import and '
-                            'initialize the New Relic agent before all '
-                            'other modules for best monitoring '
-                            'results.' % module)
+                    _logger.debug(
+                        "Module %s has been imported before the "
+                        "newrelic.agent.initialize call. Import and "
+                        "initialize the New Relic agent before all "
+                        "other modules for best monitoring "
+                        "results.",
+                        module,
+                    )
 
                     # Add the module name to the set of uninstrumented modules.
                     # During harvest, this set will be used to produce metrics.
@@ -119,12 +139,11 @@ def _notify_import_hooks(name, module):
     if hooks is not None:
         _import_hooks[name] = None
 
-        for callable in hooks:
-            callable(module)
+        for hook in hooks:
+            hook(module)
 
 
 class _ImportHookLoader:
-
     def load_module(self, fullname):
 
         # Call the import hooks on the module being handled.
@@ -136,7 +155,6 @@ class _ImportHookLoader:
 
 
 class _ImportHookChainedLoader:
-
     def __init__(self, loader):
         self.loader = loader
 
@@ -151,7 +169,6 @@ class _ImportHookChainedLoader:
 
 
 class ImportHookFinder:
-
     def __init__(self):
         self._skip = {}
 
@@ -181,7 +198,7 @@ class ImportHookFinder:
 
             if find_spec:
                 spec = find_spec(fullname)
-                loader = getattr(spec, 'loader', None)
+                loader = getattr(spec, "loader", None)
 
                 if loader:
                     return _ImportHookChainedLoader(loader)
@@ -204,6 +221,7 @@ def import_hook(name):
     def decorator(wrapped):
         register_import_hook(name, wrapped)
         return wrapped
+
     return decorator
 
 

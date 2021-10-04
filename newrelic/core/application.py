@@ -71,7 +71,7 @@ class Application(object):
         if linked_applications is not None:
             self._linked_applications = sorted(set(linked_applications))
         else:
-            self._linked_applications = set()
+            self._linked_applications = []
 
         self._process_id = None
 

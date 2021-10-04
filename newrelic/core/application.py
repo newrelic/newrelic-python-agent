@@ -18,7 +18,6 @@
 
 from __future__ import print_function
 
-import imp
 import logging
 import os
 import sys

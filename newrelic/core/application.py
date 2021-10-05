@@ -229,7 +229,7 @@ class Application(object):
         thread = threading.Thread(
             target=self.connect_to_data_collector, name="NR-Activate-Session/%s" % self.name, args=(activate_agent,)
         )
-        thread.setDaemon(True)
+        thread.daemon = True
         thread.start()
 
         if not timeout:
@@ -238,7 +238,12 @@ class Application(object):
         if self._detect_deadlock:
             self._deadlock_event.wait(deadlock_timeout)
 
-            if not self._deadlock_event.isSet():
+            try:
+                deadlock_event_set = self._deadlock_event.is_set()
+            except TypeError:
+                deadlock_event_set = self._deadlock_event.isSet()
+
+            if not deadlock_event_set:
                 _logger.warning(
                     "Detected potential deadlock while waiting "
                     "for activation of session for application %r. "
@@ -255,7 +260,12 @@ class Application(object):
 
         self._connected_event.wait(timeout)
 
-        if not self._connected_event.isSet():
+        try:
+            connected_event_set = self._connected_event.is_set()
+        except TypeError:
+            connected_event_set = self._connected_event.isSet()
+
+        if not connected_event_set:
             _logger.debug(
                 "Timeout waiting for activation of session for " "application %r where timeout was %.02f seconds.",
                 self._app_name,

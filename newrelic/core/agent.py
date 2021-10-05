@@ -208,7 +208,7 @@ class Agent(object):
         self._config = config
 
         self._harvest_thread = threading.Thread(target=self._harvest_loop, name="NR-Harvest-Thread")
-        self._harvest_thread.setDaemon(True)
+        self._harvest_thread.daemon = True
         self._harvest_shutdown = threading.Event()
 
         self._default_harvest_count = 0
@@ -560,8 +560,14 @@ class Agent(object):
         application = self._applications.get(app_name, None)
         return application.compute_sampled()
 
+    def _harvest_shutdown_is_set(self):
+        try:
+            return self._harvest_shutdown.is_set()
+        except TypeError:
+            return self._harvest_shutdown.isSet()
+                
     def _harvest_flexible(self, shutdown=False):
-        if not self._harvest_shutdown.isSet():
+        if not self._harvest_shutdown_is_set():
             event_harvest_config = self.global_settings().event_harvest_config
 
             self._scheduler.enter(event_harvest_config.report_period_ms / 1000.0, 1, self._harvest_flexible, ())
@@ -587,7 +593,7 @@ class Agent(object):
         )
 
     def _harvest_default(self, shutdown=False):
-        if not self._harvest_shutdown.isSet():
+        if not self._harvest_shutdown_is_set():
             self._scheduler.enter(60.0, 2, self._harvest_default, ())
             _logger.debug("Commencing harvest[default] of application data.")
         elif not shutdown:
@@ -611,7 +617,7 @@ class Agent(object):
         )
 
     def _harvest_timer(self):
-        if self._harvest_shutdown.isSet():
+        if self._harvest_shutdown_is_set():
             return float("inf")
         return time.time()
 
@@ -691,7 +697,7 @@ class Agent(object):
         self.shutdown_agent()
 
     def shutdown_agent(self, timeout=None):
-        if self._harvest_shutdown.isSet():
+        if self._harvest_shutdown_is_set():
             return
 
         if timeout is None:

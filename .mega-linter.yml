@@ -6,7 +6,10 @@ DEFAULT_BRANCH: main # Usually master or main
 SHOW_ELAPSED_TIME: true
 FILEIO_REPORTER: false
 PRINT_ALPACA: false
-VALIDATE_ALL_CODEBASE: false
+VALIDATE_ALL_CODEBASE: false # only lint new and edited files
+IGNORE_GITIGNORED_FILES: true
+FILTER_REGEX_EXCLUDE: "(.*/?packages/.*)" # Ignore packages directories
+
 ENABLE_LINTERS: # If you use ENABLE_LINTERS variable, all other linters will be disabled by default
   - MARKDOWN_MARKDOWN_LINK_CHECK
   - MARKDOWN_MARKDOWNLINT
@@ -30,34 +33,3 @@ PYTHON_ISORT_CONFIG_FILE: pyproject.toml
 # Bandit's next release supports pyproject.toml. Until then, add config by cli option
 PYTHON_BANDIT_ARGUMENTS: --skip=B110,B101,B404
 PYTHON_PYLINT_ARGUMENTS: "--fail-under=0 --fail-on=E"
-
-# IGNORE_GITIGNORED_FILES: true # Currently broken
-EXCLUDED_DIRECTORIES:
-  - "__pycache__"
-  - ".eggs"
-  - ".env"
-  - ".mypy_cache"
-  - ".nox"
-  - ".pytest_cache"
-  - ".pytype"
-  - ".tox"
-  - ".venv"
-  - "build"
-  - "cover"
-  - "cython_debug"
-  - "develop-eggs"
-  - "dist"
-  - "downloads"
-  - "eggs"
-  - "env"
-  - "htmlcov"
-  - "lib"
-  - "lib64"
-  - "parts"
-  - "report"
-  - "sdist"
-  - "python-wheels"
-  - "target"
-  - "var"
-  - "venv"
-  - "wheels"

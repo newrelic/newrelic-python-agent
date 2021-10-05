@@ -189,7 +189,7 @@ class ProfileSessionManager(object):
             if not self._profiler_thread_running:
                 self._profiler_thread = threading.Thread(
                         target=self._profiler_loop, name='NR-Profiler-Thread')
-                self._profiler_thread.setDaemon(True)
+                self._profiler_thread.daemon = True
 
                 self._profiler_thread.start()
                 self._profiler_thread_running = True

@@ -186,9 +186,12 @@ def test_two_transactions(event_loop, trace):
 
         done.set()
 
-    afut = asyncio.ensure_future(create_coro())
-    bfut = asyncio.ensure_future(await_task())
-    event_loop.run_until_complete(asyncio.gather(afut, bfut))
+    afut = asyncio.ensure_future(create_coro(), loop=event_loop)
+    bfut = asyncio.ensure_future(await_task(), loop=event_loop)
+    try:
+        event_loop.run_until_complete(asyncio.gather(afut, bfut, loop=event_loop))
+    except TypeError:
+        event_loop.run_until_complete(asyncio.gather(afut, bfut))
 
 
 # Sentinel left in cache transaction exited

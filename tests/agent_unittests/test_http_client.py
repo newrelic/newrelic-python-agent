@@ -99,13 +99,22 @@ class InsecureServer(MockExternalHTTPServer):
 class SecureServer(InsecureServer):
     def __init__(self, *args, **kwargs):
         super(SecureServer, self).__init__(*args, **kwargs)
-        self.httpd.socket = ssl.wrap_socket(
-            self.httpd.socket,
-            server_side=True,
-            keyfile=SERVER_CERT,
-            certfile=SERVER_CERT,
-            do_handshake_on_connect=False,
-        )
+        try:
+            self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            self.context.load_cert_chain(certfile=SERVER_CERT, keyfile=SERVER_CERT)
+            self.httpd.socket = self.context.wrap_socket(
+                sock=self.httpd.socket,
+                server_side=True,
+                do_handshake_on_connect=False,
+            )
+        except (AttributeError, TypeError):
+            self.httpd.socket = ssl.wrap_socket(
+                self.httpd.socket,
+                server_side=True,
+                keyfile=SERVER_CERT,
+                certfile=SERVER_CERT,
+                do_handshake_on_connect=False,
+            )
 
 
 @pytest.fixture(scope="module")

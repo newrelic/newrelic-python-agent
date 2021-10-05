@@ -41,8 +41,8 @@ except ImportError:
 try:
     import grpc
 
-    from newrelic.core.infinite_tracing_pb2 import (
-        Span as _,  # NOQA # pylint: disable=W0611,C0412
+    from newrelic.core.infinite_tracing_pb2 import (  # pylint: disable=W0611,C0412  # noqa: F401
+        Span,
     )
 except ImportError:
     grpc = None
@@ -1034,13 +1034,12 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     apply_config_setting(settings_snapshot, "event_harvest_config.whitelist", frozenset(harvest_limits))
 
     # Override span event harvest config
-    span_event_harvest_config = server_side_config.get('span_event_harvest_config', {})
+    span_event_harvest_config = server_side_config.get("span_event_harvest_config", {})
     span_event_harvest_limit = span_event_harvest_config.get("harvest_limit", None)
     if span_event_harvest_limit is not None:
         apply_config_setting(
-                settings_snapshot,
-                'event_harvest_config.harvest_limits.span_event_data',
-                span_event_harvest_limit)
+            settings_snapshot, "event_harvest_config.harvest_limits.span_event_data", span_event_harvest_limit
+        )
 
     # This will be removed at some future point
     # Special case for account_id which will be sent instead of
@@ -1103,22 +1102,28 @@ def ignore_status_code(status):
 def is_expected_error(
     exc_info,
     status_code=None,
+    settings=None,
 ):
+    """Check if an error is expected based on rules matching. Default is False when settings lookup fails."""
     return error_matches_rules(
         "expected",
         exc_info,
         status_code=status_code,
+        settings=settings,
     )
 
 
 def should_ignore_error(
     exc_info,
     status_code=None,
+    settings=None,
 ):
+    """Check if an error should be ignored based on rules matching. Default is True when settings lookup fails."""
     return error_matches_rules(
         "ignore",
         exc_info,
         status_code=status_code,
+        settings=settings,
     )
 
 
@@ -1126,30 +1131,42 @@ def error_matches_rules(
     rules_prefix,
     exc_info,
     status_code=None,
+    settings=None,
 ):
+    """
+    Attempt to match exception to rules based on prefix.
+
+    rules_prefix is one of [ignore, expected]
+    exc_info is an exception tuple of (exc, val, tb)
+    status_code is an optional value or callable taking in exc_info that returns an int-like object
+    origin is either the current application or trace.
+    """
     # Delay imports to prevent lockups
-    from newrelic.api.application import application_instance
     from newrelic.core.trace_cache import trace_cache
 
-    trace = trace_cache().current_trace()
-    settings = trace and trace.settings
-
     if not settings:
-        # Retrieve application settings
-        application = application_instance()
-        settings = application and application.settings
+        # Pull from current transaction if no settings provided
+        tc = trace_cache()
+        transaction = tc.current_transaction()
+        settings = transaction and transaction.settings
 
-    # Default to global settings
-    settings = settings or global_settings()
+        if not settings:
+            # Pull from active trace if no settings on transaction
+            trace = tc.current_trace()
+            settings = trace and trace.settings
 
-    if not settings:
-        return False
+            if not settings:
+                # Unable to find rules to match with
+                _logger.error(
+                    "Failed to retrieve exception rules: No settings supplied, or found on transaction or trace."
+                )
+                return None
 
     # Retrieve settings based on prefix
     classes_rules = getattr(settings.error_collector, "%s_classes" % rules_prefix, set())
     status_codes_rules = getattr(settings.error_collector, "%s_status_codes" % rules_prefix, set())
 
-    module, name, fullnames, message = parse_exc_info(exc_info)
+    _, _, fullnames, _ = parse_exc_info(exc_info)
     fullname = fullnames[0]
 
     # Check class names

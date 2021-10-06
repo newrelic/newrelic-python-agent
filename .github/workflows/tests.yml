@@ -75,6 +75,7 @@ jobs:
           ]
 
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v2
@@ -144,6 +145,7 @@ jobs:
         group-number: [1]
 
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v2
@@ -213,6 +215,7 @@ jobs:
         group-number: [1]
 
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v2
@@ -289,6 +292,7 @@ jobs:
         group-number: [1, 2]
 
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     services:
       postgres:
@@ -374,6 +378,7 @@ jobs:
         group-number: [1, 2]
 
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     services:
       mysql:
@@ -462,6 +467,7 @@ jobs:
         group-number: [1]
 
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     services:
       redis:
@@ -545,6 +551,7 @@ jobs:
         group-number: [1]
 
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     services:
       solr:
@@ -630,6 +637,7 @@ jobs:
         group-number: [1, 2]
 
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     services:
       memcached:
@@ -713,6 +721,7 @@ jobs:
         group-number: [1]
 
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     services:
       rabbitmq:
@@ -797,6 +806,7 @@ jobs:
         group-number: [1]
 
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     services:
       mongodb:
@@ -880,6 +890,7 @@ jobs:
         group-number: [1]
 
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     services:
       es01:
@@ -965,6 +976,7 @@ jobs:
         group-number: [1]
 
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     services:
       es01:
@@ -1050,6 +1062,7 @@ jobs:
         group-number: [1]
 
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     services:
       gearman:

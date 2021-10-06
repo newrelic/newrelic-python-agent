@@ -18,7 +18,6 @@
 
 from __future__ import print_function
 
-import imp
 import logging
 import os
 import sys
@@ -51,6 +50,7 @@ from newrelic.network.exceptions import (
     NetworkInterfaceException,
     RetryDataForRequest,
 )
+from newrelic.packages import six
 from newrelic.samplers.data_sampler import DataSampler
 
 _logger = logging.getLogger(__name__)
@@ -60,7 +60,7 @@ class Application(object):
 
     """Class which maintains recorded data for a single application."""
 
-    def __init__(self, app_name, linked_applications=[]):
+    def __init__(self, app_name, linked_applications=None):
         _logger.debug(
             "Initializing application with name %r and " "linked applications of %r.", app_name, linked_applications
         )
@@ -68,7 +68,10 @@ class Application(object):
         self._creation_time = time.time()
 
         self._app_name = app_name
-        self._linked_applications = sorted(set(linked_applications))
+        if linked_applications is not None:
+            self._linked_applications = sorted(set(linked_applications))
+        else:
+            self._linked_applications = []
 
         self._process_id = None
 
@@ -129,7 +132,7 @@ class Application(object):
 
         self.profile_manager = profile_session_manager()
 
-        self._uninstrumented = None
+        self._uninstrumented = []
 
     @property
     def name(self):
@@ -166,7 +169,10 @@ class Application(object):
         active_session = self._active_session
 
         if active_session:
-            print("Collector URL: %s" % (active_session.collector_url), file=file)
+            try:
+                print("Collector URL: %s" % (active_session._protocol.client._host), file=file)
+            except AttributeError:
+                pass
             print("Agent Run ID: %s" % (active_session.agent_run_id), file=file)
             print("URL Normalization Rules: %r" % (self._rules_engine["url"].rules), file=file)
             print("Metric Normalization Rules: %r" % (self._rules_engine["metric"].rules), file=file)
@@ -313,9 +319,14 @@ class Application(object):
         # code run from this thread performs a deferred module import.
 
         if self._detect_deadlock:
-            imp.acquire_lock()
-            self._deadlock_event.set()
-            imp.release_lock()
+            if six.PY2:
+                import imp
+
+                imp.acquire_lock()
+                self._deadlock_event.set()
+                imp.release_lock()
+            else:
+                self._deadlock_event.set()
 
         # Register the application with the data collector. Any errors
         # that occur will be dealt with by create_session(). The result

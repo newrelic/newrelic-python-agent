@@ -61,43 +61,43 @@ jobs:
       # Set up all versions of python
       - uses: actions/setup-python@v2
         with:
-          python-version: 2.7
+          python-version: "2.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.6
+          python-version: "3.6"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: "3.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: "3.8"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: "3.9"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.10
+          python-version: "3.10"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy3
+          python-version: "pypy3"
           architecture: x64
 
       # Setup pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy2
+          python-version: "pypy2"
           architecture: x64
 
       - name: Install Dependencies
@@ -135,43 +135,43 @@ jobs:
       # Set up all versions of python
       - uses: actions/setup-python@v2
         with:
-          python-version: 2.7
+          python-version: "2.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.6
+          python-version: "3.6"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: "3.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: "3.8"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: "3.9"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.10
+          python-version: "3.10"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy3
+          python-version: "pypy3"
           architecture: x64
 
       # Setup pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy2
+          python-version: "pypy2"
           architecture: x64
 
       - name: Install Dependencies
@@ -209,44 +209,44 @@ jobs:
       # Set up all versions of python
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy3
+          python-version: "pypy3"
           architecture: x64
 
       # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy2
+          python-version: "pypy2"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 2.7
+          python-version: "2.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.6
+          python-version: "3.6"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: "3.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: "3.8"
           architecture: x64
 
       # Set up python 3.9 last to ensure tox runs CPython
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: "3.9"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.10
+          python-version: "3.10"
           architecture: x64
 
       - name: Install Dependencies
@@ -305,44 +305,44 @@ jobs:
       # Set up all versions of python
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy3
+          python-version: "pypy3"
           architecture: x64
 
       # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy2
+          python-version: "pypy2"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 2.7
+          python-version: "2.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.6
+          python-version: "3.6"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: "3.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: "3.8"
           architecture: x64
 
       # Set up python 3.9 last to ensure tox runs CPython
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: "3.9"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.10
+          python-version: "3.10"
           architecture: x64
 
       - name: Install Dependencies
@@ -398,44 +398,44 @@ jobs:
       # Set up all versions of python
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy3
+          python-version: "pypy3"
           architecture: x64
 
       # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy2
+          python-version: "pypy2"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 2.7
+          python-version: "2.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.6
+          python-version: "3.6"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: "3.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: "3.8"
           architecture: x64
 
       # Set up python 3.9 last to ensure tox runs CPython
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: "3.9"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.10
+          python-version: "3.10"
           architecture: x64
 
       - name: Install Dependencies
@@ -486,44 +486,44 @@ jobs:
       # Set up all versions of python
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy3
+          python-version: "pypy3"
           architecture: x64
 
       # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy2
+          python-version: "pypy2"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 2.7
+          python-version: "2.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.6
+          python-version: "3.6"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: "3.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: "3.8"
           architecture: x64
 
       # Set up python 3.9 last to ensure tox runs CPython
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: "3.9"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.10
+          python-version: "3.10"
           architecture: x64
 
       - name: Install Dependencies
@@ -576,44 +576,44 @@ jobs:
       # Set up all versions of python
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy3
+          python-version: "pypy3"
           architecture: x64
 
       # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy2
+          python-version: "pypy2"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 2.7
+          python-version: "2.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.6
+          python-version: "3.6"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: "3.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: "3.8"
           architecture: x64
 
       # Set up python 3.9 last to ensure tox runs CPython
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: "3.9"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.10
+          python-version: "3.10"
           architecture: x64
 
       - name: Install Dependencies
@@ -664,44 +664,44 @@ jobs:
       # Set up all versions of python
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy3
+          python-version: "pypy3"
           architecture: x64
 
       # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy2
+          python-version: "pypy2"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 2.7
+          python-version: "2.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.6
+          python-version: "3.6"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: "3.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: "3.8"
           architecture: x64
 
       # Set up python 3.9 last to ensure tox runs CPython
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: "3.9"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.10
+          python-version: "3.10"
           architecture: x64
 
       - name: Install Dependencies
@@ -753,44 +753,44 @@ jobs:
       # Set up all versions of python
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy3
+          python-version: "pypy3"
           architecture: x64
 
       # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy2
+          python-version: "pypy2"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 2.7
+          python-version: "2.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.6
+          python-version: "3.6"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: "3.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: "3.8"
           architecture: x64
 
       # Set up python 3.9 last to ensure tox runs CPython
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: "3.9"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.10
+          python-version: "3.10"
           architecture: x64
 
       - name: Install Dependencies
@@ -841,44 +841,44 @@ jobs:
       # Set up all versions of python
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy3
+          python-version: "pypy3"
           architecture: x64
 
       # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy2
+          python-version: "pypy2"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 2.7
+          python-version: "2.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.6
+          python-version: "3.6"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: "3.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: "3.8"
           architecture: x64
 
       # Set up python 3.9 last to ensure tox runs CPython
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: "3.9"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.10
+          python-version: "3.10"
           architecture: x64
 
       - name: Install Dependencies
@@ -931,44 +931,44 @@ jobs:
       # Set up all versions of python
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy3
+          python-version: "pypy3"
           architecture: x64
 
       # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy2
+          python-version: "pypy2"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 2.7
+          python-version: "2.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.6
+          python-version: "3.6"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: "3.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: "3.8"
           architecture: x64
 
       # Set up python 3.9 last to ensure tox runs CPython
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: "3.9"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.10
+          python-version: "3.10"
           architecture: x64
 
       - name: Install Dependencies
@@ -1021,44 +1021,44 @@ jobs:
       # Set up all versions of python
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy3
+          python-version: "pypy3"
           architecture: x64
 
       # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy2
+          python-version: "pypy2"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 2.7
+          python-version: "2.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.6
+          python-version: "3.6"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: "3.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: "3.8"
           architecture: x64
 
       # Set up python 3.9 last to ensure tox runs CPython
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: "3.9"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.10
+          python-version: "3.10"
           architecture: x64
 
       - name: Install Dependencies
@@ -1108,44 +1108,44 @@ jobs:
       # Set up all versions of python
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy3
+          python-version: "pypy3"
           architecture: x64
 
       # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
       - uses: actions/setup-python@v2
         with:
-          python-version: pypy2
+          python-version: "pypy2"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 2.7
+          python-version: "2.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.6
+          python-version: "3.6"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: "3.7"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: "3.8"
           architecture: x64
 
       # Set up python 3.9 last to ensure tox runs CPython
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: "3.9"
           architecture: x64
 
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.10
+          python-version: "3.10"
           architecture: x64
 
       - name: Install Dependencies

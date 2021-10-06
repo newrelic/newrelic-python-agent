@@ -149,7 +149,12 @@ def test_simultaneous_requests(method, uri, metric_name,
     @asyncio.coroutine
     def multi_fetch(loop):
         coros = [fetch() for i in range(2)]
-        combined = asyncio.gather(*coros, loop=loop)
+
+        try:
+            combined = asyncio.gather(*coros)
+        except TypeError:
+            combined = asyncio.gather(*coros, loop=loop)
+
         responses = yield from combined
         return responses
 

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 import uvloop
 import pytest
 from newrelic.api.background_task import background_task, BackgroundTask
@@ -186,12 +187,14 @@ def test_two_transactions(event_loop, trace):
 
         done.set()
 
-    afut = asyncio.ensure_future(create_coro(), loop=event_loop)
-    bfut = asyncio.ensure_future(await_task(), loop=event_loop)
-    try:
-        event_loop.run_until_complete(asyncio.gather(afut, bfut, loop=event_loop))
-    except TypeError:
+    if sys.version_info >= (3, 10, 0):
+        afut = asyncio.ensure_future(create_coro(), loop=event_loop)
+        bfut = asyncio.ensure_future(await_task(), loop=event_loop)
         event_loop.run_until_complete(asyncio.gather(afut, bfut))
+    else:
+        afut = asyncio.ensure_future(create_coro())
+        bfut = asyncio.ensure_future(await_task())
+        asyncio.get_event_loop().run_until_complete(asyncio.gather(afut, bfut))
 
 
 # Sentinel left in cache transaction exited

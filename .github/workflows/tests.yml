@@ -23,6 +23,27 @@ on:
   pull_request:
 
 jobs:
+  tests:  # Aggregate job that provides a single check for workflow success
+    runs-on: ubuntu-latest
+    needs: 
+      - python
+      - grpc
+      - libcurl
+      - postgres
+      - mysql
+      - redis
+      - solr
+      - memcached
+      - rabbitmq
+      - mongodb
+      - elasticsearchserver01
+      - elasticsearchserver07
+      - gearman
+    
+    steps:
+      - name: Success
+        run: echo "Success!"
+
   python:
     env:
       TOTAL_GROUPS: 20

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import asyncio
+
 from gunicorn.workers.sync import SyncWorker
 
 
@@ -25,16 +26,16 @@ class WsgiProxy(object):
 
     def __call__(self, environ, start_response):
         loop = asyncio.new_event_loop()
-        instance = self.asgi({'type': 'http'})
+        instance = self.asgi({"type": "http"})
         loop.run_until_complete(instance(self.receive, self.send))
-        start_response('200 OK', [])
-        return [b'PONG']
+        start_response("200 OK", [])
+        return [b"PONG"]
 
     async def send(self, message):
         pass
 
     async def receive(self):
-        return {'type': 'http.request'}
+        return {"type": "http.request"}
 
 
 class AsgiWorker(SyncWorker):

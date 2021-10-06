@@ -21,24 +21,23 @@ from urllib.request import HTTPError, urlopen
 
 import pytest
 import uvicorn
+from testing_support.fixtures import (
+    override_application_settings,
+    raise_background_exceptions,
+    validate_transaction_errors,
+    validate_transaction_metrics,
+    wait_for_background_threads,
+)
+from testing_support.sample_asgi_applications import (
+    AppWithCall,
+    AppWithCallRaw,
+    simple_app_v2_raw,
+)
 from uvicorn.config import Config
 from uvicorn.main import Server
 
 from newrelic.api.asgi_application import ASGIApplicationWrapper
 from newrelic.common.object_names import callable_name
-from testing_support.fixtures import (
-    override_application_settings,
-    validate_transaction_errors,
-    validate_transaction_metrics,
-    raise_background_exceptions,
-    wait_for_background_threads,
-)
-from testing_support.sample_asgi_applications import (
-    simple_app_v2_raw,
-    AppWithCall,
-    AppWithCallRaw,
-)
-
 
 UVICORN_VERSION = tuple(int(v) for v in uvicorn.__version__.split(".")[:2])
 
@@ -56,15 +55,11 @@ def get_open_port():
         simple_app_v2_raw,
         pytest.param(
             AppWithCallRaw(),
-            marks=pytest.mark.skipif(
-                UVICORN_VERSION < (0, 6), reason="ASGI3 unsupported"
-            ),
+            marks=pytest.mark.skipif(UVICORN_VERSION < (0, 6), reason="ASGI3 unsupported"),
         ),
         pytest.param(
             AppWithCall(),
-            marks=pytest.mark.skipif(
-                UVICORN_VERSION < (0, 6), reason="ASGI3 unsupported"
-            ),
+            marks=pytest.mark.skipif(UVICORN_VERSION < (0, 6), reason="ASGI3 unsupported"),
         ),
     ),
     ids=("raw", "class_with_call", "class_with_call_double_wrapped"),

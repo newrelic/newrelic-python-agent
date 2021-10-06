@@ -1,18 +1,17 @@
 import asyncio
-import pytest
-from testing_support.fixtures import (
-    dt_enabled,
-    validate_transaction_metrics,
-)
-from testing_support.validators.validate_span_events import validate_span_events
-from newrelic.api.background_task import background_task
 
+import pytest
 from test_application import is_graphql_2
+from testing_support.fixtures import dt_enabled, validate_transaction_metrics
+from testing_support.validators.validate_span_events import validate_span_events
+
+from newrelic.api.background_task import background_task
 
 
 @pytest.fixture(scope="session")
 def graphql_run_async():
-    from graphql import graphql, __version__ as version
+    from graphql import __version__ as version
+    from graphql import graphql
 
     major_version = int(version.split(".")[0])
     if major_version == 2:
@@ -81,9 +80,7 @@ def test_query_and_mutation_async(app, graphql_run_async, is_graphql_2):
     @background_task()
     def _test():
         async def coro():
-            response = await graphql_run_async(
-                app, 'mutation { storage_add(string: "abc") }'
-            )
+            response = await graphql_run_async(app, 'mutation { storage_add(string: "abc") }')
             assert not response.errors
             response = await graphql_run_async(app, "query { storage }")
             assert not response.errors

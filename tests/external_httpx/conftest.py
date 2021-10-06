@@ -15,13 +15,12 @@
 import asyncio
 
 import pytest
+from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import (
     code_coverage_fixture,
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
-
-from testing_support.fixture.event_loop import event_loop as loop
 
 _coverage_source = [
     "newrelic.api.external_trace",
@@ -48,4 +47,3 @@ def httpx():
     import httpx
 
     return httpx
-

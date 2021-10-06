@@ -12,29 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
 import os
 import random
-import pytest
-import asyncio
-import asyncpg
-
 from io import BytesIO
 
-from newrelic.api.background_task import background_task
+import asyncpg
+import pytest
+from testing_support.db_settings import postgresql_settings
 from testing_support.fixtures import (
     validate_transaction_metrics,
     validate_tt_collector_json,
 )
 from testing_support.util import instance_hostname
-from testing_support.db_settings import postgresql_settings
+
+from newrelic.api.background_task import background_task
 
 DB_SETTINGS = postgresql_settings()[0]
 
 
 PG_PREFIX = "Datastore/operation/Postgres/"
-ASYNCPG_VERSION = tuple(
-    int(x) for x in getattr(asyncpg, "__version__", "0.0").split(".")[:2]
-)
+ASYNCPG_VERSION = tuple(int(x) for x in getattr(asyncpg, "__version__", "0.0").split(".")[:2])
 
 if ASYNCPG_VERSION < (0, 11):
     CONNECT_METRICS = ()
@@ -63,9 +61,7 @@ def conn(event_loop):
     scoped_metrics=((PG_PREFIX + "select", 1),),
     rollup_metrics=(("Datastore/all", 1),),
 )
-@validate_tt_collector_json(
-    datastore_params={"port_path_or_id": str(DB_SETTINGS["port"])}
-)
+@validate_tt_collector_json(datastore_params={"port_path_or_id": str(DB_SETTINGS["port"])})
 @background_task(name="test_single")
 @pytest.mark.parametrize("method", ("execute",))
 def test_single(event_loop, method, conn):
@@ -104,16 +100,12 @@ def test_prepare(event_loop, conn):
 def table(event_loop, conn):
     table_name = "table_%d" % os.getpid()
 
-    event_loop.run_until_complete(
-        conn.execute("""create table %s (a integer, b real, c text)""" % table_name)
-    )
+    event_loop.run_until_complete(conn.execute("""create table %s (a integer, b real, c text)""" % table_name))
 
     return table_name
 
 
-@pytest.mark.skipif(
-    ASYNCPG_VERSION < (0, 11), reason="Copy wasn't implemented before 0.11"
-)
+@pytest.mark.skipif(ASYNCPG_VERSION < (0, 11), reason="Copy wasn't implemented before 0.11")
 @validate_transaction_metrics(
     "test_copy",
     background_task=True,
@@ -201,9 +193,7 @@ def test_cursor(event_loop, conn):
     background_task=True,
     rollup_metrics=[
         (
-            "Datastore/instance/Postgres/"
-            + instance_hostname("localhost")
-            + "//.s.PGSQL.THIS_FILE_BETTER_NOT_EXIST",
+            "Datastore/instance/Postgres/" + instance_hostname("localhost") + "//.s.PGSQL.THIS_FILE_BETTER_NOT_EXIST",
             1,
         )
     ],
@@ -211,9 +201,7 @@ def test_cursor(event_loop, conn):
 @background_task(name="test_unix_socket_connect")
 def test_unix_socket_connect(event_loop):
     with pytest.raises(OSError):
-        event_loop.run_until_complete(
-            asyncpg.connect("postgres://?host=/.s.PGSQL.THIS_FILE_BETTER_NOT_EXIST")
-        )
+        event_loop.run_until_complete(asyncpg.connect("postgres://?host=/.s.PGSQL.THIS_FILE_BETTER_NOT_EXIST"))
 
 
 @pytest.mark.skipif(

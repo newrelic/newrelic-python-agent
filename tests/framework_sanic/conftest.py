@@ -12,55 +12,59 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
+
 import pytest
+from testing_support.fixtures import (
+    code_coverage_fixture,
+    collector_agent_registration_fixture,
+    collector_available_fixture,
+)
 
 from newrelic.common.object_wrapper import transient_function_wrapper
 
-from testing_support.fixtures import (code_coverage_fixture,
-        collector_agent_registration_fixture, collector_available_fixture)
-
-import asyncio
-
 _coverage_source = [
-    'newrelic.hooks.framework_sanic',
+    "newrelic.hooks.framework_sanic",
 ]
 
 code_coverage = code_coverage_fixture(source=_coverage_source)
 
 _default_settings = {
-    'transaction_tracer.explain_threshold': 0.0,
-    'transaction_tracer.transaction_threshold': 0.0,
-    'transaction_tracer.stack_trace_threshold': 0.0,
-    'debug.log_data_collector_payloads': True,
-    'debug.record_transaction_failure': True,
+    "transaction_tracer.explain_threshold": 0.0,
+    "transaction_tracer.transaction_threshold": 0.0,
+    "transaction_tracer.stack_trace_threshold": 0.0,
+    "debug.log_data_collector_payloads": True,
+    "debug.record_transaction_failure": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-        app_name='Python Agent Test (framework_sanic)',
-        default_settings=_default_settings)
+    app_name="Python Agent Test (framework_sanic)", default_settings=_default_settings
+)
 
 
 RESPONSES = []
 
 loop = None
 
+
 def create_request_class(app, method, url, headers=None, loop=None):
     from sanic.request import Request
+
     try:
         _request = Request(
             method=method.upper(),
-            url_bytes=url.encode('utf-8'),
+            url_bytes=url.encode("utf-8"),
             headers=headers,
-            version='1.0',
+            version="1.0",
             transport=None,
         )
     except TypeError:
         _request = Request(
             app=app,
             method=method.upper(),
-            url_bytes=url.encode('utf-8'),
+            url_bytes=url.encode("utf-8"),
             headers=headers,
-            version='1.0',
+            version="1.0",
             transport=None,
         )
 
@@ -91,9 +95,10 @@ def create_request_coroutine(app, method, url, headers=None, loop=None):
     try:
         coro = app.handle_request(create_request_class(app, method, url, headers, loop=loop))
     except TypeError:
+
         def write_callback(response):
             response.raw_headers = response.output()
-            if b'write_response_error' in response.raw_headers:
+            if b"write_response_error" in response.raw_headers:
                 raise ValueError("write_response_error")
 
             if response not in RESPONSES:
@@ -134,11 +139,14 @@ class TestApplication(object):
 @pytest.fixture()
 def app():
     from _target_application import app
+
     return TestApplication(app)
+
 
 @pytest.fixture(autouse=True)
 def capture_requests(monkeypatch):
     from sanic.response import BaseHTTPResponse
+
     original = BaseHTTPResponse.__init__
 
     def capture(*args, **kwargs):

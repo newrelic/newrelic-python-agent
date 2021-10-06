@@ -13,23 +13,21 @@
 # limitations under the License.
 
 import asyncio
+
 import asyncpg
 import pytest
-
+from testing_support.db_settings import postgresql_settings
 from testing_support.fixtures import (
-    validate_transaction_metrics,
     override_application_settings,
+    validate_transaction_metrics,
 )
 from testing_support.util import instance_hostname
-from testing_support.db_settings import postgresql_settings
 
 from newrelic.api.background_task import background_task
 
 DB_MULTIPLE_SETTINGS = postgresql_settings()
 
-ASYNCPG_VERSION = tuple(
-    int(x) for x in getattr(asyncpg, "__version__", "0.0").split(".")[:2]
-)
+ASYNCPG_VERSION = tuple(int(x) for x in getattr(asyncpg, "__version__", "0.0").split(".")[:2])
 
 if ASYNCPG_VERSION < (0, 11):
     CONNECT_METRICS = []
@@ -97,9 +95,7 @@ if len(DB_MULTIPLE_SETTINGS) > 1:
             (_instance_metric_name_2, STATEMENT_COUNT),
         ]
     )
-    _disable_rollup_metrics.extend(
-        [(_instance_metric_name_1, None), (_instance_metric_name_2, None)]
-    )
+    _disable_rollup_metrics.extend([(_instance_metric_name_1, None), (_instance_metric_name_2, None)])
 
 
 # Query
@@ -118,9 +114,7 @@ async def _exercise_db():
         port=postgresql1["port"],
     )
     try:
-        await connection.execute(
-            "SELECT setting from pg_settings where name='server_version'"
-        )
+        await connection.execute("SELECT setting from pg_settings where name='server_version'")
     finally:
         await connection.close()
 
@@ -132,9 +126,7 @@ async def _exercise_db():
         port=postgresql2["port"],
     )
     try:
-        await connection.execute(
-            "SELECT setting from pg_settings where name='server_version'"
-        )
+        await connection.execute("SELECT setting from pg_settings where name='server_version'")
     finally:
         await connection.close()
 

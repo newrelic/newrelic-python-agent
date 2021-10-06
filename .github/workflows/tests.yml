@@ -86,8 +86,8 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
-            python-version: 3.10.0-rc.2
-            architecture: x64
+          python-version: 3.10
+          architecture: x64
 
       - uses: actions/setup-python@v2
         with:
@@ -160,8 +160,8 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
-            python-version: 3.10.0-rc.2
-            architecture: x64
+          python-version: 3.10
+          architecture: x64
 
       - uses: actions/setup-python@v2
         with:
@@ -246,8 +246,8 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
-            python-version: 3.10.0-rc.2
-            architecture: x64
+          python-version: 3.10
+          architecture: x64
 
       - name: Install Dependencies
         run: |
@@ -342,8 +342,8 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
-            python-version: 3.10.0-rc.2
-            architecture: x64
+          python-version: 3.10
+          architecture: x64
 
       - name: Install Dependencies
         run: |
@@ -435,8 +435,8 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
-            python-version: 3.10.0-rc.2
-            architecture: x64
+          python-version: 3.10
+          architecture: x64
 
       - name: Install Dependencies
         run: |
@@ -523,8 +523,8 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
-            python-version: 3.10.0-rc.2
-            architecture: x64
+          python-version: 3.10
+          architecture: x64
 
       - name: Install Dependencies
         run: |
@@ -613,8 +613,8 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
-            python-version: 3.10.0-rc.2
-            architecture: x64
+          python-version: 3.10
+          architecture: x64
 
       - name: Install Dependencies
         run: |
@@ -701,8 +701,8 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
-            python-version: 3.10.0-rc.2
-            architecture: x64
+          python-version: 3.10
+          architecture: x64
 
       - name: Install Dependencies
         run: |
@@ -790,8 +790,8 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
-            python-version: 3.10.0-rc.2
-            architecture: x64
+          python-version: 3.10
+          architecture: x64
 
       - name: Install Dependencies
         run: |
@@ -878,8 +878,8 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
-            python-version: 3.10.0-rc.2
-            architecture: x64
+          python-version: 3.10
+          architecture: x64
 
       - name: Install Dependencies
         run: |
@@ -968,8 +968,8 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
-            python-version: 3.10.0-rc.2
-            architecture: x64
+          python-version: 3.10
+          architecture: x64
 
       - name: Install Dependencies
         run: |
@@ -1058,8 +1058,8 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
-            python-version: 3.10.0-rc.2
-            architecture: x64
+          python-version: 3.10
+          architecture: x64
 
       - name: Install Dependencies
         run: |
@@ -1145,8 +1145,8 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
-            python-version: 3.10.0-rc.2
-            architecture: x64
+          python-version: 3.10
+          architecture: x64
 
       - name: Install Dependencies
         run: |

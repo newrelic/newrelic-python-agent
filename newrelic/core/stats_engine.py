@@ -316,7 +316,7 @@ class SampledDataSet(object):
         self.num_seen += 1
 
         if priority is None:
-            priority = random.random()
+            priority = random.random()  # nosec
 
         entry = (priority, self.num_seen, sample)
         if self.num_seen == self.capacity:
@@ -584,9 +584,9 @@ class StatsEngine(object):
         if not error or None in error:
             error = sys.exc_info()
 
-        # If no exception to report, exit
-        if not error or None in error:
-            return
+            # If no exception to report, exit
+            if not error or None in error:
+                return
 
         exc, value, tb = error
 
@@ -637,7 +637,7 @@ class StatsEngine(object):
 
         # Default rule matching
         if should_ignore is None:
-            should_ignore = should_ignore_error(error, status_code=status_code)
+            should_ignore = should_ignore_error(error, status_code=status_code, settings=settings)
             if should_ignore:
                 return
 
@@ -660,7 +660,7 @@ class StatsEngine(object):
 
         # Default rule matching
         if is_expected is None:
-            is_expected = is_expected_error(error, status_code=status_code)
+            is_expected = is_expected_error(error, status_code=status_code, settings=settings)
 
         # Only add attributes if High Security Mode is off.
 

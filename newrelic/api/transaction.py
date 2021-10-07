@@ -394,6 +394,11 @@ class Transaction(object):
         if not self._settings:
             return
 
+        # Record error if one was registered.
+
+        if exc is not None and value is not None and tb is not None:
+            self.root_span.notice_error((exc, value, tb))
+
         self._state = self.STATE_STOPPED
 
         # Force the root span out of the cache if it's there
@@ -421,11 +426,6 @@ class Transaction(object):
                 "occurred during exit. Report this issue to New Relic support."
             )
             return
-
-        # Record error if one was registered.
-
-        if exc is not None and value is not None and tb is not None:
-            root.notice_error((exc, value, tb))
 
         # Record the end time for transaction and then
         # calculate the duration.
@@ -941,7 +941,7 @@ class Transaction(object):
     def _compute_sampled_and_priority(self):
         if self._priority is None:
             # truncate priority field to 6 digits past the decimal
-            self._priority = float("%.6f" % random.random())
+            self._priority = float("%.6f" % random.random())  # nosec
 
         if self._sampled is None:
             self._sampled = self._application.compute_sampled()

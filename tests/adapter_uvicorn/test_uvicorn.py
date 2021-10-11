@@ -76,12 +76,7 @@ def port(app):
     def server_run():
         def on_tick_sync():
             if not ready.is_set():
-                try:
-                    loop = asyncio.get_running_loop()
-                except (AttributeError, TypeError):
-                    loop = asyncio.get_event_loop()
-
-                loops.append(loop)
+                loops.append(asyncio.get_event_loop())
                 ready.set()
 
         async def on_tick():
@@ -104,7 +99,7 @@ def port(app):
     thread.start()
     ready.wait()
     yield port
-    loops[0].stop()
+    _ = [loop.stop() for loop in loops]  # Stop all loops
     thread.join(timeout=1)
 
     if thread.is_alive():

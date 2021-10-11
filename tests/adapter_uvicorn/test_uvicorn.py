@@ -78,7 +78,7 @@ def port(app):
             if not ready.is_set():
                 try:
                     loop = asyncio.get_running_loop()
-                except TypeError:
+                except (AttributeError, TypeError):
                     loop = asyncio.get_event_loop()
 
                 loops.append(loop)

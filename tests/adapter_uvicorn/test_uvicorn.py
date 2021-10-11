@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import asyncio
-import functools
 import logging
 import socket
 import threading
@@ -36,7 +35,6 @@ from testing_support.sample_asgi_applications import (
 from uvicorn.config import Config
 from uvicorn.main import Server
 
-from newrelic.api.asgi_application import ASGIApplicationWrapper
 from newrelic.common.object_names import callable_name
 
 UVICORN_VERSION = tuple(int(v) for v in uvicorn.__version__.split(".")[:2])
@@ -78,7 +76,12 @@ def port(app):
     def server_run():
         def on_tick_sync():
             if not ready.is_set():
-                loops.append(asyncio.new_event_loop())
+                try:
+                    loop = asyncio.get_running_loop()
+                except TypeError:
+                    loop = asyncio.get_event_loop()
+
+                loops.append(loop)
                 ready.set()
 
         async def on_tick():
@@ -97,12 +100,15 @@ def port(app):
             pass
         server.run()
 
-    thread = threading.Thread(target=server_run)
+    thread = threading.Thread(target=server_run, daemon=True)
     thread.start()
     ready.wait()
     yield port
     loops[0].stop()
-    thread.join(timeout=0.2)
+    thread.join(timeout=1)
+
+    if thread.is_alive():
+        raise RuntimeError("Thread failed to exit in time.")
 
 
 @override_application_settings({"transaction_name.naming_scheme": "framework"})

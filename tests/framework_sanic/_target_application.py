@@ -135,8 +135,9 @@ app.register_middleware(request_middleware)
 @app.route("/streaming")
 async def streaming(request):
     async def streaming_fn(response):
-        await response.write('foo')
-        await response.write('bar')
+        response.write("foo")
+        response.write("bar")
+
     return stream(streaming_fn)
 
 
@@ -193,7 +194,8 @@ async def async_error(request):
 @blueprint.route("/blueprint")
 async def blueprint_route(request):
     async def streaming_fn(response):
-        await response.write('foo')
+        response.write("foo")
+
     return stream(streaming_fn)
 
 

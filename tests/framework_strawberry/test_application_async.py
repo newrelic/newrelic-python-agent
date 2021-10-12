@@ -26,6 +26,9 @@ _graphql_base_rollup_metrics = [
 ]
 
 
+loop = asyncio.new_event_loop()
+
+
 def test_basic(app, graphql_run_async):
     from graphql import __version__ as version
 
@@ -48,7 +51,6 @@ def test_basic(app, graphql_run_async):
             response = await graphql_run_async(app, "{ hello_async }")
             assert not response.errors
 
-        loop = asyncio.get_event_loop()
         loop.run_until_complete(coro())
 
     _test()
@@ -122,7 +124,6 @@ def test_query_and_mutation_async(app, graphql_run_async):
             assert "storage" in str(response.data)
             assert "abc" in str(response.data)
 
-        loop = asyncio.get_event_loop()
         loop.run_until_complete(coro())
 
     _test()

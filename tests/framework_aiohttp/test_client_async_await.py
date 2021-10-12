@@ -67,7 +67,7 @@ test_matrix = (
 
 @cat_enabled
 @pytest.mark.parametrize("method,exc_expected", test_matrix)
-def test_client_async_await(local_server_info, method, exc_expected):
+def test_client_async_await(event_loop, local_server_info, method, exc_expected):
     @validate_transaction_metrics(
         "fetch_multiple",
         background_task=True,
@@ -79,14 +79,13 @@ def test_client_async_await(local_server_info, method, exc_expected):
         ],
     )
     def task_test():
-        loop = asyncio.get_event_loop()
-        task(loop, method, exc_expected, local_server_info.url)
+        task(event_loop, method, exc_expected, local_server_info.url)
 
     task_test()
 
 
 @cat_enabled
-def test_client_yarl_async_await(local_server_info):
+def test_client_yarl_async_await(event_loop, local_server_info):
     method = "get"
 
     @validate_transaction_metrics(
@@ -100,24 +99,22 @@ def test_client_yarl_async_await(local_server_info):
         ],
     )
     def task_test():
-        loop = asyncio.get_event_loop()
-        task(loop, method, False, URL(local_server_info.url))
+        task(event_loop, method, False, URL(local_server_info.url))
 
     task_test()
 
 
 @pytest.mark.parametrize("method,exc_expected", test_matrix)
 @cat_enabled
-def test_client_no_txn_async_await(local_server_info, method, exc_expected):
+def test_client_no_txn_async_await(event_loop, local_server_info, method, exc_expected):
     def task_test():
-        loop = asyncio.get_event_loop()
-        task(loop, method, exc_expected, local_server_info.url)
+        task(event_loop, method, exc_expected, local_server_info.url)
 
     task_test()
 
 
 @pytest.mark.parametrize("method,exc_expected", test_matrix)
-def test_client_throw_async_await(local_server_info, method, exc_expected):
+def test_client_throw_async_await(event_loop, local_server_info, method, exc_expected):
     class ThrowerException(ValueError):
         pass
 
@@ -143,16 +140,14 @@ def test_client_throw_async_await(local_server_info, method, exc_expected):
         ],
     )
     def task_test():
-        loop = asyncio.get_event_loop()
-
         with pytest.raises(ThrowerException):
-            loop.run_until_complete(self_driving_thrower())
+            event_loop.run_until_complete(self_driving_thrower())
 
     task_test()
 
 
 @pytest.mark.parametrize("method,exc_expected", test_matrix)
-def test_client_close_async_await(local_server_info, method, exc_expected):
+def test_client_close_async_await(event_loop, local_server_info, method, exc_expected):
     @background_task(name="test_client_close_async_await")
     async def self_driving_closer():
         async with aiohttp.ClientSession() as session:
@@ -175,15 +170,14 @@ def test_client_close_async_await(local_server_info, method, exc_expected):
         ],
     )
     def task_test():
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self_driving_closer())
+        event_loop.run_until_complete(self_driving_closer())
 
     task_test()
 
 
 @pytest.mark.parametrize("method,exc_expected", test_matrix)
 @cat_enabled
-def test_await_request_async_await(local_server_info, method, exc_expected):
+def test_await_request_async_await(event_loop, local_server_info, method, exc_expected):
     async def request_with_await():
         async with aiohttp.ClientSession() as session:
             coro = session._request(method.upper(), local_server_info.url)
@@ -205,10 +199,9 @@ def test_await_request_async_await(local_server_info, method, exc_expected):
     )
     @background_task(name="test_await_request_async_await")
     def task_test():
-        loop = asyncio.get_event_loop()
         coros = [request_with_await() for _ in range(2)]
         future = asyncio.gather(*coros, return_exceptions=True)
-        text_list = loop.run_until_complete(future)
+        text_list = event_loop.run_until_complete(future)
         if exc_expected:
             assert isinstance(text_list[0], _expected_error_class), text_list[0].__class__
             assert isinstance(text_list[1], _expected_error_class), text_list[1].__class__
@@ -226,7 +219,7 @@ test_ws_matrix = (
 
 
 @pytest.mark.parametrize("method,exc_expected", test_ws_matrix)
-def test_ws_connect_async_await(local_server_info, method, exc_expected):
+def test_ws_connect_async_await(event_loop, local_server_info, method, exc_expected):
     @validate_transaction_metrics(
         "fetch_multiple",
         background_task=True,
@@ -238,15 +231,14 @@ def test_ws_connect_async_await(local_server_info, method, exc_expected):
         ],
     )
     def task_test():
-        loop = asyncio.get_event_loop()
-        task(loop, method, exc_expected, local_server_info.url)
+        task(event_loop, method, exc_expected, local_server_info.url)
 
     task_test()
 
 
 @pytest.mark.parametrize("method,exc_expected", test_matrix)
 @cat_enabled
-def test_create_task_async_await(local_server_info, method, exc_expected):
+def test_create_task_async_await(event_loop, local_server_info, method, exc_expected):
 
     # `loop.create_task` returns a Task object which uses the coroutine's
     # `send` method, not `__next__`
@@ -274,8 +266,7 @@ def test_create_task_async_await(local_server_info, method, exc_expected):
         ],
     )
     def task_test():
-        loop = asyncio.get_event_loop()
-        result = loop.run_until_complete(fetch_multiple(loop))
+        result = event_loop.run_until_complete(fetch_multiple(event_loop))
         if exc_expected:
             assert isinstance(result[0], _expected_error_class), result[0].__class__
             assert isinstance(result[1], _expected_error_class), result[1].__class__
@@ -287,7 +278,7 @@ def test_create_task_async_await(local_server_info, method, exc_expected):
 
 @pytest.mark.parametrize("method,exc_expected", test_matrix)
 @cat_enabled
-def test_terminal_parent_async_await(local_server_info, method, exc_expected):
+def test_terminal_parent_async_await(event_loop, local_server_info, method, exc_expected):
     """
     This test injects a terminal node into a simple background task workflow.
     It was added to validate a bug where our coro.send() wrapper would fail
@@ -295,11 +286,9 @@ def test_terminal_parent_async_await(local_server_info, method, exc_expected):
     """
 
     def task_test():
-        loop = asyncio.get_event_loop()
-
         @function_trace(terminal=True)
         def execute_task():
-            task(loop, method, exc_expected, local_server_info.url)
+            task(event_loop, method, exc_expected, local_server_info.url)
 
         execute_task()
 

@@ -138,8 +138,10 @@ def fetch(method, url, loop):
 
     try:
         _method = getattr(session, method)
-        response = yield from asyncio.wait_for(
-                _method(url), timeout=None, loop=loop)
+        try:
+            response = yield from asyncio.wait_for(_method(url), timeout=None, loop=loop)
+        except TypeError:
+            response = yield from asyncio.wait_for(_method(url), timeout=None)
         text = yield from response.text()
 
     finally:
@@ -154,7 +156,10 @@ def fetch(method, url, loop):
 @asyncio.coroutine
 def fetch_multiple(method, loop, url):
     coros = [fetch(method, url, loop) for _ in range(2)]
-    responses = yield from asyncio.gather(*coros, loop=loop)
+    try:
+        responses = yield from asyncio.gather(*coros, loop=loop)
+    except TypeError:
+        responses = yield from asyncio.gather(*coros)
     return '\n'.join(responses)
 
 

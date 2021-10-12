@@ -18,7 +18,6 @@
 
 from __future__ import print_function
 
-import imp
 import logging
 import os
 import sys
@@ -51,6 +50,7 @@ from newrelic.network.exceptions import (
     NetworkInterfaceException,
     RetryDataForRequest,
 )
+from newrelic.packages import six
 from newrelic.samplers.data_sampler import DataSampler
 
 _logger = logging.getLogger(__name__)
@@ -60,15 +60,18 @@ class Application(object):
 
     """Class which maintains recorded data for a single application."""
 
-    def __init__(self, app_name, linked_applications=[]):
+    def __init__(self, app_name, linked_applications=None):
         _logger.debug(
-            "Initializing application with name %r and " "linked applications of %r.", app_name, linked_applications
+            "Initializing application with name %r and linked applications of %r.", app_name, linked_applications
         )
 
         self._creation_time = time.time()
 
         self._app_name = app_name
-        self._linked_applications = sorted(set(linked_applications))
+        if linked_applications is not None:
+            self._linked_applications = sorted(set(linked_applications))
+        else:
+            self._linked_applications = []
 
         self._process_id = None
 
@@ -129,7 +132,7 @@ class Application(object):
 
         self.profile_manager = profile_session_manager()
 
-        self._uninstrumented = None
+        self._uninstrumented = []
 
     @property
     def name(self):
@@ -166,7 +169,10 @@ class Application(object):
         active_session = self._active_session
 
         if active_session:
-            print("Collector URL: %s" % (active_session.collector_url), file=file)
+            try:
+                print("Collector URL: %s" % (active_session._protocol.client._host), file=file)
+            except AttributeError:
+                pass
             print("Agent Run ID: %s" % (active_session.agent_run_id), file=file)
             print("URL Normalization Rules: %r" % (self._rules_engine["url"].rules), file=file)
             print("Metric Normalization Rules: %r" % (self._rules_engine["metric"].rules), file=file)
@@ -223,7 +229,7 @@ class Application(object):
         thread = threading.Thread(
             target=self.connect_to_data_collector, name="NR-Activate-Session/%s" % self.name, args=(activate_agent,)
         )
-        thread.setDaemon(True)
+        thread.daemon = True
         thread.start()
 
         if not timeout:
@@ -232,7 +238,12 @@ class Application(object):
         if self._detect_deadlock:
             self._deadlock_event.wait(deadlock_timeout)
 
-            if not self._deadlock_event.isSet():
+            try:
+                deadlock_event_set = self._deadlock_event.is_set()
+            except TypeError:
+                deadlock_event_set = self._deadlock_event.isSet()
+
+            if not deadlock_event_set:
                 _logger.warning(
                     "Detected potential deadlock while waiting "
                     "for activation of session for application %r. "
@@ -249,9 +260,14 @@ class Application(object):
 
         self._connected_event.wait(timeout)
 
-        if not self._connected_event.isSet():
+        try:
+            connected_event_set = self._connected_event.is_set()
+        except TypeError:
+            connected_event_set = self._connected_event.isSet()
+
+        if not connected_event_set:
             _logger.debug(
-                "Timeout waiting for activation of session for " "application %r where timeout was %.02f seconds.",
+                "Timeout waiting for activation of session for application %r where timeout was %.02f seconds.",
                 self._app_name,
                 timeout,
             )
@@ -303,9 +319,14 @@ class Application(object):
         # code run from this thread performs a deferred module import.
 
         if self._detect_deadlock:
-            imp.acquire_lock()
-            self._deadlock_event.set()
-            imp.release_lock()
+            if six.PY2:
+                import imp
+
+                imp.acquire_lock()
+                self._deadlock_event.set()
+                imp.release_lock()
+            else:
+                self._deadlock_event.set()
 
         # Register the application with the data collector. Any errors
         # that occur will be dealt with by create_session(). The result
@@ -385,15 +406,15 @@ class Application(object):
                 try:
                     if settings.debug.log_normalization_rules:
                         _logger.info(
-                            "The URL normalization rules for " "%r are %r.", self._app_name, configuration.url_rules
+                            "The URL normalization rules for %r are %r.", self._app_name, configuration.url_rules
                         )
                         _logger.info(
-                            "The metric normalization rules " "for %r are %r.",
+                            "The metric normalization rules for %r are %r.",
                             self._app_name,
                             configuration.metric_name_rules,
                         )
                         _logger.info(
-                            "The transaction normalization " "rules for %r are %r.",
+                            "The transaction normalization rules for %r are %r.",
                             self._app_name,
                             configuration.transaction_name_rules,
                         )
@@ -512,9 +533,9 @@ class Application(object):
 
         with InternalTraceContext(internal_metrics):
             internal_metric(
-                "Supportability/Python/Application/" "Registration/Duration", self._period_start - connect_start
+                "Supportability/Python/Application/Registration/Duration", self._period_start - connect_start
             )
-            internal_metric("Supportability/Python/Application/" "Registration/Attempts", connect_attempts)
+            internal_metric("Supportability/Python/Application/Registration/Attempts", connect_attempts)
 
         self._stats_engine.merge_custom_metrics(internal_metrics.metrics())
 
@@ -581,13 +602,9 @@ class Application(object):
             settings = global_settings()
 
             if settings.debug.log_agent_initialization:
-                _logger.info(
-                    "Process validation check was triggered " "from: %r", "".join(traceback.format_stack()[:-1])
-                )
+                _logger.info("Process validation check was triggered from: %r", "".join(traceback.format_stack()[:-1]))
             else:
-                _logger.debug(
-                    "Process validation check was triggered " "from: %r", "".join(traceback.format_stack()[:-1])
-                )
+                _logger.debug("Process validation check was triggered from: %r", "".join(traceback.format_stack()[:-1]))
 
             # We now zero out the process ID so we know we have already
             # generated a warning message.
@@ -657,9 +674,7 @@ class Application(object):
 
             for data_sampler in self._data_samplers:
                 try:
-                    _logger.debug(
-                        "Starting data sampler for %r in " "application %r.", data_sampler.name, self._app_name
-                    )
+                    _logger.debug("Starting data sampler for %r in application %r.", data_sampler.name, self._app_name)
 
                     data_sampler.start()
                 except Exception:
@@ -686,9 +701,7 @@ class Application(object):
 
             for data_sampler in self._data_samplers:
                 try:
-                    _logger.debug(
-                        "Stopping data sampler for %r in " "application %r.", data_sampler.name, self._app_name
-                    )
+                    _logger.debug("Stopping data sampler for %r in application %r.", data_sampler.name, self._app_name)
 
                     data_sampler.stop()
                 except Exception:
@@ -714,7 +727,7 @@ class Application(object):
 
                 try:
                     _logger.debug(
-                        "Removing/Stopping data sampler for %r in " "application %r.", data_sampler.name, self._app_name
+                        "Removing/Stopping data sampler for %r in application %r.", data_sampler.name, self._app_name
                     )
 
                     data_sampler.stop()
@@ -724,7 +737,7 @@ class Application(object):
                     # If sampler has not started yet, it may throw an error.
 
                     _logger.debug(
-                        "Exception when stopping " "data source %r when attempting to remove it.", data_sampler.name
+                        "Exception when stopping data source %r when attempting to remove it.", data_sampler.name
                     )
 
                 self._data_samplers.remove(data_sampler)
@@ -736,7 +749,7 @@ class Application(object):
         """
         # Deprecation Warning
         warnings.warn(
-            ("The record_exception function is deprecated. Please use the " "new api named notice_error instead."),
+            ("The record_exception function is deprecated. Please use the new api named notice_error instead."),
             DeprecationWarning,
         )
 
@@ -1025,7 +1038,7 @@ class Application(object):
             self._pending_shutdown = True
 
         if not self._active_session or not self._harvest_enabled:
-            _logger.debug("Cannot perform a data harvest for %r as " "there is no active session.", self._app_name)
+            _logger.debug("Cannot perform a data harvest for %r as there is no active session.", self._app_name)
 
             return
 
@@ -1083,7 +1096,7 @@ class Application(object):
                     # data sampler, then should perhaps deregister it if it
                     # keeps having problems.
 
-                    _logger.debug("Fetching metrics from data sources for " "harvest of %r.", self._app_name)
+                    _logger.debug("Fetching metrics from data sources for harvest of %r.", self._app_name)
 
                     for data_sampler in self._data_samplers:
                         try:
@@ -1131,7 +1144,7 @@ class Application(object):
                     if self._uninstrumented:
                         for uninstrumented in self._uninstrumented:
                             internal_count_metric("Supportability/Python/Uninstrumented", 1)
-                            internal_count_metric("Supportability/Uninstrumented/" "%s" % uninstrumented, 1)
+                            internal_count_metric("Supportability/Uninstrumented/%s" % uninstrumented, 1)
 
                 # Create our time stamp as to when this reporting period
                 # ends and start reporting the data.
@@ -1151,7 +1164,7 @@ class Application(object):
 
                 if shutdown and (transaction_count or global_events_account):
                     if period_end - self._period_start < 1.0:
-                        _logger.debug("Stretching harvest duration for " "forced harvest on shutdown.")
+                        _logger.debug("Stretching harvest duration for forced harvest on shutdown.")
                         period_end = self._period_start + 1.001
 
                 try:
@@ -1164,7 +1177,7 @@ class Application(object):
                     synthetics_events = stats.synthetics_events
                     if synthetics_events:
                         if synthetics_events.num_samples:
-                            _logger.debug("Sending synthetics event data for " "harvest of %r.", self._app_name)
+                            _logger.debug("Sending synthetics event data for harvest of %r.", self._app_name)
 
                             self._active_session.send_transaction_events(
                                 synthetics_events.sampling_info, synthetics_events
@@ -1179,14 +1192,14 @@ class Application(object):
                         if transaction_events:
                             # As per spec
                             internal_metric(
-                                "Supportability/Python/" "RequestSampler/requests", transaction_events.num_seen
+                                "Supportability/Python/RequestSampler/requests", transaction_events.num_seen
                             )
                             internal_metric(
-                                "Supportability/Python/" "RequestSampler/samples", transaction_events.num_samples
+                                "Supportability/Python/RequestSampler/samples", transaction_events.num_samples
                             )
 
                             if transaction_events.num_samples:
-                                _logger.debug("Sending analytics event data " "for harvest of %r.", self._app_name)
+                                _logger.debug("Sending analytics event data for harvest of %r.", self._app_name)
 
                                 self._active_session.send_transaction_events(
                                     transaction_events.sampling_info, transaction_events
@@ -1216,7 +1229,7 @@ class Application(object):
                                 if spans.num_samples > 0:
                                     span_samples = list(spans)
 
-                                    _logger.debug("Sending span event data " "for harvest of %r.", self._app_name)
+                                    _logger.debug("Sending span event data for harvest of %r.", self._app_name)
 
                                     self._active_session.send_span_events(spans.sampling_info, span_samples)
                                     span_samples = None
@@ -1224,8 +1237,8 @@ class Application(object):
                                 # As per spec
                                 spans_seen = spans.num_seen
                                 spans_sampled = spans.num_samples
-                                internal_count_metric("Supportability/SpanEvent/" "TotalEventsSeen", spans_seen)
-                                internal_count_metric("Supportability/SpanEvent/" "TotalEventsSent", spans_sampled)
+                                internal_count_metric("Supportability/SpanEvent/TotalEventsSeen", spans_seen)
+                                internal_count_metric("Supportability/SpanEvent/TotalEventsSent", spans_sampled)
 
                                 stats.reset_span_events()
 
@@ -1243,17 +1256,15 @@ class Application(object):
                             if num_error_samples > 0:
                                 error_event_samples = list(error_events)
 
-                                _logger.debug("Sending error event data " "for harvest of %r.", self._app_name)
+                                _logger.debug("Sending error event data for harvest of %r.", self._app_name)
 
                                 samp_info = error_events.sampling_info
                                 self._active_session.send_error_events(samp_info, error_event_samples)
                                 error_event_samples = None
 
                             # As per spec
-                            internal_count_metric(
-                                "Supportability/Events/" "TransactionError/Seen", error_events.num_seen
-                            )
-                            internal_count_metric("Supportability/Events/" "TransactionError/Sent", num_error_samples)
+                            internal_count_metric("Supportability/Events/TransactionError/Seen", error_events.num_seen)
+                            internal_count_metric("Supportability/Events/TransactionError/Sent", num_error_samples)
 
                             stats.reset_error_events()
 
@@ -1267,14 +1278,14 @@ class Application(object):
                             if customs.num_samples > 0:
                                 custom_samples = list(customs)
 
-                                _logger.debug("Sending custom event data " "for harvest of %r.", self._app_name)
+                                _logger.debug("Sending custom event data for harvest of %r.", self._app_name)
 
                                 self._active_session.send_custom_events(customs.sampling_info, custom_samples)
                                 custom_samples = None
 
                             # As per spec
-                            internal_count_metric("Supportability/Events/" "Customer/Seen", customs.num_seen)
-                            internal_count_metric("Supportability/Events/" "Customer/Sent", customs.num_samples)
+                            internal_count_metric("Supportability/Events/Customer/Seen", customs.num_seen)
+                            internal_count_metric("Supportability/Events/Customer/Sent", customs.num_samples)
 
                             stats.reset_custom_events()
 
@@ -1284,7 +1295,7 @@ class Application(object):
                         error_data = stats.error_data()
 
                         if error_data:
-                            _logger.debug("Sending error data for harvest " "of %r.", self._app_name)
+                            _logger.debug("Sending error data for harvest of %r.", self._app_name)
 
                             self._active_session.send_errors(error_data)
 
@@ -1294,19 +1305,19 @@ class Application(object):
 
                             with connections:
                                 if configuration.slow_sql.enabled:
-                                    _logger.debug("Processing slow SQL data " "for harvest of %r.", self._app_name)
+                                    _logger.debug("Processing slow SQL data for harvest of %r.", self._app_name)
 
                                     slow_sql_data = stats.slow_sql_data(connections)
 
                                     if slow_sql_data:
-                                        _logger.debug("Sending slow SQL data for " "harvest of %r.", self._app_name)
+                                        _logger.debug("Sending slow SQL data for harvest of %r.", self._app_name)
 
                                         self._active_session.send_sql_traces(slow_sql_data)
 
                                 slow_transaction_data = stats.transaction_trace_data(connections)
 
                                 if slow_transaction_data:
-                                    _logger.debug("Sending slow transaction " "data for harvest of %r.", self._app_name)
+                                    _logger.debug("Sending slow transaction data for harvest of %r.", self._app_name)
 
                                     self._active_session.send_transaction_traces(slow_transaction_data)
 
@@ -1338,7 +1349,7 @@ class Application(object):
                         # Send metrics
                         self._active_session.send_metric_data(self._period_start, period_end, metric_data)
 
-                        _logger.debug("Done sending data for harvest of " "%r.", self._app_name)
+                        _logger.debug("Done sending data for harvest of %r.", self._app_name)
 
                         stats.reset_metric_stats()
 
@@ -1355,7 +1366,7 @@ class Application(object):
                         # Fetch agent commands sent from the data collector
                         # and process them.
 
-                        _logger.debug("Process agent commands during " "harvest of %r.", self._app_name)
+                        _logger.debug("Process agent commands during harvest of %r.", self._app_name)
                         self.process_agent_commands()
 
                         # Send the accumulated profile data back to the data
@@ -1366,7 +1377,7 @@ class Application(object):
                         # results last ensures we send back that data from
                         # the stopped profiling session immediately.
 
-                        _logger.debug("Send profiling data for harvest of " "%r.", self._app_name)
+                        _logger.debug("Send profiling data for harvest of %r.", self._app_name)
 
                         self.report_profile_data()
 
@@ -1422,7 +1433,7 @@ class Application(object):
 
                     exc_type = sys.exc_info()[0]
 
-                    internal_metric("Supportability/Python/Harvest/" "Exception/%s" % callable_name(exc_type), 1)
+                    internal_metric("Supportability/Python/Harvest/Exception/%s" % callable_name(exc_type), 1)
 
                     if self._period_start != period_end:
                         self._stats_engine.rollback(stats)
@@ -1435,7 +1446,7 @@ class Application(object):
 
                     exc_type = sys.exc_info()[0]
 
-                    internal_metric("Supportability/Python/Harvest/" "Exception/%s" % callable_name(exc_type), 1)
+                    internal_metric("Supportability/Python/Harvest/Exception/%s" % callable_name(exc_type), 1)
 
                     self._discard_count += 1
 
@@ -1445,7 +1456,7 @@ class Application(object):
 
                     exc_type = sys.exc_info()[0]
 
-                    internal_metric("Supportability/Python/Harvest/" "Exception/%s" % callable_name(exc_type), 1)
+                    internal_metric("Supportability/Python/Harvest/Exception/%s" % callable_name(exc_type), 1)
 
                     _logger.exception(
                         "Unexpected exception when attempting "
@@ -1478,7 +1489,7 @@ class Application(object):
 
         for profile_data in self.profile_manager.profile_data(self._app_name):
             if profile_data:
-                _logger.debug("Reporting thread profiling session data " "for %r.", self._app_name)
+                _logger.debug("Reporting thread profiling session data for %r.", self._app_name)
                 self._active_session.send_profile_data(profile_data)
 
     def internal_agent_shutdown(self, restart=False):
@@ -1571,11 +1582,11 @@ class Application(object):
 
                 if cmd_handler is None:
                     _logger.debug(
-                        "Received unknown agent command " "%r from the data collector for %r.", cmd_name, self._app_name
+                        "Received unknown agent command %r from the data collector for %r.", cmd_name, self._app_name
                     )
                     continue
 
-                _logger.debug("Process agent command %r from the data " "collector for %r.", cmd_name, self._app_name)
+                _logger.debug("Process agent command %r from the data collector for %r.", cmd_name, self._app_name)
 
                 cmd_res = cmd_handler(cmd_id, **cmd_args)
 

@@ -52,16 +52,14 @@ jobs:
           CIBW_BUILD: cp27-manylinux_x86_64
           CIBW_ARCHS: x86_64
           CIBW_ENVIRONMENT: "LD_LIBRARY_PATH=/opt/rh/=vtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
-          CIBW_TEST_REQUIRES: beautifulsoup4
 
       - name: Build Manylinux Wheels (Python 3)
         uses: pypa/cibuildwheel@v2.0.1
         env:
           CIBW_PLATFORM: linux
-          CIBW_BUILD: cp36-manylinux_aarch64 cp37-manylinux_aarch64 cp38-manylinux_aarch64 cp39-manylinux_aarch64 cp36-manylinux_x86_64 cp37-manylinux_x86_64 cp38-manylinux_x86_64 cp39-manylinux_x86_64
+          CIBW_BUILD: cp36-manylinux_aarch64 cp37-manylinux_aarch64 cp38-manylinux_aarch64 cp39-manylinux_aarch64 cp310-manylinux_aarch64 cp36-manylinux_x86_64 cp37-manylinux_x86_64 cp38-manylinux_x86_64 cp39-manylinux_x86_64 cp310-manylinux_x86_64
           CIBW_ARCHS: x86_64 aarch64
           CIBW_ENVIRONMENT: "LD_LIBRARY_PATH=/opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
-          CIBW_TEST_REQUIRES: beautifulsoup4
 
       - name: Upload Package to S3
         run: |

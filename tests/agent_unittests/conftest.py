@@ -62,7 +62,7 @@ def global_settings(request, monkeypatch):
     monkeypatch.delenv("NEW_RELIC_HOST", raising=False)
     monkeypatch.delenv("NEW_RELIC_LICENSE_KEY", raising=False)
 
-    if "env" in request.funcargnames:
+    if "env" in request.fixturenames:
         env = request.getfixturevalue("env")
         for k, v in env.items():
             monkeypatch.setenv(k, v)

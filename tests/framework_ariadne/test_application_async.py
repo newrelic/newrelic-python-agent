@@ -85,7 +85,7 @@ def test_query_and_mutation_async(app, graphql_run_async):
             assert "storage" in str(response.get("data"))
             assert "abc" in str(response.get("data"))
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
         loop.run_until_complete(coro())
 
     _test()

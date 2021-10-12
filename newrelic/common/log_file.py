@@ -37,7 +37,7 @@ _agent_logger = logging.getLogger("newrelic")
 _agent_logger.addHandler(_NullHandler())
 _agent_logger.propagate = False
 
-_LOG_FORMAT = "%(asctime)s (%(process)d/%(threadName)s) " "%(name)s %(levelname)s - %(message)s"
+_LOG_FORMAT = "%(asctime)s (%(process)d/%(threadName)s) %(name)s %(levelname)s - %(message)s"
 
 _initialized = False
 
@@ -101,7 +101,7 @@ def initialize_logging(log_file, log_level):
             except Exception:
                 _initialize_stderr_logging(log_level)
 
-                _agent_logger.exception("Falling back to stderr logging as " "unable to create log file %r." % log_file)
+                _agent_logger.exception("Falling back to stderr logging as unable to create log file %r." % log_file)
 
         _initialized = True
 

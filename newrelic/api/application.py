@@ -115,7 +115,7 @@ class Application(object):
     def record_exception(self, exc=None, value=None, tb=None, params=None, ignore_errors=None):
         # Deprecation Warning
         warnings.warn(
-            ("The record_exception function is deprecated. Please use the " "new api named notice_error instead."),
+            ("The record_exception function is deprecated. Please use the new api named notice_error instead."),
             DeprecationWarning,
         )
 

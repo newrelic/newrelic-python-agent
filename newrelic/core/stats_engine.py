@@ -316,7 +316,7 @@ class SampledDataSet(object):
         self.num_seen += 1
 
         if priority is None:
-            priority = random.random()
+            priority = random.random()  # nosec
 
         entry = (priority, self.num_seen, sample)
         if self.num_seen == self.capacity:
@@ -559,7 +559,7 @@ class StatsEngine(object):
     def record_exception(self, exc=None, value=None, tb=None, params=None, ignore_errors=None):
         # Deprecation Warning
         warnings.warn(
-            ("The record_exception function is deprecated. Please use the " "new api named notice_error instead."),
+            ("The record_exception function is deprecated. Please use the new api named notice_error instead."),
             DeprecationWarning,
         )
 
@@ -584,9 +584,9 @@ class StatsEngine(object):
         if not error or None in error:
             error = sys.exc_info()
 
-        # If no exception to report, exit
-        if not error or None in error:
-            return
+            # If no exception to report, exit
+            if not error or None in error:
+                return
 
         exc, value, tb = error
 
@@ -637,7 +637,7 @@ class StatsEngine(object):
 
         # Default rule matching
         if should_ignore is None:
-            should_ignore = should_ignore_error(error, status_code=status_code)
+            should_ignore = should_ignore_error(error, status_code=status_code, settings=settings)
             if should_ignore:
                 return
 
@@ -660,13 +660,13 @@ class StatsEngine(object):
 
         # Default rule matching
         if is_expected is None:
-            is_expected = is_expected_error(error, status_code=status_code)
+            is_expected = is_expected_error(error, status_code=status_code, settings=settings)
 
         # Only add attributes if High Security Mode is off.
 
         if settings.high_security:
             if attributes:
-                _logger.debug("Cannot add custom parameters in " "High Security Mode.")
+                _logger.debug("Cannot add custom parameters in High Security Mode.")
             user_attributes = []
         else:
             custom_attributes = {}
@@ -1218,7 +1218,7 @@ class StatsEngine(object):
             data = [transaction_trace, list(trace.string_table.values())]
 
             if self.__settings.debug.log_transaction_trace_payload:
-                _logger.debug("Encoding slow transaction data where " "payload=%r.", data)
+                _logger.debug("Encoding slow transaction data where payload=%r.", data)
 
             json_data = json_encode(data)
 
@@ -1283,7 +1283,7 @@ class StatsEngine(object):
         data = [transaction_trace, list(self.__slow_transaction.string_table.values())]
 
         if self.__settings.debug.log_transaction_trace_payload:
-            _logger.debug("Encoding slow transaction data where " "payload=%r.", data)
+            _logger.debug("Encoding slow transaction data where payload=%r.", data)
 
         json_data = json_encode(data)
 

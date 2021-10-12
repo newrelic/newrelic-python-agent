@@ -12,29 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
 import os
 import random
-import pytest
-import asyncio
-import asyncpg
-
 from io import BytesIO
 
-from newrelic.api.background_task import background_task
+import asyncpg
+import pytest
+from testing_support.db_settings import postgresql_settings
 from testing_support.fixtures import (
     validate_transaction_metrics,
     validate_tt_collector_json,
 )
 from testing_support.util import instance_hostname
-from testing_support.db_settings import postgresql_settings
+
+from newrelic.api.background_task import background_task
 
 DB_SETTINGS = postgresql_settings()[0]
 
 
 PG_PREFIX = "Datastore/operation/Postgres/"
-ASYNCPG_VERSION = tuple(
-    int(x) for x in getattr(asyncpg, "__version__", "0.0").split(".")[:2]
-)
+ASYNCPG_VERSION = tuple(int(x) for x in getattr(asyncpg, "__version__", "0.0").split(".")[:2])
 
 if ASYNCPG_VERSION < (0, 11):
     CONNECT_METRICS = ()
@@ -43,9 +41,8 @@ else:
 
 
 @pytest.fixture
-def conn():
-    loop = asyncio.get_event_loop()
-    conn = loop.run_until_complete(
+def conn(event_loop):
+    conn = event_loop.run_until_complete(
         asyncpg.connect(
             user=DB_SETTINGS["user"],
             password=DB_SETTINGS["password"],
@@ -55,7 +52,7 @@ def conn():
         )
     )
     yield conn
-    loop.run_until_complete(conn.close())
+    event_loop.run_until_complete(conn.close())
 
 
 @validate_transaction_metrics(
@@ -64,14 +61,12 @@ def conn():
     scoped_metrics=((PG_PREFIX + "select", 1),),
     rollup_metrics=(("Datastore/all", 1),),
 )
-@validate_tt_collector_json(
-    datastore_params={"port_path_or_id": str(DB_SETTINGS["port"])}
-)
+@validate_tt_collector_json(datastore_params={"port_path_or_id": str(DB_SETTINGS["port"])})
 @background_task(name="test_single")
 @pytest.mark.parametrize("method", ("execute",))
-def test_single(method, conn):
+def test_single(event_loop, method, conn):
     _method = getattr(conn, method)
-    asyncio.get_event_loop().run_until_complete(_method("""SELECT 0"""))
+    event_loop.run_until_complete(_method("""SELECT 0"""))
 
 
 @validate_transaction_metrics(
@@ -85,9 +80,9 @@ def test_single(method, conn):
 )
 @background_task(name="test_prepared_single")
 @pytest.mark.parametrize("method", ("fetch", "fetchrow", "fetchval"))
-def test_prepared_single(method, conn):
+def test_prepared_single(event_loop, method, conn):
     _method = getattr(conn, method)
-    asyncio.get_event_loop().run_until_complete(_method("""SELECT 0"""))
+    event_loop.run_until_complete(_method("""SELECT 0"""))
 
 
 @validate_transaction_metrics(
@@ -97,25 +92,20 @@ def test_prepared_single(method, conn):
     rollup_metrics=(("Datastore/all", 1),),
 )
 @background_task(name="test_prepare")
-def test_prepare(conn):
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(conn.prepare("""SELECT 0"""))
+def test_prepare(event_loop, conn):
+    event_loop.run_until_complete(conn.prepare("""SELECT 0"""))
 
 
 @pytest.fixture
-def table(conn):
+def table(event_loop, conn):
     table_name = "table_%d" % os.getpid()
 
-    asyncio.get_event_loop().run_until_complete(
-        conn.execute("""create table %s (a integer, b real, c text)""" % table_name)
-    )
+    event_loop.run_until_complete(conn.execute("""create table %s (a integer, b real, c text)""" % table_name))
 
     return table_name
 
 
-@pytest.mark.skipif(
-    ASYNCPG_VERSION < (0, 11), reason="Copy wasn't implemented before 0.11"
-)
+@pytest.mark.skipif(ASYNCPG_VERSION < (0, 11), reason="Copy wasn't implemented before 0.11")
 @validate_transaction_metrics(
     "test_copy",
     background_task=True,
@@ -126,7 +116,7 @@ def table(conn):
     rollup_metrics=(("Datastore/all", 4),),
 )
 @background_task(name="test_copy")
-def test_copy(table, conn):
+def test_copy(event_loop, table, conn):
     async def amain():
         await conn.copy_records_to_table(table, records=[(1, 2, "3"), (4, 5, "6")])
         await conn.copy_from_table(table, output=BytesIO())
@@ -135,8 +125,7 @@ def test_copy(table, conn):
         # 2 statements
         await conn.copy_from_query("""SELECT 0""", output=BytesIO())
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(amain())
+    event_loop.run_until_complete(amain())
 
 
 @validate_transaction_metrics(
@@ -149,9 +138,8 @@ def test_copy(table, conn):
     rollup_metrics=(("Datastore/all", 2),),
 )
 @background_task(name="test_select_many")
-def test_select_many(conn):
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(conn.executemany("""SELECT $1::int""", ((1,), (2,))))
+def test_select_many(event_loop, conn):
+    event_loop.run_until_complete(conn.executemany("""SELECT $1::int""", ((1,), (2,))))
 
 
 @validate_transaction_metrics(
@@ -165,13 +153,12 @@ def test_select_many(conn):
     rollup_metrics=(("Datastore/all", 3),),
 )
 @background_task(name="test_transaction")
-def test_transaction(conn):
+def test_transaction(event_loop, conn):
     async def amain():
         async with conn.transaction():
             await conn.execute("""SELECT 0""")
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(amain())
+    event_loop.run_until_complete(amain())
 
 
 @validate_transaction_metrics(
@@ -186,7 +173,7 @@ def test_transaction(conn):
     rollup_metrics=(("Datastore/all", 7),),
 )
 @background_task(name="test_cursor")
-def test_cursor(conn):
+def test_cursor(event_loop, conn):
     async def amain():
         async with conn.transaction():
             async for record in conn.cursor("SELECT generate_series(0, 0)", prefetch=1):
@@ -194,8 +181,7 @@ def test_cursor(conn):
 
             await conn.cursor("SELECT 0")
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(amain())
+    event_loop.run_until_complete(amain())
 
 
 @pytest.mark.skipif(
@@ -207,20 +193,15 @@ def test_cursor(conn):
     background_task=True,
     rollup_metrics=[
         (
-            "Datastore/instance/Postgres/"
-            + instance_hostname("localhost")
-            + "//.s.PGSQL.THIS_FILE_BETTER_NOT_EXIST",
+            "Datastore/instance/Postgres/" + instance_hostname("localhost") + "//.s.PGSQL.THIS_FILE_BETTER_NOT_EXIST",
             1,
         )
     ],
 )
 @background_task(name="test_unix_socket_connect")
-def test_unix_socket_connect():
-    loop = asyncio.get_event_loop()
+def test_unix_socket_connect(event_loop):
     with pytest.raises(OSError):
-        loop.run_until_complete(
-            asyncpg.connect("postgres://?host=/.s.PGSQL.THIS_FILE_BETTER_NOT_EXIST")
-        )
+        event_loop.run_until_complete(asyncpg.connect("postgres://?host=/.s.PGSQL.THIS_FILE_BETTER_NOT_EXIST"))
 
 
 @pytest.mark.skipif(
@@ -233,7 +214,7 @@ def test_unix_socket_connect():
     scoped_metrics=((PG_PREFIX + "connect", 2),),
 )
 @background_task(name="test_pool_acquire")
-def test_pool_acquire():
+def test_pool_acquire(event_loop):
     async def amain():
         pool = await asyncpg.create_pool(
             user=DB_SETTINGS["user"],
@@ -252,5 +233,4 @@ def test_pool_acquire():
         finally:
             await pool.close()
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(amain())
+    event_loop.run_until_complete(amain())

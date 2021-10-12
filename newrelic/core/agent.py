@@ -162,22 +162,22 @@ class Agent(object):
         if "NEW_RELIC_ADMIN_COMMAND" in os.environ:
             if settings.debug.log_agent_initialization:
                 _logger.info(
-                    "Monitored application started using the " "newrelic-admin command with command line of %s.",
+                    "Monitored application started using the newrelic-admin command with command line of %s.",
                     os.environ["NEW_RELIC_ADMIN_COMMAND"],
                 )
             else:
                 _logger.debug(
-                    "Monitored application started using the " "newrelic-admin command with command line of %s.",
+                    "Monitored application started using the newrelic-admin command with command line of %s.",
                     os.environ["NEW_RELIC_ADMIN_COMMAND"],
                 )
 
         with Agent._instance_lock:
             if not Agent._instance:
                 if settings.debug.log_agent_initialization:
-                    _logger.info("Creating instance of Python agent in " "process %d.", os.getpid())
+                    _logger.info("Creating instance of Python agent in process %d.", os.getpid())
                     _logger.info("Agent was initialized from: %r", "".join(traceback.format_stack()[:-1]))
                 else:
-                    _logger.debug("Creating instance of Python agent in " "process %d.", os.getpid())
+                    _logger.debug("Creating instance of Python agent in process %d.", os.getpid())
                     _logger.debug("Agent was initialized from: %r", "".join(traceback.format_stack()[:-1]))
 
                 instance = Agent(settings)
@@ -362,10 +362,10 @@ class Agent(object):
                     )
 
                 if settings.debug.log_agent_initialization:
-                    _logger.info("Creating application instance for %r " "in process %d.", app_name, os.getpid())
+                    _logger.info("Creating application instance for %r in process %d.", app_name, os.getpid())
                     _logger.info("Application was activated from: %r", "".join(traceback.format_stack()[:-1]))
                 else:
-                    _logger.debug("Creating application instance for %r " "in process %d.", app_name, os.getpid())
+                    _logger.debug("Creating application instance for %r in process %d.", app_name, os.getpid())
                     _logger.debug("Application was activated from: %r", "".join(traceback.format_stack()[:-1]))
 
                 linked_applications = sorted(set(linked_applications))
@@ -450,7 +450,7 @@ class Agent(object):
 
     def remove_thread_utilization(self):
 
-        _logger.debug("Removing thread utilization data source from all " "applications")
+        _logger.debug("Removing thread utilization data source from all applications")
 
         source_name = thread_utilization_data_source.__name__
         factory_name = "Thread Utilization"
@@ -478,7 +478,7 @@ class Agent(object):
     def record_exception(self, app_name, exc=None, value=None, tb=None, params=None, ignore_errors=None):
         # Deprecation Warning
         warnings.warn(
-            ("The record_exception function is deprecated. Please use the " "new api named notice_error instead."),
+            ("The record_exception function is deprecated. Please use the new api named notice_error instead."),
             DeprecationWarning,
         )
 
@@ -565,7 +565,7 @@ class Agent(object):
             return self._harvest_shutdown.is_set()
         except TypeError:
             return self._harvest_shutdown.isSet()
-                
+
     def _harvest_flexible(self, shutdown=False):
         if not self._harvest_shutdown_is_set():
             event_harvest_config = self.global_settings().event_harvest_config
@@ -584,12 +584,12 @@ class Agent(object):
             try:
                 application.harvest(shutdown=False, flexible=True)
             except Exception:
-                _logger.exception("Failed to harvest data " "for %s." % application.name)
+                _logger.exception("Failed to harvest data for %s." % application.name)
 
         self._flexible_harvest_duration = time.time() - self._last_flexible_harvest
 
         _logger.debug(
-            "Completed harvest[flexible] of application data in %.2f " "seconds.", self._flexible_harvest_duration
+            "Completed harvest[flexible] of application data in %.2f seconds.", self._flexible_harvest_duration
         )
 
     def _harvest_default(self, shutdown=False):
@@ -608,13 +608,11 @@ class Agent(object):
             try:
                 application.harvest(shutdown, flexible=False)
             except Exception:
-                _logger.exception("Failed to harvest data " "for %s." % application.name)
+                _logger.exception("Failed to harvest data for %s." % application.name)
 
         self._default_harvest_duration = time.time() - self._last_default_harvest
 
-        _logger.debug(
-            "Completed harvest[default] of application data in %.2f " "seconds.", self._default_harvest_duration
-        )
+        _logger.debug("Completed harvest[default] of application data in %.2f seconds.", self._default_harvest_duration)
 
     def _harvest_timer(self):
         if self._harvest_shutdown_is_set():

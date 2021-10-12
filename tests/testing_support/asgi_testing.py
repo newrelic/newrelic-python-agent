@@ -34,7 +34,7 @@ class AsgiTest(object):
         self.asgi_application = asgi_application
 
     def make_request(self, method, path, params=None, headers=None, body=None):
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
         coro = self.make_request_async(method, path, params, headers, body)
         return loop.run_until_complete(coro)
 
@@ -49,9 +49,7 @@ class AsgiTest(object):
         scope = self.generate_input(method, path, params, headers, body)
 
         try:
-            awaitable = self.asgi_application(
-                scope, self.input_queue.get, self.output_queue.put
-            )
+            awaitable = self.asgi_application(scope, self.input_queue.get, self.output_queue.put)
         except TypeError:
             instance = self.asgi_application(scope)
             awaitable = instance(self.input_queue.get, self.output_queue.put)

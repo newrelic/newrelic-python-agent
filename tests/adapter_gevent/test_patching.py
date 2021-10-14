@@ -12,8 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import gevent.monkey
-
-
 def test_patch_thread():
+    import gevent.monkey
     gevent.monkey.patch_thread()
+
+
+def test_patch_ssl_recursion():
+    import gevent.monkey
+    gevent.monkey.patch_all()
+
+    # Delay imports and test creation of contexts from both bundled and installed urllib3
+    import urllib3.util.ssl_
+    import newrelic.packages.urllib3.util.ssl_
+
+    context1 = urllib3.util.ssl_.create_urllib3_context()
+    context2 = newrelic.packages.urllib3.util.ssl_.create_urllib3_context()

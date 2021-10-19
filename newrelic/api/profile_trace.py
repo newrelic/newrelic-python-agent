@@ -113,6 +113,10 @@ class ProfileTrace(object):
             function_trace = FunctionTrace(name=name, parent=parent)
             function_trace.__enter__()
 
+            function_trace._add_agent_attribute("source_code_context.line_number", func_line_no)
+            function_trace._add_agent_attribute("source_code_context.file_path", func_filename)
+            function_trace._add_agent_attribute("source_code_context.callable_name", name)
+
             self.function_traces.append(function_trace)
             self.current_depth += 1
 

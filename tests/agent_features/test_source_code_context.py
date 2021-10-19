@@ -12,14 +12,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+
 from testing_support.validators.validate_span_events import (
         validate_span_events)
 
 from newrelic.api.background_task import background_task
 
+
+# ===== Source Functions =====
 def exercise():
     return
 
+
+class MyClass():
+    def exercise(self):
+        return
+
+    def __call__(self):
+        return
+
+CLASS_INSTANCE = MyClass()
+
+exercise_lambda = lambda: None
+
+# ===== Tests =====
+
+@pytest.mark.parametrize("func", (
+    exercise,  # Function
+    CLASS_INSTANCE.exercise,  # Method
+    CLASS_INSTANCE,  # Callable object
+    exercise_lambda,  # Lambda
+))
 @validate_span_events(
     count=1,
     expected_agents=[
@@ -29,5 +53,5 @@ def exercise():
     ],
 )
 @background_task()
-def test_source_code_context():
-    exercise()
+def test_source_code_context(func):
+    func()

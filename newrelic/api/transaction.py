@@ -31,7 +31,6 @@ import newrelic.core.root_node
 import newrelic.core.transaction_node
 import newrelic.packages.six as six
 from newrelic.api.time_trace import TimeTrace
-from newrelic.api.profile_trace import ProfileTrace
 from newrelic.common.encoding_utils import (
     DistributedTracePayload,
     NrTraceState,
@@ -185,8 +184,6 @@ class Transaction(object):
         self._frozen_path = None
 
         self.root_span = None
-
-        self._profile_trace = None
 
         self._request_uri = None
         self._port = None
@@ -382,13 +379,6 @@ class Transaction(object):
 
         self._state = self.STATE_RUNNING
 
-        # Start profile trace
-        # TODO enable and depth settings
-
-        if not sys.getprofile():
-            self._profile_trace = ProfileTrace(100)
-            sys.setprofile(self._profile_trace)
-
         return self
 
     def __exit__(self, exc, value, tb):
@@ -410,12 +400,6 @@ class Transaction(object):
             self.root_span.notice_error((exc, value, tb))
 
         self._state = self.STATE_STOPPED
-
-        # Remove profile trace
-
-        if self._profile_trace:
-            sys.setprofile(None)
-            self._profile_trace = None
 
         # Force the root span out of the cache if it's there
         # This also prevents saving of the root span in the future since the

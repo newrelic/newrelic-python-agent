@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
 import logging
 import random
 import sys
@@ -20,7 +21,7 @@ import traceback
 import warnings
 
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
-from newrelic.common.object_names import parse_exc_info
+from newrelic.common.object_names import parse_exc_info, callable_name
 from newrelic.core.attribute import MAX_NUM_USER_ATTRIBUTES, process_user_attribute
 from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.trace_cache import trace_cache
@@ -29,7 +30,7 @@ _logger = logging.getLogger(__name__)
 
 
 class TimeTrace(object):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, source=None):
         self.parent = parent
         self.root = None
         self.child_count = 0
@@ -50,6 +51,9 @@ class TimeTrace(object):
         self.guid = "%016x" % random.getrandbits(64)
         self.agent_attributes = {}
         self.user_attributes = {}
+
+        if source is not None:
+            self.add_source_code_context(source)
 
     @property
     def transaction(self):
@@ -192,6 +196,37 @@ class TimeTrace(object):
             return
 
         self.user_attributes[key] = value
+
+    def add_source_code_context(self, func):
+        """Extract source code context from a callable and add appropriate attributes."""
+        # Fully unwrap object
+        while hasattr(func, "__wrapped__") and func.__wrapped__ is not None:
+            if func.__wrapped__ == func:
+                # Infinite loop protection
+                break
+            func = func.__wrapped__
+        
+        # Retrieve basic object details
+        name = callable_name(func)
+        module_name = func.__module__
+
+        if hasattr(func, "__code__"):
+            # Extract details from function __code__ attr
+            co = func.__code__
+            line_number = co.co_firstlineno
+            file_path = co.co_filename
+        else:
+            # Extract file path from sys.modules
+            if module_name in sys.modules:
+                module = sys.modules[module_name]
+                file_path = module.__file__
+
+            # Use inspect to get line number
+            line_number = inspect.findsource(func)[1]
+
+        self._add_agent_attribute("source_code_context.line_number", line_number)
+        self._add_agent_attribute("source_code_context.file_path", file_path)
+        self._add_agent_attribute("source_code_context.callable_name", name)
 
     def _observe_exception(self, exc_info=None, ignore=None, expected=None, status_code=None):
         # Bail out if the transaction is not active or

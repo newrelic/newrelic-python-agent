@@ -23,12 +23,12 @@ from newrelic.core.external_node import ExternalNode
 
 class ExternalTrace(CatHeaderMixin, TimeTrace):
     def __init__(self, library, url, method=None, **kwargs):
-        parent = None
+        parent=kwargs.pop("parent", None)
+        source=kwargs.pop("source", None)
         if kwargs:
-            if len(kwargs) > 1:
-                raise TypeError("Invalid keyword arguments:", kwargs)
-            parent = kwargs["parent"]
-        super(ExternalTrace, self).__init__(parent)
+            raise TypeError("Invalid keyword arguments:", kwargs)
+
+        super(ExternalTrace, self).__init__(parent=parent, source=source)
 
         self.library = library
         self.url = url
@@ -94,7 +94,7 @@ def ExternalTraceWrapper(wrapped, library, url, method=None):
         else:
             _method = method
 
-        trace = ExternalTrace(library, _url, _method, parent=parent)
+        trace = ExternalTrace(library, _url, _method, parent=parent, source=wrapped)
 
         if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)
@@ -111,7 +111,7 @@ def ExternalTraceWrapper(wrapped, library, url, method=None):
         else:
             parent = None
 
-        trace = ExternalTrace(library, url, method, parent=parent)
+        trace = ExternalTrace(library, url, method, parent=parent, source=wrapped)
 
         if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)

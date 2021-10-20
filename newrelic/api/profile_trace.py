@@ -191,7 +191,7 @@ def ProfileTraceWrapper(wrapped, name=None, group=None, label=None,
         else:
             _params = params
 
-        with FunctionTrace(_name, _group, _label, _params, parent=parent):
+        with FunctionTrace(_name, _group, _label, _params, parent=parent, source=wrapped):
             if not hasattr(sys, 'getprofile'):
                 return wrapped(*args, **kwargs)
 

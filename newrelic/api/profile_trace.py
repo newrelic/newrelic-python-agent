@@ -57,8 +57,9 @@ class ProfileTrace(object):
         func_name = co.co_name
         func_line_no = frame.f_lineno
         func_filename = co.co_filename
+        func = None  # Populate later
 
-        def _callable_name():
+        def _callable():
             # A stack frame doesn't provide any information about the
             # original callable object. We thus need to try and
             # deduce what it is by searching through the stack
@@ -70,7 +71,7 @@ class ProfileTrace(object):
             try:
                 if func_name in frame.f_globals:
                     if frame.f_globals[func_name].func_code is co:
-                        return callable_name(frame.f_globals[func_name])
+                        return frame.f_globals[func_name]
 
             except Exception:
                 pass
@@ -78,7 +79,7 @@ class ProfileTrace(object):
             for name, obj in six.iteritems(frame.f_globals):
                 try:
                     if obj.__dict__[func_name].func_code is co:
-                        return callable_name(obj.__dict__[func_name])
+                        return obj.__dict__[func_name]
 
                 except Exception:
                     pass
@@ -100,11 +101,14 @@ class ProfileTrace(object):
                 return
 
             if event == 'call':
-                name = _callable_name()
-                if not name:
+                func = _callable()
+                if func:
+                    name = callable_name(func)
+                else:
                     name = '%s:%s#%s' % (func_filename, func_name,
                             func_line_no)
             else:
+                func = arg
                 name = callable_name(arg)
                 if not name:
                     name = '%s:@%s#%s' % (func_filename, func_name,
@@ -113,9 +117,12 @@ class ProfileTrace(object):
             function_trace = FunctionTrace(name=name, parent=parent)
             function_trace.__enter__()
 
-            function_trace._add_agent_attribute("source_code_context.line_number", func_line_no)
-            function_trace._add_agent_attribute("source_code_context.file_path", func_filename)
-            function_trace._add_agent_attribute("source_code_context.callable_name", name)
+            # Attempt to add source code context for function
+            try:
+                if func:
+                    function_trace.add_source_code_context(func)
+            except Exception:
+                pass
 
             self.function_traces.append(function_trace)
             self.current_depth += 1

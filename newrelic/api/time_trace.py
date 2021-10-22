@@ -21,7 +21,7 @@ import traceback
 import warnings
 
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
-from newrelic.common.object_names import parse_exc_info, callable_name
+from newrelic.common.object_names import parse_exc_info, callable_name, object_context
 from newrelic.core.attribute import MAX_NUM_USER_ATTRIBUTES, process_user_attribute
 from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.trace_cache import trace_cache
@@ -53,7 +53,7 @@ class TimeTrace(object):
         self.user_attributes = {}
 
         if source is not None:
-            self.add_source_code_context(source)
+            self.add_code(source)
 
     @property
     def transaction(self):
@@ -197,7 +197,7 @@ class TimeTrace(object):
 
         self.user_attributes[key] = value
 
-    def add_source_code_context(self, func):
+    def add_code(self, func):
         """Extract source code context from a callable and add appropriate attributes."""
         # Fully unwrap object
         while hasattr(func, "__wrapped__") and func.__wrapped__ is not None:
@@ -207,8 +207,7 @@ class TimeTrace(object):
             func = func.__wrapped__
         
         # Retrieve basic object details
-        name = callable_name(func)
-        module_name = func.__module__
+        module_name, func_path = object_context(func)
 
         if hasattr(func, "__code__"):
             # Extract details from function __code__ attr
@@ -222,11 +221,31 @@ class TimeTrace(object):
                 file_path = module.__file__
 
             # Use inspect to get line number
-            line_number = inspect.findsource(func)[1]
+            try:
+                line_number = inspect.findsource(func)[1]
+            except TypeError:
+                if hasattr(func, "__call__"):  # Callable object
+                    line_number = inspect.findsource(func.__call__)[1]
+                else:
+                    line_number = None  # Unable to extract
 
-        self._add_agent_attribute("source_code_context.line_number", line_number)
-        self._add_agent_attribute("source_code_context.file_path", file_path)
-        self._add_agent_attribute("source_code_context.callable_name", name)
+        # Add filepath attributes
+        if line_number is not None:
+            self._add_agent_attribute("code.lineno", line_number)
+        self._add_agent_attribute("code.filepath", file_path)
+
+        # Split function path to extract class name
+        func_path = func_path.split(".")
+        func_name = func_path[-1]  # function name is last in path
+        if len(func_path) > 1:
+            class_name = ".".join((func_path[:-1]))
+            namespace = ".".join((module_name, class_name))
+        else:
+            namespace = module_name
+
+        # Add callable naming attributes
+        self._add_agent_attribute("code.namespace", namespace)
+        self._add_agent_attribute("code.function", func_name)
 
     def _observe_exception(self, exc_info=None, ignore=None, expected=None, status_code=None):
         # Bail out if the transaction is not active or

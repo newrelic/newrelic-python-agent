@@ -215,19 +215,20 @@ class TimeTrace(object):
             line_number = co.co_firstlineno
             file_path = co.co_filename
         else:
-            # Extract file path from sys.modules
-            if module_name in sys.modules:
-                module = sys.modules[module_name]
-                file_path = module.__file__
+            # Extract call method for callable objects
+            if hasattr(func, "__call__"):
+                func = func.__call__
+                module_name, func_path = object_context(func)
 
-            # Use inspect to get line number
+            # Initialize here instead of in except to potentially get file_path but not line_number
+            file_path = None
+            line_number = None
             try:
-                line_number = inspect.findsource(func)[1]
+            # Use inspect to get file and line number
+                file_path = inspect.getsourcefile(func)
+                line_number = inspect.getsourcelines(func)[1]
             except TypeError:
-                if hasattr(func, "__call__"):  # Callable object
-                    line_number = inspect.findsource(func.__call__)[1]
-                else:
-                    line_number = None  # Unable to extract
+                pass
 
         # Add filepath attributes
         if line_number is not None:

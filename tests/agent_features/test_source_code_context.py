@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import newrelic.packages.six as six
 import pytest
 
 from testing_support.validators.validate_span_events import validate_span_events
@@ -19,12 +20,14 @@ from testing_support.validators.validate_span_events import validate_span_events
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTraceWrapper
 
-import _test_source_code_context
-from _test_source_code_context import exercise_function, CLASS_INSTANCE, exercise_lambda, ExerciseClass
+from _test_source_code_context import exercise_function, CLASS_INSTANCE, exercise_lambda, ExerciseClass, __file__ as FILE_PATH
 
 
-FILE_PATH = _test_source_code_context.__file__
-
+NAMESPACE = "_test_source_code_context"
+CLASS_NAMESPACE = ".".join((NAMESPACE, "ExerciseClass"))
+FUZZY_NAMESPACE = CLASS_NAMESPACE if six.PY3 else NAMESPACE
+if FILE_PATH.endswith(".pyc"):
+    FILE_PATH = FILE_PATH[:-1]
 
 @pytest.mark.parametrize(
     "func,agents",
@@ -35,7 +38,7 @@ FILE_PATH = _test_source_code_context.__file__
                 "code.filepath": FILE_PATH,
                 "code.function": "exercise_function",
                 "code.lineno": 14,
-                "code.namespace": "_test_source_code_context",
+                "code.namespace": NAMESPACE,
             },
         ),
         (  # Method
@@ -44,7 +47,7 @@ FILE_PATH = _test_source_code_context.__file__
                 "code.filepath": FILE_PATH,
                 "code.function": "exercise_method",
                 "code.lineno": 19,
-                "code.namespace": "_test_source_code_context.ExerciseClass",
+                "code.namespace": CLASS_NAMESPACE,
             },
         ),
         (  # Static Method
@@ -53,7 +56,7 @@ FILE_PATH = _test_source_code_context.__file__
                 "code.filepath": FILE_PATH,
                 "code.function": "exercise_static_method",
                 "code.lineno": 22,
-                "code.namespace": "_test_source_code_context.ExerciseClass",
+                "code.namespace": FUZZY_NAMESPACE,
             },
         ),
         (  # Class Method
@@ -62,25 +65,25 @@ FILE_PATH = _test_source_code_context.__file__
                 "code.filepath": FILE_PATH,
                 "code.function": "exercise_class_method",
                 "code.lineno": 26,
-                "code.namespace": "_test_source_code_context.ExerciseClass",
+                "code.namespace": CLASS_NAMESPACE,
             },
         ),
         (  # Callable object
             CLASS_INSTANCE,
             {
                 "code.filepath": FILE_PATH,
-                "code.function": "ExerciseClass",
-                "code.lineno": 14,
-                "code.namespace": "_test_source_code_context.ExerciseClass",
+                "code.function": "__call__",
+                "code.lineno": 30,
+                "code.namespace": CLASS_NAMESPACE,
             },
         ),
         (  # Lambda
             exercise_lambda,
             {
                 "code.filepath": FILE_PATH,
-                "code.function": "exercise_lambda",
+                "code.function": "<lambda>",
                 "code.lineno": 36,
-                "code.namespace": "_test_source_code_context",
+                "code.namespace": NAMESPACE,
             },
         ),
     ),

@@ -15,7 +15,7 @@ def exercise_function():
     return
 
 
-class ExerciseClass:
+class ExerciseClass():
     def exercise_method(self):
         return
 

@@ -157,7 +157,7 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None, params=None
 
         _name = name or callable_name(wrapped)
 
-        trace = FunctionTrace(_name, group, label, params, terminal, rollup, parent=parent)
+        trace = FunctionTrace(_name, group, label, params, terminal, rollup, parent=parent, source=wrapped)
 
         if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)

@@ -14,44 +14,84 @@
 
 import pytest
 
-from testing_support.validators.validate_span_events import (
-        validate_span_events)
+from testing_support.validators.validate_span_events import validate_span_events
 
 from newrelic.api.background_task import background_task
+from newrelic.api.function_trace import FunctionTraceWrapper
+
+import _test_source_code_context
+from _test_source_code_context import exercise_function, CLASS_INSTANCE, exercise_lambda, ExerciseClass
 
 
-# ===== Source Functions =====
-def exercise():
-    return
+FILE_PATH = _test_source_code_context.__file__
 
 
-class MyClass():
-    def exercise(self):
-        return
-
-    def __call__(self):
-        return
-
-CLASS_INSTANCE = MyClass()
-
-exercise_lambda = lambda: None
-
-# ===== Tests =====
-
-@pytest.mark.parametrize("func", (
-    exercise,  # Function
-    CLASS_INSTANCE.exercise,  # Method
-    CLASS_INSTANCE,  # Callable object
-    exercise_lambda,  # Lambda
-))
-@validate_span_events(
-    count=1,
-    expected_agents=[
-        "source_code_context.callable_name",
-        "source_code_context.line_number",
-        "source_code_context.file_path",
-    ],
+@pytest.mark.parametrize(
+    "func,agents",
+    (
+        (  # Function
+            exercise_function,
+            {
+                "code.filepath": FILE_PATH,
+                "code.function": "exercise_function",
+                "code.lineno": 14,
+                "code.namespace": "_test_source_code_context",
+            },
+        ),
+        (  # Method
+            CLASS_INSTANCE.exercise_method,
+            {
+                "code.filepath": FILE_PATH,
+                "code.function": "exercise_method",
+                "code.lineno": 19,
+                "code.namespace": "_test_source_code_context.ExerciseClass",
+            },
+        ),
+        (  # Static Method
+            CLASS_INSTANCE.exercise_static_method,
+            {
+                "code.filepath": FILE_PATH,
+                "code.function": "exercise_static_method",
+                "code.lineno": 22,
+                "code.namespace": "_test_source_code_context.ExerciseClass",
+            },
+        ),
+        (  # Class Method
+            ExerciseClass.exercise_class_method,
+            {
+                "code.filepath": FILE_PATH,
+                "code.function": "exercise_class_method",
+                "code.lineno": 26,
+                "code.namespace": "_test_source_code_context.ExerciseClass",
+            },
+        ),
+        (  # Callable object
+            CLASS_INSTANCE,
+            {
+                "code.filepath": FILE_PATH,
+                "code.function": "ExerciseClass",
+                "code.lineno": 14,
+                "code.namespace": "_test_source_code_context.ExerciseClass",
+            },
+        ),
+        (  # Lambda
+            exercise_lambda,
+            {
+                "code.filepath": FILE_PATH,
+                "code.function": "exercise_lambda",
+                "code.lineno": 36,
+                "code.namespace": "_test_source_code_context",
+            },
+        ),
+    ),
 )
-@background_task()
-def test_source_code_context(func):
-    func()
+def test_source_code_context(func, agents):
+    @validate_span_events(
+        count=1,
+        exact_agents=agents,
+    )
+    @background_task()
+    def _test():
+        FunctionTraceWrapper(func)()
+
+    _test()

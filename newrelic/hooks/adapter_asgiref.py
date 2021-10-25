@@ -1,6 +1,6 @@
 from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.core.trace_cache import trace_cache
-from newrelic.core.context import context_wrapper_async, ContextOf
+from newrelic.core.context import context_wrapper, ContextOf
+from newrelic.api.time_trace import current_trace
 
 
 def _bind_thread_handler(loop, source_task, *args, **kwargs):
@@ -15,7 +15,7 @@ def thread_handler_wrapper(wrapped, instance, args, kwargs):
 
 def main_wrap_wrapper(wrapped, instance, args, kwargs):
     awaitable = wrapped(*args, **kwargs)
-    return context_wrapper_async(awaitable, trace_cache().current_thread_id())
+    return context_wrapper(awaitable, current_trace())
 
 
 def instrument_asgiref_sync(module):

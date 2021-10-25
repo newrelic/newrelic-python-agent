@@ -25,8 +25,7 @@ from newrelic.common.object_wrapper import (
     wrap_function_wrapper,
 )
 from newrelic.core.config import should_ignore_error
-from newrelic.core.context import context_wrapper, current_thread_id
-from newrelic.core.trace_cache import trace_cache
+from newrelic.core.context import context_wrapper, ContextOf
 
 
 def framework_details():
@@ -43,30 +42,10 @@ def bind_exc(request, exc, *args, **kwargs):
     return exc
 
 
-class RequestContext(object):
-    def __init__(self, request):
-        self.request = request
-        self.force_propagate = False
-        self.thread_id = None
-
-    def __enter__(self):
-        trace = getattr(self.request, "_nr_trace", None)
-        self.force_propagate = trace and current_trace() is None
-
-        # Propagate trace context onto the current task
-        if self.force_propagate:
-            self.thread_id = trace_cache().thread_start(trace)
-
-    def __exit__(self, exc, value, tb):
-        # Remove any context from the current thread as it was force propagated above
-        if self.force_propagate:
-            trace_cache().thread_stop(self.thread_id)
-
-
 @function_wrapper
 def route_naming_wrapper(wrapped, instance, args, kwargs):
 
-    with RequestContext(bind_request(*args, **kwargs)):
+    with ContextOf(request=bind_request(*args, **kwargs)):
         transaction = current_transaction()
         if transaction:
             transaction.set_transaction_name(callable_name(wrapped), priority=2)
@@ -175,7 +154,7 @@ def wrap_exception_handler(wrapped, instance, args, kwargs):
             FunctionTraceWrapper(wrapped)(*args, **kwargs), bind_exc(*args, **kwargs)
         )
     else:
-        with RequestContext(bind_request(*args, **kwargs)):
+        with ContextOf(request=bind_request(*args, **kwargs)):
             response = FunctionTraceWrapper(wrapped)(*args, **kwargs)
             record_response_error(response, bind_exc(*args, **kwargs))
             return response
@@ -217,7 +196,7 @@ async def wrap_run_in_threadpool(wrapped, instance, args, kwargs):
         return await wrapped(*args, **kwargs)
 
     func, args, kwargs = bind_run_in_threadpool(*args, **kwargs)
-    func = context_wrapper(func, current_thread_id())
+    func = context_wrapper(func, trace)
 
     return await wrapped(func, *args, **kwargs)
 

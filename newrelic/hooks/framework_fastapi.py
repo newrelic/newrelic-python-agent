@@ -13,10 +13,11 @@
 # limitations under the License.
 
 from copy import copy
-from newrelic.api.time_trace import current_trace
+
 from newrelic.api.function_trace import FunctionTraceWrapper
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.api.time_trace import current_trace
 from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
 def wrap_run_endpoint_function(wrapped, instance, args, kwargs):

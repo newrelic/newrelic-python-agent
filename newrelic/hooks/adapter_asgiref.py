@@ -1,6 +1,6 @@
-from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.core.context import context_wrapper, ContextOf
 from newrelic.api.time_trace import current_trace
+from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.core.context import ContextOf, context_wrapper
 
 
 def _bind_thread_handler(loop, source_task, *args, **kwargs):
@@ -19,7 +19,5 @@ def main_wrap_wrapper(wrapped, instance, args, kwargs):
 
 
 def instrument_asgiref_sync(module):
-    wrap_function_wrapper(module, 'SyncToAsync.thread_handler',
-        thread_handler_wrapper)
-    wrap_function_wrapper(module, 'AsyncToSync.main_wrap',
-        main_wrap_wrapper)
+    wrap_function_wrapper(module, "SyncToAsync.thread_handler", thread_handler_wrapper)
+    wrap_function_wrapper(module, "AsyncToSync.main_wrap", main_wrap_wrapper)

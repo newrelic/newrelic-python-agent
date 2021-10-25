@@ -25,7 +25,7 @@ from newrelic.common.object_wrapper import (
     wrap_function_wrapper,
 )
 from newrelic.core.config import should_ignore_error
-from newrelic.core.context import context_wrapper, ContextOf
+from newrelic.core.context import ContextOf, context_wrapper
 
 
 def framework_details():
@@ -115,16 +115,14 @@ def wrap_add_middleware(wrapped, instance, args, kwargs):
     return wrapped(wrap_middleware(middleware), *args, **kwargs)
 
 
-def bind_middleware_starlette(
-    debug=False, routes=None, middleware=None, *args, **kwargs
-):
+def bind_middleware_starlette(debug=False, routes=None, middleware=None, *args, **kwargs):  # pylint: disable=W1113
     return middleware
 
 
 def wrap_starlette(wrapped, instance, args, kwargs):
     middlewares = bind_middleware_starlette(*args, **kwargs)
     if middlewares:
-        for middleware in middlewares:
+        for middleware in middlewares:  # pylint: disable=E1133
             cls = getattr(middleware, "cls", None)
             if cls and not hasattr(cls, "__wrapped__"):
                 middleware.cls = wrap_middleware(cls)
@@ -150,9 +148,7 @@ async def wrap_exception_handler_async(coro, exc):
 
 def wrap_exception_handler(wrapped, instance, args, kwargs):
     if is_coroutine_function(wrapped):
-        return wrap_exception_handler_async(
-            FunctionTraceWrapper(wrapped)(*args, **kwargs), bind_exc(*args, **kwargs)
-        )
+        return wrap_exception_handler_async(FunctionTraceWrapper(wrapped)(*args, **kwargs), bind_exc(*args, **kwargs))
     else:
         with ContextOf(request=bind_request(*args, **kwargs)):
             response = FunctionTraceWrapper(wrapped)(*args, **kwargs)
@@ -169,9 +165,7 @@ def wrap_server_error_handler(wrapped, instance, args, kwargs):
 
 
 def wrap_add_exception_handler(wrapped, instance, args, kwargs):
-    exc_class_or_status_code, handler, args, kwargs = bind_add_exception_handler(
-        *args, **kwargs
-    )
+    exc_class_or_status_code, handler, args, kwargs = bind_add_exception_handler(*args, **kwargs)
     handler = FunctionWrapper(handler, wrap_exception_handler)
     return wrapped(exc_class_or_status_code, handler, *args, **kwargs)
 
@@ -220,35 +214,21 @@ def instrument_starlette_requests(module):
 
 
 def instrument_starlette_middleware_errors(module):
-    wrap_function_wrapper(
-        module, "ServerErrorMiddleware.__call__", error_middleware_wrapper
-    )
+    wrap_function_wrapper(module, "ServerErrorMiddleware.__call__", error_middleware_wrapper)
 
-    wrap_function_wrapper(
-        module, "ServerErrorMiddleware.__init__", wrap_server_error_handler
-    )
+    wrap_function_wrapper(module, "ServerErrorMiddleware.__init__", wrap_server_error_handler)
 
-    wrap_function_wrapper(
-        module, "ServerErrorMiddleware.error_response", wrap_exception_handler
-    )
+    wrap_function_wrapper(module, "ServerErrorMiddleware.error_response", wrap_exception_handler)
 
-    wrap_function_wrapper(
-        module, "ServerErrorMiddleware.debug_response", wrap_exception_handler
-    )
+    wrap_function_wrapper(module, "ServerErrorMiddleware.debug_response", wrap_exception_handler)
 
 
 def instrument_starlette_exceptions(module):
-    wrap_function_wrapper(
-        module, "ExceptionMiddleware.__call__", error_middleware_wrapper
-    )
+    wrap_function_wrapper(module, "ExceptionMiddleware.__call__", error_middleware_wrapper)
 
-    wrap_function_wrapper(
-        module, "ExceptionMiddleware.http_exception", wrap_exception_handler
-    )
+    wrap_function_wrapper(module, "ExceptionMiddleware.http_exception", wrap_exception_handler)
 
-    wrap_function_wrapper(
-        module, "ExceptionMiddleware.add_exception_handler", wrap_add_exception_handler
-    )
+    wrap_function_wrapper(module, "ExceptionMiddleware.add_exception_handler", wrap_add_exception_handler)
 
 
 def instrument_starlette_background_task(module):

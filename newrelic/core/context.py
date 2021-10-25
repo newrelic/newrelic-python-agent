@@ -17,7 +17,6 @@ This module implements utilities for context propagation for tracing across thre
 """
 
 import logging
-from newrelic.api.time_trace import current_trace
 
 from newrelic.common.object_wrapper import function_wrapper
 from newrelic.core.trace_cache import trace_cache
@@ -40,13 +39,12 @@ class ContextOf(object):
         elif trace is not None:
             self.trace = trace
         elif hasattr(request, "_nr_trace") and request._nr_trace is not None:
-                # Unpack traces from objects patched with them
-                self.trace = request._nr_trace
+            # Unpack traces from objects patched with them
+            self.trace = request._nr_trace
         else:
             _logger.error(
                 "Runtime instrumentation error. Request context propagation failed. No context attached to request. Report this issue to New Relic support.\n",
             )
-
 
     def __enter__(self):
         if self.trace:

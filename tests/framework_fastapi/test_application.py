@@ -13,20 +13,22 @@
 # limitations under the License.
 
 import logging
+
 import pytest
-
 from testing_support.fixtures import validate_transaction_metrics
-from testing_support.fixtures import newrelic_caplog as caplog  # noqa: F401; pylint: disable=W0611
 
 
-@pytest.mark.parametrize("endpoint,transaction_name", (
-    ("/sync", "_target_application:sync"),
-    ("/async", "_target_application:non_sync"),
-))
+@pytest.mark.parametrize(
+    "endpoint,transaction_name",
+    (
+        ("/sync", "_target_application:sync"),
+        ("/async", "_target_application:non_sync"),
+    ),
+)
 def test_application(caplog, app, endpoint, transaction_name):
     caplog.set_level(logging.ERROR)
-    @validate_transaction_metrics(transaction_name,
-        scoped_metrics=[("Function/" + transaction_name, 1)])
+
+    @validate_transaction_metrics(transaction_name, scoped_metrics=[("Function/" + transaction_name, 1)])
     def _test():
         response = app.get(endpoint)
         assert response.status == 200

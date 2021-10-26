@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from conftest import async_handler_support, skip_if_not_async_handler_support  # pylint: disable=E0611
+from conftest import (  # pylint: disable=E0611
+    async_handler_support,
+    skip_if_not_async_handler_support,
+)
 from testing_support.fixtures import (
     validate_transaction_errors,
     validate_transaction_metrics,

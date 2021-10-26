@@ -25,59 +25,69 @@ _logger = logging.getLogger(__name__)
 
 
 class ContextOf(object):
-    def __init__(self, trace=None, request=None):
+    def __init__(self, trace=None, request=None, trace_cache_id=None):
         self.trace = None
         self.trace_cache = trace_cache()
         self.thread_id = None
-        self.restore = False
+        self.restore = None
+        self.should_restore = False
 
         # Extract trace if possible, else leave as None for safety
-        if trace is None and request is None:
+        if trace is None and request is None and trace_cache_id is None:
             _logger.error(
-                "Runtime instrumentation error. Request context propagation failed. No trace or request provided. Report this issue to New Relic support.\n",
+                "Runtime instrumentation error. Request context propagation failed. No trace or request provided. Report this issue to New Relic support.",
             )
         elif trace is not None:
             self.trace = trace
+        elif trace_cache_id is not None:
+            self.trace = self.trace_cache._cache.get(trace_cache_id, None)
+            if self.trace is None:
+                _logger.error(
+                    "Runtime instrumentation error. Request context propagation failed. No trace with id %s. Report this issue to New Relic support.", trace_cache_id
+                )
         elif hasattr(request, "_nr_trace") and request._nr_trace is not None:
             # Unpack traces from objects patched with them
             self.trace = request._nr_trace
         else:
             _logger.error(
-                "Runtime instrumentation error. Request context propagation failed. No context attached to request. Report this issue to New Relic support.\n",
+                "Runtime instrumentation error. Request context propagation failed. No context attached to request. Report this issue to New Relic support.",
             )
 
     def __enter__(self):
         if self.trace:
             self.thread_id = self.trace_cache.current_thread_id()
+            
+            # Save previous cache contents
+            self.restore = self.trace_cache._cache.get(self.thread_id, None)
+            self.should_restore = True
 
-            if self.thread_id not in self.trace_cache._cache:
-                # No active trace for current thread: continue
-                self.restore = True
-                self.trace_cache._cache[self.thread_id] = self.trace
-            elif self.trace_cache._cache[self.thread_id] is self.trace:
-                # Trace already active for this thread: ignore
-                pass
-            else:
-                _logger.error(
-                    "Runtime instrumentation error. An active trace already exists in the cache on thread_id %s. Report this issue to New Relic support.\n",
-                    current_thread_id,
-                )
-                return None
+            # Set context in trace cache
+            self.trace_cache._cache[self.thread_id] = self.trace
 
         return self
 
     def __exit__(self, exc, value, tb):
-        if self.restore:
-            self.trace_cache._cache.pop(self.thread_id)
+        if self.should_restore:
+            if self.restore is not None:
+                # Restore previous contents
+                self.trace_cache._cache[self.thread_id] = self.restore
+            else:
+                # Remove entry from cache
+                self.trace_cache._cache.pop(self.thread_id)
 
 
-def context_wrapper(func, trace=None, request=None):
+def context_wrapper(func, trace=None, request=None, trace_cache_id=None):
     @function_wrapper
     def _context_wrapper(wrapped, instance, args, kwargs):
-        with ContextOf(trace=trace, request=request):
+        with ContextOf(trace=trace, request=request, trace_cache_id=trace_cache_id):
             return wrapped(*args, **kwargs)
 
     return _context_wrapper(func)
+
+
+async def context_wrapper_async(awaitable, trace=None, request=None, trace_cache_id=None):
+    with ContextOf(trace=trace, request=request, trace_cache_id=trace_cache_id):
+        return await awaitable
 
 
 def current_thread_id():

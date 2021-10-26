@@ -56,7 +56,6 @@ def test_class_based_view():
     response = application.get('/view')
     response.mustcontain('VIEW RESPONSE')
 
-@pytest.mark.xfail(reason="Currently broken in flask.")
 @skip_if_not_async_handler_support
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_views_async:test_async_view',
@@ -82,7 +81,6 @@ def test_post_method_view():
     response = application.post('/methodview')
     response.mustcontain('METHODVIEW POST RESPONSE')
 
-@pytest.mark.xfail(reason="Currently broken in flask.")
 @skip_if_not_async_handler_support
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_views_async:test_async_methodview',

@@ -43,7 +43,8 @@ class ContextOf(object):
             self.trace = self.trace_cache._cache.get(trace_cache_id, None)
             if self.trace is None:
                 _logger.error(
-                    "Runtime instrumentation error. Request context propagation failed. No trace with id %s. Report this issue to New Relic support.", trace_cache_id
+                    "Runtime instrumentation error. Request context propagation failed. No trace with id %s. Report this issue to New Relic support.",
+                    trace_cache_id,
                 )
         elif hasattr(request, "_nr_trace") and request._nr_trace is not None:
             # Unpack traces from objects patched with them
@@ -56,7 +57,7 @@ class ContextOf(object):
     def __enter__(self):
         if self.trace:
             self.thread_id = self.trace_cache.current_thread_id()
-            
+
             # Save previous cache contents
             self.restore = self.trace_cache._cache.get(self.thread_id, None)
             self.should_restore = True

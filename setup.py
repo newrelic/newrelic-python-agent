@@ -35,7 +35,11 @@ except ImportError:
 
 from distutils.command.build_ext import build_ext  # noqa
 from distutils.core import Extension  # noqa
-from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError  # noqa
+from distutils.errors import (  # noqa
+    CCompilerError,
+    DistutilsExecError,
+    DistutilsPlatformError,
+)
 
 
 def newrelic_agent_guess_next_version(tag_version):

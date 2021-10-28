@@ -14,26 +14,28 @@
 
 from __future__ import print_function
 
-import sys
 import os
+import sys
 
 python_version = sys.version_info[:2]
 
-assert python_version in ((2, 7),) or python_version >= (3, 6), \
-        'The New Relic Python agent only supports Python 2.7 and 3.6+.'
+assert python_version in ((2, 7),) or python_version >= (
+    3,
+    6,
+), "The New Relic Python agent only supports Python 2.7 and 3.6+."
 
 with_setuptools = False
 
 try:
     from setuptools import setup
+
     with_setuptools = True
 except ImportError:
     from distutils.core import setup
 
-from distutils.core import Extension
-from distutils.command.build_ext import build_ext
-from distutils.errors import (CCompilerError, DistutilsExecError,
-        DistutilsPlatformError)
+from distutils.command.build_ext import build_ext  # noqa
+from distutils.core import Extension  # noqa
+from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError  # noqa
 
 
 def newrelic_agent_guess_next_version(tag_version):
@@ -53,26 +55,24 @@ def newrelic_agent_next_version(version):
     if version.exact:
         return version.format_with("{tag}")
     else:
-        return version.format_next_version(
-            newrelic_agent_guess_next_version, fmt="{guessed}"
-        )
+        return version.format_next_version(newrelic_agent_guess_next_version, fmt="{guessed}")
 
 
 script_directory = os.path.dirname(__file__)
 if not script_directory:
     script_directory = os.getcwd()
 
-readme_file = os.path.join(script_directory, 'README.rst')
+readme_file = os.path.join(script_directory, "README.rst")
 
-if sys.platform == 'win32' and python_version > (2, 6):
-    build_ext_errors = (CCompilerError, DistutilsExecError,
-            DistutilsPlatformError, IOError)
+if sys.platform == "win32" and python_version > (2, 6):
+    build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError, IOError)
 else:
-    build_ext_errors = (CCompilerError, DistutilsExecError,
-            DistutilsPlatformError)
+    build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError)
+
 
 class BuildExtFailed(Exception):
     pass
+
 
 class optional_build_ext(build_ext):
     def run(self):
@@ -87,87 +87,89 @@ class optional_build_ext(build_ext):
         except build_ext_errors:
             raise BuildExtFailed()
 
+
 packages = [
-        "newrelic",
-        "newrelic.admin",
-        "newrelic.api",
-        "newrelic.bootstrap",
-        "newrelic.common",
-        "newrelic.core",
-        "newrelic.extras",
-        "newrelic.extras.framework_django",
-        "newrelic.extras.framework_django.templatetags",
-        "newrelic.hooks",
-        "newrelic.network",
-        "newrelic/packages",
-        "newrelic/packages/urllib3",
-        "newrelic/packages/urllib3/util",
-        "newrelic/packages/urllib3/contrib",
-        "newrelic/packages/urllib3/contrib/_securetransport",
-        "newrelic/packages/urllib3/packages",
-        "newrelic/packages/urllib3/packages/backports",
-        "newrelic/packages/urllib3/packages/ssl_match_hostname",
-        "newrelic/packages/wrapt",
-        "newrelic.samplers",
+    "newrelic",
+    "newrelic.admin",
+    "newrelic.api",
+    "newrelic.bootstrap",
+    "newrelic.common",
+    "newrelic.core",
+    "newrelic.extras",
+    "newrelic.extras.framework_django",
+    "newrelic.extras.framework_django.templatetags",
+    "newrelic.hooks",
+    "newrelic.network",
+    "newrelic/packages",
+    "newrelic/packages/urllib3",
+    "newrelic/packages/urllib3/util",
+    "newrelic/packages/urllib3/contrib",
+    "newrelic/packages/urllib3/contrib/_securetransport",
+    "newrelic/packages/urllib3/packages",
+    "newrelic/packages/urllib3/packages/backports",
+    "newrelic/packages/urllib3/packages/ssl_match_hostname",
+    "newrelic/packages/wrapt",
+    "newrelic.samplers",
 ]
 
 classifiers = [
-        "Development Status :: 5 - Production/Stable",
-        "License :: OSI Approved :: Apache Software License",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: Implementation :: CPython",
-        "Programming Language :: Python :: Implementation :: PyPy",
-        "Topic :: System :: Monitoring",
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 2.7",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: System :: Monitoring",
 ]
 
 kwargs = dict(
-        name = "newrelic",
-        use_scm_version={
-            "version_scheme": newrelic_agent_next_version,
-            "local_scheme": "no-local-version",
-            "git_describe_command": "git describe --dirty --tags --long --match *.*.*.*",
-            "write_to": "newrelic/version.txt",
-        },
-        setup_requires=["setuptools_scm>=3.2,<7"],
-        description = "New Relic Python Agent",
-        long_description = open(readme_file).read(),
-        url = "https://newrelic.com/docs/python/new-relic-for-python",
-        project_urls = {"Source": "https://github.com/newrelic/newrelic-python-agent"},
-        author = "New Relic",
-        author_email = "support@newrelic.com",
-        maintainer = 'New Relic',
-        maintainer_email = 'support@newrelic.com',
-        license = 'Apache-2.0',
-        zip_safe = False,
-        classifiers = classifiers,
-        packages = packages,
-        python_requires = '>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*',
-        package_data = {'newrelic': ['newrelic.ini',
-                                     'version.txt',
-                                     'packages/urllib3/LICENSE.txt',
-                                     'common/cacert.pem'],
-        },
-        scripts = [ 'scripts/newrelic-admin' ],
-        extras_require = {'infinite-tracing': ['grpcio<2', 'protobuf<4']},
+    name="newrelic",
+    use_scm_version={
+        "version_scheme": newrelic_agent_next_version,
+        "local_scheme": "no-local-version",
+        "git_describe_command": "git describe --dirty --tags --long --match *.*.*.*",
+        "write_to": "newrelic/version.txt",
+    },
+    setup_requires=["setuptools_scm>=3.2,<7"],
+    description="New Relic Python Agent",
+    long_description=open(readme_file).read(),
+    url="https://newrelic.com/docs/python/new-relic-for-python",
+    project_urls={"Source": "https://github.com/newrelic/newrelic-python-agent"},
+    author="New Relic",
+    author_email="support@newrelic.com",
+    maintainer="New Relic",
+    maintainer_email="support@newrelic.com",
+    license="Apache-2.0",
+    zip_safe=False,
+    classifiers=classifiers,
+    packages=packages,
+    python_requires=">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*",
+    package_data={
+        "newrelic": ["newrelic.ini", "version.txt", "packages/urllib3/LICENSE.txt", "common/cacert.pem"],
+    },
+    scripts=["scripts/newrelic-admin"],
+    extras_require={"infinite-tracing": ["grpcio<2", "protobuf<4"]},
 )
 
 if with_setuptools:
-    kwargs['entry_points'] = {
-            'console_scripts': ['newrelic-admin = newrelic.admin:main'],
-            }
+    kwargs["entry_points"] = {
+        "console_scripts": ["newrelic-admin = newrelic.admin:main"],
+    }
+
 
 def with_librt():
     try:
-        if sys.platform.startswith('linux'):
+        if sys.platform.startswith("linux"):
             import ctypes.util
-            return ctypes.util.find_library('rt')
+
+            return ctypes.util.find_library("rt")
     except Exception:
         pass
+
 
 def run_setup(with_extensions):
     def _run_setup():
@@ -180,34 +182,33 @@ def run_setup(with_extensions):
         if with_extensions:
             monotonic_libraries = []
             if with_librt():
-                monotonic_libraries = ['rt']
+                monotonic_libraries = ["rt"]
 
-            kwargs_tmp['ext_modules'] = [
-                    Extension("newrelic.packages.wrapt._wrappers",
-                        ["newrelic/packages/wrapt/_wrappers.c"]),
-                    Extension("newrelic.common._monotonic",
-                        ["newrelic/common/_monotonic.c"],
-                        libraries=monotonic_libraries),
-                    Extension("newrelic.core._thread_utilization",
-                        ["newrelic/core/_thread_utilization.c"]),
-                    ]
-            kwargs_tmp['cmdclass'] = dict(build_ext=optional_build_ext)
+            kwargs_tmp["ext_modules"] = [
+                Extension("newrelic.packages.wrapt._wrappers", ["newrelic/packages/wrapt/_wrappers.c"]),
+                Extension(
+                    "newrelic.common._monotonic", ["newrelic/common/_monotonic.c"], libraries=monotonic_libraries
+                ),
+                Extension("newrelic.core._thread_utilization", ["newrelic/core/_thread_utilization.c"]),
+            ]
+            kwargs_tmp["cmdclass"] = dict(build_ext=optional_build_ext)
 
         setup(**kwargs_tmp)
 
-    if os.environ.get('TDDIUM') is not None:
+    if os.environ.get("TDDIUM") is not None:
         try:
-            print('INFO: Running under tddium. Use lock.')
+            print("INFO: Running under tddium. Use lock.")
             from lock_file import LockFile
         except ImportError:
-            print('ERROR: Cannot import locking mechanism.')
+            print("ERROR: Cannot import locking mechanism.")
             _run_setup()
         else:
-            print('INFO: Attempting to create lock file.')
-            with LockFile('setup.lock', wait=True):
+            print("INFO: Attempting to create lock file.")
+            with LockFile("setup.lock", wait=True):
                 _run_setup()
     else:
         _run_setup()
+
 
 WARNING = """
 WARNING: The optional C extension components of the Python agent could
@@ -221,16 +222,16 @@ Pure Python versions of code supporting some features, rather than the
 optimised C versions, will also be used resulting in additional overheads.
 """
 
-with_extensions = os.environ.get('NEW_RELIC_EXTENSIONS', None)
+with_extensions = os.environ.get("NEW_RELIC_EXTENSIONS", None)
 if with_extensions:
-    if with_extensions.lower() == 'true':
+    if with_extensions.lower() == "true":
         with_extensions = True
-    elif with_extensions.lower() == 'false':
+    elif with_extensions.lower() == "false":
         with_extensions = False
     else:
         with_extensions = None
 
-if hasattr(sys, 'pypy_version_info'):
+if hasattr(sys, "pypy_version_info"):
     with_extensions = False
 
 if with_extensions is not None:
@@ -242,20 +243,20 @@ else:
 
     except BuildExtFailed:
 
-        print(75 * '*')
+        print(75 * "*")
 
         print(WARNING)
         print("INFO: Trying to build without extensions.")
 
         print()
-        print(75 * '*')
+        print(75 * "*")
 
         run_setup(with_extensions=False)
 
-        print(75 * '*')
+        print(75 * "*")
 
         print(WARNING)
         print("INFO: Only pure Python agent was installed.")
 
         print()
-        print(75 * '*')
+        print(75 * "*")

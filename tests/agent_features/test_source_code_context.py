@@ -13,16 +13,19 @@
 # limitations under the License.
 
 import newrelic.packages.six as six
+import os
 import pytest
 
 from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.fixtures import override_application_settings
+
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTraceWrapper
 
 from _test_source_code_context import exercise_function, CLASS_INSTANCE, exercise_lambda, ExerciseClass, __file__ as FILE_PATH
 
-
+os.environ['SERVICE_VERSION'] = '1.2.3'
 NAMESPACE = "_test_source_code_context"
 CLASS_NAMESPACE = ".".join((NAMESPACE, "ExerciseClass"))
 FUZZY_NAMESPACE = CLASS_NAMESPACE if six.PY3 else NAMESPACE
@@ -39,6 +42,7 @@ if FILE_PATH.endswith(".pyc"):
                 "code.function": "exercise_function",
                 "code.lineno": 14,
                 "code.namespace": NAMESPACE,
+                "service.version": '1.2.3',
             },
         ),
         (  # Method
@@ -48,6 +52,7 @@ if FILE_PATH.endswith(".pyc"):
                 "code.function": "exercise_method",
                 "code.lineno": 19,
                 "code.namespace": CLASS_NAMESPACE,
+                "service.version": '1.2.3',
             },
         ),
         (  # Static Method
@@ -57,6 +62,7 @@ if FILE_PATH.endswith(".pyc"):
                 "code.function": "exercise_static_method",
                 "code.lineno": 22,
                 "code.namespace": FUZZY_NAMESPACE,
+                "service.version": '1.2.3',
             },
         ),
         (  # Class Method
@@ -66,6 +72,7 @@ if FILE_PATH.endswith(".pyc"):
                 "code.function": "exercise_class_method",
                 "code.lineno": 26,
                 "code.namespace": CLASS_NAMESPACE,
+                "service.version": '1.2.3',
             },
         ),
         (  # Callable object
@@ -75,6 +82,7 @@ if FILE_PATH.endswith(".pyc"):
                 "code.function": "__call__",
                 "code.lineno": 30,
                 "code.namespace": CLASS_NAMESPACE,
+                "service.version": '1.2.3',
             },
         ),
         (  # Lambda
@@ -84,6 +92,7 @@ if FILE_PATH.endswith(".pyc"):
                 "code.function": "<lambda>",
                 "code.lineno": 36,
                 "code.namespace": NAMESPACE,
+                "service.version": '1.2.3',
             },
         ),
     ),

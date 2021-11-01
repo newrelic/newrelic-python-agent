@@ -14,6 +14,7 @@
 
 import inspect
 import logging
+import os
 import random
 import sys
 import time
@@ -54,6 +55,8 @@ class TimeTrace(object):
 
         if source is not None:
             self.add_code(source)
+
+        self.add_service_version()
 
     @property
     def transaction(self):
@@ -197,6 +200,11 @@ class TimeTrace(object):
 
         self.user_attributes[key] = value
 
+    def add_service_version(self):
+        service_version = os.environ.get("SERVICE_VERSION", None)
+        if service_version is not None:
+            self._add_agent_attribute("service.version", service_version)
+
     def add_code(self, func):
         """Extract source code context from a callable and add appropriate attributes."""
         # Fully unwrap object
@@ -229,7 +237,6 @@ class TimeTrace(object):
                 line_number = inspect.getsourcelines(func)[1]
             except TypeError:
                 pass
-
         # Add filepath attributes
         if line_number is not None:
             self._add_agent_attribute("code.lineno", line_number)

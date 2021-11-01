@@ -121,6 +121,7 @@ class ProfileTrace(object):
             try:
                 if func:
                     function_trace.add_source_code_context(func)
+                    function_trace.add_service_version()
             except Exception:
                 pass
 

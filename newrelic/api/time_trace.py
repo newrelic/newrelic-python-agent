@@ -199,13 +199,28 @@ class TimeTrace(object):
 
     def add_code(self, func):
         """Extract source code context from a callable and add appropriate attributes."""
+        original_func = func  # Save original reference
+
+        if hasattr(func, "_nr_source_code"):
+            (file_path, line_number, namespace, func_name) = func._nr_source_code
+
+            # Add attributes
+            if line_number is not None:
+                self._add_agent_attribute("code.lineno", line_number)
+            self._add_agent_attribute("code.filepath", file_path)
+            self._add_agent_attribute("code.namespace", namespace)
+            self._add_agent_attribute("code.function", func_name)
+
+            return
+
         # Fully unwrap object
         while hasattr(func, "__wrapped__") and func.__wrapped__ is not None:
             if func.__wrapped__ == func:
                 # Infinite loop protection
                 break
+
             func = func.__wrapped__
-        
+
         # Retrieve basic object details
         module_name, func_path = object_context(func)
 
@@ -247,6 +262,14 @@ class TimeTrace(object):
         # Add callable naming attributes
         self._add_agent_attribute("code.namespace", namespace)
         self._add_agent_attribute("code.function", func_name)
+
+        try:
+            if hasattr(original_func, "__func__"):
+                # Must store on underlying function not bound method
+                original_func = original_func.__func__
+            original_func._nr_source_code = (file_path, line_number, namespace, func_name)
+        except:  # Don't raise exceptions for any reason
+            pass
 
     def _observe_exception(self, exc_info=None, ignore=None, expected=None, status_code=None):
         # Bail out if the transaction is not active or

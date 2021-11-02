@@ -199,6 +199,10 @@ class TimeTrace(object):
 
     def add_code(self, func):
         """Extract source code context from a callable and add appropriate attributes."""
+        settings = self.settings
+        if not settings or not settings.source_code_context.enabled:
+            return
+
         original_func = func  # Save original reference
 
         if hasattr(func, "_nr_source_code"):

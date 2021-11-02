@@ -33,6 +33,14 @@ class StreamingRpc(object):
     """
 
     PATH = "/com.newrelic.trace.v1.IngestService/RecordSpan"
+    RETRY_POLICY = (
+        (15, False, False),
+        (15, False, False),
+        (30, False, False),
+        (60, True, False),
+        (120, False, False),
+        (300, False, True),
+    )
 
     def __init__(self, endpoint, stream_buffer, metadata, record_metric, ssl=True):
         if ssl:
@@ -80,6 +88,7 @@ class StreamingRpc(object):
     def process_responses(self):
         response_iterator = None
 
+        retry = 0
         while True:
             with self.notify:
                 if self.channel and response_iterator:
@@ -112,14 +121,28 @@ class StreamingRpc(object):
                             )
                             break
 
-                        _logger.warning(
-                            "Streaming RPC closed. "
-                            "Will attempt to reconnect in 15 seconds. "
-                            "Code: %s Details: %s",
-                            code,
-                            details,
-                        )
-                        self.notify.wait(15)
+                        if retry >= len(self.RETRY_POLICY):
+                            retry_time, warning, error = self.RETRY_POLICY[-1]
+                        else:
+                            retry_time, warning, error = self.RETRY_POLICY[retry]
+                            retry += 1
+
+                        if warning:
+                            _logger.warning(
+                                "Streaming RPC closed. Will attempt to reconnect in %d seconds. Check the prior log entries and remedy any issue as necessary, or if the problem persists, report this problem to New Relic support for further investigation. Code: %s Details: %s",
+                                retry_time,
+                                code,
+                                details,
+                            )
+                        elif error:
+                            _logger.error(
+                                "Streaming RPC closed after additional attempts. Will attempt to reconnect in %d seconds. Please report this problem to New Relic support for further investigation. Code: %s Details: %s",
+                                retry_time,
+                                code,
+                                details,
+                            )
+                        
+                        self.notify.wait(retry_time)
 
                 if not self.channel:
                     break

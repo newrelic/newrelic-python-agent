@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from newrelic.api.time_trace import current_trace
 from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.core.trace_cache import trace_cache
-from newrelic.core.context import context_wrapper_async, ContextOf
+from newrelic.core.context import ContextOf, context_wrapper_async
 
 
 def _bind_thread_handler(loop, source_task, *args, **kwargs):
@@ -23,17 +23,15 @@ def _bind_thread_handler(loop, source_task, *args, **kwargs):
 
 def thread_handler_wrapper(wrapped, instance, args, kwargs):
     task = _bind_thread_handler(*args, **kwargs)
-    with ContextOf(id(task)):
+    with ContextOf(trace_cache_id=id(task)):
         return wrapped(*args, **kwargs)
 
 
 def main_wrap_wrapper(wrapped, instance, args, kwargs):
     awaitable = wrapped(*args, **kwargs)
-    return context_wrapper_async(awaitable, trace_cache().current_thread_id())
+    return context_wrapper_async(awaitable, current_trace())
 
 
 def instrument_asgiref_sync(module):
-    wrap_function_wrapper(module, 'SyncToAsync.thread_handler',
-        thread_handler_wrapper)
-    wrap_function_wrapper(module, 'AsyncToSync.main_wrap',
-        main_wrap_wrapper)
+    wrap_function_wrapper(module, "SyncToAsync.thread_handler", thread_handler_wrapper)
+    wrap_function_wrapper(module, "AsyncToSync.main_wrap", main_wrap_wrapper)

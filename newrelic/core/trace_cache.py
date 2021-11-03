@@ -275,25 +275,6 @@ class TraceCache(object):
                     task = current_task(self.asyncio)
                     trace._task = task
 
-    def thread_start(self, trace):
-        current_thread_id = self.current_thread_id()
-        if current_thread_id not in self._cache:
-            self._cache[current_thread_id] = trace
-        else:
-            _logger.error(
-                "Runtime instrumentation error. An active "
-                "trace already exists in the cache on thread_id %s. Report "
-                "this issue to New Relic support.\n ",
-                current_thread_id,
-            )
-            return None
-
-        return current_thread_id
-
-    def thread_stop(self, thread_id):
-        if thread_id:
-            self._cache.pop(thread_id, None)
-
     def pop_current(self, trace):
         """Restore the trace's parent under the thread ID of the current
         executing thread."""

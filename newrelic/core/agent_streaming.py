@@ -41,14 +41,11 @@ class StreamingRpc(object):
         (120, False, False),
         (300, False, True),
     )
+    OPTIONS = [('grpc.enable_retries', 0)] 
 
     def __init__(self, endpoint, stream_buffer, metadata, record_metric, ssl=True):
-        if ssl:
-            credentials = grpc.ssl_channel_credentials()
-            channel = grpc.secure_channel(endpoint, credentials)
-        else:
-            channel = grpc.insecure_channel(endpoint)
-        self.channel = channel
+        self._endpoint = endpoint
+        self._ssl = ssl
         self.metadata = metadata
         self.request_iterator = stream_buffer
         self.response_processing_thread = threading.Thread(
@@ -56,10 +53,21 @@ class StreamingRpc(object):
         )
         self.response_processing_thread.daemon = True
         self.notify = self.condition()
+        self.record_metric = record_metric
+        self.closed = False
+        
+        self.create_channel()
+
+    def create_channel(self):
+        if self._ssl:
+            credentials = grpc.ssl_channel_credentials()
+            self.channel = grpc.secure_channel(self._endpoint, credentials, options=self.OPTIONS)
+        else:
+            self.channel = grpc.insecure_channel(self._endpoint, options=self.OPTIONS)
+
         self.rpc = self.channel.stream_stream(
             self.PATH, Span.SerializeToString, RecordStatus.FromString
         )
-        self.record_metric = record_metric
 
     @staticmethod
     def condition(*args, **kwargs):
@@ -71,6 +79,7 @@ class StreamingRpc(object):
             if self.channel:
                 channel = self.channel
                 self.channel = None
+                self.closed = True
             self.notify.notify_all()
 
         if channel:
@@ -121,12 +130,14 @@ class StreamingRpc(object):
                             )
                             break
 
+                        # Unpack retry policy settings
                         if retry >= len(self.RETRY_POLICY):
                             retry_time, warning, error = self.RETRY_POLICY[-1]
                         else:
                             retry_time, warning, error = self.RETRY_POLICY[retry]
                             retry += 1
 
+                        # Emit appropriate retry logs
                         if warning:
                             _logger.warning(
                                 "Streaming RPC closed. Will attempt to reconnect in %d seconds. Check the prior log entries and remedy any issue as necessary, or if the problem persists, report this problem to New Relic support for further investigation. Code: %s Details: %s",
@@ -142,9 +153,16 @@ class StreamingRpc(object):
                                 details,
                             )
                         
+                        # Reconnect channel with backoff
+                        self.channel.close()
                         self.notify.wait(retry_time)
+                        if self.closed:
+                            break
+                        else:
+                            _logger.debug("Attempting to reconnect Streaming RPC.")
+                            self.create_channel()
 
-                if not self.channel:
+                if self.closed:
                     break
 
                 response_iterator = self.rpc(

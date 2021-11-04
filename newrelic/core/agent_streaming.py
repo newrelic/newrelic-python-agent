@@ -34,12 +34,12 @@ class StreamingRpc(object):
 
     PATH = "/com.newrelic.trace.v1.IngestService/RecordSpan"
     RETRY_POLICY = (
-        (15, False, False),
-        (15, False, False),
-        (30, False, False),
-        (60, True, False),
-        (120, False, False),
-        (300, False, True),
+        (15, False),
+        (15, False),
+        (30, False),
+        (60, False),
+        (120, False),
+        (300, True),
     )
     OPTIONS = [('grpc.enable_retries', 0)] 
 
@@ -132,20 +132,20 @@ class StreamingRpc(object):
 
                         # Unpack retry policy settings
                         if retry >= len(self.RETRY_POLICY):
-                            retry_time, warning, error = self.RETRY_POLICY[-1]
+                            retry_time, error = self.RETRY_POLICY[-1]
                         else:
-                            retry_time, warning, error = self.RETRY_POLICY[retry]
+                            retry_time, error = self.RETRY_POLICY[retry]
                             retry += 1
 
                         # Emit appropriate retry logs
-                        if warning:
+                        if not error:
                             _logger.warning(
                                 "Streaming RPC closed. Will attempt to reconnect in %d seconds. Check the prior log entries and remedy any issue as necessary, or if the problem persists, report this problem to New Relic support for further investigation. Code: %s Details: %s",
                                 retry_time,
                                 code,
                                 details,
                             )
-                        elif error:
+                        else:
                             _logger.error(
                                 "Streaming RPC closed after additional attempts. Will attempt to reconnect in %d seconds. Please report this problem to New Relic support for further investigation. Code: %s Details: %s",
                                 retry_time,

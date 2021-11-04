@@ -156,7 +156,7 @@ kwargs = dict(
         "newrelic": ["newrelic.ini", "version.txt", "packages/urllib3/LICENSE.txt", "common/cacert.pem"],
     },
     scripts=["scripts/newrelic-admin"],
-    extras_require={"infinite-tracing": ["grpcio<2", "protobuf<4"]},
+    extras_require={"infinite-tracing": ["grpcio<1.40", "protobuf<4"]},
 )
 
 if with_setuptools:

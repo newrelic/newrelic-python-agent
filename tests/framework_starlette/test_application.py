@@ -16,13 +16,13 @@ import sys
 
 import pytest
 import starlette
-
-from newrelic.common.object_names import callable_name
 from testing_support.fixtures import (
     override_ignore_status_codes,
     validate_transaction_errors,
     validate_transaction_metrics,
 )
+
+from newrelic.common.object_names import callable_name
 
 
 @pytest.fixture(scope="session")
@@ -96,27 +96,28 @@ def test_exception_in_middleware(target_application, app_name):
     app = target_application[app_name]
 
     from starlette import __version__ as version
+
     starlette_version = tuple(int(v) for v in version.split("."))
 
-    # Starlette >=0.15 raises an exception group instead of reraising the ValueError
+    # Starlette >=0.15 and <0.17 raises an exception group instead of reraising the ValueError
     # This only occurs on Python versions >=3.8
-    if sys.version_info[0:2] > (3, 7) and starlette_version >= (0, 15, 0):
+    if sys.version_info[0:2] > (3, 7) and starlette_version >= (0, 15, 0) and starlette_version < (0, 17, 0):
         from anyio._backends._asyncio import ExceptionGroup
+
         exc_type = ExceptionGroup
     else:
         exc_type = ValueError
 
     @validate_transaction_metrics(
         "_test_application:middleware_factory.<locals>.middleware",
-        scoped_metrics=[
-            ("Function/_test_application:middleware_factory.<locals>.middleware", 1)
-        ],
+        scoped_metrics=[("Function/_test_application:middleware_factory.<locals>.middleware", 1)],
         rollup_metrics=[FRAMEWORK_METRIC],
     )
     @validate_transaction_errors(errors=[callable_name(exc_type)])
     def _test():
         with pytest.raises(exc_type):  # Later versions of starlette
             app.get("/crash_me_now")
+
     _test()
 
 
@@ -161,14 +162,10 @@ def test_exception_in_middleware(target_application, app_name):
     ),
 )
 @validate_transaction_errors(errors=["builtins:RuntimeError"])
-def test_server_error_middleware(
-    target_application, app_name, transaction_name, path, scoped_metrics
-):
+def test_server_error_middleware(target_application, app_name, transaction_name, path, scoped_metrics):
     @validate_transaction_metrics(
         transaction_name,
-        scoped_metrics=scoped_metrics
-        + [("Function/_test_application:runtime_error", 1)]
-        + DEFAULT_MIDDLEWARE_METRICS,
+        scoped_metrics=scoped_metrics + [("Function/_test_application:runtime_error", 1)] + DEFAULT_MIDDLEWARE_METRICS,
         rollup_metrics=[FRAMEWORK_METRIC],
     )
     def _test():
@@ -196,9 +193,7 @@ def test_server_error_middleware(
         ),
     ),
 )
-def test_application_handled_error(
-    target_application, app_name, transaction_name, path, error
-):
+def test_application_handled_error(target_application, app_name, transaction_name, path, error):
     @validate_transaction_errors(errors=[error])
     @validate_transaction_metrics(
         transaction_name,
@@ -229,9 +224,7 @@ def test_application_handled_error(
     ),
 )
 @override_ignore_status_codes(set((500,)))
-def test_application_ignored_error(
-    target_application, app_name, transaction_name, path
-):
+def test_application_ignored_error(target_application, app_name, transaction_name, path):
     @validate_transaction_errors(errors=[])
     @validate_transaction_metrics(
         transaction_name,
@@ -276,9 +269,7 @@ def test_starlette_http_exception(target_application, app_name, scoped_metrics):
 
 @pytest.mark.parametrize("app_name", ("no_middleware",))
 @validate_transaction_errors(errors=["builtins:RuntimeError"])
-@validate_transaction_metrics(
-    "_test_application:CustomRoute", rollup_metrics=[FRAMEWORK_METRIC]
-)
+@validate_transaction_metrics("_test_application:CustomRoute", rollup_metrics=[FRAMEWORK_METRIC])
 def test_starlette_http_exception_after_response_start(target_application, app_name):
     app = target_application[app_name]
     with pytest.raises(RuntimeError):

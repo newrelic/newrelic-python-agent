@@ -17,6 +17,11 @@ import pytest
 from testing_support.fixtures import dt_enabled, validate_transaction_metrics
 from testing_support.validators.validate_span_events import validate_span_events
 
+def get_starlette_version():
+    import starlette
+    version = getattr(starlette, "__version__", "0.0.0").split(".")
+    return tuple(int(x) for x in version)
+
 @pytest.fixture(scope="session")
 def target_application():
     import _test_graphql
@@ -25,6 +30,7 @@ def target_application():
 
 @dt_enabled
 @pytest.mark.parametrize("endpoint", ("/async", "/sync"))
+@pytest.mark.skipif(get_starlette_version() >= (0, 17), reason="Starlette GraphQL support dropped in v0.17.0")
 def test_graphql_metrics_and_attrs(target_application, endpoint):
     from graphql import __version__ as version
     from newrelic.hooks.framework_graphql import graphene_framework_details

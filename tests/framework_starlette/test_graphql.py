@@ -13,9 +13,18 @@
 # limitations under the License.
 
 import json
+
 import pytest
 from testing_support.fixtures import dt_enabled, validate_transaction_metrics
 from testing_support.validators.validate_span_events import validate_span_events
+
+
+def get_starlette_version():
+    import starlette
+
+    version = getattr(starlette, "__version__", "0.0.0").split(".")
+    return tuple(int(x) for x in version)
+
 
 @pytest.fixture(scope="session")
 def target_application():
@@ -23,10 +32,13 @@ def target_application():
 
     return _test_graphql.target_application
 
+
 @dt_enabled
 @pytest.mark.parametrize("endpoint", ("/async", "/sync"))
+@pytest.mark.skipif(get_starlette_version() >= (0, 17), reason="Starlette GraphQL support dropped in v0.17.0")
 def test_graphql_metrics_and_attrs(target_application, endpoint):
     from graphql import __version__ as version
+
     from newrelic.hooks.framework_graphql import graphene_framework_details
 
     FRAMEWORK_METRICS = [
@@ -65,7 +77,9 @@ def test_graphql_metrics_and_attrs(target_application, endpoint):
         rollup_metrics=_test_unscoped_metrics + FRAMEWORK_METRICS,
     )
     def _test():
-        response = target_application.make_request("POST", endpoint, body=json.dumps({"query": "{ hello }"}), headers={"Content-Type": "application/json"})
+        response = target_application.make_request(
+            "POST", endpoint, body=json.dumps({"query": "{ hello }"}), headers={"Content-Type": "application/json"}
+        )
         assert response.status == 200
         assert "Hello!" in response.body.decode("utf-8")
 

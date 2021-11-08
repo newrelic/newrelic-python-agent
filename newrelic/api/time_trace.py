@@ -52,8 +52,7 @@ class TimeTrace(object):
         self.agent_attributes = {}
         self.user_attributes = {}
 
-        if source is not None:
-            self.add_code(source)
+        self._source = source
 
     @property
     def transaction(self):
@@ -114,6 +113,10 @@ class TimeTrace(object):
             raise
 
         self.activated = True
+
+        # Extract source code context
+        if self._source is not None:
+            self.add_code(self._source)
 
         return self
 

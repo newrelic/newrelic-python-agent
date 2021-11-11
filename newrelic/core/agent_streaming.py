@@ -17,7 +17,8 @@ import threading
 
 try:
     import grpc
-    from newrelic.core.infinite_tracing_pb2 import Span, RecordStatus
+
+    from newrelic.core.infinite_tracing_pb2 import RecordStatus, Span
 except ImportError:
     grpc = None
 
@@ -41,7 +42,7 @@ class StreamingRpc(object):
         (120, False),
         (300, True),
     )
-    OPTIONS = [('grpc.enable_retries', 0)] 
+    OPTIONS = [("grpc.enable_retries", 0)]
 
     def __init__(self, endpoint, stream_buffer, metadata, record_metric, ssl=True):
         self._endpoint = endpoint
@@ -55,7 +56,7 @@ class StreamingRpc(object):
         self.notify = self.condition()
         self.record_metric = record_metric
         self.closed = False
-        
+
         self.create_channel()
 
     def create_channel(self):
@@ -65,9 +66,7 @@ class StreamingRpc(object):
         else:
             self.channel = grpc.insecure_channel(self._endpoint, options=self.OPTIONS)
 
-        self.rpc = self.channel.stream_stream(
-            self.PATH, Span.SerializeToString, RecordStatus.FromString
-        )
+        self.rpc = self.channel.stream_stream(self.PATH, Span.SerializeToString, RecordStatus.FromString)
 
     @staticmethod
     def condition(*args, **kwargs):
@@ -152,7 +151,7 @@ class StreamingRpc(object):
                                 code,
                                 details,
                             )
-                        
+
                         # Reconnect channel with backoff
                         self.channel.close()
                         self.notify.wait(retry_time)
@@ -165,9 +164,7 @@ class StreamingRpc(object):
                 if self.closed:
                     break
 
-                response_iterator = self.rpc(
-                    self.request_iterator, metadata=self.metadata
-                )
+                response_iterator = self.rpc(self.request_iterator, metadata=self.metadata)
                 _logger.info("Streaming RPC connect completed.")
 
             try:

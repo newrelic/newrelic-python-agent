@@ -137,6 +137,10 @@ class DatabaseTrace(TimeTrace):
         database_name = None
 
         settings = transaction.settings
+
+        if not settings:
+            return
+
         tt = settings.transaction_tracer
         agent_limits = settings.agent_limits
         ds_tracer = settings.datastore_tracer

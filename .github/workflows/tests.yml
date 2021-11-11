@@ -21,6 +21,8 @@ on:
     tags-ignore:
       - "**"
   pull_request:
+  schedule:
+    - cron: '0 15 * * *'
 
 jobs:
   tests: # Aggregate job that provides a single check for workflow success

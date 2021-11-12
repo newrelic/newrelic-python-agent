@@ -1485,7 +1485,7 @@ class Transaction(object):
                 status_code=status_code,
             )
 
-    def _create_error_node(self, settings, fullname, message, expected, custom_params, span_id, tb):
+    def _create_error_node(self, settings, fullname, message, expected, custom_params, span_id, tb, source):
         # Only remember up to limit of what can be caught for a
         # single transaction. This could be trimmed further
         # later if there are already recorded errors and would
@@ -1516,7 +1516,7 @@ class Transaction(object):
             custom_params=custom_params,
             file_name=None,
             line_number=None,
-            source=None,
+            source=source,
         )
 
         # TODO Errors are recorded in time order. If

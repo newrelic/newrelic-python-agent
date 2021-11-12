@@ -21,11 +21,14 @@ import traceback
 import warnings
 
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
-from newrelic.common.object_names import parse_exc_info, callable_name, object_context
+from newrelic.common.object_names import parse_exc_info
 from newrelic.core.attribute import MAX_NUM_USER_ATTRIBUTES, process_user_attribute
 from newrelic.core.config import is_expected_error, should_ignore_error
+from newrelic.core.source_code_node import (
+    extract_source_code_from_callable,
+    extract_source_code_from_traceback,
+)
 from newrelic.core.trace_cache import trace_cache
-from newrelic.core.source_code_node import SourceCodeNode
 
 _logger = logging.getLogger(__name__)
 
@@ -206,87 +209,8 @@ class TimeTrace(object):
 
     def add_code(self, func):
         """Extract source code context from a callable and add appropriate attributes."""
-        original_func = func  # Save original reference
-
-        if hasattr(func, "_nr_source_code"):
-            node = func._nr_source_code
-
-            # Add attributes
-            for k, v in node._asdict().items():
-                if v is not None:
-                    self._add_agent_attribute("code.%s" % k, v)
-
-            return
-
-        # Fully unwrap object
-        while hasattr(func, "__wrapped__") and func.__wrapped__ is not None:
-            if func.__wrapped__ == func:
-                # Infinite loop protection
-                break
-
-            func = func.__wrapped__
-
-        # Retrieve basic object details
-        module_name, func_path = object_context(func)
-
-        if hasattr(func, "__code__"):
-            # Extract details from function __code__ attr
-            co = func.__code__
-            line_number = co.co_firstlineno
-            file_path = co.co_filename
-        else:
-            # Extract call method for callable objects
-            if hasattr(func, "__call__"):
-                func = func.__call__
-                module_name, func_path = object_context(func)
-
-            # Initialize here instead of in except to potentially get file_path but not line_number
-            file_path = None
-            line_number = None
-            try:
-            # Use inspect to get file and line number
-                file_path = inspect.getsourcefile(func)
-                line_number = inspect.getsourcelines(func)[1]
-            except TypeError:
-                pass
-
-        # Add filepath attributes
-        if line_number is not None:
-            self._add_agent_attribute("code.lineno", line_number)
-        self._add_agent_attribute("code.filepath", file_path)
-
-        # Split function path to extract class name
-        func_path = func_path.split(".")
-        func_name = func_path[-1]  # function name is last in path
-        if len(func_path) > 1:
-            class_name = ".".join((func_path[:-1]))
-            namespace = ".".join((module_name, class_name))
-        else:
-            namespace = module_name
-
-        # Add callable naming attributes
-        self._add_agent_attribute("code.namespace", namespace)
-        self._add_agent_attribute("code.function", func_name)
-
-        node = SourceCodeNode(
-            filepath=file_path,
-            function=func_name,
-            lineno=line_number,
-            namespace=namespace,
-        )
-
-        # Add attributes
-        for k, v in node._asdict().items():
-            if v is not None:
-                self._add_agent_attribute("code.%s" % k, v)
-
-        try:
-            if hasattr(original_func, "__func__"):
-                # Must store on underlying function not bound method
-                original_func = original_func.__func__
-            original_func._nr_source_code = node
-        except:  # Don't raise exceptions for any reason
-            pass
+        node = extract_source_code_from_callable(func)
+        node.add_attrs(self._add_agent_attribute)
 
     def _observe_exception(self, exc_info=None, ignore=None, expected=None, status_code=None):
         # Bail out if the transaction is not active or
@@ -450,7 +374,22 @@ class TimeTrace(object):
                     )
                     custom_params = {}
 
-            transaction._create_error_node(settings, fullname, message, is_expected, custom_params, self.guid, tb)
+
+            if settings.source_code_context.enabled:
+                source = extract_source_code_from_traceback(tb)
+            else:
+                source = None
+
+            transaction._create_error_node(
+                settings,
+                fullname,
+                message,
+                is_expected,
+                custom_params,
+                self.guid,
+                tb,
+                source=source,
+            )
 
     def record_exception(self, exc_info=None, params=None, ignore_errors=None):
         # Deprecation Warning

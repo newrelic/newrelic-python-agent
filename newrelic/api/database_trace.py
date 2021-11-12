@@ -68,8 +68,8 @@ class DatabaseTrace(TimeTrace):
         database_name=None,
         **kwargs
     ):
-        parent=kwargs.pop("parent", None)
-        source=kwargs.pop("source", None)
+        parent = kwargs.pop("parent", None)
+        source = kwargs.pop("source", None)
         if kwargs:
             raise TypeError("Invalid keyword arguments:", kwargs)
 

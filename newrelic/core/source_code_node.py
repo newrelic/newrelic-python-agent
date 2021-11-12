@@ -12,12 +12,107 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
 from collections import namedtuple
 
-SourceCodeNode = namedtuple('SourceCodeNode',
+from newrelic.common.object_names import object_context
+
+_SourceCodeNode = namedtuple(
+    "SourceCodeNode",
     [
-        'filepath', 
-        'function',
-        'lineno', 
-        'namespace',
-    ])
+        "filepath",
+        "function",
+        "lineno",
+        "namespace",
+    ],
+)
+
+
+class SourceCodeNode(_SourceCodeNode):
+    def add_attrs(self, add_attr_function):
+        # Add attributes
+        for k, v in self._asdict().items():
+            if v is not None:
+                add_attr_function("code.%s" % k, v)
+
+
+def extract_source_code_from_callable(func):
+    """Extract source code context from a callable and add appropriate attributes."""
+    original_func = func  # Save original reference
+
+    if hasattr(func, "_nr_source_code"):
+        return func._nr_source_code
+
+    # Fully unwrap object
+    while hasattr(func, "__wrapped__") and func.__wrapped__ is not None:
+        if func.__wrapped__ == func:
+            # Infinite loop protection
+            break
+
+        func = func.__wrapped__
+
+    # Retrieve basic object details
+    module_name, func_path = object_context(func)
+
+    if hasattr(func, "__code__"):
+        # Extract details from function __code__ attr
+        co = func.__code__
+        line_number = co.co_firstlineno
+        file_path = co.co_filename
+    else:
+        # Extract call method for callable objects
+        if hasattr(func, "__call__"):
+            func = func.__call__
+            module_name, func_path = object_context(func)
+
+        # Initialize here instead of in except to potentially get file_path but not line_number
+        file_path = None
+        line_number = None
+        try:
+            # Use inspect to get file and line number
+            file_path = inspect.getsourcefile(func)
+            line_number = inspect.getsourcelines(func)[1]
+        except TypeError:
+            pass
+
+    # Split function path to extract class name
+    func_path = func_path.split(".")
+    func_name = func_path[-1]  # function name is last in path
+    if len(func_path) > 1:
+        class_name = ".".join((func_path[:-1]))
+        namespace = ".".join((module_name, class_name))
+    else:
+        namespace = module_name
+
+    node = SourceCodeNode(
+        filepath=file_path,
+        function=func_name,
+        lineno=line_number,
+        namespace=namespace,
+    )
+
+    try:
+        if hasattr(original_func, "__func__"):
+            # Must store on underlying function not bound method
+            original_func = original_func.__func__
+        original_func._nr_source_code = node
+    except:  # Don't raise exceptions for any reason
+        pass
+
+    return node
+
+
+def extract_source_code_from_traceback(tb):
+    # Walk traceback
+    while getattr(tb, "tb_next", None) is not None:
+        tb = tb.tb_next
+
+    frame = tb.tb_frame
+    code = frame.f_code
+
+    # Extract exception source code
+    lineno = tb.tb_lineno
+    filepath = code.co_filename
+    funcname = code.co_name
+
+    return SourceCodeNode(filepath=filepath, lineno=lineno, function=funcname, namespace=None)

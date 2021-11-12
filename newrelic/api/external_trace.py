@@ -23,8 +23,8 @@ from newrelic.core.external_node import ExternalNode
 
 class ExternalTrace(CatHeaderMixin, TimeTrace):
     def __init__(self, library, url, method=None, **kwargs):
-        parent=kwargs.pop("parent", None)
-        source=kwargs.pop("source", None)
+        parent = kwargs.pop("parent", None)
+        source = kwargs.pop("source", None)
         if kwargs:
             raise TypeError("Invalid keyword arguments:", kwargs)
 

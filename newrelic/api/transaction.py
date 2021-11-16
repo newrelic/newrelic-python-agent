@@ -59,6 +59,7 @@ from newrelic.core.attribute_filter import (
 )
 from newrelic.core.config import DEFAULT_RESERVOIR_SIZE
 from newrelic.core.custom_event import create_custom_event
+from newrelic.core.source_code_node import extract_source_code_from_callable
 from newrelic.core.stack_trace import exception_stack
 from newrelic.core.stats_engine import CustomMetrics, SampledDataSet
 from newrelic.core.thread_utilization import utilization_tracker
@@ -159,9 +160,11 @@ class Transaction(object):
     STATE_RUNNING = 1
     STATE_STOPPED = 2
 
-    def __init__(self, application, enabled=None):
+    def __init__(self, application, enabled=None, source=None):
 
         self._application = application
+
+        self._source = source
 
         self.thread_id = None
 
@@ -378,6 +381,10 @@ class Transaction(object):
         # used to validate correct usage of class.
 
         self._state = self.STATE_RUNNING
+
+        # Extract source code context
+        if self._source is not None and self.settings.source_code_context.enabled:
+            self.add_source_code_context(self._source)
 
         return self
 
@@ -937,6 +944,15 @@ class Transaction(object):
     @property
     def user_attributes(self):
         return create_user_attributes(self._custom_params, self.attribute_filter)
+
+    def add_source_code_context(self, source):
+        """Extract source code context from a callable and add appropriate attributes."""
+        if source:
+            try:
+                node = extract_source_code_from_callable(source)
+                node.add_attrs(self._add_agent_attribute)
+            except:
+                _logger.error("Failed to extract source code context from callable %s. Report this issue to newrelic support." % source)
 
     def _compute_sampled_and_priority(self):
         if self._priority is None:

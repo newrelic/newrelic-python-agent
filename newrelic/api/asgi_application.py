@@ -221,7 +221,7 @@ class ASGIBrowserMiddleware(object):
 
 
 class ASGIWebTransaction(WebTransaction):
-    def __init__(self, application, scope, receive, send):
+    def __init__(self, application, scope, receive, send, source=None):
         self.receive = receive
         self._send = send
         scheme = scope.get("scheme", "http")
@@ -243,6 +243,7 @@ class ASGIWebTransaction(WebTransaction):
             request_path=request_path,
             query_string=query_string,
             headers=headers,
+            source=source,
         )
 
         if self._settings:
@@ -334,6 +335,7 @@ def ASGIApplicationWrapper(
                 scope=scope,
                 receive=receive,
                 send=send,
+                source=wrapped,
             ) as transaction:
 
                 # Record details of framework against the transaction for later

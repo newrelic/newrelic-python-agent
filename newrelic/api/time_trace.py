@@ -123,7 +123,7 @@ class TimeTrace(object):
 
         # Extract source code context
         if self._source is not None and self.settings.source_code_context.enabled:
-            self.add_code(self._source)
+            self.add_source_code_context(self._source)
 
         return self
 
@@ -207,10 +207,14 @@ class TimeTrace(object):
 
         self.user_attributes[key] = value
 
-    def add_code(self, func):
+    def add_source_code_context(self, source):
         """Extract source code context from a callable and add appropriate attributes."""
-        node = extract_source_code_from_callable(func)
-        node.add_attrs(self._add_agent_attribute)
+        if source:
+            try:
+                node = extract_source_code_from_callable(source)
+                node.add_attrs(self._add_agent_attribute)
+            except:
+                _logger.error("Failed to extract source code context from callable %s. Report this issue to newrelic support." % source)
 
     def _observe_exception(self, exc_info=None, ignore=None, expected=None, status_code=None):
         # Bail out if the transaction is not active or

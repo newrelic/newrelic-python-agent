@@ -118,11 +118,9 @@ class TimeTrace(object):
 
         self.activated = True
 
-        if self.settings is None:
-            return self
-
         # Extract source code context
-        if self._source is not None and self.settings.source_code_context.enabled:
+        settings = self.settings or self.transaction.settings  # Some derived classes do not have self.settings immediately
+        if self._source is not None and settings and settings.source_code_context.enabled:
             self.add_source_code_context(self._source)
 
         return self

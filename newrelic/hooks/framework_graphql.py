@@ -369,12 +369,6 @@ def bind_resolve_field_v2(exe_context, parent_type, source, field_asts, parent_i
     return parent_type, field_asts, field_path
 
 
-def graphene_framework_details():
-    import graphene
-
-    return ("Graphene", getattr(graphene, "__version__", None))
-
-
 def wrap_resolve_field(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if transaction is None:
@@ -451,14 +445,10 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
         trace.statement = graphql_statement(query)
 
         # Handle Graphene Schemas
-        try:
-            from graphene.types.schema import Schema as GrapheneSchema
-            if isinstance(schema, GrapheneSchema):
-                trace.product = "Graphene"
-                framework = graphene_framework_details()
-                transaction.add_framework_info(name=framework[0], version=framework[1])
-        except ImportError:
-            pass
+        if hasattr(schema, "_nr_framework"):
+            trace.product = "Graphene"
+            framework = schema._nr_framework
+            transaction.add_framework_info(name=framework[0], version=framework[1])
 
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             result = wrapped(*args, **kwargs)

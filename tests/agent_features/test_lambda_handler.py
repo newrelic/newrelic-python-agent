@@ -16,8 +16,10 @@ import functools
 import pytest
 from copy import deepcopy
 from testing_support.fixtures import (override_application_settings,
-        validate_transaction_trace_attributes,
         validate_transaction_event_attributes)
+from testing_support.validators.validate_transaction_trace_attributes import (
+    validate_transaction_trace_attributes
+)
 import newrelic.api.lambda_handler as lambda_handler
 
 

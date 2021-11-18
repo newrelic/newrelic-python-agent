@@ -39,11 +39,27 @@ from newrelic.core.agent_protocol import AgentProtocol
 
 from testing_support.fixtures import (override_application_settings,
         override_generic_settings,
-        validate_custom_parameters, validate_transaction_errors,
-        validate_request_params_omitted, validate_attributes_complete,
-        validate_non_transaction_error_event, reset_core_stats_engine,
-        validate_custom_event_in_application_stats_engine,
-        validate_custom_event_count, validate_tt_segment_params)
+        validate_transaction_errors,
+        reset_core_stats_engine,
+        validate_tt_segment_params)
+from testing_support.validators.validate_non_transaction_error_event import (
+    validate_non_transaction_error_event
+)
+from testing_support.validators.validate_custom_parameters import (
+    validate_custom_parameters
+)
+from testing_support.validators.validate_attributes_complete import (
+    validate_attributes_complete
+)
+from testing_support.validators.validate_custom_event_count import (
+    validate_custom_event_count
+)
+from testing_support.validators.validate_custom_event_in_application_stats_engine import (
+    validate_custom_event_in_application_stats_engine
+)
+from testing_support.validators.validate_request_params_omitted import (
+    validate_request_params_omitted
+)
 
 
 def test_hsm_configuration_default():

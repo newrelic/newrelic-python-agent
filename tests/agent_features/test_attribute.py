@@ -25,11 +25,20 @@ from newrelic.core.attribute import (truncate, sanitize, Attribute,
 
 from newrelic.packages import six
 
-from testing_support.fixtures import (override_application_settings,
-    validate_attributes, validate_attributes_complete,
-    validate_custom_parameters, validate_agent_attribute_types)
+from testing_support.fixtures import override_application_settings
 from testing_support.sample_applications import fully_featured_app
-
+from testing_support.validators.validate_custom_parameters import (
+    validate_custom_parameters
+)
+from testing_support.validators.validate_attributes_complete import (
+    validate_attributes_complete
+)
+from testing_support.validators.validate_attributes import (
+    validate_attributes
+)
+from testing_support.validators.validate_agent_attribute_types import (
+    validate_agent_attribute_types
+)
 
 # Python 3 lacks longs
 

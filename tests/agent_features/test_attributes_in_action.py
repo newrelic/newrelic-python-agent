@@ -19,16 +19,30 @@ from testing_support.fixtures import (
     dt_enabled,
     override_application_settings,
     reset_core_stats_engine,
-    validate_attributes,
-    validate_browser_attributes,
-    validate_error_event_attributes,
-    validate_error_event_attributes_outside_transaction,
-    validate_error_trace_attributes_outside_transaction,
-    validate_transaction_error_trace_attributes,
     validate_transaction_event_attributes,
-    validate_transaction_trace_attributes,
 )
 from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.validators.validate_error_event_attributes_outside_transaction import (
+    validate_error_event_attributes_outside_transaction
+)
+from testing_support.validators.validate_error_trace_attributes_outside_transaction import (
+    validate_error_trace_attributes_outside_transaction
+)
+from testing_support.validators.validate_transaction_error_trace_attributes import (
+    validate_transaction_error_trace_attributes
+)
+from testing_support.validators.validate_error_event_attributes import (
+    validate_error_event_attributes
+)
+from testing_support.validators.validate_attributes import (
+    validate_attributes
+)
+from testing_support.validators.validate_browser_attributes import (
+    validate_browser_attributes
+)
+from testing_support.validators.validate_transaction_trace_attributes import (
+    validate_transaction_trace_attributes
+)
 
 from newrelic.api.application import application_instance as application
 from newrelic.api.message_transaction import message_transaction

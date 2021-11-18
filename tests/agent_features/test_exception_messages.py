@@ -20,9 +20,14 @@ from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import notice_error
 
-from testing_support.fixtures import (validate_transaction_exception_message,
-        set_default_encoding, validate_application_exception_message,
-        reset_core_stats_engine)
+from testing_support.fixtures import (set_default_encoding,
+    reset_core_stats_engine)
+from testing_support.validators.validate_application_exception_message import (
+    validate_application_exception_message
+)
+from testing_support.validators.validate_transaction_exception_message import (
+    validate_transaction_exception_message
+)
 
 UNICODE_MESSAGE = u'I💜🐍'
 UNICODE_ENGLISH = u'I love python'

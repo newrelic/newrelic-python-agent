@@ -20,10 +20,13 @@ from newrelic.api.transaction import record_custom_event
 from newrelic.core.custom_event import process_event_type
 
 from testing_support.fixtures import (reset_core_stats_engine,
-        validate_custom_event_count,
-        validate_custom_event_in_application_stats_engine,
         override_application_settings, function_not_called)
-
+from testing_support.validators.validate_custom_event_count import (
+    validate_custom_event_count
+)
+from testing_support.validators.validate_custom_event_in_application_stats_engine import (
+    validate_custom_event_in_application_stats_engine
+)
 # Test process_event_type()
 
 def test_process_event_type_name_is_string():

@@ -19,7 +19,10 @@ import json
 import six
 
 from testing_support.fixtures import (override_application_settings,
-    validate_transaction_errors, validate_custom_parameters)
+    validate_transaction_errors)
+from testing_support.validators.validate_custom_parameters import (
+    validate_custom_parameters
+)
 
 from newrelic.api.application import application_settings
 from newrelic.api.transaction import (get_browser_timing_header,

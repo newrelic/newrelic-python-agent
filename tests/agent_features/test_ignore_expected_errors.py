@@ -12,17 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 import pytest
 from testing_support.fixtures import (
     override_application_settings,
     reset_core_stats_engine,
-    validate_error_event_attributes_outside_transaction,
-    validate_error_event_sample_data,
-    validate_error_trace_attributes_outside_transaction,
-    validate_time_metrics_outside_transaction,
-    validate_transaction_error_trace_attributes,
     validate_transaction_errors,
     validate_transaction_metrics,
+)
+from testing_support.validators.validate_time_metrics_outside_transaction import (
+        validate_time_metrics_outside_transaction
+)
+from testing_support.validators.validate_error_event_attributes_outside_transaction import (
+    validate_error_event_attributes_outside_transaction
+)
+from testing_support.validators.validate_error_event_sample_data import (
+    validate_error_event_sample_data
+)
+from testing_support.validators.validate_error_trace_attributes_outside_transaction import (
+    validate_error_trace_attributes_outside_transaction
+)
+from testing_support.validators.validate_transaction_error_trace_attributes import (
+    validate_transaction_error_trace_attributes
 )
 
 from newrelic.api.application import application_instance

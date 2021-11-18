@@ -14,14 +14,25 @@
 
 import webtest
 
-from testing_support.fixtures import (validate_error_trace_collector_json,
-        validate_tt_collector_json, validate_transaction_event_collector_json,
-        validate_error_event_collector_json,
-        validate_custom_event_collector_json, override_application_settings)
+from testing_support.fixtures import (
+        validate_tt_collector_json,
+        override_application_settings)
 
 from testing_support.sample_applications import (simple_app,
         simple_exceptional_app, simple_custom_event_app)
 
+from testing_support.validators.validate_error_event_collector_json import (
+    validate_error_event_collector_json
+)
+from testing_support.validators.validate_error_trace_collector_json import (
+    validate_error_trace_collector_json
+)
+from testing_support.validators.validate_custom_event_collector_json import (
+    validate_custom_event_collector_json
+)
+from testing_support.validators.validate_transaction_event_collector_json import (
+    validate_transaction_event_collector_json
+)
 
 exceptional_application = webtest.TestApp(simple_exceptional_app)
 normal_application = webtest.TestApp(simple_app)

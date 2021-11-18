@@ -19,7 +19,7 @@ import pytest
 import six
 
 from testing_support.fixtures import (override_application_settings,
-    validate_transaction_errors, validate_custom_parameters)
+    validate_transaction_errors)
 from testing_support.asgi_testing import AsgiTest
 
 from newrelic.api.application import application_settings
@@ -28,6 +28,9 @@ from newrelic.api.transaction import (get_browser_timing_header,
         disable_browser_autorum)
 from newrelic.api.asgi_application import asgi_application
 from newrelic.common.encoding_utils import deobfuscate
+from testing_support.validators.validate_custom_parameters import (
+    validate_custom_parameters
+)
 
 from bs4 import BeautifulSoup
 

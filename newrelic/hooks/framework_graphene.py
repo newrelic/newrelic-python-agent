@@ -23,7 +23,7 @@ def framework_details():
 
 def wrap_schema_init(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
-    instance.graphql_schema._nr_framework = framework_details() 
+    instance.graphql_schema._nr_framework = framework_details()
     return result  # Should never actually be defined
 
 

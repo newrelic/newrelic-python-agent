@@ -277,6 +277,8 @@ def total_physical_memory():
     elif sys.platform == 'darwin':
         return _darwin_total_physical_memory()
 
+    return 0
+
 
 def _linux_physical_memory_used(filename=None):
     # For Linux we can use information from the proc filesystem. We use

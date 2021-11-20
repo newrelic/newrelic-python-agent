@@ -14,7 +14,6 @@
 
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
-
 def framework_details():
     import graphene
 
@@ -23,7 +22,11 @@ def framework_details():
 
 def wrap_schema_init(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
-    instance.graphql_schema._nr_framework = framework_details()
+    if hasattr(instance, "graphql_schema"):
+        instance.graphql_schema._nr_framework = framework_details()
+    else:
+        instance._nr_framework = framework_details()
+
     return result  # Should never actually be defined
 
 

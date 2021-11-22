@@ -23,7 +23,6 @@ from newrelic.api.transaction import current_transaction, ignore_transaction
 from newrelic.common.object_names import callable_name, parse_exc_info
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.core.graphql_utils import graphql_statement
-from newrelic.hooks.framework_graphene import framework_details
 
 _logger = logging.getLogger(__name__)
 

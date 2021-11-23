@@ -39,10 +39,10 @@ def target_application():
 def test_graphql_metrics_and_attrs(target_application, endpoint):
     from graphql import __version__ as version
 
-    from newrelic.hooks.framework_graphql import graphene_framework_details
+    from newrelic.hooks.framework_graphene import framework_details
 
     FRAMEWORK_METRICS = [
-        ("Python/Framework/Graphene/%s" % graphene_framework_details()[1], 1),
+        ("Python/Framework/Graphene/%s" % framework_details()[1], 1),
         ("Python/Framework/GraphQL/%s" % version, 1),
     ]
     _test_scoped_metrics = [

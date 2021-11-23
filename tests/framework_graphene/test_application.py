@@ -66,12 +66,12 @@ def to_graphql_source(query):
     return delay_import
 
 
-def example_middleware(next, root, info, **args):  #pylint: disable=W0622
+def example_middleware(next, root, info, **args):  # pylint: disable=W0622
     return_value = next(root, info, **args)
     return return_value
 
 
-def error_middleware(next, root, info, **args):  #pylint: disable=W0622
+def error_middleware(next, root, info, **args):  # pylint: disable=W0622
     raise RuntimeError("Runtime Error!")
 
 
@@ -88,12 +88,12 @@ _graphql_base_rollup_metrics = [
 
 def test_basic(app, graphql_run):
     from graphql import __version__ as version
-    from newrelic.hooks.framework_graphql import graphene_framework_details
+
+    from newrelic.hooks.framework_graphene import framework_details
 
     FRAMEWORK_METRICS = [
-        ("Python/Framework/Graphene/%s" % graphene_framework_details()[1], 1),
+        ("Python/Framework/Graphene/%s" % framework_details()[1], 1),
         ("Python/Framework/GraphQL/%s" % version, 1),
-
     ]
 
     @validate_transaction_metrics(
@@ -326,7 +326,7 @@ def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_clas
         exc_class = callable_name(GraphQLError)
 
     _test_exception_scoped_metrics = [
-            ('GraphQL/operation/Graphene/<unknown>/<anonymous>/<unknown>', 1),
+        ("GraphQL/operation/Graphene/<unknown>/<anonymous>/<unknown>", 1),
     ]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),

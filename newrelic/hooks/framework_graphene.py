@@ -14,6 +14,7 @@
 
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
+
 def framework_details():
     import graphene
 

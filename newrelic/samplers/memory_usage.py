@@ -19,7 +19,6 @@ memory usage.
 import os
 
 from newrelic.common.system_info import physical_memory_used, total_physical_memory
-
 from newrelic.samplers.decorators import data_source_generator
 
 PID = os.getpid()
@@ -29,9 +28,9 @@ PID = os.getpid()
 def memory_usage_data_source():
     memory = physical_memory_used()
     total_memory = total_physical_memory()
-    memory_utilization = (
-        (memory / total_memory) if None not in (memory, total_memory) else None
-    )
+
+    # Calculate memory utilization without 0 division errors
+    memory_utilization = (memory / total_memory) if total_memory != 0 else 0
 
     yield ("Memory/Physical", memory)
     yield ("Memory/Physical/%d" % (PID), memory)

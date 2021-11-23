@@ -19,7 +19,6 @@ memory usage.
 import os
 
 from newrelic.common.system_info import physical_memory_used, total_physical_memory
-
 from newrelic.samplers.decorators import data_source_generator
 
 PID = os.getpid()

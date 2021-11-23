@@ -444,10 +444,11 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
     with GraphQLOperationTrace() as trace:
         trace.statement = graphql_statement(query)
 
+
         # Handle Schemas created from frameworks
         if hasattr(schema, "_nr_framework"):
-            trace.product = "Graphene"
             framework = schema._nr_framework
+            trace.product = framework[0]
             transaction.add_framework_info(name=framework[0], version=framework[1])
 
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):

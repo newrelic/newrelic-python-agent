@@ -441,9 +441,9 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
 
     transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=10)
 
+
     with GraphQLOperationTrace() as trace:
         trace.statement = graphql_statement(query)
-
 
         # Handle Schemas created from frameworks
         if hasattr(schema, "_nr_framework"):

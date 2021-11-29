@@ -183,7 +183,7 @@ class ImportHookFinder:
     def find_module(self, fullname, path=None):
         """
         Find spec and patch import hooks into loader before returning.
-        
+
         Required for Python 2.
 
         https://docs.python.org/3/library/importlib.html#importlib.abc.MetaPathFinder.find_module
@@ -234,7 +234,7 @@ class ImportHookFinder:
     def find_spec(self, fullname, path=None, target=None):
         """
         Find spec and patch import hooks into loader before returning.
-        
+
         Required for Python 3.10+ to avoid warnings.
 
         https://docs.python.org/3/library/importlib.html#importlib.abc.MetaPathFinder.find_spec
@@ -273,7 +273,7 @@ class ImportHookFinder:
                 return spec
 
             else:
-                # Not possible, Python 3 defines find_spec and Python 2 does not have find_spec on Finders 
+                # Not possible, Python 3 defines find_spec and Python 2 does not have find_spec on Finders
                 return None
 
         finally:

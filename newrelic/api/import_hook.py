@@ -162,10 +162,18 @@ class _ImportHookChainedLoader:
         module = self.loader.load_module(fullname)
 
         # Call the import hooks on the module being handled.
-
         _notify_import_hooks(fullname, module)
 
         return module
+
+    def create_module(self, spec):
+        return self.loader.create_module(spec)
+
+    def exec_module(self, module):
+        self.loader.exec_module(module)
+
+        # Call the import hooks on the module being handled.
+        _notify_import_hooks(module.__name__, module)
 
 
 class ImportHookFinder:
@@ -173,6 +181,13 @@ class ImportHookFinder:
         self._skip = {}
 
     def find_module(self, fullname, path=None):
+        """
+        Find spec and patch import hooks into loader before returning.
+        
+        Required for Python 2.
+
+        https://docs.python.org/3/library/importlib.html#importlib.abc.MetaPathFinder.find_module
+        """
 
         # If not something we are interested in we can return.
 
@@ -200,7 +215,7 @@ class ImportHookFinder:
                 spec = find_spec(fullname)
                 loader = getattr(spec, "loader", None)
 
-                if loader:
+                if loader and not isinstance(loader, (_ImportHookChainedLoader, _ImportHookLoader)):
                     return _ImportHookChainedLoader(loader)
 
             else:
@@ -212,6 +227,54 @@ class ImportHookFinder:
                 # the module.
 
                 return _ImportHookLoader()
+
+        finally:
+            del self._skip[fullname]
+
+    def find_spec(self, fullname, path=None, target=None):
+        """
+        Find spec and patch import hooks into loader before returning.
+        
+        Required for Python 3.10+ to avoid warnings.
+
+        https://docs.python.org/3/library/importlib.html#importlib.abc.MetaPathFinder.find_spec
+        """
+        # raise ValueError((name, path, target))
+
+        # If not something we are interested in we can return.
+
+        if fullname not in _import_hooks:
+            return None
+
+        # Check whether this is being called on the second time
+        # through and return.
+
+        if fullname in self._skip:
+            return None
+
+        # We are now going to call back into import. We set a
+        # flag to see we are handling the module so that check
+        # above drops out on subsequent pass and we don't go
+        # into an infinite loop.
+
+        self._skip[fullname] = True
+
+        try:
+            # For Python 3 we need to use find_spec() from the importlib
+            # module.
+
+            if find_spec:
+                spec = find_spec(fullname)
+                loader = getattr(spec, "loader", None)
+
+                if loader and not isinstance(loader, (_ImportHookChainedLoader, _ImportHookLoader)):
+                    spec.loader = _ImportHookChainedLoader(loader)
+
+                return spec
+
+            else:
+                # Not possible, Python 3 defines find_spec and Python 2 does not have find_spec on Finders 
+                return None
 
         finally:
             del self._skip[fullname]

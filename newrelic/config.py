@@ -2631,6 +2631,8 @@ def _process_module_builtin_defaults():
     )
     _process_module_definition("redis.client", "newrelic.hooks.datastore_redis", "instrument_redis_client")
 
+    #_process_module_definition("redis.commands.core", "newrelic.hooks.datastore_redis", "instrument_redis_commands_core")
+
     _process_module_definition("motor", "newrelic.hooks.datastore_motor", "patch_motor")
 
     _process_module_definition(

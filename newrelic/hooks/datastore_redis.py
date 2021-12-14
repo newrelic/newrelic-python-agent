@@ -99,6 +99,7 @@ def _wrap_Redis_method_wrapper_(module, instance_class_name, operation):
     name = '%s.%s' % (instance_class_name, operation)
     wrap_function_wrapper(module, name, _nr_wrapper_Redis_method_)
 
+
 def instrument_redis_client(module):
     if hasattr(module, 'StrictRedis'):
         for name in _redis_client_methods:
@@ -109,6 +110,13 @@ def instrument_redis_client(module):
         for name in _redis_client_methods:
             if name in vars(module.Redis):
                 _wrap_Redis_method_wrapper_(module, 'Redis', name)
+
+
+def instrument_redis_commands_core(module):
+    for name in _redis_client_methods:
+        if name in vars(module.CoreCommands):
+            _wrap_Redis_method_wrapper_(module, 'CoreCommands', name)
+
 
 def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
     transaction = current_transaction()
@@ -156,6 +164,7 @@ def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
             port_path_or_id=port_path_or_id,
             database_name=db):
         return wrapped(*args, **kwargs)
+
 
 def instrument_redis_connection(module):
     wrap_function_wrapper(module, 'Connection.send_command',

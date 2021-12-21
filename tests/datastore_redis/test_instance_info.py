@@ -91,7 +91,10 @@ _instance_info_from_url_tests = [
     (('redis://localhost:1234/garbage',), {}, ('localhost', '1234', '0')),
 ]
 
-if REDIS_PY_VERSION >= (2, 7, 5):
+# Behavior to default port to 6379 was added in v2.7.5
+# (https://github.com/redis/redis-py/commit/cfe1041bbb8a8887531810429879bffbe705b03a)
+# and removed in v4.0.0b1 (https://github.com/redis/redis-py/blame/v4.0.0b1/redis/connection.py#L997)
+if (3, 5, 3) >= REDIS_PY_VERSION >= (2, 7, 5):
     _instance_info_from_url_tests.append(
         (('redis://127.0.0.1',), {}, ('127.0.0.1', '6379', '0'))
     )

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from elasticsearch import VERSION
 from elasticsearch.client.utils import _make_path
 from elasticsearch.transport import Transport
 from elasticsearch.connection.http_requests import RequestsHttpConnection
@@ -33,6 +34,7 @@ DOC_TYPE = 'person'
 ID = 1
 METHOD = _make_path(INDEX, DOC_TYPE, ID)
 PARAMS = {}
+HEADERS = {"Content-Type": "application/json"}
 DATA = {"name": "Joe Tester"}
 BODY = JSONSerializer().dumps(DATA).encode('utf-8')
 
@@ -46,20 +48,27 @@ def test_transport_get_connection():
     expected = (ES_SETTINGS['host'], ES_SETTINGS['port'], None)
     assert transaction._nr_datastore_instance_info == expected
 
+
 def test_transport_perform_request_urllib3():
     app = application()
     with BackgroundTask(app, 'perform_request_urllib3') as transaction:
         transport = Transport([HOST], connection_class=Urllib3HttpConnection)
-        transport.perform_request('POST', METHOD, params=PARAMS, body=DATA)
-
+        if VERSION >= (7, 16, 0):
+            transport.perform_request('POST', METHOD, headers=HEADERS, params=PARAMS, body=DATA)
+        else:
+            transport.perform_request('POST', METHOD, params=PARAMS, body=DATA)
     expected = (ES_SETTINGS['host'], ES_SETTINGS['port'], None)
     assert transaction._nr_datastore_instance_info == expected
+
 
 def test_transport_perform_request_requests():
     app = application()
     with BackgroundTask(app, 'perform_request_requests') as transaction:
         transport = Transport([HOST], connection_class=RequestsHttpConnection)
-        transport.perform_request('POST', METHOD, params=PARAMS, body=DATA)
+        if VERSION >= (7, 16, 0):
+            transport.perform_request('POST', METHOD, headers=HEADERS, params=PARAMS, body=DATA)
+        else:
+            transport.perform_request('POST', METHOD, params=PARAMS, body=DATA)
 
     expected = (ES_SETTINGS['host'], ES_SETTINGS['port'], None)
     assert transaction._nr_datastore_instance_info == expected

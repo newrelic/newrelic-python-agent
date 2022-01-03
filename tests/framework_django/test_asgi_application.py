@@ -22,7 +22,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, override_application_settings,
     override_generic_settings, override_ignore_status_codes)
 
-DJANGO_VERSION = tuple(map(int, django.get_version().split('.')[:2]))
+DJANGO_VERSION = tuple(map(int, django.get_version().split('.')[:1]))
 
 if DJANGO_VERSION[0] < 3:
     pytest.skip("support for asgi added in django 3", allow_module_level=True)

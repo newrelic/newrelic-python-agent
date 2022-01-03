@@ -22,7 +22,7 @@ import os
 
 import django
 
-DJANGO_VERSION = tuple(map(int, django.get_version().split('.')[:2]))
+DJANGO_VERSION = tuple(map(int, django.get_version().split('.')[:1]))
 DJANGO_SETTINGS_MODULE = os.environ.get('DJANGO_SETTINGS_MODULE', None)
 
 

@@ -243,12 +243,12 @@ def instrument_redis_client(module):
 
 def instrument_redis_commands_core(module):
     for name in _redis_client_methods:
-        if hasattr(module, 'CoreCommands'):
+        if hasattr(module, "CoreCommands"):
             if hasattr(module.CoreCommands, name):
-                _wrap_Redis_method_wrapper_(module, 'CoreCommands', name)
-        if hasattr(module, 'DataAccessCommands'):
+                _wrap_Redis_method_wrapper_(module, "CoreCommands", name)
+        if hasattr(module, "DataAccessCommands"):
             if hasattr(module.DataAccessCommands, name):
-                _wrap_Redis_method_wrapper_(module, 'DataAccessCommands', name)
+                _wrap_Redis_method_wrapper_(module, "DataAccessCommands", name)
 
 
 def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):

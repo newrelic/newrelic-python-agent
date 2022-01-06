@@ -64,7 +64,7 @@ class TastyPieFullDebugMode(object):
 
 _test_api_base_scoped_metrics = [
         ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
-        ('Function/django.urls.resolvers:RegexURLResolver.resolve', 1),
+        ('Function/django.urls.resolvers:URLResolver.resolve', 1),
         ('Python/WSGI/Application', 1),
         ('Python/WSGI/Response', 1),
         ('Python/WSGI/Finalize', 1),

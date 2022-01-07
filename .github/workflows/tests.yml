@@ -115,7 +115,7 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
-          python-version: "pypy3"
+          python-version: "pypy-3.7"
           architecture: x64
 
       # Setup pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
@@ -190,7 +190,7 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
-          python-version: "pypy3"
+          python-version: "pypy-3.7"
           architecture: x64
 
       # Setup pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
@@ -235,7 +235,7 @@ jobs:
       # Set up all versions of python
       - uses: actions/setup-python@v2
         with:
-          python-version: "pypy3"
+          python-version: "pypy-3.7"
           architecture: x64
 
       # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
@@ -332,7 +332,7 @@ jobs:
       # Set up all versions of python
       - uses: actions/setup-python@v2
         with:
-          python-version: "pypy3"
+          python-version: "pypy-3.7"
           architecture: x64
 
       # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
@@ -426,7 +426,7 @@ jobs:
       # Set up all versions of python
       - uses: actions/setup-python@v2
         with:
-          python-version: "pypy3"
+          python-version: "pypy-3.7"
           architecture: x64
 
       # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
@@ -515,7 +515,7 @@ jobs:
       # Set up all versions of python
       - uses: actions/setup-python@v2
         with:
-          python-version: "pypy3"
+          python-version: "pypy-3.7"
           architecture: x64
 
       # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
@@ -606,7 +606,7 @@ jobs:
       # Set up all versions of python
       - uses: actions/setup-python@v2
         with:
-          python-version: "pypy3"
+          python-version: "pypy-3.7"
           architecture: x64
 
       # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
@@ -695,7 +695,7 @@ jobs:
       # Set up all versions of python
       - uses: actions/setup-python@v2
         with:
-          python-version: "pypy3"
+          python-version: "pypy-3.7"
           architecture: x64
 
       # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
@@ -785,7 +785,7 @@ jobs:
       # Set up all versions of python
       - uses: actions/setup-python@v2
         with:
-          python-version: "pypy3"
+          python-version: "pypy-3.7"
           architecture: x64
 
       # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
@@ -874,7 +874,7 @@ jobs:
       # Set up all versions of python
       - uses: actions/setup-python@v2
         with:
-          python-version: "pypy3"
+          python-version: "pypy-3.7"
           architecture: x64
 
       # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
@@ -965,7 +965,7 @@ jobs:
       # Set up all versions of python
       - uses: actions/setup-python@v2
         with:
-          python-version: "pypy3"
+          python-version: "pypy-3.7"
           architecture: x64
 
       # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
@@ -1056,7 +1056,7 @@ jobs:
       # Set up all versions of python
       - uses: actions/setup-python@v2
         with:
-          python-version: "pypy3"
+          python-version: "pypy-3.7"
           architecture: x64
 
       # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
@@ -1144,7 +1144,7 @@ jobs:
       # Set up all versions of python
       - uses: actions/setup-python@v2
         with:
-          python-version: "pypy3"
+          python-version: "pypy-3.7"
           architecture: x64
 
       # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3

@@ -16,19 +16,15 @@ import re
 
 import grpc
 import pytest
+from inspect import isawaitable
 from conftest import create_stub_and_channel
 from framework_grpc._test_common import create_request, wait_for_transaction_completion
+from framework_grpcaio._test_common import get_response
 from newrelic.core.config import global_settings
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_transaction_event_attributes, override_application_settings,
         override_generic_settings, function_not_called,
         validate_transaction_errors)
-
-
-if hasattr(grpc, '__version__'):
-    GRPC_VERSION = tuple(int(v) for v in grpc.__version__.split('.'))
-else:
-    GRPC_VERSION = None
 
 
 def test_newrelic_disabled_no_transaction(mock_grpc_server, stub):
@@ -46,10 +42,11 @@ def test_newrelic_disabled_no_transaction(mock_grpc_server, stub):
         'StatsEngine.record_transaction')
     @wait_for_transaction_completion
     def _doit():
-        async def coro():
-            c = method(request)
-            await c._raise_for_status()
-        loop.run_until_complete(coro())
+        responses = get_response(method, request)
+
+        # Assert text content of responses
+        for response in responses:
+            assert re.match(r"\w+: Hello World", response.text), response.text
 
     _doit()
 
@@ -64,46 +61,32 @@ _test_matrix = ["method_name,streaming_request", [
 
 @pytest.mark.parametrize(*_test_matrix)
 def test_simple(method_name, streaming_request, mock_grpc_server, stub):
-    import asyncio
-
-    loop = asyncio.get_event_loop()
-
     port = mock_grpc_server
     request = create_request(streaming_request)
     _transaction_name = \
         "sample_application:SampleApplicationServicer.{}".format(method_name)
     method = getattr(stub, method_name)
-    breakpoint()
 
     @override_application_settings({'attributes.include': ['request.*']})
-    # @validate_transaction_event_attributes(
-    #         required_params={
-    #             'agent': ['request.uri', 'request.headers.userAgent',
-    #                 'response.status', 'response.headers.contentType'],
-    #             'user': [],
-    #             'intrinsic': ['port'],
-    #         },
-    #         exact_attrs={
-    #             'agent': {},
-    #             'user': {},
-    #             'intrinsic': {'port': port}
-    #         })
+    @validate_transaction_event_attributes(
+            required_params={
+                'agent': ['request.uri', 'request.headers.userAgent',
+                    'response.status', 'response.headers.contentType'],
+                'user': [],
+                'intrinsic': ['port'],
+            },
+            exact_attrs={
+                'agent': {},
+                'user': {},
+                'intrinsic': {'port': port}
+            })
     @validate_transaction_metrics(_transaction_name)
     @wait_for_transaction_completion
     def _doit():
-        async def coro():
-            c = method(request)
-            await c._raise_for_status()
-    
-            breakpoint()
-            return c
+        responses = get_response(method, request)
 
-        response = loop.run_until_complete(coro())
-        assert re.match(r"\w+: Hello World", response.text), response.text
-
-        try:
-            list(response)
-        except Exception:
-            pass
+        # Assert text content of responses
+        for response in responses:
+            assert re.match(r"\w+: Hello World", response.text), response.text
 
     _doit()

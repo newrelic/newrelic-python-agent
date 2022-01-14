@@ -144,7 +144,7 @@ def grpc_web_transaction(wrapped, instance, args, kwargs):
             getattr(rpc_event, 'invocation_metadata', None) or
             getattr(rpc_event, 'request_metadata', None))
 
-    host = port = None
+    host = port = request_path = None
     if call_details:
         try:
             host, port = call_details.host.split(b':', 1)

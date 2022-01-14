@@ -24,42 +24,7 @@ from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapp
 from newrelic.common.object_names import callable_name
 
 
-# def grpc_web_transaction(wrapped, instance, args, kwargs):
-#     rpc_event, behavior = _bind_transaction_args(*args, **kwargs)
-#     behavior_name = callable_name(behavior)
-
-#     call_details = (
-#             getattr(rpc_event, 'call_details', None) or
-#             getattr(rpc_event, 'request_call_details', None))
-
-#     metadata = (
-#             getattr(rpc_event, 'invocation_metadata', None) or
-#             getattr(rpc_event, 'request_metadata', None))
-
-#     host = port = None
-#     if call_details:
-#         try:
-#             host, port = call_details.host.split(b':', 1)
-#         except Exception:
-#             pass
-
-#         request_path = call_details.method
-
-#     return WebTransactionWrapper(
-#             wrapped,
-#             name=behavior_name,
-#             request_path=request_path,
-#             host=host,
-#             port=port,
-#             headers=metadata)(*args, **kwargs)
-
 HANDLER_METHODS = ("unary_unary", "stream_unary", "unary_stream", "stream_stream")
-
-@function_wrapper
-def _prepare_request(wrapped, instance, args, kwargs):
-    breakpoint()
-
-    return WebTransactionWrapper(wrapped)(*args, **kwargs)
 
 def _nr_interceptor():
     from grpc.aio._interceptor import ServerInterceptor
@@ -75,11 +40,47 @@ def _nr_interceptor():
             for method in HANDLER_METHODS:
                 handler_method = handler.get(method, None)
                 if handler_method is not None:
-                    handler[method] = _prepare_request(handler_method)
+                    handler[method] = grpc_web_transaction(handler_method, handler_call_details)
 
             return RpcMethodHandler(**handler)
 
     return _NR_Interceptor()
+
+
+def _bind_transaction_args(request, context):
+    return request, context
+
+
+def grpc_web_transaction(handler_method, call_details):
+    @function_wrapper
+    def _grpc_web_transaction(wrapped, instance, args, kwargs):
+        request, context = _bind_transaction_args(*args, **kwargs)
+        behavior_name = callable_name(wrapped)
+
+        metadata = (
+                getattr(context, 'invocation_metadata', None) or
+                getattr(context, 'request_metadata', None))()
+
+        host = port = request_path = None
+        try:
+            host = context.peer().split(":")[1:]  # Split host into pieces, removing protocol
+            port = host[-1]  # Remove port
+            host = ":".join(host[:-1])  # Rejoin ipv6 hosts
+        except Exception:
+            pass
+
+        if call_details is not None:
+            request_path = call_details.method
+
+        return WebTransactionWrapper(
+                wrapped,
+                name=behavior_name,
+                request_path=request_path,
+                host=host,
+                port=port,
+                headers=metadata)(*args, **kwargs)
+
+    return _grpc_web_transaction(handler_method)
 
 
 def bind_server_init_args(thread_pool, generic_handlers, interceptors, options, maximum_concurrent_rpcs, compression):

@@ -239,7 +239,6 @@ class ImportHookFinder:
 
         https://docs.python.org/3/library/importlib.html#importlib.abc.MetaPathFinder.find_spec
         """
-        # raise ValueError((name, path, target))
 
         # If not something we are interested in we can return.
 

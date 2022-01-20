@@ -12,21 +12,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-def get_response(method, request):
+def get_result(call):
     import asyncio
 
     loop = asyncio.get_event_loop()
 
     async def _get_response():
-        response = method(request)
         try:
             # Await all responses in async iterator and return
             l = []
-            async for x in response:
+            async for x in call:
                 l.append(x)
             return l
-        except:
+        except TypeError:
             # Return single awaited response
-            return [await response]
+            return [await call]
 
     return loop.run_until_complete(_get_response())
+
+
+def create_request(streaming_request, count=1, timesout=False, is_async=False):
+    from sample_application.sample_application_pb2 import Message
+
+    def _message_stream():
+        for i in range(count):
+            yield Message(text='Hello World', count=count, timesout=timesout)
+
+    async def _message_stream_async():
+        for i in range(count):
+            yield Message(text='Hello World', count=count, timesout=timesout)
+
+    if streaming_request:
+        if is_async:
+            return _message_stream_async()
+        else:
+            return _message_stream()
+    else:
+        return Message(text='Hello World', count=count, timesout=timesout)

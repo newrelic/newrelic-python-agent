@@ -14,12 +14,11 @@
 
 import re
 
-import grpc
 import pytest
 from inspect import isawaitable
 from conftest import create_stub_and_channel
 from framework_grpc._test_common import create_request, wait_for_transaction_completion
-from framework_grpcaio._test_common import get_response
+from framework_grpcaio._test_common import get_result
 from newrelic.core.config import global_settings
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_transaction_event_attributes, override_application_settings,
@@ -42,7 +41,7 @@ def test_newrelic_disabled_no_transaction(mock_grpc_server, stub):
         'StatsEngine.record_transaction')
     @wait_for_transaction_completion
     def _doit():
-        responses = get_response(method, request)
+        responses = get_result(method(request))
 
         # Assert text content of responses
         for response in responses:
@@ -83,7 +82,7 @@ def test_simple(method_name, streaming_request, mock_grpc_server, stub):
     @validate_transaction_metrics(_transaction_name)
     @wait_for_transaction_completion
     def _doit():
-        responses = get_response(method, request)
+        responses = get_result(method(request))
 
         # Assert text content of responses
         for response in responses:

@@ -103,6 +103,81 @@ def wrap_server_init(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
-def instrument_grpc_server(module):
+def _prepare_request(
+        transaction,
+        guid, 
+        request,
+        *args,
+        timeout=None,
+        metadata=None,
+        **kwargs
+    ):
+    metadata = metadata and list(metadata) or []
+    dt_metadata = transaction._create_distributed_trace_data_with_guid(guid)
+    metadata.extend(
+        transaction._generate_distributed_trace_headers(dt_metadata)
+    )
+    kwargs.update({"timeout": timeout, "metadata": metadata})
+    args = (request,) + args
+    return args, kwargs
+
+
+def _prepare_request_stream(
+        transaction, guid, request_iterator, *args, **kwargs):
+    return _prepare_request(
+            transaction, guid, request_iterator, *args, **kwargs)
+
+def _get_uri_method(instance, *args, **kwargs):
+    target = instance._channel.target().decode('utf-8')
+    method = instance._method.decode('utf-8').lstrip('/')
+    uri = 'grpc://%s/%s' % (target, method)
+    return (uri, method)
+
+
+def wrap_call(module, object_path, prepare):
+
+    def _call_wrapper(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+        if transaction is None:
+            return wrapped(*args, **kwargs)
+
+        uri, method = _get_uri_method(instance)
+        with ExternalTrace('gRPC', uri, method):
+            args, kwargs = prepare(transaction, None, *args, **kwargs)
+            ret = wrapped(*args, **kwargs)
+
+        return ret
+
+    wrap_function_wrapper(module, object_path, _call_wrapper)
+
+def wrap_set_code(wrapped, instance, args, kwargs):
+    return wrapped(*args, **kwargs)
+
+
+def instrument_grpc_aio_channel(module):
+    wrap_call(module, 'UnaryUnaryMultiCallable.__call__',
+            _prepare_request)
+    wrap_call(module, 'StreamUnaryMultiCallable.__call__',
+            _prepare_request_stream)
+    # wrap_future(module, '_UnaryStreamMultiCallable.__call__',
+    #         _prepare_request)
+    # wrap_future(module, '_StreamStreamMultiCallable.__call__',
+    #         _prepare_request_stream)
+
+    # if hasattr(module, '_MultiThreadedRendezvous'):
+    #     wrap_function_wrapper(module, '_MultiThreadedRendezvous.result',
+    #             wrap_result)
+    #     wrap_function_wrapper(module, '_MultiThreadedRendezvous._next',
+    #             wrap_next)
+    # else:
+    #     wrap_function_wrapper(module, '_Rendezvous.result',
+    #             wrap_result)
+    #     wrap_function_wrapper(module, '_Rendezvous._next',
+    #             wrap_next)
+    # wrap_function_wrapper(module, '_Rendezvous.cancel',
+    #         wrap_result)
+
+
+def instrument_grpc_aio_server(module):
     if hasattr(module, "Server"):
         wrap_function_wrapper(module.Server, "__init__", wrap_server_init)

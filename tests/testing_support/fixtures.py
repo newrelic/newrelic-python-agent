@@ -2416,29 +2416,34 @@ def override_ignore_status_codes(status_codes):
     return _override_ignore_status_codes
 
 
-def code_coverage_fixture(source=None):
-    source = source if source is not None else ["newrelic"]
-
-    @pytest.fixture(scope="session")
+def code_coverage_fixture(source=['newrelic']):
+    @pytest.fixture(scope='session')
     def _code_coverage_fixture(request):
         if not source:
             return
 
-        if os.environ.get("GITHUB_ACTIONS") is not None:
+        if os.environ.get('GITHUB_ACTIONS') is not None:
             return
 
         from coverage import coverage
 
-        coverage_directory = os.environ.get("TOX_ENVDIR", "htmlcov")
-        coverage_suffix = os.environ.get("TOX_ENV_NAME", None)
+        env_directory = os.environ.get('TOX_ENVDIR', None)
+
+        if env_directory is not None:
+            coverage_directory = os.path.join(env_directory, 'htmlcov')
+            xml_report = os.path.join(env_directory, 'coverage.xml')
+        else:
+            coverage_directory = 'htmlcov'
+            xml_report = 'coverage.xml'
 
         def finalize():
             cov.stop()
             cov.html_report(directory=coverage_directory)
+            cov.xml_report(outfile=xml_report)
 
         request.addfinalizer(finalize)
 
-        cov = coverage(source=source, branch=True, data_suffix=coverage_suffix)
+        cov = coverage(source=source, branch=True)
         cov.start()
 
     return _code_coverage_fixture

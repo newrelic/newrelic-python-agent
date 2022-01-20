@@ -183,7 +183,7 @@ def _nr_wrap_abort(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
-def instrument_grpc__channel(module):
+def instrument_grpc_channel(module):
     wrap_call(module, '_UnaryUnaryMultiCallable.__call__',
             _prepare_request)
     wrap_call(module, '_UnaryUnaryMultiCallable.with_call',

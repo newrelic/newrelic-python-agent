@@ -2246,7 +2246,7 @@ def _process_module_builtin_defaults():
         "instrument_ariadne_wsgi",
     )
 
-    _process_module_definition("grpc._channel", "newrelic.hooks.framework_grpc", "instrument_grpc__channel")
+    _process_module_definition("grpc._channel", "newrelic.hooks.framework_grpc", "instrument_grpc_channel")
     _process_module_definition("grpc._server", "newrelic.hooks.framework_grpc", "instrument_grpc_server")
     _process_module_definition("grpc.aio._server", "newrelic.hooks.framework_grpcaio", "instrument_grpc_server")
 

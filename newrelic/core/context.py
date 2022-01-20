@@ -25,34 +25,40 @@ _logger = logging.getLogger(__name__)
 
 
 class ContextOf(object):
-    def __init__(self, trace=None, request=None, trace_cache_id=None):
+    def __init__(self, trace=None, request=None, trace_cache_id=None, strict=True):
         self.trace = None
         self.trace_cache = trace_cache()
         self.thread_id = None
         self.restore = None
         self.should_restore = False
 
+        def log_propagation_failure(s):
+            if strict:
+                _logger.error(
+                    "Runtime instrumentation error. Request context propagation failed. %s Report this issue to New Relic support.",
+                    s,
+                )
+            else:
+                _logger.debug(
+                    "Request context propagation failed. %s This may be an issue if there's an active transaction. Consult with New Relic support if further issues arise.",
+                    s,
+                )
+
         # Extract trace if possible, else leave as None for safety
         if trace is None and request is None and trace_cache_id is None:
-            _logger.error(
-                "Runtime instrumentation error. Request context propagation failed. No trace or request provided. Report this issue to New Relic support.",
-            )
+            if strict:
+                log_propagation_failure("No trace or request provided.")
         elif trace is not None:
             self.trace = trace
         elif trace_cache_id is not None:
             self.trace = self.trace_cache._cache.get(trace_cache_id, None)
             if self.trace is None:
-                _logger.error(
-                    "Runtime instrumentation error. Request context propagation failed. No trace with id %s. Report this issue to New Relic support.",
-                    trace_cache_id,
-                )
+                log_propagation_failure("No trace with id %d." % trace_cache_id)
         elif hasattr(request, "_nr_trace") and request._nr_trace is not None:
             # Unpack traces from objects patched with them
             self.trace = request._nr_trace
         else:
-            _logger.error(
-                "Runtime instrumentation error. Request context propagation failed. No context attached to request. Report this issue to New Relic support.",
-            )
+            log_propagation_failure("No context attached to request.")
 
     def __enter__(self):
         if self.trace:
@@ -77,17 +83,17 @@ class ContextOf(object):
                 self.trace_cache._cache.pop(self.thread_id)
 
 
-def context_wrapper(func, trace=None, request=None, trace_cache_id=None):
+def context_wrapper(func, trace=None, request=None, trace_cache_id=None, strict=True):
     @function_wrapper
     def _context_wrapper(wrapped, instance, args, kwargs):
-        with ContextOf(trace=trace, request=request, trace_cache_id=trace_cache_id):
+        with ContextOf(trace=trace, request=request, trace_cache_id=trace_cache_id, strict=strict):
             return wrapped(*args, **kwargs)
 
     return _context_wrapper(func)
 
 
-async def context_wrapper_async(awaitable, trace=None, request=None, trace_cache_id=None):
-    with ContextOf(trace=trace, request=request, trace_cache_id=trace_cache_id):
+async def context_wrapper_async(awaitable, trace=None, request=None, trace_cache_id=None, strict=True):
+    with ContextOf(trace=trace, request=request, trace_cache_id=trace_cache_id, strict=strict):
         return await awaitable
 
 

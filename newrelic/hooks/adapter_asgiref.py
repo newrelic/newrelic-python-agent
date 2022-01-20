@@ -23,13 +23,13 @@ def _bind_thread_handler(loop, source_task, *args, **kwargs):
 
 def thread_handler_wrapper(wrapped, instance, args, kwargs):
     task = _bind_thread_handler(*args, **kwargs)
-    with ContextOf(trace_cache_id=id(task)):
+    with ContextOf(trace_cache_id=id(task), strict=False):
         return wrapped(*args, **kwargs)
 
 
 def main_wrap_wrapper(wrapped, instance, args, kwargs):
     awaitable = wrapped(*args, **kwargs)
-    return context_wrapper_async(awaitable, current_trace())
+    return context_wrapper_async(awaitable, current_trace(), strict=False)
 
 
 def instrument_asgiref_sync(module):

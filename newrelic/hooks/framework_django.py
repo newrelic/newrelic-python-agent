@@ -547,7 +547,10 @@ def wrap_view_handler(wrapped, priority=3):
     if hasattr(wrapped, '_nr_django_view_handler'):
         return wrapped
 
-    name = callable_name(wrapped)
+    if hasattr(wrapped, "view_class"):
+        name = callable_name(wrapped.view_class)
+    else:
+        name = callable_name(wrapped)
 
     def wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction()
@@ -896,6 +899,20 @@ def instrument_django_views_debug(module):
             module.technical_500_response, priority=1)
 
 
+def resolve_view_handler(view, request):
+    # We can't intercept the delegated view handler when it
+    # is looked up by the dispatch() method so we need to
+    # duplicate the lookup mechanism.
+
+    if request.method.lower() in view.http_method_names:
+        handler = getattr(view, request.method.lower(),
+                view.http_method_not_allowed)
+    else:
+        handler = view.http_method_not_allowed
+
+    return handler
+
+
 def wrap_view_dispatch(wrapped):
 
     # Wrapper to be applied to dispatcher for class based views.
@@ -912,15 +929,7 @@ def wrap_view_dispatch(wrapped):
         view = instance
         request = _args(*args, **kwargs)
 
-        # We can't intercept the delegated view handler when it
-        # is looked up by the dispatch() method so we need to
-        # duplicate the lookup mechanism.
-
-        if request.method.lower() in view.http_method_names:
-            handler = getattr(view, request.method.lower(),
-                    view.http_method_not_allowed)
-        else:
-            handler = view.http_method_not_allowed
+        handler = resolve_view_handler(view, request)
 
         name = callable_name(handler)
 

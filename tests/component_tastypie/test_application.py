@@ -16,6 +16,8 @@ import pytest
 import six
 import webtest
 
+from tastypie import VERSION
+
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
 
@@ -64,7 +66,6 @@ class TastyPieFullDebugMode(object):
 
 _test_api_base_scoped_metrics = [
         ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
-        ('Function/django.urls.resolvers:RegexURLResolver.resolve', 1),
         ('Python/WSGI/Application', 1),
         ('Python/WSGI/Response', 1),
         ('Python/WSGI/Finalize', 1),
@@ -76,6 +77,13 @@ if six.PY3:
 else:
     _test_api_base_scoped_metrics.append(
             ('Function/tastypie.resources:wrapper', 1))
+
+# django < 1.12 used the RegexURLResolver class and this was updated to URLResolver in later versions
+if VERSION <= (0, 14, 3) and not six.PY3:
+    _test_api_base_scoped_metrics.append(('Function/django.urls.resolvers:RegexURLResolver.resolve', 1))
+else:
+    _test_api_base_scoped_metrics.append(('Function/django.urls.resolvers:URLResolver.resolve', 1))
+
 
 _test_application_not_found_scoped_metrics = list(
         _test_api_base_scoped_metrics)

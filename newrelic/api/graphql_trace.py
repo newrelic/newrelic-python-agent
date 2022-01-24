@@ -23,12 +23,12 @@ from newrelic.core.graphql_node import GraphQLOperationNode, GraphQLResolverNode
 
 class GraphQLOperationTrace(TimeTrace):
     def __init__(self, **kwargs):
-        parent = None
+        parent = kwargs.pop("parent", None)
+        source = kwargs.pop("source", None)
         if kwargs:
-            if len(kwargs) > 1:
-                raise TypeError("Invalid keyword arguments:", kwargs)
-            parent = kwargs["parent"]
-        super(GraphQLOperationTrace, self).__init__(parent)
+            raise TypeError("Invalid keyword arguments:", kwargs)
+
+        super(GraphQLOperationTrace, self).__init__(parent=parent, source=source)
 
         self.operation_name = "<anonymous>"
         self.operation_type = "<unknown>"
@@ -114,7 +114,7 @@ def GraphQLOperationTraceWrapper(wrapped):
         else:
             parent = None
 
-        trace = GraphQLOperationTrace(parent=parent)
+        trace = GraphQLOperationTrace(parent=parent, source=wrapped)
 
         if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)
@@ -135,7 +135,13 @@ def wrap_graphql_operation_trace(module, object_path):
 
 class GraphQLResolverTrace(TimeTrace):
     def __init__(self, field_name=None, **kwargs):
-        super(GraphQLResolverTrace, self).__init__(**kwargs)
+        parent = kwargs.pop("parent", None)
+        source = kwargs.pop("source", None)
+        if kwargs:
+            raise TypeError("Invalid keyword arguments:", kwargs)
+
+        super(GraphQLResolverTrace, self).__init__(parent=parent, source=source)
+
         self.field_name = field_name
         self._product = None
 
@@ -192,7 +198,7 @@ def GraphQLResolverTraceWrapper(wrapped):
         else:
             parent = None
 
-        trace = GraphQLResolverTrace(parent=parent)
+        trace = GraphQLResolverTrace(parent=parent, source=wrapped)
 
         if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)

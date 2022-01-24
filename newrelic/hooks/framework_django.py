@@ -20,7 +20,7 @@ import functools
 from newrelic.packages import six
 
 from newrelic.api.application import register_application
-from newrelic.api.background_task import BackgroundTask
+from newrelic.api.background_task import BackgroundTaskWrapper
 from newrelic.api.error_trace import wrap_error_trace
 from newrelic.api.function_trace import (FunctionTrace, wrap_function_trace,
         FunctionTraceWrapper)
@@ -990,8 +990,7 @@ def _nr_wrapper_BaseCommand_run_from_argv_(wrapped, instance, args, kwargs):
 
     application = register_application(timeout=startup_timeout)
 
-    with BackgroundTask(application, subcommand, 'Django'):
-        return wrapped(*args, **kwargs)
+    return BackgroundTaskWrapper(wrapped, application, subcommand, 'Django')(*args, **kwargs)
 
 
 def instrument_django_core_management_base(module):

@@ -17,7 +17,7 @@ import sys
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
         function_wrapper)
 from newrelic.api.transaction import current_transaction
-from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.function_trace import FunctionTraceWrapper
 from newrelic.common.object_names import callable_name
 
 
@@ -56,8 +56,7 @@ def _nr_wrapper_APIView_dispatch_(wrapped, instance, args, kwargs):
     view.handle_exception = _nr_wrapper_APIView_handle_exception_(
             view.handle_exception, request)
 
-    with FunctionTrace(name):
-        return wrapped(*args, **kwargs)
+    return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
 
 
 def _nr_wrapper_APIView_handle_exception_(handler, request):

@@ -100,6 +100,7 @@ def wrap_headers_received(request_conn):
             request_path=path,
             query_string=query,
             headers=headers,
+            source=wrapped,
         )
         transaction.__enter__()
 
@@ -275,8 +276,7 @@ def wrap_httpclient_fetch(wrapped, instance, args, kwargs):
     except:
         return wrapped(*args, **kwargs)
 
-    trace = ExternalTrace(
-            'tornado', req.url, req.method.upper())
+    trace = ExternalTrace('tornado', req.url, req.method.upper(), source=wrapped)
 
     outgoing_headers = trace.generate_request_headers(current_transaction())
     for header_name, header_value in outgoing_headers:

@@ -21,7 +21,7 @@ from newrelic.api.application import application_instance
 from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import notice_error
 from newrelic.api.web_transaction import WSGIWebTransaction
-from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
 from newrelic.api.html_insertion import insert_html_snippet, verify_body_exists
 
 from newrelic.common.object_names import callable_name
@@ -81,16 +81,13 @@ class _WSGIApplicationIterable(object):
             self.response_trace = None
 
         try:
-            with FunctionTrace(
-                    name='Finalize', group='Python/WSGI'):
+            with FunctionTrace(name='Finalize', group='Python/WSGI'):
 
                 if isinstance(self.generator, _WSGIApplicationMiddleware):
                     self.generator.close()
 
                 elif hasattr(self.generator, 'close'):
-                    name = callable_name(self.generator.close)
-                    with FunctionTrace(name):
-                        self.generator.close()
+                    FunctionTraceWrapper(self.generator.close)()
 
         except:  # Catch all
             self.transaction.__exit__(*sys.exc_info())
@@ -444,9 +441,7 @@ class _WSGIApplicationMiddleware(object):
         # WSGI specification.
 
         if hasattr(self.iterable, 'close'):
-            name = callable_name(self.iterable.close)
-            with FunctionTrace(name):
-                self.iterable.close()
+            FunctionTraceWrapper(self.iterable.close)()
 
     def __iter__(self):
         # Process the response content from the iterable.
@@ -671,9 +666,8 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
                 environ['wsgi.input'] = _WSGIInputWrapper(transaction,
                         environ['wsgi.input'])
 
-            with FunctionTrace(
-                    name='Application', group='Python/WSGI'):
-                with FunctionTrace(name=callable_name(wrapped)):
+            with FunctionTrace(name='Application', group='Python/WSGI'):
+                with FunctionTrace(name=callable_name(wrapped), source=wrapped):
                     if (settings and settings.browser_monitoring.enabled and
                             not transaction.autorum_disabled):
                         result = _WSGIApplicationMiddleware(wrapped,

@@ -59,7 +59,7 @@ def _nr_wrapper_handler_(wrapped, instance, args, kwargs):
 
     transaction.set_transaction_name(name, priority=2)
 
-    FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
+    return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
 
 
 def _nr_wrapper_Flask_add_url_rule_input_(wrapped, instance, args, kwargs):
@@ -108,7 +108,7 @@ def _nr_wrapper_Flask_handle_http_exception_(wrapped, instance, args, kwargs):
 
     transaction.set_transaction_name(name, priority=1)
 
-    FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
+    return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
 
 
 def _nr_wrapper_Flask_handle_exception_(wrapped, instance, args, kwargs):
@@ -125,7 +125,7 @@ def _nr_wrapper_Flask_handle_exception_(wrapped, instance, args, kwargs):
 
     name = callable_name(wrapped)
 
-    FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
+    return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
 
 
 @function_wrapper
@@ -143,7 +143,7 @@ def _nr_wrapper_error_handler_(wrapped, instance, args, kwargs):
 
     transaction.set_transaction_name(name, priority=1)
 
-    FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
+    return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
 
 
 def _nr_wrapper_Flask__register_error_handler_(wrapped, instance, args, kwargs):
@@ -187,7 +187,7 @@ def _nr_wrapper_Flask_try_trigger_before_first_request_functions_(
 
     transaction.set_transaction_name(name)
 
-    FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
+    return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
 
 
 def _nr_wrapper_Flask_before_first_request_(wrapped, instance, args, kwargs):
@@ -211,7 +211,7 @@ def _nr_wrapper_Flask_before_request_wrapped_(wrapped, instance, args, kwargs):
 
     transaction.set_transaction_name(name)
 
-    FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
+    return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
 
 
 def _nr_wrapper_Flask_before_request_(wrapped, instance, args, kwargs):
@@ -363,7 +363,7 @@ def _nr_wrapper_Blueprint_before_request_wrapped_(wrapped, instance, args, kwarg
 
     transaction.set_transaction_name(name)
 
-    FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
+    return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
 
 
 def _nr_wrapper_Blueprint_before_request_(wrapped, instance, args, kwargs):

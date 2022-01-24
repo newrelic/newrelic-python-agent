@@ -28,13 +28,13 @@ class MessageTransaction(BackgroundTask):
     def __init__(self, library, destination_type,
             destination_name, application, routing_key=None,
             exchange_type=None, headers=None, queue_name=None, reply_to=None,
-            correlation_id=None, source=None):
+            correlation_id=None):
 
         name, group = self.get_transaction_name(library, destination_type,
                 destination_name)
 
         super(MessageTransaction, self).__init__(application, name,
-                group=group, source=source)
+                group=group)
 
         self.headers = headers
 
@@ -195,7 +195,6 @@ def MessageTransactionWrapper(wrapped, library, destination_type,
                 queue_name=_queue_name,
                 reply_to=_reply_to,
                 correlation_id=_correlation_id,
-                source=wrapped,
             )
 
         proxy = async_proxy(wrapped)

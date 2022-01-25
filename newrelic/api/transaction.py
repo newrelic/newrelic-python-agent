@@ -159,9 +159,11 @@ class Transaction(object):
     STATE_RUNNING = 1
     STATE_STOPPED = 2
 
-    def __init__(self, application, enabled=None):
+    def __init__(self, application, enabled=None, source=None):
 
         self._application = application
+
+        self._source = source
 
         self.thread_id = None
 
@@ -378,6 +380,11 @@ class Transaction(object):
         # used to validate correct usage of class.
 
         self._state = self.STATE_RUNNING
+
+        # Extract source code context
+        if self._source is not None:
+            self.root_span.add_source_code_context(self._source)
+            self._source = None  # Remove reference to source
 
         return self
 

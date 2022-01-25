@@ -142,9 +142,9 @@ class WebTransaction(Transaction):
     def __init__(self, application, name, group=None,
             scheme=None, host=None, port=None, request_method=None,
             request_path=None, query_string=None, headers=None,
-            enabled=None):
+            enabled=None, source=None):
 
-        super(WebTransaction, self).__init__(application, enabled)
+        super(WebTransaction, self).__init__(application, enabled, source=source)
 
         # Flags for tracking whether RUM header and footer have been
         # generated.
@@ -610,7 +610,7 @@ class WSGIWebTransaction(WebTransaction):
 
     MOD_WSGI_HEADERS = ('mod_wsgi.request_start', 'mod_wsgi.queue_start')
 
-    def __init__(self, application, environ):
+    def __init__(self, application, environ, source=None):
 
         # The web transaction can be enabled/disabled by
         # the value of the variable "newrelic.enabled"
@@ -631,7 +631,7 @@ class WSGIWebTransaction(WebTransaction):
             request_method=environ.get('REQUEST_METHOD'),
             query_string=environ.get('QUERY_STRING'),
             headers=iter(WSGIHeaderProxy(environ)),
-            enabled=enabled)
+            enabled=enabled, source=source)
 
         # Disable transactions for websocket connections.
         # Also disable autorum if this is a websocket. This is a good idea for
@@ -943,7 +943,7 @@ def WebTransactionWrapper(wrapped, application=None, name=None, group=None,
                 return None
             return WebTransaction( _application, _name, _group,
                     _scheme, _host, _port, _request_method,
-                    _request_path, _query_string, _headers)
+                    _request_path, _query_string, _headers, source=wrapped)
 
         if proxy:
             context_manager = TransactionContext(create_transaction)
@@ -951,7 +951,7 @@ def WebTransactionWrapper(wrapped, application=None, name=None, group=None,
 
         transaction = WebTransaction(
                 _application, _name, _group, _scheme, _host, _port,
-                _request_method, _request_path, _query_string, _headers)
+                _request_method, _request_path, _query_string, _headers, source=wrapped)
 
         transaction = create_transaction(current_transaction(active_only=False))
 

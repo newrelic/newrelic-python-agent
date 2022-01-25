@@ -207,7 +207,7 @@ class TimeTrace(object):
 
     def add_source_code_context(self, source):
         """Extract source code context from a callable and add appropriate attributes."""
-        if source:
+        if source and self.settings and self.settings.source_code_context:
             try:
                 node = extract_source_code_from_callable(source)
                 node.add_attrs(self._add_agent_attribute)

@@ -597,7 +597,7 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
                 target_application = application_instance(application)
 
         # Now start recording the actual web transaction.
-        transaction = WSGIWebTransaction(target_application, environ)
+        transaction = WSGIWebTransaction(target_application, environ, source=wrapped)
         transaction.__enter__()
 
         # Record details of framework against the transaction for later

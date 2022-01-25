@@ -99,7 +99,7 @@ class SolrTraceWrapper(object):
         else:
             command = self._nr_command
 
-        with SolrTrace(library, command, parent=parent, source= self._nr_next_object):
+        with SolrTrace(library, command, parent=parent, source=self._nr_next_object):
             return self._nr_next_object(*args, **kwargs)
 
 

@@ -13,8 +13,7 @@
 # limitations under the License.
 
 from newrelic.api.database_trace import register_database_client
-from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
-from newrelic.api.transaction import current_transaction
+from newrelic.api.function_trace import FunctionTrace
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_object
 
@@ -35,7 +34,6 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
         # tracked.
 
         return self
-        #return FunctionTraceWrapper(self, name=name)
 
     def __exit__(self, exc, value, tb):
         name = callable_name(self.__wrapped__.__exit__)
@@ -55,7 +53,6 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
             #        return self.__wrapped__.__exit__(exc, value, tb)
 
           return self.__wrapped__.__exit__(exc, value, tb)
-        #return FunctionTraceWrapper(self.__wrapped__.__exit__, name=name)(exc, value, tb)
 
 class ConnectionFactory(DBAPI2ConnectionFactory):
 

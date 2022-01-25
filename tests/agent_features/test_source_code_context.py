@@ -15,7 +15,7 @@
 import newrelic.packages.six as six
 import pytest
 
-from testing_support.fixtures import override_application_settings
+from testing_support.fixtures import override_application_settings, dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 
 from newrelic.api.background_task import background_task
@@ -91,9 +91,9 @@ if FILE_PATH.endswith(".pyc"):
 )
 def test_source_code_context(func, agents):
     @override_application_settings({
-        "distributed_tracing.enabled": True,
         "source_code_context.enabled": True,
     })
+    @dt_enabled
     @validate_span_events(
         count=1,
         exact_agents=agents,

@@ -27,12 +27,12 @@ def validate_database_trace_inputs(sql_parameters_type):
         def _bind_params(sql, dbapi2_module=None,
                 connect_params=None, cursor_params=None, sql_parameters=None,
                 execute_params=None, host=None, port_path_or_id=None,
-                database_name=None):
+                database_name=None, source=None):
             return (sql, dbapi2_module, connect_params,
-                    cursor_params, sql_parameters, execute_params)
+                    cursor_params, sql_parameters, execute_params, source)
 
         (sql, dbapi2_module, connect_params, cursor_params,
-            sql_parameters, execute_params) = _bind_params(*args, **kwargs)
+            sql_parameters, execute_params, source) = _bind_params(*args, **kwargs)
 
         assert hasattr(dbapi2_module, 'connect')
 
@@ -57,6 +57,8 @@ def validate_database_trace_inputs(sql_parameters_type):
             assert len(execute_params) == 2
             assert isinstance(execute_params[0], tuple)
             assert isinstance(execute_params[1], dict)
+
+        assert callable(source)
 
         return wrapped(*args, **kwargs)
 

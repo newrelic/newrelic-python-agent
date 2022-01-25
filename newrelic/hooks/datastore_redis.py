@@ -14,7 +14,7 @@
 
 import re
 
-from newrelic.api.datastore_trace import DatastoreTrace, DatastoreTraceWrapper
+from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
@@ -288,7 +288,8 @@ def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
 
     operation = _redis_operation_re.sub("_", operation)
 
-    return DatastoreTraceWrapper(wrapped, product="Redis", target=None, operation=operation, host=host, port_path_or_id=port_path_or_id, database_name=db)(*args, **kwargs)
+    with DatastoreTrace(product="Redis", target=None, operation=operation, host=host, port_path_or_id=port_path_or_id, database_name=db, source=wrapped):
+        return wrapped(*args, **kwargs)
 
 
 def instrument_redis_connection(module):

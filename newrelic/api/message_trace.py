@@ -29,13 +29,12 @@ class MessageTrace(CatHeaderMixin, TimeTrace):
     cat_synthetics_key = "NewRelicSynthetics"
 
     def __init__(self, library, operation, destination_type, destination_name, params=None, **kwargs):
-
-        parent = None
+        parent = kwargs.pop("parent", None)
+        source = kwargs.pop("source", None)
         if kwargs:
-            if len(kwargs) > 1:
-                raise TypeError("Invalid keyword arguments:", kwargs)
-            parent = kwargs["parent"]
-        super(MessageTrace, self).__init__(parent)
+            raise TypeError("Invalid keyword arguments:", kwargs)
+
+        super(MessageTrace, self).__init__(parent=parent, source=source)
 
         self.library = library
         self.operation = operation
@@ -132,7 +131,7 @@ def MessageTraceWrapper(wrapped, library, operation, destination_type, destinati
         else:
             _destination_name = destination_name
 
-        trace = MessageTrace(_library, _operation, _destination_type, _destination_name, params={}, parent=parent)
+        trace = MessageTrace(_library, _operation, _destination_type, _destination_name, params={}, parent=parent, source=wrapped)
 
         if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)

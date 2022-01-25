@@ -93,8 +93,6 @@ class ConnectionSaveParamsWrapper(DBAPI2ConnectionWrapper):
 
         return self
 
-        # return FunctionTraceWrapper(self, name=name)
-
     def __exit__(self, exc, value, tb):
         transaction = current_transaction()
         name = callable_name(self.__wrapped__.__exit__)

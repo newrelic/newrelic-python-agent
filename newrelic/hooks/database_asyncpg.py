@@ -17,7 +17,7 @@ from newrelic.api.database_trace import (
     enable_datastore_instance_feature,
     register_database_client,
 )
-from newrelic.api.datastore_trace import DatastoreTraceWrapper
+from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
 
 
@@ -135,15 +135,15 @@ def wrap_connect(wrapped, instance, args, kwargs):
             kwargs["addr"], None, kwargs.get("params")
         )
 
-    return DatastoreTraceWrapper(
-        wrapped,
+    with DatastoreTrace(
         PostgresApi._nr_database_product,
         None,
         "connect",
         host=host,
         port_path_or_id=port,
         database_name=database_name,
-    )(*args, **kwargs)
+    ):
+        return wrapped(*args, **kwargs)
 
 
 def instrument_asyncpg_protocol(module):

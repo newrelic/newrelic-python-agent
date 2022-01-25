@@ -17,7 +17,7 @@ import os
 
 from newrelic.api.database_trace import (enable_datastore_instance_feature,
         register_database_client, DatabaseTrace)
-from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (wrap_object, ObjectProxy,
@@ -82,8 +82,8 @@ class ConnectionSaveParamsWrapper(DBAPI2ConnectionWrapper):
     def __enter__(self):
         transaction = current_transaction()
         name = callable_name(self.__wrapped__.__enter__)
-        with FunctionTrace(name):
-            self.__wrapped__.__enter__()
+        #with FunctionTrace(name):
+        #    self.__wrapped__.__enter__()
 
         # Must return a reference to self as otherwise will be
         # returning the inner connection object. If 'as' is used
@@ -91,12 +91,14 @@ class ConnectionSaveParamsWrapper(DBAPI2ConnectionWrapper):
         # using the wrapped connection object and nothing will be
         # tracked.
 
-        return self
+        #return self
+
+        return FunctionTraceWrapper(self, name=name)
 
     def __exit__(self, exc, value, tb):
         transaction = current_transaction()
         name = callable_name(self.__wrapped__.__exit__)
-        with FunctionTrace(name):
+        with FunctionTrace(name, source=self.__wrapped__.__exit__):
             if exc is None:
                 with DatabaseTrace('COMMIT',
                         self._nr_dbapi2_module, self._nr_connect_params):

@@ -41,9 +41,7 @@ class MethodWrapper(object):
         if transaction:
             transaction.set_transaction_name(self._nr_name,
                     priority=self._nr_priority)
-            with newrelic.api.function_trace.FunctionTrace(
-                    name=self._nr_name):
-                return self._nr_wrapped(*args, **kwargs)
+            return newrelic.api.function_trace.FunctionTraceWrapper(self._nr_wrapped, name=self._nr_name)(*args, **kwargs)
         else:
             return self._nr_wrapped(*args, **kwargs)
 

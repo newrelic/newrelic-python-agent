@@ -104,7 +104,7 @@ def view_handler_wrapper(wrapped, instance, args, kwargs):
         name,
         priority=1 if args and isinstance(args[0], Exception) else 2)
 
-    with FunctionTrace(name) as trace:
+    with FunctionTrace(name, source=wrapped) as trace:
         try:
             return wrapped(*args, **kwargs)
 
@@ -152,7 +152,7 @@ def default_view_mapper_wrapper(wrapped, instance, args, kwargs):
 
         name = callable_name(view)
 
-        with FunctionTrace(name=name) as tracer:
+        with FunctionTrace(name=name, source=wrapper) as tracer:
             try:
                 return wrapper(context, request)
             finally:

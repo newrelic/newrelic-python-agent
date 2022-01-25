@@ -16,7 +16,7 @@ import os
 
 from newrelic.api.database_trace import (enable_datastore_instance_feature,
         DatabaseTrace, register_database_client)
-from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_object
@@ -29,21 +29,24 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
     def __enter__(self):
         transaction = current_transaction()
         name = callable_name(self.__wrapped__.__enter__)
-        with FunctionTrace(name):
-            cursor = self.__wrapped__.__enter__()
+        #with FunctionTrace(name):
+        #    cursor = self.__wrapped__.__enter__()
 
         # The __enter__() method of original connection object returns
         # a new cursor instance for use with 'as' assignment. We need
         # to wrap that in a cursor wrapper otherwise we will not track
         # any queries done via it.
 
-        return self.__cursor_wrapper__(cursor, self._nr_dbapi2_module,
-                self._nr_connect_params, None)
+        #return self.__cursor_wrapper__(cursor, self._nr_dbapi2_module,
+        #        self._nr_connect_params, None)
+
+        cursor = self.__wrapped__.__enter__()
+        return FunctionTraceWrapper(self.__cursor_wrapper__, name=name)(cursor, self._nr_dbapi2_module, self._nr_connect_params, None)
 
     def __exit__(self, exc, value, tb):
         transaction = current_transaction()
         name = callable_name(self.__wrapped__.__exit__)
-        with FunctionTrace(name):
+        with FunctionTrace(name, source=self.__wrapped__.__exit__):
             if exc is None:
                 with DatabaseTrace('COMMIT',
                         self._nr_dbapi2_module, self._nr_connect_params):

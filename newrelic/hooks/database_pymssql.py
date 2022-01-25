@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from newrelic.api.database_trace import register_database_client
-from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_object
@@ -25,7 +25,7 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
 
     def __enter__(self):
         name = callable_name(self.__wrapped__.__enter__)
-        with FunctionTrace(name):
+        with FunctionTrace(name, source=self.__wrapped__.__enter__):
             self.__wrapped__.__enter__()
 
         # Must return a reference to self as otherwise will be
@@ -35,10 +35,11 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
         # tracked.
 
         return self
+        #return FunctionTraceWrapper(self, name=name)
 
     def __exit__(self, exc, value, tb):
         name = callable_name(self.__wrapped__.__exit__)
-        with FunctionTrace(name):
+        with FunctionTrace(name, source=self.__wrapped__.__exit__):
             # XXX The pymssql client doesn't appear to to force a
             # commit or rollback from __exit__() explicitly. Need
             # to work out what its behaviour is around auto commit
@@ -53,7 +54,8 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
             #            self._nr_dbapi2_module):
             #        return self.__wrapped__.__exit__(exc, value, tb)
 
-            return self.__wrapped__.__exit__(exc, value, tb)
+          return self.__wrapped__.__exit__(exc, value, tb)
+        #return FunctionTraceWrapper(self.__wrapped__.__exit__, name=name)(exc, value, tb)
 
 class ConnectionFactory(DBAPI2ConnectionFactory):
 

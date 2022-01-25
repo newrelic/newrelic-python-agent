@@ -270,7 +270,7 @@ def wrap_middleware(wrapped, instance, args, kwargs):
 
     name = callable_name(wrapped)
     transaction.set_transaction_name(name, "GraphQL", priority=12)
-    with FunctionTrace(name):
+    with FunctionTrace(name, source=wrapped):
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             return wrapped(*args, **kwargs)
 

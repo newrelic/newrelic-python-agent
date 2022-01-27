@@ -13,12 +13,15 @@
 # limitations under the License.
 
 import collections
+import logging
 import threading
 
 try:
     from newrelic.core.infinite_tracing_pb2 import AttributeValue
 except:
     AttributeValue = None
+
+_logger = logging.getLogger(__name__)
 
 
 class StreamBuffer(object):
@@ -64,18 +67,46 @@ class StreamBuffer(object):
 
         return seen, dropped
 
+    def __iter__(self):
+        return StreamBufferIterator(self)
+
+class StreamBufferIterator(object):
+
+    def __init__(self, stream_buffer):
+        self.stream_buffer = stream_buffer
+        self._notify = self.stream_buffer._notify
+        self._shutdown = False
+        self._stream = None
+
+    def shutdown(self):
+        with self._notify:
+            self._shutdown = True
+            self._notify.notify_all()
+
+    def stream_closed(self):
+        return self._shutdown or self.stream_buffer._shutdown or (self._stream and self._stream.done())
+
     def __next__(self):
-        while True:
-            if self._shutdown:
-                raise StopIteration
+        with self._notify:
+            while True:
+                # When a gRPC stream receives a server side disconnect (usually in the form of an OK code)
+                # the item it is waiting to consume from the iterator will not be sent, and will inevitably 
+                # be lost. To prevent this, StopIteration is raised by shutting down the iterator and 
+                # notifying to allow the thread to exit. Iterators cannot be reused or race conditions may
+                # occur between iterator shutdown and restart, so a new iterator must be created from the
+                # streaming buffer.
+                if self.stream_closed():
+                    _logger.debug("gRPC stream is closed. Shutting down and refusing to iterate.")
+                    if not self._shutdown:
+                        self.shutdown()
+                    raise StopIteration
 
-            try:
-                return self._queue.popleft()
-            except IndexError:
-                pass
+                try:
+                    return self.stream_buffer._queue.popleft()
+                except IndexError:
+                    pass
 
-            with self._notify:
-                if not self._shutdown and not self._queue:
+                if not self.stream_closed() and not self.stream_buffer._queue:
                     self._notify.wait()
 
     next = __next__

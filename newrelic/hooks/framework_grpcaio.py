@@ -15,6 +15,7 @@
 from inspect import isawaitable
 import random
 import time
+from newrelic.api.application import application_instance
 
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.web_transaction import WebTransactionWrapper, WebTransaction
@@ -47,14 +48,28 @@ def _nr_interceptor():
     return _NR_Interceptor()
 
 
-def _bind_transaction_args(request, context):
-    return request, context
+def _bind_context(request, context):
+    return context
 
+
+# def nr_server_callback(context, transaction):
+#     def _nr_server_callback():
+#         # Process status code and trailing metadata from ServicerContext
+#         if transaction and transaction.state == transaction.STATE_RUNNING:
+#             try:
+#                 status_code = context.code()
+#                 trailing_metadata = context.trailing_metadata()
+#             except AttributeError:
+#                 pass
+#             else:
+#                 transaction.process_response(status_code, trailing_metadata)
+
+#     return _nr_server_callback
 
 def grpc_web_transaction(handler_method, call_details):
     @function_wrapper
     def _grpc_web_transaction(wrapped, instance, args, kwargs):
-        request, context = _bind_transaction_args(*args, **kwargs)
+        context = _bind_context(*args, **kwargs)
         behavior_name = callable_name(wrapped)
 
         metadata = (
@@ -63,7 +78,7 @@ def grpc_web_transaction(handler_method, call_details):
 
         host = port = request_path = None
         try:
-            host = context.peer().split(":")[1:]  # Split host into pieces, removing protocol
+            host = context.host().decode("utf-8").split(":")[1:]  # Split host into pieces, removing protocol
             port = host[-1]  # Remove port
             host = ":".join(host[:-1])  # Rejoin ipv6 hosts
         except Exception:
@@ -72,13 +87,26 @@ def grpc_web_transaction(handler_method, call_details):
         if call_details is not None:
             request_path = call_details.method
 
-        return WebTransactionWrapper(
-                wrapped,
-                name=behavior_name,
-                request_path=request_path,
-                host=host,
-                port=port,
-                headers=metadata)(*args, **kwargs)
+        with WebTransaction(
+            application=application_instance(),
+            name=behavior_name,
+            request_path=request_path,
+            host=host,
+            port=port,
+            headers=metadata) as transaction:
+
+            response = wrapped(*args, **kwargs)
+
+            try:
+                status_code = context.code()
+                trailing_metadata = context.trailing_metadata()
+            except AttributeError:
+                pass
+            else:
+                breakpoint()
+                transaction.process_response(status_code, trailing_metadata)
+
+            return response
 
     return _grpc_web_transaction(handler_method)
 
@@ -128,10 +156,28 @@ def _prepare_request_stream(
             transaction, guid, request_iterator, *args, **kwargs)
 
 def _get_uri_method(instance, *args, **kwargs):
-    target = instance._channel.target().decode('utf-8')
+    if hasattr(instance._channel, "target"):
+        target = instance._channel.target().decode('utf-8')
+    else:
+        target = "<unknown>"
+
     method = instance._method.decode('utf-8').lstrip('/')
     uri = 'grpc://%s/%s' % (target, method)
     return (uri, method)
+
+
+def await_response(trace):
+    def _await_response(call):
+        """Retrieve status code using an event loop."""
+        transaction = current_transaction()
+        if transaction:
+            import asyncio
+            loop = asyncio.get_event_loop()
+            code, trailing_metadata = loop.run_until_complete(asyncio.gather(call.code(), call.trailing_metadata()))
+            breakpoint()
+            trace.process_response(code.value[0], trailing_metadata)
+
+    return _await_response
 
 
 def wrap_call(module, object_path, prepare):
@@ -142,22 +188,24 @@ def wrap_call(module, object_path, prepare):
             return wrapped(*args, **kwargs)
 
         uri, method = _get_uri_method(instance)
-        with ExternalTrace('gRPC', uri, method):
+        with ExternalTrace('gRPC', uri, method) as trace:
             args, kwargs = prepare(transaction, None, *args, **kwargs)
-            ret = wrapped(*args, **kwargs)
+            call = wrapped(*args, **kwargs)
+            call.add_done_callback(await_response(trace))
 
-        return ret
+        return call
 
     wrap_function_wrapper(module, object_path, _call_wrapper)
-
-def wrap_set_code(wrapped, instance, args, kwargs):
-    return wrapped(*args, **kwargs)
 
 
 def instrument_grpc_aio_channel(module):
     wrap_call(module, 'UnaryUnaryMultiCallable.__call__',
             _prepare_request)
     wrap_call(module, 'StreamUnaryMultiCallable.__call__',
+            _prepare_request_stream)
+    wrap_call(module, 'UnaryStreamMultiCallable.__call__',
+            _prepare_request)
+    wrap_call(module, 'StreamStreamMultiCallable.__call__',
             _prepare_request_stream)
     # wrap_future(module, '_UnaryStreamMultiCallable.__call__',
     #         _prepare_request)

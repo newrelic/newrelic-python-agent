@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
 import grpc
 import pytest
 import six
@@ -47,6 +48,18 @@ _test_matrix = [
         ('stream_stream', True, 2, False),
         ('stream_stream', False, 1, True),
         ('stream_stream', False, 2, True),
+
+        # ('unary_unary', False, 1, False),
+        # ('unary_unary', True, 1, False),
+
+        # ('stream_unary', False, 1, False),
+        # ('stream_unary', True, 1, False),
+
+        # ('unary_stream', False, 1, False),
+        # ('unary_stream', False, 2, False),
+
+        # ('stream_stream', False, 1, False),
+        # ('stream_stream', False, 2, False),
 )]
 
 @pytest.mark.parametrize(*_test_matrix)
@@ -110,93 +123,97 @@ def test_client_newrelic_disabled_no_harm(service_method_type, raises_exception,
         assert cancel
 
 
-# @pytest.mark.parametrize(*_test_matrix)
-# def test_client(service_method_type, raises_exception, message_count, cancel, mock_grpc_server, stub):
+class ClientInterceptor(grpc.aio.ClientInterceptor):
+    async def intercept_unary_unary(self, continuation, client_call_details, request):
+        breakpoint()
+        return
 
-#     port = mock_grpc_server
 
-#     service_method_class_name = 'NoTxn%s%s' % (
-#             service_method_type.title().replace('_', ''),
-#             'Raises' if raises_exception else '')
-#     streaming_request = service_method_type.split('_')[0] == 'stream'
-#     streaming_response = service_method_type.split('_')[1] == 'stream'
+@pytest.mark.parametrize(*_test_matrix)
+def test_client(service_method_type, raises_exception, message_count, cancel, mock_grpc_server, stub_and_channel):
+    stub, channel = stub_and_channel
 
-#     _test_scoped_metrics = [
-#             ('External/localhost:%s/gRPC/SampleApplication/%s' % (port,
-#                 service_method_class_name), 1),
-#     ]
-#     _test_rollup_metrics = [
-#             ('External/localhost:%s/gRPC/SampleApplication/%s' % (port,
-#                 service_method_class_name), 1),
-#             ('External/localhost:%s/all' % port, 1),
-#             ('External/allOther', 1),
-#             ('External/all', 1),
-#     ]
+    port = mock_grpc_server
 
-#     if six.PY2:
-#         _test_transaction_name = 'test_clients:_test_client'
-#     else:
-#         _test_transaction_name = (
-#                 'test_clients:test_client.<locals>._test_client')
+    service_method_class_name = 'NoTxn%s%s' % (
+            service_method_type.title().replace('_', ''),
+            'Raises' if raises_exception else '')
+    streaming_request = service_method_type.split('_')[0] == 'stream'
+    streaming_response = service_method_type.split('_')[1] == 'stream'
 
-#     _errors = []
-#     if not streaming_response and cancel:
-#         _errors.append('grpc:FutureCancelledError')
-#     elif raises_exception or cancel:
-#         _errors.append('grpc._channel:_Rendezvous')
+    _test_scoped_metrics = [
+            # ('External/localhost:%s/gRPC/SampleApplication/%s' % (port,
+            #     service_method_class_name), 1),
+    ]
+    _test_rollup_metrics = [
+            # ('External/localhost:%s/gRPC/SampleApplication/%s' % (port,
+            #     service_method_class_name), 1),
+            # ('External/localhost:%s/all' % port, 1),
+            ('External/allOther', 1),
+            ('External/all', 1),
+    ]
 
-#     @validate_transaction_errors(errors=_errors)
-#     @validate_transaction_metrics(_test_transaction_name,
-#             scoped_metrics=_test_scoped_metrics,
-#             rollup_metrics=_test_rollup_metrics,
-#             background_task=True)
-#     @background_task()
-#     def _test_client():
-#         service_method_class = getattr(stub, service_method_class_name)
-#         service_method_method = getattr(service_method_class,
-#                 service_method_method_name)
+    if six.PY2:
+        _test_transaction_name = 'test_clients:_test_client'
+    else:
+        _test_transaction_name = (
+                'test_clients:test_client.<locals>._test_client')
 
-#         # In the case that we're preparing to cancel a request it's important
-#         # that the request does not return prior to cancelling. If the request
-#         # returns prior to cancellation then the response might be valid. In
-#         # order to force the request to not return, the timesout option is set.
-#         request = create_request(streaming_request, count=message_count,
-#                 timesout=cancel)
+    _errors = []
+    if not streaming_response and cancel:
+        _errors.append('grpc:FutureCancelledError')
+    elif raises_exception or cancel:
+        _errors.append('grpc._channel:_Rendezvous')
 
-#         reply = service_method_method(request, None, None, None)
+    @validate_transaction_errors(errors=_errors)
+    @validate_transaction_metrics(_test_transaction_name,
+            scoped_metrics=_test_scoped_metrics,
+            rollup_metrics=_test_rollup_metrics,
+            background_task=True)
+    @background_task()
+    def _test_client():
+        service_method_class = getattr(stub, service_method_class_name)
+        service_method_method = service_method_class.__call__
 
-#         if isinstance(reply, tuple):
-#             reply = reply[0]
+        # service_method_class._interceptors = [ClientInterceptor()]
 
-#         if cancel:
-#             reply.cancel()
+        # In the case that we're preparing to cancel a request it's important
+        # that the request does not return prior to cancelling. If the request
+        # returns prior to cancellation then the response might be valid. In
+        # order to force the request to not return, the timesout option is set.
 
-#         try:
-#             # If the reply was canceled or the server code raises an exception,
-#             # this will raise an exception which will be recorded by the agent
-#             if streaming_response:
-#                 reply = list(reply)
-#             else:
-#                 reply = [reply.result()]
-#         except (AttributeError, TypeError):
-#             reply = [reply]
+        request = create_request(streaming_request, count=message_count,
+                timesout=cancel)
 
-#         expected_text = '%s: Hello World' % service_method_type
-#         response_texts_correct = [r.text == expected_text for r in reply]
-#         assert len(response_texts_correct) == message_count
-#         assert response_texts_correct and all(response_texts_correct)
+        reply = service_method_method(request, timeout=3)
 
-#     try:
-#         _test_client()
-#     except grpc.RpcError as e:
-#         if raises_exception:
-#             assert '%s: Hello World' % service_method_type in e.details()
-#         elif cancel:
-#             assert e.code() == grpc.StatusCode.CANCELLED
-#         else:
-#             raise
-#     except grpc.FutureCancelledError:
-#         assert cancel
+        if cancel:
+            reply.cancel()
+
+        try:
+            # If the reply was canceled or the server code raises an exception,
+            # this will raise an exception which will be recorded by the agent
+            reply = get_result(reply)
+        except (AttributeError, TypeError):
+            reply = [reply]
+
+        expected_text = '%s: Hello World' % service_method_type
+        response_texts_correct = [r.text == expected_text for r in reply]
+        assert len(response_texts_correct) == message_count
+        assert response_texts_correct and all(response_texts_correct), reply
+
+
+    try:
+        _test_client()
+    except grpc.RpcError as e:
+        if raises_exception:
+            assert '%s: Hello World' % service_method_type in e.details()
+        elif cancel:
+            assert e.code() == grpc.StatusCode.CANCELLED
+        else:
+            raise
+    except (grpc.FutureCancelledError, asyncio.exceptions.CancelledError):
+        assert cancel
 
 
 # _test_matrix = [

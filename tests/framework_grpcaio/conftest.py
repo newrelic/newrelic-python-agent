@@ -43,7 +43,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 @pytest.fixture(scope='session')
 async def grpc_app_server():
-    async with MockExternalgRPCAIOServer() as server:
+    async with MockExternalgRPCAIOServer(port=55555) as server:
         yield server, server.port
 
 

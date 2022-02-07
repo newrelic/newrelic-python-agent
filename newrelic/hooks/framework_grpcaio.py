@@ -12,65 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from inspect import isawaitable
-import random
-import time
 from newrelic.api.application import application_instance
 
 from newrelic.api.external_trace import ExternalTrace
-from newrelic.api.web_transaction import WebTransactionWrapper, WebTransaction
+from newrelic.api.web_transaction import WebTransaction
 from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import notice_error
-from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
+from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.object_names import callable_name
 
 
-HANDLER_METHODS = ("unary_unary", "stream_unary", "unary_stream", "stream_stream")
+def _bind_finish_handler_with_unary_response(rpc_state, unary_handler, request, servicer_context, response_serializer, loop):
+    return unary_handler, servicer_context
 
-def _nr_interceptor():
-    from grpc.aio._interceptor import ServerInterceptor
-    from grpc._utilities import RpcMethodHandler
-
-    class _NR_Interceptor(ServerInterceptor):
-        async def intercept_service(self, continuation, handler_call_details):
-            handler = continuation(handler_call_details)
-            if isawaitable(handler):
-                handler = await handler
-
-            handler = handler._asdict()
-            for method in HANDLER_METHODS:
-                handler_method = handler.get(method, None)
-                if handler_method is not None:
-                    handler[method] = grpc_web_transaction(handler_method, handler_call_details)
-
-            return RpcMethodHandler(**handler)
-
-    return _NR_Interceptor()
+def _bind_finish_handler_with_stream_responses(rpc_state, stream_handler, request, servicer_context, loop):
+    return stream_handler, servicer_context
 
 
-def _bind_context(request, context):
-    return context
-
-
-# def nr_server_callback(context, transaction):
-#     def _nr_server_callback():
-#         # Process status code and trailing metadata from ServicerContext
-#         if transaction and transaction.state == transaction.STATE_RUNNING:
-#             try:
-#                 status_code = context.code()
-#                 trailing_metadata = context.trailing_metadata()
-#             except AttributeError:
-#                 pass
-#             else:
-#                 transaction.process_response(status_code, trailing_metadata)
-
-#     return _nr_server_callback
-
-def grpc_web_transaction(handler_method, call_details):
-    @function_wrapper
-    def _grpc_web_transaction(wrapped, instance, args, kwargs):
-        context = _bind_context(*args, **kwargs)
-        behavior_name = callable_name(wrapped)
+def grpc_web_transaction(_bind_finish):
+    async def _grpc_web_transaction(wrapped, instance, args, kwargs):
+        behavior, context = _bind_finish(*args, **kwargs)
+        behavior_name = callable_name(behavior)
 
         metadata = (
                 getattr(context, 'invocation_metadata', None) or
@@ -78,14 +40,12 @@ def grpc_web_transaction(handler_method, call_details):
 
         host = port = request_path = None
         try:
-            host = context.host().decode("utf-8").split(":")[1:]  # Split host into pieces, removing protocol
+            host = context.host().decode("utf-8").split(":")  # Split host into pieces, removing protocol
             port = host[-1]  # Remove port
             host = ":".join(host[:-1])  # Rejoin ipv6 hosts
-        except Exception:
+            request_path = context.method()
+        except AttributeError:
             pass
-
-        if call_details is not None:
-            request_path = call_details.method
 
         with WebTransaction(
             application=application_instance(),
@@ -95,40 +55,20 @@ def grpc_web_transaction(handler_method, call_details):
             port=port,
             headers=metadata) as transaction:
 
-            response = wrapped(*args, **kwargs)
+            response = await wrapped(*args, **kwargs)
 
+            status_code, trailing_metadata = 0, ()
             try:
                 status_code = context.code()
                 trailing_metadata = context.trailing_metadata()
             except AttributeError:
                 pass
-            else:
-                breakpoint()
-                transaction.process_response(status_code, trailing_metadata)
+
+            transaction.process_response(status_code, trailing_metadata)
 
             return response
 
-    return _grpc_web_transaction(handler_method)
-
-
-def bind_server_init_args(thread_pool, generic_handlers, interceptors, options, maximum_concurrent_rpcs, compression):
-    return thread_pool, generic_handlers, interceptors, options, maximum_concurrent_rpcs, compression
-
-
-def wrap_server_init(wrapped, instance, args, kwargs):
-    args = list(bind_server_init_args(*args, **kwargs))
-    interceptors = args[2]
-
-    # Insert New Relic into interceptors
-    if not interceptors:
-        interceptors = [_nr_interceptor()]
-    else:
-        interceptors = list(interceptors)
-        interceptors.insert(0, _nr_interceptor())
-
-    args[2] = interceptors
-
-    return wrapped(*args, **kwargs)
+    return _grpc_web_transaction
 
 
 def _prepare_request(
@@ -207,25 +147,8 @@ def instrument_grpc_aio_channel(module):
             _prepare_request)
     wrap_call(module, 'StreamStreamMultiCallable.__call__',
             _prepare_request_stream)
-    # wrap_future(module, '_UnaryStreamMultiCallable.__call__',
-    #         _prepare_request)
-    # wrap_future(module, '_StreamStreamMultiCallable.__call__',
-    #         _prepare_request_stream)
-
-    # if hasattr(module, '_MultiThreadedRendezvous'):
-    #     wrap_function_wrapper(module, '_MultiThreadedRendezvous.result',
-    #             wrap_result)
-    #     wrap_function_wrapper(module, '_MultiThreadedRendezvous._next',
-    #             wrap_next)
-    # else:
-    #     wrap_function_wrapper(module, '_Rendezvous.result',
-    #             wrap_result)
-    #     wrap_function_wrapper(module, '_Rendezvous._next',
-    #             wrap_next)
-    # wrap_function_wrapper(module, '_Rendezvous.cancel',
-    #         wrap_result)
 
 
-def instrument_grpc_aio_server(module):
-    if hasattr(module, "Server"):
-        wrap_function_wrapper(module.Server, "__init__", wrap_server_init)
+def instrument_grpc_cygprc(module):
+    wrap_function_wrapper(module, "_finish_handler_with_unary_response", grpc_web_transaction(_bind_finish_handler_with_unary_response))
+    wrap_function_wrapper(module, "_finish_handler_with_stream_responses", grpc_web_transaction(_bind_finish_handler_with_stream_responses))

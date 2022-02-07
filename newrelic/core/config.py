@@ -783,7 +783,7 @@ _settings.aws_lambda_metadata = {}
 
 _settings.event_loop_visibility.enabled = True
 _settings.event_loop_visibility.blocking_threshold = 0.1
-_settings.source_code_context.enabled = False
+_settings.source_code_context.enabled = True
 
 
 def global_settings():

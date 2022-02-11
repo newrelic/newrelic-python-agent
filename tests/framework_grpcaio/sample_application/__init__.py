@@ -67,12 +67,12 @@ class SampleApplicationServicer(_SampleApplicationServicer):
     def DoUnaryStreamRaises(self, request, context):
         raise AssertionError('unary_stream: %s' % request.text)
 
-    def DoStreamUnaryRaises(self, request_iter, context):
-        for request in request_iter:
+    async def DoStreamUnaryRaises(self, request_iter, context):
+        async for request in request_iter:
             raise AssertionError('stream_unary: %s' % request.text)
 
-    def DoStreamStreamRaises(self, request_iter, context):
-        for request in request_iter:
+    async def DoStreamStreamRaises(self, request_iter, context):
+        async for request in request_iter:
             raise AssertionError('stream_stream: %s' % request.text)
 
     def NoTxnUnaryUnaryRaises(self, request, context):
@@ -85,23 +85,23 @@ class SampleApplicationServicer(_SampleApplicationServicer):
         if txn: txn.ignore_transaction = True
         raise AssertionError('unary_stream: %s' % request.text)
 
-    def NoTxnStreamUnaryRaises(self, request_iter, context):
+    async def NoTxnStreamUnaryRaises(self, request_iter, context):
         txn = current_transaction()
         if txn: txn.ignore_transaction = True
         
-        for request in request_iter:
+        async for request in request_iter:
             raise AssertionError('stream_unary: %s' % request.text)
 
     async def NoTxnStreamStreamRaises(self, request_iter, context):
         txn = current_transaction()
         if txn: txn.ignore_transaction = True
 
-        try:
-            async for request in request_iter:
-                raise AssertionError('stream_stream: %s' % request.text)
-        except TypeError as e:
-            for request in request_iter:
-                raise AssertionError('stream_stream: %s' % request.text)
+        # try:
+        async for request in request_iter:
+            raise AssertionError('stream_stream: %s' % request.text)
+        # except TypeError as e:
+        #     for request in request_iter:
+        #         raise AssertionError('stream_stream: %s' % request.text)
 
     def NoTxnUnaryUnary(self, request, context):
         txn = current_transaction()
@@ -124,6 +124,8 @@ class SampleApplicationServicer(_SampleApplicationServicer):
         return self.DoStreamStream(request_iter, context)
 
     def DoUnaryUnaryAbort(self, request, context):
+        txn = current_transaction()
+        breakpoint()
         context.abort(grpc.StatusCode.ABORTED, 'aborting')
 
     def DoUnaryStreamAbort(self, request, context):

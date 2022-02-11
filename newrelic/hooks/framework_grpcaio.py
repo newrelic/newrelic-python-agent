@@ -12,27 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+import time
+
 from newrelic.api.application import application_instance
 
+from newrelic.api.error_trace import ErrorTrace
 from newrelic.api.external_trace import ExternalTrace
-from newrelic.api.web_transaction import WebTransaction
-from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import notice_error
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.api.transaction import current_transaction
+from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
 def _bind_finish_handler_with_unary_response(rpc_state, unary_handler, request, servicer_context, response_serializer, loop):
-    return unary_handler, servicer_context
+    return unary_handler, servicer_context, unary_handler
 
 def _bind_finish_handler_with_stream_responses(rpc_state, stream_handler, request, servicer_context, loop):
-    return stream_handler, servicer_context
+    return stream_handler, servicer_context, stream_handler
 
 
 def grpc_web_transaction(_bind_finish):
     async def _grpc_web_transaction(wrapped, instance, args, kwargs):
-        behavior, context = _bind_finish(*args, **kwargs)
+        behavior, context, handler = _bind_finish(*args, **kwargs)
         behavior_name = callable_name(behavior)
+
+        # handler = 
 
         metadata = (
                 getattr(context, 'invocation_metadata', None) or
@@ -47,26 +53,27 @@ def grpc_web_transaction(_bind_finish):
         except AttributeError:
             pass
 
-        with WebTransaction(
+        transaction = WebTransaction(
             application=application_instance(),
             name=behavior_name,
             request_path=request_path,
             host=host,
             port=port,
-            headers=metadata) as transaction:
+            headers=metadata)
+        transaction.__enter__()
 
-            response = await wrapped(*args, **kwargs)
+        response = await wrapped(*args, **kwargs)
 
-            status_code, trailing_metadata = 0, ()
-            try:
-                status_code = context.code()
-                trailing_metadata = context.trailing_metadata()
-            except AttributeError:
-                pass
+        status_code, trailing_metadata = 0, ()
+        try:
+            status_code = context.code()
+            trailing_metadata = context.trailing_metadata()
+        except AttributeError:
+            pass
 
-            transaction.process_response(status_code, trailing_metadata)
+        transaction.process_response(status_code, trailing_metadata)
 
-            return response
+        return response
 
     return _grpc_web_transaction
 
@@ -120,6 +127,48 @@ def await_response(trace):
     return _await_response
 
 
+async def wrap_handle_rpc(wrapped, instance, args, kwargs):
+    with ErrorTrace():
+        return await wrapped(*args, **kwargs)
+
+
+async def wrap_handle_exceptions(wrapped, instance, args, kwargs):
+    # True transaction start time is now, but WebTransaction attributes are
+    # not available from the pure python level until the final handler.
+    # We need to preserve the start time and handle transaction exits cleanly
+    # so that exception and abort handlers have a transaction to process
+    # responses for.
+
+    start_time = time.time()
+
+    try:
+        return await wrapped(*args, **kwargs)
+    finally:
+        transaction = current_transaction()
+        if transaction:
+            transaction.start_time = start_time
+            transaction.__exit__(*sys.exc_info())
+
+
+def bind_send_error_status_from_server(grpc_call_wrapper,
+    code,
+    details,
+    trailing_metadata,
+    send_initial_metadata_op,
+    loop):
+    return code, trailing_metadata
+
+
+async def wrap_send_error_status_from_server(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    breakpoint()
+    if transaction:
+        code, trailing_metadata = bind_send_error_status_from_server(*args, **kwargs)
+        transaction.process_response(code, trailing_metadata)
+
+    return await wrapped(*args, **kwargs)
+
+
 def wrap_call(module, object_path, prepare):
 
     def _call_wrapper(wrapped, instance, args, kwargs):
@@ -152,3 +201,6 @@ def instrument_grpc_aio_channel(module):
 def instrument_grpc_cygprc(module):
     wrap_function_wrapper(module, "_finish_handler_with_unary_response", grpc_web_transaction(_bind_finish_handler_with_unary_response))
     wrap_function_wrapper(module, "_finish_handler_with_stream_responses", grpc_web_transaction(_bind_finish_handler_with_stream_responses))
+    wrap_function_wrapper(module, "_handle_exceptions", wrap_handle_exceptions)
+    wrap_function_wrapper(module, "_handle_rpc", wrap_handle_rpc)
+    wrap_function_wrapper(module, "_send_error_status_from_server", wrap_send_error_status_from_server)

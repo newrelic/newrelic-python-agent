@@ -14,6 +14,7 @@
 
 import re
 
+import grpc
 import pytest
 from inspect import isawaitable
 from conftest import create_stub_and_channel
@@ -89,3 +90,105 @@ def test_simple(method_name, streaming_request, mock_grpc_server, stub):
             assert re.match(r"\w+: Hello World", response.text), response.text
 
     _doit()
+
+
+@pytest.mark.parametrize(*_test_matrix)
+def test_raises_response_status(method_name, streaming_request,
+        mock_grpc_server, stub):
+    port = mock_grpc_server
+    request = create_request(streaming_request)
+
+    method_name = method_name + 'Raises'
+
+    _transaction_name = \
+        "sample_application:SampleApplicationServicer.{}".format(method_name)
+    method = getattr(stub, method_name)
+
+    status_code = str(grpc.StatusCode.UNKNOWN.value[0])
+
+    @validate_transaction_errors(errors=['builtins:AssertionError'])
+    @validate_transaction_metrics(_transaction_name)
+    @override_application_settings({'attributes.include': ['request.*']})
+    @validate_transaction_event_attributes(
+            required_params={
+                'agent': ['request.headers.userAgent',
+                    'response.status'],
+                # 'agent': ['request.uri', 'request.headers.userAgent',
+                #     'response.status'],
+                'user': [],
+                'intrinsic': ['port'],
+            },
+            exact_attrs={
+                'agent': {'response.status': status_code},
+                'user': {},
+                'intrinsic': {'port': port}
+            })
+    @wait_for_transaction_completion
+    def _doit():
+        try:
+            responses = get_result(method(request))
+        except Exception as e:
+            pass
+
+    _doit()
+
+
+@pytest.mark.parametrize(*_test_matrix)
+def test_abort(method_name, streaming_request, mock_grpc_server, stub):
+    port = mock_grpc_server
+    request = create_request(streaming_request)
+    method = getattr(stub, method_name + 'Abort')
+
+    @validate_transaction_errors(errors=['builtins:Exception'])
+    @wait_for_transaction_completion
+    def _doit():
+        with pytest.raises(grpc.RpcError) as error:
+            responses = get_result(method(request))
+
+        assert error.value.details() == 'aborting'
+        assert error.value.code() == grpc.StatusCode.ABORTED
+
+    _doit()
+
+
+@pytest.mark.parametrize(*_test_matrix)
+def test_abort_with_status(method_name, streaming_request, mock_grpc_server, stub):
+    port = mock_grpc_server
+    request = create_request(streaming_request)
+    method = getattr(stub, method_name + 'AbortWithStatus')
+
+    @validate_transaction_errors(errors=['builtins:Exception'])
+    @wait_for_transaction_completion
+    def _doit():
+        with pytest.raises(grpc.RpcError) as error:
+            responses = get_result(method(request))
+
+        assert error.value.details() == 'abort_with_status'
+        assert error.value.code() == grpc.StatusCode.ABORTED
+
+    _doit()
+
+
+def test_no_exception_client_close(mock_grpc_server):
+    port = mock_grpc_server
+    # We can't use the stub_and_channel fixture here as closing
+    # that channel will cause any subsequent tests to fail.
+    # Instead we create a brand new channel to close.
+    stub, channel = create_stub_and_channel(port)
+
+    with channel:
+        request = create_request(False, timesout=True)
+
+        method = getattr(stub, 'DoUnaryUnary')
+
+        @validate_transaction_errors(errors=[])
+        @wait_for_transaction_completion
+        def _doit():
+            future_response = get_result(method.future(request))
+            channel.close()
+            with pytest.raises(grpc.RpcError) as error:
+                future_response.result()
+
+            assert error.value.code() == grpc.StatusCode.CANCELLED
+
+        _doit()

@@ -21,10 +21,12 @@ except ImportError:
         from django.urls import re_path as url
 
 from rest_framework.decorators import api_view
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework.settings import APISettings, api_settings
+from rest_framework.views import APIView
 from views import index
+
 
 
 class View(APIView):
@@ -40,6 +42,9 @@ class ViewError(APIView):
     def get(self, request, format=None):
         raise Error('xxx')
 
+class ViewAPIException(APIView):
+    def get(self, request, format=None):
+        raise AuthenticationFailed('xxx')
 
 class ViewHandleError(APIView):
     settings = APISettings(api_settings.user_settings,
@@ -79,6 +84,7 @@ urlpatterns = [
     url(r'^$', index, name='index'),
     url(r'^view/$', View.as_view()),
     url(r'^view_error/$', ViewError.as_view()),
+    url(r'^view_api_exception/$', ViewAPIException.as_view()),
     url(r'^view_handle_error/(?P<status>\d+)/(?P<global_exc>\w+)/$',
         ViewHandleError.as_view()),
     url(r'^api_view/$', wrapped_view),

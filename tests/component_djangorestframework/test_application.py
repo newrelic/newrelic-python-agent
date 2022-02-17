@@ -125,6 +125,17 @@ def test_application_view_error(target_application):
     target_application.get('/view_error/', status=500)
 
 
+_test_application_view_api_exception_scoped_metrics = list(_scoped_metrics)
+_test_application_view_api_exception_scoped_metrics.append(
+        ('Function/urls:ViewAPIException.get', 1))
+
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics('urls:ViewAPIException.get',
+    scoped_metrics=_test_application_view_api_exception_scoped_metrics)
+def test_application_view_api_exception(target_application):
+    target_application.get('/view_api_exception/', status=429)
+
+
 _test_application_view_handle_error_scoped_metrics = list(_scoped_metrics)
 _test_application_view_handle_error_scoped_metrics.append(
         ('Function/urls:ViewHandleError.get', 1))

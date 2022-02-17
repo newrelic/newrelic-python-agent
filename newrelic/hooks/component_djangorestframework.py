@@ -59,11 +59,17 @@ def _nr_wrapper_APIView_dispatch_(wrapped, instance, args, kwargs):
     with FunctionTrace(name):
         return wrapped(*args, **kwargs)
 
+        
+def should_ignore(exc, value, tb):
+    from rest_framework.exceptions import APIException
+    return isinstance(value, APIException)
 
 def _nr_wrapper_APIView_handle_exception_(handler, request):
     @function_wrapper
     def _handle_exception_wrapper(wrapped, instance, args, kwargs):
-        request._nr_exc_info = sys.exc_info()
+        exc_info = sys.exc_info()
+        if not should_ignore(*exc_info):
+            request._nr_exc_info = exc_info
         return wrapped(*args, **kwargs)
     return _handle_exception_wrapper(handler)
 

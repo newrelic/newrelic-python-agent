@@ -55,18 +55,12 @@ class _GCDataSource(object):
             self.start_time = time.time()
         elif phase == "stop":
             total_time = time.time() - self.start_time
-            self.gc_time_metrics.record_custom_metric(
-                "GC/time/%d/all" % self.pid, total_time
-            )
+            self.gc_time_metrics.record_custom_metric("GC/time/%d/all" % self.pid, total_time)
             for gen in range(0, 3):
                 if gen <= current_generation:
-                    self.gc_time_metrics.record_custom_metric(
-                        "GC/time/%d/%d" % (self.pid, gen), total_time
-                    )
+                    self.gc_time_metrics.record_custom_metric("GC/time/%d/%d" % (self.pid, gen), total_time)
                 else:
-                    self.gc_time_metrics.record_custom_metric(
-                        "GC/time/%d/%d" % (self.pid, gen), 0
-                    )
+                    self.gc_time_metrics.record_custom_metric("GC/time/%d/%d" % (self.pid, gen), 0)
 
     def start(self):
         if hasattr(gc, "callbacks"):
@@ -100,9 +94,7 @@ class _GCDataSource(object):
         if hasattr(gc, "get_objects"):
             object_types = map(type, gc.get_objects())
             if self.top_object_count_limit > 0:
-                highest_types = Counter(object_types).most_common(
-                    self.top_object_count_limit
-                )
+                highest_types = Counter(object_types).most_common(self.top_object_count_limit)
                 for obj_type, count in highest_types:
                     yield (
                         "GC/objects/%d/type/%s" % (self.pid, callable_name(obj_type)),

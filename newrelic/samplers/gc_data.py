@@ -34,10 +34,10 @@ class _GCDataSource(object):
 
     @property
     def enabled(self):
-        if platform.python_implementation() == "PyPy":
+        settings = global_settings()
+        if platform.python_implementation() == "PyPy" or not settings:
             return False
         else:
-            settings = global_settings()
             return settings.gc_runtime_metrics.enabled
 
     @property

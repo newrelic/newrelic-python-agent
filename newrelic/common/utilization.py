@@ -165,6 +165,7 @@ class AWSUtilization(CommonUtilization):
     HEADERS = {'X-aws-ec2-metadata-token-ttl-seconds': '21600'}
     VENDOR_NAME = 'aws'
 
+    @classmethod
     def fetchAuthToken(cls):
         try:
             with cls.CLIENT_CLS(cls.METADATA_HOST,
@@ -187,7 +188,7 @@ class AWSUtilization(CommonUtilization):
             authToken = cls.fetchAuthToken()
             if authToken == None:
                 return
-            cls.HEADERS = {"X-aws-ec2-metadata-toke": authToken}
+            cls.HEADERS = {"X-aws-ec2-metadata-token": authToken}
             with cls.CLIENT_CLS(cls.METADATA_HOST,
                                 timeout=cls.FETCH_TIMEOUT) as client:
                 resp = client.send_request(method='GET',

@@ -240,7 +240,9 @@ async def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
 
     operation = _redis_operation_re.sub("_", operation)
 
-    with DatastoreTrace("Redis", None, operation):
+    with DatastoreTrace(
+        product="Redis", target=None, operation=operation, host=host, port_path_or_id=port_path_or_id, database_name=db
+    ):
         return await wrapped(*args, **kwargs)
     
 

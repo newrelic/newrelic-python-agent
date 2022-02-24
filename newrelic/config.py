@@ -2548,6 +2548,12 @@ def _process_module_builtin_defaults():
     _process_module_definition("solr", "newrelic.hooks.datastore_solrpy", "instrument_solrpy")
 
     _process_module_definition(
+        "aredis.connection",
+        "newrelic.hooks.datastore_aredis",
+        "instrument_aredis_connection",
+    )
+
+    _process_module_definition(
         "elasticsearch.client",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client",

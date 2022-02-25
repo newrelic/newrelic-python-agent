@@ -19,6 +19,7 @@ from newrelic.api.background_task import background_task
 
 from testing_support.fixtures import (validate_transaction_metrics,
     override_application_settings)
+from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.db_settings import redis_settings
 from testing_support.util import instance_hostname
 
@@ -67,20 +68,22 @@ _disable_rollup_metrics.append(
         (_instance_metric_name, None)
 )
 
-def exercise_redis_multi_args(client):
-    client.execute_command('CLIENT', 'LIST', parse='LIST')
+async def exercise_redis_multi_args(client):
+    await client.execute_command('CLIENT', 'LIST', parse='LIST')
 
-def exercise_redis_single_arg(client):
-    client.execute_command('CLIENT LIST')
+async def exercise_redis_single_arg(client):
+    await client.execute_command('CLIENT LIST')
+
 
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
-    'test_execute_command:test_strict_redis_execute_command_two_args_enable',
-    scoped_metrics=_enable_scoped_metrics,
-    rollup_metrics=_enable_rollup_metrics,
-    background_task=True)
+        'test_execute_command:test_strict_redis_execute_command_two_args_enable',
+        scoped_metrics=_enable_scoped_metrics,
+        rollup_metrics=_enable_rollup_metrics,
+        background_task=True)
 @background_task()
-def test_strict_redis_execute_command_two_args_enable():
+def test_strict_redis_execute_command_two_args_enable(loop):
     r = aredis.StrictRedis(host=DB_SETTINGS['host'],
             port=DB_SETTINGS['port'], db=0)
-    exercise_redis_multi_args(r)
+    loop.run_until_complete(exercise_redis_multi_args(r))
+    

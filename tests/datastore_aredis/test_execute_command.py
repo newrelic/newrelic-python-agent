@@ -86,4 +86,40 @@ def test_strict_redis_execute_command_two_args_enable(loop):
     r = aredis.StrictRedis(host=DB_SETTINGS['host'],
             port=DB_SETTINGS['port'], db=0)
     loop.run_until_complete(exercise_redis_multi_args(r))
-    
+
+@override_application_settings(_disable_instance_settings)
+@validate_transaction_metrics(
+        'test_execute_command:test_strict_redis_execute_command_two_args_disabled',
+        scoped_metrics=_disable_scoped_metrics,
+        rollup_metrics=_disable_rollup_metrics,
+        background_task=True)
+@background_task()
+def test_strict_redis_execute_command_two_args_disabled(loop):
+    r = aredis.StrictRedis(host=DB_SETTINGS['host'],
+            port=DB_SETTINGS['port'], db=0)
+    loop.run_until_complete(exercise_redis_multi_args(r))
+
+
+@override_application_settings(_enable_instance_settings)
+@validate_transaction_metrics(
+        'test_execute_command:test_strict_redis_execute_command_as_one_arg_enable',
+        scoped_metrics=_enable_scoped_metrics,
+        rollup_metrics=_enable_rollup_metrics,
+        background_task=True)
+@background_task()
+def test_strict_redis_execute_command_as_one_arg_enable(loop):
+    r = aredis.StrictRedis(host=DB_SETTINGS['host'],
+            port=DB_SETTINGS['port'], db=0)
+    loop.run_until_complete(exercise_redis_single_arg(r))
+
+@override_application_settings(_disable_instance_settings)
+@validate_transaction_metrics(
+        'test_execute_command:test_strict_redis_execute_command_as_one_arg_disabled',
+        scoped_metrics=_disable_scoped_metrics,
+        rollup_metrics=_disable_rollup_metrics,
+        background_task=True)
+@background_task()
+def test_strict_redis_execute_command_as_one_arg_disabled(loop):
+    r = aredis.StrictRedis(host=DB_SETTINGS['host'],
+            port=DB_SETTINGS['port'], db=0)
+    loop.run_until_complete(exercise_redis_single_arg(r))

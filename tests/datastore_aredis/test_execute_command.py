@@ -83,5 +83,4 @@ def exercise_redis_single_arg(client):
 def test_strict_redis_execute_command_two_args_enable():
     r = aredis.StrictRedis(host=DB_SETTINGS['host'],
             port=DB_SETTINGS['port'], db=0)
-    breakpoint()
     exercise_redis_multi_args(r)

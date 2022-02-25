@@ -25,7 +25,6 @@ _logger = logging.getLogger(__name__)
 
 
 class StreamBuffer(object):
-
     def __init__(self, maxlen):
         self._queue = collections.deque(maxlen=maxlen)
         self._notify = self.condition()
@@ -70,8 +69,8 @@ class StreamBuffer(object):
     def __iter__(self):
         return StreamBufferIterator(self)
 
-class StreamBufferIterator(object):
 
+class StreamBufferIterator(object):
     def __init__(self, stream_buffer):
         self.stream_buffer = stream_buffer
         self._notify = self.stream_buffer._notify
@@ -90,8 +89,8 @@ class StreamBufferIterator(object):
         with self._notify:
             while True:
                 # When a gRPC stream receives a server side disconnect (usually in the form of an OK code)
-                # the item it is waiting to consume from the iterator will not be sent, and will inevitably 
-                # be lost. To prevent this, StopIteration is raised by shutting down the iterator and 
+                # the item it is waiting to consume from the iterator will not be sent, and will inevitably
+                # be lost. To prevent this, StopIteration is raised by shutting down the iterator and
                 # notifying to allow the thread to exit. Iterators cannot be reused or race conditions may
                 # occur between iterator shutdown and restart, so a new iterator must be created from the
                 # streaming buffer.
@@ -121,10 +120,8 @@ class SpanProtoAttrs(dict):
         if args:
             arg = args[0]
             if len(args) > 1:
-                raise TypeError(
-                        "SpanProtoAttrs expected at most 1 argument, got %d",
-                        len(args))
-            elif hasattr(arg, 'keys'):
+                raise TypeError("SpanProtoAttrs expected at most 1 argument, got %d", len(args))
+            elif hasattr(arg, "keys"):
                 for k in arg:
                     self[k] = arg[k]
             else:
@@ -135,8 +132,7 @@ class SpanProtoAttrs(dict):
             self[k] = kwargs[k]
 
     def __setitem__(self, key, value):
-        super(SpanProtoAttrs, self).__setitem__(key,
-                SpanProtoAttrs.get_attribute_value(value))
+        super(SpanProtoAttrs, self).__setitem__(key, SpanProtoAttrs.get_attribute_value(value))
 
     def copy(self):
         copy = SpanProtoAttrs()

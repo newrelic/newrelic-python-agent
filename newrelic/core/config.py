@@ -116,7 +116,7 @@ class AttributesSettings(Settings):
 
 
 class GCRuntimeMetricsSettings(Settings):
-    pass
+    enabled = False
 
 
 class ThreadProfilerSettings(Settings):

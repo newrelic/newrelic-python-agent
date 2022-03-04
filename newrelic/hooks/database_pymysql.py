@@ -47,7 +47,6 @@ def instance_info(args, kwargs):
             port=None, *args, **kwargs):
         return host, port, db
 
-    breakpoint()
     host, port, db = _bind_params(*args, **kwargs)
 
     return (host, port, db)

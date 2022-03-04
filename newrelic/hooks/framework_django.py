@@ -547,7 +547,6 @@ def wrap_view_handler(wrapped, priority=3):
             return wrapped(*args, **kwargs)
 
         transaction.set_transaction_name(name, priority=priority)
-
         with FunctionTrace(name=name, source=wrapped):
             try:
                 return wrapped(*args, **kwargs)
@@ -943,7 +942,8 @@ def wrap_view_dispatch(wrapped):
 
         transaction.set_transaction_name(name, priority=priority)
 
-        return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
+        with FunctionTrace(name=name, source=handler):
+            return wrapped(*args, **kwargs)
 
     return FunctionWrapper(wrapped, wrapper)
 

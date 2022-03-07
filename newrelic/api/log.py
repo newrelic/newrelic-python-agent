@@ -91,14 +91,7 @@ class NewRelicLogHandler(logging.Handler):
     A class which sends records to a New Relic via its API.
     """
 
-    def __init__(
-            self,
-            level=logging.INFO,
-            app_id: int = 0,
-            app_name: str = None,
-            license_key: str = None,
-            region: str = "US",
-    ):
+    def __init__(self, level=logging.INFO, app_id=0, app_name=None, license_key=None, region="US", ):
         """
         Initialize the instance with the region and license_key
         """
@@ -152,15 +145,17 @@ class NewRelicLogHandler(logging.Handler):
             },
             method="POST"
         )
-        resp = urlopen(req)
+        # this line helps to forward logs to newrelic logs api. I made sure to use a python standard lib
+        # see https://docs.newrelic.com/docs/logs/log-api/introduction-log-api
+        resp = urlopen(req)  # nosec
 
         if resp.status // 100 != 2:
             if resp.status == 429:
-                print(f"New Relic API Response: Retry-After")
+                print("New Relic API Response: Retry-After")
                 time.sleep(1)
                 self.send_log(data=data)
                 return
-            print(f"Error sending log to new relic")
+            print("Error sending log to new relic")
             print(f"Status Code: {resp.status}")
             print(f"Reason: {resp.reason}")
             print(f"url: {resp.url}")

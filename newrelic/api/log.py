@@ -120,7 +120,7 @@ class NewRelicLogHandler(logging.Handler):
         """
         try:
             record = self.prepare(record)
-            print(f"{record.getMessage()}")
+            print(record.getMessage())
             data_formatted_dict = json.loads(self.format(record))
 
             data = {
@@ -156,8 +156,8 @@ class NewRelicLogHandler(logging.Handler):
                 self.send_log(data=data)
                 return
             print("Error sending log to new relic")
-            print(f"Status Code: {resp.status}")
-            print(f"Reason: {resp.reason}")
-            print(f"url: {resp.url}")
+            print("Status Code: {}".format(resp.status))
+            print("Reason: {}".format(resp.reason))
+            print("url: {}".format(resp.url))
             print(resp.read().decode())
-            print(f"data: {data}")
+            print("data: {}".format(data))

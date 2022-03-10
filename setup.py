@@ -49,7 +49,7 @@ def newrelic_agent_guess_next_version(tag_version):
         return version
     version_info[1] += 1
     if version_info[1] % 2:
-        version_info[2] += 1
+        version_info[2] += 2
         version_info[3] = 0
     else:
         version_info[3] += 1

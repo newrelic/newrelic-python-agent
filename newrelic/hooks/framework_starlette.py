@@ -131,6 +131,7 @@ def wrap_starlette(wrapped, instance, args, kwargs):
 
 def status_code(response):
     code = getattr(response, "status_code", None)
+
     def _status_code(exc, value, tb):
         return code
 

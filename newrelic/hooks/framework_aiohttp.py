@@ -11,29 +11,30 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import itertools
 import asyncio
 import inspect
+import itertools
 
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import function_trace
 from newrelic.api.transaction import current_transaction, ignore_transaction
 from newrelic.api.web_transaction import web_transaction
-from newrelic.common.async_wrapper import is_coroutine_callable, async_wrapper
+from newrelic.common.async_wrapper import async_wrapper, is_coroutine_callable
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import (wrap_function_wrapper,
-        function_wrapper, ObjectProxy)
+from newrelic.common.object_wrapper import (
+    ObjectProxy,
+    function_wrapper,
+    wrap_function_wrapper,
+)
 from newrelic.core.config import should_ignore_error
 
-
-
-SUPPORTED_METHODS = ('connect', 'head', 'get', 'delete', 'options', 'patch',
-        'post', 'put', 'trace')
+SUPPORTED_METHODS = ("connect", "head", "get", "delete", "options", "patch", "post", "put", "trace")
 
 
 def aiohttp_version_info():
     import aiohttp
-    return tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
+
+    return tuple(int(_) for _ in aiohttp.__version__.split(".")[:2])
 
 
 def headers_preserve_casing():
@@ -43,32 +44,31 @@ def headers_preserve_casing():
         return True
 
     d = CIMultiDict()
-    d.update({'X-NewRelic-ID': 'value'})
-    return 'X-NewRelic-ID' in dict(d.items())
+    d.update({"X-NewRelic-ID": "value"})
+    return "X-NewRelic-ID" in dict(d.items())
 
 
 def should_ignore(transaction):
     settings = transaction.settings
-    
+
     def _should_ignore(exc, value, tb):
         from aiohttp import web
 
         if isinstance(value, web.HTTPException):
             status_code = value.status_code
             return should_ignore_error((exc, value, tb), status_code, settings=settings)
-    
+
     return _should_ignore
 
+
 def _nr_process_response_proxy(response, transaction):
-    nr_headers = transaction.process_response(response.status,
-            response.headers)
+    nr_headers = transaction.process_response(response.status, response.headers)
 
     response._headers = HeaderProxy(response.headers, nr_headers)
 
 
 def _nr_process_response(response, transaction):
-    nr_headers = transaction.process_response(response.status,
-            response.headers)
+    nr_headers = transaction.process_response(response.status, response.headers)
 
     response._headers.update(nr_headers)
 
@@ -87,8 +87,7 @@ def _nr_aiohttp_view_wrapper_(wrapped, instance, args, kwargs):
 
 
 @function_wrapper
-def _nr_aiohttp_initial_class_transaction_name_(
-        wrapped, instance, args, kwargs):
+def _nr_aiohttp_initial_class_transaction_name_(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
     if not transaction:
@@ -102,24 +101,24 @@ def _nr_aiohttp_initial_class_transaction_name_(
 def _nr_aiohttp_wrap_view_(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
     from aiohttp.web import View
+
     if inspect.isclass(instance._handler):
         try:
-            init = getattr(instance._handler, '__init__')
+            init = getattr(instance._handler, "__init__")
         except AttributeError:
+
             def init(*args, **kwargs):
                 pass
 
-        if not hasattr(init, '__wrapped__'):
-            instance._handler.__init__ = \
-                    _nr_aiohttp_initial_class_transaction_name_(init)
+        if not hasattr(init, "__wrapped__"):
+            instance._handler.__init__ = _nr_aiohttp_initial_class_transaction_name_(init)
 
         if issubclass(instance._handler, View):
             for method in SUPPORTED_METHODS:
                 handler = getattr(instance._handler, method, None)
 
-                if handler and not hasattr(handler, '__wrapped__'):
-                    setattr(instance._handler, method,
-                            _nr_aiohttp_view_wrapper_(handler))
+                if handler and not hasattr(handler, "__wrapped__"):
+                    setattr(instance._handler, method, _nr_aiohttp_view_wrapper_(handler))
     else:
         instance._handler = _nr_aiohttp_view_wrapper_(instance._handler)
     return result
@@ -140,8 +139,7 @@ def _nr_aiohttp_wrap_wsgi_response_(wrapped, instance, args, kwargs):
         def __getattr__(self, name):
             # instance.response should be overwritten at this point
             if instance.response is self:
-                raise AttributeError("%r object has no attribute %r" % (
-                        type(instance).__name__, 'response'))
+                raise AttributeError("%r object has no attribute %r" % (type(instance).__name__, "response"))
             return getattr(instance.response, name)
 
     instance.response = ResponseProxy()
@@ -150,13 +148,12 @@ def _nr_aiohttp_wrap_wsgi_response_(wrapped, instance, args, kwargs):
 
 
 def _nr_aiohttp_response_prepare_(wrapped, instance, args, kwargs):
-
     def _bind_params(request):
         return request
 
     request = _bind_params(*args, **kwargs)
 
-    nr_headers = getattr(request, '_nr_headers', None)
+    nr_headers = getattr(request, "_nr_headers", None)
     if nr_headers:
         nr_headers.update(instance.headers)
         instance._headers = nr_headers
@@ -166,7 +163,6 @@ def _nr_aiohttp_response_prepare_(wrapped, instance, args, kwargs):
 
 @function_wrapper
 def _nr_aiohttp_wrap_middleware_(wrapped, instance, args, kwargs):
-
     @asyncio.coroutine
     def _inner():
         result = yield from wrapped(*args, **kwargs)
@@ -178,9 +174,9 @@ def _nr_aiohttp_wrap_middleware_(wrapped, instance, args, kwargs):
 def _nr_aiohttp_wrap_application_init_(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
 
-    if hasattr(instance, '_middlewares'):
+    if hasattr(instance, "_middlewares"):
         for index, middleware in enumerate(instance._middlewares):
-            if getattr(middleware, '__middleware_version__', None) == 1:
+            if getattr(middleware, "__middleware_version__", None) == 1:
                 traced_middleware = function_trace()(middleware)
             else:
                 traced_middleware = _nr_aiohttp_wrap_middleware_(middleware)
@@ -207,8 +203,7 @@ class HeaderProxy(ObjectProxy):
             if key in self:
                 nr_headers.pop(key)
 
-        return itertools.chain(
-                self.__wrapped__.items(), nr_headers.items())
+        return itertools.chain(self.__wrapped__.items(), nr_headers.items())
 
 
 def _nr_aiohttp_add_cat_headers_(wrapped, instance, args, kwargs):
@@ -225,6 +220,7 @@ def _nr_aiohttp_add_cat_headers_(wrapped, instance, args, kwargs):
     instance.headers = HeaderProxy(tmp, cat_headers)
 
     if is_coroutine_callable(wrapped):
+
         @asyncio.coroutine
         def new_coro():
             try:
@@ -269,7 +265,7 @@ def _nr_aiohttp_request_wrapper_(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     method, url = _bind_request(*args, **kwargs)
-    trace = ExternalTrace('aiohttp', str(url), method)
+    trace = ExternalTrace("aiohttp", str(url), method)
 
     @asyncio.coroutine
     def _coro():
@@ -284,7 +280,7 @@ def _nr_aiohttp_request_wrapper_(wrapped, instance, args, kwargs):
             return response
         except Exception as e:
             try:
-                trace.process_response_headers(e.headers.items())
+                trace.process_response_headers(e.headers.items())  # pylint: disable=E1101
             except:
                 pass
 
@@ -294,8 +290,7 @@ def _nr_aiohttp_request_wrapper_(wrapped, instance, args, kwargs):
 
 
 def instrument_aiohttp_client(module):
-    wrap_function_wrapper(module, 'ClientSession._request',
-            _nr_aiohttp_request_wrapper_)
+    wrap_function_wrapper(module, "ClientSession._request", _nr_aiohttp_request_wrapper_)
 
 
 def instrument_aiohttp_client_reqrep(module):
@@ -307,24 +302,21 @@ def instrument_aiohttp_client_reqrep(module):
         else:
             cat_wrapper = _nr_aiohttp_add_cat_headers_
 
-        wrap_function_wrapper(module, 'ClientRequest.send', cat_wrapper)
+        wrap_function_wrapper(module, "ClientRequest.send", cat_wrapper)
 
 
 def instrument_aiohttp_protocol(module):
-    wrap_function_wrapper(module, 'Request.send_headers',
-            _nr_aiohttp_add_cat_headers_)
+    wrap_function_wrapper(module, "Request.send_headers", _nr_aiohttp_add_cat_headers_)
 
 
 def instrument_aiohttp_web_urldispatcher(module):
     if aiohttp_version_info() < (3, 5):
-        system_route_handler = 'SystemRoute._handler'
+        system_route_handler = "SystemRoute._handler"
     else:
-        system_route_handler = 'SystemRoute._handle'
+        system_route_handler = "SystemRoute._handle"
 
-    wrap_function_wrapper(module, 'ResourceRoute.__init__',
-            _nr_aiohttp_wrap_view_)
-    wrap_function_wrapper(module, system_route_handler,
-            _nr_aiohttp_wrap_system_route_)
+    wrap_function_wrapper(module, "ResourceRoute.__init__", _nr_aiohttp_wrap_view_)
+    wrap_function_wrapper(module, system_route_handler, _nr_aiohttp_wrap_system_route_)
 
 
 def _bind_handle(request, *args, **kwargs):
@@ -335,12 +327,12 @@ def _nr_request_wrapper(wrapped, instance, args, kwargs):
     request = _bind_handle(*args, **kwargs)
 
     # Ignore websockets
-    if request.headers.get('upgrade', '').lower() == 'websocket':
+    if request.headers.get("upgrade", "").lower() == "websocket":
         return wrapped(*args, **kwargs)
 
     coro = wrapped(*args, **kwargs)
 
-    if hasattr(coro, '__await__'):
+    if hasattr(coro, "__await__"):
         coro = coro.__await__()
 
     @asyncio.coroutine
@@ -354,8 +346,8 @@ def _nr_request_wrapper(wrapped, instance, args, kwargs):
         transaction._ignore_errors = should_ignore(transaction)
 
         import aiohttp
-        transaction.add_framework_info(
-                name='aiohttp', version=aiohttp.__version__)
+
+        transaction.add_framework_info(name="aiohttp", version=aiohttp.__version__)
 
         import aiohttp.web as _web
 
@@ -376,7 +368,8 @@ def _nr_request_wrapper(wrapped, instance, args, kwargs):
         request_method=request.method,
         request_path=request.path,
         query_string=request.query_string,
-        headers=request.raw_headers)(_coro)
+        headers=request.raw_headers,
+    )(_coro)
 
     return _coro(*args, **kwargs)
 
@@ -386,17 +379,13 @@ def instrument_aiohttp_web(module):
     if not headers_preserve_casing():
         _nr_process_response = _nr_process_response_proxy
 
-    wrap_function_wrapper(module, 'Application._handle',
-            _nr_request_wrapper)
-    wrap_function_wrapper(module, 'Application.__init__',
-            _nr_aiohttp_wrap_application_init_)
+    wrap_function_wrapper(module, "Application._handle", _nr_request_wrapper)
+    wrap_function_wrapper(module, "Application.__init__", _nr_aiohttp_wrap_application_init_)
 
 
 def instrument_aiohttp_wsgi(module):
-    wrap_function_wrapper(module, 'WsgiResponse.__init__',
-            _nr_aiohttp_wrap_wsgi_response_)
+    wrap_function_wrapper(module, "WsgiResponse.__init__", _nr_aiohttp_wrap_wsgi_response_)
 
 
 def instrument_aiohttp_web_response(module):
-    wrap_function_wrapper(module, 'Response.prepare',
-            _nr_aiohttp_response_prepare_)
+    wrap_function_wrapper(module, "Response.prepare", _nr_aiohttp_response_prepare_)

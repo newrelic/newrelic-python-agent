@@ -161,8 +161,8 @@ class TimeTrace(object):
 
         self.exclusive += self.duration
 
-        if self.exclusive < 0:
-            self.exclusive = 0
+        # Set negative values to 0
+        self.exclusive = max(self.exclusive, 0)
 
         self.exited = True
 

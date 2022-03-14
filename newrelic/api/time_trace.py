@@ -227,7 +227,7 @@ class TimeTrace(object):
 
         exc, value, tb = exc_info
 
-        if value._nr_ignored:
+        if getattr(value, "_nr_ignored", None):
             return
 
         module, name, fullnames, message = parse_exc_info((exc, value, tb))

@@ -590,7 +590,7 @@ class StatsEngine(object):
 
         exc, value, tb = error
 
-        if value._nr_ignored:
+        if getattr(value, "_nr_ignored", None):
             return
 
         module, name, fullnames, message = parse_exc_info(error)

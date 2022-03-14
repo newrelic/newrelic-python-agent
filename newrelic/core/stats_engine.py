@@ -590,6 +590,9 @@ class StatsEngine(object):
 
         exc, value, tb = error
 
+        if value._nr_ignored:
+            return
+
         module, name, fullnames, message = parse_exc_info(error)
         fullname = fullnames[0]
 
@@ -619,12 +622,14 @@ class StatsEngine(object):
         if isinstance(ignore, bool):
             should_ignore = ignore
             if should_ignore:
+                value._nr_ignored = True
                 return
 
         # Callable parameter
         if should_ignore is None and callable(ignore):
             should_ignore = ignore(exc, value, tb)
             if should_ignore:
+                value._nr_ignored = True
                 return
 
         # List of class names
@@ -633,12 +638,14 @@ class StatsEngine(object):
             # This should cascade into default settings rule matching
             for name in fullnames:
                 if name in ignore:
+                    value._nr_ignored = True
                     return
 
         # Default rule matching
         if should_ignore is None:
             should_ignore = should_ignore_error(error, status_code=status_code, settings=settings)
             if should_ignore:
+                value._nr_ignored = True
                 return
 
         # Check against expected rules

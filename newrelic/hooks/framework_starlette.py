@@ -24,7 +24,6 @@ from newrelic.common.object_wrapper import (
     function_wrapper,
     wrap_function_wrapper,
 )
-from newrelic.core.config import should_ignore_error
 from newrelic.core.context import ContextOf, context_wrapper
 
 
@@ -130,14 +129,19 @@ def wrap_starlette(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
+def status_code(response):
+    code = getattr(response, "status_code", None)
+    def _status_code(exc, value, tb):
+        return code
+
+    return _status_code
+
+
 def record_response_error(response, value):
-    status_code = getattr(response, "status_code", None)
     exc = getattr(value, "__class__", None)
     tb = getattr(value, "__traceback__", None)
-    if should_ignore_error((exc, value, tb), status_code):
-        value._nr_ignored = True
-    else:
-        notice_error((exc, value, tb))
+
+    notice_error((exc, value, tb), status_code=status_code(response))
 
 
 async def wrap_exception_handler_async(coro, exc):

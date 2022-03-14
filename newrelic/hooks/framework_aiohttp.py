@@ -47,13 +47,17 @@ def headers_preserve_casing():
     return 'X-NewRelic-ID' in dict(d.items())
 
 
-def should_ignore(exc, value, tb):
-    from aiohttp import web
+def should_ignore(transaction):
+    settings = transaction.settings
+    
+    def _should_ignore(exc, value, tb):
+        from aiohttp import web
 
-    if isinstance(value, web.HTTPException):
-        status_code = value.status_code
-        return should_ignore_error((exc, value, tb), status_code)
-
+        if isinstance(value, web.HTTPException):
+            status_code = value.status_code
+            return should_ignore_error((exc, value, tb), status_code, settings=settings)
+    
+    return _should_ignore
 
 def _nr_process_response_proxy(response, transaction):
     nr_headers = transaction.process_response(response.status,
@@ -347,7 +351,7 @@ def _nr_request_wrapper(wrapped, instance, args, kwargs):
             return response
 
         # Patch in should_ignore to all notice_error calls
-        transaction._ignore_errors = should_ignore
+        transaction._ignore_errors = should_ignore(transaction)
 
         import aiohttp
         transaction.add_framework_info(

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sqlite3
 import newrelic.packages.six as six
 import pytest
 
@@ -30,11 +31,14 @@ FUZZY_NAMESPACE = CLASS_NAMESPACE if six.PY3 else NAMESPACE
 if FILE_PATH.endswith(".pyc"):
     FILE_PATH = FILE_PATH[:-1]
 
+SQLITE_CONNECTION = sqlite3.Connection(":memory:")
+
 @pytest.mark.parametrize(
-    "func,agents",
+    "func,args,agents",
     (
         (  # Function
             exercise_function,
+            (),
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "exercise_function",
@@ -44,6 +48,7 @@ if FILE_PATH.endswith(".pyc"):
         ),
         (  # Method
             CLASS_INSTANCE.exercise_method,
+            (),
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "exercise_method",
@@ -53,6 +58,7 @@ if FILE_PATH.endswith(".pyc"):
         ),
         (  # Static Method
             CLASS_INSTANCE.exercise_static_method,
+            (),
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "exercise_static_method",
@@ -62,6 +68,7 @@ if FILE_PATH.endswith(".pyc"):
         ),
         (  # Class Method
             ExerciseClass.exercise_class_method,
+            (),
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "exercise_class_method",
@@ -71,6 +78,7 @@ if FILE_PATH.endswith(".pyc"):
         ),
         (  # Callable object
             CLASS_INSTANCE,
+            (),
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "__call__",
@@ -80,6 +88,7 @@ if FILE_PATH.endswith(".pyc"):
         ),
         (  # Lambda
             exercise_lambda,
+            (),
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "<lambda>",
@@ -87,9 +96,39 @@ if FILE_PATH.endswith(".pyc"):
                 "code.namespace": NAMESPACE,
             },
         ),
+        (  # Top Level Builtin
+            max,
+            (1, 2),
+            {
+                "code.filepath": "<builtin>",
+                "code.function": "max",
+                "code.lineno": None,
+                "code.namespace": "builtins",
+            },
+        ),
+        (  # Module Level Builtin
+            sqlite3.connect,
+            (":memory:",),
+            {
+                "code.filepath": "<builtin>",
+                "code.function": "connect",
+                "code.lineno": None,
+                "code.namespace": "_sqlite3",
+            },
+        ),
+        (  # Builtin Method
+            SQLITE_CONNECTION.__enter__,
+            (),
+            {
+                "code.filepath": "<builtin>",
+                "code.function": "__enter__",
+                "code.lineno": None,
+                "code.namespace": "sqlite3.Connection",
+            },
+        ),
     ),
 )
-def test_source_code_context(func, agents):
+def test_source_code_context(func, args, agents):
     @override_application_settings({
         "source_code_context.enabled": True,
     })
@@ -100,6 +139,6 @@ def test_source_code_context(func, agents):
     )
     @background_task()
     def _test():
-        FunctionTraceWrapper(func)()
+        FunctionTraceWrapper(func)(*args)
 
     _test()

@@ -60,20 +60,25 @@ def extract_source_code_from_callable(func):
         line_number = co.co_firstlineno
         file_path = co.co_filename
     else:
-        # Extract call method for callable objects
-        if hasattr(func, "__call__"):
-            func = func.__call__
-            module_name, func_path = object_context(func)
+        if inspect.isbuiltin(func):
+            # Set attributes for builtins
+            file_path = "<builtin>"
+            line_number = None
+        else:
+            # Extract call method for callable objects
+            if hasattr(func, "__call__"):
+                func = func.__call__
+                module_name, func_path = object_context(func)
 
-        # Initialize here instead of in except to potentially get file_path but not line_number
-        file_path = None
-        line_number = None
-        try:
-            # Use inspect to get file and line number
-            file_path = inspect.getsourcefile(func)
-            line_number = inspect.getsourcelines(func)[1]
-        except TypeError:
-            pass
+            # Initialize here instead of in except to potentially get file_path but not line_number
+            file_path = None
+            line_number = None
+            try:
+                # Use inspect to get file and line number
+                file_path = inspect.getsourcefile(func)
+                line_number = inspect.getsourcelines(func)[1]
+            except TypeError:
+                pass
 
     # Split function path to extract class name
     func_path = func_path.split(".")
@@ -96,7 +101,7 @@ def extract_source_code_from_callable(func):
             # Must store on underlying function not bound method
             original_func = original_func.__func__
         original_func._nr_source_code = node
-    except:  # Don't raise exceptions for any reason
+    except Exception:  # Don't raise exceptions for any reason
         pass
 
     return node

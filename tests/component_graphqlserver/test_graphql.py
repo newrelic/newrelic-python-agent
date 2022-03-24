@@ -1,4 +1,4 @@
- Copyright 2010 New Relic, Inc.
+# Copyright 2010 New Relic, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,13 +17,9 @@ import json
 import pytest
 from testing_support.fixtures import dt_enabled, validate_transaction_metrics
 from testing_support.validators.validate_span_events import validate_span_events
-
-
-def get_starlette_version():
-    import starlette
-
-    version = getattr(starlette, "__version__", "0.0.0").split(".")
-    return tuple(int(x) for x in version)
+from testing_support.validators.validate_transaction_count import (
+    validate_transaction_count,
+)
 
 
 @pytest.fixture(scope="session")
@@ -34,26 +30,26 @@ def target_application():
 
 
 @dt_enabled
-@pytest.mark.parametrize("endpoint", ("/async", "/sync"))
-@pytest.mark.skipif(get_starlette_version() >= (0, 17), reason="Starlette GraphQL support dropped in v0.17.0")
-def test_graphql_metrics_and_attrs(target_application, endpoint):
-    from graphql import __version__ as version
-
-    from newrelic.hooks.framework_graphene import framework_details
+def test_graphql_metrics_and_attrs(target_application):
+    from graphql import __version__ as graphql_version
+    from graphql_server import __version__ as graphql_server_version
+    from sanic import __version__ as sanic_version
 
     FRAMEWORK_METRICS = [
-        ("Python/Framework/Graphene/%s" % framework_details()[1], 1),
-        ("Python/Framework/GraphQL/%s" % version, 1),
+        ("Python/Framework/GraphQL/%s" % graphql_version, 1),
+        ("Python/Framework/GraphQLServer/%s" % graphql_server_version, 1),
+        ("Python/Framework/Sanic/%s" % sanic_version, 1),
     ]
     _test_scoped_metrics = [
-        ("GraphQL/resolve/Graphene/hello", 1),
-        ("GraphQL/operation/Graphene/query/<anonymous>/hello", 1),
+        ("GraphQL/resolve/GraphQLServer/hello", 1),
+        ("GraphQL/operation/GraphQLServer/query/<anonymous>/hello", 1),
+        ("Function/graphql_server.sanic.graphqlview:GraphQLView.post", 1),
     ]
     _test_unscoped_metrics = [
         ("GraphQL/all", 1),
-        ("GraphQL/Graphene/all", 1),
+        ("GraphQL/GraphQLServer/all", 1),
         ("GraphQL/allWeb", 1),
-        ("GraphQL/Graphene/allWeb", 1),
+        ("GraphQL/GraphQLServer/allWeb", 1),
     ] + _test_scoped_metrics
 
     _expected_query_operation_attributes = {
@@ -78,9 +74,17 @@ def test_graphql_metrics_and_attrs(target_application, endpoint):
     )
     def _test():
         response = target_application.make_request(
-            "POST", endpoint, body=json.dumps({"query": "{ hello }"}), headers={"Content-Type": "application/json"}
+            "POST", "/graphql", body=json.dumps({"query": "{ hello }"}), headers={"Content-Type": "application/json"}
         )
         assert response.status == 200
         assert "Hello!" in response.body.decode("utf-8")
 
     _test()
+
+
+@validate_transaction_count(0)
+def test_ignored_introspection_transactions(target_application):
+    response = target_application.make_request(
+        "POST", "/graphql", body=json.dumps({"query": "{ __schema { types { name } } }"}), headers={"Content-Type": "application/json"}
+    )
+    assert response.status == 200

@@ -13,26 +13,14 @@
 # limitations under the License.
 
 from sanic import Sanic
-from graphql_server.sanic import GraphQLView
+
 from testing_support.asgi_testing import AsgiTest
+from framework_graphql._target_application import _target_application as schema
+from graphql_server.sanic import GraphQLView
 
-from graphql import GraphQLObjectType, GraphQLString, GraphQLSchema, GraphQLField
 
-
-def resolve_hello(root, info):
-    return "Hello!"
-
-hello_field = GraphQLField(GraphQLString, resolve=resolve_hello)
-query = GraphQLObjectType(
-    name="Query",
-    fields={
-        "hello": hello_field,
-    },
-)
-
-app = Sanic(name="SanicGraphQL")
+sanic_app = Sanic(name="SanicGraphQL")
 routes = [
-    app.add_route(GraphQLView.as_view(schema=GraphQLSchema(query=query)), "/graphql"),
+    sanic_app.add_route(GraphQLView.as_view(schema=schema), "/graphql"),
 ]
-
-target_application = AsgiTest(app)
+target_application = AsgiTest(sanic_app)

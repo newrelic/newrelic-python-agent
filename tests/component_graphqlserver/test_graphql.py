@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
+import importlib
 import pytest
 from testing_support.fixtures import (
     dt_enabled,
@@ -24,7 +24,6 @@ from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
 )
 
-from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 
 
@@ -35,29 +34,13 @@ def is_graphql_2():
     major_version = int(version.split(".")[0])
     return major_version == 2
 
-
-@pytest.fixture(scope="session")
-def target_application():
+@pytest.fixture(scope="session", params=("Sanic", "Flask"))
+def target_application(request):
     import _test_graphql
+    framework = request.param
+    version = importlib.import_module(framework.lower()).__version__
 
-    return _test_graphql.target_application
-
-
-@pytest.fixture(scope="session")
-def graphql_run():
-    """Wrapper function to simulate framework_graphql test behavior."""
-
-    def execute(target_application, query):
-        response = target_application.make_request(
-            "POST", "/graphql", body=json.dumps({"query": query}), headers={"Content-Type": "application/json"}
-        )
-        
-        if not isinstance(query, str) or "error" not in query:
-            assert response.status == 200
-
-        return response
-
-    return execute
+    return framework, version, _test_graphql.target_application[framework]
 
 
 def example_middleware(next, root, info, **args):  #pylint: disable=W0622
@@ -77,17 +60,18 @@ _graphql_base_rollup_metrics = [
     ("GraphQL/GraphQLServer/all", 1),
     ("GraphQL/GraphQLServer/allWeb", 1),
 ]
+_view_metrics = {"Sanic": "Function/graphql_server.sanic.graphqlview:GraphQLView.post", "Flask": "Function/graphql_server.flask.graphqlview:graphql"}
 
 
-def test_basic(target_application, graphql_run):
+def test_basic(target_application):
+    framework, version, target_application = target_application
     from graphql import __version__ as graphql_version
     from graphql_server import __version__ as graphql_server_version
-    from sanic import __version__ as sanic_version
 
     FRAMEWORK_METRICS = [
         ("Python/Framework/GraphQL/%s" % graphql_version, 1),
         ("Python/Framework/GraphQLServer/%s" % graphql_server_version, 1),
-        ("Python/Framework/Sanic/%s" % sanic_version, 1),
+        ("Python/Framework/%s/%s" % (framework, version), 1),
     ]
 
     @validate_transaction_metrics(
@@ -96,26 +80,26 @@ def test_basic(target_application, graphql_run):
         rollup_metrics=_graphql_base_rollup_metrics + FRAMEWORK_METRICS,
     )
     def _test():
-        response = graphql_run(target_application, "{ hello }")
+        response = target_application("{ hello }")
 
     _test()
 
 
 @dt_enabled
-def test_query_and_mutation(target_application, graphql_run):
+def test_query_and_mutation(target_application):
+    framework, version, target_application = target_application
     from graphql import __version__ as graphql_version
     from graphql_server import __version__ as graphql_server_version
-    from sanic import __version__ as sanic_version
 
     FRAMEWORK_METRICS = [
         ("Python/Framework/GraphQL/%s" % graphql_version, 1),
         ("Python/Framework/GraphQLServer/%s" % graphql_server_version, 1),
-        ("Python/Framework/Sanic/%s" % sanic_version, 1),
+        ("Python/Framework/%s/%s" % (framework, version), 1),
     ]
     _test_query_scoped_metrics = [
         ("GraphQL/resolve/GraphQLServer/storage", 1),
         ("GraphQL/operation/GraphQLServer/query/<anonymous>/storage", 1),
-        ("Function/graphql_server.sanic.graphqlview:GraphQLView.post", 1),
+        (_view_metrics[framework], 1),
     ]
     _test_query_unscoped_metrics = [
         ("GraphQL/all", 1),
@@ -127,7 +111,7 @@ def test_query_and_mutation(target_application, graphql_run):
     _test_mutation_scoped_metrics = [
         ("GraphQL/resolve/GraphQLServer/storage_add", 1),
         ("GraphQL/operation/GraphQLServer/mutation/<anonymous>/storage_add", 1),
-        ("Function/graphql_server.sanic.graphqlview:GraphQLView.post", 1),
+        (_view_metrics[framework], 1),
     ]
     _test_mutation_unscoped_metrics = [
         ("GraphQL/all", 1),
@@ -169,7 +153,7 @@ def test_query_and_mutation(target_application, graphql_run):
         @validate_span_events(exact_agents=_expected_mutation_operation_attributes)
         @validate_span_events(exact_agents=_expected_mutation_resolver_attributes)
         def _mutation():
-            return graphql_run(target_application, 'mutation { storage_add(string: "abc") }')
+            return target_application('mutation { storage_add(string: "abc") }')
 
         @validate_transaction_metrics(
             "query/<anonymous>/storage",
@@ -180,7 +164,7 @@ def test_query_and_mutation(target_application, graphql_run):
         @validate_span_events(exact_agents=_expected_query_operation_attributes)
         @validate_span_events(exact_agents=_expected_query_resolver_attributes)
         def _query():
-            return graphql_run(target_application, "query { storage }")
+            return target_application("query { storage }")
 
         response = _mutation()
         response = _query()
@@ -194,7 +178,8 @@ def test_query_and_mutation(target_application, graphql_run):
 
 @pytest.mark.parametrize("field", ("error", "error_non_null"))
 @dt_enabled
-def test_exception_in_resolver(target_application, graphql_run, field):
+def test_exception_in_resolver(target_application, field):
+    framework, version, target_application = target_application
     query = "query MyQuery { %s }" % field
 
     txn_name = "framework_graphql._target_application:resolve_error"
@@ -233,7 +218,7 @@ def test_exception_in_resolver(target_application, graphql_run, field):
     @validate_span_events(exact_agents=_expected_exception_resolver_attributes)
     @validate_transaction_errors(errors=_test_runtime_error)
     def _test():
-        response = graphql_run(target_application, query)
+        response = target_application(query)
 
     _test()
 
@@ -246,7 +231,8 @@ def test_exception_in_resolver(target_application, graphql_run, field):
         ("{ syntax_error ", "graphql.error.syntax_error:GraphQLSyntaxError"),
     ],
 )
-def test_exception_in_validation(target_application, graphql_run, is_graphql_2, query, exc_class):
+def test_exception_in_validation(target_application, is_graphql_2, query, exc_class):
+    framework, version, target_application = target_application
     if "syntax" in query:
         txn_name = "graphql.language.parser:parse"
     else:
@@ -286,18 +272,25 @@ def test_exception_in_validation(target_application, graphql_run, is_graphql_2, 
     @validate_span_events(exact_agents=_expected_exception_operation_attributes)
     @validate_transaction_errors(errors=[exc_class])
     def _test():
-        response = graphql_run(target_application, query)
+        response = target_application(query)
 
     _test()
 
 
 @dt_enabled
-def test_operation_metrics_and_attrs(target_application, graphql_run):
+def test_operation_metrics_and_attrs(target_application):
+    framework, version, target_application = target_application
     operation_metrics = [("GraphQL/operation/GraphQLServer/query/MyQuery/library", 1)]
     operation_attrs = {
         "graphql.operation.type": "query",
         "graphql.operation.name": "MyQuery",
     }
+
+    # Base span count 10: Transaction, View, Operation, and 7 Resolvers
+    # library, library.name, library.book
+    # library.book.name and library.book.id for each book resolved (in this case 2)
+    # For Flask, add 9 more for WSGI and framework related spans
+    span_count = {"Flask": 19, "Sanic": 10}
 
     @validate_transaction_metrics(
         "query/MyQuery/library",
@@ -305,19 +298,17 @@ def test_operation_metrics_and_attrs(target_application, graphql_run):
         scoped_metrics=operation_metrics,
         rollup_metrics=operation_metrics + _graphql_base_rollup_metrics,
     )
-    # Span count 10: Transaction, View, Operation, and 7 Resolvers
-    # library, library.name, library.book
-    # library.book.name and library.book.id for each book resolved (in this case 2)
-    @validate_span_events(count=10)
+    @validate_span_events(count=span_count[framework])
     @validate_span_events(exact_agents=operation_attrs)
     def _test():
-        response = graphql_run(target_application, "query MyQuery { library(index: 0) { branch, book { id, name } } }")
+        response = target_application("query MyQuery { library(index: 0) { branch, book { id, name } } }")
 
     _test()
 
 
 @dt_enabled
-def test_field_resolver_metrics_and_attrs(target_application, graphql_run):
+def test_field_resolver_metrics_and_attrs(target_application):
+    framework, version, target_application = target_application
     field_resolver_metrics = [("GraphQL/resolve/GraphQLServer/hello", 1)]
     graphql_attrs = {
         "graphql.field.name": "hello",
@@ -326,17 +317,20 @@ def test_field_resolver_metrics_and_attrs(target_application, graphql_run):
         "graphql.field.returnType": "String",
     }
 
+    # Base span count 4: Transaction, View, Operation, and 1 Resolver
+    # For Flask, add 9 more for WSGI and framework related spans
+    span_count = {"Flask": 13, "Sanic": 4}
+
     @validate_transaction_metrics(
         "query/<anonymous>/hello",
         "GraphQL",
         scoped_metrics=field_resolver_metrics,
         rollup_metrics=field_resolver_metrics + _graphql_base_rollup_metrics,
     )
-    # Span count 4: Transaction, View, Operation, and 1 Resolver
-    @validate_span_events(count=4)
+    @validate_span_events(count=span_count[framework])
     @validate_span_events(exact_agents=graphql_attrs)
     def _test():
-        response = graphql_run(target_application, "{ hello }")
+        response = target_application("{ hello }")
         assert "Hello!" in response.body.decode("utf-8")
 
     _test()
@@ -362,7 +356,8 @@ _test_queries = [
 
 @dt_enabled
 @pytest.mark.parametrize("query,obfuscated", _test_queries)
-def test_query_obfuscation(target_application, graphql_run, query, obfuscated):
+def test_query_obfuscation(target_application, query, obfuscated):
+    framework, version, target_application = target_application
     graphql_attrs = {"graphql.operation.query": obfuscated}
 
     if callable(query):
@@ -370,7 +365,7 @@ def test_query_obfuscation(target_application, graphql_run, query, obfuscated):
 
     @validate_span_events(exact_agents=graphql_attrs)
     def _test():
-        response = graphql_run(target_application, query)
+        response = target_application(query)
 
     _test()
 
@@ -415,7 +410,8 @@ _test_queries = [
 
 @dt_enabled
 @pytest.mark.parametrize("query,expected_path", _test_queries)
-def test_deepest_unique_path(target_application, graphql_run, query, expected_path):
+def test_deepest_unique_path(target_application, query, expected_path):
+    framework, version, target_application = target_application
     if expected_path == "/error":
         txn_name = "framework_graphql._target_application:resolve_error"
     else:
@@ -426,11 +422,12 @@ def test_deepest_unique_path(target_application, graphql_run, query, expected_pa
         "GraphQL",
     )
     def _test():
-        response = graphql_run(target_application, query)
+        response = target_application(query)
 
     _test()
 
 
 @validate_transaction_count(0)
-def test_ignored_introspection_transactions(target_application, graphql_run):
-    response = graphql_run(target_application, "{ __schema { types { name } } }")
+def test_ignored_introspection_transactions(target_application):
+    framework, version, target_application = target_application
+    response = target_application("{ __schema { types { name } } }")

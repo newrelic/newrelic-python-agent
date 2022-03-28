@@ -43,7 +43,7 @@ _graphql_base_rollup_metrics = [
 loop = asyncio.new_event_loop()
 
 
-def test_basic(app, graphql_run_async):
+def test_basic_async(app, graphql_run_async):
     from graphql import __version__ as version
 
     from newrelic.hooks.framework_strawberry import framework_details
@@ -64,6 +64,7 @@ def test_basic(app, graphql_run_async):
         async def coro():
             response = await graphql_run_async(app, "{ hello_async }")
             assert not response.errors
+            assert response.data["hello_async"] == "Hello!"
 
         loop.run_until_complete(coro())
 

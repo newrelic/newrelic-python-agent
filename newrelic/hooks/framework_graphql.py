@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
+from inspect import isawaitable
 import logging
 from collections import deque
 
@@ -323,7 +325,16 @@ def wrap_resolver(wrapped, instance, args, kwargs):
     transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=13)
 
     with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
-        return wrapped(*args, **kwargs)
+        result = wrapped(*args, **kwargs)
+
+        if isawaitable(result):
+            # Grab any async resolvers and wrap with error traces
+            async def _nr_coro_resolver_error_wrapper():
+                with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
+                    return await result
+            return _nr_coro_resolver_error_wrapper()
+
+        return result
 
 
 def wrap_error_handler(wrapped, instance, args, kwargs):
@@ -387,18 +398,38 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
     field_name = field_asts[0].name.value
     field_def = parent_type.fields.get(field_name)
     field_return_type = str(field_def.type) if field_def else "<unknown>"
+    if isinstance(field_path, list):
+        field_path = field_path[0]
+    else:
+        field_path = field_path.key
 
-    with GraphQLResolverTrace(field_name) as trace:
-        with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
-            trace._add_agent_attribute("graphql.field.parentType", parent_type.name)
-            trace._add_agent_attribute("graphql.field.returnType", field_return_type)
+    start_time = time.time()
 
-            if isinstance(field_path, list):
-                trace._add_agent_attribute("graphql.field.path", field_path[0])
-            else:
-                trace._add_agent_attribute("graphql.field.path", field_path.key)
+    try:
+        result = wrapped(*args, **kwargs)
+    except Exception:
+        # Synchonous resolver with exception raised
+        with GraphQLResolverTrace(field_name, field_parent_type=parent_type.name, field_return_type=field_return_type, field_path=field_path) as trace:
+            trace._start_time = start_time
+            notice_error(ignore=ignore_graphql_duplicate_exception)
+            raise
 
-            return wrapped(*args, **kwargs)
+    if isawaitable(result):
+        # Asynchronous resolvers (returned coroutines from non-coroutine functions)
+        async def _nr_coro_resolver_wrapper():
+            with GraphQLResolverTrace(field_name, field_parent_type=parent_type.name, field_return_type=field_return_type, field_path=field_path) as trace:
+                with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
+                    trace._start_time = start_time
+                    return await result
+
+        # Return a coroutine that handles wrapping in a resolver trace
+        return _nr_coro_resolver_wrapper()
+    else:
+        # Synchonous resolver with no exception raised
+        with GraphQLResolverTrace(field_name, field_parent_type=parent_type.name, field_return_type=field_return_type, field_path=field_path) as trace:
+            with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
+                trace._start_time = start_time
+                return result
 
 
 def bind_graphql_impl_query(schema, source, *args, **kwargs):

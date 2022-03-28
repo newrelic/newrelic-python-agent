@@ -105,6 +105,7 @@ def test_basic(app, graphql_run):
     def _test():
         response = graphql_run(app, "{ hello }")
         assert not response.errors
+        assert response.data["hello"] == "Hello!"
 
     _test()
 

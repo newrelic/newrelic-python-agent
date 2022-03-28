@@ -266,7 +266,7 @@ def instrument_flask_views(module):
 
 
 def instrument_flask_app(module):
-    wrap_wsgi_application(module, "Flask.wsgi_app", framework=framework_details())
+    wrap_wsgi_application(module, "Flask.wsgi_app", framework=framework_details)
 
     wrap_function_wrapper(
         module, "Flask.add_url_rule", _nr_wrapper_Flask_add_url_rule_input_

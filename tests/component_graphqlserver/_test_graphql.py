@@ -12,15 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from flask import Flask
-from sanic import Sanic
 import json
-import webtest
 
-from testing_support.asgi_testing import AsgiTest
+import webtest
+from flask import Flask
 from framework_graphql._target_application import _target_application as schema
 from graphql_server.flask import GraphQLView as FlaskView
 from graphql_server.sanic import GraphQLView as SanicView
+from sanic import Sanic
+from testing_support.asgi_testing import AsgiTest
+
 
 def set_middlware(middleware, view_middleware):
     view_middleware.clear()
@@ -29,6 +30,7 @@ def set_middlware(middleware, view_middleware):
             view_middleware.extend(middleware)
         except TypeError:
             view_middleware.append(middleware)
+
 
 # Sanic
 target_application = dict()
@@ -41,13 +43,14 @@ routes = [
 ]
 sanic_app = AsgiTest(sanic_app)
 
+
 def sanic_execute(query, middleware=None):
     set_middlware(middleware, sanic_middleware)
     response = sanic_app.make_request(
         "POST", "/graphql", body=json.dumps({"query": query}), headers={"Content-Type": "application/json"}
     )
     body = json.loads(response.body.decode("utf-8"))
-    
+
     if not isinstance(query, str) or "error" in query:
         try:
             assert response.status != 200
@@ -59,6 +62,7 @@ def sanic_execute(query, middleware=None):
 
     return response
 
+
 target_application["Sanic"] = sanic_execute
 
 # Flask
@@ -68,6 +72,7 @@ flask_middleware = []
 flask_app.add_url_rule("/graphql", view_func=FlaskView.as_view("graphql", schema=schema, middleware=flask_middleware))
 flask_app = webtest.TestApp(flask_app)
 
+
 def flask_execute(query, middleware=None):
     if not isinstance(query, str) or "error" in query:
         expect_errors = True
@@ -76,7 +81,10 @@ def flask_execute(query, middleware=None):
 
     set_middlware(middleware, flask_middleware)
     response = flask_app.post(
-        "/graphql", json.dumps({"query": query}), headers={"Content-Type": "application/json"}, expect_errors=expect_errors
+        "/graphql",
+        json.dumps({"query": query}),
+        headers={"Content-Type": "application/json"},
+        expect_errors=expect_errors,
     )
 
     body = json.loads(response.body.decode("utf-8"))
@@ -86,5 +94,6 @@ def flask_execute(query, middleware=None):
         assert "errors" not in body or not body["errors"]
 
     return response
+
 
 target_application["Flask"] = flask_execute

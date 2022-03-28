@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import importlib
+
 import pytest
 from testing_support.fixtures import (
     dt_enabled,
@@ -34,21 +35,23 @@ def is_graphql_2():
     major_version = int(version.split(".")[0])
     return major_version == 2
 
+
 @pytest.fixture(scope="session", params=("Sanic", "Flask"))
 def target_application(request):
     import _test_graphql
+
     framework = request.param
     version = importlib.import_module(framework.lower()).__version__
 
     return framework, version, _test_graphql.target_application[framework]
 
 
-def example_middleware(next, root, info, **args):  #pylint: disable=W0622
+def example_middleware(next, root, info, **args):  # pylint: disable=W0622
     return_value = next(root, info, **args)
     return return_value
 
 
-def error_middleware(next, root, info, **args):  #pylint: disable=W0622
+def error_middleware(next, root, info, **args):  # pylint: disable=W0622
     raise RuntimeError("Runtime Error!")
 
 
@@ -60,7 +63,10 @@ _graphql_base_rollup_metrics = [
     ("GraphQL/GraphQLServer/all", 1),
     ("GraphQL/GraphQLServer/allWeb", 1),
 ]
-_view_metrics = {"Sanic": "Function/graphql_server.sanic.graphqlview:GraphQLView.post", "Flask": "Function/graphql_server.flask.graphqlview:graphql"}
+_view_metrics = {
+    "Sanic": "Function/graphql_server.sanic.graphqlview:GraphQLView.post",
+    "Flask": "Function/graphql_server.flask.graphqlview:graphql",
+}
 
 
 def test_basic(target_application):
@@ -123,7 +129,7 @@ def test_query_and_mutation(target_application):
     _expected_mutation_operation_attributes = {
         "graphql.operation.type": "mutation",
         "graphql.operation.name": "<anonymous>",
-        "graphql.operation.query": 'mutation { storage_add(string: ?) }',
+        "graphql.operation.query": "mutation { storage_add(string: ?) }",
     }
     _expected_mutation_resolver_attributes = {
         "graphql.field.name": "storage_add",
@@ -319,7 +325,7 @@ def test_exception_in_validation(target_application, is_graphql_2, query, exc_cl
         exc_class = callable_name(GraphQLError)
 
     _test_exception_scoped_metrics = [
-            ('GraphQL/operation/GraphQLServer/<unknown>/<anonymous>/<unknown>', 1),
+        ("GraphQL/operation/GraphQLServer/<unknown>/<anonymous>/<unknown>", 1),
     ]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),

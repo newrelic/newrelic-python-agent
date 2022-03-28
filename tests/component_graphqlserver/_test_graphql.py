@@ -22,16 +22,27 @@ from framework_graphql._target_application import _target_application as schema
 from graphql_server.flask import GraphQLView as FlaskView
 from graphql_server.sanic import GraphQLView as SanicView
 
+def set_middlware(middleware, view_middleware):
+    view_middleware.clear()
+    if middleware:
+        try:
+            view_middleware.extend(middleware)
+        except TypeError:
+            view_middleware.append(middleware)
+
 # Sanic
 target_application = dict()
 
 sanic_app = Sanic(name="SanicGraphQL")
+sanic_middleware = []
+sanic_view = SanicView.as_view(schema=schema, middleware=sanic_middleware)
 routes = [
-    sanic_app.add_route(SanicView.as_view(schema=schema), "/graphql"),
+    sanic_app.add_route(sanic_view, "/graphql"),
 ]
 sanic_app = AsgiTest(sanic_app)
 
-def sanic_execute(query):
+def sanic_execute(query, middleware=None):
+    set_middlware(middleware, sanic_middleware)
     response = sanic_app.make_request(
         "POST", "/graphql", body=json.dumps({"query": query}), headers={"Content-Type": "application/json"}
     )
@@ -53,15 +64,17 @@ target_application["Sanic"] = sanic_execute
 # Flask
 
 flask_app = Flask("FlaskGraphQL")
-flask_app.add_url_rule("/graphql", view_func=FlaskView.as_view("graphql", schema=schema))
+flask_middleware = []
+flask_app.add_url_rule("/graphql", view_func=FlaskView.as_view("graphql", schema=schema, middleware=flask_middleware))
 flask_app = webtest.TestApp(flask_app)
 
-def flask_execute(query):
+def flask_execute(query, middleware=None):
     if not isinstance(query, str) or "error" in query:
         expect_errors = True
     else:
         expect_errors = False
 
+    set_middlware(middleware, flask_middleware)
     response = flask_app.post(
         "/graphql", json.dumps({"query": query}), headers={"Content-Type": "application/json"}, expect_errors=expect_errors
     )

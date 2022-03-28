@@ -176,6 +176,77 @@ def test_query_and_mutation(target_application):
     _test()
 
 
+@dt_enabled
+def test_middleware(target_application):
+    framework, version, target_application = target_application
+    _test_middleware_metrics = [
+        ("GraphQL/operation/GraphQLServer/query/<anonymous>/hello", 1),
+        ("GraphQL/resolve/GraphQLServer/hello", 1),
+        ("Function/test_graphql:example_middleware", 1),
+    ]
+
+    # Base span count 5: Transaction, View, Operation, Middleware, and 1 Resolver
+    # For Flask, add 9 more for WSGI and framework related spans
+    span_count = {"Flask": 14, "Sanic": 5}
+
+    @validate_transaction_metrics(
+        "query/<anonymous>/hello",
+        "GraphQL",
+        scoped_metrics=_test_middleware_metrics,
+        rollup_metrics=_test_middleware_metrics + _graphql_base_rollup_metrics,
+    )
+    @validate_span_events(count=span_count[framework])
+    def _test():
+        response = target_application("{ hello }", middleware=[example_middleware])
+
+    _test()
+
+
+@dt_enabled
+def test_exception_in_middleware(target_application):
+    framework, version, target_application = target_application
+    query = "query MyQuery { error_middleware }"
+    field = "error_middleware"
+
+    # Metrics
+    _test_exception_scoped_metrics = [
+        ("GraphQL/operation/GraphQLServer/query/MyQuery/%s" % field, 1),
+        ("GraphQL/resolve/GraphQLServer/%s" % field, 1),
+    ]
+    _test_exception_rollup_metrics = [
+        ("Errors/all", 1),
+        ("Errors/allWeb", 1),
+        ("Errors/WebTransaction/GraphQL/test_graphql:error_middleware", 1),
+    ] + _test_exception_scoped_metrics
+
+    # Attributes
+    _expected_exception_resolver_attributes = {
+        "graphql.field.name": field,
+        "graphql.field.parentType": "Query",
+        "graphql.field.path": field,
+        "graphql.field.returnType": "String",
+    }
+    _expected_exception_operation_attributes = {
+        "graphql.operation.type": "query",
+        "graphql.operation.name": "MyQuery",
+        "graphql.operation.query": query,
+    }
+
+    @validate_transaction_metrics(
+        "test_graphql:error_middleware",
+        "GraphQL",
+        scoped_metrics=_test_exception_scoped_metrics,
+        rollup_metrics=_test_exception_rollup_metrics + _graphql_base_rollup_metrics,
+    )
+    @validate_span_events(exact_agents=_expected_exception_operation_attributes)
+    @validate_span_events(exact_agents=_expected_exception_resolver_attributes)
+    @validate_transaction_errors(errors=_test_runtime_error)
+    def _test():
+        response = target_application(query, middleware=[error_middleware])
+
+    _test()
+
+
 @pytest.mark.parametrize("field", ("error", "error_non_null"))
 @dt_enabled
 def test_exception_in_resolver(target_application, field):

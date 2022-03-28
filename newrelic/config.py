@@ -2153,6 +2153,12 @@ def _process_module_builtin_defaults():
         "instrument_flask_rest",
     )
 
+    _process_module_definition(
+        "graphql_server",
+        "newrelic.hooks.component_graphqlserver",
+        "instrument_graphqlserver",
+    )
+
     # _process_module_definition('web.application',
     #        'newrelic.hooks.framework_webpy')
     # _process_module_definition('web.template',

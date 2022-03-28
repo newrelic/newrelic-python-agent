@@ -521,8 +521,20 @@ class _WSGIApplicationMiddleware(object):
 def WSGIApplicationWrapper(wrapped, application=None, name=None,
         group=None, framework=None):
 
-    if framework is not None and not isinstance(framework, tuple):
-        framework = (framework, None)
+    def get_framework():
+        """Used to delay imports by passing framework as a callable."""
+        nonlocal framework
+
+        if isinstance(framework, tuple) or framework is None:
+            return framework
+
+        if callable(framework):
+            framework = framework()
+
+        if framework is not None and not isinstance(framework, tuple):
+            framework = (framework, None)
+
+        return framework
 
     def _nr_wsgi_application_wrapper_(wrapped, instance, args, kwargs):
         # Check to see if any transaction is present, even an inactive
@@ -530,6 +542,7 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
         # stopped already.
 
         transaction = current_transaction(active_only=False)
+        framework = get_framework()
 
         if transaction:
             # If there is any active transaction we will return without

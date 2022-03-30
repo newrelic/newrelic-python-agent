@@ -141,6 +141,8 @@ def test_basic(target_application):
 def test_query_and_mutation(target_application, is_graphql_2):
     framework, version, target_application, is_bg, schema_type = target_application
 
+    type_annotation = "!" if framework == "Strawberry" else ""
+
     _test_mutation_scoped_metrics = [
         ("GraphQL/resolve/%s/storage_add" % framework, 1),
         ("GraphQL/operation/%s/mutation/<anonymous>/storage_add" % framework, 1),
@@ -158,7 +160,7 @@ def test_query_and_mutation(target_application, is_graphql_2):
         "graphql.field.name": "storage_add",
         "graphql.field.parentType": "Mutation",
         "graphql.field.path": "storage_add",
-        "graphql.field.returnType": "String",
+        "graphql.field.returnType": "String" + type_annotation,
     }
     _expected_query_operation_attributes = {
         "graphql.operation.type": "query",
@@ -168,7 +170,7 @@ def test_query_and_mutation(target_application, is_graphql_2):
         "graphql.field.name": "storage",
         "graphql.field.parentType": "Query",
         "graphql.field.path": "storage",
-        "graphql.field.returnType": "[String]",
+        "graphql.field.returnType": "[String%s]%s" % (type_annotation, type_annotation),
     }
 
     @validate_code_level_metrics("_target_schema_%s" % schema_type, "resolve_storage_add")
@@ -300,7 +302,10 @@ def test_exception_in_resolver(target_application, field):
     framework, version, target_application, is_bg, schema_type = target_application
     query = "query MyQuery { %s }" % field
 
-    txn_name = "_target_schema_%s:resolve_error" % schema_type
+    if framework == "Strawberry" and schema_type == "async":
+        txn_name = "strawberry.schema.schema_converter:GraphQLCoreConverter.from_resolver.<locals>._async_resolver"
+    else:
+        txn_name = "_target_schema_%s:resolve_error" % schema_type
 
     # Metrics
     _test_exception_scoped_metrics = [
@@ -432,11 +437,12 @@ def test_field_resolver_metrics_and_attrs(target_application):
     framework, version, target_application, is_bg, schema_type = target_application
     field_resolver_metrics = [("GraphQL/resolve/%s/hello" % framework, 1)]
 
+    type_annotation = "!" if framework == "Strawberry" else ""
     graphql_attrs = {
         "graphql.field.name": "hello",
         "graphql.field.parentType": "Query",
         "graphql.field.path": "hello",
-        "graphql.field.returnType": "String",
+        "graphql.field.returnType": "String" + type_annotation,
     }
 
     @validate_transaction_metrics(
@@ -535,7 +541,10 @@ _test_queries = [
 def test_deepest_unique_path(target_application, query, expected_path):
     framework, version, target_application, is_bg, schema_type = target_application
     if expected_path == "/error":
-        txn_name = "_target_schema_%s:resolve_error" % schema_type
+        if framework == "Strawberry" and schema_type == "async":
+            txn_name = "strawberry.schema.schema_converter:GraphQLCoreConverter.from_resolver.<locals>._async_resolver"
+        else:
+            txn_name = "_target_schema_%s:resolve_error" % schema_type
     else:
         txn_name = "query/<anonymous>%s" % expected_path
 

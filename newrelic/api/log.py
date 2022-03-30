@@ -12,17 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import re
 import json
 import logging
-
+import re
 from logging import Formatter, LogRecord
 
-from newrelic.core.attribute import truncate
 from newrelic.api.time_trace import get_linking_metadata
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_names import parse_exc_info
 from newrelic.common import agent_http
+from newrelic.common.object_names import parse_exc_info
+from newrelic.core.attribute import truncate
 from newrelic.core.config import global_settings, is_expected_error
 
 
@@ -89,7 +88,7 @@ class NewRelicContextFormatter(Formatter):
 class NewRelicLogHandler(logging.Handler):
     """This is an experimental log handler provided by the community. Use with caution."""
 
-    PATH="/log/v1"
+    PATH = "/log/v1"
 
     def __init__(
         self,
@@ -141,7 +140,13 @@ class NewRelicLogHandler(logging.Handler):
                         "An unexpected HTTP response of %r was received for request made to https://%s:%d%s."
                         "The response payload for the request was %r. If this issue persists then please "
                         "report this problem to New Relic support for further investigation."
-                        % (status_code, self.client._host, self.client._port, self.PATH, truncate(response.decode("utf-8"), 1024))
+                        % (
+                            status_code,
+                            self.client._host,
+                            self.client._port,
+                            self.PATH,
+                            truncate(response.decode("utf-8"), 1024),
+                        )
                     )
 
         except Exception:

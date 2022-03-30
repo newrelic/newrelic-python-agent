@@ -21,6 +21,7 @@ def target_application(request):
     target_application = target_application[request.param]
 
     try:
+        import strawberry
         version = strawberry.__version__
     except Exception:
         import pkg_resources

@@ -68,26 +68,6 @@ class Query:
     error: Optional[str] = field(resolver=resolve_error)
     error_non_null: str = field(resolver=resolve_error)
 
-    async def resolve_library(self, info, index):
-        return libraries[index]
-
-    async def resolve_storage(self, info):
-        return storage
-
-    async def resolve_search(self, info, contains):
-        search_books = [b for b in books if contains in b.name]
-        search_magazines = [m for m in magazines if contains in m.name]
-        return search_books + search_magazines
-
-    async def resolve_hello(self, info):
-        return "Hello!"
-
-    async def resolve_echo(self, info, echo):
-        return echo
-
-    async def resolve_error(self, info) -> str:
-        raise RuntimeError("Runtime Error!")
-
 
 @strawberry.type
 class Mutation:

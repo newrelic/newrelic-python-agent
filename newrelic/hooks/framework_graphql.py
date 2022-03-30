@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import time
-from inspect import isawaitable
+from inspect import isawaitable, iscoroutine
 import logging
 from collections import deque
 
@@ -146,11 +146,20 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
 
     transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=11)
     result = wrapped(*args, **kwargs)
-    if not execution_context.errors:
-        if hasattr(trace, "set_transaction_name"):
+
+    def set_name():
+        if not execution_context.errors and hasattr(trace, "set_transaction_name"):
             # Operation trace sets transaction name
             trace.set_transaction_name(priority=14)
 
+    if iscoroutine(result):
+        async def _nr_coro_execute_name_wrapper(result):
+            result = await result
+            set_name()
+            return result
+        return _nr_coro_execute_name_wrapper(result)
+    
+    set_name()
     return result
 
 
@@ -322,7 +331,8 @@ def wrap_resolver(wrapped, instance, args, kwargs):
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=13)
+    name = callable_name(wrapped)
+    transaction.set_transaction_name(name, "GraphQL", priority=13)
 
     with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
         result = wrapped(*args, **kwargs)
@@ -331,7 +341,12 @@ def wrap_resolver(wrapped, instance, args, kwargs):
             # Grab any async resolvers and wrap with error traces
             async def _nr_coro_resolver_error_wrapper():
                 with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
-                    return await result
+                    try:
+                        return await result
+                    except Exception:
+                        transaction.set_transaction_name(name, "GraphQL", priority=99)
+                        raise
+
             return _nr_coro_resolver_error_wrapper()
 
         return result

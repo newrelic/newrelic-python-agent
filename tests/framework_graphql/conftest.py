@@ -40,11 +40,13 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
-@pytest.fixture(scope="session")
-def app():
-    from _target_application import _target_application
+@pytest.fixture(scope="session", params=["sync-sync", "async-sync", "async-async"])
+def target_application(request):
+    from _target_application import target_application
 
-    return _target_application
+    is_async_schema = request.param.split("-")[1] == "async"
+
+    return "GraphQL", None, target_application[request.param], True, is_async_schema
 
 
 if six.PY2:

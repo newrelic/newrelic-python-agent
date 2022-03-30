@@ -12,225 +12,56 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from graphql import (
-    GraphQLArgument,
-    GraphQLField,
-    GraphQLInt,
-    GraphQLList,
-    GraphQLNonNull,
-    GraphQLObjectType,
-    GraphQLSchema,
-    GraphQLString,
-    GraphQLUnionType,
-)
+import asyncio
+from graphql.language.source import Source        
+from _target_schema import target_schema
+from _target_schema_async import target_schema as target_schema_async
 
-authors = [
-    {
-        "first_name": "New",
-        "last_name": "Relic",
-    },
-    {
-        "first_name": "Bob",
-        "last_name": "Smith",
-    },
-    {
-        "first_name": "Leslie",
-        "last_name": "Jones",
-    },
-]
+def run_sync(schema):
+    def _run_sync(query, middleware=None):
+        try:
+            from graphql import graphql_sync as graphql
+        except ImportError:
+            from graphql import graphql
 
-books = [
-    {
-        "id": 1,
-        "name": "Python Agent: The Book",
-        "isbn": "a-fake-isbn",
-        "author": authors[0],
-        "branch": "riverside",
-    },
-    {
-        "id": 2,
-        "name": "Ollies for O11y: A Sk8er's Guide to Observability",
-        "isbn": "a-second-fake-isbn",
-        "author": authors[1],
-        "branch": "downtown",
-    },
-    {
-        "id": 3,
-        "name": "[Redacted]",
-        "isbn": "a-third-fake-isbn",
-        "author": authors[2],
-        "branch": "riverside",
-    },
-]
+        response = graphql(schema, query, middleware=middleware)
 
-magazines = [
-    {"id": 1, "name": "Reli Updates Weekly", "issue": 1, "branch": "riverside"},
-    {"id": 2, "name": "Reli Updates Weekly", "issue": 2, "branch": "downtown"},
-    {"id": 3, "name": "Node Weekly", "issue": 1, "branch": "riverside"},
-]
+        if isinstance(query, str) and "error" not in query or isinstance(query, Source) and "error" not in query.body:
+            assert not response.errors
+        else:
+            assert response.errors
 
+        return response.data
 
-libraries = ["riverside", "downtown"]
-libraries = [
-    {
-        "id": i + 1,
-        "branch": branch,
-        "magazine": [m for m in magazines if m["branch"] == branch],
-        "book": [b for b in books if b["branch"] == branch],
-    }
-    for i, branch in enumerate(libraries)
-]
+    return _run_sync
 
-storage = []
+def run_async(schema):
+    def _run_async(query, middleware=None):
+        from graphql import __version__ as version
+        from graphql import graphql
 
+        major_version = int(version.split(".")[0])
+        if major_version == 2:
+            def graphql_run(*args, **kwargs):
+                return graphql(*args, return_promise=True, **kwargs)
+        else:
+            graphql_run = graphql
 
-def resolve_library(parent, info, index):
-    return libraries[index]
+        loop = asyncio.get_event_loop()
+        response = loop.run_until_complete(graphql_run(schema, query, middleware=middleware))
 
+        if isinstance(query, str) and "error" not in query or isinstance(query, Source) and "error" not in query.body:
+            assert not response.errors
+        else:
+            assert response.errors
 
-def resolve_storage_add(parent, info, string):
-    storage.append(string)
-    return string
+        return response.data
 
+    
+    return _run_async
 
-def resolve_storage(parent, info):
-    return storage
-
-
-def resolve_search(parent, info, contains):
-    search_books = [b for b in books if contains in b["name"]]
-    search_magazines = [m for m in magazines if contains in m["name"]]
-    return search_books + search_magazines
-
-
-Author = GraphQLObjectType(
-    "Author",
-    {
-        "first_name": GraphQLField(GraphQLString),
-        "last_name": GraphQLField(GraphQLString),
-    },
-)
-
-Book = GraphQLObjectType(
-    "Book",
-    {
-        "id": GraphQLField(GraphQLInt),
-        "name": GraphQLField(GraphQLString),
-        "isbn": GraphQLField(GraphQLString),
-        "author": GraphQLField(Author),
-        "branch": GraphQLField(GraphQLString),
-    },
-)
-
-Magazine = GraphQLObjectType(
-    "Magazine",
-    {
-        "id": GraphQLField(GraphQLInt),
-        "name": GraphQLField(GraphQLString),
-        "issue": GraphQLField(GraphQLInt),
-        "branch": GraphQLField(GraphQLString),
-    },
-)
-
-
-Library = GraphQLObjectType(
-    "Library",
-    {
-        "id": GraphQLField(GraphQLInt),
-        "branch": GraphQLField(GraphQLString),
-        "book": GraphQLField(GraphQLList(Book)),
-        "magazine": GraphQLField(GraphQLList(Magazine)),
-    },
-)
-
-Storage = GraphQLList(GraphQLString)
-
-
-def resolve_hello(root, info):
-    return "Hello!"
-
-
-def resolve_echo(root, info, echo):
-    return echo
-
-
-def resolve_error(root, info):
-    raise RuntimeError("Runtime Error!")
-
-
-try:
-    hello_field = GraphQLField(GraphQLString, resolver=resolve_hello)
-    library_field = GraphQLField(
-        Library,
-        resolver=resolve_library,
-        args={"index": GraphQLArgument(GraphQLNonNull(GraphQLInt))},
-    )
-    search_field = GraphQLField(
-        GraphQLList(GraphQLUnionType("Item", (Book, Magazine), resolve_type=resolve_search)),
-        args={"contains": GraphQLArgument(GraphQLNonNull(GraphQLString))},
-    )
-    echo_field = GraphQLField(
-        GraphQLString,
-        resolver=resolve_echo,
-        args={"echo": GraphQLArgument(GraphQLNonNull(GraphQLString))},
-    )
-    storage_field = GraphQLField(
-        Storage,
-        resolver=resolve_storage,
-    )
-    storage_add_field = GraphQLField(
-        Storage,
-        resolver=resolve_storage_add,
-        args={"string": GraphQLArgument(GraphQLNonNull(GraphQLString))},
-    )
-    error_field = GraphQLField(GraphQLString, resolver=resolve_error)
-    error_non_null_field = GraphQLField(GraphQLNonNull(GraphQLString), resolver=resolve_error)
-except TypeError:
-    hello_field = GraphQLField(GraphQLString, resolve=resolve_hello)
-    library_field = GraphQLField(
-        Library,
-        resolve=resolve_library,
-        args={"index": GraphQLArgument(GraphQLNonNull(GraphQLInt))},
-    )
-    search_field = GraphQLField(
-        GraphQLList(GraphQLUnionType("Item", (Book, Magazine), resolve_type=resolve_search)),
-        args={"contains": GraphQLArgument(GraphQLNonNull(GraphQLString))},
-    )
-    echo_field = GraphQLField(
-        GraphQLString,
-        resolve=resolve_echo,
-        args={"echo": GraphQLArgument(GraphQLNonNull(GraphQLString))},
-    )
-    storage_field = GraphQLField(
-        Storage,
-        resolve=resolve_storage,
-    )
-    storage_add_field = GraphQLField(
-        GraphQLString,
-        resolve=resolve_storage_add,
-        args={"string": GraphQLArgument(GraphQLNonNull(GraphQLString))},
-    )
-    error_field = GraphQLField(GraphQLString, resolve=resolve_error)
-    error_non_null_field = GraphQLField(GraphQLNonNull(GraphQLString), resolve=resolve_error)
-
-query = GraphQLObjectType(
-    name="Query",
-    fields={
-        "hello": hello_field,
-        "library": library_field,
-        "search": search_field,
-        "echo": echo_field,
-        "storage": storage_field,
-        "error": error_field,
-        "error_non_null": error_non_null_field,
-    },
-)
-
-mutation = GraphQLObjectType(
-    name="Mutation",
-    fields={
-        "storage_add": storage_add_field,
-    },
-)
-
-_target_application = GraphQLSchema(query=query, mutation=mutation)
+target_application = {
+    "sync-sync": run_sync(target_schema),
+    "async-sync": run_async(target_schema),
+    "async-async": run_async(target_schema_async),
+}

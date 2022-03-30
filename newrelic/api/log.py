@@ -141,7 +141,7 @@ class NewRelicLogHandler(logging.Handler):
                         "An unexpected HTTP response of %r was received for request made to https://%s:%d%s."
                         "The response payload for the request was %r. If this issue persists then please "
                         "report this problem to New Relic support for further investigation."
-                        % (status_code, self.client._host, self.client._port, self.PATH, truncate(response.decode("utf-8"), maxlen=1024))
+                        % (status_code, self.client._host, self.client._port, self.PATH, truncate(response.decode("utf-8"), 1024))
                     )
 
         except Exception:

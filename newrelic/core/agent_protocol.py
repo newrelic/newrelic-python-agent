@@ -18,6 +18,7 @@ import os
 from newrelic import version
 from newrelic.common import system_info
 from newrelic.common.agent_http import ApplicationModeClient, ServerlessModeClient
+from newrelic.core.attribute import truncate
 from newrelic.core.internal_metrics import internal_count_metric
 from newrelic.common.encoding_utils import (
     json_decode,
@@ -248,7 +249,7 @@ class AgentProtocol(object):
                     "params": {
                         k: v for k, v in params.items() if k in self.PARAMS_ALLOWLIST
                     },
-                    "content": data,
+                    "content": truncate(data, 1024),
                     "agent_run_id": self._run_token,
                 },
             )

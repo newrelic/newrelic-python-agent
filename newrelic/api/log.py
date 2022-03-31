@@ -12,16 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
 import json
 import logging
-import time
 
-from urllib.request import urlopen, Request
 from logging import Formatter, LogRecord
 
+from newrelic.core.attribute import truncate
 from newrelic.api.time_trace import get_linking_metadata
+from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import parse_exc_info
-from newrelic.core.config import is_expected_error
+from newrelic.common import agent_http
+from newrelic.core.config import global_settings, is_expected_error
 
 
 def format_exc_info(exc_info):
@@ -85,79 +87,74 @@ class NewRelicContextFormatter(Formatter):
 
 
 class NewRelicLogHandler(logging.Handler):
-    """
-    Implementation was derived from: https://pypi.org/project/new-relic-logger-for-python/0.2.0/
-    file: newrelic_logger.handlers.py
-    A class which sends records to a New Relic via its API.
-    """
+    """This is an experimental log handler provided by the community. Use with caution."""
 
-    def __init__(self, level=logging.INFO, app_id=0, app_name=None, license_key=None, region="US", ):
-        """
-        Initialize the instance with the region and license_key
-        """
+    PATH="/log/v1"
+
+    def __init__(
+        self,
+        level=logging.INFO,
+        license_key=None,
+        host=None,
+        port=443,
+        proxy_scheme=None,
+        proxy_host=None,
+        proxy_user=None,
+        proxy_pass=None,
+        timeout=None,
+        ca_bundle_path=None,
+        disable_certificate_validation=False,
+    ):
         super(NewRelicLogHandler, self).__init__(level=level)
-        self.app_id = app_id
-        self.app_name = app_name
-        self.host_us = "log-api.newrelic.com"
-        self.host_eu = "log-api.eu.newrelic.com"
-        self.url = "/log/v1"
-        self.region = region.upper()
-        self.license_key = license_key
+        self.license_key = license_key or self.settings.license_key
+        self.host = host or self.settings.host or self.default_host(self.license_key)
+
+        self.client = agent_http.HttpClient(
+            host=host,
+            port=port,
+            proxy_scheme=proxy_scheme,
+            proxy_host=proxy_host,
+            proxy_user=proxy_user,
+            proxy_pass=proxy_pass,
+            timeout=timeout,
+            ca_bundle_path=ca_bundle_path,
+            disable_certificate_validation=disable_certificate_validation,
+        )
+
         self.setFormatter(NewRelicContextFormatter())
 
-    def prepare(self, record):
-        self.format(record)
-
-        record.msg = record.message
-        record.args = get_linking_metadata()
-        record.exc_info = None
-        return record
+    @property
+    def settings(self):
+        transaction = current_transaction()
+        if transaction:
+            return transaction.settings
+        return global_settings()
 
     def emit(self, record):
-        """
-        Emit a record.
-        Send the record to the New Relic API
-        """
         try:
-            record = self.prepare(record)
-            print(record.getMessage())
-            data_formatted_dict = json.loads(self.format(record))
-
-            data = {
-                **data_formatted_dict,
-                "appId": self.app_id,
-                "labels": {"app": self.app_name},
-                **record.args,
-            }
-            self.send_log(data=data)
+            headers = {"Api-Key": self.license_key or "", "Content-Type": "application/json"}
+            payload = self.format(record).encode("utf-8")
+            with self.client:
+                status_code, response = self.client.send_request(path=self.PATH, headers=headers, payload=payload)
+                if status_code < 200 or status_code >= 300:
+                    raise RuntimeError(
+                        "An unexpected HTTP response of %r was received for request made to https://%s:%d%s."
+                        "The response payload for the request was %r. If this issue persists then please "
+                        "report this problem to New Relic support for further investigation."
+                        % (status_code, self.client._host, self.client._port, self.PATH, truncate(response.decode("utf-8"), maxlen=1024))
+                    )
 
         except Exception:
             self.handleError(record)
 
-    def send_log(self, data: {}):
-        host = self.host_us if self.region == "US" else self.host_eu
-        req = Request(
-            url="https://" + host + self.url,
-            data=json.dumps(data).encode(),
-            headers={
-                'X-License-Key': self.license_key,
-                'Content-Type': "application/json",
-            },
-            method="POST"
-        )
-        # this line helps to forward logs to newrelic logs api. I made sure to use a python standard lib
-        # see https://docs.newrelic.com/docs/logs/log-api/introduction-log-api
-        resp = urlopen(req)  # nosec
+    def default_host(self, license_key):
+        if not license_key:
+            return "log-api.newrelic.com"
 
-        if resp.status // 100 != 2:
-            if resp.status == 429:
-                print("New Relic API Response: Retry-After")
-                time.sleep(1)
-                self.send_log(data=data)
-                return
-            print("Error sending log to new relic")
-            print("Status Code: {}".format(resp.status))
-            print("Reason: {}".format(resp.reason))
-            print("url: {}".format(resp.url))
-            print(resp.read().decode())
-            print("data: {}".format(data))
+        region_aware_match = re.match("^(.+?)x", license_key)
+        if not region_aware_match:
+            return "log-api.newrelic.com"
+
+        region = region_aware_match.group(1)
+        host = "log-api." + region + ".newrelic.com"
+        return host

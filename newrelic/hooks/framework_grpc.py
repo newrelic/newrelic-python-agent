@@ -159,7 +159,8 @@ def grpc_web_transaction(wrapped, instance, args, kwargs):
             request_path=request_path,
             host=host,
             port=port,
-            headers=metadata)(*args, **kwargs)
+            headers=metadata,
+            source=behavior)(*args, **kwargs)
 
 
 def _trailing_metadata(state, *args, **kwargs):

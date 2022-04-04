@@ -852,7 +852,7 @@ class WSGIWebTransaction(WebTransaction):
 
 def WebTransactionWrapper(wrapped, application=None, name=None, group=None,
         scheme=None, host=None, port=None, request_method=None,
-        request_path=None, query_string=None, headers=None):
+        request_path=None, query_string=None, headers=None, source=None):
 
     def wrapper(wrapped, instance, args, kwargs):
 
@@ -938,12 +938,14 @@ def WebTransactionWrapper(wrapped, application=None, name=None, group=None,
 
         proxy = async_proxy(wrapped)
 
+        source_arg = source or wrapped
+
         def create_transaction(transaction):
             if transaction:
                 return None
             return WebTransaction( _application, _name, _group,
                     _scheme, _host, _port, _request_method,
-                    _request_path, _query_string, _headers, source=wrapped)
+                    _request_path, _query_string, _headers, source=source_arg)
 
         if proxy:
             context_manager = TransactionContext(create_transaction)
@@ -951,7 +953,7 @@ def WebTransactionWrapper(wrapped, application=None, name=None, group=None,
 
         transaction = WebTransaction(
                 _application, _name, _group, _scheme, _host, _port,
-                _request_method, _request_path, _query_string, _headers, source=wrapped)
+                _request_method, _request_path, _query_string, _headers, source=source_arg)
 
         transaction = create_transaction(current_transaction(active_only=False))
 

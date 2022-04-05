@@ -20,13 +20,14 @@ from testing_support.fixtures import override_application_settings, dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 
 from newrelic.api.background_task import background_task
-from newrelic.api.function_trace import FunctionTraceWrapper
+from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
 
-from _test_code_level_metrics import exercise_function, CLASS_INSTANCE, exercise_lambda, ExerciseClass, __file__ as FILE_PATH
+from _test_code_level_metrics import exercise_function, CLASS_INSTANCE, CLASS_INSTANCE_CALLABLE, exercise_lambda, ExerciseClass, ExerciseClassCallable, __file__ as FILE_PATH
 
 
 NAMESPACE = "_test_code_level_metrics"
 CLASS_NAMESPACE = ".".join((NAMESPACE, "ExerciseClass"))
+CALLABLE_CLASS_NAMESPACE = ".".join((NAMESPACE, "ExerciseClassCallable"))
 FUZZY_NAMESPACE = CLASS_NAMESPACE if six.PY3 else NAMESPACE
 if FILE_PATH.endswith(".pyc"):
     FILE_PATH = FILE_PATH[:-1]
@@ -77,13 +78,13 @@ SQLITE_CONNECTION = sqlite3.Connection(":memory:")
             },
         ),
         (  # Callable object
-            CLASS_INSTANCE,
+            CLASS_INSTANCE_CALLABLE,
             (),
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "__call__",
-                "code.lineno": 30,
-                "code.namespace": CLASS_NAMESPACE,
+                "code.lineno": 32,
+                "code.namespace": CALLABLE_CLASS_NAMESPACE,
             },
         ),
         (  # Lambda
@@ -92,7 +93,7 @@ SQLITE_CONNECTION = sqlite3.Connection(":memory:")
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "<lambda>",
-                "code.lineno": 36,
+                "code.lineno": 38,
                 "code.namespace": NAMESPACE,
             },
         ),
@@ -128,7 +129,7 @@ SQLITE_CONNECTION = sqlite3.Connection(":memory:")
         ),
     ),
 )
-def test_code_level_metrics(func, args, agents):
+def test_code_level_metrics_callables(func, args, agents):
     @override_application_settings({
         "code_level_metrics.enabled": True,
     })
@@ -141,4 +142,53 @@ def test_code_level_metrics(func, args, agents):
     def _test():
         FunctionTraceWrapper(func)(*args)
 
+    _test()
+
+
+@pytest.mark.parametrize(
+    "obj,agents",
+    (
+        (  # Class with __call__
+            ExerciseClassCallable,
+            {
+                "code.filepath": FILE_PATH,
+                "code.function": "ExerciseClassCallable",
+                "code.lineno": 31,
+                "code.namespace":NAMESPACE,
+            },
+        ),
+        (  # Class without __call__
+            ExerciseClass,
+            {
+                "code.filepath": FILE_PATH,
+                "code.function": "ExerciseClass",
+                "code.lineno": 18,
+                "code.namespace": NAMESPACE,
+            },
+        ),
+        (  # Non-callable Object instance
+            CLASS_INSTANCE,
+            {
+                "code.filepath": FILE_PATH,
+                "code.function": "ExerciseClass",
+                "code.lineno": 18,
+                "code.namespace": NAMESPACE,
+            },
+        ),
+    ),
+)
+def test_code_level_metrics_objects(obj, agents):
+    @override_application_settings({
+        "code_level_metrics.enabled": True,
+    })
+    @dt_enabled
+    @validate_span_events(
+        count=1,
+        exact_agents=agents,
+    )
+    @background_task()
+    def _test():
+        with FunctionTrace("_test", source=obj):
+            pass
+    
     _test()

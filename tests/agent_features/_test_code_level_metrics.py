@@ -27,10 +27,12 @@ class ExerciseClass():
     def exercise_class_method(cls):
         return
 
+
+class ExerciseClassCallable():
     def __call__(self):
         return
 
-
 CLASS_INSTANCE = ExerciseClass()
+CLASS_INSTANCE_CALLABLE = ExerciseClassCallable()
 
 exercise_lambda = lambda: None

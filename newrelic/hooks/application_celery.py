@@ -23,8 +23,8 @@ about this below.
 import functools
 
 from newrelic.api.application import application_instance
-from newrelic.api.background_task import BackgroundTaskWrapper
-from newrelic.api.function_trace import FunctionTraceWrapper
+from newrelic.api.background_task import BackgroundTask
+from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.pre_function import wrap_pre_function
 from newrelic.api.object_wrapper import callable_name, ObjectWrapper
 from newrelic.api.transaction import current_transaction
@@ -91,10 +91,12 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
             return wrapped(*args, **kwargs)
 
         elif transaction:
-            return FunctionTraceWrapper(wrapped)(*args, **kwargs)
+            with FunctionTrace(_name, source=instance):
+                return wrapped(*args, **kwargs)
 
         else:
-            return BackgroundTaskWrapper(wrapped, _application(), _name, 'Celery')(*args, **kwargs)
+            with BackgroundTask(_application(), _name, 'Celery', source=instance):
+                return wrapped(*args, **kwargs)
 
     # Start Hotfix v2.2.1.
     # obj = ObjectWrapper(wrapped, None, wrapper)

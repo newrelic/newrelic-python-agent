@@ -25,8 +25,8 @@ from newrelic.common.object_names import parse_exc_info
 from newrelic.core.attribute import MAX_NUM_USER_ATTRIBUTES, process_user_attribute
 from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.code_level_metrics import (
-    extract_source_code_from_callable,
-    extract_source_code_from_traceback,
+    extract_code_from_callable,
+    extract_code_from_traceback,
 )
 from newrelic.core.trace_cache import trace_cache
 
@@ -209,7 +209,7 @@ class TimeTrace(object):
         """Extract source code context from a callable and add appropriate attributes."""
         if source and self.settings and self.settings.code_level_metrics and self.settings.code_level_metrics.enabled:
             try:
-                node = extract_source_code_from_callable(source)
+                node = extract_code_from_callable(source)
                 node.add_attrs(self._add_agent_attribute)
             except:
                 _logger.error("Failed to extract source code context from callable %s. Report this issue to newrelic support." % source)
@@ -378,7 +378,7 @@ class TimeTrace(object):
 
 
             if settings and settings.code_level_metrics and settings.code_level_metrics.enabled:
-                source = extract_source_code_from_traceback(tb)
+                source = extract_code_from_traceback(tb)
             else:
                 source = None
 

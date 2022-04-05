@@ -36,7 +36,7 @@ class CodeLevelMetricsNode(_CodeLevelMetricsNode):
                 add_attr_function("code.%s" % k, v)
 
 
-def extract_source_code_from_callable(func):
+def extract_code_from_callable(func):
     """Extract source code context from a callable and add appropriate attributes."""
     original_func = func  # Save original reference
 
@@ -66,9 +66,16 @@ def extract_source_code_from_callable(func):
             line_number = None
         else:
             # Extract call method for callable objects
-            if hasattr(func, "__call__"):
+            if inspect.isclass(func):
+                # For class types don't change anything
+                pass
+            elif hasattr(func, "__call__"):
+                # For callable object, use the __call__ attribute
                 func = func.__call__
                 module_name, func_path = object_context(func)
+            elif hasattr(func, "__class__"):
+                # Extract class from object instances
+                func = func.__class__
 
             # Initialize here instead of in except to potentially get file_path but not line_number
             file_path = None
@@ -107,7 +114,7 @@ def extract_source_code_from_callable(func):
     return node
 
 
-def extract_source_code_from_traceback(tb):
+def extract_code_from_traceback(tb):
     # Walk traceback
     while getattr(tb, "tb_next", None) is not None:
         tb = tb.tb_next

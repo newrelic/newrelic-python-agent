@@ -16,19 +16,21 @@ from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.fixtures import dt_enabled
 from newrelic.common.object_wrapper import function_wrapper
 
-def validate_code_level_metrics(namespace, function, builtin=False, index=-1):
+def validate_code_level_metrics(namespace, function, builtin=False, count=1, index=-1):
     """Verify that code level metrics are generated for a callable."""
 
     if builtin:
         validator = validate_span_events(
             exact_agents={"code.function": function, "code.namespace": namespace, "code.filepath": "<builtin>"},
             unexpected_agents=["code.lineno"],
+            count=count,
             index=index,
         )
     else:
         validator = validate_span_events(
             exact_agents={"code.function": function, "code.namespace": namespace},
             expected_agents=["code.lineno", "code.filepath"],
+            count=count,
             index=index,
         )
 

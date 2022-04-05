@@ -17,8 +17,8 @@ from collections import namedtuple
 
 from newrelic.common.object_names import object_context
 
-_SourceCodeNode = namedtuple(
-    "SourceCodeNode",
+_CodeLevelMetricsNode = namedtuple(
+    "CodeLevelMetricsNode",
     [
         "filepath",
         "function",
@@ -28,7 +28,7 @@ _SourceCodeNode = namedtuple(
 )
 
 
-class SourceCodeNode(_SourceCodeNode):
+class CodeLevelMetricsNode(_CodeLevelMetricsNode):
     def add_attrs(self, add_attr_function):
         # Add attributes
         for k, v in self._asdict().items():
@@ -89,7 +89,7 @@ def extract_source_code_from_callable(func):
     else:
         namespace = module_name
 
-    node = SourceCodeNode(
+    node = CodeLevelMetricsNode(
         filepath=file_path,
         function=func_name,
         lineno=line_number,
@@ -120,4 +120,4 @@ def extract_source_code_from_traceback(tb):
     filepath = code.co_filename
     funcname = code.co_name
 
-    return SourceCodeNode(filepath=filepath, lineno=lineno, function=funcname, namespace=None)
+    return CodeLevelMetricsNode(filepath=filepath, lineno=lineno, function=funcname, namespace=None)

@@ -383,7 +383,7 @@ class Transaction(object):
 
         # Extract source code context
         if self._source is not None:
-            self.root_span.add_source_code_context(self._source)
+            self.root_span.add_code_level_metrics(self._source)
             self._source = None  # Remove reference to source
 
         return self

@@ -24,7 +24,7 @@ from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.common.object_names import parse_exc_info
 from newrelic.core.attribute import MAX_NUM_USER_ATTRIBUTES, process_user_attribute
 from newrelic.core.config import is_expected_error, should_ignore_error
-from newrelic.core.source_code_node import (
+from newrelic.core.code_level_metrics import (
     extract_source_code_from_callable,
     extract_source_code_from_traceback,
 )
@@ -120,8 +120,8 @@ class TimeTrace(object):
 
         # Extract source code context
         settings = self.settings or self.transaction.settings  # Some derived classes do not have self.settings immediately
-        if self._source is not None and settings and settings.source_code_context.enabled:
-            self.add_source_code_context(self._source)
+        if self._source is not None:
+            self.add_code_level_metrics(self._source)
 
         return self
 
@@ -205,9 +205,9 @@ class TimeTrace(object):
 
         self.user_attributes[key] = value
 
-    def add_source_code_context(self, source):
+    def add_code_level_metrics(self, source):
         """Extract source code context from a callable and add appropriate attributes."""
-        if source and self.settings and self.settings.source_code_context:
+        if source and self.settings and self.settings.code_level_metrics and self.settings.code_level_metrics.enabled:
             try:
                 node = extract_source_code_from_callable(source)
                 node.add_attrs(self._add_agent_attribute)
@@ -377,7 +377,7 @@ class TimeTrace(object):
                     custom_params = {}
 
 
-            if settings.source_code_context.enabled:
+            if settings and settings.code_level_metrics and settings.code_level_metrics.enabled:
                 source = extract_source_code_from_traceback(tb)
             else:
                 source = None

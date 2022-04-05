@@ -120,7 +120,7 @@ class ProfileTrace(object):
             # Attempt to add source code context for function
             try:
                 if func:
-                    function_trace.add_source_code_context(func)
+                    function_trace.add_code_level_metrics(func)
             except Exception:
                 pass
 

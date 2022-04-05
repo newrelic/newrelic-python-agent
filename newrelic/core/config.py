@@ -119,7 +119,7 @@ class GCRuntimeMetricsSettings(Settings):
     pass
 
 
-class SourceCodeContextSettings(Settings):
+class CodeLevelMetricsSettings(Settings):
     pass
 
 
@@ -339,7 +339,7 @@ class EventHarvestConfigHarvestLimitSettings(Settings):
 _settings = TopLevelSettings()
 _settings.attributes = AttributesSettings()
 _settings.gc_runtime_metrics = GCRuntimeMetricsSettings()
-_settings.source_code_context = SourceCodeContextSettings()
+_settings.code_level_metrics = CodeLevelMetricsSettings()
 _settings.thread_profiler = ThreadProfilerSettings()
 _settings.transaction_tracer = TransactionTracerSettings()
 _settings.transaction_tracer.attributes = TransactionTracerAttributesSettings()
@@ -783,7 +783,7 @@ _settings.aws_lambda_metadata = {}
 
 _settings.event_loop_visibility.enabled = True
 _settings.event_loop_visibility.blocking_threshold = 0.1
-_settings.source_code_context.enabled = True
+_settings.code_level_metrics.enabled = True
 
 
 def global_settings():

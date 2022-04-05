@@ -530,7 +530,7 @@ def _process_configuration(section):
     _process_setting(section, "infinite_tracing.trace_observer_host", "get", None)
     _process_setting(section, "infinite_tracing.trace_observer_port", "getint", None)
     _process_setting(section, "infinite_tracing.span_queue_size", "getint", None)
-    _process_setting(section, "source_code_context.enabled", "getboolean", None)
+    _process_setting(section, "code_level_metrics.enabled", "getboolean", None)
 
 
 # Loading of configuration from specified file and for specified

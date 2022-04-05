@@ -22,10 +22,10 @@ from testing_support.validators.validate_span_events import validate_span_events
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTraceWrapper
 
-from _test_source_code_context import exercise_function, CLASS_INSTANCE, exercise_lambda, ExerciseClass, __file__ as FILE_PATH
+from _test_code_level_metrics import exercise_function, CLASS_INSTANCE, exercise_lambda, ExerciseClass, __file__ as FILE_PATH
 
 
-NAMESPACE = "_test_source_code_context"
+NAMESPACE = "_test_code_level_metrics"
 CLASS_NAMESPACE = ".".join((NAMESPACE, "ExerciseClass"))
 FUZZY_NAMESPACE = CLASS_NAMESPACE if six.PY3 else NAMESPACE
 if FILE_PATH.endswith(".pyc"):
@@ -128,9 +128,9 @@ SQLITE_CONNECTION = sqlite3.Connection(":memory:")
         ),
     ),
 )
-def test_source_code_context(func, args, agents):
+def test_code_level_metrics(func, args, agents):
     @override_application_settings({
-        "source_code_context.enabled": True,
+        "code_level_metrics.enabled": True,
     })
     @dt_enabled
     @validate_span_events(

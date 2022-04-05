@@ -383,7 +383,7 @@ class Transaction(object):
 
         # Extract source code context
         if self._source is not None:
-            self.root_span.add_code_level_metrics(self._source)
+            self.add_code_level_metrics(self._source)
             self._source = None  # Remove reference to source
 
         return self
@@ -997,6 +997,10 @@ class Transaction(object):
     def _record_supportability(self, metric_name):
         m = self._transaction_metrics.get(metric_name, 0)
         self._transaction_metrics[metric_name] = m + 1
+
+    def add_code_level_metrics(self, source):
+        if self.root_span:
+            self.root_span.add_code_level_metrics(source)
 
     def _create_distributed_trace_data_with_guid(self, guid):
         data = self._create_distributed_trace_data()

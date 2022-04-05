@@ -20,7 +20,7 @@ import time
 from newrelic.api.function_trace import function_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.api.external_trace import ExternalTrace
-from newrelic.api.time_trace import notice_error
+from newrelic.api.time_trace import notice_error, current_trace
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.api.application import application_instance
 from newrelic.core.trace_cache import trace_cache
@@ -100,7 +100,7 @@ def wrap_headers_received(request_conn):
             request_path=path,
             query_string=query,
             headers=headers,
-            source=wrapped,
+            source=instance,
         )
         transaction.__enter__()
 
@@ -329,6 +329,7 @@ def _nr_method(wrapped, instance, args, kwargs):
     transaction.set_transaction_name(name, priority=2)
     transaction._method_seen = True
     if getattr(wrapped, '__tornado_coroutine__', False):
+        current_trace().add_code_level_metrics(wrapped)
         return wrapped(*args, **kwargs)
     return function_trace(name=name)(wrapped)(*args, **kwargs)
 
@@ -385,6 +386,8 @@ def _nr_wrapper_web_requesthandler_init(wrapped, instance, args, kwargs):
 
     name = callable_name(instance)
     transaction.set_transaction_name(name, priority=1)
+    if transaction._name_priority == 1:
+        current_trace().add_code_level_metrics(instance)
     return wrapped(*args, **kwargs)
 
 

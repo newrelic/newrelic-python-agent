@@ -20,6 +20,7 @@ from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.api.function_trace import (
     wrap_function_trace,
     FunctionTraceWrapper,
+    FunctionTrace,
 )
 from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import notice_error
@@ -53,13 +54,15 @@ def _nr_wrapper_handler_(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     name = getattr(wrapped, "_nr_view_func_name", callable_name(wrapped))
+    view = getattr(wrapped, "view_class", wrapped)
 
     # Set priority=2 so this will take precedence over any error
     # handler which will be at priority=1.
 
     transaction.set_transaction_name(name, priority=2)
 
-    return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
+    with FunctionTrace(name=name, source=view):
+        return wrapped(*args, **kwargs)
 
 
 def _nr_wrapper_Flask_add_url_rule_input_(wrapped, instance, args, kwargs):

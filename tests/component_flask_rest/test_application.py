@@ -17,6 +17,7 @@ import pytest
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, override_ignore_status_codes,
     override_generic_settings)
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 
 from newrelic.core.config import global_settings
 from newrelic.common.object_names import callable_name
@@ -51,6 +52,7 @@ _test_application_index_scoped_metrics = [
 ]
 
 
+@validate_code_level_metrics("_test_application.create_app.<locals>", "IndexResource")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_application:index',
         scoped_metrics=_test_application_index_scoped_metrics)
@@ -77,6 +79,7 @@ _test_application_raises_scoped_metrics = [
 def test_application_raises(exception, status_code, ignore_status_code,
         propagate_exceptions, application):
 
+    @validate_code_level_metrics("_test_application.create_app.<locals>", "ExceptionResource")
     @validate_transaction_metrics('_test_application:exception',
             scoped_metrics=_test_application_raises_scoped_metrics)
     def _test():

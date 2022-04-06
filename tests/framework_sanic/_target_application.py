@@ -24,10 +24,17 @@ class MethodView(HTTPMethodView):
     async def get(self, request):
         return json({"hello": "world"})
 
-    post = get
-    put = get
-    patch = get
-    delete = get
+    async def post(self, request):
+        return json({"hello": "world"})
+
+    async def put(self, request):
+        return json({"hello": "world"})
+
+    async def patch(self, request):
+        return json({"hello": "world"})
+
+    async def delete(self, request):
+        return json({"hello": "world"})
 
 
 class CustomErrorHandler(ErrorHandler):

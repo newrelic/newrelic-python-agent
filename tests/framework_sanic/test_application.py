@@ -27,6 +27,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_event_attributes,
     override_ignore_status_codes, override_generic_settings,
     function_not_called)
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 
 
 sanic_21 = int(sanic.__version__.split('.', 1)[0]) >= 21
@@ -47,6 +48,7 @@ validate_base_transaction_event_attr = validate_transaction_event_attributes(
 )
 
 
+@validate_code_level_metrics("_target_application", "index")
 @validate_transaction_metrics(
     '_target_application:index',
     scoped_metrics=BASE_METRICS,
@@ -76,6 +78,7 @@ def test_websocket(app):
 def test_method_view(app, method):
     metric_name = 'Function/_target_application:MethodView.' + method
 
+    @validate_code_level_metrics("_target_application.MethodView", method)
     @validate_transaction_metrics(
         '_target_application:MethodView.' + method,
         scoped_metrics=[(metric_name, 1)],
@@ -182,6 +185,7 @@ STREAMING_METRICS = [
 ]
 
 
+@validate_code_level_metrics("_target_application", "streaming")
 @validate_transaction_metrics(
     '_target_application:streaming',
     scoped_metrics=STREAMING_METRICS,
@@ -288,6 +292,7 @@ def test_returning_middleware(app, middleware, attach_to, metric_name,
         ('Function/%s' % metric_name, 1),
     ]
 
+    @validate_code_level_metrics(*metric_name.split(":"))
     @validate_transaction_metrics(
             transaction_name,
             scoped_metrics=metrics,
@@ -344,6 +349,8 @@ BLUEPRINT_METRICS = [
 ]
 
 
+@validate_code_level_metrics("_target_application", "blueprint_middleware")
+@validate_code_level_metrics("_target_application", "blueprint_route")
 @validate_transaction_metrics(
     "_target_application:blueprint_route",
     scoped_metrics=BLUEPRINT_METRICS,

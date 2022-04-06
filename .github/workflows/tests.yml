@@ -86,7 +86,7 @@ jobs:
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
       - uses: actions/setup-python@v3
         with:
-          python-version: "pypy-3.7"
+          python-version: "pypy-3.6"
           architecture: x64
 
       - uses: actions/setup-python@v3
@@ -161,7 +161,7 @@ jobs:
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
       - uses: actions/setup-python@v3
         with:
-          python-version: "pypy-3.7"
+          python-version: "pypy-3.6"
           architecture: x64
 
       - uses: actions/setup-python@v3
@@ -236,7 +236,7 @@ jobs:
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
       - uses: actions/setup-python@v3
         with:
-          python-version: "pypy-3.7"
+          python-version: "pypy-3.6"
           architecture: x64
 
       - uses: actions/setup-python@v3
@@ -332,7 +332,7 @@ jobs:
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
       - uses: actions/setup-python@v3
         with:
-          python-version: "pypy-3.7"
+          python-version: "pypy-3.6"
           architecture: x64
 
       - uses: actions/setup-python@v3
@@ -425,7 +425,7 @@ jobs:
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
       - uses: actions/setup-python@v3
         with:
-          python-version: "pypy-3.7"
+          python-version: "pypy-3.6"
           architecture: x64
 
       - uses: actions/setup-python@v3
@@ -513,7 +513,7 @@ jobs:
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
       - uses: actions/setup-python@v3
         with:
-          python-version: "pypy-3.7"
+          python-version: "pypy-3.6"
           architecture: x64
 
       - uses: actions/setup-python@v3
@@ -603,7 +603,7 @@ jobs:
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
       - uses: actions/setup-python@v3
         with:
-          python-version: "pypy-3.7"
+          python-version: "pypy-3.6"
           architecture: x64
 
       - uses: actions/setup-python@v3
@@ -691,7 +691,7 @@ jobs:
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
       - uses: actions/setup-python@v3
         with:
-          python-version: "pypy-3.7"
+          python-version: "pypy-3.6"
           architecture: x64
 
       - uses: actions/setup-python@v3
@@ -780,7 +780,7 @@ jobs:
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
       - uses: actions/setup-python@v3
         with:
-          python-version: "pypy-3.7"
+          python-version: "pypy-3.6"
           architecture: x64
 
       - uses: actions/setup-python@v3
@@ -868,7 +868,7 @@ jobs:
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
       - uses: actions/setup-python@v3
         with:
-          python-version: "pypy-3.7"
+          python-version: "pypy-3.6"
           architecture: x64
 
       - uses: actions/setup-python@v3
@@ -958,7 +958,7 @@ jobs:
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
       - uses: actions/setup-python@v3
         with:
-          python-version: "pypy-3.7"
+          python-version: "pypy-3.6"
           architecture: x64
 
       - uses: actions/setup-python@v3
@@ -1048,7 +1048,7 @@ jobs:
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
       - uses: actions/setup-python@v3
         with:
-          python-version: "pypy-3.7"
+          python-version: "pypy-3.6"
           architecture: x64
 
       - uses: actions/setup-python@v3
@@ -1135,7 +1135,7 @@ jobs:
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
       - uses: actions/setup-python@v3
         with:
-          python-version: "pypy-3.7"
+          python-version: "pypy-3.6"
           architecture: x64
 
       - uses: actions/setup-python@v3

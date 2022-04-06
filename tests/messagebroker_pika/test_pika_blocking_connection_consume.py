@@ -25,6 +25,7 @@ from newrelic.api.transaction import end_of_transaction
 from conftest import QUEUE, EXCHANGE, CORRELATION_ID, REPLY_TO, HEADERS, BODY
 from testing_support.fixtures import (capture_transaction_metrics,
         validate_transaction_metrics, validate_tt_collector_json)
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 from testing_support.db_settings import rabbitmq_settings
 
 DB_SETTINGS = rabbitmq_settings()[0]
@@ -132,6 +133,7 @@ else:
 
 
 @pytest.mark.parametrize('as_partial', [True, False])
+@validate_code_level_metrics("test_pika_blocking_connection_consume.test_blocking_connection_basic_consume_outside_transaction.<locals>", "on_message")
 @validate_transaction_metrics(
         _txn_name,
         scoped_metrics=_test_blocking_conn_basic_consume_no_txn_metrics,
@@ -177,6 +179,7 @@ else:
 
 
 @pytest.mark.parametrize('as_partial', [True, False])
+@validate_code_level_metrics("test_pika_blocking_connection_consume.test_blocking_connection_basic_consume_inside_txn.<locals>", "on_message")
 @validate_transaction_metrics(
         ('test_pika_blocking_connection_consume:'
                 'test_blocking_connection_basic_consume_inside_txn'),

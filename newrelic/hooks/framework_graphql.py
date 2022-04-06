@@ -308,7 +308,7 @@ def wrap_executor_execute(wrapped, instance, args, kwargs):
     # args[0] is the resolver function, or the top of the middleware chain
     args = list(args)
     if callable(args[0]):
-        if not hasattr(args[0], "_nr_wrapped"):
+        if not hasattr(args[0], "_nr_wrapped") and not hasattr(getattr(args[0], "func", None), "_nr_wrapped"):
             args[0] = wrap_resolver(args[0])
             args[0]._nr_wrapped = True
     return wrapped(*args, **kwargs)

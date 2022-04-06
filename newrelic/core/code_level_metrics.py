@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
 import inspect
 from collections import namedtuple
 
@@ -44,12 +45,17 @@ def extract_code_from_callable(func):
         return func._nr_source_code
 
     # Fully unwrap object
-    while hasattr(func, "__wrapped__") and func.__wrapped__ is not None:
-        if func.__wrapped__ == func:
-            # Infinite loop protection
-            break
+    while (hasattr(func, "__wrapped__") and func.__wrapped__ is not None) or isinstance(func, functools.partial):
+        # Remove Partials
+        if isinstance(func, functools.partial):
+            func = func.func
+        # Unwrap wrapped objects
+        else:
+            if func.__wrapped__ == func:
+                # Infinite loop protection
+                break
 
-        func = func.__wrapped__
+            func = func.__wrapped__
 
     # Retrieve basic object details
     module_name, func_path = object_context(func)

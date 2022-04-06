@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import functools
+
 def exercise_function():
     return
 
@@ -36,3 +38,4 @@ CLASS_INSTANCE = ExerciseClass()
 CLASS_INSTANCE_CALLABLE = ExerciseClassCallable()
 
 exercise_lambda = lambda: None
+exercise_partial = functools.partial(exercise_function)

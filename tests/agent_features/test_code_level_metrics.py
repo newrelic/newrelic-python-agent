@@ -22,7 +22,7 @@ from testing_support.validators.validate_span_events import validate_span_events
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
 
-from _test_code_level_metrics import exercise_function, CLASS_INSTANCE, CLASS_INSTANCE_CALLABLE, exercise_lambda, ExerciseClass, ExerciseClassCallable, __file__ as FILE_PATH
+from _test_code_level_metrics import exercise_function, CLASS_INSTANCE, CLASS_INSTANCE_CALLABLE, exercise_lambda, exercise_partial, ExerciseClass, ExerciseClassCallable, __file__ as FILE_PATH
 
 
 NAMESPACE = "_test_code_level_metrics"
@@ -43,7 +43,7 @@ SQLITE_CONNECTION = sqlite3.Connection(":memory:")
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "exercise_function",
-                "code.lineno": 14,
+                "code.lineno": 16,
                 "code.namespace": NAMESPACE,
             },
         ),
@@ -53,7 +53,7 @@ SQLITE_CONNECTION = sqlite3.Connection(":memory:")
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "exercise_method",
-                "code.lineno": 19,
+                "code.lineno": 21,
                 "code.namespace": CLASS_NAMESPACE,
             },
         ),
@@ -63,7 +63,7 @@ SQLITE_CONNECTION = sqlite3.Connection(":memory:")
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "exercise_static_method",
-                "code.lineno": 22,
+                "code.lineno": 24,
                 "code.namespace": FUZZY_NAMESPACE,
             },
         ),
@@ -73,7 +73,7 @@ SQLITE_CONNECTION = sqlite3.Connection(":memory:")
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "exercise_class_method",
-                "code.lineno": 26,
+                "code.lineno": 28,
                 "code.namespace": CLASS_NAMESPACE,
             },
         ),
@@ -83,7 +83,7 @@ SQLITE_CONNECTION = sqlite3.Connection(":memory:")
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "__call__",
-                "code.lineno": 32,
+                "code.lineno": 34,
                 "code.namespace": CALLABLE_CLASS_NAMESPACE,
             },
         ),
@@ -93,7 +93,17 @@ SQLITE_CONNECTION = sqlite3.Connection(":memory:")
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "<lambda>",
-                "code.lineno": 38,
+                "code.lineno": 40,
+                "code.namespace": NAMESPACE,
+            },
+        ),
+        (  # Functools Partials
+            exercise_partial,
+            (),
+            {
+                "code.filepath": FILE_PATH,
+                "code.function": "exercise_function",
+                "code.lineno": 16,
                 "code.namespace": NAMESPACE,
             },
         ),
@@ -153,7 +163,7 @@ def test_code_level_metrics_callables(func, args, agents):
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "ExerciseClassCallable",
-                "code.lineno": 31,
+                "code.lineno": 33,
                 "code.namespace":NAMESPACE,
             },
         ),
@@ -162,7 +172,7 @@ def test_code_level_metrics_callables(func, args, agents):
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "ExerciseClass",
-                "code.lineno": 18,
+                "code.lineno": 20,
                 "code.namespace": NAMESPACE,
             },
         ),
@@ -171,7 +181,7 @@ def test_code_level_metrics_callables(func, args, agents):
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "ExerciseClass",
-                "code.lineno": 18,
+                "code.lineno": 20,
                 "code.namespace": NAMESPACE,
             },
         ),

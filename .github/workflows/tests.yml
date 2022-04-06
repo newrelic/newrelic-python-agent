@@ -126,8 +126,8 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip3 install -U pip
-          pip3 install -U wheel setuptools tox virtualenv!=20.0.24
+          python3.10 -m pip install -U pip
+          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
         id: get-envs
@@ -201,8 +201,8 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip3 install -U pip
-          pip3 install -U wheel setuptools tox virtualenv!=20.0.24
+          python3.10 -m pip install -U pip
+          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
         id: get-envs
@@ -276,8 +276,8 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip3 install -U pip
-          pip3 install -U wheel setuptools tox virtualenv!=20.0.24
+          python3.10 -m pip install -U pip
+          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       # Special case packages
       - name: Install libcurl-dev
@@ -372,8 +372,8 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip3 install -U pip
-          pip3 install -U wheel setuptools tox virtualenv!=20.0.24
+          python3.10 -m pip install -U pip
+          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
         id: get-envs
@@ -465,8 +465,8 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip3 install -U pip
-          pip3 install -U wheel setuptools tox virtualenv!=20.0.24
+          python3.10 -m pip install -U pip
+          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
         id: get-envs
@@ -553,8 +553,8 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip3 install -U pip
-          pip3 install -U wheel setuptools tox virtualenv!=20.0.24
+          python3.10 -m pip install -U pip
+          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
         id: get-envs
@@ -643,8 +643,8 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip3 install -U pip
-          pip3 install -U wheel setuptools tox virtualenv!=20.0.24
+          python3.10 -m pip install -U pip
+          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
         id: get-envs
@@ -731,8 +731,8 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip3 install -U pip
-          pip3 install -U wheel setuptools tox virtualenv!=20.0.24
+          python3.10 -m pip install -U pip
+          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
         id: get-envs
@@ -820,8 +820,8 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip3 install -U pip
-          pip3 install -U wheel setuptools tox virtualenv!=20.0.24
+          python3.10 -m pip install -U pip
+          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
         id: get-envs
@@ -908,8 +908,8 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip3 install -U pip
-          pip3 install -U wheel setuptools tox virtualenv!=20.0.24
+          python3.10 -m pip install -U pip
+          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
         id: get-envs
@@ -998,8 +998,8 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip3 install -U pip
-          pip3 install -U wheel setuptools tox virtualenv!=20.0.24
+          python3.10 -m pip install -U pip
+          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
         id: get-envs
@@ -1088,8 +1088,8 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip3 install -U pip
-          pip3 install -U wheel setuptools tox virtualenv!=20.0.24
+          python3.10 -m pip install -U pip
+          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
         id: get-envs
@@ -1175,8 +1175,8 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip3 install -U pip
-          pip3 install -U wheel setuptools tox virtualenv!=20.0.24
+          python3.10 -m pip install -U pip
+          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
         id: get-envs

@@ -104,7 +104,7 @@ def view_handler_wrapper(wrapped, instance, args, kwargs):
         name,
         priority=1 if args and isinstance(args[0], Exception) else 2)
 
-    with FunctionTrace(name, source=wrapped) as trace:
+    with FunctionTrace(name, source=view_callable) as trace:
         try:
             return wrapped(*args, **kwargs)
 
@@ -152,25 +152,26 @@ def default_view_mapper_wrapper(wrapped, instance, args, kwargs):
 
         name = callable_name(view)
 
-        with FunctionTrace(name=name, source=wrapper) as tracer:
+        with FunctionTrace(name=name, source=view) as tracer:
             try:
                 return wrapper(context, request)
             finally:
                 attr = instance.attr
-                if attr:
-                    inst = getattr(request, '__view__', None)
-                    if inst is not None:
-                        name = callable_name(getattr(inst, attr))
+                inst = getattr(request, '__view__', None)
+                if inst is not None:
+                    if attr:
+                        handler = getattr(inst, attr)
+                        name = callable_name(handler)
                         transaction.set_transaction_name(name, priority=2)
                         tracer.name = name
-                else:
-                    inst = getattr(request, '__view__', None)
-                    if inst is not None:
+                        tracer.add_code_level_metrics(handler)
+                    else:
                         method = getattr(inst, '__call__')
                         if method:
                             name = callable_name(method)
                             transaction.set_transaction_name(name, priority=2)
                             tracer.name = name
+                            tracer.add_code_level_metrics(method)
 
     return _wrapper
 

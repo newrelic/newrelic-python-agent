@@ -18,6 +18,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, override_application_settings)
 
 from newrelic.packages import six
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 
 
 def target_application(with_tweens=False, tweens_explicit=False):
@@ -59,6 +60,7 @@ def test_application_index(with_tweens, tweens_explicit):
     if with_tweens:
         metrics.append((tween_name, 1))
 
+    @validate_code_level_metrics("_test_application", "home_view")
     @validate_transaction_errors(errors=[])
     @validate_transaction_metrics(
         '_test_application:home_view', scoped_metrics=metrics)
@@ -152,6 +154,7 @@ _test_redirect_scoped_metrics = [
         ('Function/_test_application:redirect', 1)]
 
 
+@validate_code_level_metrics("_test_application", "redirect")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
     '_test_application:redirect',
@@ -170,6 +173,7 @@ _test_resource_get_scoped_metrics = [
         ('Function/_test_application:RestView.get', 1)]
 
 
+@validate_code_level_metrics("_test_application.RestView", "get")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
     '_test_application:RestView.get',
@@ -189,6 +193,7 @@ _test_resource_post_scoped_metrics = [
         ('Function/_test_application:RestView.post', 1)]
 
 
+@validate_code_level_metrics("_test_application.RestView", "post")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
     '_test_application:RestView.post',

@@ -173,8 +173,8 @@ class TimeTrace(object):
 
         self.exclusive += self.duration
 
-        if self.exclusive < 0:
-            self.exclusive = 0
+        # Set negative values to 0
+        self.exclusive = max(self.exclusive, 0)
 
         self.exited = True
 
@@ -248,6 +248,9 @@ class TimeTrace(object):
 
         exc, value, tb = exc_info
 
+        if getattr(value, "_nr_ignored", None):
+            return
+
         module, name, fullnames, message = parse_exc_info((exc, value, tb))
         fullname = fullnames[0]
 
@@ -278,18 +281,21 @@ class TimeTrace(object):
         if isinstance(ignore, bool):
             should_ignore = ignore
             if should_ignore:
+                value._nr_ignored = True
                 return
 
         # Callable parameter
         if should_ignore is None and callable(ignore):
             should_ignore = ignore(exc, value, tb)
             if should_ignore:
+                value._nr_ignored = True
                 return
 
         # Callable on transaction
         if should_ignore is None and hasattr(transaction, "_ignore_errors"):
             should_ignore = transaction._ignore_errors(exc, value, tb)
             if should_ignore:
+                value._nr_ignored = True
                 return
 
         # List of class names
@@ -298,12 +304,14 @@ class TimeTrace(object):
             # This should cascade into default settings rule matching
             for name in fullnames:
                 if name in ignore:
+                    value._nr_ignored = True
                     return
 
         # Default rule matching
         if should_ignore is None:
             should_ignore = should_ignore_error(exc_info, status_code=status_code, settings=settings)
             if should_ignore:
+                value._nr_ignored = True
                 return
 
         # Check against expected rules

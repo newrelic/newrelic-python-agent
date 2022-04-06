@@ -13,11 +13,16 @@
 # limitations under the License.
 
 import json
+import logging
+import re
 from logging import Formatter, LogRecord
 
 from newrelic.api.time_trace import get_linking_metadata
+from newrelic.api.transaction import current_transaction
+from newrelic.common import agent_http
 from newrelic.common.object_names import parse_exc_info
-from newrelic.core.config import is_expected_error
+from newrelic.core.attribute import truncate
+from newrelic.core.config import global_settings, is_expected_error
 
 
 def format_exc_info(exc_info):
@@ -78,3 +83,83 @@ class NewRelicContextFormatter(Formatter):
                 return "<unprintable %s object>" % type(object).__name__
 
         return json.dumps(self.log_record_to_dict(record), default=safe_str, separators=(",", ":"))
+
+
+class NewRelicLogHandler(logging.Handler):
+    """This is an experimental log handler provided by the community. Use with caution."""
+
+    PATH = "/log/v1"
+
+    def __init__(
+        self,
+        level=logging.INFO,
+        license_key=None,
+        host=None,
+        port=443,
+        proxy_scheme=None,
+        proxy_host=None,
+        proxy_user=None,
+        proxy_pass=None,
+        timeout=None,
+        ca_bundle_path=None,
+        disable_certificate_validation=False,
+    ):
+        super(NewRelicLogHandler, self).__init__(level=level)
+        self.license_key = license_key or self.settings.license_key
+        self.host = host or self.settings.host or self.default_host(self.license_key)
+
+        self.client = agent_http.HttpClient(
+            host=host,
+            port=port,
+            proxy_scheme=proxy_scheme,
+            proxy_host=proxy_host,
+            proxy_user=proxy_user,
+            proxy_pass=proxy_pass,
+            timeout=timeout,
+            ca_bundle_path=ca_bundle_path,
+            disable_certificate_validation=disable_certificate_validation,
+        )
+
+        self.setFormatter(NewRelicContextFormatter())
+
+    @property
+    def settings(self):
+        transaction = current_transaction()
+        if transaction:
+            return transaction.settings
+        return global_settings()
+
+    def emit(self, record):
+        try:
+            headers = {"Api-Key": self.license_key or "", "Content-Type": "application/json"}
+            payload = self.format(record).encode("utf-8")
+            with self.client:
+                status_code, response = self.client.send_request(path=self.PATH, headers=headers, payload=payload)
+                if status_code < 200 or status_code >= 300:
+                    raise RuntimeError(
+                        "An unexpected HTTP response of %r was received for request made to https://%s:%d%s."
+                        "The response payload for the request was %r. If this issue persists then please "
+                        "report this problem to New Relic support for further investigation."
+                        % (
+                            status_code,
+                            self.client._host,
+                            self.client._port,
+                            self.PATH,
+                            truncate(response.decode("utf-8"), 1024),
+                        )
+                    )
+
+        except Exception:
+            self.handleError(record)
+
+    def default_host(self, license_key):
+        if not license_key:
+            return "log-api.newrelic.com"
+
+        region_aware_match = re.match("^(.+?)x", license_key)
+        if not region_aware_match:
+            return "log-api.newrelic.com"
+
+        region = region_aware_match.group(1)
+        host = "log-api." + region + ".newrelic.com"
+        return host

@@ -116,7 +116,7 @@ class AttributesSettings(Settings):
 
 
 class GCRuntimeMetricsSettings(Settings):
-    pass
+    enabled = False
 
 
 class CodeLevelMetricsSettings(Settings):
@@ -1163,7 +1163,7 @@ def error_matches_rules(
 
             if not settings:
                 # Unable to find rules to match with
-                _logger.error(
+                _logger.debug(
                     "Failed to retrieve exception rules: No settings supplied, or found on transaction or trace."
                 )
                 return None

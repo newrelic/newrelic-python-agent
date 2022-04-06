@@ -2154,6 +2154,12 @@ def _process_module_builtin_defaults():
         "instrument_flask_rest",
     )
 
+    _process_module_definition(
+        "graphql_server",
+        "newrelic.hooks.component_graphqlserver",
+        "instrument_graphqlserver",
+    )
+
     # _process_module_definition('web.application',
     #        'newrelic.hooks.framework_webpy')
     # _process_module_definition('web.template',
@@ -2547,6 +2553,14 @@ def _process_module_builtin_defaults():
     _process_module_definition("pysolr", "newrelic.hooks.datastore_pysolr", "instrument_pysolr")
 
     _process_module_definition("solr", "newrelic.hooks.datastore_solrpy", "instrument_solrpy")
+
+    _process_module_definition("aredis.client", "newrelic.hooks.datastore_aredis", "instrument_aredis_client")
+
+    _process_module_definition(
+        "aredis.connection",
+        "newrelic.hooks.datastore_aredis",
+        "instrument_aredis_connection",
+    )
 
     _process_module_definition(
         "elasticsearch.client",

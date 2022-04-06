@@ -19,6 +19,7 @@ import aiohttp
 from newrelic.core.config import global_settings
 from testing_support.fixtures import (validate_transaction_metrics,
         override_generic_settings)
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 
 version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
 
@@ -83,6 +84,11 @@ def test_middleware(nr_enabled, aiohttp_app, middleware, metric):
         _test = validate_transaction_metrics('_target_application:index',
                 scoped_metrics=scoped_metrics,
                 rollup_metrics=rollup_metrics)(_test)
+        _test = validate_code_level_metrics("_target_application", "index")(_test)
+        
+        func_name = metric.split("/")[1].replace(":", ".").split(".")
+        namespace, func_name = ".".join(func_name[:-1]), func_name[-1]
+        _test = validate_code_level_metrics(namespace, func_name)(_test)
     else:
         settings = global_settings()
 

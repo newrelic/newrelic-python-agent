@@ -68,7 +68,7 @@ def wrap_elasticsearch_client_method(owner, name, arg_extractor, prefix=None):
         # associated with this method. Hence this method will only
         # create an operation metric and no statement metric. This is
         # handled by setting the target to None when calling the
-        # DatastoreTrace.
+        # DatastoreTraceWrapper.
 
         if arg_extractor is None:
             index = None
@@ -85,7 +85,8 @@ def wrap_elasticsearch_client_method(owner, name, arg_extractor, prefix=None):
         dt = DatastoreTrace(
                 product='Elasticsearch',
                 target=index,
-                operation=operation
+                operation=operation,
+                source=wrapped
         )
 
         with dt:

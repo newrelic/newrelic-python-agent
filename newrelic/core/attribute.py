@@ -79,6 +79,10 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set((
         'graphql.operation.name',
         'graphql.operation.type',
         'graphql.operation.query',
+        "code.filepath",
+        "code.function",
+        "code.lineno",
+        "code.namespace",
 ))
 
 MAX_NUM_USER_ATTRIBUTES = 128

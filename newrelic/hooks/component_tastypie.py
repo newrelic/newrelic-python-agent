@@ -14,7 +14,7 @@
 
 import sys
 
-from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.function_trace import FunctionTraceWrapper
 from newrelic.api.object_wrapper import ObjectWrapper, callable_name
 from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import notice_error
@@ -64,9 +64,8 @@ def outer_fn_wrapper(outer_fn, instance, args, kwargs):
 
         transaction.set_transaction_name(name, group, priority=5)
 
-        with FunctionTrace(name, group):
-            # django's exception handling will record errors here
-            return inner_fn(*args, **kwargs)
+        # django's exception handling will record errors here
+        return FunctionTraceWrapper(inner_fn, name=name, group=group)(*args, **kwargs)
 
     result = outer_fn(*args, **kwargs)
 

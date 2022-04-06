@@ -29,6 +29,7 @@ from newrelic.common.object_wrapper import (wrap_out_function,
 
 module_bottle = None
 
+
 def status_code(exc, value, tb):
     # The HTTPError class derives from HTTPResponse and so we do not
     # need to check for it seperately as isinstance() will pick it up.
@@ -41,10 +42,12 @@ def status_code(exc, value, tb):
         elif hasattr(value, 'http_status_code'):
             return value.http_status_code
 
+
 def should_ignore(exc, value, tb):
     if hasattr(module_bottle, 'RouteReset'):
         if isinstance(value, module_bottle.RouteReset):
             return True
+
 
 @function_wrapper
 def callback_wrapper(wrapped, instance, args, kwargs):
@@ -61,7 +64,7 @@ def callback_wrapper(wrapped, instance, args, kwargs):
 
     transaction.set_transaction_name(name, priority=2)
 
-    with FunctionTrace(name) as trace:
+    with FunctionTrace(name=name, source=wrapped) as trace:
         try:
             return wrapped(*args, **kwargs)
 
@@ -75,12 +78,15 @@ def callback_wrapper(wrapped, instance, args, kwargs):
             trace.notice_error(status_code=status_code, ignore=should_ignore)
             raise
 
+
 def output_wrapper_Bottle_match(result):
     callback, args = result
     return callback_wrapper(callback), args
 
+
 def output_wrapper_Route_make_callback(callback):
     return callback_wrapper(callback)
+
 
 class proxy_Bottle_error_handler(ObjectProxy):
     # This proxy wraps the error_handler attribute of the Bottle class.
@@ -112,6 +118,7 @@ class proxy_Bottle_error_handler(ObjectProxy):
 
         return handler or default
 
+
 def wrapper_auth_basic(wrapped, instance, args, kwargs):
     # Bottle has a bug whereby functools.wraps() is not used on the
     # nested wrapper function in the implementation of auth_basic()
@@ -127,6 +134,7 @@ def wrapper_auth_basic(wrapped, instance, args, kwargs):
         return functools.wraps(func)(decorator(func))
 
     return _decorator
+
 
 def instrument_bottle(module):
     global module_bottle

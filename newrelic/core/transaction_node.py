@@ -332,6 +332,10 @@ class TransactionNode(_TransactionNode):
                 if attr.destinations & DST_ERROR_COLLECTOR:
                     params['userAttributes'][attr.name] = attr.value
 
+            # add source context attrs for error
+            if self.settings and self.settings.code_level_metrics and self.settings.code_level_metrics.enabled and getattr(error, "source", None):
+                error.source.add_attrs(params['agentAttributes'].__setitem__)
+
             # add error specific custom params to this error's userAttributes
 
             err_attrs = create_user_attributes(error.custom_params,

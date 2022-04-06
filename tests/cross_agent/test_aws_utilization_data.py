@@ -57,12 +57,17 @@ def test_aws(monkeypatch, testname, uri,
             body = json.dumps(api_result['response'])
             return 200, body.encode('utf-8')
 
+    @classmethod
+    def fake_token(cls):
+        return "FakeToken"
+
     url, api_result = uri.popitem()
     status, data = _get_mock_return_value(api_result)
 
     client_cls = create_client_cls(status, data, url)
 
     monkeypatch.setattr(AWSUtilization, "CLIENT_CLS", client_cls)
+    monkeypatch.setattr(AWSUtilization, "fetchAuthToken", fake_token)
 
     metrics = []
     if expected_metrics:

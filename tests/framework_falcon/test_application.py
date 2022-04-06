@@ -17,6 +17,7 @@ from newrelic.core.config import global_settings
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_transaction_errors, override_ignore_status_codes,
         override_generic_settings)
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 
 SETTINGS = global_settings()
 
@@ -27,6 +28,7 @@ def test_basic(app):
         ('Function/_target_application:Index.on_get', 1),
     )
 
+    @validate_code_level_metrics("_target_application.Index", "on_get")
     @validate_transaction_metrics('_target_application:Index.on_get',
             scoped_metrics=_test_basic_metrics,
             rollup_metrics=_test_basic_metrics)
@@ -62,6 +64,7 @@ def test_error_recorded(app):
 # This test verifies that we don't actually break anything if somebody puts
 # garbage into the status code
 @validate_transaction_metrics('_target_application:BadResponse.on_get')
+@validate_code_level_metrics("_target_application.BadResponse", "on_get")
 @validate_transaction_errors(errors=['_target_application:BadGetRequest'])
 def test_bad_response_error(app):
     # Disable linting since this should actually be an invalid response
@@ -75,6 +78,7 @@ def test_bad_response_error(app):
 
 
 @validate_transaction_metrics('_target_application:BadResponse.on_put')
+@validate_code_level_metrics("_target_application.BadResponse", "on_put")
 @validate_transaction_errors(errors=['_target_application:BadPutRequest'])
 def test_unhandled_exception(app):
     from falcon import __version__ as falcon_version

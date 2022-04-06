@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from newrelic.api.external_trace import wrap_external_trace
-from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
 

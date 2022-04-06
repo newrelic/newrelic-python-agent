@@ -191,9 +191,9 @@ def test_middleware(target_application):
         ("Function/test_graphql:example_middleware", 1),
     ]
 
-    # Base span count 5: Transaction, View, Operation, Middleware, and 1 Resolver
+    # Base span count 6: Transaction, View, Operation, Middleware, and 1 Resolver and Resolver function
     # For Flask, add 9 more for WSGI and framework related spans
-    span_count = {"Flask": 14, "Sanic": 5}
+    span_count = {"Flask": 15, "Sanic": 6}
 
     @validate_transaction_metrics(
         "query/<anonymous>/hello",
@@ -363,11 +363,11 @@ def test_operation_metrics_and_attrs(target_application):
         "graphql.operation.name": "MyQuery",
     }
 
-    # Base span count 10: Transaction, View, Operation, and 7 Resolvers
+    # Base span count 17: Transaction, View, Operation, and 7 Resolvers and Resolver functions
     # library, library.name, library.book
     # library.book.name and library.book.id for each book resolved (in this case 2)
     # For Flask, add 9 more for WSGI and framework related spans
-    span_count = {"Flask": 19, "Sanic": 10}
+    span_count = {"Flask": 26, "Sanic": 17}
 
     @validate_transaction_metrics(
         "query/MyQuery/library",
@@ -394,9 +394,9 @@ def test_field_resolver_metrics_and_attrs(target_application):
         "graphql.field.returnType": "String",
     }
 
-    # Base span count 4: Transaction, View, Operation, and 1 Resolver
+    # Base span count 5: Transaction, View, Operation, and 1 Resolver and Resolver function
     # For Flask, add 9 more for WSGI and framework related spans
-    span_count = {"Flask": 13, "Sanic": 4}
+    span_count = {"Flask": 14, "Sanic": 5}
 
     @validate_transaction_metrics(
         "query/<anonymous>/hello",

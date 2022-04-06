@@ -38,7 +38,7 @@
 #   use of XMLRPCDispatcher.
 
 from newrelic.api.error_trace import wrap_error_trace
-from newrelic.api.function_trace import FunctionTrace, wrap_function_trace
+from newrelic.api.function_trace import FunctionTraceWrapper, wrap_function_trace
 from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import current_transaction
 from newrelic.api.wsgi_application import wrap_wsgi_application
@@ -85,9 +85,7 @@ def handler_wrapper(wrapped, instance, args, kwargs):
     # except those which are used for controlling the actions of the
     # application.
 
-    with FunctionTrace(name=name):
-        return wrapped(*args, **kwargs)
-
+    return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
 
 class ResourceProxy(ObjectProxy):
     def __getattr__(self, name):

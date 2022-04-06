@@ -11,21 +11,31 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import functools
 
-from collections import namedtuple
+def exercise_function():
+    return
 
-ErrorNode = namedtuple(
-    "ErrorNode",
-    [
-        "timestamp",
-        "type",
-        "message",
-        "expected",
-        "span_id",
-        "stack_trace",
-        "custom_params",
-        "file_name",
-        "line_number",
-        "source",
-    ],
-)
+
+class ExerciseClass():
+    def exercise_method(self):
+        return
+
+    @staticmethod
+    def exercise_static_method():
+        return
+
+    @classmethod
+    def exercise_class_method(cls):
+        return
+
+
+class ExerciseClassCallable():
+    def __call__(self):
+        return
+
+CLASS_INSTANCE = ExerciseClass()
+CLASS_INSTANCE_CALLABLE = ExerciseClassCallable()
+
+exercise_lambda = lambda: None
+exercise_partial = functools.partial(exercise_function)

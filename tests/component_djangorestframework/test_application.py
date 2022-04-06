@@ -15,12 +15,13 @@
 import pytest
 import webtest
 
+from newrelic.packages import six
 from newrelic.core.config import global_settings
 
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, override_generic_settings,
     function_not_called)
-
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 import django
 
 DJANGO_VERSION = tuple(map(int, django.get_version().split('.')[:2]))
@@ -91,6 +92,7 @@ if DJANGO_VERSION >= (1, 5):
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:index',
         scoped_metrics=_test_application_index_scoped_metrics)
+@validate_code_level_metrics("views", "index")
 def test_application_index(target_application):
     response = target_application.get('')
     response.mustcontain('INDEX RESPONSE')
@@ -107,6 +109,7 @@ if DJANGO_VERSION >= (1, 5):
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('urls:View.get',
     scoped_metrics=_test_application_view_scoped_metrics)
+@validate_code_level_metrics("urls.View", "get")
 def test_application_view(target_application):
     response = target_application.get('/view/')
     assert response.status_int == 200
@@ -121,6 +124,7 @@ _test_application_view_error_scoped_metrics.append(
 @validate_transaction_errors(errors=['urls:Error'])
 @validate_transaction_metrics('urls:ViewError.get',
     scoped_metrics=_test_application_view_error_scoped_metrics)
+@validate_code_level_metrics("urls.ViewError", "get")
 def test_application_view_error(target_application):
     target_application.get('/view_error/', status=500)
 
@@ -132,6 +136,7 @@ _test_application_view_handle_error_scoped_metrics.append(
 
 @pytest.mark.parametrize('status,should_record', [(418, True), (200, False)])
 @pytest.mark.parametrize('use_global_exc_handler', [True, False])
+@validate_code_level_metrics("urls.ViewHandleError", "get")
 def test_application_view_handle_error(status, should_record,
         use_global_exc_handler, target_application):
     errors = ['urls:Error'] if should_record else []
@@ -160,6 +165,7 @@ _test_api_view_scoped_metrics_get.append(
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(_test_api_view_view_name_get,
     scoped_metrics=_test_api_view_scoped_metrics_get)
+@validate_code_level_metrics("urls.WrappedAPIView" if six.PY3 else "urls", "wrapped_view")
 def test_api_view_get(target_application):
     response = target_application.get('/api_view/')
     response.mustcontain('wrapped_view response')

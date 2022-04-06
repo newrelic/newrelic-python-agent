@@ -159,9 +159,11 @@ class Transaction(object):
     STATE_RUNNING = 1
     STATE_STOPPED = 2
 
-    def __init__(self, application, enabled=None):
+    def __init__(self, application, enabled=None, source=None):
 
         self._application = application
+
+        self._source = source
 
         self.thread_id = None
 
@@ -378,6 +380,11 @@ class Transaction(object):
         # used to validate correct usage of class.
 
         self._state = self.STATE_RUNNING
+
+        # Extract source code context
+        if self._source is not None:
+            self.add_code_level_metrics(self._source)
+            self._source = None  # Remove reference to source
 
         return self
 
@@ -991,6 +998,10 @@ class Transaction(object):
         m = self._transaction_metrics.get(metric_name, 0)
         self._transaction_metrics[metric_name] = m + 1
 
+    def add_code_level_metrics(self, source):
+        if self.root_span:
+            self.root_span.add_code_level_metrics(source)
+
     def _create_distributed_trace_data_with_guid(self, guid):
         data = self._create_distributed_trace_data()
         if guid and data and "id" in data:
@@ -1485,7 +1496,7 @@ class Transaction(object):
                 status_code=status_code,
             )
 
-    def _create_error_node(self, settings, fullname, message, expected, custom_params, span_id, tb):
+    def _create_error_node(self, settings, fullname, message, expected, custom_params, span_id, tb, source):
         # Only remember up to limit of what can be caught for a
         # single transaction. This could be trimmed further
         # later if there are already recorded errors and would
@@ -1516,7 +1527,7 @@ class Transaction(object):
             custom_params=custom_params,
             file_name=None,
             line_number=None,
-            source=None,
+            source=source,
         )
 
         # TODO Errors are recorded in time order. If

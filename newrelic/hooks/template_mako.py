@@ -34,9 +34,7 @@ class TemplateRenderWrapper(object):
         if transaction:
             if hasattr(template, 'filename'):
                 name = template.filename or '<template>'
-                with newrelic.api.function_trace.FunctionTrace(
-                        name=name, group='Template/Render'):
-                    return self.__wrapped(template, *args, **kwargs)
+                return newrelic.api.function_trace.FunctionTraceWrapper(self.__wrapped, name=name, group='Template/Render')(template, *args, **kwargs)
             else:
                 return self.__wrapped(template, *args, **kwargs)
         else:

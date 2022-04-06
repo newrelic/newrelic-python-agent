@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 import sqlite3
 import newrelic.packages.six as six
 import pytest
@@ -25,6 +26,8 @@ from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
 from _test_code_level_metrics import exercise_function, CLASS_INSTANCE, CLASS_INSTANCE_CALLABLE, exercise_lambda, exercise_partial, ExerciseClass, ExerciseClassCallable, __file__ as FILE_PATH
 
 
+is_pypy = hasattr(sys, "pypy_version_info")
+
 NAMESPACE = "_test_code_level_metrics"
 CLASS_NAMESPACE = ".".join((NAMESPACE, "ExerciseClass"))
 CALLABLE_CLASS_NAMESPACE = ".".join((NAMESPACE, "ExerciseClassCallable"))
@@ -33,6 +36,8 @@ if FILE_PATH.endswith(".pyc"):
     FILE_PATH = FILE_PATH[:-1]
 
 SQLITE_CONNECTION = sqlite3.Connection(":memory:")
+
+BUILTIN_ATTRS = {"code.filepath": "<builtin>", "code.lineno": None} if not is_pypy else {}
 
 @pytest.mark.parametrize(
     "func,args,agents",
@@ -111,30 +116,27 @@ SQLITE_CONNECTION = sqlite3.Connection(":memory:")
             max,
             (1, 2),
             {
-                "code.filepath": "<builtin>",
                 "code.function": "max",
-                "code.lineno": None,
                 "code.namespace": "builtins" if six.PY3 else "__builtin__",
+                **BUILTIN_ATTRS,
             },
         ),
         (  # Module Level Builtin
             sqlite3.connect,
             (":memory:",),
             {
-                "code.filepath": "<builtin>",
                 "code.function": "connect",
-                "code.lineno": None,
                 "code.namespace": "_sqlite3",
+                **BUILTIN_ATTRS,
             },
         ),
         (  # Builtin Method
             SQLITE_CONNECTION.__enter__,
             (),
             {
-                "code.filepath": "<builtin>",
                 "code.function": "__enter__",
-                "code.lineno": None,
-                "code.namespace": "sqlite3.Connection",
+                "code.namespace": "sqlite3.Connection" if not is_pypy else "_sqlite3.Connection",
+                **BUILTIN_ATTRS,
             },
         ),
     ),

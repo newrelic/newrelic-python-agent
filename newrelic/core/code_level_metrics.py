@@ -60,38 +60,37 @@ def extract_code_from_callable(func):
     # Retrieve basic object details
     module_name, func_path = object_context(func)
 
-    if hasattr(func, "__code__"):
+    if inspect.isbuiltin(func):
+        # Set attributes for builtins
+        file_path = "<builtin>"
+        line_number = None
+    elif hasattr(func, "__code__"):
         # Extract details from function __code__ attr
         co = func.__code__
         line_number = co.co_firstlineno
         file_path = co.co_filename
     else:
-        if inspect.isbuiltin(func):
-            # Set attributes for builtins
-            file_path = "<builtin>"
-            line_number = None
-        else:
-            # Extract call method for callable objects
-            if inspect.isclass(func):
-                # For class types don't change anything
-                pass
-            elif hasattr(func, "__call__"):
-                # For callable object, use the __call__ attribute
-                func = func.__call__
-                module_name, func_path = object_context(func)
-            elif hasattr(func, "__class__"):
-                # Extract class from object instances
-                func = func.__class__
+        # Extract call method for callable objects
+        if inspect.isclass(func):
+            # For class types don't change anything
+            pass
+        elif hasattr(func, "__call__"):
+            # For callable object, use the __call__ attribute
+            func = func.__call__
+            module_name, func_path = object_context(func)
+        elif hasattr(func, "__class__"):
+            # Extract class from object instances
+            func = func.__class__
 
-            # Initialize here instead of in except to potentially get file_path but not line_number
-            file_path = None
-            line_number = None
-            try:
-                # Use inspect to get file and line number
-                file_path = inspect.getsourcefile(func)
-                line_number = inspect.getsourcelines(func)[1]
-            except TypeError:
-                pass
+        # Initialize here instead of in except to potentially get file_path but not line_number
+        file_path = None
+        line_number = None
+        try:
+            # Use inspect to get file and line number
+            file_path = inspect.getsourcefile(func)
+            line_number = inspect.getsourcelines(func)[1]
+        except TypeError:
+            pass
 
     # Split function path to extract class name
     func_path = func_path.split(".")

@@ -39,6 +39,12 @@ SQLITE_CONNECTION = sqlite3.Connection(":memory:")
 
 BUILTIN_ATTRS = {"code.filepath": "<builtin>", "code.lineno": None} if not is_pypy else {}
 
+def merge_dicts(A, B):
+    d = {}
+    d.update(A)
+    d.update(B)
+    return d
+
 @pytest.mark.parametrize(
     "func,args,agents",
     (
@@ -115,29 +121,26 @@ BUILTIN_ATTRS = {"code.filepath": "<builtin>", "code.lineno": None} if not is_py
         (  # Top Level Builtin
             max,
             (1, 2),
-            {
+            merge_dicts({
                 "code.function": "max",
                 "code.namespace": "builtins" if six.PY3 else "__builtin__",
-                **BUILTIN_ATTRS,
-            },
+            }, BUILTIN_ATTRS),
         ),
         (  # Module Level Builtin
             sqlite3.connect,
             (":memory:",),
-            {
+            merge_dicts({
                 "code.function": "connect",
                 "code.namespace": "_sqlite3",
-                **BUILTIN_ATTRS,
-            },
+            }, BUILTIN_ATTRS),
         ),
         (  # Builtin Method
             SQLITE_CONNECTION.__enter__,
             (),
-            {
+            merge_dicts({
                 "code.function": "__enter__",
                 "code.namespace": "sqlite3.Connection" if not is_pypy else "_sqlite3.Connection",
-                **BUILTIN_ATTRS,
-            },
+            }, BUILTIN_ATTRS),
         ),
     ),
 )

@@ -114,7 +114,7 @@ SQLITE_CONNECTION = sqlite3.Connection(":memory:")
                 "code.filepath": "<builtin>",
                 "code.function": "max",
                 "code.lineno": None,
-                "code.namespace": "builtins",
+                "code.namespace": "builtins" if six.PY3 else "__builtin__",
             },
         ),
         (  # Module Level Builtin

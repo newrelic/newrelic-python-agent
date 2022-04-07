@@ -48,7 +48,7 @@ def httplib_endheaders_wrapper(wrapped, instance, args, kwargs,
     try:
         skip_headers = getattr(connection, '_nr_skip_headers', False)
 
-        with ExternalTrace(library=library, url=url) as tracer:
+        with ExternalTrace(library=library, url=url, source=wrapped) as tracer:
             # Add the tracer to the connection object. The tracer will be
             # used in getresponse() to add back into the external trace,
             # after the trace has already completed, details from the

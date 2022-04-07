@@ -23,6 +23,7 @@ from testing_support.fixtures import (
 )
 
 from newrelic.common.object_names import callable_name
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 
 
 @pytest.fixture(scope="session")
@@ -49,6 +50,8 @@ MIDDLEWARE_METRICS = [
     scoped_metrics=MIDDLEWARE_METRICS + [("Function/_test_application:index", 1)],
     rollup_metrics=[FRAMEWORK_METRIC],
 )
+@validate_code_level_metrics("_test_application", "index")
+@validate_code_level_metrics("_test_application.middleware_factory.<locals>", "middleware", count=2)
 def test_application_index(target_application, app_name):
     app = target_application[app_name]
     response = app.get("/index")
@@ -61,6 +64,8 @@ def test_application_index(target_application, app_name):
     scoped_metrics=MIDDLEWARE_METRICS + [("Function/_test_application:non_async", 1)],
     rollup_metrics=[FRAMEWORK_METRIC],
 )
+@validate_code_level_metrics("_test_application", "non_async")
+@validate_code_level_metrics("_test_application.middleware_factory.<locals>", "middleware", count=2)
 def test_application_non_async(target_application, app_name):
     app = target_application[app_name]
     response = app.get("/non_async")

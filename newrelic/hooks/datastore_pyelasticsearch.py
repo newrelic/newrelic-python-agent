@@ -14,7 +14,7 @@
 
 from newrelic.packages import six
 
-from newrelic.api.datastore_trace import DatastoreTrace
+from newrelic.api.datastore_trace import DatastoreTraceWrapper
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
@@ -87,16 +87,14 @@ def wrap_elasticsearch_client_method(module, name, arg_extractor):
         # associated with this method. Hence this method will only
         # create an operation metric and no statement metric. This is
         # handled by setting the target to None when calling the
-        # DatastoreTrace.
+        # DatastoreTraceWrapper.
 
         if arg_extractor is None:
             index = None
         else:
             index = arg_extractor(*args, **kwargs)
 
-        with DatastoreTrace(product='Elasticsearch',
-                target=index, operation=name):
-            return wrapped(*args, **kwargs)
+        return DatastoreTraceWrapper(wrapped, product='Elasticsearch',target=index, operation=name)(*args, **kwargs)
 
     if hasattr(module.ElasticSearch, name):
         wrap_function_wrapper(module.ElasticSearch, name,

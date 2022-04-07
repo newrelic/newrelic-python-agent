@@ -41,6 +41,7 @@ from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.database_utils import explain_plan
 from newrelic.core.error_collector import TracedError
 from newrelic.core.metric import TimeMetric
+from newrelic.core.code_level_metrics import extract_code_from_traceback
 from newrelic.core.stack_trace import exception_stack
 
 _logger = logging.getLogger(__name__)
@@ -711,6 +712,12 @@ class StatsEngine(object):
         attributes["intrinsics"] = {
             "error.expected": is_expected,
         }
+
+        # set source code attributes
+        attributes["agentAttributes"] = {}
+        if settings and settings.code_level_metrics and settings.code_level_metrics.enabled:
+            extract_code_from_traceback(tb).add_attrs(attributes["agentAttributes"].__setitem__)
+
 
         error_details = TracedError(
             start_time=time.time(), path="Exception", message=message, type=fullname, parameters=attributes

@@ -16,6 +16,7 @@ import logging
 
 import pytest
 from testing_support.fixtures import validate_transaction_metrics
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 
 
 @pytest.mark.parametrize(
@@ -29,6 +30,7 @@ def test_application(caplog, app, endpoint, transaction_name):
     caplog.set_level(logging.ERROR)
 
     @validate_transaction_metrics(transaction_name, scoped_metrics=[("Function/" + transaction_name, 1)])
+    @validate_code_level_metrics(*transaction_name.split(":"))
     def _test():
         response = app.get(endpoint)
         assert response.status == 200

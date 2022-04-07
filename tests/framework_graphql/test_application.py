@@ -23,6 +23,7 @@ from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
 )
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
@@ -163,6 +164,8 @@ def test_query_and_mutation(target_application, is_graphql_2):
         "graphql.field.returnType": "[String]",
     }
 
+    @validate_code_level_metrics("_target_application", "resolve_storage")
+    @validate_code_level_metrics("_target_application", "resolve_storage_add")
     @validate_transaction_metrics(
         "mutation/<anonymous>/storage_add",
         "GraphQL",
@@ -211,6 +214,8 @@ def test_middleware(target_application, middleware):
         ("Function/test_application:%s" % name, 1),
     ]
 
+    @validate_code_level_metrics("test_application", "example_middleware")
+    @validate_code_level_metrics("_target_application", "resolve_hello")
     @validate_transaction_metrics(
         "query/<anonymous>/hello",
         "GraphQL",
@@ -218,8 +223,8 @@ def test_middleware(target_application, middleware):
         rollup_metrics=_test_middleware_metrics + _graphql_base_rollup_metrics(framework, version, is_bg),
         background_task=is_bg,
     )
-    # Span count 4: Transaction, Operation, Middleware, and 1 Resolver
-    @validate_span_events(count=4)
+    # Span count 5: Transaction, Operation, Middleware, and 1 Resolver and Resolver Function
+    @validate_span_events(count=5)
     @conditional_decorator(background_task(), is_bg)
     def _test():
         response = target_application("{ hello }", middleware=[middleware])
@@ -400,10 +405,10 @@ def test_operation_metrics_and_attrs(target_application):
         rollup_metrics=operation_metrics + _graphql_base_rollup_metrics(framework, version, is_bg),
         background_task=is_bg,
     )
-    # Span count 7: Transaction, Operation, and 7 Resolvers
+    # Span count 16: Transaction, Operation, and 7 Resolvers and Resolver functions
     # library, library.name, library.book
     # library.book.name and library.book.id for each book resolved (in this case 2)
-    @validate_span_events(count=9)
+    @validate_span_events(count=16)
     @validate_span_events(exact_agents=operation_attrs)
     @conditional_decorator(background_task(), is_bg)
     def _test():
@@ -431,8 +436,8 @@ def test_field_resolver_metrics_and_attrs(target_application):
         rollup_metrics=field_resolver_metrics + _graphql_base_rollup_metrics(framework, version, is_bg),
         background_task=is_bg,
     )
-    # Span count 3: Transaction, Operation, and 1 Resolver
-    @validate_span_events(count=3)
+    # Span count 4: Transaction, Operation, and 1 Resolver and Resolver function
+    @validate_span_events(count=4)
     @validate_span_events(exact_agents=graphql_attrs)
     @conditional_decorator(background_task(), is_bg)
     def _test():

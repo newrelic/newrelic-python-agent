@@ -21,6 +21,7 @@ from newrelic.common.encoding_utils import gzip_decompress
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, override_application_settings,
     override_generic_settings, override_ignore_status_codes)
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 
 DJANGO_VERSION = tuple(map(int, django.get_version().split('.')[:2]))
 
@@ -57,6 +58,7 @@ def application():
 @validate_transaction_metrics('views:index',
         scoped_metrics=[('Function/views:index', 1)] + scoped_metrics,
         rollup_metrics=rollup_metrics)
+@validate_code_level_metrics("views", "index")
 def test_asgi_index(application):
     response = application.get('/')
     assert response.status == 200
@@ -65,6 +67,7 @@ def test_asgi_index(application):
 @validate_transaction_metrics('views:exception',
         scoped_metrics=[('Function/views:exception', 1)] + scoped_metrics,
         rollup_metrics=rollup_metrics)
+@validate_code_level_metrics("views", "exception")
 def test_asgi_exception(application):
     response = application.get('/exception')
     assert response.status == 500
@@ -75,6 +78,7 @@ def test_asgi_exception(application):
 @validate_transaction_metrics('views:middleware_410',
         scoped_metrics=[('Function/views:middleware_410', 1)] + scoped_metrics,
         rollup_metrics=rollup_metrics)
+@validate_code_level_metrics("views", "middleware_410")
 def test_asgi_middleware_ignore_status_codes(application):
     response = application.get('/middleware_410')
     assert response.status == 410
@@ -85,6 +89,7 @@ def test_asgi_middleware_ignore_status_codes(application):
 @validate_transaction_metrics('views:permission_denied',
         scoped_metrics=[('Function/views:permission_denied', 1)] + scoped_metrics,
         rollup_metrics=rollup_metrics)
+@validate_code_level_metrics("views", "permission_denied")
 def test_asgi_ignored_status_code(application):
     response = application.get('/permission_denied')
     assert response.status == 403
@@ -95,11 +100,14 @@ def test_asgi_ignored_status_code(application):
     ('/deferred_cbv', 'views:deferred_cbv'),
 ))
 def test_asgi_class_based_view(application, url, view_name):
-
+    func = 'get' if url == '/cbv' else 'deferred_cbv'
+    namespace = 'views.MyView' if func == 'get' else 'views'
+   
     @validate_transaction_errors(errors=[])
     @validate_transaction_metrics(view_name,
             scoped_metrics=[('Function/' + view_name, 1)] + scoped_metrics,
             rollup_metrics=rollup_metrics)
+    @validate_code_level_metrics(namespace, func)
     def _test():
         response = application.get(url)
         assert response.status == 200
@@ -160,6 +168,7 @@ def test_asgi_html_insertion_failed(application, url):
                 ('Template/Render/main.html', 1),
                 ('Template/Render/results.html', 1)] + scoped_metrics,
         rollup_metrics=rollup_metrics)
+@validate_code_level_metrics('views', 'template_tags')
 def test_asgi_template_render(application):
     response = application.get('/template_tags')
     assert response.status == 200

@@ -22,12 +22,12 @@ from newrelic.core.memcache_node import MemcacheNode
 
 class MemcacheTrace(TimeTrace):
     def __init__(self, command, **kwargs):
-        parent = None
+        parent = kwargs.pop("parent", None)
+        source = kwargs.pop("source", None)
         if kwargs:
-            if len(kwargs) > 1:
-                raise TypeError("Invalid keyword arguments:", kwargs)
-            parent = kwargs["parent"]
-        super(MemcacheTrace, self).__init__(parent)
+            raise TypeError("Invalid keyword arguments:", kwargs)
+
+        super(MemcacheTrace, self).__init__(parent=parent, source=source)
 
         self.command = command
 
@@ -69,7 +69,7 @@ def MemcacheTraceWrapper(wrapped, command):
         else:
             _command = command
 
-        trace = MemcacheTrace(_command, parent=parent)
+        trace = MemcacheTrace(_command, parent=parent, source=wrapped)
 
         if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)

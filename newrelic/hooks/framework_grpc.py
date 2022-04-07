@@ -56,7 +56,7 @@ def wrap_call(module, object_path, prepare):
             return wrapped(*args, **kwargs)
 
         uri, method = _get_uri_method(instance)
-        with ExternalTrace('gRPC', uri, method):
+        with ExternalTrace('gRPC', uri, method, source=wrapped):
             args, kwargs = prepare(transaction, None, *args, **kwargs)
             return wrapped(*args, **kwargs)
 
@@ -76,7 +76,7 @@ def wrap_future(module, object_path, prepare):
         args, kwargs = prepare(transaction, guid, *args, **kwargs)
         future = wrapped(*args, **kwargs)
         future._nr_guid = guid
-        future._nr_args = ('gRPC', uri, method)
+        future._nr_args = {"library": 'gRPC', "url": uri, "method": method, "source": wrapped}
         future._nr_start_time = time.time()
 
         # In non-streaming responses, result is typically called instead of
@@ -100,7 +100,7 @@ def wrap_next(_wrapped, _instance, _args, _kwargs):
         _nr_start_time = getattr(_instance, '_nr_start_time', 0.0)
         _nr_guid = getattr(_instance, '_nr_guid', None)
 
-        with ExternalTrace(*_nr_args) as t:
+        with ExternalTrace(**_nr_args) as t:
             t.start_time = _nr_start_time or t.start_time
             t.guid = _nr_guid or t.guid
             raise
@@ -117,12 +117,12 @@ def wrap_result(_wrapped, _instance, _args, _kwargs):
     try:
         result = _wrapped(*_args, **_kwargs)
     except Exception:
-        with ExternalTrace(*_nr_args) as t:
+        with ExternalTrace(**_nr_args) as t:
             t.start_time = _nr_start_time or t.start_time
             t.guid = _nr_guid or t.guid
             raise
     else:
-        with ExternalTrace(*_nr_args) as t:
+        with ExternalTrace(**_nr_args) as t:
             t.start_time = _nr_start_time or t.start_time
             t.guid = _nr_guid or t.guid
             return result
@@ -159,7 +159,8 @@ def grpc_web_transaction(wrapped, instance, args, kwargs):
             request_path=request_path,
             host=host,
             port=port,
-            headers=metadata)(*args, **kwargs)
+            headers=metadata,
+            source=behavior)(*args, **kwargs)
 
 
 def _trailing_metadata(state, *args, **kwargs):

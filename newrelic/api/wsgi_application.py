@@ -12,28 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
+import logging
 import sys
 import time
-import logging
-import functools
 
 from newrelic.api.application import application_instance
 from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import notice_error
 from newrelic.api.web_transaction import WSGIWebTransaction
-from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
 from newrelic.api.html_insertion import insert_html_snippet, verify_body_exists
-
+from newrelic.api.time_trace import notice_error
+from newrelic.api.transaction import current_transaction
+from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import wrap_object, FunctionWrapper
-
+from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
 
 
 class _WSGIApplicationIterable(object):
-
     def __init__(self, transaction, generator):
         self.transaction = transaction
         self.generator = generator
@@ -68,8 +68,7 @@ class _WSGIApplicationIterable(object):
             self.transaction._sent_start = time.time()
 
         if not self.response_trace:
-            self.response_trace = FunctionTrace(
-                    name='Response', group='Python/WSGI')
+            self.response_trace = FunctionTrace(name="Response", group="Python/WSGI")
             self.response_trace.__enter__()
 
     def close(self):
@@ -81,16 +80,13 @@ class _WSGIApplicationIterable(object):
             self.response_trace = None
 
         try:
-            with FunctionTrace(
-                    name='Finalize', group='Python/WSGI'):
+            with FunctionTrace(name='Finalize', group='Python/WSGI'):
 
                 if isinstance(self.generator, _WSGIApplicationMiddleware):
                     self.generator.close()
 
                 elif hasattr(self.generator, 'close'):
-                    name = callable_name(self.generator.close)
-                    with FunctionTrace(name):
-                        self.generator.close()
+                    FunctionTraceWrapper(self.generator.close)()
 
         except:  # Catch all
             self.transaction.__exit__(*sys.exc_info())
@@ -105,7 +101,6 @@ class _WSGIApplicationIterable(object):
 
 
 class _WSGIInputWrapper(object):
-
     def __init__(self, transaction, input):
         self.__transaction = transaction
         self.__input = input
@@ -114,7 +109,7 @@ class _WSGIInputWrapper(object):
         return getattr(self.__input, name)
 
     def close(self):
-        if hasattr(self.__input, 'close'):
+        if hasattr(self.__input, "close"):
             self.__input.close()
 
     def read(self, *args, **kwargs):
@@ -204,8 +199,7 @@ class _WSGIApplicationMiddleware(object):
 
         # Grab the iterable returned by the wrapped WSGI
         # application.
-        self.iterable = self.application(self.request_environ,
-                self.start_response)
+        self.iterable = self.application(self.request_environ, self.start_response)
 
     def process_data(self, data):
         # If this is the first data block, then immediately try
@@ -217,7 +211,7 @@ class _WSGIApplicationMiddleware(object):
             header = self.transaction.browser_timing_header()
 
             if not header:
-                return b''
+                return b""
 
             footer = self.transaction.browser_timing_footer()
 
@@ -228,10 +222,12 @@ class _WSGIApplicationMiddleware(object):
 
             if modified is not None:
                 if self.debug:
-                    _logger.debug('RUM insertion from WSGI middleware '
-                            'triggered on first yielded string from '
-                            'response. Bytes added was %r.',
-                            len(modified) - len(data))
+                    _logger.debug(
+                        "RUM insertion from WSGI middleware "
+                        "triggered on first yielded string from "
+                        "response. Bytes added was %r.",
+                        len(modified) - len(data),
+                    )
 
                 if self.content_length is not None:
                     length = len(modified) - len(data)
@@ -264,7 +260,7 @@ class _WSGIApplicationMiddleware(object):
 
         if self.response_data:
             self.response_data.append(data)
-            data = b''.join(self.response_data)
+            data = b"".join(self.response_data)
             self.response_data = []
 
         # Perform the insertion of the HTML. This should always
@@ -276,10 +272,12 @@ class _WSGIApplicationMiddleware(object):
 
         if modified is not None:
             if self.debug:
-                _logger.debug('RUM insertion from WSGI middleware '
-                        'triggered on subsequent string yielded from '
-                        'response. Bytes added was %r.',
-                        len(modified) - len(data))
+                _logger.debug(
+                    "RUM insertion from WSGI middleware "
+                    "triggered on subsequent string yielded from "
+                    "response. Bytes added was %r.",
+                    len(modified) - len(data),
+                )
 
             if self.content_length is not None:
                 length = len(modified) - len(data)
@@ -297,11 +295,10 @@ class _WSGIApplicationMiddleware(object):
         # additional data was inserted into the response.
 
         if self.content_length is not None:
-            header = (('Content-Length', str(self.content_length)))
+            header = ("Content-Length", str(self.content_length))
             self.response_headers.append(header)
 
-        self.outer_write = self.outer_start_response(self.response_status,
-                self.response_headers, *self.response_args)
+        self.outer_write = self.outer_start_response(self.response_status, self.response_headers, *self.response_args)
 
     def inner_write(self, data):
         # If the write() callable is used, we do not attempt to
@@ -345,8 +342,7 @@ class _WSGIApplicationMiddleware(object):
         # This is because it can be disabled using an API call.
         # Also check whether RUM insertion has already occurred.
 
-        if (self.transaction.autorum_disabled or
-                self.transaction.rum_header_generated):
+        if self.transaction.autorum_disabled or self.transaction.rum_header_generated:
 
             self.flush_headers()
             self.pass_through = True
@@ -370,7 +366,7 @@ class _WSGIApplicationMiddleware(object):
         for (name, value) in response_headers:
             _name = name.lower()
 
-            if _name == 'content-length':
+            if _name == "content-length":
                 try:
                     content_length = int(value)
                     continue
@@ -378,13 +374,13 @@ class _WSGIApplicationMiddleware(object):
                 except ValueError:
                     pass_through = True
 
-            elif _name == 'content-type':
+            elif _name == "content-type":
                 content_type = value
 
-            elif _name == 'content-encoding':
+            elif _name == "content-encoding":
                 content_encoding = value
 
-            elif _name == 'content-disposition':
+            elif _name == "content-disposition":
                 content_disposition = value
 
             headers.append((name, value))
@@ -408,9 +404,7 @@ class _WSGIApplicationMiddleware(object):
 
                 return False
 
-            if (content_disposition is not None and
-                    content_disposition.split(';')[0].strip().lower() ==
-                    'attachment'):
+            if content_disposition is not None and content_disposition.split(";")[0].strip().lower() == "attachment":
                 return False
 
             if content_type is None:
@@ -419,7 +413,7 @@ class _WSGIApplicationMiddleware(object):
             settings = self.transaction.settings
             allowed_content_type = settings.browser_monitoring.content_type
 
-            if content_type.split(';')[0] not in allowed_content_type:
+            if content_type.split(";")[0] not in allowed_content_type:
                 return False
 
             return True
@@ -444,9 +438,7 @@ class _WSGIApplicationMiddleware(object):
         # WSGI specification.
 
         if hasattr(self.iterable, 'close'):
-            name = callable_name(self.iterable.close)
-            with FunctionTrace(name):
-                self.iterable.close()
+            FunctionTraceWrapper(self.iterable.close)()
 
     def __iter__(self):
         # Process the response content from the iterable.
@@ -518,8 +510,7 @@ class _WSGIApplicationMiddleware(object):
                 yield data
 
 
-def WSGIApplicationWrapper(wrapped, application=None, name=None,
-        group=None, framework=None):
+def WSGIApplicationWrapper(wrapped, application=None, name=None, group=None, framework=None):
 
     # Python 2 does not allow rebinding nonlocal variables, so to fix this
     # framework must be stored in list so it can be edited by closure.
@@ -563,8 +554,7 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
             # supportability metrics.
 
             if framework:
-                transaction.add_framework_info(
-                        name=framework[0], version=framework[1])
+                transaction.add_framework_info(name=framework[0], version=framework[1])
 
             # Also override the web transaction name to be the name of
             # the wrapped callable if not explicitly named, and we want
@@ -578,9 +568,8 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
             if name is None and settings:
                 if framework is not None:
                     naming_scheme = settings.transaction_name.naming_scheme
-                    if naming_scheme in (None, 'framework'):
-                        transaction.set_transaction_name(
-                                callable_name(wrapped), priority=1)
+                    if naming_scheme in (None, "framework"):
+                        transaction.set_transaction_name(callable_name(wrapped), priority=1)
 
             elif name:
                 transaction.set_transaction_name(name, group, priority=1)
@@ -598,11 +587,11 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
 
         target_application = application
 
-        if 'newrelic.app_name' in environ:
-            app_name = environ['newrelic.app_name']
+        if "newrelic.app_name" in environ:
+            app_name = environ["newrelic.app_name"]
 
-            if ';' in app_name:
-                app_names = [n.strip() for n in app_name.split(';')]
+            if ";" in app_name:
+                app_names = [n.strip() for n in app_name.split(";")]
                 app_name = app_names[0]
                 target_application = application_instance(app_name)
                 for altname in app_names[1:]:
@@ -616,19 +605,18 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
 
             # FIXME Should this allow for multiple apps if a string.
 
-            if not hasattr(application, 'activate'):
+            if not hasattr(application, "activate"):
                 target_application = application_instance(application)
 
         # Now start recording the actual web transaction.
-        transaction = WSGIWebTransaction(target_application, environ)
+        transaction = WSGIWebTransaction(target_application, environ, source=wrapped)
         transaction.__enter__()
 
         # Record details of framework against the transaction for later
         # reporting as supportability metrics.
 
         if framework:
-            transaction.add_framework_info(
-                    name=framework[0], version=framework[1])
+            transaction.add_framework_info(name=framework[0], version=framework[1])
 
         # Override the initial web transaction name to be the supplied
         # name, or the name of the wrapped callable if wanting to use
@@ -648,24 +636,20 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
             naming_scheme = settings.transaction_name.naming_scheme
 
             if framework is not None:
-                if naming_scheme in (None, 'framework'):
-                    transaction.set_transaction_name(
-                            callable_name(wrapped), priority=1)
+                if naming_scheme in (None, "framework"):
+                    transaction.set_transaction_name(callable_name(wrapped), priority=1)
 
-            elif naming_scheme in ('component', 'framework'):
-                transaction.set_transaction_name(
-                        callable_name(wrapped), priority=1)
+            elif naming_scheme in ("component", "framework"):
+                transaction.set_transaction_name(callable_name(wrapped), priority=1)
 
         elif name:
             transaction.set_transaction_name(name, group, priority=1)
 
         def _start_response(status, response_headers, *args):
 
-            additional_headers = transaction.process_response(
-                    status, response_headers, *args)
+            additional_headers = transaction.process_response(status, response_headers, *args)
 
-            _write = start_response(status,
-                    response_headers + additional_headers, *args)
+            _write = start_response(status, response_headers + additional_headers, *args)
 
             def write(data):
                 if not transaction._sent_start:
@@ -685,17 +669,13 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
             # Should always exist, but check as test harnesses may not
             # have it.
 
-            if 'wsgi.input' in environ:
-                environ['wsgi.input'] = _WSGIInputWrapper(transaction,
-                        environ['wsgi.input'])
+            if "wsgi.input" in environ:
+                environ["wsgi.input"] = _WSGIInputWrapper(transaction, environ["wsgi.input"])
 
-            with FunctionTrace(
-                    name='Application', group='Python/WSGI'):
-                with FunctionTrace(name=callable_name(wrapped)):
-                    if (settings and settings.browser_monitoring.enabled and
-                            not transaction.autorum_disabled):
-                        result = _WSGIApplicationMiddleware(wrapped,
-                                environ, _start_response, transaction)
+            with FunctionTrace(name='Application', group='Python/WSGI'):
+                with FunctionTrace(name=callable_name(wrapped), source=wrapped):
+                    if settings and settings.browser_monitoring.enabled and not transaction.autorum_disabled:
+                        result = _WSGIApplicationMiddleware(wrapped, environ, _start_response, transaction)
                     else:
                         result = wrapped(environ, _start_response)
 
@@ -709,11 +689,10 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
 
 
 def wsgi_application(application=None, name=None, group=None, framework=None):
-    return functools.partial(WSGIApplicationWrapper, application=application,
-            name=name, group=group, framework=framework)
+    return functools.partial(
+        WSGIApplicationWrapper, application=application, name=name, group=group, framework=framework
+    )
 
 
-def wrap_wsgi_application(module, object_path, application=None,
-            name=None, group=None, framework=None):
-    wrap_object(module, object_path, WSGIApplicationWrapper,
-            (application, name, group, framework))
+def wrap_wsgi_application(module, object_path, application=None, name=None, group=None, framework=None):
+    wrap_object(module, object_path, WSGIApplicationWrapper, (application, name, group, framework))

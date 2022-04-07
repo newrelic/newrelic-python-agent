@@ -13,11 +13,11 @@
 # limitations under the License.
 
 import sys
-from inspect import isawaitable, iscoroutinefunction
+from inspect import isawaitable
 
 from newrelic.api.web_transaction import web_transaction
 from newrelic.api.transaction import current_transaction
-from newrelic.api.function_trace import function_trace
+from newrelic.api.function_trace import function_trace, FunctionTrace
 from newrelic.api.time_trace import notice_error
 from newrelic.common.object_wrapper import (wrap_function_wrapper,
     function_wrapper)
@@ -37,16 +37,21 @@ def _nr_wrapper_handler_(wrapped, instance, args, kwargs):
 
     name = callable_name(wrapped)
     view_class = getattr(wrapped, 'view_class', None)
+    view = view_class or wrapped
     if view_class:
         try:
             method = args[0].method.lower()
             name = callable_name(view_class) + '.' + method
+            view = getattr(view_class, method)
         except:
             pass
+    
     transaction.set_transaction_name(name, priority=3)
     import sanic
     transaction.add_framework_info(name='Sanic', version=sanic.__version__)
-    return function_trace(name=name)(wrapped)(*args, **kwargs)
+
+    with FunctionTrace(name=name, source=view):
+        return wrapped(*args, **kwargs)
 
 
 @function_wrapper

@@ -119,6 +119,10 @@ class GCRuntimeMetricsSettings(Settings):
     enabled = False
 
 
+class CodeLevelMetricsSettings(Settings):
+    pass
+
+
 class ThreadProfilerSettings(Settings):
     pass
 
@@ -335,6 +339,7 @@ class EventHarvestConfigHarvestLimitSettings(Settings):
 _settings = TopLevelSettings()
 _settings.attributes = AttributesSettings()
 _settings.gc_runtime_metrics = GCRuntimeMetricsSettings()
+_settings.code_level_metrics = CodeLevelMetricsSettings()
 _settings.thread_profiler = ThreadProfilerSettings()
 _settings.transaction_tracer = TransactionTracerSettings()
 _settings.transaction_tracer.attributes = TransactionTracerAttributesSettings()
@@ -778,6 +783,7 @@ _settings.aws_lambda_metadata = {}
 
 _settings.event_loop_visibility.enabled = True
 _settings.event_loop_visibility.blocking_threshold = 0.1
+_settings.code_level_metrics.enabled = True
 
 
 def global_settings():
@@ -1157,7 +1163,7 @@ def error_matches_rules(
 
             if not settings:
                 # Unable to find rules to match with
-                _logger.error(
+                _logger.debug(
                     "Failed to retrieve exception rules: No settings supplied, or found on transaction or trace."
                 )
                 return None

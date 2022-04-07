@@ -17,6 +17,7 @@ import sys
 import webtest
 
 from testing_support.fixtures import validate_transaction_errors
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 
 import cherrypy
 
@@ -34,6 +35,7 @@ conf = { '/': { 'request.dispatch': dispatcher } }
 application = cherrypy.Application(None, '/', conf)
 test_application = webtest.TestApp(application)
 
+@validate_code_level_metrics("test_routes.EndPoint", "index")
 @validate_transaction_errors(errors=[])
 def test_routes_index():
     response = test_application.get('/endpoint')

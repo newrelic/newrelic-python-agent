@@ -281,7 +281,7 @@ def wrap_middleware(wrapped, instance, args, kwargs):
 
     name = callable_name(wrapped)
     transaction.set_transaction_name(name, "GraphQL", priority=12)
-    with FunctionTrace(name):
+    with FunctionTrace(name, source=wrapped):
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             return wrapped(*args, **kwargs)
 
@@ -319,7 +319,7 @@ def wrap_executor_execute(wrapped, instance, args, kwargs):
     # args[0] is the resolver function, or the top of the middleware chain
     args = list(args)
     if callable(args[0]):
-        if not hasattr(args[0], "_nr_wrapped"):
+        if not hasattr(args[0], "_nr_wrapped") and not hasattr(getattr(args[0], "func", None), "_nr_wrapped"):
             args[0] = wrap_resolver(args[0])
             args[0]._nr_wrapped = True
     return wrapped(*args, **kwargs)
@@ -335,21 +335,24 @@ def wrap_resolver(wrapped, instance, args, kwargs):
     transaction.set_transaction_name(name, "GraphQL", priority=13)
 
     with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
+        sync_start_time = time.time()
         result = wrapped(*args, **kwargs)
 
         if isawaitable(result):
             # Grab any async resolvers and wrap with error traces
             async def _nr_coro_resolver_error_wrapper():
-                with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
-                    try:
-                        return await result
-                    except Exception:
-                        transaction.set_transaction_name(name, "GraphQL", priority=99)
-                        raise
-
+                with FunctionTrace(name, source=wrapped):
+                    with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
+                        try:
+                            return await result
+                        except Exception:
+                            transaction.set_transaction_name(name, "GraphQL", priority=15)
+                            raise
             return _nr_coro_resolver_error_wrapper()
-
-        return result
+        else:
+            with FunctionTrace(name, source=wrapped) as trace:
+                trace.start_time = sync_start_time
+                return result
 
 
 def wrap_error_handler(wrapped, instance, args, kwargs):
@@ -425,7 +428,7 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
     except Exception:
         # Synchonous resolver with exception raised
         with GraphQLResolverTrace(field_name, field_parent_type=parent_type.name, field_return_type=field_return_type, field_path=field_path) as trace:
-            trace._start_time = start_time
+            trace.start_time = start_time
             notice_error(ignore=ignore_graphql_duplicate_exception)
             raise
 
@@ -434,7 +437,7 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
         async def _nr_coro_resolver_wrapper():
             with GraphQLResolverTrace(field_name, field_parent_type=parent_type.name, field_return_type=field_return_type, field_path=field_path) as trace:
                 with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
-                    trace._start_time = start_time
+                    trace.start_time = start_time
                     return await result
 
         # Return a coroutine that handles wrapping in a resolver trace
@@ -443,7 +446,7 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
         # Synchonous resolver with no exception raised
         with GraphQLResolverTrace(field_name, field_parent_type=parent_type.name, field_return_type=field_return_type, field_path=field_path) as trace:
             with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
-                trace._start_time = start_time
+                trace.start_time = start_time
                 return result
 
 

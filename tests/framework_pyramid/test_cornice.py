@@ -16,6 +16,7 @@ import pytest
 
 from testing_support.fixtures import (validate_transaction_errors,
         validate_transaction_metrics)
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 
 from newrelic.packages import six
 
@@ -44,6 +45,7 @@ _test_cornice_service_scoped_metrics = [
         ('Function/pyramid.router:Router.__call__', 1),
         ('Function/_test_application:cornice_service_get_info', 1)]
 
+@validate_code_level_metrics("_test_application", "cornice_service_get_info")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_application:cornice_service_get_info',
         scoped_metrics=_test_cornice_service_scoped_metrics)
@@ -58,6 +60,7 @@ _test_cornice_resource_collection_get_scoped_metrics = [
         ('Function/pyramid.router:Router.__call__', 1),
         ('Function/_test_application:Resource.collection_get', 1)]
 
+@validate_code_level_metrics("_test_application.Resource", "collection_get")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_application:Resource.collection_get',
         scoped_metrics=_test_cornice_resource_collection_get_scoped_metrics)
@@ -72,6 +75,7 @@ _test_cornice_resource_get_scoped_metrics = [
         ('Function/pyramid.router:Router.__call__', 1),
         ('Function/_test_application:Resource.get', 1)]
 
+@validate_code_level_metrics("_test_application.Resource", "get")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_application:Resource.get',
         scoped_metrics=_test_cornice_resource_get_scoped_metrics)
@@ -90,6 +94,7 @@ if six.PY3:
 else:
     _test_cornice_error_errors = ['exceptions:RuntimeError']
 
+@validate_code_level_metrics("_test_application", "cornice_error_get_info")
 @validate_transaction_errors(errors=_test_cornice_error_errors)
 @validate_transaction_metrics('_test_application:cornice_error_get_info',
         scoped_metrics=_test_cornice_error_scoped_metrics)
